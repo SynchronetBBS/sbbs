@@ -29,6 +29,7 @@
 #include <sys/file.h>   /* L_SET for Solaris */
 #include <errno.h>
 #include <sys/param.h>  /* BSD */
+#include <sys/syscall.h> /* SYS_close_range */
 
 #endif
 
@@ -519,3 +520,39 @@ int xp_lockfile(int file, off_t offset, off_t size, bool block)
 }
 #endif // _WIN32
 
+
+#ifndef _WIN32
+/****************************************************************************/
+/* Close every descriptor above stderr, except (optionally) one to be	    */
+/* inherited deliberately.  For use between fork() and exec(): a child must  */
+/* not inherit this process's sockets, message bases, or anything a library  */
+/* opened where we never see the descriptor.  GitLab #1174.                 */
+/*                                                                          */
+/* Only async-signal-safe calls are legal here, since other threads are      */
+/* still holding locks in the forked child - hence no /proc walk.           */
+/****************************************************************************/
+void xp_close_inherited_fds(int keep)
+{
+	long max;
+	int  fd;
+
+#ifdef SYS_close_range
+	if (keep < 3) {
+		if (syscall(SYS_close_range, (unsigned)3, ~0U, 0) == 0)
+			return;
+	}
+	else {
+		if (syscall(SYS_close_range, (unsigned)3, (unsigned)(keep - 1), 0) == 0
+		    && syscall(SYS_close_range, (unsigned)(keep + 1), ~0U, 0) == 0)
+			return;
+	}
+	/* ENOSYS (pre-5.9 kernel): fall through */
+#endif
+	if ((max = sysconf(_SC_OPEN_MAX)) < 0)
+		max = 1024;
+	for (fd = 3; fd < max; fd++) {
+		if (fd != keep)
+			close(fd);
+	}
+}
+#endif

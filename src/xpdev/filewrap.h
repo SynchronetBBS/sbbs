@@ -182,6 +182,9 @@ DLLEXPORT int	xp_lockfile(int fd, off_t pos, off_t len, bool block);
 #endif
 
 DLLEXPORT time_t	filetime(int fd);
+#ifndef _WIN32
+DLLEXPORT void		xp_close_inherited_fds(int keep);
+#endif
 
 #if defined(__cplusplus)
 }

@@ -1678,6 +1678,13 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			input_thread_mutex_locked = (pthread_mutex_lock(&input_thread_mutex) == 0);
 	}
 
+	/* The one descriptor the child is meant to inherit: a native socket-door is
+	   given this socket by number (the %H command-line specifier). */
+	int sock_dup_to_keep = -1;
+	if (native && passthru_thread_running && client_socket_dup != INVALID_SOCKET
+	    && !(mode & EX_STDIO))
+		sock_dup_to_keep = client_socket_dup;
+
 	if (!(mode & EX_NOLOG) && pipe(err_pipe) != 0) {
 		errormsg(WHERE, ERR_CREATE, "err_pipe", 0);
 		return -1;
@@ -1902,8 +1909,18 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			dup2(err_pipe[1], 2);    /* stderr */
 		}
 
+		/* Last thing before exec, once every descriptor the child is meant to
+		   have is in place: a native socket-door is handed client_socket_dup by
+		   number (%H), everything else goes.  GitLab #1174. */
+		xp_close_inherited_fds(sock_dup_to_keep);
+
 		execvp(argv[0], argv);
-		lprintf(LOG_ERR, "!ERROR %d (%s) executing: %s", errno, strerror(errno), argv[0]);
+		/* stderr is the pipe the parent reads and logs; lprintf() is not usable
+		   here, having neither its descriptors nor fork safety. */
+		snprintf(str, sizeof(str), "!ERROR %d (%s) executing: %s\n"
+		         , errno, strerror(errno), argv[0]);
+		if (write(STDERR_FILENO, str, strlen(str)) < 0)
+			; /* nothing left to report it with */
 		_exit(-1);  /* should never get here */
 	}
 
