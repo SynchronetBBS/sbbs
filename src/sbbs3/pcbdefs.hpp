@@ -96,7 +96,7 @@ struct sys {
 	char     ConfScanned[5];
 	Int16    ConfAddTime;
 	Int16    CreditMinutes;
-	char     MultiLangExt[4];
+	char     MultiLangExt[4]{' ', ' ', ' ', ' '};	// Spaces (not NULs) when no language is selected
 	string<25> Name;
 	Int16    MinutesLeft;
 	uint8_t  NodeNum;	// Binary node number or 0

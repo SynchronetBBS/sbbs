@@ -97,6 +97,8 @@
   bare-LF-to-CRLF expansion applied by the BBS
 - WWIV `CHAIN.TXT` drop file: the time-of-call and time-used fields
   (lines 24 and 25) are now populated rather than always zero
+- `PCBOARD.SYS` drop file: the download-allowance, conference and
+  language-extension fields are now populated
 - Configuration changes now reach new callers without waiting for
   every node to disconnect: when a recycle is signaled (the
   `ctrl/recycle` semaphore, an MQTT recycle, `SIGHUP` /

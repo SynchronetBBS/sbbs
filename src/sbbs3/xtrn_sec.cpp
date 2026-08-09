@@ -750,6 +750,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		now = time(NULL);
 		sys.TimeUsed = -(int16_t)(((now - starttime) / 60) + (time_t)useron.ttoday);/* Negative minutes used */
 		sys.PwrdTimeAllowed = cfg.level_timepercall[useron.level];
+		// 32767 means "unlimited" to PCBoard, a useful saturation value here
+		sys.MaxKBytesAllowed = (int16_t)MIN(user_available_credits(&useron) / 1024, (uint64_t)INT16_MAX);
 		sys.Name = name;
 		sys.MinutesLeft = (int16_t)(tleft / 60);
 		sys.NodeNum = (uint8_t)cfg.node_num;
@@ -757,6 +759,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		sys.UseAnsi = term->supports(ANSI);
 		sys.YesChar = yes_key();
 		sys.NoChar = no_key();
+		sys.Conference = (char)curgrp;
 		sys.Conference2 = cursubnum;
 
 		fwrite(&sys, sizeof(sys), 1, fp);
