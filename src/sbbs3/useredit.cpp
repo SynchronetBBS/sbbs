@@ -164,7 +164,7 @@ void sbbs_t::useredit(int usernumber)
 			SAFECAT(str, "ABCDEFHIJKLMNOPRSTUVWXYZ+~*$#");
 		l = getkeys(str, l, K_UPPER | K_NOCRLF);
 		if (l & 0x80000000L) {
-			user.number = (ushort)(l & ~0x80000000L);
+			user.number = l & ~0x80000000L;
 			continue;
 		}
 		if (IS_ALPHA(l) || strchr("~+*$/", l) != NULL)   // non-alpha commands that prompt

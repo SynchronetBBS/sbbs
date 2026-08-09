@@ -41,7 +41,7 @@ struct user_private_t
 		if (user->number != 0 && !cached) {
 			if (file < 1)
 				file = openuserdat(cfg, /* for_modify: */ false);
-			ushort usernumber = user->number;
+			int usernumber = user->number;
 			if (fgetuserdat(cfg, user, file) == 0)
 				cached = true;
 			user->number = usernumber; // Can be zeroed by fgetuserdat() failure
@@ -523,7 +523,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			}
 			rc = JS_SUSPENDREQUEST(cx);
 			if (usernumber != p->user->number) {
-				p->user->number = (ushort)usernumber;
+				p->user->number = usernumber;
 				p->cached = false;
 				p->mail_waiting.reset();
 				p->mail_read.reset();
@@ -1844,7 +1844,7 @@ js_user_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if (argc && (!JS_ValueToInt32(cx, argv[0], &val)))
 		return JS_FALSE;
 	memset(&user, 0, sizeof(user));
-	user.number = (ushort)val;
+	user.number = val;
 	if (user.number != 0 && (i = getuserdat(scfg, &user)) != 0) {
 		JS_ReportError(cx, "Error %d reading user number %d", i, val);
 		return JS_FALSE;

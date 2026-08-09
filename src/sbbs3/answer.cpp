@@ -42,7 +42,7 @@ sbbs_t::set_authresponse(bool activate_ssh)
 }
 
 static bool
-check_pubkey(scfg_t *cfg, ushort unum, char *pkey, size_t pksz)
+check_pubkey(scfg_t *cfg, int unum, char *pkey, size_t pksz)
 {
 	// 2048 is enough bytes for anyone!
 	// I would absolutely prefer a getline() here. :(
