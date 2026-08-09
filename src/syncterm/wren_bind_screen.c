@@ -609,6 +609,15 @@ push_next_event(WrenVM *vm, bool retry_empty_key_event, bool at_exit)
 	if (code == CIO_KEY_KEY_EVENT) {
 		struct ciolib_key_event kev;
 		if (ciokey_getevent(&kev)) {
+			/* Backends post one coalesced CIO_KEY_KEY_EVENT token
+			 * while the physical-key queue is nonempty.  doterm's
+			 * normal path drains that queue in one pass, but this
+			 * blocking Wren reader returns one event per call.  Put a
+			 * token back when another edge remains so a press/release
+			 * pair cannot strand the release until unrelated input
+			 * wakes the backend again. */
+			if (ciokey_pending())
+				ungetch(CIO_KEY_KEY_EVENT);
 			push_physical_key_event(vm, &kev, 0);
 			return true;
 		}

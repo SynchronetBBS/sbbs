@@ -14,7 +14,7 @@
 // or mutate any other module that's been loaded.
 
 import "syncterm" for Screen, Console, Input, Clipboard, Key,
-    REPL, LogSource, MouseEvent
+    REPL, LogSource, KeyEvent, MouseEvent
 
 class WrenConsole {
   // __history (static field) keeps submitted lines across run()
@@ -213,7 +213,10 @@ class WrenConsole {
             redrawPrompt = true
           }
         }
-      } else {
+      // PhysicalKeyEvent edges may be enabled by the connected host.
+      // Drain and ignore those here; console editing is driven by the
+      // corresponding translated KeyEvent, just like the menu UI.
+      } else if (ev is KeyEvent) {
         var key = ev.code
         if (key == Key.wrenConsole || key == Key.escape || key == Key.quit) {
           done = true

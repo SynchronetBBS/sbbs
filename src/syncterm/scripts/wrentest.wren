@@ -30,7 +30,8 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     Codepage, ConnType, Emulation, Font, LogSource, LogLevel,
     Parity, BBSListType, ScreenMode, AddressFamily, MusicMode,
     RipVersion, LogMode, StatusDisplay, Color, Cell, Hyperlinks,
-    REPL, Input, Wake, KeyEvent, MouseEvent, Mouse, Cache, Platform,
+    REPL, Input, Wake, KeyEvent, PhysicalKeyEvent, MouseEvent, Mouse,
+    Cache, Platform,
     Timer, TimerElapsed, WON, FileError, FileErr, WONError, WONErr,
     Error, ScriptError, Surface, Scrollback, Host, PixelColor,
     PixelBuffer, PixelMask, PixelBlit
@@ -229,6 +230,7 @@ class WrenTest {
     testPixelDecoders_()
     testScreenPixels_()
     testMouseEventCtors_()
+    testPhysicalKeyInputDrain_()
     testScrollbackMouseMask_()
     testKeyEventCtorValidation_()
 
@@ -762,6 +764,26 @@ class WrenTest {
            g.startPixelX == 20 && g.startPixelY == 30 &&
            g.endPixelX == 40 && g.endPixelY == 50,
            "MouseEvent.withPixels preserves explicit raster coordinates")
+  }
+
+  // Physical-key wakeups are coalesced: one CIO_KEY_KEY_EVENT token
+  // means "the queue is nonempty", and doterm normally drains the
+  // whole queue.  Input.next returns one edge at a time, so it must
+  // re-arm the token while another edge remains.  A press/release
+  // pair catches the failure: without re-arming, the second timed
+  // read returns null and remains stuck until unrelated input arrives.
+  static testPhysicalKeyInputDrain_() {
+    var evdev = 700
+    Input.synthesizePhysicalKey(evdev, true)
+    Input.synthesizePhysicalKey(evdev, false)
+    var pressed = Input.next(1000)
+    var released = Input.next(1000)
+    check_(pressed is PhysicalKeyEvent && pressed.evdev == evdev &&
+           pressed.pressed,
+           "Input.next returns synthesized physical-key press")
+    check_(released is PhysicalKeyEvent && released.evdev == evdev &&
+           !released.pressed,
+           "Input.next drains queued physical-key release")
   }
 
   static testScrollbackMouseMask_() {

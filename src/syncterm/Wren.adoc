@@ -1870,6 +1870,11 @@ console does not change its event-pumping model.  When the menu was
 entered through Alt+E, the connection is already parked for the entire
 menu visit.
 
+When physical-key reporting is active, the console drains and ignores
+`PhysicalKeyEvent` press/release edges; editing commands use the corresponding
+translated `KeyEvent`.  This keeps host key state synchronized without sending
+console keystrokes to the connected application.
+
 The REPL evaluates input through `REPL.eval(module, src)`.  The
 input is pre-classified by inspecting its leading non-whitespace
 token: source that begins with a Wren statement keyword (`var`,
@@ -2635,7 +2640,9 @@ Unified blocking and nonblocking reader for keyboard and mouse events.
 
 | `Input.next()`
 | Block until the next event; return `KeyEvent`, `PhysicalKeyEvent`, or
-  `MouseEvent`.
+  `MouseEvent`.  Physical press/release edges are returned one per call;
+  when the backend's coalesced physical-key wake represents multiple queued
+  edges, `Input.next` re-arms the wake until the queue is drained.
 
 | `Input.next(ms)`
 | Wait up to `ms` milliseconds; return the event or `null` on
