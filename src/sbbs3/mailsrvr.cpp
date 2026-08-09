@@ -2106,14 +2106,13 @@ static bool chk_email_addr(SOCKET socket, const char* prot, const char* p, const
 
 static bool email_addr_is_exempt(const char* addr)
 {
-	char  fname[MAX_PATH + 1];
 	char  netmail[128];
 	char* p;
 
 	if (*addr == 0 || strcmp(addr, "<>") == 0)
 		return false;
 	angle_bracket(netmail, sizeof(netmail), addr);
-	if (dnsbl_exempt.listed(netmail, fname))
+	if (dnsbl_exempt.listed(netmail))
 		return true;
 	p = netmail + 1;
 	*lastchar(p) = '\0';
