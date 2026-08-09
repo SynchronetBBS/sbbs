@@ -4282,7 +4282,7 @@ bool check_realname(scfg_t* cfg, const char* name)
 		return false;
 	if ((cfg->uq & UQ_NOEXASC) && !str_is_ascii(name))
 		return false;
-	if (!(cfg->uq & UQ_NOSPACEREQ) && strchr(name, ' ') == NULL)
+	if ((cfg->uq & UQ_REALNAME) && !(cfg->uq & UQ_NOSPACEREQ) && strchr(name, ' ') == NULL)
 		return false;
 	if (strstr(name, "  ") != NULL) /* double spaces */
 		return false;
