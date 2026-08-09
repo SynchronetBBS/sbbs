@@ -41,6 +41,29 @@ int main(void) {
 	assert(r.kind == TERMGFX_SGR_MOVE);
 	termgfx_mouse_report(&m2, 64, 1, 1, 0, &r);
 	assert(r.kind == TERMGFX_SGR_WHEEL && r.wheel == -1);
+	termgfx_mouse_report(&m2, 65, 1, 1, 0, &r);
+	assert(r.kind == TERMGFX_SGR_WHEEL && r.wheel == 1);
+
+	/* SyncTERM sets the motion bit on a wheel notch when the pointer moved
+	   too, so a click made without a perfectly still hand arrives as 96 or
+	   97 -- and these used to be classified as hovers and discarded. */
+	termgfx_mouse_report(&m2, 97, 1, 1, 0, &r);     /* wheel down + motion */
+	assert(r.kind == TERMGFX_SGR_WHEEL && r.wheel == 1);
+	termgfx_mouse_report(&m2, 97 | 4, 1, 1, 0, &r); /* ...with shift held */
+	assert(r.kind == TERMGFX_SGR_WHEEL && r.wheel == 1);
+
+	/* 96 stays a MOVE: SyncTERM's no-button hover is 96 exactly, so
+	   wheel-up-with-motion and a hover are the same bytes. */
+	termgfx_mouse_report(&m2, 96, 1, 1, 0, &r);
+	assert(r.kind == TERMGFX_SGR_MOVE);
+
+	/* Drags keep their buttons -- 32|btn must not be read as a wheel. */
+	termgfx_mouse_report(&m2, 32, 1, 1, 0, &r);
+	assert(r.kind == TERMGFX_SGR_MOVE);
+	termgfx_mouse_report(&m2, 33, 1, 1, 0, &r);
+	assert(r.kind == TERMGFX_SGR_MOVE);
+	termgfx_mouse_report(&m2, 34, 1, 1, 0, &r);
+	assert(r.kind == TERMGFX_SGR_MOVE);
 
 	return 0;
 }

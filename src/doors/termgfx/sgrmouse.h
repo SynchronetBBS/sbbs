@@ -39,6 +39,14 @@ typedef enum {
 //        buttons into xterm's 64/65) -- giving 64 -- before the 32 motion bit
 //        is added.
 //
+// THE EXCEPTION IS 97. SyncTERM sets the motion bit on a wheel notch too
+// whenever the pointer moved in the same event, so a click made without a
+// perfectly still hand arrives as 96 (up) or 97 (down). 97 is decoded as a
+// wheel because a hover is 96 exactly -- the low bit is never set on one --
+// while 96 stays MOVE because nothing can tell wheel-up-with-motion from a
+// hover. Half the notches are recoverable; the other half are a collision in
+// the terminal's own encoding.
+//
 // Note the wheel bit is independent of the low two bits: xterm sets it from
 // `button & 4`, not from a value in 0..3. That is exactly the invariant
 // SyncTERM's arithmetic remap breaks.
