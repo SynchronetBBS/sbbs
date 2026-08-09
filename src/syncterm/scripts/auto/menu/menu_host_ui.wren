@@ -5,8 +5,12 @@ import "ui_pane" for Pane
 import "ui_progress" for ProgressText
 
 class MenuHostUI {
-  static statusWidth_(screenWidth) {
-    return 74.min((screenWidth - 4).max(1))
+  static statusWidth_(screenWidth, title, lines) {
+    var longest = title == null ? 0 : title.count
+    for (line in lines) {
+      if (line.count > longest) longest = line.count
+    }
+    return (longest + 4).min((screenWidth - 4).max(1))
   }
 
   static alert(title, message) {
@@ -43,10 +47,7 @@ class MenuHostUI {
     __statusPane.title = title
     __statusBody.lines = lines
     var size = Screen.size
-    // Match UIFC's 74-column progress window.  Keeping the width stable
-    // preserves the C formatter's 20-cell name column between rows and
-    // across updates; narrow screens still retain the standard margins.
-    var w = statusWidth_(size[0])
+    var w = statusWidth_(size[0], title, lines)
     var rows = __statusBody.rowCount((w - 2).max(1))
     var h = (rows + 4).max(5).min(size[1] - 4)
     __statusPane.bounds = Pane.modalBounds(w, h)
