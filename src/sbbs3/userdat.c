@@ -3215,6 +3215,7 @@ bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 {
 	file_t f;
 	bool   removed = false;
+	bool   remove_failed = false;
 
 	filename = getfname(filename);
 	if (!loadfile(cfg, dirnum, filename, &f, file_detail_normal, NULL))
@@ -3236,14 +3237,22 @@ bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 		}
 		if (strListCount(dest_user_list) < 1) {
 			char path[MAX_PATH + 1];
-			if (remove(getfilepath(cfg, &f, path)) == 0)
+			if (remove(getfilepath(cfg, &f, path)) == 0) {
 				removed = removefile(cfg, dirnum, f.name, NULL);
+				/* The file is gone from disk: if its record can't be removed
+				 * too, don't fall through and update a dangling record. */
+				remove_failed = !removed;
+			}
 		}
 		strListFree(&dest_user_list);
 	}
 
 	f.hdr.times_downloaded++;
 	f.hdr.last_downloaded = time32(NULL);
+	if (remove_failed) {
+		smb_freefilemem(&f);
+		return false;
+	}
 	if (!removed && !updatefile(cfg, &f, NULL)) {
 		smb_freefilemem(&f);
 		return false;

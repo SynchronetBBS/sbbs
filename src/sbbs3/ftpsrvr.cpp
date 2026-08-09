@@ -4744,8 +4744,12 @@ static void ctrl_thread(void* arg)
 					           , fname, errno);
 				} else {
 					lprintf(LOG_NOTICE, "%04d <%s> deleted %s", sock, user.alias, fname);
-					if (filedat)
-						removefile(&scfg, dir, getfname(fname), NULL);
+					if (filedat) {
+						int result;
+						if (!removefile(&scfg, dir, getfname(fname), &result))
+							errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d removing file (%s) from database"
+							        , sock, user.alias, result, getfname(fname));
+					}
 					sockprintf(sock, sess, "250 %s deleted.", fname);
 				}
 			} else if (success) {

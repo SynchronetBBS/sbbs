@@ -296,7 +296,12 @@ bool sbbs_t::editfilename(file_t* f)
 	}
 	bprintf(text[FileRenamed], path, tmp);
 	smb_new_hfield_str(f, SMB_FILENAME, str);
-	return updatefile(&cfg, f, NULL);
+	int result;
+	if (!updatefile(&cfg, f, &result)) {
+		errormsg(WHERE, "updating file", f->name, result);
+		return false;
+	}
+	return true;
 }
 
 bool sbbs_t::editfiledesc(file_t* f)
@@ -312,7 +317,12 @@ bool sbbs_t::editfiledesc(file_t* f)
 	if (f->desc != NULL && strcmp(fdesc, f->desc) == 0)
 		return true;
 	smb_new_hfield_str(f, SMB_FILEDESC, fdesc);
-	return updatefile(&cfg, f, NULL);
+	int result;
+	if (!updatefile(&cfg, f, &result)) {
+		errormsg(WHERE, "updating file", f->name, result);
+		return false;
+	}
+	return true;
 }
 
 bool sbbs_t::editfileinfo(file_t* f)
@@ -364,5 +374,10 @@ bool sbbs_t::editfileinfo(file_t* f)
 			return false;
 		inputnstime32((time32_t*)&f->hdr.when_imported.time);
 	}
-	return updatefile(&cfg, f, NULL);
+	int result;
+	if (!updatefile(&cfg, f, &result)) {
+		errormsg(WHERE, "updating file", f->name, result);
+		return false;
+	}
+	return true;
 }

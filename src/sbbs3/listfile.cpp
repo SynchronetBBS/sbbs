@@ -919,8 +919,10 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 							snprintf(str, sizeof str, text[AddToOfflineDirQ]
 							         , f->name, cfg.lib[cfg.dir[i]->lib]->sname, cfg.dir[i]->sname);
 							if (yesno(str)) {
+								int addfile_result;
 								f->dir = i;
-								addfile(&cfg, f, f->extdesc, f->auxdata, /* client: */ NULL, /* result: */NULL);
+								if (!addfile(&cfg, f, f->extdesc, f->auxdata, /* client: */ NULL, &addfile_result))
+									errormsg(WHERE, "adding file to database", f->name, addfile_result);
 							}
 						}
 					}

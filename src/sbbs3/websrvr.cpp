@@ -6584,7 +6584,9 @@ static void respond(http_session_t * session)
 					        , snt, cps, session->req.range_start, session->req.range_end
 					        , session->req.physical_path, content_length);
 				if (session->parsed_vpath == PARSED_VPATH_FULL && session->file.name != NULL) {
-					user_downloaded_file(&scfg, &session->user, &session->client, session->file.dir, session->file.name, snt);
+					if (!user_downloaded_file(&scfg, &session->user, &session->client, session->file.dir, session->file.name, snt))
+						errprintf(LOG_ERR, WHERE, "%04d !ERROR updating file (%s) in database"
+						        , session->socket, session->file.name);
 					mqtt_file_download(&mqtt, &session->user, session->file.dir, session->file.name, snt, &session->client);
 				}
 			}

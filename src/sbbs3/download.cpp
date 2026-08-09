@@ -45,7 +45,8 @@ void sbbs_t::downloadedfile(file_t* f)
 	         , cfg.lib[cfg.dir[f->dir]->lib]->sname
 	         , cfg.dir[f->dir]->sname);
 
-	user_downloaded_file(&cfg, &useron, &client, f->dir, f->name, length);
+	if (!user_downloaded_file(&cfg, &useron, &client, f->dir, f->name, length))
+		errormsg(WHERE, "updating file", f->name, 0);
 	mqtt_file_download(mqtt, &useron, f->dir, f->name, length, &client);
 
 	user_event(EVENT_DOWNLOAD);
@@ -460,7 +461,8 @@ bool sbbs_t::sendfile(file_t* f, char prot, bool autohang)
 			logon_dlb += length;  /* Update 'this call' stats */
 			logon_dls++;
 		}
-		user_downloaded_file(&cfg, &useron, &client, f->dir, f->name, length);
+		if (!user_downloaded_file(&cfg, &useron, &client, f->dir, f->name, length))
+			errormsg(WHERE, "updating file", f->name, 0);
 		user_event(EVENT_DOWNLOAD);
 	}
 	return result;

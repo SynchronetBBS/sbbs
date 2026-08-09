@@ -158,18 +158,22 @@ bool sbbs_t::uploadfile(file_t* f)
 			lprintf(LOG_DEBUG, "DIZ does not exist in: %s", path);
 	}
 
-	if (!(cfg.dir[f->dir]->misc & DIR_NOSTAT)) {
-		logon_ulb += length;  /* Update 'this call' stats */
-		logon_uls++;
-		inc_upload_stats(&cfg, 1, length);
-	}
 	if (cfg.dir[f->dir]->misc & DIR_AONLY)  /* Forced anonymous */
 		f->hdr.attr |= MSG_ANONYMOUS;
 	smb_hfield_bin(f, SMB_COST, length);
 	smb_hfield_str(f, SENDER, useron.alias);
 	bprintf(text[FileNBytesReceived], f->name, u64toac(length, tmp));
-	if (!addfile(&cfg, f, ext, /* metadata: */ NULL, &client, NULL))
+	int addfile_result;
+	if (!addfile(&cfg, f, ext, /* metadata: */ NULL, &client, &addfile_result)) {
+		errormsg(WHERE, "adding file to database", f->name, addfile_result);
 		return false;
+	}
+	/* Don't credit the upload until it's actually in the database */
+	if (!(cfg.dir[f->dir]->misc & DIR_NOSTAT)) {
+		logon_ulb += length;  /* Update 'this call' stats */
+		logon_uls++;
+		inc_upload_stats(&cfg, 1, length);
+	}
 
 	llprintf("U+", "uploaded %s (%" PRId64 " bytes) to %s %s"
 	         , f->name
