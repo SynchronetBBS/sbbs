@@ -42,7 +42,7 @@ for(var c=0; c < options.login_prompts; c++) {
 		str += options.new_prompt || "\x01c or '\x01yNew\x01c'";
 	if(guest)
 		str += options.guest_prompt || "\x01c or '\x01yGuest\x01c'";
-	str += "\r\nLogin: \x01w";
+	str += options.login_prompt_str || "\r\nLogin: \x01w";
 	console.print("\r\n"
 		+ legacy_login_prompt
 		+ word_wrap(options.login_prompt || str, console.screen_columns-1).trimRight());
