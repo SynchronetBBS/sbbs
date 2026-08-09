@@ -100,9 +100,17 @@ LDFLAGS	+=	-fPIC
 CFLAGS	+=	-O2 -I../xpdev
 ifeq ($(OS),Darwin)
  CFLAGS		+=	-D__unix__
- LDFLAGS	:=	$(CFLAGS) -L$(LIBDIR) -dynamiclib -single_module
-else
- LDFLAGS	:=	-L$(LIBDIR) -shared
+endif
+# LDFLAGS links the example programs, not the library (that's SHFLAGS), so it
+# must not carry -shared/-dynamiclib: those yield an executable with a NULL
+# ELF entry point that segfaults the instant it's run.
+LDFLAGS	+=	-L$(LIBDIR)
+# The examples name the shared library by relative path, so without a runpath
+# they only load when run from this directory.
+ifneq ($(OS),Darwin)
+ ifndef win
+  LDFLAGS	+=	'-Wl,-rpath,$$ORIGIN/../$(LIBDIR),-z,origin,--enable-new-dtags'
+ endif
 endif
 CFLAGS	+=	-Wall
 ifeq ($(shell if [ -f /usr/include/inttypes.h ] ; then echo YES ; fi),YES)
@@ -152,6 +160,9 @@ else
  else
   SHLIB		?=	.so
   SHFLAGS	+=	-Wl,-Bsymbolic
+  # Without a soname the library records into its clients as the relative path
+  # it was linked by, which the runpath search never sees.
+  SHFLAGS	+=	-Wl,-soname,$(SHLIB_PREFIX)ODoors$(SHLIB)$(LIB_SUFFIX)
  endif
 endif
 STATICLIB	:=	.a
