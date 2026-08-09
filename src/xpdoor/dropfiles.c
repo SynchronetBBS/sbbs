@@ -78,9 +78,10 @@ int xpd_parse_dropfile()
 			xpd_info.drop.user.seconds_remaining = tmp*60;
 		xpd_info.end_time=time(NULL)+xpd_info.drop.user.seconds_remaining;
 		GETBUF();
-		if(strcmp(buf,"GR"))
+		truncnl(buf);
+		if(strcmp(buf,"GR") == 0)
 			xpd_info.drop.user.dflags |= XPD_ANSI_SUPPORTED|XPD_CP437_SUPPORTED;
-		else if(strcmp(buf,"NG"))
+		else if(strcmp(buf,"NG") == 0)
 			xpd_info.drop.user.dflags |= XPD_CP437_SUPPORTED;
 		GETIBUF(xpd_info.drop.user.rows);
 		GETBBUF(xpd_info.drop.user.expert);
