@@ -4242,7 +4242,10 @@ prepare_disconnect_notice_row(void)
 }
 
 static const char disconnect_notice[] =
-    "Disconnected, press Enter to exit";
+    "Disconnected: Enter exits, F1 details";
+
+static_assert(sizeof(disconnect_notice) <= 40,
+    "disconnect notice and cursor must fit in 40 columns");
 
 static size_t
 disconnect_notice_layout(size_t *start)
@@ -4253,6 +4256,18 @@ disconnect_notice_layout(size_t *start)
 		len = (size_t)term.width - 1;
 	*start = ((size_t)term.width - len) / 2;
 	return len;
+}
+
+static void
+position_disconnect_notice_cursor(void)
+{
+	size_t len;
+	size_t start;
+
+	len = disconnect_notice_layout(&start);
+	cterm_gotoxy(cterm, (int)(start + len + 1), cterm->height);
+	cterm->cursor = _NORMALCURSOR;
+	_setcursortype(_NORMALCURSOR);
 }
 
 static bool
@@ -4298,21 +4313,23 @@ paint_disconnect_notice_row(bool notice)
 static void
 show_disconnect_notice(void)
 {
-	size_t len;
-	size_t start;
 	int key;
 
 	prepare_disconnect_notice_row();
 	if (!paint_disconnect_notice_row(true))
 		return;
-	len = disconnect_notice_layout(&start);
-	cterm_gotoxy(cterm, (int)(start + len + 1), cterm->height);
-	cterm->cursor = _NORMALCURSOR;
-	_setcursortype(_NORMALCURSOR);
+	position_disconnect_notice_cursor();
 	for (;;) {
 		key = syncterm_getkey();
 		if (key == '\r' || key == '\n' || key == CIO_KEY_QUIT)
 			break;
+		if (key == CIO_KEY_F(1)) {
+			host_ui_alert("Disconnected",
+			    "Remote host dropped connection");
+			(void)paint_disconnect_notice_row(true);
+			position_disconnect_notice_cursor();
+			continue;
+		}
 		if (key == CIO_KEY_MOUSE) {
 			getmouse(NULL);
 			continue;
