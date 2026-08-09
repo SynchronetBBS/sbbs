@@ -653,8 +653,9 @@ Read-only callers should leave expansion **on**: it is what resolves the
 fields you normally want to display. Turn it off only for a
 read-modify-write.
 
-Setting a field at **save** time avoids the round trip entirely — prefer that
-where you control the original write:
+Where you own the original write, set the field in `save_msg()` instead and
+there is nothing to read back and rewrite — no expand argument to get wrong,
+and no half-corrected message if the write fails partway through a batch:
 
 ```javascript
 mb.save_msg({ to: "Eva", to_ext: "614",
