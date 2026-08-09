@@ -44,18 +44,24 @@ int main(void) {
 	termgfx_mouse_report(&m2, 65, 1, 1, 0, &r);
 	assert(r.kind == TERMGFX_SGR_WHEEL && r.wheel == 1);
 
-	/* SyncTERM sets the motion bit on a wheel notch when the pointer moved
-	   too, so a click made without a perfectly still hand arrives as 96 or
-	   97 -- and these used to be classified as hovers and discarded. */
-	termgfx_mouse_report(&m2, 97, 1, 1, 0, &r);     /* wheel down + motion */
-	assert(r.kind == TERMGFX_SGR_WHEEL && r.wheel == 1);
+	/* 96 and 97 are BOTH pointer motion. 97 was briefly decoded as
+	   wheel-down-with-motion; what that produced was a phantom scroll on
+	   every pointer movement, so a door's selection changed whenever the
+	   mouse moved and was correct only while the hand was held still.
+	   A live capture settled it: 1492 clean 64/65 detents against 16 of
+	   97, several of them 6-8 ms apart with the coordinates walking. */
+	termgfx_mouse_report(&m2, 97, 1, 1, 0, &r);
+	assert(r.kind == TERMGFX_SGR_MOVE);
 	termgfx_mouse_report(&m2, 97 | 4, 1, 1, 0, &r); /* ...with shift held */
-	assert(r.kind == TERMGFX_SGR_WHEEL && r.wheel == 1);
-
-	/* 96 stays a MOVE: SyncTERM's no-button hover is 96 exactly, so
-	   wheel-up-with-motion and a hover are the same bytes. */
+	assert(r.kind == TERMGFX_SGR_MOVE);
 	termgfx_mouse_report(&m2, 96, 1, 1, 0, &r);
 	assert(r.kind == TERMGFX_SGR_MOVE);
+
+	/* And a real detent is still a detent. */
+	termgfx_mouse_report(&m2, 64, 1, 1, 0, &r);
+	assert(r.kind == TERMGFX_SGR_WHEEL && r.wheel == -1);
+	termgfx_mouse_report(&m2, 65, 1, 1, 0, &r);
+	assert(r.kind == TERMGFX_SGR_WHEEL && r.wheel == 1);
 
 	/* Drags keep their buttons -- 32|btn must not be read as a wheel. */
 	termgfx_mouse_report(&m2, 32, 1, 1, 0, &r);

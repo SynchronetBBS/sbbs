@@ -8,26 +8,24 @@ termgfx_sgr_classify(int b, int *button, int *wheel)
 {
 	int base = b & ~28;             // strip modifiers: 4 shift, 8 alt, 16 ctrl
 
-	// A wheel notch that ALSO carries the motion bit. SyncTERM sets it
-	// whenever the pointer moved in the same event, so a click made while
-	// the hand is not perfectly still arrives as 96 or 97 -- and the
-	// motion-first test below then classified it as a hover and threw it
-	// away. Measured across four sessions on 1.9rc4 and 1.10a: one had 75
-	// of these against 30 clean wheel reports.
+	// THE MOTION BIT IS AUTHORITATIVE. 96 and 97 are both pointer motion,
+	// and neither is treated as a wheel notch.
 	//
-	// Only 97 can be rescued. SyncTERM's no-button hover is 96 exactly
-	// (mouse_state() forces button 3, the wheel remap turns that into 64,
-	// then the motion bit is added), so 96 means either wheel-up-with-
-	// motion or a plain hover and NOTHING can tell them apart. 97 has the
-	// low bit set, which a hover never does, so it is unambiguous.
-	if ((base & 96) == 96 && (base & 1)) {
-		if (wheel != NULL)
-			*wheel = 1;         // 97: wheel DOWN, with motion
-		return TERMGFX_SGR_WHEEL;
-	}
-
+	// 97 was briefly rescued as wheel-down-with-motion, on the reasoning
+	// that a hover never sets the low bit and on a session measured at 75
+	// such reports against 30 clean ones. A later session inverts that
+	// ratio completely -- 1492 clean 64/65 detents against 16 of 97 --
+	// and several of the 97s arrive 6 to 8 ms apart with the coordinates
+	// walking one cell at a time, which is a pointer being moved and not
+	// a wheel any hand can turn that fast.
+	//
+	// What the rescue actually bought was a phantom scroll on every
+	// pointer movement: the door's block selection changed whenever the
+	// mouse moved, and behaved correctly only while the hand was held
+	// perfectly still. Real detents arrive as 64 and 65 WITHOUT the
+	// motion bit, in their thousands, so nothing is lost by trusting it.
 	if (base & 32)
-		return TERMGFX_SGR_MOVE;    // hover (xterm 35, SyncTERM 96) or drag (32|btn)
+		return TERMGFX_SGR_MOVE;    // hover (xterm 35, SyncTERM 96/97) or drag (32|btn)
 
 	if (base & 64) {                // wheel: 64 = up, 65 = down
 		if (wheel != NULL)
