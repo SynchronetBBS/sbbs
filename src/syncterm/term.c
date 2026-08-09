@@ -4212,6 +4212,122 @@ on_status_display_change(struct cterminal *c, int old_type, int new_type,
 		force_status_update = true;
 }
 
+/* Replace the modal disconnect alert with a non-destructive notice on the
+ * bottom row.  If there is no status row, preserve every host-owned line by
+ * scrolling the full terminal once through cterm's normal scrollback path.
+ * An indicator or host-writable status row is already outside the main
+ * display, so disabling it simply exposes a new blank main-display row. */
+static void
+prepare_disconnect_notice_row(void)
+{
+	int old_type = cterm->status_display_type;
+
+	cterm->top_margin = 1;
+	cterm->bottom_margin = cterm->height;
+	cterm->left_margin = 1;
+	cterm->right_margin = cterm->width;
+	if (old_type == 0) {
+		cterm_scrollup(cterm);
+		term.nostatus = true;
+		return;
+	}
+
+	cterm->status_display_active = 0;
+	cterm->status_display_type = 0;
+	/* The connection has already closed, so resizing the local display must
+	 * not try to report a new terminal size to the remote. */
+	cterm->size_change_cb = NULL;
+	on_status_display_change(cterm, old_type, 0,
+	    cterm->status_display_cbdata);
+}
+
+static const char disconnect_notice[] =
+    "Disconnected, press Enter to exit";
+
+static size_t
+disconnect_notice_layout(size_t *start)
+{
+	size_t len = strlen(disconnect_notice);
+
+	if (len >= (size_t)term.width)
+		len = (size_t)term.width - 1;
+	*start = ((size_t)term.width - len) / 2;
+	return len;
+}
+
+static bool
+paint_disconnect_notice_row(bool notice)
+{
+	size_t len;
+	size_t start;
+	int i;
+
+	if (term.width <= 0)
+		return false;
+	if (status_bar == NULL || status_bar_sz != (size_t)term.width) {
+		free(status_bar);
+		status_bar_sz = (size_t)term.width;
+		status_bar = calloc(status_bar_sz, sizeof(status_bar[0]));
+		if (status_bar == NULL) {
+			status_bar_sz = 0;
+			return false;
+		}
+	}
+
+	for (i = 0; i < term.width; i++) {
+		status_bar[i].ch = ' ';
+		status_bar[i].legacy_attr = notice ? 0x4f : cterm->attr;
+		status_bar[i].fg = notice ? 0x80ffffff : cterm->fg_color;
+		status_bar[i].bg = notice ? 0x80aa0000 : cterm->bg_color;
+		status_bar[i].font = notice ? 0 : ciolib_attrfont(cterm->attr);
+		status_bar[i].hyperlink_id = 0;
+	}
+	if (notice) {
+		len = disconnect_notice_layout(&start);
+		for (i = 0; i < (int)len; i++)
+			status_bar[start + (size_t)i].ch =
+			    (uint8_t)disconnect_notice[i];
+	}
+
+	vmem_puttext(cterm->x, cterm->y + cterm->height - 1,
+	    cterm->x + cterm->width - 1, cterm->y + cterm->height - 1,
+	    status_bar);
+	return true;
+}
+
+static void
+show_disconnect_notice(void)
+{
+	size_t len;
+	size_t start;
+	int key;
+
+	prepare_disconnect_notice_row();
+	if (!paint_disconnect_notice_row(true))
+		return;
+	len = disconnect_notice_layout(&start);
+	cterm_gotoxy(cterm, (int)(start + len + 1), cterm->height);
+	cterm->cursor = _NORMALCURSOR;
+	_setcursortype(_NORMALCURSOR);
+	for (;;) {
+		key = syncterm_getkey();
+		if (key == '\r' || key == '\n' || key == CIO_KEY_QUIT)
+			break;
+		if (key == CIO_KEY_MOUSE) {
+			getmouse(NULL);
+			continue;
+		}
+#ifdef CIOLIB_KEY_EVENTS
+		if (key == CIO_KEY_KEY_EVENT)
+			ciokey_clear_events();
+#endif
+	}
+	/* Keep application chrome out of the completed session's offline
+	 * scrollback.  The row was newly exposed for this notice, so restore it
+	 * as a terminal-style blank before finish_scrollback() captures it. */
+	(void)paint_disconnect_notice_row(false);
+}
+
 /* Win32 doesn't have ffs()... just use this everywhere. */
 static int
 my_ffs(int mask)
@@ -5077,12 +5193,11 @@ doterm(struct bbslist *bbs)
 							 * SftpApp drives the degraded modal and
 							 * keeps is_connected true until the queue
 							 * drains, so we go straight to teardown. */
-							finish_scrollback();
 							if (!bbs->hidepopups) {
-								host_ui_alert("Disconnected",
-								    "Remote host dropped connection");
+								show_disconnect_notice();
 							}
 							check_exit(false);
+							finish_scrollback();
 							audio_apc_cleanup();
 							cterm_end(cterm, 0);
 							cterm = NULL;
