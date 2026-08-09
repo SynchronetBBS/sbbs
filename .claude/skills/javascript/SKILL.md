@@ -617,6 +617,51 @@ subject).
 MsgBase script is the right tool (see `smbutils` for the storage
 layer and when to prefer each).
 
+### Modifying a header: read it UNEXPANDED or the write is refused
+
+`put_msg_header()` rejects a header that was fetched with field expansion,
+failing with:
+
+```
+Message header has 'expanded fields'
+```
+
+That message describes the *header*, so it reads like the message is
+unwritable — the actual problem is the **read**. Expansion is on by default,
+so the obvious spelling fails:
+
+```javascript
+var m = mb.get_msg_header(false, num);          // expand defaults to TRUE
+m.from_ext = "960";
+mb.put_msg_header(false, num, m);               // false: "expanded fields"
+```
+
+Pass `expand = false` (the third argument, after `by_offset` and the message
+number) and the same write succeeds:
+
+```javascript
+var m = mb.get_msg_header(false, num, false);   // by_offset, number, expand
+m.from_ext = "960";
+mb.put_msg_header(false, num, m);               // true
+```
+
+Same parameter as `get_all_msg_headers([include_votes] [, expand_fields])`
+above, and the same rule applies to headers taken from there — fetch with
+`get_all_msg_headers(false, false)` if you intend to write any of them back.
+
+Read-only callers should leave expansion **on**: it is what resolves the
+fields you normally want to display. Turn it off only for a
+read-modify-write.
+
+Setting a field at **save** time avoids the round trip entirely — prefer that
+where you control the original write:
+
+```javascript
+mb.save_msg({ to: "Eva", to_ext: "614",
+              from: "Claude.Ai", from_ext: "960",   // link the sender
+              subject: "..." }, body);
+```
+
 ## Reading text files: `readAll()`/`readln()` split lines at 512 bytes
 
 `File.readAll([maxlen=512])` and `File.readln([maxlen=512])` are **not** "read
