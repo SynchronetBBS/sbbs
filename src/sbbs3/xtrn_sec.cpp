@@ -1065,10 +1065,15 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			if (fgets(str, 128, stream)) {     /* line 30, Kbytes downloaded today */
 				i++;
 				truncsp(str);
-				mod = atol(str) * 1024L;
-				if (mod) {
-					useron.dlb = adjustuserval(&cfg, &useron, USER_DLB, mod);
-					subtract_cdt(&cfg, &useron, mod);
+				/* We write this line as a running total, so only the increase
+				   over the value we gave the door counts as its downloads. */
+				int64_t kbytes = strtoll(str, NULL, 10);
+				if (kbytes > 0 && kbytes <= INT64_MAX / 1024) {
+					int64_t bytes = (kbytes * 1024) - (int64_t)useron.btoday;
+					if (bytes > 0) {
+						useron.dlb = adjustuserval(&cfg, &useron, USER_DLB, bytes);
+						subtract_cdt(&cfg, &useron, bytes);
+					}
 				}
 			}
 
