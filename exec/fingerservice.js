@@ -516,19 +516,19 @@ var usernum=Number(request);
 if(!usernum) {
 	var at = request.indexOf('@');
 	if(at>0)
-		request = request.substr(0,at-1);
+		request = request.substr(0,at);
 
 	usernum = system.matchuser(request);
 	if(!usernum) {
 		log(format("!UNKNOWN USER: '%s'",request));
 		exit();
 	}
-}
-var u = new User(usernum);
-if(u == null) {
-	log(format("!INVALID USER NUMBER: %d",usernum));
+} else if(usernum!=Math.floor(usernum) || usernum<1 || usernum>system.lastuser) {
+	// new User() throws on a non-integral, negative, or out-of-range number
+	log(format("!INVALID USER NUMBER: '%s'",request));
 	exit();
 }
+var u = new User(usernum);
 
 var uname = format("%s #%d", u.alias, u.number);
 write(format("User: %-30s", uname));

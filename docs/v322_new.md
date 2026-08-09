@@ -199,6 +199,11 @@
 - Rate-limited connections now log a `NOTICE` before being
   dropped, matching the other servers (previously dropped
   silently)
+- Finger: numeric requests outside the valid user-number
+  range no longer throw a JavaScript error
+- Finger: forwarded requests (`user@host@target`) no longer
+  answer with the wrong user (the name was being truncated by
+  one character)
 
 ## SBBSecho
 
