@@ -2484,8 +2484,8 @@ void services_thread(void* arg)
 
 					} else {
 						/* TCP */
-						if ((client_socket = accept(service[i].set->socks[j].sock
-						                            , (struct sockaddr *)&client_addr, &client_addr_len)) == INVALID_SOCKET) {
+						if ((client_socket = xp_accept(service[i].set->socks[j].sock
+						                              , &client_addr, &client_addr_len)) == INVALID_SOCKET) {
 							if (SOCKET_ERRNO == ENOTSOCK || SOCKET_ERRNO == EINVAL)
 								lprintf(LOG_NOTICE, "%04d %s socket closed while listening"
 								        , service[i].set->socks[j].sock, service[i].protocol);

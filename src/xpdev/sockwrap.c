@@ -24,6 +24,9 @@
 #include <errno.h>      /* ENOMEM */
 #include <stdio.h>      /* SEEK_SET */
 #include <string.h>
+#ifndef _WIN32
+#include <fcntl.h>     /* fcntl, FD_CLOEXEC */
+#endif
 #if defined(_WIN32)
  #include <malloc.h>    /* alloca() on Win32 */
 #endif
@@ -436,6 +439,31 @@ bool socket_recvdone(SOCKET sock, int timeout)
 		return false;
 	return true;
 #endif
+}
+
+/* accept() a connection, creating the descriptor close-on-exec.
+ * See GitLab #1174: a child process must not inherit another session's socket.
+ * Not for a socket a child is *meant* to receive (the passthru socket a native
+ * socket-door is handed by number), which has to stay inheritable. */
+DLLEXPORT SOCKET xp_accept(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen)
+{
+	SOCKET sock;
+
+#ifdef SOCK_CLOEXEC
+	sock = accept4(s, (struct sockaddr*)addr, addrlen, SOCK_CLOEXEC);
+	if (sock != INVALID_SOCKET || (SOCKET_ERRNO != EINVAL && SOCKET_ERRNO != ENOSYS))
+		return sock;
+	/* Kernel too old for accept4(): fall through to the racy path */
+#endif
+	sock = accept(s, (struct sockaddr*)addr, addrlen);
+#ifndef _WIN32
+	if (sock != INVALID_SOCKET) {
+		int flags = fcntl(sock, F_GETFD);
+		if (flags != -1)
+			(void)fcntl(sock, F_SETFD, flags | FD_CLOEXEC);
+	}
+#endif
+	return sock;
 }
 
 int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen

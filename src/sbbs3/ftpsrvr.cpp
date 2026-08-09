@@ -1405,7 +1405,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 #ifdef SOCKET_DEBUG_ACCEPT
 		socket_debug[ctrl_sock] |= SOCKET_DEBUG_ACCEPT;
 #endif
-		*data_sock = accept(pasv_sock, (struct sockaddr*)addr, &addr_len);
+		*data_sock = xp_accept(pasv_sock, addr, &addr_len);
 #ifdef SOCKET_DEBUG_ACCEPT
 		socket_debug[ctrl_sock] &= ~SOCKET_DEBUG_ACCEPT;
 #endif

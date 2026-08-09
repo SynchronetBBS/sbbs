@@ -459,7 +459,7 @@ SOCKET accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen)
 {
 	SOCKET sock;
 
-	sock = accept(s, (struct sockaddr*)addr, addrlen);
+	sock = xp_accept(s, addr, addrlen);
 	if (sock != INVALID_SOCKET)
 		call_socket_open_callback(true);
 
@@ -6305,6 +6305,9 @@ NO_SSH:
 					goto NO_PASSTHRU;
 				}
 
+				/* Deliberately not xp_accept(): a native socket-door is handed this
+				   descriptor by number (the %H command-line specifier), so it is the
+				   one socket that must survive exec.  GitLab #1174. */
 				new_node->client_socket_dup = accept(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len);
 
 				if (new_node->client_socket_dup == INVALID_SOCKET) {
