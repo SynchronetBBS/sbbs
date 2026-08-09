@@ -76,6 +76,7 @@ static pthread_mutex_t winpos_lock;
 static pthread_mutex_t rect_lock;
 static pthread_mutex_t off_lock;
 static pthread_mutex_t stypelock;
+static pthread_mutex_t input_pipe_lock;
 
 // Internal implementation
 
@@ -169,15 +170,17 @@ gdi_add_key(uint16_t key)
 		buf[1] = key >> 8;
 		remain = 2;
 	}
+	/* The window, mouse, and physical-key threads all write here. */
+	assert_pthread_mutex_lock(&input_pipe_lock);
 	do {
 		lwch = wch;
-		if (lwch != NULL)
-			WriteFile(lwch, bp, remain, &added, NULL);
-		else
-			added = remain;
+		if (lwch == NULL || !WriteFile(lwch, bp, remain, &added, NULL)
+		    || added == 0)
+			break;
 		remain -= added;
 		bp += added;
 	} while (remain > 0);
+	assert_pthread_mutex_unlock(&input_pipe_lock);
 }
 
 static void
@@ -1409,6 +1412,7 @@ gdi_initciolib(int mode)
 	assert_pthread_mutex_init(&rect_lock, NULL);
 	assert_pthread_mutex_init(&off_lock, NULL);
 	assert_pthread_mutex_init(&stypelock, NULL);
+	assert_pthread_mutex_init(&input_pipe_lock, NULL);
 	init_sem = CreateSemaphore(NULL, 0, INT_MAX, NULL);
 
 	return(gdi_init(mode));

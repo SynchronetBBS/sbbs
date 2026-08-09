@@ -550,9 +550,8 @@ send_scancode(uint32_t evdev_key, bool pressed)
 			    getcodepage(), utf32,
 			    utf32 < 128 ? (char)utf32 : 0);
 			if (ch) {
-				if (ch == 0xe0)
-					write(wl_key_pipe[1], &ch, 1);
-				write(wl_key_pipe[1], &ch, 1);
+				uint8_t buf[2] = {ch, ch};
+				write(wl_key_pipe[1], buf, ch == 0xe0 ? 2 : 1);
 				repeat_key = evdev_key;
 				repeat_since = xp_timer64();
 				repeat_in_delay = true;

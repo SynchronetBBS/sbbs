@@ -2112,6 +2112,7 @@ static void
 handle_bios_key(uint32_t *bios_key, bool *bios_key_parsing, bool *zero_first)
 {
 	uint8_t ch;
+	uint8_t buf[2];
 
 	if (*bios_key > 0 && *bios_key_parsing) {
 		if (*zero_first) {
@@ -2124,17 +2125,17 @@ handle_bios_key(uint32_t *bios_key, bool *bios_key_parsing, bool *zero_first)
 					x11.XBell(dpy, 100);
 			}
 			else {
-				IGNORE_RESULT(write(key_pipe[1], &ch, 1));
-				if (ch == 0xe0)
-					IGNORE_RESULT(write(key_pipe[1], &ch, 1));
+				buf[0] = ch;
+				buf[1] = ch;
+				IGNORE_RESULT(write(key_pipe[1], buf, ch == 0xe0 ? 2 : 1));
 			}
 		}
 		else {
 			// Codepage character
 			ch = *bios_key;
-			IGNORE_RESULT(write(key_pipe[1], &ch, 1));
-			if (ch == 0xe0)
-				IGNORE_RESULT(write(key_pipe[1], &ch, 1));
+			buf[0] = ch;
+			buf[1] = ch;
+			IGNORE_RESULT(write(key_pipe[1], buf, ch == 0xe0 ? 2 : 1));
 		}
 	}
 	*bios_key = 0;
@@ -2553,9 +2554,8 @@ x11_event(XEvent *ev)
 								else
 									ch = cpchar_from_unicode_cpoint(getcodepage(), wbuf[i], 0);
 								if (ch) {
-									if (ch == 0xe0) // Double-up 0xe0
-										IGNORE_RESULT(write(key_pipe[1], &ch, 1));
-									IGNORE_RESULT(write(key_pipe[1], &ch, 1));
+									uint8_t buf[2] = {ch, ch};
+									IGNORE_RESULT(write(key_pipe[1], buf, ch == 0xe0 ? 2 : 1));
 									return;
 								}
 							}
