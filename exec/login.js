@@ -35,13 +35,13 @@ for(var c=0; c < options.login_prompts; c++) {
 	// Display login prompt
 	const legacy_login_prompt = options.legacy_prompts ? "NN: \x01[" : "";
 	const legacy_password_prompt = options.legacy_prompts ? "PW: \x01[" : "";
-	var str = "\x01n\x01h\x01cEnter \x01wUser Name";
+	var str = options.name_prompt || "\x01n\x01h\x01cEnter \x01wUser Name";
 	if(system.login_settings & LOGIN_USERNUM)
-		str += "\x01c or \x01wNumber";
+		str += options.number_prompt || "\x01c or \x01wNumber";
 	if(!(system.settings&SYS_CLOSED))
-		str += "\x01c or '\x01yNew\x01c'";
+		str += options.new_prompt || "\x01c or '\x01yNew\x01c'";
 	if(guest)
-		str += "\x01c or '\x01yGuest\x01c'";
+		str += options.guest_prompt || "\x01c or '\x01yGuest\x01c'";
 	str += "\r\nLogin: \x01w";
 	console.print("\r\n"
 		+ legacy_login_prompt
