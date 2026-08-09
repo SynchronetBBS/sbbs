@@ -385,31 +385,22 @@ bool upgrade_file_bases(bool hash)
 			skipped_dirs++;
 			continue;
 		}
-		smb.status.attr = SMB_FILE_DIRECTORY;
-		if (!hash || (scfg.dir[i]->misc & DIR_NOHASH))
-			smb.status.attr |= SMB_NOHASH;
-		smb.status.max_age = scfg.dir[i]->maxage;
-		smb.status.max_msgs = scfg.dir[i]->maxfiles;
-		if ((result = smb_create(&smb)) != SMB_SUCCESS) {
-			fprintf(stderr, "Error %d (%s) creating %s\n", result, smb.last_error, smb.file);
-			return false;
-		}
-
+		/* Read the legacy index *before* smb_create() truncates the target:
+		 * a directory with no legacy data to convert must be a no-op, not an
+		 * erasure.  (smb_create() empties .shd/.sid/.sdt, so discovering the
+		 * missing .ixb afterwards left the base wiped rather than untouched.) */
 		char str[MAX_PATH + 1];
 		int  file;
-		int  extfile = openextdesc(&scfg, i);
 
 		sprintf(str, "%s%s.ixb", scfg.dir[i]->data_dir, scfg.dir[i]->code);
 		if ((file = open(str, O_RDONLY | O_BINARY)) == -1) {
 			smb_close(&smb);
-			closeextdesc(extfile);
 			continue;
 		}
 		long l = (long)filelength(file);
 		if (!l) {
 			close(file);
 			smb_close(&smb);
-			closeextdesc(extfile);
 			continue;
 		}
 		uchar* ixbbuf;
@@ -417,7 +408,6 @@ bool upgrade_file_bases(bool hash)
 			close(file);
 			printf("\7ERR_ALLOC %s %lu\n", str, l);
 			smb_close(&smb);
-			closeextdesc(extfile);
 			continue;
 		}
 		if (read(file, ixbbuf, l) != (int)l) {
@@ -425,10 +415,23 @@ bool upgrade_file_bases(bool hash)
 			printf("\7ERR_READ %s %lu\n", str, l);
 			free(ixbbuf);
 			smb_close(&smb);
-			closeextdesc(extfile);
 			continue;
 		}
 		close(file);
+
+		int extfile = openextdesc(&scfg, i);
+
+		smb.status.attr = SMB_FILE_DIRECTORY;
+		if (!hash || (scfg.dir[i]->misc & DIR_NOHASH))
+			smb.status.attr |= SMB_NOHASH;
+		smb.status.max_age = scfg.dir[i]->maxage;
+		smb.status.max_msgs = scfg.dir[i]->maxfiles;
+		if ((result = smb_create(&smb)) != SMB_SUCCESS) {
+			fprintf(stderr, "Error %d (%s) creating %s\n", result, smb.last_error, smb.file);
+			free(ixbbuf);
+			closeextdesc(extfile);
+			return false;
+		}
 		size_t     file_count = l / F_IXBSIZE;
 		oldfile_t* filelist = malloc(sizeof(*filelist) * file_count);
 		if (filelist == NULL) {
