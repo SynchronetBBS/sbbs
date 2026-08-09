@@ -29,7 +29,6 @@
 #include <sys/file.h>   /* L_SET for Solaris */
 #include <errno.h>
 #include <sys/param.h>  /* BSD */
-#include <sys/syscall.h> /* SYS_close_range */
 
 #endif
 
@@ -522,6 +521,13 @@ int xp_lockfile(int file, off_t offset, off_t size, bool block)
 
 
 #ifndef _WIN32
+#if defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 34))
+	#define XP_HAVE_CLOSEFROM
+#elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) \
+	|| defined(__DragonFly__) || defined(__solaris__)
+	#define XP_HAVE_CLOSEFROM
+#endif
+
 /****************************************************************************/
 /* Close every descriptor above stderr, except (optionally) one to be	    */
 /* inherited deliberately.  For use between fork() and exec(): a child must  */
@@ -533,26 +539,28 @@ int xp_lockfile(int file, off_t offset, off_t size, bool block)
 /****************************************************************************/
 void xp_close_inherited_fds(int keep)
 {
-	long max;
-	int  fd;
+	const int first = STDERR_FILENO + 1;
+	int       fd;
 
-#ifdef SYS_close_range
-	if (keep < 3) {
-		if (syscall(SYS_close_range, (unsigned)3, ~0U, 0) == 0)
-			return;
+#ifdef XP_HAVE_CLOSEFROM
+	/* Everything above the kept descriptor goes in one call; the handful below
+	   it is a bounded loop, so no descriptor limit has to be consulted. */
+	if (keep >= first) {
+		for (fd = first; fd < keep; fd++)
+			close(fd);
+		closefrom(keep + 1);
 	}
-	else {
-		if (syscall(SYS_close_range, (unsigned)3, (unsigned)(keep - 1), 0) == 0
-		    && syscall(SYS_close_range, (unsigned)(keep + 1), ~0U, 0) == 0)
-			return;
-	}
-	/* ENOSYS (pre-5.9 kernel): fall through */
-#endif
+	else
+		closefrom(first);
+#else
+	long max;
+
 	if ((max = sysconf(_SC_OPEN_MAX)) < 0)
 		max = 1024;
-	for (fd = 3; fd < max; fd++) {
+	for (fd = first; fd < max; fd++) {
 		if (fd != keep)
 			close(fd);
 	}
+#endif
 }
 #endif
