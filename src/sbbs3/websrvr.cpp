@@ -5235,6 +5235,10 @@ static bool exec_cgi(http_session_t *session)
 				        , session->socket, session->client.protocol, session->host_ip, errno, cgipath);
 		}
 
+		/* Nothing above stderr is the CGI's business: the client socket it reads
+		   from, where it has one, was duplicated onto stdin above.  #1174. */
+		xp_close_inherited_fds(-1);
+
 		/* Execute command */
 		if (handler != NULL) {
 			char* shell = os_cmdshell();
@@ -5244,7 +5248,12 @@ static bool exec_cgi(http_session_t *session)
 			execle(cmdline, cmdline, NULL, env_list);
 		}
 
-		errprintf(LOG_ERR, WHERE, "%04d !ERROR %d executing execle(%s)", session->socket, errno, cmdline);
+		/* stderr is the pipe the parent reads and logs as "CGI Error"; errprintf()
+		   is not usable here, having neither its descriptors nor fork safety. */
+		snprintf(cgipath, sizeof(cgipath), "!ERROR %d (%s) executing: %s\n"
+		         , errno, strerror(errno), cmdline);
+		if (write(STDERR_FILENO, cgipath, strlen(cgipath)) < 0)
+			; /* nothing left to report it with */
 		exit(EXIT_FAILURE); /* Should never happen */
 	}
 
