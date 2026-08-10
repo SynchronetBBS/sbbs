@@ -429,11 +429,15 @@ static enum { P_NORMAL, P_ESC, P_CSI, P_APC, P_APC_ESC } pstate;
 static unsigned apc_len;   /* bytes swallowed in the current APC/string seq (bail if unterminated) */
 
 /* Lone-ESC disambiguation: a bare ESC (Escape key) shares its first byte with the
- * start of an escape sequence (arrows = ESC[A, etc.). A real sequence arrives as one
- * burst, so if no follow-up byte lands within SYNCDUKE_ESC_MS we deliver the pending
- * ESC as Escape -- without this the menu key only registers when the NEXT key is hit. */
+ * start of an escape sequence (arrows = ESC[A, etc.). Once the socket holds nothing
+ * more and SYNCDUKE_ESC_MS has passed we deliver the pending ESC as Escape -- without
+ * this the menu key only registers when the NEXT key is hit. */
 #define SYNCDUKE_ESC_MS 50
 static uint32_t g_esc_at_ms;
+
+/* read()s per pump. Enough that the terminal is normally drained (so a split sequence
+ * completes in the same pump), bounded so a flooding client cannot stall the frame. */
+#define SYNCDUKE_PUMP_READS 16
 
 static uint32_t syncduke_in_now_ms(void)
 {
@@ -1512,7 +1516,7 @@ static void csi_final(char fin, int gameplay, int now)
 void syncduke_input_pump(int fd, int now, int gameplay)
 {
 	uint8_t buf[256];
-	int     n, i;
+	int     n, i, reads = 0, drained = 0;
 
 	if (fd < 0)
 		return;
@@ -1528,128 +1532,153 @@ void syncduke_input_pump(int fd, int now, int gameplay)
 	if (g_crouch_toggle && gameplay)
 		press(sc_Z, now);
 
-	/* Deliver a pending lone ESC once its follow-up window has elapsed (the menu key
-	 * shouldn't wait for the next keystroke). A real ESC[ sequence arrives in the same
-	 * burst, so it'll have advanced past P_ESC before this fires. */
-	if (pstate == P_ESC && (uint32_t)(syncduke_in_now_ms() - g_esc_at_ms) > SYNCDUKE_ESC_MS) {
-		press(sc_Escape, now);
-		pstate = P_NORMAL;
-	}
-
-	/* On a real door socket, EOF (peer closed) or a hard error means the user
-	 * disconnected -> exit and free the node. In dev/tty mode (stdin fallback,
-	 * no door socket) a finite piped script hitting EOF is normal, so just stop
-	 * reading -- don't exit. "no data yet" (EWOULDBLOCK) returns quietly. */
+	/* Read until the terminal has nothing left (or the per-pump cap is hit): one read()
+	 * per pump leaves the tail of a split sequence queued in the socket while its ESC
+	 * ages out below, and a single 256-byte read splits a sequence outright whenever the
+	 * mouse-report stream (?1003h) fills the buffer ahead of it. */
+	while (reads++ < SYNCDUKE_PUMP_READS) {
+		/* On a real door socket, EOF (peer closed) or a hard error means the user
+		 * disconnected -> exit and free the node. In dev/tty mode (stdin fallback,
+		 * no door socket) a finite piped script hitting EOF is normal, so just stop
+		 * reading -- don't exit. "no data yet" (EWOULDBLOCK) leaves quietly. */
 #ifdef _WIN32
-	n = recv((SOCKET)fd, (char *)buf, (int)sizeof(buf), 0);
-	if (n == SOCKET_ERROR) {
-		int e = WSAGetLastError();
-		if (e == WSAEWOULDBLOCK || e == WSAENOBUFS || e == WSAEINTR)
-			return;                                  /* no input yet / transient */
-		if (syncduke_door_socket() >= 0) {
-			char r[48];
-			snprintf(r, sizeof r, "input recv error wsa=%d", e);
-			syncduke_hangup(r);
+		n = recv((SOCKET)fd, (char *)buf, (int)sizeof(buf), 0);
+		if (n == SOCKET_ERROR) {
+			int e = WSAGetLastError();
+			if (e == WSAEWOULDBLOCK || e == WSAENOBUFS || e == WSAEINTR) {
+				drained = 1;                         /* no input yet / transient */
+				break;
+			}
+			if (syncduke_door_socket() >= 0) {
+				char r[48];
+				snprintf(r, sizeof r, "input recv error wsa=%d", e);
+				syncduke_hangup(r);
+			}
+			return;
 		}
-		return;
-	}
-	if (n == 0) {                                        /* peer closed */
-		if (syncduke_door_socket() >= 0)
-			syncduke_hangup("client closed (input EOF)");
-		return;
-	}
-#else
-	n = (int)read(fd, buf, sizeof(buf));
-	if (n <= 0) {
-		if (syncduke_door_socket() >= 0) {
-			if (n == 0)
+		if (n == 0) {                                    /* peer closed */
+			if (syncduke_door_socket() >= 0)
 				syncduke_hangup("client closed (input EOF)");
-			if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)
-				syncduke_hangup("input read error");
+			return;
 		}
-		return;
-	}
+#else
+		n = (int)read(fd, buf, sizeof(buf));
+		if (n <= 0) {
+			if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
+				drained = 1;                         /* no input yet / transient */
+				break;
+			}
+			if (syncduke_door_socket() >= 0) {
+				if (n == 0)
+					syncduke_hangup("client closed (input EOF)");
+				else
+					syncduke_hangup("input read error");
+			}
+			return;
+		}
 #endif
 
-	termgfx_audio_feed(sd_audio, buf, n);   /* resolve the audio cap probe (ESC[=7;100;Xn) */
+		termgfx_audio_feed(sd_audio, buf, n); /* resolve the audio cap probe (ESC[=7;100;Xn) */
 
-	/* Capture the DECRQSS reply to the DECSSDT status-line query (pre-door type,
-	 * for restore on exit). Raw-byte scan with a small rolling window to bridge a
-	 * reply split across reads -- the DCS reply is otherwise swallowed below. */
-	if (g_status_type < 0) {
-		static uint8_t sacc[32];
-		static int     sacclen;
-		int            r = termgfx_term_parse_status(buf, n);
+		/* Capture the DECRQSS reply to the DECSSDT status-line query (pre-door type,
+		 * for restore on exit). Raw-byte scan with a small rolling window to bridge a
+		 * reply split across reads -- the DCS reply is otherwise swallowed below. */
+		if (g_status_type < 0) {
+			static uint8_t sacc[32];
+			static int     sacclen;
+			int            r = termgfx_term_parse_status(buf, n);
 
-		if (r < 0) {
-			if (n >= (int)sizeof sacc) {
-				memcpy(sacc, buf + (n - (int)sizeof sacc), sizeof sacc);
-				sacclen = (int)sizeof sacc;
-			} else {
-				int keep = (int)sizeof sacc - n;
-				if (sacclen > keep) {
-					memmove(sacc, sacc + (sacclen - keep), keep);
-					sacclen = keep;
+			if (r < 0) {
+				if (n >= (int)sizeof sacc) {
+					memcpy(sacc, buf + (n - (int)sizeof sacc), sizeof sacc);
+					sacclen = (int)sizeof sacc;
+				} else {
+					int keep = (int)sizeof sacc - n;
+					if (sacclen > keep) {
+						memmove(sacc, sacc + (sacclen - keep), keep);
+						sacclen = keep;
+					}
+					memcpy(sacc + sacclen, buf, n);
+					sacclen += n;
 				}
-				memcpy(sacc + sacclen, buf, n);
-				sacclen += n;
+				r = termgfx_term_parse_status(sacc, sacclen);
 			}
-			r = termgfx_term_parse_status(sacc, sacclen);
+			if (r >= 0)
+				g_status_type = r;
 		}
-		if (r >= 0)
-			g_status_type = r;
-	}
-	{
-		static int sd_prev_tier = -2;       /* log the negotiated audio tier once it resolves */
-		int        t = termgfx_audio_tier(sd_audio);
-		if (t != sd_prev_tier) {
-			sd_prev_tier = t;
-			syncduke_log("audio: tier=%d (%s)", t,
-			             t == 1 ? "digital -- SFX should play" :
-			             t == 0 ? "audio APC but no libsndfile -- silent" :
-			             "no audio APC reply -- old SyncTERM or no audio");
-			if (t >= 1)
-				sd_music_pending_retry();   /* tier just resolved: play title music dropped at startup */
+		{
+			static int sd_prev_tier = -2;   /* log the negotiated audio tier once it resolves */
+			int        t = termgfx_audio_tier(sd_audio);
+			if (t != sd_prev_tier) {
+				sd_prev_tier = t;
+				syncduke_log("audio: tier=%d (%s)", t,
+				             t == 1 ? "digital -- SFX should play" :
+				             t == 0 ? "audio APC but no libsndfile -- silent" :
+				             "no audio APC reply -- old SyncTERM or no audio");
+				if (t >= 1)
+					sd_music_pending_retry(); /* tier just resolved: play title music dropped at startup */
+			}
+		}
+
+		for (i = 0; i < n; i++) {
+			uint8_t c = buf[i];
+			switch (pstate) {
+				case P_NORMAL:
+					/* ESC begins a sequence (P_ESC); every other byte is a key on the legacy byte
+					 * path -- handle_key() does the door shortcuts (Ctrl-S/T/O, Ctrl-A..F = F1..F6,
+					 * the SyncTERM <=1.4 fallback), sticky crouch, and the scancode map.  Under the
+					 * kitty protocol these same keys instead arrive as CSI-u events (csi_final 'u'),
+					 * which route through the same handle_key() with real press/release. */
+					if (c == 0x1b) { pstate = P_ESC; g_esc_at_ms = syncduke_in_now_ms(); }
+					else
+						handle_key(c, gameplay, now, 0);
+					break;
+				case P_ESC:
+					if (c == '[' || c == 'O') { pstate = P_CSI; csi_intro = (char)c; csi_len = 0; }
+					/* String sequences -- APC (_), DCS (P), OSC (]), PM (^) -- end at ST (ESC \)
+					 * and carry no keys; swallow them. SyncTERM's C;L cache-list reply is an APC
+					 * literally containing "C;L", so passing it through typed stray letters. */
+					else if (c == '_' || c == 'P' || c == ']' || c == '^') { pstate = P_APC; apc_len = 0; }
+					else { press(sc_Escape, now); pstate = P_NORMAL; i--; } /* lone ESC, reprocess c */
+					break;
+				case P_APC:
+					if (c == 0x1b)
+						pstate = P_APC_ESC;                 /* maybe the ST terminator */
+					else if (c == 0x07)
+						pstate = P_NORMAL;                  /* BEL also ends OSC/strings */
+					else if (++apc_len > (1u << 20))
+						pstate = P_NORMAL;                  /* unterminated -> bail (no input lockup) */
+					break;                                  /* else: swallow body byte */
+				case P_APC_ESC:
+					pstate = (c == '\\') ? P_NORMAL : P_APC; /* ESC '\' = ST -> done */
+					break;
+				case P_CSI:
+					if (c >= 0x40 && c <= 0x7e) { csi_final((char)c, gameplay, now); pstate = P_NORMAL; }
+					else if (csi_len < (int)sizeof(csi_par)) { csi_par[csi_len++] = (char)c; }
+					break;
+			}
+		}
+
+		/* A short read emptied the terminal's queue -- which is the question the lone-ESC
+		 * test below is really asking. Reading again only to be told so would block on a
+		 * blocking fd (the unit tests feed a plain pipe). */
+		if (n < (int)sizeof(buf)) {
+			drained = 1;
+			break;
 		}
 	}
 
-	for (i = 0; i < n; i++) {
-		uint8_t c = buf[i];
-		switch (pstate) {
-			case P_NORMAL:
-				/* ESC begins a sequence (P_ESC); every other byte is a key on the legacy byte
-				 * path -- handle_key() does the door shortcuts (Ctrl-S/T/O, Ctrl-A..F = F1..F6,
-				 * the SyncTERM <=1.4 fallback), sticky crouch, and the scancode map.  Under the
-				 * kitty protocol these same keys instead arrive as CSI-u events (csi_final 'u'),
-				 * which route through the same handle_key() with real press/release. */
-				if (c == 0x1b) { pstate = P_ESC; g_esc_at_ms = syncduke_in_now_ms(); }
-				else
-					handle_key(c, gameplay, now, 0);
-				break;
-			case P_ESC:
-				if (c == '[' || c == 'O') { pstate = P_CSI; csi_intro = (char)c; csi_len = 0; }
-				/* String sequences -- APC (_), DCS (P), OSC (]), PM (^) -- end at ST (ESC \)
-				 * and carry no keys; swallow them. SyncTERM's C;L cache-list reply is an APC
-				 * literally containing "C;L", so passing it through typed stray letters. */
-				else if (c == '_' || c == 'P' || c == ']' || c == '^') { pstate = P_APC; apc_len = 0; }
-				else { press(sc_Escape, now); pstate = P_NORMAL; i--; }   /* lone ESC, reprocess c */
-				break;
-			case P_APC:
-				if (c == 0x1b)
-					pstate = P_APC_ESC;                     /* maybe the ST terminator */
-				else if (c == 0x07)
-					pstate = P_NORMAL;                      /* BEL also ends OSC/strings */
-				else if (++apc_len > (1u << 20))
-					pstate = P_NORMAL;                      /* unterminated -> bail (no input lockup) */
-				break;                                      /* else: swallow body byte */
-			case P_APC_ESC:
-				pstate = (c == '\\') ? P_NORMAL : P_APC;    /* ESC '\' = ST -> done */
-				break;
-			case P_CSI:
-				if (c >= 0x40 && c <= 0x7e) { csi_final((char)c, gameplay, now); pstate = P_NORMAL; }
-				else if (csi_len < (int)sizeof(csi_par)) { csi_par[csi_len++] = (char)c; }
-				break;
-		}
+	/* Deliver a pending lone ESC once its follow-up window has elapsed (the menu key
+	 * shouldn't wait for the next keystroke). Judged only after the reads above found
+	 * nothing more: an ESC whose sequence is merely split across reads is NOT lone, and
+	 * turning it into an Escape keypress hands the game a menu it was never asked for --
+	 * plus the rest of the sequence as literal keys. The window is wall-clock, but a pump
+	 * only runs once per presented frame, so a tier slow enough to frame longer than
+	 * SYNCDUKE_ESC_MS would otherwise tear every sequence it straddles. */
+	if (drained && pstate == P_ESC
+	    && (uint32_t)(syncduke_in_now_ms() - g_esc_at_ms) > SYNCDUKE_ESC_MS) {
+		press(sc_Escape, now);
+		pstate = P_NORMAL;
 	}
 }
 
