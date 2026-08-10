@@ -164,16 +164,24 @@ function split_sections(raw, min_body)
      * recycle.mail is stated one level up.  Without the lead, that
      * section holds no "mail" token and a question naming the mail
      * server cannot retrieve it. */
-    var PARENT_LEAD = 220;
+    var PARENT_LEAD = 600;
 
     var out = [];
     for (var s = 0; s < sections.length; s++) {
         var sec = sections[s];
-        sec.body = strip_dokuwiki_markup(sec.lines.join('\n'));
+        /* own_body is this section's OWN text.  The lead must be taken
+         * from a parent's own_body, never from its body: bodies have
+         * already had their own parent's lead prepended, so leading
+         * from them makes a grandchild inherit the GRANDparent's text
+         * instead of its parent's.  That is what kept the ".<service>"
+         * suffix -- the sentence that yields recycle.mail -- out of the
+         * recycle section, which sits two levels down. */
+        sec.own_body = strip_dokuwiki_markup(sec.lines.join('\n'));
+        sec.body = sec.own_body;
         /* Nearest preceding section at a shallower depth is the parent. */
         for (var p = s - 1; p >= 0; p--) {
             if (sections[p].level >= sec.level) continue;
-            var lead = String(sections[p].body || '');
+            var lead = String(sections[p].own_body || '');
             if (lead.length > PARENT_LEAD) {
                 lead = lead.slice(0, PARENT_LEAD);
                 /* Don't end mid-word. */
