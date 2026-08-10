@@ -112,11 +112,21 @@ static filterFile         host_exempt;
 static filterFile         spam_block;
 static filterFile         dnsbl_exempt;
 
-static const char*        servprot_smtp = "SMTP";
-static const char*        servprot_submission = "SMTP";
-static const char*        servprot_submissions = "SMTPS";
-static const char*        servprot_pop3 = "POP3";
-static const char*        servprot_pop3s = "POP3S";
+/* Properties of each listening socket, passed through xpms as the callback
+ * data. A descriptor rather than a bare protocol name because the transfer
+ * and submission agents share the name "SMTP", and the compiler pools those
+ * identical string literals into one pointer. */
+struct mail_listener {
+	const char* protocol;   /* Name used in log messages and responses */
+	bool pop3;
+	bool submission;        /* A message submission port (RFC 6409) */
+	bool tls;               /* Implicit TLS */
+};
+static const struct mail_listener listener_smtp        = { "SMTP",  false, false, false };
+static const struct mail_listener listener_submission  = { "SMTP",  false, true,  false };
+static const struct mail_listener listener_submissions = { "SMTPS", false, true,  true  };
+static const struct mail_listener listener_pop3        = { "POP3",  true,  false, false };
+static const struct mail_listener listener_pop3s       = { "POP3S", true,  false, true  };
 
 struct {
 	volatile ulong sockets;
@@ -155,6 +165,7 @@ typedef struct {
 	union xp_sockaddr client_addr;
 	socklen_t client_addr_len;
 	bool tls_port;
+	bool submission;    /* Arrived on a message submission port (RFC 6409), not the transfer port */
 	CRYPT_SESSION session;
 } smtp_t, pop3_t;
 
@@ -2907,7 +2918,7 @@ static bool smtp_splittag(char *in, char **name, char **tag)
 	return false;
 }
 
-static int smtp_matchuser(scfg_t *scfg, char *str, bool aliases, bool datdupe)
+static int smtp_matchuser(scfg_t *scfg, const char *str, bool aliases, bool datdupe)
 {
 	char *user = strdup(str);
 	char *name;
@@ -2934,6 +2945,97 @@ static int smtp_matchuser(scfg_t *scfg, char *str, bool aliases, bool datdupe)
 end:
 	free(user);
 	return usernum;
+}
+
+/****************************************************************************/
+/* Resolve a local recipient name to a user number, 0 if it matches none.   */
+/* 'name' is a local-part after any alias.cfg substitution; 'aliased' says   */
+/* whether that substitution occurred, which is what permits the user-number */
+/* form. 'matched' (>= LEN_ALIAS + 1 bytes) receives the matched user name   */
+/* for the user-number form, and is emptied otherwise.                       */
+/****************************************************************************/
+static int smtp_resolve_user(const char* name, bool aliased, char* matched, size_t maxlen)
+{
+	char  rcpt_name[128];
+	char* tp;
+	int   usernum;
+
+	if (matched != NULL && maxlen != 0)
+		*matched = 0;
+
+	if (aliased && IS_DIGIT(*name)) {
+		char str[128];
+		usernum = atoi(name);            /* RX by user number */
+		/* verify usernum */
+		username(&scfg, usernum, str);
+		if (!str[0] || stricmp(str, "DELETED USER") == 0)
+			usernum = 0;
+		if (matched != NULL && maxlen != 0)
+			safe_snprintf(matched, maxlen, "%s", str);
+		return usernum;
+	}
+
+	/* RX by "user alias", "user.alias" or "user_alias" */
+	usernum = smtp_matchuser(&scfg, name, startup->options & MAIL_OPT_ALLOW_SYSOP_ALIASES, false);
+	if (usernum)
+		return usernum;
+
+	/* RX by "real name", "real.name", or "sysop.alias" */
+	/* convert "user.name" to "user name" */
+	SAFECOPY(rcpt_name, name);
+	for (tp = rcpt_name; *tp; tp++)
+		if (*tp == '.')
+			*tp = ' ';
+
+	if (stricmp(name, scfg.sys_op) == 0 || stricmp(rcpt_name, scfg.sys_op) == 0)
+		return 1;           /* RX by "sysop.alias" */
+
+	if (scfg.msg_misc & MM_REALNAME) {
+		if ((usernum = smtp_matchuser(&scfg, name, false, true)) != 0)
+			return usernum;
+		if ((usernum = smtp_matchuser(&scfg, rcpt_name, false, true)) != 0)
+			return usernum;
+	}
+
+	return 0;
+}
+
+/****************************************************************************/
+/* May authenticated 'user' send as 'addr' (a bare addr-spec)?              */
+/* The domain must be one of this system's and the address must deliver to  */
+/* that same user (RFC 6409 section 6.1).                                   */
+/****************************************************************************/
+static bool sender_addr_authorized(user_t* user, const char* addr, const char* domain_list)
+{
+	char        name[128];
+	char        alias_buf[128];
+	const char* domain;
+	const char* p;
+
+	/* A null reverse-path must not, in itself, be cause for rejection (RFC 6409 section 3.2) */
+	if (addr == NULL || *addr == 0)
+		return true;
+
+	if ((domain = strrchr(addr, '@')) == NULL)
+		return false;
+	domain++;
+	if (stricmp(domain, scfg.sys_inetaddr) != 0
+	    && stricmp(domain, startup->host_name) != 0
+	    && findstr(domain, domain_list) == false)
+		return false;
+
+	/* Same alias.cfg lookups the recipient path makes: whole address, then local-part */
+	p = alias(&scfg, addr, alias_buf);
+	if (p != alias_buf) {
+		SAFECOPY(name, addr);
+		truncstr(name, "@");
+		p = alias(&scfg, name, alias_buf);
+	}
+	/* An alias resolving off-system is a forced relay, not a local address */
+	if (strchr(p, '@') != NULL)
+		return false;
+
+	return smtp_resolve_user(p, /* aliased: */ p == alias_buf, NULL, 0) == user->number;
 }
 
 // Save a verbatim-copy of the SMTP-received mail message to a file in .eml format
@@ -3012,6 +3114,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	uchar             digest[MD5_DIGEST_SIZE];
 	char              dest_host[128];
 	const char*       errmsg;
+	char              from_errmsg[256];
 	ushort            dest_port;
 	socklen_t         addr_len;
 	ushort            hfield_type;
@@ -3635,6 +3738,19 @@ static bool smtp_client_thread(smtp_t* smtp)
 							}
 							char from_addr[128];
 							parse_mail_address(p, /* name: */ NULL, 0, from_addr, sizeof(from_addr) - 1);
+							if (smtp->submission && relay_user.number != 0
+							    && !sender_addr_authorized(&relay_user, from_addr, domain_list)) {
+								char user_addr[128];
+								lprintf(LOG_NOTICE, "%04d %-5s %s !UNAUTHORIZED mail header 'FROM' field (%s) for user #%u (%s)"
+								        , socket, client.protocol, client_id, from_addr
+								        , relay_user.number, relay_user.alias);
+								safe_snprintf(from_errmsg, sizeof from_errmsg
+								              , "550 Mail header 'FROM' address not authorized for this account, try <%s>"
+								              , usermailaddr(&scfg, user_addr, relay_user.alias));
+								errmsg = from_errmsg;
+								smb_error = SMB_FAILURE;
+								break;
+							}
 							if (dnsbl_result.s_addr && email_addr_is_exempt(from_addr)) {
 								lprintf(LOG_INFO, "%04d %-5s %s Ignoring DNSBL results for exempt sender (from): %s"
 								        , socket, client.protocol, client_id, from_addr);
@@ -4591,6 +4707,13 @@ static bool smtp_client_thread(smtp_t* smtp)
 		    || !strnicmp(buf, "SOML FROM:", 10)   /* Send OR Mail a Message to a local user */
 		    || !strnicmp(buf, "SAML FROM:", 10)   /* Send AND Mail a Message to a local user */
 		    ) {
+			if (smtp->submission && relay_user.number == 0) {
+				lprintf(LOG_NOTICE, "%04d %-5s %s !UNAUTHENTICATED submission attempt from %s"
+				        , socket, client.protocol, client_id, host_ip);
+				sockprintf(socket, client.protocol, session, "530 Authentication required.");
+				stats.msgs_refused++;
+				continue;
+			}
 			p = buf + 10;
 			if (relay_user.number == 0
 			    && !chk_email_addr(socket, client.protocol, p, host_name, host_ip, NULL, NULL, "REVERSE PATH")) {
@@ -4602,6 +4725,20 @@ static bool smtp_client_thread(smtp_t* smtp)
 			SAFECOPY(reverse_path, p);
 			if ((p = strchr(reverse_path, ' ')) != NULL)  /* Truncate "<user@domain> KEYWORD=VALUE" to just "<user@domain>" per RFC 1869 */
 				*p = 0;
+			if (smtp->submission && relay_user.number != 0) {
+				char sender_addr_buf[128];
+				parse_mail_address(reverse_path, /* name: */ NULL, 0, sender_addr_buf, sizeof(sender_addr_buf) - 1);
+				if (!sender_addr_authorized(&relay_user, sender_addr_buf, domain_list)) {
+					char user_addr[128];
+					lprintf(LOG_NOTICE, "%04d %-5s %s !UNAUTHORIZED REVERSE PATH (%s) for user #%u (%s)"
+					        , socket, client.protocol, client_id, sender_addr_buf
+					        , relay_user.number, relay_user.alias);
+					sockprintf(socket, client.protocol, session, "550 Sender address not authorized for this account, try <%s>"
+					           , usermailaddr(&scfg, user_addr, relay_user.alias));
+					stats.msgs_refused++;
+					continue;
+				}
+			}
 
 			/* If MAIL FROM address is in dnsbl_exempt.cfg, clear DNSBL results */
 			if (dnsbl_result.s_addr && email_addr_is_exempt(reverse_path)) {
@@ -4852,7 +4989,14 @@ static bool smtp_client_thread(smtp_t* smtp)
 						}
 					} else
 						getuserdat(&scfg, &relay_user);
+					/* An authenticated user sending to an external address via a
+					 * submission port is submitting, not relaying (RFC 6409), so
+					 * ALLOW_RELAY doesn't apply - but their restrictions still do. */
+					bool submitting = smtp->submission && relay_user.number != 0
+					                  && !(relay_user.rest & (FLAG('G') | FLAG('M')));
+
 					if (p != alias_buf /* forced relay by alias */ &&
+					    !submitting &&
 					    (!(startup->options & MAIL_OPT_ALLOW_RELAY)
 					     || relay_user.number == 0
 					     || relay_user.rest & (FLAG('G') | FLAG('M'))) &&
@@ -4989,36 +5133,10 @@ static bool smtp_client_thread(smtp_t* smtp)
 				}
 			}
 
-			if ((p == alias_buf || p == name_alias_buf)
-			    && IS_DIGIT(*p)) {
-				usernum = atoi(p);            /* RX by user number */
-				/* verify usernum */
-				username(&scfg, usernum, str);
-				if (!str[0] || !stricmp(str, "DELETED USER"))
-					usernum = 0;
+			usernum = smtp_resolve_user(p, /* aliased: */ p == alias_buf || p == name_alias_buf
+			                            , str, sizeof str);
+			if (str[0] != 0)
 				p = str;
-			} else {
-				/* RX by "user alias", "user.alias" or "user_alias" */
-				usernum = smtp_matchuser(&scfg, p, startup->options & MAIL_OPT_ALLOW_SYSOP_ALIASES, false);
-
-				if (!usernum) { /* RX by "real name", "real.name", or "sysop.alias" */
-
-					/* convert "user.name" to "user name" */
-					SAFECOPY(rcpt_name, p);
-					for (tp = rcpt_name; *tp; tp++)
-						if (*tp == '.')
-							*tp = ' ';
-
-					if (!stricmp(p, scfg.sys_op) || !stricmp(rcpt_name, scfg.sys_op))
-						usernum = 1;        /* RX by "sysop.alias" */
-
-					if (!usernum && scfg.msg_misc & MM_REALNAME)   /* RX by "real name" */
-						usernum = smtp_matchuser(&scfg, p, false, true);
-
-					if (!usernum && scfg.msg_misc & MM_REALNAME)   /* RX by "real.name" */
-						usernum = smtp_matchuser(&scfg, rcpt_name, false, true);
-				}
-			}
 			if (!usernum && startup->default_user[0]) {
 				usernum = matchuser(&scfg, startup->default_user, true /* sysop_alias */);
 				if (usernum)
@@ -6515,30 +6633,30 @@ void mail_server(void* arg)
 		}
 		terminated = false;
 		if (!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces
-		                   , startup->smtp_port, "SMTP Transfer Agent", &terminate_server, mail_open_socket, startup->seteuid, (void*)servprot_smtp))
+		                   , startup->smtp_port, "SMTP Transfer Agent", &terminate_server, mail_open_socket, startup->seteuid, (void*)&listener_smtp))
 			lprintf(LOG_INFO, "SMTP No extra interfaces listening");
 
 		if (startup->options & MAIL_OPT_USE_SUBMISSION_PORT) {
 			xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces
-			              , startup->submission_port, "SMTP Submission Agent", &terminate_server, mail_open_socket, startup->seteuid, (void*)servprot_submission);
+			              , startup->submission_port, "SMTP Submission Agent", &terminate_server, mail_open_socket, startup->seteuid, (void*)&listener_submission);
 		}
 
 		if (startup->options & MAIL_OPT_TLS_SUBMISSION) {
 			xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->submissions_port
-			              , "SMTPS Submission Agent", &terminate_server, mail_open_socket, startup->seteuid, (void*)servprot_submissions);
+			              , "SMTPS Submission Agent", &terminate_server, mail_open_socket, startup->seteuid, (void*)&listener_submissions);
 		}
 
 		if (startup->options & MAIL_OPT_ALLOW_POP3) {
 			/* open a socket and wait for a client */
 			if (!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces, startup->pop3_port
-			                   , "POP3 Server", &terminate_server, mail_open_socket, startup->seteuid, (void*)servprot_pop3))
+			                   , "POP3 Server", &terminate_server, mail_open_socket, startup->seteuid, (void*)&listener_pop3))
 				lprintf(LOG_INFO, "POP3 No extra interfaces listening");
 		}
 
 		if (startup->options & MAIL_OPT_TLS_POP3) {
 			/* open a socket and wait for a client */
 			if (!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces
-			                   , startup->pop3s_port, "POP3S Server", &terminate_server, mail_open_socket, startup->seteuid, (void*)servprot_pop3s))
+			                   , startup->pop3s_port, "POP3S Server", &terminate_server, mail_open_socket, startup->seteuid, (void*)&listener_pop3s))
 				lprintf(LOG_INFO, "POP3S No extra interfaces listening");
 		}
 
@@ -6668,9 +6786,11 @@ void mail_server(void* arg)
 
 			/* now wait for connection */
 			client_addr_len = sizeof(client_addr);
-			client_socket = xpms_accept(mail_set, &client_addr, &client_addr_len, startup->sem_chk_freq * 1000, XPMS_FLAGS_NONE, (void**)&servprot);
+			const struct mail_listener* listener = NULL;
+			client_socket = xpms_accept(mail_set, &client_addr, &client_addr_len, startup->sem_chk_freq * 1000, XPMS_FLAGS_NONE, (void**)&listener);
 			if (client_socket != INVALID_SOCKET) {
-				bool is_smtp = (servprot != servprot_pop3 && servprot != servprot_pop3s);
+				servprot = listener->protocol;
+				bool is_smtp = !listener->pop3;
 				if (startup->socket_open != NULL)
 					startup->socket_open(startup->cbdata, true);
 				stats.sockets++;
@@ -6731,7 +6851,8 @@ void mail_server(void* arg)
 					smtp->socket = client_socket;
 					memcpy(&smtp->client_addr, &client_addr, client_addr_len);
 					smtp->client_addr_len = client_addr_len;
-					smtp->tls_port = (servprot == servprot_submissions);
+					smtp->tls_port = listener->tls;
+					smtp->submission = listener->submission;
 					(void)protected_uint32_adjust(&thread_count, 1);
 					_beginthread(smtp_thread, 0, smtp);
 					stats.connections_served++;
@@ -6750,7 +6871,7 @@ void mail_server(void* arg)
 					pop3->socket = client_socket;
 					memcpy(&pop3->client_addr, &client_addr, client_addr_len);
 					pop3->client_addr_len = client_addr_len;
-					pop3->tls_port = (servprot == servprot_pop3s);
+					pop3->tls_port = listener->tls;
 					(void)protected_uint32_adjust(&thread_count, 1);
 					_beginthread(pop3_thread, 0, pop3);
 					stats.connections_served++;

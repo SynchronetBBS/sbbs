@@ -124,7 +124,7 @@ static struct init_field mail_init_fields[] = {
 #define MAIL_OPT_NO_HOST_LOOKUP         (1 << 11) /* Don't look-up hostnames */
 #define MAIL_OPT_USE_TCP_DNS            (1 << 12) /* Use TCP vs UDP for DNS req */
 #define MAIL_OPT_NO_SENDMAIL            (1 << 13) /* Don't run SendMail thread */
-#define MAIL_OPT_ALLOW_RELAY            (1 << 14) /* Allow relays from stored user IPs */
+#define MAIL_OPT_ALLOW_RELAY            (1 << 14) /* Allow authenticated users to send to external addresses via the SMTP transfer port */
 #define MAIL_OPT_DNSBL_REFUSE           (1 << 15) /* Refuse session, return error */
 #define MAIL_OPT_DNSBL_IGNORE           (1 << 16) /* Dump mail, return success */
 #define MAIL_OPT_DNSBL_BADUSER          (1 << 17) /* Refuse mail (bad user name) */

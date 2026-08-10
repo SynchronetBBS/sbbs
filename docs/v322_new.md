@@ -172,6 +172,24 @@
   matching public key is published in DNS. Supported on both *nix and
   Windows builds (signing uses OpenSSL libcrypto; it is a no-op stub if
   OpenSSL is unavailable at build time)
+- **Message submission (RFC 6409) on ports 587/465**: the submission
+  ports are no longer handled identically to port 25. They now always
+  require SMTP authentication (a `530` reply otherwise) — point any
+  unauthenticated clients at port 25 instead. An authenticated user
+  sending to an external recipient via a submission port is now treated
+  as a submission rather than a relay, so it no longer requires the
+  `ALLOW_RELAY` option; that option continues to govern port 25
+  (issue #1221)
+- New **sender-address verification** on the submission ports: an
+  authenticated user's `MAIL FROM` and `From:` address must be at one of
+  your domains *and* resolve to that same user, using the same lookup
+  that decides which account an incoming message is delivered to. Any
+  address that reaches a user therefore works as a sender address for
+  them — their alias, real name, `alias.cfg` entry, sub-address tag or
+  user number — and nothing else does, so mail can no longer be
+  submitted with a forged sender. A rejection names the address to use,
+  so a mistyped client setting is self-correcting. The transfer port
+  (25) does not verify sender addresses
 - POP3: `USER` / `PASS` issued on an already-authenticated
   session now get a plain `-ERR` response rather than
   `!UNSUPPORTED COMMAND`, matching Dovecot / Courier behavior
