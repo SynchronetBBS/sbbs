@@ -14,7 +14,7 @@
 // or mutate any other module that's been loaded.
 
 import "syncterm" for Screen, Console, Input, Clipboard, Key,
-    REPL, LogSource, KeyEvent, MouseEvent
+    REPL, LogSource, KeyEvent, MouseEvent, Mouse
 
 class WrenConsole {
   // __history (static field) keeps submitted lines across run()
@@ -111,6 +111,16 @@ class WrenConsole {
 
   static run() { run("syncterm") }
 
+  static setupMouse_() {
+    var saved = Input.mouseEvents
+    Input.mouseEvents = 0
+    Input.enableMouseEvent(Mouse.button1DragStart)
+    Input.enableMouseEvent(Mouse.button1DragMove)
+    Input.enableMouseEvent(Mouse.button1DragEnd)
+    Input.enableMouseEvent(Mouse.button2Click)
+    return saved
+  }
+
   static run(initialModule) {
     if (__history == null) __history = []
     var saved = Screen.save()
@@ -120,6 +130,7 @@ class WrenConsole {
     var origBounds = Screen.window.bounds
     var screenSize = Screen.size
     Screen.window.bounds = [1, 1, screenSize[0], screenSize[1]]
+    var savedMouse = setupMouse_()
 
     // Run the loop body in a child fiber so an unhandled abort —
     // typo in a console binding, runtime error in a user script's
@@ -131,6 +142,7 @@ class WrenConsole {
 
     Screen.window.bounds = origBounds
     Screen.restore(saved)
+    Input.mouseEvents = savedMouse
     if (f.error != null) {
       System.print("console aborted: " + f.error)
       REPL.printTrace_(f)

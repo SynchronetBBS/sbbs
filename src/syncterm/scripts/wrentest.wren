@@ -231,6 +231,7 @@ class WrenTest {
     testScreenPixels_()
     testMouseEventCtors_()
     testPhysicalKeyInputDrain_()
+    testWrenConsoleMouseMask_()
     testScrollbackMouseMask_()
     testKeyEventCtorValidation_()
 
@@ -796,6 +797,20 @@ class WrenTest {
     Input.mouseEvents = returned
     check_(Input.mouseEvents == saved,
            "ScrollbackView mouse mask can be restored exactly")
+  }
+
+  static testWrenConsoleMouseMask_() {
+    var saved = Input.mouseEvents
+    var returned = WrenConsole.setupMouse_()
+    var expected = (1 << Mouse.button1DragStart) |
+                   (1 << Mouse.button1DragMove) |
+                   (1 << Mouse.button1DragEnd) |
+                   (1 << Mouse.button2Click)
+    check_(returned == saved && Input.mouseEvents == expected,
+           "WrenConsole replaces the mouse mask for copy and paste")
+    Input.mouseEvents = returned
+    check_(Input.mouseEvents == saved,
+           "WrenConsole mouse mask can be restored exactly")
   }
 
   // KeyEvent.new validates that the code is roundtrip-representable
