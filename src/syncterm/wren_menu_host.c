@@ -425,6 +425,12 @@ wren_menu_host_run(const char *current, bool connected)
 		return NULL;
 
 	wren_menu_host_status_clear();
+#ifdef CIOLIB_KEY_EVENTS
+	/* The menu consumes translated keys, not the connected terminal's
+	 * physical-key stream.  Suspend that producer across the ownership
+	 * change; restore it only when returning to a live connection. */
+	bool restore_key_events = ciokey_setenabled(false);
+#endif
 	wren_host_input_barrier();
 	mousepointer(CIOLIB_MOUSEPTR_BAR);
 	struct wren_host_state *old = wren_host_select_state(&menu_state);
@@ -448,6 +454,10 @@ wren_menu_host_run(const char *current, bool connected)
 	}
 	wren_host_select_state(old);
 	wren_host_input_barrier();
+#ifdef CIOLIB_KEY_EVENTS
+	if (connected && restore_key_events)
+		ciokey_setenabled(true);
+#endif
 	return selected;
 }
 

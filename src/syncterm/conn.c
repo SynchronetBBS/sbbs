@@ -289,6 +289,34 @@ enum failure_reason {
 	FAILURE_DISCONNECTED
 };
 
+/* Consume one conio input record and report whether it represents a real
+ * keyboard action.  Mouse and physical-key notification tokens carry their
+ * actual event in a separate queue; leaving that payload behind can keep the
+ * backend wake source asserted after the token itself has been removed. */
+static bool
+connection_input_requests_cancel(void)
+{
+	int ch = syncterm_getkey();
+
+	if (ch == CIO_KEY_MOUSE) {
+		getmouse(NULL);
+		return false;
+	}
+#ifdef CIOLIB_KEY_EVENTS
+	if (ch == CIO_KEY_KEY_EVENT) {
+		bool cancel = false;
+		struct ciolib_key_event event;
+
+		while (ciokey_getevent(&event)) {
+			if (event.pressed)
+				cancel = true;
+		}
+		return cancel;
+	}
+#endif
+	return true;
+}
+
 SOCKET
 conn_socket_connect(struct bbslist *bbs, bool can_cancel)
 {
@@ -339,13 +367,8 @@ conn_socket_connect(struct bbslist *bbs, bool can_cancel)
 
 	if (can_cancel) {
 		/* Drain the input buffer to avoid accidental cancel */
-		while (kbhit()) {
-			int ch = syncterm_getkey();
-			if (ch == CIO_KEY_MOUSE)
-				getmouse(NULL);
-			if (quitting)
-				break;
-		}
+		while (kbhit() && !quitting)
+			(void)connection_input_requests_cancel();
 		if (quitting)
 			failcode = FAILURE_ABORTED;
 	}
@@ -391,10 +414,12 @@ conn_socket_connect(struct bbslist *bbs, bool can_cancel)
 						}
 						else {
 							if (can_cancel) {
-								if (kbhit()) {
-									int ch = syncterm_getkey();
-									if (ch == CIO_KEY_MOUSE)
-										getmouse(NULL);
+								bool cancel = false;
+								while (kbhit()) {
+									if (connection_input_requests_cancel())
+										cancel = true;
+								}
+								if (cancel) {
 									failcode = FAILURE_ABORTED;
 									closesocket(sock);
 									sock = INVALID_SOCKET;

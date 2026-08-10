@@ -1252,7 +1252,9 @@ cannot run while another VM owns the screen.  This prevents a connected
 script from placing synthetic input in
 `ungetkey()` / `ungetmouse()` just before the trusted menu or picker
 takes control.  The same barrier protects the connected VM when control
-returns from a trusted UI.
+returns from a trusted UI.  Physical-key production is suspended while
+the menu owns input, restored when returning to a live connection, and
+disabled with its held-key state cleared when the connection ends.
 
 The picker VM is the local-file consent broker.  Neither its caller nor
 the picker script receives arbitrary pathname-open authority.  A

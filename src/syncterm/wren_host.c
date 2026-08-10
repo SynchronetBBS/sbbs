@@ -1185,6 +1185,13 @@ wren_host_init(struct bbslist *bbs)
 void
 wren_host_shutdown(void)
 {
+#ifdef CIOLIB_KEY_EVENTS
+	/* Physical-key delivery is session-scoped.  Stop its backend producer
+	 * before dismantling the connected VM, and forget held-key state so it
+	 * cannot leak into the persistent menu or the next connection. */
+	ciokey_setenabled(false);
+	ciokey_reset();
+#endif
 	if (!active)
 		return;
 
