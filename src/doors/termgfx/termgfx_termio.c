@@ -1991,15 +1991,11 @@ void termgfx_termio_pump(void)
 	if (g_capture != NULL || g_fd_in < 0)
 		return;   /* headless / capture mode (no client to read from) */
 
-	/* Before reading: a lone Escape from an EARLIER pump has no further bytes
-	 * coming, so nothing below would ever resolve it. */
-	termgfx_esc_timeout();
-
 	for (;;) {
 		int n = termgfx_plat_read(g_fd_in, buf, sizeof buf);
 		if (n < 0) {
 			if (n == TERMGFX_IO_AGAIN || n == TERMGFX_IO_INTR)
-				return;         /* nothing more to read this pump */
+				break;          /* nothing more to read this pump */
 			g_hangup = 1;        /* hard read error: treat like a dropped peer */
 			g_quit   = 1;
 			return;
@@ -2046,6 +2042,14 @@ void termgfx_termio_pump(void)
 		acc_shrink();
 		parse_bytes(buf, (int)n);
 	}
+
+	/* Only the loop's "nothing left to read" exit reaches here, so a still-pending
+	 * ESC really did arrive alone: an earlier pump's Escape with no further bytes
+	 * coming, which nothing above would ever resolve. Judging it BEFORE the read
+	 * instead would beat the tail of a sequence split across pumps -- the door would
+	 * get an Escape it was never sent, the sequence body as literal keys, and none of
+	 * what the sequence encoded. */
+	termgfx_esc_timeout();
 }
 
 int termgfx_termio_quit_requested(void) { return g_quit; }
