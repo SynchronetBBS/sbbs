@@ -1294,8 +1294,7 @@ static void csi_final(char fin, int gameplay, int now)
 				/* Lone Alt is NOT forwarded as Strafe -- SyncTERM reserves Alt+key (see evdev note). */
 				/* In a MENU, the NumLock-off nav cluster does its NAV function (like the main
 				 * Home/End/PgUp/PgDn), not a digit: numpad Home/End jump to first/last item.  In
-				 * GAMEPLAY it falls through to the digit fold below, so the numpad view controls are
-				 * unchanged (and match the evdev path, where the numpad is always its digit). */
+				 * GAMEPLAY it is Duke's Aim/Look pair instead, handled just below. */
 				if (!gameplay) {
 					int msc = (cp == 57423) ? sc_Home :        /* KP_HOME -> first item */
 					          (cp == 57424) ? sc_End  : 0;     /* KP_END  -> last item  */

@@ -6,8 +6,11 @@
  * Companion to test_keymap.c (which covers the legacy byte path).  Build + run:
  *
  *   cc -I../Game/src -I../../termgfx -o /tmp/test_kitty test_kitty.c \
- *      ../syncduke_input.c ../syncduke_door.c \
- *      ../../termgfx/caps.c ../../termgfx/keymode.c && /tmp/test_kitty -s1
+ *      ../syncduke_input.c ../../termgfx/caps.c ../../termgfx/keymode.c \
+ *      ../../termgfx/sixel.c && /tmp/test_kitty
+ *
+ * syncduke_door.c is NOT linked: it now reaches the door32/idle/config layers, which
+ * would drag in xpdev for a key test. Its handful of entry points are stubbed below.
  */
 
 #include <stdio.h>
@@ -40,6 +43,16 @@ int  syncduke_node_composing(void) { return 0; }
 void syncduke_node_compose_key(int c) { (void)c; }
 void syncduke_node_page_request(void) { }
 void syncduke_term_restore(void) { }   /* hangup path's terminal restore: no terminal here */
+
+/* syncduke_door.c / syncduke_io.c entry points the pump calls (see the note up top). */
+int  syncduke_door_socket(void) { return -1; }   /* dev mode: EOF is not a hangup */
+void syncduke_hangup(const char *r) { (void)r; }
+int  syncduke_idle_wake(void) { return 0; }
+int  syncduke_idle_check(void) { return 0; }
+void syncduke_set_sdm_probed(int v) { (void)v; }
+void syncduke_set_cterm_ver(int v) { (void)v; }
+void termgfx_audio_set_blob_ok(termgfx_audio_t *m, int v) { (void)m; (void)v; }
+int  termgfx_term_parse_status(const uint8_t *b, int n) { (void)b; (void)n; return -1; }
 
 
 /* termgfx audio the pump now touches (music-key path) -- stub out, no audio in the test. */
@@ -205,10 +218,12 @@ int main(void)
 	chk("KP_HOME (menu) -> first", syncduke_input_pop_raw(), sc_Home);
 	feed("\x1b[57424;1:1u"); syncduke_input_pump(pp[0], 48, 0);   /* numpad-1 = KP_END  -> last item */
 	chk("KP_END (menu) -> last",  syncduke_input_pop_raw(), sc_End);
-	/* In GAMEPLAY the same physical key is still the digit-folded view control (KP_HOME -> '7'),
-	 * unchanged and matching the evdev path. */
-	{ char b7 = '7'; feed("\x1b[57423;1:1u"); syncduke_input_pump(pp[0], 49, 1);
-	  chk("KP_HOME (gameplay) -> '7'", syncduke_input_pop_raw(), syncduke_map_key(&b7, 1, 1)); }
+	/* In GAMEPLAY the same cluster is Duke's Aim/Look pair, NOT a digit: folding KP_END to
+	 * '1' would holster the pistol mid-fight. Matches the evdev and legacy CSI paths. */
+	feed("\x1b[57423;1:1u"); syncduke_input_pump(pp[0], 49, 1);   /* KP_HOME -> Aim up   */
+	chk("KP_HOME (gameplay) -> Aim up", syncduke_input_pop_raw(), sc_kpad_7);
+	feed("\x1b[57424;1:1u"); syncduke_input_pump(pp[0], 50, 1);   /* KP_END  -> Aim down */
+	chk("KP_END (gameplay) -> Aim down", syncduke_input_pop_raw(), sc_kpad_1);
 
 	printf(fails ? "\n%d FAILURE(S)\n" : "\nALL PASS\n", fails);
 	return fails != 0;

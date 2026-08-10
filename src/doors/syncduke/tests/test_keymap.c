@@ -1,12 +1,15 @@
 /*
  * test_keymap.c -- unit test for syncduke_map_key() (terminal byte/seq -> scancode).
  *
- * syncduke_input.c + syncduke_door.c are engine-independent, so this links them directly
- * with no Duke/SDL (plus termgfx/caps.c, which syncduke_input.c uses to parse the JXL
- * cap-probe reply). Build+run:
+ * syncduke_input.c is engine-independent, so this links it directly with no Duke/SDL
+ * (plus termgfx/caps.c, which syncduke_input.c uses to parse the JXL cap-probe reply,
+ * and termgfx/sixel.c for the sixel probe verdicts). Build+run:
  *   cc -I../Game/src -I../../termgfx -o /tmp/test_keymap test_keymap.c \
- *      ../syncduke_input.c ../syncduke_door.c \
- *      ../../termgfx/caps.c ../../termgfx/keymode.c && /tmp/test_keymap -s1
+ *      ../syncduke_input.c ../../termgfx/caps.c ../../termgfx/keymode.c \
+ *      ../../termgfx/sixel.c && /tmp/test_keymap
+ *
+ * syncduke_door.c is NOT linked: it now reaches the door32/idle/config layers, which
+ * would drag in xpdev for a key test. Its handful of entry points are stubbed below.
  */
 
 #include <stdio.h>
@@ -29,6 +32,16 @@ int  syncduke_node_composing(void) { return 0; }
 void syncduke_node_compose_key(int c) { (void)c; }
 void syncduke_node_page_request(void) { }
 void syncduke_term_restore(void) { }   /* hangup path's terminal restore: no terminal here */
+
+/* syncduke_door.c / syncduke_io.c entry points the pump calls (see the note up top). */
+int  syncduke_door_socket(void) { return -1; }   /* dev mode: EOF is not a hangup */
+void syncduke_hangup(const char *r) { (void)r; }
+int  syncduke_idle_wake(void) { return 0; }
+int  syncduke_idle_check(void) { return 0; }
+void syncduke_set_sdm_probed(int v) { (void)v; }
+void syncduke_set_cterm_ver(int v) { (void)v; }
+void termgfx_audio_set_blob_ok(termgfx_audio_t *m, int v) { (void)m; (void)v; }
+int  termgfx_term_parse_status(const uint8_t *b, int n) { (void)b; (void)n; return -1; }
 
 /* termgfx audio + pacing the pump touches (music-key / native-turn paths) -- stub out. */
 uint32_t syncduke_rtt(void) { return 0; }
