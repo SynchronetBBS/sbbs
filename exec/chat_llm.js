@@ -2478,11 +2478,43 @@ function open_session(ctx)
 
 var INDEX_CACHE = null;   /* module-level cache for one session */
 
+
+/* Fold a token to a singular-ish form so "recycles"/"recycle" and
+ * "servers"/"server" are the same term.  Applied by tokenize(), so it
+ * runs identically at index time and query time -- the two MUST agree
+ * or every folded term silently stops matching.
+ *
+ * Deliberately plurals only.  Verb-suffix stripping ("recycling" ->
+ * "recycl") does not converge on the base form that "recycle" folds
+ * to, so it would create as many misses as it fixed; that needs a real
+ * Porter stemmer, not a suffix chop. */
+/* Tokens whose trailing 's' is part of the word: folding these
+ * conflates genuinely different terms ("news" -> "new", "windows" ->
+ * "window") or mangles a technical token. */
+var STEM_KEEP = { news: true, windows: true, https: true, plus: true,
+                  bios: true, gnus: true, emacs: true, alias: true };
+
+function stem_token(t)
+{
+    if (t.length < 5) return t;                 /* is, was, bbs, dos */
+    if (STEM_KEEP[t]) return t;
+    if (/[aeiou]?ss$/.test(t)) return t;        /* pass, address, class */
+    if (/(us|is|as)$/.test(t)) return t;        /* status, analysis, alias */
+    if (/ies$/.test(t)) return t.slice(0, -3) + 'y';   /* utilities */
+    if (/sses$/.test(t)) return t.slice(0, -2);        /* passes */
+    if (/es$/.test(t)) return t.slice(0, -1);          /* recycles, files */
+    if (/s$/.test(t)) return t.slice(0, -1);           /* servers */
+    return t;
+}
+
 function tokenize(text)
 {
     if (!text) return [];
     var matches = String(text).toLowerCase().match(/[a-z0-9]+/g);
-    return matches || [];
+    if (!matches) return [];
+    for (var i = 0; i < matches.length; i++)
+        matches[i] = stem_token(matches[i]);
+    return matches;
 }
 
 /* English stopwords + conversational filler. Stripped from QUERIES at
@@ -2514,7 +2546,13 @@ var QUERY_STOPWORDS = (function () {
         + 'bye later cya seeya gtg ttyl thanks thx ty np lol haha hehe '
         + 'hi hey yo sup hiya hello howdy greetings').split(/\s+/);
     var set = Object.create(null);
-    for (var i = 0; i < words.length; i++) set[words[i]] = true;
+    for (var i = 0; i < words.length; i++) {
+        set[words[i]] = true;
+        /* tokenize_query() folds plurals BEFORE consulting this set, so
+         * register the folded form too -- otherwise "these" arrives as
+         * "thes", misses, and gets scored as a content word. */
+        set[stem_token(words[i])] = true;
+    }
     return set;
 }());
 
@@ -2863,7 +2901,87 @@ function bm25_search(idx, query_tokens, top_k, source_weights, recency_halflife_
     return hits;
 }
 
-function format_retrieved_context(hits)
+/* Keep at most `max_per_page` chunks from any one wiki page, then trim
+ * to `limit`.  Order is preserved, so this only ever removes.
+ *
+ * Indexing a page as one document made this free: a page could occupy
+ * exactly one slot.  Per-section chunks removed that guarantee -- a
+ * long page's sections all score similarly and can fill the window
+ * between them, which is how "how do I recycle all my mail servers"
+ * ended up with 8 server:mail sections and no config:semfiles at all.
+ * The signal that a page is relevant is worth one or two slots, not
+ * the whole context. */
+function cap_hits_per_page(hits, max_per_page, limit) {
+    if (!hits || !hits.length) return hits || [];
+    var seen = {}, out = [];
+    for (var i = 0; i < hits.length && out.length < limit; i++) {
+        var id = String(hits[i].id || '');
+        var hash = id.indexOf('#');
+        var page = hash >= 0 ? id.slice(0, hash) : id;
+        var n = seen[page] || 0;
+        if (n >= max_per_page) continue;
+        seen[page] = n + 1;
+        out.push(hits[i]);
+    }
+    return out;
+}
+
+/* Return the ~max_chars passage of `text` that best covers the query
+ * tokens, rather than its first max_chars.
+ *
+ * Retrieval selects a document; this selects what part of it the model
+ * gets to read.  Taking the head threw away the answer whenever it sat
+ * below the fold: config:semfiles ranked FIRST for "recycle the mail
+ * server via a semaphore file", but its "Recycle Semaphore Files"
+ * section starts 3388 characters in, so what reached the model was the
+ * page's generic "touch /sbbs/data/dothing.now" example -- off which
+ * the model modelled an invented semaphore filename.
+ *
+ * Falls back to the head when the query has no usable terms or none of
+ * them appear, which is no worse than the previous behavior. */
+function best_snippet(text, tokens, max_chars) {
+    text = String(text || '');
+    if (text.length <= max_chars) return text;
+
+    var lower = text.toLowerCase();
+    var positions = [];
+    for (var i = 0; tokens && i < tokens.length && positions.length < 400; i++) {
+        var t = String(tokens[i]).toLowerCase();
+        if (t.length < 3) continue;      /* too short to be discriminating */
+        var at = lower.indexOf(t);
+        while (at >= 0 && positions.length < 400) {
+            positions.push(at);
+            at = lower.indexOf(t, at + t.length);
+        }
+    }
+    if (!positions.length) return text.slice(0, max_chars) + '...';
+
+    /* Score a window opening a quarter-width before each hit by how
+     * many hits it covers; keep the best. */
+    var lead = Math.floor(max_chars / 4);
+    var best_start = 0, best_score = -1;
+    for (var p = 0; p < positions.length; p++) {
+        var start = positions[p] - lead;
+        if (start < 0) start = 0;
+        var end = start + max_chars, score = 0;
+        for (var q = 0; q < positions.length; q++)
+            if (positions[q] >= start && positions[q] < end) score++;
+        if (score > best_score) {
+            best_score = score;
+            best_start = start;
+        }
+    }
+    /* Open on a line boundary so the passage doesn't start mid-sentence. */
+    if (best_start > 0) {
+        var nl = text.lastIndexOf('\n', best_start);
+        if (nl >= 0 && best_start - nl < 200) best_start = nl + 1;
+    }
+    return (best_start > 0 ? '...' : '')
+         + text.slice(best_start, best_start + max_chars)
+         + (best_start + max_chars < text.length ? '...' : '');
+}
+
+function format_retrieved_context(hits, tokens)
 {
     if (!hits || !hits.length) return '';
     var blocks = hits.map(function (h) {
@@ -2893,8 +3011,7 @@ function format_retrieved_context(hits)
          * the tight cap was protecting against, and the extra ~550
          * chars per wiki chunk is well worth the ~+2s TTFC. */
         var max_chars = prov.indexOf('Wiki:') === 0 ? 800 : 500;
-        if (text.length > max_chars)
-            text = text.slice(0, max_chars) + '...';
+        text = best_snippet(text, tokens, max_chars);
 
         /* For wiki hits, extract the URL from the provenance tag
          * (which looks like "Wiki:https://wiki.synchro.net/history:versions ...")
@@ -3092,10 +3209,16 @@ function inject_retrieval(input, ctx, cfg)
         weights = _wiki_boosted_weights(weights, 1.8);
         ctx._rag_wiki_boost = true;   /* profile breadcrumb */
     }
-    var hits = bm25_search(idx, tokens, cfg.index_top_k,
+    /* Search wider than top_k, then cap per page and trim back: the
+     * chunks displaced by the cap have to be replaced by something,
+     * and they can only come from further down the ranking. */
+    var per_page = parseInt(cfg.index_max_sections_per_page, 10);
+    if (isNaN(per_page) || per_page < 1) per_page = 2;
+    var hits = bm25_search(idx, tokens, cfg.index_top_k * 4,
                            weights, halflife,
                            cfg.group_aliases, input);
     if (!hits.length) return;
+    hits = cap_hits_per_page(hits, per_page, cfg.index_top_k);
 
     var min_per_token = parseFloat(cfg.index_min_score_per_token);
     if (isNaN(min_per_token)) min_per_token = 3.5;
@@ -3119,7 +3242,7 @@ function inject_retrieval(input, ctx, cfg)
     }
 
     ctx._rag_hits = hits.length;
-    ctx.retrieved_context = format_retrieved_context(hits);
+    ctx.retrieved_context = format_retrieved_context(hits, tokens);
 
     /* Stash the top-hit Wiki URL (if any) so the post-process pass can
      * append it to the model's reply when the model doesn't cite it
@@ -3135,11 +3258,19 @@ function inject_retrieval(input, ctx, cfg)
      * routinely caught truncating real page names (e.g. emitting
      * /network:irc when the real provenance is /network:irc.synchro.net). */
     ctx._valid_wiki_urls = {};
+    ctx._rag_wiki_hits = [];
     for (var hi = 0; hi < hits.length; hi++) {
         var prov = hits[hi].provenance || '';
         var m = prov.match(/^Wiki:(https?:\/\/\S+)/);
         if (m) {
+            ctx._rag_wiki_hits.push({ url: m[1], text: hits[hi].text || '' });
+        }
+        if (m) {
             ctx._valid_wiki_urls[m[1].toLowerCase()] = true;
+            /* Section chunks carry a #anchor.  strip_fake_urls() looks
+             * up fragment-stripped keys, and the model may cite either
+             * the anchored URL or the bare page, so register both. */
+            ctx._valid_wiki_urls[_url_key(m[1])] = true;
             if (!ctx._rag_top_wiki_url) ctx._rag_top_wiki_url = m[1];
         }
     }
@@ -3263,7 +3394,9 @@ function strip_fake_urls(reply, ctx) {
      * Cite this URL verbatim: These should provide..." went out to
      * #synchronet on 2026-08-09).  Drop the phrase wherever it
      * appears, keeping any URL that followed it. */
-    stripped = stripped.replace(/\s*\bcite this url verbatim\s*:[ \t]*/gi, ' ');
+    /* The model paraphrases the scaffold as well as quoting it ("Cite
+     * this URL for full details:"), so match the lead-in loosely. */
+    stripped = stripped.replace(/\s*\bcite (?:this|the) url\b[^:\n]{0,40}:[ \t]*/gi, ' ');
 
     /* Clean up artifacts left where a URL was stripped:
      *   - "at <>" / "<>" residue when model wrapped url in angle brackets
@@ -3629,6 +3762,46 @@ function find_duplicate_reply(reply, memory, cfg) {
     return null;
 }
 
+/* Of the wiki chunks retrieved this turn, the URL of the one whose
+ * text best overlaps the reply -- i.e. the chunk the answer actually
+ * came out of.
+ *
+ * The top-ranked hit is the wrong choice: BM25 ranks against the
+ * QUESTION, and once pages are split per section the highest-scoring
+ * section is often not the one the model used.  A correct answer about
+ * touching ctrl/recycle went out citing custom:text.ini#3_recycle_servers
+ * purely because that section ranked first. */
+function best_supporting_url(reply, wiki_hits) {
+    if (!reply || !wiki_hits || !wiki_hits.length) return null;
+    var rtok = {}, rt = tokenize(reply), i;
+    for (i = 0; i < rt.length; i++)
+        if (!QUERY_STOPWORDS[rt[i]]) rtok[rt[i]] = true;
+    var reply_size = 0;
+    for (var r in rtok) reply_size++;
+    var best = null, best_score = 0;
+    for (i = 0; i < wiki_hits.length; i++) {
+        var toks = tokenize(wiki_hits[i].text || '');
+        var seen = {}, overlap = 0, chunk_size = 0;
+        for (var t = 0; t < toks.length; t++) {
+            if (seen[toks[t]]) continue;
+            seen[toks[t]] = true;
+            chunk_size++;
+            if (rtok[toks[t]]) overlap++;
+        }
+        if (!overlap) continue;
+        /* Jaccard, not a raw count: a long chunk has more distinct
+         * tokens and so more accidental matches.  Scoring by raw
+         * overlap cited a rambling faq section over the short one
+         * that actually stated the answer. */
+        var score = overlap / (reply_size + chunk_size - overlap);
+        if (score > best_score) {
+            best_score = score;
+            best = wiki_hits[i].url;
+        }
+    }
+    return best;
+}
+
 /* Append the top retrieved wiki URL to the reply if the reply doesn't
  * already mention it.  Band-aid over the 7B-model failure to follow
  * "cite the URL from the chunks" instructions for well-known topics
@@ -3649,7 +3822,10 @@ function append_wiki_url_if_missing(reply, ctx)
     var append_floor = parseFloat(ctx._rag_url_append_floor);
     if (isNaN(append_floor)) append_floor = 5.25;
     if (isNaN(per_token) || per_token < append_floor) return reply;
-    var url = ctx._rag_top_wiki_url;
+    /* Cite the chunk the answer came out of, falling back to the
+     * top-ranked one when nothing overlaps.  See best_supporting_url(). */
+    var url = best_supporting_url(reply, ctx._rag_wiki_hits)
+           || ctx._rag_top_wiki_url;
     /* Require lexical overlap between the query and the wiki URL
      * path.  BM25 can return a high-scoring hit that's topically
      * off (e.g. person:digital_man scoring well for "what was

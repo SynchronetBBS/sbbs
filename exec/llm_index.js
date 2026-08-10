@@ -64,12 +64,35 @@ function load_config(persona)
     return cfg;
 }
 
+/* Tokens whose trailing 's' is part of the word: folding these
+ * conflates genuinely different terms ("news" -> "new", "windows" ->
+ * "window") or mangles a technical token. */
+var STEM_KEEP = { news: true, windows: true, https: true, plus: true,
+                  bios: true, gnus: true, emacs: true, alias: true };
+
+/* KEEP IN SYNC with chat_llm.js's stem_token(). */
+function stem_token(t)
+{
+    if (t.length < 5) return t;                 /* is, was, bbs, dos */
+    if (STEM_KEEP[t]) return t;
+    if (/[aeiou]?ss$/.test(t)) return t;        /* pass, address, class */
+    if (/(us|is|as)$/.test(t)) return t;        /* status, analysis, alias */
+    if (/ies$/.test(t)) return t.slice(0, -3) + 'y';   /* utilities */
+    if (/sses$/.test(t)) return t.slice(0, -2);        /* passes */
+    if (/es$/.test(t)) return t.slice(0, -1);          /* recycles, files */
+    if (/s$/.test(t)) return t.slice(0, -1);           /* servers */
+    return t;
+}
+
 /* Tokenize text for BM25. KEEP IN SYNC with chat_llm.js's tokenize(). */
 function tokenize(text)
 {
     if (!text) return [];
     var matches = String(text).toLowerCase().match(/[a-z0-9]+/g);
-    return matches || [];
+    if (!matches) return [];
+    for (var i = 0; i < matches.length; i++)
+        matches[i] = stem_token(matches[i]);
+    return matches;
 }
 
 /* Accept a user number OR alias string (e.g. "guest", "Guest") and

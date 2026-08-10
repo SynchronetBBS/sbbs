@@ -37,10 +37,18 @@ function strip_dokuwiki_markup(text)
     text = text.replace(/\{\{[^}]*\}\}/g, '');
 
     /* Internal links: [[ns:page]] or [[ns:page|label]]. Keep the label
-     * (or the target, if no label) so the linked concept stays in tokens. */
+     * (or the target, if no label) so the linked concept stays in tokens.
+     *
+     * An unlabeled target keeps only its page component: the wiki
+     * writes "the file [[dir:ctrl]]/recycle", and carrying the
+     * namespace through left "dir:ctrl/recycle" in the indexed prose,
+     * which the bot then handed to users as if "dir:" were part of the
+     * path. */
     text = text.replace(/\[\[([^\]]*)\]\]/g, function (_m, inner) {
         var pipe = inner.indexOf('|');
-        return pipe >= 0 ? inner.slice(pipe + 1) : inner;
+        if (pipe >= 0) return inner.slice(pipe + 1);
+        var colon = inner.lastIndexOf(':');
+        return colon >= 0 ? inner.slice(colon + 1) : inner;
     });
 
     /* Bold/italic/underline markers: keep content, strip markers. */
@@ -80,6 +88,90 @@ function first_heading(text)
      * Match any level 1-6 and return the first one as the page title. */
     var m = text.match(/^={2,6}\s*(.+?)\s*={2,6}\s*$/m);
     return m ? m[1].replace(/^\s+|\s+$/g, '') : '';
+}
+
+/* DokuWiki's own anchor form for a heading: lowercased, every run of
+ * non-alphanumerics folded to a single underscore.  Used to deep-link
+ * a section chunk's provenance URL at the section it came from. */
+function heading_anchor(heading)
+{
+    return String(heading || '').toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+}
+
+/* Split a raw page into per-heading sections.
+ *
+ * A whole page is the wrong unit to retrieve and inject: the mean page
+ * here is ~5000 characters against an 800-character injection cap, so
+ * indexing pages whole meant the model saw a page's opening and never
+ * the section that answered the question.  One chunk per heading keeps
+ * each unit about one topic, and lets BM25 rank the section rather
+ * than the page.
+ *
+ * Splitting happens on the RAW text, before strip_dokuwiki_markup()
+ * flattens "===== X =====" to a bare line -- after stripping, a
+ * heading is indistinguishable from body text.
+ *
+ * Returns [{heading, level, anchor, breadcrumb, body}], body already
+ * markup-stripped.  Sections too small to stand alone are folded into
+ * the preceding one rather than dropped.
+ */
+function split_sections(raw, min_body)
+{
+    if (min_body === undefined) min_body = 30;
+    var lines = String(raw || '').replace(/\r/g, '').split('\n');
+    var heading_re = /^\s*(={2,6})\s*(.+?)\s*={2,6}\s*$/;
+    var sections = [], cur = null;
+    /* Heading level in DokuWiki is INVERSE to the '=' count: "======"
+     * is the top level.  Track a stack by depth so a subsection can
+     * name its parents. */
+    var stack = [];
+
+    function open(heading, eq_count, body_line) {
+        var depth = 7 - eq_count;   /* "======" -> 1, "==" -> 5 */
+        stack = stack.slice(0, depth - 1);
+        stack.push(heading);
+        cur = {
+            heading:    heading,
+            level:      depth,
+            anchor:     heading_anchor(heading),
+            breadcrumb: stack.join(' - '),
+            lines:      []
+        };
+        sections.push(cur);
+        if (body_line) cur.lines.push(body_line);
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+        var m = lines[i].match(heading_re);
+        if (m) {
+            open(m[2], m[1].length, null);
+            continue;
+        }
+        if (!cur) {
+            /* Text before any heading -- a page that opens without one. */
+            open('', 6, lines[i]);
+            continue;
+        }
+        cur.lines.push(lines[i]);
+    }
+
+    var out = [];
+    for (var s = 0; s < sections.length; s++) {
+        var sec = sections[s];
+        sec.body = strip_dokuwiki_markup(sec.lines.join('\n'));
+        /* A heading with nothing under it (or a stub) carries no
+         * retrievable content of its own; fold it into the previous
+         * chunk so its words aren't lost. */
+        if (sec.body.length < min_body && out.length) {
+            var prev = out[out.length - 1];
+            prev.body += '\n' + sec.heading + '\n' + sec.body;
+            continue;
+        }
+        out.push(sec);
+    }
+    return out;
 }
 
 /* Namespaces to skip entirely. "wiki" is DokuWiki's own help / syntax
@@ -138,15 +230,6 @@ function walk(root, prefix, chunks, opts)
         if (!raw) continue;
 
         var title = first_heading(raw);
-        var body  = strip_dokuwiki_markup(raw);
-        if (body.length < min_body) continue;
-
-        /* Prepend the title to the indexed text only when it isn't
-         * already the first thing in `body` (avoids duplicating it
-         * for BM25). */
-        var text = body;
-        if (title && body.toLowerCase().indexOf(title.toLowerCase()) != 0)
-            text = title + '\n' + body;
 
         /* URL form: DokuWiki maps the namespace separator ':' onto the
          * URL path.  Hard-coded default is the Synchronet community
@@ -159,13 +242,38 @@ function walk(root, prefix, chunks, opts)
         if (url_base.charAt(url_base.length - 1) !== '/') url_base += '/';
         var url = url_base + id;
 
-        chunks.push({
-            id:         'dokuwiki/' + id,
-            text:       text,
-            provenance: 'Wiki:' + url + (title ? ' "' + title + '"' : ''),
-            ts:         mtime,
-            title:      title || ''
-        });
+        /* One chunk per heading rather than one per page -- see
+         * split_sections(). */
+        var sections = split_sections(raw, min_body);
+        for (var s = 0; s < sections.length; s++) {
+            if (chunks.length >= max) return;
+            var sec = sections[s];
+            if (sec.body.length < min_body) continue;
+
+            /* Lead each chunk with its breadcrumb so a subsection
+             * still carries the page's subject into BM25 and into the
+             * model's context ("Semaphore Files - Recycle Semaphore
+             * Files"), which a bare section heading would not. */
+            var crumb = sec.breadcrumb || title;
+            var text  = sec.body;
+            if (crumb && text.toLowerCase().indexOf(crumb.toLowerCase()) != 0)
+                text = crumb + '\n' + text;
+
+            /* Deep-link the section so a citation lands on the part
+             * that actually answered the question. */
+            var sec_url = sec.anchor ? (url + '#' + sec.anchor) : url;
+            var label   = crumb || title;
+
+            chunks.push({
+                id:         'dokuwiki/' + id
+                            + (sec.anchor ? '#' + sec.anchor : ''),
+                text:       text,
+                provenance: 'Wiki:' + sec_url
+                            + (label ? ' "' + label + '"' : ''),
+                ts:         mtime,
+                title:      label || ''
+            });
+        }
     }
 }
 
