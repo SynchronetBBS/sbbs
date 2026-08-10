@@ -1400,14 +1400,30 @@ function sanitize_reply(s)
      * pattern engine did), so removing JUST the backticks is safe and
      * preserves the surrounding text. */
     s = String(s).replace(/`/g, '');
-    /* Emoji and pictographs.  Covers:
-     *   - Surrogate-pair emoji in supplementary planes (U+1F000-U+1FFFF):
-     *     high surrogate 0xD83C-0xD83E + any low surrogate.
-     *   - Misc symbols / dingbats / arrows / weather / chess in
-     *     U+2600-U+27BF.
-     *   - Variation selectors (U+FE00-U+FE0F) used as emoji presentation
-     *     modifiers, and the U+200D zero-width joiner that glues
-     *     compound emoji together. */
+    /* Emoji and pictographs.
+     *
+     * Matched as UTF-8 BYTE SEQUENCES, because strings in this engine
+     * hold bytes rather than UTF-16 code units: U+1F310 is the four
+     * characters F0 9F 8C 90, and a surrogate-pair regex has nothing
+     * to match against it.  (A literal emoji in this source file
+     * arrives the same way, so it can't be used to test the other
+     * form either.)  The surrogate-pair patterns are kept after these
+     * for engines that do decode to UTF-16; they are inert here.
+     *
+     * Ranges, as UTF-8:
+     *   U+1F000-U+1FFFF supplementary pictographs  F0 9F xx xx
+     *   U+2600-U+27BF   misc symbols / dingbats    E2 98-9E xx
+     *   U+FE00-U+FE0F   variation selectors        EF B8 80-8F
+     *   U+200D          zero-width joiner          E2 80 8D
+     *
+     * The E2 ranges are deliberately narrow: box drawing (U+2500,
+     * E2 94) and arrows (U+2190, E2 86) are ordinary text here and
+     * must survive. */
+    s = s.replace(/\xF0\x9F[\x80-\xBF][\x80-\xBF]/g, '');
+    s = s.replace(/\xE2[\x98-\x9E][\x80-\xBF]/g, '');
+    s = s.replace(/\xEF\xB8[\x80-\x8F]/g, '');
+    s = s.replace(/\xE2\x80\x8D/g, '');
+    /* UTF-16 forms, for an engine that decodes rather than byte-holds. */
     s = s.replace(/[\uD83C-\uD83E][\uDC00-\uDFFF]/g, '');
     s = s.replace(/[\u2600-\u27BF]/g, '');
     s = s.replace(/[\uFE00-\uFE0F]/g, '');
@@ -2556,7 +2572,56 @@ var QUERY_STOPWORDS = (function () {
     return set;
 }());
 
-function tokenize_query(text)
+/* Parse the query_synonyms knob: "a = x; b, c = y, z" into
+ * {a:[x], b:[y,z], c:[y,z]}.  Keys and expansions are tokenized the
+ * same way queries are, so they fold plurals identically. */
+function parse_query_synonyms(spec)
+{
+    var map = {};
+    if (!spec) return map;
+    var entries = String(spec).split(';');
+    for (var e = 0; e < entries.length; e++) {
+        var eq = entries[e].indexOf('=');
+        if (eq < 0) continue;
+        var keys = tokenize(entries[e].slice(0, eq));
+        var vals = tokenize(entries[e].slice(eq + 1));
+        if (!keys.length || !vals.length) continue;
+        for (var k = 0; k < keys.length; k++) map[keys[k]] = vals;
+    }
+    return map;
+}
+
+/* Bridge the vocabulary gap between how people ask and how the wiki
+ * writes.  BM25 matches literal terms, so a question that shares no
+ * words with the page that answers it cannot retrieve that page no
+ * matter how well the corpus is chunked -- "the mail server recycle
+ * file" never says "semaphore", which is the word the documentation
+ * uses throughout.
+ *
+ * Expansion ADDS terms and never replaces them, so a synonym that
+ * turns out to be unhelpful costs some ranking rather than making a
+ * previously-working query wrong. */
+function expand_query_tokens(tokens, map)
+{
+    if (!map || !tokens || !tokens.length) return tokens || [];
+    var have = {}, out = [], i;
+    for (i = 0; i < tokens.length; i++) {
+        have[tokens[i]] = true;
+        out.push(tokens[i]);
+    }
+    for (i = 0; i < tokens.length; i++) {
+        var add = map[tokens[i]];
+        if (!add) continue;
+        for (var a = 0; a < add.length; a++) {
+            if (have[add[a]]) continue;
+            have[add[a]] = true;
+            out.push(add[a]);
+        }
+    }
+    return out;
+}
+
+function tokenize_query(text, cfg)
 {
     var raw = tokenize(text);
     var out = [];
@@ -2564,6 +2629,11 @@ function tokenize_query(text)
         if (raw[i].length < 2) continue;          /* drop "i", "a", etc. */
         if (QUERY_STOPWORDS[raw[i]]) continue;
         out.push(raw[i]);
+    }
+    if (cfg && cfg.query_synonyms) {
+        if (!cfg._query_synonym_map)
+            cfg._query_synonym_map = parse_query_synonyms(cfg.query_synonyms);
+        out = expand_query_tokens(out, cfg._query_synonym_map);
     }
     return out;
 }
@@ -3191,7 +3261,11 @@ function inject_retrieval(input, ctx, cfg)
     /* Don't retrieve for identity/social queries -- RAG can't help and
      * the injected board/wiki text confuses the bot's sense of self. */
     if (_is_conversational_query(input)) { ctx._rag_skipped = 'conversational'; return; }
-    var tokens = tokenize_query(input);
+    /* Synonym expansion applies to RETRIEVAL only.  is_casual_input()
+     * also tokenizes queries, but it decides "is this small talk" from
+     * how many content words there are -- adding terms there would
+     * make a two-word greeting look substantive. */
+    var tokens = tokenize_query(input, cfg);
     if (tokens.length < 1) return;   /* all stopwords / nothing to query */
     var persona = ctx.persona && ctx.persona.code;
     var idx = load_index(persona, cfg);
@@ -3233,6 +3307,7 @@ function inject_retrieval(input, ctx, cfg)
      * can return a high-scoring hit that's actually off-topic
      * (e.g. person:digital_man for "what was PC-Pursuit?"). */
     ctx._rag_url_append_floor = min_per_token * 1.5;
+    ctx._rag_url_append_rank  = cfg.index_url_append_rank;
     ctx._rag_query_tokens = tokens;
     if (per_token < min_per_token) {
         /* Below quality threshold -- top hit isn't really about the
@@ -3762,6 +3837,16 @@ function find_duplicate_reply(reply, memory, cfg) {
     return null;
 }
 
+/* How far down the retrieved list an appended citation may come from.
+ * Stashed on ctx by inject_retrieval() while cfg was in scope. */
+function cfg_append_rank_limit(ctx) {
+    var raw = ctx && ctx._rag_url_append_rank;
+    if (raw === undefined || raw === null || raw === '') return 3;
+    var n = parseInt(raw, 10);
+    if (isNaN(n)) return 3;
+    return n;            /* 0 disables appending entirely */
+}
+
 /* Of the wiki chunks retrieved this turn, the URL of the one whose
  * text best overlaps the reply -- i.e. the chunk the answer actually
  * came out of.
@@ -3776,24 +3861,33 @@ function best_supporting_url(reply, wiki_hits) {
     var rtok = {}, rt = tokenize(reply), i;
     for (i = 0; i < rt.length; i++)
         if (!QUERY_STOPWORDS[rt[i]]) rtok[rt[i]] = true;
-    var reply_size = 0;
-    for (var r in rtok) reply_size++;
+    /* Per-token spread across the candidates.  A word carried by most
+     * of the retrieved chunks ("server", "file", "configuration" on a
+     * question about servers) says nothing about which one the answer
+     * came from; a word in only one or two does.  Weighting by
+     * rarity-among-candidates is what separates them, and it needs no
+     * corpus statistics -- the candidate set is enough. */
+    var uniq = [], spread = {};
+    for (i = 0; i < wiki_hits.length; i++) {
+        var ct = tokenize(wiki_hits[i].text || ''), u = {};
+        for (var x = 0; x < ct.length; x++) {
+            if (u[ct[x]]) continue;
+            u[ct[x]] = true;
+            spread[ct[x]] = (spread[ct[x]] || 0) + 1;
+        }
+        uniq.push(u);
+    }
     var best = null, best_score = 0;
     for (i = 0; i < wiki_hits.length; i++) {
-        var toks = tokenize(wiki_hits[i].text || '');
-        var seen = {}, overlap = 0, chunk_size = 0;
-        for (var t = 0; t < toks.length; t++) {
-            if (seen[toks[t]]) continue;
-            seen[toks[t]] = true;
-            chunk_size++;
-            if (rtok[toks[t]]) overlap++;
+        var score = 0, size = 0, tok;
+        for (tok in uniq[i]) {
+            size++;
+            if (rtok[tok]) score += 1 / spread[tok];
         }
-        if (!overlap) continue;
-        /* Jaccard, not a raw count: a long chunk has more distinct
-         * tokens and so more accidental matches.  Scoring by raw
-         * overlap cited a rambling faq section over the short one
-         * that actually stated the answer. */
-        var score = overlap / (reply_size + chunk_size - overlap);
+        if (!score) continue;
+        /* Normalize by chunk breadth so a long chunk doesn't win on
+         * accumulated accidental matches alone. */
+        score = score / Math.sqrt(size || 1);
         if (score > best_score) {
             best_score = score;
             best = wiki_hits[i].url;
@@ -3822,10 +3916,28 @@ function append_wiki_url_if_missing(reply, ctx)
     var append_floor = parseFloat(ctx._rag_url_append_floor);
     if (isNaN(append_floor)) append_floor = 5.25;
     if (isNaN(per_token) || per_token < append_floor) return reply;
-    /* Cite the chunk the answer came out of, falling back to the
-     * top-ranked one when nothing overlaps.  See best_supporting_url(). */
-    var url = best_supporting_url(reply, ctx._rag_wiki_hits)
-           || ctx._rag_top_wiki_url;
+    /* Cite the chunk the answer came out of.  See best_supporting_url().
+     *
+     * Only append when that chunk is also one of the top few retrieved:
+     * if the answer came from something retrieval ranked mid-pack, the
+     * evidence for "this is THE page for the question" is weak, and a
+     * confidently-wrong "See <url> for the official docs" tacked onto a
+     * correct answer is worse than no pointer at all.  This appears to
+     * the user as a wrong reference, which is exactly the complaint
+     * this whole mechanism was meant to prevent. */
+    var support = best_supporting_url(reply, ctx._rag_wiki_hits);
+    var top_n = parseInt(cfg_append_rank_limit(ctx), 10);
+    var url = null;
+    if (support) {
+        for (var wi = 0; wi < ctx._rag_wiki_hits.length && wi < top_n; wi++) {
+            if (ctx._rag_wiki_hits[wi].url !== support) continue;
+            url = support;
+            break;
+        }
+    } else {
+        url = ctx._rag_top_wiki_url;
+    }
+    if (!url) return reply;
     /* Require lexical overlap between the query and the wiki URL
      * path.  BM25 can return a high-scoring hit that's topically
      * off (e.g. person:digital_man scoring well for "what was

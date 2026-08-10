@@ -157,10 +157,32 @@ function split_sections(raw, min_body)
         cur.lines.push(lines[i]);
     }
 
+    /* Lead-in carried from a section's parent.  Splitting can separate
+     * an answer from the qualifier that makes it usable: on the
+     * semaphore-files page the recycle section says to touch
+     * ctrl/recycle, while the ".<service>" suffix that yields
+     * recycle.mail is stated one level up.  Without the lead, that
+     * section holds no "mail" token and a question naming the mail
+     * server cannot retrieve it. */
+    var PARENT_LEAD = 220;
+
     var out = [];
     for (var s = 0; s < sections.length; s++) {
         var sec = sections[s];
         sec.body = strip_dokuwiki_markup(sec.lines.join('\n'));
+        /* Nearest preceding section at a shallower depth is the parent. */
+        for (var p = s - 1; p >= 0; p--) {
+            if (sections[p].level >= sec.level) continue;
+            var lead = String(sections[p].body || '');
+            if (lead.length > PARENT_LEAD) {
+                lead = lead.slice(0, PARENT_LEAD);
+                /* Don't end mid-word. */
+                var sp = lead.lastIndexOf(' ');
+                if (sp > PARENT_LEAD / 2) lead = lead.slice(0, sp);
+            }
+            if (lead.length) sec.body = lead + '\n' + sec.body;
+            break;
+        }
         /* A heading with nothing under it (or a stub) carries no
          * retrievable content of its own; fold it into the previous
          * chunk so its words aren't lost. */
