@@ -3493,10 +3493,14 @@ static void door_csi_final(char fin)
 	}
 }
 
+/* Reads per tick. Enough that the client is normally drained (so a split sequence
+ * completes in the same tick), bounded so a flooding one cannot stall the frame. */
+#define DOOR_PUMP_READS 16
+
 void door_io_pump(void)
 {
 	uint8_t buf[256];
-	int     n, i;
+	int     n, i, reads;
 
 	if (!g_inited)
 		door_io_init();
@@ -3505,179 +3509,188 @@ void door_io_pump(void)
 	if (g_file_mode)
 		return;   /* offline capture: no client to read from */
 
+	/* Read until the client has nothing left (bounded, so a flooding one cannot stall
+	 * the frame): one read per tick would split a sequence across ticks whenever the
+	 * buffer fills ahead of it, and door_input_drain() would then see a lone ESC that
+	 * is nothing of the sort. */
+	for (reads = 0; reads < DOOR_PUMP_READS; reads++) {
 #ifdef _WIN32
-	if (!g_use_sock)
-		return;
-	n = recv(g_iosock, (char *)buf, (int)sizeof buf, 0);
-	if (n == SOCKET_ERROR) {
-		int e = WSAGetLastError();
-		if (e == WSAEWOULDBLOCK || e == WSAENOBUFS || e == WSAEINTR)
+		if (!g_use_sock)
 			return;
-		if (g_cli_sock >= 0) {
-			char r[48];
-			snprintf(r, sizeof r, "input recv error wsa=%d", e);
-			door_hangup(r);
+		n = recv(g_iosock, (char *)buf, (int)sizeof buf, 0);
+		if (n == SOCKET_ERROR) {
+			int e = WSAGetLastError();
+			if (e == WSAEWOULDBLOCK || e == WSAENOBUFS || e == WSAEINTR)
+				return;
+			if (g_cli_sock >= 0) {
+				char r[48];
+				snprintf(r, sizeof r, "input recv error wsa=%d", e);
+				door_hangup(r);
+			}
+			return;
 		}
-		return;
-	}
-	if (n == 0) {
-		if (g_cli_sock >= 0)
-			door_hangup("client closed (input EOF)");
-		return;
-	}
-#else
-	n = (int)read(g_fd_in, buf, sizeof buf);
-	if (n <= 0) {
-		if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
+		if (n == 0) {
+			if (g_cli_sock >= 0)
+				door_hangup("client closed (input EOF)");
 			return;
-		if (g_cli_sock >= 0)   /* only a real door socket hanging up ends the process */
-			door_hangup(n == 0 ? "client closed (input EOF)" : "input read error");
-		return;
-	}
+		}
+#else
+		n = (int)read(g_fd_in, buf, sizeof buf);
+		if (n <= 0) {
+			if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
+				return;
+			if (g_cli_sock >= 0) /* only a real door socket hanging up ends the process */
+				door_hangup(n == 0 ? "client closed (input EOF)" : "input read error");
+			return;
+		}
 #endif
 
-	termgfx_audio_feed(g_audio, buf, n);   /* resolve the audio cap probe + any C;L cache-list
-	                                         * reply -- a raw-byte scan, tolerant of everything
-	                                         * else (keys, DSR acks) interleaved; independent of
-	                                         * the P_APC swallow below (audio_mgr.h). */
+		termgfx_audio_feed(g_audio, buf, n); /* resolve the audio cap probe + any C;L cache-list
+		                                     * reply -- a raw-byte scan, tolerant of everything
+		                                     * else (keys, DSR acks) interleaved; independent of
+		                                     * the P_APC swallow below (audio_mgr.h). */
 
-	/* Capture the DECRQSS reply to our DECSSDT status-line query (the pre-door
-	 * status type, for restore on exit). A raw-byte scan like the audio one --
-	 * the DCS reply is otherwise swallowed by the P_APC state below -- with a
-	 * small rolling window to bridge a reply split across reads. */
-	if (g_status_type < 0) {
-		static uint8_t sacc[32];
-		static int     sacclen;
-		int            r = termgfx_term_parse_status(buf, n);
+		/* Capture the DECRQSS reply to our DECSSDT status-line query (the pre-door
+		 * status type, for restore on exit). A raw-byte scan like the audio one --
+		 * the DCS reply is otherwise swallowed by the P_APC state below -- with a
+		 * small rolling window to bridge a reply split across reads. */
+		if (g_status_type < 0) {
+			static uint8_t sacc[32];
+			static int     sacclen;
+			int            r = termgfx_term_parse_status(buf, n);
 
-		if (r < 0) {
-			if (n >= (int)sizeof sacc) {
-				memcpy(sacc, buf + (n - (int)sizeof sacc), sizeof sacc);
-				sacclen = (int)sizeof sacc;
-			} else {
-				int keep = (int)sizeof sacc - n;
-				if (sacclen > keep) {
-					memmove(sacc, sacc + (sacclen - keep), keep);
-					sacclen = keep;
-				}
-				memcpy(sacc + sacclen, buf, n);
-				sacclen += n;
-			}
-			r = termgfx_term_parse_status(sacc, sacclen);
-		}
-		if (r >= 0)
-			g_status_type = r;
-	}
-
-	/* Capture the XTVERSION reply (DCS >|<name> ... ST) to learn whether this is
-	 * xterm -- door_calc_rect() demotes an xterm's ESC[14t text-area canvas to
-	 * the safe sixel ceiling (see g_is_xterm), the fix for the big-window black
-	 * screen. A raw-byte scan with a rolling window, like the status reply above:
-	 * the P_APC state below swallows the DCS otherwise. */
-	if (!g_xtver_done) {
-		static uint8_t xacc[32];
-		static int     xacclen;
-		int            r = termgfx_term_parse_xtversion(buf, n);
-
-		if (r < 0) {
-			if (n >= (int)sizeof xacc) {
-				memcpy(xacc, buf + (n - (int)sizeof xacc), sizeof xacc);
-				xacclen = (int)sizeof xacc;
-			} else {
-				int keep = (int)sizeof xacc - n;
-				if (xacclen > keep) {
-					memmove(xacc, xacc + (xacclen - keep), keep);
-					xacclen = keep;
-				}
-				memcpy(xacc + xacclen, buf, n);
-				xacclen += n;
-			}
-			r = termgfx_term_parse_xtversion(xacc, xacclen);
-		}
-		if (r >= 0) {
-			g_is_xterm   = (r == 1);
-			g_xtver_done = 1;
-		}
-	}
-	{
-		static int sa_prev_tier = -2;   /* log the negotiated audio tier once it resolves */
-		int        t = termgfx_audio_tier(g_audio);
-		if (t != sa_prev_tier) {
-			sa_prev_tier = t;
-			fprintf(stderr, DOOR_SHORT_NAME ": audio tier=%d (%s)\n", t,
-			        t == 1 ? "digital -- SFX/music should play" :
-			        t == 0 ? "audio APC but no libsndfile -- silent" :
-			        "no audio APC reply -- old SyncTERM or no audio");
-		}
-	}
-
-	for (i = 0; i < n; i++) {
-		uint8_t c = buf[i];
-		switch (g_pstate) {
-			case P_NORMAL:
-				/* Task 5: Ctrl-P page-compose capture -- while composing, EVERY
-				 * plain byte (this parser's raw-byte level, same as F4/Ctrl-F
-				 * below -- a "minimal v1" scope per the task brief; a kitty-
-				 * negotiated client's OWN letter/digit keys still arrive as
-				 * plain bytes here too, only MODIFIED keys get CSI-u wrapped)
-				 * goes to the compose line instead of normal dispatch. A bare
-				 * Escape always cancels, even if the user meant to start an
-				 * arrow-key CSI sequence -- accepted simplification (DEFERRED.md
-				 * candidate, not a v1 promise). */
-				if (door_node_composing()) {
-					if (c == 0x1b || c == '\r' || c == '\n' || c == 0x08 || c == 0x7f
-					    || (c >= 0x20 && c < 0x7f))
-						door_node_compose_key((int)c);
-					break;
-				}
-				if (c == 0x1b)
-					g_pstate = P_ESC;
-				else if (c >= 0x01 && c <= 0x1a && door_io_hotkey(c | 0x60, 1)) {
-					/* Ctrl+letter door hotkey (Ctrl-D/F/U/P/S) consumed as a raw
-					 * control byte -- the legacy (non-evdev/kitty) key path. The
-					 * evdev/kitty paths reach door_io_hotkey() from door_input.c
-					 * instead, since there these arrive as decoded key events. */
-				} else if ((c == '+' || c == '=' || c == '-' || c == '_')
-				           && door_io_hotkey(c, 1)) {
-					/* +/- music-volume hotkey as a plain byte (legacy + kitty --
-					 * evdev/SyncTERM reaches door_io_hotkey() via door_input.c). */
-				} else
-					door_input_byte(c);
-				break;
-			case P_ESC:
-				if (c == '[' || c == 'O') {
-					g_pstate    = P_CSI;
-					g_csi_intro = (char)c;
-					g_csi_len   = 0;
-				} else if (c == '_' || c == 'P' || c == ']' || c == '^') {
-					g_pstate = P_APC;   /* APC/DCS/OSC/PM string: swallow to ST/BEL */
-					g_apc_len = 0;
+			if (r < 0) {
+				if (n >= (int)sizeof sacc) {
+					memcpy(sacc, buf + (n - (int)sizeof sacc), sizeof sacc);
+					sacclen = (int)sizeof sacc;
 				} else {
-					door_input_byte(0x1b);
-					g_pstate = P_NORMAL;
-					i--;                /* reprocess c as a normal byte */
+					int keep = (int)sizeof sacc - n;
+					if (sacclen > keep) {
+						memmove(sacc, sacc + (sacclen - keep), keep);
+						sacclen = keep;
+					}
+					memcpy(sacc + sacclen, buf, n);
+					sacclen += n;
 				}
-				break;
-			case P_APC:
-				if (c == 0x1b)
-					g_pstate = P_APC_ESC;
-				else if (c == 0x07)
-					g_pstate = P_NORMAL;
-				else if (++g_apc_len > (1 << 20))
-					g_pstate = P_NORMAL;   /* unterminated: bail rather than lock up */
-				break;
-			case P_APC_ESC:
-				g_pstate = (c == '\\') ? P_NORMAL : P_APC;
-				break;
-			case P_CSI:
-				if (c >= 0x40 && c <= 0x7e) {
-					door_csi_final((char)c);
-					g_pstate = P_NORMAL;
-				} else if (g_csi_len < (int)sizeof g_csi_par) {
-					g_csi_par[g_csi_len++] = (char)c;
-				}
-				break;
+				r = termgfx_term_parse_status(sacc, sacclen);
+			}
+			if (r >= 0)
+				g_status_type = r;
 		}
+
+		/* Capture the XTVERSION reply (DCS >|<name> ... ST) to learn whether this is
+		 * xterm -- door_calc_rect() demotes an xterm's ESC[14t text-area canvas to
+		 * the safe sixel ceiling (see g_is_xterm), the fix for the big-window black
+		 * screen. A raw-byte scan with a rolling window, like the status reply above:
+		 * the P_APC state below swallows the DCS otherwise. */
+		if (!g_xtver_done) {
+			static uint8_t xacc[32];
+			static int     xacclen;
+			int            r = termgfx_term_parse_xtversion(buf, n);
+
+			if (r < 0) {
+				if (n >= (int)sizeof xacc) {
+					memcpy(xacc, buf + (n - (int)sizeof xacc), sizeof xacc);
+					xacclen = (int)sizeof xacc;
+				} else {
+					int keep = (int)sizeof xacc - n;
+					if (xacclen > keep) {
+						memmove(xacc, xacc + (xacclen - keep), keep);
+						xacclen = keep;
+					}
+					memcpy(xacc + xacclen, buf, n);
+					xacclen += n;
+				}
+				r = termgfx_term_parse_xtversion(xacc, xacclen);
+			}
+			if (r >= 0) {
+				g_is_xterm   = (r == 1);
+				g_xtver_done = 1;
+			}
+		}
+		{
+			static int sa_prev_tier = -2; /* log the negotiated audio tier once it resolves */
+			int        t = termgfx_audio_tier(g_audio);
+			if (t != sa_prev_tier) {
+				sa_prev_tier = t;
+				fprintf(stderr, DOOR_SHORT_NAME ": audio tier=%d (%s)\n", t,
+				        t == 1 ? "digital -- SFX/music should play" :
+				        t == 0 ? "audio APC but no libsndfile -- silent" :
+				        "no audio APC reply -- old SyncTERM or no audio");
+			}
+		}
+
+		for (i = 0; i < n; i++) {
+			uint8_t c = buf[i];
+			switch (g_pstate) {
+				case P_NORMAL:
+					/* Task 5: Ctrl-P page-compose capture -- while composing, EVERY
+					 * plain byte (this parser's raw-byte level, same as F4/Ctrl-F
+					 * below -- a "minimal v1" scope per the task brief; a kitty-
+					 * negotiated client's OWN letter/digit keys still arrive as
+					 * plain bytes here too, only MODIFIED keys get CSI-u wrapped)
+					 * goes to the compose line instead of normal dispatch. A bare
+					 * Escape always cancels, even if the user meant to start an
+					 * arrow-key CSI sequence -- accepted simplification (DEFERRED.md
+					 * candidate, not a v1 promise). */
+					if (door_node_composing()) {
+						if (c == 0x1b || c == '\r' || c == '\n' || c == 0x08 || c == 0x7f
+						    || (c >= 0x20 && c < 0x7f))
+							door_node_compose_key((int)c);
+						break;
+					}
+					if (c == 0x1b)
+						g_pstate = P_ESC;
+					else if (c >= 0x01 && c <= 0x1a && door_io_hotkey(c | 0x60, 1)) {
+						/* Ctrl+letter door hotkey (Ctrl-D/F/U/P/S) consumed as a raw
+						 * control byte -- the legacy (non-evdev/kitty) key path. The
+						 * evdev/kitty paths reach door_io_hotkey() from door_input.c
+						 * instead, since there these arrive as decoded key events. */
+					} else if ((c == '+' || c == '=' || c == '-' || c == '_')
+					           && door_io_hotkey(c, 1)) {
+						/* +/- music-volume hotkey as a plain byte (legacy + kitty --
+						 * evdev/SyncTERM reaches door_io_hotkey() via door_input.c). */
+					} else
+						door_input_byte(c);
+					break;
+				case P_ESC:
+					if (c == '[' || c == 'O') {
+						g_pstate    = P_CSI;
+						g_csi_intro = (char)c;
+						g_csi_len   = 0;
+					} else if (c == '_' || c == 'P' || c == ']' || c == '^') {
+						g_pstate = P_APC; /* APC/DCS/OSC/PM string: swallow to ST/BEL */
+						g_apc_len = 0;
+					} else {
+						door_input_byte(0x1b);
+						g_pstate = P_NORMAL;
+						i--;            /* reprocess c as a normal byte */
+					}
+					break;
+				case P_APC:
+					if (c == 0x1b)
+						g_pstate = P_APC_ESC;
+					else if (c == 0x07)
+						g_pstate = P_NORMAL;
+					else if (++g_apc_len > (1 << 20))
+						g_pstate = P_NORMAL; /* unterminated: bail rather than lock up */
+					break;
+				case P_APC_ESC:
+					g_pstate = (c == '\\') ? P_NORMAL : P_APC;
+					break;
+				case P_CSI:
+					if (c >= 0x40 && c <= 0x7e) {
+						door_csi_final((char)c);
+						g_pstate = P_NORMAL;
+					} else if (g_csi_len < (int)sizeof g_csi_par) {
+						g_csi_par[g_csi_len++] = (char)c;
+					}
+					break;
+			}
+		}
+
+		if (n < (int)sizeof buf)
+			break;   /* a short read emptied the client's queue */
 	}
 }
 

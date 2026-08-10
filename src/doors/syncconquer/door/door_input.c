@@ -807,13 +807,6 @@ void door_input_drain(void)
 {
 	uint8_t b;
 
-	/* Resolve a pending lone ESC even on a drain that reads no new bytes. */
-	if (g_pstate == DIN_ESC
-	    && (uint32_t)(door_io_now_ms() - g_esc_at_ms) > DOOR_ESC_MS) {
-		emit_tap(VK_ESCAPE);
-		g_pstate = DIN_NORMAL;
-	}
-
 	while (door_io_input_pop(&b)) {
 		switch (g_pstate) {
 			case DIN_NORMAL:
@@ -846,5 +839,16 @@ void door_input_drain(void)
 				}
 				break;
 		}
+	}
+
+	/* Resolve a pending lone ESC only once the ring above is empty -- door_io_pump()
+	 * has just drained the socket into it, so an ESC still pending here really did
+	 * arrive alone. Judging it first instead would beat the rest of its own sequence
+	 * out of the ring: the game would get an Escape (a menu it never asked for) plus
+	 * the sequence body as literal keys, and lose whatever the sequence encoded. */
+	if (g_pstate == DIN_ESC
+	    && (uint32_t)(door_io_now_ms() - g_esc_at_ms) > DOOR_ESC_MS) {
+		emit_tap(VK_ESCAPE);
+		g_pstate = DIN_NORMAL;
 	}
 }
