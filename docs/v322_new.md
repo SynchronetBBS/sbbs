@@ -90,6 +90,9 @@
 - VT320 status-line control (`DECSSDT` / `DECSASD`) — the BBS can
   now write to the bottom status row of a terminal that supports
   it
+- Doors are no longer told the caller has no ANSI when the caller
+  uses an ANSI terminal in monochrome mode: line 20 of `DOOR.SYS`
+  now reports "GR" whenever ANSI is supported (issue #1218)
 - New **"Untranslated" external I/O mode** lets a door, external
   message editor, sysop page program, or global hot-key program
   emit output already encoded for the remote terminal (its own

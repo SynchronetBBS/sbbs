@@ -403,8 +403,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , tm.tm_mday, TM_YEAR(tm.tm_year)
 		              , MIN(tleft, INT16_MAX)   /* 18: User time left in sec */
 		              , MIN((tleft / 60), INT16_MAX) /* 19: User time left in min */
-		              , term->charset() == CHARSET_ASCII     /* 20: GR if COLOR ANSI */
-		        ? "7E" : (term->supports(ANSI | COLOR) ? "GR" : "NG"));
+		              , term->charset() == CHARSET_ASCII     /* 20: GR if ANSI */
+		        ? "7E" : (term->supports(ANSI) ? "GR" : "NG"));
 		lfexpand(str, misc);
 		fwrite(str, strlen(str), 1, fp);
 
