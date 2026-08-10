@@ -1159,6 +1159,7 @@ function chat_ollama(cfg, messages, opts)
                     pre_result = JSON.stringify(
                         { error: 'pre-classifier exec: ' + e2 });
                 }
+                record_tool_urls(pre_result, _ctx0);
                 /* relay_message: speak the tool's own result text verbatim
                  * and skip the model turn entirely.  The tool already
                  * returns first-person bot speech for every outcome --
@@ -1298,6 +1299,7 @@ function chat_ollama(cfg, messages, opts)
                     error: 'tool executor not loaded'
                 });
             }
+            record_tool_urls(tc_result, _ctx);
             current_messages.push({
                 role:    'tool',
                 content: String(tc_result),
@@ -3343,7 +3345,13 @@ function inject_retrieval(input, ctx, cfg)
      * the allowlist when policing wiki citations -- the model is
      * routinely caught truncating real page names (e.g. emitting
      * /network:irc when the real provenance is /network:irc.synchro.net). */
+    /* Every policed-domain URL the model can see this turn counts as
+     * citable, whatever its source namespace -- the wiki provenance
+     * below is only one of them.  Without this, enabling a crawler
+     * whose chunks carry GitLab links would have the fabrication
+     * filter strip the very URLs it retrieved. */
     ctx._valid_wiki_urls = {};
+    _add_urls_from(ctx.retrieved_context, ctx._valid_wiki_urls);
     ctx._rag_wiki_hits = [];
     for (var hi = 0; hi < hits.length; hi++) {
         var prov = hits[hi].provenance || '';
@@ -3393,7 +3401,7 @@ function _archive_urls_set() {
  *
  * Declared WITHOUT the /g/ flag: each user builds its own global
  * RegExp from .source, so nobody inherits another's stale lastIndex. */
-var _KNOWN_URL_PAT = /(?:https?:\/\/)?(?:[\w-]+\.)*(?:wiki\.synchro\.net|textfiles\.com|bbsdocumentary\.com|anticlimactic\.org)\/[\w\-./:?#%=&@~+]+/i;
+var _KNOWN_URL_PAT = /(?:https?:\/\/)?(?:[\w-]+\.)*(?:wiki\.synchro\.net|gitlab\.synchro\.net|textfiles\.com|bbsdocumentary\.com|anticlimactic\.org)\/[\w\-./:?#%=&@~+]+/i;
 
 /* Normalize a URL into the lookup key used by every valid-URL set:
  * lowercased, protocol-qualified, fragment and trailing sentence
@@ -3424,15 +3432,31 @@ function _url_key(url) {
 function _cited_urls(ctx) {
     var seen = {};
     var transcript = (ctx && ctx.transcript) || [];
-    var re = new RegExp(_KNOWN_URL_PAT.source, 'gi');
-    for (var i = 0; i < transcript.length; i++) {
-        var text = String((transcript[i] && transcript[i].text) || '');
-        var m;
-        re.lastIndex = 0;
-        while ((m = re.exec(text)) !== null)
-            seen[_url_key(m[0])] = true;
-    }
+    for (var i = 0; i < transcript.length; i++)
+        _add_urls_from((transcript[i] && transcript[i].text) || '', seen);
     return seen;
+}
+
+/* Collect every policed-domain URL in `text` into `set`, keyed the way
+ * strip_fake_urls() looks them up. */
+function _add_urls_from(text, set) {
+    if (!text || !set) return set;
+    var re = new RegExp(_KNOWN_URL_PAT.source, 'gi');
+    var m;
+    while ((m = re.exec(String(text))) !== null)
+        set[_url_key(m[0])] = true;
+    return set;
+}
+
+/* Record the URLs a tool returned, so the model may cite them.
+ * GitLab issue/commit lookups are the case that matters: the bot
+ * invented commit SHAs and handed out links for them, and nothing
+ * downstream could tell an invented commit URL from one a tool
+ * actually returned. */
+function record_tool_urls(result, ctx) {
+    if (!ctx || !result) return;
+    if (!ctx._tool_urls) ctx._tool_urls = {};
+    _add_urls_from(result, ctx._tool_urls);
 }
 
 /* Strip URLs that look fabricated -- the model wrote a path under a
@@ -3450,8 +3474,10 @@ function strip_fake_urls(reply, ctx) {
     var valid_wiki = (ctx && ctx._valid_wiki_urls) || {};
     var valid_arch = _archive_urls_set();
     var valid_seen = _cited_urls(ctx);
+    var valid_tool = (ctx && ctx._tool_urls) || {};
     function known(key) {
-        return !!(valid_wiki[key] || valid_arch[key] || valid_seen[key]);
+        return !!(valid_wiki[key] || valid_arch[key] || valid_seen[key]
+                  || valid_tool[key]);
     }
     var re = new RegExp(_KNOWN_URL_PAT.source, 'gi');
     var stripped = reply.replace(re, function (url) {
