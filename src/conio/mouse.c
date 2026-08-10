@@ -502,9 +502,11 @@ void ciolib_mouse_thread(void *data)
 								state.button_state[but-1]=MOUSE_NOSTATE;
 								state.timeout[but-1]=0;
 							}
-							// Scroll "buttons"...
-							if (but > 3)
+							if (but > 3) {
+								/* Wheel buttons are momentary; no release follows. */
+								state.buttonstate &= ~CIOLIB_BUTTON(but);
 								state.button_state[but-1] = MOUSE_NOSTATE;
+							}
 							break;
 						case MOUSE_CLICKED:
 							state.button_state[but-1]=MOUSE_DOUBLEPRESSED;
