@@ -63,10 +63,15 @@ static unsigned apc_len;           /* bytes swallowed in the current APC/string 
 /* A lone ESC (Escape key, no follow-up CSI/SS3 byte) can't be told apart from
  * the start of a multi-byte sequence until either the next byte arrives or a
  * short follow-up window elapses -- port of syncduke_input.c's g_esc_at_ms/
- * SYNCDUKE_ESC_MS. Checked every pump call (even one with no new bytes) so a
- * real Escape keypress isn't stuck waiting for more input that never comes. */
+ * SYNCDUKE_ESC_MS. Resolved once a pump has drained the terminal without finding
+ * that byte, so a real Escape keypress isn't stuck waiting for input that never
+ * comes and a merely-split sequence isn't mistaken for one. */
 #define SM_ESC_MS 50
 static uint32_t g_esc_at_ms;
+
+/* Reads per pump. Enough that the terminal is normally drained (so a split sequence
+ * completes in the same pump), bounded so a flooding client cannot stall the frame. */
+#define SM_PUMP_READS 16
 
 /* Monotonic millisecond clock (syncmoo1_plat.h, xpdev's xp_timer64) -- the same
  * clock domain syncmoo1_io.c paces frames on. */
@@ -389,97 +394,117 @@ int sm_input_pump(int sockfd)
     uint8_t buf[256];
     int     n;
     int     i;
+    int     reads   = 0;
+    int     drained = 0;
 
     if (sockfd < 0)
         return 0;   /* no live source (a Windows dev run with no door socket) */
 
-    /* Deliver a pending lone ESC once its follow-up window has elapsed, even
-     * on a pump call that reads no new bytes -- the menu Escape key shouldn't
-     * wait for the next keystroke. A real ESC-sequence byte arrives in the
-     * same burst as the ESC that started it, so it will have already
-     * advanced past SM_P_ESC before this fires. */
-    if (pstate == SM_P_ESC && (uint32_t)(sm_in_now_ms() - g_esc_at_ms) > SM_ESC_MS) {
+    /* Read until the terminal has nothing left (or the per-pump cap is hit): one
+     * read per pump leaves the tail of a split sequence queued while its ESC ages
+     * out below, and a single 256-byte read splits a sequence outright once the
+     * buffer fills ahead of it. */
+    while (reads++ < SM_PUMP_READS) {
+        n = sm_plat_read(sockfd, buf, sizeof buf);
+        if (n > 0) {
+            sm_io_wiredump_in(buf, (size_t)n);   /* debug capture; no-op unless SYNCMOO1_WIREDUMP is set */
+            {   /* Resolve the audio capability probe (SyncTERM replies with an
+                 * APC the manager parses); harmless for every other byte. */
+                termgfx_audio_t *am = sm_io_audio();
+                if (am != NULL)
+                    termgfx_audio_feed(am, buf, n);
+            }
+        }
+        if (n < 0) {
+            if (n == SM_IO_AGAIN || n == SM_IO_INTR) {
+                drained = 1;   /* no input yet / transient: not a hangup */
+                break;
+            }
+            return -1;         /* real read error: treat as hangup */
+        }
+        if (n == 0)
+            return -1;         /* peer closed */
+
+        for (i = 0; i < n; i++) {
+            uint8_t c = buf[i];
+
+            switch (pstate) {
+            case SM_P_NORMAL:
+                /* ESC begins a sequence (SM_P_ESC); every other byte is a
+                 * key on the plain-byte path via sm_map_ascii(). */
+                if (c == 0x1b) {
+                    pstate = SM_P_ESC;
+                    g_esc_at_ms = sm_in_now_ms();
+                } else {
+                    mookey_t key;
+                    uint32_t mod;
+                    char     ch;
+
+                    if (sm_map_ascii(c, &key, &mod, &ch))
+                        sm_key_deliver(key, mod, ch);
+                }
+                break;
+            case SM_P_ESC:
+                if (c == '[' || c == 'O') {
+                    pstate     = SM_P_CSI;
+                    csi_intro  = (char)c;
+                    csi_len    = 0;
+                } else if (c == '_' || c == 'P' || c == ']' || c == '^') {
+                    /* String sequences -- APC (_), DCS (P), OSC (]), PM (^) --
+                     * end at ST (ESC \) and carry no keys; swallow them.
+                     * SyncTERM's C;L cache-list reply is an APC literally
+                     * containing "C;L", so passing it through would type
+                     * stray letters into the game. */
+                    pstate  = SM_P_APC;
+                    apc_len = 0;
+                } else {
+                    /* Lone ESC (Escape key), reprocess c in NORMAL. */
+                    sm_key_deliver(MOO_KEY_ESCAPE, 0, 0x1b);
+                    pstate = SM_P_NORMAL;
+                    i--;
+                }
+                break;
+            case SM_P_APC:
+                if (c == 0x1b)
+                    pstate = SM_P_APC_ESC;              /* maybe the ST terminator */
+                else if (c == 0x07)
+                    pstate = SM_P_NORMAL;               /* BEL also ends OSC/strings */
+                else if (++apc_len > (1u << 20))
+                    pstate = SM_P_NORMAL;               /* unterminated -> bail (no input lockup) */
+                break;                                  /* else: swallow body byte */
+            case SM_P_APC_ESC:
+                pstate = (c == '\\') ? SM_P_NORMAL : SM_P_APC;   /* ESC '\' = ST -> done */
+                break;
+            case SM_P_CSI:
+                if (c >= 0x40 && c <= 0x7e) {
+                    sm_csi_final((char)c);
+                    pstate = SM_P_NORMAL;
+                } else if (csi_len < (int)sizeof(csi_par)) {
+                    csi_par[csi_len++] = (char)c;
+                }
+                break;
+            }
+        }
+
+        /* A short read emptied the terminal's queue -- the question the lone-ESC test
+         * below is really asking. */
+        if (n < (int)sizeof buf) {
+            drained = 1;
+            break;
+        }
+    }
+
+    /* Deliver a pending lone ESC once its follow-up window has elapsed -- the menu
+     * Escape key shouldn't wait for the next keystroke. Judged only after the reads
+     * above found nothing more: an ESC whose sequence is merely split across reads
+     * is NOT lone, and turning it into an Escape keypress hands the game a menu it
+     * was never asked for, plus the rest of the sequence as literal keys. The window
+     * is wall-clock, but a pump only runs once per presented frame, so a frame longer
+     * than SM_ESC_MS would otherwise tear every sequence it straddles. */
+    if (drained && pstate == SM_P_ESC
+        && (uint32_t)(sm_in_now_ms() - g_esc_at_ms) > SM_ESC_MS) {
         sm_key_deliver(MOO_KEY_ESCAPE, 0, 0x1b);
         pstate = SM_P_NORMAL;
-    }
-
-    n = sm_plat_read(sockfd, buf, sizeof buf);
-    if (n > 0) {
-        sm_io_wiredump_in(buf, (size_t)n);   /* debug capture; no-op unless SYNCMOO1_WIREDUMP is set */
-        {   /* Resolve the audio capability probe (SyncTERM replies with an
-             * APC the manager parses); harmless for every other byte. */
-            termgfx_audio_t *am = sm_io_audio();
-            if (am != NULL)
-                termgfx_audio_feed(am, buf, n);
-        }
-    }
-    if (n < 0) {
-        if (n == SM_IO_AGAIN || n == SM_IO_INTR)
-            return 0;      /* no input yet / transient: not a hangup */
-        return -1;         /* real read error: treat as hangup */
-    }
-    if (n == 0)
-        return -1;         /* peer closed */
-
-    for (i = 0; i < n; i++) {
-        uint8_t c = buf[i];
-
-        switch (pstate) {
-        case SM_P_NORMAL:
-            /* ESC begins a sequence (SM_P_ESC); every other byte is a
-             * key on the plain-byte path via sm_map_ascii(). */
-            if (c == 0x1b) {
-                pstate = SM_P_ESC;
-                g_esc_at_ms = sm_in_now_ms();
-            } else {
-                mookey_t key;
-                uint32_t mod;
-                char     ch;
-
-                if (sm_map_ascii(c, &key, &mod, &ch))
-                    sm_key_deliver(key, mod, ch);
-            }
-            break;
-        case SM_P_ESC:
-            if (c == '[' || c == 'O') {
-                pstate     = SM_P_CSI;
-                csi_intro  = (char)c;
-                csi_len    = 0;
-            } else if (c == '_' || c == 'P' || c == ']' || c == '^') {
-                /* String sequences -- APC (_), DCS (P), OSC (]), PM (^) --
-                 * end at ST (ESC \) and carry no keys; swallow them.
-                 * SyncTERM's C;L cache-list reply is an APC literally
-                 * containing "C;L", so passing it through would type
-                 * stray letters into the game. */
-                pstate  = SM_P_APC;
-                apc_len = 0;
-            } else {
-                /* Lone ESC (Escape key), reprocess c in NORMAL. */
-                sm_key_deliver(MOO_KEY_ESCAPE, 0, 0x1b);
-                pstate = SM_P_NORMAL;
-                i--;
-            }
-            break;
-        case SM_P_APC:
-            if (c == 0x1b)
-                pstate = SM_P_APC_ESC;              /* maybe the ST terminator */
-            else if (c == 0x07)
-                pstate = SM_P_NORMAL;               /* BEL also ends OSC/strings */
-            else if (++apc_len > (1u << 20))
-                pstate = SM_P_NORMAL;               /* unterminated -> bail (no input lockup) */
-            break;                                  /* else: swallow body byte */
-        case SM_P_APC_ESC:
-            pstate = (c == '\\') ? SM_P_NORMAL : SM_P_APC;   /* ESC '\' = ST -> done */
-            break;
-        case SM_P_CSI:
-            if (c >= 0x40 && c <= 0x7e) {
-                sm_csi_final((char)c);
-                pstate = SM_P_NORMAL;
-            } else if (csi_len < (int)sizeof(csi_par)) {
-                csi_par[csi_len++] = (char)c;
-            }
-            break;
-        }
     }
     return 0;
 }
