@@ -2302,9 +2302,19 @@ function chat_session(input, ctx)
      * reply as a single line and are unaffected. */
     if (reply !== null && cfg.reply_dedup && !ctx.volunteering
         && !opts._stream_used && !is_repeat_request(input)) {
-        var dup = find_duplicate_reply(reply, memory, cfg);
+        /* A user retyping their question means the previous answer did
+         * not land, so re-answering is a failure whatever the wording.
+         * Don't put that through the similarity test at all -- measured
+         * on the real exchange, three semantically identical answers
+         * scored 0.33-0.58 against each other while genuinely NEW
+         * answers on one topic score 0.42-0.62, so no threshold can
+         * separate them.  Treat the last answer as the duplicate and
+         * go straight to the regenerate-with-a-note path. */
+        var asked_again = is_repeated_question(input, memory, cfg);
+        var dup = asked_again ? _last_bot_turn(memory)
+                              : find_duplicate_reply(reply, memory, cfg);
         if (dup) {
-            ctx._dedup = 'retry';
+            ctx._dedup = asked_again ? 'retry(asked-again)' : 'retry';
             var retry_opts = {
                 streaming:           false,   /* first attempt already drew */
                 simulate_typos:      opts.simulate_typos,
@@ -2315,7 +2325,8 @@ function chat_session(input, ctx)
                     + 'nothing further on it. Keep it to one or two sentences.'
             };
             var retry = _finish_reply(llm_chat(input, ctx, retry_opts), ctx);
-            if (retry !== null && !find_duplicate_reply(retry, memory, cfg)) {
+            if (retry !== null
+                && !find_duplicate_reply(retry, memory, cfg, asked_again)) {
                 reply = retry;
             } else {
                 ctx._dedup = 'fallback';
@@ -3821,11 +3832,48 @@ function _dedup_fallback_reply(input, dup, memory, ctx, cfg) {
  * persona-mode, see memory_path), so one user can't suppress another's
  * answers.  Only bot turns are candidates -- the bot echoing a user's
  * own words back is a different problem. */
-function find_duplicate_reply(reply, memory, cfg) {
+/* Text of the most recent bot turn, or null. */
+function _last_bot_turn(memory) {
+    var t = (memory && memory.transcript) || [];
+    for (var i = t.length - 1; i >= 0; i--)
+        if (t[i] && t[i].bot) return t[i].text || null;
+    return null;
+}
+
+/* Did this speaker just ask the same thing again?  Compared against
+ * their OWN recent turns only -- the bot restating the question back
+ * is not the user asking twice.
+ *
+ * This is a much stronger signal than reply similarity for detecting a
+ * stuck conversation: a person retyping their question means the last
+ * answer did not land, whatever its wording.  Reply-text similarity
+ * alone cannot see that, because the model rewords itself each time. */
+function is_repeated_question(input, memory, cfg) {
+    if (!input || !memory || !memory.transcript) return false;
+    var threshold = parseFloat(cfg && cfg.question_repeat_similarity);
+    if (isNaN(threshold)) threshold = 0.8;
+    var window = (cfg && cfg.reply_dedup_window) || 4;
+    var seen = 0;
+    for (var i = memory.transcript.length - 1; i >= 0 && seen < window; i--) {
+        var turn = memory.transcript[i];
+        if (!turn || turn.bot) continue;
+        seen++;
+        if (reply_similarity(input, turn.text) >= threshold) return true;
+    }
+    return false;
+}
+
+function find_duplicate_reply(reply, memory, cfg, question_repeated) {
     if (!reply || !memory || !memory.transcript) return null;
     var min_tokens = cfg.reply_dedup_min_tokens || 12;
     if (_dedup_tokens(reply).length < min_tokens) return null;
-    var threshold = cfg.reply_dedup_similarity || 0.75;
+    /* When the user has just asked the same thing again, accept a much
+     * looser match as "the same answer" -- the two only have to mean
+     * the same thing, and at this temperature they rarely share enough
+     * words to clear the strict bar. */
+    var threshold = question_repeated
+        ? (parseFloat(cfg.reply_dedup_similarity_repeat) || 0.45)
+        : (cfg.reply_dedup_similarity || 0.75);
     var window = cfg.reply_dedup_window || 4;
     var seen = 0;
     for (var i = memory.transcript.length - 1; i >= 0 && seen < window; i--) {
