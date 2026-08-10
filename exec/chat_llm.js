@@ -131,6 +131,20 @@ function load_config(persona_code)
      * sender (anti-abuse).  Passed to the relay_message tool via env. */
     cfg.relay_max_pending   = parseInt(cfg.relay_max_pending, 10)   || 5;
 
+    /* Near-duplicate reply suppression.  See find_duplicate_reply().
+     * similarity: word-set Jaccard above which a reply counts as a
+     * repeat of a recent one -- 0.75 calibrated against real repeats in
+     * data/guru_irc_chat.log (observed duplicates cluster at 0.83-1.00,
+     * genuinely-new answers on the same topic at 0.42-0.62).
+     * window: how many of the speaker's recent bot turns to compare
+     * against.  min_tokens: replies shorter than this are exempt
+     * ("ok", "yep, that works") -- they're legitimately repeatable. */
+    cfg.reply_dedup            = (cfg.reply_dedup === undefined)
+                                 || (cfg.reply_dedup != 'false');
+    cfg.reply_dedup_similarity = parseFloat(cfg.reply_dedup_similarity) || 0.75;
+    cfg.reply_dedup_window     = parseInt(cfg.reply_dedup_window, 10)   || 4;
+    cfg.reply_dedup_min_tokens = parseInt(cfg.reply_dedup_min_tokens, 10) || 12;
+
     /* BM25 retrieval knobs (step 3). The indexer (exec/chat_index.js)
      * writes the index file; we just need its path and top_k here. */
     cfg.index_top_k         = parseInt(cfg.index_top_k, 10)         || 5;
@@ -1669,6 +1683,17 @@ function llm_chat(user_input, ctx, opts)
      * can match against it (build_messages may have wrapped or
      * @-expanded the prompt by the time it's in messages[]). */
     opts._user_input = user_input;
+    /* One-shot steering note (dedup retry).  Appended to the final
+     * user message rather than pushed as a trailing system message --
+     * not every backend honors a system turn in last position, and the
+     * instruction is about THIS answer, so it belongs beside it. */
+    if (opts._retry_note && messages.length) {
+        var last = messages[messages.length - 1];
+        if (last.role === 'user')
+            last.content = last.content + '\n\n' + opts._retry_note;
+        else
+            messages.push({ role: 'system', content: opts._retry_note });
+    }
     return sanitize_reply(dispatch(cfg, messages, opts));
 }
 
@@ -2229,14 +2254,7 @@ function chat_session(input, ctx)
      * already happened during llm_chat, so this only changes what
      * future turns and the log see -- not THIS turn's on-screen
      * rendering. */
-    if (reply !== null) {
-        reply = final_reply_postprocess(reply);
-        /* strip BEFORE append: fabricated wiki/archive URLs in the
-         * body shouldn't suppress a legitimate appended top-wiki URL
-         * via append_wiki_url_if_missing's "already cited" guard. */
-        reply = strip_fake_urls(reply, ctx);
-        reply = append_wiki_url_if_missing(reply, ctx);
-    }
+    reply = _finish_reply(reply, ctx);
 
     /* Unprompted-intervention fact-check: even a non-SKIP answer must
      * survive a strict second opinion (stronger model) confirming every
@@ -2247,6 +2265,57 @@ function chat_session(input, ctx)
         && !verify_volunteer_answer(cfg, input, ctx.retrieved_context, reply)) {
         ctx._abstained = true;
         reply = null;
+    }
+
+    /* Near-duplicate suppression: don't answer the same user with the
+     * same text over and over.  Skipped when they explicitly asked for
+     * a repeat, and when the reply is a volunteered line (already
+     * gated by the fact-check above).
+     *
+     * On a hit: regenerate ONCE with an explicit don't-repeat note.
+     * If the retry is also a duplicate the model has nothing further,
+     * so say that briefly instead of re-sending the wall of text -- and
+     * if the previous turn was ALREADY that brief line, stay silent
+     * rather than loop on the fallback itself.
+     *
+     * Skipped entirely when the first attempt was STREAMED: those
+     * tokens are already on the user's screen, so swapping the string
+     * now would leave them reading one answer while memory and the log
+     * record another.  Streaming only happens in private 1:1 mode;
+     * IRC and multinode (where the repetition was reported) emit the
+     * reply as a single line and are unaffected. */
+    if (reply !== null && cfg.reply_dedup && !ctx.volunteering
+        && !opts._stream_used && !is_repeat_request(input)) {
+        var dup = find_duplicate_reply(reply, memory, cfg);
+        if (dup) {
+            ctx._dedup = 'retry';
+            var retry_opts = {
+                streaming:           false,   /* first attempt already drew */
+                simulate_typos:      opts.simulate_typos,
+                typing_speed_factor: opts.typing_speed_factor,
+                _retry_note: 'You already gave this person that answer, '
+                    + 'nearly word for word. Do NOT repeat it. Either add '
+                    + 'something genuinely new, or say plainly that you have '
+                    + 'nothing further on it. Keep it to one or two sentences.'
+            };
+            var retry = _finish_reply(llm_chat(input, ctx, retry_opts), ctx);
+            if (retry !== null && !find_duplicate_reply(retry, memory, cfg)) {
+                reply = retry;
+            } else {
+                ctx._dedup = 'fallback';
+                reply = _dedup_fallback_reply(input, dup, memory, ctx, cfg);
+                if (reply === null) ctx._dedup = 'silent';
+            }
+        }
+    }
+    /* Consecutive-fallback counter, consulted by _dedup_fallback_reply
+     * above on the NEXT turn.  Persisted with the transcript, so it
+     * survives the bot being restarted mid-conversation.  A guru.dat
+     * deflection varies its wording every time, so the fallback can't
+     * be recognized by its text the way a fixed line could. */
+    if (memory) {
+        if (ctx._dedup === 'fallback') memory.dedup_streak = 1;
+        else if (reply !== null) memory.dedup_streak = 0;
     }
 
     /* Flag for C++ dispatch to skip its post-call simulate_type. */
@@ -2291,6 +2360,7 @@ function chat_session(input, ctx)
                     ? ' rag_q=' + ctx._rag_per_token.toFixed(2)
                     : '')
                  + ' window=' + window
+                 + (ctx._dedup ? ' dedup=' + ctx._dedup : '')
                  + ' stream=' + (opts._stream_used ? 'yes' : 'no')
                  + (opts._stream_used && opts._ttfc !== null
                     ? ' ttfc=' + opts._ttfc.toFixed(2) + 's'
@@ -3099,12 +3169,61 @@ function _archive_urls_set() {
     return _ARCHIVE_URLS_CACHE;
 }
 
+/* URL pattern for the known-domain policing below.  Requires a path
+ * segment after the domain so bare domain mentions ("textfiles.com is
+ * great") aren't treated as URLs; the protocol is optional so the model
+ * writing "textfiles.com/foo" is caught too.
+ *
+ * Declared WITHOUT the /g/ flag: each user builds its own global
+ * RegExp from .source, so nobody inherits another's stale lastIndex. */
+var _KNOWN_URL_PAT = /(?:https?:\/\/)?(?:[\w-]+\.)*(?:wiki\.synchro\.net|textfiles\.com|bbsdocumentary\.com|anticlimactic\.org)\/[\w\-./:?#%=&@~+]+/i;
+
+/* Normalize a URL into the lookup key used by every valid-URL set:
+ * lowercased, protocol-qualified, fragment and trailing sentence
+ * punctuation removed.  Defaults to https for textfiles/wiki/
+ * anticlimactic, http for bbsdocumentary (matches what's in the JSON). */
+function _url_key(url) {
+    var lookup = String(url).toLowerCase();
+    if (!/^https?:\/\//.test(lookup)) {
+        var proto = /bbsdocumentary\.com/.test(lookup) ? 'http://' : 'https://';
+        lookup = proto + lookup;
+    }
+    return lookup.replace(/#.*$/, '').replace(/[.,;:!?)\]]+$/, '');
+}
+
+/* URLs the model can see verbatim in the transcript window it was
+ * handed this turn (ctx.transcript, set by chat_session() from the
+ * rolling memory).  Quoting one of those back is not fabrication --
+ * it's the model repeating a link that already passed validation, or
+ * one the USER typed.
+ *
+ * Without this, the valid-URL set is rebuilt from scratch every turn
+ * out of that turn's BM25 hits, so "what was that link again?" -- a
+ * question with no content words, which therefore retrieves unrelated
+ * pages -- had the correct URL stripped straight back out of the
+ * reply.  Observed live in #synchronet on 2026-08-09: the bot cited
+ * wiki.synchro.net/server:mail correctly, then dropped the link from
+ * four consecutive follow-ups while insisting it had provided it. */
+function _cited_urls(ctx) {
+    var seen = {};
+    var transcript = (ctx && ctx.transcript) || [];
+    var re = new RegExp(_KNOWN_URL_PAT.source, 'gi');
+    for (var i = 0; i < transcript.length; i++) {
+        var text = String((transcript[i] && transcript[i].text) || '');
+        var m;
+        re.lastIndex = 0;
+        while ((m = re.exec(text)) !== null)
+            seen[_url_key(m[0])] = true;
+    }
+    return seen;
+}
+
 /* Strip URLs that look fabricated -- the model wrote a path under a
  * known domain (wiki.synchro.net, textfiles.com, bbsdocumentary.com,
- * anticlimactic.org) that isn't in either the RAG hits' provenance
- * set (wiki) or the curated archive index.  The model is observed
- * to truncate real page names ("network:irc" instead of
- * "network:irc.synchro.net") and invent plausible-looking paths for
+ * anticlimactic.org) that isn't in the RAG hits' provenance set (wiki),
+ * the curated archive index, or the transcript it was just shown.  The
+ * model is observed to truncate real page names ("network:irc" instead
+ * of "network:irc.synchro.net") and invent plausible-looking paths for
  * topics it "knows" but has no tool result for ("textfiles.com/raids/
  * stevetx.html", "bbsdocumentary.com/services/pc-pursuit").  Strip
  * the URL token, leave surrounding prose; the postprocess collapses
@@ -3113,41 +3232,39 @@ function strip_fake_urls(reply, ctx) {
     if (!reply) return reply;
     var valid_wiki = (ctx && ctx._valid_wiki_urls) || {};
     var valid_arch = _archive_urls_set();
-    /* Require a path segment after the domain so we don't flag bare
-     * domain mentions ("textfiles.com is great") as URLs.  Protocol
-     * is optional so the model writing "textfiles.com/foo" gets
-     * caught too. */
-    var re = /(?:https?:\/\/)?(?:[\w-]+\.)*(?:wiki\.synchro\.net|textfiles\.com|bbsdocumentary\.com|anticlimactic\.org)\/[\w\-./:?#%=&@~+]+/gi;
+    var valid_seen = _cited_urls(ctx);
+    function known(key) {
+        return !!(valid_wiki[key] || valid_arch[key] || valid_seen[key]);
+    }
+    var re = new RegExp(_KNOWN_URL_PAT.source, 'gi');
     var stripped = reply.replace(re, function (url) {
-        /* Add protocol if missing, for lookup vs. our valid sets
-         * (which store fully-qualified URLs).  Default to https
-         * for textfiles/wiki/anticlimactic, http for bbsdocumentary
-         * (matches what's in the JSON). */
-        var lookup = url.toLowerCase();
-        if (!/^https?:\/\//.test(lookup)) {
-            var proto = /bbsdocumentary\.com/.test(lookup) ? 'http://' : 'https://';
-            lookup = proto + lookup;
-        }
-        var key = lookup.replace(/#.*$/, '')
-                        .replace(/[.,;:!?)\]]+$/, '');
-        if (valid_wiki[key]) return url;
-        if (valid_arch[key]) return url;
+        var key = _url_key(url);
+        if (known(key)) return url;
         /* Slash-suffix tolerance: curated may be /foo/, model wrote /foo. */
-        if (valid_wiki[key + '/']) return url;
-        if (valid_arch[key + '/']) return url;
+        if (known(key + '/')) return url;
         if (key.charAt(key.length - 1) === '/') {
-            var trimmed = key.replace(/\/+$/, '');
-            if (valid_wiki[trimmed] || valid_arch[trimmed]) return url;
+            if (known(key.replace(/\/+$/, ''))) return url;
         }
         /* http <-> https tolerance.  JSON has e.g. http://www.bbsdocumentary.com/
          * but the model often writes https://.  Try the opposite scheme. */
         var swapped = /^https/.test(key)
             ? key.replace(/^https/, 'http')
             : key.replace(/^http/, 'https');
-        if (valid_wiki[swapped]) return url;
-        if (valid_arch[swapped]) return url;
+        if (known(swapped)) return url;
         return '';
     });
+    /* "Cite this URL verbatim:" is RAG-injection machinery -- it's
+     * prepended to every wiki chunk (see format_retrieved_context)
+     * and to msgbase chunks by llm_index/msgs.js, to make the URL
+     * visible to the model.  It is an instruction TO the model and
+     * must never reach a user.  qwen2.5:7b echoes it back verbatim,
+     * and once the URL beside it was stripped above, the bare
+     * instruction was all that remained ("Cite this URL verbatim:
+     * Cite this URL verbatim: These should provide..." went out to
+     * #synchronet on 2026-08-09).  Drop the phrase wherever it
+     * appears, keeping any URL that followed it. */
+    stripped = stripped.replace(/\s*\bcite this url verbatim\s*:[ \t]*/gi, ' ');
+
     /* Clean up artifacts left where a URL was stripped:
      *   - "at <>" / "<>" residue when model wrapped url in angle brackets
      *   - "[text]()" / "[text]( )" markdown link with stripped URL
@@ -3172,7 +3289,344 @@ function strip_fake_urls(reply, ctx) {
     stripped = stripped.replace(/\s+([.,;:!?])/g, '$1');
     /* Avoid duplicate periods if the cleanup added one. */
     stripped = stripped.replace(/\.{2,}$/, '.');
+    /* A strip at the very start or end leaves the reply with leading /
+     * trailing whitespace the collapses above don't reach. */
+    stripped = stripped.replace(/^\s+|\s+$/g, '');
     return stripped;
+}
+
+/* Post-process an assembled reply into the form that is spoken,
+ * logged, and persisted.  Kept as one function so a regenerated reply
+ * (see the dedup retry in chat_session) goes through exactly the same
+ * pipeline as the first attempt -- an earlier inline copy of these
+ * three steps is how postprocessing drifts apart between paths. */
+function _finish_reply(reply, ctx) {
+    if (reply === null) return null;
+    reply = final_reply_postprocess(reply);
+    /* strip BEFORE append: fabricated wiki/archive URLs in the body
+     * shouldn't suppress a legitimate appended top-wiki URL via
+     * append_wiki_url_if_missing's "already cited" guard. */
+    reply = strip_fake_urls(reply, ctx);
+    reply = append_wiki_url_if_missing(reply, ctx);
+    return reply;
+}
+
+/* --- near-duplicate reply suppression ---------------------------
+ *
+ * A 7B model asked a follow-up it can't really answer tends to re-emit
+ * its last reply almost verbatim.  Observed live on 2026-08-09: two
+ * CONSECUTIVE replies to the same user were token-identical, and the
+ * same "These should provide you with the necessary information...
+ * Let me know if you need more help!" boilerplate closed 3 of 6
+ * consecutive replies.  Raising temperature (the earlier mitigation,
+ * see [guru:irc] in ctrl/chat_llm.ini) varies the wording without
+ * noticing the repetition; this detects it instead. */
+
+/* Content words of a reply, lowercased, punctuation-split.  URLs
+ * survive as their component words, so two replies that differ only
+ * in the link they cite still compare as different. */
+function _dedup_tokens(s) {
+    var raw = String(s || '').toLowerCase().split(/[^a-z0-9]+/);
+    var out = [];
+    for (var i = 0; i < raw.length; i++)
+        if (raw[i].length) out.push(raw[i]);
+    return out;
+}
+
+/* Word-set Jaccard similarity of two replies: |A n B| / |A u B|.
+ * 1.0 = same words, 0.0 = nothing in common.  Set-based rather than
+ * sequence-based so a reply that merely reorders or pads its previous
+ * self still scores as a duplicate. */
+function reply_similarity(a, b) {
+    var A = {}, B = {}, i, k;
+    var ta = _dedup_tokens(a), tb = _dedup_tokens(b);
+    if (!ta.length || !tb.length) return 0;
+    for (i = 0; i < ta.length; i++) A[ta[i]] = true;
+    for (i = 0; i < tb.length; i++) B[tb[i]] = true;
+    var inter = 0, uni = 0;
+    for (k in A) { uni++; if (B[k]) inter++; }
+    for (k in B) if (!A[k]) uni++;
+    return uni ? (inter / uni) : 0;
+}
+
+/* The user explicitly asking for something to be said again.  These
+ * bypass dedup entirely -- suppressing the answer to "what was that
+ * link again?" as a duplicate is precisely the failure this whole
+ * area is meant to fix.  Deliberately narrow: a bare "again" is far
+ * too common in ordinary questions ("I tried again and it failed") to
+ * be a trigger on its own. */
+function is_repeat_request(input) {
+    var s = String(input || '').toLowerCase();
+    if (/\brepeat\b/.test(s)) return true;
+    if (/\bone more time\b/.test(s)) return true;
+    /* "say/post/paste/send/show/give/tell ... again" */
+    if (/\b(say|post|paste|send|show|give|tell|list|drop)\b[^.!?]{0,30}\bagain\b/.test(s))
+        return true;
+    /* "what was that link again", "which page were those again" */
+    if (/\b(what|which|where)\b[^.!?]{0,40}\b(was|were|is|are)\b[^.!?]{0,30}\bagain\b/.test(s))
+        return true;
+    /* "again" attached to a link/url/address noun */
+    if (/\b(link|links|url|urls|address)\b[^.!?]{0,20}\bagain\b/.test(s))
+        return true;
+    if (/\bagain\b[^.!?]{0,20}\b(link|links|url|urls)\b/.test(s)) return true;
+    return false;
+}
+
+/* --- ctrl/guru.dat fallback ------------------------------------
+ *
+ * When the LLM has nothing new to say, answer the way the Guru did
+ * before there was an LLM: keyword-matched canned responses out of
+ * ctrl/<guru>.dat.  Reference implementation is sbbs_t::guruchat() and
+ * sbbs_t::guruexp() in src/sbbs3/chat.cpp; the file format is a
+ * "(EXPR)" line followed by candidate answers, one per line.
+ *
+ * Deliberate divergences from the C implementation:
+ *   - Sections whose expression contains an [AR] access-requirement
+ *     test are skipped.  An IRC nick has no Synchronet user record, so
+ *     SEX/FLAG/LEVEL can't be evaluated -- and guessing would put the
+ *     stock file's gendered variants in front of the wrong people.
+ *   - Chat-control codes are stripped rather than obeyed: `q ends the
+ *     guru chat session and `h hangs up, neither of which an IRC bot
+ *     may do to a channel.  `_ (pause) and `! (typo toggle) likewise
+ *     have no meaning here. */
+
+/* Fold a user's line the way guruchat() does before matching:
+ * uppercase, drop leading punctuation, collapse a doubled non-
+ * alphanumeric, and keep a trailing '?' but nothing after it. */
+function _guru_normalize(line) {
+    var s = String(line || '').toUpperCase();
+    var out = '';
+    for (var i = 0; i < s.length; i++) {
+        var ch = s.charAt(i);
+        if (!/[A-Z0-9]/.test(ch)) {
+            if (!out.length) continue;                  /* leading */
+            if (ch === s.charAt(i + 1)) continue;       /* redundant */
+            if (s.charAt(i + 1) === '?') continue;      /* "WHAT ?" */
+        }
+        out += ch;
+    }
+    var k = out.length - 1;
+    while (k >= 0 && !/[A-Z0-9]/.test(out.charAt(k))) k--;
+    if (k < 0) return '';
+    if (out.charAt(k + 1) === '?') k++;
+    return out.slice(0, k + 1);
+}
+
+/* Split a guru file into [{expr, answers[]}].  A line beginning with
+ * '(' opens a section; every line until the next one is a candidate
+ * answer.  A trailing backslash continues an answer onto the next
+ * line. */
+function guru_parse(text) {
+    var lines = String(text || '').replace(/\r/g, '').split('\n');
+    var sections = [], cur = null, pending = null;
+    for (var i = 0; i < lines.length; i++) {
+        var ln = lines[i];
+        if (pending === null && ln.charAt(0) === '(') {
+            /* strip the outermost parens only -- inner ones are part
+             * of the expression, e.g. "((BYE)&[SEX F])" */
+            cur = { expr: ln.slice(1).replace(/\)\s*$/, ''), answers: [] };
+            sections.push(cur);
+            continue;
+        }
+        if (!cur || !ln.length) { pending = null; continue; }
+        if (pending !== null) { ln = pending + ' ' + ln; pending = null; }
+        if (ln.charAt(ln.length - 1) === '\\') {
+            pending = ln.slice(0, -1);
+            continue;
+        }
+        cur.answers.push(ln);
+    }
+    return sections;
+}
+
+/* Does one keyword match the (already normalized) line?  A bare
+ * keyword must appear as an isolated word; a '~' suffix relaxes that
+ * to a plain substring, and a '^' suffix anchors it to the start. */
+function _guru_keyword_match(word, line) {
+    word = word.replace(/^\s+|\s+$/g, '');
+    if (!word.length) return false;
+    var anchored = false, loose = false;
+    if (word.charAt(word.length - 1) === '^') {
+        anchored = true;
+        word = word.slice(0, -1);
+    }
+    if (word.charAt(word.length - 1) === '~') {
+        loose = true;
+        word = word.slice(0, -1);
+    }
+    if (!word.length) return false;
+    var at = line.indexOf(word);
+    while (at >= 0) {
+        if (anchored && at !== 0) return false;
+        if (loose) return true;
+        var before = at === 0 ? '' : line.charAt(at - 1);
+        var after  = line.charAt(at + word.length);
+        if (!/[A-Z0-9]/.test(before) && !/[A-Z0-9]/.test(after)) return true;
+        if (anchored) return false;
+        at = line.indexOf(word, at + word.length);
+    }
+    return false;
+}
+
+/* Evaluate a section's match expression against a raw input line.
+ * Left-to-right with no precedence, matching guruexp().  Returns false
+ * for any expression carrying an [AR] test (see the header comment). */
+function guru_match(expr, line) {
+    expr = String(expr || '');
+    if (expr.indexOf('[') >= 0) return false;
+    var norm = /[a-z]/.test(line) ? _guru_normalize(line) : String(line);
+    /* An empty expression -- "()" in the file -- is the catch-all. */
+    if (!expr.replace(/[()\s]/g, '').length) return true;
+    var result = null, op = '|', token = '', depth = 0;
+
+    function apply(val) {
+        if (result === null) result = val;
+        else if (op === '&') result = result && val;
+        else result = result || val;
+    }
+    function flush() {
+        var t = token;
+        token = '';
+        if (!t.replace(/\s/g, '').length) return;
+        apply(t.charAt(0) === '(' ? guru_match(t.slice(1, -1), norm)
+                                  : _guru_keyword_match(t, norm));
+    }
+    for (var i = 0; i < expr.length; i++) {
+        var ch = expr.charAt(i);
+        if (ch === '(') depth++;
+        if (ch === ')') depth--;
+        if (depth === 0 && (ch === '|' || ch === '&')) {
+            flush();
+            op = ch;
+            continue;
+        }
+        token += ch;
+    }
+    flush();
+    return result === true;
+}
+
+/* Expand the backtick codes in a guru answer.  Only the codes that
+ * mean something outside a live terminal session are substituted; the
+ * rest (and any unknown code) are dropped along with their letter. */
+function guru_expand(answer, ctx) {
+    var alias = (ctx && ctx.speaker && ctx.speaker.alias) || 'stranger';
+    var guru  = (ctx && ctx.persona && ctx.persona.name) || 'The Guru';
+    var now   = new Date();
+    var months = ['January', 'February', 'March', 'April', 'May', 'June',
+                  'July', 'August', 'September', 'October', 'November',
+                  'December'];
+    var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                'Friday', 'Saturday'];
+    var out = String(answer || '').replace(/`(.)/g, function (m, code) {
+        switch (code.toUpperCase()) {
+            case 'A': return alias;
+            case 'G': return guru;
+            case 'O': return system.operator || 'the sysop';
+            case 'S': return system.name || 'this BBS';
+            case 'I': return system.qwk_id || '';
+            case 'M': return months[now.getMonth()];
+            case 'W': return days[now.getDay()];
+            case 'Y': return String(now.getFullYear());
+            case 'J': return String(now.getDate());
+            case 'T':
+                var h = now.getHours();
+                var mn = now.getMinutes();
+                return (h > 12 ? h - 12 : h) + ':' + (mn < 10 ? '0' + mn : mn);
+            /* Control codes -- see the header comment.  Dropped codes
+             * become a SPACE, not nothing: the file uses them between
+             * words for timing ("write to`_`_Rush Limbaugh"), where
+             * deleting them outright would run the words together.
+             * The whitespace collapse below tidies up after. */
+            case 'Q': case 'H': case '_': case '!': return ' ';
+            default:  return ' ';
+        }
+    });
+    /* Collapse the whitespace a dropped code leaves behind. */
+    out = out.replace(/[ \t]{2,}/g, ' ').replace(/\s+([.,;:!?])/g, '$1');
+    return out.replace(/^\s+|\s+$/g, '');
+}
+
+/* Cached parse of the guru file, refreshed when it changes on disk. */
+var _GURU_CACHE = null;
+var _GURU_CACHE_TIME = 0;
+var _GURU_CACHE_PATH = '';
+
+function _guru_sections(cfg) {
+    var path = (cfg && cfg.guru_file) || (system.ctrl_dir + 'guru.dat');
+    if (!file_exists(path)) return null;
+    var mtime = file_date(path);
+    if (_GURU_CACHE && _GURU_CACHE_PATH === path && _GURU_CACHE_TIME === mtime)
+        return _GURU_CACHE;
+    var f = new File(path);
+    if (!f.open('r')) return null;
+    var body = f.read();
+    f.close();
+    _GURU_CACHE = guru_parse(body);
+    _GURU_CACHE_TIME = mtime;
+    _GURU_CACHE_PATH = path;
+    return _GURU_CACHE;
+}
+
+/* A guru.dat answer for this input, or null if the file yields none.
+ * `text` is for testing -- omit it to read the configured guru file. */
+function guru_response(input, ctx, cfg, text) {
+    var sections = (text === undefined) ? _guru_sections(cfg) : guru_parse(text);
+    if (!sections || !sections.length) return null;
+    var norm = _guru_normalize(input);
+    if (!norm.length) return null;
+    for (var i = 0; i < sections.length; i++) {
+        if (!sections[i].answers.length) continue;
+        if (!guru_match(sections[i].expr, norm)) continue;
+        var answers = sections[i].answers;
+        var pick = answers[Math.floor(Math.random() * answers.length)];
+        var expanded = guru_expand(pick, ctx);
+        if (expanded.length) return expanded;
+    }
+    return null;
+}
+
+/* Opening words of the short "nothing further" line -- used when
+ * guru.dat is absent or matches nothing. */
+var _DEDUP_FALLBACK_LEAD = "That's still all I have on it";
+
+/* The stand-in for a reply that would have repeated a previous one.
+ * First choice is a keyword-matched line from ctrl/guru.dat -- the
+ * pre-LLM Guru deflecting is a better answer than the LLM saying the
+ * same thing a third time.  Falls back to a short pointer (carrying
+ * the previous answer's URL forward, since the point is to stop
+ * re-sending the wall of text, not to withhold the link) when the
+ * guru file is missing or matches nothing.
+ *
+ * Returns null -- say nothing -- if the previous turn was itself a
+ * fallback, so the bot can't sit in a loop of deflections. */
+function _dedup_fallback_reply(input, dup, memory, ctx, cfg) {
+    if (memory && memory.dedup_streak) return null;
+    var guru = guru_response(input, ctx, cfg);
+    if (guru) return guru;
+    var m = String(dup || '').match(new RegExp(_KNOWN_URL_PAT.source, 'i'));
+    return _DEDUP_FALLBACK_LEAD + (m ? ' -- ' + m[0] : '.');
+}
+
+/* Return the recent bot turn this reply duplicates, or null.  Compares
+ * only against THIS speaker's own transcript (memory is per-speaker per
+ * persona-mode, see memory_path), so one user can't suppress another's
+ * answers.  Only bot turns are candidates -- the bot echoing a user's
+ * own words back is a different problem. */
+function find_duplicate_reply(reply, memory, cfg) {
+    if (!reply || !memory || !memory.transcript) return null;
+    var min_tokens = cfg.reply_dedup_min_tokens || 12;
+    if (_dedup_tokens(reply).length < min_tokens) return null;
+    var threshold = cfg.reply_dedup_similarity || 0.75;
+    var window = cfg.reply_dedup_window || 4;
+    var seen = 0;
+    for (var i = memory.transcript.length - 1; i >= 0 && seen < window; i--) {
+        var turn = memory.transcript[i];
+        if (!turn || !turn.bot) continue;
+        seen++;
+        if (reply_similarity(reply, turn.text) >= threshold) return turn.text;
+    }
+    return null;
 }
 
 /* Append the top retrieved wiki URL to the reply if the reply doesn't
