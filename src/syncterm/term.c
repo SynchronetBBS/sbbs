@@ -21,6 +21,7 @@
 #include "syncterm.h"
 #include "telnet_io.h"
 #include "term.h"
+#include "theme.h"
 #include "threadwrap.h"
 #include "audio_apc.h"
 #include "window.h"
@@ -4273,6 +4274,20 @@ position_disconnect_notice_cursor(void)
 static bool
 paint_disconnect_notice_row(bool notice)
 {
+	const struct syncterm_theme *theme = syncterm_theme_active();
+	const struct syncterm_theme_style *base =
+	    syncterm_theme_style(theme, "default");
+	const struct syncterm_theme_style *style =
+	    syncterm_theme_style(theme, "disconnected");
+	assert(base != NULL);
+	int attr = style != NULL && style->legacy_attr >= 0 ?
+	    style->legacy_attr : base->legacy_attr;
+	int fg = style != NULL && style->foreground >= 0 ?
+	    style->foreground : base->foreground;
+	int bg = style != NULL && style->background >= 0 ?
+	    style->background : base->background;
+	int font = style != NULL && style->font >= 0 ?
+	    style->font : base->font;
 	size_t len;
 	size_t start;
 	int i;
@@ -4291,10 +4306,12 @@ paint_disconnect_notice_row(bool notice)
 
 	for (i = 0; i < term.width; i++) {
 		status_bar[i].ch = ' ';
-		status_bar[i].legacy_attr = notice ? 0x4f : cterm->attr;
-		status_bar[i].fg = notice ? 0x80ffffff : cterm->fg_color;
-		status_bar[i].bg = notice ? 0x80aa0000 : cterm->bg_color;
-		status_bar[i].font = notice ? 0 : ciolib_attrfont(cterm->attr);
+		status_bar[i].legacy_attr = notice ? attr : cterm->attr;
+		status_bar[i].fg = notice ? CIOLIB_COLOR_RGB | (uint32_t)fg :
+		    cterm->fg_color;
+		status_bar[i].bg = notice ? CIOLIB_COLOR_RGB | (uint32_t)bg :
+		    cterm->bg_color;
+		status_bar[i].font = notice ? font : ciolib_attrfont(cterm->attr);
 		status_bar[i].hyperlink_id = 0;
 	}
 	if (notice) {

@@ -425,6 +425,7 @@ test_document_edit_and_save(void)
 	if (document == NULL)
 		return;
 	CHECK(syncterm_theme_document_dirty(document));
+	CHECK(document_has_style(document, "disconnected"));
 	CHECK(syncterm_theme_document_set_metadata(document,
 	    SYNCTERM_THEME_METADATA_NAME, "Document Test", error,
 	    sizeof(error)));

@@ -283,7 +283,7 @@ class UiStyleTest {
       "title", "title.inactive",
       "menu.item", "menu.item.focused", "menu.item.disabled",
       "input", "input.focused",
-      "statusbar", "scrollbar.track", "scrollbar.thumb",
+      "statusbar", "disconnected", "scrollbar.track", "scrollbar.thumb",
       "help", "popup", "popup.frame", "popup.frame.inactive"
     ]
     var allComplete = true

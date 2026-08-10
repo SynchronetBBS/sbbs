@@ -303,6 +303,9 @@ The current role registry is:
 | `statusbar`
 | Status and help bars.
 
+| `disconnected`
+| Bottom-row disconnected notice.
+
 | `checkbox`, `checkbox.focused`
 | Check-box controls.
 

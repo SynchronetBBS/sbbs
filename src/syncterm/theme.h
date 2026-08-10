@@ -103,6 +103,8 @@ void syncterm_theme_shutdown(void);
 
 const struct syncterm_theme *syncterm_theme_active(void);
 const struct syncterm_theme *syncterm_theme_default(void);
+const struct syncterm_theme_style *syncterm_theme_style(
+    const struct syncterm_theme *theme, const char *role);
 uint64_t syncterm_theme_generation(void);
 
 bool syncterm_theme_prepare(const struct syncterm_settings *settings,

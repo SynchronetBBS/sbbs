@@ -64,6 +64,7 @@ static const struct style_template default_styles[] = {
 	S("button.focused", THEME_INHERIT, 0x70, 0x000000, 0xaaaaaa),
 	S("button.focused.hotkey", THEME_INHERIT, 0x78, 0x555555, THEME_INHERIT),
 	S("statusbar", THEME_INHERIT, 0x30, 0x000000, 0x00aaaa),
+	S("disconnected", THEME_INHERIT, 0x4f, 0xffffff, 0xaa0000),
 	S("checkbox", THEME_INHERIT, 0x1f, THEME_INHERIT, THEME_INHERIT),
 	S("checkbox.focused", THEME_INHERIT, 0x70, 0x000000, 0xaaaaaa),
 	S("radio.item", THEME_INHERIT, 0x1f, THEME_INHERIT, THEME_INHERIT),
@@ -336,14 +337,22 @@ error:
 	return NULL;
 }
 
-static struct syncterm_theme_style *
-find_style(struct syncterm_theme *theme, const char *role)
+const struct syncterm_theme_style *
+syncterm_theme_style(const struct syncterm_theme *theme, const char *role)
 {
+	if (theme == NULL || role == NULL)
+		return NULL;
 	for (size_t i = 0; i < theme->style_count; i++) {
 		if (strcmp(theme->styles[i].role, role) == 0)
 			return &theme->styles[i];
 	}
 	return NULL;
+}
+
+static struct syncterm_theme_style *
+find_style(struct syncterm_theme *theme, const char *role)
+{
+	return (struct syncterm_theme_style *)syncterm_theme_style(theme, role);
 }
 
 static struct syncterm_theme_glyph *
