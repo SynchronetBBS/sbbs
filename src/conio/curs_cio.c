@@ -771,8 +771,6 @@ int curs_kbhit(void)
 {
 	struct timeval timeout;
 	fd_set	rfds;
-	wint_t	ch;
-	int	rc;
 
 	if(curs_nextgetch)
 		return(1);
@@ -785,24 +783,7 @@ int curs_kbhit(void)
 	FD_ZERO(&rfds);
 	FD_SET(fileno(stdin),&rfds);
 
-	if(select(fileno(stdin)+1,&rfds,NULL,NULL,&timeout) == 1)
-		return(1);
-
-	/* Completing an escape sequence makes curses read ahead, so bytes it
-	 * consumed but did not return are held in its own input queue, where
-	 * the select() above cannot see them.  Ask curses too, and push back
-	 * whatever it hands over. */
-	if(suspended)
-		return(0);
-	nodelay(stdscr, TRUE);
-	rc=get_wch(&ch);
-	wtimeout(stdscr, 10);
-	if(rc == KEY_CODE_YES)
-		return(ungetch((int)ch) == OK);
-	if(rc == OK)
-		return(unget_wch(ch) == OK);
-
-	return(0);
+	return(select(fileno(stdin)+1,&rfds,NULL,NULL,&timeout) == 1);
 }
 
 void curs_gotoxy(int x, int y)
