@@ -1,0 +1,4 @@
+# Local Coverity tooling and extracted reports
+/coverity-syncterm-local.py
+/coverity-syncterm-api-details.tmp.json
+/coverity-syncterm-details.tmp.md

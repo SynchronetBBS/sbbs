@@ -1,0 +1,89 @@
+106519
+264171 IGNORE: intentional; xp_random is explicitly a general-purpose non-cryptographic PRNG and is not used as a security primitive
+381369 IGNORE: intentional; time32 deliberately implements the legacy signed 32-bit time representation, including its 2038 range limit
+381374 IGNORE: intentional; mktime32 deliberately implements the legacy signed 32-bit time representation, including its 2038 range limit
+412730 IGNORE: false positive; ciolib_initial_scaling is assigned during single-threaded startup before ciolib initializes its video threads and scaling lock
+414093 IGNORE: false positive; getstring validates that the complete length-prefixed string lies within the received packet before memchr receives its length
+454839 IGNORE: intentional; the SDL user-function mutex must span the event request and response wait to serialize the shared return channel
+454843 IGNORE: intentional; the SDL user-function mutex must span the event request and response wait to serialize the shared return channel
+464917
+501974 IGNORE: false positive; got is below the object size and read cannot return more than the requested remainder, so the next subtraction cannot underflow
+501975 IGNORE: false positive; this is initialization-time access before concurrent video use, and current code additionally protects it with vstatlock
+501978 IGNORE: false positive; sent is below len and write cannot return more than the requested remainder, so the next subtraction cannot underflow
+502902 IGNORE: false positive; the restored dldir string was duplicated from the same fixed-size field and therefore fits when copied back
+503183 IGNORE: false positive; the opos less-than-4095 guard makes the size_t subtraction 4095 minus opos nonnegative
+503184 IGNORE: false positive; the identical deterministic template_index call was already tested nonnegative in the enclosing condition
+503185 IGNORE: false positive; the identical deterministic template_index call was already tested nonnegative in the enclosing condition
+503211
+503212 IGNORE: intentional; params++ uses the first-call false result to omit a separator and subsequent true results to insert one
+503213
+503214
+503215
+503347 IGNORE: intentional; nonzero duration at the fixed 44100-Hz rate already implies nonzero frames, while the check is harmless defensive validation
+503356 IGNORE: false positive; ssh_close runs on the connection owner thread and joins the SSH and SFTP workers before cleanup and nulling ssh_session
+503360 IGNORE: false positive; the realloc result is transferred into the selected scale buffer, while the unselected buffer is released
+503361 IGNORE: intentional; hyperlink garbage collection holds the table mutex while marking and scanning so the callback observes a stable hyperlink table
+503366 IGNORE: intentional; the initialization mutex must span ANSI backend initialization to serialize the one-time backend selection
+503375 IGNORE: false positive; termination releases the connection mutexes before returning, and ssh_close waits for the worker threads while holding none of them
+503377 IGNORE: false positive; successful send returns at most the requested remaining bytes, so sent cannot exceed bufsz
+503380 IGNORE: false positive; unlocked callers acquire screenlock in bitmap_draw_from_vmem, while locked callers enter under the documented already-held lock contract
+503385 IGNORE: false positive; unlocked callers acquire screenlock in bitmap_draw_from_vmem, while locked callers enter under the documented already-held lock contract
+503387 IGNORE: false positive; terminate and disconnect release connection mutexes, and cleanup joins the demux thread before destroying them
+503401 IGNORE: false positive; got is below bufsz and recv cannot return more than the requested remainder
+503451 IGNORE: false positive; mask and entry are distinct fixed arrays in the structure, and current code also formats through a separate temporary buffer
+503452
+503479 IGNORE: false positive; getstring bounds the length against the complete already-allocated packet before allocating or copying the string
+503480 IGNORE: false positive; Coverity taints the whole state object through its remote id, but getcstring reads only the independently bounds-checked receive packet
+503481 IGNORE: false positive; Coverity taints the whole state object through its remote id, but getcstring reads only the independently bounds-checked receive packet
+503482 IGNORE: false positive; Coverity taints the whole state object through its remote id, but getcstring reads only the independently bounds-checked receive packet
+503483 IGNORE: intentional; SFTP version 3 timestamps are 32-bit wire fields, so the cast implements the protocol representation
+503484 IGNORE: false positive; extract_packet allocates from a complete packet already buffered in memory, with packet size arithmetic safe on the analyzed 64-bit target
+503485 IGNORE: false positive; Coverity taints the whole state object through its remote id, but getcstring reads only the independently bounds-checked receive packet
+503486 IGNORE: false positive; client_exit is reached only after client_enter or the front-operation equivalent and releases the mutex held by that entry path
+503487 IGNORE: false positive; Coverity taints the whole state object through its remote id, but getcstring reads only the independently bounds-checked receive packet
+503488 IGNORE: intentional; SFTP version 3 timestamps are 32-bit wire fields, so the cast implements the protocol representation
+503489
+503490 IGNORE: false positive; extension lengths are independently packet-bounded by getstring and allocations are proportional to the already-received packet
+503491 IGNORE: false positive; server_exit is reached only after server_enter and releases the mutex held by that entry path
+503494 IGNORE: false positive; Wren bytecode is compiler-generated trusted data and the compiler enforces valid module-slot indices
+503495 IGNORE: false positive; Wren bytecode is compiler-generated trusted data and the compiler enforces valid constant indices
+503496 IGNORE: intentional; Wren Random is a non-security WELL512 PRNG and libc rand is used only to seed that general-purpose generator
+503497 IGNORE: intentional; Wren Random is a non-security WELL512 PRNG and libc rand is used only to seed that general-purpose generator
+503498 IGNORE: intentional; the unchecked matchChar call deliberately consumes an optional minus after the mutually exclusive plus test
+503500
+503501 IGNORE: false positive; Wren bytecode is compiler-generated trusted data and the compiler enforces valid constant indices
+503504
+503506
+503507
+503508 IGNORE: intentional; Screen.save transfers the allocated screen pointer to Wren as an opaque handle and Screen.restore frees that handle
+503510
+503511
+503512
+503514
+503519
+503520
+503521 IGNORE: false positive; each getstring call independently bounds-checks the cursor against the packet, although Coverity propagates cursor mutation as taint
+503522
+503523
+503524 IGNORE: false positive; each packet parser call independently bounds-checks the cursor, although Coverity propagates prior cursor mutation as taint
+503525 IGNORE: false positive; each packet parser call independently bounds-checks the cursor, although Coverity propagates prior cursor mutation as taint
+503526 IGNORE: intentional; SFTP permissions are optional and the zero-initialized result deliberately retains mode zero when the attribute is absent
+503548
+503582 IGNORE: false positive; speed is initialized from the configured BPS rate and remains independently mutable, so the positive-speed suspension catch-up branch is reachable
+503603 IGNORE: false positive; xfer_tick_get deliberately returns storage under the caller-held xfer_tick_lock and all accesses follow the lock/get/unlock contract
+504829 IGNORE: false positive; read_font_files initializes success to false on entry and sets it on every successful return
+504830 IGNORE: false positive; read_font_files frees its partial result and returns NULL whenever success is false
+504842 IGNORE: false positive; every internal append_catalog call supplies a nonnull name or filename, so the fallback strdup argument cannot be null
+504843 IGNORE: false positive; FULLPATH is called with caller-owned destination storage and does not return a separately owned allocation in this use
+504863 IGNORE: intentional; removal of obsolete theme cache sidecars is best-effort cleanup after the primary cached package has already been removed
+504864 IGNORE: intentional; removing a failed temporary theme file is best-effort cleanup and cannot change the already-reported write, validation, or replacement failure
+504865 IGNORE: false positive; remainder is transferred to output and strListFree of output releases it on the reported append-failure path
+504866 IGNORE: intentional; removing an abandoned theme download temporary is best-effort cleanup on an already-failed operation
+505066 IGNORE: intentional; removing an abandoned private temporary file is best-effort cleanup on an already-failed operation
+505067 IGNORE: intentional; removing the private temporary after fdopen failure is best-effort cleanup while the original errno is preserved
+505068 IGNORE: intentional; discarding a private temporary is a no-fail cleanup operation whose caller has no useful recovery from remove failure
+505082 IGNORE: false positive; password_repeated is at least one 64-byte block after successful allocation, so the password-copy loop is reachable for ordinary inputs
+505083 IGNORE: false positive; password_repeated is at least one 64-byte block after successful allocation, so the password-copy loop is reachable for ordinary inputs
+505084 IGNORE: false positive; the overflow guard is a defensive extreme-size path and Coverity's contradictory salt-length constraints do not make the cleanup intrinsically dead
+505085 IGNORE: false positive; the overflow guard is a defensive extreme-size path and Coverity's contradictory salt-length constraints do not make the cleanup intrinsically dead
+505262 IGNORE: false positive; dssh_transport_disconnect releases channel_mtx before returning, so dssh_session_cleanup acquires accept_mtx while holding no channel lock
