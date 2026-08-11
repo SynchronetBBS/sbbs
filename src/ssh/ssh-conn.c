@@ -3189,7 +3189,7 @@ static int
 chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
     const struct dssh_chan_accept_cbs *cbs, struct dssh_chan_params *p, struct dssh_chan_accept_result *result)
 {
-	bool had_pty = false, had_terminal = false;
+	bool had_pty = false;
 	for (;;) {
 		uint8_t  msg_type;
 		uint8_t *payload;
@@ -3230,12 +3230,6 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 				    "duplicate pty-req");
 				return DSSH_ERROR_TERMINATED;
 			}
-			if (had_terminal) {
-				if (want_reply)
-					setup_reply(sess, ch, false);
-				free(payload);
-				continue;
-			}
 			had_pty = true;
 			res     = accept_parse_pty(req_data, req_data_len, p);
 			if (res < 0) {
@@ -3255,12 +3249,6 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 			continue;
 		}
 		if (rtype_len == DSSH_STRLEN(str_env) && memcmp(rtype, str_env, DSSH_STRLEN(str_env)) == 0) {
-			if (had_terminal) {
-				if (want_reply)
-					setup_reply(sess, ch, false);
-				free(payload);
-				continue;
-			}
 			int cb_res = -1;
 			if (cbs->env != NULL) {
 				res = accept_parse_env(req_data, req_data_len, p);
@@ -3273,13 +3261,6 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 			continue;
 		}
 		if (rtype_len == DSSH_STRLEN(str_shell) && memcmp(rtype, str_shell, DSSH_STRLEN(str_shell)) == 0) {
-			if (had_terminal) {
-				if (want_reply)
-					setup_reply(sess, ch, false);
-				free(payload);
-				continue;
-			}
-			had_terminal = true;
 			p->type      = DSSH_CHAN_SHELL;
 			int cb_res   = -1;
 			if (cbs->shell != NULL)
@@ -3294,13 +3275,6 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 			return DSSH_ERROR_REJECTED;
 		}
 		if (rtype_len == DSSH_STRLEN(str_exec) && memcmp(rtype, str_exec, DSSH_STRLEN(str_exec)) == 0) {
-			if (had_terminal) {
-				if (want_reply)
-					setup_reply(sess, ch, false);
-				free(payload);
-				continue;
-			}
-			had_terminal = true;
 			p->type      = DSSH_CHAN_EXEC;
 			res          = accept_parse_exec(req_data, req_data_len, p);
 			int cb_res   = -1;
@@ -3317,13 +3291,6 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 		}
 		if (rtype_len == DSSH_STRLEN(str_subsystem)
 		    && memcmp(rtype, str_subsystem, DSSH_STRLEN(str_subsystem)) == 0) {
-			if (had_terminal) {
-				if (want_reply)
-					setup_reply(sess, ch, false);
-				free(payload);
-				continue;
-			}
-			had_terminal = true;
 			p->type      = DSSH_CHAN_SUBSYSTEM;
 			res          = accept_parse_subsystem(req_data, req_data_len, p);
 			int cb_res   = -1;

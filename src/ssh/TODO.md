@@ -3,17 +3,6 @@
 
 ## Open
 
-181. **Coverity CID 503353: `had_terminal` guards in the channel-accept
-     setup loop are dead code.** `had_terminal` starts false, and each of
-     the only branches that sets it true (`shell`, `exec`, and `subsystem`)
-     immediately returns on both callback acceptance and rejection. No
-     later loop iteration can observe a true value, so the five guards for
-     rejecting late `pty-req`, `env`, or terminal requests are unreachable.
-     Remove the redundant state, assignments, and guards (or restructure
-     the terminal branches if continued setup processing was intended),
-     retaining protocol tests for duplicate terminal requests and late
-     setup requests.
-
 179. **Botan wrapper `catch (...)` doesn't catch `PK_Verifier`/`PK_Signer`
      lookup failures.**  The Botan-backed RSA verifier/signer (and any
      other site that instantiates `Botan::PK_Verifier`/`PK_Signer`
