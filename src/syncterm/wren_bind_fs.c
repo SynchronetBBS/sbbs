@@ -1754,7 +1754,11 @@ fn_File_offset_set(WrenVM *vm)
 		wren_throw(vm, "File: offset past end");
 		return;
 	}
-	fseek(wf->fp, off, SEEK_SET);
+	if (fseek(wf->fp, off, SEEK_SET) != 0) {
+		file_build_error(vm, 0, FILE_ERR_SEEK_FAILED, errno,
+		    "fseek setting offset failed");
+		return;
+	}
 }
 
 void
