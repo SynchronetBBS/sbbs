@@ -14,7 +14,7 @@
 503183 IGNORE: false positive; the opos less-than-4095 guard makes the size_t subtraction 4095 minus opos nonnegative
 503184 IGNORE: false positive; the identical deterministic template_index call was already tested nonnegative in the enclosing condition
 503185 IGNORE: false positive; the identical deterministic template_index call was already tested nonnegative in the enclosing condition
-503211
+503211 IGNORE: false positive; fg_tc_str and bg_tc_str are assembled solely from components of the fixed 256-byte seq_params buffer, so both strings plus the fixed DECRQSS fields fit within tmp[3072]
 503212 IGNORE: intentional; params++ uses the first-call false result to omit a separator and subsequent true results to insert one
 503213
 503214
