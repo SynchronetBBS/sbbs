@@ -73,6 +73,36 @@ extern const char *const termgfx_term_probe;
 // note above: the terminal is already at its default by then.
 extern const char *const termgfx_term_leave;
 
+// The mouse pointer, for the duration of a door that owns the screen. An arrow
+// floating over a first-person scene is the giveaway that this is a window
+// rather than a game, and no terminal offers the pointer LOCK that would let a
+// door hide it and still track the hand -- so this is cosmetic, and does not
+// change what the pointer reports or where it can go.
+//
+// Two sequences, sent together because no terminal implements both and each
+// ignores the other's:
+//
+//   CSI > 3 p    XTSMPOINTER (xterm). pointerMode 3, "always hide the pointer,
+//                even if leaving/entering the window". Worth spelling out why
+//                the default is not enough: it is 1, "hide if the mouse
+//                tracking mode is not enabled" -- and these doors DO enable
+//                tracking, so xterm deliberately keeps the pointer visible for
+//                exactly this case. Mode 2 is the near miss; it unhides
+//                whenever the pointer crosses the window border.
+//   OSC 22       Pointer shape, by xcursor name (foot, and terminals that
+//                copied it). foot cannot hide the pointer at all -- an empty
+//                or unknown name only resets the shape -- so a crosshair is
+//                the closest it gets to not being an arrow.
+//
+// SyncTERM implements neither: cterm has no XTSMPOINTER, and its OSC handler
+// knows only 4, 8, 10, 11 and 104 and discards the rest. Safe to send blind.
+//
+// restore writes pointerMode 1, the documented default. XTSMPOINTER has no
+// query, so there is nothing to save first and this ASSUMES the user had not
+// chosen their own; the empty OSC 22 resets the shape properly.
+extern const char *const termgfx_term_pointer_quiet;
+extern const char *const termgfx_term_pointer_restore;
+
 // The DECSDM sequence that makes THIS peer draw a sixel at the text cursor
 // rather than at the screen origin, given the cterm revision its DA1 reply
 // carried (termgfx_caps_cterm_version(); <= 0 for "not cterm, or not answered").
