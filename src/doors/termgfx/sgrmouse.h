@@ -49,13 +49,23 @@ typedef enum {
 // the terminal's own encoding.
 //
 // BOTH OF THOSE ARE HISTORY IN A CURRENT SyncTERM, and the handling stays
-// anyway. bbf7c4c79b (dice-12-carpet, 2026-07-11) stopped routing the
-// no-button sentinel through the wheel remap, so motion is now reported as
-// xterm's 35 and a notch as a clean 64/65 -- captured live 2026-08-10 from
-// CTerm 1.332: twelve motion reports at b=35, wheel at b=64/65, no 96 or 97
-// at all. Doors serve whatever client dials in, including releases built
-// before that, so 96 and 97 must keep decoding as they do above; what
-// changes is that they are no longer the common case.
+// anyway. It took two fixes, because 96 had two causes:
+//
+//   bbf7c4c79b (dice-12-carpet, 2026-07-11) stopped routing the no-button
+//   sentinel through the wheel remap, so a plain hover became 35.
+//
+//   a34c0f4e62 (exchange-33-sign, 2026-08-09) cleared the wheel button from
+//   the button state after a notch -- a wheel "button" is momentary and no
+//   release ever follows, so it stayed latched and every subsequent motion
+//   looked like a DRAG rather than a hover. That is why the first fix did
+//   not finish the job: motion after a scroll was never the no-button case
+//   it corrected.
+//
+// Captured live 2026-08-10 from CTerm 1.332 with both in: twelve motion
+// reports at b=35, wheel at b=64/65, no 96 or 97 at all. Doors serve
+// whatever client dials in, including builds older than either fix, so 96
+// and 97 must keep decoding as they do above; what changes is that they are
+// no longer the common case.
 //
 // Note the wheel bit is independent of the low two bits: xterm sets it from
 // `button & 4`, not from a value in 0..3. That is exactly the invariant
