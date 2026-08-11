@@ -1250,6 +1250,34 @@ fn_Status_callable_set(WrenVM *vm)
 		st->status_callable = wrenGetSlotHandle(vm, 1);
 }
 
+/* Status.details is an optional no-argument Fn returning a String for
+ * non-visual consumers of status-bar state, currently the disconnect F1
+ * popup.  Keeping this next to the renderer lets replacements override both
+ * without teaching C about script-owned indicators. */
+void
+fn_Status_details_get(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->status_details == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotHandle(vm, 0, st->status_details);
+}
+
+void
+fn_Status_details_set(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL)
+		return;
+	if (st->status_details != NULL) {
+		wrenReleaseHandle(vm, st->status_details);
+		st->status_details = NULL;
+	}
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_NULL)
+		st->status_details = wrenGetSlotHandle(vm, 1);
+}
+
 /* Status.enabled — true while the SyncTERM-managed status row is
  * active.  False when DECSSDT (or nostatus startup config) has hidden
  * it; the script's render Fn should early-return then. */

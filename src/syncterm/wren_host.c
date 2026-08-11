@@ -1293,6 +1293,8 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.timer_elapsed_class);
 	if (state.status_callable != NULL)
 		wrenReleaseHandle(state.vm, state.status_callable);
+	if (state.status_details != NULL)
+		wrenReleaseHandle(state.vm, state.status_details);
 	if (state.status_surface != NULL)
 		wrenReleaseHandle(state.vm, state.status_surface);
 	state.status_surface_width = 0;
@@ -1766,6 +1768,28 @@ wren_status_render(int width, struct vmem_cell **out_buf)
 		return false;
 
 	*out_buf = sf->buf;
+	return true;
+}
+
+bool
+wren_status_details(char *out, size_t out_size)
+{
+	int length;
+	const char *details;
+
+	if (!active || !on_owner_thread() || out == NULL || out_size == 0 ||
+	    state.status_details == NULL)
+		return false;
+	wrenEnsureSlots(state.vm, 1);
+	wrenSetSlotHandle(state.vm, 0, state.status_details);
+	if (wrenCall(state.vm, state.call0_handle) != WREN_RESULT_SUCCESS ||
+	    wrenGetSlotType(state.vm, 0) != WREN_TYPE_STRING)
+		return false;
+	details = wrenGetSlotBytes(state.vm, 0, &length);
+	if (details == NULL || length < 0 || (size_t)length >= out_size)
+		return false;
+	memcpy(out, details, (size_t)length);
+	out[length] = 0;
 	return true;
 }
 

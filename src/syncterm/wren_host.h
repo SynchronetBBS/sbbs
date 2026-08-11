@@ -59,6 +59,11 @@ void wren_host_bind_speed(int *speed);
 struct vmem_cell;
 bool wren_status_render(int width, struct vmem_cell **out_buf);
 
+/* Invoke Status.details and copy its returned String into `out`.  The
+ * snapshot is independent of the visual row width.  Returns false when the
+ * callback is absent, fails, returns a non-String, or the output is invalid. */
+bool wren_status_details(char *out, size_t out_size);
+
 /* Input-shaped dispatchers: return true to consume / drop the event,
  * false to pass through. The first hook returning true short-circuits;
  * subsequent hooks are not called for that event. */

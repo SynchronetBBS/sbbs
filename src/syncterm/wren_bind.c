@@ -1350,6 +1350,8 @@ static const struct binding BINDINGS[] = {
 
 	{ "Status", true, "callable",        fn_Status_callable_get    },
 	{ "Status", true, "callable=(_)",    fn_Status_callable_set    },
+	{ "Status", true, "details",         fn_Status_details_get     },
+	{ "Status", true, "details=(_)",     fn_Status_details_set     },
 	{ "Status", true, "enabled",         fn_Status_enabled         },
 
 	/* Transfer — mailbox bridge for the in-Wren transfer-window

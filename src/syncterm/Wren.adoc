@@ -5611,6 +5611,14 @@ host releases the previous handle when the callable changes.
   taking one argument (the `Surface` the host hands it); pass `null`
   to detach.  Releases the previous handle.
 
+| `Status.details`, `Status.details = fn`
+| Optional no-argument callable returning a complete human-readable status
+  String.  SyncTERM snapshots it when the disconnect notice appears and
+  shows it in the F1 details popup, so fields omitted by narrow visual
+  layouts remain available.  Set it to `null` to detach it.  A custom status
+  renderer should replace both callables when its state differs from the
+  default bar.
+
 | `Status.enabled`
 | `true` while the SyncTERM-managed status row is active; `false`
   when DECSSDT or startup config has hidden it.  The render

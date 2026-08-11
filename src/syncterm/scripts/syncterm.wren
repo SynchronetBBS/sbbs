@@ -1722,6 +1722,11 @@ class Host {
 class Status {
   foreign static callable
   foreign static callable=(fn)
+  // Optional Fn{} returning a complete, human-readable status snapshot.
+  // The disconnect F1 popup uses this instead of scraping the visual row,
+  // whose narrow layouts deliberately omit fields.
+  foreign static details
+  foreign static details=(fn)
   foreign static enabled
 }
 

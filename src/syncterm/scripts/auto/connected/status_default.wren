@@ -130,6 +130,40 @@ class StatusDefault {
   }
   static pad2_(n) { n < 10 ? "0%(n)" : "%(n)" }
 
+  // Complete text counterpart to the width-dependent visual bar.  This is
+  // snapshotted when the disconnect notice appears, so elapsed time does not
+  // continue advancing while the user waits or reads the popup.
+  static details() {
+    var lines = ["BBS: %(BBS.name)", "Connection: %(BBS.connTypeName)"]
+    var ct = BBS.connType
+    var isSerial = ct == ConnType.serial || ct == ConnType.serialNoRts
+    var rate = isSerial ? BBS.bpsRate : CTerm.throttleSpeed
+    if (rate > 0) lines.add("Speed: %(rate) bps")
+    lines.add("Connected: %(elapsedString_())")
+
+    var modes = []
+    if (Host.safeMode) modes.add("SAFE")
+    if (Capture.active) modes.add("Logging")
+    if (CTerm.doorwayMode) modes.add("DrWy")
+    var ooii = CTerm.ooiiMode
+    if (ooii == 1) modes.add("OOTerm")
+    if (ooii == 2) modes.add("OOTerm1")
+    if (ooii == 3) modes.add("OOTerm2")
+    if (CTerm.atasciiInverse) modes.add("INV")
+    if (modes.count > 0) lines.add("Modes: " + modes.join(", "))
+
+    var activity = []
+    if (Host.logUnreadError) activity.add("unread Wren errors")
+    if (Host.logUnread && !Host.logUnreadError) activity.add("unread Wren log")
+    if (Host.uploadArrow) activity.add("uploading")
+    if (Host.downloadArrow) activity.add("downloading")
+    if (activity.count > 0) lines.add("Activity: " + activity.join(", "))
+    if (CTerm.mouseMode != 0) {
+      lines.add(CTerm.mouseDisabled ? "Mouse: disabled" : "Mouse: enabled")
+    }
+    return lines.join("\n")
+  }
+
   // Truncate ASCII string `s` to fit in `room` bytes, replacing the
   // tail with "..." when truncation happens.  Returns "" when
   // room < 1.
@@ -258,3 +292,4 @@ class StatusDefault {
 }
 
 Status.callable = Fn.new { |surf| StatusDefault.render(surf) }
+Status.details = Fn.new { StatusDefault.details() }

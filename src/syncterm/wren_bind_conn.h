@@ -115,6 +115,8 @@ void fn_CTerm_music_set(WrenVM *vm);
 
 void fn_Status_callable_get(WrenVM *vm);
 void fn_Status_callable_set(WrenVM *vm);
+void fn_Status_details_get(WrenVM *vm);
+void fn_Status_details_set(WrenVM *vm);
 void fn_Status_enabled(WrenVM *vm);
 
 void wren_extattr_allocate(WrenVM *vm);

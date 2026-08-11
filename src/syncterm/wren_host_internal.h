@@ -278,6 +278,10 @@ struct wren_host_state {
 	 * NULL when no callable is set; in that case C leaves the row
 	 * blank (prefilled default attribute, no content). */
 	WrenHandle  *status_callable;
+	/* Optional Fn{} returning the human-readable status details shown by
+	 * the disconnect notice's F1 popup.  Kept separate from the visual
+	 * renderer so narrow terminals do not lose information. */
+	WrenHandle  *status_details;
 
 	/* Long-lived width×1 Surface, recycled across status renders to
 	 * avoid per-frame allocation churn.  Reallocated when the terminal

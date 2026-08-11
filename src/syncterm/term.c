@@ -4330,8 +4330,18 @@ paint_disconnect_notice_row(bool notice)
 static void
 show_disconnect_notice(void)
 {
+	static const char reason[] = "Remote host dropped connection";
+	char message[1200];
+	char details[1024];
+	const char *popup_message = reason;
 	int key;
 
+	/* Take this before waiting for input so the connected duration records
+	 * the session, not time spent sitting at the disconnect notice. */
+	if (wren_status_details(details, sizeof(details))) {
+		snprintf(message, sizeof(message), "%s\n\n%s", reason, details);
+		popup_message = message;
+	}
 	prepare_disconnect_notice_row();
 	if (!paint_disconnect_notice_row(true))
 		return;
@@ -4341,8 +4351,7 @@ show_disconnect_notice(void)
 		if (key == '\r' || key == '\n' || key == CIO_KEY_QUIT)
 			break;
 		if (key == CIO_KEY_F(1)) {
-			host_ui_alert("Disconnected",
-			    "Remote host dropped connection");
+			host_ui_alert("Disconnected", popup_message);
 			(void)paint_disconnect_notice_row(true);
 			position_disconnect_notice_cursor();
 			continue;
