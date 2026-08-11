@@ -664,7 +664,7 @@ void
 cterm_cterm_handle_font_dcs(struct cterminal *cterm)
 {
 	char *p, *p2;
-	size_t i;
+	ssize_t i;
 
 	cterm->font_slot = strtoul(cterm->strbuf + 11, &p, 10);
 	if (cterm->font_slot < CONIO_FIRST_FREE_FONT)
@@ -674,6 +674,8 @@ cterm_cterm_handle_font_dcs(struct cterminal *cterm)
 	if (p && *p == ':') {
 		p++;
 		i = b64_decode(cterm->fontbuf, sizeof(cterm->fontbuf), p, 0);
+		if (i < 0)
+			return;
 		p2 = malloc(i);
 		if (p2) {
 			memcpy(p2, cterm->fontbuf, i);

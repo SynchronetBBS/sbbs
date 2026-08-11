@@ -1846,6 +1846,14 @@ static int test_ansi_dcs_malformed(void)
 	return expect_text(1, 1, "B");
 }
 
+static int test_ansi_dcs_font_bad_base64(void)
+{
+	setup_ansi();
+	ct_printf("\033[2J\033[H");
+	ct_puts("\033PCTerm:Font:46:!\033\\B");
+	return expect_text(1, 1, "B");
+}
+
 /* APC + SI (0x0F) — in the gap between 00/13 and 02/00 */
 static int test_ansi_apc_malformed(void)
 {
@@ -5964,6 +5972,7 @@ static struct test_entry tests[] = {
 	/* ANSI-BBS — Malformed strings */
 	{"ANSI_OSC_malform",  test_ansi_osc_malformed},
 	{"ANSI_DCS_malform",  test_ansi_dcs_malformed},
+	{"ANSI_DCS_font_b64", test_ansi_dcs_font_bad_base64},
 	{"ANSI_APC_malform",  test_ansi_apc_malformed},
 	{"ANSI_SOS_malform",  test_ansi_sos_malformed},
 	/* ANSI-BBS — NUL media-fill */
@@ -6236,4 +6245,3 @@ int main(int argc, char **argv)
 
 	return failed > 0 ? 1 : 0;
 }
-
