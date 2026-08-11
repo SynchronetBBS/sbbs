@@ -1484,7 +1484,11 @@ do_read_at(WrenVM *vm, struct wren_file *wf, long off, long count,
 	}
 	if (off + count > sz)
 		count = sz - off;
-	fseek(wf->fp, off, SEEK_SET);
+	if (fseek(wf->fp, off, SEEK_SET) != 0) {
+		file_build_error(vm, 0, FILE_ERR_SEEK_FAILED, errno,
+		    "fseek before read failed");
+		return;
+	}
 	if (count == 0) {
 		wrenSetSlotBytes(vm, 0, "", 0);
 		return;
