@@ -1254,6 +1254,11 @@ static int fp_enter_dir(struct fp_state *s)
 {
 	const char *name = s->dirs[s->dir_cur].name;
 
+	if (strcmp(name, "..") != 0
+	    && strlen(name) >= sizeof(s->path) - strlen(s->path)) {
+		s->api->msg("Path is too long!");
+		return FIELD_DIR;
+	}
 	FREE_AND_NULL(s->prev_path);
 	s->prev_path = strdup(s->path);
 	if (s->prev_path == NULL)
