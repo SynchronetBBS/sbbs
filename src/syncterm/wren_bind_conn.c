@@ -286,6 +286,8 @@ fn_Conn_protocolLog(WrenVM *vm)
 #ifndef WITHOUT_CRYPTO
 	if (st->bbs->conn_type == CONN_TYPE_TELNETS)
 		supported = true;
+	if (st->bbs->conn_type == CONN_TYPE_MQTT)
+		supported = true;
 #endif
 #ifndef WITHOUT_DEUCESSH
 	if (st->bbs->conn_type == CONN_TYPE_SSH ||

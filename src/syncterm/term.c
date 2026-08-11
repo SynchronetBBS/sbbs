@@ -4356,6 +4356,8 @@ show_disconnect_notice(struct bbslist *bbs)
 #ifndef WITHOUT_CRYPTO
 			if (bbs != NULL && bbs->conn_type == CONN_TYPE_TELNETS)
 				has_log = true;
+			if (bbs != NULL && bbs->conn_type == CONN_TYPE_MQTT)
+				has_log = true;
 #endif
 #ifndef WITHOUT_DEUCESSH
 			if (bbs != NULL && (bbs->conn_type == CONN_TYPE_SSH ||

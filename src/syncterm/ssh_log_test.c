@@ -47,12 +47,15 @@ test_combined_protocol_sources(void)
 {
 	static const char telnet[] = "Telnet Info: TX: WILL BINARY\n";
 	static const char tls[] = "TLS Debug Botan backend: handshake message: Finished\n";
+	static const char mqtt[] = "MQTT Info: broker accepted CONNECT\n";
 	protocol_log_reset(LOG_DEBUG);
 	CHECK(protocol_log_append(LOG_INFO, telnet, sizeof(telnet) - 1, NULL));
 	CHECK(protocol_log_append(LOG_DEBUG, tls, sizeof(tls) - 1, NULL));
+	CHECK(protocol_log_append(LOG_INFO, mqtt, sizeof(mqtt) - 1, NULL));
 	char *snapshot = protocol_log_snapshot(NULL);
 	CHECK(snapshot != NULL && strstr(snapshot, telnet) != NULL);
 	CHECK(snapshot != NULL && strstr(snapshot, tls) != NULL);
+	CHECK(snapshot != NULL && strstr(snapshot, mqtt) != NULL);
 	free(snapshot);
 
 	protocol_log_reset(LOG_ERR);

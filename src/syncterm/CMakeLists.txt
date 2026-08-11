@@ -274,6 +274,7 @@ if(NOT WITHOUT_CRYPTO)
 	# conn_mqtt.c rides the same TLS-PSK path so it's gated identically.
 	list(APPEND SOURCE
 		telnets.c
+		tls_log.c
 		conn_mqtt.c
 		legacy_ciphers/idea.c
 		legacy_ciphers/rc2.c)

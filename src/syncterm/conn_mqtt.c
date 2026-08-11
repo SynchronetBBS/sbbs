@@ -20,6 +20,7 @@
  */
 
 #include <stdatomic.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,8 +31,10 @@
 #include "conn_mqtt.h"
 #include "genwrap.h"
 #include "host_ui.h"
+#include "protocol_log.h"
 #include "sockwrap.h"
 #include "threadwrap.h"
+#include "tls_log.h"
 #include "xp_tls.h"
 
 /* ─────────────────────────────────────────────────────────── state */
@@ -45,6 +48,7 @@ static char              mqtt_input_topic[160];
 static uint16_t          mqtt_pkt_id = 1;
 static int               mqtt_keepalive_sec = 60;
 static atomic_long       mqtt_last_send_us;
+extern FILE             *log_fp;
 
 /* MQTT control packet types (high nibble of byte 0). */
 #define MQTT_CONNECT      1
@@ -57,6 +61,70 @@ static atomic_long       mqtt_last_send_us;
 #define MQTT_PINGREQ     12
 #define MQTT_PINGRESP    13
 #define MQTT_DISCONNECT  14
+
+static const char *
+mqtt_packet_name(uint8_t type)
+{
+	switch (type) {
+		case MQTT_CONNECT: return "CONNECT";
+		case MQTT_CONNACK: return "CONNACK";
+		case MQTT_PUBLISH: return "PUBLISH";
+		case MQTT_SUBSCRIBE: return "SUBSCRIBE";
+		case MQTT_SUBACK: return "SUBACK";
+		case MQTT_UNSUBSCRIBE: return "UNSUBSCRIBE";
+		case MQTT_UNSUBACK: return "UNSUBACK";
+		case MQTT_PINGREQ: return "PINGREQ";
+		case MQTT_PINGRESP: return "PINGRESP";
+		case MQTT_DISCONNECT: return "DISCONNECT";
+	}
+	return "unknown";
+}
+
+static void
+mqtt_log(int level, const char *format, ...)
+{
+	if (!protocol_log_enabled(level))
+		return;
+	char message[768];
+	va_list ap;
+	va_start(ap, format);
+	int message_len = vsnprintf(message, sizeof(message), format, ap);
+	va_end(ap);
+	if (message_len < 0)
+		return;
+	if ((size_t)message_len >= sizeof(message))
+		message_len = sizeof(message) - 1;
+	const char *level_name = level <= LOG_ERR ? "Error"
+	    : level <= LOG_WARNING ? "Warning"
+	    : level <= LOG_INFO ? "Info" : "Debug";
+	char line[sizeof(message) * 4 + 32];
+	int prefix_len = snprintf(line, sizeof(line), "MQTT %s: ", level_name);
+	if (prefix_len < 0 || (size_t)prefix_len >= sizeof(line))
+		return;
+	size_t used = (size_t)prefix_len;
+	for (int i = 0; i < message_len; i++) {
+		unsigned char ch = (unsigned char)message[i];
+		if (ch >= 0x20 && ch <= 0x7e)
+			line[used++] = (char)ch;
+		else
+			used += (size_t)snprintf(line + used, sizeof(line) - used,
+			    "\\x%02X", ch);
+	}
+	line[used++] = '\n';
+	(void)protocol_log_append(level, line, used, log_fp);
+}
+
+static void
+mqtt_alert(const char *title, const char *message)
+{
+	char *help = protocol_log_build_help(message);
+	if (help != NULL) {
+		host_ui_alert_help(title, message, help);
+		free(help);
+	}
+	else
+		host_ui_alert(title, message);
+}
 
 /* ──────────────────────────────────────────────────── varint codec */
 
@@ -134,8 +202,11 @@ tls_send_all(const void *buf, size_t len)
 		if (rc == XP_TLS_OK)
 			(void)xp_tls_flush_timeout(mqtt_tls, -1);
 		assert_pthread_mutex_unlock(&mqtt_io_mutex);
-		if (rc < 0)
+		if (rc < 0) {
+			mqtt_log(LOG_ERR, "TLS write failed: %s",
+			    mqtt_tls == NULL ? "no TLS session" : xp_tls_errstr(mqtt_tls));
 			return -1;
+		}
 		if (copied == 0 && rc == XP_TLS_OK)
 			SLEEP(5);	/* spurious zero-progress; backoff */
 		total += copied;
@@ -175,8 +246,11 @@ tls_pull(uint8_t *rx_buf, size_t rx_len, size_t rx_cap, int wait_ms)
 	assert_pthread_mutex_unlock(&mqtt_io_mutex);
 	if (rc == XP_TLS_TIMEOUT)
 		return rx_len;	/* no progress, but not an error */
-	if (rc < 0)
+	if (rc < 0) {
+		mqtt_log(LOG_ERR, "TLS read failed: %s",
+		    mqtt_tls == NULL ? "no TLS session" : xp_tls_errstr(mqtt_tls));
 		return -1;
+	}
 	return rx_len + got;
 }
 
@@ -209,6 +283,36 @@ parse_packet(const uint8_t *buf, size_t len,
 	*payload_len = remaining;
 	*consumed = total;
 	return 1;
+}
+
+static void
+log_received_packet(uint8_t type, const uint8_t *payload,
+	size_t payload_len, size_t packet_len)
+{
+	mqtt_log(LOG_DEBUG, "received %s packet bytes=%zu",
+	    mqtt_packet_name(type), packet_len);
+	if (type == MQTT_DISCONNECT) {
+		unsigned reason = payload_len == 0 ? 0 : payload[0];
+		mqtt_log(reason == 0 ? LOG_INFO : LOG_WARNING,
+		    "broker sent DISCONNECT reason=0x%02X", reason);
+		return;
+	}
+	if ((type != MQTT_SUBACK && type != MQTT_UNSUBACK) || payload_len < 3)
+		return;
+	uint16_t packet_id = ((uint16_t)payload[0] << 8) | payload[1];
+	uint32_t properties_len;
+	size_t properties_varint;
+	int rc = decode_varint(payload + 2, payload_len - 2,
+	    &properties_len, &properties_varint);
+	if (rc != 1 || properties_len > payload_len - 2 - properties_varint)
+		return;
+	size_t reason_offset = 2 + properties_varint + properties_len;
+	if (reason_offset >= payload_len)
+		return;
+	unsigned reason = payload[reason_offset];
+	mqtt_log(reason >= 0x80 ? LOG_ERR : LOG_DEBUG,
+	    "%s packet-id=%u first-reason=0x%02X",
+	    mqtt_packet_name(type), packet_id, reason);
 }
 
 /* ──────────────────────────────────────────── packet builders */
@@ -337,6 +441,7 @@ send_connect(const char *user, const char *syspass)
 	char client_id[40];
 	snprintf(client_id, sizeof(client_id), "syncterm-%u", (unsigned)getpid());
 	size_t n = build_connect(buf, client_id, user, syspass, mqtt_keepalive_sec);
+	mqtt_log(LOG_DEBUG, "sending CONNECT (sensitive fields omitted)");
 	return tls_send_all(buf, n);
 }
 
@@ -347,6 +452,8 @@ send_subscribe(const char *topic_filter)
 	uint16_t id = mqtt_pkt_id++;
 	if (mqtt_pkt_id == 0) mqtt_pkt_id = 1;	/* MQTT requires non-zero */
 	size_t n = build_subscribe(buf, id, topic_filter);
+	mqtt_log(LOG_DEBUG, "sending SUBSCRIBE packet-id=%u topic-bytes=%zu",
+	    id, strlen(topic_filter));
 	return tls_send_all(buf, n);
 }
 
@@ -357,6 +464,8 @@ send_unsubscribe(const char *topic_filter)
 	uint16_t id = mqtt_pkt_id++;
 	if (mqtt_pkt_id == 0) mqtt_pkt_id = 1;
 	size_t n = build_unsubscribe(buf, id, topic_filter);
+	mqtt_log(LOG_DEBUG, "sending UNSUBSCRIBE packet-id=%u topic-bytes=%zu",
+	    id, strlen(topic_filter));
 	return tls_send_all(buf, n);
 }
 
@@ -369,6 +478,8 @@ send_publish(const char *topic, const void *payload, size_t payload_len)
 	size_t n = build_publish(buf, sizeof(buf), topic, payload, payload_len);
 	if (n == 0)
 		return -1;
+	mqtt_log(LOG_DEBUG, "sending PUBLISH topic-bytes=%zu payload-bytes=%zu",
+	    strlen(topic), payload_len);
 	return tls_send_all(buf, n);
 }
 
@@ -454,8 +565,13 @@ discovery_pump(struct discovery_state *st, double deadline_sec)
 			size_t payload_len, consumed;
 			int prc = parse_packet(rx_buf, rx_len, &type, &flags,
 			                       &payload, &payload_len, &consumed);
-			if (prc <= 0)
+			if (prc < 0) {
+				mqtt_log(LOG_ERR, "malformed packet during discovery");
+				return -1;
+			}
+			if (prc == 0)
 				break;
+			log_received_packet(type, payload, payload_len, consumed);
 
 			if (type == MQTT_PUBLISH) {
 				const uint8_t *topic_b;
@@ -672,8 +788,14 @@ mqtt_input_thread(void *args)
 			size_t payload_len, consumed;
 			int prc = parse_packet(rx_buf, rx_len, &type, &flags,
 			                       &payload, &payload_len, &consumed);
-			if (prc <= 0)
+			if (prc < 0) {
+				mqtt_log(LOG_ERR, "malformed packet in live session");
+				conn_api.terminate = true;
 				break;
+			}
+			if (prc == 0)
+				break;
+			log_received_packet(type, payload, payload_len, consumed);
 
 			if (type == MQTT_PUBLISH) {
 				const uint8_t *topic_b;
@@ -753,6 +875,7 @@ mqtt_output_thread(void *args)
 			if (since > (long)mqtt_keepalive_sec * 500000) {
 				uint8_t ping[2];
 				size_t n = build_pingreq(ping);
+				mqtt_log(LOG_DEBUG, "sending PINGREQ");
 				if (tls_send_all(ping, n) < 0) {
 					conn_api.terminate = true;
 					break;
@@ -829,6 +952,8 @@ mqtt_connect(struct bbslist *bbs)
 		.psk_version = XP_TLS_VERSION_1_2,
 		.psk_policy = XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY,
 	};
+	syncterm_tls_log_configure(&tls_config, bbs->protocol_loglevel);
+	mqtt_log(LOG_INFO, "starting TLS-PSK negotiation");
 	mqtt_tls = xp_tls_client_open_config(mqtt_sock, &tls_config);
 	/* psk_buf is a stack copy; xp_tls_client_open_config made an internal
 	   secure copy.  Wipe ours before it goes out of scope. */
@@ -847,6 +972,8 @@ mqtt_connect(struct bbslist *bbs)
 	if (mqtt_tls == NULL) {
 		strncpy(psk_err, xp_tls_last_err(), sizeof(psk_err) - 1);
 		psk_err[sizeof(psk_err) - 1] = 0;
+		mqtt_log(LOG_WARNING,
+		    "TLS-PSK negotiation failed; retrying with certificate authentication");
 
 		closesocket(mqtt_sock);
 		mqtt_sock = INVALID_SOCKET;
@@ -857,13 +984,15 @@ mqtt_connect(struct bbslist *bbs)
 		}
 		mqtt_sock = conn_socket_connect(bbs, true);
 		if (mqtt_sock == INVALID_SOCKET) {
+			mqtt_log(LOG_ERR,
+			    "TCP reconnect for certificate-authenticated TLS failed");
 			if (!bbs->hidepopups) {
 				host_ui_status(NULL);
 				char str[600];
 				snprintf(str, sizeof(str),
 				    "TLS-PSK failed: %s\nTCP reconnect for cert retry failed.",
 				    psk_err);
-				host_ui_alert("MQTT TLS Error", str);
+				mqtt_alert("MQTT TLS Error", str);
 			}
 			conn_api.terminate = true;
 			return -1;
@@ -873,13 +1002,16 @@ mqtt_connect(struct bbslist *bbs)
 			fprintf(stderr, "%s:%d: setsockopt TCP_NODELAY failed (%d)\n",
 			    __FILE__, __LINE__, errno);
 		}
-		const struct xp_tls_client_config cert_config = {
+		struct xp_tls_client_config cert_config = {
 			.server_name = bbs->addr,
 		};
+		syncterm_tls_log_configure(&cert_config, bbs->protocol_loglevel);
+		mqtt_log(LOG_INFO, "starting certificate-authenticated TLS negotiation");
 		mqtt_tls = xp_tls_client_open_config(mqtt_sock, &cert_config);
 	}
 
 	if (mqtt_tls == NULL) {
+		mqtt_log(LOG_ERR, "TLS negotiation failed: %s", xp_tls_last_err());
 		if (!bbs->hidepopups) {
 			host_ui_status(NULL);
 			char str[800];
@@ -890,13 +1022,15 @@ mqtt_connect(struct bbslist *bbs)
 			else
 				snprintf(str, sizeof(str),
 				    "TLS handshake failed: %s", xp_tls_last_err());
-			host_ui_alert("MQTT TLS Error", str);
+			mqtt_alert("MQTT TLS Error", str);
 		}
 		closesocket(mqtt_sock);
 		mqtt_sock = INVALID_SOCKET;
 		conn_api.terminate = true;
 		return -1;
 	}
+	mqtt_log(LOG_INFO, "TLS established using %s authentication",
+	    xp_tls_used_psk(mqtt_tls) ? "PSK" : "certificate");
 
 	if (!bbs->hidepopups) {
 		host_ui_status(NULL);
@@ -964,28 +1098,33 @@ mqtt_connect(struct bbslist *bbs)
 			goto fail;
 		}
 		if (prc == 1) {
+			log_received_packet(type, cak_payload, cak_plen, cak_used);
 			got_connack = 1;
 			break;
 		}
 	}
 	if (!got_connack || type != MQTT_CONNACK || cak_plen < 2) {
+		mqtt_log(LOG_ERR, "no valid CONNACK received from broker");
 		if (!bbs->hidepopups) {
 			host_ui_status(NULL);
-			host_ui_alert("MQTT Error", "No CONNACK received from broker.");
+			mqtt_alert("MQTT Error", "No CONNACK received from broker.");
 		}
 		goto fail;
 	}
 	if (cak_payload[1] != 0) {
+		mqtt_log(LOG_ERR, "broker rejected CONNECT reason=0x%02X",
+		    cak_payload[1]);
 		if (!bbs->hidepopups) {
 			char str[128];
 			snprintf(str, sizeof(str),
 			         "Broker rejected CONNECT (reason 0x%02X)",
 			         cak_payload[1]);
 			host_ui_status(NULL);
-			host_ui_alert("MQTT Auth Error", str);
+			mqtt_alert("MQTT Auth Error", str);
 		}
 		goto fail;
 	}
+	mqtt_log(LOG_INFO, "broker accepted CONNECT");
 
 	/* BBSID discovery — the BBS publishes sbbs/{BBSID} (retained, value
 	   = sys_name) at server startup, so a wildcard subscribe at the
@@ -1007,11 +1146,13 @@ mqtt_connect(struct bbslist *bbs)
 	}
 
 	if (mqtt_bbsid[0] == 0) {
+		mqtt_log(LOG_WARNING,
+		    "BBSID discovery timed out; requesting manual entry");
 		if (!bbs->hidepopups)
 			host_ui_status(NULL);
 		if (prompt_bbsid() < 0) {
 			if (!bbs->hidepopups)
-				host_ui_alert("MQTT Error",
+				mqtt_alert("MQTT Error",
 				    "No BBSID was discovered and none was entered.\n"
 				    "The broker has no retained `sbbs/{BBSID}` topic, which\n"
 				    "means the BBS has not yet published its identity to MQTT.");
@@ -1024,6 +1165,8 @@ mqtt_connect(struct bbslist *bbs)
 		host_ui_status(NULL);
 		host_ui_status("Discovering nodes");
 	}
+	if (mqtt_bbsid[0] != 0)
+		mqtt_log(LOG_INFO, "BBSID selected (value omitted)");
 
 	(void)send_unsubscribe("sbbs/+");
 
@@ -1048,11 +1191,13 @@ mqtt_connect(struct bbslist *bbs)
 
 	mqtt_node = pick_node(&st);
 	if (mqtt_node <= 0) {
+		mqtt_log(LOG_INFO, "node selection cancelled");
 		if (!bbs->hidepopups)
-			host_ui_alert("MQTT",
+			mqtt_alert("MQTT",
 			    "No node selected.  Cancelled.");
 		goto fail;
 	}
+	mqtt_log(LOG_INFO, "node %d selected", mqtt_node);
 
 	(void)send_unsubscribe(node_filter);
 
@@ -1113,13 +1258,16 @@ mqtt_connect(struct bbslist *bbs)
 
 	if (!bbs->hidepopups)
 		host_ui_status(NULL);
+	mqtt_log(LOG_INFO, "MQTT session established");
 	return 0;
 
 fail:
 	if (!bbs->hidepopups)
 		host_ui_status(NULL);
+	if (fail_reason != NULL)
+		mqtt_log(LOG_ERR, "%s", fail_reason);
 	if (!bbs->hidepopups && fail_reason != NULL)
-		host_ui_alert("MQTT Error", fail_reason);
+		mqtt_alert("MQTT Error", fail_reason);
 	if (mqtt_tls != NULL) {
 		xp_tls_close(mqtt_tls, false);
 		mqtt_tls = NULL;
@@ -1136,14 +1284,19 @@ int
 mqtt_close(void)
 {
 	char garbage[1024];
+	bool local_close = !conn_api.terminate;
 	conn_api.terminate = true;
 
-	/* Best-effort DISCONNECT — only if the session is still alive. */
-	if (mqtt_tls != NULL) {
+	/* Send MQTT DISCONNECT only for a locally initiated close. A remote
+	 * teardown or I/O failure has no live protocol session to notify. */
+	if (mqtt_tls != NULL && local_close) {
 		uint8_t buf[2];
 		size_t  n = build_disconnect(buf);
+		mqtt_log(LOG_DEBUG, "sending DISCONNECT");
 		(void)tls_send_all(buf, n);
 	}
+	if (mqtt_tls != NULL)
+		(void)xp_tls_terminate(mqtt_tls);
 
 	if (mqtt_sock != INVALID_SOCKET)
 		shutdown(mqtt_sock, SHUT_RDWR);

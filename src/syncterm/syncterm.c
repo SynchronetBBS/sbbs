@@ -215,6 +215,7 @@ uses_protocol_log(int conn_type)
 			return true;
 #ifndef WITHOUT_CRYPTO
 		case CONN_TYPE_TELNETS:
+		case CONN_TYPE_MQTT:
 			return true;
 #endif
 #ifndef WITHOUT_DEUCESSH
