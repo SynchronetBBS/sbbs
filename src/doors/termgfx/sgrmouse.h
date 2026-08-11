@@ -32,7 +32,8 @@ typedef enum {
 //        settles it -- button.c's BtnCode() takes button<0 (FirstBitN(0), no
 //        button held) and does `result += 3`, and the SGR path then subtracts
 //        the X10 +32 bias: 32+32+3-32 = 35.
-//   96   what SyncTERM actually sends, matching neither -- not even its own
+//   96   what SyncTERM sent BEFORE bbf7c4c79b (dice-12-carpet, 2026-07-11),
+//        matching neither -- not even its own
 //        spec above. syncterm/term.c's mouse_state() forces the no-button
 //        case to bit 4 -> button 3, which then collides with the wheel remap
 //        `if (button >= 3) button += 61` (there to turn CIOLIB's wheel
@@ -46,6 +47,15 @@ typedef enum {
 // while 96 stays MOVE because nothing can tell wheel-up-with-motion from a
 // hover. Half the notches are recoverable; the other half are a collision in
 // the terminal's own encoding.
+//
+// BOTH OF THOSE ARE HISTORY IN A CURRENT SyncTERM, and the handling stays
+// anyway. bbf7c4c79b (dice-12-carpet, 2026-07-11) stopped routing the
+// no-button sentinel through the wheel remap, so motion is now reported as
+// xterm's 35 and a notch as a clean 64/65 -- captured live 2026-08-10 from
+// CTerm 1.332: twelve motion reports at b=35, wheel at b=64/65, no 96 or 97
+// at all. Doors serve whatever client dials in, including releases built
+// before that, so 96 and 97 must keep decoding as they do above; what
+// changes is that they are no longer the common case.
 //
 // Note the wheel bit is independent of the low two bits: xterm sets it from
 // `button & 4`, not from a value in 0..3. That is exactly the invariant
