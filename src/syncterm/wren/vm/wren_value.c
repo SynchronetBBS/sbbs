@@ -122,7 +122,7 @@ void wrenBindMethod(WrenVM* vm, ObjClass* classObj, int symbol, Method method)
   // Make sure the buffer is big enough to contain the symbol's index.
   if (symbol >= classObj->methods.count)
   {
-    Method noMethod;
+    Method noMethod = {0};
     noMethod.type = METHOD_NONE;
     wrenMethodBufferFill(vm, &classObj->methods, noMethod,
                          symbol - classObj->methods.count + 1);
