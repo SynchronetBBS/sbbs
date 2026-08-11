@@ -3590,11 +3590,13 @@ Connection-level send and receive.
 | `Conn.type`
 | `ConnType` value.
 
-| `Conn.sshLog`
+| `Conn.protocolLog`
 | A snapshot String containing the structured diagnostics retained for
-  the current SSH session, or `null` for a non-SSH session or when no
-  diagnostics have been recorded.  The final snapshot remains available
-  to `Hook.onDisconnect` handlers after transport teardown.
+  the current SSH, Telnet, or TelnetS session, or `null` for another
+  protocol or when no diagnostics have been recorded. TelnetS combines
+  Telnet negotiation and TLS-provider diagnostics in arrival order. The
+  final snapshot remains available to `Hook.onDisconnect` handlers after
+  transport teardown.
 
 | `Conn.pending`
 | Bytes available to read right now (in the inbuf ring).

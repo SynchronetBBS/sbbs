@@ -13,6 +13,7 @@
 #include "conn.h"
 #include "conn_telnet.h"
 #include "gen_defs.h"
+#include "protocol_log.h"
 #include "telnet.h"
 #include "term.h"
 
@@ -30,7 +31,6 @@ uchar        telnet_remote_option[0x100];
 
 extern char *log_levels[];
 extern FILE *log_fp;
-int          protocol_log_level;
 
 static int
 lprintf(int level, const char *fmt, ...)
@@ -38,14 +38,22 @@ lprintf(int level, const char *fmt, ...)
 	char    sbuf[1024];
 	va_list argptr;
 
-	if ((log_fp == NULL) || (level > protocol_log_level))
+	if (!protocol_log_enabled(level))
 		return 0;
 
 	va_start(argptr, fmt);
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0;
 	va_end(argptr);
-	return fprintf(log_fp, "Telnet %s %s\n", log_levels[level], sbuf);
+	char line[sizeof(sbuf) + 64];
+	int length = snprintf(line, sizeof(line), "Telnet %s: %s\n",
+	    log_levels[level], sbuf);
+	if (length < 0)
+		return length;
+	if ((size_t)length >= sizeof(line))
+		length = sizeof(line) - 1;
+	(void)protocol_log_append(level, line, (size_t)length, log_fp);
+	return length;
 }
 
 void

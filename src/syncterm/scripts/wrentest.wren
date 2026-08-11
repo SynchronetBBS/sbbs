@@ -238,7 +238,7 @@ class WrenTest {
     // ------ read-only live bindings ---------------------------------
     testConnConnected_()
     testConnType_()
-    testConnSshLog_()
+    testConnProtocolLog_()
     testConnPending_()
     testConnQueued_()
     testScreenSize_()
@@ -858,10 +858,10 @@ class WrenTest {
     check_(t is Num && t >= 0, "Conn.type is a Num")
   }
 
-  static testConnSshLog_() {
-    var log = Conn.sshLog
+  static testConnProtocolLog_() {
+    var log = Conn.protocolLog
     check_(log == null || log is String,
-        "Conn.sshLog is null or a String snapshot")
+        "Conn.protocolLog is null or a String snapshot")
   }
 
   static testConnPending_() {

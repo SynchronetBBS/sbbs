@@ -113,7 +113,45 @@ struct xp_tls_ctx {
 	pthread_mutex_t provider_lock;
 	bool locks_initialized;
 	bool terminating;
+	struct xp_tls_logger logger;
 };
+
+static void
+openssl_info_callback(const SSL *ssl, int where, int ret)
+{
+	struct xp_tls_ctx *ctx = SSL_get_app_data(ssl);
+	if (ctx == NULL)
+		return;
+	if ((where & SSL_CB_ALERT) != 0) {
+		bool local = (where & SSL_CB_WRITE) != 0;
+		unsigned long code = (unsigned long)(ret & 0xff);
+		bool fatal = ((ret >> 8) & 0xff) == 2;
+		enum xp_tls_log_level level = code == SSL_AD_CLOSE_NOTIFY
+		    ? XP_TLS_LOG_DEBUG
+		    : fatal ? XP_TLS_LOG_ERROR : XP_TLS_LOG_WARNING;
+		xp_tls_log_emitf(&ctx->logger, level,
+		    local ? XP_TLS_LOG_SOURCE_LOCAL_ALERT
+		          : XP_TLS_LOG_SOURCE_PEER_ALERT,
+		    0, code, fatal, "%s %s alert: %s",
+		    local ? "sent" : "received",
+		    SSL_alert_type_string_long(ret),
+		    SSL_alert_desc_string_long(ret));
+		return;
+	}
+	if ((where & SSL_CB_HANDSHAKE_START) != 0)
+		xp_tls_log_emit(&ctx->logger, XP_TLS_LOG_DEBUG,
+		    XP_TLS_LOG_SOURCE_BACKEND, 0, 0, false,
+		    "handshake started");
+	if ((where & SSL_CB_LOOP) != 0)
+		xp_tls_log_emit(&ctx->logger, XP_TLS_LOG_DEBUG,
+		    XP_TLS_LOG_SOURCE_BACKEND, 0, 0, false,
+		    SSL_state_string_long(ssl));
+	if ((where & SSL_CB_HANDSHAKE_DONE) != 0)
+		xp_tls_log_emitf(&ctx->logger, XP_TLS_LOG_DEBUG,
+		    XP_TLS_LOG_SOURCE_BACKEND, 0, 0, false,
+		    "handshake completed: %s, %s", SSL_get_version(ssl),
+		    SSL_get_cipher_name(ssl));
+}
 
 static bool
 initialize_context_locks(struct xp_tls_ctx *ctx)
@@ -663,6 +701,8 @@ client_open_inner(SOCKET sock, const struct xp_tls_client_config *config)
 	ctx->sock = sock;
 	ctx->peer_chain_cb = config->peer_chain_cb;
 	ctx->peer_chain_cb_arg = config->peer_chain_cb_arg;
+	ctx->logger = (struct xp_tls_logger){config->log_cb,
+	    config->log_cb_arg, config->log_level, "OpenSSL"};
 
 	if (psk_identity != NULL && psk != NULL && psk_len > 0) {
 		ctx->psk_identity = strdup(psk_identity);
@@ -806,6 +846,7 @@ client_open_inner(SOCKET sock, const struct xp_tls_client_config *config)
 	SSL_set_mode(ctx->ssl,
 	    SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 	SSL_set_app_data(ctx->ssl, ctx);
+	SSL_set_info_callback(ctx->ssl, openssl_info_callback);
 	if (sni != NULL && sni[0] != 0) {
 		/* SSL_set_tlsext_host_name returns 1 on success. */
 		if (SSL_set_tlsext_host_name(ctx->ssl, sni) != 1) {
@@ -855,7 +896,7 @@ fail:
 }
 
 xp_tls_t
-xp_tls_client_open_config(SOCKET sock,
+client_open_config_inner(SOCKET sock,
                           const struct xp_tls_client_config *config)
 {
 	if (config == NULL) {
@@ -929,6 +970,21 @@ xp_tls_client_open_config(SOCKET sock,
 	return client_open_inner(sock, config);
 }
 
+xp_tls_t
+xp_tls_client_open_config(SOCKET sock,
+    const struct xp_tls_client_config *config)
+{
+	xp_tls_t result = client_open_config_inner(sock, config);
+	if (result == NULL && config != NULL) {
+		const struct xp_tls_logger logger = {config->log_cb,
+		    config->log_cb_arg, config->log_level, "OpenSSL"};
+		xp_tls_log_emit(&logger, XP_TLS_LOG_ERROR,
+		    XP_TLS_LOG_SOURCE_LIBRARY, XP_TLS_ERR, 0, false,
+		    xp_tls_last_err());
+	}
+	return result;
+}
+
 static int
 use_certificate_chain(SSL_CTX *context,
 	const void *pem, size_t pem_length)
@@ -955,7 +1011,7 @@ use_certificate_chain(SSL_CTX *context,
 }
 
 xp_tls_t
-xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
+provider_server_open_inner(SOCKET socket, const void *chain_pem,
 	size_t chain_pem_length, xp_key_t private_key,
 	const struct xp_tls_server_config *config)
 {
@@ -986,6 +1042,8 @@ xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
 	context->server_psk_lookup = config->psk_lookup;
 	context->server_psk_lookup_arg = config->psk_lookup_arg;
 	context->server_key = private_key;
+	context->logger = (struct xp_tls_logger){config->log_cb,
+	    config->log_cb_arg, config->log_level, "OpenSSL"};
 	if (private_key != NULL)
 		xp_key_retain(private_key);
 	context->sslctx = SSL_CTX_new(TLS_server_method());
@@ -1050,6 +1108,7 @@ xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
 	SSL_set_mode(context->ssl,
 	    SSL_MODE_ENABLE_PARTIAL_WRITE | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 	SSL_set_app_data(context->ssl, context);
+	SSL_set_info_callback(context->ssl, openssl_info_callback);
 	rc = drive_handshake(context, true, config->handshake_timeout_ms);
 	if (rc == 0) {
 		set_last_err("TLS server handshake timed out");
@@ -1063,6 +1122,23 @@ xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
 fail:
 	xp_tls_close(context, false);
 	return NULL;
+}
+
+xp_tls_t
+xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
+	size_t chain_pem_length, xp_key_t private_key,
+	const struct xp_tls_server_config *config)
+{
+	xp_tls_t result = provider_server_open_inner(socket, chain_pem,
+	    chain_pem_length, private_key, config);
+	if (result == NULL && config != NULL) {
+		const struct xp_tls_logger logger = {config->log_cb,
+		    config->log_cb_arg, config->log_level, "OpenSSL"};
+		xp_tls_log_emit(&logger, XP_TLS_LOG_ERROR,
+		    XP_TLS_LOG_SOURCE_LIBRARY, XP_TLS_ERR, 0, false,
+		    xp_tls_last_err());
+	}
+	return result;
 }
 
 enum xp_tls_version
@@ -1100,9 +1176,14 @@ tls_io_error_locked(struct xp_tls_ctx *ctx, int result, const char *operation,
 			return XP_TLS_ERR_CLOSED;
 		snprintf(ctx->err, sizeof(ctx->err), "%s syscall error (errno=%d)",
 		    operation, errno);
+		xp_tls_log_emit(&ctx->logger, XP_TLS_LOG_ERROR,
+		    XP_TLS_LOG_SOURCE_LIBRARY, XP_TLS_ERR, (unsigned long)errno,
+		    false, ctx->err);
 		return XP_TLS_ERR;
 	}
 	format_ssl_err(ctx->err, sizeof(ctx->err), operation);
+	xp_tls_log_emit(&ctx->logger, XP_TLS_LOG_ERROR,
+	    XP_TLS_LOG_SOURCE_LIBRARY, XP_TLS_ERR, 0, false, ctx->err);
 	return XP_TLS_ERR;
 }
 
@@ -1202,6 +1283,9 @@ xp_tls_push_timeout(xp_tls_t ctx, const void *buf, size_t n, size_t *copied,
 		if (result == 1) {
 			snprintf(ctx->err, sizeof(ctx->err),
 			    "SSL_write produced no progress");
+			xp_tls_log_emit(&ctx->logger, XP_TLS_LOG_ERROR,
+			    XP_TLS_LOG_SOURCE_LIBRARY, XP_TLS_ERR, 0, false,
+			    ctx->err);
 			pthread_mutex_unlock(&ctx->provider_lock);
 			status = XP_TLS_ERR;
 			break;
@@ -1324,6 +1408,9 @@ xp_tls_terminate(xp_tls_t ctx)
 	pthread_mutex_lock(&ctx->provider_lock);
 	if (!ctx->terminating) {
 		ctx->terminating = true;
+		xp_tls_log_emit(&ctx->logger, XP_TLS_LOG_DEBUG,
+		    XP_TLS_LOG_SOURCE_LIBRARY, 0, 0, false,
+		    "local termination requested");
 		if (ctx->ssl != NULL && ctx->sock != INVALID_SOCKET
 		    && socket_writable(ctx->sock, 0))
 			(void)SSL_shutdown(ctx->ssl);

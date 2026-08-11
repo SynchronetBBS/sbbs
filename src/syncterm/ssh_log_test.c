@@ -1,4 +1,5 @@
 #include "ssh_log.h"
+#include "protocol_log.h"
 
 #include "eventwrap.h"
 #include "gen_defs.h"
@@ -42,6 +43,24 @@ test_level_mapping(void)
 }
 
 static void
+test_combined_protocol_sources(void)
+{
+	static const char telnet[] = "Telnet Info: TX: WILL BINARY\n";
+	static const char tls[] = "TLS Debug Botan backend: handshake message: Finished\n";
+	protocol_log_reset(LOG_DEBUG);
+	CHECK(protocol_log_append(LOG_INFO, telnet, sizeof(telnet) - 1, NULL));
+	CHECK(protocol_log_append(LOG_DEBUG, tls, sizeof(tls) - 1, NULL));
+	char *snapshot = protocol_log_snapshot(NULL);
+	CHECK(snapshot != NULL && strstr(snapshot, telnet) != NULL);
+	CHECK(snapshot != NULL && strstr(snapshot, tls) != NULL);
+	free(snapshot);
+
+	protocol_log_reset(LOG_ERR);
+	CHECK(!protocol_log_append(LOG_INFO, telnet, sizeof(telnet) - 1, NULL));
+	CHECK(protocol_log_snapshot(NULL) == NULL);
+}
+
+static void
 test_format_and_file(void)
 {
 	static const uint8_t message[] = {'b', 'a', 'd', 0x1b, '\n', 0xff};
@@ -55,13 +74,13 @@ test_format_and_file(void)
 	record.always_display = true;
 	record.truncated = true;
 
-	ssh_log_reset();
+	protocol_log_reset(LOG_DEBUG);
 	FILE *fp = tmpfile();
 	CHECK(fp != NULL);
 	CHECK(ssh_log_append(&record, fp));
 
 	size_t len = 0;
-	char *snapshot = ssh_log_snapshot(&len);
+	char *snapshot = protocol_log_snapshot(&len);
 	CHECK(snapshot != NULL);
 	CHECK(len == strlen(snapshot));
 	CHECK(strstr(snapshot, "SSH ERROR peer-disconnect:") != NULL);
@@ -102,7 +121,7 @@ test_concurrent_append(void)
 {
 	static const uint8_t message[] = "concurrent";
 	struct append_thread threads[4];
-	ssh_log_reset();
+	protocol_log_reset(LOG_DEBUG);
 	for (size_t i = 0; i < 4; i++) {
 		threads[i].record = record_for(DSSH_LOG_WARNING,
 		    DSSH_LOG_SOURCE_LIBRARY, message, sizeof(message) - 1);
@@ -116,7 +135,7 @@ test_concurrent_append(void)
 		CloseEvent(threads[i].done);
 	}
 	size_t len = 0;
-	char *snapshot = ssh_log_snapshot(&len);
+	char *snapshot = protocol_log_snapshot(&len);
 	CHECK(snapshot != NULL);
 	size_t lines = 0;
 	for (size_t i = 0; i < len; i++)
@@ -133,36 +152,37 @@ test_cap_and_help(void)
 	memset(message, 'x', sizeof(message));
 	struct dssh_log_record record = record_for(DSSH_LOG_DEBUG,
 	    DSSH_LOG_SOURCE_LIBRARY, message, sizeof(message));
-	ssh_log_reset();
+	protocol_log_reset(LOG_DEBUG);
 	for (int i = 0; i < 10000; i++)
 		(void)ssh_log_append(&record, NULL);
 	size_t len = 0;
-	char *snapshot = ssh_log_snapshot(&len);
+	char *snapshot = protocol_log_snapshot(&len);
 	CHECK(snapshot != NULL);
-	CHECK(len <= SSH_LOG_MAX_SIZE);
+	CHECK(len <= PROTOCOL_LOG_MAX_SIZE);
 	CHECK(strstr(snapshot, "[log truncated at 1 MiB]") != NULL);
 	free(snapshot);
 
-	char *help = ssh_log_build_help("Remote *host*\nCipher: `aes`");
+	char *help = protocol_log_build_help("Remote *host*\nCipher: `aes`");
 	CHECK(help != NULL);
 	CHECK(strstr(help, "Remote \\*host\\*") != NULL);
 	CHECK(strstr(help, "Cipher: \\`aes\\`") != NULL);
-	CHECK(strstr(help, "# SSH Session Log") != NULL);
+	CHECK(strstr(help, "# Protocol Session Log") != NULL);
 	free(help);
 
-	ssh_log_reset();
-	CHECK(ssh_log_snapshot(NULL) == NULL);
+	protocol_log_reset(LOG_DEBUG);
+	CHECK(protocol_log_snapshot(NULL) == NULL);
 }
 
 int
 main(void)
 {
-	CHECK(ssh_log_init());
+	CHECK(protocol_log_init());
 	test_level_mapping();
+	test_combined_protocol_sources();
 	test_format_and_file();
 	test_concurrent_append();
 	test_cap_and_help();
-	ssh_log_cleanup();
+	protocol_log_cleanup();
 	if (failures != 0)
 		fprintf(stderr, "%u ssh log test(s) failed\n", failures);
 	return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

@@ -8,6 +8,19 @@
 #include "xp_sign.h"
 #include "xp_tls.h"
 
+static unsigned tls_log_count;
+
+static void
+capture_tls_log(const struct xp_tls_log_record *record, void *arg)
+{
+	unsigned *count = arg;
+	if (record != NULL && record->level == XP_TLS_LOG_ERROR
+	    && record->source == XP_TLS_LOG_SOURCE_LIBRARY
+	    && record->backend != NULL && strcmp(record->backend, "none") == 0
+	    && record->message != NULL && record->message_len != 0)
+		(*count)++;
+}
+
 int main(void)
 {
 	xp_key_t key = (xp_key_t)1;
@@ -39,11 +52,20 @@ int main(void)
 	if (xp_digest_size(XP_DIGEST_SHA256) != 0
 	    || xp_digest_create(XP_DIGEST_SHA256) != NULL)
 		return 1;
-	struct xp_tls_client_config client = {0};
-	struct xp_tls_server_config server = {0};
+	struct xp_tls_client_config client = {
+		.log_cb = capture_tls_log,
+		.log_cb_arg = &tls_log_count,
+		.log_level = XP_TLS_LOG_ERROR,
+	};
+	struct xp_tls_server_config server = {
+		.log_cb = capture_tls_log,
+		.log_cb_arg = &tls_log_count,
+		.log_level = XP_TLS_LOG_ERROR,
+	};
 	if (xp_tls_client_open_config(INVALID_SOCKET, &client) != NULL
 	    || xp_tls_server_open(INVALID_SOCKET, NULL, &server) != NULL
-	    || strstr(xp_tls_last_err(), "disabled") == NULL)
+	    || strstr(xp_tls_last_err(), "disabled") == NULL
+	    || tls_log_count != 2)
 		return 1;
 	unsigned char output[32];
 	if (xp_kdf_pbkdf2(XP_DIGEST_SHA256, "x", 1, "y", 1, 1,

@@ -19,12 +19,19 @@
 #include <stddef.h>
 
 #include "xp_tls.h"
+#include "xp_tls_internal.h"
 
 xp_tls_t
 xp_tls_client_open_config(SOCKET sock, const struct xp_tls_client_config *config)
 {
 	(void)sock;
-	(void)config;
+	if (config != NULL) {
+		const struct xp_tls_logger logger = {config->log_cb,
+		    config->log_cb_arg, config->log_level, "none"};
+		xp_tls_log_emit(&logger, XP_TLS_LOG_ERROR,
+		    XP_TLS_LOG_SOURCE_LIBRARY, XP_TLS_ERR, 0, false,
+		    "TLS disabled at build time (WITHOUT_CRYPTO)");
+	}
 	return NULL;
 }
 
@@ -34,7 +41,15 @@ xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
 	const struct xp_tls_server_config *config)
 {
 	(void)socket; (void)chain_pem; (void)chain_pem_length;
-	(void)private_key; (void)config; return NULL;
+	(void)private_key;
+	if (config != NULL) {
+		const struct xp_tls_logger logger = {config->log_cb,
+		    config->log_cb_arg, config->log_level, "none"};
+		xp_tls_log_emit(&logger, XP_TLS_LOG_ERROR,
+		    XP_TLS_LOG_SOURCE_LIBRARY, XP_TLS_ERR, 0, false,
+		    "TLS disabled at build time (WITHOUT_CRYPTO)");
+	}
+	return NULL;
 }
 
 enum xp_tls_version

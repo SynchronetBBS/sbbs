@@ -43,6 +43,38 @@ extern "C" {
 typedef struct xp_tls_ctx *xp_tls_t;
 typedef struct xp_tls_server_credentials *xp_tls_server_credentials_t;
 
+enum xp_tls_log_level {
+	XP_TLS_LOG_ERROR,
+	XP_TLS_LOG_WARNING,
+	XP_TLS_LOG_DEBUG,
+};
+
+enum xp_tls_log_source {
+	XP_TLS_LOG_SOURCE_LIBRARY,
+	XP_TLS_LOG_SOURCE_BACKEND,
+	XP_TLS_LOG_SOURCE_PEER_ALERT,
+	XP_TLS_LOG_SOURCE_LOCAL_ALERT,
+};
+
+struct xp_tls_log_record {
+	enum xp_tls_log_level  level;
+	enum xp_tls_log_source source;
+	const char            *backend;
+	int                    error_code;
+	unsigned long          native_code;
+	bool                   fatal;
+	const void            *message;
+	size_t                 message_len;
+};
+
+/*
+ * Optional per-session diagnostics. Records and pointed-to data are valid
+ * only during the callback. Callbacks may overlap when separate threads use
+ * one session and must not re-enter that session through xp_tls_*().
+ */
+typedef void (*xp_tls_log_cb)(const struct xp_tls_log_record *record,
+	void *arg);
+
 enum xp_tls_server_auth {
 	XP_TLS_SERVER_AUTH_NONE,
 	XP_TLS_SERVER_AUTH_WEB_PKI,
@@ -111,6 +143,9 @@ struct xp_tls_server_config {
 	xp_tls_psk_lookup_cb psk_lookup;
 	void *psk_lookup_arg;
 	enum xp_tls_psk_policy psk_policy;
+	xp_tls_log_cb log_cb;
+	void *log_cb_arg;
+	enum xp_tls_log_level log_level;
 };
 
 /*
@@ -174,6 +209,9 @@ struct xp_tls_client_config {
 	xp_crypto_secret_callback_t private_key_password;
 	void       *private_key_password_arg;
 	const struct xp_tls_client_identity *client_identity;
+	xp_tls_log_cb log_cb;
+	void *log_cb_arg;
+	enum xp_tls_log_level log_level;
 };
 
 /*

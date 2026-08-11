@@ -345,6 +345,7 @@ OBJS   += $(WREN_OBJS)
 OBJS   += $(MTOBJODIR)$(DIRSEP)bbslist_model$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)menu_settings$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)host_ui$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)protocol_log$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_menu_host$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind$(OFILE)
@@ -715,13 +716,15 @@ $(CONN_BUFFER_TEST): conn_buffer_test.c conn_buf.c conn.h $(XPDEV-MT_LIB) | $(EX
 ifndef WITHOUT_DEUCESSH
 SSH_LOG_TEST = $(EXEODIR)$(DIRSEP)ssh_log_test
 
-$(SSH_LOG_TEST): ssh_log_test.c ssh_log.c ssh_log.h $(DEUCESSH_LIB) $(XPDEV-MT_LIB) | $(EXEODIR)
+$(SSH_LOG_TEST): ssh_log_test.c ssh_log.c ssh_log.h protocol_log.c protocol_log.h $(DEUCESSH_LIB) $(XPDEV-MT_LIB) | $(EXEODIR)
 	@echo Compiling ssh_log_test
 	${QUIET}$(CC) -std=c17 $(CFLAGS) $(MT_CFLAGS) -o $(MTOBJODIR)$(DIRSEP)ssh_log_test$(OFILE) -c ssh_log_test.c
 	${QUIET}$(CC) -std=c17 $(CFLAGS) $(MT_CFLAGS) -o $(MTOBJODIR)$(DIRSEP)ssh_log_test_log$(OFILE) -c ssh_log.c
+	${QUIET}$(CC) -std=c17 $(CFLAGS) $(MT_CFLAGS) -o $(MTOBJODIR)$(DIRSEP)ssh_log_test_protocol_log$(OFILE) -c protocol_log.c
 	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) \
 		$(MTOBJODIR)$(DIRSEP)ssh_log_test$(OFILE) \
-		$(MTOBJODIR)$(DIRSEP)ssh_log_test_log$(OFILE) -o $@ \
+		$(MTOBJODIR)$(DIRSEP)ssh_log_test_log$(OFILE) \
+		$(MTOBJODIR)$(DIRSEP)ssh_log_test_protocol_log$(OFILE) -o $@ \
 		$(EXTRA_LIBS) $(XPDEV-MT_LIBS) $(TRAILING_LIBS)
 else
 SSH_LOG_TEST =

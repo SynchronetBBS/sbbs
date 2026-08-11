@@ -820,7 +820,8 @@ File Transfer Log Level:::
 	Errors, Warnings, Notices, Normal, or Debug.
 Protocol Log Level:::
 	Chosen from the same list as above. Controls Telnet and SSH
-	protocol diagnostics. The global default is Errors when neither the
+	protocol diagnostics, including native TLS-provider tracing for
+	TelnetS. The global default is Errors when neither the
 	new ProtocolLogLevel nor legacy TelnetLogLevel setting is present.
 Append Log File::: If set you Yes, the log file retains old information
 	and will keep growing.  If set to No, the log file is emptied

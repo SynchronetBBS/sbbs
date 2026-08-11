@@ -86,6 +86,7 @@ enum {
 #endif
 #include "fonts.h"
 #include "host_ui.h"
+#include "protocol_log.h"
 #include "syncterm.h"
 #include "term.h"
 #include "theme.h"
@@ -204,6 +205,25 @@ close_connection_log(void)
 	fprintf(log_fp, "---------------\n");
 	fclose(log_fp);
 	log_fp = NULL;
+}
+
+static bool
+uses_protocol_log(int conn_type)
+{
+	switch (conn_type) {
+		case CONN_TYPE_TELNET:
+			return true;
+#ifndef WITHOUT_CRYPTO
+		case CONN_TYPE_TELNETS:
+			return true;
+#endif
+#ifndef WITHOUT_DEUCESSH
+		case CONN_TYPE_SSH:
+		case CONN_TYPE_SSHNA:
+			return true;
+#endif
+	}
+	return false;
 }
 
 /* ---------------------------------------------------------- popup queue */
@@ -2257,6 +2277,9 @@ main(int argc, char **argv)
 	}
 
 	pthread_mutex_init(&popup_q_mutex, NULL);
+	if (!protocol_log_init())
+		fprintf(stderr, "Unable to initialize protocol diagnostic log\n");
+	atexit(protocol_log_cleanup);
 
 #ifndef WITHOUT_DEUCESSH
         /* DeuceSSH algorithm registration + RNG seed; must run before
@@ -2678,7 +2701,7 @@ main(int argc, char **argv)
 
 	while ((!quitting) && (bbs != NULL ||
 	    (bbs = wren_menu_host_run(last_bbs, false)) != NULL)) {
-		bool ssh_log_opened_early = false;
+		bool protocol_log_opened_early = false;
 		if (default_hidepopups >= 0)
 			bbs->hidepopups = default_hidepopups;
 		if (default_nostatus >= 0)
@@ -2691,13 +2714,12 @@ main(int argc, char **argv)
 		set_default_cursor();
 		load_font_files();
 		setfont(find_font_id(bbs->font), true, 1);
-#ifndef WITHOUT_DEUCESSH
-		if (bbs->conn_type == CONN_TYPE_SSH ||
-		    bbs->conn_type == CONN_TYPE_SSHNA)
-			ssh_log_opened_early = open_connection_log(bbs);
-#endif
+		if (uses_protocol_log(bbs->conn_type)) {
+			protocol_log_reset(bbs->protocol_loglevel);
+			protocol_log_opened_early = open_connection_log(bbs);
+		}
 		if (conn_connect(bbs)) {
-			if (ssh_log_opened_early)
+			if (protocol_log_opened_early)
 				close_connection_log();
 			load_font_files();
 			textmode(txtinfo.currmode);

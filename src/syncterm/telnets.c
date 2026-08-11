@@ -9,6 +9,7 @@
 #include "gen_defs.h"
 #include "genwrap.h"
 #include "host_ui.h"
+#include "protocol_log.h"
 #include "sockwrap.h"
 #include "ssh.h"
 #include "syncterm.h"
@@ -21,6 +22,81 @@
 static SOCKET telnets_sock;
 static xp_tls_t telnets_session;
 static pthread_mutex_t telnets_mutex;
+extern FILE *log_fp;
+
+static enum xp_tls_log_level
+tls_log_level_from_config(int level)
+{
+	if (level <= LOG_ERR)
+		return XP_TLS_LOG_ERROR;
+	if (level < LOG_DEBUG)
+		return XP_TLS_LOG_WARNING;
+	return XP_TLS_LOG_DEBUG;
+}
+
+static void
+tls_diagnostic_cb(const struct xp_tls_log_record *record, void *arg)
+{
+	(void)arg;
+	if (record == NULL)
+		return;
+	const char *level_name;
+	int level;
+	switch (record->level) {
+		case XP_TLS_LOG_ERROR:
+			level = LOG_ERR;
+			level_name = "Error";
+			break;
+		case XP_TLS_LOG_WARNING:
+			level = LOG_WARNING;
+			level_name = "Warning";
+			break;
+		default:
+			level = LOG_DEBUG;
+			level_name = "Debug";
+			break;
+	}
+	static const char *const sources[] = {
+		"library", "backend", "peer-alert", "local-alert"
+	};
+	const char *source = (unsigned)record->source <
+	    sizeof(sources) / sizeof(sources[0])
+	    ? sources[record->source] : "unknown";
+	if (record->message_len > (SIZE_MAX - 384) / 4)
+		return;
+	size_t capacity = record->message_len * 4 + 384;
+	char *line = malloc(capacity);
+	if (line == NULL)
+		return;
+	int written = snprintf(line, capacity, "TLS %s %s %s: ", level_name,
+	    record->backend == NULL ? "xptls" : record->backend, source);
+	if (written < 0 || (size_t)written >= capacity) {
+		free(line);
+		return;
+	}
+	size_t used = (size_t)written;
+	const unsigned char *message = record->message;
+	for (size_t i = 0; i < record->message_len; i++) {
+		unsigned char ch = message == NULL ? 0 : message[i];
+		if (ch >= 0x20 && ch <= 0x7e)
+			line[used++] = (char)ch;
+		else
+			used += (size_t)snprintf(line + used, capacity - used,
+			    "\\x%02X", ch);
+	}
+	if (record->error_code != 0)
+		used += (size_t)snprintf(line + used, capacity - used,
+		    " [error=%d]", record->error_code);
+	if (record->native_code != 0)
+		used += (size_t)snprintf(line + used, capacity - used,
+		    " [native=%lu]", record->native_code);
+	if (record->fatal)
+		used += (size_t)snprintf(line + used, capacity - used, " [fatal]");
+	line[used++] = '\n';
+	line[used] = '\0';
+	(void)protocol_log_append(level, line, used, log_fp);
+	free(line);
+}
 
 struct captured_certificate {
 	char *subject;
@@ -226,7 +302,7 @@ certificate_failure_flow(struct bbslist *bbs,
 		return false;
 	const bool can_install = !safe_mode && bbs->type == USER_BBSLIST &&
 	    bbs->name[0] != 0;
-	const size_t option_count = chain->count + 1;
+	const size_t option_count = chain->count + 2;
 	char **options = calloc(option_count, sizeof(*options));
 	if (options == NULL)
 		return false;
@@ -236,7 +312,8 @@ certificate_failure_flow(struct bbslist *bbs,
 		    role, chain->certificates[i].subject) < 0)
 			options[i] = NULL;
 	}
-	options[chain->count] = copy_string("Disconnect");
+	options[chain->count] = copy_string("View Protocol Log");
+	options[chain->count + 1] = copy_string("Disconnect");
 	for (size_t i = 0; i < option_count; i++) {
 		if (options[i] == NULL) {
 			for (size_t j = 0; j < option_count; j++)
@@ -259,6 +336,14 @@ certificate_failure_flow(struct bbslist *bbs,
 		if (selected == -2)
 			break;
 		shown = true;
+		if (selected >= 0 && (size_t)selected == chain->count) {
+			char *help = protocol_log_build_help(error);
+			if (help != NULL) {
+				host_ui_help("TLS Certificate Error", help);
+				free(help);
+			}
+			continue;
+		}
 		if (selected < 0 || (size_t)selected >= chain->count)
 			break;
 		const struct captured_certificate *certificate =
@@ -365,7 +450,8 @@ accept_tls_version(struct bbslist *bbs, enum syncterm_tls_version negotiated)
 		return false;
 
 	static const char *const options[] = {
-		"Disconnect", "Accept Once", "Accept and Remember"
+		"Disconnect", "Accept Once", "Accept and Remember",
+		"View Protocol Log"
 	};
 	char message[512];
 	snprintf(message, sizeof(message),
@@ -374,8 +460,18 @@ accept_tls_version(struct bbslist *bbs, enum syncterm_tls_version negotiated)
 	    "server configuration change or an active downgrade attack.\n\n"
 	    "SyncTERM has not started Telnet I/O.\n",
 	    tls_version_name(floor), tls_version_name(negotiated));
-	int choice = host_ui_choice_message("TLS version downgraded", message,
-	    options, sizeof(options) / sizeof(options[0]), 0);
+	int choice;
+	do {
+		choice = host_ui_choice_message("TLS version downgraded", message,
+		    options, sizeof(options) / sizeof(options[0]), 0);
+		if (choice == 3) {
+			char *help = protocol_log_build_help(message);
+			if (help != NULL) {
+				host_ui_help("TLS version downgraded", help);
+				free(help);
+			}
+		}
+	} while (choice == 3);
 	if (choice == 2)
 		remember_tls_version(bbs, negotiated);
 	return choice == 1 || choice == 2;
@@ -389,7 +485,13 @@ xp_tls_error_message(xp_tls_t sess, const char *doing)
 	const char *err = xp_tls_errstr(sess);
 	snprintf(title, sizeof(title), "TLS error %s", doing);
 	snprintf(body, sizeof(body), "Error %s\r\n\r\n%s\r\n\r\n", doing, err);
-	host_ui_alert(title, body);
+	char *help = protocol_log_build_help(body);
+	if (help != NULL) {
+		host_ui_alert_help(title, body, help);
+		free(help);
+	}
+	else
+		host_ui_alert(title, body);
 }
 
 /*
@@ -530,6 +632,8 @@ telnets_connect(struct bbslist *bbs)
 	struct captured_chain failed_chain = {0};
 	struct xp_tls_client_config tls_config = {
 		.server_name = bbs->addr,
+		.log_cb = tls_diagnostic_cb,
+		.log_level = tls_log_level_from_config(bbs->protocol_loglevel),
 	};
 	bool have_per_connection_client_cert = bbs->tls_client_cert[0] != 0 ||
 	    bbs->tls_client_key[0] != 0;
@@ -587,7 +691,13 @@ telnets_connect(struct bbslist *bbs)
 		if (!bbs->hidepopups && !handled) {
 			char str[sizeof(error) + 32];
 			snprintf(str, sizeof(str), "Error activating session: %s", error);
-			host_ui_alert("Error activating session", str);
+			char *help = protocol_log_build_help(str);
+			if (help != NULL) {
+				host_ui_alert_help("Error activating session", str, help);
+				free(help);
+			}
+			else
+				host_ui_alert("Error activating session", str);
 		}
 		free_captured_chain(&failed_chain);
 		close_failed_session();
@@ -641,8 +751,10 @@ telnets_close(void)
 {
 	char garbage[1024];
 	conn_api.terminate = 1;
-	/* Unblock the I/O threads by shutting the socket. xp_tls_close()
-	   then runs its graceful-close best-effort on the dead fd. */
+	if (telnets_session != NULL)
+		(void)xp_tls_terminate(telnets_session);
+	/* After the TLS layer has staged its best-effort close_notify, unblock
+	   both I/O workers by shutting down the caller-owned socket. */
 	shutdown(telnets_sock, SHUT_RDWR);
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);

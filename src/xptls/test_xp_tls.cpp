@@ -2,6 +2,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -33,6 +34,40 @@ struct ServerResult {
 	xp_tls_t session = nullptr;
 	std::string error;
 };
+
+struct CapturedLogRecord {
+	enum xp_tls_log_level level;
+	enum xp_tls_log_source source;
+	std::string backend;
+	std::string message;
+};
+
+struct LogCapture {
+	std::mutex mutex;
+	std::vector<CapturedLogRecord> records;
+
+	bool has(enum xp_tls_log_level level,
+	         enum xp_tls_log_source source)
+	{
+		std::lock_guard<std::mutex> guard(mutex);
+		for (const auto& record : records)
+			if (record.level == level && record.source == source)
+				return true;
+		return false;
+	}
+};
+
+void capture_log(const struct xp_tls_log_record *record, void *arg)
+{
+	auto *capture = static_cast<LogCapture *>(arg);
+	if (record == nullptr || capture == nullptr)
+		return;
+	std::lock_guard<std::mutex> guard(capture->mutex);
+	capture->records.push_back({record->level, record->source,
+	    record->backend == nullptr ? "" : record->backend,
+	    std::string(static_cast<const char *>(record->message),
+	                record->message_len)});
+}
 
 struct SocketTimeouts {
 	long long receive = -1;
@@ -424,11 +459,16 @@ bool certificate_session(enum xp_tls_version version, bool permissive)
 	REQUIRE(connected_sockets(sockets));
 	SocketTimeouts client_timeouts = socket_timeouts(sockets.client);
 	SocketTimeouts server_timeouts = socket_timeouts(sockets.server);
+	LogCapture client_log;
+	LogCapture server_log;
 	struct xp_tls_server_config server_config{};
 	server_config.min_version = version;
 	server_config.max_version = version;
 	server_config.handshake_timeout_ms = 3000;
 	server_config.client_auth = XP_TLS_CLIENT_AUTH_NONE;
+	server_config.log_cb = capture_log;
+	server_config.log_cb_arg = &server_log;
+	server_config.log_level = XP_TLS_LOG_DEBUG;
 	if (permissive)
 		server_config.psk_lookup = reject_psk;
 	ServerResult server;
@@ -444,6 +484,9 @@ bool certificate_session(enum xp_tls_version version, bool permissive)
 	                                             : certificate_file.path();
 	client_config.min_version = version;
 	client_config.max_version = version;
+	client_config.log_cb = capture_log;
+	client_config.log_cb_arg = &client_log;
+	client_config.log_level = XP_TLS_LOG_DEBUG;
 	Session client;
 	client.value = xp_tls_client_open_config(sockets.client, &client_config);
 	std::string client_error = client.value == nullptr ? xp_tls_last_err() : "";
@@ -458,6 +501,8 @@ bool certificate_session(enum xp_tls_version version, bool permissive)
 		return false;
 	}
 	Session server_session{server.session};
+	REQUIRE(client_log.has(XP_TLS_LOG_DEBUG, XP_TLS_LOG_SOURCE_BACKEND));
+	REQUIRE(server_log.has(XP_TLS_LOG_DEBUG, XP_TLS_LOG_SOURCE_BACKEND));
 	REQUIRE(socket_timeouts(sockets.client) == client_timeouts);
 	REQUIRE(socket_timeouts(sockets.server) == server_timeouts);
 	REQUIRE(xp_tls_protocol_version(client.value) == version);
@@ -609,6 +654,8 @@ bool unknown_psk_is_rejected()
 
 bool version_range_is_rejected()
 {
+	LogCapture client_log;
+	LogCapture server_log;
 	TempFile certificate_file("tls-version-rejection");
 	xp_key_t key = nullptr;
 	xp_ca_cert_t certificate = nullptr;
@@ -625,6 +672,9 @@ bool version_range_is_rejected()
 	server_config.min_version = XP_TLS_VERSION_1_3;
 	server_config.max_version = XP_TLS_VERSION_1_3;
 	server_config.handshake_timeout_ms = 1000;
+	server_config.log_cb = capture_log;
+	server_config.log_cb_arg = &server_log;
+	server_config.log_level = XP_TLS_LOG_ERROR;
 	ServerResult server;
 	std::thread thread([&] {
 		server = start_server(sockets.server, credentials, server_config);
@@ -635,6 +685,9 @@ bool version_range_is_rejected()
 	client_config.trusted_cert_file = certificate_file.path();
 	client_config.min_version = XP_TLS_VERSION_1_2;
 	client_config.max_version = XP_TLS_VERSION_1_2;
+	client_config.log_cb = capture_log;
+	client_config.log_cb_arg = &client_log;
+	client_config.log_level = XP_TLS_LOG_ERROR;
 	Session client;
 	client.value = xp_tls_client_open_config(sockets.client, &client_config);
 	thread.join();
@@ -650,7 +703,9 @@ bool version_range_is_rejected()
 	xp_tls_server_credentials_release(credentials);
 	xp_ca_cert_free(certificate);
 	xp_key_release(key);
-	return rejected;
+	return rejected &&
+	    (client_log.has(XP_TLS_LOG_ERROR, XP_TLS_LOG_SOURCE_LIBRARY) ||
+	     server_log.has(XP_TLS_LOG_ERROR, XP_TLS_LOG_SOURCE_LIBRARY));
 }
 
 bool close_during_handshake_is_bounded()

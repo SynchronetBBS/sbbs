@@ -1130,7 +1130,7 @@ static const struct binding BINDINGS[] = {
 	{ "Conn",  true, "connected",      fn_Conn_connected    },
 	{ "Conn",  true, "elapsedSeconds", fn_Conn_elapsedSeconds },
 	{ "Conn",  true, "type",           fn_Conn_type         },
-	{ "Conn",  true, "sshLog",         fn_Conn_sshLog       },
+	{ "Conn",  true, "protocolLog",    fn_Conn_protocolLog  },
 	{ "Conn",  true, "pending",        fn_Conn_pending      },
 	{ "Conn",  true, "queued",         fn_Conn_queued       },
 	{ "Conn",  true, "peek(_)",        fn_Conn_peek         },

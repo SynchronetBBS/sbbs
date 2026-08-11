@@ -113,6 +113,7 @@ set(SOURCE
 	fonts.c
 	modem.c
 	pixel_image.c
+	protocol_log.c
 	rip_icons.c
 	ripper.c
 	rlogin.c
@@ -493,7 +494,7 @@ target_include_directories(conn_buffer_test PRIVATE ../conio)
 target_compile_definitions(conn_buffer_test PRIVATE SDL_MAIN_HANDLED)
 add_test(NAME conn_buffer_test COMMAND conn_buffer_test)
 if(NOT WITHOUT_DEUCESSH)
-	add_executable(ssh_log_test ssh_log_test.c ssh_log.c)
+	add_executable(ssh_log_test ssh_log_test.c ssh_log.c protocol_log.c)
 	require_libs(ssh_log_test xpdev sftp)
 	target_link_libraries(ssh_log_test deucessh_static)
 	target_include_directories(ssh_log_test PRIVATE

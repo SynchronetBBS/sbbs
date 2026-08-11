@@ -118,7 +118,8 @@ endif()
 
 set(XPTLS_SOURCES
 	${XPTLS_PROVIDER_SOURCES}
-	xp_crypto_common.c xp_key_store.c xp_keyset.c xp_tls_credentials.c)
+	xp_crypto_common.c xp_key_store.c xp_keyset.c xp_tls_credentials.c
+	xp_tls_log.c)
 
 add_library(xptls_static STATIC ${XPTLS_SOURCES})
 add_library(xptls::static ALIAS xptls_static)

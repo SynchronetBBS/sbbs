@@ -25,9 +25,9 @@
 #include "ooii.h"      /* MAX_OOII_MODE */
 #endif
 #include "xpbeep.h"    /* xptone_open / xptone_close — OOII toggling */
+#include "protocol_log.h"
 #ifndef WITHOUT_DEUCESSH
 #include "ssh.h"       /* ssh_set_sftp_buffer_mode */
-#include "ssh_log.h"
 #endif
 
 #include <stdbool.h>
@@ -275,27 +275,35 @@ fn_Conn_type(WrenVM *vm)
 }
 
 void
-fn_Conn_sshLog(WrenVM *vm)
+fn_Conn_protocolLog(WrenVM *vm)
 {
-#ifdef WITHOUT_DEUCESSH
-	wrenSetSlotNull(vm, 0);
-#else
 	struct wren_host_state *st = wren_host_state();
-	if (st == NULL || st->bbs == NULL ||
-	    (st->bbs->conn_type != CONN_TYPE_SSH &&
-	     st->bbs->conn_type != CONN_TYPE_SSHNA)) {
+	if (st == NULL || st->bbs == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	bool supported = st->bbs->conn_type == CONN_TYPE_TELNET;
+#ifndef WITHOUT_CRYPTO
+	if (st->bbs->conn_type == CONN_TYPE_TELNETS)
+		supported = true;
+#endif
+#ifndef WITHOUT_DEUCESSH
+	if (st->bbs->conn_type == CONN_TYPE_SSH ||
+	    st->bbs->conn_type == CONN_TYPE_SSHNA)
+		supported = true;
+#endif
+	if (!supported) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
 	size_t len = 0;
-	char *snapshot = ssh_log_snapshot(&len);
+	char *snapshot = protocol_log_snapshot(&len);
 	if (snapshot == NULL)
 		wrenSetSlotNull(vm, 0);
 	else {
 		wrenSetSlotBytes(vm, 0, snapshot, len);
 		free(snapshot);
 	}
-#endif
 }
 
 void

@@ -21,6 +21,7 @@
 #include "gen_defs.h"
 #include "genwrap.h"
 #include "host_ui.h"
+#include "protocol_log.h"
 #include "sftp.h"
 #include "ssh.h"
 #include "ssh_log.h"
@@ -563,7 +564,6 @@ exit_crypt(void)
 {
 	/* DeuceSSH has no global shutdown — individual sessions own all
 	   state, and they're cleaned up by ssh_close(). */
-	ssh_log_cleanup();
 }
 
 void
@@ -572,8 +572,6 @@ init_crypt(void)
 	if (crypt_initialized)
 		return;
 	crypt_initialized = true;
-	if (!ssh_log_init())
-		fprintf(stderr, "Unable to initialize SSH diagnostic log\n");
 
 	/* Identify ourselves in the SSH version banner so server admins
 	   can pick us out of their logs.  Must precede session_init(). */
@@ -1011,7 +1009,7 @@ error_popup(struct bbslist *bbs, const char *blurb)
 	if (!bbs->hidepopups)
 		host_ui_status(NULL);
 	if (!bbs->hidepopups) {
-		char *help = ssh_log_build_help(blurb);
+		char *help = protocol_log_build_help(blurb);
 		if (help != NULL) {
 			host_ui_alert_help("SSH error", blurb, help);
 			free(help);
@@ -1069,7 +1067,7 @@ error_popup_rc(struct bbslist *bbs, const char *what, int rc)
 		char message[256];
 		snprintf(message, sizeof(message),
 		    "%s failed (DeuceSSH rc=%d). Press F1 for details.", what, rc);
-		char *help = ssh_log_build_help(body);
+		char *help = protocol_log_build_help(body);
 		if (help != NULL) {
 			host_ui_alert_help(what, message, help);
 			free(help);
@@ -1091,7 +1089,6 @@ ssh_connect(struct bbslist *bbs)
 	int      auth_rc;
 
 	assert_pthread_mutex_init(&ssh_mutex, NULL);
-	ssh_log_reset();
 	io_fail_op = NULL;
 	io_fail_errno = 0;
 	io_fail_peer_closed = false;

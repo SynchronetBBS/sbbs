@@ -70,6 +70,7 @@
 #include <botan/tls_callbacks.h>
 #include <botan/tls_client.h>
 #include <botan/tls_external_psk.h>
+#include <botan/tls_handshake_msg.h>
 #include <botan/tls_policy.h>
 #include <botan/tls_server_info.h>
 #include <botan/tls_session.h>
@@ -591,6 +592,7 @@ struct xp_tls_ctx {
 	std::mutex                                  provider_lock;
 	std::mutex                                  wire_write_lock;
 	std::atomic_bool                            terminating{false};
+	struct xp_tls_logger                       logger{};
 };
 
 class XpTlsCallbacks : public Botan::TLS::Callbacks {
@@ -609,6 +611,10 @@ public:
 			ctx->protocol_version = XP_TLS_VERSION_1_3;
 		else
 			ctx->protocol_version = XP_TLS_VERSION_UNKNOWN;
+		xp_tls_log_emitf(&ctx->logger, XP_TLS_LOG_DEBUG,
+		    XP_TLS_LOG_SOURCE_BACKEND, 0, 0, false,
+		    "session established: %s, %s", s.version().to_string().c_str(),
+		    ctx->cipher_name.c_str());
 	}
 
 	void tls_emit_data(std::span<const uint8_t> data) override
@@ -627,6 +633,23 @@ public:
 			ctx->peer_closed = true;
 		else if (alert.is_fatal())
 			ctx->fatal_alert = true;
+		enum xp_tls_log_level level =
+		    alert.type() == Botan::TLS::AlertType::CloseNotify
+		    ? XP_TLS_LOG_DEBUG
+		    : alert.is_fatal() ? XP_TLS_LOG_ERROR : XP_TLS_LOG_WARNING;
+		xp_tls_log_emitf(&ctx->logger, level,
+		    XP_TLS_LOG_SOURCE_PEER_ALERT, 0,
+		    static_cast<unsigned long>(alert.type()), alert.is_fatal(),
+		    "received %s alert", alert.type_string().c_str());
+	}
+
+	void tls_inspect_handshake_msg(
+	    const Botan::TLS::Handshake_Message &message) override
+	{
+		xp_tls_log_emitf(&ctx->logger, XP_TLS_LOG_DEBUG,
+		    XP_TLS_LOG_SOURCE_BACKEND, 0,
+		    static_cast<unsigned long>(message.type()), false,
+		    "handshake message: %s", message.type_string().c_str());
 	}
 
 	void tls_verify_cert_chain(
@@ -782,6 +805,9 @@ flush_pending(xp_tls_ctx *ctx, OperationDeadline& deadline)
 				return XP_TLS_ERR_CLOSED;
 			snprintf(ctx->err, sizeof(ctx->err),
 			    "send syscall error (errno=%d)", errno);
+			xp_tls_log_emit(&ctx->logger, XP_TLS_LOG_ERROR,
+			    XP_TLS_LOG_SOURCE_LIBRARY, XP_TLS_ERR,
+			    static_cast<unsigned long>(errno), false, ctx->err);
 			return XP_TLS_ERR;
 		}
 		if (n == 0)
@@ -814,6 +840,9 @@ pump_recv(xp_tls_ctx *ctx, OperationDeadline& deadline)
 			return XP_TLS_ERR_CLOSED;
 		snprintf(ctx->err, sizeof(ctx->err),
 		    "recv syscall error (errno=%d)", errno);
+		xp_tls_log_emit(&ctx->logger, XP_TLS_LOG_ERROR,
+		    XP_TLS_LOG_SOURCE_LIBRARY, XP_TLS_ERR,
+		    static_cast<unsigned long>(errno), false, ctx->err);
 		return XP_TLS_ERR;
 	}
 	if (n == 0)
@@ -827,6 +856,9 @@ pump_recv(xp_tls_ctx *ctx, OperationDeadline& deadline)
 		}
 		catch (const std::exception &e) {
 			snprintf(ctx->err, sizeof(ctx->err), "TLS: %s", e.what());
+			xp_tls_log_emit(&ctx->logger, XP_TLS_LOG_ERROR,
+			    XP_TLS_LOG_SOURCE_BACKEND, XP_TLS_ERR, 0, false,
+			    ctx->err);
 			return XP_TLS_ERR;
 		}
 		/* received_data() can deliver application data and a following alert
@@ -867,6 +899,8 @@ client_open_inner(SOCKET sock, const struct xp_tls_client_config *config)
 	ctx->protocol_version   = XP_TLS_VERSION_UNKNOWN;
 	ctx->peer_chain_cb      = config->peer_chain_cb;
 	ctx->peer_chain_cb_arg  = config->peer_chain_cb_arg;
+	ctx->logger             = {config->log_cb, config->log_cb_arg,
+	                           config->log_level, "Botan"};
 	if (sni != nullptr && sni[0] != 0)
 		ctx->sni = sni;
 	if (psk_identity != nullptr)
@@ -973,7 +1007,7 @@ client_open_inner(SOCKET sock, const struct xp_tls_client_config *config)
 }
 
 extern "C" xp_tls_t
-xp_tls_client_open_config(SOCKET sock,
+client_open_config_inner(SOCKET sock,
                           const struct xp_tls_client_config *config)
 {
 	if (config == nullptr) {
@@ -1059,6 +1093,21 @@ xp_tls_client_open_config(SOCKET sock,
 	return client_open_inner(sock, config);
 }
 
+extern "C" xp_tls_t
+xp_tls_client_open_config(SOCKET sock,
+                          const struct xp_tls_client_config *config)
+{
+	xp_tls_t result = client_open_config_inner(sock, config);
+	if (result == nullptr && config != nullptr) {
+		const struct xp_tls_logger logger = {config->log_cb,
+		    config->log_cb_arg, config->log_level, "Botan"};
+		xp_tls_log_emit(&logger, XP_TLS_LOG_ERROR,
+		    XP_TLS_LOG_SOURCE_LIBRARY, XP_TLS_ERR, 0, false,
+		    xp_tls_last_err());
+	}
+	return result;
+}
+
 extern "C" enum xp_tls_version
 xp_tls_protocol_version(xp_tls_t ctx)
 {
@@ -1066,7 +1115,7 @@ xp_tls_protocol_version(xp_tls_t ctx)
 }
 
 extern "C" xp_tls_t
-xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
+provider_server_open_inner(SOCKET socket, const void *chain_pem,
 	size_t chain_pem_length, xp_key_t private_key,
 	const struct xp_tls_server_config *config)
 {
@@ -1100,6 +1149,8 @@ xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
 	ctx->sock = socket;
 	ctx->protocol_version = XP_TLS_VERSION_UNKNOWN;
 	ctx->server_key = private_key;
+	ctx->logger = {config->log_cb, config->log_cb_arg,
+	               config->log_level, "Botan"};
 	if (private_key != nullptr)
 		xp_key_retain(private_key);
 	try {
@@ -1155,6 +1206,23 @@ xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
 	}
 	(void)flush_pending(ctx, handshake_deadline);
 	return ctx;
+}
+
+extern "C" xp_tls_t
+xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
+	size_t chain_pem_length, xp_key_t private_key,
+	const struct xp_tls_server_config *config)
+{
+	xp_tls_t result = provider_server_open_inner(socket, chain_pem,
+	    chain_pem_length, private_key, config);
+	if (result == nullptr && config != nullptr) {
+		const struct xp_tls_logger logger = {config->log_cb,
+		    config->log_cb_arg, config->log_level, "Botan"};
+		xp_tls_log_emit(&logger, XP_TLS_LOG_ERROR,
+		    XP_TLS_LOG_SOURCE_LIBRARY, XP_TLS_ERR, 0, false,
+		    xp_tls_last_err());
+	}
+	return result;
 }
 
 /* ---------------------------------------------------------- push */
@@ -1233,6 +1301,9 @@ xp_tls_push_timeout(xp_tls_t ctx, const void *buf, size_t n, size_t *copied,
 		}
 		catch (const std::exception& e) {
 			snprintf(ctx->err, sizeof(ctx->err), "TLS send: %s", e.what());
+			xp_tls_log_emit(&ctx->logger, XP_TLS_LOG_ERROR,
+			    XP_TLS_LOG_SOURCE_BACKEND, XP_TLS_ERR, 0, false,
+			    ctx->err);
 			return XP_TLS_ERR;
 		}
 	}
@@ -1319,6 +1390,9 @@ xp_tls_terminate(xp_tls_t ctx)
 		return XP_TLS_ERR;
 	bool was_terminating = ctx->terminating.exchange(true);
 	if (!was_terminating) {
+		xp_tls_log_emit(&ctx->logger, XP_TLS_LOG_DEBUG,
+		    XP_TLS_LOG_SOURCE_LIBRARY, 0, 0, false,
+		    "local termination requested");
 		std::lock_guard<std::mutex> provider_guard(ctx->provider_lock);
 		try {
 			if (ctx->channel && !ctx->channel->is_closed())
