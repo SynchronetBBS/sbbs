@@ -25,6 +25,9 @@ bool wren_menu_host_offer_save_bbs(const struct bbslist *bbs);
  * trusted input boundaries and restore the prior screen before returning.
  * prompt/choice return -2 when the bridge fails and -1 when cancelled. */
 bool wren_menu_host_alert(const char *title, const char *message);
+bool wren_menu_host_alert_help(const char *title, const char *message,
+                               const char *help_text);
+bool wren_menu_host_help(const char *title, const char *body);
 bool wren_menu_host_confirm(const char *title, const char *message,
                             bool *answer);
 int wren_menu_host_prompt(const char *title, const char *message,

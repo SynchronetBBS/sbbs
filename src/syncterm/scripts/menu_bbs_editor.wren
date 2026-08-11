@@ -457,7 +457,7 @@ class BbsEditor {
       "logFile": b.logFile,
       "appendLogFile": b.appendLogFile,
       "xferLogLevel": b.xferLogLevel,
-      "telnetLogLevel": b.telnetLogLevel,
+      "protocolLogLevel": b.protocolLogLevel,
       "stopBits": b.stopBits,
       "dataBits": b.dataBits,
       "parity": b.parity,
@@ -758,7 +758,7 @@ class BbsEditor {
     if (key == "ulDir") return "# Upload Path\n\nEnter the directory initially browsed for uploads."
     if (key == "logFile") return logFileHelp_()
     if (key == "xferLogLevel") return logLevelHelp_("File Transfer")
-    if (key == "telnetLogLevel") return logLevelHelp_("Telnet Command")
+    if (key == "protocolLogLevel") return logLevelHelp_("Protocol")
     if (key == "tlsTrustedCert") {
       return "# Trusted TLS Certificate\n\nSelect a PEM certificate file " +
           "to trust for this connection. The certificate may be a CA or " +
@@ -920,7 +920,7 @@ class BbsEditor {
     return "# Log Configuration\n\n" +
         helpItem_("Log Filename", "The optional session log filename") +
         helpItem_("File Transfer Log Level", "File-transfer log verbosity") +
-        helpItem_("Telnet Command Log Level", "Telnet-command log verbosity") +
+        helpItem_("Protocol Log Level", "Telnet and SSH protocol-log verbosity") +
         helpItem_("Append Log File", "Append instead of replacing the log")
   }
 
@@ -1086,8 +1086,8 @@ class BbsEditor {
         [0, logLine_("Log Filename", d["logFile"])],
         [1, logLine_("File Transfer Log Level",
             MenuUi.rowName(Menu.logLevels, d["xferLogLevel"]))],
-        [2, logLine_("Telnet Command Log Level",
-            MenuUi.rowName(Menu.logLevels, d["telnetLogLevel"]))],
+        [2, logLine_("Protocol Log Level",
+            MenuUi.rowName(Menu.logLevels, d["protocolLogLevel"]))],
         [3, logLine_("Append Log File", yesNo_(d["appendLogFile"]))]
       ]
       var picked = MenuUi.choice(app, "Log Configuration", rows, selected,
@@ -1103,10 +1103,10 @@ class BbsEditor {
               logLevelHelp_("File Transfer"))
           if (next != null) d["xferLogLevel"] = next
         } else if (value == 2) {
-          var next = MenuUi.choice(app, "Telnet Command Log Level",
-              Menu.logLevels, d["telnetLogLevel"],
-              logLevelHelp_("Telnet Command"))
-          if (next != null) d["telnetLogLevel"] = next
+          var next = MenuUi.choice(app, "Protocol Log Level",
+              Menu.logLevels, d["protocolLogLevel"],
+              logLevelHelp_("Protocol"))
+          if (next != null) d["protocolLogLevel"] = next
         } else if (value == 3) {
           d["appendLogFile"] = !d["appendLogFile"]
         }
@@ -1375,7 +1375,7 @@ class BbsEditor {
     b.logFile = d["logFile"]
     b.appendLogFile = d["appendLogFile"]
     b.xferLogLevel = d["xferLogLevel"]
-    b.telnetLogLevel = d["telnetLogLevel"]
+    b.protocolLogLevel = d["protocolLogLevel"]
     b.stopBits = d["stopBits"]
     b.dataBits = d["dataBits"]
     b.parity = d["parity"]

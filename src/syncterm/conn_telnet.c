@@ -15,7 +15,7 @@
 #include "term.h"
 #include "threadwrap.h"
 
-extern int telnet_log_level;
+extern int protocol_log_level;
 bool telnet_deferred = false;
 bool telnet_no_binary = false;
 static bool last_was_lf = false;
@@ -135,7 +135,7 @@ telnet_tx_parse_cb(const void *buf, size_t len, size_t *olen)
 int
 telnet_connect(struct bbslist *bbs)
 {
-	telnet_log_level = bbs->telnet_loglevel;
+	protocol_log_level = bbs->protocol_loglevel;
 
 	/* Explicit atomic init — conn_connect() memsets conn_api but
 	 * memset isn't a valid init for _Atomic fields, and stale state

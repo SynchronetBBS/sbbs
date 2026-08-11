@@ -30,7 +30,7 @@ uchar        telnet_remote_option[0x100];
 
 extern char *log_levels[];
 extern FILE *log_fp;
-int          telnet_log_level;
+int          protocol_log_level;
 
 static int
 lprintf(int level, const char *fmt, ...)
@@ -38,7 +38,7 @@ lprintf(int level, const char *fmt, ...)
 	char    sbuf[1024];
 	va_list argptr;
 
-	if ((log_fp == NULL) || (level > telnet_log_level))
+	if ((log_fp == NULL) || (level > protocol_log_level))
 		return 0;
 
 	va_start(argptr, fmt);

@@ -23,6 +23,7 @@
 #include "host_ui.h"
 #include "sftp.h"
 #include "ssh.h"
+#include "ssh_log.h"
 #include "sockwrap.h"
 #include "syncterm.h"
 #include "threadwrap.h"
@@ -402,24 +403,30 @@ auth_banner_cb(const uint8_t *message, size_t message_len,
 
 /* ------------------------------------------------------------- debug */
 
-/* SSH_MSG_DEBUG (RFC 4253 §11.3).  Logged unconditionally; popup queued
- * for the doterm() main loop when the sender flagged always_display and
- * the bbslist entry isn't suppressing popups.  Fires on whichever thread
- * is currently processing inbound packets — could be ssh_connect's
- * thread during handshake or ssh_input_thread mid-session, so we route
- * UI work through the popup queue. */
+/* Structured diagnostics may arrive concurrently on the API or demux
+ * threads. ssh_log_append() serializes retained and file output. */
+static dssh_log_action
+ssh_diagnostic_cb(const struct dssh_log_record *record, void *cbdata)
+{
+	(void)cbdata;
+	(void)ssh_log_append(record, log_fp);
+	return DSSH_LOG_LOCAL_ONLY;
+}
+
+/* SSH_MSG_DEBUG (RFC 4253 section 11.3).  The structured callback above
+ * receives the same message for selected logging; this callback retains the
+ * existing always-display popup behavior. */
 static void
-ssh_debug_cb(bool always_display, const uint8_t *message, size_t message_len,
-             void *cbdata)
+ssh_debug_popup_cb(bool always_display, const uint8_t *message,
+    size_t message_len, void *cbdata)
 {
 	struct bbslist *bbs = cbdata;
 	char            buf[512];
-	size_t          len = message_len < sizeof(buf) - 1 ? message_len : sizeof(buf) - 1;
+	size_t          len = message_len < sizeof(buf) - 1
+	    ? message_len : sizeof(buf) - 1;
 
 	memcpy(buf, message, len);
 	buf[len] = 0;
-	if (log_fp != NULL)
-		fprintf(log_fp, "SSH %s %s\n", always_display ? "display" : "debug", buf);
 	if (always_display && bbs != NULL && !bbs->hidepopups)
 		popup_queue_post("SSH Debug", buf);
 }
@@ -556,6 +563,7 @@ exit_crypt(void)
 {
 	/* DeuceSSH has no global shutdown — individual sessions own all
 	   state, and they're cleaned up by ssh_close(). */
+	ssh_log_cleanup();
 }
 
 void
@@ -564,6 +572,8 @@ init_crypt(void)
 	if (crypt_initialized)
 		return;
 	crypt_initialized = true;
+	if (!ssh_log_init())
+		fprintf(stderr, "Unable to initialize SSH diagnostic log\n");
 
 	/* Identify ourselves in the SSH version banner so server admins
 	   can pick us out of their logs.  Must precede session_init(). */
@@ -997,15 +1007,18 @@ set_default_pty_modes(struct dssh_chan_params *p, struct bbslist *bbs)
 static void
 error_popup(struct bbslist *bbs, const char *blurb)
 {
-	if (ssh_sock != INVALID_SOCKET) {
-		closesocket(ssh_sock);
-		ssh_sock = INVALID_SOCKET;
-	}
-	if (!bbs->hidepopups)
-		host_ui_alert("SSH error", blurb);
-	conn_api.terminate = true;
+	ssh_close();
 	if (!bbs->hidepopups)
 		host_ui_status(NULL);
+	if (!bbs->hidepopups) {
+		char *help = ssh_log_build_help(blurb);
+		if (help != NULL) {
+			host_ui_alert_help("SSH error", blurb, help);
+			free(help);
+		}
+		else
+			host_ui_alert("SSH error", blurb);
+	}
 }
 
 /*
@@ -1049,15 +1062,21 @@ error_popup_rc(struct bbslist *bbs, const char *what, int rc)
 	    enc    ? enc    : "(not negotiated)",
 	    mac    ? mac    : "(not negotiated)",
 	    io_line);
-	if (ssh_sock != INVALID_SOCKET) {
-		closesocket(ssh_sock);
-		ssh_sock = INVALID_SOCKET;
-	}
-	if (!bbs->hidepopups)
-		host_ui_alert(what, body);
-	conn_api.terminate = true;
+	ssh_close();
 	if (!bbs->hidepopups)
 		host_ui_status(NULL);
+	if (!bbs->hidepopups) {
+		char message[256];
+		snprintf(message, sizeof(message),
+		    "%s failed (DeuceSSH rc=%d). Press F1 for details.", what, rc);
+		char *help = ssh_log_build_help(body);
+		if (help != NULL) {
+			host_ui_alert_help(what, message, help);
+			free(help);
+		}
+		else
+			host_ui_alert(what, body);
+	}
 }
 
 int
@@ -1072,6 +1091,7 @@ ssh_connect(struct bbslist *bbs)
 	int      auth_rc;
 
 	assert_pthread_mutex_init(&ssh_mutex, NULL);
+	ssh_log_reset();
 	io_fail_op = NULL;
 	io_fail_errno = 0;
 	io_fail_peer_closed = false;
@@ -1120,7 +1140,10 @@ ssh_connect(struct bbslist *bbs)
 	dssh_session_set_hostkey_verify_cb(ssh_session, hostkey_verify_cb, bbs);
 	dssh_session_set_terminate_cb(ssh_session, transport_terminate_cb, NULL);
 	dssh_session_set_banner_cb(ssh_session, auth_banner_cb, bbs);
-	dssh_session_set_debug_cb(ssh_session, ssh_debug_cb, bbs);
+	dssh_session_set_debug_cb(ssh_session, ssh_debug_popup_cb, bbs);
+	dssh_session_set_log_cb(ssh_session, ssh_diagnostic_cb, bbs);
+	dssh_session_set_log_level(ssh_session,
+	    ssh_log_level_from_config(bbs->protocol_loglevel));
 
 	/* aes128-cbc is registered globally for compat with legacy servers
 	   (e.g. Mystic), but only offered when the entry opts in.  Default
@@ -1140,7 +1163,6 @@ ssh_connect(struct bbslist *bbs)
 	int handshake_rc = dssh_transport_handshake(ssh_session);
 	if (handshake_rc != 0) {
 		error_popup_rc(bbs, "SSH handshake", handshake_rc);
-		ssh_close();
 		return -1;
 	}
 	if (!handle_hostkey_result(bbs)) {
@@ -1156,7 +1178,6 @@ ssh_connect(struct bbslist *bbs)
 		if (host_ui_prompt("SSH User ID", "No user ID is stored for this entry.",
 		    username, sizeof(username), MAX_USER_LEN, false) <= 0) {
 			error_popup(bbs, "authentication cancelled: no user ID supplied");
-			ssh_close();
 			return -1;
 		}
 	}
@@ -1177,7 +1198,6 @@ ssh_connect(struct bbslist *bbs)
 	int  probe_rc     = dssh_auth_get_methods(ssh_session, username, methods, sizeof(methods));
 	if (probe_rc < 0) {
 		error_popup(bbs, "auth method probe failed");
-		ssh_close();
 		return -1;
 	}
 	if (probe_rc == DSSH_AUTH_NONE_ACCEPTED)
@@ -1207,7 +1227,6 @@ ssh_connect(struct bbslist *bbs)
 	dssh_cleanse(password, sizeof(password));
 	if (auth_rc != 0) {
 		error_popup(bbs, "authentication failed");
-		ssh_close();
 		return -1;
 	}
 
@@ -1218,7 +1237,6 @@ ssh_connect(struct bbslist *bbs)
 
 	if (dssh_session_start(ssh_session) != 0) {
 		error_popup(bbs, "starting session");
-		ssh_close();
 		return -1;
 	}
 
@@ -1239,7 +1257,6 @@ ssh_connect(struct bbslist *bbs)
 	dssh_chan_params_free(&params);
 	if (ssh_chan == NULL) {
 		error_popup(bbs, "opening shell channel");
-		ssh_close();
 		return -1;
 	}
 	sftp_shell_alive = true;

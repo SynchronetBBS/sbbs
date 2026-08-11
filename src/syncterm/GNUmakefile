@@ -133,11 +133,12 @@ ifndef WITHOUT_DEUCESSH
 endif
 
 ifndef WITHOUT_DEUCESSH
- # ssh.c + SFTP-MT bridge — pulled in only if the probe above decided
+ # ssh.c + diagnostics + SFTP-MT bridge — pulled in only if the probe above decided
  # DeuceSSH is buildable.  Doing this after the probe keeps WITHOUT_DEUCESSH
  # honest: the probe may set it, and then nothing references dssh_* or
  # ssh.o at all.
- OBJS       += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE)
+ OBJS       += $(MTOBJODIR)$(DIRSEP)ssh$(OFILE) \
+               $(MTOBJODIR)$(DIRSEP)ssh_log$(OFILE)
  CFLAGS     += -I$(SRC_ROOT)/ssh $(SFTP-MT_CFLAGS)
  LDFLAGS    += $(SFTP-MT_LDFLAGS)
  EXTRA_LIBS += $(SFTP-MT_LIBS) $(DEUCESSH_LIB)
@@ -711,6 +712,21 @@ $(CONN_BUFFER_TEST): conn_buffer_test.c conn_buf.c conn.h $(XPDEV-MT_LIB) | $(EX
 	${QUIET}$(CC) $(CFLAGS) $(MT_CFLAGS) $(LDFLAGS) $(MT_LDFLAGS) \
 		-o $@ conn_buffer_test.c conn_buf.c $(XPDEV-MT_LIBS)
 
+ifndef WITHOUT_DEUCESSH
+SSH_LOG_TEST = $(EXEODIR)$(DIRSEP)ssh_log_test
+
+$(SSH_LOG_TEST): ssh_log_test.c ssh_log.c ssh_log.h $(DEUCESSH_LIB) $(XPDEV-MT_LIB) | $(EXEODIR)
+	@echo Compiling ssh_log_test
+	${QUIET}$(CC) -std=c17 $(CFLAGS) $(MT_CFLAGS) -o $(MTOBJODIR)$(DIRSEP)ssh_log_test$(OFILE) -c ssh_log_test.c
+	${QUIET}$(CC) -std=c17 $(CFLAGS) $(MT_CFLAGS) -o $(MTOBJODIR)$(DIRSEP)ssh_log_test_log$(OFILE) -c ssh_log.c
+	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) \
+		$(MTOBJODIR)$(DIRSEP)ssh_log_test$(OFILE) \
+		$(MTOBJODIR)$(DIRSEP)ssh_log_test_log$(OFILE) -o $@ \
+		$(EXTRA_LIBS) $(XPDEV-MT_LIBS) $(TRAILING_LIBS)
+else
+SSH_LOG_TEST =
+endif
+
 ifndef WITHOUT_SDL
 TERMTEST = $(EXEODIR)$(DIRSEP)termtest
 
@@ -718,17 +734,19 @@ $(TERMTEST): termtest.c | $(EXEODIR)
 	@echo Compiling termtest
 	${QUIET}$(CC) -o $@ $<
 
-.PHONY: termtest xfer_queue_test xmodem_cancel_test conn_buffer_test test parser_vectors
+.PHONY: termtest xfer_queue_test xmodem_cancel_test conn_buffer_test ssh_log_test test parser_vectors
 termtest: $(TERMTEST)
 xfer_queue_test: $(XFER_QUEUE_TEST)
 xmodem_cancel_test: $(XMODEM_CANCEL_TEST)
 conn_buffer_test: $(CONN_BUFFER_TEST)
+ssh_log_test: $(SSH_LOG_TEST)
 
-test: $(SYNCTERM) $(TERMTEST) $(XFER_QUEUE_TEST) $(XMODEM_CANCEL_TEST) $(CONN_BUFFER_TEST)
+test: $(SYNCTERM) $(TERMTEST) $(XFER_QUEUE_TEST) $(XMODEM_CANCEL_TEST) $(CONN_BUFFER_TEST) $(SSH_LOG_TEST)
 	./run_termtest.sh $(SYNCTERM) $(TERMTEST)
 	$(XFER_QUEUE_TEST)
 	$(XMODEM_CANCEL_TEST)
 	$(CONN_BUFFER_TEST)
+	$(SSH_LOG_TEST)
 
 # M1 RIP parser vectors.  Drives rip_test/parser_vectors/* through the
 # running harness on $RIP_HARNESS_HOST:$RIP_HARNESS_PORT (default
@@ -738,17 +756,19 @@ parser_vectors:
 	@echo Running RIP parser_vectors against harness
 	${QUIET}python3 rip_test/parser_vectors/run_vectors.py
 else
-.PHONY: termtest xfer_queue_test xmodem_cancel_test conn_buffer_test test parser_vectors
+.PHONY: termtest xfer_queue_test xmodem_cancel_test conn_buffer_test ssh_log_test test parser_vectors
 termtest:
 	@echo "termtest requires SDL (skipped)"
 xfer_queue_test: $(XFER_QUEUE_TEST)
 xmodem_cancel_test: $(XMODEM_CANCEL_TEST)
 conn_buffer_test: $(CONN_BUFFER_TEST)
-test: $(XFER_QUEUE_TEST) $(XMODEM_CANCEL_TEST) $(CONN_BUFFER_TEST)
+ssh_log_test: $(SSH_LOG_TEST)
+test: $(XFER_QUEUE_TEST) $(XMODEM_CANCEL_TEST) $(CONN_BUFFER_TEST) $(SSH_LOG_TEST)
 	@echo "termtest requires SDL (skipped)"
 	$(XFER_QUEUE_TEST)
 	$(XMODEM_CANCEL_TEST)
 	$(CONN_BUFFER_TEST)
+	$(SSH_LOG_TEST)
 parser_vectors:
 	@echo "parser_vectors requires SDL (skipped)"
 endif

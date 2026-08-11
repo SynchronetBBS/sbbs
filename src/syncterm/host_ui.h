@@ -5,6 +5,9 @@
 #include <stddef.h>
 
 bool host_ui_alert(const char *title, const char *message);
+bool host_ui_alert_help(const char *title, const char *message,
+                        const char *help_text);
+bool host_ui_help(const char *title, const char *body);
 bool host_ui_confirm(const char *title, const char *message);
 int host_ui_prompt(const char *title, const char *message,
                    char *value, size_t value_size, size_t max_len,

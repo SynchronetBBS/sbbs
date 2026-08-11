@@ -24,6 +24,8 @@ static WrenHandle *menu_prepare_handle;
 static WrenHandle *menu_offer_save_handle;
 static WrenHandle *menu_ui_class;
 static WrenHandle *menu_alert_handle;
+static WrenHandle *menu_alert_help_handle;
+static WrenHandle *menu_help_handle;
 static WrenHandle *menu_confirm_handle;
 static WrenHandle *menu_prompt_handle;
 static WrenHandle *menu_choice_handle;
@@ -353,6 +355,10 @@ wren_menu_host_init(void)
 			wrenEnsureSlots(menu_state.vm, 1);
 			wrenGetVariable(menu_state.vm, "menu_host_ui", "MenuHostUI", 0);
 			menu_ui_class = wrenGetSlotHandle(menu_state.vm, 0);
+			menu_alert_help_handle = wrenMakeCallHandle(menu_state.vm,
+			    "alertWithHelp(_,_,_)");
+			menu_help_handle = wrenMakeCallHandle(menu_state.vm,
+			    "help(_,_)");
 			menu_alert_handle = wrenMakeCallHandle(menu_state.vm,
 			    "alert(_,_)");
 			menu_confirm_handle = wrenMakeCallHandle(menu_state.vm,
@@ -391,6 +397,10 @@ wren_menu_host_shutdown(void)
 		wrenReleaseHandle(menu_state.vm, menu_ui_class);
 	if (menu_alert_handle != NULL)
 		wrenReleaseHandle(menu_state.vm, menu_alert_handle);
+	if (menu_alert_help_handle != NULL)
+		wrenReleaseHandle(menu_state.vm, menu_alert_help_handle);
+	if (menu_help_handle != NULL)
+		wrenReleaseHandle(menu_state.vm, menu_help_handle);
 	if (menu_confirm_handle != NULL)
 		wrenReleaseHandle(menu_state.vm, menu_confirm_handle);
 	if (menu_prompt_handle != NULL)
@@ -403,6 +413,8 @@ wren_menu_host_shutdown(void)
 		wrenReleaseHandle(menu_state.vm, menu_status_clear_handle);
 	menu_ui_class = NULL;
 	menu_alert_handle = NULL;
+	menu_alert_help_handle = NULL;
+	menu_help_handle = NULL;
 	menu_confirm_handle = NULL;
 	menu_prompt_handle = NULL;
 	menu_choice_handle = NULL;
@@ -539,6 +551,34 @@ wren_menu_host_alert(const char *title, const char *message)
 	wrenSetSlotString(menu_state.vm, 1, title == NULL ? "Alert" : title);
 	wrenSetSlotString(menu_state.vm, 2, message == NULL ? "" : message);
 	return menu_ui_call(menu_alert_handle, 3, true);
+}
+
+bool
+wren_menu_host_alert_help(const char *title, const char *message,
+    const char *help_text)
+{
+	if (!menu_active || menu_state.vm == NULL ||
+	    menu_alert_help_handle == NULL)
+		return false;
+	wrenEnsureSlots(menu_state.vm, 4);
+	wrenSetSlotString(menu_state.vm, 1, title == NULL ? "Alert" : title);
+	wrenSetSlotString(menu_state.vm, 2, message == NULL ? "" : message);
+	if (help_text == NULL)
+		wrenSetSlotNull(menu_state.vm, 3);
+	else
+		wrenSetSlotString(menu_state.vm, 3, help_text);
+	return menu_ui_call(menu_alert_help_handle, 4, true);
+}
+
+bool
+wren_menu_host_help(const char *title, const char *body)
+{
+	if (!menu_active || menu_state.vm == NULL || menu_help_handle == NULL)
+		return false;
+	wrenEnsureSlots(menu_state.vm, 3);
+	wrenSetSlotString(menu_state.vm, 1, title == NULL ? "Details" : title);
+	wrenSetSlotString(menu_state.vm, 2, body == NULL ? "" : body);
+	return menu_ui_call(menu_help_handle, 3, true);
 }
 
 bool

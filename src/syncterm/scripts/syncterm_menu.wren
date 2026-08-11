@@ -314,8 +314,8 @@ foreign class BBS {
   foreign appendLogFile=(value)
   foreign xferLogLevel
   foreign xferLogLevel=(value)
-  foreign telnetLogLevel
-  foreign telnetLogLevel=(value)
+  foreign protocolLogLevel
+  foreign protocolLogLevel=(value)
   foreign stopBits
   foreign stopBits=(value)
   foreign dataBits

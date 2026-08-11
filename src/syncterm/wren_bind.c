@@ -142,7 +142,7 @@ static void fn_BBS_ulDir(WrenVM *vm)        { BBS_FIELD_STR(uldir); }
 static void fn_BBS_logFile(WrenVM *vm)      { BBS_FIELD_STR(logfile); }
 static void fn_BBS_appendLogFile(WrenVM *vm){ BBS_FIELD_BOOL(append_logfile); }
 static void fn_BBS_xferLogLevel(WrenVM *vm) { BBS_FIELD_NUM(xfer_loglevel); }
-static void fn_BBS_telnetLogLevel(WrenVM *vm){ BBS_FIELD_NUM(telnet_loglevel); }
+static void fn_BBS_protocolLogLevel(WrenVM *vm){ BBS_FIELD_NUM(protocol_loglevel); }
 
 static void fn_BBS_stopBits(WrenVM *vm)     { BBS_FIELD_NUM(stop_bits); }
 static void fn_BBS_dataBits(WrenVM *vm)     { BBS_FIELD_NUM(data_bits); }
@@ -1130,6 +1130,7 @@ static const struct binding BINDINGS[] = {
 	{ "Conn",  true, "connected",      fn_Conn_connected    },
 	{ "Conn",  true, "elapsedSeconds", fn_Conn_elapsedSeconds },
 	{ "Conn",  true, "type",           fn_Conn_type         },
+	{ "Conn",  true, "sshLog",         fn_Conn_sshLog       },
 	{ "Conn",  true, "pending",        fn_Conn_pending      },
 	{ "Conn",  true, "queued",         fn_Conn_queued       },
 	{ "Conn",  true, "peek(_)",        fn_Conn_peek         },
@@ -1250,7 +1251,7 @@ static const struct binding BINDINGS[] = {
 	{ "BBS",   true, "logFile",                 fn_BBS_logFile               },
 	{ "BBS",   true, "appendLogFile",           fn_BBS_appendLogFile         },
 	{ "BBS",   true, "xferLogLevel",            fn_BBS_xferLogLevel          },
-	{ "BBS",   true, "telnetLogLevel",          fn_BBS_telnetLogLevel        },
+	{ "BBS",   true, "protocolLogLevel",        fn_BBS_protocolLogLevel      },
 	{ "BBS",   true, "stopBits",                fn_BBS_stopBits              },
 	{ "BBS",   true, "dataBits",                fn_BBS_dataBits              },
 	{ "BBS",   true, "parity",                  fn_BBS_parity                },

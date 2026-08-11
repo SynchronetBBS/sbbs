@@ -386,7 +386,7 @@ if(WITHOUT_DEUCESSH)
 	target_compile_definitions(syncterm PRIVATE WITHOUT_DEUCESSH)
 else()
 	# DeuceSSH sub-build — src/ssh/ ships a CMake build system.
-	target_sources(syncterm PRIVATE ssh.c)
+	target_sources(syncterm PRIVATE ssh.c ssh_log.c)
 	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ssh deucessh EXCLUDE_FROM_ALL)
 	target_include_directories(syncterm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../ssh)
 	target_link_libraries(syncterm deucessh_static sftp)
@@ -492,6 +492,14 @@ require_libs(conn_buffer_test xpdev)
 target_include_directories(conn_buffer_test PRIVATE ../conio)
 target_compile_definitions(conn_buffer_test PRIVATE SDL_MAIN_HANDLED)
 add_test(NAME conn_buffer_test COMMAND conn_buffer_test)
+if(NOT WITHOUT_DEUCESSH)
+	add_executable(ssh_log_test ssh_log_test.c ssh_log.c)
+	require_libs(ssh_log_test xpdev sftp)
+	target_link_libraries(ssh_log_test deucessh_static)
+	target_include_directories(ssh_log_test PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}/../ssh)
+	add_test(NAME ssh_log_test COMMAND ssh_log_test)
+endif()
 if(NOT WITHOUT_CRYPTO)
 	add_executable(ini_crypt_test
 		ini_crypt_test.c ini_crypt.c

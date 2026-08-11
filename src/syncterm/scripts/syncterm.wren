@@ -1040,6 +1040,7 @@ foreign class Conn {
   foreign static connected
   foreign static elapsedSeconds
   foreign static type
+  foreign static sshLog
   foreign static pending
   foreign static queued
   foreign static peek(count)
@@ -1216,7 +1217,7 @@ foreign class BBS {
   foreign static logFile
   foreign static appendLogFile
   foreign static xferLogLevel
-  foreign static telnetLogLevel
+  foreign static protocolLogLevel
   foreign static stopBits
   foreign static dataBits
   foreign static parity

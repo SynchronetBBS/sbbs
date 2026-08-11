@@ -18,6 +18,31 @@ host_ui_alert(const char *title, const char *message)
 }
 
 bool
+host_ui_alert_help(const char *title, const char *message,
+    const char *help_text)
+{
+	if (wren_host_alert_help(title, message, help_text) ||
+	    wren_menu_host_alert_help(title, message, help_text))
+		return true;
+	fprintf(stderr, "%s%s%s\n", title == NULL ? "SyncTERM" : title,
+	    message == NULL || message[0] == 0 ? "" : ": ",
+	    message == NULL ? "" : message);
+	if (help_text != NULL && help_text[0] != 0)
+		fprintf(stderr, "%s\n", help_text);
+	return false;
+}
+
+bool
+host_ui_help(const char *title, const char *body)
+{
+	if (wren_host_help(title, body) || wren_menu_host_help(title, body))
+		return true;
+	fprintf(stderr, "%s%s%s\n", title == NULL ? "Details" : title,
+	    body == NULL || body[0] == 0 ? "" : ": ", body == NULL ? "" : body);
+	return false;
+}
+
+bool
 host_ui_confirm(const char *title, const char *message)
 {
 	bool answer = false;

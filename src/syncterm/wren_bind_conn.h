@@ -24,6 +24,7 @@ void fn_Conn_scrollback(WrenVM *vm);
 void fn_Conn_connected(WrenVM *vm);
 void fn_Conn_elapsedSeconds(WrenVM *vm);
 void fn_Conn_type(WrenVM *vm);
+void fn_Conn_sshLog(WrenVM *vm);
 void fn_Conn_pending(WrenVM *vm);
 void fn_Conn_queued(WrenVM *vm);
 void fn_Conn_peek(WrenVM *vm);

@@ -999,7 +999,10 @@ read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsna
 	iniGetSString(sys ? NULL : section, NULL, "LogFile", "", entry->logfile, sizeof(entry->logfile));
 	entry->append_logfile = iniGetBool(sys ? NULL : section, NULL, "AppendLogFile", true);
 	entry->xfer_loglevel = iniGetEnum(sys ? NULL : section, NULL, "TransferLogLevel", log_levels, LOG_INFO);
-	entry->telnet_loglevel = iniGetEnum(sys ? NULL : section, NULL, "TelnetLogLevel", log_levels, LOG_INFO);
+	int legacy_protocol_loglevel = iniGetEnum(sys ? NULL : section, NULL,
+	    "TelnetLogLevel", log_levels, LOG_ERR);
+	entry->protocol_loglevel = iniGetEnum(sys ? NULL : section, NULL,
+	    "ProtocolLogLevel", log_levels, legacy_protocol_loglevel);
 
 	entry->bpsrate = iniGetInteger(section, NULL, "BPSRate", 0);
 	entry->music = iniGetInteger(section, NULL, "ANSIMusic", CTERM_MUSIC_BANSI);
@@ -1417,8 +1420,9 @@ update_bbs_ini(str_list_t *inifile, struct bbslist *bbs, bool new_entry)
 	iniSetString(inifile, section, "LogFile", bbs->logfile, &ini_style);
 	iniSetEnum(inifile, section, "TransferLogLevel", log_levels,
 	    bbs->xfer_loglevel, &ini_style);
-	iniSetEnum(inifile, section, "TelnetLogLevel", log_levels,
-	    bbs->telnet_loglevel, &ini_style);
+	iniSetEnum(inifile, section, "ProtocolLogLevel", log_levels,
+	    bbs->protocol_loglevel, &ini_style);
+	iniRemoveKey(inifile, section, "TelnetLogLevel");
 	iniSetBool(inifile, section, "AppendLogFile", bbs->append_logfile,
 	    &ini_style);
 	iniSetInteger(inifile, section, "BPSRate", bbs->bpsrate,

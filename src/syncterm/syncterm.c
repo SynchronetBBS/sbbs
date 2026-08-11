@@ -181,6 +181,31 @@ int                      fake_mode = -1;
 char                    *config_override;
 char                    *list_override;
 
+static bool
+open_connection_log(const struct bbslist *bbs)
+{
+	if (safe_mode || log_fp != NULL || bbs == NULL || bbs->logfile[0] == 0)
+		return false;
+	log_fp = fopen(bbs->logfile, bbs->append_logfile ? "a" : "w");
+	if (log_fp == NULL)
+		return false;
+	time_t now = time(NULL);
+	fprintf(log_fp, "%.15s Log opened\n", ctime(&now) + 4);
+	return true;
+}
+
+static void
+close_connection_log(void)
+{
+	if (log_fp == NULL)
+		return;
+	time_t now = time(NULL);
+	fprintf(log_fp, "%.15s Log closed\n", ctime(&now) + 4);
+	fprintf(log_fp, "---------------\n");
+	fclose(log_fp);
+	log_fp = NULL;
+}
+
 /* ---------------------------------------------------------- popup queue */
 
 struct popup_entry {
@@ -1205,7 +1230,7 @@ parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults
 		bbs->conn_type = dflt_conn_type;
 		bbs->port = conn_ports[dflt_conn_type];
 		bbs->xfer_loglevel = LOG_INFO;
-		bbs->telnet_loglevel = LOG_INFO;
+		bbs->protocol_loglevel = LOG_INFO;
 		bbs->music = CTERM_MUSIC_BANSI;
 		strcpy(bbs->font, "Codepage 437 English");
 	}
@@ -2237,6 +2262,7 @@ main(int argc, char **argv)
         /* DeuceSSH algorithm registration + RNG seed; must run before
            anything that calls into it (i.e. any SSH connection). */
         init_crypt();
+	atexit(exit_crypt);
 #endif
 	url[0] = 0;
 
@@ -2652,6 +2678,7 @@ main(int argc, char **argv)
 
 	while ((!quitting) && (bbs != NULL ||
 	    (bbs = wren_menu_host_run(last_bbs, false)) != NULL)) {
+		bool ssh_log_opened_early = false;
 		if (default_hidepopups >= 0)
 			bbs->hidepopups = default_hidepopups;
 		if (default_nostatus >= 0)
@@ -2664,7 +2691,14 @@ main(int argc, char **argv)
 		set_default_cursor();
 		load_font_files();
 		setfont(find_font_id(bbs->font), true, 1);
+#ifndef WITHOUT_DEUCESSH
+		if (bbs->conn_type == CONN_TYPE_SSH ||
+		    bbs->conn_type == CONN_TYPE_SSHNA)
+			ssh_log_opened_early = open_connection_log(bbs);
+#endif
 		if (conn_connect(bbs)) {
+			if (ssh_log_opened_early)
+				close_connection_log();
 			load_font_files();
 			textmode(txtinfo.currmode);
 			set_default_cursor();
@@ -2702,12 +2736,7 @@ main(int argc, char **argv)
 			term.nostatus = bbs->nostatus;
 			if (drawwin())
 				return 1;
-			if (!safe_mode && (log_fp == NULL) && bbs->logfile[0])
-				log_fp = fopen(bbs->logfile, bbs->append_logfile ? "a" : "w");
-			if (log_fp != NULL) {
-				time_t now = time(NULL);
-				fprintf(log_fp, "%.15s Log opened\n", ctime(&now) + 4);
-			}
+			(void)open_connection_log(bbs);
 
 			for (i = CONIO_FIRST_FREE_FONT; i < 256; i++) {
 				FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
@@ -2731,13 +2760,7 @@ main(int argc, char **argv)
 			fake_mode = -1;
 			setvideoflags(0);
 
-			if (log_fp != NULL) {
-				time_t now = time(NULL);
-				fprintf(log_fp, "%.15s Log closed\n", ctime(&now) + 4);
-				fprintf(log_fp, "---------------\n");
-				fclose(log_fp);
-				log_fp = NULL;
-			}
+			close_connection_log();
 			textmode(txtinfo.currmode);
 			set_default_cursor();
 			settitle("SyncTERM");

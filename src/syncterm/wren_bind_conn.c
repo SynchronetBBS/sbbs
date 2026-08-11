@@ -27,6 +27,7 @@
 #include "xpbeep.h"    /* xptone_open / xptone_close — OOII toggling */
 #ifndef WITHOUT_DEUCESSH
 #include "ssh.h"       /* ssh_set_sftp_buffer_mode */
+#include "ssh_log.h"
 #endif
 
 #include <stdbool.h>
@@ -271,6 +272,30 @@ fn_Conn_type(WrenVM *vm)
 	struct wren_host_state *st = wren_host_state();
 	int t = (st != NULL && st->bbs != NULL) ? st->bbs->conn_type : 0;
 	wrenSetSlotDouble(vm, 0, (double)t);
+}
+
+void
+fn_Conn_sshLog(WrenVM *vm)
+{
+#ifdef WITHOUT_DEUCESSH
+	wrenSetSlotNull(vm, 0);
+#else
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->bbs == NULL ||
+	    (st->bbs->conn_type != CONN_TYPE_SSH &&
+	     st->bbs->conn_type != CONN_TYPE_SSHNA)) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	size_t len = 0;
+	char *snapshot = ssh_log_snapshot(&len);
+	if (snapshot == NULL)
+		wrenSetSlotNull(vm, 0);
+	else {
+		wrenSetSlotBytes(vm, 0, snapshot, len);
+		free(snapshot);
+	}
+#endif
 }
 
 void

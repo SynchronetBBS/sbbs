@@ -1,6 +1,7 @@
 import "syncterm" for CustomCursor, Screen
 import "menu_ui" for MenuUi
 import "ui_app" for App
+import "ui_help" for Help
 import "ui_pane" for Pane
 import "ui_progress" for ProgressText
 
@@ -15,6 +16,19 @@ class MenuHostUI {
 
   static alert(title, message) {
     MenuUi.alertStandalone(title, message)
+  }
+
+  static alertWithHelp(title, message, helpText) {
+    MenuUi.alertStandalone(title, message, helpText)
+  }
+
+  static help(title, body) {
+    var app = App.new()
+    var p = Help.new(title, body)
+    p.bounds = Help.centeredBounds_()
+    p.onDismiss = Fn.new { |v| app.quit() }
+    app.pushModal(p)
+    app.runSync()
   }
 
   static confirm(title, message) {

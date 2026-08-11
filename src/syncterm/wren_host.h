@@ -118,6 +118,9 @@ void wren_host_mark_log_seen(void);
  * to load, or the Wren call aborts; callers should fall back to their
  * historical UI in that case. */
 bool wren_host_alert(const char *title, const char *message);
+bool wren_host_alert_help(const char *title, const char *message,
+                          const char *help_text);
+bool wren_host_help(const char *title, const char *body);
 
 /* Fires any Hook.every() callbacks whose deadline has elapsed. Called
  * from doterm() just before the main-loop sleep. */

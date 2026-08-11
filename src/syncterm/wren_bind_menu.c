@@ -290,7 +290,7 @@ BBS_NUM_PROPERTY(screenMode, screen_mode, SCREEN_MODE_CURRENT,
     SCREEN_MODE_TERMINATOR - 1)
 BBS_NUM_PROPERTY(bpsRate, bpsrate, 0, INT_MAX)
 BBS_NUM_PROPERTY(xferLogLevel, xfer_loglevel, 0, 7)
-BBS_NUM_PROPERTY(telnetLogLevel, telnet_loglevel, 0, 7)
+BBS_NUM_PROPERTY(protocolLogLevel, protocol_loglevel, 0, 7)
 BBS_NUM_PROPERTY(stopBits, stop_bits, 1, 2)
 BBS_NUM_PROPERTY(dataBits, data_bits, 7, 8)
 BBS_NUM_PROPERTY(parity, parity, SYNCTERM_PARITY_NONE,
@@ -1424,7 +1424,7 @@ static const struct binding bindings[] = {
 	BBS_GETSET(screenMode),
 	BBS_GETSET(bpsRate),
 	BBS_GETSET(xferLogLevel),
-	BBS_GETSET(telnetLogLevel),
+	BBS_GETSET(protocolLogLevel),
 	BBS_GETSET(stopBits),
 	BBS_GETSET(dataBits),
 	BBS_GETSET(parity),

@@ -15,6 +15,9 @@
 #include "filewrap.h"
 #include "gen_defs.h"
 #include "host_ui.h"
+#ifndef WITHOUT_DEUCESSH
+#include "ssh_log.h"
+#endif
 #include "saucedefs.h"
 #include "sexyz.h"
 #include "strwrap.h"
@@ -4328,7 +4331,7 @@ paint_disconnect_notice_row(bool notice)
 }
 
 static void
-show_disconnect_notice(void)
+show_disconnect_notice(struct bbslist *bbs)
 {
 	static const char reason[] = "Remote host dropped connection";
 	char message[1200];
@@ -4351,7 +4354,20 @@ show_disconnect_notice(void)
 		if (key == '\r' || key == '\n' || key == CIO_KEY_QUIT)
 			break;
 		if (key == CIO_KEY_F(1)) {
-			host_ui_alert("Disconnected", popup_message);
+#ifndef WITHOUT_DEUCESSH
+			if (bbs != NULL && (bbs->conn_type == CONN_TYPE_SSH ||
+			    bbs->conn_type == CONN_TYPE_SSHNA)) {
+				char *help = ssh_log_build_help(popup_message);
+				if (help != NULL) {
+					host_ui_help("Disconnected", help);
+					free(help);
+				}
+				else
+					host_ui_alert("Disconnected", popup_message);
+			}
+			else
+#endif
+				host_ui_alert("Disconnected", popup_message);
 			(void)paint_disconnect_notice_row(true);
 			position_disconnect_notice_cursor();
 			continue;
@@ -4946,7 +4962,7 @@ doterm(struct bbslist *bbs)
 	else
 		speed = bbs->bpsrate;
 	log_level = bbs->xfer_loglevel;
-	conn_api.log_level = bbs->telnet_loglevel;
+	conn_api.log_level = bbs->protocol_loglevel;
 	vc = realloc(scrollback_buf, term.width * sizeof(*vc) * settings.backlines);
 	if (vc != NULL) {
 		scrollback_buf = vc;
@@ -5236,16 +5252,16 @@ doterm(struct bbslist *bbs)
 							 * SftpApp drives the degraded modal and
 							 * keeps is_connected true until the queue
 							 * drains, so we go straight to teardown. */
-							if (!bbs->hidepopups) {
-								show_disconnect_notice();
-							}
+							/* Finish protocol teardown before presenting details so
+							 * SSH's final diagnostics are visible to F1 and Wren. */
+							conn_close();
+							if (!bbs->hidepopups)
+								show_disconnect_notice(bbs);
 							check_exit(false);
 							finish_scrollback();
 							audio_apc_cleanup();
 							cterm_end(cterm, 0);
 							cterm = NULL;
-							// TODO: Do this before the popup to avoid being rude...
-							conn_close();
 							hidemouse();
 							ret = false;
 							goto end;

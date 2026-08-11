@@ -201,6 +201,8 @@ struct wren_host_state {
 	WrenHandle  *dispatch1_handle;
 	WrenHandle  *host_popup_class;
 	WrenHandle  *host_alert_handle;
+	WrenHandle  *host_alert_help_handle;
+	WrenHandle  *host_help_handle;
 
 	/* Cached class handles for foreign classes that the C side
 	 * allocates instances of (via wrenSetSlotNewForeign).  Filled

@@ -159,7 +159,7 @@ struct bbslist {
 	char               logfile[MAX_PATH + 1];
 	bool               append_logfile;
 	int                xfer_loglevel;
-	int                telnet_loglevel;
+	int                protocol_loglevel;
 	int                bpsrate;
 	int                music;
 	int                address_family;

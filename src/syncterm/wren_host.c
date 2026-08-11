@@ -297,6 +297,39 @@ wren_host_alert(const char *title, const char *message)
 	return wrenCall(state.vm, state.host_alert_handle) == WREN_RESULT_SUCCESS;
 }
 
+bool
+wren_host_alert_help(const char *title, const char *message,
+    const char *help_text)
+{
+	if (!active || !on_owner_thread() || state.vm == NULL ||
+	    state.host_popup_class == NULL || state.host_alert_help_handle == NULL)
+		return false;
+
+	wrenEnsureSlots(state.vm, 4);
+	wrenSetSlotHandle(state.vm, 0, state.host_popup_class);
+	wrenSetSlotString(state.vm, 1, title == NULL ? "Alert" : title);
+	wrenSetSlotString(state.vm, 2, message == NULL ? "" : message);
+	if (help_text == NULL)
+		wrenSetSlotNull(state.vm, 3);
+	else
+		wrenSetSlotString(state.vm, 3, help_text);
+	return wrenCall(state.vm, state.host_alert_help_handle) == WREN_RESULT_SUCCESS;
+}
+
+bool
+wren_host_help(const char *title, const char *body)
+{
+	if (!active || !on_owner_thread() || state.vm == NULL ||
+	    state.host_popup_class == NULL || state.host_help_handle == NULL)
+		return false;
+
+	wrenEnsureSlots(state.vm, 3);
+	wrenSetSlotHandle(state.vm, 0, state.host_popup_class);
+	wrenSetSlotString(state.vm, 1, title == NULL ? "Details" : title);
+	wrenSetSlotString(state.vm, 2, body == NULL ? "" : body);
+	return wrenCall(state.vm, state.host_help_handle) == WREN_RESULT_SUCCESS;
+}
+
 void
 wren_log_clear(void)
 {
@@ -1177,6 +1210,9 @@ wren_host_init(struct bbslist *bbs)
 	if (wrenHasVariable(state.vm, "host_popup", "HostPopup")) {
 		wrenGetVariable(state.vm, "host_popup", "HostPopup", 0);
 		state.host_popup_class = wrenGetSlotHandle(state.vm, 0);
+		state.host_alert_help_handle = wrenMakeCallHandle(state.vm,
+		    "alertWithHelp(_,_,_)");
+		state.host_help_handle = wrenMakeCallHandle(state.vm, "help(_,_)");
 		state.host_alert_handle = wrenMakeCallHandle(state.vm,
 		    "alert(_,_)");
 	}
@@ -1259,6 +1295,10 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.dispatch1_handle);
 	if (state.host_alert_handle != NULL)
 		wrenReleaseHandle(state.vm, state.host_alert_handle);
+	if (state.host_alert_help_handle != NULL)
+		wrenReleaseHandle(state.vm, state.host_alert_help_handle);
+	if (state.host_help_handle != NULL)
+		wrenReleaseHandle(state.vm, state.host_help_handle);
 	if (state.hook_class != NULL)
 		wrenReleaseHandle(state.vm, state.hook_class);
 	if (state.host_popup_class != NULL)
