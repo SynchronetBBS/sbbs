@@ -3848,7 +3848,7 @@ ObjFn* wrenCompile(WrenVM* vm, ObjModule* module, const char* source,
   // Skip the UTF-8 BOM if there is one.
   if (strncmp(source, "\xEF\xBB\xBF", 3) == 0) source += 3;
   
-  Parser parser;
+  Parser parser = {0};
   parser.vm = vm;
   parser.module = module;
   parser.source = source;
@@ -3858,7 +3858,7 @@ ObjFn* wrenCompile(WrenVM* vm, ObjModule* module, const char* source,
   parser.currentLine = 1;
   parser.numParens = 0;
 
-  // Zero-init the current token. This will get copied to previous when
+  // Initialize the lookahead token used to prime current and previous when
   // nextToken() is called below.
   parser.next.type = TOKEN_ERROR;
   parser.next.start = source;
