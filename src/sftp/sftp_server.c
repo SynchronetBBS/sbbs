@@ -92,6 +92,12 @@ getcstring(sftps_state_t state)
 static bool
 init(sftps_state_t state, struct sftps_outcome *out)
 {
+	uint32_t packet_size = pkt_sz(state->priv->rxp);
+	if (packet_size < sizeof(state->priv->rxp->type) + sizeof(uint32_t)) {
+		sftps_outcome_record(out, SFTP_ERR_PARSE_FAILED,
+		    "INIT packet too small (%" PRIu32 " bytes)", packet_size);
+		return false;
+	}
 	state->version = get32(state->priv->rxp);
 	if (state->version > SFTP_VERSION)
 		state->version = SFTP_VERSION;
@@ -99,7 +105,7 @@ init(sftps_state_t state, struct sftps_outcome *out)
 	 * The result is what we enable for this session AND what we echo
 	 * back to the client in VERSION. */
 	state->extensions = 0;
-	uint32_t payload_len = pkt_sz(state->priv->rxp) - 1;
+	uint32_t payload_len = packet_size - sizeof(state->priv->rxp->type);
 	while (state->priv->rxp->cur + sizeof(uint32_t) <= payload_len) {
 		sftp_str_t ext_name = getstring(state->priv->rxp);
 		sftp_str_t ext_data = getstring(state->priv->rxp);
