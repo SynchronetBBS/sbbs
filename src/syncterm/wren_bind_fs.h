@@ -83,6 +83,7 @@ enum file_err_code {
 	FILE_ERR_OOM,
 	FILE_ERR_VANISHED,
 	FILE_ERR_RESOLVE_FAILED,
+	FILE_ERR_SEEK_FAILED,
 };
 
 /* Build a FileError into slot `slot` (used as both type-result and

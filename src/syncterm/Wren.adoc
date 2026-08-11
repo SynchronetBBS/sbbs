@@ -5487,6 +5487,7 @@ demux with `is FileError`.
 | `FileErr.oom`           | 5 | Internal `malloc` / `realloc` returned NULL.
 | `FileErr.vanished`      | 6 | Backing file/dir gone (race with external `rm`).
 | `FileErr.resolveFailed` | 7 | `Cache`-relative path resolution failed.
+| `FileErr.seekFailed`    | 8 | `fseek` failed while positioning an open file.
 |===
 
 **What is NOT a FileError:** programmer errors abort the fiber instead.

@@ -1307,7 +1307,8 @@ class WrenTest {
            FileErr.mmapFailed    == 4 &&
            FileErr.oom           == 5 &&
            FileErr.vanished      == 6 &&
-           FileErr.resolveFailed == 7,
+           FileErr.resolveFailed == 7 &&
+           FileErr.seekFailed    == 8,
            "FileErr enum constants")
     check_(FileError is Class,
            "FileError class importable from syncterm")

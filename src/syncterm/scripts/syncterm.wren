@@ -1408,6 +1408,7 @@ class FileErr {
   static oom           { 5 }
   static vanished      { 6 }
   static resolveFailed { 7 }
+  static seekFailed    { 8 }
 }
 
 class Hook {

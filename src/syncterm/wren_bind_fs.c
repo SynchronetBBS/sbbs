@@ -558,6 +558,7 @@ fn_FileError_toString(WrenVM *vm)
 	case FILE_ERR_OOM:            name = "OOM";             break;
 	case FILE_ERR_VANISHED:       name = "VANISHED";        break;
 	case FILE_ERR_RESOLVE_FAILED: name = "RESOLVE_FAILED";  break;
+	case FILE_ERR_SEEK_FAILED:    name = "SEEK_FAILED";     break;
 	default:                      name = "UNKNOWN";         break;
 	}
 	char buf[256];
@@ -1549,7 +1550,11 @@ do_write_at(WrenVM *vm, struct wren_file *wf, long off,
 		wren_throw(vm, "File: offset past end");
 		return;
 	}
-	fseek(wf->fp, off, SEEK_SET);
+	if (fseek(wf->fp, off, SEEK_SET) != 0) {
+		file_build_error(vm, 0, FILE_ERR_SEEK_FAILED, errno,
+		    "fseek before write failed");
+		return;
+	}
 	if (len > 0) {
 		size_t put = fwrite(bytes, 1, (size_t)len, wf->fp);
 		if ((int)put != len) {
@@ -1559,7 +1564,11 @@ do_write_at(WrenVM *vm, struct wren_file *wf, long off,
 		}
 	}
 	fflush(wf->fp);
-	fseek(wf->fp, off + len, SEEK_SET);
+	if (fseek(wf->fp, off + len, SEEK_SET) != 0) {
+		file_build_error(vm, 0, FILE_ERR_SEEK_FAILED, errno,
+		    "fseek after write failed");
+		return;
+	}
 }
 
 void
