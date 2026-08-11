@@ -30,6 +30,7 @@ add_library(termgfx STATIC
     charset.c
     sgrmouse.c
     mouse.c
+    focus.c
     keymode.c
     pace.c
     idle.c

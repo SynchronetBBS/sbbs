@@ -41,9 +41,9 @@ set_target_properties(test_mouse PROPERTIES C_STANDARD 11)
 target_compile_options(test_mouse PRIVATE -UNDEBUG)
 add_test(NAME mouse COMMAND test_mouse)
 
-# Unit test for idle.c -- the pure idle-user clock. Compiled as a bare SOURCE
-# and linked against nothing, like test_chunk: the module is arithmetic over
-# timestamps, with no I/O and no dependencies at all.
+# Unit test for font.c -- glyphs drawn into an indexed framebuffer. Compiled
+# as a bare SOURCE and linked against nothing, like test_chunk: the module is
+# pure pixels, with no I/O and no dependencies at all.
 add_executable(test_font
     ${CMAKE_CURRENT_SOURCE_DIR}/../font.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_font.c)
@@ -52,6 +52,19 @@ set_target_properties(test_font PROPERTIES C_STANDARD 11)
 target_compile_options(test_font PRIVATE -UNDEBUG)
 add_test(NAME font COMMAND test_font)
 
+# Unit test for focus.c -- DECSET 1004 focus events. Same shape: the module
+# is a two-state machine over one CSI final and depends on nothing.
+add_executable(test_focus
+    ${CMAKE_CURRENT_SOURCE_DIR}/../focus.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_focus.c)
+target_include_directories(test_focus PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+set_target_properties(test_focus PROPERTIES C_STANDARD 11)
+target_compile_options(test_focus PRIVATE -UNDEBUG)
+add_test(NAME focus COMMAND test_focus)
+
+# Unit test for idle.c -- the pure idle-user clock. Compiled as a bare SOURCE
+# and linked against nothing, like test_chunk: the module is arithmetic over
+# timestamps, with no I/O and no dependencies at all.
 add_executable(test_idle
     ${CMAKE_CURRENT_SOURCE_DIR}/../idle.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_idle.c)
