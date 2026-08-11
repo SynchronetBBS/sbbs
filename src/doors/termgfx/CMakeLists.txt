@@ -25,6 +25,7 @@ add_library(termgfx STATIC
     text.c
     term.c
     geometry.c
+    font.c
     door32.c
     charset.c
     sgrmouse.c
