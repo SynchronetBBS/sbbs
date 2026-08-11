@@ -1638,7 +1638,11 @@ fn_File_readLine(WrenVM *vm)
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	fseek(wf->fp, off, SEEK_SET);
+	if (fseek(wf->fp, off, SEEK_SET) != 0) {
+		file_build_error(vm, 0, FILE_ERR_SEEK_FAILED, errno,
+		    "fseek before readLine failed");
+		return;
+	}
 
 	/* Chunked read so a 100 GB file with short lines doesn't allocate
 	 * the whole remainder up front.  Grows geometrically when a line
@@ -1681,7 +1685,12 @@ fn_File_readLine(WrenVM *vm)
 		line_len += take;
 		advance  += eol ? (long)(take + 1) : (long)got;
 	}
-	fseek(wf->fp, off + advance, SEEK_SET);
+	if (fseek(wf->fp, off + advance, SEEK_SET) != 0) {
+		free(line);
+		file_build_error(vm, 0, FILE_ERR_SEEK_FAILED, errno,
+		    "fseek after readLine failed");
+		return;
+	}
 	wrenSetSlotBytes(vm, 0, line != NULL ? line : "", line_len);
 	free(line);
 }
