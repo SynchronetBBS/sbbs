@@ -107,6 +107,7 @@ set(SOURCE
 	host_ui.c
 	conn.c
 	conn_buf.c
+	conn_log.c
 	ansi_filter.c
 	conn_pty.c
 	conn_telnet.c

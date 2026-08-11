@@ -11,6 +11,7 @@
 #include <vidmodes.h>
 
 #include "conn.h"
+#include "conn_log.h"
 #include "dirwrap.h"
 #include "filewrap.h"
 #include "gen_defs.h"
@@ -4352,18 +4353,8 @@ show_disconnect_notice(struct bbslist *bbs)
 		if (key == '\r' || key == '\n' || key == CIO_KEY_QUIT)
 			break;
 		if (key == CIO_KEY_F(1)) {
-			bool has_log = bbs != NULL && bbs->conn_type == CONN_TYPE_TELNET;
-#ifndef WITHOUT_CRYPTO
-			if (bbs != NULL && bbs->conn_type == CONN_TYPE_TELNETS)
-				has_log = true;
-			if (bbs != NULL && bbs->conn_type == CONN_TYPE_MQTT)
-				has_log = true;
-#endif
-#ifndef WITHOUT_DEUCESSH
-			if (bbs != NULL && (bbs->conn_type == CONN_TYPE_SSH ||
-			    bbs->conn_type == CONN_TYPE_SSHNA))
-				has_log = true;
-#endif
+			bool has_log = bbs != NULL &&
+			    conn_type_has_diagnostics(bbs->conn_type);
 			if (has_log) {
 				char *help = protocol_log_build_help(popup_message);
 				if (help != NULL) {

@@ -29,6 +29,7 @@
 
 #include "bbslist.h"
 #include "conn.h"
+#include "conn_log.h"
 #include "conn_mqtt.h"
 #include "host_ui.h"
 #include "raw.h"
@@ -172,8 +173,12 @@ bool
 conn_connect(struct bbslist *bbs)
 {
 	char str[64];
+	const char *type_name = bbs->conn_type > CONN_TYPE_UNKNOWN &&
+	    bbs->conn_type < CONN_TYPE_TERMINATOR
+	    ? conn_types[bbs->conn_type] : "Unknown";
 
 	memset(&conn_api, 0, sizeof(conn_api));
+	conn_logf("Connection", LOG_INFO, "starting provider type=%s", type_name);
 
 	conn_api.nostatus = bbs->nostatus;
 	conn_api.emulation = get_emulation(bbs);
@@ -244,14 +249,19 @@ conn_connect(struct bbslist *bbs)
 #endif
 		default:
 			sprintf(str, "%s connections not supported.", conn_types[bbs->conn_type]);
-			host_ui_alert(str,
+			conn_logf("Connection", LOG_ERR,
+			    "provider unavailable in this build type=%s", type_name);
+			conn_log_alert(str,
 			    "The connection type of this entry is not supported by this build.\n"
 			    "Either the protocol was disabled at compile time, or is\n"
 			    "unsupported on this platform.");
 			conn_api.terminate = true;
 	}
 	if (conn_api.connect) {
-		if (conn_api.connect(bbs)) {
+		int result = conn_api.connect(bbs);
+		if (result) {
+			conn_logf("Connection", LOG_ERR,
+			    "provider setup failed type=%s result=%d", type_name, result);
 			conn_api.terminate = true;
 			while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1)
 				SLEEP(1);
@@ -260,8 +270,14 @@ conn_connect(struct bbslist *bbs)
 			while ((!conn_api.terminate)
 			    && (conn_api.input_thread_running == 0 || conn_api.output_thread_running == 0))
 				SLEEP(1);
-			if (!conn_api.terminate)
+			if (!conn_api.terminate) {
 				conn_api.connected_at = xp_fast_timer64();
+				conn_logf("Connection", LOG_INFO,
+				    "provider active type=%s", type_name);
+			}
+			else
+				conn_logf("Connection", LOG_ERR,
+				    "provider stopped during startup type=%s", type_name);
 		}
 	}
 	return conn_api.terminate;
@@ -270,8 +286,13 @@ conn_connect(struct bbslist *bbs)
 int
 conn_close(void)
 {
-	if (conn_api.close)
-		return conn_api.close();
+	if (conn_api.close) {
+		conn_logf("Connection", LOG_DEBUG, "closing provider");
+		int result = conn_api.close();
+		conn_logf("Connection", result == 0 ? LOG_DEBUG : LOG_ERR,
+		    "provider close result=%d", result);
+		return result;
+	}
 	return 0;
 }
 
@@ -332,7 +353,11 @@ conn_socket_connect(struct bbslist *bbs, bool can_cancel)
 	struct addrinfo *cur;
 	char             portnum[6];
 	char             str[LIST_ADDR_MAX + 40];
+	int              gai_error = 0;
+	int              connected_family = AF_UNSPEC;
 
+	conn_logf("TCP", LOG_DEBUG, "resolving remote endpoint port=%hu",
+	    bbs->port);
 	if (!bbs->hidepopups)
 		host_ui_status("Looking up host");
 	memset(&hints, 0, sizeof(hints));
@@ -356,7 +381,9 @@ conn_socket_connect(struct bbslist *bbs, bool can_cancel)
 	hints.ai_flags |= AI_ADDRCONFIG;
 #endif
 	sprintf(portnum, "%hu", bbs->port);
-	if (getaddrinfo(bbs->addr, portnum, &hints, &res) != 0) {
+	if ((gai_error = getaddrinfo(bbs->addr, portnum, &hints, &res)) != 0) {
+		conn_logf("TCP", LOG_ERR, "name resolution failed error=%d",
+		    gai_error);
 		failcode = FAILURE_RESOLVE;
 		res = NULL;
 	}
@@ -374,6 +401,9 @@ conn_socket_connect(struct bbslist *bbs, bool can_cancel)
 	}
 
 	for (cur = res; cur && sock == INVALID_SOCKET && failcode == FAILURE_WHAT_FAILURE; cur = cur->ai_next) {
+		connected_family = cur->ai_family;
+		conn_logf("TCP", LOG_DEBUG, "trying address family=%d",
+		    cur->ai_family);
 		if (sock == INVALID_SOCKET) {
 			sock = socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol);
 			if (sock == INVALID_SOCKET) {
@@ -443,9 +473,14 @@ connected:
 		nonblock = 0;
 		ioctlsocket(sock, FIONBIO, &nonblock);
 		if (!socket_recvdone(sock, 0)) {
+			conn_logf("TCP", LOG_INFO, "connection established family=%d",
+			    connected_family);
 			int keepalives = true;
-			if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepalives, sizeof(keepalives)))
+			if (setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void *)&keepalives, sizeof(keepalives))) {
+				conn_logf("TCP", LOG_WARNING,
+				    "failed to enable keepalive error=%d", ERROR_VALUE);
 				fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
+			}
 
 			/* Pin both kernel socket buffers to 1 MiB for consistent
 			 * throughput across platforms.  Windows defaults to ~8 KiB
@@ -464,12 +499,18 @@ connected:
 			 * can't queue keystroke-blocking bulk data), so the value
 			 * set here is the baseline that the toggle restores to. */
 			int sockbuf = 1024 * 1024;
-			if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char *)&sockbuf, sizeof(sockbuf)))
+			if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char *)&sockbuf, sizeof(sockbuf))) {
+				conn_logf("TCP", LOG_WARNING,
+				    "failed to set send buffer error=%d", ERROR_VALUE);
 				fprintf(stderr, "%s:%d: Error %d calling setsockopt(SO_SNDBUF)\n",
 				    __FILE__, __LINE__, errno);
-			if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&sockbuf, sizeof(sockbuf)))
+			}
+			if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char *)&sockbuf, sizeof(sockbuf))) {
+				conn_logf("TCP", LOG_WARNING,
+				    "failed to set receive buffer error=%d", ERROR_VALUE);
 				fprintf(stderr, "%s:%d: Error %d calling setsockopt(SO_RCVBUF)\n",
 				    __FILE__, __LINE__, errno);
+			}
 
 			if (!bbs->hidepopups)
 				host_ui_status(NULL);
@@ -479,6 +520,8 @@ connected:
 	}
 	if (failcode == FAILURE_WHAT_FAILURE)
 		failcode = FAILURE_CONNECT_ERROR;
+	conn_logf("TCP", failcode == FAILURE_ABORTED ? LOG_INFO : LOG_ERR,
+	    "connection failed reason=%d", failcode);
 
 	if (res)
 		freeaddrinfo(res);
@@ -489,28 +532,28 @@ connected:
 		switch (failcode) {
 			case FAILURE_RESOLVE:
 				sprintf(str, "Cannot resolve %s!", bbs->addr);
-				host_ui_alert(str,
+				conn_log_alert(str,
 				    "The system is unable to resolve the hostname. Check its spelling\n"
 				    "and the DNS configuration for this system and the remote host.");
 				break;
 			case FAILURE_CANT_CREATE:
 				sprintf(str, "Cannot create socket (%d)!", ERROR_VALUE);
-				host_ui_alert(str,
+				conn_log_alert(str,
 				    "Your system is either dangerously low on resources, or there\n"
 				    "is a problem with your TCP/IP stack.");
 				break;
 			case FAILURE_CONNECT_ERROR:
 				sprintf(str, "Connect error (%d)!", ERROR_VALUE);
-				host_ui_alert(str,
+				conn_log_alert(str,
 				    "The call to connect() returned an unexpected error code.");
 				break;
 			case FAILURE_ABORTED:
-				host_ui_alert("Connection Aborted",
+				conn_log_alert("Connection Aborted",
 				    "Connection to the remote system aborted by keystroke.");
 				break;
 			case FAILURE_DISCONNECTED:
 				sprintf(str, "Connect error (%d)!", ERROR_VALUE);
-				host_ui_alert(str,
+				conn_log_alert(str,
 				    "After connect() succeeded, the socket was in a disconnected state.");
 				break;
 		}

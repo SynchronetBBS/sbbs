@@ -17,6 +17,7 @@
 #include "ciolib.h"
 #include "comio.h"     /* COM_FLOW_CONTROL_* — also used by FlowControl in wren_bind.c */
 #include "conn.h"
+#include "conn_log.h"
 #include "cterm.h"
 #include "syncterm.h"  /* safe_mode */
 #include "term.h"      /* force_status_update, term, struct mouse_state, setup_mouse_events */
@@ -282,19 +283,7 @@ fn_Conn_protocolLog(WrenVM *vm)
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	bool supported = st->bbs->conn_type == CONN_TYPE_TELNET;
-#ifndef WITHOUT_CRYPTO
-	if (st->bbs->conn_type == CONN_TYPE_TELNETS)
-		supported = true;
-	if (st->bbs->conn_type == CONN_TYPE_MQTT)
-		supported = true;
-#endif
-#ifndef WITHOUT_DEUCESSH
-	if (st->bbs->conn_type == CONN_TYPE_SSH ||
-	    st->bbs->conn_type == CONN_TYPE_SSHNA)
-		supported = true;
-#endif
-	if (!supported) {
+	if (!conn_type_has_diagnostics(st->bbs->conn_type)) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}

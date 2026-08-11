@@ -7,6 +7,8 @@
 #include "ciolib.h"
 #include "comio.h"
 #include "conn.h"
+#include "conn_log.h"
+#include "gen_defs.h"
 #include "host_ui.h"
 #include "modem.h"
 #include "sockwrap.h"
@@ -14,6 +16,16 @@
 
 static _Atomic(COM_HANDLE) com = COM_HANDLE_INVALID;
 static bool seven_bits = false;
+static const char *modem_log_source = "Serial";
+
+static void
+modem_report(struct bbslist *bbs, const char *title,
+	const char *log_message, const char *display_message)
+{
+	conn_logf(modem_log_source, LOG_ERR, "%s", log_message);
+	if (!bbs->hidepopups)
+		conn_log_alert(title, display_message);
+}
 
 void
 modem_input_thread(void *args)
@@ -48,12 +60,16 @@ modem_input_thread(void *args)
 			assert_pthread_mutex_unlock(&(conn_inbuf.write_mutex));
 		}
 		if (args == NULL) {
-			if ((comGetModemStatus(com) & COM_DCD) == 0)
+			if ((comGetModemStatus(com) & COM_DCD) == 0) {
+				conn_logf(modem_log_source, LOG_INFO, "carrier detect dropped");
 				break;
+			}
 		}
 		else if (monitor_dsr) {
-			if ((comGetModemStatus(com) & COM_DSR) == 0)
+			if ((comGetModemStatus(com) & COM_DSR) == 0) {
+				conn_logf(modem_log_source, LOG_INFO, "data-set-ready dropped");
 				break;
+			}
 		}
 	}
 	conn_api.terminate = true;
@@ -93,6 +109,9 @@ modem_output_thread(void *args)
 				ret = comWriteBuf(com, conn_api.wr_buf + sent, wr - sent);
 				if (ret > 0)
 					sent += ret;
+				if (ret < 0)
+					conn_logf(modem_log_source, LOG_ERR,
+					    "serial write failed");
 				if (ret < 0)
 					break;
 			}
@@ -159,39 +178,44 @@ modem_connect(struct bbslist *bbs)
 	int  fc;
 	char respbuf[1024];
 
+	modem_log_source = bbs->conn_type == CONN_TYPE_MODEM ? "Modem"
+	    : bbs->conn_type == CONN_TYPE_SERIAL_NORTS ? "Serial-3-Wire"
+	    : "Serial";
 	seven_bits = (bbs->data_bits == 7);
 
 	if ((bbs->conn_type == CONN_TYPE_SERIAL) || (bbs->conn_type == CONN_TYPE_SERIAL_NORTS)) {
+		conn_logf(modem_log_source, LOG_INFO,
+		    "opening serial interface (device omitted)");
 		com = comOpen(bbs->addr);
 		if (com == COM_HANDLE_INVALID) {
-			if (!bbs->hidepopups)
-				host_ui_alert("Cannot Open Port",
-				    "Cannot open the specified serial device.");
+			modem_report(bbs, "Cannot Open Port",
+			    "cannot open serial device",
+			    "Cannot open the specified serial device.");
 			conn_api.terminate = true;
 			return -1;
 		}
 		if (bbs->bpsrate) {
 			if (!comSetBaudRate(com, bbs->bpsrate)) {
-				if (!bbs->hidepopups)
-					host_ui_alert("Cannot Set Baud Rate",
-					    "Cannot set the serial device baud rate.");
+				modem_report(bbs, "Cannot Set Baud Rate",
+				    "cannot set serial baud rate",
+				    "Cannot set the serial device baud rate.");
 				conn_api.terminate = true;
 				comClose(com);
 				return -1;
 			}
 		}
 		if (!comSetParity(com, bbs->parity != SYNCTERM_PARITY_NONE, bbs->parity == SYNCTERM_PARITY_ODD)) {
-			if (!bbs->hidepopups)
-				host_ui_alert("Cannot Set Parity",
-				    "Cannot set parity on the serial device.");
+			modem_report(bbs, "Cannot Set Parity",
+			    "cannot set serial parity",
+			    "Cannot set parity on the serial device.");
 			conn_api.terminate = true;
 			comClose(com);
 			return -1;
 		}
 		if (!comSetBits(com, bbs->data_bits, bbs->stop_bits)) {
-			if (!bbs->hidepopups)
-				host_ui_alert("Cannot Set Data Bits",
-				    "Cannot set data and stop bits on the serial device.");
+			modem_report(bbs, "Cannot Set Data Bits",
+			    "cannot set serial data and stop bits",
+			    "Cannot set data and stop bits on the serial device.");
 			conn_api.terminate = true;
 			comClose(com);
 			return -1;
@@ -207,69 +231,69 @@ modem_connect(struct bbslist *bbs)
 			fc &= ~COM_FLOW_CONTROL_RTS_CTS;
 		if (!comSetFlowControl(com, fc)) {
 			conn_api.close();
-			if (!bbs->hidepopups)
-				host_ui_alert("Failed to Set Flow Control",
-				    "SyncTERM was unable to set flow control.");
+			modem_report(bbs, "Failed to Set Flow Control",
+			    "cannot set serial flow control",
+			    "SyncTERM was unable to set flow control.");
 			return -1;
 		}
 		if (bbs->conn_type == CONN_TYPE_SERIAL_NORTS)
 			comLowerRTS(com);
 		if (!comRaiseDTR(com)) {
-			if (!bbs->hidepopups)
-				host_ui_alert("Cannot Raise DTR",
-				    "comRaiseDTR() returned an error.");
+			modem_report(bbs, "Cannot Raise DTR",
+			    "cannot raise DTR", "comRaiseDTR() returned an error.");
 			conn_api.terminate = true;
 			comClose(com);
 			return -1;
 		}
 	}
 	else {
+		conn_logf(modem_log_source, LOG_INFO,
+		    "opening modem (device and phone number omitted)");
 		com = comOpen(settings.mdm.device_name);
 		if (com == COM_HANDLE_INVALID) {
-			if (!bbs->hidepopups)
-				host_ui_alert("Cannot Open Modem",
-				    "Cannot open the specified modem device.");
+			modem_report(bbs, "Cannot Open Modem",
+			    "cannot open modem device",
+			    "Cannot open the specified modem device.");
 			conn_api.terminate = true;
 			return -1;
 		}
 		if (settings.mdm.com_rate) {
 			if (!comSetBaudRate(com, settings.mdm.com_rate)) {
-				if (!bbs->hidepopups)
-					host_ui_alert("Cannot Set Baud Rate",
-					    "Cannot set the modem device baud rate.");
+				modem_report(bbs, "Cannot Set Baud Rate",
+				    "cannot set modem baud rate",
+				    "Cannot set the modem device baud rate.");
 				conn_api.terminate = true;
 				comClose(com);
 				return -1;
 			}
 		}
 		if (!comSetParity(com, bbs->parity != SYNCTERM_PARITY_NONE, bbs->parity == SYNCTERM_PARITY_ODD)) {
-			if (!bbs->hidepopups)
-				host_ui_alert("Cannot Set Parity",
-				    "Cannot set parity on the modem device.");
+			modem_report(bbs, "Cannot Set Parity",
+			    "cannot set modem parity",
+			    "Cannot set parity on the modem device.");
 			conn_api.terminate = true;
 			comClose(com);
 			return -1;
 		}
 		if (!comSetBits(com, bbs->data_bits, bbs->stop_bits)) {
-			if (!bbs->hidepopups)
-				host_ui_alert("Cannot Set Data Bits",
-				    "Cannot set data and stop bits on the modem device.");
+			modem_report(bbs, "Cannot Set Data Bits",
+			    "cannot set modem data and stop bits",
+			    "Cannot set data and stop bits on the modem device.");
 			conn_api.terminate = true;
 			comClose(com);
 			return -1;
 		}
 		if (!comSetFlowControl(com, bbs->flow_control)) {
 			conn_api.close();
-			if (!bbs->hidepopups)
-				host_ui_alert("Failed to Set Flow Control",
-				    "SyncTERM was unable to set flow control.");
+			modem_report(bbs, "Failed to Set Flow Control",
+			    "cannot set modem flow control",
+			    "SyncTERM was unable to set flow control.");
 			return -1;
 		}
 
 		if (!comRaiseDTR(com)) {
-			if (!bbs->hidepopups)
-				host_ui_alert("Cannot Raise DTR",
-				    "comRaiseDTR() returned an error.");
+			modem_report(bbs, "Cannot Raise DTR",
+			    "cannot raise DTR", "comRaiseDTR() returned an error.");
 			conn_api.terminate = true;
 			comClose(com);
 			return -1;
@@ -292,6 +316,8 @@ modem_connect(struct bbslist *bbs)
 		if (!bbs->hidepopups)
 			host_ui_status("Initializing...");
 
+		conn_logf(modem_log_source, LOG_INFO,
+		    "sending initialization command (contents omitted)");
 		comWriteString(com, settings.mdm.init_string);
 		comWriteString(com, "\r");
 
@@ -299,14 +325,16 @@ modem_connect(struct bbslist *bbs)
 		while (1) {
 			if ((ret = modem_response(respbuf, sizeof(respbuf), 5)) != 0) {
 				modem_close();
-				if (!bbs->hidepopups) {
+				if (!bbs->hidepopups)
 					host_ui_status(NULL);
-					if (ret < 0) {
-						host_ui_alert("Modem Not Responding",
-						    "The modem did not respond to the initialization string.\n"
-						    "Check the initialization string and phone number.");
-					}
-				}
+				if (ret < 0)
+					modem_report(bbs, "Modem Not Responding",
+					    "initialization response timed out",
+					    "The modem did not respond to the initialization string.\n"
+					    "Check the initialization string and phone number.");
+				else
+					conn_logf(modem_log_source, LOG_INFO,
+					    "initialization cancelled by user");
 				conn_api.terminate = true;
 				return -1;
 			}
@@ -316,14 +344,18 @@ modem_connect(struct bbslist *bbs)
 		}
 
 		if (!strstr(respbuf, "OK")) {
+			conn_logf(modem_log_source, LOG_ERR,
+			    "modem rejected initialization command (response omitted)");
 			modem_close();
 			if (!bbs->hidepopups) {
 				host_ui_status(NULL);
-				host_ui_alert("Modem Initialization Error", respbuf);
+				conn_log_alert("Modem Initialization Error", respbuf);
 			}
 			conn_api.terminate = true;
 			return -1;
 		}
+		conn_logf(modem_log_source, LOG_INFO,
+		    "modem accepted initialization command");
 
 		if (!bbs->hidepopups) {
 			host_ui_status(NULL);
@@ -332,16 +364,21 @@ modem_connect(struct bbslist *bbs)
 		comWriteString(com, settings.mdm.dial_string);
 		comWriteString(com, bbs->addr);
 		comWriteString(com, "\r");
+		conn_logf(modem_log_source, LOG_INFO,
+		    "dial command sent (command and phone number omitted)");
 
                 /* Wait for "CONNECT" */
 		while (1) {
 			if ((ret = modem_response(respbuf, sizeof(respbuf), 60)) != 0) {
 				modem_close();
-				if (!bbs->hidepopups) {
+				if (!bbs->hidepopups)
 					host_ui_status(NULL);
-					if (ret < 0)
-						host_ui_alert("No Answer", respbuf);
-				}
+				if (ret < 0)
+					modem_report(bbs, "No Answer",
+					    "dial response timed out", respbuf);
+				else
+					conn_logf(modem_log_source, LOG_INFO,
+					    "dial cancelled by user");
 				conn_api.terminate = true;
 				return -1;
 			}
@@ -351,14 +388,17 @@ modem_connect(struct bbslist *bbs)
 		}
 
 		if (!strstr(respbuf, "CONNECT")) {
+			conn_logf(modem_log_source, LOG_ERR,
+			    "modem rejected dial request (response omitted)");
 			modem_close();
 			if (!bbs->hidepopups) {
 				host_ui_status(NULL);
-				host_ui_alert("Connection Failed", respbuf);
+				conn_log_alert("Connection Failed", respbuf);
 			}
 			conn_api.terminate = true;
 			return -1;
 		}
+		conn_logf(modem_log_source, LOG_INFO, "carrier established");
 
 		if (!bbs->hidepopups) {
 			host_ui_status(NULL);
@@ -369,15 +409,24 @@ modem_connect(struct bbslist *bbs)
 	}
 
 	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
+		modem_report(bbs, "Connection Error",
+		    "failed to allocate input buffer",
+		    "Unable to allocate the connection input buffer.");
 		conn_api.close();
 		return -1;
 	}
 	if (!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
+		modem_report(bbs, "Connection Error",
+		    "failed to allocate output buffer",
+		    "Unable to allocate the connection output buffer.");
 		conn_api.close();
 		destroy_conn_buf(&conn_inbuf);
 		return -1;
 	}
 	if (!(conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
+		modem_report(bbs, "Connection Error",
+		    "failed to allocate receive workspace",
+		    "Unable to allocate the connection receive workspace.");
 		conn_api.close();
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
@@ -385,6 +434,9 @@ modem_connect(struct bbslist *bbs)
 	}
 	conn_api.rd_buf_size = BUFFER_SIZE;
 	if (!(conn_api.wr_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
+		modem_report(bbs, "Connection Error",
+		    "failed to allocate send workspace",
+		    "Unable to allocate the connection send workspace.");
 		conn_api.close();
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
@@ -392,6 +444,11 @@ modem_connect(struct bbslist *bbs)
 		return -1;
 	}
 	conn_api.wr_buf_size = BUFFER_SIZE;
+	if (bbs->conn_type != CONN_TYPE_MODEM)
+		conn_logf(modem_log_source, LOG_INFO,
+		    "serial link configured baud=%lu data-bits=%d stop-bits=%d parity=%d flow=0x%X",
+		    (unsigned long)bbs->bpsrate, bbs->data_bits, bbs->stop_bits,
+		    bbs->parity, fc);
 
 	if ((bbs->conn_type == CONN_TYPE_SERIAL) || (bbs->conn_type == CONN_TYPE_SERIAL_NORTS)) {
 		_beginthread(modem_output_thread, 0, (void *)-1);
@@ -404,6 +461,7 @@ modem_connect(struct bbslist *bbs)
 
 	if (!bbs->hidepopups)
 		host_ui_status(NULL);
+	conn_logf(modem_log_source, LOG_INFO, "session established");
 
 	return 0;
 }
@@ -412,6 +470,7 @@ int
 serial_close(void)
 {
 	conn_api.terminate = true;
+	conn_logf(modem_log_source, LOG_DEBUG, "closing serial interface");
 
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1)
 		SLEEP(1);
@@ -431,6 +490,7 @@ modem_close(void)
 	COM_HANDLE oldcom;
 
 	conn_api.terminate = true;
+	conn_logf(modem_log_source, LOG_DEBUG, "closing modem and lowering DTR");
 
 	if ((comGetModemStatus(com) & COM_DCD) == 0) /* DCD already low */
 		goto CLOSEIT;

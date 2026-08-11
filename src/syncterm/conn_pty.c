@@ -26,6 +26,9 @@
 
 #include <termios.h>
 
+#include "conn_log.h"
+#include "gen_defs.h"
+
 /*
  * Control Character Defaults
  */
@@ -313,8 +316,14 @@ pty_input_thread(void *args)
 	SetThreadName("PTY Input");
 	conn_api.input_thread_running = 1;
 	while (master != -1 && !conn_api.terminate) {
-		if ((i = waitpid(child_pid, &status, WNOHANG)))
+		if ((i = waitpid(child_pid, &status, WNOHANG))) {
+			if (i > 0)
+				conn_logf("Shell", LOG_INFO, "child process exited");
+			else
+				conn_logf("Shell", LOG_ERR,
+				    "waitpid failed error=%d", errno);
 			break;
+		}
 		if (bufsz < BUFFER_SIZE) {
 			FD_ZERO(&rds);
 			FD_SET(master, &rds);
@@ -327,10 +336,16 @@ pty_input_thread(void *args)
 			if (rd == -1) {
 				if (errno == EBADF)
 					break;
+				conn_logf("Shell", LOG_ERR,
+				    "PTY select failed error=%d", errno);
 				rd = 0;
 			}
 			if (rd == 1) {
 				rd = read(master, conn_api.rd_buf + bufsz, conn_api.rd_buf_size - bufsz);
+				if (rd <= 0)
+					conn_logf("Shell", rd == 0 ? LOG_INFO : LOG_ERR,
+					    rd == 0 ? "PTY reached end of file"
+					            : "PTY read failed error=%d", errno);
 				if (rd <= 0)
 					break;
 				bufsz += rd;
@@ -399,6 +414,8 @@ pty_output_thread(void *args)
 			assert_pthread_mutex_unlock(&(conn_outbuf.read_mutex));
 		}
 		if (ret == -1)
+			conn_logf("Shell", LOG_ERR, "PTY write failed error=%d", errno);
+		if (ret == -1)
 			break;
 	}
 	conn_api.terminate = true;
@@ -414,6 +431,8 @@ pty_connect(struct bbslist *bbs)
 	int            cols, rows, pixelc, pixelr;
 	int            cp;
 	int            i;
+	conn_logf("Shell", LOG_INFO,
+	    "starting local shell session (command omitted)");
 
 	/* A PTY provides reliable kernel backpressure, so start it without
 	 * software flow control.  Interactive programs may change these
@@ -490,6 +509,9 @@ pty_connect(struct bbslist *bbs)
 	child_pid = forkpty(&master, NULL, &ts, &ws);
 	switch (child_pid) {
 		case -1:
+			conn_logf("Shell", LOG_ERR, "forkpty failed error=%d", errno);
+			if (!bbs->hidepopups)
+				conn_log_alert("Shell Error", "Unable to create a local pseudo-terminal.");
 			return -1;
 		case 0: /* Child */
 			setenv("TERM", bbs->term_name[0] ? bbs->term_name : settings.TERM, 1);
@@ -544,19 +566,32 @@ pty_connect(struct bbslist *bbs)
 			exit(1);
 	}
 
-	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE))
+	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
+		conn_logf("Shell", LOG_ERR, "failed to allocate input buffer");
+		if (!bbs->hidepopups)
+			conn_log_alert("Shell Error", "Unable to allocate the shell input buffer.");
 		return -1;
+	}
 	if (!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
+		conn_logf("Shell", LOG_ERR, "failed to allocate output buffer");
+		if (!bbs->hidepopups)
+			conn_log_alert("Shell Error", "Unable to allocate the shell output buffer.");
 		destroy_conn_buf(&conn_inbuf);
 		return -1;
 	}
 	if (!(conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
+		conn_logf("Shell", LOG_ERR, "failed to allocate receive workspace");
+		if (!bbs->hidepopups)
+			conn_log_alert("Shell Error", "Unable to allocate the shell receive workspace.");
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
 		return -1;
 	}
 	conn_api.rd_buf_size = BUFFER_SIZE;
 	if (!(conn_api.wr_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
+		conn_logf("Shell", LOG_ERR, "failed to allocate send workspace");
+		if (!bbs->hidepopups)
+			conn_log_alert("Shell Error", "Unable to allocate the shell send workspace.");
 		free(conn_api.rd_buf);
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
@@ -566,6 +601,7 @@ pty_connect(struct bbslist *bbs)
 
 	_beginthread(pty_output_thread, 0, NULL);
 	_beginthread(pty_input_thread, 0, NULL);
+	conn_logf("Shell", LOG_INFO, "local shell session established");
 
 	return 0;
 }
@@ -597,7 +633,11 @@ pty_close(void)
 	char   garbage[1024];
 	int oldmaster;
 
+	bool local_close = !conn_api.terminate;
 	conn_api.terminate = true;
+	conn_logf("Shell", local_close ? LOG_DEBUG : LOG_INFO,
+	    local_close ? "local shell teardown requested"
+	                : "closing after child or PTY teardown");
 	start = xp_fast_timer64();
 	kill(child_pid, SIGHUP);
 	while (waitpid(child_pid, &status, WNOHANG) == 0) {
@@ -608,6 +648,12 @@ pty_close(void)
 	}
 	kill(child_pid, SIGKILL);
 	waitpid(child_pid, &status, 0);
+	if (WIFEXITED(status))
+		conn_logf("Shell", LOG_INFO, "child exit status=%d",
+		    WEXITSTATUS(status));
+	else if (WIFSIGNALED(status))
+		conn_logf("Shell", LOG_INFO, "child terminated by signal=%d",
+		    WTERMSIG(status));
 
 	oldmaster = master;
 	master = -1;

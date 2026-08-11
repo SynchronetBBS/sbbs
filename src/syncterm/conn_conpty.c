@@ -8,7 +8,9 @@
 
 #include "bbslist.h"
 #include "conn.h"
+#include "conn_log.h"
 #include "fonts.h"
+#include "gen_defs.h"
 #include "host_ui.h"
 #include "window.h"
 
@@ -16,6 +18,14 @@ HANDLE inputRead, inputWrite, outputRead, outputWrite;
 PROCESS_INFORMATION pi;
 HPCON cpty;
 enum ciolib_codepage codepage;
+
+static void
+conpty_error(struct bbslist *bbs, const char *message)
+{
+	conn_logf("Shell", LOG_ERR, "%s", message);
+	if (!bbs->hidepopups)
+		conn_log_alert("Shell Error", message);
+}
 
 static size_t
 get_utf8_span(const uint8_t *b, size_t sz)
@@ -63,13 +73,23 @@ conpty_input_thread(void *args)
 	conn_api.input_thread_running = 1;
 	while (!conn_api.terminate) {
 		if (GetExitCodeProcess(pi.hProcess, &ec)) {
-			if (ec != STILL_ACTIVE)
+			if (ec != STILL_ACTIVE) {
+				conn_logf("Shell", LOG_INFO, "child exit status=%lu",
+				    (unsigned long)ec);
 				break;
+			}
 		}
 		else {
+			conn_logf("Shell", LOG_ERR,
+			    "GetExitCodeProcess failed windows-error=%lu",
+			    (unsigned long)GetLastError());
 			break;
 		}
 		if (!ReadFile(outputRead, conn_api.rd_buf + fill, conn_api.rd_buf_size - fill, &rd, NULL)) {
+			if (!conn_api.terminate)
+				conn_logf("Shell", LOG_ERR,
+				    "ConPTY read failed windows-error=%lu",
+				    (unsigned long)GetLastError());
 			break;
 		}
 		fill += rd;
@@ -126,6 +146,9 @@ conpty_output_thread(void *args)
 			size_t sent = 0;
 			while (!conn_api.terminate && sent < sz) {
 				if (!WriteFile(inputWrite, utf + sent, sz - sent, &ret, NULL)) {
+					conn_logf("Shell", LOG_ERR,
+					    "ConPTY write failed windows-error=%lu",
+					    (unsigned long)GetLastError());
 					conn_api.terminate = true;
 					break;
 				}
@@ -144,6 +167,8 @@ conpty_output_thread(void *args)
 int conpty_connect(struct bbslist *bbs)
 {
 	HANDLE heap = GetProcessHeap();
+	conn_logf("Shell", LOG_INFO,
+	    "starting local shell session (command omitted)");
 
 	int w, h;
 	get_term_win_size(&w, &h, NULL, NULL, &bbs->nostatus);
@@ -163,7 +188,7 @@ int conpty_connect(struct bbslist *bbs)
 	InitializeProcThreadAttributeList(NULL, 1, 0, &sz);
 	si.lpAttributeList = HeapAlloc(heap, 0, sz);
 	if (si.lpAttributeList == NULL) {
-		host_ui_alert("Shell Error", "HeapAlloc failed");
+		conpty_error(bbs, "HeapAlloc failed");
 		return -1;
 	}
 
@@ -171,18 +196,18 @@ int conpty_connect(struct bbslist *bbs)
 	if (cmd[0] == 0)
 		cmd = getenv("ComSpec");
 	if (cmd == NULL)  {
-		host_ui_alert("Shell Error", "No command shell found");
+		conpty_error(bbs, "No command shell found");
 		return -1;
 	}
 	if (!CreatePipe(&inputRead, &inputWrite, NULL, 0)) {
-		host_ui_alert("Shell Error", "CreatePipe (input) failed");
+		conpty_error(bbs, "CreatePipe (input) failed");
 		return -1;
 	}
 	if (!CreatePipe(&outputRead, &outputWrite, NULL, 0)) {
 		CloseHandle(inputRead);
 		CloseHandle(inputWrite);
 		HeapFree(heap, 0, si.lpAttributeList);
-		host_ui_alert("Shell Error", "CreatePipe (output) failed");
+		conpty_error(bbs, "CreatePipe (output) failed");
 		return -1;
 	}
 	if (FAILED(CreatePseudoConsole(size, inputRead, outputWrite, 0, &cpty))) {
@@ -191,7 +216,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
 		HeapFree(heap, 0, si.lpAttributeList);
-		host_ui_alert("Shell Error", "CreatePseudoConsole failed");
+		conpty_error(bbs, "CreatePseudoConsole failed");
 		return -1;
 	}
 	if (!InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0, &sz)) {
@@ -200,7 +225,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
 		HeapFree(heap, 0, si.lpAttributeList);
-		host_ui_alert("Shell Error", "InitializeProcThreadAttributeList failed");
+		conpty_error(bbs, "InitializeProcThreadAttributeList failed");
 		return -1;
 	}
 
@@ -211,7 +236,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
 		HeapFree(heap, 0, si.lpAttributeList);
-		host_ui_alert("Shell Error", "UpdateProcThreadAttribute failed");
+		conpty_error(bbs, "UpdateProcThreadAttribute failed");
 		return -1;
 	}
 
@@ -222,7 +247,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
 		HeapFree(heap, 0, si.lpAttributeList);
-		host_ui_alert("Shell Error", "CreateProcessA failed");
+		conpty_error(bbs, "CreateProcessA failed");
 		return -1;
 	}
 	DeleteProcThreadAttributeList(si.lpAttributeList);
@@ -232,7 +257,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(inputWrite);
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
-		host_ui_alert("Shell Error", "create_conn_buf (input) failed");
+		conpty_error(bbs, "create_conn_buf (input) failed");
 		return -1;
 	}
 	if (!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
@@ -241,7 +266,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(inputWrite);
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
-		host_ui_alert("Shell Error", "create_conn_buf (output) failed");
+		conpty_error(bbs, "create_conn_buf (output) failed");
 		return -1;
 	}
 	if (!(conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
@@ -251,7 +276,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(inputWrite);
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
-		host_ui_alert("Shell Error", "malloc (input) failed");
+		conpty_error(bbs, "malloc (input) failed");
 		return -1;
 	}
 	conn_api.rd_buf_size = BUFFER_SIZE;
@@ -263,13 +288,14 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(inputWrite);
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
-		host_ui_alert("Shell Error", "malloc (output) failed");
+		conpty_error(bbs, "malloc (output) failed");
 		return -1;
 	}
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
 	_beginthread(conpty_output_thread, 0, NULL);
 	_beginthread(conpty_input_thread, 0, NULL);
+	conn_logf("Shell", LOG_INFO, "local shell session established");
 
 	return 0;
 }
@@ -299,7 +325,11 @@ conpty_close(void)
 	char garbage[1024];
 	DWORD ret;
 
+	bool local_close = !conn_api.terminate;
 	conn_api.terminate = true;
+	conn_logf("Shell", local_close ? LOG_DEBUG : LOG_INFO,
+	    local_close ? "local shell teardown requested"
+	                : "closing after child or ConPTY teardown");
 	TerminateProcess(pi.hProcess, 0);
 	WaitForSingleObject(pi.hProcess, 1000);
 	ClosePseudoConsole(cpty);

@@ -81,6 +81,7 @@ enum {
 
 #include "bbslist.h"
 #include "conn.h"
+#include "conn_log.h"
 #ifndef WITHOUT_DEUCESSH
 #include "ssh.h"
 #endif
@@ -210,21 +211,7 @@ close_connection_log(void)
 static bool
 uses_protocol_log(int conn_type)
 {
-	switch (conn_type) {
-		case CONN_TYPE_TELNET:
-			return true;
-#ifndef WITHOUT_CRYPTO
-		case CONN_TYPE_TELNETS:
-		case CONN_TYPE_MQTT:
-			return true;
-#endif
-#ifndef WITHOUT_DEUCESSH
-		case CONN_TYPE_SSH:
-		case CONN_TYPE_SSHNA:
-			return true;
-#endif
-	}
-	return false;
+	return conn_type_has_diagnostics(conn_type);
 }
 
 /* ---------------------------------------------------------- popup queue */

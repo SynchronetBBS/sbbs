@@ -3592,13 +3592,13 @@ Connection-level send and receive.
 
 | `Conn.protocolLog`
 | A snapshot String containing the structured diagnostics retained for
-  the current SSH, Telnet, TelnetS, or MQTT session, or `null` for another
-  protocol or when no diagnostics have been recorded. TelnetS combines
-  Telnet negotiation and TLS-provider diagnostics in arrival order; MQTT
-  combines control-packet metadata with TLS-provider diagnostics without
-  retaining credentials, topics, or payload bytes. The final snapshot
-  remains available to `Hook.onDisconnect` handlers after transport
-  teardown.
+  the current connection, or `null` when no diagnostics have been recorded.
+  Detail depends on the provider: TelnetS combines Telnet negotiation and
+  TLS-provider diagnostics; MQTT combines control-packet metadata with TLS;
+  RLogin and GHost include their control exchanges; raw TCP, serial, modem,
+  and local shell sessions record setup, lifecycle, and errors. Terminal
+  traffic and sensitive setup values are not retained. The final snapshot
+  remains available to `Hook.onDisconnect` handlers after transport teardown.
 
 | `Conn.pending`
 | Bytes available to read right now (in the inbuf ring).

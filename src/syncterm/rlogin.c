@@ -7,6 +7,8 @@
 
 #include "bbslist.h"
 #include "conn.h"
+#include "conn_log.h"
+#include "gen_defs.h"
 #include "host_ui.h"
 #include "sockwrap.h"
 #include "term.h"	/* get_cterm_size */
@@ -30,6 +32,15 @@ static _Atomic bool rlogin_active = false;
  * true.  Cleared by DC1 (XON), by a server 0x10 transition to raw,
  * by rlogin_binary_mode_on, and at connect/close. */
 static _Atomic bool rlogin_input_paused = false;
+static const char *rlogin_log_source = "Raw";
+
+static void
+rlogin_connect_error(struct bbslist *bbs, const char *message)
+{
+	conn_logf(rlogin_log_source, LOG_ERR, "%s", message);
+	if (!bbs->hidepopups)
+		conn_log_alert("Connection Error", message);
+}
 
 /* Forward decl so rlogin_handle_control() can call the public API
  * entry point in the same file. */
@@ -77,10 +88,14 @@ rlogin_tx_parse_cb(const void *inbuf, size_t inlen, size_t *olen)
 		unsigned char c = src[i];
 		if (c == 0x13) {	/* DC3 / XOFF */
 			atomic_store(&rlogin_input_paused, true);
+			conn_logf(rlogin_log_source, LOG_DEBUG,
+			    "consumed local XOFF; server input paused");
 			continue;
 		}
 		if (c == 0x11) {	/* DC1 / XON  */
 			atomic_store(&rlogin_input_paused, false);
+			conn_logf(rlogin_log_source, LOG_DEBUG,
+			    "consumed local XON; server input resumed");
 			continue;
 		}
 		dst[out++] = c;
@@ -95,6 +110,8 @@ rlogin_tx_parse_cb(const void *inbuf, size_t inlen, size_t *olen)
 static void
 rlogin_handle_control(uint8_t c)
 {
+	conn_logf(rlogin_log_source, LOG_DEBUG,
+	    "received RFC 1282 urgent control=0x%02X", c);
 	switch (c) {
 		case 0x02:	/* TIOCFLUSH — server tells client to discard
 				 * any output it has queued but not yet sent.
@@ -163,6 +180,9 @@ rlogin_send_window_change(int text_cols, int text_rows,
 	buf[10] = (ypx >> 8) & 0xff;
 	buf[11] = ypx & 0xff;
 
+	conn_logf(rlogin_log_source, LOG_DEBUG,
+	    "sending window size rows=%u columns=%u pixels=%ux%u",
+	    rows, cols, xpx, ypx);
 	conn_send(buf, sizeof(buf), 1000);
 }
 
@@ -209,8 +229,12 @@ rlogin_input_thread(void *args)
 		tv.tv_usec = (bufsz ? 0 : 100) * 1000;
 		int sel = select((int)rlogin_sock + 1, &rd_set, NULL,
 		    oob_pending ? NULL : &ex_set, &tv);
-		if (sel < 0)
+		if (sel < 0) {
+			if (!conn_api.terminate)
+				conn_logf(rlogin_log_source, LOG_ERR,
+				    "socket select failed error=%d", errno);
 			break;
+		}
 		if (sel > 0) {
 			if (FD_ISSET(rlogin_sock, &rd_set))
 				data_avail = true;
@@ -252,6 +276,12 @@ rlogin_input_thread(void *args)
 			else {
 				/* recv() <= 0 with no urgent pending — the peer
 				 * really did close (or the socket erred out). */
+				if (!conn_api.terminate)
+					conn_logf(rlogin_log_source,
+					    rd == 0 ? LOG_INFO : LOG_ERR,
+					    rd == 0 ? "peer closed the connection"
+					            : "socket receive failed error=%d",
+					    errno);
 				break;
 			}
 		}
@@ -304,8 +334,12 @@ rlogin_output_thread(void *args)
 		else {
 			assert_pthread_mutex_unlock(&(conn_outbuf.read_mutex));
 		}
-		if (ret < 0)
+		if (ret < 0) {
+			if (!conn_api.terminate)
+				conn_logf(rlogin_log_source, LOG_ERR,
+				    "socket write failed error=%d", errno);
 			break;
+		}
 	}
 	conn_api.terminate = true;
 	shutdown(rlogin_sock, SHUT_RDWR);
@@ -324,6 +358,9 @@ rlogin_connect(struct bbslist *bbs)
 		passwd = bbs->user;
 		ruser = bbs->password;
 	}
+	rlogin_log_source = bbs->conn_type == CONN_TYPE_RLOGIN ? "RLogin"
+	    : bbs->conn_type == CONN_TYPE_RLOGIN_REVERSED ? "RLogin-Reversed"
+	    : bbs->conn_type == CONN_TYPE_MBBS_GHOST ? "MBBS-GHost" : "Raw";
 
 	/* Explicitly reset state from any prior session — conn_connect
 	 * memsets conn_api but that's not a valid init for an _Atomic
@@ -342,19 +379,24 @@ rlogin_connect(struct bbslist *bbs)
 	if (rlogin_sock == INVALID_SOCKET)
 		return -1;
 
-	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE))
+	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
+		rlogin_connect_error(bbs, "Failed to allocate the connection input buffer.");
 		return -1;
+	}
 	if (!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
+		rlogin_connect_error(bbs, "Failed to allocate the connection output buffer.");
 		destroy_conn_buf(&conn_inbuf);
 		return -1;
 	}
 	if (!(conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
+		rlogin_connect_error(bbs, "Failed to allocate the connection receive workspace.");
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
 		return -1;
 	}
 	conn_api.rd_buf_size = BUFFER_SIZE;
 	if (!(conn_api.wr_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
+		rlogin_connect_error(bbs, "Failed to allocate the connection send workspace.");
 		FREE_AND_NULL(conn_api.rd_buf);
 		destroy_conn_buf(&conn_inbuf);
 		destroy_conn_buf(&conn_outbuf);
@@ -363,6 +405,8 @@ rlogin_connect(struct bbslist *bbs)
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
 	if ((bbs->conn_type == CONN_TYPE_RLOGIN) || (bbs->conn_type == CONN_TYPE_RLOGIN_REVERSED)) {
+		conn_logf(rlogin_log_source, LOG_INFO,
+		    "sending RFC 1282 handshake (login fields omitted)");
 		/* RFC 1282 OOB control bytes: leave SO_OOBINLINE off (Winsock2
 		 * inline-OOB + SIOCATMARK is broken).  The input thread watches
 		 * exceptfds for urgent notification and consumes the byte via
@@ -389,6 +433,10 @@ rlogin_connect(struct bbslist *bbs)
 
 			conn_send(sbuf, strlen(sbuf) + 1, 1000);
 		}
+		conn_logf(rlogin_log_source, LOG_DEBUG,
+		    "sent terminal parameters emulation=%s rate=%lu",
+		    get_emulation_str(bbs),
+		    (unsigned long)(bbs->bpsrate ? bbs->bpsrate : 115200));
 
 		/* Now wire rlogin-only hooks: DC1/DC3 scanning on outbound,
 		 * and a binary-mode-on side-effect that clears any pending
@@ -406,12 +454,16 @@ rlogin_connect(struct bbslist *bbs)
 		int  idx, ret = -1;
 
                 /* Check to make sure GHost is actually listening */
+		conn_logf(rlogin_log_source, LOG_INFO, "probing GHost service");
 		sendsocket(rlogin_sock, "\r\nMBBS: PING\r\n", 14);
 
 		idx = 0;
 		while (socket_readable(rlogin_sock, 1000)) {
-			if (idx >= sizeof(rbuf) - 1)
+			if (idx >= sizeof(rbuf) - 1) {
+				rlogin_connect_error(bbs,
+				    "The GHost probe response exceeded the supported limit.");
 				return -1;
+			}
 			ret = recv(rlogin_sock, rbuf + idx, 1, 0);
 			if (ret <= 0)
 				break;
@@ -422,9 +474,13 @@ rlogin_connect(struct bbslist *bbs)
 				break;
 		}
 
-		if (ret < 1)
+		if (ret < 1) {
+			rlogin_connect_error(bbs, "The GHost probe failed or timed out.");
 			return -1;
+		}
 
+		conn_logf(rlogin_log_source, LOG_INFO,
+		    "sending GHost launch request (program and user omitted)");
 		sprintf(sbuf, "MBBS: %s %d '%s' %d %s\r\n",
 		    (bbs->ghost_program[0]) ? bbs->ghost_program : bbs->password,  /* Program name */
 		    2,                                                             /* GHost protocol version */
@@ -436,8 +492,11 @@ rlogin_connect(struct bbslist *bbs)
 
 		idx = 0;
 		while (socket_readable(rlogin_sock, 1000)) {
-			if (idx >= sizeof(rbuf) - 1)
+			if (idx >= sizeof(rbuf) - 1) {
+				rlogin_connect_error(bbs,
+				    "The GHost launch response exceeded the supported limit.");
 				return -1;
+			}
 			ret = recv(rlogin_sock, rbuf + idx, 1, 0);
 			if (ret <= 0)
 				break;
@@ -448,8 +507,11 @@ rlogin_connect(struct bbslist *bbs)
 				break;
 		}
 
-		if (ret < 1)
+		if (ret < 1) {
+			rlogin_connect_error(bbs, "The GHost launch failed or timed out.");
 			return -1;
+		}
+		conn_logf(rlogin_log_source, LOG_INFO, "GHost launch accepted");
 	}
 
 	_beginthread(rlogin_output_thread, 0, NULL);
@@ -457,6 +519,7 @@ rlogin_connect(struct bbslist *bbs)
 
 	if (!bbs->hidepopups)
 		host_ui_status(NULL);
+	conn_logf(rlogin_log_source, LOG_INFO, "session established");
 
 	return 0;
 }
@@ -467,7 +530,11 @@ rlogin_close(void)
 	char garbage[1024];
 	SOCKET oldsock;
 
+	bool local_close = !conn_api.terminate;
 	conn_api.terminate = true;
+	conn_logf(rlogin_log_source, local_close ? LOG_DEBUG : LOG_INFO,
+	    local_close ? "local session teardown requested"
+	                : "closing after peer or I/O teardown");
 	oldsock = rlogin_sock;
 	rlogin_sock = INVALID_SOCKET;
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
