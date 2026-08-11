@@ -1626,6 +1626,11 @@ fn_File_readLine(WrenVM *vm)
 	if (wf == NULL)
 		return;
 	long off = ftell(wf->fp);
+	if (off < 0) {
+		file_build_error(vm, 0, FILE_ERR_SEEK_FAILED, errno,
+		    "ftell before readLine failed");
+		return;
+	}
 	long sz;
 	if (!file_size_now(vm, wf, &sz))
 		return;
