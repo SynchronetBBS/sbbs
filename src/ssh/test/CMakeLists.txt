@@ -527,6 +527,7 @@ target_link_libraries(dssh_test_transport_errors PRIVATE
 set(TRANSPORT_ERROR_TESTS
 	test_modules/roundtrip
 	send/encrypt_error send/mac_error send/mac_overflow_rejected
+	send/channel_slot_drain_fatal send/channel_slot_gather_fatal
 	recv/decrypt_error_first_block recv/decrypt_error_remaining
 	recv/mac_generate_error recv/mac_mismatch recv/mac_too_large
 	newkeys/enc_init_failure newkeys/mac_init_failure
@@ -537,6 +538,10 @@ foreach(t ${TRANSPORT_ERROR_TESTS})
 	set_tests_properties(dssh_transport_errors_${t} PROPERTIES
 		ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
 endforeach()
+set_tests_properties(
+	dssh_transport_errors_send/channel_slot_drain_fatal
+	dssh_transport_errors_send/channel_slot_gather_fatal
+	PROPERTIES TIMEOUT 15)
 
 # ================================================================
 # Tier 2c: Thread error tests (lock/unlock/condvar failure injection)

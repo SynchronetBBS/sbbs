@@ -1,0 +1,57 @@
+468238 IGNORE: generated libcrux intentionally passes the 200-byte Keccak state by value so final squeezing mutates a copy; the static-inline function has no correctness issue
+468240 IGNORE: generated libcrux intentionally consumes and returns the 512-byte polynomial by value as an ownership pipeline; the static-inline implementation is optimizer-visible
+468241 IGNORE: generated libcrux preserves Rust value semantics for the 512-byte polynomial serializer; its static-inline wrappers are optimizer-visible and the finding has no correctness impact
+468244 IGNORE: generated libcrux serializer reads a Rust-value polynomial through an optimizer-visible static-inline layer; duplicate performance heuristic of CID 468241 with no correctness impact
+468255 IGNORE: generated libcrux passes the computed 512-byte message polynomial by value into an optimizer-visible serializer; low-impact performance heuristic with no correctness issue
+468259 IGNORE: generated libcrux constructs the returned ML-KEM keypair from owned private/public key values; key-generation-only aggregate copies are optimizer-visible and not a correctness defect
+468261 IGNORE: generated RATE-136 specialization of CID 468238 intentionally mutates a by-value 200-byte Keccak state during final squeeze; no correctness issue
+468270 IGNORE: generated libcrux intentionally consumes, overwrites, and returns the 512-byte intermediate polynomial as an owned value; static-inline transformation has no correctness issue
+503352 FIXED: fatal TX-slot termination is deferred until channel_mtx is released; pending Coverity rescan
+503353
+503354 IGNORE: false positive; session_set_terminate releases accept_mtx and channel_mtx before returning, and dssh_session_stop joins the demux thread before destroying them
+503355 IGNORE: false positive; send_to_slot and dssh_transport_disconnect do not return holding accept_mtx or channel_mtx, and exactly-once termination prevents the reported second acquisition
+503356 IGNORE: false positive; SyncTERM calls ssh_close only on its connection/UI owner thread, and close joins the SSH/SFTP workers before cleaning up and nulling ssh_session
+503358 IGNORE: false positive; sequential channel-close sends do not retain accept_mtx, and send_packet's termination-notification path releases accept_mtx before returning
+503359 IGNORE: false positive; send_packet and session_set_terminate release accept_mtx/channel_mtx before returning, and the atomic termination guard makes the follow-up call a no-op after send failure
+503364 IGNORE: false positive; recv_packet's termination path releases channel_mtx before returning through kex_recv_wrapper
+503365 IGNORE: false positive; pending banners are set and flushed during documented single-threaded pre-start authentication, while accept_mtx is touched only by fatal termination notification
+503367 IGNORE: false positive; password_dispatch's send/disconnect termination paths release channel_mtx internally before returning to handle_auth_password
+503368 IGNORE: false positive; dssh_transport_disconnect's termination notification releases channel_mtx before returning to handle_auth_none
+503369 IGNORE: intentional; the overflow guard is redundant on the analyzed 64-bit target after the UINT32_MAX bound but required when size_t is 32 bits
+503370 IGNORE: false positive; version_exchange and kexinit release accept_mtx/channel_mtx on failure, and handshake's subsequent termination call is suppressed by the atomic exactly-once guard
+503371 IGNORE: false positive; slot drain/gather termination releases accept_mtx before returning, and send_to_slot's later termination call is suppressed by the atomic guard; the former channel_mtx recursion is fixed by deferred termination
+503372 IGNORE: false positive; gather-path termination releases accept_mtx before returning and send_commit's later termination call is suppressed by the atomic guard; the former channel_mtx recursion is fixed by deferred termination
+503373 FIXED: fatal TX-slot termination is deferred until channel_mtx is released; pending Coverity rescan
+503374 IGNORE: false positive; both public-key rejection paths call dssh_transport_disconnect, whose termination notification releases channel_mtx before returning
+503375 IGNORE: false positive; dssh_session_terminate releases accept_mtx and channel_mtx before returning, so SyncTERM's later worker/SFTP waits hold neither lock
+503376 IGNORE: false positive; session_set_terminate unlocks tx_queue_mtx before acquiring accept_mtx on success, while the reported failure branch never acquired tx_queue_mtx
+503377 IGNORE: false positive; successful send returns at most the requested bufsz-sent bytes, so sent cannot exceed bufsz and the next subtraction cannot underflow
+503378 IGNORE: false positive; the keyboard-interactive rejection path calls dssh_transport_disconnect, whose termination notification releases channel_mtx before returning
+503379 IGNORE: false positive; kexinit releases accept_mtx/channel_mtx before returning, and rekey's final termination call is either the first acquisition or an atomic no-op after lower-level termination
+503381 IGNORE: false positive; rekey, recv_packet_raw, send_to_slot, and disconnect handling release connection mutexes before returning or looping; the former nested channel-slot termination defect is fixed by deferred termination
+503382 IGNORE: false positive; auth_server_impl's nested send/receive/disconnect paths release channel_mtx before returning, and authentication is documented as single-threaded before session start
+503383 IGNORE: intentional; the signature-length addition cannot overflow on the analyzed 64-bit target after UINT32_MAX bounds but the guard and cleanup are required when size_t is 32 bits
+503384 IGNORE: intentional; the key-length addition cannot overflow on the analyzed 64-bit target after UINT32_MAX bounds but the guard is required when size_t is 32 bits
+503387 IGNORE: false positive; SyncTERM's terminate/disconnect calls release connection mutexes (with later termination notification an atomic no-op), and cleanup joins the demux thread before destroying them
+503388 IGNORE: false positive; recv/dispatch/open helpers release accept_mtx/channel_mtx before the demux loop continues or broadcasts at exit; the former nested channel-slot termination defect is fixed by deferred termination
+503389 FIXED: fatal TX-slot termination is deferred until channel_mtx is released; pending Coverity rescan
+503390 IGNORE: false positive; handle_channel_request releases buf_mtx on every early-return path and its nested send/disconnect handling releases channel_mtx; the former nested channel-slot termination defect is fixed by deferred termination
+503391 IGNORE: false positive; accept_channel_init balances channel-table locks, and a failed open-confirmation send releases the termination path's accept_mtx before returning NULL
+503392 IGNORE: false positive; kexinit releases accept_mtx before rekey reacquires tx_mtx, so the claimed accept_mtx-to-tx_mtx side of the lock-order cycle does not exist
+503393 IGNORE: false positive; recv_packet_raw owns rx_mtx and its supported callers hold neither channel_mtx nor accept_mtx
+503396 IGNORE: false positive; the zero-copy API intentionally transfers the held tx_mtx from zc_getbuf through zc_send or zc_cancel
+503397 FIXED: fatal TX-slot termination is deferred until channel_mtx is released; pending Coverity rescan
+503398 IGNORE: false positive; authentication is sequential and completes before dssh_session_start creates the demux thread
+503400 IGNORE: false positive; zc_send_inner holds tx_mtx but neither acquires nor inherits accept_mtx
+503401 IGNORE: false positive; got is below bufsz before subtraction and recv cannot return more than the requested remainder
+503403 IGNORE: false positive; handle_channel_request releases buf_mtx on the error path and does not inherit channel_mtx
+503404 IGNORE: intentional contract; send_begin transfers the held tx_mtx to send_commit or send_cancel
+503405 IGNORE: false positive; auth_server_impl runs before connection mutex initialization and does not inherit channel_mtx
+503406 IGNORE: false positive; negotiate_algorithms neither acquires nor inherits channel_mtx
+503407 IGNORE: duplicate symptom of CID 503397; the underlying channel_mtx recursion is fixed by deferred termination
+503408 IGNORE: false positive; session_set_terminate releases tx_queue_mtx before acquiring channel_mtx; the former unsafe path in CID 503397 is fixed by deferred termination
+503409 IGNORE: false positive; cleanup joins the demux thread before destroying connection mutexes and carries no lock into dssh_session_stop
+503410 IGNORE: false positive; password_dispatch is pre-start and conn_initialized is false on its disconnect path
+503413 IGNORE: intentional 32-bit portability guard that is unreachable only in the analyzed 64-bit build
+505091 IGNORE: intentional size-overflow guard required on narrower targets
+505092 IGNORE: intentional size-overflow guard required on narrower targets

@@ -8,6 +8,7 @@
  */
 
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 #include <threads.h>
 
@@ -34,6 +35,20 @@ mock_tx_dispatch(uint8_t *buf, size_t bufsz,
 		return mock_tx_client(buf, bufsz, sess, cbdata);
 	else
 		return mock_tx_server(buf, bufsz, sess, cbdata);
+}
+
+static int
+mock_tx_gather_dispatch(const struct dssh_tx_iov *iov, size_t iovcnt,
+    dssh_session sess, void *cbdata)
+{
+	for (size_t i = 0; i < iovcnt; i++) {
+		uint8_t *buf = (uint8_t *)(uintptr_t)iov[i].base;
+		int      ret = mock_tx_dispatch(buf, iov[i].len, sess, cbdata);
+
+		if (ret < 0)
+			return ret;
+	}
+	return 0;
 }
 
 static int
@@ -105,13 +120,15 @@ static int handshake_server_thread(void *arg) {
 }
 
 static int
-handshake_setup(struct handshake_ctx *ctx)
+handshake_setup_config(struct handshake_ctx *ctx, bool gather)
 {
 	memset(ctx, 0, sizeof(*ctx));
 	dssh_test_reset_global_config();
 	test_enc_reset();
 	test_mac_reset();
 
+	if (gather && dssh_transport_set_tx_gather(mock_tx_gather_dispatch) < 0)
+		return -1;
 	if (register_test_algorithms() < 0)
 		return -1;
 	if (dssh_ed25519_generate_key() < 0)
@@ -165,6 +182,12 @@ handshake_setup(struct handshake_ctx *ctx)
 	return 0;
 }
 
+static int
+handshake_setup(struct handshake_ctx *ctx)
+{
+	return handshake_setup_config(ctx, false);
+}
+
 static void
 handshake_cleanup(struct handshake_ctx *ctx)
 {
@@ -176,6 +199,210 @@ handshake_cleanup(struct handshake_ctx *ctx)
 		dssh_session_cleanup(ctx->client);
 	mock_io_free(&ctx->io);
 	dssh_test_reset_global_config();
+}
+
+/* ================================================================
+ * Channel TX-slot fixture
+ *
+ * Initialize the connection-layer locks and one registered channel
+ * without starting a demux thread.  This isolates slot draining and
+ * gathering while giving session_set_terminate() the real channel
+ * lock topology it must wake.
+ * ================================================================ */
+
+struct channel_slot_fixture {
+	struct dssh_channel_s  channel;
+	struct dssh_channel_s *channels[1];
+};
+
+static int
+channel_slot_fixture_setup(dssh_session sess, struct channel_slot_fixture *fixture)
+{
+	memset(fixture, 0, sizeof(*fixture));
+
+	if (mtx_init(&sess->channel_mtx, mtx_plain) != thrd_success)
+		return -1;
+	if (mtx_init(&sess->accept_mtx, mtx_plain) != thrd_success) {
+		mtx_destroy(&sess->channel_mtx);
+		return -1;
+	}
+	if (cnd_init(&sess->accept_cnd) != thrd_success) {
+		mtx_destroy(&sess->accept_mtx);
+		mtx_destroy(&sess->channel_mtx);
+		return -1;
+	}
+	if (mtx_init(&fixture->channel.buf_mtx, mtx_plain) != thrd_success) {
+		cnd_destroy(&sess->accept_cnd);
+		mtx_destroy(&sess->accept_mtx);
+		mtx_destroy(&sess->channel_mtx);
+		return -1;
+	}
+	if (mtx_init(&fixture->channel.cb_mtx, mtx_plain) != thrd_success) {
+		mtx_destroy(&fixture->channel.buf_mtx);
+		cnd_destroy(&sess->accept_cnd);
+		mtx_destroy(&sess->accept_mtx);
+		mtx_destroy(&sess->channel_mtx);
+		return -1;
+	}
+	if (cnd_init(&fixture->channel.poll_cnd) != thrd_success) {
+		mtx_destroy(&fixture->channel.cb_mtx);
+		mtx_destroy(&fixture->channel.buf_mtx);
+		cnd_destroy(&sess->accept_cnd);
+		mtx_destroy(&sess->accept_mtx);
+		mtx_destroy(&sess->channel_mtx);
+		return -1;
+	}
+	if (alloc_channel_slots(sess, &fixture->channel) < 0) {
+		free_tx_slot(&fixture->channel.wa_slot);
+		free_tx_slot(&fixture->channel.chan_fail_slot);
+		cnd_destroy(&fixture->channel.poll_cnd);
+		mtx_destroy(&fixture->channel.cb_mtx);
+		mtx_destroy(&fixture->channel.buf_mtx);
+		cnd_destroy(&sess->accept_cnd);
+		mtx_destroy(&sess->accept_mtx);
+		mtx_destroy(&sess->channel_mtx);
+		return -1;
+	}
+
+	fixture->channel.sess = sess;
+	fixture->channels[0]  = &fixture->channel;
+	sess->channels         = fixture->channels;
+	sess->channel_count    = 1;
+	sess->channel_capacity = 1;
+	atomic_store(&sess->conn_initialized, true);
+	return 0;
+}
+
+static void
+channel_slot_fixture_cleanup(dssh_session sess, struct channel_slot_fixture *fixture)
+{
+	atomic_store(&sess->conn_initialized, false);
+	sess->channels         = NULL;
+	sess->channel_count    = 0;
+	sess->channel_capacity = 0;
+
+	free_tx_slot(&fixture->channel.wa_slot);
+	free_tx_slot(&fixture->channel.chan_fail_slot);
+	cnd_destroy(&fixture->channel.poll_cnd);
+	mtx_destroy(&fixture->channel.cb_mtx);
+	mtx_destroy(&fixture->channel.buf_mtx);
+	cnd_destroy(&sess->accept_cnd);
+	mtx_destroy(&sess->accept_mtx);
+	mtx_destroy(&sess->channel_mtx);
+}
+
+static void
+arm_channel_wa_slot(struct dssh_channel_s *channel)
+{
+	memset(&channel->wa_slot.buf[9], 0, 9);
+	channel->wa_slot.buf[9] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
+	channel->wa_slot.payload_len = 9;
+	atomic_store(&channel->wa_slot.ready, true);
+}
+
+/* ================================================================
+ * Channel TX-slot fatal errors must terminate after channel_mtx is
+ * released.  Before the fix, each test self-deadlocks in
+ * session_set_terminate(); CTest supplies a bounded timeout.
+ * ================================================================ */
+
+static int
+test_channel_slot_drain_fatal(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct channel_slot_fixture fixture;
+	if (channel_slot_fixture_setup(ctx.client, &fixture) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	bool initially_terminated = dssh_session_is_terminated(ctx.client);
+	arm_channel_wa_slot(&fixture.channel);
+	test_enc_fail_encrypt_at(0);
+
+	if (mtx_lock(&ctx.client->trans.tx_mtx) != thrd_success) {
+		channel_slot_fixture_cleanup(ctx.client, &fixture);
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+	drain_tx_slots(ctx.client);
+	int tx_unlock_result = mtx_unlock(&ctx.client->trans.tx_mtx);
+
+	bool terminated = dssh_session_is_terminated(ctx.client);
+	bool ready       = atomic_load(&fixture.channel.wa_slot.ready);
+	int  lock_result = mtx_trylock(&ctx.client->channel_mtx);
+	int  channel_unlock_result = thrd_success;
+
+	if (lock_result == thrd_success)
+		channel_unlock_result = mtx_unlock(&ctx.client->channel_mtx);
+
+	test_enc_reset();
+	channel_slot_fixture_cleanup(ctx.client, &fixture);
+	handshake_cleanup(&ctx);
+
+	ASSERT_FALSE(initially_terminated);
+	ASSERT_TRUE(terminated);
+	ASSERT_FALSE(ready);
+	ASSERT_EQ(tx_unlock_result, thrd_success);
+	ASSERT_EQ(lock_result, thrd_success);
+	ASSERT_EQ(channel_unlock_result, thrd_success);
+	return TEST_PASS;
+}
+
+static int
+test_channel_slot_gather_fatal(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup_config(&ctx, true) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct channel_slot_fixture fixture;
+	if (channel_slot_fixture_setup(ctx.client, &fixture) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	bool initially_terminated = dssh_session_is_terminated(ctx.client);
+	arm_channel_wa_slot(&fixture.channel);
+	test_enc_fail_encrypt_at(0);
+	ctx.client->trans.tx_packet[9] = SSH_MSG_IGNORE;
+
+	if (mtx_lock(&ctx.client->trans.tx_mtx) != thrd_success) {
+		channel_slot_fixture_cleanup(ctx.client, &fixture);
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+	int gather_result = tx_gather_with_packet(ctx.client,
+	    ctx.client->trans.tx_packet, 1);
+	int tx_unlock_result = mtx_unlock(&ctx.client->trans.tx_mtx);
+
+	bool terminated = dssh_session_is_terminated(ctx.client);
+	bool ready       = atomic_load(&fixture.channel.wa_slot.ready);
+	int  lock_result = mtx_trylock(&ctx.client->channel_mtx);
+	int  channel_unlock_result = thrd_success;
+
+	if (lock_result == thrd_success)
+		channel_unlock_result = mtx_unlock(&ctx.client->channel_mtx);
+
+	test_enc_reset();
+	channel_slot_fixture_cleanup(ctx.client, &fixture);
+	handshake_cleanup(&ctx);
+
+	ASSERT_FALSE(initially_terminated);
+	ASSERT_OK(gather_result);
+	ASSERT_TRUE(terminated);
+	ASSERT_FALSE(ready);
+	ASSERT_EQ(tx_unlock_result, thrd_success);
+	ASSERT_EQ(lock_result, thrd_success);
+	ASSERT_EQ(channel_unlock_result, thrd_success);
+	return TEST_PASS;
 }
 
 /* ================================================================
@@ -770,6 +997,8 @@ static struct dssh_test_entry tests[] = {
 	/* send_packet error paths */
 	{ "send/encrypt_error",                test_send_encrypt_error },
 	{ "send/mac_error",                    test_send_mac_error },
+	{ "send/channel_slot_drain_fatal",     test_channel_slot_drain_fatal },
+	{ "send/channel_slot_gather_fatal",    test_channel_slot_gather_fatal },
 
 	/* recv_packet error paths */
 	{ "recv/decrypt_error_first_block",    test_recv_decrypt_error_first_block },

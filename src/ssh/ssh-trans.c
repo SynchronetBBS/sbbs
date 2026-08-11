@@ -827,7 +827,7 @@ send_packet_inner(struct dssh_session_s *sess, const uint8_t *payload, size_t pa
  * Returns true if the slot was ready and processed.
  */
 static bool
-drain_one_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot)
+drain_one_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, bool *fatal)
 {
 	if (!atomic_load(&slot->ready))
 		return false;
@@ -835,7 +835,7 @@ drain_one_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot)
 
 	atomic_store(&slot->ready, false);
 	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
-		session_set_terminate(sess);
+		*fatal = true;
 	return true;
 }
 
@@ -849,11 +849,12 @@ drain_one_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot)
 DSSH_PRIVATE void
 drain_tx_slots(struct dssh_session_s *sess)
 {
-	bool any = false;
+	bool any   = false;
+	bool fatal = false;
 
 	/* Session-level slots — always first (protocol-critical) */
-	any |= drain_one_slot(sess, &sess->trans.global_reply_slot);
-	any |= drain_one_slot(sess, &sess->trans.open_fail_slot);
+	any |= drain_one_slot(sess, &sess->trans.global_reply_slot, &fatal);
+	any |= drain_one_slot(sess, &sess->trans.open_fail_slot, &fatal);
 
 	/* Channel-level slots — round-robin starting at drain_next_ch */
 	if (sess->conn_initialized) {
@@ -867,13 +868,18 @@ drain_tx_slots(struct dssh_session_s *sess)
 				size_t                 idx = (start + j) % n;
 				struct dssh_channel_s *ch  = sess->channels[idx];
 
-				any |= drain_one_slot(sess, &ch->wa_slot);
-				any |= drain_one_slot(sess, &ch->chan_fail_slot);
+				any |= drain_one_slot(sess, &ch->wa_slot, &fatal);
+				any |= drain_one_slot(sess, &ch->chan_fail_slot, &fatal);
 			}
 			sess->trans.drain_next_ch = (start + 1) % n;
 		}
 		dssh_thrd_check(sess, mtx_unlock(&sess->channel_mtx));
 	}
+
+	/* session_set_terminate() acquires channel_mtx to wake channel
+	 * waiters, so it must not run from a per-channel slot helper. */
+	if (fatal)
+		session_set_terminate(sess);
 
 	if (any) {
 		dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx));
@@ -888,12 +894,12 @@ drain_tx_slots(struct dssh_session_s *sess)
 
 /*
  * Prepare a single ready slot for gather send.  Returns true if
- * the slot was ready and an iov entry was added.
+ * the slot was ready and processed.
  * Caller MUST hold tx_mtx.
  */
 static bool
 gather_prepare_one(struct dssh_session_s *sess, struct dssh_tx_slot *slot, struct dssh_tx_iov *iov, size_t *iovcnt,
-    size_t *total_bytes)
+    size_t *total_bytes, bool *fatal)
 {
 	if (!atomic_load(&slot->ready))
 		return false;
@@ -907,7 +913,7 @@ gather_prepare_one(struct dssh_session_s *sess, struct dssh_tx_slot *slot, struc
 	atomic_store(&slot->ready, false);
 	if (ret < 0) {
 		if ((ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
-			session_set_terminate(sess);
+			*fatal = true;
 		return true;
 	}
 	iov[*iovcnt].base = wire;
@@ -926,10 +932,11 @@ gather_prepare_one(struct dssh_session_s *sess, struct dssh_tx_slot *slot, struc
 static bool
 gather_prepare_slots(struct dssh_session_s *sess, struct dssh_tx_iov *iov, size_t *iovcnt, size_t *total_bytes)
 {
-	bool any = false;
+	bool any   = false;
+	bool fatal = false;
 
-	any |= gather_prepare_one(sess, &sess->trans.global_reply_slot, iov, iovcnt, total_bytes);
-	any |= gather_prepare_one(sess, &sess->trans.open_fail_slot, iov, iovcnt, total_bytes);
+	any |= gather_prepare_one(sess, &sess->trans.global_reply_slot, iov, iovcnt, total_bytes, &fatal);
+	any |= gather_prepare_one(sess, &sess->trans.open_fail_slot, iov, iovcnt, total_bytes, &fatal);
 
 	if (sess->conn_initialized) {
 		dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx));
@@ -942,13 +949,17 @@ gather_prepare_slots(struct dssh_session_s *sess, struct dssh_tx_iov *iov, size_
 				size_t                 idx = (start + j) % n;
 				struct dssh_channel_s *ch  = sess->channels[idx];
 
-				any |= gather_prepare_one(sess, &ch->wa_slot, iov, iovcnt, total_bytes);
-				any |= gather_prepare_one(sess, &ch->chan_fail_slot, iov, iovcnt, total_bytes);
+				any |= gather_prepare_one(sess, &ch->wa_slot, iov, iovcnt, total_bytes, &fatal);
+				any |= gather_prepare_one(sess, &ch->chan_fail_slot, iov, iovcnt, total_bytes, &fatal);
 			}
 			sess->trans.drain_next_ch = (start + 1) % n;
 		}
 		dssh_thrd_check(sess, mtx_unlock(&sess->channel_mtx));
 	}
+
+	/* Defer termination until channel_mtx has been released. */
+	if (fatal)
+		session_set_terminate(sess);
 	return any;
 }
 
