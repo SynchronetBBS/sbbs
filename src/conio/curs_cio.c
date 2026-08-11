@@ -771,6 +771,7 @@ int curs_kbhit(void)
 {
 	struct timeval timeout;
 	fd_set	rfds;
+	int	ch;
 
 	if(curs_nextgetch)
 		return(1);
@@ -783,7 +784,21 @@ int curs_kbhit(void)
 	FD_ZERO(&rfds);
 	FD_SET(fileno(stdin),&rfds);
 
-	return(select(fileno(stdin)+1,&rfds,NULL,NULL,&timeout) == 1);
+	if(select(fileno(stdin)+1,&rfds,NULL,NULL,&timeout) == 1)
+		return(1);
+
+	/* Completing an escape sequence makes curses read ahead, so bytes it
+	 * consumed but did not return are held in its own input queue, where
+	 * the select() above cannot see them.  Ask curses for one raw byte or
+	 * key code and push it back.  Do not use get_wch() here: with nodelay
+	 * enabled, it can consume part of an incomplete multibyte character
+	 * before returning ERR. */
+	if(suspended)
+		return(0);
+	nodelay(stdscr, TRUE);
+	ch=getch();
+	wtimeout(stdscr, 10);
+	return(ch != ERR && ungetch(ch) == OK);
 }
 
 void curs_gotoxy(int x, int y)
