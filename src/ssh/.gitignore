@@ -5,6 +5,11 @@ build-*/
 # Claude Code (local settings)
 .claude/
 
+# Local Coverity tooling and extracted reports
+/coverity-deucessh-local.py
+/coverity-deucessh-api-details.tmp.json
+/coverity-deucessh-details.tmp.md
+
 # Coverage artifacts
 *.profraw
 *.profdata
