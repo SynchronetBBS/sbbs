@@ -892,8 +892,9 @@ returning.
 ### 11.1-1
 > All implementations **MUST** be able to process this message.
 
-**CONFORMS** — `recv_packet()` handles `SSH_MSG_DISCONNECT` by setting
-`terminate = true` and returning `DSSH_ERROR_TERMINATED`.
+**CONFORMS** — `recv_packet()` fully parses the reason, description, and
+language, delivers them to the optional structured diagnostic callback,
+then sets `terminate = true` and returns `DSSH_ERROR_TERMINATED`.
 
 ### 11.1-2
 > They **SHOULD** be able to send this message.
@@ -936,9 +937,9 @@ packet is read.
 > All implementations **MUST** understand this message, but they are
 > allowed to ignore it.
 
-**CONFORMS** — `recv_packet()` handles `SSH_MSG_DEBUG` by parsing the
-`always_display` boolean and message string, invoking the `debug_cb`
-callback if set, then continuing to the next packet.
+**CONFORMS** — `recv_packet()` fully parses the `always_display`, message,
+and language fields, invokes the legacy `debug_cb` and structured
+diagnostic callback when configured, then continues to the next packet.
 
 ### 11.3-2
 > If 'always_display' is TRUE, the message **SHOULD** be displayed.

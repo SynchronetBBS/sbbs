@@ -28,6 +28,72 @@ extern "C" {
 #define DSSH_ERROR_REJECTED      -13 /* Channel open or request rejected by peer */
 #define DSSH_ERROR_TIMEOUT       -14 /* Operation timed out waiting for peer */
 
+/* RFC 4253 section 11.1 disconnect reason codes. */
+#define DSSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT    UINT32_C(1)
+#define DSSH_DISCONNECT_PROTOCOL_ERROR                 UINT32_C(2)
+#define DSSH_DISCONNECT_KEY_EXCHANGE_FAILED            UINT32_C(3)
+#define DSSH_DISCONNECT_RESERVED                       UINT32_C(4)
+#define DSSH_DISCONNECT_MAC_ERROR                      UINT32_C(5)
+#define DSSH_DISCONNECT_COMPRESSION_ERROR              UINT32_C(6)
+#define DSSH_DISCONNECT_SERVICE_NOT_AVAILABLE          UINT32_C(7)
+#define DSSH_DISCONNECT_PROTOCOL_VERSION_NOT_SUPPORTED UINT32_C(8)
+#define DSSH_DISCONNECT_HOST_KEY_NOT_VERIFIABLE        UINT32_C(9)
+#define DSSH_DISCONNECT_CONNECTION_LOST                UINT32_C(10)
+#define DSSH_DISCONNECT_BY_APPLICATION                 UINT32_C(11)
+#define DSSH_DISCONNECT_TOO_MANY_CONNECTIONS           UINT32_C(12)
+#define DSSH_DISCONNECT_AUTH_CANCELLED_BY_USER         UINT32_C(13)
+#define DSSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE UINT32_C(14)
+#define DSSH_DISCONNECT_ILLEGAL_USER_NAME              UINT32_C(15)
+
+#define DSSH_LOG_MESSAGE_MAX  230
+#define DSSH_LOG_LANGUAGE_MAX 64
+
+typedef enum {
+	DSSH_LOG_ERROR,
+	DSSH_LOG_WARNING,
+	DSSH_LOG_DEBUG
+} dssh_log_level;
+
+typedef enum {
+	DSSH_LOG_LOCAL_ONLY,
+	DSSH_LOG_SEND_DEBUG,
+	DSSH_LOG_SEND_DEBUG_ALWAYS_DISPLAY
+} dssh_log_action;
+
+typedef enum {
+	DSSH_LOG_SOURCE_LIBRARY,
+	DSSH_LOG_SOURCE_PEER_DEBUG,
+	DSSH_LOG_SOURCE_PEER_DISCONNECT
+} dssh_log_source;
+
+struct dssh_log_record {
+	dssh_log_level  level;
+	dssh_log_source source;
+	int             error_code;
+	uint32_t        ssh_reason_code;
+	bool            always_display;
+	bool            truncated;
+	const uint8_t  *message;
+	size_t          message_len;
+	const uint8_t  *language;
+	size_t          language_len;
+};
+
+/*
+ * Optional per-session diagnostic callback.  The record and its strings
+ * are immutable snapshots valid only for the duration of the callback.
+ * The callback can run on an API caller thread or the demux thread, and
+ * callbacks for one session may overlap.  It MUST NOT call a dssh_*
+ * function on the same session.
+ *
+ * Returning DSSH_LOG_LOCAL_ONLY keeps the record local.  The two
+ * DSSH_LOG_SEND_DEBUG values request best-effort forwarding to the peer;
+ * they do not guarantee that a message will be sent.  The
+ * DSSH_LOG_SEND_DEBUG_ALWAYS_DISPLAY variant sets SSH's always_display
+ * hint.  Records received from the peer are never forwarded back.
+ */
+typedef dssh_log_action (*dssh_log_cb)(const struct dssh_log_record *record, void *cbdata);
+
 /* Opaque session handle.  Created by session_init, freed by session_cleanup. */
 typedef struct dssh_session_s *dssh_session;
 
@@ -144,6 +210,9 @@ typedef dssh_hostkey_decision (*dssh_hostkey_verify_cb)(const char *algo_name, u
  */
 DSSH_PUBLIC int64_t dssh_parse_uint32(const uint8_t *buf, size_t bufsz, uint32_t *val);
 
+/* Generic, static-storage description of a DSSH_ERROR_* value. */
+DSSH_PUBLIC const char *dssh_strerror(int error_code);
+
 /*
  * Serialize val as a big-endian uint32 into buf at offset *pos.
  * Advances *pos by 4.  Returns 0 on success, or a negative
@@ -199,6 +268,10 @@ DSSH_PUBLIC int dssh_session_set_cbdata(dssh_session sess, void *tx_cbdata, void
  */
 DSSH_PUBLIC int dssh_session_set_debug_cb(dssh_session sess, dssh_debug_cb cb, void *cbdata);
 DSSH_PUBLIC int dssh_session_set_unimplemented_cb(dssh_session sess, dssh_unimplemented_cb cb, void *cbdata);
+DSSH_PUBLIC int dssh_session_set_log_cb(dssh_session sess, dssh_log_cb cb, void *cbdata);
+
+/* May be changed at any time.  The default is DSSH_LOG_ERROR. */
+DSSH_PUBLIC int dssh_session_set_log_level(dssh_session sess, dssh_log_level level);
 
 /*
  * Optional callback for SSH_MSG_USERAUTH_BANNER (RFC 4252 s5.4).

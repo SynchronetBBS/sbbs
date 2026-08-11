@@ -1577,6 +1577,43 @@ dssh_session_set_global_request_cb(sess, my_global_req_handler, my_context);
 dssh_session_set_terminate_cb(sess, my_terminate_handler, my_context);
 ```
 
+### Structured diagnostics
+
+An optional per-session diagnostic callback reports contextual errors,
+warnings, and debugging information from session creation through
+termination.  The default level is `DSSH_LOG_ERROR`; enable additional
+records with `dssh_session_set_log_level()`:
+
+```c
+static dssh_log_action
+my_log(const struct dssh_log_record *record, void *cbdata)
+{
+    /* message and language are length-delimited, callback-lifetime data. */
+    save_record(cbdata, record);
+    return DSSH_LOG_LOCAL_ONLY;
+}
+
+dssh_session_set_log_cb(sess, my_log, my_log_state);
+dssh_session_set_log_level(sess, DSSH_LOG_WARNING);
+```
+
+The callback runs synchronously on the API caller or demux thread that
+owns the event, with no library mutex held.  Calls for one session may
+overlap, so applications retaining a shared list must synchronize their
+own storage.  The callback must be quick, must copy retained strings, and
+must not call a `dssh_*` function on the same session.
+
+Returning `DSSH_LOG_SEND_DEBUG` or
+`DSSH_LOG_SEND_DEBUG_ALWAYS_DISPLAY` requests best-effort forwarding of
+a local record as `SSH_MSG_DEBUG`.  Forwarding is bounded and may be
+silently skipped; peer-originated records are never echoed.  An actual
+wire-send failure remains fatal to the transport.  Peer text is untrusted
+and applications must filter control characters before displaying it.
+
+When no callback is installed, diagnostic formatting, message copying,
+queue allocation, and queue locking are skipped.  Suppressed warning and
+debug records are gated before their formatting arguments are evaluated.
+
 ## Inactivity Timeout
 
 Internal waits for peer responses (channel open confirmation, channel
@@ -1599,6 +1636,8 @@ A rekey timeout is fatal and terminates the session.
 All functions return 0 on success, negative `DSSH_ERROR_*` codes
 on failure.  The transport layer sends `SSH_MSG_DISCONNECT` on
 protocol errors (negotiation failure, MAC mismatch) before returning.
+`dssh_strerror()` maps these codes to generic static strings; structured
+diagnostics provide operation-specific context when enabled.
 
 Received `SSH_MSG_DISCONNECT` from the peer returns
 `DSSH_ERROR_TERMINATED`.  Transport messages (`IGNORE`, `DEBUG`,

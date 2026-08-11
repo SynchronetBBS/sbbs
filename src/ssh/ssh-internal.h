@@ -135,6 +135,26 @@ struct dssh_accept_queue {
 /* Set terminate flag and wake all library-owned condvar waiters. */
 DSSH_PRIVATE void session_set_terminate(struct dssh_session_s *sess);
 
+DSSH_PRIVATE bool dssh_log_enabled(struct dssh_session_s *sess, dssh_log_level level);
+DSSH_PRIVATE void dssh_log_emit(struct dssh_session_s *sess, dssh_log_level level, dssh_log_source source,
+    int error_code, uint32_t ssh_reason_code, bool always_display, bool truncated, const uint8_t *message,
+    size_t message_len, const uint8_t *language, size_t language_len);
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((format(printf, 4, 5)))
+#endif
+DSSH_PRIVATE void dssh_log_emitf(struct dssh_session_s *sess, dssh_log_level level, int error_code,
+    const char *format, ...);
+DSSH_PRIVATE void dssh_log_cleanup(struct dssh_session_s *sess);
+DSSH_PRIVATE void dssh_log_termination(struct dssh_session_s *sess, int cause);
+
+/* The outer guard is intentional: suppressed format arguments are not
+ * evaluated, formatted, or copied. */
+#define DSSH_LOGF(sess, level, error_code, ...)                    \
+	do {                                                        \
+		if (dssh_log_enabled((sess), (level)))                \
+			dssh_log_emitf((sess), (level), (error_code), __VA_ARGS__); \
+	} while (0)
+
 /* Forward declaration of public function called from internal code
  * (ssh-trans.c cleanup path).  Avoids needing deucessh-conn.h. */
 DSSH_PUBLIC void dssh_session_stop(struct dssh_session_s *sess);
@@ -212,6 +232,21 @@ int dssh_test_EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int pad);
  * rejected).  Ensures the DISCONNECT message fits a 256-byte buffer
  * with room for msg_type, reason, and empty language tag. */
 #define DSSH_DISCONNECT_DESC_MAX 230
+
+#define DSSH_LOG_FORWARD_MAX 8
+
+struct dssh_log_forward_entry {
+	size_t  message_len;
+	bool    always_display;
+	uint8_t message[DSSH_LOG_MESSAGE_MAX];
+};
+
+struct dssh_log_forward_queue {
+	mtx_t                         mtx;
+	size_t                        head;
+	size_t                        count;
+	struct dssh_log_forward_entry entries[DSSH_LOG_FORWARD_MAX];
+};
 
 /* RFC 4251 s6: names must not contain DEL */
 #define DSSH_ASCII_DEL 127
@@ -329,6 +364,9 @@ struct dssh_session_s {
 	void *extra_line_cbdata;
 	void  (*debug_cb)(bool always_display, const uint8_t *message, size_t message_len, void *cbdata);
 	void *debug_cbdata;
+	dssh_log_cb log_cb;
+	void       *log_cbdata;
+	struct dssh_log_forward_queue *log_forward;
 	void  (*unimplemented_cb)(uint32_t rejected_seq, void *cbdata);
 	void *unimplemented_cbdata;
 	void (*banner_cb)(const uint8_t *message, size_t message_len, const uint8_t *language, size_t language_len,
@@ -381,6 +419,9 @@ struct dssh_session_s {
 	atomic_bool terminate;
 	atomic_bool demux_running;
 	atomic_bool conn_initialized;
+	atomic_int  log_level;
+	atomic_bool termination_logged;
+	atomic_bool log_mirror_suppressed;
 	bool        auth_service_requested;
 };
 

@@ -1412,6 +1412,33 @@ test_ignore_silently_skipped(void)
 	return TEST_PASS;
 }
 
+static int test_log_peer_count;
+static dssh_log_source test_log_peer_source;
+static uint32_t test_log_peer_reason;
+static bool test_log_peer_always;
+static char test_log_peer_message[DSSH_LOG_MESSAGE_MAX + 1];
+
+static dssh_log_action
+test_transport_log_cb(const struct dssh_log_record *record, void *cbdata)
+{
+	(void)cbdata;
+	if (record->source != DSSH_LOG_SOURCE_LIBRARY) {
+		test_log_peer_count++;
+		test_log_peer_source = record->source;
+		test_log_peer_reason = record->ssh_reason_code;
+		test_log_peer_always = record->always_display;
+		size_t len = record->message_len;
+
+		if (len > DSSH_LOG_MESSAGE_MAX)
+			len = DSSH_LOG_MESSAGE_MAX;
+		if (len > 0)
+			memcpy(test_log_peer_message, record->message, len);
+		test_log_peer_message[len] = 0;
+	}
+	/* Must be ignored for peer-originated records. */
+	return DSSH_LOG_SEND_DEBUG_ALWAYS_DISPLAY;
+}
+
 static int
 test_disconnect_sets_terminate(void)
 {
@@ -1430,6 +1457,8 @@ test_disconnect_sets_terminate(void)
 	dssh_session server = init_server_session();
 	ASSERT_NOT_NULL(server);
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+	test_log_peer_count = 0;
+	ASSERT_OK(dssh_session_set_log_cb(server, test_transport_log_cb, NULL));
 
 	ASSERT_FALSE(dssh_session_is_terminated(server));
 
@@ -1443,6 +1472,11 @@ test_disconnect_sets_terminate(void)
 	int res = recv_packet(server, &msg_type, &recv_payload, &recv_len);
 	ASSERT_ERR(res, DSSH_ERROR_TERMINATED);
 	ASSERT_TRUE(dssh_session_is_terminated(server));
+	ASSERT_EQ(test_log_peer_count, 1);
+	ASSERT_EQ(test_log_peer_source, DSSH_LOG_SOURCE_PEER_DISCONNECT);
+	ASSERT_EQ(test_log_peer_reason, SSH_DISCONNECT_BY_APPLICATION);
+	ASSERT_STR_EQ(test_log_peer_message, "goodbye");
+	ASSERT_EQ(server->log_forward->count, (size_t)0);
 
 	dssh_session_cleanup(client);
 	dssh_session_cleanup(server);
@@ -1490,6 +1524,9 @@ test_debug_invokes_callback(void)
 	test_debug_called = false;
 	test_debug_message[0] = 0;
 	dssh_session_set_debug_cb(server, test_debug_cb, NULL);
+	test_log_peer_count = 0;
+	ASSERT_OK(dssh_session_set_log_cb(server, test_transport_log_cb, NULL));
+	ASSERT_OK(dssh_session_set_log_level(server, DSSH_LOG_DEBUG));
 
 	/* Build SSH_MSG_DEBUG: type(1) + always_display(1) + string(4+N) + lang(4+0) */
 	const char *dbg_text = "test debug";
@@ -1518,6 +1555,56 @@ test_debug_invokes_callback(void)
 	ASSERT_TRUE(test_debug_called);
 	ASSERT_TRUE(test_debug_always_display);
 	ASSERT_STR_EQ(test_debug_message, "test debug");
+	ASSERT_EQ(test_log_peer_count, 1);
+	ASSERT_EQ(test_log_peer_source, DSSH_LOG_SOURCE_PEER_DEBUG);
+	ASSERT_TRUE(test_log_peer_always);
+	ASSERT_STR_EQ(test_log_peer_message, "test debug");
+	ASSERT_EQ(server->log_forward->count, (size_t)0);
+
+	dssh_session_cleanup(client);
+	dssh_session_cleanup(server);
+	mock_io_free(&io);
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
+test_log_forwards_debug(void)
+{
+	dssh_test_reset_global_config();
+	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+	    mock_rxline_dispatch, mock_extra_line_cb);
+	ASSERT_OK(dssh_register_none_comp());
+	struct mock_io_state io;
+	ASSERT_OK(mock_io_init(&io, 0));
+	dssh_session client = dssh_session_init(true, 0);
+	dssh_session server = init_server_session();
+	ASSERT_NOT_NULL(client);
+	ASSERT_NOT_NULL(server);
+	dssh_session_set_cbdata(client, &io, &io, &io, &io);
+	dssh_session_set_cbdata(server, &io, &io, &io, &io);
+	ASSERT_OK(dssh_session_set_log_cb(client, test_transport_log_cb, NULL));
+	ASSERT_OK(dssh_session_set_log_level(client, DSSH_LOG_DEBUG));
+	test_debug_called = false;
+	test_debug_message[0] = 0;
+	ASSERT_OK(dssh_session_set_debug_cb(server, test_debug_cb, NULL));
+
+	/* Version exchange normally establishes this before packet sends. */
+	client->trans.remote_id_str_sz = 1;
+	DSSH_LOGF(client, DSSH_LOG_WARNING, DSSH_ERROR_TIMEOUT, "forwarded diagnostic");
+	ASSERT_EQ(client->log_forward->count, (size_t)1);
+	uint8_t real_msg[] = { SSH_MSG_SERVICE_REQUEST, 0xAA };
+	ASSERT_OK(send_packet(client, real_msg, sizeof(real_msg), NULL));
+
+	uint8_t msg_type;
+	uint8_t *recv_payload;
+	size_t recv_len;
+	ASSERT_OK(recv_packet(server, &msg_type, &recv_payload, &recv_len));
+	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+	ASSERT_TRUE(test_debug_called);
+	ASSERT_TRUE(test_debug_always_display);
+	ASSERT_STR_EQ(test_debug_message, "forwarded diagnostic");
+	ASSERT_EQ(client->log_forward->count, (size_t)0);
 
 	dssh_session_cleanup(client);
 	dssh_session_cleanup(server);
@@ -3629,18 +3716,13 @@ test_debug_truncated_payload(void)
 	uint8_t dbg[] = { SSH_MSG_DEBUG, 1 };
 	ASSERT_OK(send_packet(client, dbg, sizeof(dbg), NULL));
 
-	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x47 };
-	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
-
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(recv_packet(server, &msg_type, &payload, &payload_len));
-	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+	ASSERT_EQ(recv_packet(server, &msg_type, &payload, &payload_len), DSSH_ERROR_PARSE);
 
-	/* Callback should have been called with msg_len=0 */
-	ASSERT_TRUE(debug_cb_invoked);
-	ASSERT_EQ_U(debug_msg_len, 0);
+	ASSERT_FALSE(debug_cb_invoked);
+	ASSERT_TRUE(dssh_session_is_terminated(server));
 
 	dssh_session_cleanup(client);
 	dssh_session_cleanup(server);
@@ -3672,7 +3754,7 @@ test_debug_no_callback(void)
 	dssh_session_set_cbdata(server, &io, &io, &io, &io);
 	/* No debug_cb set */
 
-	uint8_t dbg[] = { SSH_MSG_DEBUG, 0, 0, 0, 0, 5, 'h', 'e', 'l', 'l', 'o' };
+	uint8_t dbg[] = { SSH_MSG_DEBUG, 0, 0, 0, 0, 5, 'h', 'e', 'l', 'l', 'o', 0, 0, 0, 0 };
 	ASSERT_OK(send_packet(client, dbg, sizeof(dbg), NULL));
 
 	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x48 };
@@ -5255,18 +5337,13 @@ test_debug_msg_len_exceeds_payload(void)
 	dssh_serialize_uint32(100, dbg, sizeof(dbg), &dp); /* msg_len=100 */
 	ASSERT_OK(send_packet(client, dbg, sizeof(dbg), NULL));
 
-	/* Send a follow-up so recv_packet returns */
-	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x47 };
-	ASSERT_OK(send_packet(client, follow, sizeof(follow), NULL));
-
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	recv_packet(server, &msg_type, &payload, &payload_len);
+	ASSERT_EQ(recv_packet(server, &msg_type, &payload, &payload_len), DSSH_ERROR_PARSE);
 
-	/* Debug callback should have been invoked with msg_len clamped to 0 */
-	ASSERT_TRUE(debug_cb_invoked);
-	ASSERT_EQ(debug_msg_len, (size_t)0);
+	ASSERT_FALSE(debug_cb_invoked);
+	ASSERT_TRUE(dssh_session_is_terminated(server));
 
 	dssh_session_cleanup(server);
 	dssh_session_cleanup(client);
@@ -6987,20 +7064,13 @@ test_debug_short_payload(void)
 	uint8_t dbg[] = { SSH_MSG_DEBUG };
 	ASSERT_OK(send_packet(client, dbg, sizeof(dbg), NULL));
 
-	/* Follow with a real message so recv_packet returns */
-	uint8_t follow[] = { SSH_MSG_SERVICE_REQUEST, 0x48 };
-	ASSERT_OK(send_packet(client, follow,
-	    sizeof(follow), NULL));
-
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
-	ASSERT_OK(recv_packet(server, &msg_type,
-	    &payload, &payload_len));
-	ASSERT_EQ(msg_type, SSH_MSG_SERVICE_REQUEST);
+	ASSERT_EQ(recv_packet(server, &msg_type, &payload, &payload_len), DSSH_ERROR_PARSE);
 
-	/* Callback must NOT have been called */
 	ASSERT_FALSE(debug_cb_invoked);
+	ASSERT_TRUE(dssh_session_is_terminated(server));
 
 	dssh_session_cleanup(client);
 	dssh_session_cleanup(server);
@@ -7401,6 +7471,7 @@ static struct dssh_test_entry tests[] = {
 	{ "transport/ignore_skipped",        test_ignore_silently_skipped },
 	{ "transport/disconnect_terminates", test_disconnect_sets_terminate },
 	{ "transport/debug_callback",        test_debug_invokes_callback },
+	{ "transport/log_forwards_debug",    test_log_forwards_debug },
 	{ "transport/unimplemented_callback", test_unimplemented_invokes_callback },
 	{ "transport/multiple_ignore",       test_multiple_ignore_before_real },
 

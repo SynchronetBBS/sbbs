@@ -977,8 +977,18 @@ done:
 static inline int
 auth_check_terminated(struct dssh_session_s *sess, int res)
 {
-	if ((res < 0) && sess->terminate)
+	if ((res < 0) && sess->terminate) {
+		DSSH_LOGF(sess, DSSH_LOG_ERROR, res, "Authentication operation terminated: %s",
+		    dssh_strerror(res));
+		dssh_log_termination(sess, res);
 		return DSSH_ERROR_TERMINATED;
+	}
+	if (res == DSSH_ERROR_AUTH_REJECTED)
+		DSSH_LOGF(sess, DSSH_LOG_WARNING, res, "Authentication rejected by peer");
+	else if (res < 0)
+		DSSH_LOGF(sess, DSSH_LOG_ERROR, res, "Authentication operation failed: %s", dssh_strerror(res));
+	else if (res == 0)
+		DSSH_LOGF(sess, DSSH_LOG_DEBUG, DSSH_ERROR_NONE, "Authentication operation completed successfully");
 	return res;
 }
 

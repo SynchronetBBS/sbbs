@@ -1680,6 +1680,8 @@ test_null_session_api(void)
 	/* Setter functions with NULL session are no-ops (must not crash) */
 	dssh_session_set_cbdata(NULL, NULL, NULL, NULL, NULL);
 	dssh_session_set_debug_cb(NULL, NULL, NULL);
+	dssh_session_set_log_cb(NULL, NULL, NULL);
+	dssh_session_set_log_level(NULL, DSSH_LOG_DEBUG);
 	dssh_session_set_unimplemented_cb(NULL, NULL, NULL);
 	dssh_session_set_banner_cb(NULL, NULL, NULL);
 	dssh_session_set_global_request_cb(NULL, NULL, NULL);
@@ -1688,6 +1690,88 @@ test_null_session_api(void)
 	/* dssh_cleanse(NULL, ...) is a no-op (must not crash) */
 	dssh_cleanse(NULL, 10);
 
+	return TEST_PASS;
+}
+
+struct log_test_state {
+	int             calls;
+	dssh_log_action action;
+	dssh_log_level  level;
+	int             error_code;
+	bool            always_display;
+	char            message[DSSH_LOG_MESSAGE_MAX + 1];
+};
+
+static dssh_log_action
+log_test_cb(const struct dssh_log_record *record, void *cbdata)
+{
+	struct log_test_state *state = cbdata;
+
+	state->calls++;
+	state->level          = record->level;
+	state->error_code     = record->error_code;
+	state->always_display = record->always_display;
+	size_t len = record->message_len;
+
+	if (len > DSSH_LOG_MESSAGE_MAX)
+		len = DSSH_LOG_MESSAGE_MAX;
+	if (len > 0)
+		memcpy(state->message, record->message, len);
+	state->message[len] = 0;
+	return state->action;
+}
+
+static int log_format_side_effects;
+
+static int
+log_format_side_effect(void)
+{
+	log_format_side_effects++;
+	return 42;
+}
+
+static int
+test_log_api(void)
+{
+	ASSERT_STR_EQ(dssh_strerror(DSSH_ERROR_ALLOC), "Memory allocation failure");
+	ASSERT_STR_EQ(dssh_strerror(12345), "Unknown DeuceSSH error");
+	dssh_session sess = dssh_session_init(true, 0);
+	ASSERT_NOT_NULL(sess);
+	ASSERT_TRUE(sess->log_forward == NULL);
+
+	log_format_side_effects = 0;
+	DSSH_LOGF(sess, DSSH_LOG_DEBUG, DSSH_ERROR_NONE, "suppressed %d", log_format_side_effect());
+	ASSERT_EQ(log_format_side_effects, 0);
+
+	struct log_test_state state = { .action = DSSH_LOG_LOCAL_ONLY };
+	ASSERT_OK(dssh_session_set_log_cb(sess, log_test_cb, &state));
+	ASSERT_NOT_NULL(sess->log_forward);
+	DSSH_LOGF(sess, DSSH_LOG_DEBUG, DSSH_ERROR_NONE, "suppressed %d", log_format_side_effect());
+	ASSERT_EQ(log_format_side_effects, 0);
+	ASSERT_EQ(state.calls, 0);
+
+	DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_INIT, "operation failed");
+	ASSERT_EQ(state.calls, 1);
+	ASSERT_EQ(state.level, DSSH_LOG_ERROR);
+	ASSERT_EQ(state.error_code, DSSH_ERROR_INIT);
+	ASSERT_STR_EQ(state.message, "operation failed");
+
+	ASSERT_OK(dssh_session_set_log_level(sess, DSSH_LOG_DEBUG));
+	DSSH_LOGF(sess, DSSH_LOG_DEBUG, DSSH_ERROR_NONE, "enabled %d", log_format_side_effect());
+	ASSERT_EQ(log_format_side_effects, 1);
+	ASSERT_EQ(state.calls, 2);
+	ASSERT_STR_EQ(state.message, "enabled 42");
+	dssh_log_level bad_level = (dssh_log_level)99;
+	ASSERT_EQ(dssh_session_set_log_level(sess, bad_level), DSSH_ERROR_INVALID);
+
+	state.action = DSSH_LOG_SEND_DEBUG_ALWAYS_DISPLAY;
+	DSSH_LOGF(sess, DSSH_LOG_WARNING, DSSH_ERROR_TIMEOUT, "forward me");
+	ASSERT_EQ(sess->log_forward->count, (size_t)1);
+	ASSERT_TRUE(sess->log_forward->entries[0].always_display);
+
+	ASSERT_OK(dssh_session_set_log_cb(sess, NULL, NULL));
+	ASSERT_TRUE(sess->log_forward == NULL);
+	dssh_session_cleanup(sess);
 	return TEST_PASS;
 }
 
@@ -2813,6 +2897,7 @@ static struct dssh_test_entry tests[] = {
 	{ "test_self_rekey_inflight_data",     test_self_rekey_inflight_data },
 	{ "test_self_connection_drop",         test_self_connection_drop },
 	{ "test_null_session_api",             test_null_session_api },
+	{ "test_log_api",                      test_log_api },
 	{ "test_set_timeout",                  test_set_timeout },
 	{ "test_set_terminate_cb",             test_set_terminate_cb },
 	{ "test_open_channel_timeout",         test_open_channel_timeout },

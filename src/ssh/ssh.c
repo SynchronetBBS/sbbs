@@ -1,8 +1,186 @@
+#include <limits.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "deucessh.h"
 #include "ssh-internal.h"
+
+DSSH_PUBLIC const char *
+dssh_strerror(int error_code)
+{
+	switch (error_code) {
+		case DSSH_ERROR_NONE:
+			return "No error";
+		case DSSH_ERROR_PARSE:
+			return "Malformed packet or field";
+		case DSSH_ERROR_INVALID:
+			return "Invalid value";
+		case DSSH_ERROR_ALLOC:
+			return "Memory allocation failure";
+		case DSSH_ERROR_INIT:
+			return "Initialization or cryptographic failure";
+		case DSSH_ERROR_TERMINATED:
+			return "Session terminated";
+		case DSSH_ERROR_TOOLATE:
+			return "Operation is no longer allowed";
+		case DSSH_ERROR_TOOMANY:
+			return "Too many registered algorithms";
+		case DSSH_ERROR_TOOLONG:
+			return "Data exceeds a buffer or protocol limit";
+		case DSSH_ERROR_MUST_BE_NULL:
+			return "Linked-list next pointer must be NULL";
+		case DSSH_ERROR_NOMORE:
+			return "No more items are available";
+		case DSSH_ERROR_REKEY_NEEDED:
+			return "Key exchange is required before continuing";
+		case DSSH_ERROR_AUTH_REJECTED:
+			return "Authentication rejected";
+		case DSSH_ERROR_REJECTED:
+			return "Channel operation rejected";
+		case DSSH_ERROR_TIMEOUT:
+			return "Operation timed out";
+		default:
+			return "Unknown DeuceSSH error";
+	}
+}
+
+DSSH_PRIVATE bool
+dssh_log_enabled(struct dssh_session_s *sess, dssh_log_level level)
+{
+	if (sess == NULL || sess->log_cb == NULL)
+		return false;
+	return level <= atomic_load_explicit(&sess->log_level, memory_order_relaxed);
+}
+
+static void
+queue_log_forward(struct dssh_session_s *sess, bool always_display, const uint8_t *message, size_t message_len)
+{
+	struct dssh_log_forward_queue *queue = sess->log_forward;
+
+	if (queue == NULL || sess->terminate || sess->log_mirror_suppressed)
+		return;
+	if (mtx_trylock(&queue->mtx) != thrd_success)
+		return;
+	if (queue->count < DSSH_LOG_FORWARD_MAX) {
+		size_t idx = (queue->head + queue->count) % DSSH_LOG_FORWARD_MAX;
+		struct dssh_log_forward_entry *entry = &queue->entries[idx];
+
+		entry->always_display = always_display;
+		entry->message_len    = message_len;
+		if (message_len > 0)
+			memcpy(entry->message, message, message_len);
+		queue->count++;
+	}
+	mtx_unlock(&queue->mtx);
+}
+
+DSSH_PRIVATE void
+dssh_log_emit(struct dssh_session_s *sess, dssh_log_level level, dssh_log_source source, int error_code,
+    uint32_t ssh_reason_code, bool always_display, bool truncated, const uint8_t *message, size_t message_len,
+    const uint8_t *language, size_t language_len)
+{
+	if (!dssh_log_enabled(sess, level))
+		return;
+	uint8_t msg_copy[DSSH_LOG_MESSAGE_MAX];
+	uint8_t lang_copy[DSSH_LOG_LANGUAGE_MAX];
+	size_t  mlen = message_len;
+	size_t  llen = language_len;
+
+	if (mlen > DSSH_LOG_MESSAGE_MAX) {
+		mlen      = DSSH_LOG_MESSAGE_MAX;
+		truncated = true;
+	}
+	if (llen > DSSH_LOG_LANGUAGE_MAX) {
+		llen      = DSSH_LOG_LANGUAGE_MAX;
+		truncated = true;
+	}
+	if (mlen > 0 && message != NULL)
+		memcpy(msg_copy, message, mlen);
+	else
+		mlen = 0;
+	if (llen > 0 && language != NULL)
+		memcpy(lang_copy, language, llen);
+	else
+		llen = 0;
+	struct dssh_log_record record = {
+	    .level           = level,
+	    .source          = source,
+	    .error_code      = error_code,
+	    .ssh_reason_code = ssh_reason_code,
+	    .always_display  = always_display,
+	    .truncated       = truncated,
+	    .message         = mlen > 0 ? msg_copy : NULL,
+	    .message_len     = mlen,
+	    .language        = llen > 0 ? lang_copy : NULL,
+	    .language_len    = llen,
+	};
+	dssh_log_action action = sess->log_cb(&record, sess->log_cbdata);
+
+	if (source != DSSH_LOG_SOURCE_LIBRARY)
+		return;
+	if (action == DSSH_LOG_SEND_DEBUG)
+		queue_log_forward(sess, false, msg_copy, mlen);
+	else if (action == DSSH_LOG_SEND_DEBUG_ALWAYS_DISPLAY)
+		queue_log_forward(sess, true, msg_copy, mlen);
+}
+
+DSSH_PRIVATE void
+dssh_log_emitf(struct dssh_session_s *sess, dssh_log_level level, int error_code, const char *format, ...)
+{
+	char    message[DSSH_LOG_MESSAGE_MAX + 1];
+	va_list ap;
+
+	va_start(ap, format);
+	int result = vsnprintf(message, sizeof(message), format, ap);
+	va_end(ap);
+	if (result < 0) {
+		static const uint8_t failed[] = "Diagnostic formatting failed";
+
+		dssh_log_emit(sess, level, DSSH_LOG_SOURCE_LIBRARY, error_code, 0, false, false, failed,
+		    sizeof(failed) - 1, NULL, 0);
+		return;
+	}
+#if SIZE_MAX < INT_MAX
+	if (result > SIZE_MAX) {
+		static const uint8_t too_long[] = "Diagnostic message length overflow";
+
+		dssh_log_emit(sess, level, DSSH_LOG_SOURCE_LIBRARY, error_code, 0, false, true, too_long,
+		    sizeof(too_long) - 1, NULL, 0);
+		return;
+	}
+#endif
+	size_t desired = (size_t)result;
+	size_t used    = desired;
+
+	if (used > DSSH_LOG_MESSAGE_MAX)
+		used = DSSH_LOG_MESSAGE_MAX;
+	dssh_log_emit(sess, level, DSSH_LOG_SOURCE_LIBRARY, error_code, 0, false,
+	    desired > DSSH_LOG_MESSAGE_MAX, (const uint8_t *)message, used, NULL, 0);
+}
+
+DSSH_PRIVATE void
+dssh_log_cleanup(struct dssh_session_s *sess)
+{
+	if (sess->log_forward != NULL) {
+		mtx_destroy(&sess->log_forward->mtx);
+		free(sess->log_forward);
+		sess->log_forward = NULL;
+	}
+}
+
+DSSH_PRIVATE void
+dssh_log_termination(struct dssh_session_s *sess, int cause)
+{
+	if (atomic_exchange_explicit(&sess->termination_logged, true, memory_order_relaxed))
+		return;
+	if (cause == DSSH_ERROR_NONE)
+		DSSH_LOGF(sess, DSSH_LOG_DEBUG, DSSH_ERROR_NONE, "Session terminated by application");
+	else
+		DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_TERMINATED, "Session terminated after error: %s",
+		    dssh_strerror(cause));
+}
 
 /* ================================================================
  * RFC 4251 wire format primitives (formerly ssh-arch.c)
@@ -132,6 +310,42 @@ dssh_session_set_debug_cb(struct dssh_session_s *sess, dssh_debug_cb cb, void *c
 		return DSSH_ERROR_TOOLATE;
 	sess->debug_cb     = cb;
 	sess->debug_cbdata = cbdata;
+	return 0;
+}
+
+DSSH_PUBLIC int
+dssh_session_set_log_cb(struct dssh_session_s *sess, dssh_log_cb cb, void *cbdata)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
+	if (cb != NULL && sess->log_forward == NULL) {
+		struct dssh_log_forward_queue *queue = calloc(1, sizeof(*queue));
+
+		if (queue == NULL)
+			return DSSH_ERROR_ALLOC;
+		if (mtx_init(&queue->mtx, mtx_plain) != thrd_success) {
+			free(queue);
+			return DSSH_ERROR_INIT;
+		}
+		sess->log_forward = queue;
+	}
+	if (cb == NULL)
+		dssh_log_cleanup(sess);
+	sess->log_cb     = cb;
+	sess->log_cbdata = cbdata;
+	return 0;
+}
+
+DSSH_PUBLIC int
+dssh_session_set_log_level(struct dssh_session_s *sess, dssh_log_level level)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (level < DSSH_LOG_ERROR || level > DSSH_LOG_DEBUG)
+		return DSSH_ERROR_INVALID;
+	atomic_store_explicit(&sess->log_level, level, memory_order_relaxed);
 	return 0;
 }
 

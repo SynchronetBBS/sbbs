@@ -253,8 +253,11 @@ dssh_transport_handshake(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
-	if (sess->trans.client && sess->hostkey_verify_cb == NULL)
+	if (sess->trans.client && sess->hostkey_verify_cb == NULL) {
+		DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_INIT,
+		    "Client handshake requires a host-key verification callback");
 		return DSSH_ERROR_INIT;
+	}
 	int res = version_exchange(sess);
 
 	if (res < 0)
@@ -268,10 +271,16 @@ dssh_transport_handshake(struct dssh_session_s *sess)
 	res = newkeys(sess);
 	if (res < 0)
 		goto fail;
+	DSSH_LOGF(sess, DSSH_LOG_DEBUG, DSSH_ERROR_NONE,
+	    "Handshake complete: kex=%s hostkey=%s cipher=%s mac=%s", sess->trans.kex_selected->name,
+	    sess->trans.key_algo_selected->name, sess->trans.enc_c2s_selected->name,
+	    sess->trans.mac_c2s_selected->name);
 	return 0;
 
 fail:
+	DSSH_LOGF(sess, DSSH_LOG_ERROR, res, "SSH transport handshake failed: %s", dssh_strerror(res));
 	session_set_terminate(sess);
+	dssh_log_termination(sess, res);
 	return res;
 }
 
@@ -409,6 +418,28 @@ dssh_transport_disconnect(struct dssh_session_s *sess, uint32_t reason, const ch
 /* Forward declarations for slot helpers */
 DSSH_TESTABLE size_t tx_block_size(struct dssh_session_s *sess);
 static uint16_t      tx_mac_size(struct dssh_session_s *sess);
+
+static bool
+parse_log_string(const uint8_t *payload, size_t payload_len, size_t *pos, const uint8_t **str, size_t *str_len)
+{
+	if (!dssh_buffer_has(payload_len, *pos, 4))
+		return false;
+	uint32_t len_u32 = DSSH_GET_U32(&payload[*pos]);
+
+	*pos += 4;
+#if SIZE_MAX < UINT32_MAX
+	if (len_u32 > SIZE_MAX)
+		return false;
+#endif
+	size_t len = (size_t)len_u32;
+
+	if (!dssh_buffer_has(payload_len, *pos, len))
+		return false;
+	*str     = len > 0 ? &payload[*pos] : NULL;
+	*str_len = len;
+	*pos += len;
+	return true;
+}
 
 /* ================================================================
  * TX slot helpers
@@ -818,6 +849,49 @@ send_packet_inner(struct dssh_session_s *sess, const uint8_t *payload, size_t pa
 	return ret;
 }
 
+/* Drain callback-approved SSH_MSG_DEBUG records.  Caller holds tx_mtx.
+ * The queue lock is held only while copying one fixed-size entry. */
+static int
+drain_log_forwards(struct dssh_session_s *sess)
+{
+	struct dssh_log_forward_queue *queue = sess->log_forward;
+
+	if (queue == NULL || sess->terminate || sess->trans.remote_id_str_sz == 0)
+		return 0;
+	for (;;) {
+		if (mtx_trylock(&queue->mtx) != thrd_success)
+			return 0;
+		if (queue->count == 0) {
+			mtx_unlock(&queue->mtx);
+			return 0;
+		}
+		struct dssh_log_forward_entry entry = queue->entries[queue->head];
+
+		queue->head = (queue->head + 1) % DSSH_LOG_FORWARD_MAX;
+		queue->count--;
+		mtx_unlock(&queue->mtx);
+
+		uint8_t  payload[1 + 1 + 4 + DSSH_LOG_MESSAGE_MAX + 4];
+		size_t   pos = 0;
+		uint32_t message_len = (uint32_t)entry.message_len;
+
+		payload[pos++] = SSH_MSG_DEBUG;
+		payload[pos++] = entry.always_display ? 1 : 0;
+		DSSH_PUT_U32(message_len, payload, &pos);
+		if (entry.message_len > 0) {
+			memcpy(&payload[pos], entry.message, entry.message_len);
+			pos += entry.message_len;
+		}
+		DSSH_PUT_U32(0, payload, &pos);
+		atomic_store_explicit(&sess->log_mirror_suppressed, true, memory_order_relaxed);
+		int ret = send_packet_inner(sess, payload, pos, NULL);
+
+		atomic_store_explicit(&sess->log_mirror_suppressed, false, memory_order_relaxed);
+		if (ret < 0)
+			return ret;
+	}
+}
+
 /* ================================================================
  * Slot-based TX queue
  * ================================================================ */
@@ -1216,6 +1290,17 @@ send_begin(struct dssh_session_s *sess, uint8_t msg_type, size_t *max_len, int *
 
 	if (!tx_gather_enabled())
 		drain_tx_slots(sess);
+	int log_ret = drain_log_forwards(sess);
+
+	if (log_ret < 0 && log_ret != DSSH_ERROR_TOOLONG && log_ret != DSSH_ERROR_REKEY_NEEDED) {
+		atomic_store_explicit(&sess->log_mirror_suppressed, true, memory_order_relaxed);
+		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+		DSSH_LOGF(sess, DSSH_LOG_ERROR, log_ret, "Failed to forward SSH diagnostic: %s",
+		    dssh_strerror(log_ret));
+		session_set_terminate(sess);
+		*err_out = log_ret;
+		return NULL;
+	}
 
 	*max_len = sess->trans.packet_buf_sz - 9;
 	return &sess->trans.tx_packet[9];
@@ -1458,8 +1543,38 @@ recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, s
 
 		switch (*msg_type) {
 			case SSH_MSG_DISCONNECT:
+			{
+				size_t         pos = 1;
+				const uint8_t *description;
+				const uint8_t *language;
+				size_t         description_len;
+				size_t         language_len;
+				uint32_t       reason = 0;
+				bool valid = dssh_buffer_has(*payload_len, pos, 4);
+
+				if (valid) {
+					reason = DSSH_GET_U32(&(*payload)[pos]);
+					pos += 4;
+					valid = parse_log_string(*payload, *payload_len, &pos, &description,
+					    &description_len);
+				}
+				if (valid)
+					valid = parse_log_string(*payload, *payload_len, &pos, &language, &language_len);
+				if (valid)
+					valid = pos == *payload_len;
+				if (valid) {
+					dssh_log_emit(sess, DSSH_LOG_ERROR, DSSH_LOG_SOURCE_PEER_DISCONNECT,
+					    DSSH_ERROR_TERMINATED, reason, false, false, description, description_len,
+					    language, language_len);
+				}
+				else {
+					DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_PARSE,
+					    "Malformed SSH_MSG_DISCONNECT received from peer");
+				}
 				session_set_terminate(sess);
+				dssh_log_termination(sess, DSSH_ERROR_TERMINATED);
 				return DSSH_ERROR_TERMINATED;
+			}
 			case SSH_MSG_IGNORE:
 				continue;
 			case SSH_MSG_KEXINIT:
@@ -1496,24 +1611,38 @@ recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, s
 				continue;
 			case SSH_MSG_DEBUG:
 			{
+				if (*payload_len < 2) {
+					DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_PARSE,
+					    "Malformed SSH_MSG_DEBUG received from peer");
+					dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+					    "malformed SSH_MSG_DEBUG");
+					return DSSH_ERROR_PARSE;
+				}
+				bool           always_display = (*payload)[1] != 0;
+				size_t         pos = 2;
+				const uint8_t *message;
+				const uint8_t *language;
+				size_t         message_len;
+				size_t         language_len;
+				bool valid = parse_log_string(*payload, *payload_len, &pos, &message, &message_len);
+
+				if (valid)
+					valid = parse_log_string(*payload, *payload_len, &pos, &language, &language_len);
+				if (valid)
+					valid = pos == *payload_len;
+				if (!valid) {
+					DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_PARSE,
+					    "Malformed SSH_MSG_DEBUG received from peer");
+					dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+					    "malformed SSH_MSG_DEBUG");
+					return DSSH_ERROR_PARSE;
+				}
 				dssh_debug_cb dcb = sess->debug_cb;
 
-				if ((dcb != NULL) && (*payload_len >= 2)) {
-					bool always_display = (*payload)[1];
-
-					/* Parse: msg_type(1) + bool(1) + string message */
-					size_t   dpos    = 2;
-					uint32_t msg_len = 0;
-
-					if (dssh_buffer_has(*payload_len, dpos, 4)) {
-						msg_len = DSSH_GET_U32(&(*payload)[dpos]);
-						dpos += 4;
-						if (!dssh_buffer_has(*payload_len, dpos, msg_len))
-							msg_len = 0;
-					}
-					dcb(always_display, msg_len > 0 ? &(*payload)[dpos] : NULL, msg_len,
-					    sess->debug_cbdata);
-				}
+				if (dcb != NULL)
+					dcb(always_display, message, message_len, sess->debug_cbdata);
+				dssh_log_emit(sess, DSSH_LOG_DEBUG, DSSH_LOG_SOURCE_PEER_DEBUG, DSSH_ERROR_NONE, 0,
+				    always_display, false, message, message_len, language, language_len);
 				continue;
 			}
 			case SSH_MSG_UNIMPLEMENTED:
@@ -2804,6 +2933,9 @@ dssh_session_init(bool client, size_t max_packet_size)
 
 	sess->timeout_ms         = 75000;
 	sess->default_max_events = DSSH_DEFAULT_MAX_EVENTS;
+	atomic_init(&sess->log_level, DSSH_LOG_ERROR);
+	atomic_init(&sess->termination_logged, false);
+	atomic_init(&sess->log_mirror_suppressed, false);
 	sess->initialized        = true;
 	return sess;
 }
@@ -2817,7 +2949,10 @@ dssh_session_terminate(struct dssh_session_s *sess)
 	bool t = true;
 
 	if (atomic_compare_exchange_strong(&sess->initialized, &t, false)) {
+		int cause = sess->terminate ? DSSH_ERROR_TERMINATED : DSSH_ERROR_NONE;
+
 		session_set_terminate(sess);
+		dssh_log_termination(sess, cause);
 		return true;
 	}
 	return false;
@@ -2838,6 +2973,7 @@ dssh_session_cleanup(struct dssh_session_s *sess)
 		return;
 	dssh_session_terminate(sess);
 	dssh_session_stop(sess);
+	dssh_log_cleanup(sess);
 	transport_cleanup(sess);
 	free(sess->pending_banner);
 	free(sess->pending_banner_lang);

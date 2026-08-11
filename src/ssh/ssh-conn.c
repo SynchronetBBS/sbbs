@@ -1576,7 +1576,10 @@ demux_thread_func(void *arg)
 				break;
 
 			/* Other errors -- terminate */
+			DSSH_LOGF(sess, DSSH_LOG_ERROR, res, "Connection demultiplexer receive failed: %s",
+			    dssh_strerror(res));
 			session_set_terminate(sess);
+			dssh_log_termination(sess, res);
 			break;
 		}
 
@@ -1592,8 +1595,14 @@ demux_thread_func(void *arg)
 		/* Parse errors from malformed peer messages are
 		 * non-fatal -- skip the packet.  I/O and serialize
 		 * errors mean the connection is broken. */
-		if (dres < 0 && dres != DSSH_ERROR_PARSE) {
+		if (dres == DSSH_ERROR_PARSE) {
+			DSSH_LOGF(sess, DSSH_LOG_WARNING, dres, "Malformed connection-layer message ignored");
+		}
+		else if (dres < 0) {
+			DSSH_LOGF(sess, DSSH_LOG_ERROR, dres, "Connection demultiplexer dispatch failed: %s",
+			    dssh_strerror(dres));
 			session_set_terminate(sess);
+			dssh_log_termination(sess, dres);
 			break;
 		}
 		/* All other message types (GLOBAL_REQUEST, KEXINIT, etc.)
@@ -1628,18 +1637,24 @@ dssh_session_start(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
-	if (sess->conn_initialized)
+	if (sess->conn_initialized) {
+		DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_INIT, "Session connection layer is already started");
 		return DSSH_ERROR_INIT;
+	}
 
-	if (mtx_init(&sess->channel_mtx, mtx_plain) != thrd_success)
+	if (mtx_init(&sess->channel_mtx, mtx_plain) != thrd_success) {
+		DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_INIT, "Failed to initialize channel mutex");
 		return DSSH_ERROR_INIT;
+	}
 	if (mtx_init(&sess->accept_mtx, mtx_plain) != thrd_success) {
 		mtx_destroy(&sess->channel_mtx);
+		DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_INIT, "Failed to initialize accept mutex");
 		return DSSH_ERROR_INIT;
 	}
 	if (cnd_init(&sess->accept_cnd) != thrd_success) {
 		mtx_destroy(&sess->accept_mtx);
 		mtx_destroy(&sess->channel_mtx);
+		DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_INIT, "Failed to initialize accept condition variable");
 		return DSSH_ERROR_INIT;
 	}
 
@@ -1657,9 +1672,11 @@ dssh_session_start(struct dssh_session_s *sess)
 		cnd_destroy(&sess->accept_cnd);
 		mtx_destroy(&sess->accept_mtx);
 		mtx_destroy(&sess->channel_mtx);
+		DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_INIT, "Failed to create connection demultiplexer thread");
 		return DSSH_ERROR_INIT;
 	}
 
+	DSSH_LOGF(sess, DSSH_LOG_DEBUG, DSSH_ERROR_NONE, "Connection demultiplexer started");
 	return 0;
 }
 
