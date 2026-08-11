@@ -1392,6 +1392,8 @@ static long
 file_size_now(struct wren_file *wf)
 {
 	long pos = ftell(wf->fp);
+	if (pos < 0)
+		return -1;
 	fseek(wf->fp, 0, SEEK_END);
 	long sz = ftell(wf->fp);
 	fseek(wf->fp, pos, SEEK_SET);
