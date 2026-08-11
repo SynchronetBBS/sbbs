@@ -79,27 +79,31 @@ extern const char *const termgfx_term_leave;
 // door hide it and still track the hand -- so this is cosmetic, and does not
 // change what the pointer reports or where it can go.
 //
-// Two sequences, sent together because no terminal implements both and each
-// ignores the other's:
+// XTSMPOINTER (`CSI > Ps p`, xterm). pointerMode 3 is "always hide the
+// pointer, even if leaving/entering the window". The default is not enough on
+// its own -- it is 1, "hide if the mouse tracking mode is not enabled", and
+// these doors DO enable tracking, so xterm deliberately keeps the pointer
+// visible for exactly this case. Mode 2 is the near miss; it unhides whenever
+// the pointer crosses the window border.
 //
-//   CSI > 3 p    XTSMPOINTER (xterm). pointerMode 3, "always hide the pointer,
-//                even if leaving/entering the window". Worth spelling out why
-//                the default is not enough: it is 1, "hide if the mouse
-//                tracking mode is not enabled" -- and these doors DO enable
-//                tracking, so xterm deliberately keeps the pointer visible for
-//                exactly this case. Mode 2 is the near miss; it unhides
-//                whenever the pointer crosses the window border.
-//   OSC 22       Pointer shape, by xcursor name (foot, and terminals that
-//                copied it). foot cannot hide the pointer at all -- an empty
-//                or unknown name only resets the shape -- so a crosshair is
-//                the closest it gets to not being an arrow.
+// Read xterm's own framing before expecting too much of it: pointerMode
+// decides whether to hide the pointer AS THE USER TYPES. It is a
+// hide-while-typing policy, not an unconditional hide, so a hand resting on
+// the mouse can keep the pointer on screen whatever this asks for.
 //
-// SyncTERM implements neither: cterm has no XTSMPOINTER, and its OSC handler
-// knows only 4, 8, 10, 11 and 104 and discards the rest. Safe to send blind.
+// SyncTERM has no XTSMPOINTER and ignores it, which is harmless.
+//
+// DO NOT ADD OSC 22 (pointer shape by name) HERE. It was tried: xterm and foot
+// both implement it, so the shape changed on both and neither hid anything --
+// the result was a crosshair floating over the game, which reads as a second
+// game cursor and is worse than the arrow it replaced. There is no name that
+// hides: foot's documentation is explicit that an empty or unknown name only
+// resets the shape. A visible pointer of any shape is still a pointer over the
+// scene, and no terminal offers the pointer LOCK that would actually solve it.
 //
 // restore writes pointerMode 1, the documented default. XTSMPOINTER has no
 // query, so there is nothing to save first and this ASSUMES the user had not
-// chosen their own; the empty OSC 22 resets the shape properly.
+// chosen their own -- a caller should restore only if it quieted.
 extern const char *const termgfx_term_pointer_quiet;
 extern const char *const termgfx_term_pointer_restore;
 

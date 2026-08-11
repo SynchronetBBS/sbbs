@@ -24,14 +24,10 @@ const char *const termgfx_term_probe = "\x1b[14t" "\x1b[16t" "\x1b[?2;1S" "\x1b"
 //             ------------------   --------  ------
 const char *const termgfx_term_leave = "\x1b[?1070h" "\x1b[?7h" "\x1b[?25h";
 
-//             XTSMPOINTER, always hide  OSC 22, crosshair shape
-//             ------------------------  -----------------------
-const char *const termgfx_term_pointer_quiet =
-	"\x1b[>3p" "\x1b]22;crosshair\x1b\\";
-//             back to xterm's default   empty name resets the shape
-//             -----------------------   ---------------------------
-const char *const termgfx_term_pointer_restore =
-	"\x1b[>1p" "\x1b]22;\x1b\\";
+//             XTSMPOINTER, hide          ...and back to xterm's default
+//             -----------------          -----------------------------
+const char *const termgfx_term_pointer_quiet   = "\x1b[>3p";
+const char *const termgfx_term_pointer_restore = "\x1b[>1p";
 
 // See term.h: which of the two mode-80 sequences asks for sixel-at-cursor depends on
 // the peer's cterm revision. An unknown peer (ver <= 0) gets the DEC-correct
