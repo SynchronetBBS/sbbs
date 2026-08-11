@@ -1696,6 +1696,11 @@ fn_File_writeLine(WrenVM *vm)
 	if (len < 0)
 		len = 0;
 	long off = ftell(wf->fp);
+	if (off < 0) {
+		file_build_error(vm, 0, FILE_ERR_SEEK_FAILED, errno,
+		    "ftell before writeLine failed");
+		return;
+	}
 	long sz;
 	if (!file_size_now(vm, wf, &sz))
 		return;
