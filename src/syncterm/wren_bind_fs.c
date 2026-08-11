@@ -18,8 +18,10 @@
 #include "wren_token.h"
 
 #include <dirwrap.h>     /* opendir / readdir / MKDIR */
+#include <filewrap.h>    /* filelength */
 
 #include <errno.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -1389,16 +1391,22 @@ file_check_open(WrenVM *vm, unsigned rights)
 	return wf;
 }
 
-static long
-file_size_now(struct wren_file *wf)
+static bool
+file_size_now(WrenVM *vm, struct wren_file *wf, long *size)
 {
-	long pos = ftell(wf->fp);
-	if (pos < 0)
-		return -1;
-	fseek(wf->fp, 0, SEEK_END);
-	long sz = ftell(wf->fp);
-	fseek(wf->fp, pos, SEEK_SET);
-	return sz;
+	off_t sz = filelength(fileno(wf->fp));
+	if (sz < 0) {
+		file_build_error(vm, 0, FILE_ERR_STAT_FAILED, errno,
+		    "filelength failed");
+		return false;
+	}
+	if ((uintmax_t)sz > (uintmax_t)LONG_MAX) {
+		file_build_error(vm, 0, FILE_ERR_STAT_FAILED, 0,
+		    "file size exceeds supported range");
+		return false;
+	}
+	*size = (long)sz;
+	return true;
 }
 
 void
@@ -1477,7 +1485,9 @@ do_read_at(WrenVM *vm, struct wren_file *wf, long off, long count,
 		wren_throw(vm, "File: negative offset or count");
 		return;
 	}
-	long sz = file_size_now(wf);
+	long sz;
+	if (!file_size_now(vm, wf, &sz))
+		return;
 	if (off > sz) {
 		wren_throw(vm, "File: offset past end");
 		return;
@@ -1533,7 +1543,9 @@ fn_File_read(WrenVM *vm)
 	if (wf == NULL)
 		return;
 	long off = ftell(wf->fp);
-	long sz  = file_size_now(wf);
+	long sz;
+	if (!file_size_now(vm, wf, &sz))
+		return;
 	if (off > sz) {
 		wren_throw(vm, "File: offset past end");
 		return;
@@ -1549,7 +1561,9 @@ do_write_at(WrenVM *vm, struct wren_file *wf, long off,
 		wren_throw(vm, "File: negative offset or length");
 		return;
 	}
-	long sz = file_size_now(wf);
+	long sz;
+	if (!file_size_now(vm, wf, &sz))
+		return;
 	if (off > sz) {
 		wren_throw(vm, "File: offset past end");
 		return;
@@ -1612,7 +1626,9 @@ fn_File_readLine(WrenVM *vm)
 	if (wf == NULL)
 		return;
 	long off = ftell(wf->fp);
-	long sz  = file_size_now(wf);
+	long sz;
+	if (!file_size_now(vm, wf, &sz))
+		return;
 	if (off >= sz) {
 		wrenSetSlotNull(vm, 0);
 		return;
@@ -1680,7 +1696,9 @@ fn_File_writeLine(WrenVM *vm)
 	if (len < 0)
 		len = 0;
 	long off = ftell(wf->fp);
-	long sz  = file_size_now(wf);
+	long sz;
+	if (!file_size_now(vm, wf, &sz))
+		return;
 	if (off > sz) {
 		wren_throw(vm, "File: offset past end");
 		return;
@@ -1749,7 +1767,9 @@ fn_File_offset_set(WrenVM *vm)
 		wren_throw(vm, "File: negative offset");
 		return;
 	}
-	long sz = file_size_now(wf);
+	long sz;
+	if (!file_size_now(vm, wf, &sz))
+		return;
 	if (off > sz) {
 		wren_throw(vm, "File: offset past end");
 		return;
@@ -1768,7 +1788,10 @@ fn_File_size(WrenVM *vm)
 	if (wf == NULL)
 		return;
 	if (wf->fp != NULL) {
-		wrenSetSlotDouble(vm, 0, (double)file_size_now(wf));
+		long sz;
+		if (!file_size_now(vm, wf, &sz))
+			return;
+		wrenSetSlotDouble(vm, 0, (double)sz);
 		return;
 	}
 	off_t sz = flength(wf->path);
