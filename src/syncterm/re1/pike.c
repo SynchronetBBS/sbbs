@@ -32,6 +32,18 @@ threadlist(int n)
 }
 
 static void
+freethreadlist(ThreadList *l)
+{
+	int i;
+
+	if(l == nil)
+		return;
+	for(i=0; i<l->n; i++)
+		decref(l->t[i].sub);
+	free(l);
+}
+
+static void
 addthread(ThreadList *l, Thread t, char *sp)
 {
 	if(t.pc->gen == gen) {
@@ -100,8 +112,8 @@ pikevm_free(PikeVM *vm)
 		return;
 	if(vm->matched)
 		decref(vm->matched);
-	free(vm->clist);
-	free(vm->nlist);
+	freethreadlist(vm->clist);
+	freethreadlist(vm->nlist);
 	free(vm);
 }
 
@@ -296,7 +308,11 @@ pikevm(Prog *prog, char *input, char **subp, int nsubp)
 		for(i=0; i<nsubp; i++)
 			subp[i] = matched->sub[i];
 		decref(matched);
+		freethreadlist(clist);
+		freethreadlist(nlist);
 		return 1;
 	}
+	freethreadlist(clist);
+	freethreadlist(nlist);
 	return 0;
 }
