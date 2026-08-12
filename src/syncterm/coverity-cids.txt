@@ -87,3 +87,5 @@
 505084 IGNORE: false positive; the overflow guard is a defensive extreme-size path and Coverity's contradictory salt-length constraints do not make the cleanup intrinsically dead
 505085 IGNORE: false positive; the overflow guard is a defensive extreme-size path and Coverity's contradictory salt-length constraints do not make the cleanup intrinsically dead
 505262 IGNORE: false positive; dssh_transport_disconnect releases channel_mtx before returning, so dssh_session_cleanup acquires accept_mtx while holding no channel lock
+505444 IGNORE: false positive; successful initial builder_printf always allocates the builder buffer before any subsequent append
+505448 IGNORE: false positive; the first successful builder append always allocates the builder buffer before any later append
