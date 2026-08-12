@@ -706,6 +706,19 @@ get_free_buffer(int width, int height)
 	return NULL;
 }
 
+/* Aspect-correct content geometry.  Must be called with vstatlock held. */
+static void
+get_content_size(int *w, int *h)
+{
+	bitmap_get_scaled_win_size(vstat.scaling, w, h,
+	    vstat.winwidth, vstat.winheight);
+	if (*w > surface_width || *h > surface_height) {
+		*w = surface_width;
+		*h = surface_height;
+		aspect_fix_inside(w, h, vstat.aspect_width, vstat.aspect_height);
+	}
+}
+
 /*
  * Mouse coordinate translation
  */
@@ -713,26 +726,37 @@ static bool
 xlat_mouse_xy(int *x, int *y)
 {
 	int sw, sh;
+	int cw, ch;
+	int xoff, yoff;
 
 	assert_rwlock_rdlock(&vstatlock);
 	sw = vstat.scrnwidth;
 	sh = vstat.scrnheight;
+	get_content_size(&cw, &ch);
 	assert_rwlock_unlock(&vstatlock);
 
 	if (surface_width <= 0 || surface_height <= 0)
 		return false;
 
-	if (*x < 0)
-		*x = 0;
-	if (*y < 0)
-		*y = 0;
-	if (*x >= surface_width)
-		*x = surface_width - 1;
-	if (*y >= surface_height)
-		*y = surface_height - 1;
+	xoff = (surface_width - cw) / 2;
+	yoff = (surface_height - ch) / 2;
+	if (xoff < 0)
+		xoff = 0;
+	if (yoff < 0)
+		yoff = 0;
+	if (*x < xoff)
+		*x = xoff;
+	if (*y < yoff)
+		*y = yoff;
+	*x -= xoff;
+	*y -= yoff;
+	if (*x >= cw)
+		*x = cw - 1;
+	if (*y >= ch)
+		*y = ch - 1;
 
-	*x = (*x * sw) / surface_width;
-	*y = (*y * sh) / surface_height;
+	*x = (*x * sw) / cw;
+	*y = (*y * sh) / ch;
 	return true;
 }
 
@@ -1404,45 +1428,62 @@ local_draw_rect(struct rectlist *rect)
 	struct wl_buffer_info *bi;
 	struct graphics_buffer *scaled = NULL;
 	int bw, bh;
+	int cw, ch;
+	int xoff, yoff;
+	int srcw, srch;
 	uint32_t *src;
 
 	if (!wl_surf || !configured)
 		goto done;
 
-	if (wl_internal_scaling) {
-		int sw, sh;
-
-		assert_rwlock_rdlock(&vstatlock);
-		if (wl_cvstat.scrnwidth != rect->rect.width
-		    || wl_cvstat.scrnheight != rect->rect.height) {
-			assert_rwlock_unlock(&vstatlock);
-			goto done;
-		}
-		bitmap_get_scaled_win_size(vstat.scaling, &sw, &sh,
-		    vstat.winwidth, vstat.winheight);
+	assert_rwlock_rdlock(&vstatlock);
+	if (wl_cvstat.scrnwidth != rect->rect.width
+	    || wl_cvstat.scrnheight != rect->rect.height) {
 		assert_rwlock_unlock(&vstatlock);
+		goto done;
+	}
+	get_content_size(&cw, &ch);
+	assert_rwlock_unlock(&vstatlock);
 
-		if (sw < rect->rect.width || sh < rect->rect.height)
-			goto done;
-
-		scaled = do_scale(rect, sw, sh);
+	if (wl_internal_scaling && cw >= rect->rect.width
+	    && ch >= rect->rect.height) {
+		scaled = do_scale(rect, cw, ch);
 		if (!scaled)
 			goto done;
 		src = scaled->data;
-		bw = scaled->w;
-		bh = scaled->h;
+		srcw = scaled->w;
+		srch = scaled->h;
+		bw = surface_width;
+		bh = surface_height;
 	}
 	else {
 		src = rect->data;
-		bw = rect->rect.width;
-		bh = rect->rect.height;
+		srcw = rect->rect.width;
+		srch = rect->rect.height;
+		/*
+		 * External scaling, and internal scaling below the bitmap driver's
+		 * minimum size, use the viewport.  Pad the source buffer to the
+		 * surface's aspect so that the unpadded image lands in the same
+		 * aspect-correct destination used by internal scaling.
+		 */
+		bw = lround((double)srcw * surface_width / cw);
+		bh = lround((double)srch * surface_height / ch);
+		if (bw < srcw)
+			bw = srcw;
+		if (bh < srch)
+			bh = srch;
 	}
 
 	bi = get_free_buffer(bw, bh);
 	if (!bi)
 		goto done;
 
-	memcpy(bi->data, src, bw * bh * 4);
+	memset(bi->data, 0, (size_t)bw * bh * sizeof(*src));
+	xoff = (bw - srcw) / 2;
+	yoff = (bh - srch) / 2;
+	for (int y = 0; y < srch; y++)
+		memcpy((uint32_t *)bi->data + (y + yoff) * bw + xoff,
+		    src + y * srcw, (size_t)srcw * sizeof(*src));
 	bi->busy = true;
 
 	wl_surface_attach(wl_surf, bi->buffer, 0, 0);

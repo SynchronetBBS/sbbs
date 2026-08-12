@@ -390,6 +390,19 @@ snap_resize(bool grow)
 	bitmap_drv_request_pixels();
 }
 
+/* Must be called with vstatlock held. */
+static void
+cg_get_content_size(int *w, int *h)
+{
+	bitmap_get_scaled_win_size(vstat.scaling, w, h,
+	    vstat.winwidth, vstat.winheight);
+	if (*w > vstat.winwidth || *h > vstat.winheight) {
+		*w = vstat.winwidth;
+		*h = vstat.winheight;
+		aspect_fix_inside(w, h, vstat.aspect_width, vstat.aspect_height);
+	}
+}
+
 #pragma mark - SyncTermView
 
 @implementation SyncTermView
@@ -407,8 +420,23 @@ snap_resize(bool grow)
 - (void)drawRect:(NSRect)dirtyRect
 {
 	struct cg_display_data dd = get_display_data();
+	int dw, dh;
+	CGFloat bs;
+	NSRect bounds;
+	CGRect dst;
+
 	if (dd.data == NULL || dd.width <= 0 || dd.height <= 0)
 		return;
+
+	assert_rwlock_rdlock(&vstatlock);
+	cg_get_content_size(&dw, &dh);
+	assert_rwlock_unlock(&vstatlock);
+	bs = cg_backing_scale;
+	if (bs <= 0)
+		bs = 1.0;
+	bounds = self.bounds;
+	dst = CGRectMake((bounds.size.width - dw / bs) / 2,
+	    (bounds.size.height - dh / bs) / 2, dw / bs, dh / bs);
 
 	/*
 	 * Pixel data is 32-bit ARGB (0x00RRGGBB, alpha unused).
@@ -434,8 +462,9 @@ snap_resize(bool grow)
 	CGContextRef ctx = [gc CGContext];
 	CGContextSetInterpolationQuality(ctx, kCGInterpolationDefault);
 
-	NSRect bounds = self.bounds;
-	CGContextDrawImage(ctx, CGRectMake(0, 0, bounds.size.width, bounds.size.height), img);
+	CGContextSetRGBFillColor(ctx, 0, 0, 0, 1);
+	CGContextFillRect(ctx, NSRectToCGRect(bounds));
+	CGContextDrawImage(ctx, dst, img);
 	CGImageRelease(img);
 }
 
@@ -571,27 +600,27 @@ cg_handle_mouse(NSEvent *event, int evtype)
 {
 	NSPoint loc = [cg_view convertPoint:event.locationInWindow fromView:nil];
 	NSRect bounds = cg_view.bounds;
-	int ww = (int)bounds.size.width;
-	int wh = (int)bounds.size.height;
+	CGFloat ww = bounds.size.width;
+	CGFloat wh = bounds.size.height;
+	CGFloat bs = cg_backing_scale;
+	CGFloat dw, dh, xoff, yoff;
+	int contentw, contenth;
 	int sw, sh, cw, ch, cols, rows;
 
 	if (ww <= 0 || wh <= 0)
 		return;
+	if (bs <= 0)
+		bs = 1.0;
 
-	int x = (int)loc.x;
+	CGFloat wx = loc.x;
 	/* Cocoa y-origin is bottom-left; convert to top-left */
-	int y = wh - 1 - (int)loc.y;
-
-	/* Clamp to window bounds */
-	if (x < 0) x = 0;
-	if (y < 0) y = 0;
-	if (x >= ww) x = ww - 1;
-	if (y >= wh) y = wh - 1;
+	CGFloat wy = wh - loc.y;
 
 	/* Map window pixel coords to screen bitmap coords */
 	assert_rwlock_rdlock(&vstatlock);
 	sw = vstat.scrnwidth;
 	sh = vstat.scrnheight;
+	cg_get_content_size(&contentw, &contenth);
 	cw = vstat.charwidth;
 	ch = vstat.charheight;
 	cols = vstat.cols;
@@ -601,8 +630,18 @@ cg_handle_mouse(NSEvent *event, int evtype)
 	if (sw <= 0 || sh <= 0)
 		return;
 
-	x = (x * sw) / ww;
-	y = (y * sh) / wh;
+	dw = contentw / bs;
+	dh = contenth / bs;
+	xoff = (ww - dw) / 2;
+	yoff = (wh - dh) / 2;
+	if (wx < xoff) wx = xoff;
+	if (wy < yoff) wy = yoff;
+	wx -= xoff;
+	wy -= yoff;
+	if (wx >= dw) wx = dw - 1;
+	if (wy >= dh) wy = dh - 1;
+	int x = (int)(wx * sw / dw);
+	int y = (int)(wy * sh / dh);
 
 	int cx = x / cw + 1;
 	int cy = y / ch + 1;
