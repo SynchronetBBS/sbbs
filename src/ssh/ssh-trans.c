@@ -1252,8 +1252,8 @@ send_packet(struct dssh_session_s *sess, const uint8_t *payload, size_t payload_
  * Acquire tx_mtx, block on rekey for application messages (type >= 50),
  * drain pending tx slots.  Returns a pointer into tx_packet[9] where the
  * caller serializes the payload directly.  *max_len is the maximum
- * payload the caller may write.  Caller MUST call send_commit() or
- * send_cancel() to release tx_mtx.
+ * payload the caller may write.  Caller MUST call send_commit(),
+ * send_commit_sensitive(), or send_cancel() to release tx_mtx.
  *
  * Returns NULL on error (timeout, terminate); *err_out is set.
  */
@@ -1306,16 +1306,16 @@ send_begin(struct dssh_session_s *sess, uint8_t msg_type, size_t *max_len, int *
 	return &sess->trans.tx_packet[9];
 }
 
-/*
- * Finalize and send the payload already at tx_packet[9].
- * Releases tx_mtx.  Caller MUST have called send_begin() first.
- */
-DSSH_PRIVATE int
-send_commit(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out)
+/* Finalize and send the payload already at tx_packet[9].  When
+ * sensitive is true, scrub the payload before invoking a termination
+ * callback or releasing tx_mtx. */
+static int
+send_commit_inner(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out, bool sensitive)
 {
 	int ret;
+	size_t max_payload = sess->trans.packet_buf_sz - 9;
 
-	if (payload_len > sess->trans.packet_buf_sz - 9) {
+	if (payload_len > max_payload) {
 		ret = DSSH_ERROR_TOOLONG;
 		goto done;
 	}
@@ -1334,6 +1334,11 @@ send_commit(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out)
 	}
 
 done:
+	if (sensitive) {
+		size_t cleanse_len = payload_len < max_payload ? payload_len : max_payload;
+
+		dssh_cleanse(&sess->trans.tx_packet[9], cleanse_len);
+	}
 	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
 		session_set_terminate(sess);
 	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
@@ -1341,8 +1346,28 @@ done:
 }
 
 /*
+ * Finalize and send the payload already at tx_packet[9].
+ * Releases tx_mtx.  Caller MUST have called send_begin() first.
+ */
+DSSH_PRIVATE int
+send_commit(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out)
+{
+	return send_commit_inner(sess, payload_len, seq_out, false);
+}
+
+/*
+ * Finalize, send, and scrub a sensitive payload while tx_mtx remains
+ * held.  Caller MUST have called send_begin() first.
+ */
+DSSH_PRIVATE int
+send_commit_sensitive(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out)
+{
+	return send_commit_inner(sess, payload_len, seq_out, true);
+}
+
+/*
  * Release tx_mtx without sending.  Use when serialization fails
- * after send_begin() but before send_commit().
+ * after send_begin() but before either commit function.
  */
 DSSH_PRIVATE void
 send_cancel(struct dssh_session_s *sess)

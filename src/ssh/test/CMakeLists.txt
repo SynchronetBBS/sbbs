@@ -527,6 +527,8 @@ target_link_libraries(dssh_test_transport_errors PRIVATE
 set(TRANSPORT_ERROR_TESTS
 	test_modules/roundtrip
 	send/encrypt_error send/mac_error send/mac_overflow_rejected
+	send/sensitive_success send/sensitive_gather_success
+	send/sensitive_encrypt_error send/sensitive_too_long
 	send/channel_slot_drain_fatal send/channel_slot_gather_fatal
 	recv/decrypt_error_first_block recv/decrypt_error_remaining
 	recv/mac_generate_error recv/mac_mismatch recv/mac_too_large

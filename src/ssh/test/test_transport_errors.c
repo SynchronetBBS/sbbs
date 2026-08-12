@@ -201,6 +201,18 @@ handshake_cleanup(struct handshake_ctx *ctx)
 	dssh_test_reset_global_config();
 }
 
+static bool
+buffer_is_zero(const uint8_t *buf, size_t len)
+{
+	volatile const uint8_t *vbuf = buf;
+
+	for (size_t i = 0; i < len; i++) {
+		if (vbuf[i] != 0)
+			return false;
+	}
+	return true;
+}
+
 /* ================================================================
  * Channel TX-slot fixture
  *
@@ -453,6 +465,177 @@ test_send_mac_error(void)
 
 	test_mac_reset();
 	handshake_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Sensitive commits scrub the shared TX payload before releasing
+ * tx_mtx or invoking the application termination callback.
+ * ================================================================ */
+
+static int
+test_sensitive_commit_success_config(bool gather)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup_config(&ctx, gather) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	size_t   max;
+	int      err;
+	uint8_t *payload = send_begin(ctx.client, SSH_MSG_IGNORE, &max, &err);
+
+	if (payload == NULL) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+	if (max < 32) {
+		send_cancel(ctx.client);
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+	memset(payload, 0xa5, 32);
+	payload[0] = SSH_MSG_IGNORE;
+
+	int  res        = send_commit_sensitive(ctx.client, 32, NULL);
+	bool cleansed   = buffer_is_zero(payload, 32);
+	int  lock_res   = mtx_trylock(&ctx.client->trans.tx_mtx);
+	int  unlock_res = thrd_success;
+
+	if (lock_res == thrd_success)
+		unlock_res = mtx_unlock(&ctx.client->trans.tx_mtx);
+	handshake_cleanup(&ctx);
+
+	ASSERT_OK(res);
+	ASSERT_TRUE(cleansed);
+	ASSERT_EQ(lock_res, thrd_success);
+	ASSERT_EQ(unlock_res, thrd_success);
+	return TEST_PASS;
+}
+
+static int
+test_sensitive_commit_success(void)
+{
+	return test_sensitive_commit_success_config(false);
+}
+
+static int
+test_sensitive_commit_gather_success(void)
+{
+	return test_sensitive_commit_success_config(true);
+}
+
+struct sensitive_terminate_observation {
+	size_t payload_len;
+	bool   called;
+	bool   payload_zero;
+};
+
+static void
+observe_sensitive_terminate(dssh_session sess, void *cbdata)
+{
+	struct sensitive_terminate_observation *obs = cbdata;
+
+	obs->called       = true;
+	obs->payload_zero = buffer_is_zero(&sess->trans.tx_packet[9], obs->payload_len);
+}
+
+static int
+test_sensitive_commit_encrypt_error(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct sensitive_terminate_observation obs = { .payload_len = 32 };
+	if (dssh_session_set_terminate_cb(ctx.client, observe_sensitive_terminate, &obs) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	size_t   max;
+	int      err;
+	uint8_t *payload = send_begin(ctx.client, SSH_MSG_IGNORE, &max, &err);
+
+	if (payload == NULL) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+	if (max < obs.payload_len) {
+		send_cancel(ctx.client);
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+	memset(payload, 0xa5, obs.payload_len);
+	payload[0] = SSH_MSG_IGNORE;
+	test_enc_fail_encrypt_at(0);
+
+	int  res        = send_commit_sensitive(ctx.client, obs.payload_len, NULL);
+	bool cleansed   = buffer_is_zero(payload, obs.payload_len);
+	bool terminated = dssh_session_is_terminated(ctx.client);
+	int  lock_res   = mtx_trylock(&ctx.client->trans.tx_mtx);
+	int  unlock_res = thrd_success;
+
+	if (lock_res == thrd_success)
+		unlock_res = mtx_unlock(&ctx.client->trans.tx_mtx);
+	handshake_cleanup(&ctx);
+
+	ASSERT_TRUE(res < 0);
+	ASSERT_TRUE(cleansed);
+	ASSERT_TRUE(terminated);
+	ASSERT_TRUE(obs.called);
+	ASSERT_TRUE(obs.payload_zero);
+	ASSERT_EQ(lock_res, thrd_success);
+	ASSERT_EQ(unlock_res, thrd_success);
+	return TEST_PASS;
+}
+
+static int
+test_sensitive_commit_too_long(void)
+{
+	struct handshake_ctx ctx;
+	if (handshake_setup(&ctx) < 0) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	size_t   max;
+	int      err;
+	uint8_t *payload = send_begin(ctx.client, SSH_MSG_IGNORE, &max, &err);
+
+	if (payload == NULL) {
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+	if (max == SIZE_MAX) {
+		send_cancel(ctx.client);
+		handshake_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+	memset(payload, 0xa5, max);
+	payload[0]   = SSH_MSG_IGNORE;
+	payload[max] = 0x7e;
+
+	int  res              = send_commit_sensitive(ctx.client, max + 1, NULL);
+	bool cleansed         = buffer_is_zero(payload, max);
+	bool canary_unchanged = payload[max] == 0x7e;
+	bool terminated       = dssh_session_is_terminated(ctx.client);
+	int  lock_res         = mtx_trylock(&ctx.client->trans.tx_mtx);
+	int  unlock_res       = thrd_success;
+
+	if (lock_res == thrd_success)
+		unlock_res = mtx_unlock(&ctx.client->trans.tx_mtx);
+	handshake_cleanup(&ctx);
+
+	ASSERT_ERR(res, DSSH_ERROR_TOOLONG);
+	ASSERT_TRUE(cleansed);
+	ASSERT_TRUE(canary_unchanged);
+	ASSERT_FALSE(terminated);
+	ASSERT_EQ(lock_res, thrd_success);
+	ASSERT_EQ(unlock_res, thrd_success);
 	return TEST_PASS;
 }
 
@@ -997,6 +1180,10 @@ static struct dssh_test_entry tests[] = {
 	/* send_packet error paths */
 	{ "send/encrypt_error",                test_send_encrypt_error },
 	{ "send/mac_error",                    test_send_mac_error },
+	{ "send/sensitive_success",            test_sensitive_commit_success },
+	{ "send/sensitive_gather_success",     test_sensitive_commit_gather_success },
+	{ "send/sensitive_encrypt_error",      test_sensitive_commit_encrypt_error },
+	{ "send/sensitive_too_long",           test_sensitive_commit_too_long },
 	{ "send/channel_slot_drain_fatal",     test_channel_slot_drain_fatal },
 	{ "send/channel_slot_gather_fatal",    test_channel_slot_gather_fatal },
 

@@ -1247,10 +1247,7 @@ send_password_request(struct dssh_session_s *sess, const char *username, const c
 		pos += new_password_len;
 	}
 
-	int ret = send_commit(sess, pos, NULL);
-
-	dssh_cleanse(msg, pos);
-	return ret;
+	return send_commit_sensitive(sess, pos, NULL);
 }
 
 DSSH_TESTABLE int
