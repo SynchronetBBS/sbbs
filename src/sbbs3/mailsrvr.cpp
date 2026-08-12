@@ -774,7 +774,7 @@ static char* encode_header_field(const char* src, char* buf, size_t size, const 
 }
 
 static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, smbmsg_t* msg, char* msgtxt, ulong maxlines
-                          , str_list_t file_list, char* mime_boundary)
+                          , str_list_t file_list, char* mime_boundary, bool* attachment_killed)
 {
 	char  toaddr[256] = "";
 	char  msgid[256];
@@ -967,26 +967,37 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	}
 	lprintf(LOG_DEBUG, "%04d %-5s sent %lu lines (%ld bytes) of body text"
 	        , socket, prot, lines, bytes);
-	if (file_list != NULL) {
+	/* A partial fetch (POP3 TOP) is a preview - the client asked for the
+	 * headers and a limited number of body-text lines, not for the message -
+	 * so the attachment(s) are neither transmitted nor killed. */
+	if (maxlines != (ulong)-1) {
+		if (strListCount(file_list))
+			endmime(socket, prot, sess, mime_boundary);
+	} else if (file_list != NULL) {
+		/* don't delete during the DKIM capture pass - pass 2 still needs it */
+		bool kill_files = tls_dkim_cap == nullptr && (msg->hdr.auxattr & MSG_KILLFILE);
+		bool killed = kill_files && file_list[0] != nullptr;
 		for (i = 0; file_list[i]; i++) {
 			sockprintf(socket, prot, sess, "");
 			lprintf(LOG_INFO, "%04u %s MIME Encoding and sending %s", socket, prot, file_list[i]);
-			if (!mimeattach(socket, prot, sess, mime_boundary, file_list[i]))
+			if (!mimeattach(socket, prot, sess, mime_boundary, file_list[i])) {
 				errprintf(LOG_ERR, WHERE, "%04u %s !ERROR opening/encoding/sending %s", socket, prot, file_list[i]);
-			else {
-				/* don't delete during the DKIM capture pass - pass 2 still needs it */
-				if (tls_dkim_cap == NULL && (msg->hdr.auxattr & MSG_KILLFILE))
-					if (remove(file_list[i]) != 0)
-						lprintf(LOG_WARNING, "%04u %s !ERROR %d (%s) removing %s", socket, prot, errno, strerror(errno), file_list[i]);
+				killed = false;
+			} else if (kill_files && remove(file_list[i]) != 0) {
+				lprintf(LOG_WARNING, "%04u %s !ERROR %d (%s) removing %s", socket, prot, errno, strerror(errno), file_list[i]);
+				killed = false;
 			}
 			endmime(socket, prot, sess, mime_boundary);
 		}
+		if (killed && attachment_killed != nullptr)
+			*attachment_killed = true;
 	}
 	sockprintf(socket, prot, sess, ".");   /* End of text */
 	return lines;
 }
 
-static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smbmsg_t* msg, char* msgtxt, ulong maxlines)
+static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smbmsg_t* msg, char* msgtxt, ulong maxlines
+                        , bool* attachment_killed = nullptr)
 {
 	char       dirname[MAX_PATH + 1];
 	char       filepath[MAX_PATH + 1];
@@ -1032,7 +1043,7 @@ static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smb
 		}
 	}
 
-	retval = sockmimetext(socket, prot, sess, msg, msgtxt, maxlines, file_list, boundary);
+	retval = sockmimetext(socket, prot, sess, msg, msgtxt, maxlines, file_list, boundary, attachment_killed);
 
 	strListFree(&file_list);
 
@@ -1743,7 +1754,8 @@ static bool pop3_client_thread(pop3_t* pop3)
 				sockprintf(socket, client.protocol, session, "+OK message follows");
 				lprintf(LOG_DEBUG, "%04d %-5s <%s> sending message text (%lu bytes) from %s"
 				        , socket, client.protocol, user.alias, (ulong)strlen(msgtxt), msg.from);
-				lines_sent = sockmsgtxt(socket, client.protocol, session, &msg, msgtxt, lines);
+				bool attachment_killed = false;
+				lines_sent = sockmsgtxt(socket, client.protocol, session, &msg, msgtxt, lines, &attachment_killed);
 				/* if(startup->options&MAIL_OPT_DEBUG_POP3) */
 				if (lines != -1 && lines_sent < (ulong)lines)   /* could send *more* lines */
 					lprintf(LOG_WARNING, "%04d %-5s <%s> !ERROR sending message text (sent %ld of %ld lines) from %s"
@@ -1752,7 +1764,8 @@ static bool pop3_client_thread(pop3_t* pop3)
 					lprintf(LOG_DEBUG, "%04d %-5s <%s> message transfer complete (%lu lines) from %s"
 					        , socket, client.protocol, user.alias, lines_sent, msg.from);
 
-					if (!(startup->options & MAIL_OPT_NO_READ_POP3) && !smb_islocked(&smb)) {
+					bool mark_read = !(startup->options & MAIL_OPT_NO_READ_POP3);
+					if ((mark_read || attachment_killed) && !smb_islocked(&smb)) {
 						if ((i = smb_locksmbhdr(&smb)) != SMB_SUCCESS) {
 							errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) locking message base"
 							          , socket, client.protocol, user.alias, i, smb.last_error);
@@ -1761,13 +1774,18 @@ static bool pop3_client_thread(pop3_t* pop3)
 								errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) getting message index"
 								          , socket, client.protocol, user.alias, i, smb.last_error);
 							} else {
-								msg.hdr.attr |= MSG_READ;
+								if (mark_read)
+									msg.hdr.attr |= MSG_READ;
+								/* the attachment was sent and killed: don't leave the
+								 * header referring to a file that no longer exists */
+								if (attachment_killed)
+									msg.hdr.auxattr &= ~(MSG_FILEATTACH | MSG_KILLFILE);
 
 								if ((i = smb_lockmsghdr(&smb, &msg)) != SMB_SUCCESS)
 									errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) locking message header #%u"
 									          , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
 								if ((i = smb_putmsg(&smb, &msg)) != SMB_SUCCESS)
-									errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) marking message #%u as read"
+									errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) updating message #%u"
 									          , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
 								smb_unlockmsghdr(&smb, &msg);
 							}
