@@ -173,6 +173,8 @@ void sbbs_t::multinodechat(int channel)
 					SAFECAT(str, "0");
 				i = getkeys(str, cfg.total_chans);
 				if (i & 0x80000000L) {  /* change channel */
+					if (i == -1)   /* ctrl-c */
+						continue;
 					savch = (char)(i & ~0x80000000L);
 					if (savch == channel)
 						continue;
@@ -689,7 +691,7 @@ bool sbbs_t::sysop_page(void)
 bool sbbs_t::chan_access(int cnum)
 {
 
-	if (!cfg.total_chans || cnum >= cfg.total_chans || !chk_ar(cfg.chan[cnum]->ar, &useron, &client)) {
+	if (!cfg.total_chans || cnum < 0 || cnum >= cfg.total_chans || !chk_ar(cfg.chan[cnum]->ar, &useron, &client)) {
 		bputs(text[CantAccessThatChannel]);
 		return false;
 	}

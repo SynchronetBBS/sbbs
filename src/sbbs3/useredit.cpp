@@ -164,6 +164,8 @@ void sbbs_t::useredit(int usernumber)
 			SAFECAT(str, "ABCDEFHIJKLMNOPRSTUVWXYZ+~*$#");
 		l = getkeys(str, l, K_UPPER | K_NOCRLF);
 		if (l & 0x80000000L) {
+			if (l == -1)   /* ctrl-c */
+				break;
 			user.number = l & ~0x80000000L;
 			continue;
 		}
