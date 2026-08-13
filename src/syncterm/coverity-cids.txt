@@ -1,4 +1,3 @@
-106519
 264171 IGNORE: intentional; xp_random is explicitly a general-purpose non-cryptographic PRNG and is not used as a security primitive
 381369 IGNORE: intentional; time32 deliberately implements the legacy signed 32-bit time representation, including its 2038 range limit
 381374 IGNORE: intentional; mktime32 deliberately implements the legacy signed 32-bit time representation, including its 2038 range limit
@@ -6,7 +5,7 @@
 414093 IGNORE: false positive; getstring validates that the complete length-prefixed string lies within the received packet before memchr receives its length
 454839 IGNORE: intentional; the SDL user-function mutex must span the event request and response wait to serialize the shared return channel
 454843 IGNORE: intentional; the SDL user-function mutex must span the event request and response wait to serialize the shared return channel
-464917
+464917 IGNORE: false positive; sftps_recv caps the fully buffered packet at 256 KiB and each extension-loop iteration consumes two independently bounds-checked strings or stops
 501974 IGNORE: false positive; got is below the object size and read cannot return more than the requested remainder, so the next subtraction cannot underflow
 501975 IGNORE: false positive; this is initialization-time access before concurrent video use, and current code additionally protects it with vstatlock
 501978 IGNORE: false positive; sent is below len and write cannot return more than the requested remainder, so the next subtraction cannot underflow
