@@ -19,7 +19,6 @@
 503369 IGNORE: intentional; the overflow guard is redundant on the analyzed 64-bit target after the UINT32_MAX bound but required when size_t is 32 bits
 503370 IGNORE: false positive; version_exchange and kexinit release accept_mtx/channel_mtx on failure, and handshake's subsequent termination call is suppressed by the atomic exactly-once guard
 503371 IGNORE: false positive; slot drain/gather termination releases accept_mtx before returning, and send_to_slot's later termination call is suppressed by the atomic guard; the former channel_mtx recursion is fixed by deferred termination
-503372 IGNORE: false positive; gather-path termination releases accept_mtx before returning and send_commit's later termination call is suppressed by the atomic guard; the former channel_mtx recursion is fixed by deferred termination
 503373 IGNORE: false positive after the TX-slot termination fix; Coverity carries locks from successful thread calls into dssh_thrd_check's mutually exclusive error path and misses the atomic exactly-once termination guard
 503374 IGNORE: false positive; both public-key rejection paths call dssh_transport_disconnect, whose termination notification releases channel_mtx before returning
 503375 IGNORE: false positive; dssh_session_terminate releases accept_mtx and channel_mtx before returning, so SyncTERM's later worker/SFTP waits hold neither lock
@@ -39,6 +38,7 @@
 503392 IGNORE: false positive; kexinit releases accept_mtx before rekey reacquires tx_mtx, so the claimed accept_mtx-to-tx_mtx side of the lock-order cycle does not exist
 503393 IGNORE: false positive; recv_packet_raw owns rx_mtx and its supported callers hold neither channel_mtx nor accept_mtx
 503396 IGNORE: false positive; the zero-copy API intentionally transfers the held tx_mtx from zc_getbuf through zc_send or zc_cancel
+503397 IGNORE: false positive after the TX-slot termination fix; Coverity conflates successful channel_mtx acquisition with dssh_thrd_check's mutually exclusive error path into session_set_terminate
 503398 IGNORE: false positive; authentication is sequential and completes before dssh_session_start creates the demux thread
 503400 IGNORE: false positive; zc_send_inner holds tx_mtx but neither acquires nor inherits accept_mtx
 503401 IGNORE: false positive; got is below bufsz before subtraction and recv cannot return more than the requested remainder
@@ -68,7 +68,6 @@
 505201 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505202 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505203 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
-505204
 505205 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505206 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505207 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
@@ -90,7 +89,6 @@
 505224 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505225 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505226 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
-505227 IGNORE: false positive; caller_seq is a function-local scalar captured while tx_mtx is held and cannot be changed by another thread after the mutex is released
 505228 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505229 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505230 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
@@ -127,7 +125,6 @@
 505263 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505264 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505265 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
-505266 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505267 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505268 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505269 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
@@ -138,7 +135,6 @@
 505274 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505275 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505276 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
-505277 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505278 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505279 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505280 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
@@ -151,6 +147,7 @@
 505287 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505288 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505289 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
+505290 IGNORE: false positive; the claimed reverse edge carries accept_mtx ownership out of dssh_thrd_check or session_set_terminate even though those functions release it before returning
 505291 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505292 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505294 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
@@ -166,8 +163,10 @@
 505441 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership from dssh_thrd_check's mutually exclusive failure path, while successful calls skip session_set_terminate and the direct lock paths are balanced
 505442 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505443 IGNORE: false positive; drain_log_forwards acquires and releases the queue mutex exactly once per loop iteration, while Coverity joins unlocks from separate iterations
-505445 IGNORE: false positive; responses and response_lens are function-owned arrays populated by a synchronous callback and are not shared with another library thread
 505446 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505447 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505449 IGNORE: false positive; rekey_in_progress is atomic_bool and this access is an atomic load, so tx_mtx is not required for race-free access
 505450 IGNORE: false positive; extra is a function-owned allocation passed to a synchronous serializer that does not retain it, so no other thread can change the pointer or allocation
+505457 IGNORE: false positive; caller_seq is a function-local scalar captured while tx_mtx is held and cannot be changed by another thread after any callee returns
+505458 IGNORE: false positive; send_commit_inner does not retain accept_mtx or channel_mtx because its callees release successful acquisitions and dssh_thrd_check's error path is mutually exclusive
+505459 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership out of tx_gather_with_packet and session_set_terminate even though both release those locks before returning
