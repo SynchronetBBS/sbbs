@@ -37,7 +37,7 @@ load("ircd/server.js");
 load("ircd/config.js");
 
 /*** Global Constants - Always in ALL_UPPERCASE ***/
-var VERSION = "SynchronetIRCd-2.1";
+var VERSION = "SynchronetIRCd-2.2";
 var VERSION_STR = format(
 	"Synchronet %s%s-%s%s (IRCd by Randy Sommerfeld)",
 	system.version, system.revision,
@@ -161,6 +161,25 @@ function config_rehash_semaphore_check() {
 	}
 }
 js.setInterval(config_rehash_semaphore_check, 1000 /* milliseconds */);
+
+/* When Synchronet's services subsystem (the Windows control panel, or
+   sbbscon/the service manager on Linux) asks us to stop, it sets
+   server.terminated.  Notice it promptly, notify the rest of the network,
+   and let the callback engine wind down.  When run standalone under JSexec,
+   `server` is the string "JSexec", so this check is simply skipped. */
+function shutdown_semaphore_check() {
+	if (typeof server === "object" && server.terminated) {
+		Notify_Servers_Of_Shutdown("Server shutting down");
+		js.do_callbacks = false;
+	}
+}
+js.setInterval(shutdown_semaphore_check, 1000 /* milliseconds */);
+
+/* Belt-and-suspenders: js.on_exit fires whenever this script is torn down --
+   by the services subsystem, the sysop, or a JSexec exit -- on every
+   platform, even if the terminated poll above never ran.  Notify is
+   idempotent, so the DIE/RESTART path and this backstop never double-send. */
+js.on_exit("Notify_Servers_Of_Shutdown('Server shutting down');");
 
 Open_PLines();
 

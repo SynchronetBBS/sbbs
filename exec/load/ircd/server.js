@@ -477,9 +477,16 @@ function Server_Work(cmdline) {
 			));
 			break;
 		}
-		mode_ts = (parseInt(p[1]) == p[1]) ? parseInt(p[1]) : 0;
-		if (mode_ts)
+		/* A numeric p[1] is a TSMODE channel timestamp and must be consumed
+		   even when it is 0 - services (ircservices) sends a ts of 0 to mean
+		   "apply unconditionally".  Testing the value's truthiness would leave
+		   the "0" in place, where it gets misparsed as the mode string and the
+		   real modes silently vanish. */
+		mode_ts = 0;
+		if (parseInt(p[1]) == p[1]) {
+			mode_ts = parseInt(p[1]);
 			p.splice(1,1);
+		}
 		if (p[0][0] == "#") {
 			/* Setting a channel mode */
 			tmp = Channels[p[0].toUpperCase()];

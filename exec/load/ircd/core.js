@@ -19,6 +19,52 @@
 
 */
 
+/* Cleanly tell the rest of the network that this server's local users are
+   gone, then synchronously push every server link's send queue out to its
+   socket.  Called on DIE/RESTART before we stop the callback engine or drop
+   the sockets, so peers (services included) process explicit QUITs and any
+   still-queued PART/MODE state instead of inferring a netsplit and losing it. */
+var Shutdown_Notified = false;
+
+function Notify_Servers_Of_Shutdown(reason) {
+	var i, sq, tries;
+	var quitmsg = reason ? reason : "Server shutting down";
+
+	/* Idempotent: DIE/RESTART, the server.terminated poll and the js.on_exit
+	   backstop may all reach us, but the network is only notified once. */
+	if (Shutdown_Notified)
+		return;
+	Shutdown_Notified = true;
+
+	/* A QUIT for each local user so peers drop them individually, clearing
+	   channel membership and op state, rather than waiting to detect the
+	   dead link. */
+	for (i in Local_Users) {
+		server_bcast_to_servers(format(
+			":%s QUIT :%s",
+			Local_Users[i].nick,
+			quitmsg
+		));
+	}
+
+	/* The normal sendq drain runs on a callback that may already be stopping
+	   (service shutdown / on_exit teardown), so flush each server link here.
+	   Bounded, and guarded, in case a socket won't accept more or the queue
+	   machinery is mid-teardown. */
+	for (i in Local_Servers) {
+		try {
+			sq = Local_Servers[i].sendq;
+			tries = 0;
+			while (sq && !sq.empty && tries < 100) {
+				sq.send(sq.socket);
+				tries++;
+			}
+		} catch (e) {
+			log(LOG_WARNING, "Notify_Servers_Of_Shutdown flush error: " + e);
+		}
+	}
+}
+
 function terminate_everything(str, error) {
 	var i;
 	var sendstr;
@@ -26,6 +72,8 @@ function terminate_everything(str, error) {
 	sendstr = format("ERROR :%s\r\n", str);
 
 	log(error ? LOG_ERR : LOG_NOTICE, "Terminating: " + str);
+
+	Notify_Servers_Of_Shutdown(str);
 
 	for (i in Unregistered) {
 		Unregistered[i].socket.send(sendstr);
