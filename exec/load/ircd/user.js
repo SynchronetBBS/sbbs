@@ -603,6 +603,7 @@ function User_Work(cmdline) {
 			break;
 		}
 		log(LOG_ERR,"!ERROR! Shutting down the ircd as per " + this.nuh);
+		Notify_Servers_Of_Shutdown("Server shut down by " + this.nick);
 		js.do_callbacks = false;
 		break;
 	case "ERROR":

@@ -258,8 +258,12 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 	/* TS-based conflict resolution for server bursts.
 	   ts == 0 means "no timestamp provided" (not a real epoch 0).
 	   If the incoming side is newer (higher ts), reject its ops/modes.
-	   If the incoming side is older (lower ts), wipe local ops/modes first. */
-	if (ts && ts > 0) {
+	   If the incoming side is older (lower ts), wipe local ops/modes first.
+	   U:lined services (ChanServ/NickServ, etc.) are authoritative for the
+	   modes they set and must never be TS-filtered: otherwise their auto-ops
+	   are silently rejected (ts > created) or collaterally wipe other
+	   members' ops (ts < created), which desyncs channel op state. */
+	if (ts && ts > 0 && !this.uline) {
 		if (ts > chan.created) {
 			/* Incoming side is newer - our side wins, reject their modes */
 			log(LOG_DEBUG, format(
@@ -628,8 +632,9 @@ function IRCClient_do_join(chan_name,join_key,join_ts) {
 		/* TS-based conflict resolution: if the joining user's side has a
 		   different channel creation time, the older side wins.
 		   Older incoming ts -> wipe our local ops/modes (they lose).
-		   Newer incoming ts -> nothing to do, our state stands. */
-		if (join_ts > 0 && join_ts < chan.created) {
+		   Newer incoming ts -> nothing to do, our state stands.
+		   U:lined services are authoritative and never trigger a wipe. */
+		if (join_ts > 0 && join_ts < chan.created && !this.uline) {
 			log(LOG_DEBUG, format(
 				"[TS] do_join: remote ts %d older than local %d for %s - wiping local ops/modes",
 				join_ts, chan.created, chan.nam
