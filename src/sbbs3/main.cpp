@@ -2328,6 +2328,13 @@ void input_thread(void *arg)
 					lprintf(LOG_NOTICE, "Node %d SSH Timeout", sbbs->cfg.node_num);
 					continue;
 				}
+				/* hangup() destroys the session between this thread's ssh_mode
+				 * test and its pop, so an error here is a teardown artifact (#1225) */
+				if (!sbbs->ssh_mode || !sbbs->online) {
+					lprintf(LOG_DEBUG, "Node %d SSH session closed while popping data (%d)"
+					    , sbbs->cfg.node_num, err);
+					break;
+				}
 				/* Handle the SSH error here... */
 				GCES(err, sbbs->cfg.node_num, sbbs->ssh_session, "popping data");
 				break;
