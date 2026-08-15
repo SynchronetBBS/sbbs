@@ -26,9 +26,10 @@ Goals:
   from one place that the C door and the JS lobby both read.
 - Entering the lobby is fast on a ROM set of any size, over SMB.
 
-Non-goals (deferred, §10): core options and save states (M5), the Zapper and
+Non-goals (deferred, §12): core options and save states (M5), the Zapper and
 other pointer devices, per-core controller overlay art, turbo buttons, FDS
-disk-swap keys, and a descriptor-derived help screen (§4 says why).
+disk-swap keys, and a descriptor-derived help screen (§4 says why). Core options
+and save states have since shipped; §12 records what they became.
 
 **Explicitly rejected: deriving the bindings from `SET_INPUT_DESCRIPTORS`.**
 See §4. Recorded here so it is not re-litigated.
@@ -488,17 +489,31 @@ skipped** -- it must not silently pass, and it must not fail a clean checkout.
    and the door renders `nestest.nes` to sixel (its menu decodes cleanly out of a
    `SYNCRETRO_SIXELOUT` capture -- the M1 technique).
 
-**Not yet done: a live play over a real terminal.** Everything above is headless.
-The NES install has no cartridges (the sysop supplies them) and no `xtrn.ini`
-entry yet.
+**Since done: the install is live.** Everything above was headless -- the NES
+install had no cartridges (the sysop supplies them) and no `xtrn.ini` entry.
+Both followed: `xtrn/syncnes` carries a sysop-supplied ROM set and is reachable
+from the menus as its own door, alongside the Intellivision and the arcade
+console.
 
 ---
 
 ## 12. Deferred, with reasons
 
-- **Core options + save states** -- M5. Note that fceumm's sample rate is a *core
-  option*: changing it mid-session would fire `SET_SYSTEM_AV_INFO`, which we
-  refuse. Harmless while no core options are surfaced; M5 must handle it.
+- **Core options + save states -- DONE (M5).** The store answers `GET_VARIABLE`
+  with the default the core itself advertised, because answering nothing is not
+  the same as answering the default: MAME 2003-Plus left `sample_rate` at 0.0
+  and emitted no audio at all until it was answered properly
+  (`retro_options.c`). A console can additionally pin an option
+  (`-option key=value`) where the setting is part of what the console IS rather
+  than a sysop's taste. Save states are the automatic suspend/resume snapshot
+  (M2_INPUT.md §8).
+
+  fceumm's sample rate is itself a core option, so changing one mid-session
+  would fire `SET_SYSTEM_AV_INFO`, which we refuse. That hazard did not
+  materialize: options are pinned on the command line before the core runs and
+  nothing changes one afterwards, so `GET_VARIABLE_UPDATE` always answers no and
+  `SET_SYSTEM_AV_INFO` is still refused. Surfacing options to a player at
+  runtime would put it back.
 - **Turbo A/B, A+B, FDS disk-swap** -- real ids in fceumm's descriptors, and each
   wants a key. Not until someone asks.
 - **The Zapper and the 4-player adapter** -- a light gun needs a pointer device;
@@ -507,4 +522,10 @@ entry yet.
   bind table (§4), but they *can* label one. Combined with `startprobe.c`'s
   "which key starts this cartridge" sweep, that is the honest path to a per-game
   legend. Later.
+
+  The need was answered from the other end first, for the console where no
+  descriptors exist at all: `games.ini` is a hand-curated table of per-cabinet
+  facts the core will not tell us, read by both the door's help screen and the
+  lobby (GAMES_INI.md). A descriptor-derived legend is still the right answer
+  for a core we know nothing about, and is still open.
 - **A descriptor-derived help screen** -- rejected, §4.

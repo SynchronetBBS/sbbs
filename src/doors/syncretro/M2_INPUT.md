@@ -1,8 +1,11 @@
 # SyncRetro M2 -- keyboard input, keypad, help & pause
 
-Status: implemented 2026-07-09. The keypad's *semantics* remain unverified
-end to end: nothing reads the controller word until a cartridge runs, and that
-needs the Intellivision BIOS. `test_keypad.c` stands in for it (§7).
+Status: implemented 2026-07-09. The keypad's *semantics* were unverified end to
+end at the time -- nothing reads the controller word until a cartridge runs, and
+that needs the Intellivision BIOS. That blocker is gone: `xtrn/syncivision`
+carries the BIOS and a sysop-supplied cartridge set, and cartridges have been
+played through (M4_AUDIO.md's status records one). `test_keypad.c` still pins
+the digit map (§7).
 Scope: the input half of milestone M2 (see [DESIGN.md](DESIGN.md) §15).
 
 M1 proved the frontend end to end but left the user with a partial RetroPad and
@@ -27,7 +30,8 @@ Goals:
 
 Non-goals (deferred, §8): the mouse-clickable 370x600 overlay art, the CP437
 text tier, `SET_INPUT_DESCRIPTORS`-driven help for unknown cores, save-state
-hotkeys.
+hotkeys. The CP437 tier has since shipped in M3, and save states themselves (as
+an automatic snapshot, not hotkeys) in M5; §8 records both.
 
 ---
 
@@ -301,8 +305,9 @@ invalidates the frame cache.
 - **Mouse-clickable overlay art.** FreeIntv's `freeintv_multiscreen_overlay`
   core option composites a 370x600 per-ROM overlay beside the game and drives a
   hotspot keypad from a pointer device. `termgfx/sgrmouse.c` means we *could*
-  feed it one. It needs core-options plumbing (M5) and a `RETRO_DEVICE_POINTER`
-  mapping, and it is strictly a nice-to-have once §3 exists.
+  feed it one. The core-options plumbing it needed has since shipped
+  (`retro_options.c`), so what is left is a `RETRO_DEVICE_POINTER` mapping and
+  the licensing below -- and it is strictly a nice-to-have once §3 exists.
 
   The art: `libretro/FreeIntv`'s `Assets/Overlays.zip` holds 90 PNGs, exactly
   370x600, named by No-Intro ROM name -- i.e. already keyed to the core's
@@ -323,6 +328,12 @@ invalidates the frame cache.
   downsample of the playfield in 16 colors. Plausible for Astrosmash, likely
   illegible for text-heavy titles. Stays in M3, where the tier work lives.
 
+  **DONE in M3.** The door renders the text tiers and picks the charset from
+  the client rather than a build-time choice: `RT_CP437` for a CP437 terminal,
+  `RT_UTF8` otherwise (`syncretro_io.c`). `F4` cycles sixel and the text tiers.
+  The legibility worry above stands -- it is a reason to prefer sixel, not a
+  reason the tier does not exist.
+
 - **`SET_INPUT_DESCRIPTORS`-driven help.** Useless for a core that sends
   descriptors: its strings describe *its* RetroPad convention, which our remap
   invalidates. It becomes the right fallback in M3, for cores we know nothing
@@ -333,5 +344,13 @@ invalidates the frame cache.
 
 - **Save-state hotkeys.** DESIGN.md §15 lists these under M2, but save states
   themselves are M5. Moving them there keeps M2 to one coherent change; M5 adds
-  the hotkeys alongside the save UI. Amending DESIGN.md §15's M2 bullet to match
-  is part of the implementation plan.
+  the hotkeys alongside the save UI.
+
+  **Partly done.** M5 shipped save states, but as one automatic per-user
+  snapshot rather than player-chosen slots: the door suspends on every exit --
+  quit, carrier loss, time limit alike -- and resumes there next session
+  (`syncretro_state.c`). A libretro blob carries no version stamp, so the
+  filename carries a key derived from the core, the ROM and the resolved
+  options, and a stale snapshot is simply not offered (`syncretro_statekey.c`).
+  Explicit hotkeys and a save UI remain open, and are the only part of this
+  bullet still outstanding.

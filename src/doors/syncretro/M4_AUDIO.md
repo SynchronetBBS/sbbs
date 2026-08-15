@@ -20,8 +20,9 @@ Goals:
   first sound after a quiet passage.
 - Degrade to silence -- never to garbage -- on a terminal that cannot decode.
 
-Non-goals (deferred, §9): adaptive buffer depth, stereo, a mute hotkey, and
-per-core audio profiles.
+Non-goals (deferred, §10): adaptive buffer depth, stereo, and per-core audio
+profiles. The volume hotkey was one of these and has since shipped; §10 records
+what it became.
 
 **Explicitly rejected: PSG register synthesis.** See §3. It is recorded here so
 it is not re-litigated.
@@ -358,8 +359,19 @@ rejected PSG design could never have produced.
   an ack-ish signal, a cost to running shallow). But it would be a second control
   loop competing with the first for one socket. Build the fixed depth, learn from
   the drop and underrun counters, then decide.
-- **Stereo.** The core emits mono duplicated. Nothing to carry until a core does.
-- **A mute / volume hotkey.** The binding table has room; no demand yet.
-- **Per-core audio profiles.** Rejected for M4 (§3), and the survey says there is
-  nothing to generalize *to*. If M3 brings a core whose audio needs different
-  handling, `syncretro_audio.c` is the seam.
+- **Stereo.** The core emits mono duplicated. Nothing to carry until a core
+  does -- but the transport is no longer the obstacle: the accumulator keeps
+  both channels when asked (`channels = 2`), and doors driving the shared
+  `termgfx_termio` path stream stereo today. This door still asks for mono, and
+  halves everything downstream, because its cores give it nothing else.
+- **A mute / volume hotkey. DONE.** `+` and `-` walk a 0..100 percent -- the
+  same unit as the `[audio] volume` knob and as the on-screen readout -- which
+  `syncretro_audio.c` converts to dB for `A;Volume`. Zero percent is the silence
+  floor and a real mute: the door stops encoding and sending, flushes the
+  channel, and re-primes the cushion on the way back up, so a player who turns
+  it off costs no uplink at all rather than streaming chunks nobody hears.
+- **Per-core audio profiles.** Rejected for M4 (§3), and the survey said there
+  was nothing to generalize *to*. M3 has since brought fceumm, whose audio
+  differs only in its sample rate -- already a parameter, taken from the core at
+  `sr_audio_start()`. Still nothing to generalize; `syncretro_audio.c` remains
+  the seam if a core ever needs more.
