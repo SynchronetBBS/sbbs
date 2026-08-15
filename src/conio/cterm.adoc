@@ -4292,7 +4292,7 @@ foreground nibble with all 4 bits of the background nibble.
 
 * [[STD-070]]https://vt100.net/manx/details/1,35074[[STD-070\]] Digital Equipment Corporation. Video Systems Reference Manual. 1989-04-14.
 * [[ECMA-48]]https://www.ecma-international.org/wp-content/uploads/ECMA-48_5th_edition_june_1991.pdf[[ECMA-48\]] ECMA. Control Functions for Coded Character Sets. June 1991
-* [[XTerm]]https://invisible-island.net/xterm/ctlseqs/ctlseqs.pdf[[XTerm\]] Edward May. XTerm Control Sequences. University of California, Berkeley. 2024/09/19
+* [[XTerm]]https://invisible-island.net/xterm/ctlseqs/ctlseqs.pdf[[XTerm\]] Edward Moy. XTerm Control Sequences. University of California, Berkeley. Revised by Stephen Gildea. X Consortium (1994). Thomas Dickey. XFree86 Project (1996-2006). invisible-island.net (2006-2024). and updated for XTerm Patch #394 2024/09/19
 * [[Paste64]]https://invisible-island.net/xterm/xterm-paste64.html[[Paste64\]] Thomas E. Dickey. XTerm -- bracketed paste. 2022
 * [[BANSI]]http://www.bbsdocumentary.com/library/PROGRAMS/GRAPHICS/ANSI/bansi.txt[[BANSI\]] Paul Wheaton. BANSI.TXT. 1999
 * [[VT102]]https://vt100.net/docs/vt102-ug/[[VT102\]] Digital. VT102 Video Terminal User Guide. 1982.
