@@ -160,19 +160,20 @@ int    termgfx_stream_blob_active(const termgfx_stream_t *s);
 // `CSI = 7 ; ch ; 0 n`: that channel's FIFO drained.
 void   termgfx_stream_underrun(termgfx_stream_t *s, int ch);
 
-// The source stopped (or restarted) producing PCM. This and _reset/_volume_step
+// The source stopped (or restarted) producing PCM. This and _reset/_set_volume
 // below came from syncretro and are live there -- a door screen pauses, Ctrl-R
-// resets, '+'/'-' step the volume -- so they are exercised every session, not
-// merely implemented. The two GETTERS are the exception: nothing calls _volume
-// or _muted, so they are untested by use.
+// resets, '+'/'-' move the volume -- so they are exercised every session, not
+// merely implemented.
 void   termgfx_stream_pause(termgfx_stream_t *s, int on);
 void   termgfx_stream_reset(termgfx_stream_t *s);
 float  termgfx_stream_volume(const termgfx_stream_t *s);   // dB (0 = unity)
 int    termgfx_stream_muted(const termgfx_stream_t *s);
-// Step the channel level by `delta_db` and return the new dB. Capped at unity
-// (0 dB -- +/- never boosts a pre-mixed stream); stepping down past a
-// near-silent floor snaps to full mute, which stops the uplink altogether.
-float  termgfx_stream_volume_step(termgfx_stream_t *s, float delta_db);
+// Set the channel level, clamped to [TERMGFX_DB_MUTE, TERMGFX_DB_UNITY] (never
+// above unity: these streams are pre-mixed, so a boost only clips). Returns the
+// level set. At the mute floor this stops the uplink altogether, and coming
+// back off it re-primes the cushion -- so a door is free to drive it straight
+// from whatever ladder its player sees, with no mute case of its own.
+float  termgfx_stream_set_volume(termgfx_stream_t *s, float db);
 
 // Feed interleaved STEREO PCM; `frames` counts per-channel frames. Always
 // returns `frames` -- the source must believe we consumed everything, whatever

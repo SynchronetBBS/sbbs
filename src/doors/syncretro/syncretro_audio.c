@@ -15,6 +15,7 @@
 static termgfx_stream_t *g_stream;
 static int               g_enabled;  /* sr_audio_init() said yes; sr_audio_start()
                                       * may still bail */
+static int               g_volume;   /* 0..100, the ladder '+'/'-' walk */
 
 /* --- the door's output seam -------------------------------------------------
  * syncretro's I/O is file-static (one door session per process), so the
@@ -63,9 +64,15 @@ void sr_audio_start(int rate)
 	if (!g_enabled)
 		return;                    /* audio off, or no Ogg encoder: stay silent */
 
+	g_volume = sr_config_audio_volume();
+	if (g_volume < 0)
+		g_volume = 0;
+	else if (g_volume > 100)
+		g_volume = 100;
+
 	cfg.enabled      = 1;
 	cfg.quality      = sr_config_audio_quality();
-	cfg.volume_db    = termgfx_db_from_pct(sr_config_audio_volume());   /* percent knob -> dB */
+	cfg.volume_db    = termgfx_db_from_pct(g_volume);   /* percent knob -> dB */
 	cfg.chunk_ms     = sr_config_audio_chunk_ms();
 	cfg.prebuffer    = sr_config_audio_prebuffer();
 	cfg.channels     = 1;
@@ -107,19 +114,29 @@ void sr_audio_pause(int on)
 	termgfx_stream_pause(g_stream, on);
 }
 
-float sr_audio_volume(void)
+int sr_audio_volume(void)
 {
-	return termgfx_stream_volume(g_stream);
+	return g_stream == NULL ? 0 : g_volume;
 }
 
-int sr_audio_muted(void)
+/* The percent ladder is the DOOR's, not termgfx's: it is what the sysop's
+ * [audio] volume knob is in and what the player reads on screen, so keeping it
+ * here means one unit end to end and no dB anywhere a player can see. termgfx
+ * takes the level in dB because that is what A;Volume carries; the conversion
+ * is linear-amplitude percent, so 100 is unity and 0 is the silence floor --
+ * which is a real mute, stopping the uplink rather than sending inaudible
+ * chunks. */
+int sr_audio_volume_step(int delta_pct)
 {
-	return termgfx_stream_muted(g_stream);
-}
-
-float sr_audio_volume_step(float delta_db)
-{
-	return termgfx_stream_volume_step(g_stream, delta_db);
+	if (g_stream == NULL)
+		return 0;                  /* no audio at all: there is no level */
+	g_volume += delta_pct;
+	if (g_volume < 0)
+		g_volume = 0;
+	else if (g_volume > 100)
+		g_volume = 100;
+	termgfx_stream_set_volume(g_stream, termgfx_db_from_pct(g_volume));
+	return g_volume;
 }
 
 void sr_audio_reset(void)

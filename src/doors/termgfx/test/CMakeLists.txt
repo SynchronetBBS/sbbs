@@ -145,6 +145,16 @@ set_target_properties(test_term_sdm PROPERTIES C_STANDARD 11)
 target_compile_options(test_term_sdm PRIVATE -UNDEBUG)
 add_test(NAME term_sdm COMMAND test_term_sdm)
 
+# Unit test for the audio_stream channel level -- the clamps, and the mute floor
+# that stops the uplink rather than sending inaudible chunks. Links the full
+# termgfx library, like test_mouse: audio_stream.c calls audio.c's APC builders.
+# The test parks the stream OFF so the level logic runs without an encoder.
+add_executable(test_stream_volume ${CMAKE_CURRENT_SOURCE_DIR}/test_stream_volume.c)
+target_link_libraries(test_stream_volume termgfx)
+set_target_properties(test_stream_volume PROPERTIES C_STANDARD 11)
+target_compile_options(test_stream_volume PRIVATE -UNDEBUG)
+add_test(NAME stream_volume COMMAND test_stream_volume)
+
 # The rest of this directory's tests -- termgfx_termio (23 binaries), the
 # quantizer, present_rgbx and the repro_fade harness -- are driven by the
 # unit_termgfx_*.sh scripts here rather than by CTest: they are POSIX-only

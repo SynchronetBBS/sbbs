@@ -302,7 +302,22 @@ static void run_scenario(void)
 	feed_ramp(FRAMES_PER_CHUNK, &phase);    /* strike 2: dropped */
 	g_backlog = 0;
 
-	/* 7: shutdown -- A;Flush on the channel, no fade. */
+	/* 7: '-' all the way down to 0% and '+' back up -- the mute round trip.
+	 * Each press is one A;Volume at the dB its percent converts to, until 0%,
+	 * which emits A;Flush and NOTHING else (no Volume: the channel goes silent
+	 * because we stop sending, not because we set it to zero). The two chunks
+	 * fed at 0% produce no records at all -- that absence IS the uplink saving
+	 * the mute exists for. Then '+' emits one A;Volume at 10% and the chunks
+	 * after it resume. Order alone cannot show the re-prime: a held batch
+	 * releases through the same per-chunk send, so it reads exactly like three
+	 * immediate sends. What is pinned here is that they come out at all. */
+	while (sr_audio_volume() > 0)
+		sr_audio_volume_step(-SR_VOLUME_STEP_PCT);
+	feed_ramp(FRAMES_PER_CHUNK * 2, &phase);   /* silenced: not one byte */
+	sr_audio_volume_step(+SR_VOLUME_STEP_PCT);
+	feed_ramp(FRAMES_PER_CHUNK * 3, &phase);
+
+	/* 8: shutdown -- A;Flush on the channel, no fade. */
 	sr_audio_shutdown();
 }
 

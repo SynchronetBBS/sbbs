@@ -217,7 +217,8 @@ play two-up on one keyboard.
 | `Enter` | numpad `Enter` | keypad Enter |
 
 Door keys (either player): `Tab` swap the two controllers · `Ctrl-P` pause · `?`
-help · `Ctrl-S` stats overlay · `Ctrl-R` reset · `Ctrl-Q` quit.
+help · `Ctrl-S` stats overlay · `Ctrl-R` reset · `+` / `-` volume · `Ctrl-Q`
+quit.
 
 Player 2's arrows and numpad have no ASCII form, so they need SyncTERM or a
 kitty-keyboard terminal; on a plain client player 2's *keypad* falls back to
@@ -286,7 +287,7 @@ Tune it in `syncretro.ini`'s `[audio]` section (see
 |---|---|---|---|
 | `enabled` | `true` | -- | `false` emits no audio APCs at all (not the same as `volume = 0`) |
 | `quality` | `0.15` | 0.01 .. 1.0, else default | Opus VBR quality; out-of-range (including NaN) falls back to the default rather than clamping |
-| `volume` | `100` | 0 .. 100 | channel base volume |
+| `volume` | `100` | 0 .. 100 | channel base volume, in percent; the player moves it 10 at a time with `+`/`-`, and at 0 the door sends no audio at all |
 | `chunk_ms` | `100` | 50 .. 250 | chunk size; below 50 the Ogg headers dominate the stream |
 | `prebuffer` | `3` | 2 .. 8 | chunks held before playback starts, i.e. 200..800 ms of cushion |
 

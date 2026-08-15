@@ -48,5 +48,28 @@
 047 A;Load slot=0 file=s/2
 048 A;Queue ch=2 slot=0 vol=0.0dB loop=0
 049 A;Update ch=2
-050 A;Flush ch=2 fade=0
--- 51 record(s), 3 sr_io_out_flush() call(s) --
+050 A;Volume ch=2 vol=-0.9dB
+051 A;Volume ch=2 vol=-1.9dB
+052 A;Volume ch=2 vol=-3.1dB
+053 A;Volume ch=2 vol=-4.4dB
+054 A;Volume ch=2 vol=-6.0dB
+055 A;Volume ch=2 vol=-8.0dB
+056 A;Volume ch=2 vol=-10.5dB
+057 A;Volume ch=2 vol=-14.0dB
+058 A;Volume ch=2 vol=-20.0dB
+059 A;Flush ch=2 fade=0
+060 A;Volume ch=2 vol=-20.0dB
+061 C;S name=s/3 bytes=1308
+062 A;Load slot=0 file=s/3
+063 A;Queue ch=2 slot=0 vol=0.0dB loop=0
+064 A;Update ch=2
+065 C;S name=s/0 bytes=1287
+066 A;Load slot=0 file=s/0
+067 A;Queue ch=2 slot=0 vol=0.0dB loop=0
+068 A;Update ch=2
+069 C;S name=s/1 bytes=1292
+070 A;Load slot=0 file=s/1
+071 A;Queue ch=2 slot=0 vol=0.0dB loop=0
+072 A;Update ch=2
+073 A;Flush ch=2 fade=0
+-- 74 record(s), 5 sr_io_out_flush() call(s) --

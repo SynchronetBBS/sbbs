@@ -309,11 +309,6 @@ termgfx_stream_underrun(termgfx_stream_t *s, int ch)
 // Opus chunks to a terminal that will discard them. That is the whole point of
 // a mute on a BBS door, where audio is the bulk of the uplink after the frames.
 
-// Stepping the level below this snaps to full mute: -36 dB is already near
-// silent, so rather than make the player press '-' all the way to the -60 dB
-// floor, the quiet tail collapses to a real (uplink-stopping) mute.
-#define STREAM_DB_MUTE_BELOW (-36.0f)
-
 float
 termgfx_stream_volume(const termgfx_stream_t *s)
 {
@@ -326,22 +321,24 @@ termgfx_stream_muted(const termgfx_stream_t *s)
 	return s == NULL ? 1 : s->cfg.volume_db <= TERMGFX_DB_MUTE;
 }
 
-// Step the level by `delta_db` and return the new dB. Capped at unity (0 dB);
-// stepping down past STREAM_DB_MUTE_BELOW snaps to full mute (stops the uplink).
+// Set the level to `db`, clamped to [TERMGFX_DB_MUTE, TERMGFX_DB_UNITY], and
+// return what was set. Absolute rather than a step: the ladder a door offers
+// its player is the door's (SyncArcade steps a 0..100 percent, which is what
+// its sysop knob and its on-screen readout are both in), and only its bottom
+// rung knows whether it means silence or merely quiet.
 float
-termgfx_stream_volume_step(termgfx_stream_t *s, float delta_db)
+termgfx_stream_set_volume(termgfx_stream_t *s, float db)
 {
 	float was;
 
 	if (s == NULL)
 		return TERMGFX_DB_MUTE;
-	was = s->cfg.volume_db;
-
-	s->cfg.volume_db += delta_db;
-	if (s->cfg.volume_db > TERMGFX_DB_UNITY)
-		s->cfg.volume_db = TERMGFX_DB_UNITY;
-	else if (s->cfg.volume_db < STREAM_DB_MUTE_BELOW)
-		s->cfg.volume_db = TERMGFX_DB_MUTE;   // snap the quiet tail to real mute
+	if (db > TERMGFX_DB_UNITY)
+		db = TERMGFX_DB_UNITY;
+	else if (db < TERMGFX_DB_MUTE)
+		db = TERMGFX_DB_MUTE;
+	was              = s->cfg.volume_db;
+	s->cfg.volume_db = db;
 	if (s->cfg.volume_db == was || s->state == TERMGFX_STREAM_OFF)
 		return s->cfg.volume_db;   // no change, or no audio pipeline to tell
 

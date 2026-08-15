@@ -679,16 +679,17 @@ int main(int argc, char **argv)
 			if (action == SR_DOOR_TIER)
 				sr_io_cycle_tier();         /* F4: sixel <-> the text tiers, keep playing */
 			if (action == SR_DOOR_VOL_UP || action == SR_DOOR_VOL_DOWN) {
-				float db = sr_audio_volume_step(action == SR_DOOR_VOL_UP ? +6.0f : -6.0f);
-				char  msg[64];
+				int  pct = sr_audio_volume_step(action == SR_DOOR_VOL_UP ?
+				                                +SR_VOLUME_STEP_PCT : -SR_VOLUME_STEP_PCT);
+				char msg[64];
 
-				/* Below the floor the door sends no audio AT ALL
-				 * (sr_audio_volume_step snaps to mute), so say so -- a bare
-				 * level reads like a quiet stream still costing bandwidth. */
-				if (sr_audio_muted())
-					snprintf(msg, sizeof msg, "Volume off -- nothing sent");
+				/* At zero the door sends no audio AT ALL, so say off rather
+				 * than leave "0%" reading like a stream still costing
+				 * bandwidth at an inaudible level. */
+				if (pct == 0)
+					snprintf(msg, sizeof msg, "Volume 0%% (off)");
 				else
-					snprintf(msg, sizeof msg, "Volume %.0f dB", db);
+					snprintf(msg, sizeof msg, "Volume %d%%", pct);
 				sr_io_toast(msg);
 			}
 			if (action == SR_DOOR_RESET) {

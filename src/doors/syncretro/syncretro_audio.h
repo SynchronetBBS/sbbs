@@ -44,13 +44,20 @@ void   sr_audio_underrun(int ch);
  * produced and the FIFO drains on purpose. Suppresses the spurious underrun and
  * re-primes on resume. */
 void   sr_audio_pause(int on);
-/* '+' / '-': step the terminal's mixer-channel volume, 0..100, and return the
- * new value. At ZERO the door stops sending audio altogether -- no encode, no
- * upload, no queue -- and flushes what is already queued, so a muted player
- * costs zero uplink rather than streaming Opus a terminal would discard. */
-float  sr_audio_volume_step(float delta_db);   /* returns the new level in dB */
-float  sr_audio_volume(void);                  /* current level in dB (0 = unity) */
-int    sr_audio_muted(void);
+/* '+' / '-': step the terminal's mixer-channel volume and return the new level.
+ * PERCENT, 0..100 -- the same unit as the [audio] volume knob the sysop sets and
+ * as the readout the player sees; termgfx converts to dB at the wire. At ZERO
+ * the door stops sending audio altogether -- no encode, no upload, no queue --
+ * and flushes what is already queued, so a silenced player costs zero uplink
+ * rather than streaming Opus a terminal would discard. Zero when audio is off
+ * entirely (disabled, or a terminal that cannot play it): there is no level to
+ * report, and claiming one would be a lie the player acts on. */
+int    sr_audio_volume_step(int delta_pct);
+int    sr_audio_volume(void);   /* current level, 0..100 */
+/* One keypress. Ten rungs is what SynchroLand's '+'/'-' walk, and matching it
+ * costs nothing here -- a player who learns the volume keys in one door should
+ * not have to relearn their reach in another. */
+#define SR_VOLUME_STEP_PCT 10
 /* Ctrl-R restarted the console: stop the channel, drop what is queued, re-prime.
  * The audio still in the terminal's FIFO belongs to a game that no longer runs. */
 void   sr_audio_reset(void);
