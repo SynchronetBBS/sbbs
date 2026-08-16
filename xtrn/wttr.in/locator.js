@@ -17,8 +17,9 @@ function getAddress() {
 	if (f.date < client.connect_time) return; // Avoid stale ws ip files
 	if (f.date - client.connect_time > 5) return; // Avoid ws ip files probably not belonging to this user (5 seconds arbitrary)
 	if (!f.open('r')) return;
-	const addr = f.read();
+	const addr = f.readln(); // A line, not the file: it holds more than one
 	f.close();
+	if (!addr) return; // open('w') truncates, so it can be found still empty
 
 	if (addr.search(addrRe) < 0) return addr;
 }
