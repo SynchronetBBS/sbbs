@@ -16,7 +16,8 @@ password(char *buffer, size_t *length)
 }
 
 static int
-round_trip(enum iniCryptAlgo algorithm)
+round_trip(enum iniCryptAlgo algorithm, int requested_key_size,
+    int expected_key_size)
 {
 	str_list_t input = strListInit();
 	if (input == NULL
@@ -29,7 +30,7 @@ round_trip(enum iniCryptAlgo algorithm)
 	}
 	FILE *file = tmpfile();
 	if (file == NULL
-	    || !iniWriteEncryptedFile(file, input, algorithm, 256,
+	    || !iniWriteEncryptedFile(file, input, algorithm, requested_key_size,
 	        "scrypt-N8-r8-p1", "correct horse battery staple")) {
 		if (file != NULL) fclose(file);
 		strListFree(&input);
@@ -41,7 +42,7 @@ round_trip(enum iniCryptAlgo algorithm)
 	str_list_t output = iniReadEncryptedFile(file, password, NULL,
 	    &actual_algorithm, &key_size, &actual_kdf);
 	int result = output == NULL || actual_algorithm != algorithm
-	    || key_size != 256 || actual_kdf != XP_KDF_SCRYPT
+	    || key_size != expected_key_size || actual_kdf != XP_KDF_SCRYPT
 	    || strListCount(input) != strListCount(output);
 	if (!result) {
 		for (size_t i = 0; input[i] != NULL; i++) {
@@ -92,8 +93,10 @@ int
 main(void)
 {
 	if (legacy_cipher_vectors() != 0
-	    || round_trip(INI_CRYPT_ALGO_AES) != 0
-	    || round_trip(INI_CRYPT_ALGO_CHACHA20) != 0)
+	    || round_trip(INI_CRYPT_ALGO_AES, 256, 256) != 0
+	    || round_trip(INI_CRYPT_ALGO_CHACHA20, 256, 256) != 0
+	    || round_trip(INI_CRYPT_ALGO_AES, 0, 256) != 0
+	    || round_trip(INI_CRYPT_ALGO_CHACHA20, 0, 256) != 0)
 		return 1;
 	FILE *file = tmpfile();
 	if (file == NULL)

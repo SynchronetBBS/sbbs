@@ -873,14 +873,8 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 	if (ctx == NULL)
 		return false;
 	/* Resolve default key size when caller passed zero. */
-	if (keySize <= 0) {
-		switch (algo) {
-			case INI_CRYPT_ALGO_AES:
-			case INI_CRYPT_ALGO_CHACHA20: keySize = 256; break;
-			case INI_CRYPT_ALGO_3DES:     keySize = 192; break;
-			default:                      keySize = 128; break;
-		}
-	}
+	if (keySize <= 0)
+		keySize = 256;
 
 	blocksize = (int)cipher_block_size(algo);
 	if (blocksize <= 1) {
