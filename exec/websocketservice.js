@@ -34,6 +34,14 @@ var WEBSOCKET_FRAME_UNKNOWN = 0;
 var WEBSOCKET_FRAME_TEXT    = 1;
 var WEBSOCKET_FRAME_BINARY  = 2;
 
+// Maximum length, in bytes, of a single handshake header line (see
+// ShakeHands()). Generous enough that a real session cookie -- a
+// several-hundred-character key plus the user number and cookie name --
+// fits comfortably, but still bounded: a line that doesn't fit is treated
+// as malformed input, not silently truncated (see the cap-hit check where
+// this is used).
+var WEBSOCKET_HANDSHAKE_LINE_MAXLEN = 4096;
+
 // Global variables
 var FFrameMask = [];
 var FFrameMasked = false;
@@ -57,107 +65,173 @@ try {
 			throw new Error('BBS is using HAProxy, but no X-Forwarded-For header present.');
 		}
 
-        SendToWebSocketClient(StringToBytes("Redirecting to server...\r\n"));
-
-        // Default to localhost on the telnet port
-		var TargetHostname = GetTelnetInterface();
-		var TargetPort = GetTelnetPort();
-        
-        // If fTelnet client sent a port on the querystring, try to use that
-        var Path = ParsePathHeader();
-        if (Path.query.Port) {
-            RequestedPort = parseInt(Path.query.Port);
-
-            // Confirm the user requested either the telnet or rlogin ports (we don't want to allow them to request any arbitrary port as that would be a gaping security hole)
-            if ((RequestedPort > 0) && (RequestedPort <= 65535) && ((RequestedPort == GetTelnetPort()) || (RequestedPort == GetRLoginPort()))) {
-                TargetPort = RequestedPort;
-                log(LOG_DEBUG, "Using user-requested port " + Path.query.Port);
-                if (TargetPort == GetRLoginPort()) TargetHostname = GetRLoginInterface();
-            } else {
-                log(LOG_NOTICE, "Client requested to connect to port " + Path.query.Port + ", which was denied");
-            }
-        } else {
-            // If SysOp gave an alternate hostname/port when installing the service, use that instead
-			for(var i in argv) {
-                var port = parseInt(argv[i], 10);
-                if (argv[i].search(/\D/) > -1 || port < 0 || port > 65535) {
-                    TargetHostname = argv[i];
-                } else if (!isNaN(port)) {
-                    TargetPort = port;
-                }
+        // -auth must be recognized whether or not the client also supplies a
+        // port on the querystring below, so it's parsed out of argv on its
+        // own rather than folded into the hostname/port loop further down.
+        var RequireAuth = false;
+        for (var a in argv) {
+            if (argv[a].toLowerCase() === '-auth') {
+                RequireAuth = true;
+                break;
             }
         }
-        
-		// Connect to the server
-        FServerSocket = new Socket();
-		log(LOG_DEBUG, "Connecting to " + TargetHostname + ":" + TargetPort);
-        if (FServerSocket.connect(TargetHostname, TargetPort)) {
 
-            ipFile = new File(system.temp_dir + 'sbbs-ws-' + FServerSocket.local_port + '.ip');
-            if (ipFile.open('w')) {
-                ipFile.write(client.ip_address);
-                ipFile.close();
-            }
-
-            // Variables we'll use in the loop
-            var DoYield = true;
-            var ClientData = [];
-            var ServerData = [];
-
-			if (UsingHAProxy()) {
-				var hapstr = '\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A\x21';
-				if (client.socket.family === PF_INET) {
-					hapstr += '\x11\x00\x0C';
-				} else if (client.socket.family === PF_INET6) {
-					hapstr += '\x21\x00\x24';
-				}
-				hapstr += inet_pton(FWebSocketHeader['X-Forwarded-For']);
-				hapstr += inet_pton(FServerSocket.remote_ip_address);
-				hapstr += client.port.toString(16);
-				hapstr += TargetPort.toString(16);
-				FServerSocket.send(hapstr);
-			}
-            
-            // Loop while we're still connected on both ends
-            while ((client.socket.is_connected) && (FServerSocket.is_connected)) {
-                // Should we yield or not (default true, but disable if we had line activity)
-                DoYield = true;
-            
-                // Check if the client sent anything
-                ClientData = GetFromWebSocketClient();
-                if (ClientData === null) {
-                    // null ClientData means the client socket is no longer connected, or a close frame was received
-                    break;
-                } else if (ClientData.length > 0) {
-                    // false means the server socket is no longer connected
-                    if (!SendToServer(ClientData)) break;
-                    DoYield = false;
-                }
-                
-                // Check if the server sent anything
-                ServerData = GetFromServer();
-                if (ServerData === null) {
-                    // null ServerData means the server socket is no longer connected
-                    break;
-                } else if (ServerData.length > 0) {
-                    // false means the client socket is no longer connected
-                    if (!SendToWebSocketClient(ServerData)) break;
-                    DoYield = false;
-                }
-            
-                // Yield if we didn't transfer any data
-                if (DoYield) {
-                    mswait(10);
-                    yield();
-                }
-            }
-            if (!client.socket.is_connected) log(LOG_DEBUG, 'Client socket no longer connected');
-			if (!FServerSocket.is_connected) log(LOG_DEBUG, 'Server socket no longer connected');
+        var WebUser = GetWebSocketUser();
+        if (RequireAuth && WebUser === 0) {
+            // Per-instance, because it must not become the default: an
+            // instance fronting a server that does its own login (e.g. a
+            // telnet server) carries people who have not logged in yet, and
+            // logging in is what they are connecting to do.
+            log(LOG_NOTICE, "Refusing a connection with no authenticated web session");
         } else {
-            // FServerSocket.connect() failed
-            log(LOG_ERR, "Error " + FServerSocket.error + " connecting to server at " + TargetHostname + ":" + TargetPort);
-            SendToWebSocketClient(StringToBytes("ERROR: Unable to connect to server\r\n"));
-            mswait(2500);
+
+            SendToWebSocketClient(StringToBytes("Redirecting to server...\r\n"));
+
+            // Default to localhost on the telnet port
+			var TargetHostname = GetTelnetInterface();
+			var TargetPort = GetTelnetPort();
+        
+            // If fTelnet client sent a port on the querystring, try to use that
+            var Path = ParsePathHeader();
+            if (Path.query.Port) {
+                RequestedPort = parseInt(Path.query.Port);
+
+                // Confirm the user requested either the telnet or rlogin ports (we don't want to allow them to request any arbitrary port as that would be a gaping security hole)
+                if ((RequestedPort > 0) && (RequestedPort <= 65535) && ((RequestedPort == GetTelnetPort()) || (RequestedPort == GetRLoginPort()))) {
+                    TargetPort = RequestedPort;
+                    log(LOG_DEBUG, "Using user-requested port " + Path.query.Port);
+                    if (TargetPort == GetRLoginPort()) TargetHostname = GetRLoginInterface();
+                } else {
+                    log(LOG_NOTICE, "Client requested to connect to port " + Path.query.Port + ", which was denied");
+                }
+            } else {
+                // If SysOp gave an alternate hostname/port when installing the service, use that instead
+				for(var i in argv) {
+                    if (argv[i].toLowerCase() === '-auth') continue;
+                    var port = parseInt(argv[i], 10);
+                    if (argv[i].search(/\D/) > -1 || port < 0 || port > 65535) {
+                        TargetHostname = argv[i];
+                    } else if (!isNaN(port)) {
+                        TargetPort = port;
+                    }
+                }
+            }
+        
+			// Connect to the server
+            FServerSocket = new Socket();
+			log(LOG_DEBUG, "Connecting to " + TargetHostname + ":" + TargetPort);
+            if (FServerSocket.connect(TargetHostname, TargetPort)) {
+
+                // The address is the first line, where it has always been.
+                // The web user number is a second line below it, so a
+                // consumer has to read a LINE and not the whole file: one
+                // that slurps to EOF gets both lines joined by a CRLF, and
+                // an address with a CRLF in it is silent corruption rather
+                // than an error -- it goes on to be used as a URL, a cache
+                // key, a log field. Nothing distinguished the two reads
+                // while the file held a single unterminated value, so a
+                // reader predating this second line may well not.
+                //
+                // Ordering matters here, and it's load-bearing: this write
+                // (and its close()) must complete before any byte is sent to
+                // the backend socket -- before the HAProxy preamble below and
+                // before SendToServer() in the relay loop. A backend can use
+                // that ordering to tell a relayed connection from a direct
+                // one: once it has received a byte from a peer, the sidecar
+                // for that peer's source port is already on disk if one was
+                // ever coming, so its absence at that point means a direct
+                // connection, not a race. Moving either send earlier, or
+                // making this write conditional or asynchronous, would break
+                // that guarantee silently -- no test fails, nothing logs,
+                // relayed connections just start looking direct.
+                ipFile = new File(system.temp_dir + 'sbbs-ws-' + FServerSocket.local_port + '.ip');
+                var SidecarWritten = false;
+                if (ipFile.open('w')) {
+                    SidecarWritten = ipFile.write(client.ip_address + '\r\n' + WebUser + '\r\n');
+                    ipFile.close();
+                }
+
+                // A failed write is not cosmetic for an -auth instance: it
+                // exists to tell its backend who is on the other end, and
+                // with no sidecar the backend sees a connection
+                // indistinguishable from one made directly to it, on the
+                // machine, by something already trusted. Forwarding anyway
+                // would hand a stranger whatever that trust is worth. A
+                // temp directory that is full, read-only, or missing is
+                // ordinary enough to plan for -- a RAM-backed one fills.
+                //
+                // Only -auth instances refuse. An instance fronting a
+                // server that does its own login was never promising its
+                // backend anything about identity, and taking away
+                // terminal access to the board because a disk filled would
+                // be its own outage.
+                if (RequireAuth && !SidecarWritten) {
+                    log(LOG_CRIT, "Refusing a connection: cannot write " + ipFile.name);
+                    SendToWebSocketClient(StringToBytes("ERROR: Unable to record the session\r\n"));
+                    mswait(2500);
+                } else {
+
+                    // Variables we'll use in the loop
+                    var DoYield = true;
+                    var ClientData = [];
+                    var ServerData = [];
+
+					if (UsingHAProxy()) {
+						var hapstr = '\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A\x21';
+						if (client.socket.family === PF_INET) {
+							hapstr += '\x11\x00\x0C';
+						} else if (client.socket.family === PF_INET6) {
+							hapstr += '\x21\x00\x24';
+						}
+						hapstr += inet_pton(FWebSocketHeader['X-Forwarded-For']);
+						hapstr += inet_pton(FServerSocket.remote_ip_address);
+						hapstr += client.port.toString(16);
+						hapstr += TargetPort.toString(16);
+						FServerSocket.send(hapstr);
+					}
+            
+                    // Loop while we're still connected on both ends
+                    while ((client.socket.is_connected) && (FServerSocket.is_connected)) {
+                        // Should we yield or not (default true, but disable if we had line activity)
+                        DoYield = true;
+            
+                        // Check if the client sent anything
+                        ClientData = GetFromWebSocketClient();
+                        if (ClientData === null) {
+                            // null ClientData means the client socket is no longer connected, or a close frame was received
+                            break;
+                        } else if (ClientData.length > 0) {
+                            // false means the server socket is no longer connected
+                            if (!SendToServer(ClientData)) break;
+                            DoYield = false;
+                        }
+                
+                        // Check if the server sent anything
+                        ServerData = GetFromServer();
+                        if (ServerData === null) {
+                            // null ServerData means the server socket is no longer connected
+                            break;
+                        } else if (ServerData.length > 0) {
+                            // false means the client socket is no longer connected
+                            if (!SendToWebSocketClient(ServerData)) break;
+                            DoYield = false;
+                        }
+            
+                        // Yield if we didn't transfer any data
+                        if (DoYield) {
+                            mswait(10);
+                            yield();
+                        }
+                    }
+                    if (!client.socket.is_connected) log(LOG_DEBUG, 'Client socket no longer connected');
+					if (!FServerSocket.is_connected) log(LOG_DEBUG, 'Server socket no longer connected');
+                }
+            } else {
+                // FServerSocket.connect() failed
+                log(LOG_ERR, "Error " + FServerSocket.error + " connecting to server at " + TargetHostname + ":" + TargetPort);
+                SendToWebSocketClient(StringToBytes("ERROR: Unable to connect to server\r\n"));
+                mswait(2500);
+            }
         }
     } else {
         log(LOG_DEBUG, "WebSocket handshake failed (likely a port scanner)");
@@ -394,6 +468,51 @@ function GetFromWebSocketClientVersion7() {
     return Result;
 }
 
+// Which web user is on the other end, or 0 if we cannot tell. A relay that
+// merely forwards bytes cannot answer this; one that can lets its backend
+// attribute what arrives, without the backend having to trust whatever the
+// client claims about itself.
+//
+// This deliberately doesn't load webv4/lib/auth.js and call its
+// validateSession(): that file is written for the web server's per-request
+// pipeline and references globals (settings, http_request, set_cookie) that
+// a service never defines, so loading it here throws. Instead this checks
+// the same on-disk session record (data/user/####.web) that validateSession()
+// itself checks against, without any of the request-pipeline side effects
+// (cookie refresh, CSRF token, logon list) that come with a real login.
+function GetWebSocketUser() {
+    if (!FWebSocketHeader['Cookie']) return 0;
+
+    var i;
+    var kv;
+    var cookies = [];
+    var parts = FWebSocketHeader['Cookie'].split(';');
+    for (i = 0; i < parts.length; i++) {
+        kv = parts[i].split('=');
+        if (kv.length > 1) cookies.push(kv.slice(1).join('=').replace(/^\s+/, ''));
+    }
+
+    for (i = 0; i < cookies.length; i++) {
+        if (cookies[i].search(/^\d+,\w+$/) < 0) continue;
+
+        var cookie = cookies[i].split(',');
+        var un = parseInt(cookie[0], 10);
+        if (un < 1) continue;
+
+        try {
+            var f = new File(format('%suser/%04d.web', system.data_dir, un));
+            if (!f.open('r')) continue;
+            var session = f.iniGetObject();
+            f.close();
+            if (session && typeof session.key === 'string' && session.key === cookie[1]) return un;
+        } catch (e) {
+            log(LOG_DEBUG, 'GetWebSocketUser() session lookup failed: ' + e);
+        }
+    }
+
+    return 0;
+}
+
 function ParsePathHeader() {
     var Result = {};
     Result.query = {};
@@ -519,9 +638,27 @@ function ShakeHands() {
         // Keep reading header data until we get all the data we want
         while (true) {
             // Read another line, and abort if we don't get one within 5 seconds
-            var InLine = client.socket.recvline(512, 5);
+            var InLine = client.socket.recvline(WEBSOCKET_HANDSHAKE_LINE_MAXLEN, 5);
             if (InLine === null) {
                 log(LOG_DEBUG, "Timeout exceeded while waiting for complete handshake");
+                return false;
+            }
+
+            // recvline() stops filling its buffer at the cap WITHOUT
+            // draining the rest of the line from the socket, so a header
+            // that doesn't fit isn't just truncated here -- its unread
+            // remainder desyncs every header parsed after it, read as if
+            // it were the start of the next line. A genuinely shorter line
+            // always comes back at least 2 bytes under the cap (recvline()
+            // needs that headroom to also consume the trailing \r\n), so a
+            // line within 1 byte of the cap only happens by hitting it.
+            // Treat that as a malformed handshake and abort, the same as
+            // any other malformed input here: a header this large isn't
+            // something a legitimate client sends, and resuming a parse
+            // that has already lost bytes would be a guess.
+            if (InLine.length >= WEBSOCKET_HANDSHAKE_LINE_MAXLEN - 1) {
+                log(LOG_NOTICE, "Handshake header line too long (>= "
+                    + (WEBSOCKET_HANDSHAKE_LINE_MAXLEN - 1) + " bytes), aborting");
                 return false;
             }
 
@@ -550,6 +687,9 @@ function ShakeHands() {
             } else if (InLine.search(/^Connection:/i) === 0) {
                 // Example: "Connection: Upgrade"
                 FWebSocketHeader['Connection'] = InLine.replace(/Connection:\s?/i, "");
+            } else if (InLine.search(/^Cookie:/i) === 0) {
+                // Example: "Cookie: synchronet=5,AbCd1234..."
+                FWebSocketHeader['Cookie'] = InLine.replace(/Cookie:\s?/i, "");
             } else if (InLine.search(/^GET/i) === 0) {
                 // Example: "GET /demo HTTP/1.1"
                 var GET = InLine.split(" ");
