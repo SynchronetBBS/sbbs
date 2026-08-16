@@ -455,7 +455,12 @@ rlogin_connect(struct bbslist *bbs)
 
                 /* Check to make sure GHost is actually listening */
 		conn_logf(rlogin_log_source, LOG_INFO, "probing GHost service");
-		sendsocket(rlogin_sock, "\r\nMBBS: PING\r\n", 14);
+		ret = sendsocket(rlogin_sock, "\r\nMBBS: PING\r\n", 14);
+		if (ret != 14) {
+			rlogin_connect_error(bbs,
+			    "The GHost probe request could not be sent completely.");
+			return -1;
+		}
 
 		idx = 0;
 		while (socket_readable(rlogin_sock, 1000)) {
@@ -488,7 +493,13 @@ rlogin_connect(struct bbslist *bbs)
 		    999,                                                           /* Time remaining */
 		    "GR"                                                           /* GR = ANSI, NG = ASCII */
 		    );
-		sendsocket(rlogin_sock, sbuf, strlen(sbuf));
+		size_t request_length = strlen(sbuf);
+		ret = sendsocket(rlogin_sock, sbuf, request_length);
+		if (ret < 0 || (size_t)ret != request_length) {
+			rlogin_connect_error(bbs,
+			    "The GHost launch request could not be sent completely.");
+			return -1;
+		}
 
 		idx = 0;
 		while (socket_readable(rlogin_sock, 1000)) {
