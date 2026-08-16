@@ -89,7 +89,7 @@
 505444 IGNORE: false positive; successful initial builder_printf always allocates the builder buffer before any subsequent append
 505448 IGNORE: false positive; the first successful builder append always allocates the builder buffer before any later append
 505469 IGNORE: intentional; removing a partially written unreferenced certificate is best-effort cleanup after the installation failure has already been reported
-505470
+505470 IGNORE: intentional; the persistent BBS rename has already succeeded and cache-directory migration is best-effort, so its failure must not change the operation's result
 505471
 505472 IGNORE: false positive; every private select_theme call supplies an empty string or a value already limited to MAX_PATH for the MAX_PATH-plus-one destinations
 505473
