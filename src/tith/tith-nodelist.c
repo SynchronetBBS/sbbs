@@ -222,7 +222,7 @@ tith_getPublicKey(struct TITH_NodelistEntry *entry, uint8_t *pk)
 			continue;
 		char *lc = strrchr(field, ':');
 		lc++;
-		if (b64_decode(pk, hydro_sign_SECRETKEYBYTES, lc))
+		if (b64_decode(pk, hydro_sign_PUBLICKEYBYTES, lc))
 			ret = true;
 		break;
 	}
@@ -327,6 +327,8 @@ tith_findNodelistEntry(struct TITH_NodelistEntry *list, size_t listLen, const ch
 	if (addr.net == 0 || addr.zone == 0)
 		return NULL;
 	// Ok, we've parsed the hellspawn, now find it.
+	if (list == NULL || listLen == 0)
+		return NULL;
 	return bsearch(&addr, list, listLen, sizeof(*list), cmpNLk);
 }
 
@@ -335,7 +337,7 @@ addrString(struct TITH_NodelistAddr *addr)
 {
 	char tmpAddr[18];
 
-	printf(tmpAddr, "%hu:%hu/%hu", addr->zone, addr->net, addr->node);
+	snprintf(tmpAddr, sizeof(tmpAddr), "%hu:%hu/%hu", addr->zone, addr->net, addr->node);
 	return tith_strDup(tmpAddr);
 }
 
@@ -445,12 +447,12 @@ abortLine:
 		goto fail;
 	fclose(fp);
 	*list_size = retCount;
-	if (ret) {
+	if (ret && retCount) {
 		struct TITH_NodelistEntry *small = realloc(ret, retCount * sizeof(struct TITH_NodelistEntry));
 		if (small)
 			ret = small;
+		qsort(ret, retCount, sizeof(*ret), cmpNL);
 	}
-	qsort(ret, retCount, sizeof(*ret), cmpNL);
 	return ret;
 
 fail:

@@ -2,6 +2,7 @@
 #define TITH_INTERFACE_HEADER
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 /*
@@ -9,13 +10,23 @@
  * 
  * This can be implemented using platform-specific code.
  * See tith-stdio.c for an example implementation.
+ *
+ * TITH supports one active TITH_main() invocation per thread.  Separate
+ * threads may run separate connections concurrently, provided libhydrogen
+ * supplies thread-local state on the target platform.  A connection must
+ * remain on the thread which called TITH_main() until that call returns.
+ *
+ * These callbacks are called synchronously on that thread.  They must not
+ * re-enter TITH_main() or call other TITH routines.  Because callbacks for
+ * different connections may execute concurrently, an implementation which
+ * shares state between handles must provide the required synchronization.
  */
 
 /*
  * This should wait for and return a single byte from the connection.
  * 
  * The return value should be the value of the byte cast to a uint8_t.
- * -1 should be returned if an error occured and the connection is no
+ * -1 should be returned if an error occurred and the connection is no
  * longer able to be read.
  */
 int getByte(void *handle);
@@ -25,15 +36,15 @@ int getByte(void *handle);
  * the connection.
  * 
  * It should return true if the requested number of bytes were read, and
- * false if an error occured and the connection is no longer able to be
+ * false if an error occurred and the connection is no longer able to be
  * read.
  */
 bool getBytes(void *handle, uint8_t *buf, size_t bufsz);
 
 /*
  * This is called when no more bytes will be retreived from a
- * connection. This should cause getChar() and getBytes() to return -1,
- * but not impact sendChar() or sendBytes().
+ * connection. This should cause getByte() to return -1 and getBytes() to
+ * return false, but not impact sendByte() or sendBytes().
  */
 void shutdownRead(void *handle);
 
@@ -41,8 +52,8 @@ void shutdownRead(void *handle);
  * This should send or buffer a single byte to the connection and block
  * until it is sent/buffered.
  * 
- * It should return true if the bytes was sent/buffered, and false if an
- * error occured and the connection is no longer able to be written to.
+ * It should return true if the byte was sent/buffered, and false if an
+ * error occurred and the connection is no longer able to be written to.
  */
 bool sendByte(void *handle, uint8_t ch);
 
@@ -51,30 +62,34 @@ bool sendByte(void *handle, uint8_t ch);
  * until it is sent/buffered.
  * 
  * It should return true if the requested number of bytes were
- * sent/buffered, and false if an error occured and the connection is no
+ * sent/buffered, and false if an error occurred and the connection is no
  * longer able to be written to.
  */
 bool sendBytes(void *handle, uint8_t *buf, size_t bufsz);
 
 /*
- * If bytes were buffered instead of sent by sendChar() and sendBytes(),
+ * If bytes were buffered instead of sent by sendByte() and sendBytes(),
  * this causes them to be sent.
  * 
- * Returns false if an error occured and the connection is no longer
+ * Returns false if an error occurred and the connection is no longer
  * able to be written to.
  */
 bool flushWrite(void *handle);
 
 /*
  * This is called when no more bytes will be sent on a connection. This
- * should cause sendChar() and sendBytes() to return -1, but not impact
- * getChar() or getBytes().
+ * should cause sendByte() and sendBytes() to return false, but not impact
+ * getByte() or getBytes().
  */
 void shutdownWrite(void *handle);
 
 /*
  * This indicates that all resources associated with the connection
  * should be freed, and the handle will not be used again.
+ *
+ * This callback is also used during error cleanup.  It must return without
+ * calling TITH routines.  handle is the value originally passed to
+ * TITH_main(), including NULL when NULL is meaningful to the implementation.
  */
 void closeConnection(void *handle);
 
@@ -86,8 +101,9 @@ void logString(const char *str);
 /*
  * This is the entry point to the TITH code.
  * 
- * handle is a connection to the remote, and if client is set, this
- * process initiated the connection.
+ * handle is a connection to the remote.  It is passed unchanged to the
+ * callbacks above, including closeConnection() when argument or configuration
+ * processing fails.
  */
 int TITH_main(int argc, char **argv, void *handle);
 

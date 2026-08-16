@@ -85,7 +85,7 @@ static void
 stripend(char *line)
 {
 	size_t len = strlen(line);
-	while (len && isspace(line[len - 1])) {
+	while (len && isspace((unsigned char)line[len - 1])) {
 		line[len - 1] = 0;
 		len--;
 	}
@@ -236,6 +236,8 @@ size_t overrides;
 struct Overrides *
 findOverride(struct TITH_NodelistAddr *addr)
 {
+	if (overrides == 0)
+		return NULL;
 	return bsearch(addr, override, overrides, sizeof(*override), tith_cmpNodelistAddr);
 }
 
@@ -277,7 +279,7 @@ loadOverrides(const char *path)
 			free(line);
 			continue;
 		}
-		if (isdigit(line[0])) {
+		if (isdigit((unsigned char)line[0])) {
 			if (!tith_parseNodelistAddr(line, &addr)) {
 				fprintf(stderr, "Failed to parse address \"%s\"\n", line);
 				exit(EXIT_FAILURE);
@@ -492,7 +494,9 @@ main(int argc, char **argv)
 				appendFlag(&sysFlags, field);
 			else if (strcmp(field, "GUUCP") == 0)
 				appendFlag(&otherFlags, field);
-			else if ((field[0] == '#' || field[0] == '!') && isdigit(field[1]) && isdigit(field[2]))
+			else if ((field[0] == '#' || field[0] == '!') &&
+			    isdigit((unsigned char)field[1]) &&
+			    isdigit((unsigned char)field[2]))
 				appendFlag(&sysFlags, field);
 			else if (field[0] == 'T' && isTimeChar(field[1]) && isTimeChar(field[2]) && field[3] == 0)
 				appendFlag(&sysFlags, field);

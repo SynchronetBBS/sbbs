@@ -30,6 +30,8 @@ const char *
 readDirectory(void *dhandle)
 {
 	struct dirent *de = readdir((DIR *)dhandle);
+	if (de == NULL)
+		return NULL;
 	return de->d_name;
 }
 

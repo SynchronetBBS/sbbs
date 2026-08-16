@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <threads.h>
 
@@ -16,10 +17,10 @@ thread_local struct TITH_Config *cfg;
 static char *
 removeWhitespace(char *str)
 {
-	while(isspace(*str))
+	while(isspace((unsigned char)*str))
 		str++;
 	size_t end = strlen(str);
-	while (end > 0 && isspace(str[end - 1])) {
+	while (end > 0 && isspace((unsigned char)str[end - 1])) {
 		str[end - 1] = 0;
 		end--;
 	}
@@ -51,6 +52,7 @@ addNode(struct TITH_Config **config, const char *key, const char *value)
 		tith_logError("realloc() failure");
 	*config = newConfig;
 	(*config)->node[(*config)->nodes].FTNaddress = tith_strDup(key);
+	(*config)->node[(*config)->nodes].hasSecretKey = false;
 	if ((*config)->node[(*config)->nodes].FTNaddress == NULL)
 		tith_logError("tith_strDup() failed in addNode()");
 	if (!b64_decode((*config)->node[(*config)->nodes].kp.pk, sizeof((*config)->node[(*config)->nodes].kp.pk), value))
@@ -92,10 +94,10 @@ resizeAlloc(struct TITH_ConfigNodelist **cur, size_t *sz, size_t *count, size_t 
 static int
 cmpDomains(const void *a1, const void *a2)
 {
-	const char *s1 = a1;
-	const char *s2 = a2;
+	const struct TITH_ConfigNodelist *nl1 = a1;
+	const struct TITH_ConfigNodelist *nl2 = a2;
 
-	return strcmp(s1, s2);
+	return strcmp(nl1->domain, nl2->domain);
 }
 
 void
@@ -119,7 +121,7 @@ tith_readConfig(const char *configFile)
 			tith_logError("Error reading config line");
 		}
 		char *p = line;
-		while (isspace(*p))
+		while (isspace((unsigned char)*p))
 			p++;
 		if (!*p) {
 			free(line);
@@ -187,8 +189,8 @@ tith_readConfig(const char *configFile)
 static int
 cmpAddrsTLV(const void *key, const void *node)
 {
-	struct TITH_TLV *k = (struct TITH_TLV *)key;
-	struct TITH_Node *n = (struct TITH_Node *)node;
+	const struct TITH_TLV *k = key;
+	const struct TITH_Node *n = node;
 
 	size_t nlen = strlen(n->FTNaddress);
 	size_t clen = nlen < k->length ? nlen : k->length;
@@ -203,8 +205,10 @@ cmpAddrsTLV(const void *key, const void *node)
 }
 
 struct TITH_Node *
-tith_getNode(struct TITH_Config * restrict cfg, struct TITH_TLV * restrict addr)
+tith_getNode(struct TITH_Config * restrict cfg, const struct TITH_TLV * restrict addr)
 {
+	if (cfg == NULL || cfg->nodes == 0)
+		return NULL;
 	return bsearch(addr, cfg->node, cfg->nodes, sizeof(cfg->node[0]), cmpAddrsTLV);
 }
 
@@ -239,13 +243,15 @@ cmpDomainKey(const void *key, const void *domain)
 	size_t dlen = strlen(nl->domain);
 	size_t cmplen = dk->length < dlen ? dk->length : dlen;
 
-	int mc = memcmp(nl->domain, dk->value, cmplen);
+	int mc = memcmp(dk->value, nl->domain, cmplen);
 	if (mc)
 		return mc;
-	if (dlen == cmplen)
+	if (dk->length == dlen)
 		return 0;
-	if (dlen < cmplen)
+	if (dk->length < dlen)
 		return -1;
+	if (dk->value[dlen] == '#')
+		return 0;
 	return 1;
 }
 
@@ -265,5 +271,6 @@ tith_configGetPublicKey(const struct TITH_TLV *addr, uint8_t *pk)
 		tith_logError("Unlisted Node");
 	tith_popAlloc();
 	free(addrStr);
-	tith_getPublicKey(entry, pk);
+	if (!tith_getPublicKey(entry, pk))
+		tith_logError("No public key for Origin");
 }

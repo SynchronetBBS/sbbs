@@ -2,6 +2,9 @@
  * Implements FTS-5005 with some exceptions
  */
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "tith-common.h"
 #include "tith-config.h"
 #include "tith-interface.h"
@@ -25,12 +28,15 @@ bundleOutbound(const char *path, const char *domain, uint16_t zone)
 	(void)domain;
 	(void)zone;
 	void *dir = openDirectory(path);
+	if (dir == NULL)
+		return false;
 	for (const char *file = readDirectory(dir); file; file = readDirectory(dir)) {
 		/*
 		 * Hrm, we need routing info here to know what the
 		 * source address should be.
 		 */
 	}
+	closeDirectory(dir);
 	return false;
 }
 
@@ -56,7 +62,7 @@ bundle(void)
 int
 TITH_main(int argc, char **argv, void *handle)
 {
-	(void)handle;
+	tith_handle = handle;
 	if (setjmp(tith_exitJmpBuf)) {
 		tith_cleanup();
 		return EXIT_FAILURE;
@@ -69,12 +75,16 @@ TITH_main(int argc, char **argv, void *handle)
 				switch (*arg) {
 					case 'c':
 						arg++;
+						if (!*arg && i + 1 >= argc)
+							tith_logError("No config file specified");
 						if (cfname) {
 							tith_popAlloc();
 							free(cfname);
 						}
-						if (*arg)
+						if (*arg) {
 							cfname = tith_strDup(arg);
+							arg += strlen(arg);
+						}
 						else {
 							i++;
 							cfname = tith_strDup(argv[i]);

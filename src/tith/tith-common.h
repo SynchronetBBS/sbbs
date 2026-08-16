@@ -2,6 +2,9 @@
 #define TITH_COMMON_HEADER
 
 #include <setjmp.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdnoreturn.h>
 #include <threads.h>
@@ -22,19 +25,29 @@ struct TITH_TLV {
 	int type;
 	bool parsed;             // Indicates the value has been parsed as a TLV sequence
 	bool added;              // Indicates the value was added by the program, not read from somewhere else
+	bool signaturePrepared;  // Indicates that an added SignedData has been signed
 	uint8_t *value;
 };
 
+struct TITH_BundleHeader {
+	struct TITH_TLV *origin;
+	const struct TITH_TLV *originPublicKey;
+	struct TITH_TLV *header;
+	struct TITH_TLV *destination;
+	const struct TITH_TLV *destinationPublicKey;
+	struct TITH_TLV *timestamp;
+};
+
 /*
- * This value should be set to the handle passed to TITH_main()
- * Used to read and write data.
+ * The handle for the TITH_main() invocation active on this thread.  It is used
+ * to read and write data and is set by TITH_main().
  */
 extern thread_local void *tith_handle;
 
 /*
- * TITH_main() will longjmp(tith_exitJmpBuf, EXIT_FAILURE) on error, and
- * return EXIT_SUCCESS on success.  This value must be set via
- * setjmp(tith_exitJmpBuf) by the caller before calling TITH_mail()
+ * TITH code will longjmp(tith_exitJmpBuf, EXIT_FAILURE) on error.  This value
+ * must be set via setjmp(tith_exitJmpBuf) by an entry point before calling
+ * routines which can call tith_logError().
  */
 extern thread_local jmp_buf tith_exitJmpBuf;
 
@@ -47,6 +60,12 @@ extern thread_local struct TITH_TLV *tith_TLV;
  * Gets the root TLV
  */
 void tith_getTLV(void);
+
+/*
+ * Reads a sibling of tlv from the current handle.  If required is false and
+ * the next type does not match, its type is retained for the next call.
+ */
+struct TITH_TLV *tith_getNextTLV(struct TITH_TLV *tlv, int type, bool required);
 
 /*
  * Frees the root TLV
@@ -100,9 +119,31 @@ FILE *tith_popFile(void);
 void tith_validateAddress(const char *addr);
 
 /*
+ * Validates an address TLV and the conditional PublicKey immediately after it.
+ */
+void tith_validateAddressValue(const struct TITH_TLV *address);
+bool tith_isUnlistedAddressString(const char *address);
+bool tith_isUnlistedAddress(const struct TITH_TLV *address);
+const struct TITH_TLV *tith_getAddressPublicKey(const struct TITH_TLV *address);
+
+/*
+ * Constructs and reads the fixed portion of a Bundle.
+ */
+struct TITH_TLV *tith_allocBundleOrigin(const char *address);
+struct TITH_TLV *tith_addBundleHeader(struct TITH_TLV *tail,
+    const char *destination,
+    const uint8_t destinationPublicKey[hydro_sign_PUBLICKEYBYTES]);
+void tith_readBundleHeader(struct TITH_BundleHeader *bundle);
+
+/*
  * Allocates a new root TLV that will have data added to
  */
 void tith_allocTLV(int type);
+
+/*
+ * Allocates a root TLV containing a copy of data.
+ */
+void tith_allocDataTLV(int type, uint64_t len, const void *data);
 
 /*
  * Copies len bytes from data into a newly allocated tith_TLV * of type
@@ -129,12 +170,44 @@ struct TITH_TLV *tith_addFile(struct TITH_TLV *tlv, int type, const char *filena
 struct TITH_TLV *tith_addContainer(struct TITH_TLV *tlv, int type, bool child);
 
 /*
+ * Adds a TTS-0002 encoded number.
+ */
+struct TITH_TLV *tith_addNumber(struct TITH_TLV *tlv, int type, uint64_t value, bool child);
+
+/*
+ * Adds a TTS-0007 encoded signed number.
+ */
+struct TITH_TLV *tith_addSignedNumber(struct TITH_TLV *tlv, int type, int64_t value, bool child);
+
+/*
+ * Decodes a TTS-0002 number that occupies the complete Value of tlv.
+ */
+uint64_t tith_getNumberValue(const struct TITH_TLV *tlv);
+
+/*
+ * Decodes a TTS-0007 signed number that occupies the complete Value of tlv.
+ */
+int64_t tith_getSignedNumberValue(const struct TITH_TLV *tlv);
+
+/*
+ * Signs an added SignedTLV and hashes one complete encoded TLV.
+ */
+void tith_prepareSignedTLV(struct TITH_TLV *tlv);
+void tith_hashTLV(const struct TITH_TLV *tlv, uint8_t hash[hydro_hash_BYTES]);
+
+/*
+ * Prepares and verifies the bare Signatures used by Message and File.
+ */
+void tith_prepareItemSignature(struct TITH_TLV *tlv);
+void tith_verifyItemSignatures(struct TITH_TLV *tlv);
+
+/*
  * Sends the current root TLV
  */
 void tith_sendTLV(void);
 
 /*
- * Verifies a TLV type and the types if the sequence of TLVs in it.
+ * Verifies a TLV type and the types in the sequence of TLVs in it.
  * numargs is the number of required/type pairs that follow, each pair
  * starts with either TITH_OPTIONAL or TITH_REQUIRED indicating that the
  * type is required or optional, then a type.

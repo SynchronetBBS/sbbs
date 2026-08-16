@@ -41,6 +41,7 @@ genKeyPair(void)
 int
 TITH_main(int argc, char **argv, void *handle)
 {
+	tith_handle = handle;
 	if (setjmp(tith_exitJmpBuf)) {
 		tith_cleanup();
 		return EXIT_FAILURE;
@@ -60,12 +61,16 @@ TITH_main(int argc, char **argv, void *handle)
 						break;
 					case 'c':
 						arg++;
+						if (!*arg && i + 1 >= argc)
+							tith_logError("No config file specified");
 						if (cfname) {
 							tith_popAlloc();
 							free(cfname);
 						}
-						if (*arg)
+						if (*arg) {
 							cfname = tith_strDup(arg);
+							arg += strlen(arg);
+						}
 						else {
 							i++;
 							cfname = tith_strDup(argv[i]);

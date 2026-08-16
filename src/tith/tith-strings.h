@@ -1,6 +1,8 @@
 #ifndef TITH_STRINGS_HEADER
 #define TITH_STRINGS_HEADER
 
+#include <stddef.h>
+
 /*
  * Basically a clone of the POSIX strdup()
  */
