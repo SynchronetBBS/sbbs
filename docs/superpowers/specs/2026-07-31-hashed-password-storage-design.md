@@ -1325,6 +1325,11 @@ remaining path that hands cleartext to an insider is in scope:
 | Baja `%pass` | `exec.cpp:62` | remove |
 | MQTT PSK table (JS broker) | `broker.js:2665` | breaks with hashing |
 | MQTT PSK table (built-in broker) | `mqtt_broker.cpp:86-116` | breaks with hashing |
+| **webv4 re-authenticates from the stored password** | `webv4/lib/auth.js:106,229` | **breaks with hashing; breaks every session** |
+| **webv4 writes the password into a served page** | `webv4/pages/003-games.xjs:64` | **breaks with hashing; see below** |
+| Same, v3 web UI | `web/root/members/externals.ssjs:60` | breaks with hashing |
+| FTP URL with embedded credentials | `web/lib/leftnav_html.ssjs:8`, `web/lib/nightshade/leftnav_html.ssjs:8` | breaks with hashing |
+| RLogin door client `-p` / `-h` | `rlogin.js:86,90` | breaks with hashing |
 | qtmonitor PSK key | `qtmonitor/settingsdialog.cpp:60-62`, `main.cpp:22` | off-box copy; see below |
 | `SM_ECHO_PW` logging | `login.cpp:106`, `ftpsrvr.cpp:2686`, `websrvr.cpp:5888`, `con_hi.cpp:166` | see below |
 | Door dropfiles | `xtrn_sec.cpp:392,648,744,778,831,925` | hardest; see below |
@@ -1356,6 +1361,43 @@ default but sysop-flippable, and it writes near-misses of real passwords into
 files that circulate far more casually than `user.tab`. Hashing removes the
 "expected" half automatically; the attempted half should go with it.
 
+**webv4 hands the user's password to the browser, and reads it back out of
+storage on every request.** Two distinct breakages, and the second is the
+larger one.
+
+The first is page content. `webv4/pages/003-games.xjs:64` writes
+`user.security.password` into the served HTML as
+`Options.RLoginClientUsername`, because Synchronet's RLogin auto-login
+convention carries the password in the client-user-name field, compared
+against `useron.pass` at `answer.cpp:170`. So the credential is rendered into
+JavaScript source in the page, travels to the browser, and is then sent back
+through the WebSocket-to-RLogin proxy when a door is launched. The v3 web UI
+does the same thing at `web/root/members/externals.ssjs:60`, and
+`web/lib/leftnav_html.ssjs:8` builds `ftp://alias:password@host` into the left
+nav of every page it renders. `rlogin.js:86,90` is the same convention from
+the door side: `-p` sends the cleartext password, and `-h` sends
+`sha1(password + user number + firston + QWK ID + pepper)` — the hashed
+variant still has to read the cleartext to compute it, so it goes with the
+other.
+
+The second is the session. `validateSession()` (`webv4/lib/auth.js:106`)
+re-establishes a cookie-carried session by reading the stored password back
+out and passing it to `login()`; guest login (`:229`) does the same with the
+Guest account's stored password. There is no `pass.tab` under which that
+succeeds. This is not confined to the games page: **under hashing, every
+webv4 session fails on the request after the form login**, and the guest path
+fails before a user ever logs in.
+
+The fix for both is the same object the MQTT rows need, one scope down: the
+web server issues a short-lived, single-use token bound to the user number
+and the client IP, embeds *that* in the page, and the RLogin path accepts it
+in the client-user-name slot. The session record already exists —
+`data/user/%04d.web` holds a `key` — so the correction to `validateSession()`
+is to make the session itself the authenticated object rather than replaying
+a password through `login()` on every request. Both improve on today's
+behavior with or without hashing: the page stops carrying a credential that
+is reusable everywhere the user's password is.
+
 **Door dropfiles** cannot be fully solved. DOOR.SYS field 14 and its
 equivalents have a cleartext password slot, third-party doors read it, and the
 format is not ours to change. Writing an empty field is the recommendation — a
@@ -1375,6 +1417,8 @@ was never in a user's head and is never typed.
 |---|---|---|
 | MQTT broker PSK (`mqtt_broker.cpp:86`, `broker.js:2665`) | a TLS-PSK key | an issued API key |
 | qtmonitor (`settingsdialog.cpp:60`) | the same TLS-PSK key, stored off-box | the API key it was issued |
+| webv4 / web RLogin auto-login (`003-games.xjs:64`, `externals.ssjs:60`) | a bearer credential embedded in page content | a short-lived, single-use token |
+| webv4 session resume (`auth.js:106`) | a session token | an actual session token |
 | Hotline (`hotline.js:1018-1020`) | ECC and session key material | protocol-fixed; no in-band fix |
 | Door dropfiles (`xtrn_sec.cpp`) | a secret passed to arbitrary third-party code | a per-session token, or nothing |
 | IRC door `PASS` (`irc.js:94,140`) | a secret passed to an IRC server | a generated service credential |
@@ -1434,8 +1478,14 @@ HTTP-layer authentication scheme: the browser holds the credential and resends
 it on every request to the protection space, and the server has no way to tell
 it to stop. Session tokens live at the application layer and are a property of
 a different login flow — webv4's form login (`webv4/lib/auth.js`) is one, and
-it genuinely does run the KDF once per session, but that is a separate code
-path from Basic and does not rescue it.
+that is a separate code path from Basic and does not rescue it.
+
+webv4 is not the free case it looks like, though. Its form login runs the KDF
+once, but session resumption re-authenticates through `login()` on every
+request (`auth.js:106`, see "Other cleartext sinks"), so as written it costs a
+derivation per request exactly as Basic does. Making the session the
+authenticated object is what reduces it to once per session; it is a
+correctness fix under hashing and a cost fix here.
 
 The answer is **not** a weaker KDF, which would forfeit the point of the
 exercise. It is:
@@ -1614,7 +1664,11 @@ reaches a sysop, not alongside it.
 3. Settle the `pass.tab` record format, the sentinel value, and the no-password
    marker; add the shared record-length measurement helper.
 4. Add `verify_password()` / `set_password()`; convert all in-tree consumers to
-   them. Make `user.security.password` compare-only.
+   them. Make `user.security.password` compare-only. Two of those consumers are
+   not mechanical conversions and should be scheduled as their own work: webv4
+   session resumption and the RLogin auto-login token (see "Other cleartext
+   sinks"). Both must land before the storage change, since neither has a
+   compare-only form.
 5. Add the verification cache, the rate limiting, and the concurrency cap on
    paths that run a derivation (see "Cost of verification"). This must land
    **with or before** step 6; enabling an expensive KDF on a per-request
