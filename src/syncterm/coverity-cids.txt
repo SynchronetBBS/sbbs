@@ -93,5 +93,5 @@
 505471
 505472 IGNORE: false positive; every private select_theme call supplies an empty string or a value already limited to MAX_PATH for the MAX_PATH-plus-one destinations
 505473
-505474
+505474 IGNORE: intentional; removing the unreferenced certificate after the dialing-directory update fails is best-effort rollback cleanup after the failure has already been reported
 505475 IGNORE: false positive; linked-list mutexes are explicitly recursive, so the nested listShiftNode lock is valid and its unlock is balanced before the outer unlock
