@@ -1,11 +1,4 @@
-468238 IGNORE: generated libcrux intentionally passes the 200-byte Keccak state by value so final squeezing mutates a copy; the static-inline function has no correctness issue
-468240 IGNORE: generated libcrux intentionally consumes and returns the 512-byte polynomial by value as an ownership pipeline; the static-inline implementation is optimizer-visible
-468241 IGNORE: generated libcrux preserves Rust value semantics for the 512-byte polynomial serializer; its static-inline wrappers are optimizer-visible and the finding has no correctness impact
-468244 IGNORE: generated libcrux serializer reads a Rust-value polynomial through an optimizer-visible static-inline layer; duplicate performance heuristic of CID 468241 with no correctness impact
-468255 IGNORE: generated libcrux passes the computed 512-byte message polynomial by value into an optimizer-visible serializer; low-impact performance heuristic with no correctness issue
-468259 IGNORE: generated libcrux constructs the returned ML-KEM keypair from owned private/public key values; key-generation-only aggregate copies are optimizer-visible and not a correctness defect
-468261 IGNORE: generated RATE-136 specialization of CID 468238 intentionally mutates a by-value 200-byte Keccak state during final squeeze; no correctness issue
-468270 IGNORE: generated libcrux intentionally consumes, overwrites, and returns the 512-byte intermediate polynomial as an owned value; static-inline transformation has no correctness issue
+454293 IGNORE: false positive; sftp_shell_alive is declared _Atomic bool, so its reads and writes are atomic and do not require the connection-buffer mutex
 503352 IGNORE: false positive after the TX-slot termination fix; Coverity conflates successful mutex acquisition with dssh_thrd_check's mutually exclusive error path into session_set_terminate
 503354 IGNORE: false positive; session_set_terminate releases accept_mtx and channel_mtx before returning, and dssh_session_stop joins the demux thread before destroying them
 503355 IGNORE: false positive; send_to_slot and dssh_transport_disconnect do not return holding accept_mtx or channel_mtx, and exactly-once termination prevents the reported second acquisition
