@@ -695,6 +695,23 @@ void sm_io_enter(void)
     g_sdm_sent = termgfx_term_sixel_at_cursor(0);   /* the ?80l term_enter carries */
     sm_io_apply_sdm();                              /* correct it if the peer is already known */
 
+    /* Hide the client's status line (DECSSDT Ps=0), reclaiming the text row it
+     * reserves. BEFORE termgfx_term_probe below: the grid reply has to report
+     * the reclaimed height, or the fit is computed against the old page and the
+     * row goes to waste.
+     *
+     * Independent of sm_geom_fit_page()'s bottom-row reserve, which stays: that
+     * one is the sixel scroll guard, and it has to hold on terminals with no
+     * status line to reclaim. Hiding the status line just means the reserved row
+     * is no longer one the picture wanted.
+     *
+     * The prefixed DECRQSS asks what the status line was set to first;
+     * syncmoo1_input.c captures the reply so sm_io_leave() can put it back.
+     * Ignored by a terminal with no status line or no DECSSDT -- which includes
+     * every released SyncTERM, cterm having gained it (9019e4bcba,
+     * buys-6-curve, 2026-04-20) after the last tag. */
+    sm_out_puts(termgfx_term_status_off);
+
     /* Audio: create the manager and probe before any sample is registered.
      * The reply lands ~50 ms later; sm_audio_pump() drains the pending Stores
      * when it does. Cache prefix "moo1" -> client-cache names moo1/sfx/s_... */
@@ -745,6 +762,19 @@ void sm_io_leave(void)
         return;   /* capture mode: no terminal on the other end */
 
     sm_out_puts("\x1b[?1003l\x1b[?1006l\x1b[?1016l");   /* mouse tracking off */
+    {
+        /* Put the status line back the way we found it -- the BBS lent us this
+         * terminal. When no DECRQSS reply ever came (a terminal with no
+         * DECSSDT), fall back to 1 = indicator, SyncTERM's own default, rather
+         * than leaving it hidden. */
+        char   sb[8];
+        size_t sn = termgfx_term_status_set(sb, sizeof sb,
+                                            sm_input_status_type() >= 0
+                                            ? sm_input_status_type() : 1);
+
+        if (sn > 0)
+            sm_out_put(sb, sn);
+    }
     sm_out_puts(termgfx_term_leave);                    /* restore ?1070h/?7h/?25h for the BBS */
     sm_io_drain_blocking(SM_LEAVE_DRAIN_MS);             /* bounded: never hang the exit path */
 }

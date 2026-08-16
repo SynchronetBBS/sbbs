@@ -27,6 +27,12 @@ Examples:
     # are converted to terminal cells for you):
     tools/fakterm.py 80 25 --click-game 160 159 --click-game 96 137
 
+    # Model a default SyncTERM (status line up, so the grid is 24 rows until
+    # the door hides it) and watch the DECSSDT hide/restore on the wire.  The
+    # "-- -t6" gives the door a time limit so it exits through its own atexit
+    # path -- a SIGKILL teardown would never emit the restore:
+    tools/fakterm.py 80 25 --status-line --seconds 10 -- -t6
+
 Options:
   --seconds N       total wall-clock time to drive the door (default 12.0;
                      the intro + first main-menu present take a few seconds)
@@ -131,7 +137,10 @@ import sixdecode
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_EXE = os.path.join(HERE, "..", "build", "syncmoo1")
-DEFAULT_LBX = os.path.join(HERE, "..", "..", "..", "xtrn", "syncmoo1")
+# tools/ -> syncmoo1 -> doors -> src -> the repo root, whose xtrn/syncmoo1 is the
+# in-tree door bundle deploy.js targets. Four levels, not three: three lands on
+# src/xtrn, which does not exist, and --lbx then fails before the door is spawned.
+DEFAULT_LBX = os.path.join(HERE, "..", "..", "..", "..", "xtrn", "syncmoo1")
 
 # --- probe replies -----------------------------------------------------------
 # See syncmoo1_input.c's sm_input_pump() CSI/APC switch for what each of
@@ -144,6 +153,22 @@ AUDIO_DIGITAL_REPLY = "\x1b[=7;100;1n"   # Q;libsndfile reply: digital tier (1)
 JXL_QUERY = b"\x1b_SyncTERM:Q;JXL\x1b\\"
 AUDIO_QUERY = b"SyncTERM:Q;libsndfile"   # substring match; it's inside an APC
 
+# --- DECSSDT status line (VT320) --------------------------------------------
+# A terminal showing a status line reserves its BOTTOM text row for it, so the
+# grid it reports to an ESC[6n is one row short of its real height. That is
+# SyncTERM's default, and it is why sm_io_enter() sends DECSSDT Ps=0 to hide it
+# before probing. Modelling it here is the only way to see the door's fit change
+# on the wire: without it the harness reports the full height either way, and a
+# door that never sent the hide looks identical to one that did.
+#
+# STATUS_RQSS is the DECRQSS query termgfx_term_status_off is prefixed with;
+# STATUS_SET matches the DECSSDT set that follows it (and any later one). Note
+# the query is a DCS (ESC P ... $ ~ ESC \) while the set is a CSI (ESC [ Ps $ ~)
+# -- the STATUS_SET pattern is anchored on "ESC [" so it cannot match inside the
+# query's own "$~".
+STATUS_RQSS = b"\x1bP$q$~\x1b\\"
+STATUS_SET = re.compile(rb"\x1b\[(\d*)\$~")
+
 
 class FakeTerm:
     """The pty side of the fake SyncTERM: owns the child process, answers
@@ -152,7 +177,7 @@ class FakeTerm:
     no reader thread, so there is no race between "have we answered the
     first ESC[6n yet" and "is the main loop about to send a click"."""
 
-    def __init__(self, cols, rows):
+    def __init__(self, cols, rows, status_line=False, decssdt=True):
         self.cols = cols
         self.rows = rows
         self.buf = bytearray()
@@ -161,6 +186,24 @@ class FakeTerm:
         self._first_dsr = True
         self._tail = bytearray()   # last few bytes scanned, so a probe split
                                     # across two reads is still recognized
+        # DECSSDT: 1 = indicator (SyncTERM's default, a row consumed), 0 = none.
+        # status_log records every query/set in order, so a caller can assert
+        # both that the door HID the status line and that it restored the type
+        # it found -- the two halves of the borrowed-terminal contract.
+        self.status_type = 1 if status_line else 0
+        # decssdt=False models a terminal that does not implement DECSSDT at all
+        # -- every RELEASED SyncTERM, since cterm gained it after the last tag.
+        # It neither answers the query nor acts on the set, so the door keeps the
+        # smaller grid and falls back to a guessed type on the way out. That is
+        # the majority case in the field, and the one where this has to be
+        # harmless rather than helpful.
+        self.decssdt = decssdt
+        self.status_log = []
+
+    def usable_rows(self):
+        """The grid height this terminal reports: one row short while a status
+        line is up, since that row is not the page's."""
+        return self.rows - (1 if self.status_type != 0 else 0)
 
     def spawn(self, exe, argv, env, cwd):
         pid, fd = pty.fork()
@@ -189,19 +232,46 @@ class FakeTerm:
             i_da1 = t.find(b"\x1b[c")
             i_jxl = t.find(JXL_QUERY)
             i_audio = t.find(AUDIO_QUERY)
+            i_rqss = t.find(STATUS_RQSS)
+            m_sssdt = STATUS_SET.search(t)
+            i_sssdt = m_sssdt.start() if m_sssdt else -1
             candidates = [(i, k) for i, k in
                           ((i_dsr, "dsr"), (i_ctda, "ctda"), (i_da1, "da1"),
-                           (i_jxl, "jxl"), (i_audio, "audio")) if i >= 0]
+                           (i_jxl, "jxl"), (i_audio, "audio"),
+                           (i_rqss, "rqss"), (i_sssdt, "decssdt")) if i >= 0]
             if not candidates:
                 break
             i, kind = min(candidates)
             if kind == "dsr":
                 if self._first_dsr:
                     self._first_dsr = False
-                    self._write("\x1b[%d;%dR" % (self.rows, self.cols))   # grid probe reply
+                    # The grid probe: report what the page actually is RIGHT NOW.
+                    # A door that hid the status line first gets the full height;
+                    # one that didn't gets a row less, and fits its image into it.
+                    self._write("\x1b[%d;%dR" % (self.usable_rows(), self.cols))
                 else:
                     self._write("\x1b[1;1R")                              # pace ack
                 del t[:i + 4]
+            elif kind == "rqss":
+                # DECRQSS reply: DCS 1 $ r <Ps> $ ~ ST. Reports the CURRENT type,
+                # which is what the door captures to restore on the way out --
+                # so answer before any set in the same burst is applied (the
+                # min() above guarantees that ordering, since term_status_off
+                # emits the query first).
+                if self.decssdt:
+                    self._write("\x1bP1$r%d$~\x1b\\" % self.status_type)
+                    self.status_log.append(("query", self.status_type))
+                else:
+                    self.status_log.append(("query-ignored", self.status_type))
+                del t[:i + len(STATUS_RQSS)]
+            elif kind == "decssdt":
+                ps = int(m_sssdt.group(1) or 0)
+                if self.decssdt:
+                    self.status_type = ps
+                    self.status_log.append(("set", ps))
+                else:
+                    self.status_log.append(("set-ignored", ps))
+                del t[:m_sssdt.end()]
             elif kind == "ctda":
                 self._write(CTDA_REPLY)
                 del t[:i + 4]
@@ -354,6 +424,18 @@ def parse_args(argv):
                    metavar="GAMESEED")
     p.add_argument("--skipintro", action="store_true")
     p.add_argument("--savequit", action="store_true")
+    p.add_argument("--status-line", action="store_true", dest="status_line",
+                    help="start with a DECSSDT status line up (type 1), the way "
+                         "a default SyncTERM does: the reported grid is ROWS-1 "
+                         "until the door hides it. Off by default, so the "
+                         "examples above keep meaning 'a terminal with ROWS "
+                         "usable rows'.")
+    p.add_argument("--no-decssdt", action="store_false", dest="decssdt",
+                    help="model a terminal with no DECSSDT support at all (a "
+                         "released SyncTERM): the status-line query goes "
+                         "unanswered and the hide is ignored, so the grid stays "
+                         "ROWS-1. Use with --status-line to check that hiding "
+                         "it is harmless where it cannot work.")
     ns = p.parse_args(argv)
     ns.engine_args = engine_args
     return ns
@@ -390,7 +472,8 @@ def main():
         argv.append("-savequit")
     argv += ns.engine_args
 
-    term = FakeTerm(ns.cols, ns.rows)
+    term = FakeTerm(ns.cols, ns.rows, status_line=ns.status_line,
+                    decssdt=ns.decssdt)
     term.spawn(exe, argv, env, cwd=launch_dir)
 
     term.drain_for(3.0)   # let term_enter + probes + the first present settle
@@ -418,6 +501,16 @@ def main():
 
     print("door still running at teardown: %s" % still_alive, file=sys.stderr)
     print("bytes captured: %d" % len(data), file=sys.stderr)
+    # The DECSSDT trace: what the door asked, what it set, and where the status
+    # line ended up. A clean session reads query=<pre-door type>, set 0 (hide),
+    # set <pre-door type> (restore) -- but only if the door was allowed to run
+    # its exit path. This tool's default teardown is SIGKILL, which no atexit
+    # handler survives, so use --savequit or a "-- -t<seconds>" door time limit
+    # when the restore is what you are checking.
+    print("status line: type %d at teardown; trace %s"
+          % (term.status_type,
+             ", ".join("%s %d" % ev for ev in term.status_log) or "(none)"),
+          file=sys.stderr)
 
     frame_count = sum(1 for _ in sixdecode.iter_sixel_frames(data))
     print("sixel frames: %d" % frame_count, file=sys.stderr)

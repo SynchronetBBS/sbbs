@@ -162,6 +162,11 @@ void sm_io_note_syncterm(void);   /* re-fit: the ID lands after the geometry pro
 int sm_input_probe_replied(void);    /* 1 once the terminal answered device-attributes */
 int sm_input_jxl(void);              /* 1 if the terminal advertised the JXL tier */
 int sm_input_jxl_answered(void);
+/* The status-line type the terminal reported BEFORE sm_io_enter() hid it: the
+ * DECSSDT Ps from the DECRQSS reply that termgfx_term_status_off's prefix
+ * provokes, or -1 if no reply ever came (a terminal with no DECSSDT). Read by
+ * sm_io_leave() to restore the player's own setting instead of guessing. */
+int sm_input_status_type(void);
 void sm_input_vscale_arm(void);      /* arm the sixel vertical-scaling probe's CPR collector */
 int  sm_input_vscale_done(void);     /* 1 once the probe has answered */
 int  sm_input_sixel_vscale(void);    /* 1 if the terminal honors the sixel raster pan (vertical scale) */

@@ -41,6 +41,7 @@
 #include "syncmoo1_input.h"
 
 #include <stdint.h>
+#include <string.h>   /* memcpy/memmove: the split-read window under the DECRQSS scan */
 
 #include "syncmoo1_plat.h"   /* clock + non-blocking descriptor I/O */
 
@@ -48,6 +49,7 @@
 #include "mouse.h"  /* 1oom: mouse_set_xy_from_hw/set_buttons_from_hw/set_scroll_from_hw, MOUSE_BUTTON_MASK_* */
 
 #include "caps.h"      /* termgfx: termgfx_caps_parse_jxl */
+#include "term.h"      /* termgfx: termgfx_term_parse_status (DECSSDT reply scan) */
 #include "sgrmouse.h" /* termgfx: termgfx_sgr_classify (SGR button-field decode) */
 #include "audio_mgr.h" /* termgfx: termgfx_audio_feed */
 
@@ -188,6 +190,7 @@ static int g_is_syncterm;
 static int g_have_sixel;
 static int g_jxl_supported;
 static int g_jxl_answered;   /* the Q;JXL query came back, either way */
+static int g_status_type = -1;   /* pre-door DECSSDT status-line type (DECRQSS reply); -1 = not captured / unsupported */
 
 /* Did the terminal identify itself as SyncTERM (CTDA '<'/'=' marker, or a CTerm
  * state report)? Read by syncmoo1_io.c's present path to decide whether the
@@ -263,6 +266,11 @@ int sm_input_jxl(void)
 int sm_input_jxl_answered(void)
 {
     return g_jxl_answered;
+}
+
+int sm_input_status_type(void)
+{
+    return g_status_type;
 }
 
 
@@ -413,6 +421,40 @@ int sm_input_pump(int sockfd)
                 termgfx_audio_t *am = sm_io_audio();
                 if (am != NULL)
                     termgfx_audio_feed(am, buf, n);
+            }
+            /* The DECRQSS reply to the status-line query sm_io_enter() sent,
+             * captured for sm_io_leave()'s restore.
+             *
+             * A raw-byte scan ahead of the state machine below, which swallows
+             * the DCS this reply arrives in (SM_P_APC -- deliberately, so a
+             * reply's payload never types letters into the game). The rolling
+             * window bridges a reply split across two reads: over a BBS link a
+             * 10-byte DCS can easily arrive in two packets, and a scan of each
+             * read alone would then never match. Same shape as
+             * syncretro_input.c and syncduke_input.c. */
+            if (g_status_type < 0) {
+                static uint8_t sacc[32];
+                static int     sacclen;
+                int            r = termgfx_term_parse_status(buf, n);
+
+                if (r < 0) {
+                    if (n >= (int)sizeof sacc) {
+                        memcpy(sacc, buf + (n - (int)sizeof sacc), sizeof sacc);
+                        sacclen = (int)sizeof sacc;
+                    } else {
+                        int keep = (int)sizeof sacc - n;
+
+                        if (sacclen > keep) {
+                            memmove(sacc, sacc + (sacclen - keep), keep);
+                            sacclen = keep;
+                        }
+                        memcpy(sacc + sacclen, buf, n);
+                        sacclen += n;
+                    }
+                    r = termgfx_term_parse_status(sacc, sacclen);
+                }
+                if (r >= 0)
+                    g_status_type = r;
             }
         }
         if (n < 0) {

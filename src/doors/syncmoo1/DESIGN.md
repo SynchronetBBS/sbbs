@@ -188,8 +188,10 @@ motion should repaint; idle still de-dupes to zero).
 ## 9. Terminal setup / probing / teardown
 
 - **Enter** (once, on first present): `termgfx_term_enter` (clear/home, hide
-  cursor, no-autowrap, DECSDM `?80l`), optional DECSSDT status-line hide to
-  reclaim the bottom row for a true 640×400, then the probe burst:
+  cursor, no-autowrap, DECSDM `?80l`), the DECSSDT status-line hide
+  (`termgfx_term_status_off`) to reclaim the text row a client's status line
+  reserves — before the probe, so the grid reply reports the reclaimed height —
+  then the probe burst:
   `termgfx_term_probe` (`ESC[14t`/`[16t` canvas + cursor-extreme/DSR fallback),
   `ESC[c` + `ESC[<c` (DA1 + SyncTERM CTDA → sixel/SyncTERM/evdev detect),
   `termgfx_query_jxl`, kitty `ESC[?u`, mouse `?1003h`/`?1006h`/`?1016h`+DECRQM,
@@ -198,9 +200,11 @@ motion should repaint; idle still de-dupes to zero).
   auto-selected tier is right immediately (never blast sixel at a text-only
   client).
 - **Teardown** via `atexit`: stop audio, drain the staged flush, disable
-  mouse/kitty/evdev/sixel-scroll modes, `termgfx_term_leave` (restore
-  `?80h`/`?7h`/`?25h`). A hangup uses `_exit()` (dead socket, skip atexit); a
-  clean quit runs the restore with blocking writes so it isn't dropped.
+  mouse/kitty/evdev/sixel-scroll modes, restore the status line to the type the
+  DECRQSS reply reported at entry (indicator when nothing answered — never left
+  hidden), `termgfx_term_leave` (restore `?80h`/`?7h`/`?25h`). A hangup uses
+  `_exit()` (dead socket, skip atexit); a clean quit runs the restore with
+  blocking writes so it isn't dropped.
 
 ## 10. Tiers
 
