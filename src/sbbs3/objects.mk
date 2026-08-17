@@ -101,6 +101,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/sftp$(OFILE)\
 			$(MTOBJODIR)/sockopts$(OFILE)\
 			$(MTOBJODIR)/str$(OFILE)\
+			$(MTOBJODIR)/systotals$(OFILE)\
 			$(MTOBJODIR)/telgate$(OFILE)\
 			$(MTOBJODIR)/telnet$(OFILE)\
 			$(MTOBJODIR)/terminal$(OFILE)\

@@ -45,10 +45,15 @@ DLLEXPORT uint      getposts(scfg_t*, int subnum);
 DLLEXPORT uint      getnewposts(scfg_t*, int subnum, uint32_t ptr);
 DLLEXPORT uint      getfiles(scfg_t*, int dirnum);
 DLLEXPORT uint      getnewfiles(scfg_t*, int dirnum, time_t ptr);
+/* Implemented in systotals.c, which only the BBS links: */
 DLLEXPORT uint64_t  total_msgs(scfg_t*);
 DLLEXPORT uint64_t  total_files(scfg_t*);
+/* Implemented in getstats.c, so that the mutating code paths compiled into
+   the stand-alone utilities can call them: */
 DLLEXPORT void      invalidate_msg_total(void);
 DLLEXPORT void      invalidate_file_total(void);
+DLLEXPORT bool      msg_total_invalidated(void);    /* tests and clears */
+DLLEXPORT bool      file_total_invalidated(void);   /* tests and clears */
 DLLEXPORT void      rolloverstats(stats_t*);
 DLLEXPORT bool      inc_post_stats(scfg_t*, uint count);
 DLLEXPORT bool      inc_email_stats(scfg_t*, uint count, bool feedback);

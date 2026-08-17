@@ -26,7 +26,6 @@
 #include "datewrap.h"
 #include "xpendian.h"
 #include "xpdatetime.h"
-#include "threadwrap.h"
 #include "scfglib.h"
 
 // dsts.ini (Daily Statistics) keys:
@@ -362,147 +361,48 @@ uint getfiles(scfg_t* cfg, int dirnum)
 }
 
 /****************************************************************************/
-/* System-wide message and file totals.                                     */
+/* Invalidation flags for the system-wide message and file totals.          */
 /*                                                                          */
-/* Neither total can be maintained as a counter: messages and files enter    */
-/* and leave the bases through too many independent paths (JS, smbutil, the  */
-/* terminal server, FTP, mail, services, web) for an incremented count to    */
-/* stay true. They can only be obtained by enumerating every base, which is  */
-/* one file operation per sub-board or directory - cheap locally, but on a   */
-/* network-mounted data directory each one is a round-trip that cannot be    */
-/* pipelined, so a system with thousands of bases spends seconds here.       */
+/* The totals are counted and cached in systotals.c, which is linked only    */
+/* into the BBS. These flags live here instead because the hooks that set    */
+/* them are in files the single-threaded stand-alone utilities also compile, */
+/* and those utilities do not link the xpdev thread wrappers - so nothing    */
+/* on this side may touch a mutex.                                          */
 /*                                                                          */
-/* The enumeration is therefore shared process-wide for totals_interval      */
-/* seconds rather than repeated per caller. Both values are system-wide, so  */
-/* a single cache is correct even in a process holding several scfg_t.       */
-/*                                                                          */
-/* Bases changed by this process discard the matching total immediately (see */
-/* invalidate_msg_total/invalidate_file_total), so a sysop's own post or     */
-/* upload is reflected at once rather than after the interval.               */
+/* A plain store is sufficient. Setting only ever requests a re-count, and a */
+/* request lost to a race costs at most totals_interval seconds of currency, */
+/* never accuracy - the same guarantee that already applies to a base        */
+/* changed by some other process entirely.                                   */
 /****************************************************************************/
-struct cached_total {
-	time_t   last;
-	uint64_t value;
-};
-
-static struct cached_total cached_msgs;
-static struct cached_total cached_files;
-
-/* This file is also linked into the stand-alone utilities, which are single-
-   threaded and do not link the xpdev thread wrappers, so the serialization
-   only exists where XPDEV_THREAD_SAFE says those wrappers are available. */
-#ifdef XPDEV_THREAD_SAFE
-
-static pthread_mutex_t totals_mutex;
-static pthread_once_t  totals_once = PTHREAD_ONCE_INIT;
-
-static void init_totals_mutex(void)
-{
-	pthread_mutex_init(&totals_mutex, NULL);
-}
-
-static void lock_totals(void)
-{
-	pthread_once(&totals_once, init_totals_mutex);
-	pthread_mutex_lock(&totals_mutex);
-}
-
-static void unlock_totals(void)
-{
-	pthread_mutex_unlock(&totals_mutex);
-}
-
-#else
-
-static void lock_totals(void)
-{
-}
-
-static void unlock_totals(void)
-{
-}
-
-#endif
-
-static uint64_t sum_posts(scfg_t* cfg)
-{
-	uint64_t total = 0;
-
-	for (int i = 0; i < cfg->total_subs; i++)
-		total += getposts(cfg, i);
-	return total;
-}
-
-static uint64_t sum_files(scfg_t* cfg)
-{
-	uint64_t total = 0;
-
-	for (int i = 0; i < cfg->total_dirs; i++)
-		total += getfiles(cfg, i);
-	return total;
-}
-
-static uint64_t get_cached_total(scfg_t* cfg, struct cached_total* cache, uint64_t (*sum)(scfg_t*))
-{
-	uint64_t result;
-	time_t   now;
-
-	if (cfg->totals_interval == 0)
-		return sum(cfg);
-
-	lock_totals();
-	now = time(NULL);
-	/* Held across the enumeration deliberately: concurrent callers finding
-	   the cache stale should wait for one scan rather than each run their
-	   own. */
-	if (cache->last == 0 || difftime(now, cache->last) >= cfg->totals_interval) {
-		cache->value = sum(cfg);
-		cache->last = now;
-	}
-	result = cache->value;
-	unlock_totals();
-	return result;
-}
-
-uint64_t total_msgs(scfg_t* cfg)
-{
-	if (cfg == NULL)
-		return 0;
-	return get_cached_total(cfg, &cached_msgs, sum_posts);
-}
-
-uint64_t total_files(scfg_t* cfg)
-{
-	if (cfg == NULL)
-		return 0;
-	return get_cached_total(cfg, &cached_files, sum_files);
-}
-
-/****************************************************************************/
-/* Discard a cached total so that the next request counts the bases again.	*/
-/*                                                                          */
-/* A base changed by some other process (smbutil, another node, another		*/
-/* host) is not noticed until the interval expires. That is a staleness		*/
-/* window, not an inaccuracy: invalidation only ever discards a value, it	*/
-/* never adjusts one, so a change these hooks miss costs at most			    */
-/* totals_interval seconds of currency - which is why the totals can be		*/
-/* invalidated on change even though they cannot be maintained as counters.	*/
-/****************************************************************************/
-static void invalidate_total(struct cached_total* cache)
-{
-	lock_totals();
-	cache->last = 0;
-	unlock_totals();
-}
+static volatile bool msg_total_stale;
+static volatile bool file_total_stale;
 
 void invalidate_msg_total(void)
 {
-	invalidate_total(&cached_msgs);
+	msg_total_stale = true;
 }
 
 void invalidate_file_total(void)
 {
-	invalidate_total(&cached_files);
+	file_total_stale = true;
+}
+
+/* The following two test and clear, so that the caller takes responsibility */
+/* for the re-count it is being told to perform.                            */
+bool msg_total_invalidated(void)
+{
+	bool result = msg_total_stale;
+
+	msg_total_stale = false;
+	return result;
+}
+
+bool file_total_invalidated(void)
+{
+	bool result = file_total_stale;
+
+	file_total_stale = false;
+	return result;
 }
 
 /****************************************************************************/
