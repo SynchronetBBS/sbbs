@@ -22,6 +22,7 @@ load("sockdefs.js");
 load("sbbsdefs.js");
 load("ftelnethelper.js");
 load("sha1.js");
+load("ws_sidecar.js");
 
 // State flags
 var WEBSOCKET_NEED_PACKET_START   = 0;
@@ -144,7 +145,13 @@ try {
                 // making this write conditional or asynchronous, would break
                 // that guarantee silently -- no test fails, nothing logs,
                 // relayed connections just start looking direct.
-                ipFile = new File(system.temp_dir + 'sbbs-ws-' + FServerSocket.local_port + '.ip');
+                // The LOCAL end of the socket just opened to the service:
+                // that is exactly the remote end the service sees, so the
+                // two derive the same name with nothing passed between
+                // them. See ws_sidecar.js for why it is that pair, and
+                // why data_dir rather than temp_dir.
+                ipFile = new File(ws_sidecar_path(FServerSocket.local_ip_address,
+                                                  FServerSocket.local_port));
                 var SidecarWritten = false;
                 if (ipFile.open('w')) {
                     SidecarWritten = ipFile.write(client.ip_address + '\r\n' + WebUser + '\r\n');
