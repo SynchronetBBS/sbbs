@@ -385,15 +385,44 @@ struct cached_total {
 	uint64_t value;
 };
 
-static pthread_mutex_t     totals_mutex;
-static pthread_once_t      totals_once = PTHREAD_ONCE_INIT;
 static struct cached_total cached_msgs;
 static struct cached_total cached_files;
+
+/* This file is also linked into the stand-alone utilities, which are single-
+   threaded and do not link the xpdev thread wrappers, so the serialization
+   only exists where XPDEV_THREAD_SAFE says those wrappers are available. */
+#ifdef XPDEV_THREAD_SAFE
+
+static pthread_mutex_t totals_mutex;
+static pthread_once_t  totals_once = PTHREAD_ONCE_INIT;
 
 static void init_totals_mutex(void)
 {
 	pthread_mutex_init(&totals_mutex, NULL);
 }
+
+static void lock_totals(void)
+{
+	pthread_once(&totals_once, init_totals_mutex);
+	pthread_mutex_lock(&totals_mutex);
+}
+
+static void unlock_totals(void)
+{
+	pthread_mutex_unlock(&totals_mutex);
+}
+
+#else
+
+static void lock_totals(void)
+{
+}
+
+static void unlock_totals(void)
+{
+}
+
+#endif
 
 static uint64_t sum_posts(scfg_t* cfg)
 {
@@ -421,8 +450,7 @@ static uint64_t get_cached_total(scfg_t* cfg, struct cached_total* cache, uint64
 	if (cfg->totals_interval == 0)
 		return sum(cfg);
 
-	pthread_once(&totals_once, init_totals_mutex);
-	pthread_mutex_lock(&totals_mutex);
+	lock_totals();
 	now = time(NULL);
 	/* Held across the enumeration deliberately: concurrent callers finding
 	   the cache stale should wait for one scan rather than each run their
@@ -432,7 +460,7 @@ static uint64_t get_cached_total(scfg_t* cfg, struct cached_total* cache, uint64
 		cache->last = now;
 	}
 	result = cache->value;
-	pthread_mutex_unlock(&totals_mutex);
+	unlock_totals();
 	return result;
 }
 
@@ -462,10 +490,9 @@ uint64_t total_files(scfg_t* cfg)
 /****************************************************************************/
 static void invalidate_total(struct cached_total* cache)
 {
-	pthread_once(&totals_once, init_totals_mutex);
-	pthread_mutex_lock(&totals_mutex);
+	lock_totals();
 	cache->last = 0;
-	pthread_mutex_unlock(&totals_mutex);
+	unlock_totals();
 }
 
 void invalidate_msg_total(void)
