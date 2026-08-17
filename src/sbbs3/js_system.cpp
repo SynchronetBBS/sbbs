@@ -671,8 +671,7 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval                idval;
 	jsint                tiny;
-	int                  i;
-	ulong                l;
+	uint64_t             l;
 	jsrefcount           rc;
 
 	js_system_private_t* sys;
@@ -739,18 +738,14 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case SYSSTAT_PROP_TOTALMSGS:
-			l = 0;
 			rc = JS_SUSPENDREQUEST(cx);
-			for (i = 0; i < cfg->total_subs; i++)
-				l += getposts(cfg, i);
+			l = total_msgs(cfg);
 			JS_RESUMEREQUEST(cx, rc);
 			*vp = DOUBLE_TO_JSVAL((double)l);
 			break;
 		case SYSSTAT_PROP_TOTALFILES:
-			l = 0;
 			rc = JS_SUSPENDREQUEST(cx);
-			for (i = 0; i < cfg->total_dirs; i++)
-				l += getfiles(cfg, i);
+			l = total_files(cfg);
 			JS_RESUMEREQUEST(cx, rc);
 			*vp = DOUBLE_TO_JSVAL((double)l);
 			break;

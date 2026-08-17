@@ -1001,10 +1001,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strcmp(sp, "TMSG")) {
-		l = 0;
-		for (i = 0; i < cfg.total_subs; i++)
-			l += getposts(&cfg, i);     /* l=total posts */
-		safe_snprintf(str, maxlen, "%lu", l);
+		safe_snprintf(str, maxlen, "%" PRIu64, total_msgs(&cfg));
 		return str;
 	}
 
@@ -1014,10 +1011,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strcmp(sp, "TFILE")) {
-		l = 0;
-		for (i = 0; i < cfg.total_dirs; i++)
-			l += getfiles(&cfg, i);
-		safe_snprintf(str, maxlen, "%lu", l);
+		safe_snprintf(str, maxlen, "%" PRIu64, total_files(&cfg));
 		return str;
 	}
 

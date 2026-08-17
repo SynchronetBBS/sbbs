@@ -675,6 +675,7 @@ typedef struct
 
 	uint			stats_interval;		// Statistics read interval in seconds (cache duration)
 	uint			cache_filter_files;
+	uint			totals_interval;	// Message/file re-count interval in seconds (0=disabled)
 
 	// Run-time state information (not configuration)
 

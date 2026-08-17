@@ -2945,6 +2945,8 @@ void sys_cfg(void)
 						, duration_to_vstr(cfg.stats_interval, str, sizeof str));
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Cache Filter Files"
 						, cfg.cache_filter_files > 0 ? duration_to_vstr(cfg.cache_filter_files, str, sizeof str) : strDisabled);
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Message/File Total Interval"
+						, cfg.totals_interval > 0 ? duration_to_vstr(cfg.totals_interval, str, sizeof str) : strDisabled);
 					opt[i][0] = 0;
 					uifc.helpbuf =
 						"`System Advanced Options:`\n"
@@ -3412,6 +3414,44 @@ void sys_cfg(void)
 							           , "Filter File Cache Duration"
 							           , str, 10, K_UPPER | K_EDIT);
 							cfg.cache_filter_files = (uint)parse_duration(str);
+							break;
+						case 23:
+							uifc.helpbuf =
+								"`Message/File Total Interval:`\n"
+								"\n"
+								"The total number of messages and files on the system (displayed by\n"
+								"the web interface and the `@`-codes of the same names) cannot be kept\n"
+								"as a running count: messages and files are added and removed by too\n"
+								"many independent paths for such a count to stay accurate.  They are\n"
+								"instead obtained by examining every message base and file directory,\n"
+								"one file operation each.\n"
+								"\n"
+								"This value determines how long those two totals are re-used before\n"
+								"being counted again.  On a system with many sub-boards or directories\n"
+								"- particularly one whose data directory is on a network share, where\n"
+								"each check is a separate round-trip - counting them for every request\n"
+								"can take seconds, so a longer interval here can make a dramatic\n"
+								"difference to web page load times.\n"
+								"\n"
+								"Posts and file additions or removals made by this instance discard\n"
+								"the affected total immediately, so your own changes are reflected\n"
+								"right away regardless of this setting.  Only changes made by another\n"
+								"program (e.g. `smbutil`) or another BBS sharing this data directory\n"
+								"wait for the interval to expire.\n"
+								"\n"
+								"A lower value means more current totals, but more disk I/O.\n"
+								"A higher value means less current totals, but less disk I/O.\n"
+								"\n"
+								"Setting this value to `0` disables re-use entirely, counting the\n"
+								"totals fresh for every request.\n"
+								"\n"
+								"If unsure, leave this value set to `10m`, the default.\n"
+							;
+							duration_to_str(cfg.totals_interval, str, sizeof str);
+							uifc.input(WIN_MID | WIN_SAV, 0, 0
+							           , "Message/File Total Interval"
+							           , str, 10, K_UPPER | K_EDIT);
+							cfg.totals_interval = (uint)parse_duration(str);
 							break;
 					}
 				}

@@ -1311,6 +1311,8 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		if (file.from_ip == NULL)
 			file_client_hfields(&file, client);
 		p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, auxdata, fpath);
+		if (p->smb_result == SMB_SUCCESS)
+			invalidate_file_total();
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
 	}
 	JS_RESUMEREQUEST(cx, rc);
@@ -1415,6 +1417,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 						if (readd_always)
 							file.hdr.when_imported.time = 0; // we want the file to appear as "new"
 						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, auxdata, newfname);
+						invalidate_file_total();
 					}
 					else {
 						JS_ReportError(cx, "%d removing '%s'", p->smb_result, filename);
@@ -1530,8 +1533,11 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 			JS_ReportError(cx, "%d removing '%s'", errno, path);
 			p->smb_result = SMB_ERR_DELETE;
 			result = JS_FALSE;
-		} else
+		} else {
 			p->smb_result = smb_removefile(&p->smb, &file);
+			if (p->smb_result == SMB_SUCCESS)
+				invalidate_file_total();
+		}
 		smb_freefilemem(&file);
 	}
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));

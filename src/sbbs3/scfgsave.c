@@ -207,6 +207,7 @@ bool write_main_cfg(scfg_t* cfg)
 	iniSetUInteger(&ini, ROOT_SECTION, "errlevel", cfg->errlevel, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "stats_interval", cfg->stats_interval, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "cache_filter_files", cfg->cache_filter_files, NULL);
+	iniSetUInteger(&ini, ROOT_SECTION, "totals_interval", cfg->totals_interval, NULL);
 
 	for (uint i = 0; i < cfg->sys_nodes; i++) {
 		char key[128];

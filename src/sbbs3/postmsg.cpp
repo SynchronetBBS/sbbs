@@ -390,6 +390,8 @@ extern "C" void signal_sub_sem(scfg_t* cfg, int subnum)
 	if (!subnum_is_valid(cfg, subnum))
 		return;
 
+	invalidate_msg_total();
+
 	/* signal semaphore files */
 	if (cfg->sub[subnum]->misc & SUB_FIDO && cfg->echomail_sem[0])
 		ftouch(cmdstr(cfg, NULL, cfg->echomail_sem, nulstr, nulstr, str, sizeof(str)));
@@ -671,7 +673,10 @@ extern "C" int postpoll(scfg_t* cfg, smb_t* smb, smbmsg_t* msg)
 
 	add_msg_ids(cfg, smb, msg, /* remsg: */ NULL);
 
-	return smb_addpoll(smb, msg, smb_storage_mode(cfg, smb));
+	int result = smb_addpoll(smb, msg, smb_storage_mode(cfg, smb));
+	if (result == SMB_SUCCESS)
+		invalidate_msg_total();
+	return result;
 }
 
 // Send an email and a short-message to a local user about something important (e.g. a system error)

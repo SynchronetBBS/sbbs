@@ -27,6 +27,7 @@
 #include "nopen.h"
 #include "smblib.h"
 #include "load_cfg.h"   // smb_open_dir()
+#include "getstats.h"   // invalidate_file_total()
 #include "scfglib.h"
 #include "sauce.h"
 #include "crc32.h"
@@ -586,7 +587,11 @@ bool removefile(scfg_t* cfg, int dirnum, const char* filename, int* result)
 
 	*result = smb_removefile_by_name(&smb, filename);
 	smb_close(&smb);
-	return (*result) == SMB_SUCCESS;
+	if ((*result) == SMB_SUCCESS) {
+		invalidate_file_total();
+		return true;
+	}
+	return false;
 }
 
 ulong getuserxfers(scfg_t* cfg, const char* from, uint to)
@@ -765,7 +770,11 @@ bool addfile(scfg_t* cfg, file_t* f, const char* extdesc, const char* metadata, 
 		file_client_hfields(f, client);
 	*result = smb_addfile(&smb, f, SMB_SELFPACK, extdesc, metadata, fpath);
 	smb_close(&smb);
-	return (*result) == SMB_SUCCESS;
+	if ((*result) == SMB_SUCCESS) {
+		invalidate_file_total();
+		return true;
+	}
+	return false;
 }
 
 /* 'size' does not include the NUL-terminator */

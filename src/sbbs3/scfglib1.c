@@ -210,6 +210,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->errlevel = (uchar)iniGetUInteger(ini, ROOT_SECTION, "errlevel", LOG_CRIT);
 	cfg->stats_interval = iniGetUInteger(ini, ROOT_SECTION, "stats_interval", 5);
 	cfg->cache_filter_files = iniGetUInteger(ini, ROOT_SECTION, "cache_filter_files", 5);
+	cfg->totals_interval = iniGetUInteger(ini, ROOT_SECTION, "totals_interval", 600);
 
 	// fixed events
 	cfg->sys_newuser = read_fixed_event(cfg, ini, "newuser");
