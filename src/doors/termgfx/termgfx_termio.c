@@ -957,6 +957,12 @@ static int resolve_fd(int argc, char **argv)
 	termgfx_plat_sock_setup(g_fd);
 	if (g_fd_in != g_fd)
 		termgfx_plat_sock_setup(g_fd_in);
+
+	/* A stdio/tty door reads a terminal, not a socket, and a terminal arrives
+	 * cooked unless something raws it: keystrokes held back until Enter, echoed
+	 * over the frame, and Ctrl-C killing the door instead of reaching it as the
+	 * quit key. No-op on the socket path (termgfx_plat_tty_raw). */
+	termgfx_plat_tty_raw(g_fd_in);
 	return 1;
 }
 
@@ -1938,6 +1944,10 @@ void termgfx_termio_shutdown(void)
 		fclose(g_trace);
 		g_trace = NULL;
 	}
+	/* After the terminal-restore sequences above: those are ours to write while
+	 * we still own the terminal, and putting the line discipline back is the
+	 * last thing before the BBS prompt gets it. */
+	termgfx_plat_tty_restore();
 	g_active = 0;
 }
 

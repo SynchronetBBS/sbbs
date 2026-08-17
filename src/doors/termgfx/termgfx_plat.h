@@ -70,6 +70,24 @@ int termgfx_plat_sock_setup(int fd);
 int termgfx_plat_write(int fd, const void *buf, size_t len);
 int termgfx_plat_read(int fd, void *buf, size_t len);
 
+/* Put a terminal into the raw mode a game door needs: no line buffering, no
+ * echo, no signal keys, and no CR/LF or flow-control translation on input --
+ * so a keystroke arrives as a byte the moment it is typed, Ctrl-C is a key
+ * rather than a kill, and Enter is not rewritten. Returns 1 if applied, 0 if
+ * the descriptor is not a terminal (a socket door -- the BBS has already done
+ * this on its side) or on Windows, -1 if the terminal rejected it.
+ *
+ * A door whose stdio a BBS redirected gets a pty, so this is the door's own
+ * business on every host: some BBSes raw the pty before exec'ing the door and
+ * some leave it cooked, and a door that assumes either one is broken on the
+ * other. Call it once the descriptor is known; safe to call with a socket.
+ *
+ * termgfx_plat_tty_restore() puts the saved settings back. It is idempotent,
+ * and is also registered with atexit() by the raw call, so a door that exits
+ * without an orderly shutdown still hands the terminal back as it found it. */
+int termgfx_plat_tty_raw(int fd);
+void termgfx_plat_tty_restore(void);
+
 /* Thin cross-platform wrappers for the handful of remaining POSIX calls the
  * door makes outside the hot path (dev/diagnostic code): isatty, F_OK-style
  * existence test, and the pid used to name a per-process trace/wirecap dump. */

@@ -32,6 +32,8 @@
 #else
   #include <fcntl.h>    /* fcntl, O_NONBLOCK */
   #include <signal.h>   /* signal, SIGPIPE */
+  #include <stdlib.h>   /* atexit */
+  #include <termios.h>  /* tcgetattr, tcsetattr */
   #include <unistd.h>   /* read, write, isatty, getpid */
 #endif
 
@@ -164,6 +166,56 @@ int termgfx_plat_read(int fd, void *buf, size_t len)
 	n = (int)read(fd, buf, len);
 #endif
 	return (n >= 0) ? n : termgfx_plat_classify();
+}
+
+/* --- terminal line discipline ---------------------------------------------- */
+
+#ifndef _WIN32
+static struct termios s_tty_saved;
+static int            s_tty_fd = -1;
+
+static void tty_restore_atexit(void)
+{
+	termgfx_plat_tty_restore();
+}
+#endif
+
+int termgfx_plat_tty_raw(int fd)
+{
+#ifdef _WIN32
+	(void)fd;
+	return 0;
+#else
+	struct termios t;
+
+	if (fd < 0 || s_tty_fd >= 0 || tcgetattr(fd, &t) != 0)
+		return 0;                 /* a socket door, or raw already */
+	s_tty_saved = t;
+	t.c_lflag &= ~(ICANON | ECHO | ISIG);
+	t.c_iflag &= ~(ICRNL | INLCR | IXON);
+	/* VMIN must stay 1: with VMIN=0 a tty read() returns 0 when nothing is
+	 * pending -- the kernel takes that path before it consults O_NONBLOCK, so
+	 * not EAGAIN -- and a caller cannot tell that apart from the EOF that means
+	 * the client dropped. O_NONBLOCK on the descriptor is what makes the read
+	 * non-blocking; VMIN plays no part in it. */
+	t.c_cc[VMIN]  = 1;
+	t.c_cc[VTIME] = 0;
+	if (tcsetattr(fd, TCSANOW, &t) != 0)
+		return -1;
+	s_tty_fd = fd;
+	atexit(tty_restore_atexit);
+	return 1;
+#endif
+}
+
+void termgfx_plat_tty_restore(void)
+{
+#ifndef _WIN32
+	if (s_tty_fd >= 0) {
+		tcsetattr(s_tty_fd, TCSANOW, &s_tty_saved);
+		s_tty_fd = -1;
+	}
+#endif
 }
 
 /* --- misc dev/diagnostic wrappers ------------------------------------------ */

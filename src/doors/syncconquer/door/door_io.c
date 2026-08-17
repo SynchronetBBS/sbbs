@@ -82,6 +82,7 @@
 #include "door32.h"      /* termgfx: the shared DOOR32.SYS parser */
 #include "sbbs_node.h"   /* Task 5: sbbs_my_node() for the per-node log filename */
 #include "keymode.h"   /* termgfx: key-mode negotiation (shared with door_input.c) */
+#include "termgfx_plat.h"  /* termgfx: termgfx_plat_tty_raw() -- the tty line discipline */
 #include "idle.h"      /* termgfx: the shared idle-USER clock */
 #include "../../termgfx/mouse.h"   /* termgfx: shared SGR-Pixels mouse handshake/latch
                                     * (Task 1) -- a QUALIFIED path, not a bare "mouse.h",
@@ -1570,6 +1571,13 @@ static void door_io_init(void)
 			fcntl(g_fd, F_SETFL, fl | O_NONBLOCK);
 		if (g_fd_in != g_fd && (fl = fcntl(g_fd_in, F_GETFL, 0)) != -1)
 			fcntl(g_fd_in, F_SETFL, fl | O_NONBLOCK);
+		/* And the line discipline on the read side: a terminal arrives COOKED
+		 * unless something raws it, so keystrokes are held back until Enter,
+		 * echoed over the frame, and Ctrl-C kills the door instead of reaching
+		 * it. Some BBSes raw the pty before exec and some do not, so the door
+		 * cannot assume either. A no-op on a socket door; undone by the
+		 * atexit() it registers. */
+		(void)termgfx_plat_tty_raw(g_fd_in);
 	}
 #endif
 }

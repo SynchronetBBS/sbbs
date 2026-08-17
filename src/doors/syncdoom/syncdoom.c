@@ -63,11 +63,11 @@
 #include "unicode.h"            // xpdev: cp437_unicode_tbl (CP437 -> Unicode for UTF-8 terminals)
 #include "sd_splash.h"          // sd_splash[] -- the bespoke waiting-room splash (80x25 char+attr)
 #include "door32.h"      // termgfx: the shared DOOR32.SYS parser
+#include "termgfx_plat.h"       // termgfx: the tty line discipline (raw mode)
 #include "sbbs_node.h"          // door-native who's-online + page (Ctrl-U / Ctrl-P)
 
 #ifndef _WIN32                  // dev stdio/tty fallback (no socket handle) is *nix-only
 #include <fcntl.h>
-#include <termios.h>
 #include <poll.h>
 #else                           // sockwrap.h has already pulled in <winsock2.h>
 #define WIN32_LEAN_AND_MEAN
@@ -2309,36 +2309,19 @@ static void check_timelimit(void)
 }
 
 // ---------------------------------------------------------------------------
-// Terminal raw mode (matters for standalone testing in a tty; harmless on a
-// socket where tcgetattr fails)
+// Terminal raw mode (the stdio/tty path; a no-op on a socket). The line
+// discipline itself is termgfx's -- every door needs the same settings, and
+// VMIN is easy to get wrong.
 // ---------------------------------------------------------------------------
 
-#ifndef _WIN32
-static struct termios s_oldtio;
-static int            s_tio_saved = 0;
-#endif
-
-// *nix stdio-fallback only (dev pipe/tty testing). The real socket path is set
-// non-blocking in tune_socket(); nothing to do here for it.
+// The socket path is set non-blocking in tune_socket(); this covers the other.
 static void raw_input_on(void)
 {
 #ifndef _WIN32
-	struct termios t;
-	int            fl;
+	int fl;
 	if (g_sock)
 		return;
-	if (tcgetattr(g_rfd, &t) == 0) {           // only succeeds on a tty
-		s_oldtio = t; s_tio_saved = 1;
-		t.c_lflag &= ~(ICANON | ECHO | ISIG);
-		t.c_iflag &= ~(ICRNL | INLCR | IXON);
-		// VMIN must stay 1: with VMIN=0 a tty read() returns 0 when nothing is
-		// pending -- before the O_NONBLOCK check, so not EAGAIN -- and conn_read
-		// cannot tell that apart from the EOF that means the client dropped.
-		// O_NONBLOCK below is what keeps the read from blocking.
-		t.c_cc[VMIN]  = 1;
-		t.c_cc[VTIME] = 0;
-		tcsetattr(g_rfd, TCSANOW, &t);
-	}
+	termgfx_plat_tty_raw(g_rfd);
 	fl = fcntl(g_rfd, F_GETFL, 0);
 	if (fl != -1)
 		fcntl(g_rfd, F_SETFL, fl | O_NONBLOCK);
@@ -2347,10 +2330,7 @@ static void raw_input_on(void)
 
 static void raw_input_off(void)
 {
-#ifndef _WIN32
-	if (s_tio_saved)
-		tcsetattr(g_rfd, TCSANOW, &s_oldtio);
-#endif
+	termgfx_plat_tty_restore();
 }
 
 // ---------------------------------------------------------------------------

@@ -45,6 +45,7 @@
 #include "syncduke.h"
 #include "keyboard.h"   /* sc_* scancode constants (pure #defines) */
 #include "keymode.h"  /* termgfx: key-mode negotiation + kitty/evdev decode */
+#include "termgfx_plat.h"  /* termgfx: termgfx_plat_tty_raw() -- the tty line discipline */
 #include "caps.h"       /* termgfx: termgfx_caps_parse_jxl (cap-probe reply scan) */
 #include "term.h"       /* termgfx: termgfx_term_parse_status (DECSSDT reply scan) */
 #include "audio_mgr.h"  /* termgfx: SyncTERM audio-APC manager (cap-probe feed) */
@@ -1714,6 +1715,13 @@ int syncduke_input_fd(void)
 			fd = 0;                            /* default stdin (dev/tty) */
 		if ((fl = fcntl(fd, F_GETFL, 0)) != -1)
 			fcntl(fd, F_SETFL, fl | O_NONBLOCK);
+		/* And the line discipline: a terminal arrives COOKED unless something
+		 * raws it, so keystrokes are held back until Enter, echoed over the
+		 * frame, and Ctrl-C kills the door instead of reaching it. Some BBSes
+		 * raw the pty before exec and some do not, so the door cannot assume
+		 * either. A no-op on a socket door; undone by the atexit() it
+		 * registers. */
+		(void)termgfx_plat_tty_raw(fd);
 	}
 #endif
 	return fd;

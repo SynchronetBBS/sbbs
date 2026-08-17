@@ -56,6 +56,7 @@
 #include "text.h"       /* termgfx: rt_config / rt_render_frame -- the text tiers */
 #include "charset.h"    /* termgfx: the client's charset (CP437 vs UTF-8) */
 #include "sbbs_node.h"  /* termgfx: sbbs_my_node() -- the dirty_log file's node tag */
+#include "termgfx_plat.h"  /* termgfx: termgfx_plat_tty_raw() -- the tty line discipline */
 #include "dirwrap.h"    /* xpdev: mkpath() -- the dirty_log dir */
 
 #ifndef PATH_MAX
@@ -1325,6 +1326,14 @@ int sr_io_init_fds(int in_fd, int out_fd)
 		(void)sr_plat_sock_setup(g_fd);
 		if (g_fd_in >= 0 && g_fd_in != g_fd)
 			(void)sr_plat_sock_setup(g_fd_in);
+		/* And the line discipline on that read side: a terminal arrives COOKED
+		 * unless something raws it, so keystrokes are held back until Enter,
+		 * echoed over the frame, and Ctrl-C kills the door instead of reaching
+		 * it. Some BBSes raw the pty before exec and some do not, so the door
+		 * cannot assume either. A no-op on a socket door, and undone by the
+		 * atexit() the call registers -- which runs after sr_io_leave() below,
+		 * since atexit is LIFO. */
+		(void)termgfx_plat_tty_raw(g_fd_in);
 	}
 
 	atexit(sr_io_leave);

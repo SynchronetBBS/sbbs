@@ -51,6 +51,7 @@
 #include "gfxgate.h"    /* termgfx: the shared no-graphics verdict + notice */
 #include "syncmoo1_geom.h"   /* sm_geom_fit_page / sm_geom_encode_dims (+ SM_FB_*, SM_SIXEL_*) */
 #include "sbbs_node.h" /* termgfx: sbbs_my_node() -- node-tag the capture */
+#include "termgfx_plat.h"    /* termgfx: termgfx_plat_tty_raw() -- the tty line discipline */
 #include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller (termgfx_rtt_sample/termgfx_aimd_update) */
 #include "audio_mgr.h"       /* termgfx: termgfx_audio_create/_probe/_set_cache_prefix */
 #include "syncmoo1_audio.h"  /* sm_audio_attach */
@@ -824,6 +825,14 @@ int sm_io_init_fds(int in_fd, int out_fd)
          * exactly the symptom that found this. */
         if (g_fd_in >= 0 && g_fd_in != g_fd)
             (void)sm_plat_sock_setup(g_fd_in);
+        /* And the line discipline, for the same fd 0 and the same reason: a
+         * terminal arrives COOKED unless something raws it, so keystrokes are
+         * held back until Enter, echoed over the frame, and Ctrl-C kills the
+         * door instead of reaching it. Some BBSes raw the pty before exec and
+         * some do not, so the door cannot assume either. A no-op on a socket
+         * door, and undone by the atexit() the call registers -- which runs
+         * after sm_io_leave() below, since atexit is LIFO. */
+        (void)termgfx_plat_tty_raw(g_fd_in);
     }
 
     sm_io_ensure_geom();
