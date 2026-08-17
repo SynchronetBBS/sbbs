@@ -2945,7 +2945,7 @@ void sys_cfg(void)
 						, duration_to_vstr(cfg.stats_interval, str, sizeof str));
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Cache Filter Files"
 						, cfg.cache_filter_files > 0 ? duration_to_vstr(cfg.cache_filter_files, str, sizeof str) : strDisabled);
-					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Message/File Total Interval"
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Msg/File Total Interval"
 						, cfg.totals_interval > 0 ? duration_to_vstr(cfg.totals_interval, str, sizeof str) : strDisabled);
 					opt[i][0] = 0;
 					uifc.helpbuf =
@@ -3449,7 +3449,7 @@ void sys_cfg(void)
 							;
 							duration_to_str(cfg.totals_interval, str, sizeof str);
 							uifc.input(WIN_MID | WIN_SAV, 0, 0
-							           , "Message/File Total Interval"
+							           , "Message/File Total Interval (cache duration)"
 							           , str, 10, K_UPPER | K_EDIT);
 							cfg.totals_interval = (uint)parse_duration(str);
 							break;
