@@ -31,6 +31,20 @@
 - Windows: `sbbs.exe`, `sbbsNTsvcs.exe`, `jsexec.exe`, and
   `sbbsctrl.exe` are now large-address-aware, so they can use up to
   ~4GB (rather than 2GB) of address space on 64-bit Windows
+- The system-wide message and file totals (`@TMSG@`, `@TFILE@`,
+  `system.stats.total_messages`, `system.stats.total_files`) are now
+  counted at most once per new `totals_interval` (default 10 minutes)
+  and shared process-wide, instead of being re-counted for every
+  request. Obtaining them means examining every message base and file
+  directory, which on a system with many bases — especially one whose
+  data directory is on a network share, where each check is a separate
+  round-trip — could take seconds. Posts and file additions or
+  removals made by the same instance refresh the affected total
+  immediately
+- Counting the system's users no longer takes a shared byte-range lock
+  on every user record: `data/user/user.tab` is now read sequentially
+  in bulk. With ~1,400 user slots and the data directory on an SMB
+  share, this removed ~2,900 lock round-trips per count
 
 ## Servers
 
@@ -142,6 +156,9 @@
   location configured to require it could not be authenticated by
   anyone. A warning is now logged at startup if the configured
   list still names it (issue #1206)
+- Fix: the web interface's System Info sidebar evaluated each
+  statistic twice — once to decide whether the row was worth showing
+  and again to render it — doubling the work behind the front page
 
 ## FTP Server
 
@@ -265,6 +282,10 @@
   → SendMail Support, for outbound DKIM message signing
 - New **Terminal Server → Max Concurrent Connections...**
   submenu (threshold, duration, silent variant)
+- New **Message/File Total Interval** option under System → Advanced
+  Options, setting how long the system-wide message and file totals
+  are re-used before being counted again (default `10m`, `0` to count
+  them for every request)
 - **Internal MQTT Broker** toggle under Networks → MQTT, which
   auto-configures broker address, port, TLS, and protocol-version
   fields when enabled
