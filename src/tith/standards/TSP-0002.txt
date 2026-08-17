@@ -3,8 +3,8 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TSP‑0002
-Revision:     1
-Title:        Route Configuration
+Revision:     3
+Title:        Routing and Distribution Configuration
 Author(s):    Stephen Hurd
 Date:         2026‑08‑17
 ══════════════════════════════════════════════════════════════════════
@@ -22,19 +22,25 @@ Status of this document
 Abstract
 ────────
 
-  Routing configuration on FTNs should use a common format. This
-  document outlines a suggested format based on historical FidoNet
-  route files.
+  This document defines configuration formats for peer identities,
+  NetMail routing and relay, EchoMail and file distribution, and
+  outbound schedules.
 
 Contents
 ────────
 
   1.  Introduction
-  2.  Proposed Syntax
-  3.  Orphans
-  4.  Defaults
-  5.  Examples
-  6.  Feedback and Discussion
+  2.  Common Syntax
+  3.  Peers
+  4.  Selectors
+  5.  NetMail Routes
+  6.  Relay and Failure Handling
+  7.  EchoMail and File Distribution
+  8.  Schedules
+  9.  Routing and Spool Behaviour
+  10. Defaults
+  11. Examples
+  12. Feedback and Discussion
 
   A. References
   B. History
@@ -45,394 +51,655 @@ Contents
 1. Introduction
 ───────────────
 
-  By default, FidoNet only supports direct and host‐routed messages.
-  However, it's very common to have an agreement in place to route
-  most or even all of your traffic through a single link. With TITH
-  proposing a new transport, new formats, and new capabilities, it
-  will be beneficial to have gateways willing to forward to legacy
-  systems.
+  NetMail routing, area distribution, and call scheduling answer
+  different questions.  A NetMail route selects one next hop for an
+  ultimate Destination.  EchoMail and file distribution replicate an
+  item to explicitly configured links.  A schedule determines when
+  already routed traffic may cause an outbound connection.
+
+  This document therefore defines four files, referred to as the
+  peers, routes, areas, and schedules files.  Their filenames and
+  locations are selected by the host configuration and are not part
+  of these formats.  All four files form one configuration set and
+  MUST be validated before any part of a new set takes effect.
+
+  The configuration set describes local policy.  None of its names,
+  schedules, or delivery classes are transmitted in a Bundle.
+
+
+2. Common Syntax
+────────────────
+
+  Each file is a UTF‑8 text file.  Every line MUST end with a Line Feed
+  (U+000A).  Other than that terminating Line Feed and a Horizontal Tab
+  (U+0009) used as a field separator, a C0 control code point or U+007F
+  anywhere in a file is an error.  A Carriage Return (U+000D) is
+  therefore not permitted.
+
+  Directive words are the literal case‐sensitive ASCII strings shown
+  in this document.  A separator is a nonempty sequence of Space
+  (U+0020) or Horizontal Tab code points.  Separators divide fields.
+  Leading and trailing separators are ignored.  An empty line is
+  ignored.
+
+  A comment line has a Semicolon (U+003B) as its first non‐separator
+  code point.  The entire line is ignored.  There are no inline
+  comments.
+
+  A configuration name is a nonempty UTF‑8 string containing no Space,
+  Horizontal Tab, control code point, or Commercial At (U+0040).
+  Names are compared by the exact encoded bytes without normalization
+  or case folding.  A reference to a peer consists of a Commercial At
+  followed immediately by its configuration name, for example
+  "@uplink".
+
+  A block begins with the directive specified for that block and ends
+  with a line containing only the literal "End".  Blocks MUST NOT be
+  left unterminated.  A directive not allowed in the current block,
+  an unknown directive, a missing field, an extra field, a duplicate
+  singleton directive, or a reference to an undefined name is an
+  error.  An error in any of the four files rejects the complete new
+  configuration set.
+
+  When a directive may occur more than once, the same sequence of
+  field values MUST NOT occur twice in its containing block.
+
+
+3. Peers
+────────
+
+  The peers file contains zero or more Peer blocks describing exact
+  local or remote identities.  A Peer block begins with "Peer", one
+  separator, and a unique configuration name.  It accepts the
+  following directives:
+
+    Address <address>
+    Public-Key <public-key>
+    Endpoint <server-address> <port>
+    Boss <peer-reference>
+    Hub <peer-reference>
+
+  Address MUST occur exactly once and contains one canonical address
+  as specified in TTS‑0004.  It MUST NOT contain a wildcard.
+
+  Public-Key contains the 43‑character base 64 representation of a
+  32‑byte libhydrogen signing public key with its trailing Equals Sign
+  (U+003D) removed.  It MUST occur exactly once when Address is the
+  unlisted address and MUST NOT occur otherwise.  A configured key
+  MUST NOT override a nodelist key for a listed address.
+
+  No two Peer blocks may describe the same exact identity.  A listed
+  address therefore occurs in at most one Peer block.  Peer blocks may
+  share an unlisted address only when their Public-Key values differ.
+
+  Endpoint identifies a TITH server.  The server address is a nonempty
+  UTF‑8 field containing no Space, Horizontal Tab, or control code
+  point.  The port is a decimal integer from 1 through 65535 without a
+  leading zero.  Endpoint MAY occur more than once; endpoints are
+  attempted in file order before an endpoint obtained from the
+  nodelist.
+
+  Boss and Hub each contain one peer reference and MAY each occur at
+  most once.  They are permitted only for an unlisted Peer.  They
+  provide the corresponding candidates for the Boss and Hub route
+  methods.  Peer relationships MUST NOT contain a cycle.
+
+  A Peer with no usable Endpoint may still be selected as a passive
+  next hop and collect held traffic by polling.
+
+  Where this document requires a local identity, its syntax is a
+  canonical listed address or a peer reference naming an unlisted
+  Peer.  The host MUST have the corresponding secret signing key.  For
+  a listed address, its public half MUST equal the current nodelist
+  key.  For an unlisted Peer, it MUST equal that Peer's Public-Key.
+
+
+4. Selectors
+────────────
+
+  A selector is one of the following sequences of fields:
+
+    All
+    Address <address-or-wildcard>
+    Peer <peer-reference>
+    Branch Zone <address>
+    Branch Region <address>
+    Branch Host <address>
+    Branch Hub <address>
+    Independent Zone <address>
+    Independent Region <address>
+
+  All matches every listed and unlisted identity.
+
+  Address contains a canonical address or wildcard as specified in
+  TTS‑0004.  Its matching behaviour is exactly that of TTS‑0004.  In
+  particular, an Asterisk (U+002A) component does not match negative
+  one (−1).  A particular unlisted identity is selected with Peer;
+  an Address selector containing a domain's unlisted address selects
+  every identity using that unlisted address.
+
+  Peer matches the exact address and, for an unlisted Peer, public key
+  identified by the reference.
+
+  Branch uses the administrative branch structure defined by
+  TTS‑5000.  The address MUST identify a nodelist entry having the
+  stated Zone, Region, Host, or Hub keyword.  It matches that entry and
+  every descendant in its branch.  A point inherits the branch
+  membership of its Boss Node.
 
+  Independent Zone selects normal nodes directly within the stated
+  Zone but outside every Region, Host, and Hub branch.  Independent
+  Region selects normal nodes directly within the stated Region but
+  outside every Host and Hub branch.  Both selectors also include the
+  points of the selected normal nodes, but not the coordinator entry.
+
+
+5. NetMail Routes
+─────────────────
+
+  The routes file contains one or more Routes blocks.  A Routes block
+  begins with "Routes", one separator, and a local identity identifying
+  one local AKA.  There MUST NOT be two Routes blocks for the same
+  local identity.  It contains the Route, relay, and failure directives
+  defined in sections 5 and 6.
 
-2. Proposed Syntax
-──────────────────
+  A Route line has the following form:
 
-  The route file will consist of a number of schedules, each having a
-  number of clases after it. A schedule is started with a Schedule
-  line and terminated by another Schedule line or the end of file.
+    Route <selector> Using <method-list> [<failure-override>]
 
+  Route lines are examined in file order.  The first selector matching
+  a NetMail Message's ultimate Destination supplies its complete
+  ordered method list.  No later Route line is considered.
 
-  1. Schedule Line
-  ────────────────
+  A method list contains one or more of the following methods,
+  separated by separators:
+
+    Via <peer-reference>
+    Direct
+    Boss
+    Hub
+    Host
+    Region
+    Zone
+    Hold
 
-  A Schedule Line consists of the word "Schedule", a space, then a
-  name for the schedule.  The name must be unique and exists for
-  logging and organization purposes.
+  Each method MAY occur at most once in a list.  Via and its peer
+  reference form one method.  Hold, if present, MUST be last.  Methods
+  are considered from left to right; the first eligible method commits
+  the next hop.  A connection failure after that commitment MUST NOT
+  cause another method to be selected.
+
+  Via commits the item to the named Peer.  It is eligible even if the
+  Peer is passive.
 
+  Direct commits the item to its ultimate Destination.  For a listed
+  Destination it is eligible only when a Peer with the same address or
+  the nodelist provides a usable TITH server endpoint, the nodelist
+  entry is not Pvt, Hold, or Down, and its caller restrictions permit
+  the local AKA.  In particular, an LO node is not eligible for a
+  direct call from an unlisted AKA.  For an unlisted Destination,
+  Direct is eligible only when a Peer with the same address and public
+  key provides an Endpoint.
 
-  2. Destinations Clause
-  ──────────────────────
+  Boss, Hub, Host, Region, and Zone commit the item to the respective
+  ancestor of the ultimate Destination.  For a listed Destination the
+  ancestor is obtained from the nodelist or applicable point
+  relationship.  Boss and Hub for an unlisted Destination are obtained
+  from its Peer.  A candidate is eligible when its Peer or nodelist
+  entry provides a usable TITH server endpoint, or when it is
+  explicitly configured as a passive Peer.
+
+  Hold commits the item to its ultimate Destination and marks the
+  delivery passive.  It is always eligible unless the Destination is
+  a Down nodelist entry.  No outbound schedule may claim a passive
+  delivery, but its exact next hop may poll for it.
 
-  A Destinations Clause consists of the word "Destinations", a space,
-  then a list of nodes that will be included in bundles generated
-  during the current Schedule.  The format may include wildcards as
-  specified in TTS‑0004.  This controls which messages will be
-  transferred during this schedule.
+  A Down Destination fails as Unroutable without considering any
+  method.  Pvt and Hold nodelist entries make Direct ineligible but do
+  not disable other methods.
+
+  If no Route line matches, the default method list for a listed
+  Destination is:
+
+    Direct Boss Hub Host Region Zone Hold
 
+  The default method list for an unlisted Destination is:
 
-  3. Route-Via Clause
-  ───────────────────
+    Boss Hub Direct Hold
 
-  A Route-Via Clause consists of the word "Route-Via", a space, an
-  address as specified in TTS‑0004, another space, then a list of
-  addresses with wildcards as specified in TTS‑0004.  The address
-  specifies the node to deliver the messages to (ie: a next hop), and
-  the list specifies destination nodes to be delivered.  By default,
-  this clause will only apply if the node cannot be contacted directly
-  and if the nodes net or hub cannot be contacted.
+  If no method is eligible, routing fails as Unroutable.
+
+  Once a method selects a next hop, the router compares its exact
+  identity with every Via in the NetMail Message.  For an unlisted Via
+  the identity includes its PublicKey as specified by TTS‑0005.  A
+  match fails as Loop.  The router MUST NOT conceal the loop by trying
+  a later method.
+
+
+6. Relay and Failure Handling
+─────────────────────────────
 
+  Relay authorization applies only to authenticated NetMail whose
+  ultimate Destination is not local.  Local delivery does not require
+  relay authorization.
 
-  4. No-Direct Clause
-  ───────────────────
-
-  A No-Direct Clause consists of the word "No-Direct", a space, then a
-  list of addresses with wildcards as specified in TTS‑0004.  If this
-  clause is present, nodes will not be contacted directly.
-
-
-  5. No-Hub Clause
-  ────────────────
-
-  A No-Hub Clause consists of the word "No-Hub", a space, then a list
-  of addresses with wildcards as specified in TTS‑0004.  If this
-  clause is present, hub routing will not be used.
-
-
-  6. No-Host Clause
-  ─────────────────
-
-  A No-Host Clause consists of the word "No-Host", a space, then a
-  list of addresses with wildcards as specified in TTS‑0004.  If this
-  clause is present, host routing will not be used.
-
-
-  7. No-Region Clause
-  ───────────────────
-
-  A No-Region Clause consists of the word "No-Region", a space, then a
-  list of addresses with wildcards as specified in TTS‑0004.  If this
-  clause is present, region routing will not be used.
-
-
-  8. No-Zone Clause
-  ─────────────────
-
-  A No-Zone Clause consists of the word "No-Zone", a space, then a
-  list of addresses with wildcards as specified in TTS‑0004.  If this
-  clause is present, zone routing will not be used.
-
-
-  9. Forward-For Clause
-  ─────────────────────
-
-  A Forward-For Clause consists of the word "Forward-For", a space,
-  then a list of addresses with wildcards as specified in TTS‑0004.
-  The list specifies destination nodes messages will be forwarded for.
-  Note that this is the message destination, not the next hop or
-  message origin.
-
-
-  10. Accept-From Clause
-  ──────────────────────
-
-  An Accept-From Clause consists of the word "Accept-From", a space,
-  then a list of addresses with wildcards as specified in TTS‑0004.
-  The list specifies origin nodes messages will be forwarded for.
-  Note that this is the origin node, not the previous hop.
-
-
-  11. Hold Clause
-  ───────────────
-
-  A Hold Clause consists of the word "Hold", a space, then a list of
-  addresses with wildcards as specified in TTS‑0004.  The list
-  specifies nodes that may call and pick up bundles during the
-  schedule.  Any node listed here will not be contacted during the
-  schedule.
-
-
-  12. Poll Clause
-  ──────────────
-
-  A Poll Clause consists of the word "Poll", a space, then a list of
-  addresses with wildcards as specified in TTS‑0004.  The list
-  specifies nodes that will be contacted and sent a poll request
-  during this schedule.
-
-
-  13. Start Clause
-  ────────────────
-
-  A Start Clause consists of the word "Start", a space, optionally the
-  word "Local" followed by a space, then a time in 24‑hour format with
-  hours and minutes only.  If Local is specified, the time is in local
-  time.  If not, the time is in UTC.  This clause specifies the time
-  that this schedule should begin.  The schedule may be delayed until
-  the previous schedule completes.  If multiple schedule start at the
-  same time, it is unspecified which will start first, so this should
-  be avoided.  If multiple schedules are waiting to start, the one
-  that has waited the longest will be started.  If the Duration has
-  passed, the schedule will still run.  There may only be one Start
-  Clause per Schedule.
-
-
-  14. Duration Clause
-  ───────────────────
-
-  A Duration Clause consists of the word "Duration", a space, then
-  either a number of minutes, of a number of hours, a colon, then a
-  number of minutes (ie: "60" and "1:00" would be identical).  This
-  is the number of minutes after the time in the Start Clause that the
-  schedule ends.  Since the schedule start may be delayed, this is the
-  maximum duration, not the total duration.  Connections in progress
-  at the end of a schedule will run to completion before the next
-  schedule starts.  The Duration may be zero indicating that
-  connections should be attempted once for all bundles and polls after
-  which the schedule will end.  There may only be one Duration Clause
-  per schedule.
-
-
-  15. Repeat-After Clause
-  ───────────────────────
-
-  A Repeat-After Clause consists of the word "Repeat-After", a space,
-  then either a number of minutes, or a number of hours, a colon, then
-  a number of minutes (ie: "60" and "1:00" would be identical).  This
-  is the number of minutes after the time in the end time that the
-  schedule will attempt to run again.  If another schedule is running
-  at that time, it will be delayed until that schedule ends.  If
-  another schedule will start for the first time, it will be given
-  preference.  If multiple Repeat-After Clauses can take effect, the
-  one that has waited the longest since it's repeat after time expired
-  will run first.  There may only be one Repeat-After Clause per
-  schedule.
-
-
-  16. Orphan-For
-  ──────────────
-
-  A Orphan-For Clause consists of the word "Orphan-For", a space, then
-  a list of addresses with wildcards as specified in TTS‑0004, a
-  space, the a reason the message has been orphaned..  If a message is
-  received whose origin matches the wildcard list, the message will be
-  handled as an orphan regardless of any matching Forward-For Clauses.
-
-
-  17. Orphan-From
-  ───────────────
-
-  A Orphan-From Clause consists of the word "Orphan-From", a space,
-  then a list of addresses with wildcards as specified in TTS‑0004, a
-  space, the a reason the message has been orphaned.  If a message is
-  received whose destination matches the wildcard list, the message
-  will be handled as an orphan regardless of any matching Accept-From
-  Clauses.
-
-
-  18. Notify-Sender
-  ─────────────────
-
-  A Notify-Sender Clause consists of the word "Notify-Sender", a
-  space, then a list of addresses with wildcards as specified in
-  TTS‑0004.  If an orphan message is received whose origin matches the
-  wildcard list, a new message will be generated to the original
-  sender indicating that the message will not be forwarded.  This
-  message should contain at least the original subject and the path
-  the message took as well as a reason for not forwarding.
-
-
-  19. Notify-Sysop
-  ────────────────
-
-  A Notify-Sysop Clause consists of the word "Notify-Sysop", a space,
-  then a list of addresses with wildcards as specified in TTS‑0004.
-  If an orphan message is received whose origin matches the wildcard
-  list, a new message will be generated to the sysop of the origin
-  node indicating that the message will not be forwarded.  This
-  message should contain at least the original subject and the path
-  the message took as well as a reason for not forwarding.
-
-
-3. Orphans
-──────────
-
-  Incoming messages that do not have a local destination and do not
-  match a Forward-For or Accept-From clause in any schedule are
-  Orphans.  Orphans are messages which were delivered to us, but we do
-  not have an agreement to route.  The software that detects the
-  orphan should notify the local sysop that an orphan was detected and
-  the path it took to reach the system.
-
-
-5. Routing
-──────────
-
-  A message will be routed by the "best available" method.
-  In order from best to worst, these methods are:
-
-  Direct
-  ──────
-  The message is passed directly to the destination node and no
-  further routing is performed.  This may be disabled via the
-  No-Direct Clause, and is only possible if the destination node
-  supports a protocol the sending node also supports.
-
-  BossNode
-  ────────
-  Only messages whose destination has a non‐zero point Component will
-  use BossNode routing.  The message is passed directly to the Boss
-  Node for the point.  This is disabled by the No-Direct Clause.
-
-  Hub
-  ───
-  The message is passed to the Hub listed before the destination node
-  in the nodelist.  This may be disabled via the No-Hub Clause, and is
-  only possible when there is a Hub listed above a node, and there is
-  a shared protocol between the sending node and the Hub.  Note that
-  FidoNet Policy 4 does not require a Hub to actually do anything, so
-  No-Hub should always be used on FidoNet for strict conformance with
-  policy unless you contact all Hubs and get permission to forward
-  trafic to them.
-
-  Host
-  ────
-  The message is passed to the Host listed before the destination node
-  in the nodelist.  This may be disabled via the No-Hub Clause, and is
-  only possible when there is a Host listed above a node, and there is
-  a shared protocol between the sending node and the Host.
-
-  Region
-  ──────
-  The message is passed to the Region listed before the destination
-  node in the nodelist.  This may be disabled via the No-Region
-  Clause, and is only possible when there is a Region listed above a
-  node, and there is a shared protocol between the sending node and
-  the Region.  Note that FidoNet Policy 4 indicates that RCs do not
-  route traffic, so No-Region should always be used on FidoNet for
-  strict conformance with policy unless you contact all RCs and get
-  permission to forward trafic to them.
-
-  Zone
-  ────
-  The message is passed to the Zone listed before the destination node
-  in the nodelist.  This may be disabled via the No-Zone Clause, and
-  is only possible when there is a Host listed above a node, and there
-  is a shared protocol between the sending node and the Host.  Note
-  that FidoNet Policy 4 indicates that ZCs do not route traffic, so
-  No-Zone should always be used on FidoNet for strict conformance with
-  policy unless you contact all ZCs and get permission to forward
-  trafic to them.
-
-  Route-Via
-  ─────────
-  The message is passed to the node listed in the Route-Via Clause in
-  the Route Configuration which has a wildcard matching the
-  destination node.  This is only possible when there is a shared
-  protocol between the sending node and the Route-Via node.  This can
-  be disabled via a Hold Clause for the destination node.
-
-  Hold
-  ────
-  The message is held at the source until the destination makes a
-  connection and polls for messages.  This method is always possible.
-
-
-6. Defaults
-───────────
-
-  If a schedule does not contain any of the following values, the
-  specified default will be assumed:
-
-  Destinations defaults to "Destinations *"
-
-  Start defaults to "Start 00:00"
-
-  Duration defaults to "Duration 0"
-
-  Repeat-After defaults to "Repeat-After 1"
-
-
-7. Examples
-───────────
-
-  A typical node schedule could be to periodically deliver new
-  messages to a single node for forwarding (with an agreement by the
-  other node to perform forwarding) unless the destination can be
-  reached direct or via host‐routing:
-
-    Schedule Mail
-    Route-Via BBSDev#885:1/1 BBSDev#*
-
-  As above but only running every half hour:
-
-    Schedule Mail
-    Route-Via BBSDev#885:1/1 BBSDev#*
+  A relay rule has one of the following forms:
+
+    Allow-Relay From <selector> Origin <selector>
+        Destination <selector> [<failure-override>]
+    Deny-Relay From <selector> Origin <selector>
+        Destination <selector> [<failure-override>]
+
+  Each displayed rule is one physical line; the indentation above is
+  only typographic wrapping.  From selects the authenticated immediate
+  peer.  Origin selects the signed Message Origin.  Destination
+  selects the ultimate Message Destination.
+
+  Allow-Relay and Deny-Relay lines are examined together in file
+  order.  The first rule whose three selectors match decides whether
+  the Message may be relayed.  If no rule matches, relay is denied.
+  A denial fails as Relay-Denied.
+
+  Every Routes block MAY contain one Failure-Default line:
+
+    Failure-Default <disposition> Notify <notification>
+
+  A disposition is either Dead-Letter or Discard.  Dead-Letter
+  preserves the failed item and its reason for manual handling.
+  Discard removes it after the failure record is committed.
+
+  A notification is one of None, Sender, Origin-Sysop, or Both.
+  Sender generates a failure NetMail to the original FromUserName at
+  the authenticated Origin.  Origin-Sysop generates one to the Sysop
+  at that Origin.  Both requests both notices.  A notice whose target
+  cannot be determined is omitted.  A failure notice MUST NOT itself
+  generate another failure notice.
+
+  Failure lines have this form:
+
+    Failure <kind> Origin <selector> Destination <selector>
+        <disposition> Notify <notification>
+
+  Each Failure is one physical line.  Kind is one of Any, Unroutable,
+  Loop, Relay-Denied, Rejected, or Authentication.  An All Destination
+  selector also matches an EchoMail Message or distribution File which
+  has an Area instead of a Destination.  Another Destination selector
+  does not match an item without a Destination.
+
+  Failure lines are examined in file order.  The first line whose kind
+  and selectors match supplies the policy.  Any matches every failure
+  kind.
+
+  A Route, Allow-Relay, or Deny-Relay line may end with this complete
+  failure override:
+
+    On-Failure <disposition> Notify <notification>
+
+  Failure policy is selected in this order:
+
+    1. The failure override on the Route which supplied the method
+       list.
+    2. The failure override on the relay rule which applied.
+    3. The first matching Failure line.
+    4. Failure-Default.
+    5. Dead-Letter with notification None.
+
+  For a delivery copy which is successfully created, the policy for
+  each permanent failure kind is resolved and stored with that copy at
+  creation.  A routing failure which prevents creation of a copy and a
+  relay denial are resolved when detected.
+
+  Every failure MUST be logged locally regardless of disposition or
+  notification.
+
+  Rejected reason 1 from TTS‑0005 fails as Rejected.  Reason 2 fails
+  as Authentication.  Reason 3 completes a conditional request and is
+  not a failure.  Reason 4 retains the item for retry no earlier than
+  its Timestamp, or for the next applicable schedule when no Timestamp
+  is present.  A request for which no complete response was received
+  remains eligible for retry and does not invoke permanent failure
+  policy.
+
+
+7. EchoMail and File Distribution
+─────────────────────────────────
+
+  The areas file contains zero or more Areas blocks.  An Areas block
+  begins with "Areas", one separator, and one local identity for which
+  a Routes block exists.  There MUST NOT be two Areas blocks for the
+  same local identity.
+
+  An Areas block contains EchoArea and FileArea blocks.  EchoArea and
+  FileArea are followed by one separator and the AreaName to which the
+  block applies.  The AreaName is the remaining nonempty text on the
+  line after leading and trailing separators are removed.  It is
+  compared by its exact UTF‑8 bytes.  An area of each kind MUST NOT be
+  defined more than once for the same local identity.
+
+  An area block accepts these repeatable directives:
+
+    Receive-From <peer-reference>
+    Send-To <peer-reference> [Class <configuration-name>]
+
+  Receive-From authorizes the Peer to send items in the area.
+  Send-To creates a delivery copy committed directly to that Peer.
+  If Class is absent, the copy has delivery class Normal.  Both lines
+  are required to exchange an area in both directions; there is no
+  combined form.  A Peer MUST NOT occur in more than one Receive-From
+  or more than one Send-To line in the same area block.
+
+  An EchoArea applies to an EchoMail Message carrying its Area.  A
+  FileArea applies to a standalone distribution File carrying its
+  Area as specified by TTS‑0005.  A File attached to a Message travels
+  with that Message and does not independently use a FileArea.
+
+  An item received for an undefined area or from a Peer not named by
+  Receive-From MUST be Rejected with reason 1.  It MUST NOT be stored,
+  imported, or distributed.
+
+  When distributing an accepted item, no copy is created for the
+  immediate incoming Peer.  A copy is also omitted for a listed Peer
+  represented by SeenBy.  Address‐only SeenBy cannot distinguish
+  unlisted Peers, so duplicate acceptance and exact immediate‐peer
+  exclusion provide the corresponding protection for them.  Omitting
+  a copy is normal distribution pruning, not a failure.
+
+  EchoMail and file distribution MUST NOT use a NetMail Route method,
+  even when a configured Peer cannot be contacted.  The copy remains
+  committed to its explicit Peer and may be collected by Poll.
+
+
+8. Schedules
+────────────
+
+  The schedules file contains zero or more Schedule blocks.  A
+  Schedule block begins with "Schedule", one separator, and a unique
+  configuration name.  It accepts these directives:
+
+    Origin <local-identity>
+    Class <configuration-name>
+    Next-Hop <selector>
+    Poll <peer-reference>
+    Start [Local] <hour>:<minute>
+    Duration <duration>
+    Repeat-After <duration>
+
+  Origin MUST occur exactly once and identify a local identity having
+  a Routes block.  A schedule can claim only deliveries having this
+  local AKA.
+
+  Class MAY occur more than once.  The schedule selects deliveries
+  having any named class.  If Class does not occur, it selects class
+  Normal.
+
+  Next-Hop MAY occur more than once.  It selects deliveries whose
+  committed next hop matches any stated selector.  If it does not
+  occur, All is used.  It does not inspect or change the ultimate
+  Destination or Area.
+
+  Poll MAY occur more than once.  At each activation, the named Peer
+  is contacted and sent one PollMessages, one PollFiles, and one
+  PollFileRequests request even when no outbound item is queued for
+  it.
+
+  Start MUST occur at most once.  The time has exactly two decimal
+  hour digits from 00 through 23, a Colon (U+003A), and exactly two
+  minute digits from 00 through 59.  Without Local it is UTC; with
+  Local it uses local civil time.
+
+  A duration is either a decimal number of minutes without a leading
+  zero, except for the literal "0", or one or more decimal hour digits
+  without a leading zero, except for the literal "0", a Colon, and
+  exactly two minute digits from 00 through 59.  Durations count
+  elapsed minutes.  Duration MUST occur at most once.
+  Repeat-After MUST occur at most once and MUST be greater than zero.
+
+  Start gives the nominal beginning of the first activation, on the
+  UTC or local civil date when the configuration set takes effect.  If
+  a local civil time does not exist because the clock advances, the
+  first following civil time is used.  If it occurs twice because the
+  clock retreats, the first occurrence is used.
+
+  Duration gives the nominal end relative to an activation's nominal
+  beginning.  A schedule with Duration zero makes one pass over its
+  selected spool work and polls, then ends.  A nonzero Duration remains
+  active until its nominal end and may claim matching work which
+  becomes available during that interval.  Each delivery is attempted
+  at most once by that activation.  Connections begun before the end
+  run to completion.
+
+  Repeat-After gives the elapsed interval from one nominal end to the
+  next nominal beginning.  If an activation begins after its nominal
+  end, it still makes one pass.  Missed activations are coalesced: when
+  an idle schedule has more than one due nominal beginning, only the
+  most recent is run, and a nominal beginning which passes while that
+  schedule is active is not separately queued.  A Schedule has at most
+  one active activation.  Different schedules MAY be active
+  concurrently.
+
+  Schedules claim spool work atomically.  Concurrent connections MAY
+  proceed with disjoint work, but an item MUST NOT be selected more
+  than once in an active exchange or be present in two active
+  exchanges.
+
+  An authenticated inbound Poll atomically claims the complete poll
+  snapshot specified by TTS‑0005.  It is not constrained by schedules,
+  delivery class, passive status, or a retry Timestamp.  It returns
+  only items already committed to the polling peer's exact address and
+  public key identity.
+
+
+9. Routing and Spool Behaviour
+──────────────────────────────
+
+  This document does not specify an on‐disk spool format.  It does
+  specify the observable boundaries between tossing, routing,
+  scheduling, and transfer.
+
+  Delivery class is local metadata associated with each individual
+  item by the host or conversion gateway.  If none is supplied, it is
+  Normal.  A NetMail delivery copy inherits its item's class.  An area
+  distribution copy instead uses the class on its Send-To line, or
+  Normal when that line has none.
+
+  A source Bundle is tossed item by item.  Before a source Bundle may
+  be retired, every required NetMail delivery or area distribution
+  copy MUST be durably recorded with:
+
+    • its local AKA;
+    • its exact next‐hop address and unlisted PublicKey, if any;
+    • its delivery class; and
+    • its retry Timestamp, if any; and
+    • its resolved permanent failure policies.
+
+  NetMail produces one delivery copy.  EchoMail and file distribution
+  produce one copy for each applicable Send-To link.  Copies MAY be
+  aggregated with compatible copies from other source Bundles.
+  Compatible copies have the same local AKA and exact next‐hop
+  identity and are concurrently eligible for the same connection.
+  A connection MUST NOT combine delivery copies from different local
+  AKAs.
+
+  Route commitment belongs to each delivery copy, not to a particular
+  storage container.  An implementation MAY compact or repackage
+  compatible items.  It MUST NOT automatically change a committed next
+  hop.  Rerouting requires an explicit administrative operation
+  outside this configuration reload process.
+
+  During an exchange, outcomes are applied per Message, File, or
+  FileRequest.  Accepted items are retired.  Permanently Rejected
+  items use section 6.  Temporarily Rejected and unacknowledged items
+  retain the same route and may be repackaged for retry.  An item with
+  a later retry Timestamp MUST NOT block another eligible item for the
+  same Peer.
+
+  Routing, area, and failure policy changes apply only to delivery
+  copies created after the new configuration takes effect.  Existing
+  copies keep their AKA, next hop, unlisted key, class, and resolved
+  policies.  Current schedules determine when their classes run, and
+  current Endpoints determine how their Peer is contacted.  A listed
+  next hop uses the current nodelist key because a configured key
+  cannot override it.
+
+  An implementation recovering after a failed connection MUST treat
+  any request without a durably known complete response as
+  unacknowledged and retry it to the same next hop.  The idempotent
+  acceptance rules in TTS‑0005 make this safe when the remote system
+  accepted the item before the failure became locally durable.
+
+
+10. Defaults
+────────────
+
+  The following defaults apply when the corresponding directive or
+  rule is absent:
+
+    Listed route:   Direct Boss Hub Host Region Zone Hold
+    Unlisted route: Boss Hub Direct Hold
+    Delivery class: Normal
+    Failure policy: Dead-Letter Notify None
+    Schedule class: Normal
+    Schedule next hop: All
+    Start: 00:00 UTC
+    Duration: 0
+    Repeat-After: 1
+    Relay: denied
+
+
+11. Examples
+────────────
+
+  Complete blocks below which use the same name or local identity are
+  alternatives.  Later blocks use the Peer definitions shown first.
+
+  These peers name a Network Coordinator and an unlisted point:
+
+    Peer nc
+    Address fidonet#1:123
+    End
+
+    Peer point
+    Address fidonet#-1
+    Public-Key mJ7K7OPsYbA41C2V1sM5QkX7QWVZwfnkcHhtvPh2unE
+    Boss @nc
+    Endpoint point.example.net 24555
+    End
+
+  This route sends all NetMail through the NC.  An agreement by the NC
+  to perform that forwarding is required separately:
+
+    Routes fidonet#1:123/45
+    Route All Using Via @nc
+    End
+
+  A FidoNet configuration can express its policy without changing the
+  generic defaults:
+
+    Routes fidonet#1:123/45
+    Route Address fidonet#* Using Direct Boss Hub Host Hold
+    End
+
+  Host and Region branches remain structurally distinct even though
+  both occupy the Net component of an address:
+
+    Routes fidonet#1:123/45
+    Route Branch Host fidonet#1:123 Using Direct Hub Host Hold
+    Route Independent Region fidonet#1:10 Using Direct Hold
+    End
+
+  A Boss Node can authorize its unlisted point to submit NetMail:
+
+    Routes fidonet#1:123
+    Allow-Relay From Peer @point Origin Peer @point Destination All
+    End
+
+  Failure policy can preserve most failures while returning and
+  discarding detected loops:
+
+    Routes fidonet#1:123/45
+    Failure-Default Dead-Letter Notify Origin-Sysop
+    Failure Loop Origin All Destination All Discard Notify Both
+    End
+
+  EchoMail and file distribution links are explicit and unrelated to
+  NetMail routing:
+
+    Areas fidonet#1:123/45
+    EchoArea FSX_GEN
+    Receive-From @nc
+    Send-To @nc
+    End
+    FileArea FSX_NODE
+    Receive-From @nc
+    Send-To @nc Class Bulk
+    End
+    End
+
+  A schedule attempts Normal traffic every half hour.  Bulk traffic
+  uses a separate daily activation:
+
+    Schedule normal
+    Origin fidonet#1:123/45
+    Class Normal
+    Duration 0
     Repeat-After 30
+    End
 
-  As above but with no direct or host‐routed messages at all:
-
-    Schedule Mail
-    Route-Via BBSDev#885:1/1 BBSDev#*
-    Repeat-After 30
-    No-Direct *
-    No-Host *
-
-  For a net coordinator, you are likely required to accept host‐routed
-  messages:
-
-    Schedule Mail
-    Route-Via BBSDev#885:1/1 BBSDev#*
-    Forward-For BBSDev#885:1/*
-
-  As above, but with a problematic node that you have stopped routing
-  for due to violation of policy:
-
-    Schedule Mail
-    Route-Via BBSDev#885:1/1 BBSDev#*
-    Forward-For BBSDev#885:1/*
-    Orphan-For BBSDev#885:1/213 Violation of Policy 4
-    Orphan-From BBSDev#885:1/213 Violation of Policy 4
-    Notify-Sysop BBSDev#885:1/213
-
-  If you are a Boss Node, you will want to hold bundles for and route
-  messages from your points:
-
-    Schedule Mail
-    Destinations *
-    Route-Via BBSDev#885:1/1 *
-    Accept-From BBSDev#885:1/3.*
-    Hold BBSDev#885:1/3.*
+    Schedule bulk
+    Origin fidonet#1:123/45
+    Class Bulk
+    Start Local 02:00
+    Duration 0
+    Repeat-After 24:00
+    End
 
 
-8. Feedback and Discussion
-──────────────────────────
+12. Feedback and Discussion
+───────────────────────────
 
-  Note that this document specifies configuration for Boss Node, but
-  at present there is no standard pointlist format, so no way to
-  configure public keys.  This is still TODO.
+  The four files deliberately separate peer identity, routing and
+  relay policy, area links, and call timing.  Their shared selectors
+  and exact peer references keep the boundaries explicit without
+  defining a second representation of a node address.
+
+  Conventional outbound formats and message attributes are converted
+  to local delivery classes at a gateway.  They do not add alternate
+  native configuration syntax.
 
 
 A. References
 ─────────────
 
-  [TTS‑0004] Node Addresses. Stephen Hurd. 17 August, 2026.
+  [TTS‑0003] "Common TLV Types", TITH, 2026‑08‑17.
 
-  [FSC‑0003] FidoNet Route Files Explained. Ben Barker, 100/76.
-  23 March, 1986.
+  [TTS‑0004] "Node Addresses", TITH, 2026‑08‑17.
+
+  [TTS‑0005] "Bundle Format", TITH, 2026‑08‑17.
+
+  [TTS‑0006] "Bundle Exchange Protocol", TITH, 2026‑08‑17.
+
+  [TTS‑5000] "The Distribution Nodelist", TITH, 2026‑08‑17.
+
+  [FSC‑0003.001] "FidoNet Route Files Explained", Ben Barker,
+  1986‑03‑23.
+
+  [FTS‑5001.006] "Nodelist flags and userflags", FTSC Members,
+  Administrator and Honoured Guests, 2017‑08‑27.
+
+  [Policy] "FidoNet Policy Document", version 4.07, 1989‑06‑09.
 
 
 B. History
 ──────────
 
    Rev.1, 2025‑11‑19: Initial Release.
+
+   Rev.2, 2026‑08‑17: Separated peer, route, area, and schedule
+   configuration; added structural selectors, complete route method
+   lists, exact relay authorization, failure policy, and spool
+   behaviour.
+
+   Rev.3, 2026‑08‑17: Aligned inbound polling with the complete atomic
+   poll snapshot defined by TTS‑0005.
 
 **********************************************************************

@@ -200,6 +200,16 @@ void tith_hashTLV(const struct TITH_TLV *tlv, uint8_t hash[hydro_hash_BYTES]);
  */
 void tith_prepareItemSignature(struct TITH_TLV *tlv);
 void tith_verifyItemSignatures(struct TITH_TLV *tlv);
+void tith_getItemIdentity(struct TITH_TLV *tlv,
+    uint8_t identity[hydro_hash_BYTES]);
+
+/*
+ * Adds the mixed TLV/string Value defined for Via by TTS-0005.
+ * publicKey is required exactly when address is unlisted.
+ */
+struct TITH_TLV *tith_addVia(struct TITH_TLV *tlv, const char *address,
+    const uint8_t publicKey[hydro_sign_PUBLICKEYBYTES], uint64_t timestamp,
+    const char *program, bool child);
 
 /*
  * Sends the current root TLV

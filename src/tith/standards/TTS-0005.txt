@@ -3,7 +3,7 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TTS‑0005
-Revision:     1
+Revision:     3
 Title:        Bundle Format
 Author(s):    Stephen Hurd
 Date:         2026‑08‑17
@@ -35,6 +35,7 @@ Contents
   4.  Ancillary Types
   5.  Error Handling
   6.  Reply Bundles
+  7.  Duplicate Acceptance
 
   A. References
   B. History
@@ -279,31 +280,40 @@ Contents
   An Accepted value which contains a manditory RequestIdentifier as
   defined in section 4, followed by a manditory TLVHash as defined in
   section 4.  It indicates that the identified value has been
-  validated, accepted, and stored by the receiver.
+  validated and either durably stored by the receiver or recognized
+  as a previously accepted duplicate as specified in section 7.
 
   69. PollMessages
   ────────────────
-  A PollMessages value contains a manditory RequestIdentifier.  If
-  this is present, requests that the Destination include any held
-  Messages for the Origin in the response.  If the Origin is the
-  unlisted address, only Messages associated with its top‐level
-  PublicKey are held for that Origin.
+  A PollMessages value contains a manditory RequestIdentifier and
+  requests held Messages committed to the Bundle Origin.
 
   70. PollFiles
   ─────────────
-  A PollFiles value  contains a manditory RequestIdentifier.  If this
-  is present, requests that the Destination include any held Files
-  for the Origin in the response.  If the Origin is the unlisted
-  address, only Files associated with its top‐level PublicKey are held
-  for that Origin.
+  A PollFiles value contains a manditory RequestIdentifier and
+  requests held standalone Files committed to the Bundle Origin.
 
   71. PollFileRequests
   ────────────────────
-  A PollFileRequests value  contains a manditory RequestIdentifier.
-  If this is present, requests that the Destination include any held
-  Files for the Origin in the response.  If the Origin is the
-  unlisted address, only Files associated with its top‐level
-  PublicKey are held for that Origin.
+  A PollFileRequests value contains a manditory RequestIdentifier and
+  requests held FileRequests committed to the Bundle Origin.
+
+  When the Destination accepts a Poll value, it MUST atomically claim
+  every matching held value which is not already claimed for an active
+  exchange.  This complete claimed set is the poll snapshot.
+  Every value in the poll snapshot MUST be returned in the same
+  SignedTLV as the Accepted value as specified in section 6.  An empty
+  poll snapshot is accepted with no returned values.
+
+  A value committed after the atomic claim is not in that poll
+  snapshot and remains available for a later exchange.  A value
+  already claimed for an active exchange is likewise excluded and
+  remains claimed for that exchange.  The Destination MUST NOT select
+  only part of the otherwise available matching set.
+
+  A held value matches only when it is held for the authenticated
+  identity represented by the Bundle Origin.  For an unlisted Origin
+  this identity includes the top‐level PublicKey.
 
   A node that holds a Message, File, or FileRequest for the unlisted
   address MUST retain the associated PublicKey as local delivery
@@ -435,9 +445,21 @@ Contents
 
   113. Via
   ────────
-  A Via Value contains a required Address followed by a required
-  Timestamp value followed by a UTF‑8 string which MAY contain the
-  program name and version separated by a space.
+  A Via value contains a required Address, followed by a PublicKey if
+  and only if the Address is the unlisted address, followed by a
+  required Timestamp and a required UTF‑8 string.  The string MAY
+  contain the program name and version separated by a space.
+
+  The PublicKey identifies the particular unlisted system represented
+  by the Via.  It is path metadata and does not override a nodelist key
+  or authenticate any other value.
+
+  The system originating a Message or distribution File MUST append a
+  Via for itself before first committing the item to a next hop.  Each
+  forwarding system MUST likewise append one Via for itself before
+  committing a new next hop.  Existing Via values MUST NOT be removed,
+  reordered, or modified.  Repackaging or retrying an item for the same
+  committed next hop MUST NOT append another Via.
 
   114. MessageID
   ──────────────
@@ -543,6 +565,40 @@ Contents
   value, the Reply Bundle is complete.
 
 
+7. Duplicate Acceptance
+───────────────────────
+
+  A Message and a standalone File have a stable signed‐item identity.
+  This identity consists of the item type, its authenticated Origin
+  address and PublicKey, and its end‐to‐end Signature.  For a listed
+  Origin, the PublicKey is the nodelist key used to authenticate the
+  item.  For an unlisted Origin, it is the PublicKey accompanying that
+  Origin.
+
+  The RequestIdentifier, Via, SeenBy, and AdditionalKludgeLine values
+  following the Signature MUST NOT be part of the duplicate identity.
+
+  The end‐to‐end Signature MUST be validated before its identity is
+  used for duplicate acceptance.  When first accepting an item, the
+  receiver MUST make the item and its duplicate identity durable
+  before returning Accepted.  The receiver MUST retain the identity
+  and MUST NOT expire it automatically.  An explicit administrative
+  operation MAY remove retained identities; doing so permits a later
+  retransmission to be accepted as a new item.
+
+  When the receiver is presented with an identity it has already
+  accepted, it MUST NOT store, import, or forward the item again.  It
+  MUST return Accepted containing the RequestIdentifier and TLVHash
+  applicable to the current transmission.  This permits a sender to
+  retry an item whose earlier Accepted response was lost or was not
+  made durable locally.
+
+  A File inside a Message is covered by the Message identity.  A File
+  directly inside a payload SignedTLV uses its own Origin and
+  Signature.  Poll and FileRequest values are repeatable requests and
+  do not use signed‐item duplicate identities.
+
+
 A. References
 ─────────────
 
@@ -570,5 +626,11 @@ B. History
 ──────────
 
    Rev.1, 2025‑11‑15: Initial Release.
+
+   Rev.2, 2026‑08‑17: Added exact unlisted identities to Via and
+   idempotent acceptance of duplicate signed items.
+
+   Rev.3, 2026‑08‑17: Defined complete atomic poll snapshots and
+   corrected PollFileRequests to return held FileRequests.
 
 **********************************************************************

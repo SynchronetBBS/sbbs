@@ -1,0 +1,319 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TSP‑0004
+Revision:     1
+Title:        Local IPC Format
+Author(s):    Stephen Hurd
+Date:         2026‑08‑17
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Standard Proposal (TSP) — it documents a
+  proposed standard and solicits discussion.  Until promoted to a TTS,
+  this is experimental only and does not describe required behaviour.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  This document defines the carrier‐independent request and result
+  format used by local TITH services.  It defines lexical rules,
+  envelopes, operation dispatch, errors, caller identity, and the
+  requirements placed on IPC bindings.  Individual operations and
+  bindings are defined by separate documents.
+
+Contents
+────────
+
+  1. Introduction
+  2. Lexical Format
+  3. Request and Result Envelopes
+  4. Operations and Extensibility
+  5. Caller Identity and Authorization
+  6. Errors and Incomplete Transactions
+  7. IPC Binding Requirements
+  8. Capabilities Operation
+  9. Feedback and Discussion
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  A TITH local service presents operations to programs on the same
+  host.  The operation documents use one canonical text format without
+  depending on a socket API, filesystem rendezvous, linked ABI, or
+  operating system handle type.
+
+  An IPC binding carries the exact request and result documents.  It
+  also supplies a securely established caller identity and may supply
+  an ordered table of associated native handles.  Credentials and
+  native handle values are never fields in an IPC document.
+
+  TSP‑0005 defines durable outbound Jobs and their control operations.
+  TSP‑0006 defines Job submission.  TSP‑0007 through TSP‑0010 define
+  bindings for this format.
+
+
+2. Lexical Format
+─────────────────
+
+  Every IPC document is canonical UTF‑8 text.  Every physical line
+  MUST end with Line Feed (U+000A).  A Carriage Return (U+000D) is
+  permitted only as the escape "\r" inside a quoted string.  Empty
+  lines, comments, leading separators, trailing separators, and
+  Horizontal Tabs are prohibited.  Fields on one line are separated
+  by exactly one Space (U+0020).
+
+  Directive words and unquoted values are the case‐sensitive ASCII
+  literals shown in the document which defines their operation.  An
+  unsigned integer is one or more ASCII decimal digits without a
+  leading zero, except for the literal "0".  A signed integer is an
+  unsigned integer or a Hyphen‐Minus (U+002D) followed by a nonzero
+  unsigned integer.
+
+  A quoted string begins and ends with Quotation Mark (U+0022).  Its
+  unescaped contents MUST be valid UTF‑8 and MUST NOT contain a C0
+  control code point, U+007F, Quotation Mark, or Reverse Solidus
+  (U+005C).  The following escapes are defined:
+
+    \"     Quotation Mark (U+0022)
+    \\     Reverse Solidus (U+005C)
+    \0     Null (U+0000)
+    \t     Horizontal Tab (U+0009)
+    \n     Line Feed (U+000A)
+    \r     Carriage Return (U+000D)
+    \xHH   another C0 code point or U+007F
+
+  Each H is one uppercase hexadecimal digit.  The \xHH form MUST NOT
+  encode a code point having one of the preceding named escapes and
+  MUST NOT encode a value above 7F.  No other escape is valid.  After
+  decoding, a field specified as UTF‑8 MUST be valid UTF‑8.
+
+  An operation document may impose further restrictions on a quoted
+  string.  In particular, a local pathname cannot contain Null even
+  though another explicitly length‐delimited string can.
+
+  In displayed grammars, brackets indicate an optional physical line,
+  an ellipsis indicates repetition, and a Vertical Line (U+007C)
+  separates alternatives.  These marks are notation and are not
+  present unless shown inside a literal.  An indented continuation of
+  an alternative is typographic wrapping of the same physical line.
+
+
+3. Request and Result Envelopes
+───────────────────────────────
+
+  A version 1 request has this outer grammar:
+
+    TITH-IPC 1
+    <operation-request>
+    [<operation-data>]...
+    End
+
+  A version 1 result has this outer grammar:
+
+    TITH-IPC-Result 1
+    <operation-result>
+    [<result-data>]...
+    End
+
+  The operation document defines every line between the header and the
+  final End, including any nested blocks and their End lines.  The End
+  which closes the outer grammar is always the last line.  A complete
+  document contains no bytes after its final Line Feed.
+
+  One request produces exactly one result.  An operation MUST NOT
+  commit a state change in response to a malformed or incomplete
+  request.  The binding determines how the result is associated with
+  its request and when each complete document becomes visible.
+
+
+4. Operations and Extensibility
+───────────────────────────────
+
+  The first line selects IPC format version 1.  The following line
+  selects one operation using the exact grammar in the document which
+  owns that operation.  An unsupported version or unknown operation
+  produces the Error result in section 6 when the binding permits a
+  result to be returned.
+
+  A future operation uses another operation name under the same
+  envelope.  A change to the lexical rules or outer envelope requires
+  a new IPC version.  A revision MUST NOT silently change the grammar
+  or meaning of an existing version and operation pair.
+
+  An operation MAY use nested blocks, arbitrary‐length strings, and an
+  arbitrary number of repeated values.  Implementations still check
+  integer conversion, allocation arithmetic, available storage, and
+  local resource policy.  They report failure rather than truncating
+  an otherwise valid document.
+
+
+5. Caller Identity and Authorization
+────────────────────────────────────
+
+  Every binding MUST securely establish a local caller identity and
+  present it to the service with the request.  The binding document
+  defines the source and lifetime of that identity.  Text supplied by
+  the request is not proof of an operating system identity.
+
+  An operation authorizes requested objects and actions against the
+  binding‐supplied identity.  A caller gains no authority merely by
+  spelling an Application, local identity, pathname, or configuration
+  name.  Unauthorized requests MUST NOT disclose objects belonging to
+  another caller.
+
+  A binding MUST NOT expose this local service as an unauthenticated
+  network service.  Authorization policy and service location come
+  from trusted host configuration and cannot be selected by a request.
+
+
+6. Errors and Incomplete Transactions
+─────────────────────────────────────
+
+  A request rejected before operation‐specific processing uses:
+
+    TITH-IPC-Result 1
+    Error Invalid|NotAuthorized|TemporaryFailure
+        "<UTF-8-description>"
+    End
+
+  The Error line occupies one physical line; its wrapping above is
+  only typographic.  Invalid includes an unsupported version, unknown
+  operation, malformed envelope, invalid escape, invalid UTF‑8, and an
+  unknown directive or value.  NotAuthorized means the caller lacks
+  authority for the requested operation.  TemporaryFailure means the
+  identical request may be retried after a local condition changes.
+
+  Error commits no operation state change.  When the binding cannot
+  return a complete Error result, it reports an incomplete transaction
+  as defined by that binding.
+
+  A Client which does not receive a complete result through its final
+  End MUST treat the outcome as unknown.  It resolves an operation
+  with possible state changes using the operation's idempotency,
+  status, or recovery rule.  It MUST NOT infer success from closure,
+  process status, partial output, or carrier state.
+
+
+7. IPC Binding Requirements
+────────────────────────────
+
+  A conforming binding specification MUST define:
+
+    • how a complete request is published or framed;
+    • how its one result is associated and made complete;
+    • how the caller identity is securely established;
+    • whether associated native handles are supported and, if so, how
+      they form a zero‐based ordered table;
+    • behaviour after truncation, disconnection, process failure, and
+      system restart; and
+    • the point at which temporary carrier objects may be removed.
+
+  A binding MUST carry the exact IPC document bytes without newline,
+  character set, normalization, case, escape, or field conversion.  A
+  binding may use carrier metadata for correlation and authentication,
+  but operation semantics MUST NOT depend on an alternate copy of a
+  field in that metadata.
+
+  Associated handles are out‐of‐band carrier objects.  An operation
+  refers to them only by zero‐based index.  A numeric descriptor or
+  native handle value MUST NOT appear in an IPC document.  A binding
+  MAY carry native values as carrier metadata only when it securely
+  identifies the source process and converts each value into a
+  service‐owned handle before operation processing.
+
+
+8. Capabilities Operation
+─────────────────────────
+
+  Every conforming local service supports this request:
+
+    TITH-IPC 1
+    Capabilities
+    End
+
+  Its result is:
+
+    TITH-IPC-Result 1
+    Capabilities Completed
+    Operation "<operation-name>"
+    [Operation "<operation-name>"]...
+    [Feature "<feature-name>"]...
+    End
+
+  Operation lines list every operation available to the authenticated
+  caller over the current binding and always include "Capabilities".
+  Feature lines describe optional behaviour within those operations.
+  Both kinds are ordered by their quoted value's exact UTF‑8 bytes and
+  contain no duplicate.  A Client ignores an unknown Feature value.
+
+  This suite defines these Feature values:
+
+    Completion.Callbacks
+    Submit.Delete
+    Submit.Move
+    Submit.Source-Handle
+    Submit.Truncate
+
+  Submit.Source-Handle is present only when the current binding and
+  service can provide an associated handle table satisfying TSP‑0006.
+  The other Submit features mean the Service implements that optional
+  ingestion or cleanup behaviour.  Completion.Callbacks means trusted
+  host configuration may associate a callback with an Application;
+  the Events and Acknowledge Operation lines independently advertise
+  the IPC event operations.
+
+  Capabilities is a snapshot of implemented and binding‐available
+  behaviour.  It does not authorize an Application, Source, Job,
+  routing choice, cleanup action, or callback configuration.  The
+  selected operation performs its normal authorization and may reject
+  data which a listed feature cannot safely handle.
+
+
+9. Feedback and Discussion
+───────────────────────────
+
+  Keeping the IPC format separate from its operations allows the Job
+  model and submission transaction to remain identical over sockets,
+  atomic files, named pipes, or later local carriers.  Conversely, a
+  new operation need not revise every binding.
+
+  This format is deliberately strict.  Local IPC is not a conversion
+  boundary for malformed legacy text, and a native producer has no
+  reason to emit multiple representations of the same request.
+
+
+A. References
+─────────────
+
+  [TSP‑0005] "Durable Outbound Jobs", TITH, 2026‑08‑17.
+
+  [TSP‑0006] "Outbound Job Submission", TITH, 2026‑08‑17.
+
+  [TSP‑0007] "Unix‐Domain Socket IPC Binding", TITH, 2026‑08‑17.
+
+  [TSP‑0008] "Atomic File IPC Binding", TITH, 2026‑08‑17.
+
+  [TSP‑0009] "Authenticated TCP IPC Binding", TITH, 2026‑08‑17.
+
+  [TSP‑0010] "Windows Named‐Pipe IPC Binding", TITH, 2026‑08‑17.
+
+
+B. History
+──────────
+
+   Rev.1, 2026‑08‑17: Initial Release.
+
+**********************************************************************

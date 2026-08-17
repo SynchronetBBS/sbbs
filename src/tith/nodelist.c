@@ -49,16 +49,16 @@
  * Phone Number - As FTS-5000 with the following exceptions:
  *                Static IP addresses will not go here.
  *                Instead of "-Unpublished-", a zero-length string is used
- * System Flags - Flags which indicate when a node is available, and the
- *                file/update requests supported.
- *                (ie: CM,ICM,MN,XA,XB,XC,XP,XR,XW,XX,#xx,!xx,TZZ)
+ * System Flags - Flags which indicate when a node is available, which
+ *                callers are accepted, and the file/update requests supported.
+ *                (ie: CM,LO,ICM,MN,XA,XB,XC,XP,XR,XW,XX,#xx,!xx,Tyz)
  *                Note that this list does not correspond precisely to
  *                FTS-5001 categories as it includes ICM and does not
  *                include MO.
- * Dial Flags - Flags which correlate to usage of the phone number field
- *              This includes the Modem Connection Protocol flags, the
- *              Session Level Error-correction and Compression Flags, and
- *              the ISDN capability flags.
+ * PSTN and ISDN Flags - Flags which correlate to usage of the phone number
+ *                       field. This includes the Modem Connection Protocol
+ *                       flags, the Session Level Error-correction and
+ *                       Compression Flags, and the ISDN capability flags.
  * Internet Flags - Contains information for internet users.
  *                  If the INA: flag is present, it is always first.
  *                  Flags from sections 5.9.1, 5.9.2, and 5.9.3 (except

@@ -1,0 +1,335 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TSP‑0010
+Revision:     1
+Title:        Windows Named‐Pipe IPC Binding
+Author(s):    Stephen Hurd
+Date:         2026‑08‑17
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Standard Proposal (TSP) — it documents a
+  proposed standard and solicits discussion.  Until promoted to a TTS,
+  this is experimental only and does not describe required behaviour.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  This document binds TSP‑0004 local IPC documents to Windows named
+  pipes.  It defines pipe framing, Windows token identity, a binary
+  carrier preamble, safe cross‐process file handle duplication,
+  completion, failure recovery, and security.
+
+Contents
+────────
+
+  1. Introduction
+  2. Endpoint and Pipe Creation
+  3. Carrier Preamble
+  4. Caller Identity
+  5. Associated File Handles
+  6. Pipe Transaction
+  7. Failure and Recovery
+  8. Security
+  9. Feedback and Discussion
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  Windows named pipes provide a local byte stream, kernel‐authenticated
+  security tokens, access control lists, and the process information
+  needed to duplicate an open file handle.  This binding uses those
+  facilities without adding credentials or native handle numbers to a
+  TSP‑0004 text document.
+
+  The binary carrier preamble precedes the exact IPC request.  It is
+  binding metadata and supplies an ordered table for TSP‑0006
+  Source-Handle.  Operations which do not use associated handles send
+  an empty table.
+
+
+2. Endpoint and Pipe Creation
+─────────────────────────────
+
+  Trusted host configuration selects one local pipe name beginning with
+  this exact nine‐character literal:
+
+    \\.\pipe\
+
+  Every Reverse Solidus shown is U+005C.  The name is not carried in an
+  IPC document.  An application‐container deployment uses the locally
+  required pipe namespace selected by host configuration.
+
+  The Service creates byte‐type, byte‐read‐mode pipe instances.  It
+  rejects remote Clients and uses the Windows facility corresponding to
+  PIPE_REJECT_REMOTE_CLIENTS when available.  A host without that flag
+  MUST enforce the same local‐only property through supported pipe and
+  security configuration.
+
+  The pipe security descriptor grants connection only to configured
+  local principals and the Service.  A default or inherited permissive
+  discretionary access control list is not sufficient.
+
+  Before sending any preamble byte, the Client obtains the pipe Server
+  process identifier with GetNamedPipeServerProcessId(), opens that
+  process for identity query, and verifies its process token against the
+  trusted Service Windows principal in host configuration.  The pipe
+  name and successful connection alone do not authenticate the Service.
+  Failure closes the pipe without transmitting request information.
+
+  The Client opens the pipe with SECURITY_SQOS_PRESENT and the
+  SecurityImpersonation level.  A Service verifies that the resulting
+  token permits local impersonation and rejects a lower level.
+
+  Each connected pipe instance carries one transaction.  Concurrent
+  instances have independent caller tokens, preambles, handle tables,
+  requests, and results.
+
+
+3. Carrier Preamble
+───────────────────
+
+  Immediately after connecting, the Client sends these fields in order:
+
+    • the eight ASCII bytes of the literal "TITHNP01";
+    • ProcessCreationTime as a canonical TTS‑0002 unsigned integer;
+    • HandleCount as a canonical TTS‑0002 unsigned integer; and
+    • exactly HandleCount canonical TTS‑0002 unsigned HandleValue
+      integers.
+
+  ProcessCreationTime is the unsigned 64‑bit Windows FILETIME creation
+  value returned for the Client process by GetProcessTimes().  A
+  HandleValue is the bit pattern of one non‐Null Windows HANDLE in the
+  Client process, represented as an unsigned integer.  Values occur in
+  associated table order: index zero is first, index one is second, and
+  so on.
+
+  The first byte after the final HandleValue, or after HandleCount when
+  it is zero, is the first byte of the exact TSP‑0004 request.  The
+  preamble has no padding, byte‐order field, or terminating Null.  Pipe
+  message boundaries, structure packing, and native pointer
+  representations are not used to encode its integers.
+
+  A malformed literal or integer, a value outside the Client's native
+  HANDLE width, a Null HandleValue, an unrepresentable count, or an
+  incomplete preamble closes the pipe without an IPC result.
+
+
+4. Caller Identity
+──────────────────
+
+  After reading the complete preamble and before reading or processing
+  IPC request data, the Service performs all of these steps:
+
+    1. It calls ImpersonateNamedPipeClient() and verifies success.
+    2. It obtains and duplicates the impersonation token needed for
+       authorization, including its user and logon identities.
+    3. It obtains the pipe Client process and session identifiers.
+    4. It opens that exact process for query and handle duplication.
+    5. It verifies that GetProcessTimes() returns the transmitted
+       ProcessCreationTime.
+    6. It verifies that the process token user, logon identity, and
+       session agree with the pipe impersonation token and session.
+    7. It calls RevertToSelf() and verifies success before continuing
+       privileged Service work.
+
+  The retained Windows token identity is the TSP‑0004 caller identity.
+  A process identifier alone is not an identity.  The creation‐time,
+  token, and session checks prevent a terminated Client's reused
+  process identifier from selecting another process for
+  DuplicateHandle().
+
+  If ImpersonateNamedPipeClient() fails, the Service closes every
+  acquired resource and the pipe without processing the request.  Once
+  impersonation succeeds, every success and failure path calls
+  RevertToSelf() before the thread performs other Service work.  If a
+  preceding step fails and reversion succeeds, the Service closes the
+  resources and pipe without processing the request.
+
+  If RevertToSelf() fails, the Service performs best‐effort resource
+  cleanup and immediately terminates the Service process.  The affected
+  thread MUST NOT return to a worker pool, accept another request, or
+  continue running in the Client's security context.
+
+
+5. Associated File Handles
+──────────────────────────
+
+  For each HandleValue, the Service calls DuplicateHandle() with the
+  verified Client process as source, its own process as target,
+  inheritance disabled, and DUPLICATE_SAME_ACCESS.  It MUST NOT use
+  DUPLICATE_CLOSE_SOURCE.  Failure closes all duplicates and rejects
+  the transaction before operation processing.  Each duplicate is an
+  opaque Service‐owned carrier handle at this point; duplication does
+  not validate or ingest an Attachment Source.
+
+  The opaque duplicates, in preamble order, form the associated handle
+  table.  After parsing the request, every referenced index exists,
+  every index is used exactly once, and no table entry is unused.  A
+  mismatch makes Submit Not-Committed with Invalid.  A non-Submit
+  operation sends an empty table unless its own standard defines an
+  associated handle field.
+
+  Submit performs all idempotency classification before inspecting a
+  Source object.  It closes duplicates belonging to Existing or
+  Conflict Jobs without reopening, querying, or validating them.  For
+  each Source-Handle in a New Job, it reopens the duplicate's exact file
+  object with ReOpenFile() for readable access and an independent file
+  position.  It then validates the reopened handle as a readable regular
+  filesystem file meeting every TSP‑0006 Source-Handle requirement and
+  closes the first duplicate.
+
+  A Service advertises the TSP‑0004 feature "Submit.Source-Handle" over
+  this binding only when it can provide these guarantees.
+
+  The Client retains every original handle and its underlying file
+  unchanged until a complete result.  The Service closes every handle
+  it owns when the operation completes or is rejected.  Neither Copy
+  nor rejection closes or modifies a Client handle.
+
+  HandleCount is not given an arbitrary protocol limit.  Checked
+  integer conversion, available process handles and memory, Windows
+  resource policy, and the request's actual indexed fields remain
+  applicable and cause failure rather than truncation.
+
+
+6. Pipe Transaction
+───────────────────
+
+  Following the preamble, the Client sends one complete TSP‑0004
+  request through its final End line and sends no further bytes.  It
+  keeps the pipe connected and every associated source handle open.
+
+  The Service reads the request through its final End, performs the
+  operation, and writes one complete result through its final End.
+  Neither side uses pipe disconnection as document framing.
+
+  After writing the result, the Service flushes the pipe so the Client
+  receives all result bytes, then disconnects that pipe instance.  The
+  Client determines completion from the parsed outer End and not from
+  ERROR_BROKEN_PIPE or another disconnection indication.
+
+  The request and result bytes are transmitted exactly as specified by
+  TSP‑0004.  The binding adds no text length, Null, Carriage Return,
+  character conversion, or alternate newline.
+
+
+7. Failure and Recovery
+───────────────────────
+
+  Failure before the caller identity and associated table are validated
+  closes the pipe without an IPC result.  After validation, an ordinary
+  malformed request SHOULD receive the applicable TSP‑0004 Error when
+  its framing and pipe state permit it.
+
+  If the Client does not receive and validate the complete result, the
+  outcome is unknown.  It applies the operation's idempotency, Query,
+  and recovery rules.  For Submit it first uses Lookup-Submission on a
+  new pipe instance with an empty handle table.  It transfers handles
+  again only if it elects to resubmit the original Submit document.
+
+  Process identifiers, HandleValues, duplicated handles, impersonation
+  tokens, and the associated table are valid only for their live pipe
+  transaction.  A Job never retains one as an Attachment Source.
+
+
+8. Security
+───────────
+
+  The Client authenticates the Service process token before transmitting
+  the preamble.  The Service authorizes against the verified Windows
+  token identity, not an Application, SID string, process identifier,
+  or handle value supplied as request text.  Pipe access control is an
+  initial filter and does not replace operation authorization.
+
+  Source-Path access is checked under the caller's retained token or by
+  an equivalent Windows access check.  A privileged Service MUST NOT
+  treat its own ability to open a Client‐inaccessible path as Client
+  authorization.
+
+  Every return value in the impersonation, process, token, duplication,
+  reopen, pipe read, pipe write, flush, and reversion sequence is
+  checked.  A failure closes acquired resources once and does not fall
+  back to a weaker identity or pathname‐only interpretation.  Failed
+  reversion instead terminates the Service process as required by
+  section 4.
+
+  The Service validates regular file type and access on its independent
+  reopened handle.  A Client cannot make an arbitrary numeric value
+  refer to a handle in another process because the source process is
+  fixed by the authenticated pipe connection and verified creation
+  time.
+
+
+9. Feedback and Discussion
+───────────────────────────
+
+  Named pipes provide the normal Windows local security model and avoid
+  separate application key management.  The binary preamble remains a
+  binding detail so the IPC request grammar is identical to the Unix,
+  TCP, and atomic file bindings.
+
+  Process creation time and token comparisons are necessary because a
+  process number by itself is reusable.  ReOpenFile() is necessary
+  because DuplicateHandle() refers to the same file object and alone
+  would share its current file position with the Client.
+
+
+A. References
+─────────────
+
+  [Microsoft-DuplicateHandle] "DuplicateHandle function", Microsoft,
+  https://learn.microsoft.com/windows/win32/api/handleapi/nf-handleapi-duplicatehandle
+
+  [Microsoft-GetNamedPipeClientProcessId]
+  "GetNamedPipeClientProcessId function", Microsoft,
+  https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-getnamedpipeclientprocessid
+
+  [Microsoft-GetNamedPipeServerProcessId]
+  "GetNamedPipeServerProcessId function", Microsoft,
+  https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-getnamedpipeserverprocessid
+
+  [Microsoft-Impersonation]
+  "Impersonating a Named Pipe Client", Microsoft,
+  https://learn.microsoft.com/windows/win32/ipc/impersonating-a-named-pipe-client
+
+  [Microsoft-NamedPipeSecurity]
+  "Named Pipe Security and Access Rights", Microsoft,
+  https://learn.microsoft.com/windows/win32/ipc/named-pipe-security-and-access-rights
+
+  [Microsoft-ImpersonateNamedPipeClient]
+  "ImpersonateNamedPipeClient function", Microsoft,
+  https://learn.microsoft.com/windows/win32/api/namedpipeapi/nf-namedpipeapi-impersonatenamedpipeclient
+
+  [Microsoft-ReOpenFile] "ReOpenFile function", Microsoft,
+  https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-reopenfile
+
+  [Microsoft-RevertToSelf] "RevertToSelf function", Microsoft,
+  https://learn.microsoft.com/windows/win32/api/securitybaseapi/nf-securitybaseapi-reverttoself
+
+  [TSP‑0004] "Local IPC Format", TITH, 2026‑08‑17.
+
+  [TSP‑0006] "Outbound Job Submission", TITH, 2026‑08‑17.
+
+  [TTS‑0002] "Type Length Value Encoding", TITH, 2026‑08‑16.
+
+
+B. History
+──────────
+
+   Rev.1, 2026‑08‑17: Initial Release.
+
+**********************************************************************

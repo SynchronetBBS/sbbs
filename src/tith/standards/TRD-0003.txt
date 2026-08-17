@@ -3,7 +3,7 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TRD‑0003
-Revision:     1
+Revision:     2
 Title:        A Nodelist‐Free Peer Network
 Author(s):    Stephen Hurd
 Date:         2026‑08‑17
@@ -142,6 +142,8 @@ Contents
   A routing decision is local.  It does not authorize modification of
   the signed portion of a Message.  RequestIdentifier, Via, SeenBy, and
   AdditionalKludgeLine retain the per‐hop rules specified by TTS‑0005.
+  A Via for an unlisted peer includes its PublicKey, so the path can
+  distinguish peers which all use the address "p2p#-1".
 
   A File attached to a Message travels with that Message.  A standalone
   File remains a one‐hop transfer and is not routed merely because the
@@ -199,21 +201,19 @@ Contents
 ────────────────────────
 
   Address‐only SeenBy values cannot distinguish peers in this Domain
-  because every peer uses "p2p#-1".  A peer therefore needs a local
-  duplicate cache when it uses a routing algorithm which may present
-  the same Message more than once.
+  because every peer uses "p2p#-1".  The duplicate acceptance record
+  required by TTS‑0005 therefore also provides loop protection when a
+  routing algorithm presents the same Message more than once.
 
-  The signed portion of a forwarded Message is immutable.  A peer can
-  compare or hash those exact encoded bytes, or use the combination of
-  the Origin PublicKey and Signature, as a stable local duplicate key.
-  A duplicate need not be processed or forwarded again.  Its transport
-  response still reflects whether the Message has been accepted and
-  stored as defined by TTS‑0005.
+  TTS‑0005 defines the authenticated Origin identity and end‐to‐end
+  Signature as the stable identity of a signed item.  A peer which has
+  already accepted that identity does not store, import, or forward it
+  again, but returns Accepted for the current transmission.  This rule
+  also handles a sender retry after an Accepted response was lost.
 
-  The cache lifetime is part of local storage policy.  Expiring an
-  entry can allow an old Message to circulate again, while retaining
-  every entry forever requires unbounded storage.  Applications should
-  select a policy appropriate to their routing and retention model.
+  TTS‑0005 requires accepted identities not to expire automatically.
+  An administrator can explicitly remove them, with the consequence
+  that a later copy can be accepted as new.
 
 
 9. Trust and Administration
@@ -257,5 +257,8 @@ B. History
 ──────────
 
    Rev.1, 2026‑08‑17: Initial Release.
+
+   Rev.2, 2026‑08‑17: Updated Via identity and duplicate suppression to
+   follow TTS‑0005 revision 2.
 
 **********************************************************************

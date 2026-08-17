@@ -2,7 +2,7 @@ all: tith nodelist tith-bundle
 -include $(OBJDIR)*.d
 
 CFLAGS	+=	-std=c11 -MMD -MP -pthread
-LDFLAGS	+=	-pthread
+LDFLAGS	+=	-pthread -lstdthreads
 ifdef DEBUG
  CFLAGS	+=	-g -O0 -Wall -pedantic -Wconversion -Wextra -Wno-format-truncation
 else
@@ -10,7 +10,7 @@ else
  LDFLAGS+=	-Os -flto -fwhole-program -s
 endif
 
-XSI_CFLAGS := $(CFLAGS) -D_XOPEN_SOURCE=500
+XSI_CFLAGS := $(CFLAGS) -D_XOPEN_SOURCE=700
 CFLAGS	+=  -D_C11_SOURCE
 
 TITH_BUNDLE_OBJS := \
@@ -36,7 +36,8 @@ TITH_OBJS := \
 	tith-nodelist.o \
 	tith-server.o \
 	tith-stdio.o \
-	tith-strings.o
+	tith-strings.o \
+	tith-xsi.o
 
 NODELIST_OBJS := \
 	base64.o \

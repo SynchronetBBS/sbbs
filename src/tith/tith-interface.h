@@ -139,4 +139,32 @@ void closeDirectory(void *dhandle);
  */
 bool isDir(const char *path);
 
+#define TITH_ITEM_IDENTITY_BYTES 32
+
+enum TITH_StoreResult {
+	TITH_STORE_FAILED,
+	TITH_STORE_NEW,
+	TITH_STORE_DUPLICATE
+};
+
+/*
+ * Atomically stores a validated Message or standalone File and its
+ * duplicate-acceptance identity.
+ *
+ * Before returning TITH_STORE_NEW, both the item and the identity MUST be
+ * durable.  TITH_STORE_DUPLICATE means that this identity was made durable
+ * by an earlier successful call; the item supplied by this call MUST NOT be
+ * stored again.  Implementations MUST NOT expire identities automatically.
+ * Calls may occur concurrently for the same identity and must be serialized.
+ *
+ * inbound is the configured inbound directory.  itemValue is the exact Value
+ * of the item TLV; itemType and itemLength allow the callback to preserve the
+ * complete item.  All pointers remain valid only for the duration of the
+ * synchronous call.
+ */
+enum TITH_StoreResult storeSignedItem(void *handle, const char *inbound,
+    const uint8_t identity[TITH_ITEM_IDENTITY_BYTES], int itemType,
+    const uint8_t *itemValue,
+    uint64_t itemLength);
+
 #endif

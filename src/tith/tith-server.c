@@ -7,6 +7,7 @@
 #include "tith.h"
 #include "tith-common.h"
 #include "tith-config.h"
+#include "tith-interface.h"
 #include "tith-strings.h"
 
 static bool
@@ -40,8 +41,15 @@ validateExpectedPublicKey(const struct TITH_TLV *publicKey,
 		tith_logError(error);
 }
 
+struct responseInfo {
+	uint64_t requestIdentifier;
+	bool poll;
+	bool duplicate;
+};
+
 static void
-addAcceptedPayload(struct TITH_TLV *header, uint64_t requestIdentifier,
+addAcceptedPayload(struct TITH_TLV *header,
+    const struct responseInfo *responses, size_t responseCount,
     const uint8_t requestHash[hydro_hash_BYTES])
 {
 	uint8_t headerHash[hydro_hash_BYTES];
@@ -50,11 +58,15 @@ addAcceptedPayload(struct TITH_TLV *header, uint64_t requestIdentifier,
 	struct TITH_TLV *signedData = tith_addContainer(payload, TITH_SignedData, true);
 	struct TITH_TLV *tail = tith_addData(signedData, TITH_TLVHash,
 	    sizeof(headerHash), headerHash, true);
-	struct TITH_TLV *accepted = tith_addContainer(tail, TITH_Accepted, false);
-	struct TITH_TLV *identifier = tith_addNumber(accepted,
-	    TITH_RequestIdentifier, requestIdentifier, true);
-	tith_addData(identifier, TITH_TLVHash, hydro_hash_BYTES,
-	    (void *)requestHash, false);
+	for (size_t i = 0; i < responseCount; i++) {
+		struct TITH_TLV *accepted = tith_addContainer(tail,
+		    TITH_Accepted, false);
+		struct TITH_TLV *identifier = tith_addNumber(accepted,
+		    TITH_RequestIdentifier, responses[i].requestIdentifier, true);
+		tith_addData(identifier, TITH_TLVHash, hydro_hash_BYTES,
+		    (void *)requestHash, false);
+		tail = accepted;
+	}
 	tith_addNullData(signedData, TITH_Signature, hydro_sign_BYTES, false);
 }
 
@@ -106,14 +118,40 @@ readPayload(struct TITH_TLV *header)
 static uint64_t
 validatePoll(struct TITH_TLV *poll)
 {
-	if (poll == NULL || poll->type != TITH_PollMessages || poll->next)
-		tith_logError("Expected one PollMessages request");
+	if (poll == NULL || poll->type != TITH_PollMessages)
+		tith_logError("Expected PollMessages request");
 	tith_parseTLV(poll);
 	struct TITH_TLV *identifier = poll->child;
 	if (identifier == NULL || identifier->type != TITH_RequestIdentifier ||
 	    identifier->next != NULL)
 		tith_logError("Invalid PollMessages request");
 	return tith_getNumberValue(identifier);
+}
+
+static uint64_t
+itemRequestIdentifier(struct TITH_TLV *item)
+{
+	struct TITH_TLV *signature = item->child;
+	while (signature && signature->type != TITH_Signature)
+		signature = signature->next;
+	if (signature == NULL || signature->next == NULL ||
+	    signature->next->type != TITH_RequestIdentifier)
+		tith_logError("Signed item has no RequestIdentifier");
+	return tith_getNumberValue(signature->next);
+}
+
+static bool
+acceptSignedItem(struct TITH_TLV *item)
+{
+	uint8_t identity[hydro_hash_BYTES];
+	tith_getItemIdentity(item, identity);
+	enum TITH_StoreResult result = storeSignedItem(tith_handle,
+	    cfg->inbound, identity, item->type, item->value, item->length);
+	if (result == TITH_STORE_FAILED)
+		tith_logError("Unable to durably store signed item");
+	if (result != TITH_STORE_NEW && result != TITH_STORE_DUPLICATE)
+		tith_logError("Invalid storeSignedItem() result");
+	return result == TITH_STORE_DUPLICATE;
 }
 
 int
@@ -147,7 +185,36 @@ tith_server(void *handle)
 
 	struct TITH_TLV *request = readPayload(requestBundle.header);
 	struct TITH_TLV *payload = requestBundle.header->next;
-	uint64_t requestIdentifier = validatePoll(request);
+	if (request == NULL)
+		tith_logError("Payload has no requests");
+	size_t responseCount = 0;
+	for (struct TITH_TLV *item = request; item; item = item->next) {
+		if (responseCount == SIZE_MAX / sizeof(struct responseInfo))
+			tith_logError("Too many requests in payload");
+		responseCount++;
+	}
+	struct responseInfo *responses = calloc(responseCount,
+	    sizeof(*responses));
+	tith_pushAlloc(responses);
+	bool poll = false;
+	size_t responseIndex = 0;
+	for (struct TITH_TLV *item = request; item; item = item->next) {
+		responses[responseIndex].poll =
+		    item->type == TITH_PollMessages;
+		if (responses[responseIndex].poll) {
+			poll = true;
+			responses[responseIndex].requestIdentifier =
+			    validatePoll(item);
+		}
+		else if (item->type == TITH_Message || item->type == TITH_File) {
+			responses[responseIndex].requestIdentifier =
+			    itemRequestIdentifier(item);
+			responses[responseIndex].duplicate = acceptSignedItem(item);
+		}
+		else
+			tith_logError("Unsupported request type");
+		responseIndex++;
+	}
 	uint8_t requestHash[hydro_hash_BYTES];
 	tith_hashTLV(payload, requestHash);
 	tith_freeTLV();
@@ -155,16 +222,30 @@ tith_server(void *handle)
 	struct TITH_TLV *tail = tith_allocBundleOrigin(serverAddress);
 	struct TITH_TLV *header = tith_addBundleHeader(tail, clientAddress,
 	    clientKey);
-	addAcceptedPayload(header, requestIdentifier, requestHash);
+	addAcceptedPayload(header, responses, responseCount, requestHash);
 	tith_sendTLV();
 	tith_freeTLV();
-	tith_logf("Accepted PollMessages request %" PRIu64, requestIdentifier);
+	for (size_t i = 0; i < responseCount; i++) {
+		if (responses[i].poll)
+			tith_logf("Accepted PollMessages request %" PRIu64,
+			    responses[i].requestIdentifier);
+		else if (responses[i].duplicate)
+			tith_logf("Accepted duplicate signed item %" PRIu64,
+			    responses[i].requestIdentifier);
+		else
+			tith_logf("Accepted new signed item %" PRIu64,
+			    responses[i].requestIdentifier);
+	}
+	tith_popAlloc();
+	free(responses);
 
-	struct TITH_BundleHeader replyBundle;
-	tith_readBundleHeader(&replyBundle);
-	validateHeader(&replyBundle, clientAddress, clientKey,
-	    serverAddress, serverKey);
-	tith_freeTLV();
+	if (poll) {
+		struct TITH_BundleHeader replyBundle;
+		tith_readBundleHeader(&replyBundle);
+		validateHeader(&replyBundle, clientAddress, clientKey,
+		    serverAddress, serverKey);
+		tith_freeTLV();
+	}
 
 	tith_popAlloc();
 	free(serverAddress);

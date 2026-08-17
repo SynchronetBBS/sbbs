@@ -1,0 +1,287 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TSP‑0008
+Revision:     1
+Title:        Atomic File IPC Binding
+Author(s):    Stephen Hurd
+Date:         2026‑08‑17
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Standard Proposal (TSP) — it documents a
+  proposed standard and solicits discussion.  Until promoted to a TTS,
+  this is experimental only and does not describe required behaviour.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  This document binds TSP‑0004 local IPC documents to an atomic
+  filesystem rendezvous.  It defines per‐principal directories,
+  request tokens, durable publication, claiming, result retention,
+  acknowledgement, caller identity, failure recovery, and security.
+
+Contents
+────────
+
+  1. Introduction
+  2. Endpoint and Names
+  3. Caller Identity and Directory Ownership
+  4. Request Publication and Claiming
+  5. Result Publication and Acknowledgement
+  6. Failure and Recovery
+  7. Operation Restrictions
+  8. Security
+  9. Feedback and Discussion
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  This binding carries the same TSP‑0004 request and result documents
+  as a stream binding, but publishes each as a complete regular file.
+  It is useful for programs which can perform atomic filesystem
+  operations but cannot open a local socket or link a client library.
+
+  These rendezvous files are IPC carrier objects.  They are not a TITH
+  spool, Binkley‐style outbound, NetMail .MSG directory, or ownership
+  reference to an Attachment.  A published Submit request is not a
+  committed Job; only its complete result establishes the outcome.
+
+
+2. Endpoint and Names
+────────────────────
+
+  Trusted host configuration assigns one endpoint root to one local
+  IPC principal.  The root contains these directories on one durable
+  filesystem:
+
+    requests
+    claimed
+    results
+    acknowledgements
+
+  The Service may use additional private temporary directories.  Their
+  names and contents are not part of this binding.
+
+  Every transaction has a RequestToken.  It is exactly 32 lowercase
+  hexadecimal digits representing a randomly generated 128‑bit value.
+  A collision with any retained carrier object causes the Client to
+  generate another value.  RequestToken is transport correlation only;
+  it is not a TSP‑0005 JobID or TSP‑0006 Idempotency-Key.
+
+  The published names are the RequestToken followed by one literal
+  extension:
+
+    <request-token>.req
+    <request-token>.rsp
+    <request-token>.ack
+
+  A request has the .req name in requests before it is claimed and in
+  claimed afterward.  Its result has the .rsp name in results.  Its
+  acknowledgement has the .ack name in acknowledgements.  No other
+  filename is interpreted as a transaction object.
+
+
+3. Caller Identity and Directory Ownership
+──────────────────────────────────────────
+
+  The binding‐supplied caller identity is the IPC principal assigned to
+  the endpoint root by trusted host configuration.  A field in a
+  request, filesystem owner name, RequestToken, or filename does not
+  select or replace that identity.
+
+  Each endpoint root serves exactly one principal.  A directory shared
+  by mutually untrusted principals is nonconforming even when file
+  ownership metadata could distinguish them.
+
+  The principal may publish into requests and acknowledgements and read
+  results.  It MUST NOT create, replace, modify, or remove entries in
+  claimed or results.  The Service may claim requests, publish results,
+  and remove acknowledged transaction objects.  Other permissions are
+  minimized according to the host.
+
+
+4. Request Publication and Claiming
+───────────────────────────────────
+
+  The Client constructs one complete TSP‑0004 request in a temporary
+  regular file on the same filesystem as requests.  It MUST NOT retain
+  a writable handle to that file after publication.  Before publishing,
+  it makes the complete file contents and metadata durable.
+
+  The Client publishes by atomically installing the file in requests
+  under an unused .req name without replacing any existing object.  It
+  then makes the requests directory update durable.  A host facility
+  which cannot provide atomic no‐replace publication cannot provide
+  this binding.
+
+  The request file contains exactly the IPC document bytes.  The final
+  Line Feed after the outer End is the final byte of the file.  A byte
+  before the header, a byte after that Line Feed, or a nonregular
+  request object makes the request Invalid.
+
+  Publication makes the request available but does not acknowledge or
+  commit its operation.  The Client MUST NOT modify or remove a
+  published .req file.
+
+  The Service claims a request by atomically moving its .req file from
+  requests to claimed without replacing an existing object.  It makes
+  both directory updates durable before processing.  At most one
+  worker may successfully claim a RequestToken.
+
+  Before an operation may change state, the Service durably associates
+  RequestToken with the exact request and with enough transaction state
+  to recover its one exact result.  This carrier record and the
+  operation's state change are one atomic commitment.  The same token
+  MUST NOT execute the operation again.
+
+  The Service validates that the claimed object is a regular file,
+  reads one stable snapshot, and checks for an observable size or
+  identity change during the read.  It processes only its private copy
+  of those request bytes.  A malformed or concurrently modified file
+  produces an Invalid Error result and no operation state change.
+
+
+5. Result Publication and Acknowledgement
+─────────────────────────────────────────
+
+  The Service constructs the one complete TSP‑0004 result in private
+  storage.  It makes the result contents and metadata durable, then
+  atomically publishes the .rsp file in results without replacing an
+  existing object, and makes the results directory update durable.
+
+  The final Line Feed after the result's outer End is the final byte of
+  the .rsp file.  The Service MUST NOT publish a partial result.  A
+  complete .rsp is the binding's indication that the operation result
+  is available; its contents, not its presence alone, state the
+  outcome.
+
+  The Client opens the .rsp as a regular file, reads and validates the
+  complete result, and only then acknowledges it.  It acknowledges by
+  durably publishing an empty regular .ack file under the same
+  RequestToken using the atomic no‐replace procedure from section 4.
+
+  An .ack means the Client received a complete result and authorizes
+  removal of the carrier objects.  After observing a durable .ack, the
+  Service may durably remove the claimed .req, .rsp, and .ack in any
+  order.  It MUST NOT remove the .rsp automatically before a durable
+  acknowledgement.  An explicit administrative operation may remove
+  abandoned carrier objects.
+
+  If the Client crashes after reading the result but before publishing
+  .ack, it reads the same retained result again.  If it crashes after
+  publishing .ack, it uses the operation's idempotency mechanism to
+  recover any application state it did not preserve.
+
+
+6. Failure and Recovery
+───────────────────────
+
+  A temporary file which was never published is not a request and may
+  be removed by its creator.  A complete .req remaining in requests is
+  available for claim after restart.
+
+  Recovery treats a durable file in claimed without a result as an
+  interrupted transaction.  If no operation state was committed, the
+  Service may process it.  Otherwise it recovers the exact recorded
+  result without evaluating the operation again.  It MUST NOT create a
+  second state change merely because result publication was
+  interrupted.
+
+  A durable .rsp is returned unchanged after restart.  The Service
+  MUST NOT re‐execute its request while that result exists.  A durable
+  .ack permits normal carrier cleanup after restart.
+
+  If the Client cannot find a result and cannot determine whether its
+  request remains published or claimed, the outcome is unknown.  For
+  Submit it first publishes a Lookup-Submission request.  If necessary
+  while every Source remains available, it may publish a new
+  RequestToken carrying the identical Submit document and idempotency
+  keys.  The new transport token does not duplicate the Job.
+
+  Filesystem full, durable‐write failure, claim failure, and result
+  publication failure are temporary binding failures.  When possible,
+  the Service publishes a TemporaryFailure Error.  Otherwise the
+  request remains recoverable in claimed and no partial result is
+  exposed.
+
+
+7. Operation Restrictions
+─────────────────────────
+
+  This binding supplies no associated native handle table.  A TSP‑0006
+  Submit request containing Source-Handle produces a Not-Committed
+  Invalid failure.  Source-Path remains available and retains all
+  TSP‑0006 race, ownership, and arbitrary‐length requirements.
+  Capabilities omits the feature "Submit.Source-Handle".
+
+  Every other TSP‑0004 operation can use this binding.  An Events Wait
+  request may remain in claimed until an event becomes available or a
+  TemporaryFailure result is produced.  Publication remains
+  asynchronous; creating .req never means that an operation completed.
+
+
+8. Security
+───────────
+
+  Endpoint directories MUST prevent one IPC principal from publishing,
+  replacing, reading, acknowledging, or removing another principal's
+  transaction objects.  The Service rejects symbolic links, devices,
+  directories, and other nonregular objects in every carrier directory.
+
+  All lookups, claims, publications, and removals use race‐resistant
+  host facilities relative to already validated endpoint directories.
+  A pathname check followed by an unrelated open, rename, or removal is
+  insufficient.  The Service never follows a carrier‐object symbolic
+  link.
+
+  Request files are untrusted input even though their endpoint supplies
+  an authenticated principal.  The Service separately applies the
+  operation's Application, Source, routing, and control authorization.
+
+  RequestToken is not a secret.  Security MUST NOT depend on an
+  attacker being unable to guess it.
+
+
+9. Feedback and Discussion
+───────────────────────────
+
+  Atomic publication ensures the Service never guesses whether a
+  request file is still being written.  Retaining the result until a
+  separate acknowledgement gives a program which crashed or restarted
+  the same certainty as reading a complete socket response.
+
+  This binding deliberately does not turn an Attachment pathname into
+  a flow‐file reference.  Submit still ingests a private copy and
+  returns a durable Job; the rendezvous files only carry its IPC
+  request and result.
+
+
+A. References
+─────────────
+
+  [TSP‑0004] "Local IPC Format", TITH, 2026‑08‑17.
+
+  [TSP‑0005] "Durable Outbound Jobs", TITH, 2026‑08‑17.
+
+  [TSP‑0006] "Outbound Job Submission", TITH, 2026‑08‑17.
+
+
+B. History
+──────────
+
+   Rev.1, 2026‑08‑17: Initial Release.
+
+**********************************************************************

@@ -3,7 +3,7 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TTS‑0006
-Revision:     1
+Revision:     2
 Title:        Bundle Exchange Protocol
 Author(s):    Stephen Hurd
 Date:         2026‑08‑17
@@ -203,9 +203,12 @@ Contents
   Closing the connection because of an error does not undo any
   Accepted or Rejected responses already completed.  Requests for
   which no response was completed remain unacknowledged and may be
-  included in a later Bundle.  Receipt of a FIN or other connection
-  termination before every expected response is complete MUST be
-  treated as a failed exchange.
+  included in a later Bundle.  If the sender lost a completed Accepted
+  response or could not make that response durable before a failure,
+  it MAY retransmit the same signed item.  The receiver MUST handle
+  that item according to the duplicate acceptance rules in TTS‑0005.
+  Receipt of a FIN or other connection termination before every
+  expected response is complete MUST be treated as a failed exchange.
 
   Both the Client and Server SHOULD log errors with as much detail as
   practical.
@@ -227,5 +230,8 @@ B. History
 ──────────
 
    Rev.1, 2025‑12‑14: Initial Release.
+
+   Rev.2, 2026‑08‑17: Clarified recovery when an Accepted response is
+   lost or is not durable at the sender.
 
 **********************************************************************

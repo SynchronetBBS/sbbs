@@ -38,10 +38,8 @@ Contents
   4.  Publication and Distribution
   5.  Content
       5.1  Comment Lines
-      5.2  Special Header
-      5.3  Data lines
-  6.  Nodediffs
-  7.  Segments
+      5.2  Data lines
+  6.  Segments
 
   A.  References
   B.  History
@@ -197,8 +195,8 @@ Contents
         This keyword defines a Private node (see Policy v4.07,
         Section 2.1.9) — i.e. a node that is operational, but
         not publicly available for direct contact. When this keyword
-        is used, field six should by empty, and no ineternet or email
-        addresses should be specified in flags fields. 
+        is used, field six should be empty, and no internet or email
+        addresses should be specified in flags fields.
 
         If the originating node cannot contact the destination node,
         mail may instead be routed via its Hub or Host.
@@ -336,10 +334,11 @@ Contents
 
      Type: string.
 
-     Contains a comma (U+2C) separated list of flags that are used to
-     decide when a node is available and what services can be used.
-     Currently (as of FTS‑5001.006), this consists of the CM, ICM, MN,
-     XA, XB, XC, XP, XR, XW, XX, #nn, !nn, and Tyz flags.
+     Contains a comma (U+2C) separated list of flags that describe
+     general mail‐service operating conditions, caller eligibility,
+     availability, and supported file or update requests.  Currently
+     (as of FTS‑5001.006), this consists of the CM, LO, MN, ICM, XA,
+     XB, XC, XP, XR, XW, XX, #nn, !nn, and Tyz flags.
 
      See FTS‑5001 for details on the flag fields.  Ignore any length
      restrictions specified in that document.
@@ -368,7 +367,7 @@ Contents
      Note however, that the ICM flag does not go in this field, but
      rather goes in Field 7 (System Flags).
 
-     If the the INA: flag is present, it MUST be the first flag in
+     If the INA: flag is present, it MUST be the first flag in
      this field.
 
      See FTS‑5001 for details on the flag fields.  Ignore any length
@@ -378,7 +377,7 @@ Contents
      supports the IIH Internet Protocol Flag.  This flag is in the
      form IIH[:<server address>][:<port>]:<PublicKey> where
      <PublicKey> is a 43‑character base 64 encoded public key with the
-     training equals sign (U+3D) removed, representing the 32‑byte
+     trailing equals sign (U+3D) removed, representing the 32‑byte
      public key of the node.  This is the key used to authenticate TITH
      data whose Origin is that node's address.  If the IIH flag is
      present, the public key MUST be included.
@@ -395,7 +394,7 @@ Contents
      Contains a comma (U+2C) separated list of flags that are used to
      pass traffic via STD 11 ARPA Internet Text Messages (email).
      FTS‑5001.006 defines these in sections 5.9.4 (Email Protocol
-     Flags), and 5.9.5 (Email Adress Flags).
+     Flags), and 5.9.5 (Email Address Flags).
 
      If the IEM: flag is present with an email address, it MUST be the
      first flag in this field.
@@ -407,8 +406,11 @@ Contents
 
      Type: string.
 
-     Contains a comma (U+2C) separated list of flags that are not
-     carried in other flags fields..
+     Contains a comma (U+2C) separated list containing the MO, GUUCP,
+     and PING flags, the mail‐oriented User Flags defined in section
+     6.2 of FTS‑5001.006, and any flag not carried in another flags
+     field.  The U delimiter used to introduce User Flags in an
+     FTS‑5000 nodelist MUST NOT be included in this field.
 
      See FTS‑5001 for details on the flag fields.  Ignore any length
      restrictions specified in that document.
@@ -452,6 +454,11 @@ A. References
 
   [FTS‑5000] "The Distribution Nodelist", FTSC Members, Administrator
   and Honoured Guests.  January 2014. Obsoleted by this document.
+
+  [FTS‑5001] "Nodelist flags and userflags", FTSC Members,
+  Administrator and Honoured Guests.  August 2017.
+
+  [FTS‑5002] "Pointlist Formats", Michiel van der Vlist.  March 2010.
 
   [FTA‑1006] "Keywords to indicate requirement levels"
   FTSC, 2000‑01‑17.

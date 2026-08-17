@@ -1,0 +1,209 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TSP‑0007
+Revision:     1
+Title:        Unix‐Domain Socket IPC Binding
+Author(s):    Stephen Hurd
+Date:         2026‑08‑17
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Standard Proposal (TSP) — it documents a
+  proposed standard and solicits discussion.  Until promoted to a TTS,
+  this is experimental only and does not describe required behaviour.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  This document binds TSP‑0004 local IPC documents to Unix‐domain
+  stream sockets.  It defines connection framing, peer identity,
+  descriptor transfer, error handling, and incomplete transactions.
+
+Contents
+────────
+
+  1. Introduction
+  2. Endpoint and Peer Identity
+  3. Connection Transaction
+  4. Associated File Descriptors
+  5. Failure and Recovery
+  6. Security
+  7. Feedback and Discussion
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  This binding carries one TSP‑0004 request and its one result on a
+  reliable, ordered, local stream socket.  The operation documents are
+  unchanged by this binding.  In particular, TSP‑0006 Source-Path works
+  without descriptor transfer and Source-Handle refers to the
+  associated descriptor table defined in section 4.
+
+  This document uses the Unix socket names AF_UNIX, SOCK_STREAM,
+  SCM_RIGHTS, and file descriptor as descriptions of host facilities.
+  Their constants and APIs are not bytes in the IPC format.
+
+
+2. Endpoint and Peer Identity
+─────────────────────────────
+
+  The Service listens on one local AF_UNIX SOCK_STREAM endpoint chosen
+  by trusted host configuration.  The endpoint pathname or other local
+  address is not carried in an IPC document.  The Service MUST NOT
+  substitute an Internet‐domain listener for this endpoint.
+
+  The Service MUST obtain the authenticated process credentials of the
+  connected peer using a host facility which binds them to that socket
+  connection.  At minimum the resulting caller identity distinguishes
+  the operating system user or security principal.  An implementation
+  may also retain process and group information supplied securely by
+  the host.
+
+  Socket pathname permissions restrict who may connect but are not an
+  IPC credential field.  A host which cannot obtain trustworthy peer
+  credentials does not provide this binding.
+
+
+3. Connection Transaction
+─────────────────────────
+
+  One accepted connection carries exactly one transaction.  The Client
+  sends one complete TSP‑0004 request through its final End line and
+  then sends no more bytes.  It need not close or half‐close its write
+  side.
+
+  The Service reads the request through that final End, performs the
+  operation, sends one complete result through its final End, and then
+  closes the connection.  Neither side uses connection closure as
+  document framing.  The Service MUST NOT wait for Client FIN before
+  processing a complete request or returning its result.
+
+  The request and result bytes are transmitted exactly as specified by
+  TSP‑0004.  No length prefix, byte‐order marker, terminating Null,
+  Carriage Return, or character conversion is added.
+
+  The Service may parse and validate bytes as they arrive.  It MUST NOT
+  commit an operation until its complete request is received and the
+  operation's commitment rules permit it.  Bytes sent after the final
+  End make the Client nonconforming; the Service may close without
+  examining them.
+
+
+4. Associated File Descriptors
+──────────────────────────────
+
+  A Client MAY attach an ordered table of open file descriptors to a
+  request using one SCM_RIGHTS ancillary control message.  The control
+  message accompanies the first byte of the request.  Source-Handle
+  zero identifies the first descriptor in that message, one identifies
+  the second, and so on.
+
+  All descriptors for the request occur in that one control message.
+  The Client MUST NOT send another SCM_RIGHTS message on the same
+  connection.  A request without an indexed associated‐handle field
+  sends no descriptors.
+
+  The Service receives the first request byte with an ancillary buffer
+  sufficient for the host's supported descriptor count.  A truncated
+  control message, malformed descriptor array, unexpected ancillary
+  type other than the host's peer‐credential facility, missing or extra
+  descriptor, or second descriptor message makes the operation
+  Invalid.  Host descriptor transfer limits are a platform resource
+  limit and MUST be reported rather than silently truncating the table.
+
+  Every received descriptor is a duplicate owned by the Service.  The
+  Service closes every duplicate after the operation completes or is
+  rejected.  It does not close the Client's descriptor.  Receiving a
+  descriptor does not transfer ownership of the Client's open file and
+  does not by itself validate an Attachment Source.
+
+  After Submit parsing and idempotency classification, descriptors for
+  Existing or Conflict Jobs are closed without inspecting their file
+  objects.  For a New Job, TSP‑0006 requires ingestion of the complete
+  regular file without changing the caller's current offset or error
+  state.  Because SCM_RIGHTS descriptors may share an open file
+  description, the Service MUST use host facilities which meet that
+  requirement.  It rejects a new Source when it cannot do so.
+
+  A Service advertises the TSP‑0004 feature "Submit.Source-Handle" over
+  this binding only when it can provide these guarantees.
+
+
+5. Failure and Recovery
+───────────────────────
+
+  If the connection ends before the complete request is received, no
+  operation is committed and no result is required.  If enough framing
+  is valid and the connection remains writable, the Service SHOULD
+  return the applicable TSP‑0004 Error before closing.
+
+  If the Client does not receive and validate the complete result, the
+  transaction outcome is unknown.  It follows the operation's retry
+  and idempotency rules.  For Submit, it first uses Lookup-Submission,
+  which sends no descriptors.  It retransmits descriptors only if it
+  elects to resubmit a document containing Source-Handle.
+
+  A descriptor table exists only for the connection which carried it.
+  It is not retained as a Job Source and cannot be recovered by numeric
+  descriptor value after either process exits.
+
+
+6. Security
+───────────
+
+  The Service authorizes the operation against the peer identity bound
+  to the accepted socket.  A claimed Application, process number, user
+  name, or descriptor number inside request text does not replace that
+  identity.
+
+  The endpoint and its containing directories MUST prevent an
+  untrusted party from replacing the listening socket.  The Service
+  rejects descriptor ancillary data before acting on the corresponding
+  operation when the peer is unauthorized to transfer handles.
+
+  A Service running with privileges unavailable to its Client applies
+  the operation standard's Source authorization independently of the
+  fact that it can technically open a pathname or read a transferred
+  descriptor.
+
+
+7. Feedback and Discussion
+───────────────────────────
+
+  A one‐transaction connection avoids multiplexing and response
+  correlation state.  Keeping the Client write side open permits the
+  Service to reply as soon as the final End is parsed and avoids using
+  FIN as an accidental protocol marker.
+
+  Descriptor transfer avoids pathname length and replacement races at
+  the interface boundary.  It remains optional because Source-Path is
+  available on every conforming Submit implementation.
+
+
+A. References
+─────────────
+
+  [TSP‑0004] "Local IPC Format", TITH, 2026‑08‑17.
+
+  [TSP‑0006] "Outbound Job Submission", TITH, 2026‑08‑17.
+
+
+B. History
+──────────
+
+   Rev.1, 2026‑08‑17: Initial Release.
+
+**********************************************************************

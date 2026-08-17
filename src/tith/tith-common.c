@@ -15,6 +15,9 @@
 #include "tith-interface.h"
 #include "tith-strings.h"
 
+_Static_assert(hydro_hash_BYTES == TITH_ITEM_IDENTITY_BYTES,
+    "Item identity size does not match libhydrogen hash size");
+
 thread_local struct TITH_TLV *tith_TLV;
 thread_local jmp_buf tith_exitJmpBuf;
 thread_local void *tith_handle;
@@ -33,6 +36,7 @@ static void freeTLV(struct TITH_TLV *tlv);
 static void getOriginPublicKey(const struct TITH_TLV *origin,
     uint8_t pk[hydro_sign_PUBLICKEYBYTES]);
 static struct TITH_Node *getSigningNode(const struct TITH_TLV *origin);
+static void validateUTF8(const uint8_t *value, size_t length);
 
 /*
  * The TLV API here works as follows:
@@ -751,6 +755,86 @@ tith_addSignedNumber(struct TITH_TLV *tlv, int type, int64_t value, bool child)
 	return tith_addNumber(tlv, type, mapped, child);
 }
 
+static size_t
+putNumber(uint8_t *buffer, size_t offset, uint64_t value)
+{
+	uint8_t encoded[10];
+	unsigned length = encodeNumber(value, encoded);
+	memcpy(&buffer[offset], encoded, length);
+	return offset + length;
+}
+
+static size_t
+putContainedTLV(uint8_t *buffer, size_t offset, int type, uint64_t length,
+    const void *value)
+{
+	offset = putNumber(buffer, offset, (uint64_t)type);
+	offset = putNumber(buffer, offset, length);
+	if (length > SIZE_MAX)
+		tith_logError("Contained TLV is too large");
+	memcpy(&buffer[offset], value, (size_t)length);
+	return offset + (size_t)length;
+}
+
+struct TITH_TLV *
+tith_addVia(struct TITH_TLV *tlv, const char *address,
+    const uint8_t publicKey[hydro_sign_PUBLICKEYBYTES], uint64_t timestamp,
+    const char *program, bool child)
+{
+	if (address == NULL || program == NULL)
+		tith_logError("NULL value supplied for Via");
+	tith_validateAddress(address);
+	bool unlisted = tith_isUnlistedAddressString(address);
+	if (unlisted && publicKey == NULL)
+		tith_logError("No PublicKey for unlisted Via");
+	if (!unlisted && publicKey != NULL)
+		tith_logError("PublicKey supplied for listed Via");
+
+	size_t addressLength = strlen(address);
+	size_t programLength = strlen(program);
+	validateUTF8((const uint8_t *)program, programLength);
+	uint8_t encodedTimestamp[10];
+	unsigned timestampLength = encodeNumber(timestamp, encodedTimestamp);
+
+	uint64_t length = (uint64_t)typeLen(TITH_Address) +
+	    lengthLen((uint64_t)addressLength) + (uint64_t)addressLength;
+	if (unlisted) {
+		uint64_t keyLength = (uint64_t)typeLen(TITH_PublicKey) +
+		    lengthLen(hydro_sign_PUBLICKEYBYTES) +
+		    hydro_sign_PUBLICKEYBYTES;
+		if (length > UINT64_MAX - keyLength)
+			tith_logError("Via is too large");
+		length += keyLength;
+	}
+	uint64_t timestampTLVLength = (uint64_t)typeLen(TITH_Timestamp) +
+	    lengthLen(timestampLength) + timestampLength;
+	if (length > UINT64_MAX - timestampTLVLength ||
+	    length + timestampTLVLength > UINT64_MAX - programLength)
+		tith_logError("Via is too large");
+	length += timestampTLVLength + programLength;
+	if (length > SIZE_MAX)
+		tith_logError("Via is too large");
+
+	uint8_t *value = malloc((size_t)length);
+	tith_pushAlloc(value);
+	size_t offset = putContainedTLV(value, 0, TITH_Address,
+	    (uint64_t)addressLength, address);
+	if (unlisted)
+		offset = putContainedTLV(value, offset, TITH_PublicKey,
+		    hydro_sign_PUBLICKEYBYTES, publicKey);
+	offset = putContainedTLV(value, offset, TITH_Timestamp,
+	    timestampLength, encodedTimestamp);
+	memcpy(&value[offset], program, programLength);
+	offset += programLength;
+	if (offset != (size_t)length)
+		tith_logError("Via length mismatch");
+	struct TITH_TLV *ret = tith_addData(tlv, TITH_Via, length, value,
+	    child);
+	tith_popAlloc();
+	free(value);
+	return ret;
+}
+
 struct TITH_TLV *
 tith_allocBundleOrigin(const char *address)
 {
@@ -981,6 +1065,100 @@ requireChildType(struct TITH_TLV *child, int type, const char *error)
 	return child->next;
 }
 
+static bool
+isUTF8Continuation(uint8_t ch)
+{
+	return (ch & 0xc0) == 0x80;
+}
+
+static void
+validateUTF8(const uint8_t *value, size_t length)
+{
+	size_t pos = 0;
+	while (pos < length) {
+		uint8_t first = value[pos++];
+		if (first < 0x80)
+			continue;
+		if (first >= 0xc2 && first <= 0xdf) {
+			if (pos >= length || !isUTF8Continuation(value[pos]))
+				tith_logError("Invalid UTF-8 string");
+			pos++;
+			continue;
+		}
+		if (first >= 0xe0 && first <= 0xef) {
+			if (length - pos < 2 ||
+			    !isUTF8Continuation(value[pos]) ||
+			    !isUTF8Continuation(value[pos + 1]))
+				tith_logError("Invalid UTF-8 string");
+			if ((first == 0xe0 && value[pos] < 0xa0) ||
+			    (first == 0xed && value[pos] >= 0xa0))
+				tith_logError("Invalid UTF-8 string");
+			pos += 2;
+			continue;
+		}
+		if (first >= 0xf0 && first <= 0xf4) {
+			if (length - pos < 3 ||
+			    !isUTF8Continuation(value[pos]) ||
+			    !isUTF8Continuation(value[pos + 1]) ||
+			    !isUTF8Continuation(value[pos + 2]))
+				tith_logError("Invalid UTF-8 string");
+			if ((first == 0xf0 && value[pos] < 0x90) ||
+			    (first == 0xf4 && value[pos] >= 0x90))
+				tith_logError("Invalid UTF-8 string");
+			pos += 3;
+			continue;
+		}
+		tith_logError("Invalid UTF-8 string");
+	}
+}
+
+static void
+readContainedTLV(const struct TITH_TLV *container, uint64_t *offset,
+    struct TITH_TLV *value)
+{
+	if (*offset >= container->length)
+		tith_logError("Missing value in Via");
+	memset(value, 0, sizeof(*value));
+	value->type = parseType(container->value, offset, container->length);
+	value->length = parseNumber(container->value, offset,
+	    container->length);
+	if (value->length > container->length - *offset)
+		tith_logError("TLV length exceeds Via");
+	value->value = &container->value[*offset];
+	*offset += value->length;
+}
+
+static void
+validateVia(struct TITH_TLV *via)
+{
+	uint64_t offset = 0;
+	struct TITH_TLV address;
+	struct TITH_TLV publicKey;
+	struct TITH_TLV timestamp;
+	readContainedTLV(via, &offset, &address);
+	if (address.type != TITH_Address)
+		tith_logError("Via does not begin with Address");
+
+	readContainedTLV(via, &offset, &timestamp);
+	if (timestamp.type == TITH_PublicKey) {
+		publicKey = timestamp;
+		readContainedTLV(via, &offset, &timestamp);
+		address.next = &publicKey;
+		publicKey.next = &timestamp;
+	}
+	else
+		address.next = &timestamp;
+
+	(void)tith_getAddressPublicKey(&address);
+	if (timestamp.type != TITH_Timestamp)
+		tith_logError("Via has no Timestamp");
+	(void)tith_getNumberValue(&timestamp);
+	if (via->length - offset > SIZE_MAX)
+		tith_logError("Via string is too large");
+	validateUTF8(&via->value[offset],
+	    (size_t)(via->length - offset));
+}
+
 static void
 validateArea(struct TITH_TLV *area)
 {
@@ -1056,8 +1234,10 @@ validateMessage(struct TITH_TLV *message)
 	child = child->next;
 	if (child == NULL || child->type != TITH_Via)
 		tith_logError("Message has no Via");
-	while (child && child->type == TITH_Via)
+	while (child && child->type == TITH_Via) {
+		validateVia(child);
 		child = child->next;
+	}
 	if (child && child->type == TITH_SeenBy)
 		child = child->next;
 	while (child && child->type == TITH_AdditionalKludgeLine)
@@ -1127,8 +1307,10 @@ validateFile(struct TITH_TLV *file)
 	if (distribution) {
 		if (child == NULL || child->type != TITH_Via)
 			tith_logError("Distribution File has no Via");
-		while (child && child->type == TITH_Via)
+		while (child && child->type == TITH_Via) {
+			validateVia(child);
 			child = child->next;
+		}
 		if (child == NULL || child->type != TITH_SeenBy)
 			tith_logError("Distribution File has no SeenBy");
 		while (child && child->type == TITH_SeenBy)
@@ -1226,6 +1408,34 @@ verifyItemSignature(struct TITH_TLV *tlv, bool required)
 	feedTLVRange(&sink, tlv->child, signature);
 	if (hydro_sign_final_verify(&state, signature->value, pk) != 0)
 		tith_logError("Item Signature failed to validate");
+}
+
+void
+tith_getItemIdentity(struct TITH_TLV *tlv,
+    uint8_t identity[hydro_hash_BYTES])
+{
+	if (tlv == NULL || (tlv->type != TITH_Message &&
+	    tlv->type != TITH_File))
+		tith_logError("Invalid item for duplicate identity");
+	if (!itemSignatureRequired(tlv))
+		tith_logError("Item has no standalone signed identity");
+	verifyItemSignature(tlv, true);
+	struct TITH_TLV *signature = findItemSignature(tlv);
+	struct TITH_TLV *origin = itemSignatureOrigin(tlv, signature);
+	uint8_t publicKey[hydro_sign_PUBLICKEYBYTES];
+	getOriginPublicKey(origin, publicKey);
+
+	hydro_hash_state state;
+	if (hydro_hash_init(&state, "ItemIDv2", NULL) != 0)
+		tith_logError("Unable to initialize item identity");
+	struct ByteSink sink = {&state, hashUpdate};
+	feedNumber(&sink, (uint64_t)tlv->type);
+	feedNumber(&sink, origin->length);
+	feedTLVValue(&sink, origin);
+	hashUpdate(&state, publicKey, sizeof(publicKey));
+	hashUpdate(&state, signature->value, hydro_sign_BYTES);
+	if (hydro_hash_final(&state, identity, hydro_hash_BYTES) != 0)
+		tith_logError("Unable to finish item identity");
 }
 
 void
