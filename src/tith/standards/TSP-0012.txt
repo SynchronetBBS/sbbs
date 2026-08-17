@@ -1,0 +1,456 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TSP‑0012
+Revision:     1
+Title:        Tosser Consumption IPC
+Author(s):    Stephen Hurd
+Date:         2026‑08‑17
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Standard Proposal (TSP) — it documents a
+  proposed standard and solicits discussion.  Until promoted to a TTS,
+  this is experimental only and does not describe required behaviour.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  This document defines the TSP‑0004 operations through which a local
+  tosser or adapter claims, reads, renews, acknowledges, defers,
+  releases, rejects, and queries TSP‑0011 inbound delivery items.  It
+  specifies path and native handle payload presentation, idempotent
+  claims, results, completion, and recovery.
+
+Contents
+────────
+
+  1. Introduction
+  2. Payload Presentation
+  3. Claim Request
+  4. Claim Results and Selection
+  5. Claim Control Operations
+  6. Query Operation
+  7. Payload Ownership and Completion
+  8. Failure and Recovery
+  9. Security
+  10. Feedback and Discussion
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  A consumer obtains one immutable native item at a time from the
+  mailer's durable inbound queue.  The item remains owned by the mailer
+  while claimed.  The consumer reports a durable outcome through a
+  later IPC transaction.
+
+  All operations use the TSP‑0004 text format and its authenticated
+  local caller identity.  The same operation grammar is used over the
+  Unix socket, atomic file, authenticated TCP, and Windows named pipe
+  bindings.  Binary payload bytes are never escaped into the text
+  document.
+
+  Path presentation is required and works over every binding.  Unix
+  socket and Windows named pipe bindings may additionally transfer a
+  read‐only native payload handle in the result.  Capabilities
+  advertises this as the feature "Consume.Payload-Handle".
+
+  Capabilities lists Claim-Inbound, Renew-Inbound,
+  Acknowledge-Inbound, Release-Inbound, Defer-Inbound, Reject-Inbound,
+  and Query-Inbound when each operation is available to the
+  authenticated caller over the current binding.
+
+
+2. Payload Presentation
+───────────────────────
+
+  A payload presentation exposes the exact immutable TLV bytes owned by
+  the TSP‑0011 item.  It is not a converted packet, an internal spool
+  reference, or a transfer of mailer ownership.
+
+  Presentation Path creates or retains a private export regular file
+  readable by the authenticated caller.  Payload-Path is its
+  arbitrary‐length pathname in the host's UTF‑8 pathname
+  representation.  The containing directories prevent another
+  principal from reading, replacing, linking, renaming, or removing the
+  export.  The consumer MUST NOT modify it.
+
+  The export path remains valid while its claim is current.  Repeating
+  the same ClaimKey may recreate the export at another path after a
+  restart, but the returned bytes, size, and hash remain identical.
+  Claim resolution or expiration permits the Service to remove it.
+
+  Presentation Handle returns a zero‐based index into the
+  result‐associated handle table supplied by the IPC binding.  The
+  binding transfers one Client‐owned readable regular file handle with
+  an independent file position at byte zero.  The handle is not
+  inherited, does not permit writing, and does not share a mutable file
+  position used by the Service.
+
+  Every presentation contains Payload-Size and Payload-Hash from the
+  durable inbound record.  The consumer reads exactly Payload-Size
+  bytes, confirms end of file, and verifies Payload-Hash before acting
+  on decoded contents.  A mismatch or additional byte is a local
+  service failure and MUST NOT be acknowledged as Consumed.
+
+  Payload size is not given an arbitrary protocol limit.  Checked
+  integer conversion, available storage and memory, host handle limits,
+  and local resource policy remain applicable and cause a temporary
+  failure rather than truncation.
+
+
+3. Claim Request
+────────────────
+
+  A consumer requests one item with:
+
+    TITH-IPC 1
+    Claim-Inbound "<application-name>" Now|Wait
+    Claim-Key "<key>"
+    Presentation Path|Handle
+    End
+
+  Application and ClaimKey have the exact meanings specified by
+  TSP‑0011.  The Service authorizes the binding‐supplied caller for that
+  Application before disclosing queue state.  ClaimKey is compared by
+  its exact decoded UTF‑8 bytes without normalization or case folding.
+
+  Now selects one currently eligible item or returns Empty.  Wait does
+  the same immediately when an item is eligible and otherwise waits
+  until one can be selected or the operation returns TemporaryFailure.
+  Wait never returns Empty.
+
+  Path is supported by every conforming implementation.  Handle
+  requires the current Capabilities result to contain
+  "Consume.Payload-Handle".  An unavailable presentation returns
+  NotSupported without claiming an item.
+
+  The Client sends no request‐associated handles for this operation.
+  A binding which receives one rejects the operation as Invalid.
+
+
+4. Claim Results and Selection
+──────────────────────────────
+
+  A successful new or repeated current claim result is:
+
+    TITH-IPC-Result 1
+    Claim-Inbound Completed
+    Item <inbound-id> Claimed
+    Claim-Token <claim-token>
+    Claim-Expires <timestamp>
+    Kind Message|File|FileRequest
+    Local-Identity "<local-identity>"
+    Peer "<address>"
+    Peer-Key "<base64-public-key>"
+    Item-Authentication Valid|Invalid|Transport
+    Received <timestamp>
+    Payload-Size <unsigned-integer>
+    Payload-Hash "<base64-hash>"
+    [Forward-Job <job-id>]
+    Payload-Path "<local-pathname>"|Payload-Handle 0
+    End
+
+  Forward-Job occurs only after a TSP‑0006 Job Forward commitment and
+  identifies that stable Job.  The final alternative occupies one
+  physical line.  Payload-Path occurs for Path and Payload-Handle occurs
+  for Handle.  A Handle result has exactly one result‐associated handle.
+  A Path result has none.
+
+  Local-Identity names the exact receiving local identity recorded by
+  TSP‑0011.  Peer is the canonical TTS‑0004 text address of the
+  authenticated immediate peer.  Peer-Key and Payload-Hash use the
+  43‑character base 64 representation of their 32 bytes without a
+  trailing Equals Sign (U+003D).  Timestamp fields are TTS‑0003
+  Timestamps.
+
+  Eligible items are ordered first by the instant at which they became
+  eligible, then by Received, then by InboundID exact bytes.  Initial
+  Available uses Received, Release uses its transition time, Deferred
+  uses Retry-After, and claim expiration uses Claim-Expires as that
+  instant.  Selection and the TSP‑0011 transition to Claimed are one
+  atomic operation.  A caller cannot use Now repeatedly to bypass an
+  older eligible item for the same Application.
+
+  Repeating a ClaimKey which still owns its claim returns Completed for
+  the same InboundID and ClaimToken.  It may request either supported
+  presentation; presentation is carrier state and does not change the
+  claim identity.  Claim-Expires reports the current expiration.
+
+  Repeating a ClaimKey whose claim expired or was resolved returns:
+
+    TITH-IPC-Result 1
+    Claim-Inbound Resolved <inbound-id> <inbound-state>
+    End
+
+  Inbound-state is the outcome recorded for that claim and need not be
+  the item's state after a later claim.  The key MUST NOT select another
+  item.  The consumer uses a new ClaimKey for another selection.  A Now
+  request finding no item is:
+
+    TITH-IPC-Result 1
+    Claim-Inbound Empty
+    End
+
+  A failure which does not claim an item is:
+
+    TITH-IPC-Result 1
+    Claim-Inbound NotAuthorized|NotSupported|TemporaryFailure
+    End
+
+  NotAuthorized discloses no Application or queue state.  A malformed
+  operation uses the TSP‑0004 Invalid Error result.
+
+  After receiving Completed, the Client verifies that Claim-Expires has
+  not passed before reading or acting on the payload.  An already
+  expired result is not usable; the Client repeats the same ClaimKey to
+  obtain Resolved and then begins another attempt with a new key.
+
+
+5. Claim Control Operations
+────────────────────────────
+
+  A consumer controls its claim with one of these complete requests:
+
+    TITH-IPC 1
+    Renew-Inbound <inbound-id> <claim-token>
+    End
+
+    TITH-IPC 1
+    Acknowledge-Inbound <inbound-id> <claim-token>
+    End
+
+    TITH-IPC 1
+    Release-Inbound <inbound-id> <claim-token>
+    End
+
+    TITH-IPC 1
+    Defer-Inbound <inbound-id> <claim-token>
+    Retry-After <timestamp>
+    Description "<UTF-8-string>"
+    End
+
+    TITH-IPC 1
+    Reject-Inbound <inbound-id> <claim-token>
+    Description "<UTF-8-string>"
+    End
+
+  Renew keeps Claimed and atomically replaces Claim-Expires with a new
+  service‐selected Timestamp.  It succeeds only while the token is
+  current.  Acknowledge, Release, Defer, and Reject have the state and
+  durability effects specified in TSP‑0011.  Description may be empty
+  and is local metadata which is never placed in a TITH item.
+
+  A successful Renew result is:
+
+    TITH-IPC-Result 1
+    Renew-Inbound Completed <claim-expires>
+    End
+
+  Another successful control result is:
+
+    TITH-IPC-Result 1
+    Acknowledge-Inbound|Release-Inbound|Defer-Inbound|Reject-Inbound
+        Completed <inbound-state>
+    End
+
+  The operation result occupies one physical line.  A stale or
+  unauthorized token does not alter the item and returns:
+
+    TITH-IPC-Result 1
+    <control-operation> Stale <inbound-state>
+    End
+
+  An unknown or unauthorized InboundID and a temporary local failure
+  return respectively:
+
+    TITH-IPC-Result 1
+    <control-operation> NotFound|TemporaryFailure
+    End
+
+  Repeating a state control with the exact token which committed that
+  transition returns its original Completed state.  A repeated Renew
+  returns Completed only while the token remains current.
+
+  A Retry-After which has passed makes Deferred immediately eligible.
+  It does not make Defer equivalent to Release: the Deferred transition
+  and its diagnostic remain durable until another claim is committed.
+
+
+6. Query Operation
+────────────────────
+
+  An authorized consumer queries retained state with:
+
+    TITH-IPC 1
+    Query-Inbound <inbound-id>
+    End
+
+  A successful result is:
+
+    TITH-IPC-Result 1
+    Query-Inbound Completed
+    Item <inbound-id> <inbound-state>
+    Application "<application-name>"
+    Kind Message|File|FileRequest
+    Local-Identity "<local-identity>"
+    Peer "<address>"
+    Peer-Key "<base64-public-key>"
+    Item-Authentication Valid|Invalid|Transport
+    Received <timestamp>
+    Changed <timestamp>
+    Attempts <unsigned-integer>
+    [Claim-Expires <timestamp>]
+    Payload-Size <unsigned-integer>
+    Payload-Hash "<base64-hash>"
+    [Forward-Job <job-id>]
+    [Last-Result "<UTF-8-string>"]
+    End
+
+  Changed is the Timestamp of the most recent state transition;
+  renewing a claim does not change it.  Attempts is the number of
+  transitions into Claimed.  Claim-Expires occurs only for Claimed.
+  Forward-Job has its Claim result meaning.  Last-Result occurs only
+  when a control or administrative outcome has recorded a diagnostic
+  and contains that exact diagnostic.  Query supplies no payload
+  presentation or result‐associated handle and does not change the
+  item.
+
+  An unsuccessful result is:
+
+    TITH-IPC-Result 1
+    Query-Inbound NotFound|TemporaryFailure
+    End
+
+  NotFound covers both an unknown item and one not authorized to the
+  binding‐supplied caller.
+
+
+7. Payload Ownership and Completion
+───────────────────────────────────
+
+  Completed Claim-Inbound grants temporary read access, not payload
+  ownership.  The consumer closes its result handle or stops depending
+  on its export path before resolving the claim.  It MUST NOT retain a
+  payload reference as the durable source of work after Acknowledge.
+
+  A consumer MUST NOT send Acknowledge-Inbound until it has durably
+  committed every effect for which it accepts responsibility.  Merely
+  parsing the TLV, creating a temporary file, placing data in a volatile
+  queue, or starting a legacy tosser is insufficient.
+
+  If the consumer creates new outbound work, it obtains a complete
+  committed submission result or recovers that result through the
+  submission idempotency operation before acknowledging the inbound
+  item.  The consumer records InboundID with its effects so redelivery
+  can be recognized without creating them again.
+
+  Release, Defer, Reject, claim expiration, a failed payload read, or an
+  incomplete Claim result transfers no durable responsibility away
+  from the mailer.  The consumer discards partial local output unless
+  its own durable recovery record can complete it idempotently.
+
+
+8. Failure and Recovery
+───────────────────────
+
+  If a Claim-Inbound result is incomplete, the caller repeats the same
+  Application and ClaimKey.  If a claim was committed, the Service
+  returns the same InboundID and token or its Resolved state.  It MUST
+  NOT assign that key to another item.
+
+  If a state control result is incomplete, the consumer repeats the
+  identical operation and token or uses Query-Inbound.  It MUST NOT
+  assume that disconnection, process exit, export disappearance, or
+  claim expiration proves whether a transition committed.
+
+  On a Handle result, the Client closes every received descriptor or
+  handle even when the text result is malformed or incomplete.  On a
+  Path result, the Client never removes or alters the export; the
+  Service recovers and retires it with the claim.
+
+  If an IPC binding fails before a complete Claim result, the consumer
+  acts on no payload bytes it may have received.  A later complete
+  result and successful hash check establish the only usable
+  presentation.
+
+
+9. Security
+────────
+
+  Every operation is authorized against the caller identity supplied
+  by the current IPC binding and its configured Application
+  association.  ClaimToken is a concurrency token and defense against
+  stale workers; it is not a substitute for caller authentication.
+
+  The Service opens or creates a path export under the consumer's
+  effective access policy without exposing another Application's
+  payload.  A privileged Service MUST NOT publish it through a
+  permissive shared directory.  Exports and result handles are
+  read‐only and refer to the exact retained regular file object.
+
+  Peer-Key, PayloadHash, and InboundID are identifiers, not credentials.
+  The consumer trusts the Service's authenticated IPC result and the
+  TITH item validation recorded by TSP‑0011; it does not authenticate a
+  remote node merely by comparing text supplied from elsewhere.
+
+
+10. Feedback and Discussion
+────────────────────────────
+
+  One item per claim keeps worker exclusion and failure recovery small.
+  Local IPC connections are cheap, and a tosser which wants a larger
+  legacy packet can claim several items under separate stable IDs and
+  record all of them in one adapter transaction.
+
+  Path presentation gives every binding a portable implementation.
+  Result handles avoid pathname representation and replacement races on
+  hosts which can transfer them without putting native values into the
+  IPC text document.
+
+
+A. References
+─────────────
+
+  [TSP‑0002] "Routing and Distribution Configuration", TITH,
+  2026‑08‑17.
+
+  [TSP‑0004] "Local IPC Format", TITH, 2026‑08‑17.
+
+  [TSP‑0006] "Outbound Job Submission", TITH, 2026‑08‑17.
+
+  [TSP‑0007] "Unix‐Domain Socket IPC Binding", TITH, 2026‑08‑17.
+
+  [TSP‑0008] "Atomic File IPC Binding", TITH, 2026‑08‑17.
+
+  [TSP‑0009] "Authenticated TCP IPC Binding", TITH, 2026‑08‑17.
+
+  [TSP‑0010] "Windows Named‐Pipe IPC Binding", TITH, 2026‑08‑17.
+
+  [TSP‑0011] "Durable Inbound Delivery Items", TITH, 2026‑08‑17.
+
+  [TTS‑0003] "Common TLV Types", TITH, 2026‑08‑17.
+
+  [TTS‑0004] "Node Addresses", TITH, 2026‑08‑17.
+
+  [TTS‑0005] "Bundle Format", TITH, 2026‑08‑17.
+
+
+B. History
+──────────
+
+   Rev.1, 2026‑08‑17: Initial Release.
+
+**********************************************************************

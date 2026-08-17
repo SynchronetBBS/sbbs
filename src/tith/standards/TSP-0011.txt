@@ -1,0 +1,384 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TSP‑0011
+Revision:     1
+Title:        Durable Inbound Delivery Items
+Author(s):    Stephen Hurd
+Date:         2026‑08‑17
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Standard Proposal (TSP) — it documents a
+  proposed standard and solicits discussion.  Until promoted to a TTS,
+  this is experimental only and does not describe required behaviour.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  This document defines durable inbound delivery items owned by a TITH
+  mailer.  It specifies their identity, exact native payload, local
+  consumer commitment, states, exclusive claims, application outcomes,
+  duplicate handling, recovery, and retention.
+
+Contents
+────────
+
+  1. Introduction
+  2. Inbound Identity and Data
+  3. Transport Acceptance and Consumer Commitment
+  4. States and Claims
+  5. Consumer Outcomes
+  6. Duplicate Delivery and Recovery
+  7. Retention and Security
+  8. Feedback and Discussion
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  An inbound delivery item is the mailer's durable unit of work for a
+  local Message, standalone File, or FileRequest which has passed the
+  TITH transport boundary.  It is the native replacement for placing a
+  packet in a tosser's inbound directory.
+
+  The item remains owned by the mailer until a configured local
+  consumer durably accepts responsibility for it.  TSP‑0012 defines the
+  local IPC operations which claim and resolve items.  TSP‑0013 defines
+  how a legacy adapter may place packet and spool conventions beyond
+  that IPC boundary.
+
+  An inbound item is not a Bundle, packet, or temporary connection
+  object.  Bundle framing and immediate transport routing are complete
+  before local consumption.  A consumer processes the exact native
+  item and creates any new outbound work through the applicable
+  submission operation rather than modifying the inbound item.
+
+
+2. Inbound Identity and Data
+────────────────────────────
+
+  Every inbound item has one stable InboundID.  An InboundID is the
+  uppercase ASCII letter "I" followed by exactly 32 lowercase
+  hexadecimal digits representing a randomly generated 128‑bit value.
+  A collision with any retained InboundID causes another value to be
+  generated.
+
+  InboundID remains unchanged across claims, release, deferral,
+  restart, payload export, adapter conversion, and terminal state.  It
+  is local metadata and MUST NOT be inserted into the native item or
+  transmitted to a remote TITH node.
+
+  One inbound item owns one exact encoded TLV of type Message, File, or
+  FileRequest as defined by TTS‑0005.  Payload begins with that item's
+  canonical Type and ends with the final byte of its Value.  It does
+  not include the enclosing SignedTLV, Bundle Header, another sibling
+  item, or connection framing.  Those exact payload bytes are immutable
+  for the life of the item.
+
+  The inbound record also contains:
+
+    • the configured local consumer Application;
+    • the receiving local identity;
+    • the authenticated immediate peer address and public key;
+    • the time at which the receiver committed the item;
+    • Message, File, or FileRequest as its Kind;
+    • the end‐to‐end item authentication result when applicable;
+    • the payload byte count and hash; and
+    • its state, claim history, optional Forward Job association, and
+      most recent local result.
+
+  The receiving local identity is the exact local identity represented
+  by the Destination in the Bundle Header.  The immediate peer is the
+  authenticated top‐level Origin of the Bundle which carried the item.
+  Its recorded key is the exact key used to authenticate that peer,
+  including the nodelist key for a listed address.  It does not replace
+  the Origin or PublicKey inside a Message or standalone File.
+
+  ItemAuthentication is Valid or Invalid for a Message or standalone
+  File and Transport for a FileRequest.  Valid and Invalid report
+  validation of the item's end‐to‐end Signature.  Transport means the
+  FileRequest had no independent item signature and was authenticated
+  by its enclosing SignedTLV.  Invalid does not mean the SignedTLV was
+  unauthenticated; unauthenticated SignedData is never made an inbound
+  item.
+
+  PayloadHash is the 32‑byte unkeyed libhydrogen generic hash of the
+  exact payload bytes.  Its context is the eight bytes of the C string
+  "InItem1", including its trailing NUL, and its key is NULL.
+
+
+3. Transport Acceptance and Consumer Commitment
+───────────────────────────────────────────────────
+
+  This document applies when trusted local configuration selects local
+  application delivery for an authenticated Message, standalone File,
+  or FileRequest.  A value committed for forwarding or holding to a
+  next hop remains routing work and is not an inbound item.
+
+  Before returning TTS‑0005 Accepted for a new locally delivered value,
+  the receiver MUST atomically and durably store:
+
+    • the complete immutable payload;
+    • InboundID and every inbound record field;
+    • the selected consumer Application;
+    • Available as the initial state; and
+    • the TTS‑0005 duplicate identity when the item has one.
+
+  A consumer Application is selected from trusted local configuration,
+  not from an unauthenticated field or IPC request.  Configuration may
+  use native item Kind, local Destination, user, Area, authenticated
+  identity, or other validated data.  If local delivery is selected but
+  no consumer or administrative quarantine can own the item durably,
+  the receiver MUST reject it rather than accept and discard it.
+
+  Transport Accepted means the receiver owns durable responsibility
+  for the item.  It does not mean that a tosser imported it, a user read
+  it, an Area accepted it, or a legacy packet was created.  A later
+  local outcome MUST NOT retract, replace, or contradict the completed
+  transport response.
+
+  A transport duplicate handled under TTS‑0005 section 7 does not create
+  another inbound item.  The receiver returns Accepted for the current
+  transmission without importing, forwarding, or delivering the
+  duplicate again.
+
+  Poll values are handled by the mailer and are not inbound items.
+  Accepted and Rejected response values are transport results and are
+  likewise not inbound items.  Values returned by an accepted Poll or
+  FileRequest become inbound items only when their own type and local
+  disposition satisfy this section.
+
+
+4. States and Claims
+─────────────────────
+
+  An inbound item has exactly one externally visible state:
+
+    Available
+    Claimed
+    Deferred
+    Consumed
+    Rejected
+    Failed
+
+  Available is durable and eligible for a consumer claim.  Deferred is
+  unclaimed and becomes eligible at its recorded retry Timestamp.
+  Claimed is durably and exclusively owned by one consumer worker until
+  its claim expires or is resolved.
+
+  A claim records the authenticated caller, Application, ClaimKey,
+  ClaimToken, expiration Timestamp, and claim attempt number.  ClaimKey
+  is a nonempty arbitrary‐length UTF‑8 string supplied by the consumer.
+  ClaimToken is the uppercase ASCII letter "C" followed by exactly 32
+  lowercase hexadecimal digits representing a random 128‑bit value.
+
+  The Application and ClaimKey form a durable idempotency identity.
+  Once that identity selects an item, repeating it MUST NOT select
+  another item.  Its mapping to InboundID, ClaimToken, and outcome is
+  retained until the inbound item is administratively purged.
+
+  The transition from Available or eligible Deferred to Claimed,
+  allocation of ClaimToken, increment of Attempts, and ClaimKey mapping
+  are one durable atomic operation.  An item MUST NOT be Claimed by two
+  workers, selected by another ClaimKey, or purged while the claim is
+  current.
+
+  Claim expiration invalidates ClaimToken and changes the item to
+  Available.  The expired ClaimKey remains mapped to that item and MUST
+  NOT silently claim it again.  A consumer uses a new ClaimKey for a
+  new attempt.  Renew may extend a current claim but MUST NOT revive an
+  expired or resolved token.
+
+  Claim duration is selected by trusted service policy and is not a
+  fixed protocol limit.  A consumer which cannot durably finish before
+  expiration renews the claim.  Processing after an unrenewed claim
+  expires risks concurrent redelivery and is nonconforming.
+
+  Consumed, Rejected, and Failed are terminal.  Consumed means the
+  consumer durably accepted responsibility as defined in section 5.
+  Rejected is a permanent local application refusal.  Failed is a
+  permanent local service failure requiring administrative handling.
+
+
+5. Consumer Outcomes
+───────────────────
+
+  A consumer acknowledges an item only after its processing result and
+  every responsibility transferred from the mailer are durable.  For a
+  native tosser this includes its message base changes, duplicate
+  record, and any new outbound submission commitment.  For a legacy
+  adapter it includes the ledger and published legacy objects required
+  by TSP‑0013.
+
+  A native consumer which performs EchoMail or file distribution uses
+  TSP‑0006 Submit-Items Job Forward before acknowledging.  That
+  operation uses the inbound record's receiving local identity, exact
+  immediate peer, and retained payload to create every applicable
+  TSP‑0002 Send-To delivery copy without applying a TITH NetMail Route.
+  The consumer obtains or recovers its complete committed result.  A
+  later outbound failure is owned by that Job and does not reopen the
+  inbound item.
+
+  The consumer assigns and durably records the Forward Job's
+  idempotency identity before requesting it.  If that local record is
+  lost, TSP‑0012 Forward-Job exposes the durable association without
+  creating another Job.
+
+  A TSP‑0013 legacy adapter MAY instead acknowledge after it has taken
+  durable ownership of an exact recoverable conversion source and every
+  unperformed distribution obligation.  The adapter then retains that
+  source and obligation until the legacy toss has durably created its
+  required copies.  Publishing a disposable inbound packet without
+  such retained state is not sufficient.
+
+  Acknowledge changes Claimed to Consumed.  The state transition and
+  local result are durable before success is returned.  Once Consumed,
+  the consumer and not the inbound payload export is the durable source
+  of any resulting local or outbound work.
+
+  Release changes Claimed to Available without recording an application
+  failure.  Defer changes Claimed to Deferred and records a retry
+  Timestamp and description.  Reject changes Claimed to Rejected and
+  records a permanent local description.  All invalidate the current
+  ClaimToken after atomically committing their new state.
+
+  A result operation repeated with the exact token which performed its
+  transition returns that completed outcome.  A different, expired, or
+  superseded token MUST NOT alter the item.  This makes loss of a local
+  IPC result recoverable without repeating consumer side effects.
+
+  Local Rejected is not TTS‑0005 Rejected.  Transport acceptance was
+  already completed.  A rejection notification, reply Message, or
+  administrative report is new outbound work and uses its normal
+  submission and routing policy; it does not rewrite the inbound item.
+
+
+6. Duplicate Delivery and Recovery
+──────────────────────────────────
+
+  Durable transport acceptance and consumer delivery are separate
+  idempotency domains.  TTS‑0005 prevents a retransmitted signed Message
+  or standalone File from creating another inbound item.  InboundID and
+  ClaimKey make repeated local delivery of the retained item
+  recognizable.
+
+  Local delivery is at least once.  If a claim expires after a consumer
+  committed its work but before Acknowledge became durable, the same
+  InboundID may be claimed again.  A consumer MUST use InboundID as an
+  idempotency identity in its durable work and recognize that replay.
+  This standard does not promise exactly‐once application processing.
+
+  FileRequest has no TTS‑0005 signed‐item duplicate identity and is a
+  repeatable request.  Separate accepted FileRequest values therefore
+  create separate inbound items even when their requested data is
+  identical.
+
+  After restart, the Service preserves every unexpired claim.  It
+  invalidates and releases a claim only when its expiration is known to
+  have passed.  If the Service cannot establish a trustworthy current
+  time after recovery, it MUST NOT allow another worker to claim that
+  item until it can safely determine expiration or an administrator
+  resolves the claim.
+
+  Payload export creation is not application processing.  A failed or
+  interrupted export leaves the item and claim recoverable.  Recreating
+  an export MUST use the exact retained payload and MUST NOT decode,
+  re‐encode, convert, combine, or split it.
+
+
+7. Retention and Security
+─────────────────────────
+
+  The immutable payload and inbound metadata remain private to the
+  mailer and MUST NOT be writable by a consumer.  Access requires the
+  binding‐supplied caller identity, configured Application association,
+  and a current authorized claim.  An InboundID, ClaimKey, ClaimToken,
+  pathname, or native handle value alone grants no authority.
+
+  Payload bytes may be retired after Consumed or Rejected and its local
+  result are durable.  Failed payload remains available for
+  administrative handling unless an administrator explicitly retires
+  it.  InboundID, Application, terminal state, ClaimKey mappings,
+  metadata, and result remain queryable until administrative purge.
+
+  An explicit administrative purge may remove an inbound record only
+  when it is Consumed, Rejected, or Failed and has no current claim.
+  A record associated with a Forward Job may be purged only after the
+  TSP‑0005 Job purge has removed that association.  Inbound purge
+  durably removes its remaining payload, metadata, ClaimKey mappings,
+  and local result as one administrative action.  It is not a consumer
+  IPC operation and MUST NOT occur as silent ordinary age‐based
+  processing.
+
+  A TTS‑0005 signed‐item duplicate identity is independent of the local
+  inbound record.  Purging InboundID MUST NOT remove that identity or
+  permit remote redelivery.  Only the separate explicit administrative
+  action allowed by TTS‑0005 may remove it.
+
+  Payload pathnames, peer keys, ClaimTokens, and conversion diagnostics
+  SHOULD be omitted from normal logs unless needed for local diagnosis.
+  A query for an unknown or unauthorized InboundID returns NotFound so
+  another Application's item is not disclosed.
+
+
+8. Feedback and Discussion
+───────────────────────────
+
+  The transport can return Accepted as soon as durable responsibility
+  is established without pretending that application processing is
+  synchronous with a network connection.  The consumer can then work
+  independently while the immutable native item remains recoverable.
+
+  Stable InboundID and expiring exclusive claims provide the strongest
+  useful boundary available without requiring the mailer and an
+  arbitrary tosser to share one storage transaction.  A native consumer
+  or legacy adapter supplies the final idempotency record on its side.
+
+
+A. References
+─────────────
+
+  [Libhydrogen] Version 1,
+  https://github.com/jedisct1/libhydrogen/wiki
+
+  [TSP‑0002] "Routing and Distribution Configuration", TITH,
+  2026‑08‑17.
+
+  [TSP‑0004] "Local IPC Format", TITH, 2026‑08‑17.
+
+  [TSP‑0005] "Durable Outbound Jobs", TITH, 2026‑08‑17.
+
+  [TSP‑0006] "Outbound Job Submission", TITH, 2026‑08‑17.
+
+  [TSP‑0012] "Tosser Consumption IPC", TITH, 2026‑08‑17.
+
+  [TSP‑0013] "Legacy Mailer and Tosser IPC Adapters", TITH,
+  2026‑08‑17.
+
+  [TTS‑0003] "Common TLV Types", TITH, 2026‑08‑17.
+
+  [TTS‑0004] "Node Addresses", TITH, 2026‑08‑17.
+
+  [TTS‑0005] "Bundle Format", TITH, 2026‑08‑17.
+
+  [TTS‑0006] "Bundle Exchange Protocol", TITH, 2026‑08‑17.
+
+
+B. History
+──────────
+
+   Rev.1, 2026‑08‑17: Initial Release.
+
+**********************************************************************

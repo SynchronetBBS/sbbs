@@ -3,7 +3,7 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TSP‑0010
-Revision:     1
+Revision:     2
 Title:        Windows Named‐Pipe IPC Binding
 Author(s):    Stephen Hurd
 Date:         2026‑08‑17
@@ -24,15 +24,15 @@ Abstract
 
   This document binds TSP‑0004 local IPC documents to Windows named
   pipes.  It defines pipe framing, Windows token identity, a binary
-  carrier preamble, safe cross‐process file handle duplication,
-  completion, failure recovery, and security.
+  carrier preamble in each direction, safe cross‐process file handle
+  duplication, completion, failure recovery, and security.
 
 Contents
 ────────
 
   1. Introduction
   2. Endpoint and Pipe Creation
-  3. Carrier Preamble
+  3. Carrier Preambles
   4. Caller Identity
   5. Associated File Handles
   6. Pipe Transaction
@@ -55,10 +55,11 @@ Contents
   facilities without adding credentials or native handle numbers to a
   TSP‑0004 text document.
 
-  The binary carrier preamble precedes the exact IPC request.  It is
-  binding metadata and supplies an ordered table for TSP‑0006
-  Source-Handle.  Operations which do not use associated handles send
-  an empty table.
+  A binary carrier preamble precedes each IPC document.  The request
+  preamble may supply an ordered table for TSP‑0006 Source-Handle.  The
+  result preamble may supply a separate table for TSP‑0012
+  Payload-Handle.  Operations which do not use the applicable table
+  send a count of zero.
 
 
 2. Endpoint and Pipe Creation
@@ -99,9 +100,11 @@ Contents
   requests, and results.
 
 
-3. Carrier Preamble
-───────────────────
+3. Carrier Preambles
+─────────────────────
 
+  Request Preamble
+  ────────────────
   Immediately after connecting, the Client sends these fields in order:
 
     • the eight ASCII bytes of the literal "TITHNP01";
@@ -127,12 +130,45 @@ Contents
   HANDLE width, a Null HandleValue, an unrepresentable count, or an
   incomplete preamble closes the pipe without an IPC result.
 
+  Result Preamble
+  ───────────────
+  Before sending an IPC result, the Service sends these fields in order:
+
+    • the eight ASCII bytes of the literal "TITHNR01";
+    • ResultHandleCount as a canonical TTS‑0002 unsigned integer; and
+    • exactly ResultHandleCount canonical TTS‑0002 unsigned
+      ResultHandleValue integers.
+
+  A ResultHandleValue is the bit pattern of one non‐Null Windows HANDLE
+  which the Service has duplicated into the verified Client process.
+  Values occur in result‐associated table order.  The Client owns none
+  of them until the carrier acknowledgement below.
+
+  After receiving the complete result preamble, the Client validates
+  that its count is permitted by the requested operation.  Operations
+  in this suite permit at most one result handle.  The Client then sends
+  the one ASCII byte "A".  Before sending it, the Client MUST NOT
+  access, close, duplicate, or otherwise use any listed handle.  The
+  Service sends no IPC result byte before receiving that exact
+  acknowledgement.
+
+  Receipt of "A" transfers ownership of every result handle to the
+  Client.  It closes them after processing the result or after any later
+  pipe or document failure.  If the pipe fails or another byte is
+  received before acknowledgement, the Service closes the duplicates
+  in the Client process and sends no IPC result.
+
+  The first byte after the Service receives "A" is the first byte of the
+  exact TSP‑0004 result.  A result preamble is sent even when its count
+  is zero.  The acknowledgement and both preambles are carrier metadata
+  and are not bytes in either IPC document.
+
 
 4. Caller Identity
 ──────────────────
 
-  After reading the complete preamble and before reading or processing
-  IPC request data, the Service performs all of these steps:
+  After reading the complete request preamble and before reading or
+  processing IPC request data, the Service performs all of these steps:
 
     1. It calls ImpersonateNamedPipeClient() and verifies success.
     2. It obtains and duplicates the impersonation token needed for
@@ -168,26 +204,29 @@ Contents
 5. Associated File Handles
 ──────────────────────────
 
+  Request Handles
+  ───────────────
   For each HandleValue, the Service calls DuplicateHandle() with the
   verified Client process as source, its own process as target,
   inheritance disabled, and DUPLICATE_SAME_ACCESS.  It MUST NOT use
   DUPLICATE_CLOSE_SOURCE.  Failure closes all duplicates and rejects
   the transaction before operation processing.  Each duplicate is an
   opaque Service‐owned carrier handle at this point; duplication does
-  not validate or ingest an Attachment Source.
+  not validate or ingest a submission Source.
 
   The opaque duplicates, in preamble order, form the associated handle
   table.  After parsing the request, every referenced index exists,
   every index is used exactly once, and no table entry is unused.  A
-  mismatch makes Submit Not-Committed with Invalid.  A non-Submit
-  operation sends an empty table unless its own standard defines an
-  associated handle field.
+  mismatch makes the submission Not-Committed with Invalid.  An
+  operation other than Submit or Submit-Items sends an empty table
+  unless its own standard defines an associated handle field.
 
-  Submit performs all idempotency classification before inspecting a
-  Source object.  It closes duplicates belonging to Existing or
-  Conflict Jobs without reopening, querying, or validating them.  For
-  each Source-Handle in a New Job, it reopens the duplicate's exact file
-  object with ReOpenFile() for readable access and an independent file
+  A submission performs all idempotency classification before
+  inspecting a Source object.  It closes duplicates belonging to
+  Existing or Conflict Jobs without reopening, querying, or validating
+  them.  For each Source-Handle in a New Job, it reopens the duplicate's
+  exact file object with ReOpenFile() for readable access and an
+  independent file
   position.  It then validates the reopened handle as a readable regular
   filesystem file meeting every TSP‑0006 Source-Handle requirement and
   closes the first duplicate.
@@ -200,7 +239,31 @@ Contents
   it owns when the operation completes or is rejected.  Neither Copy
   nor rejection closes or modifies a Client handle.
 
-  HandleCount is not given an arbitrary protocol limit.  Checked
+  Result Handles
+  ──────────────
+  For each result‐associated handle, the Service obtains a readable
+  noninheritable handle to the exact Service‐owned regular file object
+  with an independent file position at byte zero.  It calls
+  DuplicateHandle() with its own process as source, the verified Client
+  process as target, inheritance disabled, and DUPLICATE_SAME_ACCESS.
+
+  The resulting Client process values form the result table transmitted
+  by section 3.  Before carrier acknowledgement, the Service retains
+  their ownership.  If acknowledgement fails, it calls
+  DuplicateHandle() from the verified Client process with
+  DUPLICATE_CLOSE_SOURCE to close each remote duplicate, and closes any
+  local duplicate thereby created.
+
+  After acknowledgement, the Client owns every result handle and the
+  Service closes its source handles.  The Client closes all result
+  handles after processing or abandoning the result.  Neither side
+  retains the other process's handle value as durable state.
+
+  A TSP‑0012 Handle presentation contains exactly one readable result
+  handle at index zero.  The Service advertises the TSP‑0004 feature
+  "Consume.Payload-Handle" only when it can provide these guarantees.
+
+  Neither handle count is given an arbitrary protocol limit.  Checked
   integer conversion, available process handles and memory, Windows
   resource policy, and the request's actual indexed fields remain
   applicable and cause failure rather than truncation.
@@ -209,12 +272,15 @@ Contents
 6. Pipe Transaction
 ───────────────────
 
-  Following the preamble, the Client sends one complete TSP‑0004
-  request through its final End line and sends no further bytes.  It
+  Following the request preamble, the Client sends one complete
+  TSP‑0004 request through its final End line.  It sends no further byte
+  until the result‐preamble acknowledgement required by section 3.  It
   keeps the pipe connected and every associated source handle open.
 
   The Service reads the request through its final End, performs the
-  operation, and writes one complete result through its final End.
+  operation, prepares the complete result and any result handles, and
+  sends the result preamble.  After receiving the Client's carrier
+  acknowledgement, it writes one complete result through its final End.
   Neither side uses pipe disconnection as document framing.
 
   After writing the result, the Service flushes the pipe so the Client
@@ -222,28 +288,39 @@ Contents
   Client determines completion from the parsed outer End and not from
   ERROR_BROKEN_PIPE or another disconnection indication.
 
-  The request and result bytes are transmitted exactly as specified by
-  TSP‑0004.  The binding adds no text length, Null, Carriage Return,
-  character conversion, or alternate newline.
+  The request and result document bytes are transmitted exactly as
+  specified by TSP‑0004.  The binding adds no text length, Null,
+  Carriage Return, character conversion, or alternate newline inside
+  either document.
 
 
 7. Failure and Recovery
 ───────────────────────
 
-  Failure before the caller identity and associated table are validated
-  closes the pipe without an IPC result.  After validation, an ordinary
-  malformed request SHOULD receive the applicable TSP‑0004 Error when
-  its framing and pipe state permit it.
+  Failure before the caller identity and request handle table are
+  validated closes the pipe without an IPC result.  After validation,
+  an ordinary malformed request SHOULD receive the applicable TSP‑0004
+  Error when its framing and pipe state permit it.
 
   If the Client does not receive and validate the complete result, the
   outcome is unknown.  It applies the operation's idempotency, Query,
-  and recovery rules.  For Submit it first uses Lookup-Submission on a
-  new pipe instance with an empty handle table.  It transfers handles
-  again only if it elects to resubmit the original Submit document.
+  and recovery rules.  For Submit or Submit-Items it first uses
+  Lookup-Submission on a new pipe instance with an empty handle table.
+  It transfers handles again only if it elects to resubmit the original
+  submission document.
 
-  Process identifiers, HandleValues, duplicated handles, impersonation
-  tokens, and the associated table are valid only for their live pipe
-  transaction.  A Job never retains one as an Attachment Source.
+  An invalid or incomplete result preamble, failed result‐handle
+  duplication, missing carrier acknowledgement, or failure after
+  acknowledgement makes the operation result unknown.  The Client
+  closes every result handle it owns and applies the operation's normal
+  recovery rule.  The Service MUST NOT retry an operation merely to
+  regenerate a failed result carrier.
+
+  Process identifiers, native handle values, duplicated handles,
+  impersonation tokens, and both associated tables are valid only for
+  their live pipe transaction.  A Job never retains one as a submission
+  Source, and an inbound item never retains one as its payload
+  reference.
 
 
 8. Security
@@ -261,11 +338,11 @@ Contents
   authorization.
 
   Every return value in the impersonation, process, token, duplication,
-  reopen, pipe read, pipe write, flush, and reversion sequence is
-  checked.  A failure closes acquired resources once and does not fall
-  back to a weaker identity or pathname‐only interpretation.  Failed
-  reversion instead terminates the Service process as required by
-  section 4.
+  remote‐handle cleanup, reopen, pipe read, pipe write, flush, and
+  reversion sequence is checked.  A failure closes acquired resources
+  once and does not fall back to a weaker identity or pathname‐only
+  interpretation.  Failed reversion instead terminates the Service
+  process as required by section 4.
 
   The Service validates regular file type and access on its independent
   reopened handle.  A Client cannot make an arbitrary numeric value
@@ -273,13 +350,19 @@ Contents
   fixed by the authenticated pipe connection and verified creation
   time.
 
+  A conforming Client does not touch result handles before carrier
+  acknowledgement, so the Service can close unacknowledged duplicates
+  without racing Client use or reuse.  After acknowledgement, the
+  Service MUST NOT attempt to close a Client result handle by its native
+  value.
+
 
 9. Feedback and Discussion
 ───────────────────────────
 
   Named pipes provide the normal Windows local security model and avoid
-  separate application key management.  The binary preamble remains a
-  binding detail so the IPC request grammar is identical to the Unix,
+  separate application key management.  The binary preambles remain
+  binding details so the IPC document grammar is identical to the Unix,
   TCP, and atomic file bindings.
 
   Process creation time and token comparisons are necessary because a
@@ -324,6 +407,8 @@ A. References
 
   [TSP‑0006] "Outbound Job Submission", TITH, 2026‑08‑17.
 
+  [TSP‑0012] "Tosser Consumption IPC", TITH, 2026‑08‑17.
+
   [TTS‑0002] "Type Length Value Encoding", TITH, 2026‑08‑16.
 
 
@@ -331,5 +416,8 @@ B. History
 ──────────
 
    Rev.1, 2026‑08‑17: Initial Release.
+
+   Rev.2, 2026‑08‑17: Added acknowledged result‐handle transfer and
+   item‐aware submission Sources.
 
 **********************************************************************

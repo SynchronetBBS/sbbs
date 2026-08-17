@@ -3,7 +3,7 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TSP‑0007
-Revision:     1
+Revision:     2
 Title:        Unix‐Domain Socket IPC Binding
 Author(s):    Stephen Hurd
 Date:         2026‑08‑17
@@ -50,7 +50,8 @@ Contents
   reliable, ordered, local stream socket.  The operation documents are
   unchanged by this binding.  In particular, TSP‑0006 Source-Path works
   without descriptor transfer and Source-Handle refers to the
-  associated descriptor table defined in section 4.
+  request‐associated descriptor table defined in section 4.  TSP‑0012
+  may use a separate result‐associated table for Payload-Handle.
 
   This document uses the Unix socket names AF_UNIX, SOCK_STREAM,
   SCM_RIGHTS, and file descriptor as descriptions of host facilities.
@@ -105,6 +106,13 @@ Contents
 4. Associated File Descriptors
 ──────────────────────────────
 
+  Request and result descriptor tables are independent.  Each direction
+  uses at most one SCM_RIGHTS ancillary control message accompanying the
+  first byte of that direction's IPC document.  An indexed handle field
+  refers only to the table carried with its own document.
+
+  Request Descriptors
+  ───────────────────
   A Client MAY attach an ordered table of open file descriptors to a
   request using one SCM_RIGHTS ancillary control message.  The control
   message accompanies the first byte of the request.  Source-Handle
@@ -128,18 +136,46 @@ Contents
   Service closes every duplicate after the operation completes or is
   rejected.  It does not close the Client's descriptor.  Receiving a
   descriptor does not transfer ownership of the Client's open file and
-  does not by itself validate an Attachment Source.
+  does not by itself validate a submission Source.
 
-  After Submit parsing and idempotency classification, descriptors for
-  Existing or Conflict Jobs are closed without inspecting their file
-  objects.  For a New Job, TSP‑0006 requires ingestion of the complete
-  regular file without changing the caller's current offset or error
-  state.  Because SCM_RIGHTS descriptors may share an open file
+  After submission parsing and idempotency classification, descriptors
+  for Existing or Conflict Jobs are closed without inspecting their
+  file objects.  For a New Job, TSP‑0006 requires ingestion of the
+  complete regular file without changing the caller's current offset or
+  error state.  Because SCM_RIGHTS descriptors may share an open file
   description, the Service MUST use host facilities which meet that
   requirement.  It rejects a new Source when it cannot do so.
 
   A Service advertises the TSP‑0004 feature "Submit.Source-Handle" over
   this binding only when it can provide these guarantees.
+
+  Result Descriptors
+  ──────────────────
+  A Service MAY attach an ordered table of open file descriptors to a
+  result using one SCM_RIGHTS control message accompanying its first
+  byte.  All result descriptors occur in that one message.  A result
+  without an indexed result‐handle field sends none.
+
+  The Client receives the first result byte with an ancillary buffer
+  sufficient for every result descriptor permitted by the requested
+  operation.  The current TSP‑0012 operation permits at most one.
+  Truncation, malformed ancillary data, a missing or extra descriptor,
+  or another SCM_RIGHTS message makes the result incomplete.  The
+  Client closes every descriptor it did receive and applies the
+  operation's unknown result recovery rule.
+
+  Every result descriptor is a Client‐owned duplicate.  The Client
+  closes it after processing the result, including when later text is
+  malformed.  The Service closes its source descriptor after transfer
+  and does not depend on the Client's descriptor or file position.
+
+  For TSP‑0012 Payload-Handle, the Service opens the immutable payload
+  as a readable regular file with a new open file description positioned
+  at byte zero, then transfers that descriptor.  The received descriptor
+  is index zero and the result contains no other associated descriptor.
+
+  A Service advertises the TSP‑0004 feature "Consume.Payload-Handle"
+  over this binding only when it can provide these guarantees.
 
 
 5. Failure and Recovery
@@ -152,13 +188,15 @@ Contents
 
   If the Client does not receive and validate the complete result, the
   transaction outcome is unknown.  It follows the operation's retry
-  and idempotency rules.  For Submit, it first uses Lookup-Submission,
-  which sends no descriptors.  It retransmits descriptors only if it
-  elects to resubmit a document containing Source-Handle.
+  and idempotency rules.  For Submit or Submit-Items, it first uses
+  Lookup-Submission, which sends no descriptors.  It retransmits
+  descriptors only if it elects to resubmit a document containing
+  Source-Handle.
 
   A descriptor table exists only for the connection which carried it.
-  It is not retained as a Job Source and cannot be recovered by numeric
-  descriptor value after either process exits.
+  A request table is not retained as a Job Source, and a result table is
+  not retained as an inbound payload reference.  Neither can be
+  recovered by numeric descriptor value after either process exits.
 
 
 6. Security
@@ -200,10 +238,15 @@ A. References
 
   [TSP‑0006] "Outbound Job Submission", TITH, 2026‑08‑17.
 
+  [TSP‑0012] "Tosser Consumption IPC", TITH, 2026‑08‑17.
+
 
 B. History
 ──────────
 
    Rev.1, 2026‑08‑17: Initial Release.
+
+   Rev.2, 2026‑08‑17: Added result‐associated descriptor transfer and
+   item‐aware submission Sources.
 
 **********************************************************************

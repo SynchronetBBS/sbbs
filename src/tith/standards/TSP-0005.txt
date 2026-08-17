@@ -3,7 +3,7 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TSP‑0005
-Revision:     1
+Revision:     2
 Title:        Durable Outbound Jobs
 Author(s):    Stephen Hurd
 Date:         2026‑08‑17
@@ -52,19 +52,20 @@ Contents
 ───────────────
 
   A Job is the mailer's durable unit of local outbound work.  It owns
-  one immutable TTS‑0005 NetMail Message, zero or more private
-  Attachment copies inside that Message, one committed delivery copy,
-  and the local metadata needed to deliver and report it.
+  one immutable TTS‑0005 NetMail Message, EchoMail Message, or
+  standalone distribution File, its private Source copies, zero or more
+  committed delivery copies, and the local metadata needed to deliver
+  and report it.
 
   The Job model does not depend on an on‐disk spool layout or IPC
-  binding.  TSP‑0006 defines the standard operation which creates
-  Jobs.  This document defines their lifecycle and the TSP‑0004 IPC
+  binding.  TSP‑0006 defines the standard operations which create Jobs.
+  This document defines their lifecycle and the TSP‑0004 IPC
   operations which inspect or explicitly alter it.
 
   A Job is not a Bundle.  Compatible delivery copies may be aggregated
   into an outgoing Bundle or drawn from several storage containers as
   permitted by TSP‑0002.  Repackaging does not create, reroute, or
-  concurrently duplicate a Job.
+  concurrently duplicate a delivery copy.
 
 
 2. Job Identity and Data
@@ -83,39 +84,48 @@ Contents
   Application and binding‐supplied caller identity jointly control
   access to the Job; spelling the Application name grants no authority.
 
-  A Job owns one complete TTS‑0005 NetMail Message.  An Attachment is a
-  File child inside that Message.  A Job may have no Attachments and
-  MUST NOT impose a fixed Attachment count or contents length beyond
-  representability, checked allocation arithmetic, available storage,
-  and local resource policy.
+  A Job records Kind NetMail, EchoMail, or File and owns one complete
+  TTS‑0005 item of that kind.  NetMail and EchoMail own a Message; File
+  owns a standalone distribution File.  The Kind never changes.
 
-  Every Attachment has an immutable private copy controlled by the
-  mailer and a stable WireFilename equal to its TTS‑0005 Filename.  The
-  private copy never depends on a caller pathname or handle after Job
-  commitment.  WireFilenames within one Job are distinct by exact
-  UTF‑8 bytes and do not change during the Job's life.
+  An Attachment is a File child inside a Message.  A Message may have
+  no Attachments.  A locally submitted standalone File has one Source
+  for its Contents; a Forward Job takes its complete item from a
+  TSP‑0011 inbound record.
+  A Job MUST NOT impose a fixed Attachment count or contents length
+  beyond representability, checked allocation arithmetic, available
+  storage, and local resource policy.
 
-  The complete Message and its Attachment Contents form one delivery
-  unit.  A File inside the Message relies on the enclosing Message
+  Every Attachment and locally submitted standalone File Source has an
+  immutable private copy controlled by the mailer and a stable
+  WireFilename equal to its TTS‑0005 Filename.  The private copy never
+  depends on a caller pathname or handle after Job commitment.
+  WireFilenames within one Job are distinct by exact UTF‑8 bytes and do
+  not change during the Job's life.  A Forward Job retains the inbound
+  standalone File's Filename when one is present and has no Source
+  cleanup record.
+
+  The complete item, including every Contents value, forms one delivery
+  unit.  A File inside a Message relies on the enclosing Message
   Signature and is not independently delivered, retried, rejected, or
   reported as successful.
 
-  The Job also records any post‐delivery Source cleanup obligation
+  The Job also records every post‐delivery Source cleanup obligation
   created by its submission.  A cleanup record contains Keep, Delete,
-  or Truncate, the Source pathname when applicable, and a race‐resistant
-  identity for the exact regular file opened during ingestion.  A
-  Source pathname is local metadata and MUST NOT be transmitted to a
-  TITH peer or derived into Subject.
+  or Truncate, the Source pathname when applicable, and a
+  race‐resistant identity for the exact regular file opened during
+  ingestion.  A Source pathname is local metadata and MUST NOT be
+  transmitted to a TITH peer or derived into Subject.
 
 
 3. Routing Commitment
 ─────────────────────
 
-  Before a Job is committed, it has one TSP‑0002 NetMail delivery copy
-  durably recorded with:
+  Before a Job is committed, it has zero or more TSP‑0002 delivery
+  copies.  Every copy is durably recorded with:
 
     • Origin as the selected local AKA;
-    • the ultimate Destination address and unlisted PublicKey, if any;
+    • the Job Kind and ultimate Destination or Area;
     • the exact next‐hop address and unlisted PublicKey, if any;
     • Active or Passive delivery mode;
     • delivery Class;
@@ -123,29 +133,40 @@ Contents
     • the resolved disposition and notification for every permanent
       failure kind.
 
+  A NetMail Job has exactly one copy selected by the applicable Route
+  method.  A locally originated EchoMail or File Job has exactly one
+  copy for every Send-To in its TSP‑0002 area configuration and MUST
+  have at least one.  A Forward Job has one for every applicable
+  Send-To after distribution pruning and may have none.  Copies occur
+  in Send-To order and are assigned stable one‐based delivery indexes.
+  They remain committed to their exact Peers and never use a NetMail
+  Route method.
+
   The permanent kinds are Unroutable, Loop, Relay-Denied, Rejected,
   and Authentication as defined by TSP‑0002.  Their policies are
-  resolved and stored when the delivery copy is created.  An explicit
-  complete override may assign the same disposition and notification
-  to every kind.
+  resolved and stored separately for every delivery copy when it is
+  created.  An explicit complete override may assign the same
+  disposition and notification to every kind of a NetMail copy.
 
-  Active work may be claimed by an applicable schedule.  Passive work
-  MUST NOT be claimed by a schedule.  An authenticated Poll may claim
-  either mode when the Job is committed to the polling peer's exact
-  identity, as specified by TSP‑0002.
+  Active‐mode work may be claimed by an applicable schedule.  Passive
+  work MUST NOT be claimed by a schedule.  An authenticated Poll may
+  claim either mode when the Job is committed to the polling peer's
+  exact identity, as specified by TSP‑0002.
 
   Restart, retry, repackaging, endpoint changes, nodelist changes, and
   ordinary configuration reload MUST NOT change committed routing
-  data.  Current schedules determine when eligible Active work runs,
-  and current endpoints determine how the exact next hop is contacted.
-  Only the explicit Reroute operation may replace a committed next hop,
-  mode, or resolved failure policies.
+  data.  Current schedules determine when eligible Active‐mode work
+  runs, and current endpoints determine how the exact next hop is
+  contacted.
+  Only the explicit Reroute operation may replace a committed NetMail
+  next hop, mode, or resolved failure policies.  Distribution copies
+  cannot be rerouted as NetMail.
 
 
 4. States and Worker Claims
 ───────────────────────────
 
-  A Job has exactly one externally visible state:
+  Every delivery copy has exactly one state:
 
     Queued
     Active
@@ -157,12 +178,16 @@ Contents
 
   Queued is durable and available to an applicable schedule or Poll.
   Active is durably claimed by exactly one worker for one exchange.  A
-  Job MUST NOT occur twice in one exchange, be Active in two
+  delivery copy MUST NOT occur twice in one exchange, be Active in two
   exchanges, or be selected by a Poll while another worker owns it.
+  Distinct copies of one distribution Job MAY be Active concurrently
+  in exchanges with their respective next hops.
 
-  Attempts is zero when the Job is created and increments durably when
-  a worker changes Queued or Deferred to Active.  Failure to commit the
-  claim leaves the Job in its previous state and does not increment it.
+  Each copy's Attempts is zero when the Job is created and increments
+  durably when a worker changes that copy from Queued or Deferred to
+  Active.  Failure to commit the claim leaves the copy in its previous
+  state and does not increment it.  Job Attempts is the sum of all copy
+  Attempts.
 
   Deferred means delivery was not confirmed and retry is delayed.  A
   connection failure, incomplete response, transient local failure, or
@@ -171,28 +196,44 @@ Contents
   Timestamp when present.
 
   Delivered means a complete Accepted response was authenticated and
-  made durable locally.  It confirms durable storage by the committed
-  next hop or recognition there of an already accepted duplicate.  It
-  does not assert that the ultimate recipient Application consumed the
-  Message.
+  made durable locally for that copy.  It confirms durable storage by
+  the committed next hop or recognition there of an already accepted
+  duplicate.  It does not assert that an ultimate recipient
+  Application consumed the item.
 
-  Rejected means a complete remote response permanently rejected the
-  Message.  TTS‑0005 reasons 1 and 2 produce Rejected.  Failed means a
-  permanent local Unroutable, Loop, or other TSP‑0002 failure.  These
+  Rejected means a complete remote response permanently rejected that
+  copy's item.  TTS‑0005 reasons 1 and 2 produce Rejected.  Failed means
+  a permanent local Unroutable, Loop, or other TSP‑0002 failure.  These
   remain distinct from Deferred.
 
-  Cancelled means the Application cancelled the Job before delivery
-  was confirmed.  Cancellation never applies Delete or Truncate.  Once
-  Cancelled is durable, the service MAY retire its private contents.
+  Cancelled means the Application cancelled that copy before delivery
+  was confirmed.  Cancellation never applies Delete or Truncate.
+
+  The Job exposes one aggregate state.  It is Active when any copy is
+  Active, Queued when none is Active and at least one is Queued, and
+  Deferred when none is Active or Queued and at least one is Deferred.
+  When every copy is terminal, Failed takes precedence over Rejected,
+  which takes precedence over Cancelled, which takes precedence over
+  Delivered.  Thus a Job is Delivered only when every copy is
+  Delivered.  Every copy transition and resulting aggregate Job state
+  are one atomic update.
+
+  A Forward Job with no applicable delivery copy is created Delivered.
+  It is a durable successful no‐delivery result after normal
+  distribution pruning.
+
+  Once every copy is terminal and the aggregate state is Cancelled, the
+  Service MAY retire private contents which no retained failure policy
+  requires.
 
 
 5. Delivery Outcomes and Source Cleanup
 ───────────────────────────────────────
 
-  Delivered and the complete Accepted response MUST be durable before
-  the delivery copy or private contents are retired and before Delete
-  or Truncate cleanup begins.  A cleanup failure does not change
-  Delivered.
+  A copy's Delivered state and complete Accepted response MUST be
+  durable before that delivery copy is retired.  Every copy MUST be
+  Delivered before private contents are retired or Delete or Truncate
+  cleanup begins.  A cleanup failure does not change Delivered.
 
   Keep never changes or removes a Source.  Delete removes the verified
   pathname.  Truncate sets the verified regular file length to zero.
@@ -201,7 +242,7 @@ Contents
   recorded during ingestion.  It MUST NOT open, remove, or truncate a
   replacement object.
 
-  Each Attachment has one cleanup status:
+  Each Attachment or standalone File Source has one cleanup status:
 
     NotRequested
     Pending
@@ -217,11 +258,12 @@ Contents
   it identifies another object.  Failed means a permanent local error
   prevents cleanup.  Pending cleanup survives restart and is retried.
 
-  Rejected and Failed apply the recorded TSP‑0002 failure policy.
-  Discard may retire immutable contents only after the terminal state
-  and failure record are durable.  Dead-Letter retains them for
-  administrative handling.  Neither policy applies Source Delete or
-  Truncate.
+  Rejected and Failed apply each copy's recorded TSP‑0002 failure
+  policy.  Discard may retire a failed copy after its terminal state
+  and failure record are durable, but shared immutable contents remain
+  while another copy needs them.  Dead-Letter retains the applicable
+  failure and contents for administrative handling.  Neither policy
+  applies Source Delete or Truncate.
 
   JobID, Application, terminal state, idempotency association, routing
   record, result, and cleanup statuses remain queryable after private
@@ -232,27 +274,30 @@ Contents
 6. Control Operations
 ─────────────────────
 
-  Query, Cancel, Retry, and Reroute take JobID and are authorized
-  against the Job's Application.  They are atomic with worker claims.
-  An unknown or unauthorized JobID is reported as NotFound so another
-  Application's Jobs are not disclosed.
+  Query, Query-Job, Cancel, Retry, and Reroute take JobID and are
+  authorized against the Job's Application.  They are atomic with
+  worker claims.  An unknown or unauthorized JobID is reported as
+  NotFound so another Application's Jobs are not disclosed.
 
-  Cancel changes Queued or Deferred to Cancelled.  It is Busy for
-  Active, NotPermitted for Delivered, and idempotently Completed for
-  Cancelled.  Rejected or Failed may be cancelled while retained
-  contents remain.  Cancel MUST NOT interrupt a live TITH exchange.
+  Cancel atomically changes every Queued or Deferred copy, and every
+  Rejected or Failed copy whose contents remain, to Cancelled.  A
+  Delivered copy remains Delivered.  Cancel is Busy and changes none
+  when any copy is Active, idempotently Completed when the aggregate
+  state is already Cancelled, and NotPermitted when no copy can be
+  changed.  It MUST NOT interrupt a live TITH exchange.
 
-  Retry changes Deferred to Queued and clears its delivery retry
-  Timestamp.  It may change Rejected or Failed to Queued only while
-  immutable contents remain.  It preserves the local AKA, next hop,
-  mode, Class, WireFilenames, failure policies, cleanup obligations,
-  Message, and Attachments.  It is NotPermitted for Delivered or
-  Cancelled.
+  Retry atomically changes every Deferred copy to Queued and clears its
+  delivery retry Timestamp.  It may change Rejected or Failed copies to
+  Queued only while immutable contents remain.  Delivered and Cancelled
+  copies remain unchanged.  Retry preserves every local AKA, next hop,
+  mode, Class, WireFilename, failure policy, cleanup obligation, item,
+  and Source.  It is NotPermitted when no copy can be changed.
 
   Reroute is the explicit administrative operation permitted by
-  TSP‑0002.  It is allowed for Queued, Deferred, Rejected, or Failed
-  while contents remain, Busy for Active, and NotPermitted for
-  Delivered or Cancelled.
+  TSP‑0002.  It applies only to a NetMail Job.  It is allowed for
+  Queued, Deferred, Rejected, or Failed while contents remain, Busy for
+  Active, and NotPermitted for a distribution Job, Delivered, or
+  Cancelled.
 
   Reroute Route applies the current TSP‑0002 NetMail Route methods.
   Reroute Active or Passive instead commits the exact listed address or
@@ -266,7 +311,7 @@ Contents
   authorization.  Reroute atomically commits the resulting exact next
   hop, mode, and policies before changing the Job to Queued.  It
   preserves JobID, Application, local AKA, ultimate Destination,
-  Class, Message Signature, Attachments, WireFilenames, and cleanup
+  Class, item Signature, Sources, WireFilenames, and cleanup
   obligations.
 
 
@@ -285,6 +330,14 @@ Contents
     End
 
     TITH-IPC 1
+    Query-Job <job-id>
+    End
+
+    TITH-IPC 1
+    Query-Job <job-id> Paths
+    End
+
+    TITH-IPC 1
     Cancel|Retry <job-id>
     End
 
@@ -299,6 +352,10 @@ Contents
   physical line.  Disposition is Dead-Letter or Discard; notification
   is None, Sender, Origin-Sysop, or Both.  Paths requests local Source
   pathnames and requires separate authorization.
+
+  Query is the original NetMail‐only result grammar retained for
+  existing Clients.  It returns NotFound for an EchoMail or File Job.
+  Query-Job is the item‐aware operation and applies to every Kind.
 
   A successful Query result is:
 
@@ -338,6 +395,61 @@ Contents
     Query NotFound|TemporaryFailure
     End
 
+  A successful item‐aware result is:
+
+    TITH-IPC-Result 1
+    Query-Job Completed
+    Job <job-id> <job-state>
+    Application "<application-name>"
+    Kind NetMail|EchoMail|File
+    Local-Identity "<local-identity>"
+    Destination "<destination-identity>"|Area "<area-name>"
+    Created <timestamp>
+    Changed <timestamp>
+    Attempts <unsigned-integer>
+    Last-Result "<UTF-8-string>"
+    [Delivery <one-based-index> <job-state>
+    Next-Hop Active|Passive "<next-hop-identity>"
+    Class "<configuration-name>"
+    Failure-Policy Unroutable <disposition> Notify <notification>
+    Failure-Policy Loop <disposition> Notify <notification>
+    Failure-Policy Relay-Denied <disposition> Notify <notification>
+    Failure-Policy Rejected <disposition> Notify <notification>
+    Failure-Policy Authentication <disposition> Notify <notification>
+    Attempts <unsigned-integer>
+    Last-Result "<UTF-8-string>"
+    End]...
+    [Source <one-based-index> Attachment|File "<wire-filename>"
+        NotRequested|Pending|Complete|NotFound|Replaced|Failed]...
+    [Source-Path <one-based-index> "<local-pathname>"]...
+    End
+
+  Local-Identity is the routing AKA recorded with every copy and may
+  differ from the signed item Origin of a Forward Job.  Destination
+  occurs only for NetMail; Area occurs only for EchoMail and File.  A
+  NetMail Job has exactly one Delivery block.  Other Jobs
+  contain zero or more in stable delivery‐index order.  Zero occurs
+  only for the successful Forward case defined in section 4.  The state
+  on a Delivery line is that copy's state, and its Attempts and
+  Last-Result apply only to that copy.
+
+  Source lines occur in Attachment order for a locally submitted
+  Message.  A locally submitted standalone File has exactly one File
+  Source; a Forward Job has none.  Source-Path uses the corresponding
+  Source index and occurs only in an authorized Paths result.  Created,
+  Changed, aggregate Attempts, and aggregate Last-Result have the
+  meanings of the original Query result.
+
+  Aggregate Last-Result is the most recently committed Job control
+  result or delivery‐copy result.  When one transaction records results
+  for multiple copies, the lowest delivery index supplies it.
+
+  An unsuccessful item‐aware result is:
+
+    TITH-IPC-Result 1
+    Query-Job NotFound|TemporaryFailure
+    End
+
   A control result has one of these forms:
 
     TITH-IPC-Result 1
@@ -352,7 +464,7 @@ Contents
   The operation and result alternatives occupy one physical line.
   Every control result except NotFound includes the current state.
 
-  After an incomplete control result, the Client MUST Query the Job
+  After an incomplete control result, the Client MUST use Query-Job
   before deciding whether another state change is required.  It MUST
   NOT blindly repeat Reroute Route because current configuration may
   resolve differently.  Cancel and Retry may be requested again when
@@ -375,7 +487,7 @@ Contents
   Event delivery is at least once.  A consumer acknowledges EventID;
   the service retains and retries unacknowledged events.  Consumers use
   EventID to discard duplicates.  Event delivery failure never changes
-  Job state or retries a delivered Message.
+  Job state or retries a delivered item.
 
   All callback and IPC consumers for one Application share one
   acknowledgement namespace and form one consumer group.  An
@@ -451,9 +563,10 @@ Contents
   transmission.
 
   When recovery cannot determine whether a complete remote Accepted
-  result became durable locally, the Job becomes Deferred with the
-  same next hop.  TTS‑0005 duplicate acceptance makes retransmission of
-  the identical Message safe.
+  result became durable locally, the affected copy becomes Deferred
+  with the same next hop and the aggregate Job state is recomputed.
+  TTS‑0005 duplicate acceptance makes retransmission of the identical
+  item safe.
 
   Private contents and Job metadata MUST NOT be writable by the
   Application after commitment.  Local pathnames SHOULD be omitted
@@ -472,17 +585,20 @@ Contents
 
   An explicit administrative purge may remove a Job only when it is
   Delivered, Rejected, Failed, or Cancelled and no cleanup status is
-  Pending.  The administrator explicitly authorizes retirement of any
+  Pending.  A Forward Job additionally requires its associated inbound
+  item to be terminal with no current claim.  The administrator
+  explicitly authorizes retirement of any
   retained Dead-Letter contents and discard of any unacknowledged
   events.  Purge MUST NOT silently occur as ordinary age‐based Job
   processing.
 
   A completed purge durably removes the Job metadata, its idempotency
-  mapping, remaining private contents, cleanup records, and event or
-  acknowledgement history as one administrative action.  Afterward,
-  Query and Acknowledge return NotFound, Lookup-Submission reports
-  NotFound, and the former Idempotency-Key may be reused for a new Job.
-  Removing contents alone does not permit key reuse.
+  mapping, Forward association, remaining private contents, cleanup
+  records, and event or acknowledgement history as one administrative
+  action.  Afterward, Query, Query-Job, and Acknowledge return NotFound,
+  Lookup-Submission reports NotFound, and the former Idempotency-Key may
+  be reused for a new Job.  Removing contents alone does not permit key
+  reuse.
 
   The purge mechanism, retention duration, and administrative
   authorization are host policy and are not local Application IPC
@@ -511,6 +627,8 @@ A. References
 
   [TSP‑0006] "Outbound Job Submission", TITH, 2026‑08‑17.
 
+  [TSP‑0011] "Durable Inbound Delivery Items", TITH, 2026‑08‑17.
+
   [TTS‑0003] "Common TLV Types", TITH, 2026‑08‑17.
 
   [TTS‑0005] "Bundle Format", TITH, 2026‑08‑17.
@@ -520,5 +638,8 @@ B. History
 ──────────
 
    Rev.1, 2026‑08‑17: Initial Release.
+
+   Rev.2, 2026‑08‑17: Generalized Jobs to EchoMail and file
+   distribution with multiple independently delivered copies.
 
 **********************************************************************

@@ -3,7 +3,7 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TSP‑0004
-Revision:     1
+Revision:     2
 Title:        Local IPC Format
 Author(s):    Stephen Hurd
 Date:         2026‑08‑17
@@ -62,7 +62,9 @@ Contents
 
   TSP‑0005 defines durable outbound Jobs and their control operations.
   TSP‑0006 defines Job submission.  TSP‑0007 through TSP‑0010 define
-  bindings for this format.
+  bindings for this format.  TSP‑0011 and TSP‑0012 define durable
+  inbound delivery and consumption.  TSP‑0013 places legacy adapters
+  beyond this interface.
 
 
 2. Lexical Format
@@ -215,8 +217,9 @@ Contents
     • how a complete request is published or framed;
     • how its one result is associated and made complete;
     • how the caller identity is securely established;
-    • whether associated native handles are supported and, if so, how
-      they form a zero‐based ordered table;
+    • whether request‐associated or result‐associated native handles are
+      supported and, if so, how each direction forms a separate
+      zero‐based ordered table;
     • behaviour after truncation, disconnection, process failure, and
       system restart; and
     • the point at which temporary carrier objects may be removed.
@@ -227,12 +230,17 @@ Contents
   but operation semantics MUST NOT depend on an alternate copy of a
   field in that metadata.
 
-  Associated handles are out‐of‐band carrier objects.  An operation
-  refers to them only by zero‐based index.  A numeric descriptor or
-  native handle value MUST NOT appear in an IPC document.  A binding
-  MAY carry native values as carrier metadata only when it securely
-  identifies the source process and converts each value into a
-  service‐owned handle before operation processing.
+  Associated handles are out‐of‐band carrier objects.  A request refers
+  only to its request‐associated table and a result refers only to its
+  result‐associated table, each by zero‐based index.  A numeric
+  descriptor or native handle value MUST NOT appear in an IPC document.
+
+  A binding MAY carry request native values as carrier metadata only
+  when it securely identifies the source process and converts each
+  value into a Service‐owned handle before operation processing.  A
+  binding MAY transfer result handles only when it converts each
+  Service source into a Client‐owned handle before the Client processes
+  the result.  Neither table exists beyond its one transaction.
 
 
 8. Capabilities Operation
@@ -262,18 +270,21 @@ Contents
   This suite defines these Feature values:
 
     Completion.Callbacks
+    Consume.Payload-Handle
     Submit.Delete
     Submit.Move
     Submit.Source-Handle
     Submit.Truncate
 
   Submit.Source-Handle is present only when the current binding and
-  service can provide an associated handle table satisfying TSP‑0006.
-  The other Submit features mean the Service implements that optional
-  ingestion or cleanup behaviour.  Completion.Callbacks means trusted
-  host configuration may associate a callback with an Application;
-  the Events and Acknowledge Operation lines independently advertise
-  the IPC event operations.
+  Service can provide a request‐associated handle table satisfying
+  TSP‑0006.  Consume.Payload-Handle is present only when it can provide
+  the result‐associated payload handle required by TSP‑0012.  The other
+  submission features apply to Submit and Submit-Items and mean the
+  Service implements that optional ingestion or cleanup behaviour.
+  Completion.Callbacks means trusted host configuration may associate
+  a callback with an Application.  The Events and Acknowledge Operation
+  lines independently advertise the IPC event operations.
 
   Capabilities is a snapshot of implemented and binding‐available
   behaviour.  It does not authorize an Application, Source, Job,
@@ -310,10 +321,20 @@ A. References
 
   [TSP‑0010] "Windows Named‐Pipe IPC Binding", TITH, 2026‑08‑17.
 
+  [TSP‑0011] "Durable Inbound Delivery Items", TITH, 2026‑08‑17.
+
+  [TSP‑0012] "Tosser Consumption IPC", TITH, 2026‑08‑17.
+
+  [TSP‑0013] "Legacy Mailer and Tosser IPC Adapters", TITH,
+  2026‑08‑17.
+
 
 B. History
 ──────────
 
    Rev.1, 2026‑08‑17: Initial Release.
+
+   Rev.2, 2026‑08‑17: Distinguished request and result handle tables
+   and added inbound consumption capabilities.
 
 **********************************************************************

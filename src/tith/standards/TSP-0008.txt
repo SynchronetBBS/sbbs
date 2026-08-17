@@ -3,7 +3,7 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TSP‑0008
-Revision:     1
+Revision:     2
 Title:        Atomic File IPC Binding
 Author(s):    Stephen Hurd
 Date:         2026‑08‑17
@@ -56,7 +56,7 @@ Contents
 
   These rendezvous files are IPC carrier objects.  They are not a TITH
   spool, Binkley‐style outbound, NetMail .MSG directory, or ownership
-  reference to an Attachment.  A published Submit request is not a
+  reference to a Source.  A published submission request is not a
   committed Job; only its complete result establishes the outcome.
 
 
@@ -206,10 +206,11 @@ Contents
 
   If the Client cannot find a result and cannot determine whether its
   request remains published or claimed, the outcome is unknown.  For
-  Submit it first publishes a Lookup-Submission request.  If necessary
-  while every Source remains available, it may publish a new
-  RequestToken carrying the identical Submit document and idempotency
-  keys.  The new transport token does not duplicate the Job.
+  Submit or Submit-Items it first publishes a Lookup-Submission
+  request.  If necessary while every Source remains available, it may
+  publish a new RequestToken carrying the identical submission document
+  and idempotency keys.  The new transport token does not duplicate the
+  Job.
 
   Filesystem full, durable‐write failure, claim failure, and result
   publication failure are temporary binding failures.  When possible,
@@ -222,15 +223,22 @@ Contents
 ─────────────────────────
 
   This binding supplies no associated native handle table.  A TSP‑0006
-  Submit request containing Source-Handle produces a Not-Committed
-  Invalid failure.  Source-Path remains available and retains all
-  TSP‑0006 race, ownership, and arbitrary‐length requirements.
-  Capabilities omits the feature "Submit.Source-Handle".
+  Submit or Submit-Items request containing Source-Handle produces a
+  Not-Committed Invalid failure.  Source-Path remains available and
+  retains all TSP‑0006 race, ownership, and arbitrary‐length
+  requirements.  Capabilities omits the feature
+  "Submit.Source-Handle".
 
   Every other TSP‑0004 operation can use this binding.  An Events Wait
   request may remain in claimed until an event becomes available or a
   TemporaryFailure result is produced.  Publication remains
   asynchronous; creating .req never means that an operation completed.
+
+  TSP‑0012 Claim-Inbound supports Presentation Path.  Presentation
+  Handle returns NotSupported, and Capabilities omits
+  "Consume.Payload-Handle".  A payload export is an operation object
+  governed by its inbound claim; it is not a .rsp carrier file and is
+  not removed merely because the Client acknowledges the .rsp.
 
 
 8. Security
@@ -263,7 +271,7 @@ Contents
   separate acknowledgement gives a program which crashed or restarted
   the same certainty as reading a complete socket response.
 
-  This binding deliberately does not turn an Attachment pathname into
+  This binding deliberately does not turn a Source pathname into
   a flow‐file reference.  Submit still ingests a private copy and
   returns a durable Job; the rendezvous files only carry its IPC
   request and result.
@@ -278,10 +286,15 @@ A. References
 
   [TSP‑0006] "Outbound Job Submission", TITH, 2026‑08‑17.
 
+  [TSP‑0012] "Tosser Consumption IPC", TITH, 2026‑08‑17.
+
 
 B. History
 ──────────
 
    Rev.1, 2026‑08‑17: Initial Release.
+
+   Rev.2, 2026‑08‑17: Defined inbound payload presentation and
+   item‐aware submission support.
 
 **********************************************************************

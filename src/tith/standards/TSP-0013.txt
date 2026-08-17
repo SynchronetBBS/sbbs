@@ -1,0 +1,355 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TSP‑0013
+Revision:     1
+Title:        Legacy Mailer and Tosser IPC Adapters
+Author(s):    Stephen Hurd
+Date:         2026‑08‑17
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Standard Proposal (TSP) — it documents a
+  proposed standard and solicits discussion.  Until promoted to a TTS,
+  this is experimental only and does not describe required behaviour.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  This document defines the transactional obligations of an adapter
+  between native TITH IPC and legacy mailer or tosser storage
+  conventions.  It places conversion beyond the IPC boundary in both
+  directions and specifies durable ledgers, ownership transfer,
+  publication, acknowledgement, replay, and recovery.
+
+Contents
+────────
+
+  1. Introduction
+  2. Adapter Boundary and Ledger
+  3. Legacy Outbound to Native IPC
+  4. Native Inbound to a Legacy Tosser
+  5. Legacy Publication and Batching
+  6. Failure and Recovery
+  7. Conversion Scope and Limitations
+  8. Security
+  9. Feedback and Discussion
+
+  A. References
+  B. History
+
+════════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  Native TITH does not use a NetMail .MSG directory, Binkley‐style
+  outbound, flow file, inbound packet directory, or deletion convention
+  as its application interface.  TSP‑0004 IPC is that interface.
+
+  A legacy adapter is an IPC Client.  On the outbound side it consumes
+  legacy objects, converts them, and submits native durable work.  On
+  the inbound side it claims a native TSP‑0011 item, converts it, and
+  durably publishes the objects required by a legacy tosser.
+
+  The adapter may be a separate process or embedded in another
+  executable.  Its logical position and ownership rules remain the
+  same.  The native mailer does not parse legacy control files or treat
+  their pathnames and deletion as native queue state.
+
+
+2. Adapter Boundary and Ledger
+─────────────────────────────
+
+  The adapter maintains a private durable ledger.  It MUST NOT depend
+  on a legacy pathname, directory scan order, file timestamp, Subject,
+  or disappearance alone as proof of a native IPC result.
+
+  For outbound conversion the ledger records:
+
+    • the race‐resistant identity and digest of every legacy object;
+    • the exact conversion policy and resulting canonical submission;
+    • every Application and Idempotency-Key;
+    • each returned JobID and state; and
+    • legacy cleanup still required.
+
+  For inbound conversion it records:
+
+    • every InboundID and native PayloadHash;
+    • the conversion policy and complete intended legacy object set;
+    • stable generated legacy names and object digests;
+    • staging, publication, and tosser ownership state; and
+    • the claim token and acknowledgement recovery state when current.
+
+  Ledger changes are durable before the adapter performs an external
+  action which cannot be safely inferred or repeated.  A ledger record
+  and legacy objects need not share one filesystem transaction, but the
+  recorded state and ordering MUST let recovery distinguish not started,
+  staged, published, submitted, acknowledged, and completed work.
+
+  The ledger is private adapter state.  Legacy software and the native
+  mailer MUST NOT modify it.  Removing it while work remains permits
+  duplication or loss and is an administrative data‐loss operation.
+
+
+3. Legacy Outbound to Native IPC
+──────────────────────────────────
+
+  The adapter opens each selected .MSG, packet, flow file, and attached
+  Source exactly once for conversion.  It validates the opened object
+  as a stable readable regular file and reads from that same object.
+  A pathname replacement MUST NOT select different contents.
+
+  Before changing a legacy object, the adapter durably assigns the
+  native submission idempotency keys and records the exact conversion.
+  It then submits through the applicable TSP‑0006 Submit or
+  Submit-Items operation.  The mailer receives native fields and
+  Sources; it does not receive a request to interpret a .MSG, packet,
+  tic, or flow file.
+
+  The adapter MUST NOT remove, truncate, mark sent, or otherwise retire
+  a legacy object until a complete Committed result or
+  Lookup-Submission proves that the corresponding native Job exists.
+  An incomplete IPC transaction leaves ownership uncertain and is
+  recovered only through the same idempotency keys.
+
+  A legacy Source disposition may be mapped to TSP‑0006 Delete or
+  Truncate only when its semantics are exact, the capability is
+  advertised, and the adapter intends cleanup after confirmed remote
+  delivery.  Otherwise the adapter uses Copy with Keep and records its
+  own later legacy cleanup.  It MUST NOT silently weaken a requested
+  ownership or deletion rule.
+
+  Retiring a .MSG or control entry and recording its associated JobID
+  are one recoverable adapter operation.  After a crash, the adapter
+  uses JobID, Lookup-Submission, and its ledger rather than submitting a
+  newly generated Message from the same legacy object.
+
+
+4. Native Inbound to a Legacy Tosser
+────────────────────────────────────
+
+  The adapter obtains an item with TSP‑0012 Claim-Inbound and verifies
+  the complete payload size and hash.  It checks its ledger for
+  InboundID before converting or publishing anything.
+
+  If the ledger shows that the exact InboundID and PayloadHash were
+  already published and durably transferred to adapter ownership, the
+  adapter does not publish a duplicate.  It acknowledges the current
+  claim and completes any interrupted ledger update.
+
+  For a new InboundID, the adapter durably records the intended
+  conversion and generated legacy names before publication.  It
+  converts the exact claimed TITH item according to TSP‑0003 and trusted
+  local policy.  Remote Filename, Subject, Area, MessageID, and pathlike
+  strings MUST NOT become local path components without the explicit
+  validation and name generation required by the legacy format.
+
+  The adapter acknowledges the inbound item only after all converted
+  objects and the ledger state which transfers responsibility from the
+  mailer are durable.  Its retained source MUST be private from the
+  legacy tosser; a published object which the tosser may remove is not
+  by itself recoverable adapter state.  At acknowledgement the adapter
+  owns delivery to the legacy tosser even if that tosser has not
+  processed the objects yet.  It MUST recover and re‐present them
+  without depending on the mailer's retained payload.
+
+  For EchoMail or file distribution, the ledger also records every
+  applicable routing or distribution obligation.  Acknowledging the
+  native item transfers those obligations to the adapter; it does not
+  say that the legacy toss completed.  The adapter retains its private
+  source until the legacy tosser has durably created every required
+  outbound copy or the adapter has committed the equivalent native
+  copies with TSP‑0006 Job Forward while the claim remains current.
+
+  An adapter MAY retain the native claim until the legacy tosser
+  completes instead, but it must renew the claim, preserve InboundID
+  idempotency, and prevent another worker from publishing the same
+  objects.  Legacy file disappearance by itself is not a sufficient
+  durable acknowledgement record.
+
+  A temporary conversion or publication failure uses Defer-Inbound or
+  Release-Inbound.  A permanent conversion refusal uses Reject-Inbound
+  only when trusted policy authorizes the local terminal outcome.
+  Neither result changes the already completed TITH transport Accepted.
+
+
+5. Legacy Publication and Batching
+──────────────────────────────────
+
+  Every legacy object is first constructed under a private temporary
+  name on the destination filesystem.  Its contents and metadata are
+  made durable before it is atomically published under an unused final
+  name without replacing an existing object.  The containing directory
+  update is then made durable.
+
+  When a packet or control object refers to companion files, every
+  companion is durably published first and the referencing object is
+  published last.  A legacy tosser MUST NOT be able to observe a packet
+  whose required companion is still temporary or incomplete.
+
+  Generated names are stable ledger data derived from locally generated
+  identity, not an arbitrary remote pathname.  A name collision causes
+  another unused name to be selected and recorded before publication.
+  Recovery never overwrites an unrelated existing object.
+
+  An adapter may place several InboundIDs in one legacy packet.  Its
+  ledger records the exact ordered set and conversion digest before the
+  packet is published.  It acknowledges each native item only after the
+  shared packet and ledger are durable.  A crash between
+  acknowledgements may redeliver an unacknowledged InboundID; the ledger
+  recognizes it as already present and prevents a second packet entry.
+
+  Packet aggregation is legacy presentation only.  It does not merge
+  InboundIDs, native payloads, claims, authentication results, or local
+  outcomes.
+
+  The adapter does not retire its private packet source merely because
+  the published packet disappeared.  It marks the legacy toss complete
+  only from the durable completion indication defined by its configured
+  legacy interface or from direct verification that every required
+  output is durable.
+
+
+6. Failure and Recovery
+───────────────────────
+
+  On startup the adapter recovers its ledger before scanning for new
+  legacy work or claiming another inbound item.  It validates every
+  retained object by its recorded race‐resistant identity, size, and
+  digest rather than assuming that a pathname still identifies it.
+
+  An outbound entry without a known Submit result is resolved with
+  Lookup-Submission.  Existing completes the Job association.  NotFound
+  permits resubmission only while every required Source and ownership
+  condition still holds.
+
+  An inbound entry with staged but unpublished objects is completed or
+  rolled back according to its ledger.  An entry with published objects
+  is never published again.  If Acknowledge-Inbound is uncertain, the
+  adapter repeats it with the same token or uses Query-Inbound.
+
+  If the legacy tosser altered, removed, or replaced a published object,
+  the adapter follows its configured legacy ownership rule.  It MUST
+  NOT request the mailer to recreate an item which it already
+  acknowledged merely because legacy processing lost the adapter's
+  copy.
+
+  A malformed legacy input or unsupported conversion is retained for
+  diagnosis or explicitly rejected according to policy.  The adapter
+  MUST NOT guess missing addresses, silently discard attachment data,
+  or claim successful conversion to make a queue advance.
+
+
+7. Conversion Scope and Limitations
+────────────────────────────────────
+
+  TSP‑0003 owns the byte‐level mapping between native TITH items and
+  legacy FTN formats.  This document owns only the placement,
+  transaction, ownership, and recovery boundary around that mapping.
+  A deployed legacy dialect does not change a native IPC grammar.
+
+  At Revision 1 of this proposal, TSP‑0003 does not yet define complete
+  Packed Message or Type‑2+ Packet conversion.  Therefore these
+  documents alone are not sufficient to implement an interoperable
+  native‐to‐packet adapter.  An implementation may use explicit local
+  conversion policy, but that policy is not a native TITH standard and
+  MUST NOT be presented as one.
+
+  At the legacy FTN boundary, exported EchoMail and file distribution
+  network (FDN) transfers are NetMail traffic.  They use individual
+  NetMail messages, packets, file attaches, and TIC conventions
+  described by FTS‑0004 version 3.31, FTS‑5006 revision 1, and FSC‑0028.
+  The adapter classifies what that legacy NetMail carriage represents.
+  Ordinary NetMail uses TSP‑0006 Submit or a Submit-Items NetMail Job;
+  EchoMail and FDN use the corresponding Submit-Items Kind.  This
+  preserves the legacy carriage fact without applying TITH NetMail
+  Destination routing to an item whose native semantics require
+  explicit area links.
+
+  Compatibility tolerance for malformed packets, alternate headers,
+  character sets, control paragraphs, .MSG variants, and flow file
+  dialects remains in the adapter and TSP‑0003.  It MUST NOT weaken
+  validation of TSP‑0004 IPC or TSP‑0011 native payloads.
+
+
+8. Security
+────────
+
+  Legacy directories and control files are untrusted input even when
+  they are local.  Every lookup, open, publication, replacement check,
+  and removal uses race‐resistant host facilities.  Symbolic links,
+  devices, directories, pipes, and sockets are rejected where a regular
+  file is required.
+
+  The adapter authorizes native operations through its configured IPC
+  principal and Application.  Legacy origin fields, usernames, packet
+  passwords, flow commands, and filenames do not grant native routing,
+  Source, cleanup, or Application authority.
+
+  The adapter ledger, temporary objects, generated names, claimed
+  payloads, and conversion diagnostics are protected from other local
+  principals.  Local Source and export pathnames SHOULD be omitted from
+  ordinary logs.
+
+
+9. Feedback and Discussion
+───────────────────────────
+
+  Keeping the adapter on the Client side makes the ownership boundary
+  symmetrical.  Legacy applications see the conventions they already
+  implement, while the mailer sees only authenticated IPC transactions
+  and durable native items.
+
+  The ledger is necessary because legacy file publication and deletion
+  do not provide an atomic transaction with the native queue.  Stable
+  JobID, InboundID, and idempotency keys let the adapter bridge that gap
+  without making either side infer state from the other's spool.
+
+
+A. References
+─────────────
+
+  [FTS‑0001] Revision 16, "A Basic FidoNet Technical Standard", FTSC,
+  1995‑09‑30.
+
+  [FTS‑0004] Version 3.31, "EchoMail Specification", FTSC,
+  1987‑12‑12.
+
+  [FTS‑5005] Revision 3, "Advanced BinkleyTerm Style Outbound flow and
+  control files", FTSC, 2016‑10‑31.
+
+  [FTS‑5006] Revision 1, "TIC file format", FTSC, 2016‑11‑07.
+
+  [FSC‑0028] "FwdSpec — A Collection of Notes on Moving Files in
+  FidoNet", FTSC, 1988‑12‑02.
+
+  [TSP‑0002] "Routing and Distribution Configuration", TITH,
+  2026‑08‑17.
+
+  [TSP‑0003] "Legacy Data Formats and TITH", TITH, 2026‑08‑17.
+
+  [TSP‑0004] "Local IPC Format", TITH, 2026‑08‑17.
+
+  [TSP‑0005] "Durable Outbound Jobs", TITH, 2026‑08‑17.
+
+  [TSP‑0006] "Outbound Job Submission", TITH, 2026‑08‑17.
+
+  [TSP‑0011] "Durable Inbound Delivery Items", TITH, 2026‑08‑17.
+
+  [TSP‑0012] "Tosser Consumption IPC", TITH, 2026‑08‑17.
+
+
+B. History
+──────────
+
+   Rev.1, 2026‑08‑17: Initial Release.
+
+**********************************************************************

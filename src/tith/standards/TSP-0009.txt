@@ -3,7 +3,7 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TSP‑0009
-Revision:     1
+Revision:     2
 Title:        Authenticated TCP IPC Binding
 Author(s):    Stephen Hurd
 Date:         2026‑08‑17
@@ -86,7 +86,7 @@ Contents
   authorized Client hydro_kx public key to one local IPC principal and
   its permitted Applications and operations.
 
-  A public key in configuration is the 43‐character base 64
+  A public key in configuration is the 43‑character base 64
   representation of its 32 bytes with the trailing Equals Sign
   (U+003D) removed.  Public keys are compared as their exact 32 decoded
   bytes.  Secret keys MUST be protected from other local principals.
@@ -203,24 +203,29 @@ Contents
 
   If the Client does not completely decrypt and validate the result,
   the transaction outcome is unknown.  It applies the operation's
-  idempotency, Query, and recovery rules.  For Submit it first uses
-  Lookup-Submission on a new authenticated connection.  If necessary
-  while every Source remains available, it may retry the identical
-  Submit request with the same idempotency keys.
+  idempotency, Query, and recovery rules.  For Submit or Submit-Items it
+  first uses Lookup-Submission on a new authenticated connection.  If
+  necessary while every Source remains available, it may retry the
+  identical submission request with the same idempotency keys.
 
 
 7. Operation Restrictions
 ─────────────────────────
 
   TCP cannot transfer a native open handle.  This binding supplies no
-  associated handle table.  A TSP‑0006 Submit request containing
-  Source-Handle produces a Not-Committed Invalid failure.  Source-Path
-  remains available and refers to the Service host's filesystem.
-  Capabilities omits the feature "Submit.Source-Handle".
+  associated handle table.  A TSP‑0006 Submit or Submit-Items request
+  containing Source-Handle produces a Not-Committed Invalid failure.
+  Source-Path remains available and refers to the Service host's
+  filesystem.  Capabilities omits the feature "Submit.Source-Handle".
 
   All other TSP‑0004 operations, including Events Wait, use the normal
   transaction.  A waiting operation keeps its authenticated connection
   open until its result or a temporary failure.
+
+  TSP‑0012 Claim-Inbound supports Presentation Path.  Presentation
+  Handle returns NotSupported, and Capabilities omits
+  "Consume.Payload-Handle".  Payload export contents are read from the
+  returned local path and are not placed in encrypted IPC records.
 
 
 8. Security
@@ -268,6 +273,8 @@ A. References
 
   [TSP‑0006] "Outbound Job Submission", TITH, 2026‑08‑17.
 
+  [TSP‑0012] "Tosser Consumption IPC", TITH, 2026‑08‑17.
+
   [TTS‑0002] "Type Length Value Encoding", TITH, 2026‑08‑16.
 
 
@@ -275,5 +282,8 @@ B. History
 ──────────
 
    Rev.1, 2026‑08‑17: Initial Release.
+
+   Rev.2, 2026‑08‑17: Defined inbound payload presentation and
+   item‐aware submission support.
 
 **********************************************************************

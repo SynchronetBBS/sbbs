@@ -3,7 +3,7 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TSP‑0002
-Revision:     3
+Revision:     4
 Title:        Routing and Distribution Configuration
 Author(s):    Stephen Hurd
 Date:         2026‑08‑17
@@ -388,6 +388,12 @@ Contents
   combined form.  A Peer MUST NOT occur in more than one Receive-From
   or more than one Send-To line in the same area block.
 
+  At copy creation, a Send-To delivery is Active when its exact Peer
+  has a usable configured or nodelist endpoint and Passive otherwise.
+  The mode is part of route commitment and does not change merely
+  because an endpoint later appears or disappears.  Either mode may be
+  claimed by an authenticated Poll from that exact Peer.
+
   An EchoArea applies to an EchoMail Message carrying its Area.  A
   FileArea applies to a standalone distribution File carrying its
   Area as specified by TTS‑0005.  A File attached to a Message travels
@@ -403,6 +409,18 @@ Contents
   unlisted Peers, so duplicate acceptance and exact immediate‐peer
   exclusion provide the corresponding protection for them.  Omitting
   a copy is normal distribution pruning, not a failure.
+
+  Before the resulting copy set is committed, a locally originated
+  item has its initial Via and a received item has one Via for the
+  forwarding local identity appended as required by TTS‑0005.  The
+  distributor retains every existing SeenBy address and adds each
+  listed identity which is known to have or to receive the item: its
+  local identity, the immediate incoming Peer when any, and every
+  listed Send-To Peer for which it creates a copy.  Unlisted identities
+  are not representable in SeenBy and are omitted.  The resulting item
+  contains exactly one SeenBy whose TTS‑0004 Trimmed Collection may be
+  empty when no listed identity is representable.  Every copy in the
+  set carries the same resulting Via and SeenBy values.
 
   EchoMail and file distribution MUST NOT use a NetMail Route method,
   even when a configured Peer cannot be contacted.  The copy remains
@@ -502,15 +520,29 @@ Contents
   distribution copy instead uses the class on its Send-To line, or
   Normal when that line has none.
 
-  A source Bundle is tossed item by item.  Before a source Bundle may
-  be retired, every required NetMail delivery or area distribution
-  copy MUST be durably recorded with:
+  A source Bundle is authenticated and tossed item by item.  A locally
+  consumed value may first become a durable TSP‑0011 inbound item.  In
+  that case the Bundle container may be retired after the exact item,
+  immediate peer, consumer commitment, and duplicate identity are
+  durable; the inbound item becomes the retained source of tossing.
+
+  Before a directly tossed source value may be considered consumed,
+  every required NetMail delivery or area distribution copy MUST be
+  durably recorded with:
 
     • its local AKA;
     • its exact next‐hop address and unlisted PublicKey, if any;
-    • its delivery class; and
+    • its delivery class;
     • its retry Timestamp, if any; and
     • its resolved permanent failure policies.
+
+  A TSP‑0011 consumer may instead take durable responsibility for a
+  queued inbound item before completing these copies.  It then retains
+  an exact recoverable source and every unperformed routing or
+  distribution obligation.  A TSP‑0013 adapter ledger and its private
+  converted objects may provide that retained source.  The consumer
+  MUST NOT retire its source or mark its toss complete until every
+  required copy above is durable.
 
   NetMail produces one delivery copy.  EchoMail and file distribution
   produce one copy for each applicable Send-To link.  Copies MAY be
@@ -670,6 +702,11 @@ Contents
 A. References
 ─────────────
 
+  [TSP‑0011] "Durable Inbound Delivery Items", TITH, 2026‑08‑17.
+
+  [TSP‑0013] "Legacy Mailer and Tosser IPC Adapters", TITH,
+  2026‑08‑17.
+
   [TTS‑0003] "Common TLV Types", TITH, 2026‑08‑17.
 
   [TTS‑0004] "Node Addresses", TITH, 2026‑08‑17.
@@ -701,5 +738,9 @@ B. History
 
    Rev.3, 2026‑08‑17: Aligned inbound polling with the complete atomic
    poll snapshot defined by TTS‑0005.
+
+   Rev.4, 2026‑08‑17: Defined durable inbound items as retained tossing
+   sources after a Bundle container is retired and fixed Send-To
+   delivery mode and distribution metadata at route commitment.
 
 **********************************************************************

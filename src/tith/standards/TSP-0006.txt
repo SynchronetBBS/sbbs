@@ -3,7 +3,7 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TSP‑0006
-Revision:     1
+Revision:     2
 Title:        Outbound Job Submission
 Author(s):    Stephen Hurd
 Date:         2026‑08‑17
@@ -22,12 +22,12 @@ Status of this document
 Abstract
 ────────
 
-  This document defines the local IPC operation through which an
+  This document defines the local IPC operations through which an
   Application atomically submits one or more TSP‑0005 outbound Jobs.
-  It specifies complete Job and Attachment syntax, private file
-  ingestion, ownership, idempotency and conflict detection,
-  source‐independent lookup, batch commitment, generated wire filenames,
-  results, and a command‐line client.
+  It specifies NetMail, EchoMail, and file distribution Job syntax,
+  private file ingestion, ownership, idempotency and conflict
+  detection, source‐independent lookup, batch commitment, generated
+  wire filenames, results, and a command‐line client.
 
 Contents
 ────────
@@ -35,9 +35,9 @@ Contents
   1. Introduction
   2. Submit Request
   3. Job Fields
-  4. Attachment Sources
+  4. Attachment and File Sources
   5. Copy, Move, and Source Disposition
-  6. Message Construction and Routing
+  6. Item Construction and Routing
   7. Idempotency, Lookup, and Batch Commitment
   8. Submit Results
   9. Command‐Line and Linked Clients
@@ -61,11 +61,12 @@ Contents
   stored Message and its overloaded Subject file list; FTS‑5005
   revision 3 describes the BinkleyTerm‐style outbound.
 
-  This operation performs both roles without exposing a spool layout.
-  An Application submits the fields of one NetMail Message and zero or
-  more Attachment Sources as one Job.  A Message without an Attachment
-  replaces ordinary .MSG injection.  A Message with an Attachment
-  replaces the corresponding .MSG and outbound handoff atomically.
+  The Submit operation performs both roles without exposing a spool
+  layout.  An Application submits the fields of one NetMail Message and
+  zero or more Attachment Sources as one Job.  A Message without an
+  Attachment replaces ordinary .MSG injection.  A Message with an
+  Attachment replaces the corresponding .MSG and outbound handoff
+  atomically.
 
   The mailer ingests every Attachment into private storage before
   commitment, constructs an ordinary TTS‑0005 NetMail Message, creates
@@ -73,8 +74,22 @@ Contents
   JobID.  A local pathname is not TITH data, is never sent to a remote
   peer, and is never substituted for Subject.
 
-  Submit uses the TSP‑0004 IPC format over any binding which can carry
-  it.  TSP‑0007 and TSP‑0010 support open handles as well as paths.
+  Submit-Items is the item‐aware operation.  It uses the same Job,
+  ingestion, ownership, idempotency, and result model for NetMail,
+  EchoMail, and standalone file distribution.  Submit remains its
+  original NetMail‐only grammar so an existing IPC version 1 operation
+  is not silently changed.
+
+  At a legacy FTN boundary, exported EchoMail and file distribution
+  network (FDN) transfers are NetMail traffic: individual messages,
+  packets, and file attaches are handed to the NetMail mailer.  Their
+  conversion to distinct native TITH Kinds records the application
+  semantics needed for area distribution; it does not deny that legacy
+  carriage model.
+
+  Both submission operations use the TSP‑0004 IPC format over any
+  binding which can carry it.  TSP‑0007 and TSP‑0010 support open
+  handles as well as paths.
   TSP‑0009 provides portable authenticated TCP with paths.  TSP‑0008
   carries the same operation through atomic files and supports paths.
 
@@ -130,6 +145,86 @@ Contents
   request with invalid Job data produces the Not-Committed result in
   section 8.
 
+  A complete item‐aware request has this outer grammar:
+
+    TITH-IPC 1
+    Submit-Items
+    <item-job>
+    [<item-job>]...
+    End
+
+  A NetMail item Job has the exact Submit Job grammar above except that
+  its opening line is the two literals "Job NetMail" instead of the one
+  literal "Job".  Its closing End and every enclosed line are
+  unchanged.
+
+  An EchoMail item Job has this grammar:
+
+    Job EchoMail
+    Application "<application-name>"
+    Idempotency-Key "<key>"
+    Origin "<local-identity>"
+    Area "<area-name>"
+    To-User "<UTF-8-string>"
+    From-User "<UTF-8-string>"
+    [Timestamp Auto|<unsigned-integer>]
+    [Subject "<UTF-8-string>"]
+    [Message-Text "<UTF-8-string>"]
+    [Legacy-Attributes <unsigned-integer>]
+    [Timestamp-Offset <signed-integer>]
+    [Tear-Line "<UTF-8-string>"]
+    [Origin-Line "<UTF-8-string>"]
+    [Message-ID "<UTF-8-string>"]
+    [Reply-To "<address>" "<UTF-8-string>"]
+    [Additional-Kludge-Line "<UTF-8-string>"]...
+    [Attachment
+    Source-Path "<local-pathname>"|Source-Handle <unsigned-integer>
+    [Ingestion Copy|Move]
+    [Source-Disposition Keep|Delete|Truncate]
+    [Wire-Filename Generate|"<UTF-8-string>"]
+    [File-Timestamp Auto|<unsigned-integer>]
+    [Expected-Size <unsigned-integer>]
+    [Expected-Hash "<base64-hash>"]
+    End]...
+    End
+
+  A standalone distribution File item Job has this grammar:
+
+    Job File
+    Application "<application-name>"
+    Idempotency-Key "<key>"
+    Origin "<local-identity>"
+    Area "<area-name>"
+    File
+    Source-Path "<local-pathname>"|Source-Handle <unsigned-integer>
+    [Ingestion Copy|Move]
+    [Source-Disposition Keep|Delete|Truncate]
+    Wire-Filename "<UTF-8-string>"
+    [File-Timestamp Auto|<unsigned-integer>]
+    [Short-Description "<UTF-8-string>"]
+    [Long-Description-Line "<UTF-8-string>"]...
+    [Tear-Line "<UTF-8-string>"]
+    [Magic-Word "<UTF-8-string>"]
+    [Replaces "<UTF-8-string>"]
+    [Expected-Size <unsigned-integer>]
+    [Expected-Hash "<base64-hash>"]
+    End
+    End
+
+  A claimed inbound distribution item uses this grammar:
+
+    Job Forward
+    Application "<application-name>"
+    Idempotency-Key "<key>"
+    Inbound <inbound-id> <claim-token>
+    End
+
+  Lines in every item Job and nested block occur in displayed order.
+  Every singleton occurs at most once.  Submit-Items contains one or
+  more Jobs and is one all‐or‐nothing Batch under section 7.  Submit and
+  Submit-Items are distinct operations and MUST NOT occur in one IPC
+  document.
+
 
 3. Job Fields
 ─────────────
@@ -142,11 +237,27 @@ Contents
   Idempotency-Key is a nonempty UTF‑8 string of arbitrary length.  Its
   exact decoded bytes and Application form the idempotency identity in
   section 7.  It is local metadata and MUST NOT be placed in the
-  Message or transmitted.
+  item or transmitted.
+
+  The opening line of an originating Submit-Items Job records its
+  TSP‑0005 Kind.  The original Submit operation always creates Kind
+  NetMail.  Job Forward preserves the Kind of its claimed inbound item.
 
   Origin identifies one local identity having a TSP‑0002 Routes block.
   It uses the local identity syntax defined there.  The service MUST
   possess its secret signing key.
+
+  An EchoMail or File Origin also has exactly one applicable TSP‑0002
+  Areas block containing the submitted area and item Kind.  The Service
+  MUST authorize the Application to originate that area.
+
+  Inbound identifies one current TSP‑0011 item and ClaimToken obtained
+  by the same Application through TSP‑0012.  For a New Forward Job, the
+  item MUST be EchoMail or a standalone distribution File.  Its
+  receiving local identity selects the Areas block and its immediate
+  peer supplies distribution exclusion.  The Service MUST authorize
+  the caller for the claim and MUST NOT accept a pathname, replacement
+  payload, Origin, Area, or routing override in that Job.
 
   Destination is a canonical listed TTS‑0004 address or a peer
   reference naming an exact unlisted identity in the TSP‑0002 peers
@@ -155,7 +266,14 @@ Contents
   The Message likewise contains the Origin PublicKey when its resolved
   Origin is unlisted.
 
-  To-User and From-User supply TTS‑0005 ToUserName and FromUserName.
+  Destination occurs only for NetMail.  Area occurs only for EchoMail
+  and File and supplies the exact nonempty TTS‑0005 AreaName.  It is
+  compared with TSP‑0002 configuration by exact UTF‑8 bytes without
+  normalization or case folding.  It MUST NOT contain a control code
+  point, Space, or Horizontal Tab at either end.
+
+  To-User and From-User occur only for a Message and supply TTS‑0005
+  ToUserName and FromUserName.
   Subject and Message-Text supply Subject and MessageText.  An omitted
   Subject or Message-Text supplies an empty value.  All four are UTF‑8.
 
@@ -171,35 +289,40 @@ Contents
   restrictions specified by TTS‑0005.  The service supplies Signature,
   RequestIdentifier, Via, and routing metadata.
 
-  Class is a TSP‑0002 delivery class configuration name and defaults to
-  Normal.  It is local metadata and is not transmitted.
+  Class occurs only for NetMail.  It is a TSP‑0002 delivery class
+  configuration name, defaults to Normal, and is not transmitted.
 
-  Next-Hop absent or Route applies normal TSP‑0002 routing.  Active or
-  Passive explicitly commits the Job to the listed address or peer
-  reference in that line without applying a NetMail Route method.  The
-  service MUST authorize an explicit next hop.  Loop detection, Down
-  status, and failure handling still apply.  Active requires a usable
-  endpoint and satisfaction of caller restrictions when committed;
-  Passive does not require an endpoint.
+  Next-Hop occurs only for NetMail.  Absent or Route applies normal
+  TSP‑0002 routing.  Active or Passive explicitly commits the Job to the
+  listed address or peer reference in that line without applying a
+  NetMail Route method.  The service MUST authorize an explicit next
+  hop.  Loop detection, Down status, and failure handling still apply.
+  Active requires a usable endpoint and satisfaction of caller
+  restrictions when committed; Passive does not require an endpoint.
 
-  Failure-Policy absent or Route uses policies resolved by TSP‑0002.
-  Otherwise it supplies one complete override for all permanent
-  failure kinds.  Disposition is Dead-Letter or Discard; notification
-  is None, Sender, Origin-Sysop, or Both.  An override requires
-  authorization and is distinct from Source-Disposition.
+  Failure-Policy occurs only for NetMail.  Absent or Route uses
+  policies resolved by TSP‑0002.  Otherwise it supplies one complete
+  override for all permanent failure kinds.  Disposition is Dead-Letter
+  or Discard; notification is None, Sender, Origin-Sysop, or Both.  An
+  override requires authorization and is distinct from
+  Source-Disposition.
 
 
-4. Attachment Sources
-─────────────────────
+4. Attachment and File Sources
+──────────────────────────────
 
-  Each Attachment becomes one File child in submission order.
+  Each Attachment becomes one File child in submission order.  The File
+  block in a Kind File Job supplies the one standalone File's Contents
+  and metadata.  Attachment and File blocks are both Sources for the
+  ingestion and ownership rules below.
+
   Source-Path identifies an arbitrary‐length local pathname in the
   host's UTF‑8 pathname representation.  It MUST NOT contain Null.  The
   service MUST NOT use a fixed path buffer or silently truncate it.
 
   Source-Handle is a zero‐based index into the associated handle table
   supplied out of band by the IPC binding.  Every referenced index MUST
-  exist, every index MUST occur in exactly one Attachment, and every
+  exist, every index MUST occur in exactly one Source block, and every
   associated handle MUST be referenced.  A binding without associated
   handles rejects Source-Handle as Invalid.
 
@@ -222,18 +345,26 @@ Contents
   enqueue partial contents.
 
   Ingestion defaults to Copy.  Source-Disposition defaults to Keep.
-  Wire-Filename defaults to Generate.  File-Timestamp defaults to Auto.
+  Attachment Wire-Filename defaults to Generate.  A standalone File
+  requires an explicit Wire-Filename.  File-Timestamp defaults to Auto.
 
   Wire-Filename supplies the TTS‑0005 Filename.  A supplied value MUST
   be nonempty and MUST NOT contain a path component.  WireFilenames in
-  one Job are distinct by exact UTF‑8 bytes.
+  one Job are distinct by exact UTF‑8 bytes.  A standalone File name is
+  not inferred from Source-Path.
 
   Auto File-Timestamp uses the Source modification time when available
   and representable and otherwise omits the File Timestamp.  An integer
   explicitly supplies the TTS‑0003 Timestamp.
 
+  Short-Description, Long-Description-Line, Tear-Line, Magic-Word, and
+  Replaces in a standalone File have the corresponding TTS‑0005
+  meanings, encodings, ordering, and restrictions.  The Service
+  supplies its Area, Origin, PublicKey when required, Signature,
+  RequestIdentifier, initial Via, and routing metadata.
+
   Expected-Size is the exact Source byte count.  Expected-Hash is the
-  43‐character base 64 representation, without trailing Equals Sign,
+  43‑character base 64 representation, without trailing Equals Sign,
   of the 32‑byte libhydrogen generic hash of those bytes.  Its context
   is the eight bytes of the C string "SubFile", including its trailing
   NUL, and its key is NULL.  A mismatch prevents Batch commitment.
@@ -249,10 +380,10 @@ Contents
   close its own handle after the binding has completed descriptor
   transfer.
 
-  The service finishes ingestion before returning New.  Every
-  Attachment is durably stored as a complete immutable private copy
-  controlled by the mailer.  A committed Job MUST NOT refer to Source
-  contents by pathname or caller handle.
+  The service finishes ingestion before returning New.  Every Source
+  is durably stored as a complete immutable private copy controlled by
+  the mailer.  A committed Job MUST NOT refer to Source contents by
+  pathname or caller handle.
 
   Copy
   ────
@@ -262,17 +393,18 @@ Contents
 
   Keep means the service never changes or removes the Source.  Delete
   and Truncate explicitly authorize the corresponding post‐delivery
-  TSP‑0005 cleanup and are permitted only with Source-Path and Copy.
+  TSP‑0005 cleanup after every delivery copy succeeds and are permitted
+  only with Source-Path and Copy.
   For either disposition, Source-Path itself, without following a
   symbolic link, MUST name the regular file opened for ingestion.
 
   Delete and Truncate are optional and are advertised respectively as
-  the TSP‑0004 features "Submit.Delete" and "Submit.Truncate".  A
-  Service which does not advertise the requested feature rejects the
-  Batch as Invalid before commitment.  An advertised feature may still
-  reject a Source whose filesystem cannot support race‐resistant
-  exact‐object cleanup.  It MUST NOT knowingly commit an obligation it
-  cannot attempt safely.
+  the TSP‑0004 features "Submit.Delete" and "Submit.Truncate".  The
+  features apply to Submit and Submit-Items.  A Service which does not
+  advertise the requested feature rejects the Batch as Invalid before
+  commitment.  An advertised feature may still reject a Source whose
+  filesystem cannot support race‐resistant exact‐object cleanup.  It
+  MUST NOT knowingly commit an obligation it cannot attempt safely.
 
   Move
   ────
@@ -282,13 +414,15 @@ Contents
   MUST name the regular file being moved.
 
   A Service advertises Move with the TSP‑0004 feature "Submit.Move".
-  One which does not advertise it rejects a Move Batch as Invalid.
+  The feature applies to Submit and Submit-Items.  A Service which does
+  not advertise it rejects a Move Batch as Invalid.
 
   New MUST NOT be returned until the ownership transfer, private copy,
-  Job, delivery copy, and idempotency mapping are durable.  A complete
-  failure result leaves every Move Source at its original pathname and
-  owned by the Application.  A service unable to provide that
-  transactionally rejects Move; it MUST NOT silently substitute Copy.
+  Job, every delivery copy, and idempotency mapping are durable.  A
+  complete failure result leaves every Move Source at its original
+  pathname and owned by the Application.  A service unable to provide
+  that transactionally rejects Move; it MUST NOT silently substitute
+  Copy.
 
   If the Application does not receive a complete result, it resolves
   ownership with Lookup-Submission.  Existing proves that the mailer
@@ -298,18 +432,29 @@ Contents
   whether Move committed.
 
 
-6. Message Construction and Routing
-───────────────────────────────────
+6. Item Construction and Routing
+────────────────────────────────
 
-  A submitted Job produces exactly one TTS‑0005 NetMail Message.  It
+  A NetMail Job produces exactly one TTS‑0005 NetMail Message.  It
   contains the resolved Origin, Destination, and Timestamp, submitted
   user names, Subject, MessageText, optional Message fields, and one
   File child for each Attachment.
 
-  Each File contains a Filename equal to its Wire-Filename, an optional
-  Timestamp, and exact private copy bytes as Contents.  It relies on
-  the enclosing Message Signature and contains no independent Origin,
-  Signature, RequestIdentifier, Via, or SeenBy.
+  An EchoMail Job produces exactly one TTS‑0005 EchoMail Message.  It
+  contains the resolved Origin, submitted Timestamp, user names,
+  Subject, MessageText, Area, optional Message fields, and one File
+  child for each Attachment.  It contains no Destination or following
+  Destination PublicKey.
+
+  Each attached File contains a Filename equal to its Wire-Filename,
+  an optional Timestamp, and exact private copy bytes as Contents.  It
+  relies on the enclosing Message Signature and contains no independent
+  Origin, Signature, RequestIdentifier, Via, or SeenBy.
+
+  A File Job produces one standalone TTS‑0005 File.  It contains the
+  submitted Filename, optional Timestamp, exact private copy bytes as
+  Contents, Area, resolved Origin and PublicKey when required, and the
+  submitted optional File metadata.
 
   The service generates the TSP‑0005 JobID before generating filenames.
   Generate produces the 32 hexadecimal JobID digits, Hyphen‐Minus
@@ -324,37 +469,93 @@ Contents
   extension from the Source pathname.  An Application sending another
   kind of TITH File supplies its required pathless Wire-Filename.
 
-  The service signs the Message's signed children after all immutable
-  values and Attachments are fixed.  It then appends RequestIdentifier,
-  the initial Via, and submitted AdditionalKludgeLine values in the
-  order required by TTS‑0005.
+  The Service signs a newly originated Message or standalone File after
+  all signed children and private Contents are fixed.  It then appends
+  RequestIdentifier and the initial Via.  A Message next appends the
+  submitted AdditionalKludgeLine values.
 
-  Before New, the service creates the TSP‑0002 delivery copy and records
-  every field required by TSP‑0005 section 3.  Route commitment belongs
-  to the Job's delivery copy rather than a storage Bundle.
+  A Forward Job preserves the exact signed children and end‐to‐end
+  Signature of its inbound item.  It replaces RequestIdentifier for the
+  new delivery, retains existing Via and AdditionalKludgeLine values,
+  retains every address represented by existing SeenBy values, and
+  appends the receiving local identity as Via.  It MUST NOT decode and
+  re‐encode, alter, or re‐sign any covered byte.  SeenBy is rebuilt as
+  the one value required by TSP‑0002 without changing the signed bytes.
+
+  Before New for NetMail, the Service creates its one TSP‑0002 Route
+  delivery copy.  Before New for locally originated EchoMail or File,
+  it creates one copy for every Send-To in the applicable area block.
+  Such an item has no immediate incoming Peer to exclude.  An undefined
+  area or an area without a Send-To is PermanentFailure.
+
+  Before New for Forward, the Service applies TSP‑0002 distribution
+  pruning using the inbound item's immediate Peer and existing SeenBy.
+  An undefined area is PermanentFailure.  No remaining recipient after
+  normal pruning creates a Delivered Job with zero delivery copies.
+  This durable no‐delivery result is not a routing failure.
+
+  All new distribution Jobs in one Batch use one consistent Areas
+  configuration snapshot.  The Service constructs the common SeenBy
+  and Via metadata for each copy set exactly as required by TSP‑0002.
+
+  Every area copy is committed directly to its exact configured Peer.
+  It is Active when that Peer has a usable endpoint at commitment and
+  Passive otherwise.  Its Class comes from its Send-To line, and its
+  permanent failure policies are resolved separately.  The Service
+  MUST NOT apply a NetMail Route method, caller‐supplied Destination,
+  or caller‐supplied next hop to an area copy.
+
+  Every delivery copy and field required by TSP‑0005 section 3 is
+  durable before New.  The Forward Job commitment does not resolve or
+  acknowledge its inbound claim; the consumer does that separately
+  under TSP‑0012 after recovering the submission result.  Route
+  commitment belongs to the delivery copies rather than a storage
+  Bundle.  Later area or endpoint configuration changes do not add,
+  remove, activate, or reroute a committed copy.
 
 
 7. Idempotency, Lookup, and Batch Commitment
 ────────────────────────────────────────────
 
-  JobDigest is the 32‐byte libhydrogen generic hash of the exact
+  JobDigest is the 32‑byte libhydrogen generic hash of the exact
   canonical bytes beginning with a Job line and ending with the Line
-  Feed after that Job block's matching End.  Nested Attachment blocks
-  are included.  The hash context is the eight bytes of the C string
-  "SubJob1", including its trailing NUL, and its key is NULL.  JobDigest
-  is local metadata and is not placed in the Message or transmitted.
+  Feed after that Job block's matching End.  Nested Attachment and File
+  blocks are included.  The hash context is the eight bytes of the C
+  string "SubJob1", including its trailing NUL, and its key is NULL.
+  JobDigest is local metadata and is not placed in the item or
+  transmitted.
 
   The Service retains the mapping from each Application and
   Idempotency-Key pair to its JobID and JobDigest.  It MUST NOT expire
   or remove that mapping except as part of the TSP‑0005 administrative
   purge of the Job.
 
-  Every Submit idempotency lookup and JobDigest comparison occurs
-  before a Source is opened, validated, or ingested.  If a mapping and
-  identical JobDigest exist, the Service returns Existing with the
-  original JobID and current state.  It MUST NOT create another Job,
+  Every Submit or Submit-Items idempotency lookup and JobDigest
+  comparison occurs before a Source is opened, validated, or ingested.
+  If a mapping and identical JobDigest exist, the Service returns
+  Existing with the original JobID and current state.  It MUST NOT
+  create another Job,
   semantically validate or use that repeated Job's other fields, open
   its Sources, or perform Move, Delete, or Truncate.
+
+  For Job Forward, the same classification also occurs before resolving
+  InboundID or validating ClaimToken.  Existing returns the original
+  Job even when the claim or inbound payload is no longer available.
+  Only a New Forward Job requires the exact inbound item and a current
+  authorized claim.
+
+  Forward validation, association, and Job commitment serialize with
+  claim renewal, expiration, and control.  ClaimToken MUST remain
+  current through commitment.  If it is stale before commitment, the
+  Forward Job is Invalid and no new Job in the Batch commits.
+
+  One inbound item may be associated with at most one Forward Job.  A
+  new Forward Job, its JobID, and that association in the TSP‑0011
+  record are one atomic commitment.  Two new Job blocks in one Batch
+  MUST NOT name the same InboundID.  An attempt to create another Job
+  for an already associated inbound item is Invalid; the consumer
+  recovers the original through its idempotency key or the TSP‑0012
+  Forward-Job field rather than using a new key.
 
   If the Application and Idempotency-Key exist with a different
   JobDigest, that Job block is Conflict.  Conflict does not access a
@@ -364,15 +565,15 @@ Contents
   selecting unrelated work.
 
   A binding MAY receive, duplicate, or otherwise acquire opaque native
-  handles as carrier metadata before Submit is parsed.  Acquisition is
-  not Source validation.  The Service MUST defer reopening, file‐type
-  and access checks, reading, hashing, and ingestion until the
-  corresponding Job has been classified as New.  It closes handles for
-  Existing or Conflict Jobs without inspecting their Source objects.
-  The Service classifies every Job in the Batch before validating or
-  ingesting any new Source.  If that classification finds a Conflict,
-  it closes every carrier handle and returns Not-Committed without
-  validating a Source.
+  handles as carrier metadata before a submission is parsed.
+  Acquisition is not Source validation.  The Service MUST defer
+  reopening, file‐type and access checks, reading, hashing, and
+  ingestion until the corresponding Job has been classified as New.
+  It closes handles for Existing or Conflict Jobs without inspecting
+  their Source objects.  The Service classifies every Job in the Batch
+  before validating or ingesting any new Source.  If that classification
+  finds a Conflict, it closes every carrier handle and returns
+  Not-Committed without validating a Source.
 
   A Client can recover idempotency mappings without any Job or Source
   fields using this operation:
@@ -396,9 +597,10 @@ Contents
   one input key in order.  All mappings and current states are read in
   one atomic snapshot.  Existing returns the mapped JobID and state;
   NotFound means no committed mapping existed at that snapshot.  It
-  does not cancel or prevent a concurrent Submit which has not yet
-  committed.  The operation never accesses a Source.  A Batch caller
-  recovers all of its keys in one Lookup-Submission request.
+  does not cancel or prevent a concurrent Submit or Submit-Items which
+  has not yet committed.  The operation never accesses a Source.  A
+  Batch caller recovers all of its keys in one Lookup-Submission
+  request.
 
   An unsuccessful lookup result is:
 
@@ -409,20 +611,21 @@ Contents
   NotAuthorized discloses no mapping or Application state.
   TemporaryFailure means the atomic snapshot could not be obtained.
 
-  The complete Submit request is one Batch.  No two Job blocks may have
-  the same idempotency identity.  Every new Job is staged and all new
-  Jobs are atomically committed or none are.  Existing Jobs remain
-  unchanged and participate only in a successful result.  Any Conflict
-  makes the Batch Not-Committed.
+  One complete Submit or Submit-Items request is one Batch.  No two Job
+  blocks may have the same idempotency identity.  Every new Job is
+  staged and all new Jobs are atomically committed or none are.
+  Existing Jobs remain unchanged and participate only in a successful
+  result.  Any Conflict makes the Batch Not-Committed.
 
   Classification and commitment serialize on every idempotency
   identity in the Batch.  Concurrent requests cannot both classify the
   same absent identity as commit‐eligible New Jobs.  After one commits,
   the other observes Existing or Conflict according to JobDigest.
 
-  A committed new Job includes its private copies, immutable Message,
-  Job record, delivery copy, cleanup records, JobDigest, and idempotency
-  mapping.  All are durable before New is returned.
+  A committed new Job includes its private Source copies, immutable
+  item, Job record, every delivery copy, cleanup records, JobDigest,
+  idempotency mapping, and Forward association when applicable.  All
+  are durable before New is returned.
 
   If validation, ingestion, routing, authorization, durability, or a
   Move transfer fails for any new Job, no new Job in the Batch is
@@ -433,6 +636,10 @@ Contents
 
 8. Submit Results
 ─────────────────
+
+  The forms below show Submit.  A Submit-Items result replaces the
+  first literal Submit with Submit-Items and is otherwise identical.
+  A result MUST name the operation in its request.
 
   A committed result is:
 
@@ -474,21 +681,22 @@ Contents
   If the caller does not receive a complete result, it first uses
   Lookup-Submission with every Batch key.  Existing recovers a
   committed JobID without a Source.  If necessary and every required
-  Source remains available, it may resubmit the identical document and
-  idempotency keys.  It MUST NOT infer commitment from carrier state,
-  process status, a partial result, or a Source pathname.
+  Source remains available, it may resubmit the identical submission
+  document and idempotency keys.  It MUST NOT infer commitment from
+  carrier state, process status, a partial result, or a Source pathname.
 
 
 9. Command‐Line and Linked Clients
 ──────────────────────────────────
 
   A service SHOULD provide a small IPC client named "tith-submit".  It
-  reads a Submit document from the named file, or standard input when
-  the name is the literal Hyphen‐Minus (U+002D), sends it through the
-  configured IPC binding, and writes only the complete result to
+  reads a submission document from the named file, or standard input
+  when the name is the literal Hyphen‐Minus (U+002D), sends it through
+  the configured IPC binding, and writes only the complete result to
   standard output:
 
     tith-submit submit <submission-file-or-hyphen>
+    tith-submit submit-items <submission-file-or-hyphen>
 
   Exit status zero means a complete Committed result was written, one
   means a complete Not-Committed result was written, and two means no
@@ -498,6 +706,7 @@ Contents
   The same client SHOULD construct these other standard requests:
 
     tith-submit query <job-id>
+    tith-submit query-job <job-id>
     tith-submit lookup <application-name> <idempotency-key>...
     tith-submit cancel <job-id>
     tith-submit retry <job-id>
@@ -520,9 +729,13 @@ Contents
 ─────────────────────────
 
   Submission crosses a local privilege boundary.  The service
-  authorizes Application, Origin, Destination, explicit Next-Hop,
-  Failure-Policy, Source access, Move, and cleanup dispositions against
-  the TSP‑0004 caller identity.
+  authorizes Application, Kind, Origin, Destination, Area, explicit
+  Next-Hop, Failure-Policy, Source access, Move, and cleanup
+  dispositions against the TSP‑0004 caller identity.
+
+  A Forward Job additionally requires the current claim's Application
+  and binding‐supplied caller authorization.  InboundID and ClaimToken
+  are correlation and concurrency values, not credentials.
 
   Every pathname operation uses an identity check and race‐resistant
   host facilities.  A check followed by an unrelated pathname open,
@@ -530,8 +743,9 @@ Contents
   avoid a replacement race fails safely.
 
   Private copies and Job metadata MUST NOT be writable by the
-  Application after New.  Source pathnames SHOULD be omitted from
-  normal logs and MUST NOT be sent to a remote TITH peer.
+  Application after New.  Source pathnames, InboundIDs, and ClaimTokens
+  SHOULD be omitted from normal logs and MUST NOT be sent to a remote
+  TITH peer.
 
 
 11. Examples
@@ -605,6 +819,60 @@ Contents
     End
     End
 
+  A tosser originates EchoMail through the same Job service while the
+  area configuration supplies its explicit links and Classes:
+
+    TITH-IPC 1
+    Submit-Items
+    Job EchoMail
+    Application "tosser"
+    Idempotency-Key "local-post-7c4cb44f"
+    Origin "fidonet#1:123/45"
+    Area "TITH.TEST"
+    To-User "All"
+    From-User "Sysop"
+    Subject "Test message"
+    Message-Text "This is a local test.\n"
+    End
+    End
+
+  A file distribution processor submits one standalone File.  Its
+  transmitted name is explicit and unrelated to its local pathname:
+
+    TITH-IPC 1
+    Submit-Items
+    Job File
+    Application "fdn-tosser"
+    Idempotency-Key "release-20260817"
+    Origin "fidonet#1:123/45"
+    Area "TITH_FDN"
+    File
+    Source-Path "/srv/fdn/staging/tith-20260817.zip"
+    Ingestion Copy
+    Source-Disposition Keep
+    Wire-Filename "tith-20260817.zip"
+    Short-Description "TITH test distribution"
+    End
+    End
+    End
+
+  A native tosser forwards a claimed EchoMail or distribution File
+  without reconstructing its signed contents:
+
+    TITH-IPC 1
+    Submit-Items
+    Job Forward
+    Application "tosser"
+    Idempotency-Key "forward-I0123456789abcdef0123456789abcdef"
+    Inbound I0123456789abcdef0123456789abcdef
+        Cfedcba9876543210fedcba9876543210
+    End
+    End
+
+  The Inbound line above is one physical line.  After a committed
+  result, or recovery through Lookup-Submission, the tosser may
+  acknowledge that inbound claim under TSP‑0012.
+
 
 12. Feedback and Discussion
 ───────────────────────────
@@ -614,12 +882,20 @@ Contents
   is optional because crash‐safe all‐or‐nothing ownership transfer,
   especially in a Batch or across filesystems, is harder.
 
-  The canonical operation is directly usable by a door author without
-  fixing an in‐process ABI.  It retains arbitrary‐length paths and
+  The canonical operations are directly usable by a door author without
+  fixing an in‐process ABI.  They retain arbitrary‐length paths and
   multiline MessageText without putting either into FTN Subject
   conventions.  Legacy outbound flavours map at a gateway to Class,
   Active or Passive mode, Failure-Policy, and Source-Disposition; a
   native Application creates neither .MSG nor flow files.
+
+  In legacy FTN, exported EchoMail and FDN transfers are NetMail
+  traffic.  They use individual NetMail messages, packets, file
+  attaches, and TIC machinery described by FTS‑0004 version 3.31,
+  FTS‑5006 revision 1, and FSC‑0028.  Submit-Items records a distinct
+  native semantic Kind after conversion so the legacy NetMail carriage
+  fact does not accidentally select TITH Destination routing instead
+  of the area's explicit links.
 
 
 A. References
@@ -628,8 +904,16 @@ A. References
   [FTS‑0001] Revision 16, "A Basic FidoNet Technical Standard", FTSC,
   1995‑09‑30.
 
+  [FTS‑0004] Version 3.31, "EchoMail Specification", FTSC,
+  1987‑12‑12.
+
   [FTS‑5005] Revision 3, "Advanced BinkleyTerm Style Outbound flow and
   control files", FTSC, 2016‑10‑31.
+
+  [FTS‑5006] Revision 1, "TIC file format", FTSC, 2016‑11‑07.
+
+  [FSC‑0028] "FwdSpec — A Collection of Notes on Moving Files in
+  FidoNet", FTSC, 1988‑12‑02.
 
   [Libhydrogen] Version 1,
   https://github.com/jedisct1/libhydrogen/wiki
@@ -649,18 +933,26 @@ A. References
 
   [TSP‑0010] "Windows Named‐Pipe IPC Binding", TITH, 2026‑08‑17.
 
+  [TSP‑0011] "Durable Inbound Delivery Items", TITH, 2026‑08‑17.
+
+  [TSP‑0012] "Tosser Consumption IPC", TITH, 2026‑08‑17.
+
   [TTS‑0003] "Common TLV Types", TITH, 2026‑08‑17.
 
   [TTS‑0004] "Node Addresses", TITH, 2026‑08‑17.
 
   [TTS‑0005] "Bundle Format", TITH, 2026‑08‑17.
 
-  [TTS‑0007] "Signed TLV Integer Encoding", TITH, 2026‑08‑16.
+  [TTS‑0007] "Signed Integer Encoding", TITH, 2026‑08‑16.
 
 
 B. History
 ──────────
 
    Rev.1, 2026‑08‑17: Initial Release.
+
+   Rev.2, 2026‑08‑17: Added item‐aware submission for EchoMail,
+   standalone file distribution, and claimed forwarding without
+   changing Submit grammar.
 
 **********************************************************************
