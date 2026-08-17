@@ -229,6 +229,17 @@
 - Finger: forwarded requests (`user@host@target`) no longer
   answer with the wrong user (the name was being truncated by
   one character)
+- `websocketservice.js`: the file it writes beside each relayed
+  connection now names the authenticated web session's user, not
+  just the client's IP address, so the service behind the relay
+  can tell who is connected
+- `websocketservice.js`: that file moved from `temp/` to `data/`
+  and is now named for the connection's address as well as its
+  port, so a relay and its service can be on different hosts of a
+  shared install
+- `websocketservice.js`: new `-auth` option refuses to relay a
+  connection it could not describe in that file, and new `-login`
+  option refuses one with no logged-in web session
 
 ## SBBSecho
 

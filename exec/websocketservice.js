@@ -66,23 +66,42 @@ try {
 			throw new Error('BBS is using HAProxy, but no X-Forwarded-For header present.');
 		}
 
-        // -auth must be recognized whether or not the client also supplies a
-        // port on the querystring below, so it's parsed out of argv on its
-        // own rather than folded into the hostname/port loop further down.
+        // TWO DIFFERENT GUARANTEES, and they were one flag until it became
+        // clear they belong to different people.
+        //
+        // -auth is about the SIDECAR: forward nothing this instance could not
+        // describe. A backend that reads the sidecar concludes from its
+        // absence that a connection was made directly to it, and may extend
+        // local trust on that basis, so a failed write must close the
+        // connection rather than quietly produce one wearing a local
+        // client's clothes.
+        //
+        // -login is about the PERSON: refuse anyone with no web session.
+        // That is a policy, not a safety property, and it belongs to the
+        // backend rather than here -- a backend may perfectly well want
+        // anonymous visitors and have its own idea of how many to allow, and
+        // it cannot express that if this instance turned them away first.
+        // Kept as a flag because a backend that wants nobody anonymous
+        // should not have to implement refusing them.
+        //
+        // Neither may become the default: an instance fronting a server that
+        // does its own login (a telnet server, say) carries people who have
+        // not logged in yet, because logging in is what they are connecting
+        // to do.
+        //
+        // Parsed out of argv on their own rather than folded into the
+        // hostname/port loop below, so they are recognized whether or not the
+        // client also supplies a port on the querystring.
         var RequireAuth = false;
+        var RequireLogin = false;
         for (var a in argv) {
-            if (argv[a].toLowerCase() === '-auth') {
-                RequireAuth = true;
-                break;
-            }
+            var Arg = argv[a].toLowerCase();
+            if (Arg === '-auth') RequireAuth = true;
+            if (Arg === '-login') RequireLogin = true;
         }
 
         var WebUser = GetWebSocketUser();
-        if (RequireAuth && WebUser === 0) {
-            // Per-instance, because it must not become the default: an
-            // instance fronting a server that does its own login (e.g. a
-            // telnet server) carries people who have not logged in yet, and
-            // logging in is what they are connecting to do.
+        if (RequireLogin && WebUser === 0) {
             log(LOG_NOTICE, "Refusing a connection with no authenticated web session");
         } else {
 
