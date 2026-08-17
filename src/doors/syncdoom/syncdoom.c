@@ -2331,7 +2331,12 @@ static void raw_input_on(void)
 		s_oldtio = t; s_tio_saved = 1;
 		t.c_lflag &= ~(ICANON | ECHO | ISIG);
 		t.c_iflag &= ~(ICRNL | INLCR | IXON);
-		t.c_cc[VMIN] = 0; t.c_cc[VTIME] = 0;
+		// VMIN must stay 1: with VMIN=0 a tty read() returns 0 when nothing is
+		// pending -- before the O_NONBLOCK check, so not EAGAIN -- and conn_read
+		// cannot tell that apart from the EOF that means the client dropped.
+		// O_NONBLOCK below is what keeps the read from blocking.
+		t.c_cc[VMIN]  = 1;
+		t.c_cc[VTIME] = 0;
 		tcsetattr(g_rfd, TCSANOW, &t);
 	}
 	fl = fcntl(g_rfd, F_GETFL, 0);
