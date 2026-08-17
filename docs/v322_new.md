@@ -470,14 +470,6 @@
   installed. Affects the game-data fetchers for SyncDOOM,
   SyncDuke, SyncAlert, SyncDawn, SyncNES and the ScummVM-based
   doors, several of which previously checked nothing
-- Windows: SyncDOOM, SyncDuke and SyncMOO1 no longer leave a
-  console window on the BBS machine for each player. A game
-  started from the SyncDOOM/SyncDuke lobby is spawned with the
-  local display disabled (new `[lobby] nodisplay`), and each
-  door also closes its own console at startup (new
-  `[debug] hide_console`, or the `-showconsole`/`-hideconsole`
-  arguments) — which covers non-Synchronet BBSes, where there is
-  no `XTRN_NODISPLAY` setting to suppress it
 - `dns.js`: `resolve()`, `resolveIPv4()` and `resolveIPv6()` return the
   resolved addresses again when used in synchronous mode
 - HatchIT (`hatchit.js`) now exits with a meaningful status (0 =
