@@ -183,31 +183,52 @@ int find_login_id(scfg_t* cfg, const char* user_id)
 }
 
 /****************************************************************************/
+/* Returns the count of user records not flagged DELETED or INACTIVE.       */
+/****************************************************************************/
 int total_users(scfg_t* cfg)
 {
-	int  total_users = 0;
-	int  file;
-	bool success = true;
+	int          total = 0;
+	int          file;
+	char*        buf;
+	size_t       got;
+	const size_t bufsize = 64 * USER_RECORD_LINE_LEN;
 
 	if (!VALID_CFG(cfg))
 		return 0;
 
-	if ((file = openuserdat(cfg, /* for_modify: */ false)) < 0)
+	if ((buf = malloc(bufsize)) == NULL)
 		return 0;
 
-	for (int usernumber = 1; success; usernumber++) {
-		char userdat[USER_RECORD_LEN + 1];
-		if (readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */ false) == 0) {
-			char* field[USER_FIELD_COUNT];
-			split_userdat(userdat, field);
-			if (!(ahtou32(field[USER_MISC]) & (DELETED | INACTIVE)))
-				total_users++;
-		} else
-			success = false;
+	if ((file = openuserdat(cfg, /* for_modify: */ false)) < 0) {
+		free(buf);
+		return 0;
 	}
 
+	/* Read in bulk, without the per-record lock that readuserdat() takes: a
+	   lock is a synchronous round-trip that dominates the cost of this scan
+	   when the data directory is network-mounted, and no amount of locking
+	   makes the result more current than the snapshot it already is. */
+	do {
+		got = 0;
+		while (got < bufsize) {
+			ssize_t rd = read(file, buf + got, bufsize - got);
+			if (rd <= 0)
+				break;
+			got += (size_t)rd;
+		}
+		for (size_t offset = 0; offset + USER_RECORD_LINE_LEN <= got; offset += USER_RECORD_LINE_LEN) {
+			char* userdat = buf + offset;
+			char* field[USER_FIELD_COUNT];
+			userdat[USER_RECORD_LEN] = '\0';    /* overwrite the LF terminator */
+			split_userdat(userdat, field);
+			if (!(ahtou32(field[USER_MISC]) & (DELETED | INACTIVE)))
+				total++;
+		}
+	} while (got == bufsize);
+
 	close(file);
-	return total_users;
+	free(buf);
+	return total;
 }
 
 /****************************************************************************/
