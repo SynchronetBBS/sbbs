@@ -6,7 +6,7 @@ Publication:  TSP‑0002
 Revision:     1
 Title:        Route Configuration
 Author(s):    Stephen Hurd
-Date:         2025‑11‑29
+Date:         2026‑08‑17
 ══════════════════════════════════════════════════════════════════════
 
 Status of this document
@@ -45,7 +45,7 @@ Contents
 1. Introduction
 ───────────────
 
-  By default, FidoNet only supports direct and host-routed messages.
+  By default, FidoNet only supports direct and host‐routed messages.
   However, it's very common to have an agreement in place to route
   most or even all of your traffic through a single link. With TITH
   proposing a new transport, new formats, and new capabilities, it
@@ -75,7 +75,7 @@ Contents
   A Destinations Clause consists of the word "Destinations", a space,
   then a list of nodes that will be included in bundles generated
   during the current Schedule.  The format may include wildcards as
-  specified in TTS-0004.  This controls which messages will be
+  specified in TTS‑0004.  This controls which messages will be
   transferred during this schedule.
 
 
@@ -83,8 +83,8 @@ Contents
   ───────────────────
 
   A Route-Via Clause consists of the word "Route-Via", a space, an
-  address as specified in TTS-0004, another space, then a list of
-  addresses with wildcards as specified in TTS-0004.  The address
+  address as specified in TTS‑0004, another space, then a list of
+  addresses with wildcards as specified in TTS‑0004.  The address
   specifies the node to deliver the messages to (ie: a next hop), and
   the list specifies destination nodes to be delivered.  By default,
   this clause will only apply if the node cannot be contacted directly
@@ -95,7 +95,7 @@ Contents
   ───────────────────
 
   A No-Direct Clause consists of the word "No-Direct", a space, then a
-  list of addresses with wildcards as specified in TTS-0004.  If this
+  list of addresses with wildcards as specified in TTS‑0004.  If this
   clause is present, nodes will not be contacted directly.
 
 
@@ -103,7 +103,7 @@ Contents
   ────────────────
 
   A No-Hub Clause consists of the word "No-Hub", a space, then a list
-  of addresses with wildcards as specified in TTS-0004.  If this
+  of addresses with wildcards as specified in TTS‑0004.  If this
   clause is present, hub routing will not be used.
 
 
@@ -111,7 +111,7 @@ Contents
   ─────────────────
 
   A No-Host Clause consists of the word "No-Host", a space, then a
-  list of addresses with wildcards as specified in TTS-0004.  If this
+  list of addresses with wildcards as specified in TTS‑0004.  If this
   clause is present, host routing will not be used.
 
 
@@ -119,7 +119,7 @@ Contents
   ───────────────────
 
   A No-Region Clause consists of the word "No-Region", a space, then a
-  list of addresses with wildcards as specified in TTS-0004.  If this
+  list of addresses with wildcards as specified in TTS‑0004.  If this
   clause is present, region routing will not be used.
 
 
@@ -127,7 +127,7 @@ Contents
   ─────────────────
 
   A No-Zone Clause consists of the word "No-Zone", a space, then a
-  list of addresses with wildcards as specified in TTS-0004.  If this
+  list of addresses with wildcards as specified in TTS‑0004.  If this
   clause is present, zone routing will not be used.
 
 
@@ -135,7 +135,7 @@ Contents
   ─────────────────────
 
   A Forward-For Clause consists of the word "Forward-For", a space,
-  then a list of addresses with wildcards as specified in TTS-0004.
+  then a list of addresses with wildcards as specified in TTS‑0004.
   The list specifies destination nodes messages will be forwarded for.
   Note that this is the message destination, not the next hop or
   message origin.
@@ -145,7 +145,7 @@ Contents
   ──────────────────────
 
   An Accept-From Clause consists of the word "Accept-From", a space,
-  then a list of addresses with wildcards as specified in TTS-0004.
+  then a list of addresses with wildcards as specified in TTS‑0004.
   The list specifies origin nodes messages will be forwarded for.
   Note that this is the origin node, not the previous hop.
 
@@ -154,7 +154,7 @@ Contents
   ───────────────
 
   A Hold Clause consists of the word "Hold", a space, then a list of
-  addresses with wildcards as specified in TTS-0004.  The list
+  addresses with wildcards as specified in TTS‑0004.  The list
   specifies nodes that may call and pick up bundles during the
   schedule.  Any node listed here will not be contacted during the
   schedule.
@@ -164,7 +164,7 @@ Contents
   ──────────────
 
   A Poll Clause consists of the word "Poll", a space, then a list of
-  addresses with wildcards as specified in TTS-0004.  The list
+  addresses with wildcards as specified in TTS‑0004.  The list
   specifies nodes that will be contacted and sent a poll request
   during this schedule.
 
@@ -173,7 +173,7 @@ Contents
   ────────────────
 
   A Start Clause consists of the word "Start", a space, optionally the
-  word "Local" followed by a space, then a time in 24-hour format with
+  word "Local" followed by a space, then a time in 24‑hour format with
   hours and minutes only.  If Local is specified, the time is in local
   time.  If not, the time is in UTC.  This clause specifies the time
   that this schedule should begin.  The schedule may be delayed until
@@ -221,7 +221,7 @@ Contents
   ──────────────
 
   A Orphan-For Clause consists of the word "Orphan-For", a space, then
-  a list of addresses with wildcards as specified in TTS-0004, a
+  a list of addresses with wildcards as specified in TTS‑0004, a
   space, the a reason the message has been orphaned..  If a message is
   received whose origin matches the wildcard list, the message will be
   handled as an orphan regardless of any matching Forward-For Clauses.
@@ -231,7 +231,7 @@ Contents
   ───────────────
 
   A Orphan-From Clause consists of the word "Orphan-From", a space,
-  then a list of addresses with wildcards as specified in TTS-0004, a
+  then a list of addresses with wildcards as specified in TTS‑0004, a
   space, the a reason the message has been orphaned.  If a message is
   received whose destination matches the wildcard list, the message
   will be handled as an orphan regardless of any matching Accept-From
@@ -243,7 +243,7 @@ Contents
 
   A Notify-Sender Clause consists of the word "Notify-Sender", a
   space, then a list of addresses with wildcards as specified in
-  TTS-0004.  If an orphan message is received whose origin matches the
+  TTS‑0004.  If an orphan message is received whose origin matches the
   wildcard list, a new message will be generated to the original
   sender indicating that the message will not be forwarded.  This
   message should contain at least the original subject and the path
@@ -254,7 +254,7 @@ Contents
   ────────────────
 
   A Notify-Sysop Clause consists of the word "Notify-Sysop", a space,
-  then a list of addresses with wildcards as specified in TTS-0004.
+  then a list of addresses with wildcards as specified in TTS‑0004.
   If an orphan message is received whose origin matches the wildcard
   list, a new message will be generated to the sysop of the origin
   node indicating that the message will not be forwarded.  This
@@ -288,7 +288,7 @@ Contents
 
   BossNode
   ────────
-  Only messages whose destination has a non-zero point Component will
+  Only messages whose destination has a non‐zero point Component will
   use BossNode routing.  The message is passed directly to the Boss
   Node for the point.  This is disabled by the No-Direct Clause.
 
@@ -367,7 +367,7 @@ Contents
   A typical node schedule could be to periodically deliver new
   messages to a single node for forwarding (with an agreement by the
   other node to perform forwarding) unless the destination can be
-  reached direct or via host-routing:
+  reached direct or via host‐routing:
 
     Schedule Mail
     Route-Via BBSDev#885:1/1 BBSDev#*
@@ -378,7 +378,7 @@ Contents
     Route-Via BBSDev#885:1/1 BBSDev#*
     Repeat-After 30
 
-  As above but with no direct or host-routed messages at all:
+  As above but with no direct or host‐routed messages at all:
 
     Schedule Mail
     Route-Via BBSDev#885:1/1 BBSDev#*
@@ -386,7 +386,7 @@ Contents
     No-Direct *
     No-Host *
 
-  For a net coordinator, you are likely required to accept host-routed
+  For a net coordinator, you are likely required to accept host‐routed
   messages:
 
     Schedule Mail
@@ -424,9 +424,9 @@ Contents
 A. References
 ─────────────
 
-  [TTS-0004] Node Addresses. Stephen Hurd. 15 November, 2025.
+  [TTS‑0004] Node Addresses. Stephen Hurd. 17 August, 2026.
 
-  [FSC-0003] FidoNet Route Files Explained. Ben Barker, 100/76.
+  [FSC‑0003] FidoNet Route Files Explained. Ben Barker, 100/76.
   23 March, 1986.
 
 

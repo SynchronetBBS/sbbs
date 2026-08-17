@@ -7,13 +7,13 @@ Revision:     1
 Title:        The Distribution Nodelist
 Author(s):    FTSC Members, Administrator, Honoured Guests and
               Stephen Hurd
-Date:         2025‑11‑14
+Date:         2026‑08‑17
 ══════════════════════════════════════════════════════════════════════
 
 Status of this document
 ───────────────────────
 
-  This document is a TITH Technical Standard (TTS) – it specifies
+  This document is a TITH Technical Standard (TTS) — it specifies
   the current technical requirements and recommendations for TITH
   software developers, coordinators and sysops of the Fidonet network
   and other networks using FTN technology.
@@ -58,8 +58,8 @@ Contents
   both technical and management purposes.
 
   For direct communication, it is necessary that the originating node
-  knows in advance the exact method and capabilities of the destina‐
-  tion node in order to determine if, when, and how a direct Fidonet
+  knows in advance the exact method and capabilities of the
+  destination node in order to determine if, when, and how a direct
   mail session can be established.  For routing and management, the
   stated hierarchy must also be known.
 
@@ -107,7 +107,7 @@ Contents
   The Distribution Nodelist uses the filename DDD-nodelist.nnn, where
   DDD is the domain of the nodelist, nnn is the day‐of‐year of
   publication, starting at 001 for the first day of January.  Partial
-  and/or alternate nodelists must use some other base filename (i.e.
+  or alternate nodelists must use some other base filename (i.e.
   in place of DDD-nodelist).
 
   For actual distribution, DDD-nodelist.nnn is packed into an archive
@@ -165,7 +165,7 @@ Contents
 
   A nodelist data line contains exactly eleven (11) variable length
   fields separated by tabs (U+09), defined below.  Each data line is
-  a record/entry for an individual Fidonet node.
+  a record for an individual Fidonet node.
 
   All printable Unicode characters are allowed in all string fields
   unless specified otherwise.
@@ -187,7 +187,7 @@ Contents
     It is recommended that future implementations allow for keywords
     of unlimited length.
 
-    Full/Member Nodes ⸺ these are the system numbers of individual
+    Full or Member Nodes — these are the system numbers of individual
     Fidonet members.  See [Policy] for details on Fidonet membership.
 
       <empty>
@@ -195,7 +195,7 @@ Contents
 
       Pvt
         This keyword defines a Private node (see Policy v4.07,
-        Section 2.1.9) – i.e. a node that is operational, but
+        Section 2.1.9) — i.e. a node that is operational, but
         not publicly available for direct contact. When this keyword
         is used, field six should by empty, and no ineternet or email
         addresses should be specified in flags fields. 
@@ -215,10 +215,11 @@ Contents
 
       Down
         Defines a node which is not operational.  This is expected to
-        be (semi‑)permanent.  Mail may NOT be sent or routed to it.
+        be permanent or semipermanent.  Mail may NOT be sent or routed
+        to it.
 
-    Administrative Nodes ⸺ these nodes indicate the beginning of a
-    branch in the Fidonet addressing/management hierarchy.
+    Administrative Nodes — these nodes indicate the beginning of a
+    branch in the Fidonet addressing and management hierarchy.
 
     Each branch may contain one or more administrative nodes of lower
     tier, or any of the above member node types unless stated
@@ -322,13 +323,13 @@ Contents
      The various parts of the phone number may be used to derive cost
      and routing information, as well as what number is to be dialled.
      A typical example of the data in a phone number field is
-     1‑800‑555‑0100, corresponding to country 1 (USA), area 800 (area
+     1-800-555-0100, corresponding to country 1 (USA), area 800 (area
      code), exchange 555, and number 0100.
 
      Alternatively, this field may be empty if the node has no
      conventional phone number. Software must recognize the empty
      string as an indicator to never attempt to dial this node by
-     PSTN/ISDN.
+     PSTN or ISDN.
 
 
   Field 7: System Flags
@@ -343,7 +344,7 @@ Contents
      See FTS‑5001 for details on the flag fields.  Ignore any length
      restrictions specified in that document.
 
-  Field 8: PSTN/ISDN Flags
+  Field 8: PSTN and ISDN Flags
 
      Type: string.
 
@@ -376,19 +377,25 @@ Contents
      In addition to the flags specified in FTS‑5001, the TITH nodelist
      supports the IIH Internet Protocol Flag.  This flag is in the
      form IIH[:<server address>][:<port>]:<PublicKey> where
-     <PublicKey> is a 43‐character base 64 encoded public key with the
+     <PublicKey> is a 43‑character base 64 encoded public key with the
      training equals sign (U+3D) removed, representing the 32‑byte
-     public key of the node. If the IIH flag is present, the public
-     key MUST be included.
+     public key of the node.  This is the key used to authenticate TITH
+     data whose Origin is that node's address.  If the IIH flag is
+     present, the public key MUST be included.
+
+     When a node is first listed following an application from the
+     unlisted address defined in TTS‑0004, this PublicKey MUST be
+     the same PublicKey that accompanied the Origin of the application
+     Message.
 
   Field 10: Email Flags
 
      Type: string.
 
      Contains a comma (U+2C) separated list of flags that are used to
-     pass traffic via STD 11 ARPA Internet Text Messages (E‑Mail).
+     pass traffic via STD 11 ARPA Internet Text Messages (email).
      FTS‑5001.006 defines these in sections 5.9.4 (Email Protocol
-     Flags), and 5.9.5 (E‑mail Adress Flags).
+     Flags), and 5.9.5 (Email Adress Flags).
 
      If the IEM: flag is present with an email address, it MUST be the
      first flag in this field.
@@ -418,7 +425,7 @@ Contents
   The format and structure is the same as the Distribution Nodelist,
   including the header, with a base filename of local invention,
   usually derived from the contents of the segment (e.g.
-  fidonet‑N712list.nnn or fidonet‑N712seg.nnn for a segment containing
+  fidonet-N712list.nnn or fidonet-N712seg.nnn for a segment containing
   all the nodes in Net 712 of fidonet).
 
   To generate the Distribution Nodelist, segments propagate up through
@@ -430,7 +437,7 @@ Contents
   all the hubs in the same local network, compile it into a Network
   Segment, and forward it on to the Regional Coordinator.  And so on.
 
-  Segments can also be sent back downstream – this is most commonly
+  Segments can also be sent back downstream — this is most commonly
   done with Zone Nodelists.  Nodes that do not need to attempt direct
   contact with nodes in other zones can use the Zone Nodelist instead
   of the full composite nodelist, saving on storage space and
@@ -448,6 +455,12 @@ A. References
 
   [FTA‑1006] "Keywords to indicate requirement levels"
   FTSC, 2000‑01‑17.
+
+  [TTS‑0003] "Common TLV Types", TITH, 2026‑08‑17.
+
+  [TTS‑0004] "Node Addresses", TITH, 2026‑08‑17.
+
+  [TTS‑0005] "Bundle Format", TITH, 2026‑08‑17.
 
   [Policy] "FidoNet Policy Document" v4.07 — June 9, 1989.
 

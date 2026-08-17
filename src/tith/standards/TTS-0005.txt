@@ -2,11 +2,11 @@
 TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
-Publication:  TTS‐0005
+Publication:  TTS‑0005
 Revision:     1
 Title:        Bundle Format
 Author(s):    Stephen Hurd
-Date:         2025‐11‐15
+Date:         2026‑08‑17
 ══════════════════════════════════════════════════════════════════════
 
 Status of this document
@@ -60,19 +60,31 @@ Contents
   The bundle as a whole is a sequence of TLV values as described in
   TTS‑0003.
 
-  The first item MUST be a Destination as defined in TTS‑0003.
+  The first item MUST be an Origin as defined in TTS‑0003.  This Origin
+  is applicable to the SignedTLV values that follow.  If it is the
+  unlisted address defined in TTS‑0004, it MUST be immediately
+  followed by a PublicKey as defined in TTS‑0003.  Otherwise it MUST
+  NOT be followed by a PublicKey.  For the unlisted address, this
+  PublicKey is the key applicable to the SignedTLV values that follow.
+  For any other Origin, the applicable key is obtained from the
+  nodelist and a supplied PublicKey MUST NOT override it.
 
-  The second item MUST be an Origin as defined in TTS‑0003.
+  The next item MUST be a SignedTLV as defined in TTS‑0003.  This is
+  the Header SignedTLV and MUST NOT contain an Origin.  Its SignedData
+  MUST contain a Destination, followed by a PublicKey if and only if
+  the Destination is the unlisted address, followed by a Timestamp,
+  all as defined in TTS‑0003.  The PublicKey identifies the particular
+  unlisted system to which the Bundle is addressed.  The Timestamp
+  indicates when the bundling process started and is not updated when
+  another item is added to the Bundle.
 
-  The third item MUST be a Timestamp as defined in TTS‑0003.  This
-  timestamp indicates the time when the bundling process started.  In
-  cases where an additional item is added to an existing bundle, the
-  Timestamp is not updated (though the Length will be).
-
-  After this is a sequence of SignedTLV values containing sequences of
-  the types defined in section 3, or one of the experimental reserved
-  values 32 to 63. These SignedTLV values SHOULD NOT contain an Origin
-  value.
+  After the Header SignedTLV is a sequence of payload SignedTLV values.
+  The SignedData in every payload SignedTLV MUST begin with a TLVHash
+  of the complete encoded Header SignedTLV, followed by a sequence of
+  the types defined in section 3 or one of the experimental reserved
+  values 32 to 63.  A missing or incorrect Header TLVHash is a data
+  error for the entire payload SignedTLV.  Payload SignedTLV values
+  SHOULD NOT contain an Origin.
 
   Types 32 to 63 are reserved for experimental extensions to this
   standard, and may be used by explicit agreement between the
@@ -83,14 +95,14 @@ Contents
   should be added to this document and the experimental value
   abandoned.
 
-  It is RECOMMENDED that there be no more than two SignedTLV values in
-  each bundle, with the first containing all FileRequest,
+  It is RECOMMENDED that there be no more than two payload SignedTLV
+  values in each Bundle, with the first containing all FileRequest,
   PollMessages, PollFiles, and PollFileRequests values, and the next
   containing everything else.  If there are no FileRequest or Poll
-  values, a single SignedTLV SHOULD be used.  The reason for this is
-  to allow the destination node to validate the SignedTLV containing
-  the FileRequests and start sending them while any Files or Messages
-  are being sent from the Origin to the Destination.
+  values, a single payload SignedTLV SHOULD be used.  The reason for
+  this is to allow the destination node to validate the SignedTLV
+  containing the FileRequests and start sending them while any Files
+  or Messages are being sent from the Origin to the Destination.
 
 
 3. Types
@@ -102,14 +114,22 @@ Contents
   ───────────
   A Message value has a large number of manditory and optional values.
   The order is specified here as a list, with M indicating Manditory,
-  O indicating Optional, N indicating Manditory for NetMail, and E
-  indicating Manditory for EchoMail.  If a + is listed after the
-  manditory/optional chracter, indicates that multiple values of that
-  type may be included.
+  O indicating Optional, N indicating Manditory for NetMail, E
+  indicating Manditory for EchoMail, and A indicating Manditory if the
+  immediately preceding address is the unlisted address and
+  prohibited otherwise.  If a + is listed after the mandatory or
+  optional character, multiple values of that type may be included.
 
-  M  Origin (TTS-0003)
-  M  Destination (TTS-0003)
-  M  Timestamp (TTS-0003)
+  A Message MUST be either NetMail or EchoMail.  NetMail MUST contain
+  a Destination and MUST NOT contain an Area.  EchoMail MUST contain
+  an Area and MUST NOT contain a Destination or its following
+  PublicKey.
+
+  M  Origin (TTS‑0003)
+  A  PublicKey (TTS‑0003)
+  N  Destination (TTS‑0003)
+  A  PublicKey (TTS‑0003)
+  M  Timestamp (TTS‑0003)
   M  ToUserName (Section 4)
   M  FromUserName (Section 4)
   M  Subject (Section 4)
@@ -123,17 +143,28 @@ Contents
   O  MessageID (Section 4)
   O  ReplyTo (Section 4)
   O  OriginalCharacterSet (Section 4)
-  O  Signature (TTS-0003)
+  M  Signature (TTS‑0003)
   M  RequestIdentifier (Section 4)
   M+ Via (Section 4)
   O  SeenBy (Section 4)
   O+ AdditionalKludgeLine (Section 4)
 
-  Note that everything before the Signature value MUST NOT be modified
-  in transit, or the Signature will fail to validate. If the signature
-  does not validate, the software SHOULD send a message to that effect
-  to the original user and when imported to a BBS, the message SHOULD
-  have an indication that it was modified in transit.
+  The Signature signs the exact encoded bytes of every child TLV
+  preceding it, beginning with the Type of the Origin and ending with
+  the final byte of the last child before the Signature.  The Type and
+  Length of the enclosing Message and the Signature itself are not
+  signed.  The Origin in the Message is the applicable Origin for the
+  Signature.  If it is the unlisted address, its immediately
+  following PublicKey is the applicable key.  Otherwise the applicable
+  key is obtained from the nodelist, and no PublicKey in the Message
+  may override it.
+
+  The signed child values and the Signature MUST NOT be modified in
+  transit.  RequestIdentifier, Via, SeenBy, and AdditionalKludgeLine
+  values following the Signature may be modified without invalidating
+  it.  If the Signature does not validate, the software SHOULD send a
+  message to that effect to the original user and, when imported to a
+  BBS, the message SHOULD indicate that it was modified in transit.
 
   65. File
   ────────
@@ -141,22 +172,42 @@ Contents
   The order is specified here as a list, with M indicating Manditory,
   O indicating Optional, A indicating manditory for a File inside of a
   Message, T indicating manditory for a File not inside of a Message,
-  directly inside of a SignedTLV, and F file a file that is part of
-  a distribution network.
+  directly inside of a SignedTLV, K indicating manditory if the
+  immediately preceding Origin is the unlisted address and prohibited
+  otherwise, and F for a file that is part of a distribution network.
   O  Filename (Section 4)
-  O  Timestamp (TTS-0003)
-  T  RequestIdentifier (Section 4)
+  O  Timestamp (TTS‑0003)
   M  Contents (Section 4)
   F  Area (Section 4)
-  F  Origin (TTS-0003)
+  T  Origin (TTS‑0003)
+  K  PublicKey (TTS‑0003)
   O  ShortDescription (Section 4)
   O+ LongDescriptionLine (Section 4)
   O  TearLine (Section 4)
   O  MagicWord (Section 4)
   O  Replaces (Section 4)
-  O  Signature (TTS-0003)
+  T  Signature (TTS‑0003)
+  T  RequestIdentifier (Section 4)
   F+ Via (Section 4)
   F+ SeenBy (Section 4)
+
+  If a Signature is present, it signs the exact encoded bytes of every
+  child TLV preceding it, beginning with the Type of the first child
+  present and ending with the final byte of the last child before the
+  Signature.  The Type and Length of the enclosing File and the
+  Signature itself are not signed.  The most recently established
+  Origin is applicable to the Signature.
+
+  The signed child values and the Signature MUST NOT be modified in
+  transit.  RequestIdentifier, Via, and SeenBy values following the
+  Signature may be modified without invalidating it.
+
+  A File directly inside a payload SignedTLV has its own Origin and
+  Signature so they remain applicable when the File is placed in a new
+  Bundle.  A File inside a Message does not require its own Signature
+  because its complete encoded value is covered by the Message
+  Signature.  An attached File MAY still contain an Origin and
+  Signature to establish independent provenance.
 
   If a timestamp is present, it represents the time of last
   modification of the file.
@@ -207,16 +258,18 @@ Contents
 
   The number may have one of the following values:
 
-  1 – Indicates that in the current configuration, the TLV value would
+  1 — Indicates that in the current configuration, the TLV value would
       always be Rejected.  Including it in a future bundle would also
       be rejected.
-  2 – Indicates that the TLV was conditional, and the condition was
+  2 — Indicates that the TLV could not be authenticated.  The receiver
+      did not process or act upon its unauthenticated contents.
+  3 — Indicates that the TLV was conditional, and the condition was
       not met.  For example, if a Timestamp was included in a
       FileRequest, but the last modified time of the requested file
       matches the value of the Timestamp.  If a Timestamp is included
       in the NoFile value, this is a time at which it is expected that
       TLV value would not be Rejected.
-  3 – Indicates that the node is not willing to accept the TLV value
+  4 — Indicates that the node is not willing to accept the TLV value
       at this time.  If a Timestamp is included in the NoFile value,
       this is a time at which the node expects to be willing to accept
       the TLV value.
@@ -225,25 +278,39 @@ Contents
   ────────────
   An Accepted value which contains a manditory RequestIdentifier as
   defined in section 4, followed by a manditory TLVHash as defined in
-  section 4.
+  section 4.  It indicates that the identified value has been
+  validated, accepted, and stored by the receiver.
 
   69. PollMessages
   ────────────────
   A PollMessages value contains a manditory RequestIdentifier.  If
   this is present, requests that the Destination include any held
-  Messages for the Origin in the response.
+  Messages for the Origin in the response.  If the Origin is the
+  unlisted address, only Messages associated with its top‐level
+  PublicKey are held for that Origin.
 
   70. PollFiles
   ─────────────
   A PollFiles value  contains a manditory RequestIdentifier.  If this
-  is present, requests that the Destination include any held Messages
-  for the Origin in the response.
+  is present, requests that the Destination include any held Files
+  for the Origin in the response.  If the Origin is the unlisted
+  address, only Files associated with its top‐level PublicKey are held
+  for that Origin.
 
   71. PollFileRequests
   ────────────────────
   A PollFileRequests value  contains a manditory RequestIdentifier.
   If this is present, requests that the Destination include any held
-  Messages for the Origin in the response.
+  Files for the Origin in the response.  If the Origin is the
+  unlisted address, only Files associated with its top‐level
+  PublicKey are held for that Origin.
+
+  A node that holds a Message, File, or FileRequest for the unlisted
+  address MUST retain the associated PublicKey as local delivery
+  metadata.  When a Message is held for its ultimate Destination, this
+  is its Destination PublicKey.  When it is held for an unlisted next
+  hop, this is the next hop's PublicKey.  This local association is not
+  added to or substituted for any PublicKey in the held value.
 
 
 4. Ancillary Types
@@ -276,47 +343,62 @@ Contents
 
   99. TLVHash
   ───────────
-  Contains a 32-byte hash as generated by the libhydrogen generic hash
-  functions on a TLV object using a context that is the C string
-  "HashTLV" (with trailing NUL).  Thirty-two bytes was chosen because
-  that's the size of the signature public key.  This is used so that a
-  specific SignedTLV must be accepted by the destination system and to
-  prevent replay attacks.
+  Contains a 32‑byte unkeyed hash generated by the libhydrogen generic
+  hash functions.  The context is the eight bytes of the C string
+  "HashTLV", including the trailing NUL, and the key is NULL.
 
-  100. FileAttached
-  ─────────────────
-  Contains a RequestIdentifier of a file that is also in the bundle.
-  The indicated file is attached to the message.
+  The input to the hash is one complete encoded SignedTLV, beginning
+  with the first byte of its Type and ending with the final byte of its
+  Value.  This includes the encoded Type and Length of the SignedTLV
+  and all bytes of its value, including any Origin, SignedData, and
+  Signature values present.  The bytes MUST be hashed exactly as
+  transmitted and MUST NOT be decoded and re‐encoded before hashing.
+
+  A TLVHash at the beginning of a payload SignedData contains the hash
+  of the Header SignedTLV for that Bundle.  A TLVHash in an Accepted or
+  Rejected value contains the hash of the payload SignedTLV that
+  contained the original request.
+
+  Every Accepted or Rejected response to a request in the same
+  SignedTLV contains the same TLVHash.  The RequestIdentifier selects
+  the individual request within that SignedTLV.  Together these values
+  bind the response to the precise signed transmission and prevent a
+  response to a different SignedTLV from being replayed as its status.
+
+  100. Unassigned
+  ───────────────
+  This type is not supported and MUST NOT be generated.  Its number is
+  available for assignment by a future revision of this standard.
 
   101. LegacyAttributes
   ─────────────────────
   Contains a number encoded the same as the Type and Length values.
-  The number has the same meaning as the AttributeWord in FTS-0001.
+  The number has the same meaning as the AttributeWord in FTS‑0001.
   If anything in here is actually useful, it should have a separate
   value.
 
   102. TimestampOffset
   ────────────────────
-  Contains a number encoded the same as the Type and Length values.
-  If this number is added to the Timestamp, the result will be the
-  local time/date the message was written.
+  Contains a signed number of seconds encoded as specified in
+  TTS‑0007.  If this number is added to the Timestamp, the result is
+  the local time and date when the message was written.
 
   103. ToUserName
   ───────────────
-  Contains a UTF-8 string which is a user name on the destination
+  Contains a UTF‑8 string which is a user name on the destination
   system.
 
   104. FromUserName
   ─────────────────
-  Contains a UTF-8 string which is a user name on the origin system.
+  Contains a UTF‑8 string which is a user name on the origin system.
 
   105. Subject
   ────────────
-  Contains a UTF-8 string which is the subject of the message.
+  Contains a UTF‑8 string which is the subject of the message.
 
   106. MessageText
   ────────────────
-  Contains a UTF-8 string which is the contents of the message.
+  Contains a UTF‑8 string which is the contents of the message.
 
   107. Area
   ─────────
@@ -325,18 +407,18 @@ Contents
 
   108. AreaName
   ─────────────
-  Contains a UTF-8 value which specifies which area the message is in.
+  Contains a UTF‑8 value which specifies which area the message is in.
   This likely has a lot of legacy restrictions that I can't find in
   any official document when used with legacy FTN software.
 
   109. AreaDescription
   ────────────────────
-  Contains a UTF-8 value which provides a description of the area for
+  Contains a UTF‑8 value which provides a description of the area for
   use when automatically adding areas.
 
   110. TearLine
   ─────────────
-  Contains a UTF-8 value which is "an optional program specifier".
+  Contains a UTF‑8 value which is "an optional program specifier".
   There is no "---" prefix in this value.
 
   111. OriginLine
@@ -348,57 +430,57 @@ Contents
   112. SeenBy
   ───────────
   Optional and only barely useful. Contains a Trimmed Collection of
-  addresses as specified in TTS-0004.  This collection is every system
+  addresses as specified in TTS‑0004.  This collection is every system
   that is expected to have received this message.
 
   113. Via
   ────────
   A Via Value contains a required Address followed by a required
-  Timestamp value followed by a UTF-8 string which MAY contain the
+  Timestamp value followed by a UTF‑8 string which MAY contain the
   program name and version separated by a space.
 
   114. MessageID
   ──────────────
-  Contains a UTF-8 string that uniquely identifies the message and the
+  Contains a UTF‑8 string that uniquely identifies the message and the
   Origin system.
 
   115. ReplyTo
   ────────────
-  Contains a required Address followed by a required UTF-8 string that
+  Contains a required Address followed by a required UTF‑8 string that
   was copied from the MessageID of a message that this one is a reply
   to.
 
   116. OriginalCharacterSet
   ─────────────────────────
-  Contains a UTF-8 string that indicates a previous value of the CHRS
+  Contains a UTF‑8 string that indicates a previous value of the CHRS
   control paragraph.  The Message will have been converted from this
-  to UTF-8 before it was placed in a bundle.
+  to UTF‑8 before it was placed in a bundle.
 
   117. AdditionalKludgeLine
   ─────────────────────────
-  Contains a UTF-8 string.  This string represents a control paragraph
-  and would be added to a legacy message. The CTRL-A character is not
+  Contains a UTF‑8 string.  This string represents a control paragraph
+  and would be added to a legacy message. The CTRL‑A character is not
   present.
 
   118. ShortDescription
   ─────────────────────
-  Contains a UTF-8 string which describes the File. This SHOULD be no
+  Contains a UTF‑8 string which describes the File. This SHOULD be no
   more than 45 characters, and MUST NOT contain newlines.
 
   119. LongDescriptionLine
   ────────────────────────
-  Contains a UTF-8 string for each line of a multi-line description.
+  Contains a UTF‑8 string for each line of a multi‐line description.
   Each line SHOULD be no more than 45 characters, and MUST NOT contain
   newlines.
 
   120. MagicWord
   ──────────────
-  Contains a UTF-8 string indicating a potential alias for requesting
+  Contains a UTF‑8 string indicating a potential alias for requesting
   the file with.
 
   121. Replaces
   ─────────────
-  Contains a UTF-8 string with wildcard characters '*' and '?' to
+  Contains a UTF‑8 string with wildcard characters '*' and '?' to
   select files this replaces. It is expected that configuration around
   sources and signatures be available.
 
@@ -431,12 +513,34 @@ Contents
 6.  Reply Bundles
 ─────────────────
 
-  Reply bundles are generated in response to other bundles.  For each
-  value in the bundle of the types Message, File, FileRequest,
-  PollMessages, PollFiles, and PollRequests, an Accepted or Rejected
-  value is included in the same order as in the original bundle.  The
-  polled types may also be included.  An Accepted value for a Poll
-  type SHOULD be followed by the types polled if any.
+  A Reply Bundle is generated in response to exactly one other Bundle.
+  Its top‐level Origin MUST be the Destination from the Header of the
+  Bundle to which it replies.  The Destination in its Header MUST be
+  the top‐level Origin of that Bundle.  When the Reply Bundle's Origin
+  is the unlisted address, it MUST be followed by the same PublicKey
+  that followed the Destination in the original Bundle's Header.  When
+  the Reply Bundle's Destination is the unlisted address, it MUST be
+  followed by the same PublicKey that followed the top‐level Origin of
+  the original Bundle.
+
+  For each value in the Bundle of the types Message, File, FileRequest,
+  PollMessages, PollFiles, and PollFileRequests, exactly one Accepted or
+  Rejected value is included in the same order as in the original
+  Bundle.
+
+  When a Poll or FileRequest is Accepted, every value returned in
+  response to it MUST be in the same SignedTLV as its Accepted value.
+  The returned values and the Accepted value may occur in any order
+  within that SignedTLV.  The end of the SignedTLV therefore marks the
+  end of the returned values; no count is required.  In particular, an
+  Accepted FileRequest does not require exactly one File: zero or more
+  Files may be returned.
+
+  The sender of the original Bundle therefore knows how many responses
+  to expect.  An Accepted or Rejected response is not complete until
+  its enclosing SignedTLV has been completely received and
+  authenticated.  Once this has occurred for the response to every such
+  value, the Reply Bundle is complete.
 
 
 A. References
@@ -445,7 +549,21 @@ A. References
   [FTA‑1006] "Keywords to indicate requirement levels" FTSC,
   2000‑01‑17.
 
-  [TTS‑5000] "The Distribution Nodelist", TITH, 2025‑11‑14
+  [FTS‑0001] "A Basic FidoNet(r) Technical Standard", Randy Bush,
+  Pacific Systems Group, 1995‑09‑30.
+
+  [Libhydrogen] Version 1,
+  https://github.com/jedisct1/libhydrogen/wiki
+
+  [TTS‑0002] "Type Length Value Encoding", TITH, 2026‑08‑16.
+
+  [TTS‑0003] "Common TLV Types", TITH, 2026‑08‑17.
+
+  [TTS‑0004] "Node Addresses", TITH, 2026‑08‑17.
+
+  [TTS‑0007] "Signed Integer Encoding", TITH, 2026‑08‑16.
+
+  [TTS‑5000] "The Distribution Nodelist", TITH, 2026‑08‑17.
 
 
 B. History

@@ -1,0 +1,135 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TTS‑0007
+Revision:     1
+Title:        Signed Integer Encoding
+Author(s):    Stephen Hurd
+Date:         2026‑08‑16
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Technical Standard (TTS) — it specifies
+  the current technical requirements and recommendations for TITH
+  software developers, coordinators and sysops of the Fidonet network
+  and other networks using FTN technology.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  This document defines the common encoding of signed integers used by
+  TITH software.
+
+Contents
+────────
+
+  1.  Introduction
+  2.  Purpose
+  3.  Limitations
+  4.  Decoding
+  5.  Encoding
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  TTS‑0002 defines an efficient, canonical encoding for non‐negative
+  integers.  Some TITH values require both positive and negative
+  integers, but using a separate unrelated representation would
+  duplicate most of that encoding.
+
+  This standard maps every signed integer to a non‐negative integer.
+  The mapped value is then encoded as specified by TTS‑0002.
+
+
+2. Purpose
+──────────
+
+  This document defines one signed integer representation for TITH
+  software.  It is intended for values such as offsets and differences
+  where either sign is meaningful.
+
+
+3. Limitations
+──────────────
+
+  The mapping itself does not limit the values that can be represented.
+  An implementation MUST support at least the complete range of a
+  32‑bit signed integer and SHOULD support at least the complete range
+  of a 63‑bit signed integer.
+
+  An implementation MUST detect a decoded value outside the range it
+  supports and reject it rather than truncate or wrap it.
+
+
+4. Decoding
+───────────
+
+  First, the complete value is decoded as a non‐negative integer using
+  TTS‑0002.  A non‐canonical or otherwise invalid TTS‑0002 encoding
+  MUST be rejected.
+
+  If the decoded number is even, the signed value is the number divided
+  by two.  If the decoded number is odd, the signed value is negative
+  one times the quantity formed by adding one to the number and
+  dividing the result by two.
+
+  Expressed algebraically, for the decoded non‐negative integer U:
+
+       U even:  U ÷ 2
+       U odd:  −((U + 1) ÷ 2)
+
+
+5. Encoding
+───────────
+
+  A signed value is mapped to a non‐negative integer, which is then
+  encoded as specified by TTS‑0002.
+
+  A value greater than or equal to zero is multiplied by two.  A
+  negative value is multiplied by negative two, then reduced by one.
+
+  Expressed algebraically, for the signed integer S:
+
+       S ≥ 0:  S × 2
+       S < 0:  (S × −2) − 1
+
+  This produces the following mappings:
+
+       Signed value    Mapped value    Encoded bytes
+             0              0              00
+            −1              1              01
+             1              2              02
+            −2              3              03
+             2              4              04
+
+  There is no negative zero.  Since the mapped value uses TTS‑0002,
+  every signed integer has exactly one valid encoding.
+
+
+A. References
+─────────────
+
+  [FTA‑1006] "Keywords to indicate requirement levels" FTSC,
+  2000‑01‑17.
+
+  [TTS‑0002] "Type Length Value Encoding", TITH, 2026‑08‑16.
+
+
+B. History
+──────────
+
+   Rev.1, 2026‑08‑16: Initial Release.
+
+**********************************************************************

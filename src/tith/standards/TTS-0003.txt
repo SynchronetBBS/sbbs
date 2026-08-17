@@ -6,7 +6,7 @@ Publication:  TTS‑0003
 Revision:     1
 Title:        Common TLV Types
 Author(s):    Stephen Hurd
-Date:         2025‑11‑15
+Date:         2026‑08‑17
 ══════════════════════════════════════════════════════════════════════
 
 Status of this document
@@ -70,22 +70,25 @@ Contents
   1.  Origin
       This type contains the 5D address as specified by TTS‑0004.
       This address identifies the public key to use for signing
-      operations at this level and below.
+      operations at this level and below.  The unlisted address is
+      the sole exception: where an enclosing standard permits it, an
+      accompanying PublicKey identifies the key to use.  A supplied
+      PublicKey MUST NOT override the nodelist key of any other Origin.
 
   2.  Signature
-      The value is the 64 binary bytes of data output from the
+      The value MUST be the 64 binary bytes of data output from the
       Libhydrogen hydro_sign_create() or hydro_sign_final_create()
-      function.  The context parameter should be the C string
-      "SignTLV" which is the code points U+53, U+69, U+67, U+6E, U+54,
-      U+4C, U+56, U+00.  Implementations SHOULD ensure this is exactly
-      64 bytes, and MUST pass the value, the public key of the
-      appropriate Origin address, the specified context value, and the
-      accompanying SignedData value to hydro_sign_verify().  If there
-      is no applicable Origin or SignedData, the implementation SHOULD
-      notify the appropriate entities of the error.  If the signature
-      does not verify, the implementation MUST NOT parse any data from
-      the SignedData field and SHOULD notify the appropriate entities
-      (Sysop, Origin, etc) of the error.
+      function.  The context parameter MUST be the eight bytes of the
+      C string "SignTLV", which is the code points U+53, U+69, U+67,
+      U+6E, U+54, U+4C, U+56, U+00.
+
+      The definition of a type containing a Signature MUST specify the
+      exact byte sequence that was signed and the Origin whose public
+      key is applicable.  That byte sequence MUST be verified using
+      hydro_sign_verify(), or the equivalent hydro_sign_init(),
+      hydro_sign_update(), and hydro_sign_final_verify() sequence.
+      The containing type also defines the consequences of a missing
+      or invalid Signature.
 
   3.  SignedData
       The value is binary data that can be validated by a Signature
@@ -126,16 +129,34 @@ Contents
       The purpose of this type is to allow specifications to permit
       some or all TLV values to be replaced by a SignedTLV value.
 
+      The Signature signs the exact bytes in the Value field of the
+      SignedData.  Since that Value is TLV encoded, this includes the
+      Type, Length, and Value of every TLV contained in the SignedData;
+      only the Type and Length of the SignedData itself are excluded.
+      Its applicable Origin is the Origin in the SignedTLV, or the
+      most recently established Origin at a higher level if the
+      SignedTLV does not contain one.
+
+      If there is no applicable Origin or SignedData, the
+      implementation SHOULD notify the appropriate entities of the
+      error.  If the Signature does not verify, the implementation
+      MUST NOT process or act upon any data from the SignedData field.
+      It MAY parse the SignedData only as required by the enclosing
+      protocol to identify request and response values and generate
+      error responses.  It SHOULD notify the appropriate entities
+      (Sysop, Origin, etc) of the error.
+
   5.  Timestamp
       The value is encoded in the same manner as the Type and Length
       parts of a TLV value.  The number encoded is the POSIX Seconds
       Since the Epoch, defined in XBD4.19.  This is the value returned
-      by time(NULL) on POSIX systems.  Despite popular belief, this is
-      NOT the number of seconds since the beginning of January 1st,
-      1970 but rather the number of complete days since January 1st,
-      1970 times 86400, plus the number of seconds that have passed so
-      far in the current day.  That is to say that the existence of
-      leap seconds is pretended out of existence by this definition.
+      by time(NULL) on POSIX systems.  A Timestamp MUST NOT represent
+      an instant before the Epoch.  Despite popular belief, this is NOT
+      the number of seconds since the beginning of January 1st, 1970
+      but rather the number of complete days since January 1st, 1970
+      times 86400, plus the number of seconds that have passed so far
+      in the current day.  That is to say that the existence of leap
+      seconds is pretended out of existence by this definition.
 
   6.  Destination
       This type contains the text representation of a 5D address as
@@ -145,11 +166,22 @@ Contents
       This type contains the text representation of a 5D address as
       specified by TTS‑0004.
 
+  8.  PublicKey
+      The value MUST be the 32 binary bytes of a Libhydrogen signing
+      public key.  A PublicKey does not by itself establish that its
+      holder has been assigned an address.  The enclosing standard
+      defines the address with which the key is associated and how the
+      key is used.
+
 
 A. References
 ─────────────
 
-  [TTS‑0002] "Type Length Value Encoding" TITH, 2025‑11‑14.
+  [TTS‑0002] "Type Length Value Encoding" TITH, 2026‑08‑16.
+
+  [TTS‑0004] "Node Addresses", TITH, 2026‑08‑17.
+
+  [TTS‑0005] "Bundle Format", TITH, 2026‑08‑17.
 
   [FTA‑1006] "Keywords to indicate requirement levels" FTSC,
   2000‑01‑17.

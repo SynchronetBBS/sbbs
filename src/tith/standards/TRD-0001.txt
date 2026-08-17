@@ -6,7 +6,7 @@ Publication:  TRD‑0001
 Revision:     1
 Title:        FidoNet Technology Network Basics
 Author(s):    Stephen Hurd
-Date:         2025‑11‑17
+Date:         2026‑08‑16
 ══════════════════════════════════════════════════════════════════════
 
 Status of this document
@@ -86,7 +86,7 @@ Contents
   FidoNet, and these usually work by modifying the text of the message
   itself.  Because of this, Messages should not start with the string
   "AREA:" or have lines starting with U+0001 (called Start of Heading,
-  Ctrl-A, or SOH).
+  Ctrl‑A, or SOH).
 
 
 3. File Requests
@@ -159,7 +159,7 @@ Contents
   the Nodelist.
 
   While current FidoNet policy requires a Node be reachable via a
-  dial-up connection during Zone Mail Hour, a cursory glance at the
+  dial‐up connection during Zone Mail Hour, a cursory glance at the
   current FidoNet Nodelist indicates that at most 150 out of 1,194
   Nodes have this capability (Less than 13%), one out of four ZCs have
   this capability (25%), four out of thirty RCs (Less than 14%), and
@@ -223,26 +223,26 @@ Contents
 
   FidoNet has a four component hierarcheal address for every node
   These components are Zone, Net, Node, and Point.  Each component can
-  technically have any value from -32,768 to 32,767 inclusive.
+  technically have any value from −32,768 to 32,767 inclusive.
   However, there are restrictions on what should be considered a valid
   component for each level, and some special exceptions for Points.
 
   The Zone component should only have a value between 1 and 32,767.
 
   The Net component should only have a value between 1 and 32,767 or
-  the special value of -1, which should only be used to apply for a
+  the special value of −1, which should only be used to apply for a
   node number.
 
   The Node component should only have a value between 1 and 32,767 or
   one of the the special values of 0, which should only be used for
-  Administrative Nodes, or -1, which should only be used to apply for
+  Administrative Nodes, or −1, which should only be used to apply for
   a node number.
 
   If the Point component is 0, the address is of the Boss Node.  A
   Point address may be expressed in the range of 0 to 65535 instead of
-  the range -32,768 to 32,767.  When expressed in this manner, a value
-  of 32,768 is considered identical to -32,768, a value of 32,769 is 
-  considered identical to -32,767, etc.
+  the range −32,768 to 32,767.  When expressed in this manner, a value
+  of 32,768 is considered identical to −32,768, a value of 32,769 is
+  considered identical to −32,767, etc.
 
   When the Point is zero, it is almost always left out of the address.
 
@@ -257,7 +257,7 @@ Contents
   destination you specify as 218/700, the zone will be assumed to be
   one and the point will be assumed to be zero.
 
-  Addresses are often refered to as a number-D address.  The number is
+  Addresses are often refered to as a number‑D address.  The number is
   generally the number of components shown in the address, but in the
   case where the Point is left off because it is zero, it may still be
   called a 4D address.
@@ -289,12 +289,12 @@ Contents
   it is generally called "5D Addressing".  The most common form for a
   5D address is to place an @ at the end of the address, followed by
   the domain, such as 1:103/1@fidonet.  Most software that implements
-  5D Addressing limits the domain to eight alpha-numeric ASCII
-  characters, and treats it as case-insensitive, where "fidonet" and
+  5D Addressing limits the domain to eight alpha‐numeric ASCII
+  characters, and treats it as case‐insensitive, where "fidonet" and
   "FidoNet" are the same domain.
 
-  For TITH however, domains are generally case-sensitive, may contain
-  almost any Unicode code-point (with some minor restrictions), and
+  For TITH however, domains are generally case‐sensitive, may contain
+  almost any Unicode code‐point (with some minor restrictions), and
   have no length limit.  TITH places domains at the beginning of the
   address followed by a number sign, ie: fidonet#1:103/1.
 
@@ -311,13 +311,13 @@ Contents
 13. Echomail
 ────────────
 
-  Echomail is a special use of FidoNet messages to implement a one-to-
-  many messaging system.  Each Echomail has an "Area", and each Node
+  Echomail is a special use of FidoNet messages to implement a
+  one‐to‐many messaging system.  Each Echomail has an "Area", and each
   has a list of other nodes that are connected to that Area.  When
   a post is entered in a specific Area, one Message is generated for
   each connected node.  The Message will start with an "AREA:" line,
   and will usually have multiple other lines added before and after
-  the post text, some starting with a U+0001 or Ctrl-A character and
+  the post text, some starting with a U+0001 or Ctrl‑A character and
   others just have a specific sequence of characters.
 
   While it is common to get all your Echomail areas from your
@@ -345,35 +345,35 @@ A. References
   [POLICY4]
        FidoNet Policy Document Version 4.07. 9 June, 1989
 
-  [FTS-0001.016]
+  [FTS‑0001.016]
        A Basic FidoNet(r) Technical Standard Revision 16. Randy Bush,
        Pacific Systems Group. September 30, 1995.
 
-  [FTS-0004.001]
+  [FTS‑0004.001]
        EchoMail Specification. 12 March, 2013.
 
-  [FTS-0006.002]
+  [FTS‑0006.002]
        YOOHOO and YOOHOO/2U2. Vince Perriello. 30 November, 2991
 
-  [FTS-4000.001]
+  [FTS‑4000.001]
        CONTROL PARAGRAPHS. FTSC. 1 October 2000.
 
-  [FTS-4009.001]
+  [FTS‑4009.001]
        Netmail tracking (Via). FTSC. 16 May, 2003.
 
-  [FTS-0008.003]
-       Extending FTS-0001 to include Bark requests. 15 October, 1990
+  [FTS‑0008.003]
+       Extending FTS‑0001 to include Bark requests. 15 October, 1990
 
-  [FTS-5000.005]
+  [FTS‑5000.005]
        The Distribution Nodelist. FTSC Members, Administrator and
        Honoured Guests. 23 January 2014.
 
-  [FTS-5005.003]
+  [FTS‑5005.003]
        Advanced BinkleyTerm Style Outbound flow and control files.
        Igor Romanovsky, Administrator and FTSC members.
        31 October, 2016
 
-  [FTS-5006.001]
+  [FTS‑5006.001]
        TIC file format. Michiel van der Vlist, FTSC members.
        7 November, 2016
 

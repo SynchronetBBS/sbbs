@@ -2,11 +2,11 @@
 TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
-Publication:  TTS‐0004
+Publication:  TTS‑0004
 Revision:     1
 Title:        Node Addresses
 Author(s):    Stephen Hurd
-Date:         2025‐11‐15
+Date:         2026‑08‑17
 ══════════════════════════════════════════════════════════════════════
 
 Status of this document
@@ -60,9 +60,9 @@ Contents
   Domain
   ──────
   The domain is a UTF‑8 string that does not contain C0 control
-  code points (U+00 to U+31 and U+7F), the Number Sign (U+23), the
-  Asterisk (U+2A), the Comma (U+2C), the Less-Than Sign (U+3C) or the
-  Greater-Than Sign (U+3E).  The Domain MUST NOT begin or end with
+  code points (U+00 to U+1F and U+7F), the Number Sign (U+23), the
+  Asterisk (U+2A), the Comma (U+2C), the Less‐Than Sign (U+3C) or the
+  Greater‐Than Sign (U+3E).  The Domain MUST NOT begin or end with
   whitespace.  If compatibility with legacy FidoNet systems is a
   concern, it SHOULD start with a lower‐case ASCII alphabetical code
   points (U+61 to U+7A) followed by up to seven lower‐case ASCII
@@ -75,6 +75,10 @@ Contents
   legal in filenames on any OS allowed on the network SHOULD be
   avoided. This generally includes U+3A (':'), U+22 ('"'), U+2F ('/'),
   U+5C ('\'), U+7C ('|'), and U+3F ('?').
+
+  The literal Domain "p2p" is reserved for the nodelist‐free
+  peer‐to‐peer network described in TRD‑0003.  It MUST NOT be used as
+  the Domain of a network which assigns listed addresses.
 
   Example domains "fidonet", "БорМер"
 
@@ -102,7 +106,7 @@ Contents
   Point
   ─────
   The point is a number in the range of zero to sixty‐five thousand,
-  five hundred and thirty-five (0–65,535).  If the Zone is negative
+  five hundred and thirty‐five (0–65,535).  If the Zone is negative
   one, the Point MUST be zero (0).
 
 
@@ -141,7 +145,7 @@ Contents
   Components other than Domain are represented as decimal values,
   either as the literal string "-1" (U+2D, U+31) if the value is
   negative one (−1) or with a code point from U+31 ('1') to U+39 ('9')
-  followed by zero or more code points from U+31 ('0') to U+39 ('9').
+  followed by zero or more code points from U+30 ('0') to U+39 ('9').
   That is to say that leading zeros are not allowed, and negative one
   (−1) has a single legal encoding.  In the cases where zero (0) is a
   legal value, it is also the default, so will not be encoded.
@@ -156,8 +160,15 @@ Contents
   "fidonet#1:10" would represent fidonet, Z1, N10, O0, P0 (AKA R10C)
   "fidonet#1/2" would represent fidonet, Z1, N1, O2, P0
   "fidonet#1.5" would represent fidonet, Z1, N1, O0, P5
-  "fidonet#−1" would represent fidonet, Z−1, N−1, O−1, P0
-  (Preferred by Policy 4 for applying for a new node number)
+  "fidonet#-1" would represent fidonet, Z−1, N−1, O−1, P0.
+
+  The address whose Zone is negative one (−1) is the unlisted address
+  for its Domain and MUST NOT appear in a nodelist.  Since it does not
+  uniquely identify a system, protocols using it MUST associate it
+  with a public key as specified in TTS‑0003 and TTS‑0005.  A
+  prospective node may use the unlisted address while applying for a
+  listed address.  In the "p2p" Domain it is instead the permanent
+  address of every system.
 
 
 5. Trimmed Collections
@@ -220,13 +231,13 @@ Contents
 
   The following wildcard components are supported:
 
-  A single Asterisk (U+2A) which will match any value except -1 in the
+  A single Asterisk (U+2A) which will match any value except −1 in the
   Component.
 
-  A list, enclosed by a Less-Than Sign (U+3C) and a Greater-Than Sign
-  (U+3E) containing a comma-separated list of values.  For numeric
+  A list, enclosed by a Less‐Than Sign (U+3C) and a Greater‐Than Sign
+  (U+3E) containing a comma‐separated list of values.  For numeric
   Components, a value may be an inclusive range with the start and end
-  value separated by a single Hyphen-Minus (U+2D).
+  value separated by a single Hyphen‐Minus (U+2D).
 
   Examples:
   ─────────
@@ -243,7 +254,13 @@ A. References
   [FTA‑1006] "Keywords to indicate requirement levels" FTSC,
   2000‑01‑17.
 
-  [TTS‑5000] "The Distribution Nodelist", TITH, 2025‑11‑14
+  [TTS‑0003] "Common TLV Types", TITH, 2026‑08‑17.
+
+  [TTS‑0005] "Bundle Format", TITH, 2026‑08‑17.
+
+  [TTS‑5000] "The Distribution Nodelist", TITH, 2026‑08‑17.
+
+  [TRD‑0003] "A Nodelist‐Free Peer Network", TITH, 2026‑08‑17.
 
 
 B. History

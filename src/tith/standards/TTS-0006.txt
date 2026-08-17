@@ -2,11 +2,11 @@
 TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
-Publication:  TTS‐0006
+Publication:  TTS‑0006
 Revision:     1
 Title:        Bundle Exchange Protocol
 Author(s):    Stephen Hurd
-Date:         2025‐12‐14
+Date:         2026‑08‑17
 ══════════════════════════════════════════════════════════════════════
 
 Status of this document
@@ -29,9 +29,10 @@ Contents
 ────────
 
   1.  Introduction
-  2.  Basic Design
-  3.  Bundle Types
-  4.  Error Handling
+  2.  Terminology
+  3.  Basic Design
+  4.  Connection Flow
+  5.  Error Handling
 
   A. References
   B. History
@@ -43,19 +44,19 @@ Contents
 ───────────────
 
   FTNs at their core exchange messages, files, and file requests.
-  Historically, this has been done using dial-up connections, and a
+  Historically, this has been done using dial‐up connections, and a
   large amount of infrastructure has been built up around that.  It is
-  much more common however to use the internet to perform these three
+  much more common, however, to use the internet to perform these three
   tasks, with the binkp protocol as implemented in the binkd program
   far and away the most common method to use.
 
   While the binkp protocol and binkd programs perform this job very
   well, the binkp protocol is complex enough that many third parties
-  have introduced subtle standard-breaking behaviour which must be
+  have introduced subtle standard‐breaking behaviour which must be
   allowed to preserve compatibility with the larger network.
 
   TITH is therefore defining a new protocol to avoid needing to test
-  against all other implementations and add various work-arounds.
+  against all other implementations and add various workarounds.
 
 
 2. Terminology
@@ -66,76 +67,165 @@ Contents
   Client
   ──────
   The Client is the software that initiated the connection.  When
-  using TCP with the BSD socket API, this means it's the software that
+  using TCP with the BSD socket API, this means it is the software that
   called connect().  For a POTS connection, this is the software that
   dialed the phone number.
 
   Server
   ──────
   The Server is the software that was connected to.  When using TCP
-  with the BSD socket API, this means it's the software that called
+  with the BSD socket API, this means it is the software that called
   accept().  For a POTS system, this is the software that answered the
   phone call.
 
 
-2. Basic Design
+3. Basic Design
 ───────────────
 
-  The design goals of this new protocol are as folows:
-  • The Client is in charge of the connection.  The server only does
-    anything in response to an explicit request by the client.
+  The design goals of this new protocol are as follows:
+  • The Client is in charge of the connection.  The Server only does
+    anything in response to an explicit request by the Client.
   • The Client performs the active close.  For TCP, this means the
     TIME_WAIT state occurs on the client side.
-  • It is clear when a Server has completely handled a request by
+  • It is clear when a Server has completely handled a request from
     the Client.
   • Anything the Server sends is clearly associated with a Client
-    Request.
-  • A Server or Client may refuse something sent by the remote.  A
-    message will indicate this.
-  • Authentication is not requred by the protocol.  Every separate
-    item will be signed by the origin, and the decision to refuse or
-    accept an item is based on the origin and the signature.
+    request.
+  • A Server or Client may refuse something sent by the remote system.
+    A Rejected value will indicate this.
+  • Every Bundle and every separate item is authenticated.  A listed
+    Origin is authenticated using its nodelist public key.  The
+    unlisted address is authenticated using the public key supplied
+    with that address.
   • The Client must be able to send all of the bundles it has
     prepared, and never send another byte.
 
+  Authentication of the unlisted address proves possession of its
+  private key.  It does not establish membership in a network which
+  uses a nodelist.  A supplied PublicKey MUST NOT be used in place of
+  the nodelist key for any other Origin.
 
-3. Connection Flow
+
+4. Connection Flow
 ──────────────────
 
   For TCP, as soon as the connection is established, the Client is
-  expected to start a single bundle as described in TTS-0005.  If the
-  bundles does not have any Poll values in it (PollMessages,
-  PollFiles, PollFileRequests), it SHOULD send a FIN on the socket.
-  For the BSD socket API, this means calling shutdown() with a how
-  value of SHUT_WR.  If any of the Poll values were present, it should
-  receive a reply bungle from the Server and send a reply bundle in
-  response to that, then shutdown the connection.
+  expected to start a single Bundle as described in TTS‑0005.  If the
+  Bundle does not have a FileRequest or any Poll values in it
+  (PollMessages, PollFiles, PollFileRequests), it SHOULD send a FIN on
+  the socket.  For the BSD socket API, this means calling shutdown()
+  with a how value of SHUT_WR.  If a FileRequest or any of the Poll
+  values were present, the Client SHOULD receive a Reply Bundle from
+  the Server and send a Reply Bundle in response to that, then shut
+  down the connection.
 
-  The Server will generate a reply bundle indicating what was accepted
-  or rejected in the corresponding bundle.  It may send the reply
-  while still receiving the bundle from the client, but MUST NOT start
+  The Server will generate a Reply Bundle indicating what was accepted
+  or rejected in the corresponding Bundle.  It may send the reply
+  while still receiving the Bundle from the Client, but MUST NOT start
   the SignedTLV response until it has verified the signature of the
-  SignedTLV in the bundle from the Client.
+  SignedTLV in the Bundle from the Client.
 
-  Replies may continue to go back and forth until a reply bundle is
-  sent that does not have a Poll value in it.  If the server sends
-  this bundle, it SHOULD try to wait for the client to initialize the
-  close.  If the Client sends this bundle, it SHOULD send a FIN as
-  described above.  If the Client receives this bundle, it SHOULD
-  ensure that a FIN is sent and not a RST.  Since this is the standard
-  behaviour, simply calling close() on the socket should do this.
+  If no error is detected, the Client knows how many responses to expect
+  from the values in the Bundle it sent.  The Server has completed its
+  response when the Client has completely received and authenticated
+  every SignedTLV containing the Accepted or Rejected response for each
+  such value.  As specified in TTS‑0005, this also completes receipt of
+  the values returned by an accepted Poll or FileRequest.  The Client
+  MUST NOT wait for the Server to close its write side to determine that
+  the response is complete.
+
+  Replies may continue to go back and forth until a Reply Bundle is
+  sent that does not have a FileRequest or Poll value in it.  If the
+  Server sends this Bundle, it SHOULD try to wait for the Client to
+  initiate the close.  If the Client sends this Bundle, it SHOULD
+  send a FIN as described above.  If the Client receives this Bundle,
+  it SHOULD ensure that a FIN is sent and not a RST.  Since this is the
+  standard behaviour, simply calling close() on the socket should do
+  this.
 
 
-4. Error Handling
+5. Error Handling
 ─────────────────
 
-  If an error is detected, it MUST be handled as described in
-  TTS-0005.  This means that if a SignedTLV has a data error, neither
-  an Accepted or Rejected will be generated for that TLV.  Both the
-  Client and Server SHOULD log this with as much detail as practical.
+  TTS‑0005 defines framing and data errors in a Bundle.  During a live
+  exchange, the consequences of those errors are defined by this
+  section rather than by the discard rules in TTS‑0005.
+
+  When a framing error is detected, the receiver MUST stop processing
+  and close the connection.  It MUST NOT attempt to find and resume at
+  a later value.
+
+  The first SignedTLV in a Bundle is its Header SignedTLV.  If it
+  cannot be authenticated, or its SignedData does not contain exactly
+  a Destination, the conditionally required PublicKey specified by
+  TTS‑0005, and a Timestamp, the receiver MUST close the connection.
+  The unauthenticated request handling below does not apply to a
+  Header SignedTLV.
+
+  After authenticating the Header SignedTLV, the receiver MUST verify
+  that its Destination identifies the receiver.  An unlisted address
+  identifies the receiver only when its PublicKey also matches the
+  receiver's public key.  For a Reply Bundle, the receiver MUST
+  also verify the Origin, Destination, and PublicKey relationship
+  specified in section 6 of TTS‑0005.  If any check fails, no value in
+  the Bundle counts as a response and the receiver MUST close the
+  connection.
+
+  If an authenticated payload SignedTLV has a missing or incorrect
+  Header TLVHash, any Accepted or Rejected value in it MUST NOT count
+  as a response and the receiver MUST close the connection.  Requests
+  in such a payload are handled as authenticated data errors below.
+
+  When a SignedTLV cannot be authenticated but its SignedData has
+  valid TLV framing, the receiver MAY parse the SignedData only far
+  enough to identify its request and response values and the
+  RequestIdentifiers of its request values.  If the SignedData
+  contains an Accepted or Rejected value, the receiver MUST NOT count
+  that value as a response and MUST close the connection.  This takes
+  precedence over generating responses for any request values in the
+  same SignedData.
+
+  If every request that requires a response has a valid
+  RequestIdentifier, the receiver MUST generate a Rejected response
+  with reason number 2 for each request.  It MUST NOT otherwise
+  process or act upon the unauthenticated contents.
+
+  If unauthenticated SignedData does not have valid TLV framing, or a
+  request in it that requires a response does not have a valid
+  RequestIdentifier, the receiver MUST close the connection.
+
+  When an authenticated and completely framed request has a data
+  error but contains a valid RequestIdentifier, the receiver MUST
+  generate a Rejected response for that request.  If the request does
+  not contain a valid RequestIdentifier, the receiver MUST close the
+  connection.
+
+  Closing the connection because of an error does not undo any
+  Accepted or Rejected responses already completed.  Requests for
+  which no response was completed remain unacknowledged and may be
+  included in a later Bundle.  Receipt of a FIN or other connection
+  termination before every expected response is complete MUST be
+  treated as a failed exchange.
+
+  Both the Client and Server SHOULD log errors with as much detail as
+  practical.
 
 
 A. References
 ─────────────
 
-  [TTS‑0005] "Bundle Format", TITH, 2025‑11‑15
+  [TTS‑0003] "Common TLV Types", TITH, 2026‑08‑17.
+
+  [TTS‑0004] "Node Addresses", TITH, 2026‑08‑17.
+
+  [TTS‑0005] "Bundle Format", TITH, 2026‑08‑17.
+
+  [TTS‑5000] "The Distribution Nodelist", TITH, 2026‑08‑17.
+
+
+B. History
+──────────
+
+   Rev.1, 2025‑12‑14: Initial Release.
+
+**********************************************************************

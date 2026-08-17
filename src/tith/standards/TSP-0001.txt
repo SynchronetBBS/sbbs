@@ -6,7 +6,7 @@ Publication:  TSP‑0001
 Revision:     1
 Title:        DNS Records for Nodelist Fields
 Author(s):    Stephen Hurd
-Date:         2025‑11‑19
+Date:         2026‑08‑16
 ══════════════════════════════════════════════════════════════════════
 
 Status of this document
@@ -70,13 +70,13 @@ Contents
   prefix (ie: _sysopname_tith).
 
   Previous versions used a more verbose key name in the TXT record
-  ("sysop=" and "iflags=").  Since we want to comply with RFC-1461, we
+  ("sysop=" and "iflags=").  Since we want to comply with RFC‑1461, we
   need <something>= at the start, but since the name completely
   includes that value, it's been reduced to a single letter.
 
   Previous versions used an _ both before and after tith in the name.
-  Existing standards use - between components (ie: _ical-access,
-  _acme-challenge).
+  Existing standards use U+002D ('-') between components (ie:
+  _ical-access, _acme-challenge).
 
 
 A. References

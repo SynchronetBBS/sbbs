@@ -6,7 +6,7 @@ Publication:  TTS‑0002
 Revision:     1
 Title:        Type Length Value Encoding
 Author(s):    Stephen Hurd
-Date:         2025‑11‑14
+Date:         2026‑08‑16
 ══════════════════════════════════════════════════════════════════════
 
 Status of this document
@@ -89,6 +89,11 @@ Contents
 4. Decoding
 ───────────
 
+  A value encoded in more bytes than necessary is not properly
+  encoded and MUST be rejected.  Therefore, if the high bit of the
+  first byte is one, at least one of its seven low bits MUST also be
+  one.
+
   Values are decoded by taking the seven least significant bits of the
   number and adding them to the running value.  If the high bit is
   one, the running value is multiplied by 128 (ie: shifted left 7) and
@@ -112,6 +117,9 @@ Contents
 
 5. Encoding
 ───────────
+
+  Values MUST be encoded in the shortest possible form.  Zero is
+  encoded as the single byte zero (0x00).
 
   Encoding is a bit trickier because the most significant seven byte
   group is encoded first.  The easiest is to find the position of the
