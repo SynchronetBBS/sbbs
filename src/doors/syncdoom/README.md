@@ -147,9 +147,9 @@ the full option list below.
 
 | Option | Meaning |
 |--------|---------|
+| `<path>/door32.sys` | **DOOR32.SYS** drop file (Synchronet's `%f`): client socket + session time limit. Recognized by its filename, as a plain argument — see [DOOR32.SYS drop file](#door32sys-drop-file). |
 | `-s<fd>` | Client comm **socket** descriptor (the connected telnet/SSH socket the BBS hands off). Glued form `-s7` or spaced `-s 7`. |
 | `-t<seconds>` | **Time limit** for the session in seconds; the door exits when it elapses. Glued or spaced. |
-| `-door32 <path>` | Path to a **DOOR32.SYS** drop file (see below). A bare path whose name is `door32.sys` is also auto-detected without this flag. |
 | `-term <path>` | A `terminal.ini` file (or a directory containing one) describing `cols`/`rows`/`chars`/`desc`. Sets the baseline; explicit flags override. |
 | `-home <dir>` | **Per-user storage** directory. The door `chdir`s here so DOOM's config, savegames and screenshots are written per user. Created if absent. |
 | `-name <handle>` | Player name shown in multiplayer (chat, scoreboard). Default `Player`. |
@@ -298,9 +298,39 @@ DOOR32.SYS does **not** carry the screen row count. The door auto-detects it (a
 live size probe, then terminal.ini if present, else a 25-row default). An
 explicit `-s` / `-t` on the command line overrides the drop-file values.
 
-A drop-file path is recognized automatically when its filename is `door32.sys`
-(case-insensitive), so a BBS that passes the drop-file path as a bare argument
-needs no `-door32` flag.
+A drop-file path is recognized by its filename — `door32.sys`, case-insensitive
+— given as a plain argument, with no flag introducing it. The sibling doors
+recognize it the same way; they share the parser in `../termgfx/door32.c`.
+
+---
+
+## Installing on a non-Synchronet BBS
+
+Any BBS that writes a DOOR32.SYS with **comm type 2** and a usable socket handle
+can run the door — eleBBS, Mystic, and the rest. Put `syncdoom` (or
+`syncdoom.exe`), `syncdoom.ini` and the WADs in one directory and register a
+command line of this shape, substituting your BBS's node-number macro:
+
+```
+c:\doors\syncdoom\syncdoom.exe c:\ele\node*N\door32.sys -home c:\ele\node*N\doom -log c:\ele\node*N\syncdoom.log
+```
+
+| Piece | Why |
+|-------|-----|
+| The **full path** to the executable | The door finds `syncdoom.ini`, the default WAD directory and `waiting.bin` beside `argv[0]`. Invoked as a bare name it can only fall back to the current directory, which is the BBS's, not the door's. |
+| The **drop file**, per node | Given as a plain argument, as above — the door recognizes it by its `door32.sys` filename. A path it cannot open is reported by name, so an unexpanded node macro shows up in the log as a directory that does not exist. |
+| **`-home`**, per node or per user | Without it every player shares one `default.cfg`, one set of savegames and one screenshot directory, in whatever the current directory happens to be. |
+| **`-log`**, per node | The default `syncdoom.log` is node-tagged only under Synchronet (which exports `SBBSNNUM`); elsewhere give each node its own path or they interleave into one file. On Windows this is the only durable record — see [Fatal errors & diagnostics](#fatal-errors--diagnostics). |
+
+WADs are found in the `[wads] dir` directory, which defaults to the door's own —
+so `-iwad doom2.wad` resolves beside the executable with or without a
+`syncdoom.ini` present. An absolute `-iwad` path always works and depends on
+nothing.
+
+The lobby that browses and creates multiplayer games is Synchronet JavaScript;
+on another BBS, register the door directly as above. Network games are still
+reachable by hand — `-dedicated` / `-spawnserver` for the server, `-connect
+<host:port>` for the clients (see [Multiplayer](#multiplayer--client)).
 
 ---
 

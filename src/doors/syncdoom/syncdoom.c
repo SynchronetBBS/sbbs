@@ -3107,13 +3107,26 @@ void DG_SetWindowTitle(const char *title) { (void)title; }
 // Recognizing the drop file among our arguments is termgfx's rule too.
 #define is_door32_path(s)   termgfx_door32_is_path(s)
 
+// A drop-file complaint, held until dlog() has a log file to write to: this runs
+// before read_syncdoom_ini(), and on Windows a socket door's stderr goes to a
+// throwaway console nobody sees, so stderr alone would reach no one. Flushed by
+// report_door32_problem() below.
+static char g_door32_diag[PATH_MAX + 128];
+
 static void read_door32(const char *path)
 {
 	termgfx_door32_t d;
 	const char      *why;
 
-	if (termgfx_door32_read(path, &d) != 0)
+	// An unreadable drop file is the one failure with no visible symptom: the door
+	// falls through to stdio, draws to a console nobody sees and reads keys nobody
+	// pressed. Name it, and name the path -- an unexpanded BBS macro (eleBBS
+	// "node*N") shows up here as a directory that does not exist.
+	if (termgfx_door32_read(path, &d) != 0) {
+		snprintf(g_door32_diag, sizeof g_door32_diag,
+		         "cannot read drop file '%s': %s", path, strerror(errno));
 		return;
+	}
 
 	if (d.socket >= 0) {
 		g_iosock = (SOCKET)d.socket;
@@ -3136,10 +3149,18 @@ static void read_door32(const char *path)
 	// has no comm type. Silently falling through to stdout means a door that
 	// starts, shows nothing, and ignores every key, with no clue why.
 	if ((why = termgfx_door32_why_unusable(&d)) != NULL)
-		fprintf(stderr, "syncdoom: %s is no use to this door: %s\n", path, why);
+		snprintf(g_door32_diag, sizeof g_door32_diag,
+		         "%s is no use to this door: %s", path, why);
 
 	if (d.time_limit_ms > 0)
 		g_time_limit_ms = d.time_limit_ms;
+}
+
+// Emit whatever read_door32() had to say, now that the ini has named a log file.
+static void report_door32_problem(void)
+{
+	if (g_door32_diag[0] != '\0')
+		dlog("%s", g_door32_diag);
 }
 
 // ---------------------------------------------------------------------------
@@ -3341,6 +3362,39 @@ static void load_splash(const char *path)
 		g_have_splash = 1;
 }
 
+// [wads] dir -- point Doom's IWAD search at the configured WAD directory so a
+// bare "-iwad freedoom1.wad" (e.g. the direct-exec install) resolves there, the
+// same dir the lobby uses. Resolve to ABSOLUTE (we chdir into -home before the
+// WAD is opened, so a relative dir would break) and export DOOMWADDIR.
+// `val` blank = the door's own dir; a relative dir is under it; absolute used
+// as-is. `dir` is the door's dir (trailing separator), empty for a bare argv[0].
+// Called with a blank `val` when there is no syncdoom.ini at all: the door-dir
+// default is what a BBS-agnostic install (exe + WADs in one directory) relies
+// on, and it must not depend on the ini being present.
+static void resolve_wads_dir(const char *dir, const char *val)
+{
+	char        wads[PATH_MAX], abs[PATH_MAX];
+	const char *resolved;
+
+	if (val[0] == '/' || val[0] == '\\' || (val[0] && val[1] == ':'))
+		snprintf(wads, sizeof(wads), "%s", val);                 // absolute
+	else if (val[0])
+		snprintf(wads, sizeof(wads), "%s%s", dir, val);          // under the door dir
+	else
+		snprintf(wads, sizeof(wads), "%s", dir[0] ? dir : ".");  // the door dir itself
+#ifndef _WIN32
+	resolved = realpath(wads, abs) ? abs : wads;
+	setenv("DOOMWADDIR", resolved, 1);
+#else
+	resolved = _fullpath(abs, wads, sizeof(abs)) ? abs : wads;
+	_putenv_s("DOOMWADDIR", resolved);
+#endif
+	// Keep the absolute wads dir for wadcopy(): a bare "-iwad <name>" resolves
+	// here (matching DOOMWADDIR + the lobby), not against the door's CWD.
+	strncpy(g_wads_dir, resolved, sizeof(g_wads_dir) - 1);
+	g_wads_dir[sizeof(g_wads_dir) - 1] = '\0';
+}
+
 // ---------------------------------------------------------------------------
 // syncdoom.ini -- the door's own config, beside the executable (portable to any
 // BBS; not Synchronet's ctrl/). Located from argv[0]'s directory, cwd fallback.
@@ -3368,6 +3422,7 @@ static void read_syncdoom_ini(const char *argv0)
 		// is parsed before this, and leaves g_logpath non-empty).
 		if (g_logpath[0] == '\0')
 			snprintf(g_logpath, sizeof(g_logpath), "syncdoom.log");
+		resolve_wads_dir(dir, "");     // the blank-[wads]-dir default: the door's own dir
 		return;
 	}
 	ini = iniReadFile(f);
@@ -3528,33 +3583,8 @@ static void read_syncdoom_ini(const char *argv0)
 	// (sd_console_detach). Default on; -showconsole/-hideconsole override it.
 	g_hide_console = iniGetBool(ini, "debug", "hide_console", TRUE);
 
-	// [wads] dir -- point Doom's IWAD search at the configured WAD directory so a
-	// bare "-iwad freedoom1.wad" (e.g. the direct-exec install) resolves there,
-	// the same dir the lobby uses. Resolve to ABSOLUTE (we chdir into -home before
-	// the WAD is opened, so a relative dir would break) and export DOOMWADDIR.
-	// Blank = the door's own dir; a relative dir is under it; absolute used as-is.
 	iniGetString(ini, "wads", "dir", "", val);
-	{
-		char        wads[PATH_MAX], abs[PATH_MAX];
-		const char *resolved;
-		if (val[0] == '/' || val[0] == '\\' || (val[0] && val[1] == ':'))
-			snprintf(wads, sizeof(wads), "%s", val);                 // absolute
-		else if (val[0])
-			snprintf(wads, sizeof(wads), "%s%s", dir, val);          // under the door dir
-		else
-			snprintf(wads, sizeof(wads), "%s", dir[0] ? dir : ".");  // the door dir itself
-#ifndef _WIN32
-		resolved = realpath(wads, abs) ? abs : wads;
-		setenv("DOOMWADDIR", resolved, 1);
-#else
-		resolved = _fullpath(abs, wads, sizeof(abs)) ? abs : wads;
-		_putenv_s("DOOMWADDIR", resolved);
-#endif
-		// Keep the absolute wads dir for wadcopy(): a bare "-iwad <name>" resolves
-		// here (matching DOOMWADDIR + the lobby), not against the door's CWD.
-		strncpy(g_wads_dir, resolved, sizeof(g_wads_dir) - 1);
-		g_wads_dir[sizeof(g_wads_dir) - 1] = '\0';
-	}
+	resolve_wads_dir(dir, val);
 
 	strListFree(&ini);
 }
@@ -4818,7 +4848,7 @@ void sd_waitroom_run(void)
 	emit_all("\x1b[2J\x1b[H", 7);
 }
 
-// main: read connection/session params (-door32 drop file and/or -s/-l/-t),
+// main: read connection/session params (the door32.sys drop file and/or -s/-l/-t),
 // set up the per-user sandbox (-home), inject -scaling 2 so Doom's 320x200
 // fills 640x400, and pass everything else (e.g. -iwad) through to doomgeneric.
 // ---------------------------------------------------------------------------
@@ -4877,8 +4907,8 @@ static void sd_usage(const char *argv0)
 		"Doom: -nomonsters, -respawn, -fast, -turbo, ...).\n"
 		"\n"
 		"Session / terminal:\n"
+		"  <path>/door32.sys DOOR32.SYS drop file (Synchronet %%f): socket + time limit\n"
 		"  -s<fd>            client comm socket descriptor (glued -s7 or spaced -s 7)\n"
-		"  -door32 <path>    DOOR32.SYS drop file (supplies the socket + time limit)\n"
 		"  -term <path>      terminal.ini file/dir (baseline cols/rows/charset/desc)\n"
 		"  -t<seconds>       session time limit; the door exits when it elapses\n"
 		"  -home <dir>       per-user dir for config, savegames, screenshots\n"
@@ -5007,18 +5037,23 @@ int main(int argc, char **argv)
 		}
 	}
 
-	// Drop file first, so an explicit -s/-t below can still override it. Either
-	// an explicit -door32 <path> or a bare "...door32.sys" path (Synchronet's %f).
+	// Drop file first, so an explicit -s/-t below can still override it. The
+	// documented form is a bare "...door32.sys" path (Synchronet's %f), which every
+	// sibling door recognizes too.
 	for (i = 1; i < argc; i++) {
+		// -door32 <path> predates that and stays for the sysops whose command line
+		// still spells it; undocumented, not in -help.
 		if (strncmp(argv[i], "-door32", 7) == 0) {
+			// A spaced value is consumed (++i): it is itself a door32.sys path, and
+			// the bare-path arm below would otherwise read the same file again.
 			const char *v = argv[i] + 7;
 			if (*v == '\0' && i + 1 < argc)
-				v = argv[i + 1];
+				v = argv[++i];
 			if (*v) { read_door32(v); strncpy(g_door32_path, v, sizeof(g_door32_path) - 1); }
 		} else if (strncmp(argv[i], "-term", 5) == 0) {
 			const char *v = argv[i] + 5;
 			if (*v == '\0' && i + 1 < argc)
-				v = argv[i + 1];
+				v = argv[++i];
 			if (*v)
 				strncpy(g_term_path, v, sizeof(g_term_path) - 1);
 		} else if (argv[i][0] != '-' && is_door32_path(argv[i])) {
@@ -5027,6 +5062,7 @@ int main(int argc, char **argv)
 	}
 	read_terminal_ini();             // baseline cols/rows/charset; explicit args below override
 	read_syncdoom_ini(argv[0]);      // beside-exe config (graphics scaling, ...)
+	report_door32_problem();         // held from the pre-scan above; [debug] log is known now
 	// Snapshot the sysop/built-in defaults now (before CLI + per-user) so a save
 	// only records what the player changes in-game (sd_save_user_prefs).
 	g_base_grace_fresh   = g_grace_fresh;
