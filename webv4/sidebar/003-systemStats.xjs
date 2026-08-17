@@ -3,6 +3,22 @@
     return (c.status == 3 ? a + 1 : a);
   }, 0);
   require('file_size.js', 'file_size_str');
+  // Every system.stats read is recomputed from disk: total_users enumerates
+  // the user base, total_messages the message bases, total_files the file
+  // bases. Read each exactly once - the hide_empty_stats conditions below
+  // would otherwise read the same property a second time to render it.
+  var _sb_stats = {
+    total_users:            system.stats.total_users,
+    total_logons:           system.stats.total_logons,
+    logons_today:           system.stats.logons_today,
+    total_files:            system.stats.total_files,
+    files_uploaded_today:   system.stats.files_uploaded_today,
+    bytes_uploaded_today:   system.stats.bytes_uploaded_today,
+    files_downloaded_today: system.stats.files_downloaded_today,
+    bytes_downloaded_today: system.stats.bytes_downloaded_today,
+    total_messages:         system.stats.total_messages,
+    messages_posted_today:  system.stats.messages_posted_today
+  };
 ?>
 
 <h4>System Info</h4>
@@ -21,7 +37,7 @@
 
 		<tr>
 			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_users); ?></th>
-			<td><?xjs write(locale.group_numbers(system.stats.total_users)); ?></td>
+			<td><?xjs write(locale.group_numbers(_sb_stats.total_users)); ?></td>
 		</tr>
 
 		<tr>
@@ -41,60 +57,60 @@
 
 		<tr>
 			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_calls_total); ?></th>
-			<td><?xjs write(locale.group_numbers(system.stats.total_logons)); ?></td>
+			<td><?xjs write(locale.group_numbers(_sb_stats.total_logons)); ?></td>
 		</tr>
 
-    <?xjs if (!settings.hide_empty_stats || system.stats.logons_today) { ?>
+    <?xjs if (!settings.hide_empty_stats || _sb_stats.logons_today) { ?>
   		<tr>
   			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_calls_today); ?></th>
-  			<td><?xjs write(locale.group_numbers(system.stats.logons_today)); ?></td>
+  			<td><?xjs write(locale.group_numbers(_sb_stats.logons_today)); ?></td>
   		</tr>
     <?xjs } ?>
 
-    <?xjs if (!settings.hide_empty_stats || system.stats.total_files) { ?>
+    <?xjs if (!settings.hide_empty_stats || _sb_stats.total_files) { ?>
   		<tr>
   			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_files_total); ?></th>
-  			<td><?xjs write(locale.group_numbers(system.stats.total_files)); ?></td>
+  			<td><?xjs write(locale.group_numbers(_sb_stats.total_files)); ?></td>
   		</tr>
     <?xjs } ?>
 
-    <?xjs if (!settings.hide_empty_stats || system.stats.files_uploaded_today) { ?>
+    <?xjs if (!settings.hide_empty_stats || _sb_stats.files_uploaded_today) { ?>
   		<tr>
   			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_files_uploaded_today); ?></th>
   			<td>
-  				<?xjs write(locale.group_numbers(system.stats.files_uploaded_today)); ?>
+  				<?xjs write(locale.group_numbers(_sb_stats.files_uploaded_today)); ?>
   				<?xjs write(locale.strings.sidebar_system_info.stat_suffix_files); ?>
   				<br>
-  				(<?xjs write(file_size_str(system.stats.bytes_uploaded_today)); ?>
+  				(<?xjs write(file_size_str(_sb_stats.bytes_uploaded_today)); ?>
   				<?xjs write(locale.strings.sidebar_system_info.stat_suffix_bytes); ?>)
   			</td>
   		</tr>
     <?xjs } ?>
 
-    <?xjs if (!settings.hide_empty_stats || system.stats.files_downloaded_today) { ?>
+    <?xjs if (!settings.hide_empty_stats || _sb_stats.files_downloaded_today) { ?>
   		<tr>
   			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_files_downloaded_today); ?></th>
   			<td>
-  				<?xjs write(locale.group_numbers(system.stats.files_downloaded_today)); ?>
+  				<?xjs write(locale.group_numbers(_sb_stats.files_downloaded_today)); ?>
   				<?xjs write(locale.strings.sidebar_system_info.stat_suffix_files); ?>
   				<br>
-  				(<?xjs write(file_size_str(system.stats.bytes_downloaded_today)); ?>
+  				(<?xjs write(file_size_str(_sb_stats.bytes_downloaded_today)); ?>
   				<?xjs write(locale.strings.sidebar_system_info.stat_suffix_bytes); ?>)
   			</td>
   		</tr>
     <?xjs } ?>
 
-    <?xjs if (!settings.hide_empty_stats || system.stats.total_messages) { ?>
+    <?xjs if (!settings.hide_empty_stats || _sb_stats.total_messages) { ?>
   		<tr>
   			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_messages_total); ?></th>
-  			<td><?xjs write(locale.group_numbers(system.stats.total_messages)); ?></td>
+  			<td><?xjs write(locale.group_numbers(_sb_stats.total_messages)); ?></td>
   		</tr>
     <?xjs } ?>
 
-    <?xjs if (!settings.hide_empty_stats || system.stats.messages_posted_today) { ?>
+    <?xjs if (!settings.hide_empty_stats || _sb_stats.messages_posted_today) { ?>
   		<tr>
   			<th scope="row"><?xjs write(locale.strings.sidebar_system_info.label_messages_posted_today); ?></th>
-  			<td><?xjs write(locale.group_numbers(system.stats.messages_posted_today)); ?></td>
+  			<td><?xjs write(locale.group_numbers(_sb_stats.messages_posted_today)); ?></td>
   		</tr>
     <?xjs } ?>
 
