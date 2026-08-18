@@ -84,8 +84,15 @@ need them.*
 | **Ctrl-T** | cycle frame-pipeline depth (auto → 1…16 → auto) |
 | **Ctrl-S** | toggle the live stats overlay (fps / KB-s / lag / depth) |
 | **Ctrl-O** | toggle mouse steering |
+| **Ctrl-R** | toggle AutoRun (Duke's Caps Lock), leaving `R` free for Steroids |
 | **Ctrl-U** | who's online — brief overlay of the other BBS nodes |
 | **Ctrl-P** | page / message another node: shows who's online, then type a message over the running game (non-blocking, MP-safe — your Duke stands still, like `T` chat). Prefix a node # (`5 hi` / `5: hi`) to target one, or leave blank to message all. `Esc`/blank cancels. |
+
+**`Ctrl-A` … `Ctrl-G` mirror `F1` … `F7`**, for terminals that keep the function
+keys for themselves (or never send them). `Ctrl-A` opens the Controls Help screen
+and `Ctrl-D` cycles the graphics tier, exactly as `F1` and `F4` do; `Ctrl-B`,
+`Ctrl-C`, `Ctrl-E`, `Ctrl-F` and `Ctrl-G` reach Duke as its own `F2`, `F3`, `F5`,
+`F6` and `F7`.
 
 ### Native key-up terminals
 

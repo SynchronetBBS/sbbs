@@ -4938,7 +4938,7 @@ static void sd_usage(const char *argv0)
 		"  -kpdelay <ms>     TAP grace (fresh key press)\n"
 		"  -kpsmooth <ms>    HOLD grace (held / repeating key)\n"
 		"  -kpturn <ms>      TURN grace (turn-key tap)\n"
-		"  -mouse <on|off>   terminal mouse steering (default on)\n"
+		"  -mouse <style>    terminal mouse steering: off|steer|follow (default steer)\n"
 		"\n"
 		"WADs (bare names resolve in the [wads] dir):\n"
 		"  -iwad <file>      the IWAD (doom.wad, doom2.wad, freedoom, ...)\n"

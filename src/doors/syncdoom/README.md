@@ -180,7 +180,7 @@ grace period after its last byte. These tune that synthesis:
 | `-kpsmooth <ms>` | HOLD grace (held/repeating key). |
 | `-kpdelay <ms>` | TAP grace (fresh press) — the main "slidy" lever. |
 | `-kpturn <ms>` | TURN grace (turn-key tap). |
-| `-mouse <on\|off>` | Terminal mouse steering (default on) — see *Mouse control*. |
+| `-mouse <off\|steer\|follow>` | Terminal mouse steering style (default `steer`) — see *Mouse control*. `on`/`true` mean `steer`; `none`/`false`/`0` mean `off`; `look`/`native`/`relative` mean `follow`. |
 
 These three set the *startup* feel (also via `syncdoom.ini [input]`; the TURN
 default is low — **75 ms** — to suit FAST TURN, below). A player retunes them
@@ -430,8 +430,8 @@ in-game with **F1**. Keys:
 | `F4` | Cycle the render tier / glyph mode. |
 | `Ctrl-G` | Cycle gamma correction (brightness): off, then levels 1-4, wrapping. Handy on a dim terminal or a washed-out color scheme. Saved per-user. (Doom's `F11` does the same where the terminal doesn't eat it for its own fullscreen toggle — Windows Terminal does.) |
 | `Ctrl-T` | Cycle the frame pipeline depth (`1 → 2 → … → 8 → auto`), flashing the depth + measured round-trip. Higher depths lift the frame rate on a high-latency (far-away) link toward Doom's 35 fps sim rate (frame rate ≈ depth ÷ round-trip), at the cost of some added input lag; `auto` (the default) adapts to the link. Mainly an A/B tuning aid for remote play. Saved per-user. (Also `[video] frames_in_flight` in `syncdoom.ini`.) |
-| `Ctrl-S` | Toggle a live stats overlay (top row): render tier, frame rate, round-trip (current / baseline), and pipeline depth — handy for watching `auto` adapt over a remote link. Session-only. |
-| `Ctrl-O` | Toggle mouse steering on/off, flashing the new state. Saved per-user. (Also `[input] mouse` in `syncdoom.ini`.) |
+| `Ctrl-S` | Toggle a live stats strip on the **bottom** row (unused by the graphics tiers, so it stays clear of DOOM's own message line): render tier, frame rate, throughput to the player, round-trip (current / baseline) and pipeline depth — handy for watching `auto` adapt over a remote link. Session-only. |
+| `Ctrl-O` | Cycle mouse steering: **off → steer → follow**, flashing the new state on DOOM's message line. Saved per-user. (Also `[input] mouse` in `syncdoom.ini` — see *Mouse control*.) |
 | `Ctrl-U` | Who's online — a brief top-strip overlay of the other BBS nodes and what they're doing. |
 | `Ctrl-P` | Page / message another node: shows who's online, then you type a message over the running game (non-blocking — your player just stands still, like `T` chat, so a co-op game never stalls). Prefix a node number (`5 hi` / `5: hi`) to target one node, or leave it blank to message everyone online. `Esc` or a blank message cancels. |
 | `F2` / `F3` | Save / load game (written under `-home`); `F6` / `F9` quicksave / quickload. |
@@ -449,19 +449,22 @@ On SyncTERM (and other xterm-mouse-capable clients) the door can turn with the
 mouse, which sidesteps the key-repeat lag of the arrow keys entirely — turning is
 smoother and more precise. Terminals report the pointer's **absolute** screen
 position (no relative deltas, and the pointer can't be re-centered by the host),
-so steering works like a **joystick**: the pointer's horizontal offset from
-screen-center sets a turn **rate** — hold it left of center to keep turning left,
-return it to center to stop. (Leaving the pointer parked off-center relaxes to
-neutral after a short idle, so an abandoned pointer doesn't spin forever.)
+which is why there are two steering styles rather than one:
+
+| Style | Feel |
+|-------|------|
+| **`steer`** (default) | A **joystick**: the pointer's horizontal offset from screen-center sets a turn **rate** — hold it left of center to keep turning left, return it to center to stop. Never runs out of travel, but a pointer parked off-center keeps turning. (It relaxes to neutral after a short idle, so an abandoned pointer doesn't spin forever.) |
+| **`follow`** | **Mouse-look**, like DOS DOOM: turn by how far the pointer *moved* since the last tic, so the view stops the instant the pointer does. Terminals clamp the pointer at the window edge and report nothing further, which would stall a turn — so while it's pinned there the view keeps creeping gently in that direction, and you reposition as you would by lifting a real mouse. |
 
 Buttons map to DOOM's defaults: **left = fire**, right = strafe-modifier (hold and
 the horizontal mouse strafes instead of turning), middle = forward. Vertical mouse
 and the wheel are unused; forward/back stays on the keyboard.
 
-Enable/disable with `[input] mouse = on|off` (default **on**) or `-mouse on|off`,
-or toggle it live in-game with **Ctrl-O**. Mouse turning is suppressed in menus and
-while typing chat, and the setting saves per-user. On a terminal without mouse
-reporting it's simply inert.
+Choose the style with `[input] mouse = off|steer|follow` (default **steer**) or
+`-mouse <style>`, or cycle it live in-game with **Ctrl-O** (off → steer → follow).
+*Options* also carries a **sensitivity** slider (1–9) that scales the turn rate of
+either style. Mouse turning is suppressed in menus and while typing chat, and both
+settings save per-user. On a terminal without mouse reporting it's simply inert.
 
 ---
 

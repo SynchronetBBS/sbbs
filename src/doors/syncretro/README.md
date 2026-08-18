@@ -51,11 +51,14 @@ either can run it:
   through its own threads, which is what does the telnet negotiation and the SSH
   crypto. The door therefore never sees a telnet IAC byte, and works over SSH
   without knowing SSH exists.
-- **`-stdio`** — the BBS redirected our stdin and stdout instead (Mystic does
-  this on \*nix, forking the door through `/bin/sh` with pipes). It does the
-  telnet and SSH itself, so the stream arrives just as clean. **POSIX only**: on
-  Windows a door is given a Winsock socket, and this door's I/O seam cannot read
-  a CRT pipe.
+- **Our stdin and stdout** — the BBS redirected them instead of handing us a
+  socket (Mystic does this on \*nix, forking the door through `/bin/sh` with
+  pipes). It does the telnet and SSH itself, so the stream arrives just as clean.
+  The drop file selects this on its own: comm type **0** ("local") means there is
+  no socket, which is what a BBS writes when it has redirected our stdio. `-stdio`
+  says the same thing by hand, for a BBS that writes no drop file at all.
+  **POSIX only**: on Windows a door is given a Winsock socket, and this door's
+  I/O seam cannot read a CRT pipe.
 
 The drop file is parsed by [`../termgfx/door32.c`](../termgfx/door32.h), shared by
 every door; a drop file it cannot use (serial, an unknown comm type, a telnet line
