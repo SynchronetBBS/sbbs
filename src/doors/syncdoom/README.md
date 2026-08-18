@@ -130,14 +130,14 @@ to the underlying DOOM engine (so standard Chocolate Doom switches such as
 A typical door invocation (the BBS fills in the DOOR32.SYS drop-file path):
 
 ```
-syncdoom <path>/door32.sys -home <per-user-dir> -iwad <wad> -name "<user>"
+syncdoom <path>/door32.sys -home <per-user-dir> -iwad <wad>
 ```
 
 The DOOR32.SYS drop file carries the client socket (or, with comm type 0, the
 fact that there is *no* socket and the BBS redirected our stdio — see [How the
-door reaches the player](#how-the-door-reaches-the-player)) and the session time
-limit; on a BBS that writes no drop file, pass those with `-s<fd>` and
-`-t<seconds>`.
+door reaches the player](#how-the-door-reaches-the-player)), the session time
+limit, and the player's alias; on a BBS that writes no drop file, pass those
+with `-s<fd>`, `-t<seconds>` and `-name`.
 (The door live-probes the terminal size, so no screen-rows argument is needed.)
 
 Run `syncdoom -help` (also `--help`, `-?`, `/?`, or with no arguments) to print
@@ -147,12 +147,12 @@ the full option list below.
 
 | Option | Meaning |
 |--------|---------|
-| `<path>/door32.sys` | **DOOR32.SYS** drop file (Synchronet's `%f`): client socket + session time limit. Recognized by its filename, as a plain argument — see [DOOR32.SYS drop file](#door32sys-drop-file). |
+| `<path>/door32.sys` | **DOOR32.SYS** drop file (Synchronet's `%f`): client socket + session time limit + player alias. Recognized by its filename, as a plain argument — see [DOOR32.SYS drop file](#door32sys-drop-file). |
 | `-s<fd>` | Client comm **socket** descriptor (the connected telnet/SSH socket the BBS hands off). Glued form `-s7` or spaced `-s 7`. |
 | `-t<seconds>` | **Time limit** for the session in seconds; the door exits when it elapses. Glued or spaced. |
 | `-term <path>` | A `terminal.ini` file (or a directory containing one) describing `cols`/`rows`/`chars`/`desc`. Sets the baseline; explicit flags override. |
 | `-home <dir>` | **Per-user storage** directory. The door `chdir`s here so DOOM's config, savegames and screenshots are written per user. Created if absent. |
-| `-name <handle>` | Player name shown in multiplayer (chat, scoreboard). Default `Player`. |
+| `-name <handle>` | Player name shown in multiplayer (chat, scoreboard), and the name a paged node sees. Taken from the drop file's line 7 when there is one; `-name` overrides it whatever the argument order. `Player` when neither is given. |
 | `-eventlog <path>` | Append game events (level start, deaths/frags) as JSONL to `<path>`; the lobby's activity feed reads it. The directory is created if absent. |
 | `-log <path>` | Write the door's diagnostics **and any fatal error** to a durable file (also `syncdoom.ini [debug] log`, or the `SYNCDOOM_LOG` env). A bare filename goes in `<data>/syncdoom/` (node-tagged, e.g. `syncdoom_n3.log`); a path with a separator is used as-is. On by default (`syncdoom.log`); blank the ini key to disable. See [Fatal errors & diagnostics](#fatal-errors--diagnostics). |
 | `-showconsole` / `-hideconsole` | **Windows:** keep or close the door's own console window (the one a BBS spawning with `CREATE_NEW_CONSOLE` pops up on the BBS machine). Closing is the default; overrides `syncdoom.ini [debug] hide_console`. Only a console the door owns is closed — running it by hand from a command prompt keeps your shell's output. |
@@ -292,6 +292,7 @@ door reads three fields:
 |----------------|-------|----------|
 | 1 | Comm type | `2` = telnet socket (otherwise the socket is not taken from the drop file) |
 | 2 | Comm/socket handle | The client socket descriptor (same as `-s`) |
+| 7 | User alias | The player's name (same as `-name`, which overrides it) |
 | 9 | Time left, **minutes** | Session time limit (same as `-t`, but in minutes) |
 
 DOOR32.SYS does **not** carry the screen row count. The door auto-detects it (a

@@ -3144,6 +3144,13 @@ static void read_door32(const char *path)
 	// XTRN_STDIO, Mystic on *nix). Windows has no such path: conn_read returns -1
 	// there, and a Windows BBS hands a door a socket anyway.
 
+	// Line 7, the caller's alias -- the BBS's own name for the player, which is
+	// what the netgame, the who's-online/page identity and the event feed should
+	// carry. This pre-scan runs before the -name argument, so an explicit -name
+	// still wins; without one the door no longer has to call the player "Player".
+	if (d.alias[0] != '\0')
+		snprintf(g_player_name, sizeof g_player_name, "%s", d.alias);
+
 	// A drop file we cannot use is worth saying out loud -- serial, an unknown
 	// comm type, a telnet line with no usable handle, or a file so truncated it
 	// has no comm type. Silently falling through to stdout means a door that
@@ -4907,12 +4914,12 @@ static void sd_usage(const char *argv0)
 		"Doom: -nomonsters, -respawn, -fast, -turbo, ...).\n"
 		"\n"
 		"Session / terminal:\n"
-		"  <path>/door32.sys DOOR32.SYS drop file (Synchronet %%f): socket + time limit\n"
+		"  <path>/door32.sys DOOR32.SYS drop file (Synchronet %%f): socket+time+alias\n"
 		"  -s<fd>            client comm socket descriptor (glued -s7 or spaced -s 7)\n"
 		"  -term <path>      terminal.ini file/dir (baseline cols/rows/charset/desc)\n"
 		"  -t<seconds>       session time limit; the door exits when it elapses\n"
 		"  -home <dir>       per-user dir for config, savegames, screenshots\n"
-		"  -name <handle>    multiplayer player name (default Player)\n"
+		"  -name <handle>    player name (else the drop file's alias, else Player)\n"
 		"  -eventlog <path>  append game events (JSONL) for the lobby activity feed\n"
 		"  -showconsole      keep the door's own console window open (Windows)\n"
 		"  -hideconsole      close it (the default; [debug] hide_console)\n"
