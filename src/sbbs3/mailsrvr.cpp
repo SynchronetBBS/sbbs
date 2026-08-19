@@ -3039,8 +3039,14 @@ static bool sender_addr_authorized(user_t* user, const char* addr, const char* d
 	domain++;
 	if (stricmp(domain, scfg.sys_inetaddr) != 0
 	    && stricmp(domain, startup->host_name) != 0
-	    && findstr(domain, domain_list) == false)
-		return false;
+	    && findstr(domain, domain_list) == false) {
+		/* A sender address in a foreign domain is a relay, and a sysop who
+		 * allows authenticated users to relay via the transfer port allows
+		 * exactly this (e.g. a BBS sysop submitting as their own domain),
+		 * so honor that same permission here. */
+		return (startup->options & MAIL_OPT_ALLOW_RELAY)
+		       && !(user->rest & (FLAG('G') | FLAG('M')));
+	}
 
 	/* Same alias.cfg lookups the recipient path makes: whole address, then local-part */
 	p = alias(&scfg, addr, alias_buf);

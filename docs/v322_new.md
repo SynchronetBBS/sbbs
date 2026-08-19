@@ -198,15 +198,20 @@
   `ALLOW_RELAY` option; that option continues to govern port 25
   (issue #1221)
 - New **sender-address verification** on the submission ports: an
-  authenticated user's `MAIL FROM` and `From:` address must be at one of
-  your domains *and* resolve to that same user, using the same lookup
-  that decides which account an incoming message is delivered to. Any
-  address that reaches a user therefore works as a sender address for
-  them — their alias, real name, `alias.cfg` entry, sub-address tag or
-  user number — and nothing else does, so mail can no longer be
-  submitted with a forged sender. A rejection names the address to use,
-  so a mistyped client setting is self-correcting. The transfer port
-  (25) does not verify sender addresses
+  authenticated user's `MAIL FROM` and `From:` address at one of your
+  domains must resolve to that same user, using the same lookup that
+  decides which account an incoming message is delivered to. Any address
+  that reaches a user therefore works as a sender address for them —
+  their alias, real name, `alias.cfg` entry, sub-address tag or user
+  number — and nothing else does, so mail can no longer be submitted
+  with a forged sender at one of your domains. An address at a domain
+  that is not yours is accepted only if `ALLOW_RELAY` is enabled — the
+  sysop who runs a smarthost for their users has already granted that
+  permission on port 25, so submission honors it too (e.g. a BBS sysop
+  submitting as their own domain); with `ALLOW_RELAY` off, it is
+  rejected. A rejection names both the offending address and the address
+  to use, so a mistyped client setting is self-correcting. The transfer
+  port (25) does not verify sender addresses
 - POP3: `USER` / `PASS` issued on an already-authenticated
   session now get a plain `-ERR` response rather than
   `!UNSUPPORTED COMMAND`, matching Dovecot / Courier behavior
