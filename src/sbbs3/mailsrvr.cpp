@@ -3045,7 +3045,7 @@ static bool sender_addr_authorized(user_t* user, const char* addr, const char* d
 		 * exactly this (e.g. a BBS sysop submitting as their own domain),
 		 * so honor that same permission here. */
 		return (startup->options & MAIL_OPT_ALLOW_RELAY)
-		       && !(user->rest & (FLAG('G') | FLAG('M')));
+		       && user_can_send_netmail(user) && !user_is_guest(user);
 	}
 
 	/* Same alias.cfg lookups the recipient path makes: whole address, then local-part */
@@ -5016,14 +5016,14 @@ static bool smtp_client_thread(smtp_t* smtp)
 					/* An authenticated user sending to an external address via a
 					 * submission port is submitting, not relaying (RFC 6409), so
 					 * ALLOW_RELAY doesn't apply - but their restrictions still do. */
-					bool submitting = smtp->submission && relay_user.number != 0
-					                  && !(relay_user.rest & (FLAG('G') | FLAG('M')));
+					bool submitting = smtp->submission && user_can_send_netmail(&relay_user)
+					                  && !user_is_guest(&relay_user);
 
 					if (p != alias_buf /* forced relay by alias */ &&
 					    !submitting &&
 					    (!(startup->options & MAIL_OPT_ALLOW_RELAY)
-					     || relay_user.number == 0
-					     || relay_user.rest & (FLAG('G') | FLAG('M'))) &&
+					     || !user_can_send_netmail(&relay_user)
+					     || user_is_guest(&relay_user)) &&
 					    !find2strs(host_name, host_ip, relay_list, NULL)) {
 						lprintf(LOG_NOTICE, "%04d %-5s %s !ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 						        , socket, client.protocol, client_id, reverse_path, host_ip, p);

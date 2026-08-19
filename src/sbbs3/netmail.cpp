@@ -83,7 +83,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 		return false;
 	}
 
-	if (useron.rest & FLAG('M')) {
+	if (!user_can_send_netmail(&useron)) {
 		bputs(text[NoNetMailAllowed]);
 		return false;
 	}
@@ -379,7 +379,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 	smbmsg_t   msg;
 	struct  tm tm;
 
-	if (useron.rest & FLAG('M')) {
+	if (fromhub == 0 && !user_can_send_netmail(&useron)) {
 		bputs(text[NoNetMailAllowed]);
 		return;
 	}
@@ -965,7 +965,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	FILE *      instream;
 	smbmsg_t    msg;
 
-	if ((!useron_is_sysop() && !(cfg.inetmail_misc & NMAIL_ALLOW)) || useron.rest & FLAG('M')) {
+	if ((!useron_is_sysop() && !(cfg.inetmail_misc & NMAIL_ALLOW)) || !user_can_send_netmail(&useron)) {
 		bputs(text[NoNetMailAllowed]);
 		return false;
 	}
@@ -1292,7 +1292,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	if (subj != NULL)
 		SAFECOPY(title, subj);
 
-	if (useron.rest & FLAG('M')) {
+	if (!user_can_send_netmail(&useron)) {
 		bputs(text[NoNetMailAllowed]);
 		return false;
 	}

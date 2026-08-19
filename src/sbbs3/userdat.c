@@ -4089,6 +4089,16 @@ uint user_downloads_per_day(scfg_t* cfg, user_t* user)
 }
 
 /****************************************************************************/
+/* Determine if the specified user can or cannot send netmail				*/
+/****************************************************************************/
+bool user_can_send_netmail(user_t* user)
+{
+	if (user == NULL || user->number == 0)
+		return false;
+	return !(user->rest & FLAG('M'));
+}
+
+/****************************************************************************/
 /* Determine if the specified user can or cannot send email					*/
 /* 'reason' is an (optional) pointer to a text.dat item number				*/
 /* usernumber==0 for netmail												*/
@@ -4103,7 +4113,7 @@ bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, int usernumber,
 		return false;
 	if (reason != NULL)
 		*reason = NoNetMailAllowed;
-	if (net_type != NET_NONE && user->rest & FLAG('M'))                          /* netmail restriction */
+	if (net_type != NET_NONE && !user_can_send_netmail(user))
 		return false;
 	if (net_type == NET_FIDO && !(cfg->netmail_misc & NMAIL_ALLOW))              /* Fido netmail globally disallowed */
 		return false;
