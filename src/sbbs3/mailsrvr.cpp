@@ -3138,7 +3138,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	uchar             digest[MD5_DIGEST_SIZE];
 	char              dest_host[128];
 	const char*       errmsg;
-	char              from_errmsg[256];
+	char              from_errmsg[512];
 	ushort            dest_port;
 	socklen_t         addr_len;
 	ushort            hfield_type;
@@ -3769,8 +3769,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 								        , socket, client.protocol, client_id, from_addr
 								        , relay_user.number, relay_user.alias);
 								safe_snprintf(from_errmsg, sizeof from_errmsg
-								              , "550 Mail header 'FROM' address not authorized for this account, try <%s>"
-								              , usermailaddr(&scfg, user_addr, relay_user.alias));
+								              , "550 Mail header 'FROM' address <%s> not authorized for this account, try <%s>"
+								              , from_addr, usermailaddr(&scfg, user_addr, relay_user.alias));
 								errmsg = from_errmsg;
 								smb_error = SMB_FAILURE;
 								break;
@@ -4757,8 +4757,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 					lprintf(LOG_NOTICE, "%04d %-5s %s !UNAUTHORIZED REVERSE PATH (%s) for user #%u (%s)"
 					        , socket, client.protocol, client_id, sender_addr_buf
 					        , relay_user.number, relay_user.alias);
-					sockprintf(socket, client.protocol, session, "550 Sender address not authorized for this account, try <%s>"
-					           , usermailaddr(&scfg, user_addr, relay_user.alias));
+					sockprintf(socket, client.protocol, session, "550 Sender address <%s> not authorized for this account, try <%s>"
+					           , sender_addr_buf, usermailaddr(&scfg, user_addr, relay_user.alias));
 					stats.msgs_refused++;
 					continue;
 				}
