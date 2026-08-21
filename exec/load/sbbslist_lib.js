@@ -9,6 +9,9 @@ load("lz-string.js");
 
 var list_fname = system.data_dir + 'sbbslist.json';
 
+var locked = false;			// Do we currently hold the lock file?
+var onexit_registered = false;
+
 var sort_property = 'name';
 
 // These max lengths are derived from the bbs_t structure definition in xtrn/sbl/sbldefs.h:
@@ -423,11 +426,21 @@ function lock(op, timeout /* in seconds */, max)
 		}
 		sleep(1000);
 	}
+	locked = true;
+	/* An out-of-memory error is not a catchable exception (a try/finally block
+	   is *not* run), so release the lock from an exit handler instead, else an
+	   aborted script leaves the lock file behind, locking-out every other
+	   reader/writer until file_mutex() expires it (up to max, below). */
+	if(!onexit_registered && typeof js == 'object' && js.on_exit !== undefined) {
+		js.on_exit("if(locked) unlock();");
+		onexit_registered = true;
+	}
 	return true;
 }
 
 function unlock()
 {
+	locked = false;
 	return file_remove(lock_fname());
 }
 
@@ -452,6 +465,9 @@ function write_list(list)
 {
 	if(!lock("write"))
 		return false;
+	/* Serialize before opening (truncating) the file, so that a failure here
+	   (e.g. out of memory) cannot leave an empty/truncated list file behind */
+	var text = JSON.stringify(list, null, 4);
     var out = new File(list_fname);
     log(LOG_DEBUG, "SBBSLIST: Opening / creating list file: " + list_fname);
     if(!out.open("w+")) {
@@ -460,7 +476,7 @@ function write_list(list)
         return false;
     }
     log(LOG_DEBUG, "SBBSLIST: Writing list file: " + out.name + " (" + list.length + " BBS entries)");
-    out.write(JSON.stringify(list, null, 4));
+    out.write(text);
     out.close();
 	unlock();
     return true;
@@ -479,9 +495,12 @@ function append(bbs)
     }
 	var list = parse(f);
 	list.push(bbs);
+	/* Serialize before truncating, so that a failure here (e.g. out of
+	   memory) cannot leave an empty/truncated list file behind */
+	var text = JSON.stringify(list, null, 4);
     log(LOG_DEBUG, "SBBSLIST: Writing list file: " + f.name + " (" + list.length + " BBS entries)");
 	f.truncate();
-    f.write(JSON.stringify(list, null, 4));
+    f.write(text);
     f.close();
 	unlock();
     return true;
@@ -506,9 +525,12 @@ function remove(bbs)
 		return false;
 	}
 	list.splice(index, 1);
+	/* Serialize before truncating, so that a failure here (e.g. out of
+	   memory) cannot leave an empty/truncated list file behind */
+	var text = JSON.stringify(list, null, 4);
     log(LOG_INFO, "SBBSLIST: Writing list file: " + f.name + " (" + list.length + " BBS entries)");
 	f.truncate();
-    f.write(JSON.stringify(list, null, 4));
+    f.write(text);
     f.close();
 	unlock();
     return true;
@@ -533,9 +555,12 @@ function replace(bbs)
 		return false;
 	}
 	list[index] = bbs;
+	/* Serialize before truncating, so that a failure here (e.g. out of
+	   memory) cannot leave an empty/truncated list file behind */
+	var text = JSON.stringify(list, null, 4);
     log(LOG_INFO, "SBBSLIST: Writing list file: " + f.name + " (" + list.length + " BBS entries)");
 	f.truncate();
-    f.write(JSON.stringify(list, null, 4));
+    f.write(text);
     f.close();
 	unlock();
     return true;
