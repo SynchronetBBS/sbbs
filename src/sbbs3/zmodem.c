@@ -2500,7 +2500,7 @@ const char* zmodem_source(void)
 
 char* zmodem_ver(char *buf)
 {
-	return strcpy(buf, "2.4");
+	return strcpy(buf, "2.5");
 }
 
 void zmodem_init(zmodem_t* zm, void* cbdata
