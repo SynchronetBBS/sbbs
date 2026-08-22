@@ -111,7 +111,7 @@ FILE*       errfp;
 FILE*       statfp;
 FILE*       logfp = NULL;
 
-const char* revision = "3.4";
+const char* revision = "3.5";
 
 SOCKET      sock = INVALID_SOCKET;
 

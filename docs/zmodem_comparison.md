@@ -177,7 +177,7 @@ a component version. sexyz reports its version via `const char* revision`
 
 | Component | Baseline | Shipped |
 |---|---|---|
-| **sexyz.c** | **3.3** — `send_byte` writes the ring one byte at a time; `-w` sets the window without touching the block size | **3.4** — buffered streaming send path (~11 → ~115 MB/s, #1195); `-w` clamps the block to window/4 like `lsz`/`sz` so `window ≤ block` no longer stalls (#1197) |
+| **sexyz.c** | **3.3** — `send_byte` writes the ring one byte at a time; `-w` sets the window without touching the block size | **3.4** — buffered streaming send path (~11 → ~115 MB/s, #1195); `-w` clamps the block to window/4 like `lsz`/`sz` so `window ≤ block` no longer stalls (#1197). **3.5** — no change of its own: the startup banner prints only sexyz's own revision, so it moves with `zmodem.c` 2.5 to keep a build identifiable without `sexyz v` |
 | **zmodem.c** | **rev 2.2** — window/ACK positions `int32_t`; switch-based byte classifier; byte-at-a-time CRC-32; quarter-window ACK interval divides by zero when window < 4×block | **rev 2.5** — 2 GB fix (`uint32_t`, #1196); Deuce's 2026-07-24 send-path work (class-table classifier, slicing-by-4 CRC-32, hoisted escape mask + `noinline` cold paths, buffered `fcrc32()`); window-interval divide-by-zero guarded (#1197); the 1-second ZRPOS purge off the normal send path and the ZFILE retransmit at the receiver's opening ZRINIT, both 2026-08-21 |
 
 - **SyncTERM:** its `term.c` send path is **unchanged** by this work; a SyncTERM
