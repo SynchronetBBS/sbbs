@@ -1597,7 +1597,7 @@ int zmodem_get_zfin(zmodem_t* zm)
 	return type;
 }
 
-BOOL zmodem_handle_zrpos(zmodem_t* zm, uint64_t* pos)
+BOOL zmodem_handle_zrpos(zmodem_t* zm, uint64_t* pos, unsigned purge_timeout)
 {
 	if (zm->rxd_header_pos < zm->current_file_size) {
 		if (*pos != zm->rxd_header_pos) {
@@ -1606,7 +1606,7 @@ BOOL zmodem_handle_zrpos(zmodem_t* zm, uint64_t* pos)
 			lprintf(zm, LOG_INFO, "%lu Resuming transfer from offset: %" PRIu64
 			        , (ulong)zm->current_file_pos, *pos);
 		}
-		zmodem_recv_purge(zm, /* timeout: */ 1);
+		zmodem_recv_purge(zm, purge_timeout);
 		return TRUE;
 	}
 	lprintf(zm, LOG_WARNING, "%lu Received INVALID ZRPOS offset: %u"
@@ -2013,7 +2013,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		}
 	}
 
-	if (!zmodem_handle_zrpos(zm, &pos))
+	if (!zmodem_handle_zrpos(zm, &pos, /* timeout: */ 0))
 		return FALSE;
 
 	zm->transfer_start_pos = pos;
@@ -2080,7 +2080,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		}
 
 		if (type == ZRPOS) {
-			if (!zmodem_handle_zrpos(zm, &pos))
+			if (!zmodem_handle_zrpos(zm, &pos, /* timeout: */ 1))
 				break;
 		}
 	} while (TRUE);
