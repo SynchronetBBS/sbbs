@@ -1960,6 +1960,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 	p += strlen((char*)p) + 1;
 
 	for (type = INVALIDSUBPKT, attempts = 0; type != ZRPOS; attempts++) {
+		BOOL stale_zrinit = FALSE;
 
 		if (attempts >= zm->max_errors)
 			return FALSE;
@@ -1983,11 +1984,19 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		 * wait for anything but an ZACK packet
 		 */
 
-		do {
+		while (is_connected(zm)) {
 			type = zmodem_recv_header(zm);
 			if (is_cancelled(zm))
 				return FALSE;
-		} while (type == ZACK && is_connected(zm));
+			if (type == ZACK)
+				continue;
+			/* A ZRINIT here answers our ZRQINIT, not our ZFILE */
+			if (type == ZRINIT && !stale_zrinit) {
+				stale_zrinit = TRUE;
+				continue;
+			}
+			break;
+		}
 
 		if (!is_connected(zm))
 			return FALSE;
