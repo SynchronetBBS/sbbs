@@ -19,6 +19,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#if defined(__unix__)
+
 #include <stdio.h>      /* NULL */
 #include <stdlib.h>     /* malloc() */
 #include "eventwrap.h"
@@ -204,3 +206,5 @@ DONE:
 
 	return retval;
 }
+
+#endif /* __unix__ */
