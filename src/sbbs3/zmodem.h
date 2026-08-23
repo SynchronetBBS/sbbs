@@ -1,27 +1,38 @@
 /*
+ * Copyright (c) 2003-2026 Rob Swindell
+ * Copyright (c) 2005-2026 Stephen Hurd
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ * Special thanks to Jacques Mattheij, formerly of Mattheij Computer Service,
+ * and original author of zmtx/zmrx.
+ */
+
+/*
  * zmodem.h
  * zmodem constants
- * (C) Mattheij Computer Service 1994
- *
- *	Date: Thu, 19 Nov 2015 10:10:02 +0100
- *	From: Jacques Mattheij
- *	Subject: Re: zmodem license
- *	To: Stephen Hurd, Fernando Toledo
- *	CC: Rob Swindell
- *
- *	Hello there to all of you,
- *
- *	So, this email will then signify as the transfer of any and all rights I
- *	held up to this point with relation to the copyright of the zmodem
- *	package as released by me many years ago and all associated files to
- *	Stephen Hurd. Fernando Toledo and Rob Swindell are named as
- *	witnesses to this transfer.
- *
- *	...
- *
- *	best regards,
- *
- *	Jacques Mattheij
  */
 
 #ifndef _ZMODEM_H
@@ -343,5 +354,3 @@ unsigned    zmodem_recv_file_data(zmodem_t*, FILE*, int64_t offset);
 int         zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, int* type);
 int         zmodem_recv_header_and_check(zmodem_t* zm);
 #endif
-
-
