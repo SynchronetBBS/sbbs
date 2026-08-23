@@ -5,6 +5,12 @@ archive that builds sexyz on its own, with no configure step and nothing else
 from Synchronet. Nothing here is part of any Synchronet build. `mksexyzsrc.sh`
 cuts the archives; `COMPILING.md` is what the recipient reads.
 
+The **change log is not here**: it is `docs/sexyz_changes.md`, beside
+`docs/sexyz.txt`, because it is user documentation rather than a packaging
+input. The script copies both into the archive. Record a user-visible sexyz
+change there as well as in the Synchronet release notes -- sexyz ships on its
+own, to sysops who may not run Synchronet at all.
+
 ## The file set is derived, never hand-maintained
 
 Cut a release with `./mksexyzsrc.sh <sbbs-checkout> <output-dir>`. It reads the

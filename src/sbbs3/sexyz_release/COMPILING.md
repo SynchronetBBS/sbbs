@@ -4,7 +4,8 @@ SEXYZ is the Synchronet External X/Y/ZMODEM file transfer protocol driver. It
 speaks XMODEM, XMODEM-CRC, XMODEM-1K, YMODEM, YMODEM-G and ZMODEM (including
 ZedZap 8K blocks) over a TCP socket, a Telnet session, or stdin/stdout, which
 makes it a drop-in replacement for the 16-bit DOS protocol drivers on a modern
-BBS. `sexyz.txt` documents how to use it.
+BBS. `sexyz.txt` documents how to use it, and `sexyz_changes.md` lists what has
+changed since the last release.
 
 This archive is a stand-alone subset of the Synchronet source tree: the sexyz
 sources plus the parts of Synchronet's portability library (`xpdev`) and hash

@@ -40,8 +40,11 @@ printf '#define GIT_BRANCH "%s"\n' "$(git -C "$R" rev-parse --abbrev-ref HEAD)" 
 printf '#define GIT_HASH "%s"\n#define GIT_DATE "%s"\n#define GIT_TIME %s\n' \
 	"$hash" "$(date -d "@$stamp" '+%b %d %Y %H:%M')" "$stamp" > "$D/git_hash.h"
 
-cp -p "$REL"/COMPILING.md "$REL"/CHANGES.md "$REL"/FILE_ID.DIZ "$REL"/GNUmakefile "$REL"/Makefile.vc "$D/"
-cp -p "$R/docs/sexyz.txt" "$D/sexyz.txt"; cp -p "$R/LICENSE" "$D/LICENSE"
+cp -p "$REL"/COMPILING.md "$REL"/FILE_ID.DIZ "$REL"/GNUmakefile "$REL"/Makefile.vc "$D/"
+cp -p "$R/docs/sexyz.txt" "$D/sexyz.txt"
+# the change log is user documentation, so it lives in docs/ beside the manual
+cp -p "$R/docs/sexyz_changes.md" "$D/sexyz_changes.md"
+cp -p "$R/LICENSE" "$D/LICENSE"
 
 ( cd "$D" && make >/dev/null 2>&1 && ./sexyz v >/dev/null ) || { echo "build failed" >&2; exit 1; }
 ( cd "$D" && make clean >/dev/null )
@@ -53,6 +56,6 @@ ver=$(sed -n 's/^const char\* *revision *= *"\([0-9.]*\)".*/\1/p' "$D/sexyz.c" |
 name="sexyz$(echo "$ver" | tr -d .)_src"
 
 mkdir -p "$OUT"; rm -f "$OUT/$name.zip" "$OUT/$name.tgz"
-( cd "$D" && zip -9 -X -q "$OUT/$name.zip" FILE_ID.DIZ COMPILING.md CHANGES.md sexyz.txt LICENSE GNUmakefile Makefile.vc *.c *.h )
+( cd "$D" && zip -9 -X -q "$OUT/$name.zip" FILE_ID.DIZ COMPILING.md sexyz.txt sexyz_changes.md LICENSE GNUmakefile Makefile.vc *.c *.h )
 ( cd "$D" && tar czf "$OUT/$name.tgz" --owner=0 --group=0 . )
 echo "$name cut from $hash: $(ls -1 "$D"/*.c | wc -l) sources, $(ls -1 "$D"/*.h | wc -l) headers"
