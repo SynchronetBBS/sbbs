@@ -137,6 +137,21 @@ include:
     - make -f ../install/install-sbbs.mk NOCAP=1 REPODIR=$(realpath ..) CC="ccache cc" CXX="ccache c++"
   needs: []
 
+# Every Windows job below drives MSBuild, and MSBuild leaves its worker nodes
+# running for 15 minutes after a build, handing them back out on a handshake
+# that covers the MSBuild version but NOT the environment they were started in.
+# The runner is a shell executor running several of these jobs concurrently
+# under one account, so a build can recruit a node another job left behind and
+# inherit its toolset environment -- which is the intermittent
+# "MSB4166: Child node N exited prematurely" failure of windows-x86 [syncscumm]
+# (the heaviest solution: ~9 projects whose vcpkg integration fans out inline
+# Roslyn task compiles all at once).  Reuse only buys back node startup, and
+# only for back-to-back builds, so turning it off in CI costs next to nothing.
+# Left ON for developer builds -- this is a property of the shared runner.
+".windows-msbuild":
+  variables:
+    MSBUILDDISABLENODEREUSE: "1"
+
 # Windows uses the platform-limited vcpkg manifest in the qtmonitor source
 # directory.  Unix and macOS jobs live in .gitlab-ci-unix.yml so unsupported
 # runners can omit them with the build_qtmonitor input.
@@ -156,7 +171,7 @@ include:
       - .gitlab-ci*.yml
 
 "windows [qtmonitor]":
-  extends: .qtmonitor-vcpkg
+  extends: [.qtmonitor-vcpkg, .windows-msbuild]
   tags: [Windows]
   script:
     - $env:VCPKG_ROOT = Join-Path $env:CI_PROJECT_DIR ".vcpkg"
@@ -205,7 +220,7 @@ include:
 "windows-x86 [sbbs]":
   tags: [Windows]
   stage: build
-  extends: .rules
+  extends: [.rules, .windows-msbuild]
   script:
     - cd src/xpdev
     - make
@@ -254,7 +269,7 @@ include:
 "windows-x86 [sexpots]":
   tags: [Windows]
   stage: build
-  extends: .rules
+  extends: [.rules, .windows-msbuild]
   script:
     - cd src/sexpots
     - .\release.bat
@@ -266,7 +281,7 @@ include:
 "windows-x86 [svdm]":
   tags: [Windows]
   stage: build
-  extends: .rules
+  extends: [.rules, .windows-msbuild]
   script:
     - cd src/vdmodem
     - .\release.bat
@@ -278,7 +293,7 @@ include:
 "windows-x86 [syncterm-msvc]":
   tags: [Windows]
   stage: build
-  extends: .rules
+  extends: [.rules, .windows-msbuild]
   script:
     - cd src/syncterm
     - .\release.bat
@@ -313,7 +328,7 @@ include:
 ".windows-door":
   tags: [Windows]
   stage: build
-  extends: .rules
+  extends: [.rules, .windows-msbuild]
   needs: []
 
 "windows-x86 [syncconquer]":
