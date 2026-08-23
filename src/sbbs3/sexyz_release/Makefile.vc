@@ -1,0 +1,63 @@
+###############################################################################
+# SEXYZ (Synchronet External X/Y/ZMODEM) - stand-alone source release         #
+#                                                                             #
+# Microsoft nmake build.  Run from a Visual Studio Developer Command Prompt:   #
+#                                                                             #
+#   nmake -f Makefile.vc                 optimized build -> sexyz.exe          #
+#   nmake -f Makefile.vc DEBUG=1         unoptimized build with symbols        #
+#   nmake -f Makefile.vc clean                                                 #
+#                                                                             #
+# The architecture (x86 or x64) is whichever the command prompt selected.      #
+# For Unix-like systems, use the GNUmakefile (see COMPILING.md).               #
+###############################################################################
+
+CC = cl
+
+# RINGBUF_EVENT and RINGBUF_MUTEX are required: sexyz.c waits on the ring
+# buffer's events and the output thread shares it with the protocol thread.
+# PREFER_POLL is deliberately NOT defined here - WSAPoll's semantics differ
+# from poll()'s, so the Windows build stays on select().
+DEFS = /DWIN32 /D_CONSOLE /DSBBS_EXPORTS /DRINGBUF_EVENT /DRINGBUF_MUTEX \
+	/DHAS_INTTYPES_H /DHAS_STDINT_H \
+	/DWINVER=0x600 /D_WIN32_WINNT=0x600 \
+	/D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE
+
+!IF "$(DEBUG)" == "1"
+CFLAGS = /nologo /W3 /I. /Od /Zi /MTd /D_DEBUG $(DEFS)
+LDFLAGS = /nologo /DEBUG
+!ELSE
+CFLAGS = /nologo /W3 /I. /O2 /MT /DNDEBUG $(DEFS)
+LDFLAGS = /nologo
+!ENDIF
+
+# /MT statically links the C run-time so the .exe needs no redistributable.
+# Change /MT to /MD (and /MTd to /MDd) to match Synchronet's own project files.
+
+# iphlpapi.lib: netwrap.c's getNameServerList() calls GetAdaptersAddresses().
+LIBS = ws2_32.lib iphlpapi.lib
+
+# Every .c in this directory, and the same list the GNUmakefile builds.
+# xpprintf.c supplies vasprintf() (used by str_list.c), which the MSVC CRT
+# lacks; xpevent.c is the *nix emulation of the Win32 *Event API and compiles
+# to an empty object here, since its body is inside #if defined(__unix__).
+OBJS = sexyz.obj xmodem.obj zmodem.obj ringbuf.obj nopen.obj date_str.obj \
+	telnet.obj crc16.obj crc32.obj \
+	datewrap.obj dirwrap.obj filewrap.obj genwrap.obj ini_file.obj \
+	netwrap.obj os_info.obj sockwrap.obj str_list.obj threadwrap.obj \
+	xpdatetime.obj xpevent.obj xpprintf.obj
+
+all: sexyz.exe
+
+sexyz.exe: $(OBJS)
+	link $(LDFLAGS) /OUT:$@ /SUBSYSTEM:CONSOLE $(OBJS) $(LIBS)
+
+.c.obj:
+	$(CC) $(CFLAGS) /c $<
+
+clean:
+	-del *.obj
+	-del sexyz.exe
+	-del sexyz.lib
+	-del sexyz.exp
+	-del sexyz.pdb
+	-del vc*.pdb
