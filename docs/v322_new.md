@@ -511,6 +511,9 @@
 - Windows: scripts using socket callbacks (`Socket.on()`,
   e.g. the IRC daemon) no longer stop accepting new connections
   once the process reaches 64 open sockets
+- Windows: `Socket.error_str` now reports the actual error for
+  errors with a long description (e.g. a connection timeout),
+  rather than "Error 122 getting error description"
 - New methods: `FileBase.lock()` and `FileBase.unlock()` for
   maintenance scripts that want to keep external writers (e.g.
   the FTP server) out during a lengthy operation
