@@ -128,6 +128,15 @@ they are generated at build time.
 
 ## License
 
-Copyright Rob Swindell. Free software under the GNU General Public License,
-version 2 or later. See <http://www.synchro.net/copyright.html>, and the
-license header at the top of each source file.
+Three licenses are represented here. The combination is distributable under
+the GPL, which is the effective license of the resulting binary:
+
+- **2-clause BSD**: `zmodem.c` and `zmodem.h`, copyright Rob Swindell and
+  Stephen Hurd, with the original zmtx/zmrx code by Jacques Mattheij.
+- **GNU General Public License, version 2 or later**: `sexyz.c`, `xmodem.c`,
+  `ringbuf.c`, `nopen.c`, `date_str.c` and `telnet.c`.
+- **GNU Lesser General Public License, version 2 or later**: the rest, which
+  come from Synchronet's `xpdev` and `hash` libraries.
+
+See <http://www.synchro.net/copyright.html> and the header at the top of each
+source file.
