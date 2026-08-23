@@ -702,7 +702,7 @@ int zmodem_send_zfin(zmodem_t* zm)
 {
 	unsigned char zfin_header[] = { ZFIN, 0, 0, 0, 0 };
 
-	lprintf(zm, LOG_NOTICE, "%lu Finishing Session (Sending ZFIN)", (ulong)zm->current_file_pos);
+	lprintf(zm, LOG_NOTICE, "Finishing Session (Sending ZFIN)");
 	return zmodem_send_hex_header(zm, zfin_header);
 }
 
@@ -2361,6 +2361,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 	unsigned errors = 0;
 	off_t    pos = (off_t)offset;
 
+	zm->current_file_pos = pos;
 	zm->transfer_start_pos = offset;
 	zm->transfer_start_time = time(NULL);
 
@@ -2482,6 +2483,8 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, int* type)
 		if (result == FRAMEOK)
 			zm->block_size = len;
 
+		zm->current_file_pos = ftello(fp);
+
 		if (zm->progress != NULL)
 			zm->progress(zm->cbdata, ftello(fp));
 
@@ -2500,7 +2503,7 @@ const char* zmodem_source(void)
 
 char* zmodem_ver(char *buf)
 {
-	return strcpy(buf, "2.5");
+	return strcpy(buf, "2.6");
 }
 
 void zmodem_init(zmodem_t* zm, void* cbdata
