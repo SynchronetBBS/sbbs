@@ -624,17 +624,24 @@ DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 	 * and SetLastError(ERROR_INSUFFICIENT_BUFFER) on a too-small buffer would otherwise clobber the WSA
 	 * error code that the caller may read in the same printf via SOCKET_ERRNO. */
 	DWORD saved_error = WSAGetLastError();
-	strncpy(buf, "Unknown error", buflen);
-	buf[buflen - 1] = 0;
+	char* msg = NULL;
+	safe_snprintf(buf, buflen, "Unknown error");
 	if (error_number > 0 && error_number < WSABASEERR)
 		error_number += WSABASEERR;
-	if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,  // dwFlags
+	/* Let FormatMessage allocate: writing into buf directly fails outright (ERROR_INSUFFICIENT_BUFFER)
+	 * rather than truncating when the description doesn't fit, e.g. WSAETIMEDOUT's 182-byte text. */
+	if (FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK
+	                   | FORMAT_MESSAGE_ALLOCATE_BUFFER,  // dwFlags
 	                    NULL, // lpSource
 	                    error_number, // dwMessageId
 	                    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // dwLanguageId
-	                    buf,
-	                    buflen,
-	                    NULL))
+	                    (char*)&msg,
+	                    0,
+	                    NULL) && msg != NULL) {
+		safe_snprintf(buf, buflen, "%s", msg);
+		LocalFree(msg);
+	}
+	else
 		safe_snprintf(buf, buflen, "Error %d getting error description", GetLastError());
 	truncsp(buf);
 	WSASetLastError(saved_error);

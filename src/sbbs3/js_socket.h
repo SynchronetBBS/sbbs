@@ -16,7 +16,7 @@ typedef struct
 	BOOL is_connected;
 	BOOL network_byte_order;
 	int last_error;
-	char last_error_str[128];
+	char last_error_str[SOCKET_STRERROR_BUFLEN];
 	int type;
 	union xp_sockaddr remote_addr;
 	CRYPT_SESSION session;
