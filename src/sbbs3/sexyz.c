@@ -542,6 +542,21 @@ static int recv_buffer(int timeout /* seconds */)
 }
 
 /****************************************************************************/
+/* ZMODEM file-management option (ZFILE ZF1), sent to the receiver to say	*/
+/* what it should do when the file already exists at its end.  The engine	*/
+/* treats these as mutually exclusive, so set exactly one.					*/
+/****************************************************************************/
+static char* zmodem_management_list[] = { "crc", "clobber", "protect", "newer", NULL };
+enum { ZMGMT_CRC, ZMGMT_CLOBBER, ZMGMT_PROTECT, ZMGMT_NEWER };
+
+static void set_zmodem_management(unsigned opt)
+{
+	zm.management_clobber = (opt == ZMGMT_CLOBBER);
+	zm.management_protect = (opt == ZMGMT_PROTECT);
+	zm.management_newer   = (opt == ZMGMT_NEWER);
+}
+
+/****************************************************************************/
 /* Bulk receive: hand the engine a run of bytes it can take verbatim.		*/
 /* Never blocks and never refills -- recv_byte() owns the waiting, so a		*/
 /* return of 0 simply means "nothing buffered right now, go per-byte".		*/
@@ -1546,7 +1561,12 @@ static const char* usage =
 	"socket = TCP socket descriptor\n"
 #endif
 	"\n"
-	"opts   = -y  allow overwriting of existing files when receiving\n"
+	"opts   = -y  overwrite an existing destination file\n"
+	"             (when receiving: here; when sending: at the receiver)\n"
+	"         -p  when sending, protect an existing file at the receiver\n"
+	"         -n  when sending, overwrite at the receiver only if ours is newer\n"
+	"         -e  request ZMODEM control-character escaping (ZF0_ESCCTL)\n"
+	"             (when receiving; when sending, the receiver's request governs)\n"
 	"         -k  enable X/YMODEM-1K send mode\n"
 	"         -c  enable XMODEM-CRC receive mode\n"
 	"         -g  enable X/YMODEM-G receive mode (no error recovery)\n"
@@ -1736,6 +1756,7 @@ int main(int argc, char **argv)
 	zm.escape_telnet_iac    = iniGetBool(ini, section, "EscapeTelnetIAC", TRUE);
 	zm.escape_8th_bit       = iniGetBool(ini, section, "Escape8thBit", FALSE);
 	zm.escape_ctrl_chars    = iniGetBool(ini, section, "EscapeCtrlChars", FALSE);
+	set_zmodem_management(iniGetEnum(ini, section, "SendManagement", zmodem_management_list, ZMGMT_CRC));
 	zm.max_window_size      = (uint32_t)iniGetBytes(ini, section, "MaxWindowSize", 1, 0);
 	zm.target_window_size   = (unsigned)iniGetDuration(ini, section, "TargetWindowSize", 0);
 
@@ -1893,7 +1914,19 @@ int main(int argc, char **argv)
 						mode |= (GMODE | CRC);
 						break;
 					case 'y':
+						/* Receiving: may we overwrite a file already here.
+						   Sending: tell the receiver to overwrite its own. */
 						mode |= OVERWRITE;
+						set_zmodem_management(ZMGMT_CLOBBER);
+						break;
+					case 'p':   /* sz compatible */
+						set_zmodem_management(ZMGMT_PROTECT);
+						break;
+					case 'n':   /* sz compatible */
+						set_zmodem_management(ZMGMT_NEWER);
+						break;
+					case 'e':   /* sz/rz compatible */
+						zm.escape_ctrl_chars = TRUE;
 						break;
 					case '!':
 						pause_on_abend = TRUE;

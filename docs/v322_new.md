@@ -599,12 +599,31 @@
   SyncTERM's built-in transfers
 - Much faster ZMODEM receives. The receive path now takes whole
   runs of unescaped bytes at a time instead of one byte per call,
-  roughly 2.5x the throughput at a quarter of the CPU on
-  fast/local links. As with sends, slower/real-world links are
-  unchanged — the connection speed dominates
+  roughly 4x the throughput at a quarter of the CPU on fast/local
+  links. As with sends, slower/real-world links are unchanged —
+  the connection speed dominates
 - The shared ZMODEM engine's own receive path is faster for every
   caller, including SyncTERM's built-in transfers, whether or not
   the caller adopts the new bulk-receive path
+- Fixed: a ZMODEM receive aborted after the tenth error in a file
+  however cleanly each one was recovered, since the error count
+  was never reset on progress. Any link with a non-zero error
+  rate therefore had a file size beyond which a receive could not
+  succeed. The count now resets whenever the transfer advances,
+  so only repeated failures at the same position exhaust it
+- New: the ZMODEM file-management option sent with each file can
+  now be selected, telling the receiver what to do when the file
+  already exists at its end — `SendManagement` in `sexyz.ini`
+  (`crc`, the default, or `clobber`, `protect`, `newer`), or the
+  `-y`, `-p` and `-n` command-line options. `-y` keeps its
+  existing meaning when receiving (overwrite a file here) and
+  gains the matching one when sending (tell the receiver to
+  overwrite its own), as in `lsz`/`lrz`
+- New: `-e` requests ZMODEM control-character escaping, the
+  command-line equivalent of `sexyz.ini`'s `EscapeCtrlChars`, for
+  links that do not pass control characters intact. It applies
+  when receiving; when sending, the receiver's own request
+  governs
 
 ## SFTP Server
 
