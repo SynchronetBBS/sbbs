@@ -951,6 +951,23 @@ int zmodem_recv_data32(zmodem_t* zm, unsigned char * p, unsigned maxlen, unsigne
 	crc = 0xffffffffl;
 
 	do {
+		/* Bulk fast path: pull a run of bytes that zmodem_rx() would return
+		   verbatim, CRC it as a block, and leave the first byte needing real
+		   handling for the per-byte path below.  Skipped entirely when no
+		   recv_span callback was supplied. */
+		if (zm->recv_span != NULL && *len < maxlen) {
+			size_t got;
+
+			while ((got = zm->recv_span(zm->cbdata, p, maxlen - *len,
+			                            zm->rx_plain_tab)) != 0) {
+				crc = ucrc32_span(p, got, crc);
+				p += got;
+				*len += got;
+				if (*len >= maxlen)
+					break;
+			}
+		}
+
 		c = zmodem_rx(zm);
 
 		if (c < 0)
@@ -2533,7 +2550,7 @@ const char* zmodem_source(void)
 
 char* zmodem_ver(char *buf)
 {
-	return strcpy(buf, "2.6");
+	return strcpy(buf, "2.7");
 }
 
 void zmodem_init(zmodem_t* zm, void* cbdata

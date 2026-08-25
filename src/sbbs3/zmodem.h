@@ -317,6 +317,12 @@ typedef struct {
 	int (*lputs)(void*, int level, const char* str);
 	int (*send_byte)(void*, BYTE ch, unsigned timeout /* seconds */);
 	int (*recv_byte)(void*, unsigned timeout /* seconds */);
+	/* OPTIONAL bulk receive.  NULL (the zmodem_init() memset default) keeps the
+	   byte-at-a-time path, so a consumer need not supply it.  Copy up to maxlen
+	   bytes into buf, stopping BEFORE the first byte with plain_tab[c]==0 and
+	   leaving that byte unconsumed for recv_byte.  Return the count copied, or
+	   0 if nothing is buffered.  Must not block: recv_byte does the waiting. */
+	size_t (*recv_span)(void*, uint8_t* buf, size_t maxlen, const uint8_t* plain_tab);
 	void (*progress)(void*, int64_t current_pos);
 	BOOL (*is_connected)(void*);
 	BOOL (*is_cancelled)(void*);
