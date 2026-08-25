@@ -47,8 +47,28 @@ shift
 goto parseargs
 :argsdone
 
-rem --- Locate MSBuild --------------------------------------------------------
+rem --- Locate MSBuild (64-bit preferred) -------------------------------------
+rem Bin\amd64\MSBuild.exe before Bin\MSBuild.exe: the latter is a 32-BIT
+rem process, and so is every worker node it spawns. Building this solution's
+rem nine projects under /m, each running cl /MP, exhausts a node's address
+rem space, and once the .NET JIT can no longer allocate it fails whatever
+rem method it happens to be compiling with "InvalidProgramException: JIT
+rem Compiler encountered an internal limitation". Which method that is varies
+rem per run, so one exhaustion surfaced as a different error every time -- the
+rem CL or LIB task failing to instantiate, vcpkg's inline GetGlobalProperties
+rem task "not found", MSB4166 worker-node deaths -- and read in CI as several
+rem unrelated flakes. Same MSBuild, 64-bit address space.
+rem
+rem This is the failure msvc\Directory.Build.props already fixes one layer down
+rem for the compiler itself (PreferredToolArchitecture=x64, after the 32-bit
+rem cl.exe host ran out of address space under /MP). MSBuild needs it too.
 set "MSBUILD="
+for %%E in (Professional Enterprise Community BuildTools) do (
+    if not defined MSBUILD (
+        set "_M=C:\Program Files\Microsoft Visual Studio\2022\%%E\MSBuild\Current\Bin\amd64\MSBuild.exe"
+        if exist "!_M!" set "MSBUILD=!_M!"
+    )
+)
 for %%E in (Professional Enterprise Community BuildTools) do (
     if not defined MSBUILD (
         set "_M=C:\Program Files\Microsoft Visual Studio\2022\%%E\MSBuild\Current\Bin\MSBuild.exe"
