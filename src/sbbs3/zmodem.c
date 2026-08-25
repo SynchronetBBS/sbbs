@@ -2407,6 +2407,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 	int      type = INVALIDSUBPKT;      // data subpacket type
 	unsigned errors = 0;
 	off_t    pos = (off_t)offset;
+	off_t    error_pos = -1;            /* file position of the last error */
 
 	zm->current_file_pos = pos;
 	zm->transfer_start_pos = offset;
@@ -2444,6 +2445,8 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 
 		int result = zmodem_recv_file_frame(zm, fp, &type);
 		pos = ftello(fp);
+		if (pos > error_pos)
+			errors = 0;                 /* progressed since the last error */
 		if (result == ENDOFFRAME) {
 			lprintf(zm, LOG_DEBUG, "%lu Complete data frame received (type: %s)", (ulong)pos, chr(type));
 			continue;
@@ -2453,6 +2456,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 			break;
 		}
 		errors++;
+		error_pos = pos;
 		lprintf(zm, LOG_WARNING, "%lu ERROR #%d: %s (type: %s)", (ulong)pos, errors, chr(result), chr(type));
 		if (errors > zm->max_errors) {
 			lprintf(zm, LOG_ERR, "%lu Maximum errors (%u) exceeded", (ulong)pos, zm->max_errors);
