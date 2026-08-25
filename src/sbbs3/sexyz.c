@@ -111,7 +111,7 @@ FILE*       errfp;
 FILE*       statfp;
 FILE*       logfp = NULL;
 
-const char* revision = "3.5";
+const char* revision = "3.6";
 
 SOCKET      sock = INVALID_SOCKET;
 
@@ -539,6 +539,29 @@ static int recv_buffer(int timeout /* seconds */)
 			return i;
 		}
 	};
+}
+
+/****************************************************************************/
+/* Bulk receive: hand the engine a run of bytes it can take verbatim.		*/
+/* Never blocks and never refills -- recv_byte() owns the waiting, so a		*/
+/* return of 0 simply means "nothing buffered right now, go per-byte".		*/
+/* In telnet mode the IAC state machine in recv_byte() has to see every		*/
+/* byte, so the span path stays disabled.									*/
+/****************************************************************************/
+size_t recv_span(void* unused, uint8_t* buf, size_t maxlen, const uint8_t* plain_tab)
+{
+	size_t n = 0;
+
+	if (telnet || inbuf_pos >= inbuf_len)
+		return 0;
+
+	while (n < maxlen && inbuf_pos < inbuf_len && plain_tab[inbuf[inbuf_pos]])
+		buf[n++] = inbuf[inbuf_pos++];
+
+	if (inbuf_pos >= inbuf_len)
+		inbuf_pos = inbuf_len = 0;
+
+	return n;
 }
 
 /****************************************************************************/
@@ -1642,6 +1665,7 @@ int main(int argc, char **argv)
 
 	xmodem_init(&xm, NULL, &mode, lputs, xmodem_progress, send_byte, recv_byte, is_connected, NULL, flush);
 	zmodem_init(&zm, NULL, lputs, zmodem_progress, send_byte, recv_byte, is_connected, NULL, data_waiting, flush);
+	zm.recv_span = recv_span;
 	xm.log_level = &log_level;
 	zm.log_level = &log_level;
 
