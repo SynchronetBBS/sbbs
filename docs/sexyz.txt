@@ -65,7 +65,12 @@ usage: sexyz <socket> [-opts] <cmd> [file | path | @list]
 
 socket = TCP socket descriptor (or leave blank for "stdio" mode on Unix)
 
-opts   = -y  allow overwriting of existing files when receiving
+opts   = -y  overwrite an existing destination file
+             (when receiving: here; when sending: at the receiver)
+         -p  when sending, protect an existing file at the receiver
+         -n  when sending, overwrite at the receiver only if ours is newer
+         -e  request ZMODEM control-character escaping (ZF0_ESCCTL)
+             (when receiving; when sending, the receiver's request governs)
          -k  enable X/YMODEM-1K send mode
          -c  enable XMODEM-CRC receive mode
          -g  enable X/YMODEM-G receive mode (no error recovery)
@@ -347,7 +352,16 @@ Example .ini file (with default values given):
     FullDuplex=TRUE     ; set to FALSE to disable window support (on receive)
     EscapeTelnetIAC=TRUE    ; send ZDLE/ZRUB1 instead of 0xff with -telnet
     Escape8thBit=FALSE      ; ZDLE-escape all bytes with bit-7 set
-    EscapeCtrlChars=FALSE   ; ZDLE-escape all control characters (< 20h)
+    EscapeCtrlChars=FALSE   ; ZDLE-escape all control characters
+                        ; (00-1Fh and 80-9Fh, carriage return included);
+                        ; same as the -e option, and when receiving it is
+                        ; requested of the sender via ZRINIT (ZF0_ESCCTL)
+    SendManagement=crc  ; what the receiver should do with a file it already
+                        ; has, announced in each ZFILE header:
+                        ;   crc     = transfer if the CRC or length differs
+                        ;   clobber = replace it unconditionally (-y)
+                        ;   protect = leave it alone, skip the file (-p)
+                        ;   newer   = replace it only if ours is newer (-n)
     MaxWindowSize=0     ; Non-zero number of bytes for window management
                         ; (block size is capped at a quarter of this)
     TargetWindowSize=0  ; Duration (secs) to enable auto-adjusting window size

@@ -2,7 +2,7 @@
 
 Changes since **v3.1**, the last released binary archive (September 2025).
 
-Component versions in this release: `sexyz.c` **3.5**, `zmodem.c` **2.6**,
+Component versions in this release: `sexyz.c` **3.6**, `zmodem.c` **2.7**,
 `xmodem.c` **2.0**. `sexyz v` prints all three.
 
 ## Speed
@@ -25,6 +25,13 @@ Component versions in this release: `sexyz.c` **3.5**, `zmodem.c` **2.6**,
   written, only when the ring actually changes state. Those are kernel
   calls on Windows and condition-variable operations elsewhere, and the
   send path was paying two or three of them per byte
+- Much faster ZMODEM receives, the counterpart of the send work above. The
+  receive path takes whole runs of unescaped bytes at a time instead of one
+  byte per call, roughly 4x the throughput at a quarter of the CPU on
+  fast/local links. Slower links are unchanged, as with sends
+- The shared engine's receive path is faster for every caller, SyncTERM's
+  built-in transfers included, whether or not the caller adopts the new
+  bulk-receive path
 
 ## Transfers
 
@@ -50,6 +57,20 @@ Component versions in this release: `sexyz.c` **3.5**, `zmodem.c` **2.6**,
   CRC check caught it in practice, but the result was still wrong
 - X/YMODEM transfers now notice a local cancellation promptly instead of
   waiting out the current protocol read
+- Fixed a receive aborting after the tenth error in a file however cleanly
+  each one was recovered, because the error count was never reset on
+  progress. Any link with a non-zero error rate therefore had a file size
+  beyond which a receive could not succeed. The count now resets whenever
+  the transfer advances, so only repeated failures at the same position
+  exhaust it
+- Fixed ZMODEM control-character escaping (`EscapeCtrlChars`, `-e`), which
+  did not work in either direction. Sending, every control character was
+  escaped except carriage return, so a receiver that had asked for escaping
+  discarded those as line noise and no file could be transferred at all.
+  Receiving, the CR/LF ending each hex header was itself discarded, so the
+  data arrived but the session could not be closed and ended in a
+  one-minute timeout. Escaped transfers now interoperate with `lrzsz` both
+  ways, putting the same bytes on the wire it does
 
 ## Messages
 
@@ -69,6 +90,18 @@ Component versions in this release: `sexyz.c` **3.5**, `zmodem.c` **2.6**,
 - `-s` (segmented) is documented as affecting both directions. It is
   consulted when receiving too, where it asks the remote sender to go
   block-at-a-time; only `-w` is genuinely send-side
+- The ZMODEM file-management option sent with each file can now be chosen,
+  telling the receiver what to do when it already has the file. The engine
+  has always honored it but nothing ever set it, so every send announced
+  the default. Use `SendManagement` in `sexyz.ini` (`crc`, the default, or
+  `clobber`, `protect`, `newer`), or `-y`, `-p` and `-n`
+- `-y` keeps its meaning when receiving, may we overwrite a file already
+  here, and gains the matching one when sending: tell the receiver to
+  overwrite its own. That is the `lsz`/`lrz` split, and `-y` was previously
+  documented as applying only to receives, so nothing that worked before
+  changes. The two act on different machines
+- `-e` is the command-line equivalent of `EscapeCtrlChars`, for links that
+  do not pass control characters intact
 
 ## Source and license
 
