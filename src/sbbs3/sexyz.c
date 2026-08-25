@@ -545,14 +545,15 @@ static int recv_buffer(int timeout /* seconds */)
 /* Bulk receive: hand the engine a run of bytes it can take verbatim.		*/
 /* Never blocks and never refills -- recv_byte() owns the waiting, so a		*/
 /* return of 0 simply means "nothing buffered right now, go per-byte".		*/
-/* In telnet mode the IAC state machine in recv_byte() has to see every		*/
-/* byte, so the span path stays disabled.									*/
+/* Disabled in the two cases where recv_byte() has to see every byte: telnet	*/
+/* mode, whose IAC state machine needs them, and DebugRx, whose per-byte		*/
+/* trace would otherwise lose every byte the span path carries.				*/
 /****************************************************************************/
 size_t recv_span(void* unused, uint8_t* buf, size_t maxlen, const uint8_t* plain_tab)
 {
 	size_t n = 0;
 
-	if (telnet || inbuf_pos >= inbuf_len)
+	if (telnet || debug_rx || inbuf_pos >= inbuf_len)
 		return 0;
 
 	while (n < maxlen && inbuf_pos < inbuf_len && plain_tab[inbuf[inbuf_pos]])

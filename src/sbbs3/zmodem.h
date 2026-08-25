@@ -240,7 +240,10 @@ typedef struct {
 	BOOL can_break;
 	BOOL can_fcs_32;
 	BOOL want_fcs_16;
-	BOOL escape_ctrl_chars;
+	BOOL escape_ctrl_chars;     /* cached into rx_plain_tab[]; if you assign
+	                               this outside zmodem_init()/zmodem_parse_zrinit(),
+	                               do it before the session's first
+	                               zmodem_send_zrinit(), which rebuilds the table */
 	BOOL escape_8th_bit;
 
 	/*

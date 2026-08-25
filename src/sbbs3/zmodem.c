@@ -110,7 +110,13 @@ static BOOL is_cancelled(zmodem_t* zm)
    ZF0_ESCCTL -- control characters, which arrive escaped and are dropped if
    they do not.  zmodem_rx() tests it per byte and recv_span copies while it
    holds, so the two paths cannot disagree about what a plain byte is.
-   Call after any change to escape_ctrl_chars. */
+
+   escape_ctrl_chars is a public struct field a consumer may set directly, so
+   the table is a cache that can go stale.  It is rebuilt everywhere the flag
+   becomes authoritative: zmodem_init() for the default, zmodem_send_zrinit()
+   for a receive session (where the consumer's value is what we announce), and
+   zmodem_parse_zrinit() for a send session (where the peer's value overrides
+   ours).  Anything else that assigns escape_ctrl_chars must call this. */
 static void zmodem_build_rx_plain_tab(zmodem_t* zm)
 {
 	int c;
@@ -1577,6 +1583,12 @@ int zmodem_get_zrinit(zmodem_t* zm)
 int zmodem_send_zrinit(zmodem_t* zm)
 {
 	unsigned char zrinit_header[] = { ZRINIT, 0, 0, 0, 0 };
+
+	/* A receiver never parses a ZRINIT, so this is its only chance to pick up
+	   an escape_ctrl_chars a consumer set directly after zmodem_init() --
+	   sexyz does, from sexyz.ini's EscapeCtrlChars.  The value is final here
+	   by definition: the ZRINIT built below is what announces it to the peer. */
+	zmodem_build_rx_plain_tab(zm);
 
 	if (zm->can_full_duplex)
 		zrinit_header[ZF0] = ZF0_CANFDX;
