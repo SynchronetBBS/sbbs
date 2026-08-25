@@ -887,8 +887,9 @@ reads 145.7 MB/s / 1.84 CPU-s, in the table below.)
 **An optional `recv_span` callback.** The transport copies while the table says
 the byte is plain and stops before the first that is not, leaving it unconsumed;
 `zmodem_recv_data32()` takes the run whole and CRCs it as a block with
-`ucrc32_span()` — the slicing-by-4 the send path has used since 2026-07-24.
-Passing the table *to* the transport keeps protocol knowledge out of it and
+`crc32_update()` (`src/hash/crc32.c:170`) — the slicing-by-4 the send path has
+used since 2026-07-24, already in the tree and already the right shape, so the
+receive path adds no CRC code of its own. Passing the table *to* the transport keeps protocol knowledge out of it and
 avoids any need to hand bytes back when a run ends early. It is a `zmodem_t`
 struct field, not a `zmodem_init()` parameter, so `zmodem_init()`'s memset
 leaves it `NULL` for every existing consumer with no source change, and `NULL`

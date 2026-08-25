@@ -52,19 +52,6 @@ static inline uint32_t ucrc32_4(const unsigned char* p, uint32_t crc)
 	    ^ crc32tbl_slicing[0][(crc >> 16) & 0xff]
 	    ^ (uint32_t)crc32tbl[crc >> 24];
 }
-/* Running CRC-32 over a span, slicing-by-4 for the bulk and byte-at-a-time for
-   the tail -- the same shape zmodem_send_data_subpkt() open-codes. */
-static inline uint32_t ucrc32_span(const unsigned char* p, size_t len, uint32_t crc)
-{
-	while (len >= 4) {
-		crc = ucrc32_4(p, crc);
-		p += 4;
-		len -= 4;
-	}
-	while (len-- > 0)
-		crc = ucrc32(*p++, crc);
-	return crc;
-}
 
 #define crc32(x, y) crc32i(0xffffffff, x, y)
 

@@ -960,7 +960,7 @@ int zmodem_recv_data32(zmodem_t* zm, unsigned char * p, unsigned maxlen, unsigne
 
 			while ((got = zm->recv_span(zm->cbdata, p, maxlen - *len,
 			                            zm->rx_plain_tab)) != 0) {
-				crc = ucrc32_span(p, got, crc);
+				crc = crc32_update(crc, p, got);
 				p += got;
 				*len += got;
 				if (*len >= maxlen)
