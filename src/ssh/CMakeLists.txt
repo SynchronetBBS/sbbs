@@ -508,6 +508,9 @@ if(DEUCESSH_BUILD_STATIC AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/client
 	add_executable(server EXCLUDE_FROM_ALL examples/server.c)
 	target_link_libraries(server PRIVATE deucessh_static)
 
+	add_executable(kbi-game-server EXCLUDE_FROM_ALL examples/kbi-game-server.c)
+	target_link_libraries(kbi-game-server PRIVATE deucessh_static)
+
 endif()
 
 # --- Test suite ---
