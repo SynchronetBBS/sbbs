@@ -1068,6 +1068,47 @@ recv_byte_ms(void *unused, unsigned timeout /* milliseconds */)
 	return -1;
 }
 
+/* Hand zmodem a run of already-buffered bytes that need no protocol
+ * processing.  Keep the same logical ordering as recv_byte(): replayed
+ * input precedes the normal receive buffer.  The first non-plain byte is
+ * deliberately left queued for zmodem_rx(), and refilling/waiting remains
+ * the responsibility of recv_byte(). */
+static size_t
+recv_span(void *unused, uint8_t *buf, size_t maxlen,
+    const uint8_t *plain_tab)
+{
+	size_t n = 0;
+
+	while (n < maxlen) {
+		BYTE     *src;
+		unsigned *pos;
+		unsigned *len;
+
+		if (recv_replay_buffer_pos < recv_replay_buffer_len) {
+			src = recv_replay_buffer;
+			pos = &recv_replay_buffer_pos;
+			len = &recv_replay_buffer_len;
+		}
+		else if (recv_byte_buffer_pos < recv_byte_buffer_len) {
+			src = recv_byte_buffer;
+			pos = &recv_byte_buffer_pos;
+			len = &recv_byte_buffer_len;
+		}
+		else {
+			break;
+		}
+
+		while (n < maxlen && *pos < *len && plain_tab[src[*pos]])
+			buf[n++] = src[(*pos)++];
+
+		if (*pos < *len)
+			break;
+		*pos = *len = 0;
+	}
+
+	return n;
+}
+
 #define XMODEM_ABORT_POLL_INTERVAL 100
 
 static BOOL xfer_xmodem_check_abort(void *cbdata);
@@ -2182,6 +2223,7 @@ zmodem_recv_worker(void *arg)
 	    data_waiting,
 	    flush_send);
 	zm.log_level          = &log_level;
+	zm.recv_span          = recv_span;
 	zm.duplicate_filename = xfer_zmodem_duplicate_cb;
 
 	files_received = zmodem_recv_files(&zm, bbs->dldir, &bytes_received);
