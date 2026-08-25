@@ -105,6 +105,26 @@ static BOOL is_cancelled(zmodem_t* zm)
 	return zm->cancelled;
 }
 
+/* The one definition of "this byte needs no zmodem_rx() handling": every byte
+   except ZDLE, the four flow-control forms, and -- when the peer negotiated
+   ZF0_ESCCTL -- control characters, which arrive escaped and are dropped if
+   they do not.  zmodem_rx() tests it per byte and recv_span copies while it
+   holds, so the two paths cannot disagree about what a plain byte is.
+   Call after any change to escape_ctrl_chars. */
+static void zmodem_build_rx_plain_tab(zmodem_t* zm)
+{
+	int c;
+
+	for (c = 0; c < 256; c++) {
+		uint8_t plain = 1;
+		if (c == ZDLE || c == XON || c == (XON | 0x80) || c == XOFF || c == (XOFF | 0x80))
+			plain = 0;
+		else if (zm->escape_ctrl_chars && (c & 0x60) == 0)
+			plain = 0;
+		zm->rx_plain_tab[c] = plain;
+	}
+}
+
 static BOOL is_data_waiting(zmodem_t* zm, unsigned timeout)
 {
 	if (zm->data_waiting)
@@ -803,7 +823,10 @@ int zmodem_rx(zmodem_t* zm)
 	while (is_connected(zm) && !is_cancelled(zm)) {
 
 		do {
-			switch (c = zmodem_recv_raw(zm)) {
+			c = zmodem_recv_raw(zm);
+			if (c >= 0 && zm->rx_plain_tab[c])
+				return c;           /* the common case, by a wide margin */
+			switch (c) {
 				case ZDLE:
 					break;
 				case XON:
@@ -1501,6 +1524,7 @@ void zmodem_parse_zrinit(zmodem_t* zm)
 	zm->can_break                       = INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_CANBRK);
 	zm->can_fcs_32                      = INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_CANFC32);
 	zm->escape_ctrl_chars               = INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_ESCCTL);
+	zmodem_build_rx_plain_tab(zm);
 	zm->escape_8th_bit                  = INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_ESC8);
 
 	lprintf(zm, LOG_INFO, "Receiver requested mode (0x%02X):\r\n"
@@ -2533,6 +2557,7 @@ void zmodem_init(zmodem_t* zm, void* cbdata
 	zm->max_block_size = ZBLOCKLEN;
 	zm->max_errors = 9;
 	zm->can_full_duplex = TRUE;
+	zmodem_build_rx_plain_tab(zm);
 
 	zm->cbdata = cbdata;
 	zm->lputs = lputs;

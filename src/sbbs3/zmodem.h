@@ -257,6 +257,11 @@ typedef struct {
 	BYTE tx_data_subpacket[8192];
 	BYTE rx_data_subpacket[8192];                           /* zzap = 8192 */
 
+	/* Set by zmodem_build_rx_plain_tab(): non-zero for bytes zmodem_rx()
+	   returns verbatim.  Both receive paths test it, so neither can develop its
+	   own idea of which bytes are special. */
+	uint8_t rx_plain_tab[256];
+
 	char current_file_name[MAX_PATH + 1];
 	int64_t current_file_size;
 	int64_t current_file_pos;
