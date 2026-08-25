@@ -25,7 +25,8 @@ Synchronet's ZMODEM implementation, **in both directions**, benchmarked against
 > the routine answer to ZFILE, so with nothing to discard the purge could only
 > establish that by letting the read time out. One dead second per file, at any
 > line speed — and one of those polls was it. Fixed 2026-08-21; **every sender
-> built on `zmodem.c` now runs level with lrzsz**:
+> built on `zmodem.c` now runs level with lrzsz** — a claim the 2026-08-24
+> re-baseline retracts, see §3:
 >
 > | Sender (256 MiB → `lrz`) | Goodput | Elapsed | CPU |
 > |---|--:|--:|--:|
@@ -34,6 +35,11 @@ Synchronet's ZMODEM implementation, **in both directions**, benchmarked against
 > | **`ztx_buf`, fixed** | **203.9 MB/s** | 1.32 s | 0.72 s |
 > | sexyz, before the fix | 115.7 MB/s | 2.32 s | 1.03 s |
 > | `ztx_buf`, before the fix | 115.8 MB/s | 2.32 s | 0.67 s |
+>
+> **Those rows are `lrz`'s ceiling, not a tie.** `lrz` receives at 208.4 MB/s
+> for 1.28 CPU-seconds and was the slowest end of every run above. Re-measured
+> against a receiver cheaper than the senders, sexyz sends at **335.3 MB/s**
+> and `lsz` at **279.9** — sexyz is 20 % ahead, not level (§3).
 >
 > The arithmetic is exact: 1.32 s of work plus 1.00 s of sleep is 2.32 s, and
 > 256 MiB over 2.32 s is 115.8 MB/s. Every buffered sender landed on the same
@@ -69,6 +75,12 @@ Synchronet's ZMODEM implementation, **in both directions**, benchmarked against
 > 3. **You cannot recall bytes once they hit socket/network buffers** — lrz
 >    doesn't either, yet recovers. An early "abort-aware purge on ZRPOS" theory
 >    in the bench README was a wrong garden path and has been retracted.
+> 4. **The fixed end of a comparison must be cheaper than the varied end**
+>    (2026-08-24, also Deuce: "switch the baseline receiver, `lrz` can't handle
+>    the load"). Every sender table here was scored against `lrz`, which costs
+>    more CPU to receive than any of those senders spend to send — so the table
+>    reported `lrz`'s ceiling four times over and called it a tie. §3 is
+>    re-baselined; §3.0.2 states the rule.
 
 > **RESOLVED (zmodem.c 2.5):** a receiver's opening ZRINIT no longer
 > retransmits the ZFILE. The receiver announces itself unprompted, the sender
@@ -117,11 +129,11 @@ Synchronet's ZMODEM implementation, **in both directions**, benchmarked against
 - **✅ RESOLVED (zmodem.c 2.7, sexyz.c 3.6) — the receive path.** A `recv_span`
   callback lets a consumer hand the engine whole runs of unescaped bytes;
   `zmodem_rx()`'s per-byte predicate became a table the two paths share.
-  **sexyz receives at 280.3 MB/s / 0.67 CPU-s, up from 113.4 / 2.36** — level
-  with `zmrx` 2.02 and above `lrz`'s 208.7 / 1.28. The callback is optional
-  (`NULL` = the old path), so **SyncTERM needs no source change**, and the
-  table alone lifts the un-adopted per-byte path from 126.9 to 153.0 MB/s. The
-  analysis that led here follows.
+  **sexyz receives at 486.5 MB/s / 0.55 CPU-s, up from 117.2 / 2.29** — 1.70×
+  `zmrx` 2.02 and 2.3× `lrz`, making it the fastest receiver measured. The
+  callback is optional (`NULL` = the old path), so **SyncTERM needs no source
+  change**, and the table alone lifts the un-adopted per-byte path to
+  145.7 MB/s. The analysis that led here follows.
 - **The RECEIVE path was slow, and the cost was in `zmodem.c` — so it was
   SyncTERM's too (§3.5).** Driven by the same `lsz` sender: `zmrx` 281.6 MB/s,
   `lrz` 208.4, **`zmodem.c` + a minimal transport (`zrx_buf`) 128.2**, sexyz
@@ -206,7 +218,7 @@ a component version. sexyz reports its version via `const char* revision`
 
 | Component | Baseline | Shipped |
 |---|---|---|
-| **sexyz.c** | **3.3** — `send_byte` writes the ring one byte at a time; `-w` sets the window without touching the block size | **3.4** — buffered streaming send path (~11 → ~115 MB/s, #1195); `-w` clamps the block to window/4 like `lsz`/`sz` so `window ≤ block` no longer stalls (#1197). **3.5** — no change of its own: the startup banner prints only sexyz's own revision, so it moves with `zmodem.c` 2.5 to keep a build identifiable without `sexyz v`. **3.6** — supplies `recv_span`, taking a receive from 113.4 to 280.3 MB/s (§3.5) |
+| **sexyz.c** | **3.3** — `send_byte` writes the ring one byte at a time; `-w` sets the window without touching the block size | **3.4** — buffered streaming send path (~11 → ~115 MB/s, #1195); `-w` clamps the block to window/4 like `lsz`/`sz` so `window ≤ block` no longer stalls (#1197). **3.5** — no change of its own: the startup banner prints only sexyz's own revision, so it moves with `zmodem.c` 2.5 to keep a build identifiable without `sexyz v`. **3.6** — supplies `recv_span`, taking a receive from 117.2 to 486.5 MB/s and making sexyz the fastest receiver measured (§3.5) |
 | **zmodem.c** | **rev 2.2** — window/ACK positions `int32_t`; switch-based byte classifier; byte-at-a-time CRC-32; quarter-window ACK interval divides by zero when window < 4×block | **rev 2.5** — 2 GB fix (`uint32_t`, #1196); Deuce's 2026-07-24 send-path work (class-table classifier, slicing-by-4 CRC-32, hoisted escape mask + `noinline` cold paths, buffered `fcrc32()`); window-interval divide-by-zero guarded (#1197); the 1-second ZRPOS purge off the normal send path and the ZFILE retransmit at the receiver's opening ZRINIT, both 2026-08-21. **rev 2.6** — the receiver reports its own file position (`09ea8a6901`, gold-13-arrest, 2026-08-23). **rev 2.7** — the receive path: a shared plain-byte table and an optional `recv_span` bulk callback (§3.5), and a receive no longer aborts at the tenth error of the whole file (§5.2) |
 
 - **SyncTERM:** its `term.c` send path is **unchanged** by this work; a SyncTERM
@@ -257,6 +269,16 @@ maps them to commits. Throughput work is GitLab #1195, the 2 GB fix #1196.
   cannot distinguish "fast code" from "idle code"** — that ambiguity cost this
   investigation a day in July, and it is what makes §3.5's receiver-bound
   finding legible at a glance (receiver CPU ≈ wall clock in every row).
+- **The fixed end must be the cheap end (§3.0.2).** When the sender is varied,
+  the receiver has to cost less CPU than every sender under test, and vice
+  versa — otherwise the fixed end is the bottleneck and the table measures it
+  instead. This is not a formality: §3's sender rows read as a three-way tie for
+  three days because `lrz` (1.28 CPU-s) was more expensive than any sender in
+  the table. The per-endpoint CPU columns are what make the violation visible.
+  Current cheapest of each kind, and therefore the current baselines: **sexyz
+  receiving** (0.55 CPU-s / 256 MB, `zmodem.c` 2.7) and **`lsz` sending**
+  (0.96 s) — though `zmtx` sends for 0.47 s, cheaper than any receiver
+  measured, so no receiver-varied table can yet be driven at its full rate.
 - **Integrity:** SHA-256 of source vs. received file every run.
 - **Content:** random data (`/dev/urandom`), so ZDLE-escaping cost is realistic
   (~2.8% wire expansion — identical across all impls, confirming equal protocol
@@ -273,43 +295,121 @@ maps them to commits. Throughput work is GitLab #1195, the 2 GB fix #1196.
 
 ## 3. Throughput (256 MB steady-state, clean localhost, `-8` where supported)
 
-This table varies the **sender** against a fixed `lrz`. The one row that varies
-the receiver instead is marked as such; **§3.5** holds that comparison in full.
+**The baseline receiver changed on 2026-08-24, and it moved every number in
+this section.** Every sender row this doc ever published was scored against
+`lrz`. §3.5 then measured `lrz` itself: 208.4 MB/s at **1.28 receiver
+CPU-seconds, equal to the wall clock**. `lrz` was never a neutral sink — it was
+the slowest component in each of those runs, so the senders were being scored on
+*its* ceiling. Deuce called this ("switch the baseline receiver, `lrz` can't
+handle the load"), and he is right.
 
-Rows marked 2026-08-21 are from one interleaved batch that day, three passes
-(spread ≤2%; median shown); rows marked 2026-08-24 likewise; the rest are the
-2026-07-24 batch, kept where the component no longer exists to re-measure. Every
-run verified byte-identical.
+`zmrx` is the obvious replacement at 0.94 CPU-s, but as of `zmodem.c` 2.7 it is
+not the cheapest receiver available: the span work of §3.5 put **sexyz itself at
+0.55–0.67 CPU-s**, 30–40 % below `zmrx`. So the baseline receiver is now sexyz,
+and the old rows are kept below only for continuity. (The range is real and
+sender-dependent: a sender that delivers larger chunks yields longer plain runs
+and fewer wakeups, so sexyz costs 0.55 s behind `zmtx` and 0.67 s behind `lsz`.
+Either is below `zmrx`'s flat 0.94.)
 
-| Sender → Receiver | Goodput | Note |
-|---|--:|---|
-| **sexyz** → lrz — `zmodem.c` 2.5, sexyz.c 3.4 | **203.9 MB/s** | 2026-08-21; level with lrzsz |
-| lsz → lrz (lrzsz baseline) | **203.8 MB/s** | 2026-08-21; 8 KB adaptive blocks, fully inlined escape/CRC |
-| `ztx_buf` (`zmodem.c` **rev 2.5** + buffered send) → lrz | **203.9 MB/s** | 2026-08-21 |
-| lsz → **`zrx_buf`** (`zmodem.c` *receives*) | **128.2 MB/s** | 2026-08-24; the engine's own receive ceiling, wrapper-independent — **§3.5** |
-| lsz → **sexyz** (sexyz *receives*) | **114.0 MB/s** | 2026-08-24; 0.55× lrz — the receiver comparison is its own table in **§3.5** |
-| `ztx_buf` (`zmodem.c` **rev 2.4**) → lrz | **115.8 MB/s** | the old "buffered floor": 1.32 s of work + 1.00 s of sleep (§0) |
-| **sexyz** → lrz — before the purge fix | **115.7 MB/s** | 2026-08-21; same second, same arithmetic |
-| **Forsberg sz** → lrz | **96.9 MB/s** | 2026-07-24; 1 KB blocks (no ZedZap); single-threaded |
-| `ztx_buf` (`zmodem.c` **rev 2.2**, pre-Deuce) → lrz | **91.9 MB/s** | 2026-07-24; what Deuce's work improved on |
-| **sexyz** → lrz — sexyz.c **3.3** (ring per-byte) | **11.5 MB/s** | 2026-07-24; superseded by 3.4 |
+**Sender varied, receiver = sexyz (`zmodem.c` 2.7, `recv_span`).** 2026-08-24,
+one interleaved batch, five passes, median shown, every run byte-identical:
+
+| Sender | Goodput | Sender CPU | Threads | Bound by |
+|---|--:|--:|--:|---|
+| **`zmtx`** 2.02 | **487.2 MB/s** | **0.47 s** | 1 | *still the receiver* (0.55 s = wall) |
+| **`ztx_buf`** — `zmodem.c` 2.7 + buffered send | **385.4 MB/s** | **0.70 s** | 1 | sender |
+| **sexyz** 3.6 | **335.3 MB/s** | **1.00 s** | 2 | sender |
+| **`lsz`** (lrzsz baseline) | **279.9 MB/s** | **0.96 s** | 1 | sender |
+| **Forsberg `sz`** 3.73 | 96.7 MB/s | 2.77 s | 1 | sender (always was) |
+
+**The same senders, across all three receivers** — this is the whole point:
+
+| Sender | → `lrz` (1.28 CPU-s) | → `zmrx` (0.94) | → sexyz 2.7 (0.55–1.34) | Sender CPU |
+|---|--:|--:|--:|--:|
+| `zmtx` | 208.8 | 286.1 | **487.2** | 0.47 s |
+| `ztx_buf` | 208.9 | 286.0 | **385.4** | 0.70 s |
+| **sexyz** | 205.9 | 275.2 | **335.3** | 1.00 s |
+| `lsz` | 207.9 | 281.5 | **279.9** | 0.96 s |
+| Forsberg `sz` | 97.3 | 97.2 | 96.7 | 2.77 s |
+
+Against `lrz` the top four senders sit inside **1.6 %** of each other; against
+`zmrx`, inside 4 %; against a receiver cheaper than they are, they spread over
+**1.74×**. The first two columns were not measuring senders at all. Only
+Forsberg is unmoved, because at 2.77 CPU-seconds it is the one sender that was
+always slower than every receiver.
+
+The sexyz column's receiver cost is a range because **the span receiver's
+efficiency depends on how the sender writes.** Behind `zmtx`'s 8 KB subpackets
+it receives 256 MB for 0.55 CPU-s; behind Forsberg's 1 KB blocks the same
+receiver spends **1.34 s and 256 k context switches** for the same bytes. Bigger
+arrivals mean longer plain runs per `recv_span()` call and fewer wakeups. The
+receiver is unchanged; only its input granularity is.
 
 Wire overhead is identical (~2.8 %, +2.55 % for Forsberg's 1 KB blocks) —
 protocol efficiency is the same; the difference is purely implementation.
 
-Three things stand out:
+Four things stand out:
 
-1. **Every sender driving `zmodem.c` now measures 203.9, the same as lrzsz's own
-   inlined `zm.c`** — sexyz, and `ztx_buf`'s buffered single-threaded path alike.
-   The three-way tie is the strongest evidence that nothing about the engine's
-   framing, escaping, or CRC is costing throughput in this regime.
-2. **The 115.8 that both buffered paths used to report was the fixed second**,
-   not a plateau they shared for structural reasons (§0). Any older figure in
-   this doc measured against a `zmodem.c`-based sender carries it.
-3. **Forsberg reaches 96.9 with only 1 KB subpackets** — a clean single-threaded
-   buffered send beats a 8×-larger block size behind a bad transport by ~8×.
+1. **sexyz now sends faster than `lsz` — 335.3 vs 279.9, +20 %.** That was
+   invisible before: against `lrz` the two read 205.9 and 207.9, a difference
+   this doc reported as "level with lrzsz". They were level in the sense that
+   both were waiting on the same receiver.
+2. **But sexyz's advantage is concurrency, not efficiency.** It spends *more*
+   CPU than `lsz` (1.00 s vs 0.96 s) and wins on wall clock by spreading it over
+   two threads — 65 k context switches per transfer, the ring producer and the
+   drain thread. The honest efficiency claim belongs to `ztx_buf`: the same
+   `zmodem.c`, single-threaded and buffered, at **385.4 MB/s for 0.70 CPU-s** —
+   faster *and* cheaper than `lsz` on both axes. That, not sexyz's number, is
+   the measure of the engine SyncTERM shares.
+3. **`zmtx` is the fastest sender by a wide margin, at the lowest cost:**
+   487.2 MB/s for 0.47 CPU-seconds, roughly half of `lsz`'s CPU for 1.74× the
+   throughput. Its row is still receiver-bound (receiver CPU 0.55 s = wall
+   clock), so 487.2 is a *lower bound* on `zmtx`. Nothing here is fast enough to
+   find its ceiling.
+4. **Forsberg reaches 96.7 with only 1 KB subpackets** — a clean single-threaded
+   buffered send beats an 8×-larger block size behind a bad transport by ~8×.
 
-### 3.0 Forsberg's receiver could not be benchmarked headlessly
+### 3.0.1 The 2026-08-21 rows, kept for continuity
+
+These are the same senders against `lrz`, and they are what this doc reported
+before the baseline moved. Read every figure as "`lrz`'s ceiling", not as the
+sender's:
+
+| Sender → Receiver | Goodput | Note |
+|---|--:|---|
+| **sexyz** → lrz — `zmodem.c` 2.5, sexyz.c 3.4 | 203.9 MB/s | 2026-08-21; receiver-bound |
+| lsz → lrz (lrzsz baseline) | 203.8 MB/s | 2026-08-21; receiver-bound |
+| `ztx_buf` (`zmodem.c` **rev 2.5** + buffered send) → lrz | 203.9 MB/s | 2026-08-21; receiver-bound |
+| lsz → **`zrx_buf`** (`zmodem.c` *receives*, pre-2.7) | 128.2 MB/s | 2026-08-24; the engine's old receive ceiling — **§3.5** |
+| lsz → **sexyz** (sexyz *receives*, v3.5) | 114.0 MB/s | 2026-08-24; 0.55× lrz — fixed in 3.6, see **§3.5** |
+| `ztx_buf` (`zmodem.c` **rev 2.4**) → lrz | 115.8 MB/s | the old "buffered floor": 1.32 s of work + 1.00 s of sleep (§0) |
+| **sexyz** → lrz — before the purge fix | 115.7 MB/s | 2026-08-21; same second, same arithmetic |
+| **Forsberg sz** → lrz | 96.9 MB/s | 2026-07-24; 1 KB blocks (no ZedZap); single-threaded |
+| `ztx_buf` (`zmodem.c` **rev 2.2**, pre-Deuce) → lrz | 91.9 MB/s | 2026-07-24; what Deuce's work improved on |
+| **sexyz** → lrz — sexyz.c **3.3** (ring per-byte) | 11.5 MB/s | 2026-07-24; superseded by 3.4 |
+
+The 115.8-vs-203.9 step in that table is real and is §0's fixed second; it is
+below `lrz`'s ceiling, so the receiver could not mask it. Everything at 203.9
+was against the ceiling and says nothing about the sender.
+
+### 3.0.2 The general lesson: a benchmark measures its slowest end
+
+Both halves of this document have now been wrong in the same way, in opposite
+directions. §3.5's receive table holds the sender fixed, which is right — but
+only because that sender (`lsz`, 0.96 CPU-s) was cheaper than the receivers
+under test, so the receiver was the bottleneck in every row. §3's sender table
+held the *receiver* fixed at something more expensive than the senders, and
+therefore measured nothing.
+
+The rule this yields, and the one the harness README now carries: **the fixed
+end must be cheaper in CPU than everything being compared at the varied end,
+and that must be shown, not assumed.** The `wait4()` CPU columns added on
+2026-08-24 are what makes it checkable at a glance — when the varied end's CPU
+is below the wall clock and the fixed end's equals it, the run is measuring the
+fixed end. Every table in this doc now reports both endpoints' CPU for exactly
+that reason.
+
+### 3.0.3 Forsberg's receiver could not be benchmarked headlessly
 
 Forsberg's **`rz` (receiver) does not complete a transfer** in any headless
 transport tested (socketpair, pty, and `socat`-bridged ptys; receiving from
@@ -593,6 +693,13 @@ median shown), every run byte-identical:
 | **`zrx_buf`** — real `zmodem.c`, minimal transport | **128.2 MB/s** | **2.09 s** | **+0.81 s** |
 | **`sexyz`** (v3.5, zmodem.c 2.6) | **114.0 MB/s** | **2.35 s** | +1.07 s |
 
+**One caveat on that table, found on 2026-08-24 (§3.0.2):** the fixed `lsz`
+sender costs 0.96 CPU-s, so the `zmrx` row — 0.95 s — was at the sender's
+ceiling, and 281.6 understates it; driven properly `zmrx` reads 286.1. The other
+three rows cost 1.28 s and up, well above the sender, so they are true receiver
+measurements and the diagnosis below is unaffected. The CPU column is what
+matters here anyway, and CPU does not depend on who was waiting for whom.
+
 CPU is additive, so the split is direct: of sexyz's **+1.07 CPU-seconds** over
 `lrz`, **0.81 s (76 %) is `zmodem.c`** and 0.26 s (24 %) is `sexyz.c`'s
 `recv_byte`. **A receiver built on `zmodem.c` cannot exceed ~128 MB/s no matter
@@ -772,7 +879,10 @@ whether the byte needed handling. That predicate is now precomputed into
 path** — so the two cannot develop separate ideas of which bytes are special.
 Built in `zmodem_init()` and rebuilt where `escape_ctrl_chars` is assigned from
 the peer's ZRINIT, the only place it changes. This alone, with no callback
-supplied, is worth **126.9 → 153.0 MB/s** and 2.11 → 1.74 CPU-s.
+supplied, is worth **126.9 → 153.0 MB/s** and 2.11 → 1.74 CPU-s. (That pair is
+`lsz`-driven — a matched A/B, so the ratio holds; both builds are far slower
+than the sender, so neither is pinned by it. The same NULL path driven by `zmtx`
+reads 145.7 MB/s / 1.84 CPU-s, in the table below.)
 
 **An optional `recv_span` callback.** The transport copies while the table says
 the byte is plain and stops before the first that is not, leaving it unconsumed;
@@ -784,18 +894,30 @@ struct field, not a `zmodem_init()` parameter, so `zmodem_init()`'s memset
 leaves it `NULL` for every existing consumer with no source change, and `NULL`
 is exactly the old path.
 
+Driven by `zmtx -8` (0.47 sender CPU-seconds, the cheapest sender measured —
+§3.0.2 on why the fixed end must be the cheap one). Receiver CPU equals the wall
+clock in every row, so every row is genuinely receiver-bound:
+
 | Receiver | Goodput | Receiver CPU |
 |---|--:|--:|
-| **sexyz 3.6, span** | **280.3 MB/s** | **0.67 s** |
-| `zmrx` 2.02 | 281.6 MB/s | 0.95 s |
-| `zrx_buf`, span | 279.8 MB/s | 0.66 s |
-| `lrz` | 208.7 MB/s | 1.28 s |
-| `zrx_buf`, `recv_span` NULL — **what an un-adopted consumer gets** | **153.0 MB/s** | 1.74 s |
-| sexyz 3.5 (per-byte, before) | 113.4 MB/s | 2.36 s |
+| **sexyz 3.6, span** | **486.5 MB/s** | **0.55 s** |
+| `zrx_buf`, span | 479.3 MB/s | 0.56 s |
+| `zmrx` 2.02 | 286.1 MB/s | 0.94 s |
+| `lrz` | 209.2 MB/s | 1.28 s |
+| `zrx_buf`, `recv_span` NULL — **what an un-adopted consumer gets** | **145.7 MB/s** | 1.84 s |
+| sexyz 3.5 (per-byte, before) | 117.2 MB/s | 2.29 s |
 
 On random data the runs average **36 bytes and cover 97.3 %** of the stream.
-sexyz is now **2.5×** its former throughput at **28 %** of the CPU, and uses
-less CPU than any other receiver measured, `zmrx` included.
+sexyz is now **4.2×** its former throughput at **24 %** of the CPU, and is the
+**fastest receiver measured** — 1.70× `zmrx`, which held that place until today.
+
+**This table was itself re-measured on 2026-08-24 for the reason §3.0.2 gives.**
+Driven by `lsz` (0.96 CPU-s) the top three rows all read ~280 MB/s and the fix
+looked like it had merely drawn level with `zmrx`. It had not: 280 was `lsz`'s
+own ceiling, and all three receivers were idling below it. The pre-fix rows were
+unaffected — at 1.84 and 2.29 CPU-seconds they were the slowest end either way,
+which is why the deficit this section diagnoses was measured correctly even
+while the fix's size was being understated.
 
 **The span path stays off in telnet mode**, where sexyz's IAC state machine
 must see every byte. That mode is already off by default for a stdio session,
@@ -1090,10 +1212,10 @@ returning to `ERROR #1` after each of the ~25 recoveries.
 
 6. **✅ DONE (zmodem.c 2.7, sexyz.c 3.6) — `zmodem.c`'s per-byte receive cost
    (§3.5).** Shipped as an optional `recv_span` callback plus a shared
-   plain-byte table: sexyz receives at **280.3 MB/s / 0.67 CPU-s**, up from
-   113.4 / 2.36, level with `zmrx` and above `lrz`. **SyncTERM needs no source
+   plain-byte table: sexyz receives at **486.5 MB/s / 0.55 CPU-s**, up from
+   117.2 / 2.29, 1.70× `zmrx` and 2.3× `lrz`. **SyncTERM needs no source
    change** — the callback defaults to `NULL` — and the table alone lifts the
-   un-adopted path to 153.0 MB/s. Original analysis retained:
+   un-adopted path to 145.7 MB/s. Original analysis retained:
 
    **○ OPEN — `zmodem.c`'s per-byte receive cost (§3.5).** This is an **engine**
    item, not a sexyz one: `zmodem.c` behind a minimal transport (`zrx_buf`)

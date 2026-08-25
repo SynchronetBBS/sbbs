@@ -33,16 +33,21 @@ gate** that the first attempt skipped.
   `git clone https://github.com/RealDeuce/zmtx-zmrx && cd zmtx-zmrx &&
   make CFLAGS="-O3 -std=c99"`. Builds clean, no permissive flags needed, and
   **both** ends run headlessly on a socket. `zmtx -8` for ZedZap; `zmrx -o` to
-  overwrite (there is no `-y`). As of 2.02 it is the **fastest receiver**
-  measured — see `docs/zmodem_comparison.md` §3.5.
+  overwrite (there is no `-y`). **`zmtx` is the fastest and cheapest sender
+  measured** (487.2 MB/s for 0.47 CPU-s), which makes it the reference sender
+  for every receiver-varied table. `zmrx` held the fastest-receiver place until
+  `zmodem.c` 2.7 — see `docs/zmodem_comparison.md` §3.
 - **ztx_buf:** `gcc -O2 -o ztx_buf ztx_buf.c <sbbs>/src/sbbs3/gcc.linux.x64.obj.release-mt/zmodem.o -I<sbbs>/src/sbbs3 -I<sbbs>/src/xpdev -I<sbbs>/src/hash <sbbs>/src/hash/gcc.linux.x64.lib.release/libhash.a <sbbs>/src/xpdev/gcc.linux.x64.lib.release/libxpdev_mt.a -lpthread -lm`
 
 ## Running
 
 ```bash
 # Clean steady-state throughput (use a BIG file — 32 MB is startup-dominated!)
+# NB: the receiver here must be CHEAPER than the sender under test, or you are
+# measuring the receiver -- see lesson 3a.  sexyz is the cheapest receiver as of
+# zmodem.c 2.7 (0.55 CPU-s/256 MB); lrz (1.28 s) pins every modern sender.
 python3 zbench_sock.py --file bigfile.256M --outdir /tmp/o \
-    --sender "/path/sexyz -8 sz bigfile.256M" --receiver "/path/lrz -y"
+    --sender "/path/sexyz -8 sz bigfile.256M" --receiver "/path/sexyz -8 rz"
 
 # The ERROR-RECOVERY GATE (see lesson below)
 python3 zbench_sock.py --file test.8M --outdir /tmp/o \
@@ -58,9 +63,11 @@ python3 zdecode.py /tmp/o/wire.bwd | head -40
 # matrix.sh: DATA=<dir> ./matrix.sh {block|crc|lat|bw|err}  (edit binary paths at top)
 
 # RECEIVE-side comparison: hold the sender fixed, vary only the receiver.
+# Drive it with zmtx -- the cheapest sender (0.47 CPU-s), so it does not become
+# the bottleneck.  lsz (0.96 s) pins every post-2.7 receiver at ~280 MB/s.
 for rx in "lrz -y" "sexyz -8 rz" "zmrx -o"; do
   python3 zbench_sock.py --file big.256M --outdir /tmp/o \
-      --sender "/path/lsz -8 big.256M" --receiver "$rx" --label "$rx"
+      --sender "/path/zmtx -8 big.256M" --receiver "$rx" --label "$rx"
 done
 
 # Per-file cost: a BATCH of small files, rate-capped to a serial line.
@@ -91,10 +98,29 @@ Output line: `rc(s/r) elapsed size recv name INTEGRITY goodput wire overhead`.
 1. **Measure steady-state, not 32 MB.** Short transfers are dominated by
    per-transfer startup and *understate and distort* rates. Use ≥256 MB, and run
    every sender in one interleaved batch so the numbers are comparable.
-   Reference points as of 2026-07-24 (256 MB → `lrz`, `-O3`): lrzsz `lsz -8`
-   **203.9**; `ztx_buf` on `zmodem.c` rev 2.3 **115.8**; sexyz *receiving*
-   **113.3**; Forsberg `sz` **96.9**; `ztx_buf` on rev 2.2 **91.9**; sexyz
-   *sending* **11.5**.
+   Reference points as of 2026-08-24 (256 MB, `-O3`), **sender varied against
+   the sexyz receiver** (`zmodem.c` 2.7): `zmtx` **487.2**; `ztx_buf`
+   **385.4**; sexyz **335.3**; `lsz` **279.9**; Forsberg `sz` **97.2**.
+   **Receiver varied against the `zmtx` sender:** sexyz **486.5**; `zrx_buf`
+   **479.3**; `zmrx` **286.1**; `lrz` **209.2**; `zrx_buf` with `recv_span`
+   NULL **145.7**; sexyz 3.5 (pre-span) **117.2**.
+
+   **3a. The FIXED end must be cheaper in CPU than everything at the varied
+   end.** Otherwise the fixed end is the bottleneck and the table measures it,
+   not the thing under test. Every sender number this project published before
+   2026-08-24 was taken against `lrz`, which receives for **1.28 CPU-s** — more
+   than any sender in the table — so four senders spanning 1.74× in real cost
+   all reported ~204-209 MB/s and were written up as "level with lrzsz". Switching
+   the fixed receiver to sexyz (0.55 s) spread them out. Deuce spotted this from
+   the outside ("`lrz` can't handle the load").
+
+   The check is mechanical, and the `wait4` CPU columns exist for it: **if the
+   fixed end's CPU equals the wall clock, the run measured the fixed end.** Do
+   not compare across two runs whose fixed ends differ. Current cheapest of each
+   kind: **sexyz receiving** 0.55 s, **`zmtx` sending** 0.47 s. `zmtx` is
+   cheaper than any receiver, so a receiver-varied table can be trusted; no
+   sender-varied table is fully clean yet, because `zmtx` at 0.47 s still
+   out-runs the 0.55 s receiver driving it.
 
    **Always record CPU as well as goodput** (`wait4` rusage; `rusage.py`-style
    wrapper). Goodput alone misled this investigation for a day: `ztx_buf` at
