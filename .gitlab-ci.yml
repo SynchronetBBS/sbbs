@@ -137,20 +137,35 @@ include:
     - make -f ../install/install-sbbs.mk NOCAP=1 REPODIR=$(realpath ..) CC="ccache cc" CXX="ccache c++"
   needs: []
 
-# Every Windows job below drives MSBuild, and MSBuild leaves its worker nodes
-# running for 15 minutes after a build, handing them back out on a handshake
-# that covers the MSBuild version but NOT the environment they were started in.
-# The runner is a shell executor running several of these jobs concurrently
-# under one account, so a build can recruit a node another job left behind and
-# inherit its toolset environment -- which is the intermittent
-# "MSB4166: Child node N exited prematurely" failure of windows-x86 [syncscumm]
-# (the heaviest solution: ~9 projects whose vcpkg integration fans out inline
-# Roslyn task compiles all at once).  Reuse only buys back node startup, and
-# only for back-to-back builds, so turning it off in CI costs next to nothing.
-# Left ON for developer builds -- this is a property of the shared runner.
+# Settings shared by every Windows job below, all of which drive MSBuild.
+#
+# MSBUILDDEBUGPATH -- where MSBuild dumps MSBuild_*.failure.txt when a worker
+# node dies.  It defaults to C:\WINDOWS\SystemTemp on the runner, where the
+# dumps are out of reach; pointing it into the workspace lets after_script echo
+# them into the job log.  windows-x86 [syncscumm] spent days dying on
+# worker-node crashes whose only direct evidence sat in those files, unread.
+#
+# MSBUILDDISABLENODEREUSE -- MSBuild keeps worker nodes alive for 15 minutes
+# after a build and hands them back out on a handshake that covers the MSBuild
+# version but not the environment they were started in, and this shell-executor
+# runner runs several of these jobs concurrently under one account.  Hygiene
+# only: it was added on the theory that recruiting another job's node explained
+# [syncscumm]'s crashes, and it did not.  See that door's build.bat.
 ".windows-msbuild":
   variables:
+    MSBUILDDEBUGPATH: '$CI_PROJECT_DIR\msbuild-debug'
     MSBUILDDISABLENODEREUSE: "1"
+  before_script:
+    - if (Test-Path $env:MSBUILDDEBUGPATH) { Remove-Item -Recurse -Force $env:MSBUILDDEBUGPATH }
+    - New-Item -ItemType Directory -Force $env:MSBUILDDEBUGPATH | Out-Null
+  after_script:
+    - |
+      if (Test-Path $env:MSBUILDDEBUGPATH) {
+        foreach ($d in Get-ChildItem $env:MSBUILDDEBUGPATH -Filter "MSBuild_*.failure.txt") {
+          Write-Host "===== MSBuild node dump: $($d.Name) ====="
+          Get-Content $d.FullName | Write-Host
+        }
+      }
 
 # Windows uses the platform-limited vcpkg manifest in the qtmonitor source
 # directory.  Unix and macOS jobs live in .gitlab-ci-unix.yml so unsupported
