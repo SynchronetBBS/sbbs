@@ -1,10 +1,12 @@
-# ZMODEM implementation comparison: sexyz vs. lrzsz vs. Forsberg rzsz
+# ZMODEM implementation comparison: sexyz vs. lrzsz vs. zmtx/zmrx vs. Forsberg rzsz
 
-**Date:** 2026-07-23, re-measured 2026-07-24
+**Date:** 2026-07-23; re-measured 2026-07-24, 2026-08-21, and 2026-08-24
+(receive path, §3.5)
 **Author:** Claude (analysis commissioned by Rob Swindell)
 **Scope:** Performance, scalability (>2 GB / >4 GB), and robustness of
-Synchronet's ZMODEM implementation, benchmarked against `lrzsz` 0.12.21rc and
-Chuck Forsberg's final `rzsz` (3.73, 2003-01-30).
+Synchronet's ZMODEM implementation, **in both directions**, benchmarked against
+`lrzsz` 0.12.21rc, `zmtx`/`zmrx` 2.02, and Chuck Forsberg's final `rzsz`
+(3.73, 2003-01-30).
 
 ---
 
@@ -112,9 +114,35 @@ Chuck Forsberg's final `rzsz` (3.73, 2003-01-30).
     with it removed the buffered path measures **203.9**, level with lrzsz, on
     **less CPU per byte** (0.72 s vs 0.96 s per 256 MiB). Further engine
     micro-optimization has no goodput left to win in this regime.
-- **sexyz *receiver* is fine** (121.0 MB/s, unchanged by these fixes — the
-  receive path never calls the sender code), including past 2 GB. Every defect
-  in this doc is on the sending side.
+- **✅ RESOLVED (zmodem.c 2.7, sexyz.c 3.6) — the receive path.** A `recv_span`
+  callback lets a consumer hand the engine whole runs of unescaped bytes;
+  `zmodem_rx()`'s per-byte predicate became a table the two paths share.
+  **sexyz receives at 280.3 MB/s / 0.67 CPU-s, up from 113.4 / 2.36** — level
+  with `zmrx` 2.02 and above `lrz`'s 208.7 / 1.28. The callback is optional
+  (`NULL` = the old path), so **SyncTERM needs no source change**, and the
+  table alone lifts the un-adopted per-byte path from 126.9 to 153.0 MB/s. The
+  analysis that led here follows.
+- **The RECEIVE path was slow, and the cost was in `zmodem.c` — so it was
+  SyncTERM's too (§3.5).** Driven by the same `lsz` sender: `zmrx` 281.6 MB/s,
+  `lrz` 208.4, **`zmodem.c` + a minimal transport (`zrx_buf`) 128.2**, sexyz
+  114.0. CPU is additive, so the split is direct: of sexyz's **+1.07 CPU-seconds
+  over `lrz`, 0.81 s (76 %) is `zmodem.c`** and 0.26 s is `sexyz.c`'s
+  `recv_byte`. **No receiver built on `zmodem.c` can exceed ~128 MB/s however
+  good its wrapper** — 0.61× `lrz`, 0.45× `zmrx`. `zmodem.c`'s three receive
+  functions cost **82.6 instructions per received byte**; `lrz`'s *entire*
+  receiver costs **24.1**.
+  The cause is a four-deep **per-byte** call chain that makes batching
+  inexpressible: no span copy, no hoisted invariants, and a byte-at-a-time CRC
+  where the send path got slicing-by-4 in 2026-07-24. **The indirect calls
+  themselves are not the cost** — a direct A/B adding one more per byte moves
+  throughput ~0.5 % (§3.5) — the 4–5× instruction count and 8× load traffic are.
+  Correct past 2 GB, no per-file cost, and invisible below ~1 Gbps. Reported by
+  Deuce; profiled 2026-08-24.
+  > Earlier revisions of this doc said "sexyz *receiver* is fine (121.0 MB/s)"
+  > and "every defect in this doc is on the sending side." Both were wrong. 121
+  > was read against the sender's then-broken 11.5 MB/s rather than against the
+  > receivers sexyz competes with, and the receive path had only ever been
+  > timed, never profiled.
 - **Forsberg** (modern branch) *sender* runs at **96.9 MB/s** (below lrzsz —
   1 KB block cap). Its *receiver* won't complete headlessly (serial-tty
   assumptions; segfaults under some transports).
@@ -162,6 +190,7 @@ Which component each finding lives in:
 | **sexyz** | `src/sbbs3/{zmodem.c,sexyz.c,zmodem.h}` | 2440+1996 | multi-threaded (in/out threads + ring buffers) |
 | **SyncTERM** | shared `src/sbbs3/zmodem.c` + `src/syncterm/term.c` wrapper | — | single-threaded, buffered send |
 | **lrzsz** 0.12.21rc | `src/{zm.c,lsz.c,lrz.c}` | 982+2493+2314 | single-threaded, stdio-buffered |
+| **zmtx/zmrx** 2.02 | `{zmdm.c,zmtx.c,zmrx.c,zmdm_posix.c}` | 1169+1124+983+300 | single-threaded, buffered; inline fast path + `rx_slow` for escapes |
 | **Forsberg rzsz** 3.73 | `zm.c,sz.c,rz.c` | 876+1746+1383 | single-threaded, stdio-buffered |
 
 `sexyz` and `SyncTERM` share `zmodem.c` (the protocol engine: framing, block
@@ -177,14 +206,18 @@ a component version. sexyz reports its version via `const char* revision`
 
 | Component | Baseline | Shipped |
 |---|---|---|
-| **sexyz.c** | **3.3** — `send_byte` writes the ring one byte at a time; `-w` sets the window without touching the block size | **3.4** — buffered streaming send path (~11 → ~115 MB/s, #1195); `-w` clamps the block to window/4 like `lsz`/`sz` so `window ≤ block` no longer stalls (#1197). **3.5** — no change of its own: the startup banner prints only sexyz's own revision, so it moves with `zmodem.c` 2.5 to keep a build identifiable without `sexyz v` |
-| **zmodem.c** | **rev 2.2** — window/ACK positions `int32_t`; switch-based byte classifier; byte-at-a-time CRC-32; quarter-window ACK interval divides by zero when window < 4×block | **rev 2.5** — 2 GB fix (`uint32_t`, #1196); Deuce's 2026-07-24 send-path work (class-table classifier, slicing-by-4 CRC-32, hoisted escape mask + `noinline` cold paths, buffered `fcrc32()`); window-interval divide-by-zero guarded (#1197); the 1-second ZRPOS purge off the normal send path and the ZFILE retransmit at the receiver's opening ZRINIT, both 2026-08-21 |
+| **sexyz.c** | **3.3** — `send_byte` writes the ring one byte at a time; `-w` sets the window without touching the block size | **3.4** — buffered streaming send path (~11 → ~115 MB/s, #1195); `-w` clamps the block to window/4 like `lsz`/`sz` so `window ≤ block` no longer stalls (#1197). **3.5** — no change of its own: the startup banner prints only sexyz's own revision, so it moves with `zmodem.c` 2.5 to keep a build identifiable without `sexyz v`. **3.6** — supplies `recv_span`, taking a receive from 113.4 to 280.3 MB/s (§3.5) |
+| **zmodem.c** | **rev 2.2** — window/ACK positions `int32_t`; switch-based byte classifier; byte-at-a-time CRC-32; quarter-window ACK interval divides by zero when window < 4×block | **rev 2.5** — 2 GB fix (`uint32_t`, #1196); Deuce's 2026-07-24 send-path work (class-table classifier, slicing-by-4 CRC-32, hoisted escape mask + `noinline` cold paths, buffered `fcrc32()`); window-interval divide-by-zero guarded (#1197); the 1-second ZRPOS purge off the normal send path and the ZFILE retransmit at the receiver's opening ZRINIT, both 2026-08-21. **rev 2.6** — the receiver reports its own file position (`09ea8a6901`, gold-13-arrest, 2026-08-23). **rev 2.7** — the receive path: a shared plain-byte table and an optional `recv_span` bulk callback (§3.5), and a receive no longer aborts at the tenth error of the whole file (§5.2) |
 
 - **SyncTERM:** its `term.c` send path is **unchanged** by this work; a SyncTERM
   throughput figure here is *modeled* by `ztx_buf` (the real `zmodem.o` behind a
   SyncTERM-style buffered `send_byte`), not measured from the SyncTERM binary.
 - **Third-party:** lrzsz **0.12.21rc**; Forsberg rzsz **3.73** from the history
-  repo's **`modern` branch**.
+  repo's **`modern` branch**; **zmtx/zmrx 2.02** — Jacques Mattheij's original
+  1994 ZMODEM, modernised by Deuce at `RealDeuce/zmtx-zmrx` on GitHub,
+  `c05df7b` (fake-1-beds, 2026-08-24), built `-O3`. It is the **fastest
+  receiver measured** (§3.5), so it belongs in the comparison rather than a
+  footnote.
 
 The `revision`/`zmodem_ver` strings above are the stable anchors; the git log
 maps them to commits. Throughput work is GitLab #1195, the 2 GB fix #1196.
@@ -193,9 +226,16 @@ maps them to commits. Throughput work is GitLab #1195, the 2 GB fix #1196.
 
 ## 2. Benchmark method
 
-- **Harness:** `zbench.py` — wires a sender and receiver (each speaking ZMODEM
-  on stdin/stdout) through a userspace relay that can inject one-way latency and
-  a token-bucket bandwidth cap in each direction. No root/`netem` required.
+- **Harness:** `zbench_sock.py` (`src/bench/zmodem/`) — wires a sender and
+  receiver (each speaking ZMODEM on stdin/stdout) through a userspace relay that
+  can inject one-way latency, a token-bucket bandwidth cap in each direction,
+  and forward bit-corruption. No root/`netem` required.
+- **Profilers (§3.5):** `strace -c -f` for the syscall mix; `valgrind
+  --tool=callgrind` (with `--branch-sim --cache-sim`) for per-byte instruction,
+  load/store, branch and call counts. `perf` is unavailable on this host
+  (`perf_event_paranoid=3`, package not installed), and callgrind needs no
+  privileges, so it is the profiler of record here. Its instruction counts are
+  exact; its *timings* are not — always pair it with the wall-clock/CPU run.
 - **Relay ceiling** measured at **5069 MB/s** — 25×+ above any tool, so it is
   not the bottleneck for clean-link runs.
 - **Transport:** localhost pipes (CPU/architecture-bound regime), on tmpfs
@@ -203,13 +243,20 @@ maps them to commits. Throughput work is GitLab #1195, the 2 GB fix #1196.
 - **Flags:** `-8` (8 KB max block, ZedZap) on both sides; `-w` (transmit window)
   where noted. `sexyz` binary: `gcc.linux.x64.exe.release/sexyz`
   (`v3.3 master/074785210`). lrzsz built from `~/lrzsz-0.12.21rc`.
-- **One file per run.** `--file` is singular: the harness measures a single
-  large steady-state transfer. **A per-file cost is therefore invisible here** —
-  it lands once, in a goodput figure designed to divide fixed costs away, and the
-  rate-capped rows refund it entirely from banked tokens. That blind spot hid a
-  flat one-second-per-file stall for months (§0). For anything suspected of
-  costing per *file* rather than per byte, send a batch of small files and time
-  the batch.
+- **Multi-file batches (added 2026-08-24).** `--file` now repeats, so a run can
+  send several files in one session. It used to be singular, and **a per-file
+  cost was therefore invisible** — it landed once, in a goodput figure designed
+  to divide fixed costs away, and the rate-capped rows refunded it entirely from
+  banked tokens. That blind spot hid a flat one-second-per-file stall for months
+  (§0). Anything suspected of costing per *file* rather than per byte gets a
+  batch of small files; §3.5 uses five 6 KB files to show the receive path has
+  no such cost.
+- **CPU per endpoint (added 2026-08-24).** Both processes are reaped with
+  `wait4()`, so every run prints the sender's and receiver's user/system CPU and
+  context switches beside the goodput. **A number with no CPU figure next to it
+  cannot distinguish "fast code" from "idle code"** — that ambiguity cost this
+  investigation a day in July, and it is what makes §3.5's receiver-bound
+  finding legible at a glance (receiver CPU ≈ wall clock in every row).
 - **Integrity:** SHA-256 of source vs. received file every run.
 - **Content:** random data (`/dev/urandom`), so ZDLE-escaping cost is realistic
   (~2.8% wire expansion — identical across all impls, confirming equal protocol
@@ -226,16 +273,21 @@ maps them to commits. Throughput work is GitLab #1195, the 2 GB fix #1196.
 
 ## 3. Throughput (256 MB steady-state, clean localhost, `-8` where supported)
 
+This table varies the **sender** against a fixed `lrz`. The one row that varies
+the receiver instead is marked as such; **§3.5** holds that comparison in full.
+
 Rows marked 2026-08-21 are from one interleaved batch that day, three passes
-(spread ≤2%; median shown); the rest are the 2026-07-24 batch, kept where the
-component no longer exists to re-measure. Every run verified byte-identical.
+(spread ≤2%; median shown); rows marked 2026-08-24 likewise; the rest are the
+2026-07-24 batch, kept where the component no longer exists to re-measure. Every
+run verified byte-identical.
 
 | Sender → Receiver | Goodput | Note |
 |---|--:|---|
 | **sexyz** → lrz — `zmodem.c` 2.5, sexyz.c 3.4 | **203.9 MB/s** | 2026-08-21; level with lrzsz |
 | lsz → lrz (lrzsz baseline) | **203.8 MB/s** | 2026-08-21; 8 KB adaptive blocks, fully inlined escape/CRC |
 | `ztx_buf` (`zmodem.c` **rev 2.5** + buffered send) → lrz | **203.9 MB/s** | 2026-08-21 |
-| lsz → **sexyz** (sexyz *receives*) | **121.0 MB/s** | 2026-08-21; receive path untouched by these fixes |
+| lsz → **`zrx_buf`** (`zmodem.c` *receives*) | **128.2 MB/s** | 2026-08-24; the engine's own receive ceiling, wrapper-independent — **§3.5** |
+| lsz → **sexyz** (sexyz *receives*) | **114.0 MB/s** | 2026-08-24; 0.55× lrz — the receiver comparison is its own table in **§3.5** |
 | `ztx_buf` (`zmodem.c` **rev 2.4**) → lrz | **115.8 MB/s** | the old "buffered floor": 1.32 s of work + 1.00 s of sleep (§0) |
 | **sexyz** → lrz — before the purge fix | **115.7 MB/s** | 2026-08-21; same second, same arithmetic |
 | **Forsberg sz** → lrz | **96.9 MB/s** | 2026-07-24; 1 KB blocks (no ZedZap); single-threaded |
@@ -516,6 +568,264 @@ so this is a real difference but not the decisive one.
 
 ---
 
+### 3.5 The receive path (measured 2026-08-24) — the cost was in `zmodem.c`, so it was SyncTERM's too
+
+Deuce reported that sexyz receives slower than `lrz` and `zmrx`. That is
+correct, and §0's "sexyz *receiver* is fine (121.0 MB/s)" was wrong — that
+verdict was set against the sender's then-broken 11.5 MB/s rather than against
+the receivers sexyz competes with. Every earlier receive figure in this doc is a
+**throughput** number; the receive path had never been profiled.
+
+**The important result is not about sexyz.** Splitting the two layers the way
+§3.2 did for the send side — `zrx_buf`, a minimal receiver linking the real
+`zmodem.o` behind a plain buffered `recv_byte` — puts **~76 % of the deficit
+inside `zmodem.c`**, which SyncTERM shares in full. sexyz's own transport
+wrapper is the minority of it.
+
+Same sender (`lsz -8`) in every row, so the receiver is the only variable.
+256 MiB, localhost, tmpfs, one interleaved batch, three passes (spread <1 %,
+median shown), every run byte-identical:
+
+| Receiver | Goodput | Receiver CPU | Excess CPU vs `lrz` |
+|---|--:|--:|--:|
+| **`zmrx`** (zmtx-zmrx 2.02) | **281.6 MB/s** | **0.95 s** | −0.33 s |
+| **`lrz`** (lrzsz 0.12.21rc) | **208.4 MB/s** | **1.28 s** | — |
+| **`zrx_buf`** — real `zmodem.c`, minimal transport | **128.2 MB/s** | **2.09 s** | **+0.81 s** |
+| **`sexyz`** (v3.5, zmodem.c 2.6) | **114.0 MB/s** | **2.35 s** | +1.07 s |
+
+CPU is additive, so the split is direct: of sexyz's **+1.07 CPU-seconds** over
+`lrz`, **0.81 s (76 %) is `zmodem.c`** and 0.26 s (24 %) is `sexyz.c`'s
+`recv_byte`. **A receiver built on `zmodem.c` cannot exceed ~128 MB/s no matter
+how good its transport wrapper is** — that is 0.61× `lrz` and 0.45× `zmrx`
+before sexyz contributes anything.
+
+Instruction counts say the same thing more sharply. Summing `zmodem.c`'s three
+receive functions gives **82.6 instructions per received byte** measured through
+`zrx_buf` and **81.5** measured through sexyz — the engine costs the same either
+way, as it should. `lrz`'s **entire** receiver, transport included, is
+**24.1**. So `zmodem.c`'s engine alone is **3.4× the whole of lrzsz's receiver.**
+
+`zrx_buf` is built in the **SyncTERM shape** (see below), so its 128.2 is the
+number to reason about for SyncTERM — with the caveats in "What this does and
+does not say about SyncTERM".
+
+#### It is not syscalls — the opposite of the send-path bug
+
+The 2026-07-24 sender collapse was a syscall pathology (§3.1: 1.96 M futex
+calls, ~94-byte writes). Receive is the reverse. Under `strace -c -f` on a
+32 MB receive, total syscall time is **1.8 ms (`lrz`), 25 ms (sexyz), 3.8 ms
+(`zmrx`)** against ~0.3 CPU-seconds of work — and sexyz issues the **fewest**
+reads of the three:
+
+| Receiver | `read()` | avg read | other hot syscalls |
+|---|--:|--:|---|
+| `lrz` | 4,225 | ~8 KB | 8,434 `alarm`, 4,223 `rt_sigaction` |
+| **sexyz** | **561** | **~60 KB** | 8,235 `write`, 17 `futex` |
+| `zmrx` | 2,135 | ~16 KB | 8,196 `write`, 4,104 `lseek`, 2,135 `pselect6` |
+
+`recv_buffer()` fills a 64 KB `inbuf` (`sexyz.c:88,454`), so the transport read
+side is already efficient; sexyz's 25 ms is 17 `futex` calls from an idle output
+thread. **The cost is entirely userspace compute.**
+
+#### Where it goes: a four-deep per-byte call chain
+
+`callgrind`, 4 MiB receive. Share of all instructions:
+
+| `lrz` | | `zmrx` | | **`zrx_buf`** (engine + minimal transport) | | **sexyz** | |
+|---|--:|---|--:|---|--:|---|--:|
+| `zrdata` | 80.9 % | `rx_data` | 84.1 % | `zmodem_recv_raw` | 30.0 % | `recv_byte` (sexyz.c) | 30.0 % |
+| `zdlread2` | 17.9 % | `crc32_update` | 11.5 % | `zmodem_rx` | 29.7 % | `zmodem_recv_raw` | 25.2 % |
+| | | | | `zmodem_recv_data32` | 17.8 % | `zmodem_rx` | 24.1 % |
+| | | | | `my_recv_byte` | 15.4 % | `zmodem_recv_data32` | 15.0 % |
+| | | | | `my_is_connected` | 4.7 % | | |
+
+`lrz` and `zmrx` each do their inner loop in essentially one function.
+`zmodem.c` spreads it across three, none inlined into the others, plus a
+transport callback: `zmodem_recv_data32` → `zmodem_rx` → `zmodem_recv_raw` →
+`zm->recv_byte`. Invocation counts per 4 MiB (4,194,304 data bytes,
+4,312,067 wire bytes) confirm every level is per byte:
+
+| Callee | Calls | Per byte |
+|---|--:|--:|
+| `recv_byte` (via `zm->recv_byte`) | 4,312,066 | 1.03 (one per *wire* byte) |
+| `zmodem_recv_raw` | 4,312,041 | 1.03 |
+| `is_connected` (via `zm->is_connected`) | 4,197,025 | 1.00 (one per *data* byte) |
+| `zmodem_rx` | 4,196,993 | 1.00 |
+| — `lrz`: `zdlread2` (rest inlined) | 1,048,003 | 0.25 |
+| — `zmrx`: `rx_slow` (escape path only) | 115,038 | 0.027 |
+
+`zmrx`'s 0.027 is the giveaway: it matches the **2.8 % ZDLE escape rate**, so
+`zmrx` handles unescaped bytes inline (`rx()` is `static inline`) and calls out
+only for a real escape. `lrz` calls its slow half for a quarter of bytes.
+`zmodem.c` calls out for **every** byte.
+
+#### The indirect calls are cheap; the structure they impose is not
+
+Per received byte:
+
+| | instr/B | loads/B | stores/B | cond-br/B | mispred/B | mispred % | indirect/B |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| `lrz` | 24.1 | 3.89 | 3.62 | 4.38 | 0.443 | 10.12 % | 0.00 |
+| `zmrx` | 34.8 | 7.54 | 5.26 | 6.61 | 0.155 | 2.35 % | 0.00 |
+| **`zrx_buf`** | **106.5** | **29.70** | 19.48 | 17.40 | 0.120 | 0.69 % | **3.06** |
+| **sexyz** | **126.8** | **33.75** | 18.42 | 21.49 | 0.118 | 0.55 % | **2.03** |
+
+The 2–3 indirect branches per byte are eye-catching, and it would be easy to
+call them the cause. **They are not, and the difference between those two rows
+proves it.** `zrx_buf` makes *more* indirect calls per byte than sexyz (3.06 vs
+2.03) because `zmodem_rx`'s loop condition is
+`while (is_connected(zm) && !is_cancelled(zm))` and both helpers dispatch
+through a function pointer when one is supplied — sexyz passes **`NULL`** for
+`is_cancelled` (`sexyz.c:1644`), SyncTERM and `zrx_buf` pass a real one. Running
+`zrx_buf` both ways is a direct A/B on exactly one indirect call per byte:
+
+| `zrx_buf` | Goodput |
+|---|--:|
+| `is_cancelled` supplied (SyncTERM shape) | 127.5 MB/s |
+| `is_cancelled` `NULL` (sexyz shape) | 128.1 MB/s |
+
+**~0.5 %, inside the layout noise below.** A perfectly-predicted call to a
+function that always returns the same value costs almost nothing; note the
+mispredict *rate* is 0.55–0.69 % here against `lrz`'s 10.12 %. `zmodem.c` is not
+stalling on branches — it is executing 4–5× the instructions and issuing 8×
+the loads (29.7–33.8 per byte against `lrz`'s 3.89).
+
+That load traffic is the real signature. Nothing stays in registers across four
+non-inlined frames, so each level reloads `zm` and respills. The calls are the
+*mechanism* by which the work cannot be batched — no span `memcpy`, no hoisted
+loop invariants, and a CRC that must run a byte at a time. Deuce's 2026-07-24
+work gave the **send** path slicing-by-4 (`ucrc32_4`, `zmodem.c:576`); the
+**receive** path still runs byte-at-a-time `ucrc32` (`zmodem.c:943`) because the
+bytes arrive one call at a time. **Inlining is not the fix — batching is, and
+inlining is what makes batching expressible.**
+
+#### Two things this is *not*
+
+**There is no per-file receive cost.** Five 6 KB files (30,720 B) in one batch
+over a simulated 115200 bps line — the shape of Uwe Ohse's report — took
+**2.23 s on all three receivers**, twice, identically. 32,131 wire bytes ÷
+14,400 B/s = 2.23 s: the link is the whole story. The one-second-per-file stall
+of §0 was sender-side; nothing analogous exists on receive.
+
+**It is invisible below gigabit.** Rate-capped at 50, 100, 200 and 400 Mbps all
+receivers return identical link-bound numbers (6.08 / 12.15 / 24.28 /
+48.49 MB/s). `zmodem.c`'s ceiling is ~128 MB/s ≈ 1.0 Gbps, so a receive only
+falls behind `lrz` on a link that can carry more than that — LAN, loopback, or a
+local socket. On dial-up or WAN the network dominates and every implementation
+is indistinguishable. That bounds the priority; it does not make the gap less
+real, and it is exactly the regime SyncTERM users on a LAN are in.
+
+#### Caveat: at this scale codegen layout moves the number ±5 %
+
+A same-tree bisect of the commits since the 2026-08-21 batch shows one
+reproducible step, at `09ea8a6901` (gold-13-arrest, 2026-08-23) — the commit
+that assigns `zm->current_file_pos` from `ftello()` per received subpacket:
+
+| Build | Goodput |
+|---|--:|
+| `9e7bbc3092` (endorsed-14-habits, 2026-08-21) — zmodem.c 2.5 | 123.6 MB/s |
+| `09ea8a6901` (gold-13-arrest, 2026-08-23) — zmodem.c 2.6 | **117.2 MB/s** |
+| `ea25028dae` (menus-17-verse, 2026-08-23) | 117.0 MB/s |
+| HEAD `6fba4d0e06` | 116.2 MB/s |
+
+**That −5.2 % is not added work.** Total instructions are identical
+(531,907,105 → 531,966,714, +0.011 %), syscall counts are identical (8,236 →
+8,235 writes), and the extra `ftello` costs 518 calls per 4 MiB — one per 8 KB
+subpacket, flushing nothing, because the pre-existing `zm->progress(...,
+ftello(fp))` on the next line already flushed. Same instructions, same syscalls,
+5 % less throughput: this is code layout. The same source built in two different
+trees measured 116.2 and 113.8, and `zrx_buf` moved 124.6 → 128.2 across an
+edit that did not touch its hot loop. **Treat any single-digit percentage in
+this section as layout noise.** The gap being reported here is 63 % and 147 %,
+far outside it.
+
+#### What this does and does not say about SyncTERM
+
+`zrx_buf` is deliberately SyncTERM-shaped: single-threaded, a buffered
+`recv_byte` that is a buffer-index fetch (SyncTERM's own, `term.c:1024`, is the
+same shape), and a real `is_cancelled` callback, which SyncTERM supplies as
+`xfer_zmodem_check_abort` (`term.c:2256`) and sexyz does not.
+
+It is **not a SyncTERM throughput model**, for the same reasons §0 gives for
+`ztx_buf` on the send side: SyncTERM's real-world speed is a deliberate
+BDP/socket-buffer choice, and its input path additionally runs the wren and RIP
+filters (`recv_bytes()`, `term.c:964`) that `zrx_buf` omits. Those can only make
+SyncTERM slower than `zrx_buf`, not faster, so **128.2 MB/s is an upper bound on
+what SyncTERM's receive can do on this hardware**, not a measurement of it.
+Measuring the real thing needs the GUI driven end-to-end, which this harness
+cannot do — and is why the engine is isolated instead.
+
+One sexyz-specific note that does **not** transfer: sexyz's `recv_byte` contains
+a telnet-IAC state machine, but it is conditional (`if (telnet)`, `sexyz.c:583`)
+and `sexyz.c:1980` clears `telnet` in stdio mode unless `-telnet` was passed —
+so it is **not** in the measured path here, and `-rlogin`/`-ssh`/`-raw` disable
+it in production too. Its cost is unmeasured: a plain `lsz` does not IAC-escape,
+so `sexyz -telnet` cannot complete a transfer against one.
+
+#### What closed it (zmodem.c 2.7, sexyz.c 3.6)
+
+Both changes are in `zmodem.c`, so they reach sexyz and SyncTERM alike.
+
+**One table, two paths.** `zmodem_rx()` decided per byte, through a switch,
+whether the byte needed handling. That predicate is now precomputed into
+`rx_plain_tab[256]`, tested before the switch, and **shared with the span
+path** — so the two cannot develop separate ideas of which bytes are special.
+Built in `zmodem_init()` and rebuilt where `escape_ctrl_chars` is assigned from
+the peer's ZRINIT, the only place it changes. This alone, with no callback
+supplied, is worth **126.9 → 153.0 MB/s** and 2.11 → 1.74 CPU-s.
+
+**An optional `recv_span` callback.** The transport copies while the table says
+the byte is plain and stops before the first that is not, leaving it unconsumed;
+`zmodem_recv_data32()` takes the run whole and CRCs it as a block with
+`ucrc32_span()` — the slicing-by-4 the send path has used since 2026-07-24.
+Passing the table *to* the transport keeps protocol knowledge out of it and
+avoids any need to hand bytes back when a run ends early. It is a `zmodem_t`
+struct field, not a `zmodem_init()` parameter, so `zmodem_init()`'s memset
+leaves it `NULL` for every existing consumer with no source change, and `NULL`
+is exactly the old path.
+
+| Receiver | Goodput | Receiver CPU |
+|---|--:|--:|
+| **sexyz 3.6, span** | **280.3 MB/s** | **0.67 s** |
+| `zmrx` 2.02 | 281.6 MB/s | 0.95 s |
+| `zrx_buf`, span | 279.8 MB/s | 0.66 s |
+| `lrz` | 208.7 MB/s | 1.28 s |
+| `zrx_buf`, `recv_span` NULL — **what an un-adopted consumer gets** | **153.0 MB/s** | 1.74 s |
+| sexyz 3.5 (per-byte, before) | 113.4 MB/s | 2.36 s |
+
+On random data the runs average **36 bytes and cover 97.3 %** of the stream.
+sexyz is now **2.5×** its former throughput at **28 %** of the CPU, and uses
+less CPU than any other receiver measured, `zmrx` included.
+
+**The span path stays off in telnet mode**, where sexyz's IAC state machine
+must see every byte. That mode is already off by default for a stdio session,
+which is how the BBS invokes sexyz for rlogin, SSH and raw connections.
+
+**A trap this design invites, hit during development.** The first version
+guarded the table build with a sentinel field compared against
+`escape_ctrl_chars`. `zmodem_init()` memsets the struct, so both were 0, the
+guard never fired, the table stayed all-zero, every byte looked special, and the
+span path returned nothing — pure overhead, measuring **24 % slower** while
+still verifying byte-identical. The memset default that makes the callback
+optional also makes 0 mean both "unset" and a legitimate value. Building the
+table eagerly removes the sentinel and the trap.
+
+**Error recovery: gated at the §3.3 rate, in both configurations.** Injecting
+bit errors at 3e-6 into an 8 MB transfer, **5 of 5** runs pass for sexyz's span
+path, for `zrx_buf`'s span path, and for `zrx_buf` with `recv_span` left
+`NULL` — the last being what a consumer that has not adopted the callback
+runs, which is the configuration the optional-callback decision obliges us to
+keep testing. The canonical sender-side gate passes **3 of 3** as well:
+`zmodem_rx()` is shared, so the plain-byte table changes how a *sender* reads
+its back-channel too, even though nothing in the send path was touched.
+
+That gate only became usable once §5.2 was fixed. Before that the
+**unmodified** receiver failed it outright, for a reason unrelated to this
+work, so there was no baseline to compare a change against.
+
+
+---
+
 ## 4. Scalability: >2 GB and >4 GB
 
 ### 4.1 The shared 4 GB ceiling
@@ -658,6 +968,49 @@ so.
 
 ---
 
+### 5.2 A receive could not survive more errors than max_errors, ever (FIXED, zmodem.c 2.7)
+
+Found while trying to gate the §3.5 receive work: at a bit-error rate of 3e-6
+into an 8 MB transfer, **sexyz's receiver failed 0 of 2 runs** where `zmrx`
+2.02 succeeded 2 of 2 (taking ~30 s to do it) and `lrz` managed 1 of 2. sexyz
+gave up in about a second. The §3.3 gate was unusable as a result — the
+unmodified baseline could not pass it, so there was nothing to compare a
+change against.
+
+**It was not the resynchronisation.** The receiver detects the bad subpacket,
+logs `CRC ERROR`, sends ZRPOS, chews through the in-flight remainder emitting
+`UNRECOGNIZED header` for each false start, and comes back in sync. That
+sequence works, and the log noise it produces is expected. Two hypotheses that
+looked obvious were tested and are **wrong**: bounding the sender's in-flight
+backlog (`--sockbuf 8192`) does not help, and neither does dropping the link to
+200 KB/s, so it is not the queue-depth effect of §3.3.1.
+
+**`zmodem_recv_file_data()` counted errors for the lifetime of the file.**
+`unsigned errors = 0` once per file, `errors++` per failure, break at
+`errors > max_errors` — with **no reset on success**. At 3e-6 an 8 MB file
+takes about 25 independently-corrupted subpackets, so the transfer died at the
+tenth even though every one of them had been recovered and the file was
+progressing normally between them.
+
+The sending side never had this bug: `zmodem_send_from()` counts
+`zm->consecutive_errors` and clears it on success. The receive path simply
+never got the same treatment — the pattern was already in the file.
+
+**Consequence, and why it matters more than the throughput work.** Any link
+with a non-zero error rate had a file size past which a receive could not
+succeed, no matter how healthy the link was between errors. The bigger the
+file, the likelier the abort. This is a real-world dial-up and noisy-line
+failure, i.e. exactly the regime where the §3.5 speed work is irrelevant.
+
+**Fixed** by clearing the count once the file position has advanced beyond
+where the last error was recorded. A run of errors with no progress between
+them still stops at `max_errors`, so a genuinely wedged transfer ends as
+before. The same 3e-6 test now completes **3 of 3**, verified, with the counter
+returning to `ERROR #1` after each of the ~25 recoveries.
+
+
+---
+
 ## 6. Recommendations & status
 
 0. **✅ DONE (zmodem.c 2.5) — the one-second-per-file stall, and the ZFILE
@@ -734,5 +1087,41 @@ so.
 
 5. **○ OPEN — the `.`-prefixed received filename** (sexyz receiver wrote
    `.test2g.bin`) — minor, separate.
+
+6. **✅ DONE (zmodem.c 2.7, sexyz.c 3.6) — `zmodem.c`'s per-byte receive cost
+   (§3.5).** Shipped as an optional `recv_span` callback plus a shared
+   plain-byte table: sexyz receives at **280.3 MB/s / 0.67 CPU-s**, up from
+   113.4 / 2.36, level with `zmrx` and above `lrz`. **SyncTERM needs no source
+   change** — the callback defaults to `NULL` — and the table alone lifts the
+   un-adopted path to 153.0 MB/s. Original analysis retained:
+
+   **○ OPEN — `zmodem.c`'s per-byte receive cost (§3.5).** This is an **engine**
+   item, not a sexyz one: `zmodem.c` behind a minimal transport (`zrx_buf`)
+   receives at **128.2 MB/s** against `lrz`'s 208.4 and `zmrx`'s 281.6, and
+   **76 % of sexyz's excess receive CPU is inside it**. **SyncTERM shares all of
+   it**, and 128.2 is an upper bound on SyncTERM's receive, not a measurement of
+   it (§3.5, "What this does and does not say about SyncTERM"). The fix is
+   **batching**, in this order:
+   (a) give `zmodem_recv_data32` a **span reader** so unescaped runs come out of
+   the transport buffer in one call and only a real ZDLE drops to per-byte —
+   `zmrx`'s `rx()`/`rx_slow()` split, `lrz`'s `zdlread`/`zdlread2` split, and
+   where the 4× instruction gap and 8× load traffic live. The span fetch is an
+   **optional callback added as a `zmodem_t` struct field, not a
+   `zmodem_init()` parameter**: `zmodem_init()` memsets the struct, so it is
+   `NULL` for every existing consumer with no source change and `NULL` keeps
+   today's per-byte path. Consumers opt in independently — **SyncTERM is not
+   required to adopt it** — at the cost that both paths stay live, so the §3.3
+   gate must pass in both;
+   (b) **slicing-by-4 CRC on receive** (`ucrc32_4`), which the send path has had
+   since 2026-07-24 and which (a) makes possible — `zmrx` did exactly this in
+   `75a598b` (diff-27-each, 2026-08-24), ten lines, and `zmodem_recv_data32`
+   already accumulates into `p`.
+   Run both against the §3.3 error-recovery gate — a span optimisation that
+   looks free can regress recovery, as it did on the send side.
+   **Do not start with the obvious-looking micro-fix:** hoisting
+   `is_connected`/`is_cancelled` out of the per-byte loop condition
+   (`zmodem.c:803`) is worth ~0.5 %, measured, not the 2–3 indirect branches per
+   byte it appears to remove. Invisible below ~1 Gbps, so this is a LAN/loopback
+   concern, not a dial-up one.
 
 None of these lift the 4 GB wire ceiling, which is inherent to ZMODEM.

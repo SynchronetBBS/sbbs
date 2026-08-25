@@ -10,9 +10,10 @@ gate** that the first attempt skipped.
 
 | File | Purpose |
 |---|---|
-| `zbench_sock.py` | **Main harness.** Wires a sender + receiver (each speaking ZMODEM on stdin/stdout) through a userspace relay that can inject one-way latency, a bandwidth cap (`--rate-bps`, `--rate-back-bps` for asymmetry), and forward **bit-corruption** (`--corrupt-rate`). No root/`netem` needed. Each endpoint gets one bidirectional socket duped to both fds (works for sexyz, lrzsz, and Forsberg `sz`). |
+| `zbench_sock.py` | **Main harness.** Wires a sender + receiver (each speaking ZMODEM on stdin/stdout) through a userspace relay that can inject one-way latency, a bandwidth cap (`--rate-bps`, `--rate-back-bps` for asymmetry), and forward **bit-corruption** (`--corrupt-rate`). No root/`netem` needed. Each endpoint gets one bidirectional socket duped to both fds (works for sexyz, lrzsz, zmtx/zmrx, and Forsberg `sz`). **Repeat `--file`** to send a batch in one session (per-*file* costs are invisible with one file — that blind spot hid a one-second-per-file stall for months). Both endpoints are reaped with `wait4()`, so every line reports **each endpoint's CPU** and context switches: `tx[cpu=…] rx[cpu=…]`. |
 | `zbench_pty.py` | Same idea over raw ptys — for serial-era tools that assume a tty. |
 | `zbench.py` | Original two-pipe variant (separate stdin/stdout). Superseded by `zbench_sock.py`. |
+| `zrx_buf.c` | **Receive-side counterpart of `ztx_buf.c`.** A minimal ZMODEM *receiver* linking the real `zmodem.o` behind a plain buffered `recv_byte` — no ring, no thread, no telnet-IAC handling. Splits "how much of a receive costs is `zmodem.c`" from "how much is the transport wrapper", which is the only way to get a **SyncTERM-relevant** number without driving the GUI: `zmodem.c` is the shared part. Built in the SyncTERM shape (real `is_cancelled` callback); `ZRX_NO_CANCEL=1` switches to sexyz's shape (NULL). Same caveat as `ztx_buf` — **not** a SyncTERM throughput model, an upper bound on one. |
 | `ztx_buf.c` | A ~150-line ZMODEM sender that links the **real `zmodem.o`** behind a buffered `send_byte` (no ring, no thread). Isolates "how much is `zmodem.c`" from "how much is `sexyz.c`" — **not** a throughput model of SyncTERM (SyncTERM is BDP/socket-buffer tuned and faster). Build it at `-O3` to match the release flags; `-O2` under-reports. |
 | `matrix.sh` | Driver for the block-size / CRC / latency / bandwidth / error sweeps. |
 | `zdecode.py` | Decodes a `--tap` wire capture into a frame trace (`ZRPOS pos=…`, `ZACK pos=…`, subpacket lengths). Resynchronises on ZPAD/ZDLE like a receiver, so it survives corrupted stretches. Diff a passing run against a failing one to see recovery behaviour directly. |
@@ -28,6 +29,12 @@ gate** that the first attempt skipped.
 - **Forsberg rzsz** (reference): build the **`modern` branch** of the rzsz history
   repo (POSIX target) with the same permissive flags — the 2003 tarball segfaults
   on non-tty fds. Its `rz` (receiver) does not run headlessly; use its `sz` only.
+- **zmtx/zmrx** (Jacques Mattheij's ZMODEM, modernised by Deuce):
+  `git clone https://github.com/RealDeuce/zmtx-zmrx && cd zmtx-zmrx &&
+  make CFLAGS="-O3 -std=c99"`. Builds clean, no permissive flags needed, and
+  **both** ends run headlessly on a socket. `zmtx -8` for ZedZap; `zmrx -o` to
+  overwrite (there is no `-y`). As of 2.02 it is the **fastest receiver**
+  measured — see `docs/zmodem_comparison.md` §3.5.
 - **ztx_buf:** `gcc -O2 -o ztx_buf ztx_buf.c <sbbs>/src/sbbs3/gcc.linux.x64.obj.release-mt/zmodem.o -I<sbbs>/src/sbbs3 -I<sbbs>/src/xpdev -I<sbbs>/src/hash <sbbs>/src/hash/gcc.linux.x64.lib.release/libhash.a <sbbs>/src/xpdev/gcc.linux.x64.lib.release/libxpdev_mt.a -lpthread -lm`
 
 ## Running
@@ -49,6 +56,32 @@ python3 zbench_sock.py ... --tap --sockbuf 8192
 python3 zdecode.py /tmp/o/wire.bwd | head -40
 
 # matrix.sh: DATA=<dir> ./matrix.sh {block|crc|lat|bw|err}  (edit binary paths at top)
+
+# RECEIVE-side comparison: hold the sender fixed, vary only the receiver.
+for rx in "lrz -y" "sexyz -8 rz" "zmrx -o"; do
+  python3 zbench_sock.py --file big.256M --outdir /tmp/o \
+      --sender "/path/lsz -8 big.256M" --receiver "$rx" --label "$rx"
+done
+
+# Per-file cost: a BATCH of small files, rate-capped to a serial line.
+python3 zbench_sock.py --file s1 --file s2 --file s3 --file s4 --file s5 \
+    --outdir /tmp/o --sender "/path/lsz -8 s1 s2 s3 s4 s5" \
+    --receiver "/path/sexyz -8 rz" --rate-bps 14400   # 115200 bps
+
+# Profile a receiver (perf is unavailable here: perf_event_paranoid=3, not installed)
+python3 zbench_sock.py --file tiny.4M --outdir /tmp/o --sender "/path/lsz -8 tiny.4M" \
+    --receiver "valgrind --tool=callgrind --branch-sim=yes --cache-sim=yes \
+                --callgrind-out-file=/tmp/cg.out --quiet /path/sexyz -8 rz"
+callgrind_annotate --threshold=92 /tmp/cg.out
+
+# Split zmodem.c from the transport wrapper (build zrx_buf the same way as ztx_buf)
+gcc -O3 -o zrx_buf zrx_buf.c <sbbs>/src/sbbs3/gcc.linux.x64.obj.release-mt/zmodem.o \
+    -I<sbbs>/src/sbbs3 -I<sbbs>/src/xpdev -I<sbbs>/src/hash \
+    <sbbs>/src/hash/gcc.linux.x64.lib.release/libhash.a \
+    <sbbs>/src/xpdev/gcc.linux.x64.lib.release/libxpdev_mt.a -lpthread -lm
+python3 zbench_sock.py --file big.256M --outdir /tmp/o \
+    --sender "/path/lsz -8 big.256M" --receiver "$PWD/zrx_buf"   # NB: absolute path,
+                                             # the harness runs the receiver in outdir
 ```
 Output line: `rc(s/r) elapsed size recv name INTEGRITY goodput wire overhead`.
 `INTEGRITY` is a SHA-256 compare of source vs. received.

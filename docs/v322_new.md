@@ -597,6 +597,14 @@
 - ZMODEM send-path speedups (table-driven byte classification,
   slicing-by-4 CRC-32, buffered whole-file CRC), shared with
   SyncTERM's built-in transfers
+- Much faster ZMODEM receives. The receive path now takes whole
+  runs of unescaped bytes at a time instead of one byte per call,
+  roughly 2.5x the throughput at a quarter of the CPU on
+  fast/local links. As with sends, slower/real-world links are
+  unchanged — the connection speed dominates
+- The shared ZMODEM engine's own receive path is faster for every
+  caller, including SyncTERM's built-in transfers, whether or not
+  the caller adopts the new bulk-receive path
 
 ## SFTP Server
 
