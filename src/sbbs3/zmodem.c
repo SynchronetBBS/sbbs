@@ -1252,6 +1252,24 @@ BOOL zmodem_recv_bin16_header(zmodem_t* zm)
 	return TRUE;
 }
 
+/* Read one byte of the CR/LF sequence that terminates a hex header.  That
+   terminator is framing, not data: it is sent unescaped even when ESCCTL has
+   been negotiated -- a hex header is built from printable characters plus
+   CR/LF precisely so it survives a control-character-hostile link.  So it must
+   NOT go through zmodem_rx(), whose ESCCTL filter would drop it as an
+   unescaped control character and leave the header unterminated (a receiver
+   configured with EscapeCtrlChars would then time out on every hex header).
+   Flow-control bytes are skipped here the way zmodem_rx() skips them. */
+static int zmodem_recv_hex_eol(zmodem_t* zm)
+{
+	int c;
+
+	do {
+		c = zmodem_recv_raw(zm);
+	} while (c == XON || c == (XON | 0x80) || c == XOFF || c == (XOFF | 0x80));
+	return c;
+}
+
 BOOL zmodem_recv_hex_header(zmodem_t* zm)
 {
 	int                c;
@@ -1301,12 +1319,12 @@ BOOL zmodem_recv_hex_header(zmodem_t* zm)
 	/*
 	 * drop the end of line sequence after a hex header
 	 */
-	c = zmodem_rx(zm);
+	c = zmodem_recv_hex_eol(zm);
 	if (c == '\r' || c == SET_PARITY('\r')) { // CR with Even Parity (Tera Term's ZMODEM sends this)
 		/*
 		 * both bytes are expected when the first received is a CR
 		 */
-		c = zmodem_rx(zm);  /* drop LF */
+		c = zmodem_recv_hex_eol(zm);  /* drop LF */
 	}
 	if (c != '\n' && c != SET_PARITY('\n')) { // LF with Odd Parity
 		lprintf(zm, LOG_ERR, "%s HEX header not terminated with LF: %s"
