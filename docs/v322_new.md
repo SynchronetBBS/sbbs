@@ -619,6 +619,16 @@
   existing meaning when receiving (overwrite a file here) and
   gains the matching one when sending (tell the receiver to
   overwrite its own), as in `lsz`/`lrz`
+- Fixed: ZMODEM control-character escaping (`EscapeCtrlChars`, and
+  the new `-e`) did not work in either direction. Sending, control
+  characters were escaped but carriage returns were not, so a
+  receiver that had asked for escaping discarded them as line
+  noise and no file could be transferred at all. Receiving, the
+  CR/LF ending each hex header was itself discarded, so the
+  transfer's data arrived but the session could not be closed and
+  ended in a 100-second timeout. Both are long-standing. Escaped
+  transfers now interoperate with `lrzsz` in both directions, and
+  put the same bytes on the wire it does
 - New: `-e` requests ZMODEM control-character escaping, the
   command-line equivalent of `sexyz.ini`'s `EscapeCtrlChars`, for
   links that do not pass control characters intact. It applies

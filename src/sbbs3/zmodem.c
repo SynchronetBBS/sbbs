@@ -329,7 +329,6 @@ enum zmodem_tx_class {
 	ZMODEM_TX_NORMAL        = 0,
 	ZMODEM_TX_ESCAPE_ALWAYS = 1 << 0,
 	ZMODEM_TX_ESCAPE_CTRL   = 1 << 1,
-	ZMODEM_TX_ESCAPE_CR     = 1 << 2,
 	ZMODEM_TX_ESCAPE_IAC    = 1 << 3,
 };
 
@@ -341,10 +340,9 @@ enum zmodem_tx_class {
 #define TXN ZMODEM_TX_NORMAL
 #define TXA ZMODEM_TX_ESCAPE_ALWAYS
 #define TXC ZMODEM_TX_ESCAPE_CTRL
-#define TXR ZMODEM_TX_ESCAPE_CR
 #define TXI ZMODEM_TX_ESCAPE_IAC
 static const unsigned char zmodem_tx_classes[256] = {
-	/* 00 */ TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXR, TXC, TXC,
+	/* 00 */ TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC,
 	/* 10 */ TXA, TXA, TXC, TXA, TXC, TXC, TXC, TXC, TXA, TXC, TXC, TXC, TXC, TXC, TXC, TXC,
 	/* 20 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
 	/* 30 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
@@ -352,7 +350,7 @@ static const unsigned char zmodem_tx_classes[256] = {
 	/* 50 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
 	/* 60 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
 	/* 70 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
-	/* 80 */ TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXR, TXC, TXC,
+	/* 80 */ TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC,
 	/* 90 */ TXA, TXA, TXC, TXA, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC,
 	/* A0 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
 	/* B0 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
@@ -364,20 +362,18 @@ static const unsigned char zmodem_tx_classes[256] = {
 #undef TXN
 #undef TXA
 #undef TXC
-#undef TXR
 #undef TXI
 
 /*
- * The escape modes remain fixed throughout a data subpacket.  Include the
- * conditional CR class here and defer its last_sent test until a CR arrives,
- * allowing data senders to reuse this mask for every byte.
+ * The escape modes remain fixed throughout a data subpacket, so a data sender
+ * computes this mask once and reuses it for every byte.
  */
 static inline unsigned zmodem_tx_active(const zmodem_t* zm)
 {
 	unsigned escape_ctrl = !!zm->escape_ctrl_chars;
 
 	return ZMODEM_TX_ESCAPE_ALWAYS
-	    | (escape_ctrl * (ZMODEM_TX_ESCAPE_CTRL | ZMODEM_TX_ESCAPE_CR))
+	    | (escape_ctrl * ZMODEM_TX_ESCAPE_CTRL)
 	    | (!!zm->escape_telnet_iac * ZMODEM_TX_ESCAPE_IAC);
 }
 
@@ -385,8 +381,6 @@ static ZMODEM_NOINLINE int zmodem_tx_non_normal(zmodem_t* zm, unsigned char c, u
 {
 	int result;
 
-	if (action == ZMODEM_TX_ESCAPE_CR && (zm->last_sent & 0x7f) != '@')
-		return zmodem_send_raw_fast(zm, c);
 	if (action == ZMODEM_TX_ESCAPE_IAC) {
 		if ((result = zmodem_send_raw_fast(zm, ZDLE)) != SEND_SUCCESS)
 			return result;
