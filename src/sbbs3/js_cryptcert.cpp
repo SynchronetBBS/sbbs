@@ -3079,7 +3079,7 @@ js_cryptcert_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	size_t                            len;
 
 	if (!do_cryptInit(lprintf)) {
-		JS_ReportError(cx, "do_cryptInit failure");
+		JS_ReportError(cx, "do_cryptInit failure: %s", get_cryptInit_error());
 		return JS_FALSE;
 	}
 	obj = JS_NewObject(cx, &js_cryptcert_class, NULL, NULL);

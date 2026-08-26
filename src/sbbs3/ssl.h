@@ -38,6 +38,7 @@ DLLEXPORT char* DLLCALL get_binary_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT
 DLLEXPORT char* DLLCALL get_crypt_attribute(CRYPT_HANDLE sess, C_IN CRYPT_ATTRIBUTE_TYPE attr);
 DLLEXPORT char* DLLCALL get_crypt_error(CRYPT_HANDLE sess);
 DLLEXPORT bool DLLCALL do_cryptInit(int (*lprintf)(int level, const char* fmt, ...));
+DLLEXPORT const char* DLLCALL get_cryptInit_error(void);
 DLLEXPORT bool DLLCALL is_crypt_initialized(void);
 DLLEXPORT bool DLLCALL get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const char *action, int *level);
 DLLEXPORT int add_private_key(scfg_t *cfg, int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSION csess);
