@@ -6,6 +6,10 @@
 
 include_guard(GLOBAL)
 
+set(SYNCHRONET_BOTAN_MIN_VERSION "3.13.0")
+set(SYNCHRONET_BOTAN_SHA256
+	"12f5a8358890bbee82edfe9d2e7769b0a610b6dd0e0698aea13d20a675d84620")
+
 function(synchronet_configure_crypto)
 	set(CRYPTO_BACKEND "${CRYPTO_BACKEND}" CACHE STRING
 		"Crypto backend: Botan, OpenSSL, or empty for auto-detect")
@@ -50,7 +54,8 @@ function(synchronet_configure_crypto)
 	set(_botan_ok FALSE)
 	set(_openssl_ok FALSE)
 	if(PkgConfig_FOUND)
-		pkg_check_modules(SYS_BOTAN3 QUIET "botan-3>=3.6")
+		pkg_check_modules(SYS_BOTAN3 QUIET
+			"botan-3>=${SYNCHRONET_BOTAN_MIN_VERSION}")
 		if(SYS_BOTAN3_FOUND)
 			set(_botan_ok TRUE)
 		endif()
@@ -73,7 +78,8 @@ function(synchronet_configure_crypto)
 	elseif(_requested STREQUAL "Botan")
 		if(NOT _botan_ok)
 			message(FATAL_ERROR
-				"CRYPTO_BACKEND=Botan requires system Botan 3.6+ or "
+				"CRYPTO_BACKEND=Botan requires system Botan "
+				"${SYNCHRONET_BOTAN_MIN_VERSION}+ or "
 				"USE_VENDORED_BOTAN=1")
 		endif()
 	elseif(_requested STREQUAL "OpenSSL")
@@ -90,19 +96,33 @@ function(synchronet_configure_crypto)
 		set(_vendor TRUE)
 	elseif(_botan_ok)
 		set(_requested Botan)
-	elseif(_openssl_ok)
-		set(_requested OpenSSL)
 	else()
 		if(_vendor_forbidden)
-			message(FATAL_ERROR
-				"No usable system crypto provider found and "
-				"USE_VENDORED_BOTAN=0")
+			if(_openssl_ok)
+				set(_requested OpenSSL)
+			else()
+				message(FATAL_ERROR
+					"No usable system crypto provider found and "
+					"USE_VENDORED_BOTAN=0")
+			endif()
+		else()
+			set(_requested Botan)
+			set(_vendor TRUE)
 		endif()
-		set(_requested Botan)
-		set(_vendor TRUE)
 	endif()
 
 	if(_vendor)
+		if(SYNCHRONET_BOTAN_ARCHIVE)
+			set(_botan_archive "${SYNCHRONET_BOTAN_ARCHIVE}")
+		else()
+			set(_botan_archive
+				"${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../../3rdp/dist/Botan.tar.xz")
+		endif()
+		if(NOT EXISTS "${_botan_archive}")
+			message(FATAL_ERROR
+				"Vendored Botan archive not found: ${_botan_archive}")
+		endif()
+
 		find_package(Python3 COMPONENTS Interpreter QUIET)
 		if(NOT Python3_Interpreter_FOUND)
 			if(_vendor_forced)
@@ -137,11 +157,11 @@ function(synchronet_configure_crypto)
 			string(APPEND _certstor_modules ",certstor_flatfile")
 		endif()
 		set(_modules
-			"tls12,tls13,aes,cbc,ctr,chacha,chacha20poly1305"
+			"tls12,tls13,aes,cbc,cfb,ctr,chacha,chacha20poly1305"
 			",rc4,des,cast128,hmac,pbkdf2,scrypt,pbes2"
-			",sha1,sha2_32,sha2_64,rsa,ed25519,x25519,dh,ecdsa,ecdh,ml_kem"
+			",sha1,sha2_32,sha2_64,rsa,emsa_pssr,ed25519,x25519,dh,ecdsa,ecdh,ml_kem"
 			",pcurves_secp256r1,pcurves_secp384r1,pcurves_secp521r1"
-			",x509${_certstor_modules},system_rng,auto_rng")
+			",x509${_certstor_modules},ffi,system_rng,auto_rng")
 		string(REPLACE ";" "" _modules "${_modules}")
 		set(_configure_args
 			--prefix=${VENDORED_BOTAN_PREFIX}
@@ -194,7 +214,9 @@ function(synchronet_configure_crypto)
 		endif()
 
 		ExternalProject_Add(vendored-botan
-			URL "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../../3rdp/dist/Botan.tar.xz"
+			URL "${_botan_archive}"
+			URL_HASH "SHA256=${SYNCHRONET_BOTAN_SHA256}"
+			DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 			PREFIX "${CMAKE_BINARY_DIR}/vendored-botan-src"
 			CONFIGURE_COMMAND ${Python3_EXECUTABLE} <SOURCE_DIR>/configure.py
 				${_configure_args}
@@ -209,17 +231,23 @@ function(synchronet_configure_crypto)
 			INTERFACE_INCLUDE_DIRECTORIES
 				"${VENDORED_BOTAN_PREFIX}/include/botan-3")
 		if(WIN32)
-			target_link_libraries(vendored-botan-3 INTERFACE Crypt32)
+			target_link_libraries(vendored-botan-3 INTERFACE crypt32)
 		endif()
 		add_dependencies(vendored-botan-3 vendored-botan)
 		set(BOTAN3_VENDORED_TARGET "vendored-botan-3" CACHE INTERNAL "")
+		set(BOTAN3_VENDORED_BUILD_TARGET "vendored-botan" CACHE INTERNAL "")
 		set(USE_VENDORED_BOTAN 1 CACHE STRING "" FORCE)
 	else()
+		set(BOTAN3_VENDORED_BUILD_TARGET "" CACHE INTERNAL "" FORCE)
 		set(USE_VENDORED_BOTAN 0 CACHE STRING "" FORCE)
 	endif()
 
 	set(CRYPTO_BACKEND "${_requested}" CACHE STRING "" FORCE)
 	set(DEUCESSH_CRYPTO_BACKEND "${_requested}" CACHE STRING "" FORCE)
+	set(DEUCESSH_BOTAN_MIN_VERSION "${SYNCHRONET_BOTAN_MIN_VERSION}"
+		CACHE INTERNAL "" FORCE)
+	set(XPTLS_BOTAN_MIN_VERSION "${SYNCHRONET_BOTAN_MIN_VERSION}"
+		CACHE INTERNAL "" FORCE)
 	if(WITHOUT_CRYPTO OR XP_CRYPTO_BACKEND STREQUAL "none")
 		set(XP_CRYPTO_BACKEND "none" CACHE STRING "" FORCE)
 	else()

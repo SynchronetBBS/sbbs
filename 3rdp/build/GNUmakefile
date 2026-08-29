@@ -59,9 +59,9 @@ JS_CONFIGURE_ENV += 'CXXFLAGS=$(CXXFLAGS)'
 cryptlib: $(CRYPTLIB_BUILD)
 libmozjs: $(JSLIB_BUILD)
 # Botan is only built when the caller asks for vendored (Common.gmake's
-# probe sets USE_VENDORED_BOTAN when neither system Botan 3.6+ nor
-# OpenSSL 3.0+ is available, plus any explicit USE_VENDORED_BOTAN=1
-# override).  Otherwise `make botan` is a no-op so CI jobs can
+# probe sets USE_VENDORED_BOTAN when system Botan 3.13+ is unavailable,
+# plus any explicit USE_VENDORED_BOTAN=1 override).  Otherwise `make botan`
+# is a no-op so CI jobs can
 # unconditionally invoke it and produce an empty archive.
 ifdef USE_VENDORED_BOTAN
 botan: $(BOTAN_BUILD)
@@ -265,7 +265,7 @@ endif
 ##########
 #
 # Built only when the consumer (usually SyncTERM) asks for it, because
-# the system already has Botan 3.9+ / OpenSSL 3.0+ in the common case.
+# the system already has Botan 3.13+ in the common case.
 # No patches — the tarball compiles cleanly on every platform we ship
 # to.  Installs a static libbotan-3.a plus botan-3.pc under
 # $(BOTAN_IDIR); consumers prepend $(BOTAN_PKGCONFIG_DIR) to
@@ -295,18 +295,20 @@ endif
 # synchronised with the matching block in src/build/SynchronetCrypto.cmake.
 #
 # tls12,tls13               — xp_tls (TelnetS, HTTPS)
-# aes,cbc,ctr               — xp_cipher encrypted-INI + DeuceSSH AES-256/CTR
+# aes,cbc,cfb,ctr           — xp_cipher encrypted-INI + DeuceSSH AES-256/CTR
 # chacha,chacha20poly1305   — xp_cipher ChaCha20 + TLS 1.3 AEAD
 # rc4,des,cast128           — xp_cipher legacy decrypt-only paths
 # hmac,pbkdf2,scrypt,pbes2  — xp_kdf + SSH MAC + encrypted CA keys
 # sha1,sha2_32,sha2_64      — legacy fingerprints + current SHA-256/-512
-# rsa,ed25519,x25519,dh     — SSH host/user keys + TLS sig/kex
+# rsa,emsa_pssr,ed25519,    — SSH host/user keys + TLS sig/kex
+# x25519,dh
 # ecdsa,ecdh                — TLS 1.2/1.3 cert + kex
 # ml_kem                    — SSH mlkem768x25519-sha256 post-quantum kex
 # pcurves_secp{256,384,521} — NIST curves for TLS ECDSA
 # x509                      — TLS cert chain parsing
 # certstor_system           — TLS Web-PKI system trust facade
 # certstor_flatfile         — Unix system CA bundle backend
+# ffi                       — DeuceSSH backend cross-check tests
 # system_rng,auto_rng       — RNG stack
 # Line continuations in a := assignment fold to a single space
 # between segments — the space confuses Botan's configure.py
@@ -320,10 +322,10 @@ else
  BOTAN_CERTSTOR_MODULES := $(BOTAN_CERTSTOR_MODULES),certstor_flatfile
 endif
 
-BOTAN_MODULES := $(subst $() ,,tls12,tls13,aes,cbc,ctr,chacha,chacha20poly1305,\
+BOTAN_MODULES := $(subst $() ,,tls12,tls13,aes,cbc,cfb,ctr,chacha,chacha20poly1305,\
 rc4,des,cast128,hmac,pbkdf2,scrypt,pbes2,sha1,sha2_32,sha2_64,rsa,ed25519,\
-x25519,dh,ecdsa,ecdh,ml_kem,pcurves_secp256r1,pcurves_secp384r1,\
-pcurves_secp521r1,x509,$(BOTAN_CERTSTOR_MODULES),system_rng,auto_rng)
+x25519,dh,ecdsa,ecdh,emsa_pssr,ml_kem,pcurves_secp256r1,pcurves_secp384r1,\
+pcurves_secp521r1,x509,$(BOTAN_CERTSTOR_MODULES),ffi,system_rng,auto_rng)
 
 # Botan's generated Makefile doesn't use a jobserver, so -j has to be
 # passed explicitly.  Detect a sane default; user can override with

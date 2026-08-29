@@ -33,10 +33,11 @@ stages:
     - job: "linux-x64 [botan]"
   script:
     # Use the same crypto dependency as the Linux binary job when validating
-    # the assembled tree.  The source artifact itself contains no Botan build.
+    # the assembled tree.  The source artifact also carries the release
+    # archive so its normal fallback remains self-contained.
     - tar -xzf "/tmp/gitlab-runner/linux-x64-${CI_PIPELINE_ID}/botan.tgz"
     - for d in 3rdp/*.release/botan/lib/pkgconfig; do [ -d "$d" ] && export PKG_CONFIG_PATH="$(pwd)/$d${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"; done
-    - mkdir -p deucegate xpdev ssh conio encode
+    - mkdir -p deucegate xpdev ssh conio encode build 3rdp/dist
     # Keep whole component trees where their CMake files own the source list,
     # but include only the two files DeuceGate consumes from conio and encode.
     - git archive --format=tar "$CI_COMMIT_SHA" src/deucegate | tar -xf - -C deucegate --strip-components=2
@@ -44,6 +45,8 @@ stages:
     - git archive --format=tar "$CI_COMMIT_SHA" src/ssh | tar -xf - -C ssh --strip-components=2
     - git archive --format=tar "$CI_COMMIT_SHA" src/conio/utf8_codepages.c src/conio/utf8_codepages.h | tar -xf - -C conio --strip-components=2
     - git archive --format=tar "$CI_COMMIT_SHA" src/encode/base64.c src/encode/base64.h | tar -xf - -C encode --strip-components=2
+    - git archive --format=tar "$CI_COMMIT_SHA" src/build/SynchronetCrypto.cmake | tar -xf - -C build --strip-components=2
+    - git archive --format=tar "$CI_COMMIT_SHA" 3rdp/dist/Botan.tar.xz | tar -xf - -C 3rdp/dist --strip-components=2
     - printf '%s\n' "$CI_COMMIT_SHA" > SOURCE_COMMIT
     # Prove that the artifact, not the monorepo source paths, configures,
     # builds, and passes its compatibility tests before publishing it.
@@ -58,6 +61,8 @@ stages:
       - ssh/
       - conio/
       - encode/
+      - build/
+      - 3rdp/dist/Botan.tar.xz
       - LICENSE
       - SOURCE_COMMIT
 

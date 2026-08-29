@@ -9,6 +9,8 @@ option(DEUCEGATE_BUILD_TESTS "Build DeuceGate tests" ON)
 set(DEUCEGATE_BOTAN_ROOT "" CACHE PATH
     "Optional Botan installation root (useful when cross-compiling without target pkg-config metadata)")
 
+include(../build/SynchronetCrypto.cmake)
+
 # xpdev's audio modules are unrelated to this daemon and pull in optional GUI/audio SDKs.
 set(WITHOUT_OSS ON CACHE BOOL "" FORCE)
 set(WITHOUT_SDL_AUDIO ON CACHE BOOL "" FORCE)
@@ -19,11 +21,37 @@ set(WITHOUT_PIPEWIRE ON CACHE BOOL "" FORCE)
 set(WITHOUT_COREAUDIO ON CACHE BOOL "" FORCE)
 set(DEUCESSH_BUILD_STATIC ON CACHE BOOL "" FORCE)
 set(DEUCESSH_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(WITHOUT_CRYPTO ON CACHE BOOL "" FORCE)
+set(WITHOUT_DEUCESSH OFF CACHE BOOL "" FORCE)
 
 if(DEUCEGATE_BOTAN_ROOT)
     enable_language(CXX)
     if(NOT EXISTS "${DEUCEGATE_BOTAN_ROOT}/lib/libbotan-3.a")
         message(FATAL_ERROR "DEUCEGATE_BOTAN_ROOT does not contain lib/libbotan-3.a")
+    endif()
+    set(_botan_build_header
+        "${DEUCEGATE_BOTAN_ROOT}/include/botan-3/botan/build.h")
+    if(NOT EXISTS "${_botan_build_header}")
+        message(FATAL_ERROR
+            "DEUCEGATE_BOTAN_ROOT does not contain Botan's build.h")
+    endif()
+    file(READ "${_botan_build_header}" _botan_build_contents)
+    foreach(_component MAJOR MINOR PATCH)
+        string(REGEX MATCH
+            "#define[ \t]+BOTAN_VERSION_${_component}[ \t]+([0-9]+)"
+            _botan_version_match "${_botan_build_contents}")
+        if(NOT _botan_version_match)
+            message(FATAL_ERROR
+                "Cannot determine Botan version from ${_botan_build_header}")
+        endif()
+        set(_botan_version_${_component} "${CMAKE_MATCH_1}")
+    endforeach()
+    set(_botan_version
+        "${_botan_version_MAJOR}.${_botan_version_MINOR}.${_botan_version_PATCH}")
+    if(_botan_version VERSION_LESS SYNCHRONET_BOTAN_MIN_VERSION)
+        message(FATAL_ERROR
+            "DEUCEGATE_BOTAN_ROOT contains Botan ${_botan_version}; "
+            "Botan ${SYNCHRONET_BOTAN_MIN_VERSION}+ is required")
     endif()
     add_library(deucegate_botan STATIC IMPORTED GLOBAL)
     set_target_properties(deucegate_botan PROPERTIES
@@ -31,7 +59,23 @@ if(DEUCEGATE_BOTAN_ROOT)
         INTERFACE_INCLUDE_DIRECTORIES "${DEUCEGATE_BOTAN_ROOT}/include/botan-3"
         IMPORTED_LINK_INTERFACE_LANGUAGES CXX)
     set(BOTAN3_VENDORED_TARGET deucegate_botan CACHE STRING "" FORCE)
+    set(BOTAN3_VENDORED_BUILD_TARGET "" CACHE INTERNAL "" FORCE)
     set(DEUCESSH_CRYPTO_BACKEND Botan CACHE STRING "" FORCE)
+    set(DEUCESSH_BOTAN_MIN_VERSION "${SYNCHRONET_BOTAN_MIN_VERSION}"
+        CACHE INTERNAL "" FORCE)
+else()
+    # The monorepo keeps 3rdp beside src; the flattened source artifact keeps
+    # it beside deucegate.  Point the shared selector at whichever layout is
+    # present so both builds use the same vendored release.
+    foreach(_botan_archive
+            "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdp/dist/Botan.tar.xz"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../3rdp/dist/Botan.tar.xz")
+        if(EXISTS "${_botan_archive}")
+            set(SYNCHRONET_BOTAN_ARCHIVE "${_botan_archive}")
+            break()
+        endif()
+    endforeach()
+    synchronet_configure_crypto()
 endif()
 
 add_subdirectory(../xpdev xpdev-build)
@@ -58,9 +102,9 @@ target_include_directories(deucegate_lib PUBLIC
     ../encode
 )
 target_link_libraries(deucegate_lib PUBLIC xpdev deucessh::static)
-if(DEUCEGATE_BOTAN_ROOT)
+if(BOTAN3_VENDORED_TARGET)
     # DeuceSSH deliberately leaves a vendored crypto target for its parent to export.
-    target_link_libraries(deucegate_lib PUBLIC deucegate_botan)
+    target_link_libraries(deucegate_lib PUBLIC ${BOTAN3_VENDORED_TARGET})
 endif()
 
 if(WIN32)

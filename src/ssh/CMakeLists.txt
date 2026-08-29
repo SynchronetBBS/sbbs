@@ -13,6 +13,8 @@ endif()
 
 option(DEUCESSH_BUILD_STATIC "Build static library" ON)
 option(DEUCESSH_BUILD_SHARED "Build shared library" ON)
+set(DEUCESSH_BOTAN_MIN_VERSION "3.13.0" CACHE STRING
+	"Minimum supported Botan version")
 
 if(NOT DEUCESSH_BUILD_STATIC AND NOT DEUCESSH_BUILD_SHARED)
 	message(FATAL_ERROR "At least one of DEUCESSH_BUILD_STATIC or DEUCESSH_BUILD_SHARED must be ON")
@@ -27,19 +29,21 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "")
 	# Auto-detect: try Botan first, then OpenSSL
 	find_package(PkgConfig QUIET)
 	if(PkgConfig_FOUND)
-		pkg_check_modules(BOTAN3 QUIET IMPORTED_TARGET botan-3)
+		pkg_check_modules(BOTAN3 QUIET IMPORTED_TARGET
+			"botan-3>=${DEUCESSH_BOTAN_MIN_VERSION}")
 	endif()
 	if(BOTAN3_FOUND)
 		set(DEUCESSH_CRYPTO_BACKEND "Botan")
 		message(STATUS "Auto-detected crypto backend: Botan")
 	else()
-		find_package(OpenSSL QUIET)
+		find_package(OpenSSL 3.0 QUIET)
 		if(OpenSSL_FOUND)
 			set(DEUCESSH_CRYPTO_BACKEND "OpenSSL")
 			message(STATUS "Auto-detected crypto backend: OpenSSL")
 		else()
 			message(FATAL_ERROR
-				"No crypto backend found. Install Botan 3 or OpenSSL 3.0+, "
+				"No crypto backend found. Install Botan "
+				"${DEUCESSH_BOTAN_MIN_VERSION}+ or OpenSSL 3.0+, "
 				"or set -DDEUCESSH_CRYPTO_BACKEND=Botan|OpenSSL")
 		endif()
 	endif()
@@ -49,10 +53,11 @@ elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 	# at configure time).  BOTAN3_VENDORED_TARGET is the cache hint.
 	if(NOT BOTAN3_VENDORED_TARGET)
 		find_package(PkgConfig REQUIRED)
-		pkg_check_modules(BOTAN3 REQUIRED IMPORTED_TARGET botan-3)
+		pkg_check_modules(BOTAN3 REQUIRED IMPORTED_TARGET
+			"botan-3>=${DEUCESSH_BOTAN_MIN_VERSION}")
 	endif()
 elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
-	find_package(OpenSSL REQUIRED)
+	find_package(OpenSSL 3.0 REQUIRED)
 else()
 	message(FATAL_ERROR
 		"Unknown crypto backend: ${DEUCESSH_CRYPTO_BACKEND} "
@@ -71,15 +76,15 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 		set(DSSH_CRYPTO_INCLUDE ${BOTAN3_INCLUDE_DIRS})
 	endif()
 	set(DSSH_CRYPTO_IMPL crypto/botan.cpp)
-	set(DSSH_CONFIG_FIND_DEPENDENCY "find_dependency(PkgConfig)\npkg_check_modules(BOTAN3 REQUIRED IMPORTED_TARGET botan-3)")
-	set(DSSH_PC_REQUIRES_PRIVATE "botan-3")
+	set(DSSH_CONFIG_FIND_DEPENDENCY "find_dependency(PkgConfig)\npkg_check_modules(BOTAN3 REQUIRED IMPORTED_TARGET \"botan-3>=${DEUCESSH_BOTAN_MIN_VERSION}\")")
+	set(DSSH_PC_REQUIRES_PRIVATE "botan-3 >= ${DEUCESSH_BOTAN_MIN_VERSION}")
 elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
 	set(DSSH_CRYPTO_LIB_PRIVATE OpenSSL::Crypto)
 	set(DSSH_CRYPTO_LIB_INTERFACE ${OPENSSL_CRYPTO_LIBRARIES})
 	set(DSSH_CRYPTO_INCLUDE ${OPENSSL_INCLUDE_DIR})
 	set(DSSH_CRYPTO_IMPL crypto/openssl.c)
-	set(DSSH_CONFIG_FIND_DEPENDENCY "find_dependency(OpenSSL)")
-	set(DSSH_PC_REQUIRES_PRIVATE "libcrypto")
+	set(DSSH_CONFIG_FIND_DEPENDENCY "find_dependency(OpenSSL 3.0)")
+	set(DSSH_PC_REQUIRES_PRIVATE "libcrypto >= 3.0")
 endif()
 
 # Botan backend uses C++ sources; enable CXX only when needed
@@ -418,6 +423,9 @@ if(DEUCESSH_BUILD_STATIC)
 		PRIVATE DSSH_VERSION_STRING="${PROJECT_VERSION}"
 		$<$<CONFIG:Release>:NDEBUG>)
 	target_compile_options(deucessh_static PRIVATE ${DEUCESSH_COMPILE_OPTIONS})
+	if(BOTAN3_VENDORED_BUILD_TARGET)
+		add_dependencies(deucessh_static ${BOTAN3_VENDORED_BUILD_TARGET})
+	endif()
 	list(APPEND DEUCESSH_INSTALL_TARGETS deucessh_static)
 endif()
 
@@ -458,6 +466,9 @@ if(DEUCESSH_BUILD_SHARED)
 		${DEUCESSH_COMPILE_OPTIONS}
 		$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>:
 			-fvisibility=hidden -fno-semantic-interposition>)
+	if(BOTAN3_VENDORED_BUILD_TARGET)
+		add_dependencies(deucessh_shared ${BOTAN3_VENDORED_BUILD_TARGET})
+	endif()
 	# ELF shared library hardening and optimization (Linux, FreeBSD)
 	if(UNIX AND NOT APPLE)
 		target_link_options(deucessh_shared PRIVATE

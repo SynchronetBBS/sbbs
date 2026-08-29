@@ -121,8 +121,8 @@ password authentication.
 
 Changes touching `_WIN32`, process creation, drop files, sockets, or DOS support
 also require a 64-bit MinGW compile and final link. In this Synchronet checkout,
-the existing Windows Botan package can be selected without leaking host
-`pkg-config` flags:
+the vendored Botan archive can be selected without leaking host `pkg-config`
+flags:
 
 ```sh
 cmake -S . -B /tmp/deucegate-mingw \
@@ -130,7 +130,7 @@ cmake -S . -B /tmp/deucegate-mingw \
   -DCMAKE_C_COMPILER=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-gcc \
   -DCMAKE_CXX_COMPILER=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-g++ \
   -DCMAKE_RC_COMPILER=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-windres \
-  -DDEUCEGATE_BOTAN_ROOT=../../3rdp/gcc.win64.x64.release/botan \
+  -DUSE_VENDORED_BOTAN=1 \
   -DDEUCEGATE_BUILD_TESTS=OFF -DBUILD_TESTING=OFF
 cmake --build /tmp/deucegate-mingw --parallel
 ```

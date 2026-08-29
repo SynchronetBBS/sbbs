@@ -95,7 +95,7 @@ ifndef WITHOUT_DEUCESSH
  # Ubuntu) don't propagate `export VAR := value` from an included file
  # into $(shell ...) calls in the same parse phase.  $(PKG_CONFIG_PATH)
  # is still set as a make variable, so we can re-emit it explicitly.
- DSSH_CRYPTO_READY := $(shell export PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)"; (pkg-config --atleast-version=3.0 botan-3 2>/dev/null || pkg-config --atleast-version=3.0 libcrypto 2>/dev/null) && echo YES)
+ DSSH_CRYPTO_READY := $(shell export PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)"; (pkg-config --atleast-version=3.13.0 botan-3 2>/dev/null || pkg-config --atleast-version=3.0 libcrypto 2>/dev/null) && echo YES)
  # Sentinel that proves configure ran AND generation produced a
  # buildable tree.  Use `test -f` via $(shell) rather than $(wildcard)
  # — wildcard's expansion is cached across a single make parse phase,

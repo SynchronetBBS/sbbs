@@ -12,6 +12,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 find_package(PkgConfig QUIET)
+set(XPTLS_BOTAN_MIN_VERSION "3.13.0" CACHE STRING
+	"Minimum supported Botan version")
 
 # xptls uses xpdev's socket/path portability API and its monotonic timer.
 # Standalone/test builds add xpdev for that dependency; raw archive builds
@@ -72,7 +74,8 @@ if(NOT DEFINED XP_CRYPTO_BACKEND OR XP_CRYPTO_BACKEND STREQUAL "")
 			"xptls crypto backend" FORCE)
 	else()
 		if(PkgConfig_FOUND)
-			pkg_check_modules(SYS_BOTAN3 QUIET "botan-3>=3.6")
+			pkg_check_modules(SYS_BOTAN3 QUIET
+				"botan-3>=${XPTLS_BOTAN_MIN_VERSION}")
 		endif()
 		if(SYS_BOTAN3_FOUND)
 			set(XP_CRYPTO_BACKEND "Botan" CACHE STRING
@@ -184,10 +187,14 @@ endif()
 if(XP_CRYPTO_BACKEND STREQUAL "Botan")
 	if(BOTAN3_VENDORED_TARGET)
 		target_link_libraries(xptls_static PRIVATE ${BOTAN3_VENDORED_TARGET})
+		if(BOTAN3_VENDORED_BUILD_TARGET)
+			add_dependencies(xptls_static ${BOTAN3_VENDORED_BUILD_TARGET})
+		endif()
 	else()
 		if(NOT TARGET PkgConfig::SYS_BOTAN3)
 			find_package(PkgConfig REQUIRED)
-			pkg_check_modules(SYS_BOTAN3 REQUIRED IMPORTED_TARGET "botan-3>=3.6")
+			pkg_check_modules(SYS_BOTAN3 REQUIRED IMPORTED_TARGET
+				"botan-3>=${XPTLS_BOTAN_MIN_VERSION}")
 		endif()
 		target_link_libraries(xptls_static PRIVATE PkgConfig::SYS_BOTAN3)
 	endif()

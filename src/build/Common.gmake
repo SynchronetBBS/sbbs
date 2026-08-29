@@ -387,9 +387,10 @@ LDFLAGS	+=	-L$(LIBODIR)
 # Decision order (first match wins; user can pre-set CRYPTO_BACKEND
 # or USE_VENDORED_BOTAN on the command line to skip the probe).
 #   1. USE_VENDORED_BOTAN set, or Windows cross-build → Botan, vendored.
-#   2. System Botan 3.6+ available → Botan, system.
-#   3. System OpenSSL 3.0+ available → OpenSSL, system.
-#   4. Otherwise → Botan, vendored (from 3rdp/dist/Botan.tar.xz).
+#   2. System Botan 3.13+ available → Botan, system.
+#   3. Otherwise → Botan, vendored (from 3rdp/dist/Botan.tar.xz).
+# OpenSSL remains available when selected explicitly with
+# CRYPTO_BACKEND=OpenSSL.
 #
 # USE_VENDORED_BOTAN is a pure boolean: defined = use vendored.  Never
 # assign it to "0" — leave it unset to mean "don't use vendored".
@@ -413,10 +414,8 @@ ifndef CRYPTO_BACKEND
   USE_VENDORED_BOTAN := 1
  else ifdef USE_VENDORED_BOTAN
   CRYPTO_BACKEND     := Botan
- else ifeq ($(shell pkg-config --atleast-version=3.6 botan-3 2>/dev/null && echo Y),Y)
+ else ifeq ($(shell pkg-config --atleast-version=3.13.0 botan-3 2>/dev/null && echo Y),Y)
   CRYPTO_BACKEND     := Botan
- else ifeq ($(shell pkg-config --atleast-version=3.0 libcrypto 2>/dev/null && echo Y),Y)
-  CRYPTO_BACKEND     := OpenSSL
  else
   CRYPTO_BACKEND     := Botan
   USE_VENDORED_BOTAN := 1

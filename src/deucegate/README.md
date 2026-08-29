@@ -12,9 +12,9 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-The DeuceSSH build selects Botan 3 or OpenSSL 3 automatically. It can be selected explicitly with `-DDEUCESSH_CRYPTO_BACKEND=Botan` or `OpenSSL`.
+DeuceGate and SyncTERM use the same crypto selection policy: system Botan 3.13 or newer is used when available, and the bundled Botan source is built otherwise. OpenSSL 3.0 or newer remains available when selected explicitly with `-DCRYPTO_BACKEND=OpenSSL`; use `-DUSE_VENDORED_BOTAN=1` to force the bundled Botan build or `-DUSE_VENDORED_BOTAN=0` to opt out of it.
 
-For a MinGW cross-build with a target Botan installation that should not be discovered through the host's `pkg-config`, pass `-DCMAKE_SYSTEM_NAME=Windows`, the MinGW C/C++/resource compilers, and `-DDEUCEGATE_BOTAN_ROOT=/path/to/windows/botan`.
+For a MinGW cross-build with a Botan 3.13-or-newer target installation that should not be discovered through the host's `pkg-config`, pass `-DCMAKE_SYSTEM_NAME=Windows`, the MinGW C/C++/resource compilers, and `-DDEUCEGATE_BOTAN_ROOT=/path/to/windows/botan`.
 
 ## Run
 

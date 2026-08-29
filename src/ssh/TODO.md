@@ -3,16 +3,6 @@
 
 ## Open
 
-179. **Require Botan 3.13 and update the vendored Botan after release.**
-     The former `PK_Verifier`/`PK_Signer` constructor issue no longer
-     reproduces with Botan 3.12: the deprecated `EMSA_PKCS1` spelling is
-     accepted, genuinely unknown padding names throw catchable exceptions,
-     and both cases are clean under Valgrind. Once Botan 3.13.0 is released,
-     require `botan-3 >= 3.13.0` for system builds and update the parent
-     build's vendored Botan version, source archive, and checksum to the same
-     release. Verify both system and vendored Botan builds with the complete
-     DeuceSSH test suite before removing any now-obsolete compatibility code.
-
 84. **DH-GEX group size vs cipher strength mismatch.**
     The client's GEX_REQUEST parameters (`GEX_MIN 2048`, `GEX_N 4096`,
     `GEX_MAX 8192`) are compile-time constants that don't account for the
@@ -47,6 +37,9 @@
 
 Items are listed newest-first.  Detailed write-ups are in git history.
 
+- 179: Botan 3.13.0 is required for system builds; the parent vendored source
+  and checksum now match that release, and system/vendored builds pass the
+  complete DeuceSSH test suite
 - 178: `libcrux_mlkem768_sha3.h` `#pragma once` replaced with standard `#ifndef LIBCRUX_MLKEM768_SHA3_H` include guard
 - 177: `sntrup761.c` — stripped 91 unused cryptoint functions (~1600 lines); 9 kept (5 directly called + 4 transitive deps); `CRYPTOINT_MAYBE_UNUSED` macro replaces `__attribute__((unused))` on 2 generic-path-only helpers
 - 174: `kex/sntrup761_optblocker.c` added — defines `crypto_int{16,32,64}_optblocker` volatile globals for non-x86\_64/aarch64 architectures (matches SUPERCOP `cryptoint/optblocker.c`)

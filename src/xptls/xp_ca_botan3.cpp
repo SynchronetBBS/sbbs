@@ -1,5 +1,5 @@
-/* xp_ca_file.h includes <windows.h>, whose min macro breaks Botan 3.12's
- * x509_ext.h.  Suppress it before either header can be included. */
+/* xp_ca_file.h includes <windows.h>, whose min macro breaks Botan's x509_ext.h.
+ * Suppress it before either header can be included. */
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -12,7 +12,6 @@
 #include <cstring>
 #include <memory>
 #include <optional>
-#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -91,53 +90,6 @@ struct xp_ca_crl {
 	std::unique_ptr<Botan::X509_CRL> native;
 };
 
-/*
- * Botan can decode issuingDistributionPoint, but its public encoder throws
- * Not_Implemented through at least Botan 3.12. Keep the standards-compliant
- * encoding workaround contained in this provider until Botan can emit it.
- */
-class xp_ca_issuing_distribution_point final
-	: public Botan::Certificate_Extension {
-public:
-	explicit xp_ca_issuing_distribution_point(std::string uri)
-		: uri_(std::move(uri))
-	{
-	}
-
-	std::unique_ptr<Botan::Certificate_Extension> copy() const override
-	{
-		return std::make_unique<xp_ca_issuing_distribution_point>(uri_);
-	}
-
-	Botan::OID oid_of() const override
-	{
-		return Botan::OID({ 2, 5, 29, 28 });
-	}
-
-	std::string oid_name() const override
-	{
-		return "X509v3.CRLIssuingDistributionPoint";
-	}
-
-private:
-	std::vector<uint8_t> encode_inner() const override
-	{
-		Botan::AlternativeName names;
-		names.add_uri(uri_);
-		Botan::Cert_Extension::CRL_Distribution_Points::Distribution_Point point(
-			names);
-		std::vector<uint8_t> encoded;
-		Botan::DER_Encoder(encoded).encode(point);
-		return encoded;
-	}
-
-	void decode_inner(const std::vector<uint8_t>&) override
-	{
-	}
-
-	std::string uri_;
-};
-
 static thread_local std::string error_text;
 
 static Botan::Public_Key *
@@ -189,6 +141,15 @@ crl_distribution_points(const Botan::X509_Certificate& certificate)
 		Botan::Cert_Extension::CRL_Distribution_Points>();
 }
 
+static const Botan::AlternativeName *
+distribution_point_name(
+	const Botan::Cert_Extension::CRL_Distribution_Points::Distribution_Point& point)
+{
+	const auto& name = point.distribution_point_name();
+	return name.has_value() && name->full_name().has_value()
+		? &*name->full_name() : nullptr;
+}
+
 static bool
 certificate_has_crl_distribution_point(
 	const Botan::X509_Certificate& certificate,
@@ -198,9 +159,13 @@ certificate_has_crl_distribution_point(
 	if (extension == nullptr)
 		return false;
 	for (const auto& distribution_point : extension->distribution_points()) {
-		const auto& uris = distribution_point.point().uris();
-		if (uris.find(std::string(expected)) != uris.end())
-			return true;
+		const auto *names = distribution_point_name(distribution_point);
+		if (names != nullptr) {
+			for (const auto& uri : names->uri_names()) {
+				if (uri.original_input() == expected)
+					return true;
+			}
+		}
 	}
 	return false;
 }
@@ -215,10 +180,10 @@ certificate_has_exact_crl_distribution_point(
 		return extension == nullptr;
 	if (extension == nullptr || extension->distribution_points().size() != 1)
 		return false;
-	const auto& names = extension->distribution_points()[0].point();
-	return names.count() == 1
-		&& names.uris().size() == 1
-		&& *names.uris().begin() == expected;
+	const auto *names = distribution_point_name(extension->distribution_points()[0]);
+	return names != nullptr && names->count() == 1
+		&& names->uri_names().size() == 1
+		&& names->uri_names().begin()->original_input() == expected;
 }
 
 static Botan::OID
@@ -230,14 +195,25 @@ crl_issuing_distribution_point_oid()
 static std::optional<Botan::AlternativeName>
 crl_issuing_distribution_point(const Botan::X509_CRL& crl)
 {
-	const auto oid = crl_issuing_distribution_point_oid();
-	if (!crl.extensions().extension_set(oid))
+	const auto *extension = crl.extensions().get_extension_object_as<
+		Botan::Cert_Extension::CRL_Issuing_Distribution_Point>();
+	if (extension == nullptr)
 		return std::nullopt;
-	Botan::Cert_Extension::CRL_Distribution_Points::Distribution_Point point;
-	Botan::BER_Decoder(crl.extensions().get_extension_bits(oid))
-		.decode(point)
-		.verify_end();
-	return point.point();
+	const auto& name = extension->distribution_point_name();
+	if (!name.has_value() || !name->full_name().has_value())
+		return std::nullopt;
+	return *name->full_name();
+}
+
+static uint32_t
+crl_number(const Botan::X509_CRL& crl)
+{
+	const auto& number = crl.crl_number_bigint();
+	if (!number.has_value())
+		return 0;
+	if (number->signum() < 0 || number->bits() > 32)
+		throw std::invalid_argument("CRL number does not fit in uint32_t");
+	return static_cast<uint32_t>(number->word_at(0));
 }
 
 static bool
@@ -251,8 +227,8 @@ crl_has_exact_issuing_distribution_point(
 	        crl_issuing_distribution_point_oid()))
 		return false;
 	return names->count() == 1
-		&& names->uris().size() == 1
-		&& *names->uris().begin() == expected;
+		&& names->uri_names().size() == 1
+		&& names->uri_names().begin()->original_input() == expected;
 }
 
 static int
@@ -727,6 +703,9 @@ public:
 	std::unique_ptr<Botan::Certificate_Extension> copy() const override {
 		return std::make_unique<Raw_CSR_Extension>(oid_, value_);
 	}
+	bool is_appropriate_context(Botan::Extension_Context) const override {
+		return true;
+	}
 protected:
 	std::vector<uint8_t> encode_inner() const override { return value_; }
 	void decode_inner(const std::vector<uint8_t>& value) override { value_ = value; }
@@ -860,7 +839,11 @@ make_extensions(const struct xp_ca_issue_request *request,
 	               request->policy.basic_constraints_critical);
 	extensions.add(std::make_unique<Botan::Cert_Extension::Key_Usage>(key_usage),
 	               request->policy.key_usage_critical);
-	Botan::Cert_Extension::Subject_Key_ID subject_key_id(subject_public_key, "SHA-256");
+	auto subject_key_hash = Botan::HashFunction::create_or_throw("SHA-256");
+	subject_key_hash->update(subject_public_key);
+	auto subject_key_digest = subject_key_hash->final();
+	Botan::Cert_Extension::Subject_Key_ID subject_key_id(
+		std::vector<uint8_t>(subject_key_digest.begin(), subject_key_digest.end()));
 	extensions.add(std::make_unique<Botan::Cert_Extension::Subject_Key_ID>(subject_key_id));
 	if (issuer != nullptr)
 		extensions.add(std::make_unique<Botan::Cert_Extension::Authority_Key_ID>(
@@ -1188,8 +1171,7 @@ static std::vector<std::vector<uint8_t>>
 pkcs7_decode(std::span<const uint8_t> encoded)
 {
 	std::vector<std::vector<uint8_t>> certs;
-	/* Botan 3.11 has no public strict-DER decoder limits. */
-	Botan::BER_Decoder input(encoded);
+	Botan::BER_Decoder input(encoded, Botan::BER_Decoder::Limits::DER());
 	auto outer = input.start_sequence();
 	Botan::OID content_type;
 	outer.decode(content_type);
@@ -1421,33 +1403,39 @@ xp_ca_cert_get_name(xp_ca_cert_t cert, enum xp_ca_name_kind kind,
 	} catch (...) { return XP_CA_ERR_FORMAT; }
 }
 
-static const std::set<std::string> *
+static std::optional<std::vector<std::string>>
 botan_string_sans(const Botan::AlternativeName& names, enum xp_ca_san_type type)
 {
-	return type == XP_CA_SAN_DNS ? &names.dns() : type == XP_CA_SAN_EMAIL ? &names.email()
-		: type == XP_CA_SAN_URI ? &names.uris() : nullptr;
+	std::vector<std::string> result;
+	if (type == XP_CA_SAN_DNS) {
+		for (const auto& name : names.dns_names())
+			result.push_back(name.to_string());
+	}
+	else if (type == XP_CA_SAN_EMAIL) {
+		for (const auto& address : names.email_addresses())
+			result.push_back(address.to_string());
+	}
+	else if (type == XP_CA_SAN_URI) {
+		for (const auto& uri : names.uri_names())
+			result.push_back(uri.original_input());
+	}
+	else
+		return std::nullopt;
+	return result;
 }
 
 static std::vector<std::vector<uint8_t>>
 botan_ip_sans(xp_ca_cert_t cert)
 {
 	std::vector<std::vector<uint8_t>> addresses;
-	try {
-		auto encoded = cert->native->v3_extensions().get_extension_bits(
-			Botan::OID::from_string("2.5.29.17"));
-		Botan::BER_Decoder decoder(encoded);
-		auto names = decoder.start_sequence();
-		while (names.more_items()) {
-			auto name = names.get_next_object();
-			if (name.is_a(static_cast<Botan::ASN1_Type>(7),
-			    Botan::ASN1_Class::ContextSpecific)
-			    && (name.length() == 4 || name.length() == 16))
-				addresses.emplace_back(name.bits(), name.bits() + name.length());
-		}
-		names.end_cons();
-		decoder.verify_end();
-	} catch (...) {
-		addresses.clear();
+	const auto& names = cert->native->subject_alt_name();
+	for (const auto& address : names.ipv4_addresses()) {
+		auto bytes = address.to_bytes();
+		addresses.emplace_back(bytes.begin(), bytes.end());
+	}
+	for (const auto& address : names.ipv6_addresses()) {
+		auto bytes = address.address();
+		addresses.emplace_back(bytes.begin(), bytes.end());
 	}
 	return addresses;
 }
@@ -1587,8 +1575,12 @@ make_scoped_crl(
 	extensions.add(
 		std::make_unique<Botan::Cert_Extension::CRL_Number>(crl_number));
 	extensions.add(
-		std::make_unique<xp_ca_issuing_distribution_point>(
-			request->issuing_distribution_point),
+		std::make_unique<Botan::Cert_Extension::CRL_Issuing_Distribution_Point>(
+			Botan::Cert_Extension::DistributionPointName([&] {
+				Botan::AlternativeName names;
+				names.add_uri(request->issuing_distribution_point);
+				return names;
+			}())),
 		true);
 
 	std::vector<uint8_t> to_be_signed;
@@ -1661,7 +1653,7 @@ xp_ca_crl_create(xp_ca_crl_t *out, xp_key_t issuer_key, xp_ca_cert_t issuer,
 		}
 		uint32_t crl_number = previous == nullptr
 			? 1
-			: previous->native->crl_number() + 1;
+			: ::crl_number(*previous->native) + 1;
 		if (previous != nullptr && crl_number == 0)
 			return XP_CA_ERR_POLICY;
 		Botan::X509_CRL crl = make_scoped_crl(
@@ -1714,7 +1706,7 @@ xp_ca_crl_get_info(xp_ca_crl_t crl, struct xp_ca_crl_info *info)
 	if (crl == nullptr || info == nullptr)
 		return XP_CA_ERR;
 	try {
-		info->number = crl->native->crl_number();
+		info->number = crl_number(*crl->native);
 		info->this_update = std::chrono::system_clock::to_time_t(
 			crl->native->this_update().to_std_timepoint());
 		if (!crl->native->next_update().time_is_set())
@@ -1758,7 +1750,7 @@ certificate_matches_identity(const Botan::X509_Certificate& cert,
 	if (san_extension_present != (identity->dns_name_count != 0))
 		return false;
 	const auto& alternative_names = cert.subject_alt_name();
-	const auto& dns_names = alternative_names.dns();
+	const auto& dns_names = alternative_names.dns_names();
 	if (alternative_names.count() != identity->dns_name_count
 	    || dns_names.size() != identity->dns_name_count)
 		return false;
@@ -1772,7 +1764,7 @@ certificate_matches_identity(const Botan::X509_Certificate& cert,
 		}
 		bool found = false;
 		for (const auto& actual : dns_names) {
-			if (dns_names_equal(actual, identity->dns_names[expected])) {
+			if (dns_names_equal(actual.to_string(), identity->dns_names[expected])) {
 				found = true;
 				break;
 			}
@@ -1802,8 +1794,9 @@ crl_scope_matches_certificate(
 	const auto idp = crl_issuing_distribution_point(crl);
 	if (!idp.has_value())
 		return false;
-	for (const auto& scope : idp->uris()) {
-		if (certificate_has_crl_distribution_point(certificate, scope))
+	for (const auto& scope : idp->uri_names()) {
+		if (certificate_has_crl_distribution_point(
+		    certificate, scope.original_input()))
 			return true;
 	}
 	return false;
@@ -1828,10 +1821,10 @@ select_applicable_crls(
 			    || !crl_scope_matches_certificate(candidate, certificate))
 				continue;
 			if (!selected[certificate_index].has_value()
-			    || candidate.crl_number()
-		        > selected[certificate_index]->crl_number()
-			    || (candidate.crl_number()
-		            == selected[certificate_index]->crl_number()
+			    || crl_number(candidate)
+		        > crl_number(*selected[certificate_index])
+			    || (crl_number(candidate)
+		            == crl_number(*selected[certificate_index])
 		        && candidate.this_update()
 		            > selected[certificate_index]->this_update()))
 				selected[certificate_index] = candidate;
@@ -1860,15 +1853,7 @@ validate_crls(
 	if (crl_count == 0)
 		return XP_CA_OK;
 
-	/*
-	 * Botan 3.11 compares a display-form CRLDP string to the raw IDP URI.
-	 * Scope was checked from the typed extensions above, so discard only that
-	 * spurious status while retaining Botan's signature, time, usage,
-	 * critical-extension, and revocation checks.
-	 */
 	auto statuses = Botan::PKIX::check_crl(path, selected, when);
-	for (auto& status : statuses)
-		status.erase(Botan::Certificate_Status_Code::NO_MATCHING_CRLDP);
 	auto overall = Botan::PKIX::overall_status(statuses);
 	if (overall != Botan::Certificate_Status_Code::OK)
 		return fail(XP_CA_ERR_VERIFY, Botan::to_string(overall));
