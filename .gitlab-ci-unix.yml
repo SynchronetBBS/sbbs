@@ -130,12 +130,17 @@ spec:
         cmake -S src/deucegate -B src/deucegate/build/ci -DCMAKE_BUILD_TYPE=Release
       fi
     - cmake --build src/deucegate/build/ci --parallel "$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
-    - if [ "$[[ inputs.os ]]" != "mingw-w64" ] || test -f src/deucegate/build/ci/deucegate.exe
+    - |
+      if [ "$[[ inputs.os ]]" = "mingw-w64" ]; then
+        test -f src/deucegate/build/ci/deucegate.exe
+      fi
+      printf '%s\n' "$CI_PROJECT_DIR" > src/deucegate/build/ci/ci-project-dir
   artifacts:
     name: "deucegate-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/deucegate/build/ci/deucegate*"
       - "src/deucegate/build/ci/CTestTestfile.cmake"
+      - "src/deucegate/build/ci/ci-project-dir"
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [deucegate-tests]":
   extends:
@@ -145,6 +150,13 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [deucegate]"
   script:
+    - |
+      deucegate_build_root=$(sed -n '1p' src/deucegate/build/ci/ci-project-dir)
+      sed "s#$deucegate_build_root#$CI_PROJECT_DIR#g" \
+        src/deucegate/build/ci/CTestTestfile.cmake \
+        > src/deucegate/build/ci/CTestTestfile.cmake.new
+      mv src/deucegate/build/ci/CTestTestfile.cmake.new \
+        src/deucegate/build/ci/CTestTestfile.cmake
     - ctest --test-dir src/deucegate/build/ci --output-on-failure --no-tests=error
   rules:
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
