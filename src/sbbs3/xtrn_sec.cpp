@@ -34,6 +34,136 @@ void sbbs_t::xtrn_sec(const char* section)
 
 const char *hungupstr = "\1n\1h%s\1n hung up on \1h%s\1n %s\r\n";
 
+static bool bbsdev_subtag_chars(const char* subtag, size_t len, int (*check)(int))
+{
+	for (size_t i = 0; i < len; i++)
+		if (!check((unsigned char)subtag[i]))
+			return false;
+	return true;
+}
+
+static bool bbsdev_language_tag_valid(const char* tag)
+{
+	static const char* grandfathered[] = {
+		"en-GB-oed", "i-ami", "i-bnn", "i-default", "i-enochian", "i-hak",
+		"i-klingon", "i-lux", "i-mingo", "i-navajo", "i-pwn", "i-tao", "i-tay",
+		"i-tsu", "sgn-BE-FR", "sgn-BE-NL", "sgn-CH-DE", "art-lojban", "cel-gaulish",
+		"no-bok", "no-nyn", "zh-guoyu", "zh-hakka", "zh-min", "zh-min-nan", "zh-xiang",
+		NULL
+	};
+	const char* parts[32];
+	size_t lengths[32], count = 0, len, at = 0;
+	const char* start;
+
+	if (tag == NULL || (len = strlen(tag)) == 0 || len > 64)
+		return false;
+	for (size_t i = 0; grandfathered[i] != NULL; i++)
+		if (stricmp(tag, grandfathered[i]) == 0)
+			return true;
+	start = tag;
+	for (const char* p = tag;; p++) {
+		if (*p != '-' && *p != 0) {
+			if (!isalnum((unsigned char)*p))
+				return false;
+			continue;
+		}
+		if (p == start || (size_t)(p - start) > 8 || count >= 32)
+			return false;
+		parts[count] = start;
+		lengths[count++] = (size_t)(p - start);
+		if (*p == 0)
+			break;
+		start = p + 1;
+	}
+	if (lengths[0] == 1 && tolower((unsigned char)parts[0][0]) == 'x')
+		return count > 1;
+	if (!bbsdev_subtag_chars(parts[0], lengths[0], isalpha)
+	    || lengths[0] < 2 || lengths[0] > 8)
+		return false;
+	at = 1;
+	if (lengths[0] <= 3) {
+		for (unsigned extlangs = 0; at < count && extlangs < 3 && lengths[at] == 3
+		    && bbsdev_subtag_chars(parts[at], lengths[at], isalpha); extlangs++)
+			at++;
+	}
+	if (at < count && lengths[at] == 4 && bbsdev_subtag_chars(parts[at], lengths[at], isalpha))
+		at++;
+	if (at < count && ((lengths[at] == 2 && bbsdev_subtag_chars(parts[at], lengths[at], isalpha))
+	    || (lengths[at] == 3 && bbsdev_subtag_chars(parts[at], lengths[at], isdigit))))
+		at++;
+	while (at < count && ((lengths[at] >= 5 && bbsdev_subtag_chars(parts[at], lengths[at], isalnum))
+	    || (lengths[at] == 4 && isdigit((unsigned char)parts[at][0])
+	    && bbsdev_subtag_chars(parts[at] + 1, 3, isalnum))))
+		at++;
+	while (at < count && lengths[at] == 1
+	    && tolower((unsigned char)parts[at][0]) != 'x') {
+		at++;
+		if (at == count || lengths[at] < 2)
+			return false;
+		while (at < count && lengths[at] >= 2)
+			at++;
+	}
+	if (at < count && lengths[at] == 1 && tolower((unsigned char)parts[at][0]) == 'x')
+		return at + 1 < count;
+	return at == count;
+}
+
+static bool bbsdev_unicode_whitespace(enum unicode_codepoint cp)
+{
+	return (cp >= 0x09 && cp <= 0x0d) || cp == 0x20 || cp == 0x85 || cp == 0xa0
+	    || cp == 0x1680 || (cp >= 0x2000 && cp <= 0x200a) || cp == 0x2028
+	    || cp == 0x2029 || cp == 0x202f || cp == 0x205f || cp == 0x3000;
+}
+
+static bool bbsdev_utf8_value_valid(const char* str)
+{
+	size_t len = strlen(str);
+	enum unicode_codepoint first = UNICODE_UNDEFINED;
+	enum unicode_codepoint last = UNICODE_UNDEFINED;
+	for (size_t offset = 0; offset < len;) {
+		enum unicode_codepoint cp;
+		int char_len = utf8_getc(str + offset, len - offset, &cp);
+		if (char_len < 1 || cp <= 0x1f || (cp >= 0x7f && cp <= 0x9f))
+			return false;
+		if (first == UNICODE_UNDEFINED)
+			first = cp;
+		last = cp;
+		offset += char_len;
+	}
+	return first != UNICODE_UNDEFINED
+	    && !bbsdev_unicode_whitespace(first) && !bbsdev_unicode_whitespace(last);
+}
+
+static bool bbsdev_utf8_field(const char* src, char* dest, size_t size, bool allow_empty)
+{
+	if (src == NULL || size == 0)
+		return false;
+	if (*src == 0) {
+		*dest = 0;
+		return allow_empty;
+	}
+	if (strlen(src) >= size)
+		return false;
+	if (!str_is_ascii(src) && !utf8_str_is_valid(src)) {
+		if (cp437_to_utf8_str(src, dest, size, /* min-char-val: */ '\x80') < 1)
+			return false;
+	} else
+		strcpy(dest, src);
+	return utf8_str_is_valid(dest) && bbsdev_utf8_value_valid(dest);
+}
+
+static bool bbsdev_write(FILE* fp, const char* const line[], size_t count)
+{
+	for (size_t i = 0; i < count; i++) {
+		size_t len = strlen(line[i]);
+		if (fwrite(line[i], 1, len, fp) != len || fwrite("\r\n", 1, 2, fp) != 2)
+			return false;
+	}
+	if (fflush(fp) != 0)
+		return false;
+	return true;
+}
+
 /****************************************************************************/
 /* Convert from unix time (seconds since 1/70) to julian (days since 1900)	*/
 /****************************************************************************/
@@ -123,7 +253,7 @@ static void lfexpand(char *str, uint misc)
 /****************************************************************************/
 /* Creates various types of xtrn (Doors, Chains, etc.) data (drop) files.	*/
 /****************************************************************************/
-void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tleft
+bool sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tleft
                      , uint misc)
 {
 	char      str[1024], tmp2[128], *p;
@@ -181,7 +311,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		(void)removecase(str);
 		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT);
-			return;
+			return false;
 		}
 
 		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%s\n"
@@ -295,7 +425,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		(void)removecase(str);
 		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT);
-			return;
+			return false;
 		}
 
 		safe_snprintf(str, sizeof(str), "%u\n%s\n%s\n%s\n%u\n%c\n"
@@ -357,7 +487,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		(void)removecase(str);
 		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT);
-			return;
+			return false;
 		}
 
 		SAFEPRINTF(str, "COM%d:\n"
@@ -499,7 +629,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		(void)removecase(str);
 		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT);
-			return;
+			return false;
 		}
 
 		SAFECOPY(tmp, cfg.sys_op);
@@ -546,7 +676,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		(void)removecase(str);
 		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC);
-			return;
+			return false;
 		}
 		getstats_cached(&cfg, 0, &stats);
 		QBBS::exitinfo exitinfo{};
@@ -610,7 +740,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		(void)removecase(str);
 		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT);
-			return;
+			return false;
 		}
 
 		if (online == ON_LOCAL)
@@ -724,7 +854,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		(void)removecase(str);
 		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC);
-			return;
+			return false;
 		}
 		PCBoard::sys sys{};
 		sys.Screen = !(misc & XTRN_NODISPLAY);
@@ -772,7 +902,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		(void)removecase(str);
 		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC);
-			return;
+			return false;
 		}
 		PCBoard::usersys user{};
 		user.hdr.Version = PCBoard::Version;
@@ -816,7 +946,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		(void)removecase(str);
 		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT);
-			return;
+			return false;
 		}
 
 		now = time(NULL);
@@ -889,7 +1019,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		(void)removecase(str);
 		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT);
-			return;
+			return false;
 		}
 
 		/* from SRE0994B's SRDOOR.DOC:
@@ -920,7 +1050,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		(void)removecase(str);
 		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT);
-			return;
+			return false;
 		}
 
 		safe_snprintf(str, sizeof(str), "%u\n%s\n%s\n%u\n%c\n%c\n%u\n%s\n%s\n%s\n"
@@ -962,7 +1092,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		(void)removecase(str);
 		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC | O_TEXT);
-			return;
+			return false;
 		}
 
 		safe_snprintf(str, sizeof(str), "%d\n%d\n%u\n%s%c\n%d\n%s\n%s\n%d\n%d\n%d\n%d\n"
@@ -982,8 +1112,123 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		fclose(fp);
 	}
 
+	else if (type == XTRN_BBSDEV) { /* BBSDEV.DRP 1.0 */
+		int file;
+		char line[19][1024]{};
+		const char* lines[19];
+		for (size_t n = 0; n < sizeof(lines) / sizeof(lines[0]); n++)
+			lines[n] = line[n];
+
+		SAFECOPY(line[0], "1.0");
+		if (misc & XTRN_CONIO) {
+			lprintf(LOG_ERR, "BBSDEV.DRP does not support Windows console interception");
+			return false;
+		}
+		if (misc & XTRN_STDIO)
+			SAFECOPY(line[1], "stdio");
+		else if (misc & XTRN_NATIVE) {
+			if (online == ON_LOCAL)
+				SAFECOPY(line[1], "local");
+			else {
+				SOCKET sock = client_socket_dup.load();
+				if (!passthru_thread_running || sock == INVALID_SOCKET) {
+					lprintf(LOG_ERR, "BBSDEV.DRP socket communication requested without an inherited socket");
+					return false;
+				}
+				SAFECOPY(line[1], "socket");
+				snprintf(line[2], sizeof(line[2]), "%" PRIu64, (uint64_t)sock);
+			}
+		} else if ((misc & XTRN_FOSSIL) || !(misc & XTRN_UART)) {
+			uint com_port = (uchar)cfg.com_port;
+			SAFECOPY(line[1], "fossil");
+			snprintf(line[2], sizeof(line[2]), "%u", com_port ? com_port - 1 : 0);
+		} else {
+			if (cfg.com_base > UINT16_MAX || cfg.com_irq > 15) {
+				lprintf(LOG_ERR, "BBSDEV.DRP UART parameters are out of range: %X,%u", cfg.com_base, cfg.com_irq);
+				return false;
+			}
+			SAFECOPY(line[1], "uart");
+			snprintf(line[2], sizeof(line[2]), "%04X,%u", cfg.com_base, cfg.com_irq);
+		}
+
+		if (!bbsdev_utf8_field(useron.alias, line[3], sizeof(line[3]), false)) {
+			lprintf(LOG_ERR, "Invalid BBSDEV.DRP user alias");
+			return false;
+		}
+		snprintf(line[4], sizeof(line[4]), "%u:%" PRId32, useron.number, useron.firston);
+		snprintf(line[5], sizeof(line[5]), "%u", MAX(1, MIN(term->cols, UINT16_MAX)));
+		snprintf(line[6], sizeof(line[6]), "%u", MAX(1, MIN(term->rows, UINT16_MAX)));
+		SAFECOPY(line[7], term->supports(ANSI) ? "Y" : "N");
+		SAFECOPY(line[8], term->supports(RIP) ? "Y" : "N");
+		if (term->cterm_version != 0)
+			snprintf(line[9], sizeof(line[9]), "%u.%u", term->cterm_version / 1000, term->cterm_version % 1000);
+		if (!user_is_sysop(&useron)) {
+			time_t deadline = time(NULL) + tleft;
+			struct tm utc;
+			if (gmtime_r(&deadline, &utc) == NULL
+			    || strftime(line[10], sizeof(line[10]), "%Y-%m-%dT%H:%M:%SZ", &utc) == 0) {
+				lprintf(LOG_ERR, "Unable to format BBSDEV.DRP UTC deadline");
+				return false;
+			}
+		}
+		if (!(misc & XTRN_BIN))
+			SAFECOPY(line[11], "IBM437");
+		else if (term->charset() == CHARSET_CP437)
+			SAFECOPY(line[11], "IBM437");
+		else
+			SAFECOPY(line[11], term->charset_str());
+		SAFECOPY(line[12], bbsdev_language_tag_valid(useron.lang) ? useron.lang : "und");
+		snprintf(tmp, sizeof(tmp), "Synchronet %s%c", VERSION, REVISION);
+		if (!bbsdev_utf8_field(tmp, line[13], sizeof(line[13]), false)
+		    || !bbsdev_utf8_field(cfg.sys_name, line[14], sizeof(line[14]), false)
+		    || !bbsdev_utf8_field(cfg.sys_op, line[15], sizeof(line[15]), false)) {
+			lprintf(LOG_ERR, "Invalid BBSDEV.DRP BBS identification field");
+			return false;
+		}
+		if (user_is_sysop(&useron))
+			SAFECOPY(line[16], "sysop");
+		else
+			snprintf(line[16], sizeof(line[16]), "%u", useron.level);
+		snprintf(line[17], sizeof(line[17]), "%u", cfg.node_num);
+		SAFECOPY(line[18], misc & XTRN_NODISPLAY ? "N" : "Y");
+
+		SAFECOPY(tmp, "BBSDEV.DRP");
+		SAFEPRINTF2(str, "%s%s", dropdir, tmp);
+#if defined(_WIN32)
+		/* A retained debugging copy from the previous run is read-only. */
+		(void)CHMOD(str, _S_IREAD | _S_IWRITE);
+#else
+		(void)CHMOD(str, S_IRUSR | S_IWUSR);
+#endif
+		(void)removecase(str);
+		if ((fp = fnopen(&file, str, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY)) == NULL) {
+			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY);
+			return false;
+		}
+		bool write_ok = bbsdev_write(fp, lines, sizeof(lines) / sizeof(lines[0]));
+		if (fclose(fp) != 0)
+			write_ok = false;
+		if (!write_ok) {
+			errormsg(WHERE, ERR_WRITE, str, 0);
+			remove(str);
+			return false;
+		}
+#if defined(_WIN32)
+		int chmod_result = CHMOD(str, _S_IREAD);
+#else
+		int chmod_result = CHMOD(str, S_IRUSR);
+#endif
+		if (chmod_result != 0) {
+			errormsg(WHERE, ERR_WRITE, str, errno);
+			remove(str);
+			return false;
+		}
+	}
+
 	else if (type)
 		errormsg(WHERE, ERR_CHK, "Drop file type", type);
+
+	return type == XTRN_NONE || type <= XTRN_BBSDEV;
 
 }
 
@@ -1277,6 +1522,14 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		bputs(text[CantRunThatProgram]);
 		return false;
 	}
+	if (cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV
+	    && ((cfg.xtrn[xtrnnum]->misc & XTRN_CONIO)
+	    || cfg.xtrn[xtrnnum]->cmd[0] == '*' || cfg.xtrn[xtrnnum]->cmd[0] == '?')) {
+		lprintf(LOG_ERR, "BBSDEV.DRP requires a child process and a supported communication method: %s"
+		        , cfg.xtrn[xtrnnum]->name);
+		bputs(text[CantRunThatProgram]);
+		return false;
+	}
 
 	if (cfg.xtrn[xtrnnum]->cost && !(useron.exempt & FLAG('X'))) {    /* costs */
 		if (cfg.xtrn[xtrnnum]->cost > user_available_credits(&useron)) {
@@ -1358,22 +1611,20 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 			case XTRN_DOOR32:
 				SAFECOPY(name, "DOOR32.SYS");
 				break;
+			case XTRN_BBSDEV:
+				SAFECOPY(name, "BBSDEV.DRP");
+				break;
 			default:
 				SAFECOPY(name, "XTRN.DAT");
 				break;
 	}
-	if (cfg.xtrn[xtrnnum]->misc & XTRN_LWRCASE)
+	if ((cfg.xtrn[xtrnnum]->misc & XTRN_LWRCASE) && cfg.xtrn[xtrnnum]->type != XTRN_BBSDEV)
 		strlwr(name);
 	SAFECAT(path, name);
-	if (action != NODE_PCHT) {
-		if (getnodedat(cfg.node_num, &thisnode, true)) {
-			thisnode.action = NODE_XTRN;
-			thisnode.aux = xtrnnum + 1;
-			putnodedat(cfg.node_num, &thisnode);
-		}
+	if (cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV && !isabspath(path)) {
+		lprintf(LOG_ERR, "BBSDEV.DRP path is not absolute: %s", path);
+		return false;
 	}
-	putuserstr(useron.number, USER_CURXTRN, cfg.xtrn[xtrnnum]->code);
-
 	if (cfg.xtrn[xtrnnum]->misc & REALNAME) {
 		SAFECOPY(name, useron.name);
 	} else {
@@ -1383,7 +1634,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	tleft = timeleft + (cfg.xtrn[xtrnnum]->textra * 60);
 	if (cfg.xtrn[xtrnnum]->maxtime && tleft > (cfg.xtrn[xtrnnum]->maxtime * 60))
 		tleft = (cfg.xtrn[xtrnnum]->maxtime * 60);
-	xtrndat(name, dropdir, cfg.xtrn[xtrnnum]->type, tleft, cfg.xtrn[xtrnnum]->misc);
+	if (!xtrndat(name, dropdir, cfg.xtrn[xtrnnum]->type, tleft, cfg.xtrn[xtrnnum]->misc))
+		return false;
 	if (!online)
 		return false;
 	llprintf("X-", "Executing external %s: %s"
@@ -1422,6 +1674,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		backslash(startup_dir);
 		if (cfg.xtrn[xtrnnum]->misc & STARTUPDIR)
 			SAFEPRINTF2(drop_file, "%s%s", startup_dir, getfname(path));
+		else if (cfg.xtrn[xtrnnum]->misc & XTRN_TEMP_DIR)
+			SAFEPRINTF2(drop_file, "%s%s", DOSEMU_TEMP_DIR, getfname(path));
 		else
 			SAFEPRINTF2(drop_file, "%s\\%s", DOSEMU_NODE_DRIVE, getfname(path));
 	}
@@ -1431,6 +1685,35 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		cmdstr(cfg.xtrn[xtrnnum]->path, "", "", startup_dir);
 		SAFECOPY(drop_file, path);
 	}
+#if defined(__FreeBSD__)
+	if (cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV
+	    && cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*'
+	    && !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
+		if (cfg.xtrn[xtrnnum]->misc & STARTUPDIR)
+			SAFEPRINTF(drop_file, "C:\\%s", getfname(path));
+		else if (cfg.xtrn[xtrnnum]->misc & XTRN_TEMP_DIR)
+			SAFEPRINTF(drop_file, "D:\\TEMP\\%s", getfname(path));
+		else
+			SAFEPRINTF(drop_file, "D:\\%s", getfname(path));
+	}
+#elif defined(_WIN32)
+	if (cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV
+	    && cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*'
+	    && !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
+		if (GetShortPathName(path, drop_file, sizeof(drop_file)) == 0) {
+			errormsg(WHERE, ERR_CHK, path, 0);
+			return false;
+		}
+	}
+#endif
+	if (action != NODE_PCHT) {
+		if (getnodedat(cfg.node_num, &thisnode, true)) {
+			thisnode.action = NODE_XTRN;
+			thisnode.aux = xtrnnum + 1;
+			putnodedat(cfg.node_num, &thisnode);
+		}
+	}
+	putuserstr(useron.number, USER_CURXTRN, cfg.xtrn[xtrnnum]->code);
 
 	start = time(NULL);
 	auto saved_max_socket_inactivity = max_socket_inactivity.load();
@@ -1444,7 +1727,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 
 	external(cmdstr(cfg.xtrn[xtrnnum]->cmd, drop_file, startup_dir, NULL, mode)
 	         , mode
-	         , cfg.xtrn[xtrnnum]->path);
+	         , cfg.xtrn[xtrnnum]->path
+	         , cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV ? drop_file : NULL);
 	end = time(NULL);
 
 	if (cfg.xtrn[xtrnnum]->misc & FREETIME)
@@ -1517,5 +1801,3 @@ bool sbbs_t::user_event(user_event_t event)
 
 	return success;
 }
-
-

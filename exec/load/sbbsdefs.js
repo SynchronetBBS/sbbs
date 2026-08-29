@@ -402,6 +402,7 @@ var XTRN_SR			= 9;		/* Solar Realms 							*/
 var XTRN_RBBS1 		= 10;		/* DORINFO1.DEF always						*/
 var XTRN_TRIBBS		= 11;		/* TRIBBS.SYS								*/
 var XTRN_DOOR32		= 12;		/* DOOR32.SYS								*/
+var XTRN_BBSDEV		= 13;		/* BBSDEV.DRP								*/
 								/********************************************/
 
 								/********************************************/

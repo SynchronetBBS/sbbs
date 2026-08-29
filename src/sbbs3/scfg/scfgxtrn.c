@@ -255,12 +255,15 @@ static char* dropfile(int type, ulong misc)
 		case XTRN_DOOR32:
 			strcpy(str, "DOOR32.SYS");
 			break;
+		case XTRN_BBSDEV:
+			strcpy(str, "BBSDEV.DRP");
+			break;
 		default:
 			strcpy(str, "None");
 			return str;
 	}
 
-	if (misc & XTRN_LWRCASE)
+	if ((misc & XTRN_LWRCASE) && type != XTRN_BBSDEV)
 		strlwr(str);
 	return str;
 }
@@ -1671,6 +1674,7 @@ void xtrn_cfg(int section)
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "RBBS/QuickBBS", "DORINFO1.DEF");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "TriBBS", "TRIBBS.SYS");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "Mystic", "DOOR32.SYS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "BBSdev", "BBSDEV.DRP");
 					opt[k][0] = 0;
 					k = cfg.xtrn[i]->type;
 					uifc.helpbuf =
@@ -1692,6 +1696,12 @@ void xtrn_cfg(int section)
 						"  TriBBS          TRIBBS.SYS\n"
 						"  Solar Realms    DOORFILE.SR\n"
 						"  Synchronet      XTRN.DAT                      MODUSER.DAT\n"
+						"  BBSdev          BBSDEV.DRP\n"
+						"\n"
+						"`BBSDEV.DRP`\n"
+						"BBSDEV.DRP is a read-only, UTF-8 door information file. The exact\n"
+						"absolute path visible to the door is supplied in the `BBSDEV_DRP`\n"
+						"environment variable. Its filename is always uppercase.\n"
 						"\n"
 						"`DOOR.SYS`\n"
 						"The drop file format compatible with the largest number of online\n"
@@ -1714,7 +1724,7 @@ void xtrn_cfg(int section)
 							cfg.xtrn[i]->misc |= XTRN_NATIVE;
 						uifc.changes = TRUE;
 					}
-					if (cfg.xtrn[i]->type && cfg.uq & UQ_ALIASES) {
+					if (cfg.xtrn[i]->type && cfg.xtrn[i]->type != XTRN_BBSDEV && cfg.uq & UQ_ALIASES) {
 						k = (cfg.xtrn[i]->misc & REALNAME) ? 0:1;
 						k = uifc.list(WIN_MID, 0, 0, 0, &k, 0, "Use Real Names", uifcYesNoOpts);
 						if (k == -1)
@@ -1728,7 +1738,7 @@ void xtrn_cfg(int section)
 							uifc.changes = TRUE;
 						}
 					}
-					if (cfg.xtrn[i]->type) {
+					if (cfg.xtrn[i]->type && cfg.xtrn[i]->type != XTRN_BBSDEV) {
 						k = (cfg.xtrn[i]->misc & XTRN_LWRCASE) ? 0:1;
 						k = uifc.list(WIN_MID, 0, 0, 0, &k, 0, "Lowercase Filename", uifcYesNoOpts);
 						if (k == 0 && !(cfg.xtrn[i]->misc & XTRN_LWRCASE)) {

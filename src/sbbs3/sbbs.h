@@ -1241,12 +1241,13 @@ public:
 
 	/* xtrn.cpp */
 	int		external(const char* cmdline, int mode, const char* startup_dir=NULL);
+	int		external(const char* cmdline, int mode, const char* startup_dir, const char* bbsdev_drp);
 	int		xtrn_mode = 0;
 	char	term_env[256]{};
 
 	/* xtrn_sec.cpp */
 	void	xtrn_sec(const char* section = "");	/* The external program section  */
-	void	xtrndat(const char* name, const char* dropdir, uchar type, uint tleft
+	bool	xtrndat(const char* name, const char* dropdir, uchar type, uint tleft
 				,uint misc);
 	bool	exec_xtrn(uint xtrnnum, bool user_event = false);	/* Executes online external program */
 	bool	user_event(user_event_t);			/* Executes user event(s) */

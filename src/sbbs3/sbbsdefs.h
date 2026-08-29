@@ -369,6 +369,7 @@ enum {                               // Values for xtrn_t.type
 	, XTRN_RBBS1                     // DORINFO1.DEF always
 	, XTRN_TRIBBS                    // TRIBBS.SYS
 	, XTRN_DOOR32                    // DOOR32.SYS
+	, XTRN_BBSDEV                    // BBSDEV.DRP
 };
 
 typedef enum {                       // Values for xtrn_t.event
