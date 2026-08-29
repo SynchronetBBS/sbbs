@@ -102,6 +102,55 @@ spec:
 ############
 # These link a runnable binary
 
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [deucegate]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  variables:
+    GIT_STRATEGY: fetch
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]"
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/botan.tgz"
+    - for d in 3rdp/*.release/botan/lib/pkgconfig; do [ -d "$d" ] && export PKG_CONFIG_PATH="$(pwd)/$d${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"; done
+    - |
+      if [ "$[[ inputs.os ]]" = "mingw-w64" ]; then
+        for d in 3rdp/*.release/botan; do
+          [ -f "$d/lib/libbotan-3.a" ] && DEUCEGATE_BOTAN_ROOT="$CI_PROJECT_DIR/$d"
+        done
+        test -n "$DEUCEGATE_BOTAN_ROOT"
+        cmake -S src/deucegate -B src/deucegate/build/ci \
+          -DCMAKE_SYSTEM_NAME=Windows \
+          -DCMAKE_C_COMPILER=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-gcc \
+          -DCMAKE_CXX_COMPILER=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-g++ \
+          -DCMAKE_RC_COMPILER=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-windres \
+          -DDEUCEGATE_BOTAN_ROOT="$DEUCEGATE_BOTAN_ROOT" \
+          -DDEUCEGATE_BUILD_TESTS=OFF -DBUILD_TESTING=OFF
+      else
+        cmake -S src/deucegate -B src/deucegate/build/ci -DCMAKE_BUILD_TYPE=Release
+      fi
+    - cmake --build src/deucegate/build/ci --parallel "$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
+    - if [ "$[[ inputs.os ]]" != "mingw-w64" ] || test -f src/deucegate/build/ci/deucegate.exe
+  artifacts:
+    name: "deucegate-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/deucegate/build/ci/deucegate*"
+      - "src/deucegate/build/ci/CTestTestfile.cmake"
+
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [deucegate-tests]":
+  extends:
+    - .$[[ inputs.os ]]-test
+  variables:
+    GIT_STRATEGY: fetch
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [deucegate]"
+  script:
+    - ctest --test-dir src/deucegate/build/ci --output-on-failure --no-tests=error
+  rules:
+    - if: '"$[[ inputs.cross_platform ]]" == "yes"'
+      when: never
+    - !reference [.rules, rules]
+
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [qtmonitor]":
   extends:
     - .$[[ inputs.os ]]-build
