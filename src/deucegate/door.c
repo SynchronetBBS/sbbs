@@ -35,6 +35,7 @@ typedef struct {
 	char emulator[32];
 	char io[32];
 	dg_encoding_t encoding;
+	bool auto_encoding;
 	unsigned force_quit_delay;
 	bool watch_dtr;
 } dg_door_t;
@@ -53,6 +54,7 @@ typedef struct {
 } dg_child_t;
 
 #define DG_DOOR_ENCODING_ENV "DEUCEGATE_ENCODING="
+#define DG_DOOR_LANGUAGE_ENV "DEUCEGATE_LANGUAGE_TAG="
 
 static const char *
 door_encoding_name(dg_encoding_t encoding)
@@ -60,27 +62,40 @@ door_encoding_name(dg_encoding_t encoding)
 	return encoding == DG_UTF8 ? "UTF-8" : "CP437";
 }
 
+static dg_encoding_t
+effective_door_encoding(const dg_client_t *client, const dg_door_t *door)
+{
+	return door->auto_encoding ? client->client_encoding : door->encoding;
+}
+
 #ifdef _WIN32
 static bool
-is_encoding_environment_entry(const char *entry)
+is_door_environment_entry(const char *entry)
 {
-	return strnicmp(entry, DG_DOOR_ENCODING_ENV, sizeof(DG_DOOR_ENCODING_ENV) - 1) == 0;
+	return strnicmp(entry, DG_DOOR_ENCODING_ENV, sizeof(DG_DOOR_ENCODING_ENV) - 1) == 0
+	    || strnicmp(entry, DG_DOOR_LANGUAGE_ENV, sizeof(DG_DOOR_LANGUAGE_ENV) - 1) == 0;
 }
 
 static char *
-door_environment_block(dg_encoding_t encoding)
+door_environment_block(dg_encoding_t encoding, const char *language)
 {
 	LPCH inherited = GetEnvironmentStringsA();
-	const char *value = door_encoding_name(encoding);
-	char assignment[sizeof(DG_DOOR_ENCODING_ENV) + 8];
-	size_t inherited_len = strListBlockLength(inherited);
-	size_t assignment_len;
+	char encoding_assignment[sizeof(DG_DOOR_ENCODING_ENV) + 8];
+	char language_assignment[sizeof(DG_DOOR_LANGUAGE_ENV) + DG_LANGUAGE_TAG_MAX + 1];
+	const char *assignments[2] = {encoding_assignment, language_assignment};
+	size_t total = 1, next_assignment = 0;
 	char *block, *out;
-	bool inserted = false;
 
-	snprintf(assignment, sizeof(assignment), "%s%s", DG_DOOR_ENCODING_ENV, value);
-	assignment_len = strlen(assignment);
-	block = malloc(inherited_len + assignment_len + 2);
+	snprintf(encoding_assignment, sizeof(encoding_assignment), "%s%s", DG_DOOR_ENCODING_ENV,
+	    door_encoding_name(encoding));
+	snprintf(language_assignment, sizeof(language_assignment), "%s%s", DG_DOOR_LANGUAGE_ENV, language);
+	for (size_t i = 0; i < 2; i++)
+		total += strlen(assignments[i]) + 1;
+	for (const char *entry = inherited; entry != NULL && *entry != 0; entry += strlen(entry) + 1) {
+		if (!is_door_environment_entry(entry))
+			total += strlen(entry) + 1;
+	}
+	block = malloc(total);
 	if (block == NULL) {
 		if (inherited != NULL) FreeEnvironmentStringsA(inherited);
 		return NULL;
@@ -88,20 +103,24 @@ door_environment_block(dg_encoding_t encoding)
 	out = block;
 	for (const char *entry = inherited; entry != NULL && *entry != 0; entry += strlen(entry) + 1) {
 		size_t len;
-		if (is_encoding_environment_entry(entry))
+		if (is_door_environment_entry(entry))
 			continue;
-		if (!inserted && dg_stricmp(entry, assignment) > 0) {
-			memcpy(out, assignment, assignment_len + 1);
-			out += assignment_len + 1;
-			inserted = true;
+		while (next_assignment < 2 && dg_stricmp(entry, assignments[next_assignment]) > 0) {
+			len = strlen(assignments[next_assignment]);
+			memcpy(out, assignments[next_assignment], len + 1);
+			out += len + 1;
+			next_assignment++;
 		}
 		len = strlen(entry);
 		memcpy(out, entry, len + 1);
 		out += len + 1;
 	}
-	if (!inserted) {
-		memcpy(out, assignment, assignment_len + 1);
-		out += assignment_len + 1;
+	while (next_assignment < 2) {
+		size_t len = strlen(assignments[next_assignment]);
+
+		memcpy(out, assignments[next_assignment], len + 1);
+		out += len + 1;
+		next_assignment++;
 	}
 	*out = 0;
 	if (inherited != NULL) FreeEnvironmentStringsA(inherited);
@@ -121,19 +140,20 @@ free_door_environment(char **environment)
 }
 
 static char **
-door_environment(dg_encoding_t encoding)
+door_environment(dg_encoding_t encoding, const char *language)
 {
 	size_t count = 0, used = 0;
 	char **environment;
 
 	while (environ != NULL && environ[count] != NULL)
 		count++;
-	environment = calloc(count + 2, sizeof(*environment));
+	environment = calloc(count + 3, sizeof(*environment));
 	if (environment == NULL)
 		return NULL;
 	for (size_t i = 0; i < count; i++) {
 		size_t len;
-		if (strncmp(environ[i], DG_DOOR_ENCODING_ENV, sizeof(DG_DOOR_ENCODING_ENV) - 1) == 0)
+		if (strncmp(environ[i], DG_DOOR_ENCODING_ENV, sizeof(DG_DOOR_ENCODING_ENV) - 1) == 0
+		    || strncmp(environ[i], DG_DOOR_LANGUAGE_ENV, sizeof(DG_DOOR_LANGUAGE_ENV) - 1) == 0)
 			continue;
 		len = strlen(environ[i]);
 		environment[used] = malloc(len + 1);
@@ -151,7 +171,17 @@ door_environment(dg_encoding_t encoding)
 			free_door_environment(environment);
 			return NULL;
 		}
-		snprintf(environment[used], len + 1, "%s%s", DG_DOOR_ENCODING_ENV, value);
+		snprintf(environment[used++], len + 1, "%s%s", DG_DOOR_ENCODING_ENV, value);
+	}
+	{
+		size_t len = sizeof(DG_DOOR_LANGUAGE_ENV) - 1 + strlen(language);
+
+		environment[used] = malloc(len + 1);
+		if (environment[used] == NULL) {
+			free_door_environment(environment);
+			return NULL;
+		}
+		snprintf(environment[used], len + 1, "%s%s", DG_DOOR_LANGUAGE_ENV, language);
 	}
 	return environment;
 }
@@ -273,6 +303,7 @@ load_door(const dg_config_t *cfg, const char *name, dg_door_t *door, char *err, 
 	iniGetSString(ini, "DOOR", "Platform", "", door->platform, sizeof(door->platform));
 	if (!*door->platform) strcpy(door->platform, iniGetBool(ini, "DOOR", "Native", false) ? "Windows" : "DOS");
 	iniGetSString(ini, "DOOR", "Encoding", "CP437", encoding, sizeof(encoding));
+	door->auto_encoding = dg_stricmp(encoding, "Auto") == 0;
 	door->encoding = dg_stricmp(encoding, "UTF-8") == 0 || dg_stricmp(encoding, "UTF8") == 0 ? DG_UTF8 : DG_CP437;
 	iniGetSString(ini, "DOOR", "Emulator", "Auto", door->emulator, sizeof(door->emulator));
 	iniGetSString(ini, "DOOR", "IO", "Socket", door->io, sizeof(door->io));
@@ -397,9 +428,10 @@ relay_io(dg_client_t *client, const dg_door_t *door, dg_child_t *child)
 	dg_decoder_t from_client, from_door;
 	uint8_t raw[DG_IO_BUFSZ], utf8[DG_IO_BUFSZ * 4], encoded[DG_IO_BUFSZ * 4];
 	dssh_channel channel = client->channel;
+	dg_encoding_t encoding = effective_door_encoding(client, door);
 	bool connected = true;
 	dg_decoder_init(&from_client, client->client_encoding);
-	dg_decoder_init(&from_door, door->encoding);
+	dg_decoder_init(&from_door, encoding);
 	while (connected) {
 		int ev = dssh_chan_poll(channel, DSSH_POLL_READ | DSSH_POLL_EVENT, 10);
 		if (ev < 0) break;
@@ -410,11 +442,20 @@ relay_io(dg_client_t *client, const dg_door_t *door, dg_child_t *child)
 		}
 		if (ev & DSSH_POLL_READ) {
 			int64_t n = dssh_chan_read(channel, 0, raw, sizeof(raw));
+			const uint8_t *output;
+			size_t output_len;
+
 			if (n <= 0) break;
-			size_t u = dg_decode(&from_client, raw, (size_t)n, utf8, sizeof(utf8), false);
-			size_t e = dg_encode(door->encoding, utf8, u, encoded, sizeof(encoded));
-			for (size_t p = 0; p < e;) {
-				int wrote = child_write(child, encoded + p, e - p);
+			output = raw;
+			output_len = (size_t)n;
+			if (!door->auto_encoding) {
+				size_t u = dg_decode(&from_client, raw, (size_t)n, utf8, sizeof(utf8), false);
+
+				output_len = dg_encode(encoding, utf8, u, encoded, sizeof(encoded));
+				output = encoded;
+			}
+			for (size_t p = 0; p < output_len;) {
+				int wrote = child_write(child, output + p, output_len - p);
 				if (wrote <= 0) { connected = false; break; }
 				p += (size_t)wrote;
 			}
@@ -423,8 +464,14 @@ relay_io(dg_client_t *client, const dg_door_t *door, dg_child_t *child)
 			if (child_read_ready(child)) {
 				int n = child_read(child, raw, sizeof(raw));
 				if (n <= 0) break;
-				size_t u = dg_decode(&from_door, raw, (size_t)n, utf8, sizeof(utf8), false);
-				if (!dg_client_write(client, utf8, u)) break;
+				if (door->auto_encoding) {
+					if (!dg_client_write_raw(client, raw, (size_t)n)) break;
+				}
+				else {
+					size_t u = dg_decode(&from_door, raw, (size_t)n, utf8, sizeof(utf8), false);
+
+					if (!dg_client_write(client, utf8, u)) break;
+				}
 			}
 		}
 #ifdef _WIN32
@@ -453,7 +500,7 @@ spawn_native_posix(const dg_client_t *client, const dg_door_t *door, SOCKET pair
 	if (cmdpath[0] != '/' && !dg_path_join(command, sizeof(command), client->config->root, cmdpath)) return false;
 	else if (cmdpath[0] == '/') snprintf(command, sizeof(command), "%s", cmdpath);
 	snprintf(params, sizeof(params), "%s", door->parameters);
-	environment = door_environment(door->encoding);
+	environment = door_environment(effective_door_encoding(client, door), client->language_tag);
 	if (environment == NULL) {
 		snprintf(err, errsz, "cannot create door environment");
 		return false;
@@ -537,7 +584,7 @@ spawn_native_windows(const dg_client_t *client, const dg_door_t *door, SOCKET pa
 		si.dwFlags = STARTF_USESTDHANDLES;
 		si.hStdInput = child_stdin; si.hStdOutput = child_stdout; si.hStdError = child_stdout;
 	}
-	environment = door_environment_block(door->encoding);
+	environment = door_environment_block(effective_door_encoding(client, door), client->language_tag);
 	if (environment == NULL) {
 		if (stdio) {
 			CloseHandle(child_stdin); CloseHandle(child->pipe_in);
@@ -661,8 +708,10 @@ spawn_dos_posix(const dg_client_t *client, const dg_door_t *door, dg_child_t *ch
 		if (!node_path(client, "external.bat", batch, sizeof(batch))) return false;
 		snprintf(batch_text, sizeof(batch_text),
 		    "@echo off\r\nlredir g: linux\\fs%s\r\nset path=%%path%%;g:\\dosutils\r\n"
-		    "set DEUCEGATE_ENCODING=%s\r\nfossil.com\r\nshare.com\r\nansi.com\r\ng:\r\n%s %s\r\nexitemu\r\n",
-		    client->config->root, door_encoding_name(door->encoding), command, params);
+		    "set DEUCEGATE_ENCODING=%s\r\nset DEUCEGATE_LANGUAGE_TAG=%s\r\n"
+		    "fossil.com\r\nshare.com\r\nansi.com\r\ng:\r\n%s %s\r\nexitemu\r\n",
+		    client->config->root, door_encoding_name(effective_door_encoding(client, door)),
+		    client->language_tag, command, params);
 		if (!write_text(batch, batch_text)) return false;
 		pid = forkpty(&ptyfd, NULL, NULL, NULL);
 		if (pid < 0) { snprintf(err, errsz, "forkpty failed: %s", strerror(errno)); return false; }
@@ -697,10 +746,12 @@ spawn_dos_posix(const dg_client_t *client, const dg_door_t *door, dg_child_t *ch
 	    "[sdl]\nfullscreen=false\n[serial]\nserial1=nullmodem server:127.0.0.1 port:%u transparent:1 telnet:0\n"
 	    "[autoexec]\nmount c \"%s\"\nc:\nset PATH=%%PATH%%;C:\\dosutils\n"
 	    "set DEUCEGATE_ENCODING=%s\n"
+	    "set DEUCEGATE_LANGUAGE_TAG=%s\n"
 	    "if exist C:\\dosutils\\fossil.com C:\\dosutils\\fossil.com\n"
 	    "if exist C:\\dosutils\\share.com C:\\dosutils\\share.com\n"
 	    "if exist C:\\dosutils\\ansi.com C:\\dosutils\\ansi.com\n%s %s\nexit\n",
-	    ntohs(addr.sin_port), client->config->root, door_encoding_name(door->encoding), command, params);
+	    ntohs(addr.sin_port), client->config->root, door_encoding_name(effective_door_encoding(client, door)),
+	    client->language_tag, command, params);
 	if (!write_text(conf, text)) { closesocket(listener); return false; }
 	pid = fork();
 	if (pid == 0) {
@@ -761,10 +812,12 @@ spawn_dos_windows(const dg_client_t *client, const dg_door_t *door, dg_child_t *
 	    "[sdl]\r\nfullscreen=false\r\n[serial]\r\nserial1=nullmodem server:127.0.0.1 port:%u transparent:1 telnet:0\r\n"
 	    "[autoexec]\r\nmount c \"%s\"\r\nc:\r\nset PATH=%%PATH%%;C:\\dosutils\r\n"
 	    "set DEUCEGATE_ENCODING=%s\r\n"
+	    "set DEUCEGATE_LANGUAGE_TAG=%s\r\n"
 	    "if exist C:\\dosutils\\fossil.com C:\\dosutils\\fossil.com\r\n"
 	    "if exist C:\\dosutils\\share.com C:\\dosutils\\share.com\r\n"
 	    "if exist C:\\dosutils\\ansi.com C:\\dosutils\\ansi.com\r\n%s %s\r\nexit\r\n",
-	    ntohs(addr.sin_port), client->config->root, door_encoding_name(door->encoding), command, params);
+	    ntohs(addr.sin_port), client->config->root, door_encoding_name(effective_door_encoding(client, door)),
+	    client->language_tag, command, params);
 	if (!write_text(conf, text)) { closesocket(listener); return false; }
 	if (dg_file_exists(base_conf))
 		snprintf(command_line, sizeof(command_line), "\"%s\" -conf \"%s\" -conf \"%s\" -noconsole",
@@ -866,8 +919,9 @@ dg_run_door(dg_client_t *client, const char *door_name, char *err, size_t errsz)
 #endif
 	}
 	if (!spawned) { cleanup_node(client); return false; }
-	dg_log(DG_LOG_INFO, "node %u running door %s (%s, %s)", client->node, door.name,
-	    door.platform, door_encoding_name(door.encoding));
+	dg_log(DG_LOG_INFO, "node %u running door %s (%s, %s%s)", client->node, door.name,
+	    door.platform, door_encoding_name(effective_door_encoding(client, &door)),
+	    door.auto_encoding ? ", pass-through" : "");
 	relay_io(client, &door, &child);
 	stop_child(&child, door.force_quit_delay, true);
 	cleanup_node(client);

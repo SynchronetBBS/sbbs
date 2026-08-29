@@ -141,6 +141,10 @@ spec:
       - "src/deucegate/build/ci/deucegate*"
       - "src/deucegate/build/ci/CTestTestfile.cmake"
       - "src/deucegate/build/ci/ci-project-dir"
+  rules:
+    - if: '"$[[ inputs.slow_system ]]" == "yes"'
+      when: never
+    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [deucegate-tests]":
   extends:
@@ -159,6 +163,8 @@ spec:
         src/deucegate/build/ci/CTestTestfile.cmake
     - ctest --test-dir src/deucegate/build/ci --output-on-failure --no-tests=error
   rules:
+    - if: '"$[[ inputs.slow_system ]]" == "yes"'
+      when: never
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
     - !reference [.rules, rules]

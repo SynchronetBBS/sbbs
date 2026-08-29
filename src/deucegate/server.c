@@ -204,7 +204,39 @@ accept_pty(dssh_channel channel, const struct dssh_chan_params *params, void *cb
 static int
 accept_env(dssh_channel channel, const struct dssh_chan_params *params, void *cbdata)
 {
-	(void)channel; (void)params; (void)cbdata;
+	dg_client_t *client = cbdata;
+	const struct dssh_chan_env *env;
+	char tag[DG_LANGUAGE_TAG_MAX + 1];
+	unsigned priority;
+	bool converted = false;
+
+	(void)channel;
+	if (params == NULL || params->env_count == 0)
+		return -1;
+	env = &params->env[params->env_count - 1];
+	if (strcmp(env->name, "DEUCEGATE_LANGUAGE_TAG") == 0) {
+		if (!dg_language_tag_valid(env->value))
+			return -1;
+		snprintf(tag, sizeof(tag), "%s", env->value);
+		priority = 3;
+	}
+	else if (strcmp(env->name, "LC_ALL") == 0)
+		priority = 2;
+	else if (strcmp(env->name, "LC_MESSAGES") == 0)
+		priority = 1;
+	else if (strcmp(env->name, "LANG") == 0)
+		priority = 0;
+	else
+		return -1;
+	if (strcmp(env->name, "DEUCEGATE_LANGUAGE_TAG") != 0) {
+		converted = dg_language_from_locale(env->value, tag, sizeof(tag));
+		if (!converted)
+			return 0;
+	}
+	if (priority >= client->language_priority) {
+		snprintf(client->language_tag, sizeof(client->language_tag), "%s", tag);
+		client->language_priority = priority;
+	}
 	return 0;
 }
 

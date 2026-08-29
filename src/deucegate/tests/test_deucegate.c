@@ -78,6 +78,24 @@ test_utf8_stream(void)
 }
 
 static void
+test_language_tags(void)
+{
+	char tag[DG_LANGUAGE_TAG_MAX + 1];
+
+	CHECK(dg_language_tag_valid("en"));
+	CHECK(dg_language_tag_valid("fr-CA"));
+	CHECK(dg_language_tag_valid("sr-Latn-RS"));
+	CHECK(dg_language_tag_valid("x-dgate"));
+	CHECK(!dg_language_tag_valid("en_US"));
+	CHECK(!dg_language_tag_valid("en--US"));
+	CHECK(!dg_language_tag_valid("UTF-8"));
+	CHECK(dg_language_from_locale("fr_CA.UTF-8", tag, sizeof(tag)) && strcmp(tag, "fr-CA") == 0);
+	CHECK(dg_language_from_locale("sr_RS@latin", tag, sizeof(tag)) && strcmp(tag, "sr-RS") == 0);
+	CHECK(!dg_language_from_locale("C.UTF-8", tag, sizeof(tag)));
+	CHECK(!dg_language_from_locale("POSIX", tag, sizeof(tag)));
+}
+
+static void
 test_mci(void)
 {
 	dg_config_t cfg = {0};
@@ -188,6 +206,7 @@ main(void)
 	test_cp437();
 	test_encoding_matrix();
 	test_utf8_stream();
+	test_language_tags();
 	test_mci();
 	test_legacy_password();
 	test_chain_txt();

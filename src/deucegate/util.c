@@ -199,3 +199,102 @@ dg_trim(char *s)
 		*--end = 0;
 	return s;
 }
+
+static bool
+subtag_chars(const char *subtag, size_t len, int (*check)(int))
+{
+	for (size_t i = 0; i < len; i++)
+		if (!check((unsigned char)subtag[i]))
+			return false;
+	return true;
+}
+
+bool
+dg_language_tag_valid(const char *tag)
+{
+	static const char *grandfathered[] = {
+	    "en-GB-oed", "i-ami", "i-bnn", "i-default", "i-enochian", "i-hak",
+	    "i-klingon", "i-lux", "i-mingo", "i-navajo", "i-pwn", "i-tao", "i-tay",
+	    "i-tsu", "sgn-BE-FR", "sgn-BE-NL", "sgn-CH-DE", "art-lojban", "cel-gaulish",
+	    "no-bok", "no-nyn", "zh-guoyu", "zh-hakka", "zh-min", "zh-min-nan", "zh-xiang",
+	    NULL
+	};
+	const char *parts[32];
+	size_t lengths[32], count = 0, len, at = 0;
+	const char *start;
+
+	if (tag == NULL || (len = strlen(tag)) == 0 || len > DG_LANGUAGE_TAG_MAX)
+		return false;
+	for (size_t i = 0; grandfathered[i] != NULL; i++)
+		if (dg_stricmp(tag, grandfathered[i]) == 0)
+			return true;
+	start = tag;
+	for (const char *p = tag;; p++) {
+		if (*p != '-' && *p != 0) {
+			if (!isalnum((unsigned char)*p))
+				return false;
+			continue;
+		}
+		if (p == start || (size_t)(p - start) > 8 || count >= 32)
+			return false;
+		parts[count] = start;
+		lengths[count++] = (size_t)(p - start);
+		if (*p == 0)
+			break;
+		start = p + 1;
+	}
+	if (lengths[0] == 1 && tolower((unsigned char)parts[0][0]) == 'x')
+		return count > 1;
+	if (!subtag_chars(parts[0], lengths[0], isalpha)
+	    || lengths[0] < 2 || lengths[0] > 8)
+		return false;
+	at = 1;
+	if (lengths[0] <= 3) {
+		for (unsigned extlangs = 0; at < count && extlangs < 3 && lengths[at] == 3
+		    && subtag_chars(parts[at], lengths[at], isalpha); extlangs++)
+			at++;
+	}
+	if (at < count && lengths[at] == 4 && subtag_chars(parts[at], lengths[at], isalpha))
+		at++;
+	if (at < count && ((lengths[at] == 2 && subtag_chars(parts[at], lengths[at], isalpha))
+	    || (lengths[at] == 3 && subtag_chars(parts[at], lengths[at], isdigit))))
+		at++;
+	while (at < count && ((lengths[at] >= 5 && subtag_chars(parts[at], lengths[at], isalnum))
+	    || (lengths[at] == 4 && isdigit((unsigned char)parts[at][0])
+	    && subtag_chars(parts[at] + 1, 3, isalnum))))
+		at++;
+	while (at < count && lengths[at] == 1
+	    && tolower((unsigned char)parts[at][0]) != 'x') {
+		at++;
+		if (at == count || lengths[at] < 2)
+			return false;
+		while (at < count && lengths[at] >= 2)
+			at++;
+	}
+	if (at < count && lengths[at] == 1 && tolower((unsigned char)parts[at][0]) == 'x')
+		return at + 1 < count;
+	return at == count;
+}
+
+bool
+dg_language_from_locale(const char *locale, char *tag, size_t tagsz)
+{
+	size_t used = 0;
+
+	if (locale == NULL || tag == NULL || tagsz == 0 || dg_stricmp(locale, "C") == 0
+	    || dg_stricmp(locale, "POSIX") == 0)
+		return false;
+	for (const char *p = locale; *p != 0 && *p != '.' && *p != '@'; p++) {
+		char ch = *p == '_' ? '-' : *p;
+
+		if (used + 1 >= tagsz)
+			return false;
+		tag[used++] = ch;
+	}
+	tag[used] = 0;
+	if (!dg_language_tag_valid(tag)) {
+		tag[0] = 0;
+		return false;
+	}
+	return true;
+}

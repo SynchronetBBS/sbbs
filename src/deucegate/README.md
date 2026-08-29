@@ -65,14 +65,26 @@ Emulator=Auto
 IO=Socket
 ```
 
-- `Encoding` is `CP437` (default) or `UTF-8`, independently of the caller's detected encoding.
+- `Encoding` is `CP437` (default), `UTF-8`, or `Auto`. Fixed encodings are
+  independent of the caller's detected encoding. `Auto` is for adaptive doors
+  that honor `DEUCEGATE_ENCODING`; DeuceGate sets it to the caller's encoding
+  and relays the door session byte-for-byte without character conversion.
 - `IO` is `Socket` (the GameSrv/DOOR32-compatible default) or `Stdio` for native doors.
 - `Emulator` is `Auto`, `DOSBox-X`, `DOSBox`, or `DOSEMU`. Auto tries DOSBox-X, DOSBox, then DOSEMU. DOSEMU is POSIX-only.
 
 DeuceGate sets `DEUCEGATE_ENCODING` to `CP437` or `UTF-8` in each native
 door's environment. Generated DOSBox and DOSEMU environments set the same
-variable. It describes the encoding of the door-facing byte stream after
-DeuceGate's conversion, not the caller's encoding.
+variable. For fixed-encoding doors it describes the door-facing byte stream
+after conversion; for `Encoding=Auto` it describes the unchanged caller byte
+stream.
+
+When the SSH client supplies a language preference, DeuceGate also sets
+`DEUCEGATE_LANGUAGE_TAG` to a BCP 47 tag such as `en-US`. Preference order is
+the same-named SSH environment variable, then `LC_ALL`, `LC_MESSAGES`, and
+`LANG`. POSIX locale suffixes are removed, so for example `fr_CA.UTF-8`
+becomes `fr-CA`. OpenSSH can send the explicit tag
+with `SendEnv DEUCEGATE_LANGUAGE_TAG`; only these locale-related environment
+variables are accepted. Language and character encoding are independent.
 
 DOSBox and DOSBox-X run on Windows and POSIX. DeuceGate loads a root `dosbox.conf` when present, adds a per-node override, mounts the GameSrv root as `C:`, loads `dosutils/fossil.com`, `share.com`, and `ansi.com` when present, and connects COM1 to an ephemeral IPv4 loopback-only nullmodem socket with Telnet processing disabled. DOSEMU uses its PTY/FOSSIL `external.bat` path.
 

@@ -15,6 +15,7 @@
 #define DG_KEY_MAX 8192
 #define DG_MCI_MAX 16384
 #define DG_IO_BUFSZ 8192
+#define DG_LANGUAGE_TAG_MAX 64
 
 typedef enum {
 	DG_CP437,
@@ -85,6 +86,8 @@ typedef struct {
 	unsigned rows;
 	dg_term_t terminal;
 	dg_encoding_t client_encoding;
+	char language_tag[DG_LANGUAGE_TAG_MAX + 1];
+	unsigned language_priority;
 	bool anonymous;
 	time_t started;
 } dg_client_t;
@@ -111,6 +114,8 @@ bool dg_mkdir_parent(const char *path);
 bool dg_alias_valid(const char *alias);
 int dg_stricmp(const char *a, const char *b);
 char *dg_trim(char *s);
+bool dg_language_tag_valid(const char *tag);
+bool dg_language_from_locale(const char *locale, char *tag, size_t tagsz);
 
 /* config.c */
 bool dg_config_load(const char *root, dg_config_t *cfg, char *err, size_t errsz);
@@ -137,6 +142,7 @@ bool dg_password_matches(const dg_config_t *cfg, const dg_user_t *user,
 
 /* terminal.c */
 bool dg_detect_terminal(dg_client_t *client);
+bool dg_client_write_raw(dg_client_t *client, const uint8_t *data, size_t len);
 bool dg_client_write(dg_client_t *client, const uint8_t *utf8, size_t len);
 bool dg_client_puts(dg_client_t *client, const char *utf8);
 int dg_client_getch(dg_client_t *client, int timeout_ms);

@@ -23,16 +23,22 @@ channel_write_all(dssh_channel channel, const uint8_t *buf, size_t len)
 }
 
 bool
+dg_client_write_raw(dg_client_t *client, const uint8_t *data, size_t len)
+{
+	return channel_write_all((dssh_channel)client->channel, data, len);
+}
+
+bool
 dg_client_write(dg_client_t *client, const uint8_t *utf8, size_t len)
 {
 	uint8_t *encoded;
 	size_t outlen;
 	if (client->client_encoding == DG_UTF8)
-		return channel_write_all((dssh_channel)client->channel, utf8, len);
+		return dg_client_write_raw(client, utf8, len);
 	encoded = malloc(len ? len : 1);
 	if (encoded == NULL) return false;
 	outlen = dg_encode(DG_CP437, utf8, len, encoded, len);
-	bool ok = channel_write_all((dssh_channel)client->channel, encoded, outlen);
+	bool ok = dg_client_write_raw(client, encoded, outlen);
 	free(encoded);
 	return ok;
 }
