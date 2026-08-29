@@ -7,6 +7,14 @@
 
 #include <unistd.h>
 
+#ifdef _WIN32
+ #define WIN32_LEAN_AND_MEAN
+ #include <windows.h>
+ #include <aclapi.h>
+#else
+ #include <sys/stat.h>
+#endif
+
 #ifdef DSSH_CRYPTO_OPENSSL
 #include <openssl/bn.h>
 #include <openssl/core_names.h>
@@ -325,6 +333,66 @@ test_ed25519_save_load_roundtrip(void)
 	int64_t loaded_len = dssh_ed25519_get_pub_str(loaded_pub, sizeof(loaded_pub));
 	ASSERT_EQ(loaded_len, orig_len);
 	ASSERT_MEM_EQ(orig_pub, loaded_pub, (size_t)orig_len);
+	return TEST_PASS;
+}
+
+static int
+test_ed25519_save_key_permissions(void)
+{
+	dssh_test_reset_global_config();
+	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
+	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
+
+	char tmppath[] = "/tmp/dssh_test_ed25519_mode_XXXXXX";
+	int fd = mkstemp(tmppath);
+	ASSERT_TRUE(fd >= 0);
+	close(fd);
+	unlink(tmppath);
+
+#ifdef _WIN32
+	ASSERT_EQ(dssh_ed25519_save_key_file(tmppath, NULL, NULL), 0);
+
+	PSID owner = NULL;
+	PACL dacl = NULL;
+	PSECURITY_DESCRIPTOR descriptor = NULL;
+	DWORD status = GetNamedSecurityInfoA(tmppath, SE_FILE_OBJECT,
+	    OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION,
+	    &owner, NULL, &dacl, NULL, &descriptor);
+	ASSERT_EQ(status, ERROR_SUCCESS);
+	ASSERT_NOT_NULL(owner);
+	ASSERT_NOT_NULL(dacl);
+	ASSERT_EQ(dacl->AceCount, 1);
+
+	SECURITY_DESCRIPTOR_CONTROL control;
+	DWORD revision;
+	ASSERT_TRUE(GetSecurityDescriptorControl(descriptor, &control,
+	    &revision));
+	ASSERT_TRUE((control & SE_DACL_PROTECTED) != 0);
+
+	void *raw_ace = NULL;
+	ASSERT_TRUE(GetAce(dacl, 0, &raw_ace));
+	ACCESS_ALLOWED_ACE *ace = raw_ace;
+	ASSERT_EQ(ace->Header.AceType, ACCESS_ALLOWED_ACE_TYPE);
+	ASSERT_EQ(ace->Mask, GENERIC_ALL);
+	ASSERT_TRUE(EqualSid(owner, &ace->SidStart));
+	LocalFree(descriptor);
+#else
+	mode_t old_umask = umask(0);
+	int result = dssh_ed25519_save_key_file(tmppath, NULL, NULL);
+	umask(old_umask);
+	ASSERT_EQ(result, 0);
+
+	struct stat st;
+	ASSERT_EQ(stat(tmppath, &st), 0);
+	ASSERT_EQ(st.st_mode & 0777, S_IRUSR | S_IWUSR);
+
+	ASSERT_EQ(chmod(tmppath, 0666), 0);
+	ASSERT_EQ(dssh_ed25519_save_key_file(tmppath, NULL, NULL), 0);
+	ASSERT_EQ(stat(tmppath, &st), 0);
+	ASSERT_EQ(st.st_mode & 0777, S_IRUSR | S_IWUSR);
+#endif
+
+	unlink(tmppath);
 	return TEST_PASS;
 }
 
@@ -3238,6 +3306,7 @@ static struct dssh_test_entry tests[] = {
 	{ "ed25519_pubkey_blob_format",     test_ed25519_pubkey_blob_format },
 	{ "ed25519_sig_blob_format",        test_ed25519_sig_blob_format },
 	{ "ed25519_save_load_roundtrip",    test_ed25519_save_load_roundtrip },
+	{ "ed25519_save_key_permissions",   test_ed25519_save_key_permissions },
 	{ "ed25519_save_pub_file",          test_ed25519_save_pub_file },
 	{ "ed25519_sign_verify_after_load", test_ed25519_sign_verify_after_load },
 

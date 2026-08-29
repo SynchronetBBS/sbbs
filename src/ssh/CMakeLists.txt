@@ -165,6 +165,16 @@ endif()
 set(DSSH_WIN32_THREADS_SOURCES ${DSSH_THREADS_SHIM_SOURCES})
 
 # Algorithm modules -- backend-specific
+if(WIN32)
+	set(DSSH_PRIVATE_KEY_FILE_SOURCE key_algo/private-key-file-win32.c)
+	set(DSSH_PRIVATE_KEY_FILE_LIB advapi32)
+	set(DSSH_PC_LIBS_PRIVATE "-ladvapi32")
+else()
+	set(DSSH_PRIVATE_KEY_FILE_SOURCE key_algo/private-key-file-posix.c)
+	set(DSSH_PRIVATE_KEY_FILE_LIB "")
+	set(DSSH_PC_LIBS_PRIVATE "")
+endif()
+
 if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
 	set(DSSH_ALG_SOURCES
 		kex/curve25519-sha256-openssl.c
@@ -210,6 +220,7 @@ endif()
 set(DEUCESSH_SOURCES
 	ssh-trans.c ssh.c ssh-auth.c ssh-conn.c
 	${DSSH_CRYPTO_IMPL}
+	${DSSH_PRIVATE_KEY_FILE_SOURCE}
 	kex/curve25519-sha256.c
 	kex/hybrid-pq-kex.c
 	kex/dh-gex-sha256.c
@@ -401,7 +412,8 @@ if(DEUCESSH_BUILD_STATIC)
 	target_include_directories(deucessh_static SYSTEM
 		PRIVATE ${DSSH_CRYPTO_INCLUDE})
 	target_link_libraries(deucessh_static
-		INTERFACE ${DSSH_CRYPTO_LIB_INTERFACE} ${THREADS_LINK_LIB})
+		INTERFACE ${DSSH_CRYPTO_LIB_INTERFACE} ${THREADS_LINK_LIB}
+			${DSSH_PRIVATE_KEY_FILE_LIB})
 	target_compile_definitions(deucessh_static
 		PRIVATE DSSH_VERSION_STRING="${PROJECT_VERSION}"
 		$<$<CONFIG:Release>:NDEBUG>)
@@ -435,7 +447,8 @@ if(DEUCESSH_BUILD_SHARED)
 	target_include_directories(deucessh_shared SYSTEM
 		PRIVATE ${DSSH_CRYPTO_INCLUDE})
 	target_link_libraries(deucessh_shared
-		PRIVATE ${DSSH_CRYPTO_LIB_PRIVATE} ${THREADS_LINK_LIB})
+		PRIVATE ${DSSH_CRYPTO_LIB_PRIVATE} ${THREADS_LINK_LIB}
+			${DSSH_PRIVATE_KEY_FILE_LIB})
 	target_compile_definitions(deucessh_shared
 		PRIVATE
 			DSSH_SHARED

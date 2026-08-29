@@ -19,6 +19,7 @@
 #include "deucessh-algorithms.h"
 #include "deucessh-crypto.h"
 #include "deucessh.h"
+#include "private-key-file.h"
 
 struct dssh_key_algo_ctx;
 
@@ -398,7 +399,7 @@ dssh_rsa_sha2_512_save_key_file(const char *path, dssh_pem_password_cb pw_cb, vo
 	if (rsa_ctx == NULL || rsa_ctx->privkey == NULL)
 		return DSSH_ERROR_INIT;
 
-	FILE *fp = fopen(path, "wb");
+	FILE *fp = dssh_private_key_open(path);
 	if (fp == NULL)
 		return DSSH_ERROR_INIT;
 

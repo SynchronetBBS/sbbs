@@ -13,6 +13,7 @@
 #include "deucessh-crypto.h"
 #include "deucessh-key-algo.h"
 #include "deucessh.h"
+#include "private-key-file.h"
 #ifdef DSSH_TESTING
  #include "ssh-internal.h"
 #endif
@@ -547,7 +548,7 @@ dssh_rsa_sha2_256_save_key_file(const char *path, dssh_pem_password_cb pw_cb, vo
 #endif
 		return DSSH_ERROR_INIT;
 
-	FILE *fp = fopen(path, "wb");
+	FILE *fp = dssh_private_key_open(path);
 
 	if (fp == NULL)
 		return DSSH_ERROR_INIT;
