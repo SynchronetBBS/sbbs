@@ -157,8 +157,8 @@ bool dg_display_file(dg_client_t *client, const char *path, bool more, bool paus
     const dg_mci_context_t *ctx);
 
 /* door.c */
-bool dg_create_drop_files(const dg_client_t *client, SOCKET handle,
-    char *node_dir, size_t node_dir_sz);
+bool dg_create_drop_files(const dg_client_t *client, const char *communications,
+    SOCKET handle, dg_encoding_t encoding, char *node_dir, size_t node_dir_sz);
 bool dg_run_door(dg_client_t *client, const char *door_name, char *err, size_t errsz);
 
 /* server.c */

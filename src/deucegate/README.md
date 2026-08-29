@@ -85,10 +85,11 @@ the same-named SSH environment variable, then `LC_ALL`, `LC_MESSAGES`, and
 becomes `fr-CA`. OpenSSH can send the explicit tag
 with `SendEnv DEUCEGATE_LANGUAGE_TAG`; only these locale-related environment
 variables are accepted. Language and character encoding are independent.
+When the client supplies no language preference, DeuceGate uses `en`.
 
 DOSBox and DOSBox-X run on Windows and POSIX. DeuceGate loads a root `dosbox.conf` when present, adds a per-node override, mounts the GameSrv root as `C:`, loads `dosutils/fossil.com`, `share.com`, and `ansi.com` when present, and connects COM1 to an ephemeral IPv4 loopback-only nullmodem socket with Telnet processing disabled. DOSEMU uses its PTY/FOSSIL `external.bat` path.
 
-Native socket doors receive a new local plaintext socket handle in `DOOR32.SYS`, `*HANDLE`, and `*SOCKETHANDLE`; the encrypted SSH socket is never inherited by a door. Drop files and command macros follow GameSrv's existing names and layout. `CHAIN.TXT` is also generated with the current SSH PTY columns and rows and is available through `*CHAIN`. User-controlled macros still require the legacy triple-star opt-in, such as `***ALIAS`.
+Native socket doors receive a new local plaintext socket handle in `DOOR32.SYS`, `*HANDLE`, and `*SOCKETHANDLE`; the encrypted SSH socket is never inherited by a door. DeuceGate also creates the UTF-8 [`BBSDEV.DRP`](https://github.com/RealDeuce/bbsdev.drp) format and exposes its absolute path through `BBSDEV_DRP` (and the optional `*BBSDEV` command macro). Its communications field is `socket` or `stdio` for native doors and `fossil` port 0 for DOS doors. Drop files and other command macros follow GameSrv's existing names and layout. `CHAIN.TXT` is also generated with the current SSH PTY columns and rows and is available through `*CHAIN`. User-controlled macros still require the legacy triple-star opt-in, such as `***ALIAS`.
 
 ## Terminal handling
 

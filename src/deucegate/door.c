@@ -55,6 +55,7 @@ typedef struct {
 
 #define DG_DOOR_ENCODING_ENV "DEUCEGATE_ENCODING="
 #define DG_DOOR_LANGUAGE_ENV "DEUCEGATE_LANGUAGE_TAG="
+#define DG_BBSDEV_ENV "BBSDEV_DRP="
 
 static const char *
 door_encoding_name(dg_encoding_t encoding)
@@ -68,28 +69,37 @@ effective_door_encoding(const dg_client_t *client, const dg_door_t *door)
 	return door->auto_encoding ? client->client_encoding : door->encoding;
 }
 
+static const char *
+door_language(const dg_client_t *client)
+{
+	return *client->language_tag != 0 ? client->language_tag : "en";
+}
+
 #ifdef _WIN32
 static bool
 is_door_environment_entry(const char *entry)
 {
-	return strnicmp(entry, DG_DOOR_ENCODING_ENV, sizeof(DG_DOOR_ENCODING_ENV) - 1) == 0
+	return strnicmp(entry, DG_BBSDEV_ENV, sizeof(DG_BBSDEV_ENV) - 1) == 0
+	    || strnicmp(entry, DG_DOOR_ENCODING_ENV, sizeof(DG_DOOR_ENCODING_ENV) - 1) == 0
 	    || strnicmp(entry, DG_DOOR_LANGUAGE_ENV, sizeof(DG_DOOR_LANGUAGE_ENV) - 1) == 0;
 }
 
 static char *
-door_environment_block(dg_encoding_t encoding, const char *language)
+door_environment_block(dg_encoding_t encoding, const char *language, const char *drop_path)
 {
 	LPCH inherited = GetEnvironmentStringsA();
+	char drop_assignment[sizeof(DG_BBSDEV_ENV) + DG_PATH_MAX];
 	char encoding_assignment[sizeof(DG_DOOR_ENCODING_ENV) + 8];
 	char language_assignment[sizeof(DG_DOOR_LANGUAGE_ENV) + DG_LANGUAGE_TAG_MAX + 1];
-	const char *assignments[2] = {encoding_assignment, language_assignment};
+	const char *assignments[3] = {drop_assignment, encoding_assignment, language_assignment};
 	size_t total = 1, next_assignment = 0;
 	char *block, *out;
 
+	snprintf(drop_assignment, sizeof(drop_assignment), "%s%s", DG_BBSDEV_ENV, drop_path);
 	snprintf(encoding_assignment, sizeof(encoding_assignment), "%s%s", DG_DOOR_ENCODING_ENV,
 	    door_encoding_name(encoding));
 	snprintf(language_assignment, sizeof(language_assignment), "%s%s", DG_DOOR_LANGUAGE_ENV, language);
-	for (size_t i = 0; i < 2; i++)
+	for (size_t i = 0; i < 3; i++)
 		total += strlen(assignments[i]) + 1;
 	for (const char *entry = inherited; entry != NULL && *entry != 0; entry += strlen(entry) + 1) {
 		if (!is_door_environment_entry(entry))
@@ -105,7 +115,7 @@ door_environment_block(dg_encoding_t encoding, const char *language)
 		size_t len;
 		if (is_door_environment_entry(entry))
 			continue;
-		while (next_assignment < 2 && dg_stricmp(entry, assignments[next_assignment]) > 0) {
+		while (next_assignment < 3 && dg_stricmp(entry, assignments[next_assignment]) > 0) {
 			len = strlen(assignments[next_assignment]);
 			memcpy(out, assignments[next_assignment], len + 1);
 			out += len + 1;
@@ -115,7 +125,7 @@ door_environment_block(dg_encoding_t encoding, const char *language)
 		memcpy(out, entry, len + 1);
 		out += len + 1;
 	}
-	while (next_assignment < 2) {
+	while (next_assignment < 3) {
 		size_t len = strlen(assignments[next_assignment]);
 
 		memcpy(out, assignments[next_assignment], len + 1);
@@ -140,19 +150,20 @@ free_door_environment(char **environment)
 }
 
 static char **
-door_environment(dg_encoding_t encoding, const char *language)
+door_environment(dg_encoding_t encoding, const char *language, const char *drop_path)
 {
 	size_t count = 0, used = 0;
 	char **environment;
 
 	while (environ != NULL && environ[count] != NULL)
 		count++;
-	environment = calloc(count + 3, sizeof(*environment));
+	environment = calloc(count + 4, sizeof(*environment));
 	if (environment == NULL)
 		return NULL;
 	for (size_t i = 0; i < count; i++) {
 		size_t len;
-		if (strncmp(environ[i], DG_DOOR_ENCODING_ENV, sizeof(DG_DOOR_ENCODING_ENV) - 1) == 0
+		if (strncmp(environ[i], DG_BBSDEV_ENV, sizeof(DG_BBSDEV_ENV) - 1) == 0
+		    || strncmp(environ[i], DG_DOOR_ENCODING_ENV, sizeof(DG_DOOR_ENCODING_ENV) - 1) == 0
 		    || strncmp(environ[i], DG_DOOR_LANGUAGE_ENV, sizeof(DG_DOOR_LANGUAGE_ENV) - 1) == 0)
 			continue;
 		len = strlen(environ[i]);
@@ -162,6 +173,15 @@ door_environment(dg_encoding_t encoding, const char *language)
 			return NULL;
 		}
 		memcpy(environment[used++], environ[i], len + 1);
+	}
+	{
+		size_t len = sizeof(DG_BBSDEV_ENV) - 1 + strlen(drop_path);
+		environment[used] = malloc(len + 1);
+		if (environment[used] == NULL) {
+			free_door_environment(environment);
+			return NULL;
+		}
+		snprintf(environment[used++], len + 1, "%s%s", DG_BBSDEV_ENV, drop_path);
 	}
 	{
 		const char *value = door_encoding_name(encoding);
@@ -209,14 +229,46 @@ node_path(const dg_client_t *client, const char *name, char *out, size_t outsz)
 	return dg_path_join(out, outsz, client->config->root, rel);
 }
 
+static bool
+absolute_node_path(const dg_client_t *client, const char *name, char *out, size_t outsz)
+{
+	char path[DG_PATH_MAX];
+
+	if (!node_path(client, name, path, sizeof(path)))
+		return false;
+#ifdef _WIN32
+	return _fullpath(out, path, outsz) != NULL;
+#else
+	{
+		char resolved[DG_PATH_MAX];
+		size_t len;
+
+		if (realpath(path, resolved) == NULL || (len = strlen(resolved)) >= outsz)
+			return false;
+		memcpy(out, resolved, len + 1);
+		return true;
+	}
+#endif
+}
+
 bool
-dg_create_drop_files(const dg_client_t *client, SOCKET handle, char *node_dir, size_t node_dir_sz)
+dg_create_drop_files(const dg_client_t *client, const char *communications, SOCKET handle,
+    dg_encoding_t encoding, char *node_dir, size_t node_dir_sz)
 {
 	char path[DG_PATH_MAX], text[16384], dropname[64], alias_upper[DG_ALIAS_MAX];
+	char logoff[32];
 	unsigned seconds = time_left(client), minutes = seconds / 60;
 	int terminal = client->terminal == DG_TERM_RIP ? 3 : client->terminal == DG_TERM_ANSI ? 1 : 0;
 	time_t now = time(NULL);
-	struct tm login_tm;
+	time_t deadline = client->started + (time_t)client->config->time_per_call * 60;
+	struct tm login_tm, deadline_tm;
+	const char *parameter = "";
+	const char *language = door_language(client);
+	const char *board = *client->config->bbs_name != 0 ? client->config->bbs_name : "GameSrv";
+	const char *sysop = *client->config->sysop_name != 0 ? client->config->sysop_name : "Sysop";
+	char handle_text[32];
+	unsigned cols = client->cols == 0 ? 1 : client->cols > 65535 ? 65535 : client->cols;
+	unsigned rows = client->rows == 0 ? 1 : client->rows > 65535 ? 65535 : client->rows;
 	snprintf(path, sizeof(path), "node%u", client->node);
 	if (!dg_path_join(node_dir, node_dir_sz, client->config->root, path) ||
 	    (!dg_dir_exists(node_dir) && mkpath(node_dir) != 0))
@@ -247,6 +299,27 @@ dg_create_drop_files(const dg_client_t *client, SOCKET handle, char *node_dir, s
 	if (!node_path(client, "dorinfo1.def", path, sizeof(path)) || !write_text(path, text)) return false;
 	snprintf(dropname, sizeof(dropname), "dorinfo%u.def", client->node);
 	if (!node_path(client, dropname, path, sizeof(path)) || !write_text(path, text)) return false;
+	if (strcmp(communications, "socket") == 0) {
+		snprintf(handle_text, sizeof(handle_text), "%llu", (unsigned long long)(uintptr_t)handle);
+		parameter = handle_text;
+	}
+	else if (strcmp(communications, "fossil") == 0)
+		parameter = "0";
+#ifdef _WIN32
+	gmtime_s(&deadline_tm, &deadline);
+#else
+	gmtime_r(&deadline, &deadline_tm);
+#endif
+	if (strftime(logoff, sizeof(logoff), "%Y-%m-%dT%H:%M:%SZ", &deadline_tm) == 0)
+		return false;
+	snprintf(text, sizeof(text),
+	    "1.0\r\n%s\r\n%s\r\n%s\r\n%u\r\n%u\r\n%u\r\n%s\r\n%s\r\n\r\n%s\r\n%s\r\n%s\r\n"
+	    "DeuceGate 0.1.0\r\n%s\r\n%s\r\n%u\r\n%u\r\nN\r\n",
+	    communications, parameter, client->user.alias, client->user.id, cols, rows,
+	    client->terminal == DG_TERM_ASCII ? "N" : "Y", client->terminal == DG_TERM_RIP ? "Y" : "N",
+	    logoff, encoding == DG_UTF8 ? "UTF-8" : "IBM437", language, board, sysop,
+	    client->user.access_level, client->node);
+	if (!node_path(client, "BBSDEV.DRP", path, sizeof(path)) || !write_text(path, text)) return false;
 	strncpy(alias_upper, client->user.alias, sizeof(alias_upper) - 1);
 	alias_upper[sizeof(alias_upper) - 1] = 0;
 	for (char *p = alias_upper; *p != 0; p++) *p = (char)toupper((unsigned char)*p);
@@ -271,7 +344,7 @@ static void
 cleanup_node(const dg_client_t *client)
 {
 	static const char *files[] = {"door.sys", "door32.sys", "doorfile.sr", "dorinfo.def", "dorinfo1.def", "chain.txt",
-	    "deucegate-dosbox.conf", "external.bat", "dosemu.log", NULL};
+	    "BBSDEV.DRP", "deucegate-dosbox.conf", "external.bat", "dosemu.log", NULL};
 	char path[DG_PATH_MAX], node[DG_PATH_MAX], name[64];
 	for (size_t i = 0; files[i] != NULL; i++)
 		if (node_path(client, files[i], path, sizeof(path))) remove(path);
@@ -332,7 +405,7 @@ static void
 expand_command(const dg_client_t *client, SOCKET handle, char *command, size_t commandsz,
     char *parameters, size_t paramsz)
 {
-	struct { const char *key; char value[DG_PATH_MAX]; } macros[16];
+	struct { const char *key; char value[DG_PATH_MAX]; } macros[17];
 	unsigned seconds = time_left(client);
 	memset(macros, 0, sizeof(macros));
 	macros[0].key = "*DORINFOx"; snprintf(macros[0].value, sizeof(macros[0].value), "%s/node%u/dorinfo%u.def", client->config->root, client->node, client->node);
@@ -342,16 +415,17 @@ expand_command(const dg_client_t *client, SOCKET handle, char *command, size_t c
 	macros[4].key = "*DOORSYS"; snprintf(macros[4].value, sizeof(macros[4].value), "%s/node%u/door.sys", client->config->root, client->node);
 	macros[5].key = "*DOORFILE"; snprintf(macros[5].value, sizeof(macros[5].value), "%s/node%u/doorfile.sr", client->config->root, client->node);
 	macros[6].key = "*CHAIN"; snprintf(macros[6].value, sizeof(macros[6].value), "%s/node%u/chain.txt", client->config->root, client->node);
-	macros[7].key = "*SOCKETHANDLE"; snprintf(macros[7].value, sizeof(macros[7].value), "%llu", (unsigned long long)(uintptr_t)handle);
-	macros[8].key = "*HANDLE"; strcpy(macros[8].value, macros[7].value);
-	macros[9].key = "*IPADDRESS"; strncpy(macros[9].value, client->remote_ip, sizeof(macros[9].value) - 1);
-	macros[10].key = "*MINUTESLEFT"; snprintf(macros[10].value, sizeof(macros[10].value), "%u", seconds / 60);
-	macros[11].key = "*SECONDSLEFT"; snprintf(macros[11].value, sizeof(macros[11].value), "%u", seconds);
-	macros[12].key = "*NODE"; snprintf(macros[12].value, sizeof(macros[12].value), "%u", client->node);
-	macros[13].key = "***ALIAS"; strncpy(macros[13].value, client->user.alias, sizeof(macros[13].value) - 1);
-	macros[14].key = "***USERNAME"; strcpy(macros[14].value, macros[13].value);
-	macros[15].key = "***PASSWORD"; strncpy(macros[15].value, client->user.password_hash, sizeof(macros[15].value) - 1);
-	for (size_t i = 0; i < 16; i++) {
+	macros[7].key = "*BBSDEV"; snprintf(macros[7].value, sizeof(macros[7].value), "%s/node%u/BBSDEV.DRP", client->config->root, client->node);
+	macros[8].key = "*SOCKETHANDLE"; snprintf(macros[8].value, sizeof(macros[8].value), "%llu", (unsigned long long)(uintptr_t)handle);
+	macros[9].key = "*HANDLE"; strcpy(macros[9].value, macros[8].value);
+	macros[10].key = "*IPADDRESS"; strncpy(macros[10].value, client->remote_ip, sizeof(macros[10].value) - 1);
+	macros[11].key = "*MINUTESLEFT"; snprintf(macros[11].value, sizeof(macros[11].value), "%u", seconds / 60);
+	macros[12].key = "*SECONDSLEFT"; snprintf(macros[12].value, sizeof(macros[12].value), "%u", seconds);
+	macros[13].key = "*NODE"; snprintf(macros[13].value, sizeof(macros[13].value), "%u", client->node);
+	macros[14].key = "***ALIAS"; strncpy(macros[14].value, client->user.alias, sizeof(macros[14].value) - 1);
+	macros[15].key = "***USERNAME"; strcpy(macros[15].value, macros[14].value);
+	macros[16].key = "***PASSWORD"; strncpy(macros[16].value, client->user.password_hash, sizeof(macros[16].value) - 1);
+	for (size_t i = 0; i < 17; i++) {
 		replace_all(command, commandsz, macros[i].key, macros[i].value);
 		replace_all(parameters, paramsz, macros[i].key, macros[i].value);
 	}
@@ -491,16 +565,22 @@ static bool
 spawn_native_posix(const dg_client_t *client, const dg_door_t *door, SOCKET pair[2],
     dg_child_t *child, char *err, size_t errsz)
 {
-	char command[DG_PATH_MAX * 4], cmdpath[DG_PATH_MAX], params[DG_PATH_MAX * 2], node_tmp[DG_PATH_MAX];
+	char command[DG_PATH_MAX * 4], cmdpath[DG_PATH_MAX], params[DG_PATH_MAX * 2];
+	char drop_path[DG_PATH_MAX], node_tmp[DG_PATH_MAX];
 	char **environment;
 	bool stdio = dg_stricmp(door->io, "Stdio") == 0;
+	dg_encoding_t encoding = effective_door_encoding(client, door);
 	int ptyfd = -1;
 	pid_t pid;
 	snprintf(cmdpath, sizeof(cmdpath), "%s", door->command);
 	if (cmdpath[0] != '/' && !dg_path_join(command, sizeof(command), client->config->root, cmdpath)) return false;
 	else if (cmdpath[0] == '/') snprintf(command, sizeof(command), "%s", cmdpath);
 	snprintf(params, sizeof(params), "%s", door->parameters);
-	environment = door_environment(effective_door_encoding(client, door), client->language_tag);
+	if (!absolute_node_path(client, "BBSDEV.DRP", drop_path, sizeof(drop_path))) {
+		snprintf(err, errsz, "cannot resolve BBSDEV.DRP path");
+		return false;
+	}
+	environment = door_environment(encoding, door_language(client), drop_path);
 	if (environment == NULL) {
 		snprintf(err, errsz, "cannot create door environment");
 		return false;
@@ -514,7 +594,7 @@ spawn_native_posix(const dg_client_t *client, const dg_door_t *door, SOCKET pair
 			free_door_environment(environment);
 			snprintf(err, errsz, "socketpair failed"); return false;
 		}
-		if (!dg_create_drop_files(client, pair[1], node_tmp, sizeof(node_tmp))) {
+		if (!dg_create_drop_files(client, "socket", pair[1], encoding, node_tmp, sizeof(node_tmp))) {
 			closesocket(pair[0]); closesocket(pair[1]);
 			free_door_environment(environment);
 			snprintf(err, errsz, "cannot update drop files"); return false;
@@ -550,11 +630,12 @@ spawn_native_windows(const dg_client_t *client, const dg_door_t *door, SOCKET pa
 {
 	STARTUPINFOA si = {0};
 	char command[DG_PATH_MAX * 4], params[DG_PATH_MAX * 2], cmdpath[DG_PATH_MAX];
-	char command_line[DG_PATH_MAX * 6], node_tmp[DG_PATH_MAX];
+	char command_line[DG_PATH_MAX * 6], drop_path[DG_PATH_MAX], node_tmp[DG_PATH_MAX];
 	SECURITY_ATTRIBUTES sa = {.nLength = sizeof(sa), .bInheritHandle = TRUE};
 	HANDLE child_stdin = NULL, child_stdout = NULL;
 	char *environment;
 	bool stdio = dg_stricmp(door->io, "Stdio") == 0;
+	dg_encoding_t encoding = effective_door_encoding(client, door);
 	JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits = {0};
 	if (stdio) {
 		if (!CreatePipe(&child_stdin, &child->pipe_in, &sa, 0) ||
@@ -566,7 +647,7 @@ spawn_native_windows(const dg_client_t *client, const dg_door_t *door, SOCKET pa
 	}
 	else {
 		if (socketpair(AF_INET, SOCK_STREAM, 0, pair) != 0) { snprintf(err, errsz, "socketpair failed"); return false; }
-		if (!dg_create_drop_files(client, pair[1], node_tmp, sizeof(node_tmp))) {
+		if (!dg_create_drop_files(client, "socket", pair[1], encoding, node_tmp, sizeof(node_tmp))) {
 			closesocket(pair[0]); closesocket(pair[1]);
 			snprintf(err, errsz, "cannot update drop files"); return false;
 		}
@@ -584,7 +665,15 @@ spawn_native_windows(const dg_client_t *client, const dg_door_t *door, SOCKET pa
 		si.dwFlags = STARTF_USESTDHANDLES;
 		si.hStdInput = child_stdin; si.hStdOutput = child_stdout; si.hStdError = child_stdout;
 	}
-	environment = door_environment_block(effective_door_encoding(client, door), client->language_tag);
+	if (!absolute_node_path(client, "BBSDEV.DRP", drop_path, sizeof(drop_path))) {
+		if (stdio) {
+			CloseHandle(child_stdin); CloseHandle(child->pipe_in);
+			CloseHandle(child->pipe_out); CloseHandle(child_stdout);
+		}
+		else { closesocket(pair[0]); closesocket(pair[1]); }
+		snprintf(err, errsz, "cannot resolve BBSDEV.DRP path"); return false;
+	}
+	environment = door_environment_block(encoding, door_language(client), drop_path);
 	if (environment == NULL) {
 		if (stdio) {
 			CloseHandle(child_stdin); CloseHandle(child->pipe_in);
@@ -709,9 +798,10 @@ spawn_dos_posix(const dg_client_t *client, const dg_door_t *door, dg_child_t *ch
 		snprintf(batch_text, sizeof(batch_text),
 		    "@echo off\r\nlredir g: linux\\fs%s\r\nset path=%%path%%;g:\\dosutils\r\n"
 		    "set DEUCEGATE_ENCODING=%s\r\nset DEUCEGATE_LANGUAGE_TAG=%s\r\n"
+		    "set BBSDEV_DRP=G:\\node%u\\BBSDEV.DRP\r\n"
 		    "fossil.com\r\nshare.com\r\nansi.com\r\ng:\r\n%s %s\r\nexitemu\r\n",
 		    client->config->root, door_encoding_name(effective_door_encoding(client, door)),
-		    client->language_tag, command, params);
+		    door_language(client), client->node, command, params);
 		if (!write_text(batch, batch_text)) return false;
 		pid = forkpty(&ptyfd, NULL, NULL, NULL);
 		if (pid < 0) { snprintf(err, errsz, "forkpty failed: %s", strerror(errno)); return false; }
@@ -747,11 +837,12 @@ spawn_dos_posix(const dg_client_t *client, const dg_door_t *door, dg_child_t *ch
 	    "[autoexec]\nmount c \"%s\"\nc:\nset PATH=%%PATH%%;C:\\dosutils\n"
 	    "set DEUCEGATE_ENCODING=%s\n"
 	    "set DEUCEGATE_LANGUAGE_TAG=%s\n"
+	    "set BBSDEV_DRP=C:\\node%u\\BBSDEV.DRP\n"
 	    "if exist C:\\dosutils\\fossil.com C:\\dosutils\\fossil.com\n"
 	    "if exist C:\\dosutils\\share.com C:\\dosutils\\share.com\n"
 	    "if exist C:\\dosutils\\ansi.com C:\\dosutils\\ansi.com\n%s %s\nexit\n",
 	    ntohs(addr.sin_port), client->config->root, door_encoding_name(effective_door_encoding(client, door)),
-	    client->language_tag, command, params);
+	    door_language(client), client->node, command, params);
 	if (!write_text(conf, text)) { closesocket(listener); return false; }
 	pid = fork();
 	if (pid == 0) {
@@ -813,11 +904,12 @@ spawn_dos_windows(const dg_client_t *client, const dg_door_t *door, dg_child_t *
 	    "[autoexec]\r\nmount c \"%s\"\r\nc:\r\nset PATH=%%PATH%%;C:\\dosutils\r\n"
 	    "set DEUCEGATE_ENCODING=%s\r\n"
 	    "set DEUCEGATE_LANGUAGE_TAG=%s\r\n"
+	    "set BBSDEV_DRP=C:\\node%u\\BBSDEV.DRP\r\n"
 	    "if exist C:\\dosutils\\fossil.com C:\\dosutils\\fossil.com\r\n"
 	    "if exist C:\\dosutils\\share.com C:\\dosutils\\share.com\r\n"
 	    "if exist C:\\dosutils\\ansi.com C:\\dosutils\\ansi.com\r\n%s %s\r\nexit\r\n",
 	    ntohs(addr.sin_port), client->config->root, door_encoding_name(effective_door_encoding(client, door)),
-	    client->language_tag, command, params);
+	    door_language(client), client->node, command, params);
 	if (!write_text(conf, text)) { closesocket(listener); return false; }
 	if (dg_file_exists(base_conf))
 		snprintf(command_line, sizeof(command_line), "\"%s\" -conf \"%s\" -conf \"%s\" -noconsole",
@@ -888,6 +980,8 @@ dg_run_door(dg_client_t *client, const char *door_name, char *err, size_t errsz)
 	dg_child_t child;
 	SOCKET pair[2] = {INVALID_SOCKET, INVALID_SOCKET};
 	char node[DG_PATH_MAX];
+	const char *communications;
+	dg_encoding_t encoding;
 	bool spawned = false;
 	memset(&child, 0, sizeof(child)); child.io = INVALID_SOCKET;
 	if (!load_door(client->config, door_name, &door, err, errsz)) return false;
@@ -902,8 +996,13 @@ dg_run_door(dg_client_t *client, const char *door_name, char *err, size_t errsz)
 		}
 #endif
 	}
-	/* Create once with a placeholder; native socket mode recreates it with the inherited handle. */
-	if (!dg_create_drop_files(client, 0, node, sizeof(node))) { snprintf(err, errsz, "cannot create node drop files"); return false; }
+	encoding = effective_door_encoding(client, &door);
+	communications = dg_stricmp(door.platform, "DOS") == 0 ? "fossil"
+	    : dg_stricmp(door.io, "Stdio") == 0 ? "stdio" : "socket";
+	/* Native socket mode recreates the files with the inherited handle before launch. */
+	if (!dg_create_drop_files(client, communications, 0, encoding, node, sizeof(node))) {
+		snprintf(err, errsz, "cannot create node drop files"); return false;
+	}
 	if (dg_stricmp(door.platform, "DOS") == 0) {
 #ifdef _WIN32
 		spawned = spawn_dos_windows(client, &door, &child, err, errsz);

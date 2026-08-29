@@ -333,6 +333,7 @@ connection_thread(void *arg)
 	client->cols = 80; client->rows = 24;
 	snprintf(client->remote_ip, sizeof(client->remote_ip), "%s", connection->remote_ip);
 	client->client_encoding = DG_CP437;
+	strcpy(client->language_tag, "en");
 	session = dssh_session_init(false, 0);
 	if (session == NULL) goto done;
 	client->session = session;

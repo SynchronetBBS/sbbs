@@ -147,7 +147,7 @@ nth_line(const uint8_t *data, size_t len, unsigned wanted, char *out, size_t out
 }
 
 static void
-test_chain_txt(void)
+test_drop_files(void)
 {
 	dg_config_t cfg = {0};
 	dg_client_t client = {0};
@@ -155,7 +155,8 @@ test_chain_txt(void)
 	uint8_t *data = NULL;
 	size_t len = 0;
 	static const char *files[] = {
-		"door.sys", "door32.sys", "doorfile.sr", "dorinfo.def", "dorinfo1.def", "dorinfo42.def", "chain.txt", NULL
+		"door.sys", "door32.sys", "doorfile.sr", "dorinfo.def", "dorinfo1.def", "dorinfo42.def", "chain.txt",
+		"BBSDEV.DRP", NULL
 	};
 #ifdef _WIN32
 	{
@@ -183,7 +184,7 @@ test_chain_txt(void)
 	client.user.id = 7;
 	client.user.access_level = 20;
 	strcpy(client.user.alias, "Chain User");
-	CHECK(dg_create_drop_files(&client, 0, node_dir, sizeof(node_dir)));
+	CHECK(dg_create_drop_files(&client, "socket", (SOCKET)123, DG_UTF8, node_dir, sizeof(node_dir)));
 	CHECK(dg_path_join(path, sizeof(path), node_dir, "chain.txt"));
 	CHECK(dg_read_file(path, &data, &len));
 	if (data != NULL) {
@@ -191,6 +192,62 @@ test_chain_txt(void)
 		CHECK(nth_line(data, len, 9, line, sizeof(line)) && strcmp(line, "132") == 0);
 		CHECK(nth_line(data, len, 10, line, sizeof(line)) && strcmp(line, "50") == 0);
 		CHECK(nth_line(data, len, 30, line, sizeof(line)) && strcmp(line, "8N1") == 0);
+		free(data);
+	}
+	data = NULL; len = 0;
+	CHECK(dg_path_join(path, sizeof(path), node_dir, "BBSDEV.DRP"));
+	CHECK(dg_read_file(path, &data, &len));
+	if (data != NULL) {
+		unsigned lines = 0;
+		for (size_t i = 0; i < len; i++) {
+			if (data[i] == '\r') CHECK(i + 1 < len && data[i + 1] == '\n');
+			if (data[i] == '\n') {
+				CHECK(i > 0 && data[i - 1] == '\r');
+				lines++;
+			}
+		}
+		CHECK(lines == 19);
+		CHECK(len >= 2 && data[len - 2] == '\r' && data[len - 1] == '\n');
+		CHECK(nth_line(data, len, 1, line, sizeof(line)) && strcmp(line, "1.0") == 0);
+		CHECK(nth_line(data, len, 2, line, sizeof(line)) && strcmp(line, "socket") == 0);
+		CHECK(nth_line(data, len, 3, line, sizeof(line)) && strcmp(line, "123") == 0);
+		CHECK(nth_line(data, len, 4, line, sizeof(line)) && strcmp(line, "Chain User") == 0);
+		CHECK(nth_line(data, len, 5, line, sizeof(line)) && strcmp(line, "7") == 0);
+		CHECK(nth_line(data, len, 6, line, sizeof(line)) && strcmp(line, "132") == 0);
+		CHECK(nth_line(data, len, 7, line, sizeof(line)) && strcmp(line, "50") == 0);
+		CHECK(nth_line(data, len, 8, line, sizeof(line)) && strcmp(line, "Y") == 0);
+		CHECK(nth_line(data, len, 9, line, sizeof(line)) && strcmp(line, "N") == 0);
+		CHECK(nth_line(data, len, 10, line, sizeof(line)) && strcmp(line, "") == 0);
+		CHECK(nth_line(data, len, 11, line, sizeof(line)) && strlen(line) == 20
+		    && line[4] == '-' && line[7] == '-' && line[10] == 'T' && line[13] == ':'
+		    && line[16] == ':' && line[19] == 'Z');
+		CHECK(nth_line(data, len, 12, line, sizeof(line)) && strcmp(line, "UTF-8") == 0);
+		CHECK(nth_line(data, len, 13, line, sizeof(line)) && strcmp(line, "en") == 0);
+		CHECK(nth_line(data, len, 14, line, sizeof(line)) && strcmp(line, "DeuceGate 0.1.0") == 0);
+		CHECK(nth_line(data, len, 15, line, sizeof(line)) && strcmp(line, "Drop Test") == 0);
+		CHECK(nth_line(data, len, 16, line, sizeof(line)) && strcmp(line, "Test Sysop") == 0);
+		CHECK(nth_line(data, len, 17, line, sizeof(line)) && strcmp(line, "20") == 0);
+		CHECK(nth_line(data, len, 18, line, sizeof(line)) && strcmp(line, "42") == 0);
+		CHECK(nth_line(data, len, 19, line, sizeof(line)) && strcmp(line, "N") == 0);
+		free(data);
+	}
+	CHECK(dg_create_drop_files(&client, "fossil", 0, DG_CP437, node_dir, sizeof(node_dir)));
+	data = NULL; len = 0;
+	CHECK(dg_read_file(path, &data, &len));
+	if (data != NULL) {
+		CHECK(nth_line(data, len, 2, line, sizeof(line)) && strcmp(line, "fossil") == 0);
+		CHECK(nth_line(data, len, 3, line, sizeof(line)) && strcmp(line, "0") == 0);
+		free(data);
+	}
+	strcpy(client.language_tag, "fr-CA");
+	CHECK(dg_create_drop_files(&client, "stdio", 0, DG_CP437, node_dir, sizeof(node_dir)));
+	data = NULL; len = 0;
+	CHECK(dg_read_file(path, &data, &len));
+	if (data != NULL) {
+		CHECK(nth_line(data, len, 2, line, sizeof(line)) && strcmp(line, "stdio") == 0);
+		CHECK(nth_line(data, len, 3, line, sizeof(line)) && strcmp(line, "") == 0);
+		CHECK(nth_line(data, len, 12, line, sizeof(line)) && strcmp(line, "IBM437") == 0);
+		CHECK(nth_line(data, len, 13, line, sizeof(line)) && strcmp(line, "fr-CA") == 0);
 		free(data);
 	}
 	for (size_t i = 0; files[i] != NULL; i++) {
@@ -209,7 +266,7 @@ main(void)
 	test_language_tags();
 	test_mci();
 	test_legacy_password();
-	test_chain_txt();
+	test_drop_files();
 	if (failures != 0) return 1;
 	puts("All DeuceGate tests passed.");
 	return 0;
