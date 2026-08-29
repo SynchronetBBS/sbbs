@@ -22,6 +22,45 @@ stages:
       # unvalidated until someone happens to touch src/ or 3rdp/.
       - .gitlab-ci*.yml
 
+# Assemble the complete, portable DeuceGate source tree once rather than once
+# per platform.  The artifact deliberately has no sbbs/src wrapper: after
+# extraction, cmake -S deucegate -B build works from its top level.
+"deucegate [source]":
+  extends: .linux-build
+  variables:
+    GIT_STRATEGY: fetch
+  needs:
+    - job: "linux-x64 [botan]"
+  script:
+    # Use the same crypto dependency as the Linux binary job when validating
+    # the assembled tree.  The source artifact itself contains no Botan build.
+    - tar -xzf "/tmp/gitlab-runner/linux-x64-${CI_PIPELINE_ID}/botan.tgz"
+    - for d in 3rdp/*.release/botan/lib/pkgconfig; do [ -d "$d" ] && export PKG_CONFIG_PATH="$(pwd)/$d${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"; done
+    - mkdir -p deucegate xpdev ssh conio encode
+    # Keep whole component trees where their CMake files own the source list,
+    # but include only the two files DeuceGate consumes from conio and encode.
+    - git archive --format=tar "$CI_COMMIT_SHA" src/deucegate | tar -xf - -C deucegate --strip-components=2
+    - git archive --format=tar "$CI_COMMIT_SHA" src/xpdev | tar -xf - -C xpdev --strip-components=2
+    - git archive --format=tar "$CI_COMMIT_SHA" src/ssh | tar -xf - -C ssh --strip-components=2
+    - git archive --format=tar "$CI_COMMIT_SHA" src/conio/utf8_codepages.c src/conio/utf8_codepages.h | tar -xf - -C conio --strip-components=2
+    - git archive --format=tar "$CI_COMMIT_SHA" src/encode/base64.c src/encode/base64.h | tar -xf - -C encode --strip-components=2
+    - printf '%s\n' "$CI_COMMIT_SHA" > SOURCE_COMMIT
+    # Prove that the artifact, not the monorepo source paths, configures,
+    # builds, and passes its compatibility tests before publishing it.
+    - cmake -S deucegate -B deucegate-source-check -DCMAKE_BUILD_TYPE=Release
+    - cmake --build deucegate-source-check --parallel "$(nproc 2>/dev/null || echo 4)"
+    - ctest --test-dir deucegate-source-check --output-on-failure --no-tests=error
+  artifacts:
+    name: "deucegate-source-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - deucegate/
+      - xpdev/
+      - ssh/
+      - conio/
+      - encode/
+      - LICENSE
+      - SOURCE_COMMIT
+
 include:
   - local: '.gitlab-ci-unix.yml'
     inputs:
