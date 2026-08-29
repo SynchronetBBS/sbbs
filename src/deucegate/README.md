@@ -69,6 +69,11 @@ IO=Socket
 - `IO` is `Socket` (the GameSrv/DOOR32-compatible default) or `Stdio` for native doors.
 - `Emulator` is `Auto`, `DOSBox-X`, `DOSBox`, or `DOSEMU`. Auto tries DOSBox-X, DOSBox, then DOSEMU. DOSEMU is POSIX-only.
 
+DeuceGate sets `DEUCEGATE_ENCODING` to `CP437` or `UTF-8` in each native
+door's environment. Generated DOSBox and DOSEMU environments set the same
+variable. It describes the encoding of the door-facing byte stream after
+DeuceGate's conversion, not the caller's encoding.
+
 DOSBox and DOSBox-X run on Windows and POSIX. DeuceGate loads a root `dosbox.conf` when present, adds a per-node override, mounts the GameSrv root as `C:`, loads `dosutils/fossil.com`, `share.com`, and `ansi.com` when present, and connects COM1 to an ephemeral IPv4 loopback-only nullmodem socket with Telnet processing disabled. DOSEMU uses its PTY/FOSSIL `external.bat` path.
 
 Native socket doors receive a new local plaintext socket handle in `DOOR32.SYS`, `*HANDLE`, and `*SOCKETHANDLE`; the encrypted SSH socket is never inherited by a door. Drop files and command macros follow GameSrv's existing names and layout. `CHAIN.TXT` is also generated with the current SSH PTY columns and rows and is available through `*CHAIN`. User-controlled macros still require the legacy triple-star opt-in, such as `***ALIAS`.
