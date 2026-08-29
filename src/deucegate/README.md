@@ -12,7 +12,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-DeuceGate and SyncTERM use the same crypto selection policy: system Botan 3.13 or newer is used when available, and the bundled Botan source is built otherwise. OpenSSL 3.0 or newer remains available when selected explicitly with `-DCRYPTO_BACKEND=OpenSSL`; use `-DUSE_VENDORED_BOTAN=1` to force the bundled Botan build or `-DUSE_VENDORED_BOTAN=0` to opt out of it.
+DeuceGate and SyncTERM use the same crypto selection policy: system Botan 3.13 or newer is preferred, then system OpenSSL 3.0 or newer, and the bundled Botan source is built when neither is available. Use `-DCRYPTO_BACKEND=OpenSSL` to select OpenSSL explicitly, `-DUSE_VENDORED_BOTAN=1` to force the bundled Botan build, or `-DUSE_VENDORED_BOTAN=0` to opt out of it.
 
 For a MinGW cross-build with a Botan 3.13-or-newer target installation that should not be discovered through the host's `pkg-config`, pass `-DCMAKE_SYSTEM_NAME=Windows`, the MinGW C/C++/resource compilers, and `-DDEUCEGATE_BOTAN_ROOT=/path/to/windows/botan`.
 

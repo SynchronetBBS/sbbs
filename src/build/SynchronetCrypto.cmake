@@ -96,19 +96,16 @@ function(synchronet_configure_crypto)
 		set(_vendor TRUE)
 	elseif(_botan_ok)
 		set(_requested Botan)
+	elseif(_openssl_ok)
+		set(_requested OpenSSL)
 	else()
 		if(_vendor_forbidden)
-			if(_openssl_ok)
-				set(_requested OpenSSL)
-			else()
-				message(FATAL_ERROR
-					"No usable system crypto provider found and "
-					"USE_VENDORED_BOTAN=0")
-			endif()
-		else()
-			set(_requested Botan)
-			set(_vendor TRUE)
+			message(FATAL_ERROR
+				"No usable system crypto provider found and "
+				"USE_VENDORED_BOTAN=0")
 		endif()
+		set(_requested Botan)
+		set(_vendor TRUE)
 	endif()
 
 	if(_vendor)
@@ -172,7 +169,10 @@ function(synchronet_configure_crypto)
 			--enable-modules=${_modules})
 
 		if(MSVC)
-			list(APPEND _configure_args --cc=msvc --build-tool=make)
+			# Botan 3.13's OCSP source uses std::ranges::equal without
+			# including <algorithm>. MSVC does not provide it transitively.
+			list(APPEND _configure_args --cc=msvc --build-tool=make
+				--extra-cxxflags=/FIalgorithm)
 			if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 				list(APPEND _configure_args --cpu=x86_64)
 			else()

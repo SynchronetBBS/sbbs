@@ -675,7 +675,7 @@ spec:
     - cd src/syncterm
     - mkdir build
     - cd build
-    - cmake -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DFIXED_FIXED_SEED=ON ..
+    - cmake -DCMAKE_CXX_COMPILER_LAUNCHER="$(command -v ccache 2>/dev/null || true)" -DFIXED_FIXED_SEED=ON ..
     - cmake --build .
   variables:
     GIT_STRATEGY: fetch
@@ -895,8 +895,8 @@ spec:
 
 # Vendored Botan.  The `botan` target in 3rdp/build is a no-op unless
 # Common.gmake's probe decided USE_VENDORED_BOTAN — so this job is
-# cheap on hosts that have system Botan 3.13+; a real build only happens
-# where a suitable Botan is absent.  Consumers always
+# cheap on hosts that have system Botan 3.13+ or OpenSSL 3.0+ and a
+# real build only happens where neither is present.  Consumers always
 # extract botan.tgz; an empty archive here is fine (the extract is
 # then a no-op and pkg-config resolves the system library instead).
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [botan]":

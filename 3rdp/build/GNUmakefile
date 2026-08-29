@@ -59,9 +59,9 @@ JS_CONFIGURE_ENV += 'CXXFLAGS=$(CXXFLAGS)'
 cryptlib: $(CRYPTLIB_BUILD)
 libmozjs: $(JSLIB_BUILD)
 # Botan is only built when the caller asks for vendored (Common.gmake's
-# probe sets USE_VENDORED_BOTAN when system Botan 3.13+ is unavailable,
-# plus any explicit USE_VENDORED_BOTAN=1 override).  Otherwise `make botan`
-# is a no-op so CI jobs can
+# probe sets USE_VENDORED_BOTAN when neither system Botan 3.13+ nor
+# OpenSSL 3.0+ is available, plus any explicit USE_VENDORED_BOTAN=1
+# override).  Otherwise `make botan` is a no-op so CI jobs can
 # unconditionally invoke it and produce an empty archive.
 ifdef USE_VENDORED_BOTAN
 botan: $(BOTAN_BUILD)
@@ -265,9 +265,10 @@ endif
 ##########
 #
 # Built only when the consumer (usually SyncTERM) asks for it, because
-# the system already has Botan 3.13+ in the common case.
-# No patches — the tarball compiles cleanly on every platform we ship
-# to.  Installs a static libbotan-3.a plus botan-3.pc under
+# the system already has Botan 3.13+ / OpenSSL 3.0+ in the common case.
+# No source patches.  The shared CMake build forces <algorithm> into
+# MSVC builds to work around Botan 3.13's missing include in ocsp.cpp.
+# Installs a static libbotan-3.a plus botan-3.pc under
 # $(BOTAN_IDIR); consumers prepend $(BOTAN_PKGCONFIG_DIR) to
 # PKG_CONFIG_PATH and every pkg-config lookup picks up the vendored
 # copy transparently.
