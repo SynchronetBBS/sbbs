@@ -276,7 +276,7 @@ dssh_ed25519_load_key_file(const char *path, dssh_pem_password_cb pw_cb, void *p
 {
 	if (path == NULL)
 		return DSSH_ERROR_INIT;
-	FILE *fp = fopen(path, "r");
+	FILE *fp = fopen(path, "rb");
 
 	if (fp == NULL)
 		return DSSH_ERROR_INIT;
@@ -330,7 +330,7 @@ dssh_ed25519_save_key_file(const char *path, dssh_pem_password_cb pw_cb, void *p
 #endif
 		return DSSH_ERROR_INIT;
 
-	FILE *fp = fopen(path, "w");
+	FILE *fp = fopen(path, "wb");
 	if (fp == NULL)
 		return DSSH_ERROR_INIT;
 

@@ -489,7 +489,7 @@ dssh_rsa_sha2_512_load_key_file(const char *path, dssh_pem_password_cb pw_cb, vo
 {
 	if (path == NULL)
 		return DSSH_ERROR_INIT;
-	FILE *fp = fopen(path, "r");
+	FILE *fp = fopen(path, "rb");
 
 	if (fp == NULL)
 		return DSSH_ERROR_INIT;
@@ -543,7 +543,7 @@ dssh_rsa_sha2_512_save_key_file(const char *path, dssh_pem_password_cb pw_cb, vo
 #endif
 		return DSSH_ERROR_INIT;
 
-	FILE *fp = fopen(path, "w");
+	FILE *fp = fopen(path, "wb");
 
 	if (fp == NULL)
 		return DSSH_ERROR_INIT;
