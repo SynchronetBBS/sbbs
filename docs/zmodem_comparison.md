@@ -6,7 +6,9 @@ changes several conclusions a 2.02 checkout would have produced.
 **Author:** Claude (analysis commissioned by Rob Swindell)
 **Scope:** Feature support, interoperability, error recovery, throughput and CPU
 cost of four ZMODEM implementations, **in both directions** — plus Forsberg's
-commercial DSZ as a fifth, for the negotiated option bits only (§7.4).
+commercial DSZ as a fifth, for the negotiated option bits only (§7.4). ZMODEM
+only; sexyz's X/YMODEM support is verified separately in
+`xymodem_verification.md`.
 
 This is a full re-measurement and supersedes every figure in earlier revisions
 of this document. Those accumulated across five sessions between 2026-07-23 and
