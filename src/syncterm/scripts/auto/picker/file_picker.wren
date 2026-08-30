@@ -6,7 +6,7 @@ import "ui_draw" for Painter
 import "ui_input" for SelectOnFocusInput
 import "ui_list" for ListView
 import "ui_pane" for Pane
-import "ui_popup" for Alert, Confirm
+import "ui_popup" for Alert, Confirm, Popup
 import "ui_widget" for Rect, Widget
 import "picker_bootstrap" for PickerBootstrap
 
@@ -103,6 +103,65 @@ class PickerList is ListView {
       return true
     }
     return super.handleMouse_(event)
+  }
+}
+
+class ExistingFileChoice is Popup {
+  construct new() {
+    super("Choose how to write to the existing file.")
+    title = "File exists"
+    keyHints = [["O", "Overwrite"], ["A", "Append"], ["Esc", "Cancel"]]
+    _overwrite = Button.new("Overwrite")
+    _append = Button.new("Append")
+    _cancel = Button.new("Cancel")
+    _overwrite.onPress = Fn.new { dismissWith_("overwrite") }
+    _append.onPress = Fn.new { dismissWith_("append") }
+    _cancel.onPress = Fn.new { dismissWith_(null) }
+    add(_overwrite)
+    add(_append)
+    add(_cancel)
+  }
+
+  static show(app) {
+    var p = ExistingFileChoice.new()
+    p.bounds = Popup.centeredBounds_(p.message, 1, 38)
+    app.modal(p)
+    return p.result
+  }
+
+  bounds=(r) {
+    super.bounds = r
+    var cb = contentBounds
+    if (cb == null) return
+    var gap = 3
+    var ow = _overwrite.intrinsicWidth
+    var aw = _append.intrinsicWidth
+    var cw = _cancel.intrinsicWidth
+    var total = ow + aw + cw + gap * 2
+    var sx = cb.x + ((cb.w - total) / 2).floor
+    var row = bounds.y + bounds.h - 2
+    _overwrite.bounds = Rect.new(sx, row, ow, 1)
+    _append.bounds = Rect.new(sx + ow + gap, row, aw, 1)
+    _cancel.bounds = Rect.new(sx + ow + aw + gap * 2, row, cw, 1)
+  }
+
+  handle(ev) {
+    if (ev is KeyEvent) {
+      var cp = ev.codepoint
+      if (cp == 0x4F || cp == 0x6F) {
+        dismissWith_("overwrite")
+        return true
+      }
+      if (cp == 0x41 || cp == 0x61) {
+        dismissWith_("append")
+        return true
+      }
+      if (ev.code == Key.escape) {
+        dismissWith_(null)
+        return true
+      }
+    }
+    return super.handle(ev)
   }
 }
 
@@ -355,9 +414,19 @@ class PickerPane is Pane {
   finishPath_(path, exists) {
     if (_mode == "save") {
       if (exists) {
-        if (option_(FilePickerOptions.confirmOverwrite) &&
-            !Confirm.show(_app, "File exists, overwrite?")) return
-        _request.acceptOverwrite(path)
+        if (option_(FilePickerOptions.allowAppend)) {
+          var choice = ExistingFileChoice.show(_app)
+          if (choice == null) return
+          if (choice == "append") {
+            _request.acceptAppend(path)
+          } else {
+            _request.acceptOverwrite(path)
+          }
+        } else {
+          if (option_(FilePickerOptions.confirmOverwrite) &&
+              !Confirm.show(_app, "File exists, overwrite?")) return
+          _request.acceptOverwrite(path)
+        }
       } else {
         if (option_(FilePickerOptions.confirmCreate) &&
             !Confirm.show(_app, "File does not exist, create?")) return

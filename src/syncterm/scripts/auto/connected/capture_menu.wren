@@ -12,7 +12,8 @@
 //
 // Help text and option labels describe the current capture controls.
 
-import "syncterm"  for Capture, CTerm, Download, Host, Input, Screen
+import "syncterm"  for Capture, CTerm, Download, FilePickerOptions,
+                       Host, Input, Screen
 import "ui_picker" for ListPicker
 
 class CaptureMenu {
@@ -83,7 +84,11 @@ class CaptureMenu {
       return
     }
     var mask = (picked >= 2) ? "*.bin" : null
-    var file = Host.pickSavePath(Download, mask)
+    var opts = FilePickerOptions.none
+    if (picked < 2) {
+      opts = FilePickerOptions.allowAppend
+    }
+    var file = Host.pickSavePath(Download, mask, opts)
     if (file == null) {
       return
     }

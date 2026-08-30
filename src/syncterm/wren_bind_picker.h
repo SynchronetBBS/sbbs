@@ -17,6 +17,7 @@
 #define PICKER_OPT_ALLOW_ENTRY        (1 << 8)
 #define PICKER_OPT_CONFIRM_OVERWRITE  (1 << 9)
 #define PICKER_OPT_CONFIRM_CREATE     (1 << 10)
+#define PICKER_OPT_ALLOW_APPEND       (1 << 11)
 
 enum wren_picker_mode {
 	WREN_PICKER_FILE,
@@ -30,6 +31,7 @@ enum wren_picker_disposition {
 	WREN_PICKER_DISPOSITION_READ,
 	WREN_PICKER_DISPOSITION_CREATE,
 	WREN_PICKER_DISPOSITION_OVERWRITE,
+	WREN_PICKER_DISPOSITION_APPEND,
 };
 
 struct wren_picker_call {

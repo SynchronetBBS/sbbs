@@ -64,6 +64,7 @@ enum wren_file_write_consent {
 	WFC_NONE = 0,    /* ordinary sandbox or picker/token File */
 	WFC_CREATE,      /* `wbx` — must not exist; race-safe single create */
 	WFC_OVERWRITE,   /* `wb` — overwrite confirmed by picker prompt */
+	WFC_APPEND,      /* `ab` — append confirmed by picker prompt */
 };
 
 enum wren_file_rights {
@@ -1091,7 +1092,7 @@ push_picker_file(WrenVM *vm, int slot, const char *picked)
 
 /* Mint a write-consent File for a path produced by Host.pickSavePath.
  * `mode` records the authorized open mode (WFC_CREATE for new paths,
- * WFC_OVERWRITE when the picker's overwrite prompt got a yes).
+ * WFC_OVERWRITE or WFC_APPEND when the picker got explicit consent).
  * Token is intentionally NULL — write consent is single-shot and
  * doesn't persist across sessions (replay would defeat the model).
  * Returns the wren_file pointer, or NULL when path is too long. */
@@ -1190,8 +1191,9 @@ fn_Host_pickFileTitle(WrenVM *vm)
 
 /* Consume the write-consent on a File foreign in the given slot.
  * Opens the underlying path with the authorized mode (`wbx` for
- * WFC_CREATE, `wb` for WFC_OVERWRITE) and transfers ownership of the
- * resulting FILE* to the caller.  Marks the foreign's consent used
+ * WFC_CREATE, `wb` for WFC_OVERWRITE, `ab` for WFC_APPEND) and
+ * transfers ownership of the resulting FILE* to the caller.  Marks
+ * the foreign's consent used
  * so subsequent open() / write / etc. abort the fiber.
  *
  * On programmer error (no consent / already used / read-mode File)
@@ -1242,8 +1244,19 @@ wren_file_consume_write(WrenVM *vm, int slot, const char **out_path)
 		    "File: write consent already used (re-pick to write again)");
 		return NULL;
 	}
-	const char *mode =
-	    (wf->write_consent == WFC_CREATE) ? "wbx" : "wb";
+	const char *mode;
+	switch (wf->write_consent) {
+		case WFC_CREATE:
+			mode = "wbx";
+			break;
+		case WFC_APPEND:
+			mode = "ab";
+			break;
+		case WFC_OVERWRITE:
+		default:
+			mode = "wb";
+			break;
+	}
 	FILE *fp = fopen(wf->path, mode);
 	if (fp == NULL) {
 		file_build_error(vm, 0, FILE_ERR_OPEN_FAILED, errno,
@@ -1256,7 +1269,7 @@ wren_file_consume_write(WrenVM *vm, int slot, const char **out_path)
 	return fp;
 }
 
-/* Host.pickSavePath(initialDir, mask) opens the isolated picker in save
+/* Host.pickSavePath(initialDir, mask[, opts]) opens the isolated picker in save
  * mode.  The user can pick an existing file (overwrite-prompted) or type
  * a new filename.
  *
@@ -1266,12 +1279,14 @@ wren_file_consume_write(WrenVM *vm, int slot, const char **out_path)
  *                    (open() uses "wbx" — race-safe single create)
  *   - WFC_OVERWRITE  when the path existed and the user confirmed
  *                    overwrite (open() uses "wb" — truncate)
+ *   - WFC_APPEND     when the path existed and the user selected append
+ *                    (open() uses "ab")
  *
  * The consent is single-shot: the first successful open()+close()
  * marks the File inert; subsequent ops abort. No persisted token is
  * created; write consent does not replay across sessions. */
-void
-fn_Host_pickSavePath(WrenVM *vm)
+static void
+host_pick_save_path(WrenVM *vm, int opts)
 {
 	char        scratch[MAX_PATH + 1];
 	const char *initial = pick_extract_initial(vm, 1,
@@ -1282,19 +1297,46 @@ fn_Host_pickSavePath(WrenVM *vm)
 
 	struct wren_picker_call call;
 	picker_call_init(&call, WREN_PICKER_SAVE, "Save as", initial, mask,
-	    PICKER_OPT_ALLOW_ENTRY | PICKER_OPT_CONFIRM_OVERWRITE);
+	    PICKER_OPT_ALLOW_ENTRY | PICKER_OPT_CONFIRM_OVERWRITE | opts);
 	if (!wren_picker_host_run(&call) || call.path_count < 1 ||
 	    call.paths == NULL || call.paths[0] == NULL) {
 		wren_picker_call_dispose(&call);
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	enum wren_file_write_consent mode =
-	    call.disposition == WREN_PICKER_DISPOSITION_OVERWRITE ?
-	    WFC_OVERWRITE : WFC_CREATE;
+	enum wren_file_write_consent mode;
+	switch (call.disposition) {
+		case WREN_PICKER_DISPOSITION_APPEND:
+			mode = WFC_APPEND;
+			break;
+		case WREN_PICKER_DISPOSITION_OVERWRITE:
+			mode = WFC_OVERWRITE;
+			break;
+		case WREN_PICKER_DISPOSITION_CREATE:
+		default:
+			mode = WFC_CREATE;
+			break;
+	}
 	if (push_picker_save_file(vm, 0, call.paths[0], mode) == NULL)
 		wrenSetSlotNull(vm, 0);
 	wren_picker_call_dispose(&call);
+}
+
+void
+fn_Host_pickSavePath(WrenVM *vm)
+{
+	host_pick_save_path(vm, 0);
+}
+
+void
+fn_Host_pickSavePathOpts(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 3) != WREN_TYPE_NUM) {
+		wren_throw(vm, "Host.pickSavePath: opts must be a Number");
+		return;
+	}
+	int opts = (int)wrenGetSlotDouble(vm, 3);
+	host_pick_save_path(vm, opts & PICKER_OPT_ALLOW_APPEND);
 }
 
 /* Host.pickFiles(initialDir, mask, opts) is the multi-select counterpart
@@ -1316,7 +1358,7 @@ fn_Host_pickFiles(WrenVM *vm)
 		opts = (int)wrenGetSlotDouble(vm, 3);
 
 	if (opts & (PICKER_OPT_ALLOW_ENTRY | PICKER_OPT_CONFIRM_OVERWRITE |
-	    PICKER_OPT_CONFIRM_CREATE)) {
+	    PICKER_OPT_CONFIRM_CREATE | PICKER_OPT_ALLOW_APPEND)) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
@@ -1434,6 +1476,11 @@ fn_File_open(WrenVM *vm)
 			 * race window between pick and open is the user's
 			 * accepted trade-off for the overwrite UX. */
 			mode = "wb";
+			break;
+		case WFC_APPEND:
+			/* Append consent is offered only by save pickers which
+			 * explicitly enable it. */
+			mode = "ab";
 			break;
 		case WFC_NONE:
 		default:
@@ -1747,7 +1794,8 @@ fn_File_writeLine(WrenVM *vm)
 	}
 }
 
-/* write(s) — truncate then rewrite from offset 0; offset ends at len. */
+/* write(s) — truncate then rewrite from offset 0; offset ends at len.
+ * Append-consent Files instead preserve the existing data and append. */
 void
 fn_File_write(WrenVM *vm)
 {
@@ -1756,6 +1804,13 @@ fn_File_write(WrenVM *vm)
 		return;
 	int len = 0;
 	const char *bytes = wrenGetSlotBytes(vm, 1, &len);
+	if (wf->write_consent == WFC_APPEND) {
+		long sz;
+		if (!file_size_now(vm, wf, &sz))
+			return;
+		do_write_at(vm, wf, sz, bytes, len);
+		return;
+	}
 	fclose(wf->fp);
 	wf->fp = fopen(wf->path, "w+b");
 	if (wf->fp == NULL) {

@@ -4928,10 +4928,13 @@ pre-bound from these at module load.
   combined with multi-select.
 
 | `Host.pickSavePath(initialDir, mask)` [[host-pickSavePath]]
+  `Host.pickSavePath(initialDir, mask, opts)`
 | Save-mode picker with path entry and overwrite confirmation.  The user
   can pick an existing file or type a new filename.  The picker reports
-  create or overwrite consent explicitly, and the caller does not stat the
-  path again.  Returns a
+  create, overwrite, or append consent explicitly, and the caller does not
+  stat the path again.  The two-argument form offers overwrite for existing
+  files.  Pass `FilePickerOptions.allowAppend` to the three-argument form to
+  offer Overwrite, Append, and Cancel instead.  Returns a
   *write-consent* `File` whose `.open()` succeeds exactly once, or
   `null` on cancel.  See <<file-write-consent,Write consent>> below
   for the mode rules and single-shot semantics.  `.token` on the
@@ -5128,11 +5131,18 @@ numeric assignments are stable so scripts may combine or persist them.
 | `confirmCreate`
 | 1024
 | Ask before accepting a destination which does not exist.
+
+| `allowAppend`
+| 2048
+| Save picker only.  When an existing destination is selected, offer
+  Append alongside Overwrite and Cancel.
 |===
 
-`allowEntry`, `confirmOverwrite`, and `confirmCreate` are invalid
-with `Host.pickFiles`.  `Host.pickSavePath` supplies its save-mode
-options itself.
+`allowEntry`, `confirmOverwrite`, `confirmCreate`, and `allowAppend` are
+invalid with `Host.pickFiles`.  `Host.pickSavePath(initialDir, mask)`
+supplies its save-mode options itself.  Its three-argument overload
+accepts save-picker option bits; currently only `allowAppend` is
+meaningful there.
 
 === Cache [[cache]]
 
@@ -5356,7 +5366,8 @@ another binding does not broaden its authority.
 | Write `s` at the current or given offset.
 
 | `File.write(s)`
-| Replace file contents with `s`.
+| Replace file contents with `s`.  On an append-consent File, append `s`
+  instead so the consent cannot be broadened into overwrite access.
 
 | `File.readLine()`
 | Read from the current offset to the first LF (0x0A) or EOF and
@@ -5436,6 +5447,10 @@ exactly once, in a specific mode determined at pick time:
 | Path existed and the user confirmed overwrite
 | `wb` (truncate or create).  The picker enforces the prompt; user
   saying "no" re-prompts.
+
+| Path existed and the user selected append
+| `ab` (append or create).  Every write is placed at the end of the
+  existing file.
 |===
 
 The consent is *consumed* by the first successful `open()`.  After

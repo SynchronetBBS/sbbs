@@ -1543,6 +1543,9 @@ class FilePickerOptions {
   static allowEntry { 1 << 8 }
   static confirmOverwrite { 1 << 9 }
   static confirmCreate { 1 << 10 }
+  // Save picker only: offer append as well as overwrite when the
+  // selected destination already exists.
+  static allowAppend { 1 << 11 }
 }
 
 // `pickFile(initialDir, mask, opts)` is the user-consent escape
@@ -1575,8 +1578,8 @@ class Host {
   // Multi-select counterpart of pickFile.  Returns a non-empty
   // List<File> on OK (each File has a .token), or null on cancel /
   // empty selection. FilePickerOptions.allowEntry,
-  // confirmOverwrite, and confirmCreate cannot be combined with
-  // multi-select.
+  // confirmOverwrite, confirmCreate, and allowAppend cannot be
+  // combined with multi-select.
   foreign static pickFiles(initialDir, mask, opts)
   // Save-mode picker. The path field permits a new name, while an
   // existing file requires overwrite confirmation. The user can
@@ -1586,6 +1589,9 @@ class Host {
   // when overwrite was confirmed); the File becomes inert after
   // close.  Returns null on cancel.  See Wren.adoc on consent.
   foreign static pickSavePath(initialDir, mask)
+  // As above, with save-picker option bits. FilePickerOptions.allowAppend
+  // adds an Append choice for an existing destination.
+  foreign static pickSavePath(initialDir, mask, opts)
   // Re-open a File from an opaque token previously returned by
   // pickFile / pickFiles via the .token getter.  Returns null when
   // the token's HMAC doesn't verify (signing key rotated / corrupt

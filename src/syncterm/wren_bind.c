@@ -1045,6 +1045,7 @@ static const struct binding BINDINGS[] = {
 	{ "Host", true, "pickFile(_,_,_,_)",    fn_Host_pickFileTitle     },
 	{ "Host", true, "pickFiles(_,_,_)",     fn_Host_pickFiles         },
 	{ "Host", true, "pickSavePath(_,_)",    fn_Host_pickSavePath      },
+	{ "Host", true, "pickSavePath(_,_,_)",  fn_Host_pickSavePathOpts  },
 	{ "Host", true, "openLocalFile(_)",     fn_Host_openLocalFile     },
 
 	/* Platform - OS identification. */

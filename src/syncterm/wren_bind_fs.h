@@ -68,6 +68,7 @@ void fn_Host_pickFile(WrenVM *vm);
 void fn_Host_pickFileTitle(WrenVM *vm);
 void fn_Host_pickFiles(WrenVM *vm);
 void fn_Host_pickSavePath(WrenVM *vm);
+void fn_Host_pickSavePathOpts(WrenVM *vm);
 void fn_Host_openLocalFile(WrenVM *vm);
 
 /* FileError result codes — exposed so other bindings (Capture,

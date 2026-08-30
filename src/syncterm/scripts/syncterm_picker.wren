@@ -83,6 +83,7 @@ foreign class PickerRequest {
   foreign acceptAll(paths)
   foreign acceptCreate(path)
   foreign acceptOverwrite(path)
+  foreign acceptAppend(path)
   foreign cancel()
   foreign quitApplication()
 }

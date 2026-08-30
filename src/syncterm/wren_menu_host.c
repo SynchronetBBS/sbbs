@@ -177,6 +177,7 @@ generic_method_allowed(const char *class_name, const char *signature)
 		"pickFile(_,_,_,_)",
 		"pickFiles(_,_,_)",
 		"pickSavePath(_,_)",
+		"pickSavePath(_,_,_)",
 		"print(_)",
 		"logUnread", "logUnreadError", "safeMode", "textTerminal",
 		"themeGeneration", "themeData", "defaultThemeData",

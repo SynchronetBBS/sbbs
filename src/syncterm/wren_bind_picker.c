@@ -702,6 +702,11 @@ static void fn_request_accept_overwrite(WrenVM *vm)
 	accept_one(vm, WREN_PICKER_DISPOSITION_OVERWRITE, WREN_PICKER_SAVE);
 }
 
+static void fn_request_accept_append(WrenVM *vm)
+{
+	accept_one(vm, WREN_PICKER_DISPOSITION_APPEND, WREN_PICKER_SAVE);
+}
+
 static void fn_request_cancel(WrenVM *vm)
 {
 	struct wren_picker_call *call = request_call(vm);
@@ -744,6 +749,7 @@ static const struct binding bindings[] = {
 	{ "PickerRequest", false, "acceptAll(_)", fn_request_accept_all },
 	{ "PickerRequest", false, "acceptCreate(_)", fn_request_accept_create },
 	{ "PickerRequest", false, "acceptOverwrite(_)", fn_request_accept_overwrite },
+	{ "PickerRequest", false, "acceptAppend(_)", fn_request_accept_append },
 	{ "PickerRequest", false, "cancel()", fn_request_cancel },
 	{ "PickerRequest", false, "quitApplication()", fn_request_quit_application },
 };
