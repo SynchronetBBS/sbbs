@@ -1121,11 +1121,14 @@ static int fp_commit_multi(struct fp_state *s, struct file_pick *fp)
 static int fp_confirm_finish(struct fp_state *s, const char *full)
 {
 	char *YesNo[] = {"Yes", "No", ""};
+	const char *prompt;
 	int   i;
 
-	if ((s->opts & UIFC_FP_OVERPROMPT) && fexist(full)) {
+	prompt = (s->opts & UIFC_FP_APPENDPROMPT)
+	    ? "File exists, append?" : "File exists, overwrite?";
+	if ((s->opts & (UIFC_FP_OVERPROMPT | UIFC_FP_APPENDPROMPT)) && fexist(full)) {
 		if (s->api->list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL,
-		        "File exists, overwrite?", YesNo) != 0) {
+		        prompt, YesNo) != 0) {
 			if (s->api->exit_flags & UIFC_XF_QUIT)
 				return -1;
 			return 0;
@@ -1918,7 +1921,8 @@ static int fp_run(uifcapi_t *api, const char *title, struct file_pick *fp,
 	fp->selected = NULL;
 
 	if (mode == FP_MODE_MULTI
-	    && (opts & (UIFC_FP_ALLOWENTRY | UIFC_FP_OVERPROMPT | UIFC_FP_CREATPROMPT)))
+	    && (opts & (UIFC_FP_ALLOWENTRY | UIFC_FP_OVERPROMPT | UIFC_FP_CREATPROMPT
+	        | UIFC_FP_APPENDPROMPT)))
 		return -1;
 
 	if (fp_state_init(&s, api, mode, title, dir, mask, opts) < 0)

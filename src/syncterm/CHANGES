@@ -18,6 +18,7 @@ Change audio backend try-order so PulseAudio is no longer tried first
 Change Qartz to map Command to Alt, not Option per Apple design
 Rework filepick widget
 Fix fullscreen aspect ratio on Wayland and Quartz
+Fix capture menu to indicate append not overwrite for ASCII and Raw
 
 Version 1.8
 -----------

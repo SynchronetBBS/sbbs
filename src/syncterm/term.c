@@ -3369,7 +3369,7 @@ capture_control(struct bbslist *bbs)
 		    "Don't do that though.  :-)";
 		if (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Capture Type", opts) != -1) {
 			j = filepick(&uifc, "Capture File", &fpick, bbs->dldir, i >= 2 ? "*.bin" : NULL,
-			        UIFC_FP_ALLOWENTRY | UIFC_FP_OVERPROMPT);
+			        UIFC_FP_ALLOWENTRY | (i >= 2 ? UIFC_FP_OVERPROMPT : UIFC_FP_APPENDPROMPT));
 			check_exit(false);
 
 			if ((j != -1) && (fpick.files >= 1)) {

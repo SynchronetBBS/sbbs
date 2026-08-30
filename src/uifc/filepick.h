@@ -32,6 +32,7 @@
 #define UIFC_FP_ALLOWENTRY  (1 << 8)              /* Allow user to type a file/path name */
 #define UIFC_FP_OVERPROMPT  (1 << 9)              /* Prompt "Overwrite?" if file exists */
 #define UIFC_FP_CREATPROMPT (1 << 10)             /* Prompt "Create?" if file does not exist */
+#define UIFC_FP_APPENDPROMPT (1 << 11)             /* Prompt "Append?" if file exists */
 
 struct file_pick {
 	int    files;
