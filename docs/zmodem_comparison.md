@@ -500,6 +500,10 @@ byte-identical, including every cross-implementation pair and both
 engine-isolation tools. No negotiation failures, no fallbacks, no
 implementation-specific workarounds.
 
+Forsberg's DSZ interoperates with sexyz too, across sexyz's whole ZMODEM option
+set and in both directions — §7.4 has the option-by-option table. The single
+exception anywhere in this document is ESC8 (§7.2).
+
 ### 7.2 ESCCTL: partial support, and one broken implementation
 
 ZMODEM's ESCCTL mode has the receiver ask, in its ZRINIT, that the sender escape
@@ -676,7 +680,66 @@ receiver with a known-plaintext file settled it in three runs. Disassembly
 remains the only way to learn what frame type `0x31` means.)
 
 sexyz sits in a third position, worse than either: it *advertises* ESC8 and
-implements neither half (§7.2, GitLab #1229).
+implements neither half (§7.2, GitLab #1229) — since removed. Precisely: sexyz
+no longer sets the ESC8 bit in its ZRINIT, so nothing will ever send it an
+8th-bit-escaped stream; and when a remote receiver asks *sexyz* for the mode,
+sexyz records the request for its log and then ignores it, sending unescaped.
+It does not refuse — ZMODEM has no way to decline a ZRINIT capability — and
+ignoring is what lrzsz does with the same request.
+
+#### Option-by-option compatibility with DSZ
+
+Everything else interoperates. Each row is a real transfer of an 8 KiB random
+file between sexyz and DSZ.EXE 1997 under DOSBox, verified byte-for-byte.
+
+**sexyz sending, DSZ receiving** — the BBS download case:
+
+| sexyz option | Result |
+|---|---|
+| default | identical |
+| `-8`, `-4`, `-2` (block size) | identical |
+| `-o` (CRC-16) | identical |
+| `-s` (segmented) | identical |
+| `-w4096` (transmit window) | identical |
+| `-e` (ESCCTL) | identical |
+| `-l` (lowercase names) | identical |
+| `-y` (clobber) | overwrote the existing file |
+| `-p` (protect) | **DSZ kept its existing file** — the request is honoured |
+| `-n` (newer) | source dated 2020 → **skipped**; dated 2030 → transferred |
+
+**DSZ sending, sexyz receiving:**
+
+| DSZ option | Result | Wire |
+|---|---|--:|
+| default | identical | 8,626 |
+| `-m` (MobyTurbo) | identical | 8,626 |
+| `-Q@` (per-character escaping) | identical | 8,698 |
+| `-e` (ESCCTL) | identical | 10,557 |
+
+Two of those are worth pulling out. The **file-management options added to sexyz
+in August 2026 work against a third-party implementation** — `-p` and `-n` both
+produce the documented behaviour at the far end, and `-n` only demonstrates
+itself once the timestamps are forced apart, since FAT's two-second granularity
+makes a same-minute comparison ambiguous. And **ESCCTL works in both
+directions**, which is the path that carried the carriage-return defect until
+2026-08-24.
+
+DSZ's 7-bit options are receiver-driven, which is worth stating because the
+names suggest otherwise. `DSZ sz -E` and `DSZ sz -P` sending to sexyz both
+transfer identically and leave 46.9 % of the wire carrying bytes with bit 7
+set — the same as with no option at all. They request the mode when DSZ
+receives; they do not impose it when DSZ sends. So a sender's `-E` is inert
+against a receiver that does not ask, and sexyz never asks.
+
+**Not tested, and not claimed:** `-m` (a local size limit with no wire
+content), the X/YMODEM modes (`-k`, `-c`, `-g`), and `-telnet` (needs IAC
+injection).
+
+**One capability sexyz leaves on the table.** DSZ advertises `CANRLE` in every
+ZRINIT it sends (§7.4's flag table), and implements RLE in both directions;
+sexyz never advertises it, so the compression is never used. On a BBS serving
+DSZ-based terminals that is throughput given away on compressible files, for a
+feature the far end already has.
 
 ## 8. Findings
 
