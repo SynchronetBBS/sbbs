@@ -135,11 +135,10 @@ set_property(TARGET deucegate PROPERTY LINKER_LANGUAGE CXX)
 include(CTest)
 if(BUILD_TESTING AND DEUCEGATE_BUILD_TESTS)
     add_executable(deucegate_tests tests/test_deucegate.c)
-    target_compile_definitions(deucegate_tests PRIVATE
-        DG_TEST_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixture")
     target_link_libraries(deucegate_tests PRIVATE deucegate_lib)
     set_property(TARGET deucegate_tests PROPERTY LINKER_LANGUAGE CXX)
-    add_test(NAME deucegate-tests COMMAND deucegate_tests)
+    add_test(NAME deucegate-tests COMMAND deucegate_tests
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixture)
     add_test(NAME deucegate-config-check COMMAND deucegate
         --root ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixture --check-config)
 endif()

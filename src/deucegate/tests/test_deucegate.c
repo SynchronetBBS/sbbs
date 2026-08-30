@@ -126,11 +126,11 @@ test_legacy_password(void)
 }
 
 static void
-test_resource_limit_defaults(void)
+test_resource_limit_defaults(const char *fixture)
 {
 	dg_config_t cfg;
 	char err[256];
-	CHECK(dg_config_load(DG_TEST_FIXTURE, &cfg, err, sizeof(err)));
+	CHECK(dg_config_load(fixture, &cfg, err, sizeof(err)));
 	CHECK(cfg.ssh_max_connections == 3);
 	CHECK(cfg.ssh_max_connections_per_ip == 3);
 	CHECK(cfg.ssh_input_byte_limit == 16 * 1024 * 1024);
@@ -274,15 +274,19 @@ test_drop_files(void)
 }
 
 int
-main(void)
+main(int argc, char **argv)
 {
+	if (argc != 2) {
+		fprintf(stderr, "usage: %s fixture-directory\n", argv[0]);
+		return 2;
+	}
 	test_cp437();
 	test_encoding_matrix();
 	test_utf8_stream();
 	test_language_tags();
 	test_mci();
 	test_legacy_password();
-	test_resource_limit_defaults();
+	test_resource_limit_defaults(argv[1]);
 	test_drop_files();
 	if (failures != 0) return 1;
 	puts("All DeuceGate tests passed.");
