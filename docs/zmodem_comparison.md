@@ -55,14 +55,14 @@ Seven specifics:
 5. **`zmtx`'s ESCCTL support is broken**, in 2.04 as in 2.02 (§7.2), in exactly
    the way Synchronet's was until 2026-08-24. A receiver that requests
    control-character escaping cannot download from `zmtx` at all.
-6. **The ESC8 option has no agreed encoding, and sexyz advertises it anyway.**
+6. **The ESC8 option has no agreed encoding, and sexyz no longer asks for it.**
    Running Forsberg's own 1997 DSZ under DOSBox settles what the bit means —
    `rz -E` sets it — and that the only two implementations of it encode it
    differently: DSZ prefixes with `0x0E` and clears bit 7, `zmrx` 2.04 uses
    `ZDLE, c ^ 0x40`. They cannot talk to each other, because the spec never
-   said which (§7.4). sexyz asks for the mode and implements neither half of it
-   (GitLab #1229). Without ESC8, that same DOS binary transfers to sexyz
-   byte-identically.
+   said which (§7.4). sexyz had advertised the mode while implementing neither
+   half of it; the option was removed on 2026-08-30 (GitLab #1229). With or
+   without it, that same DOS binary transfers to sexyz byte-identically.
 7. **Instruction counts do not order CPU time, and neither orders goodput.**
    `lrz` executes fewer instructions per byte than `zmrx` (24.1 vs 34.8) and
    costs 36 % more CPU. sexyz's sender executes 2.4× `lsz`'s instructions and
@@ -198,7 +198,7 @@ every profiled figure is paired with a wall-clock/CPU run of the same pair.
 | Segmented (ack per subpacket) | `-s`, both directions | — | `zmtx -s`, `zmrx -s` | — |
 | Window management | `-w#` (send) | `-w N` | `zmtx -w` | `-w N` |
 | Control-char escaping (ESCCTL) | `-e`, ini, **both directions** | `-e`, both directions | `zmrx -e` requests; sender honours it but **escaping is broken** (§7.2) | `-e` (sender) |
-| 8th-bit escaping (ESC8) | ini `Escape8thBit` requests it, but sexyz **cannot decode** it and never escapes when sending (§7.2) | — | implements it (`zmrx -b`), incompatibly with DSZ | `rzsz` no; **DSZ `-E` yes** (§7.4) |
+| 8th-bit escaping (ESC8) | **no** — never requested, never honoured; the `Escape8thBit` key was removed (§7.2) | — | implements it (`zmrx -b`), incompatibly with DSZ | `rzsz` no; **DSZ `-E` yes** (§7.4) |
 | File-management option (ZFILE ZF1) | `-y`/`-p`/`-n`, ini `SendManagement` | `-y`/`-p`/`-n`/`-E`/`-Y` | `-o`/`-p`/`-n`, both ends | `-y`/`-p`/`-n` |
 | Batch / file lists | multiple, `@list`, `+list` | multiple | multiple | multiple |
 | Crash recovery / resume | — | `-r` | — | — |
@@ -544,20 +544,23 @@ of unescaped CR and 0x8D bytes in 4 MiB of random data. `zmtx` under-escapes and
 with no one else. A receiver that drops unescaped control characters, as the
 ESCCTL contract requires and as both sexyz and `lrz` do, sees corruption.
 
-**ESC8, the 8th-bit equivalent, is implemented by exactly one of the four, and
-sexyz asks for it without being able to decode it.** zmtx/zmrx 2.04 implements
-it properly at both ends: `zmtx → zmrx -b` transfers correctly with genuine
-escaping, the wire growing from 4,311,816 to **6,360,011** bytes for the same
-4 MiB file. Neither lrzsz nor sexyz escapes when a peer requests it — a
-sexyz→sexyz transfer with `Escape8thBit=true` at *both* ends succeeds while
-putting the unescaped 4,311,816 bytes on the wire, and `lsz → zmrx -b` does the
-same.
+**ESC8, the 8th-bit equivalent, is implemented by exactly one of the four.**
+zmtx/zmrx 2.04 does it at both ends: `zmtx → zmrx -b` transfers correctly with
+genuine escaping, the wire growing from 4,311,816 to **6,360,011** bytes for the
+same 4 MiB file. Neither lrzsz nor sexyz escapes when a peer requests it —
+`lsz → zmrx -b` succeeds only by putting the unescaped 4,311,816 bytes on the
+wire.
 
-sexyz nonetheless *advertises* ESC8 whenever `Escape8thBit=true`, and its
-receiver has no ESC8 decode path: an escaped high-bit byte (`0xA5` sent as
-`ZDLE 0xE5`) fails `zmodem_rx()`'s `(c & 0x60) == 0x40` test and is logged as
-`Illegal sequence: ZDLE 229` until the session times out. So `zmtx → sexyz` with
-that option set cannot start a transfer at all. Filed as **#1229**.
+**sexyz used to ask for the mode without being able to decode it, and no longer
+does.** Until 2026-08-30 an `Escape8thBit=true` in `sexyz.ini` advertised ESC8
+in the ZRINIT while the receiver had no decode path for it: an escaped high-bit
+byte (`0xA5` sent as `ZDLE 0xE5`) failed the `(c & 0x60) == 0x40` test and was
+logged as `Illegal sequence: ZDLE 229` until the session timed out, so
+`zmtx → sexyz` could not start a transfer at all. The key and the advertisement
+are both gone (GitLab #1229); sexyz never sets the bit now, and ignores a remote
+receiver's request rather than refusing it, there being no way to decline a
+ZRINIT capability — which is what lrzsz does too. With that removed,
+`zmtx → sexyz` completes byte-identically.
 
 Chuck Forsberg defined `ESC8`/`TESC8` in his `zmodem.h` and never referenced
 either in any `.c` file; lrzsz inherited the same two dead defines. The option
@@ -679,8 +682,9 @@ class table finds nothing. Running the binary against a deliberately permissive
 receiver with a known-plaintext file settled it in three runs. Disassembly
 remains the only way to learn what frame type `0x31` means.)
 
-sexyz sits in a third position, worse than either: it *advertises* ESC8 and
-implements neither half (§7.2, GitLab #1229) — since removed. Precisely: sexyz
+sexyz sat in a third position, worse than either — *advertising* ESC8 while
+implementing neither half (§7.2, GitLab #1229) — until the option was removed on
+2026-08-30. Precisely: sexyz
 no longer sets the ESC8 bit in its ZRINIT, so nothing will ever send it an
 8th-bit-escaped stream; and when a remote receiver asks *sexyz* for the mode,
 sexyz records the request for its log and then ignores it, sending unescaped.
@@ -757,11 +761,12 @@ transport rather than protocol code. `zmtx`'s 15.2 in that sentence is its 2.02
 figure, kept because it is what the ratio was measured against; at 2.04 it is
 10.0.
 
-Two defects of our own. **ESC8 is advertised and implemented in neither
-direction** (§7.2) — `Escape8thBit=true` makes sexyz ask a peer to escape
-high-bit bytes that sexyz cannot then decode, which was harmless for 21 years
-because no peer implemented it and is not harmless now that one does; filed as
-**#1229**. And the one feature gap worth closing is a minimum-throughput abort
+One defect of our own, since fixed. **ESC8 was advertised and implemented in
+neither direction** (§7.2) — `Escape8thBit=true` made sexyz ask a peer to escape
+high-bit bytes it could not then decode, harmless for 21 years because no peer
+implemented it and not harmless once one did. The option and the advertisement
+were removed on 2026-08-30 (**#1229**). The remaining feature gap worth closing
+is a minimum-throughput abort
 (§3.2): sexyz's timeouts reset on every byte, so a trickling transfer holds a
 node indefinitely.
 
