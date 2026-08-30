@@ -5,7 +5,8 @@ release, including zmtx/zmrx **2.04**, which landed four days earlier and
 changes several conclusions a 2.02 checkout would have produced.
 **Author:** Claude (analysis commissioned by Rob Swindell)
 **Scope:** Feature support, interoperability, error recovery, throughput and CPU
-cost of four ZMODEM implementations, **in both directions**.
+cost of four ZMODEM implementations, **in both directions** — plus Forsberg's
+commercial DSZ as a fifth, for the negotiated option bits only (§7.4).
 
 This is a full re-measurement and supersedes every figure in earlier revisions
 of this document. Those accumulated across five sessions between 2026-07-23 and
@@ -31,7 +32,7 @@ fastest sender has the weakest error recovery and a broken escaping mode.
 | Peak pair goodput | `zmtx` → `zmrx` 514.2 MB/s | Forsberg → any ~97 MB/s | 5.3× |
 | Error recovery, 8 MiB @ 3e-6 | **sexyz 10/10 both ways** | `zmtx` 0/5 | — |
 
-Six specifics:
+Seven specifics:
 
 1. **zmtx/zmrx 2.04 is the cheapest implementation in both directions, by
    roughly a factor of two** — 10.0 instructions per data byte sending and 12.1
@@ -54,7 +55,15 @@ Six specifics:
 5. **`zmtx`'s ESCCTL support is broken**, in 2.04 as in 2.02 (§7.2), in exactly
    the way Synchronet's was until 2026-08-24. A receiver that requests
    control-character escaping cannot download from `zmtx` at all.
-6. **Instruction counts do not order CPU time, and neither orders goodput.**
+6. **The ESC8 option has no agreed encoding, and sexyz advertises it anyway.**
+   Running Forsberg's own 1997 DSZ under DOSBox settles what the bit means —
+   `rz -E` sets it — and that the only two implementations of it encode it
+   differently: DSZ prefixes with `0x0E` and clears bit 7, `zmrx` 2.04 uses
+   `ZDLE, c ^ 0x40`. They cannot talk to each other, because the spec never
+   said which (§7.4). sexyz asks for the mode and implements neither half of it
+   (GitLab #1229). Without ESC8, that same DOS binary transfers to sexyz
+   byte-identically.
+7. **Instruction counts do not order CPU time, and neither orders goodput.**
    `lrz` executes fewer instructions per byte than `zmrx` (24.1 vs 34.8) and
    costs 36 % more CPU. sexyz's sender executes 2.4× `lsz`'s instructions and
    still beats it on wall clock, by using a second thread. Quote all three
@@ -72,6 +81,7 @@ Six specifics:
 | **lrzsz** (`lsz`/`lrz`) | 0.12.21rc | Uwe Ohse's maintained fork of Forsberg's rzsz |
 | **zmtx/zmrx** | **2.04** (`3a5d2ed`, tag `v2.04`, 2026-08-25) | Jacques Mattheij, 1994; currently maintained by Stephen Hurd |
 | **Forsberg rzsz** | `sz` 3.73, 2003-01-30 | Omen Technology; built from the history repo's `modern` branch |
+| **Forsberg DSZ** (§7.4) | DSZ.EXE 1997-05-25 | Omen Technology's *commercial* DOS product; run under DOSBox, not throughput-benchmarked |
 
 `sexyz v` prints all three component versions, which is how a build is
 identified here; the other three print one.
@@ -188,7 +198,7 @@ every profiled figure is paired with a wall-clock/CPU run of the same pair.
 | Segmented (ack per subpacket) | `-s`, both directions | — | `zmtx -s`, `zmrx -s` | — |
 | Window management | `-w#` (send) | `-w N` | `zmtx -w` | `-w N` |
 | Control-char escaping (ESCCTL) | `-e`, ini, **both directions** | `-e`, both directions | `zmrx -e` requests; sender honours it but **escaping is broken** (§7.2) | `-e` (sender) |
-| 8th-bit escaping (ESC8) | ini `Escape8thBit` requests it, but sexyz **cannot decode** it and never escapes when sending (§7.2) | — | **the only working implementation**: `zmrx -b` requests, sender honours | — |
+| 8th-bit escaping (ESC8) | ini `Escape8thBit` requests it, but sexyz **cannot decode** it and never escapes when sending (§7.2) | — | implements it (`zmrx -b`), incompatibly with DSZ | `rzsz` no; **DSZ `-E` yes** (§7.4) |
 | File-management option (ZFILE ZF1) | `-y`/`-p`/`-n`, ini `SendManagement` | `-y`/`-p`/`-n`/`-E`/`-Y` | `-o`/`-p`/`-n`, both ends | `-y`/`-p`/`-n` |
 | Batch / file lists | multiple, `@list`, `+list` | multiple | multiple | multiple |
 | Crash recovery / resume | — | `-r` | — | — |
@@ -591,6 +601,82 @@ real serial tty is itself a finding — it is the kind of thing that motivated t
 maintained lrzsz fork.
 
 ---
+
+### 7.4 A fifth implementation, for the negotiated options: Forsberg's DSZ
+
+Forsberg's **commercial** line (DSZ, GSZ, ZCOMM, Pro-YAM) is not in the
+throughput tables — it is a 16-bit DOS product with no source, so it cannot be
+built or profiled here. It is invaluable for one thing the open implementations
+cannot settle on their own: **what the negotiated option bits were actually
+meant to do**, from the author of the protocol.
+
+DSZ.EXE 1997-05-25 — the last release, and the EXE rather than the COM, because
+the 7-bit options and `-Q<string>` quoting are EXE-only — runs under DOSBox with
+its COM1 bridged to TCP (`serial1=nullmodem`) into a relay that pipes it to a
+local ZMODEM program. (DSZ needs its `d` command or it exits silently: DOSBox
+never asserts carrier.)
+
+**The base protocol interoperates perfectly.** A 4096-byte random file sent by
+this 1997 DOS binary arrives byte-identical at both sexyz and `zmrx`.
+
+**On the option bits, its ZRINIT is the reference:**
+
+| DSZ command | ZF0 | Flags |
+|---|--:|---|
+| `rz` | 0x2F | CANFDX, CANOVIO, CANBRK, **CANRLE**, CANFC32 |
+| `rz -e` | 0x6F | the same **+ ESCCTL** |
+| **`rz -E`** | **0xAF** | the same **+ ESC8** |
+| `rz -P` | 0x2F | (Pack-7 negotiated some other way) |
+
+So **ESC8 is the negotiation bit for "8th bit quoting"**, which DSZ.DOC
+describes as half of ZMODEM-90's default 7-bit mode — "RLE compression and 8th
+bit quoting" — and `-E` is what turns it on. CANRLE being set unconditionally
+matches the other half: RLE *is* implemented in Forsberg's free source
+(`zmr.c`, `ZRESC`, frame types `ZBINR32 'D'` / `ZVBINR32 'd'`), while the
+8th-bit-quoting half never was, in any release from 1987 to 2003.
+
+**And the two ESC8 implementations in existence do not interoperate.** Asked for
+ESC8 by `zmrx -b`, DSZ acts on it — bytes with bit 7 set fall from 47.7 % of the
+wire to 3.4 %, and the residue is one repeated 3-byte sequence rather than data
+— but it also switches to frame type **`0x31` (`'1'`)**, which is not among the
+eight types any published `zmodem.h` defines (`ZBIN 'A'`, `ZHEX 'B'`,
+`ZBIN32 'C'`, `ZBINR32 'D'` and the lowercase `ZVBIN` variants). `zmrx` cannot
+parse it: *"can't establish contact with sender"*.
+
+**DSZ's encoding, recovered by known-plaintext capture:** a `0x0E` (SO) prefix
+followed by the byte with bit 7 cleared, with ordinary ZDLE escaping of control
+characters continuing alongside it. In a capture of DSZ sending a 4096-byte
+random file, `0x0E` occurs 4,991 times and is followed by a byte below 0x80 in
+100 % of them, never doubled, successors spanning 0x01–0x7E; decoding on that
+rule recovers 92 contiguous bytes of the known plaintext and restores the
+stream from 0.0 % high-bit to 45.6 % (random data is ~50 %). That is exactly
+DSZ.DOC's "8th bit quoting similar to Kermit", Kermit being where prefixing
+comes from.
+
+So the two implementations use unrelated mechanisms for the same negotiated
+mode:
+
+| | Encoding of a high-bit byte `c` |
+|---|---|
+| **DSZ** (Omen, 1997) | `0x0E`, then `c & 0x7F` — a Kermit-style prefix |
+| **zmtx/zmrx 2.04** (2026) | `ZDLE`, then `c ^ 0x40` — ZMODEM's own escape |
+
+Neither is wrong, because the specification never said. ZMODEM.DOC names ESC8
+exactly once operationally and never states how a high-bit byte is escaped,
+where ESCCTL gets a full paragraph. Two implementers 29 years apart read that
+one line and built different things, and one of them also switched to an
+unpublished frame type.
+
+(Method, for anyone revisiting: disassembly is the obvious route and the wrong
+first one. DSZ.EXE is a plain unpacked MZ image, so it disassembles fine, but
+the escape table is not in the file — DSZ builds it at runtime into BSS,
+exactly as Forsberg's free `zsendline_init()` does, so scanning for a 256-byte
+class table finds nothing. Running the binary against a deliberately permissive
+receiver with a known-plaintext file settled it in three runs. Disassembly
+remains the only way to learn what frame type `0x31` means.)
+
+sexyz sits in a third position, worse than either: it *advertises* ESC8 and
+implements neither half (§7.2, GitLab #1229).
 
 ## 8. Findings
 
