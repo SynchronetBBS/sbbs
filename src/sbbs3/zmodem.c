@@ -1560,6 +1560,9 @@ void zmodem_parse_zrinit(zmodem_t* zm)
 	zm->can_fcs_32                      = INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_CANFC32);
 	zm->escape_ctrl_chars               = INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_ESCCTL);
 	zmodem_build_rx_plain_tab(zm);
+	/* Recorded for the log only: we never escape on a peer's behalf either
+	   (no agreed encoding -- see zmodem_send_zrinit()).  lrzsz ignores an
+	   ESC8 request the same way. */
 	zm->escape_8th_bit                  = INT_TO_BOOL(zm->rxd_header[ZF0] & ZF0_ESC8);
 
 	lprintf(zm, LOG_INFO, "Receiver requested mode (0x%02X):\r\n"
@@ -1617,8 +1620,13 @@ int zmodem_send_zrinit(zmodem_t* zm)
 	if (zm->escape_ctrl_chars)
 		zrinit_header[ZF0] |= ZF0_ESCCTL;
 
-	if (zm->escape_8th_bit)
-		zrinit_header[ZF0] |= ZF0_ESC8;
+	/* ZF0_ESC8 is deliberately never advertised.  We cannot decode an
+	   8th-bit-escaped stream, and there is no encoding to implement: the
+	   specification names ESC8 once and never says how a high-bit byte is
+	   escaped, so the two implementations that exist disagree -- Omen's DSZ
+	   prefixes with 0x0E and clears bit 7, zmtx/zmrx 2.04 sends ZDLE and
+	   c ^ 0x40.  Asking for the mode commits us to whichever the peer chose.
+	   See GitLab issue #1229. */
 
 	if (zm->no_streaming && zm->recv_bufsize == 0)
 		zm->recv_bufsize = zm->max_block_size;

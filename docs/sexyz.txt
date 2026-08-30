@@ -351,7 +351,6 @@ Example .ini file (with default values given):
     CRC32=TRUE          ; set to FALSE to force CRC-16 instead
     FullDuplex=TRUE     ; set to FALSE to disable window support (on receive)
     EscapeTelnetIAC=TRUE    ; send ZDLE/ZRUB1 instead of 0xff with -telnet
-    Escape8thBit=FALSE      ; ZDLE-escape all bytes with bit-7 set
     EscapeCtrlChars=FALSE   ; ZDLE-escape all control characters
                         ; (00-1Fh and 80-9Fh, carriage return included);
                         ; same as the -e option, and when receiving it is

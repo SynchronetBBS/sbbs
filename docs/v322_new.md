@@ -629,6 +629,16 @@
   ended in a 100-second timeout. Both are long-standing. Escaped
   transfers now interoperate with `lrzsz` in both directions, and
   put the same bytes on the wire it does
+- Removed: the `Escape8thBit` key in `sexyz.ini`, and with it any
+  advertisement of ZMODEM's ESC8 option. It asked a remote sender to
+  escape every byte with the high bit set, which sexyz could not then
+  decode — so setting it broke transfers with any sender that honored
+  the request, and did nothing with any that did not. It had never
+  worked in either direction since being added in 2005. There is also
+  no encoding to implement: the ZMODEM specification names ESC8 once
+  and never says how such a byte is escaped, and the two programs that
+  do implement it disagree — Omen's DSZ prefixes with 0x0E and clears
+  bit 7, zmtx/zmrx 2.04 sends ZDLE and the byte XOR 0x40 (issue #1229)
 - New: `-e` requests ZMODEM control-character escaping, the
   command-line equivalent of `sexyz.ini`'s `EscapeCtrlChars`, for
   links that do not pass control characters intact. It applies

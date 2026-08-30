@@ -244,7 +244,10 @@ typedef struct {
 	                               this outside zmodem_init()/zmodem_parse_zrinit(),
 	                               do it before the session's first
 	                               zmodem_send_zrinit(), which rebuilds the table */
-	BOOL escape_8th_bit;
+	BOOL escape_8th_bit;        /* NOT IMPLEMENTED: set from a peer's ZRINIT
+	                               for logging only, never advertised and never
+	                               honored -- there is no agreed encoding for
+	                               it.  See issue #1229. */
 
 	/*
 	 * file management options.

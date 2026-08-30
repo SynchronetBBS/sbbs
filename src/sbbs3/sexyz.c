@@ -1754,7 +1754,6 @@ int main(int argc, char **argv)
 	zm.want_fcs_16          = !iniGetBool(ini, section, "CRC32", TRUE);
 	zm.can_full_duplex      = iniGetBool(ini, section, "FullDuplex", TRUE);
 	zm.escape_telnet_iac    = iniGetBool(ini, section, "EscapeTelnetIAC", TRUE);
-	zm.escape_8th_bit       = iniGetBool(ini, section, "Escape8thBit", FALSE);
 	zm.escape_ctrl_chars    = iniGetBool(ini, section, "EscapeCtrlChars", FALSE);
 	set_zmodem_management(iniGetEnum(ini, section, "SendManagement", zmodem_management_list, ZMGMT_CRC));
 	zm.max_window_size      = (uint32_t)iniGetBytes(ini, section, "MaxWindowSize", 1, 0);
