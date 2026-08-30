@@ -1240,8 +1240,7 @@ public:
 	bool	viewfilecontents(file_t* f);
 
 	/* xtrn.cpp */
-	int		external(const char* cmdline, int mode, const char* startup_dir=NULL);
-	int		external(const char* cmdline, int mode, const char* startup_dir, const char* bbsdev_drp);
+	int		external(const char* cmdline, int mode, const char* startup_dir=NULL, const char* bbsdev_drp=NULL);
 	int		xtrn_mode = 0;
 	char	term_env[256]{};
 

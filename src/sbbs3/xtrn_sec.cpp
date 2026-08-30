@@ -108,13 +108,6 @@ static bool bbsdev_language_tag_valid(const char* tag)
 	return at == count;
 }
 
-static bool bbsdev_unicode_whitespace(enum unicode_codepoint cp)
-{
-	return (cp >= 0x09 && cp <= 0x0d) || cp == 0x20 || cp == 0x85 || cp == 0xa0
-	    || cp == 0x1680 || (cp >= 0x2000 && cp <= 0x200a) || cp == 0x2028
-	    || cp == 0x2029 || cp == 0x202f || cp == 0x205f || cp == 0x3000;
-}
-
 static bool bbsdev_utf8_value_valid(const char* str)
 {
 	size_t len = strlen(str);
@@ -123,7 +116,8 @@ static bool bbsdev_utf8_value_valid(const char* str)
 	for (size_t offset = 0; offset < len;) {
 		enum unicode_codepoint cp;
 		int char_len = utf8_getc(str + offset, len - offset, &cp);
-		if (char_len < 1 || cp <= 0x1f || (cp >= 0x7f && cp <= 0x9f))
+		if (char_len < 1 || cp <= UNICODE_INFORMATION_SEPARATOR_ONE
+		    || (cp >= UNICODE_DELETE && cp <= UNICODE_APPLICATION_PROGRAM_COMMAND))
 			return false;
 		if (first == UNICODE_UNDEFINED)
 			first = cp;
@@ -131,7 +125,7 @@ static bool bbsdev_utf8_value_valid(const char* str)
 		offset += char_len;
 	}
 	return first != UNICODE_UNDEFINED
-	    && !bbsdev_unicode_whitespace(first) && !bbsdev_unicode_whitespace(last);
+	    && !unicode_is_whitespace(first) && !unicode_is_whitespace(last);
 }
 
 static bool bbsdev_utf8_field(const char* src, char* dest, size_t size, bool allow_empty)
@@ -1138,17 +1132,13 @@ bool sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 				SAFECOPY(line[1], "socket");
 				snprintf(line[2], sizeof(line[2]), "%" PRIu64, (uint64_t)sock);
 			}
-		} else if ((misc & XTRN_FOSSIL) || !(misc & XTRN_UART)) {
+		} else if (misc & XTRN_UART) {
+			lprintf(LOG_ERR, "BBSDEV.DRP UART communication is unavailable: Synchronet has no valid UART configuration");
+			return false;
+		} else {
 			uint com_port = (uchar)cfg.com_port;
 			SAFECOPY(line[1], "fossil");
 			snprintf(line[2], sizeof(line[2]), "%u", com_port ? com_port - 1 : 0);
-		} else {
-			if (cfg.com_base > UINT16_MAX || cfg.com_irq > 15) {
-				lprintf(LOG_ERR, "BBSDEV.DRP UART parameters are out of range: %X,%u", cfg.com_base, cfg.com_irq);
-				return false;
-			}
-			SAFECOPY(line[1], "uart");
-			snprintf(line[2], sizeof(line[2]), "%04X,%u", cfg.com_base, cfg.com_irq);
 		}
 
 		if (!bbsdev_utf8_field(useron.alias, line[3], sizeof(line[3]), false)) {
@@ -1519,6 +1509,11 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 
 	if (!chk_ar(cfg.xtrn[xtrnnum]->run_ar, &useron, &client)
 	    || !chk_ar(cfg.xtrnsec[cfg.xtrn[xtrnnum]->sec]->ar, &useron, &client)) {
+		bputs(text[CantRunThatProgram]);
+		return false;
+	}
+	if (cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV && (cfg.xtrn[xtrnnum]->misc & XTRN_UART)) {
+		lprintf(LOG_ERR, "BBSDEV.DRP UART communication is unavailable: Synchronet has no valid UART configuration");
 		bputs(text[CantRunThatProgram]);
 		return false;
 	}

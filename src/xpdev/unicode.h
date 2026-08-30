@@ -31,6 +31,7 @@ extern "C" {
 #endif
 
 extern enum unicode_codepoint cp437_unicode_tbl[];
+bool unicode_is_whitespace(enum unicode_codepoint);
 bool unicode_is_zerowidth(enum unicode_codepoint);
 size_t unicode_width(enum unicode_codepoint, size_t zerowidth);
 char unicode_to_cp437(enum unicode_codepoint);

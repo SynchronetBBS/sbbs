@@ -291,11 +291,6 @@ bool native_executable(scfg_t* cfg, const char* cmdline, int mode)
 	#define XTRN_LOADABLE_JS_MODULE
 #endif
 
-int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
-{
-	return external(cmdline, mode, startup_dir, NULL);
-}
-
 #ifdef _WIN32
 
 #include "vdd_func.h"   /* DOSXTRN.EXE API */

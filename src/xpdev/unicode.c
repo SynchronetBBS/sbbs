@@ -295,6 +295,21 @@ enum unicode_codepoint cp437_unicode_tbl[] =
 	/* 0xFF */ UNICODE_NO_BREAK_SPACE
 };
 
+bool unicode_is_whitespace(enum unicode_codepoint u)
+{
+	return (u >= UNICODE_CHARACTER_TABULATION && u <= UNICODE_CARRIAGE_RETURN)
+	    || u == UNICODE_SPACE
+	    || u == UNICODE_NEXT_LINE
+	    || u == UNICODE_NO_BREAK_SPACE
+	    || u == UNICODE_OGHAM_SPACE_MARK
+	    || (u >= UNICODE_EN_QUAD && u <= UNICODE_HAIR_SPACE)
+	    || u == UNICODE_LINE_SEPARATOR
+	    || u == UNICODE_PARAGRAPH_SEPARATOR
+	    || u == UNICODE_NARROW_NO_BREAK_SPACE
+	    || u == UNICODE_MEDIUM_MATHEMATICAL_SPACE
+	    || u == UNICODE_IDEOGRAPHIC_SPACE;
+}
+
 bool unicode_is_zerowidth(enum unicode_codepoint u)
 {
 	switch (u) {
