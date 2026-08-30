@@ -155,7 +155,11 @@
 #define ZF0_CANFDX      0x01    /* Receiver can send and receive true full duplex */
 #define ZF0_CANOVIO     0x02    /* receiver can receive data during disk I/O */
 #define ZF0_CANBRK      0x04    /* receiver can send a break signal */
-#define ZF0_CANCRY      0x08    /* Receiver can decrypt DONT USE */
+/* Bit 0x08 is contested: lrzsz and this header call it CANCRY (decrypt), but
+   Forsberg's own rzsz calls it CANRLE, "receiver can decode RLE", and his DSZ
+   sets it on every connection meaning exactly that.  We neither set nor honour
+   it under either reading. */
+#define ZF0_CANCRY      0x08    /* aka CANRLE -- see above; not implemented */
 #define ZF0_CANLZW      0x10    /* Receiver can uncompress DONT USE */
 #define ZF0_CANFC32     0x20    /* Receiver can use 32 bit Frame Check */
 #define ZF0_ESCCTL      0x40    /* Receiver expects ctl chars to be escaped */

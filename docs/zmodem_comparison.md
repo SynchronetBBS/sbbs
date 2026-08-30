@@ -202,6 +202,8 @@ every profiled figure is paired with a wall-clock/CPU run of the same pair.
 | File-management option (ZFILE ZF1) | `-y`/`-p`/`-n`, ini `SendManagement` | `-y`/`-p`/`-n`/`-E`/`-Y` | `-o`/`-p`/`-n`, both ends | `-y`/`-p`/`-n` |
 | Batch / file lists | multiple, `@list`, `+list` | multiple | multiple | multiple |
 | Crash recovery / resume | — | `-r` | — | — |
+| ZSINIT (Attn sequence, sender escape declaration) | **never sent; a received one is ACKed and its flags and Attn string discarded** | handled both ways | `zmrx` handles a received one; **`zmtx` never sends** | sends when it has something to declare (observed with `sz -e`) |
+| Honours a *sender's* ZFILE management request | **no** — local policy (`-y`) decides | yes (`lrz.c`) | yes (`zmrx.c`) | yes (verified: honoured `-p`) |
 | Telnet IAC escaping | `-telnet` | — | — | — |
 | Socket-descriptor argument | **yes** | `--tcp-server`/`--tcp-client` | `-l line` | — |
 | Minimum-BPS abort | — | `-m` / `-M` | — | — |
