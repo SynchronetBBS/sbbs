@@ -10,6 +10,14 @@ always use **DeuceGate**. Do not derive product names from the directory name.
 
 ## Repository relationships
 
+DeuceGate work is strictly confined to this directory. Treat every path outside
+the DeuceGate directory as read-only: do not create, modify, delete, rename,
+stage, or commit files elsewhere in the Synchronet tree while working on
+DeuceGate. In particular, changes to sibling projects must never be made as
+part of DeuceGate work. If a DeuceGate task exposes a required sibling-project
+change, report it separately and leave it unmodified; that change requires its
+own separately scoped task.
+
 This project lives beside Synchronet's shared libraries and intentionally uses
 their source trees:
 
@@ -23,8 +31,8 @@ their source trees:
 - `../sbbs3/xtrn_sec.cpp` is the reference for drop-file field ordering,
   especially `CHAIN.TXT`.
 
-Keep changes in those sibling projects out of DeuceGate work unless the task
-explicitly requires them.
+Sibling source trees may be inspected for APIs and reference behavior, but must
+not be changed during DeuceGate work.
 
 ## Compatibility invariants
 
@@ -118,34 +126,6 @@ For SSH/session changes, also run a live OpenSSH-client check against a temporar
 copy of `tests/fixture`: verify signed-key TOFU enrollment, a subsequent login,
 menu display, and clean logoff. Add a legacy-password live check when changing
 password authentication.
-
-Changes touching `_WIN32`, process creation, drop files, sockets, or DOS support
-also require a 64-bit MinGW compile and final link. In this Synchronet checkout,
-the vendored Botan archive can be selected without leaking host `pkg-config`
-flags:
-
-```sh
-cmake -S . -B /tmp/deucegate-mingw \
-  -DCMAKE_SYSTEM_NAME=Windows \
-  -DCMAKE_C_COMPILER=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-gcc \
-  -DCMAKE_CXX_COMPILER=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-g++ \
-  -DCMAKE_RC_COMPILER=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-windres \
-  -DUSE_VENDORED_BOTAN=1 \
-  -DDEUCEGATE_BUILD_TESTS=OFF -DBUILD_TESTING=OFF
-cmake --build /tmp/deucegate-mingw --parallel
-```
-
-Toolchain locations vary; use equivalent paths when they are not installed at
-the locations above. A successful object build is insufficient: verify that
-`deucegate.exe` links successfully. Run it under Wine or on Windows when the
-behavior being changed can be exercised there.
-
-Before handoff, also check:
-
-```sh
-rg -n -i '[T]ODO|[F]IXME' . -g '!build/**'
-git diff --check
-```
 
 Warnings emitted solely by sibling xpdev/conio sources may be reported, but new
 warnings from DeuceGate sources should be fixed.
