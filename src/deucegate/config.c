@@ -57,11 +57,32 @@ dg_config_load(const char *root, dg_config_t *cfg, char *err, size_t errsz)
 	get_string(ini, "PasswordPepper", "", cfg->password_pepper, sizeof(cfg->password_pepper));
 	cfg->first_node = iniGetIntInRange(ini, "CONFIGURATION", "FirstNode", 1, 1, 9999);
 	cfg->last_node = iniGetIntInRange(ini, "CONFIGURATION", "LastNode", 1, 10, 9999);
+	if (cfg->last_node < cfg->first_node) {
+		strListFree(&ini);
+		snprintf(err, errsz, "LastNode must be greater than or equal to FirstNode");
+		return false;
+	}
+	cfg->ssh_max_connections = iniGetIntInRange(ini, "CONFIGURATION", "SSHMaxConnections", 1,
+	    (int)(cfg->last_node - cfg->first_node + 2), 65535);
+	cfg->ssh_max_connections_per_ip = iniGetIntInRange(ini, "CONFIGURATION",
+	    "SSHMaxConnectionsPerIP", 1, cfg->ssh_max_connections < 4 ? cfg->ssh_max_connections : 4, 65535);
+	cfg->ssh_input_byte_limit = iniGetIntInRange(ini, "CONFIGURATION",
+	    "SSHInputByteLimit", 0, 16 * 1024 * 1024, 0x7fffffff);
+	cfg->ssh_output_byte_limit = iniGetIntInRange(ini, "CONFIGURATION",
+	    "SSHOutputByteLimit", 0, 64 * 1024 * 1024, 0x7fffffff);
+	cfg->ssh_idle_timeout_seconds = iniGetIntInRange(ini, "CONFIGURATION",
+	    "SSHIdleTimeoutSeconds", 0, 15 * 60, 24 * 60 * 60);
+	cfg->auth_tarpit_base_milliseconds = iniGetIntInRange(ini, "CONFIGURATION",
+	    "AuthTarpitBaseMilliseconds", 0, 250, 60000);
+	cfg->auth_tarpit_max_milliseconds = iniGetIntInRange(ini, "CONFIGURATION",
+	    "AuthTarpitMaxMilliseconds", 0, 8000, 60000);
+	cfg->auth_tarpit_decay_seconds = iniGetIntInRange(ini, "CONFIGURATION",
+	    "AuthTarpitDecaySeconds", 0, 15 * 60, 24 * 60 * 60);
 	cfg->time_per_call = iniGetIntInRange(ini, "CONFIGURATION", "TimePerCall", 1, 60, 1440);
 	cfg->next_user_id = iniGetIntInRange(ini, "CONFIGURATION", "NextUserId", 1, 1, 0x7fffffff);
 	strListFree(&ini);
-	if (cfg->last_node < cfg->first_node) {
-		snprintf(err, errsz, "LastNode must be greater than or equal to FirstNode");
+	if (cfg->auth_tarpit_base_milliseconds > cfg->auth_tarpit_max_milliseconds) {
+		snprintf(err, errsz, "AuthTarpitMaxMilliseconds must be greater than or equal to AuthTarpitBaseMilliseconds");
 		return false;
 	}
 	return true;
@@ -75,6 +96,14 @@ dg_config_check(const dg_config_t *cfg, FILE *out)
 	fprintf(out, "GameSrv root: %s\n", cfg->root);
 	fprintf(out, "SSH listener: %s:%u\n", cfg->ssh_ip, cfg->ssh_port);
 	fprintf(out, "Nodes: %u-%u\n", cfg->first_node, cfg->last_node);
+	fprintf(out, "SSH connections: %u total, %u per IP\n", cfg->ssh_max_connections,
+	    cfg->ssh_max_connections_per_ip);
+	fprintf(out, "SSH quotas: %u bytes input, %u bytes output\n",
+	    cfg->ssh_input_byte_limit, cfg->ssh_output_byte_limit);
+	fprintf(out, "SSH idle timeout: %u seconds\n", cfg->ssh_idle_timeout_seconds);
+	fprintf(out, "Authentication tarpit: %u-%u ms, %u-second decay\n",
+	    cfg->auth_tarpit_base_milliseconds, cfg->auth_tarpit_max_milliseconds,
+	    cfg->auth_tarpit_decay_seconds);
 	if (!dg_path_join(path, sizeof(path), cfg->root, "menus") || !dg_dir_exists(path)) {
 		fprintf(out, "ERROR: menus directory is missing\n");
 		ok = false;

@@ -45,6 +45,14 @@ typedef struct {
 	char ssh_ip[64];
 	unsigned ssh_port;
 	char ssh_host_key[DG_PATH_MAX];
+	unsigned ssh_max_connections;
+	unsigned ssh_max_connections_per_ip;
+	unsigned ssh_input_byte_limit;
+	unsigned ssh_output_byte_limit;
+	unsigned ssh_idle_timeout_seconds;
+	unsigned auth_tarpit_base_milliseconds;
+	unsigned auth_tarpit_max_milliseconds;
+	unsigned auth_tarpit_decay_seconds;
 	char dosbox_path[DG_PATH_MAX];
 	char dosbox_x_path[DG_PATH_MAX];
 	char dosemu_path[DG_PATH_MAX];

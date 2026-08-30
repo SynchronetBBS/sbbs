@@ -1,6 +1,7 @@
 #include "deucegate.h"
 
 #include <errno.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdatomic.h>
 #include <stdlib.h>
@@ -23,13 +24,30 @@
 
 typedef struct {
 	SOCKET sock;
+	const dg_config_t *cfg;
+	const char *remote_ip;
+	atomic_uint_fast64_t input_bytes;
+	atomic_uint_fast64_t output_bytes;
+	atomic_uint_fast64_t last_activity_ms;
+	atomic_bool idle_logged;
+	atomic_bool input_quota_logged;
+	atomic_bool output_quota_logged;
 } dg_ssh_io_t;
 
-typedef struct {
+typedef struct dg_connection {
 	dg_config_t *cfg;
 	SOCKET sock;
 	char remote_ip[64];
 } dg_connection_t;
+
+typedef struct {
+	bool used;
+	char remote_ip[64];
+	unsigned active;
+	unsigned auth_failures;
+	uint64_t last_failure_ms;
+	uint64_t last_seen_ms;
+} dg_ip_state_t;
 
 typedef struct {
 	dg_client_t *client;
@@ -40,6 +58,10 @@ typedef struct {
 	dg_config_t *cfg;
 	dg_client_t **nodes;
 	size_t node_count;
+	dg_connection_t **connections;
+	size_t connection_capacity;
+	dg_ip_state_t *ip_states;
+	size_t ip_state_capacity;
 	pthread_mutex_t mutex;
 	SOCKET listener;
 } dg_server_state_t;
@@ -50,6 +72,41 @@ static atomic_bool offline = false;
 static atomic_bool scheduler_running = false;
 static atomic_uint active_threads = 0;
 static volatile sig_atomic_t signal_received = 0;
+
+static uint64_t
+monotonic_ms(void)
+{
+	uint64_t now = xp_timer64();
+	return now == UINT64_MAX ? (uint64_t)time(NULL) * 1000 : now;
+}
+
+static bool
+ssh_idle_expired(dg_ssh_io_t *io)
+{
+	uint64_t limit, last_activity;
+	if (io->cfg->ssh_idle_timeout_seconds == 0)
+		return false;
+	limit = (uint64_t)io->cfg->ssh_idle_timeout_seconds * 1000;
+	last_activity = atomic_load_explicit(&io->last_activity_ms, memory_order_relaxed);
+	if (monotonic_ms() - last_activity < limit)
+		return false;
+	if (!atomic_exchange_explicit(&io->idle_logged, true, memory_order_relaxed)) {
+		dg_log(DG_LOG_WARN, "SSH connection from %s exceeded the %u-second inactivity limit",
+		    io->remote_ip, io->cfg->ssh_idle_timeout_seconds);
+	}
+	return true;
+}
+
+static bool
+set_nonblocking(SOCKET sock)
+{
+#ifdef _WIN32
+	u_long enabled = 1;
+#else
+	int enabled = 1;
+#endif
+	return ioctlsocket(sock, FIONBIO, (socket_ioctl_ptr_t)&enabled) == 0;
+}
 
 static bool
 list_contains(const dg_config_t *cfg, const char *relative, const char *value, bool ip_pattern)
@@ -69,16 +126,182 @@ list_contains(const dg_config_t *cfg, const char *relative, const char *value, b
 	return false;
 }
 
+static dg_ip_state_t *
+ip_state_locked(const char *remote_ip, bool create)
+{
+	dg_ip_state_t *unused = NULL, *oldest = NULL;
+	for (size_t i = 0; i < server_state.ip_state_capacity; i++) {
+		dg_ip_state_t *state = &server_state.ip_states[i];
+		if (state->used && strcmp(state->remote_ip, remote_ip) == 0)
+			return state;
+		if (!state->used) {
+			if (unused == NULL)
+				unused = state;
+		}
+		else if (state->active == 0 && (oldest == NULL || state->last_seen_ms < oldest->last_seen_ms))
+			oldest = state;
+	}
+	if (!create)
+		return NULL;
+	dg_ip_state_t *state = unused != NULL ? unused : oldest;
+	if (state == NULL)
+		return NULL;
+	memset(state, 0, sizeof(*state));
+	state->used = true;
+	state->last_seen_ms = monotonic_ms();
+	snprintf(state->remote_ip, sizeof(state->remote_ip), "%s", remote_ip);
+	return state;
+}
+
+static bool
+connection_register(dg_connection_t *connection)
+{
+	bool registered = false;
+	pthread_mutex_lock(&server_state.mutex);
+	dg_ip_state_t *ip = ip_state_locked(connection->remote_ip, true);
+	if (ip != NULL && ip->active < connection->cfg->ssh_max_connections_per_ip) {
+		for (size_t i = 0; i < server_state.connection_capacity; i++) {
+			if (server_state.connections[i] == NULL) {
+				server_state.connections[i] = connection;
+				ip->active++;
+				ip->last_seen_ms = monotonic_ms();
+				atomic_fetch_add(&active_threads, 1);
+				registered = true;
+				break;
+			}
+		}
+	}
+	pthread_mutex_unlock(&server_state.mutex);
+	return registered;
+}
+
+static void
+connection_close(dg_connection_t *connection)
+{
+	pthread_mutex_lock(&server_state.mutex);
+	for (size_t i = 0; i < server_state.connection_capacity; i++) {
+		if (server_state.connections[i] == connection) {
+			server_state.connections[i] = NULL;
+			dg_ip_state_t *ip = ip_state_locked(connection->remote_ip, false);
+			if (ip != NULL && ip->active > 0) {
+				ip->active--;
+				ip->last_seen_ms = monotonic_ms();
+			}
+			atomic_fetch_sub(&active_threads, 1);
+			break;
+		}
+	}
+	if (connection->sock != INVALID_SOCKET) {
+		closesocket(connection->sock);
+		connection->sock = INVALID_SOCKET;
+	}
+	pthread_mutex_unlock(&server_state.mutex);
+}
+
+static unsigned
+auth_failure_delay(const char *remote_ip, unsigned *failure_count)
+{
+	unsigned delay = 0;
+	uint64_t now = monotonic_ms();
+	pthread_mutex_lock(&server_state.mutex);
+	dg_ip_state_t *ip = ip_state_locked(remote_ip, true);
+	if (ip != NULL) {
+		uint64_t decay_ms = (uint64_t)server_state.cfg->auth_tarpit_decay_seconds * 1000;
+		if (decay_ms != 0 && ip->auth_failures != 0 && now > ip->last_failure_ms) {
+			uint64_t steps = (now - ip->last_failure_ms) / decay_ms;
+			if (steps >= ip->auth_failures)
+				ip->auth_failures = 0;
+			else
+				ip->auth_failures -= (unsigned)steps;
+		}
+		if (ip->auth_failures < 32)
+			ip->auth_failures++;
+		ip->last_failure_ms = now;
+		ip->last_seen_ms = now;
+		delay = server_state.cfg->auth_tarpit_base_milliseconds;
+		for (unsigned i = 1; i < ip->auth_failures && delay < server_state.cfg->auth_tarpit_max_milliseconds; i++)
+			delay = delay > server_state.cfg->auth_tarpit_max_milliseconds / 2
+			    ? server_state.cfg->auth_tarpit_max_milliseconds : delay * 2;
+		if (delay > server_state.cfg->auth_tarpit_max_milliseconds)
+			delay = server_state.cfg->auth_tarpit_max_milliseconds;
+		*failure_count = ip->auth_failures;
+	}
+	pthread_mutex_unlock(&server_state.mutex);
+	return delay;
+}
+
+static void
+auth_success(const char *remote_ip)
+{
+	pthread_mutex_lock(&server_state.mutex);
+	dg_ip_state_t *ip = ip_state_locked(remote_ip, false);
+	if (ip != NULL) {
+		ip->auth_failures = 0;
+		ip->last_failure_ms = 0;
+		ip->last_seen_ms = monotonic_ms();
+	}
+	pthread_mutex_unlock(&server_state.mutex);
+}
+
+static int
+auth_rejected(dg_auth_t *auth)
+{
+	unsigned failures = 0;
+	unsigned delay = auth_failure_delay(auth->client->remote_ip, &failures);
+	if (delay > 0) {
+		dg_log(DG_LOG_WARN, "tarpitting authentication failure %u from %s for %u ms",
+		    failures, auth->client->remote_ip, delay);
+		SLEEP(delay);
+	}
+	return DSSH_AUTH_FAILURE;
+}
+
 static int
 ssh_tx(uint8_t *buf, size_t bufsz, dssh_session session, void *cbdata)
 {
 	dg_ssh_io_t *io = cbdata;
 	size_t sent = 0;
 	while (sent < bufsz && !dssh_session_is_terminated(session)) {
-		int n = send(io->sock, (socket_send_buffer_t)(buf + sent), (int)(bufsz - sent), 0);
-		if (n > 0) sent += (size_t)n;
-		else if (n == SOCKET_ERROR && (SOCKET_ERRNO == EINTR || SOCKET_ERRNO == EWOULDBLOCK)) SLEEP(1);
-		else return DSSH_ERROR_INIT;
+		fd_set writes;
+		struct timeval tv = {.tv_sec = 1, .tv_usec = 0};
+		size_t remaining = bufsz - sent, chunk = remaining;
+		int ready, n;
+		if (ssh_idle_expired(io))
+			return DSSH_ERROR_TERMINATED;
+		if (io->cfg->ssh_output_byte_limit != 0) {
+			uint64_t used = atomic_load_explicit(&io->output_bytes, memory_order_relaxed);
+			uint64_t available = used < io->cfg->ssh_output_byte_limit
+			    ? io->cfg->ssh_output_byte_limit - used : 0;
+			if (available == 0) {
+				if (!atomic_exchange_explicit(&io->output_quota_logged, true,
+				    memory_order_relaxed)) {
+					dg_log(DG_LOG_WARN, "SSH connection from %s exceeded the %u-byte output limit",
+					    io->remote_ip, io->cfg->ssh_output_byte_limit);
+				}
+				return DSSH_ERROR_TERMINATED;
+			}
+			if (chunk > available)
+				chunk = (size_t)available;
+		}
+		if (chunk > INT_MAX)
+			chunk = INT_MAX;
+		FD_ZERO(&writes); FD_SET(io->sock, &writes);
+		ready = select((int)io->sock + 1, NULL, &writes, NULL, &tv);
+		if (ready == 0) continue;
+		if (ready < 0) {
+			if (SOCKET_ERRNO == EINTR) continue;
+			return DSSH_ERROR_INIT;
+		}
+		n = send(io->sock, (socket_send_buffer_t)(buf + sent), (int)chunk, 0);
+		if (n > 0) {
+			sent += (size_t)n;
+			atomic_fetch_add_explicit(&io->output_bytes, (size_t)n, memory_order_relaxed);
+			atomic_store_explicit(&io->last_activity_ms, monotonic_ms(), memory_order_relaxed);
+		}
+		else if (n == SOCKET_ERROR && (SOCKET_ERRNO == EINTR || SOCKET_ERRNO == EWOULDBLOCK))
+			SLEEP(1);
+		else
+			return DSSH_ERROR_INIT;
 	}
 	return sent == bufsz ? 0 : DSSH_ERROR_TERMINATED;
 }
@@ -91,7 +314,27 @@ ssh_rx(uint8_t *buf, size_t bufsz, dssh_session session, void *cbdata)
 	while (got < bufsz && !dssh_session_is_terminated(session)) {
 		fd_set reads;
 		struct timeval tv = {.tv_sec = 1, .tv_usec = 0};
+		size_t remaining = bufsz - got, chunk = remaining;
 		int ready, n;
+		if (ssh_idle_expired(io))
+			return DSSH_ERROR_TERMINATED;
+		if (io->cfg->ssh_input_byte_limit != 0) {
+			uint64_t used = atomic_load_explicit(&io->input_bytes, memory_order_relaxed);
+			uint64_t available = used < io->cfg->ssh_input_byte_limit
+			    ? io->cfg->ssh_input_byte_limit - used : 0;
+			if (available == 0) {
+				if (!atomic_exchange_explicit(&io->input_quota_logged, true,
+				    memory_order_relaxed)) {
+					dg_log(DG_LOG_WARN, "SSH connection from %s exceeded the %u-byte input limit",
+					    io->remote_ip, io->cfg->ssh_input_byte_limit);
+				}
+				return DSSH_ERROR_TERMINATED;
+			}
+			if (chunk > available)
+				chunk = (size_t)available;
+		}
+		if (chunk > INT_MAX)
+			chunk = INT_MAX;
 		FD_ZERO(&reads); FD_SET(io->sock, &reads);
 		ready = select((int)io->sock + 1, &reads, NULL, NULL, &tv);
 		if (ready == 0) continue;
@@ -99,8 +342,12 @@ ssh_rx(uint8_t *buf, size_t bufsz, dssh_session session, void *cbdata)
 			if (SOCKET_ERRNO == EINTR) continue;
 			return DSSH_ERROR_INIT;
 		}
-		n = recv(io->sock, (socket_recv_buffer_t)(buf + got), (int)(bufsz - got), 0);
-		if (n > 0) got += (size_t)n;
+		n = recv(io->sock, (socket_recv_buffer_t)(buf + got), (int)chunk, 0);
+		if (n > 0) {
+			got += (size_t)n;
+			atomic_fetch_add_explicit(&io->input_bytes, (size_t)n, memory_order_relaxed);
+			atomic_store_explicit(&io->last_activity_ms, monotonic_ms(), memory_order_relaxed);
+		}
 		else if (n == 0) return DSSH_ERROR_TERMINATED;
 		else if (SOCKET_ERRNO != EINTR && SOCKET_ERRNO != EWOULDBLOCK) return DSSH_ERROR_INIT;
 	}
@@ -146,17 +393,19 @@ auth_publickey(const uint8_t *username, size_t username_len, const char *algorit
 	char alias[DG_ALIAS_MAX], err[256];
 	if (strcmp(algorithm, "ssh-ed25519") != 0 && strcmp(algorithm, "rsa-sha2-256") != 0 &&
 	    strcmp(algorithm, "rsa-sha2-512") != 0 && strcmp(algorithm, "ssh-rsa") != 0)
-		return DSSH_AUTH_FAILURE;
+		return has_signature ? auth_rejected(auth) : DSSH_AUTH_FAILURE;
 	copy_username(alias, sizeof(alias), username, username_len);
 	if (list_contains(auth->client->config, "config/banned-users.txt", alias, false))
-		return DSSH_AUTH_FAILURE;
+		return has_signature ? auth_rejected(auth) : DSSH_AUTH_FAILURE;
 	if (!dg_user_bind(auth->client->config, alias, algorithm, blob, blob_len, has_signature,
 	    &auth->client->user, err, sizeof(err))) {
 		dg_log(DG_LOG_WARN, "SSH key rejected for %s from %s: %s", alias, auth->client->remote_ip, err);
-		return DSSH_AUTH_FAILURE;
+		return has_signature ? auth_rejected(auth) : DSSH_AUTH_FAILURE;
 	}
-	if (has_signature)
+	if (has_signature) {
+		auth_success(auth->client->remote_ip);
 		dg_log(DG_LOG_INFO, "SSH key accepted for %s from %s", alias, auth->client->remote_ip);
+	}
 	return DSSH_AUTH_SUCCESS;
 }
 
@@ -169,11 +418,12 @@ auth_password(const uint8_t *username, size_t username_len, const uint8_t *passw
 	(void)prompt; (void)prompt_len;
 	copy_username(alias, sizeof(alias), username, username_len);
 	if (list_contains(auth->client->config, "config/banned-users.txt", alias, false))
-		return DSSH_AUTH_FAILURE;
+		return auth_rejected(auth);
 	if (!dg_user_validate_password(auth->client->config, alias, password, password_len, &auth->client->user)) {
 		dg_log(DG_LOG_WARN, "legacy password rejected for %s from %s", alias, auth->client->remote_ip);
-		return DSSH_AUTH_FAILURE;
+		return auth_rejected(auth);
 	}
+	auth_success(auth->client->remote_ip);
 	dg_log(DG_LOG_INFO, "legacy password accepted for %s from %s", alias, auth->client->remote_ip);
 	return DSSH_AUTH_SUCCESS;
 }
@@ -319,14 +569,25 @@ connection_thread(void *arg)
 {
 	dg_connection_t *connection = arg;
 	dg_client_t *client = calloc(1, sizeof(*client));
-	dg_ssh_io_t io = {.sock = connection->sock};
+	dg_ssh_io_t io = {
+	    .sock = connection->sock,
+	    .cfg = connection->cfg,
+	    .remote_ip = connection->remote_ip,
+	};
 	dg_auth_t auth;
 	dssh_session session = NULL;
 	dssh_channel channel = NULL;
 	char runbbs_path[DG_PATH_MAX], err[512];
 	uint8_t auth_user[256];
 	size_t auth_user_len = sizeof(auth_user);
+	unsigned protocol_timeout_ms = 75000;
 	bool node_reserved = false;
+	atomic_init(&io.input_bytes, 0);
+	atomic_init(&io.output_bytes, 0);
+	atomic_init(&io.last_activity_ms, monotonic_ms());
+	atomic_init(&io.idle_logged, false);
+	atomic_init(&io.input_quota_logged, false);
+	atomic_init(&io.output_quota_logged, false);
 	if (client == NULL) goto done;
 	client->config = connection->cfg;
 	client->sock = connection->sock;
@@ -339,6 +600,10 @@ connection_thread(void *arg)
 	client->session = session;
 	dssh_session_set_cbdata(session, &io, &io, &io, NULL);
 	dssh_session_set_terminate_cb(session, ssh_terminate, &io);
+	if (client->config->ssh_idle_timeout_seconds != 0 && client->config->ssh_idle_timeout_seconds < 75)
+		protocol_timeout_ms = client->config->ssh_idle_timeout_seconds * 1000;
+	if (dssh_session_set_timeout(session, (int)protocol_timeout_ms) < 0)
+		goto done;
 	if (dssh_transport_handshake(session) < 0) goto done;
 	auth.client = client;
 	auth.runbbs = dg_path_join(runbbs_path, sizeof(runbbs_path), client->config->root,
@@ -380,10 +645,9 @@ done:
 	if (node_reserved) release_node(client);
 	if (channel != NULL) dssh_chan_close(channel, 0);
 	if (session != NULL) dssh_session_cleanup(session);
-	if (connection->sock != INVALID_SOCKET) closesocket(connection->sock);
+	connection_close(connection);
 	free(client);
 	free(connection);
-	atomic_fetch_sub(&active_threads, 1);
 }
 
 static bool
@@ -542,10 +806,15 @@ dg_server_request_stop(void)
 		closesocket(server_state.listener);
 		server_state.listener = INVALID_SOCKET;
 	}
-	if (server_state.nodes != NULL) {
+	if (server_state.connections != NULL || server_state.nodes != NULL) {
 		pthread_mutex_lock(&server_state.mutex);
+		if (server_state.connections != NULL) {
+			for (size_t i = 0; i < server_state.connection_capacity; i++)
+				if (server_state.connections[i] != NULL)
+					shutdown(server_state.connections[i]->sock, SHUT_RDWR);
+		}
 		for (size_t i = 0; i < server_state.node_count; i++)
-			if (server_state.nodes[i] != NULL)
+			if (server_state.nodes != NULL && server_state.nodes[i] != NULL)
 				dssh_session_terminate((dssh_session)server_state.nodes[i]->session);
 		pthread_mutex_unlock(&server_state.mutex);
 	}
@@ -585,9 +854,19 @@ dg_server_run(dg_config_t *cfg)
 	if (!init_ssh(cfg)) return 1;
 	server_state.cfg = cfg;
 	server_state.node_count = cfg->last_node - cfg->first_node + 1;
-	server_state.nodes = calloc(server_state.node_count, sizeof(*server_state.nodes));
+	server_state.connection_capacity = cfg->ssh_max_connections;
+	server_state.ip_state_capacity = cfg->ssh_max_connections + 1024;
 	server_state.mutex = pthread_mutex_initializer_np(false);
-	if (server_state.nodes == NULL) return 1;
+	server_state.nodes = calloc(server_state.node_count, sizeof(*server_state.nodes));
+	server_state.connections = calloc(server_state.connection_capacity, sizeof(*server_state.connections));
+	server_state.ip_states = calloc(server_state.ip_state_capacity, sizeof(*server_state.ip_states));
+	if (server_state.nodes == NULL || server_state.connections == NULL || server_state.ip_states == NULL) {
+		free(server_state.nodes); server_state.nodes = NULL;
+		free(server_state.connections); server_state.connections = NULL;
+		free(server_state.ip_states); server_state.ip_states = NULL;
+		pthread_mutex_destroy(&server_state.mutex);
+		return 1;
+	}
 	snprintf(port, sizeof(port), "%u", cfg->ssh_port);
 	hints.ai_family = AF_UNSPEC; hints.ai_socktype = SOCK_STREAM; hints.ai_flags = AI_PASSIVE;
 	if (getaddrinfo(cfg->ssh_ip, port, &hints, &addresses) != 0) return 1;
@@ -595,7 +874,8 @@ dg_server_run(dg_config_t *cfg)
 		listener = socket(address->ai_family, address->ai_socktype, address->ai_protocol);
 		if (listener == INVALID_SOCKET) continue;
 		setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, (socket_send_buffer_t)&one, sizeof(one));
-		if (bind(listener, address->ai_addr, (socklen_t)address->ai_addrlen) == 0 && listen(listener, 32) == 0)
+		if (bind(listener, address->ai_addr, (socklen_t)address->ai_addrlen) == 0 &&
+		    listen(listener, SOMAXCONN) == 0)
 			break;
 		closesocket(listener); listener = INVALID_SOCKET;
 	}
@@ -614,7 +894,8 @@ dg_server_run(dg_config_t *cfg)
 		atomic_store(&scheduler_running, false);
 		dg_log(DG_LOG_WARN, "could not start timed-event scheduler");
 	}
-	dg_log(DG_LOG_INFO, "DeuceGate listening on %s:%u", cfg->ssh_ip, cfg->ssh_port);
+	dg_log(DG_LOG_INFO, "DeuceGate listening on %s:%u (%u connections, %u per IP)",
+	    cfg->ssh_ip, cfg->ssh_port, cfg->ssh_max_connections, cfg->ssh_max_connections_per_ip);
 	while (!atomic_load(&stopping) && !signal_received) {
 		struct sockaddr_storage peer;
 		socklen_t peerlen = sizeof(peer);
@@ -623,6 +904,10 @@ dg_server_run(dg_config_t *cfg)
 		fd_set reads;
 		struct timeval tv = {1, 0};
 		if (atomic_load(&offline)) { SLEEP(100); continue; }
+		if (atomic_load(&active_threads) >= cfg->ssh_max_connections) {
+			SLEEP(100);
+			continue;
+		}
 		FD_ZERO(&reads); FD_SET(listener, &reads);
 		if (select((int)listener + 1, &reads, NULL, NULL, &tv) <= 0) continue;
 		sock = accept(listener, (struct sockaddr *)&peer, &peerlen);
@@ -646,14 +931,24 @@ dg_server_run(dg_config_t *cfg)
 			dg_log(DG_LOG_WARN, "rejected banned IP %s", connection->remote_ip);
 			closesocket(sock); free(connection); continue;
 		}
-		atomic_fetch_add(&active_threads, 1);
+		if (!set_nonblocking(sock)) {
+			dg_log(DG_LOG_WARN, "could not make SSH socket from %s non-blocking", connection->remote_ip);
+			closesocket(sock); free(connection); continue;
+		}
+		if (!connection_register(connection)) {
+			dg_log(DG_LOG_WARN, "rejected SSH connection from %s at the per-IP limit",
+			    connection->remote_ip);
+			closesocket(sock); free(connection); continue;
+		}
 		if (_beginthread(connection_thread, 0, connection) == (ulong)-1L) {
-			atomic_fetch_sub(&active_threads, 1); closesocket(sock); free(connection);
+			connection_close(connection); free(connection);
 		}
 	}
 	dg_server_request_stop();
 	while (atomic_load(&active_threads) != 0 || atomic_load(&scheduler_running)) SLEEP(100);
 	free(server_state.nodes); server_state.nodes = NULL;
+	free(server_state.connections); server_state.connections = NULL;
+	free(server_state.ip_states); server_state.ip_states = NULL;
 	pthread_mutex_destroy(&server_state.mutex);
 #ifdef _WIN32
 	SetConsoleCtrlHandler(console_stop, FALSE);

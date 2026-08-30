@@ -35,12 +35,24 @@ These optional keys belong in `[CONFIGURATION]` in `config/gamesrv.ini`:
 SSHServerIP=0.0.0.0
 SSHServerPort=22
 SSHHostKey=config/ssh_host_ed25519.pem
+SSHMaxConnections=9
+SSHMaxConnectionsPerIP=4
+SSHInputByteLimit=16777216
+SSHOutputByteLimit=67108864
+SSHIdleTimeoutSeconds=900
+AuthTarpitBaseMilliseconds=250
+AuthTarpitMaxMilliseconds=8000
+AuthTarpitDecaySeconds=900
 DOSBoxPath=
 DOSBoxXPath=
 DOSEmuPath=
 ```
 
 An Ed25519 server host key is generated on first start if `SSHHostKey` does not exist. Keep this file stable and backed up: callers use it to identify the server.
+
+When omitted, `SSHMaxConnections` defaults to the configured node count plus one. Once that many connections are active, DeuceGate stops calling `accept()` until a slot opens and leaves pending connections in the operating system's listen backlog. `SSHMaxConnectionsPerIP` defaults to the smaller of four or the global limit. Normal socket and SSH channel backpressure handles pacing; byte limits are per connection and count encrypted SSH transport traffic. The idle timeout measures SSH traffic in either direction. Set a byte-limit or idle-timeout value to zero to disable that individual limit.
+
+Failed password attempts and rejected signed-key authorization requests are delayed per source IP. The delay doubles from `AuthTarpitBaseMilliseconds` up to `AuthTarpitMaxMilliseconds`; one failure level decays per `AuthTarpitDecaySeconds`, and successful authentication clears the accumulated delay. Set `AuthTarpitBaseMilliseconds=0` to disable the tarpit. Key probes and SSH `none` method discovery are not counted as failures.
 
 New aliases authenticate with an Ed25519 or RSA-SHA2 key. The first correctly signed key creates the GameSrv user and is stored as `SSHKeyAlgorithm` and `SSHKey` in that user's existing INI format. Later keys must match. Key probes do not create users.
 

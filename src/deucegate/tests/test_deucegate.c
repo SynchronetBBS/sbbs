@@ -125,6 +125,22 @@ test_legacy_password(void)
 	CHECK(dg_password_matches(&cfg, &user, (const uint8_t *)"plain", 5));
 }
 
+static void
+test_resource_limit_defaults(void)
+{
+	dg_config_t cfg;
+	char err[256];
+	CHECK(dg_config_load(DG_TEST_FIXTURE, &cfg, err, sizeof(err)));
+	CHECK(cfg.ssh_max_connections == 3);
+	CHECK(cfg.ssh_max_connections_per_ip == 3);
+	CHECK(cfg.ssh_input_byte_limit == 16 * 1024 * 1024);
+	CHECK(cfg.ssh_output_byte_limit == 64 * 1024 * 1024);
+	CHECK(cfg.ssh_idle_timeout_seconds == 900);
+	CHECK(cfg.auth_tarpit_base_milliseconds == 250);
+	CHECK(cfg.auth_tarpit_max_milliseconds == 8000);
+	CHECK(cfg.auth_tarpit_decay_seconds == 900);
+}
+
 static bool
 nth_line(const uint8_t *data, size_t len, unsigned wanted, char *out, size_t outsz)
 {
@@ -266,6 +282,7 @@ main(void)
 	test_language_tags();
 	test_mci();
 	test_legacy_password();
+	test_resource_limit_defaults();
 	test_drop_files();
 	if (failures != 0) return 1;
 	puts("All DeuceGate tests passed.");
