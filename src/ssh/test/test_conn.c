@@ -434,6 +434,14 @@ open_exec_channel(struct open_exec_ctx *ctx)
 	thrd_join(st, NULL);
 	if (ctx->client_ch == NULL || ctx->server_ch == NULL)
 		return -1;
+	/* The accepting side opens its receive window only after setup, via
+	 * asynchronous WINDOW_ADJUST.  Wait until that reaches the peer before
+	 * returning a stream channel that tests can write immediately. */
+	if (ctx->server_ch->io_model == DSSH_IO_STREAM) {
+		int ev = dssh_chan_poll(ctx->server_ch, DSSH_POLL_WRITE, 5000);
+		if ((ev & DSSH_POLL_WRITE) == 0)
+			return -1;
+	}
 	return 0;
 }
 

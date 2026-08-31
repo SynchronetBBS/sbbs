@@ -177,11 +177,13 @@ struct dssh_test_entry {
 int main(int argc, char *argv[]) \
 { \
 	signal(SIGPIPE, SIG_IGN); \
-	const char *filter = (argc > 1) ? argv[1] : NULL; \
+	bool exact = (argc > 2) && (strcmp(argv[1], "--exact") == 0); \
+	const char *filter = exact ? argv[2] : ((argc > 1) ? argv[1] : NULL); \
 	int total = 0, passed = 0, failed = 0, skipped = 0; \
 	size_t count = sizeof(test_table) / sizeof(test_table[0]); \
 	for (size_t i = 0; i < count; i++) { \
-		if (filter && !strstr(test_table[i].name, filter)) \
+		if (filter && (exact ? strcmp(test_table[i].name, filter) != 0 \
+		    : strstr(test_table[i].name, filter) == NULL)) \
 			continue; \
 		total++; \
 		printf("%-60s ", test_table[i].name); \

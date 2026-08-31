@@ -157,67 +157,67 @@ endmacro()
 macro(dssh_add_individual_tests executable prefix test_list)
 	foreach(t ${${test_list}})
 		add_test(NAME ${prefix}_${t}
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t} PROPERTIES
 			ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_dhgex
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_dhgex PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=dh-gex;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_rsa
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_rsa PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_rsa512
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_rsa512 PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_dhgex_rsa
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_dhgex_rsa PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_dhgex_rsa512
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_dhgex_rsa512 PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_sntrup
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_sntrup PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=sntrup;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_sntrup_rsa
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_sntrup_rsa PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_sntrup_rsa512
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_sntrup_rsa512 PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_mlkem
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_mlkem PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=mlkem;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_mlkem_rsa
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_mlkem_rsa PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=mlkem;DSSH_TEST_KEY=rsa;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_mlkem_rsa512
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_mlkem_rsa512 PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=mlkem;DSSH_TEST_KEY=rsa512;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_hmac256
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_hmac256 PROPERTIES
 			ENVIRONMENT "DSSH_TEST_MAC=hmac256;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_rsa_hmac256
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_rsa_hmac256 PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEY=rsa;DSSH_TEST_MAC=hmac256;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_dhgex_hmac256
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_dhgex_hmac256 PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=dh-gex;DSSH_TEST_MAC=hmac256;${DSSH_TEST_KEY_ENV}")
 		add_test(NAME ${prefix}_${t}_sntrup_hmac256
-			COMMAND ${executable} ${t})
+			COMMAND ${executable} --exact ${t})
 		set_tests_properties(${prefix}_${t}_sntrup_hmac256 PROPERTIES
 			ENVIRONMENT "DSSH_TEST_KEX=sntrup;DSSH_TEST_MAC=hmac256;${DSSH_TEST_KEY_ENV}")
 	endforeach()
