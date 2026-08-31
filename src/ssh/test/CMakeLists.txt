@@ -75,15 +75,18 @@ endif()
 target_link_libraries(deucessh_test_lib INTERFACE
 	dssh_test_allocator dssh_test_ossl)
 
-# Mock allocator library (--wrap based, for process-wide injection)
-add_library(dssh_mock_alloc STATIC mock_alloc.c)
-set_property(TARGET dssh_mock_alloc PROPERTY C_STANDARD 17)
-set_property(TARGET dssh_mock_alloc PROPERTY C_STANDARD_REQUIRED ON)
-target_include_directories(dssh_mock_alloc PUBLIC
-	${CMAKE_CURRENT_SOURCE_DIR})
+# Mock allocator library (--wrap based, for process-wide injection).
+# Apple's Mach-O linker does not support the GNU --wrap option.
+if(NOT APPLE)
+	add_library(dssh_mock_alloc STATIC mock_alloc.c)
+	set_property(TARGET dssh_mock_alloc PROPERTY C_STANDARD 17)
+	set_property(TARGET dssh_mock_alloc PROPERTY C_STANDARD_REQUIRED ON)
+	target_include_directories(dssh_mock_alloc PUBLIC
+		${CMAKE_CURRENT_SOURCE_DIR})
 
-set(DSSH_WRAP_FLAGS
-	-Wl,--wrap=malloc,--wrap=calloc,--wrap=realloc,--wrap=free)
+	set(DSSH_WRAP_FLAGS
+		-Wl,--wrap=malloc,--wrap=calloc,--wrap=realloc,--wrap=free)
+endif()
 
 # Helper function for adding test executables
 function(dssh_add_test test_name source_file)
@@ -522,8 +525,11 @@ dssh_add_individual_tests(dssh_test_conn dssh_conn CONN_TESTS)
 # ================================================================
 # Tier 1b: Alloc failure tests (need mock allocator + mock I/O)
 # ossl_iterate tests are OpenSSL-only (guarded with #ifdef in source)
+# The process-wide allocator injection requires the GNU --wrap linker
+# option, so these tests are not available with Apple's Mach-O linker.
 # ================================================================
 
+if(NOT APPLE)
 dssh_add_test(alloc test_alloc.c)
 target_link_libraries(dssh_test_alloc PRIVATE dssh_mock_io dssh_mock_alloc)
 target_link_options(dssh_test_alloc PRIVATE ${DSSH_WRAP_FLAGS})
@@ -575,6 +581,7 @@ add_test(NAME dssh_targeted_dhgex_bn_rand_fail
 	COMMAND dssh_test_alloc dhgex/server_bn_rand_fail)
 set_tests_properties(dssh_targeted_dhgex_bn_rand_fail PROPERTIES
 	ENVIRONMENT "DSSH_TEST_KEX=dh-gex;${DSSH_TEST_KEY_ENV}")
+endif()
 endif()
 
 # ================================================================
