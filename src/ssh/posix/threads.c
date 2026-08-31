@@ -4,6 +4,7 @@
  */
 
 #include <errno.h>
+#include <sched.h>	/* sched_yield */
 #include <stdint.h>	/* intptr_t */
 #include <stdlib.h>	/* malloc / free */
 
@@ -146,4 +147,16 @@ thrd_join(thrd_t thr, int *res)
 	if (res != NULL)
 		*res = (int)(intptr_t)retval;
 	return thrd_success;
+}
+
+int
+thrd_sleep(const struct timespec *duration, struct timespec *remaining)
+{
+	return nanosleep(duration, remaining);
+}
+
+void
+thrd_yield(void)
+{
+	sched_yield();
 }
