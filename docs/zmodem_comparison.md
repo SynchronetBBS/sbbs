@@ -198,7 +198,7 @@ every profiled figure is paired with a wall-clock/CPU run of the same pair.
 | 8 KiB subpackets (ZedZap) | `-8` | `-8` | `-8` | **no** (1 KiB cap) |
 | 4 KiB subpackets | `-4` | `-4` | `-4` | no |
 | CRC-32 | yes (default) | yes (default) | yes | yes |
-| CRC-16 fallback | `-o` | `-o` | — | — |
+| CRC-16 | selectable (`-o`) | selectable (`lsz -o`) | **supported but not selectable** — falls back when the peer omits `CANFC32`; no option to prefer it | — |
 | Segmented (ack per subpacket) | `-s`, both directions | — | `zmtx -s`, `zmrx -s` | — |
 | Window management | `-w#` (send) | `-w N` | `zmtx -w` | `-w N` |
 | Control-char escaping (ESCCTL) | `-e`, ini, **both directions** | `-e`, both directions | `zmrx -e` requests; sender honours it but **escaping is broken** (§7.2) | `-e` (sender) |
@@ -215,11 +215,29 @@ every profiled figure is paired with a wall-clock/CPU run of the same pair.
 | Remote command execution | **no** (deliberate) | `lsz -c`/`-i`, `lrz -C` | — | `zcommand` |
 | Restricted mode | filename always sanitised | `-R` / `-U` | — | `-R` |
 
-Two entries need expansion.
+Three entries need expansion.
 
 **Remote command execution.** lrzsz and Forsberg can carry a command in the
 ZMODEM stream for the far end to run (`lsz -c`, gated at the receiver by
 `lrz -C`). sexyz implements no such thing, which for a BBS is the right answer.
+
+**CRC-16.** zmtx/zmrx's entry deserves the distinction. `want_fcs_32` is
+hard-coded true in `zmdm.c` and neither program offers a CRC flag, so it cannot
+be *asked* for 16-bit CRC — but the machinery is there and the selection is
+`can_fcs_32 && want_fcs_32`, so it drops to CRC-16 whenever the peer omits
+`CANFC32`. Measured both ways on a 4 MiB file, where the wire size shows which
+CRC was actually used:
+
+| Pair | Wire | vs CRC-32 |
+|---|--:|--:|
+| `zmtx` → sexyz `-o` | 4,311,016 | **−1,049** |
+| `zmtx` → sexyz | 4,312,065 | — |
+| sexyz `-o` → `zmrx` | 4,310,744 | **−1,072** |
+| sexyz → `zmrx` | 4,311,816 | — |
+
+512 subpackets at 8 KiB, two CRC bytes saved each, is ~1,024 bytes — which is
+what those deltas are. Both transfers verified byte-identical, so zmtx really
+emitted CRC-16 subpackets and zmrx really accepted them.
 
 **Filename safety.** sexyz strips the directory component from every
 sender-supplied filename, on both `/` and `\` separators, at two independent
