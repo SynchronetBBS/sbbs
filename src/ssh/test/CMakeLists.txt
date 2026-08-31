@@ -24,6 +24,10 @@ target_compile_definitions(deucessh_test_lib PRIVATE DSSH_TESTING
 target_include_directories(deucessh_test_lib
 	PUBLIC ${PROJECT_SOURCE_DIR}
 	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+if(DSSH_THREADS_SHIM_INCLUDE)
+	target_include_directories(deucessh_test_lib BEFORE
+		PUBLIC ${DSSH_THREADS_SHIM_INCLUDE})
+endif()
 target_include_directories(deucessh_test_lib SYSTEM
 	PRIVATE ${DSSH_CRYPTO_INCLUDE})
 target_link_libraries(deucessh_test_lib
@@ -55,6 +59,10 @@ set_property(TARGET dssh_test_ossl PROPERTY C_STANDARD 17)
 set_property(TARGET dssh_test_ossl PROPERTY C_STANDARD_REQUIRED ON)
 target_include_directories(dssh_test_ossl PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR})
+if(DSSH_THREADS_SHIM_INCLUDE)
+	target_include_directories(dssh_test_ossl BEFORE
+		PRIVATE ${DSSH_THREADS_SHIM_INCLUDE})
+endif()
 if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
 	target_link_libraries(dssh_test_ossl PRIVATE OpenSSL::Crypto)
 	target_compile_definitions(dssh_test_ossl PRIVATE DSSH_CRYPTO_OPENSSL)
