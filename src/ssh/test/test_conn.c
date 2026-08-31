@@ -1803,16 +1803,20 @@ test_two_channels(void)
 	}
 
 	/* Write on channel 1, read on channel 1 */
+	int ev = dssh_chan_poll(c1, DSSH_POLL_WRITE, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_WRITE);
 	const uint8_t m1[] = "chan1data";
 	dssh_chan_write(c1, 0, m1, 8);
 
 	/* Write on channel 2, read on channel 2 */
+	ev = dssh_chan_poll(c2, DSSH_POLL_WRITE, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_WRITE);
 	const uint8_t m2[] = "chan2data";
 	dssh_chan_write(c2, 0, m2, 8);
 
 	uint8_t buf[256];
 
-	int ev = dssh_chan_poll(sctx.ch1, DSSH_POLL_READ, 5000);
+	ev = dssh_chan_poll(sctx.ch1, DSSH_POLL_READ, 5000);
 	ASSERT_TRUE(ev & DSSH_POLL_READ);
 	int64_t n = dssh_chan_read(sctx.ch1, 0, buf, sizeof(buf));
 	ASSERT_EQ(n, 8);
@@ -5756,6 +5760,8 @@ test_zc_open_client(void)
 	ASSERT_EQ(oc.client_ch->io_model, DSSH_IO_ZC);
 
 	/* Server sends data (stream mode) -- should trigger client ZC callback */
+	int ev = dssh_chan_poll(sc.server_ch, DSSH_POLL_WRITE, 5000);
+	ASSERT_TRUE(ev & DSSH_POLL_WRITE);
 	static const uint8_t msg1[] = "hello to zc client";
 	int64_t w = dssh_chan_write(sc.server_ch, 0, msg1, sizeof(msg1));
 	ASSERT_TRUE(w > 0);
@@ -5787,7 +5793,7 @@ test_zc_open_client(void)
 	ASSERT_OK(res);
 
 	/* Server reads reply (stream mode) */
-	int ev = dssh_chan_poll(sc.server_ch, DSSH_POLL_READ, 5000);
+	ev = dssh_chan_poll(sc.server_ch, DSSH_POLL_READ, 5000);
 	ASSERT_TRUE(ev & DSSH_POLL_READ);
 
 	uint8_t rbuf[256];

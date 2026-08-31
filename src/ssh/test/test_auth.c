@@ -7614,7 +7614,7 @@ kbi_immediate_success_cb(const uint8_t *username, size_t username_len,
 	(void)num_responses; (void)responses; (void)response_lens;
 	(void)name_out; (void)instruction_out;
 	(void)num_prompts_out; (void)prompts_out; (void)echo_out;
-	(void)cbdata;
+	mock_io_close_s2c_write(cbdata);
 	return DSSH_AUTH_SUCCESS;
 }
 
@@ -7631,6 +7631,7 @@ test_server_send_fail_kbi_success(void)
 	sa.ctx = &ctx;
 	sa.cbs.methods_str = "keyboard-interactive";
 	sa.cbs.keyboard_interactive_cb = kbi_immediate_success_cb;
+	sa.cbs.cbdata = &ctx.io;
 
 	thrd_t st;
 	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
@@ -7665,11 +7666,9 @@ test_server_send_fail_kbi_success(void)
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
-	/* Close s2c before server sends SUCCESS */
-	mock_io_close_s2c(&ctx.io);
-	mock_io_close_c2s(&ctx.io);
-
 	thrd_join(st, NULL);
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
 	ASSERT_TRUE(sa.result < 0);
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
