@@ -633,11 +633,48 @@ target_link_libraries(dssh_test_thread_errors PRIVATE dssh_mock_io)
 dssh_add_variant_tests(dssh_thrd dssh_test_thread_errors)
 
 # ================================================================
-# Tier 3a: Self-test (integration) — one process per variant
+# Tier 3a: Self-test (integration) — one process per case and variant
 # ================================================================
 
 dssh_add_test(selftest test_selftest.c)
-dssh_add_variant_tests(dssh_self dssh_test_selftest)
+set(SELFTEST_TESTS
+	test_self_handshake_curve25519
+	test_self_auth_password
+	test_self_exec_echo
+	test_self_exec_exit_code
+	test_self_shell_echo
+	test_self_shell_large_data
+	test_self_signal
+	test_self_window_change
+	test_self_multiple_channels
+	test_self_graceful_disconnect
+	test_self_eof_half_close
+	test_self_rekey_during_data
+	test_self_rekey_manual
+	test_self_rekey_preserves_channels
+	test_self_rekey_inflight_data
+	test_self_connection_drop
+	test_null_session_api
+	test_log_api
+	test_set_timeout
+	test_set_terminate_cb
+	test_open_channel_timeout
+	test_setup_recv_timeout
+	test_rekey_send_timeout
+	test_self_chan_exec_echo
+	test_self_chan_shell_pty
+	test_self_chan_accept_exec
+	test_self_chan_accept_shell_pty
+	test_self_chan_event_exit_status
+	test_self_chan_read_peek
+	test_self_chan_shutwr_then_close
+	test_self_chan_close_exit_code
+	test_self_chan_close_no_exit_code
+	test_self_chan_send_break
+	test_self_chan_getters_after_accept
+	test_self_chan_accept_env_reject
+)
+dssh_add_individual_tests(dssh_test_selftest dssh_self SELFTEST_TESTS)
 
 # ================================================================
 # Tier 3b: Asymmetric MAC negotiation (fork-based, separate registries)
