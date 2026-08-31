@@ -22,7 +22,8 @@ No proprietary extensions (no `@` algorithm names).
 
 ## Dependencies
 
-- **OpenSSL 3.0+** (libcrypto only — no libssl)
+- **Crypto backend**: Botan 3.13.0+ (preferred) or OpenSSL 3.0+
+  (libcrypto only — no libssl)
 - **C11 threads** (`<threads.h>`, `<stdatomic.h>`) — used internally only, not exposed in public headers
 
 ## Building
