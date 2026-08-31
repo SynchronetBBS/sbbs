@@ -444,9 +444,72 @@ dssh_add_individual_tests(dssh_test_auth dssh_auth AUTH_TESTS)
 
 dssh_add_test(conn test_conn.c)
 target_link_libraries(dssh_test_conn PRIVATE dssh_mock_io)
-dssh_add_variant_tests(dssh_conn dssh_test_conn)
-set_tests_properties(dssh_conn_sntrup PROPERTIES COST 12)
-set_tests_properties(dssh_conn_sntrup_rsa PROPERTIES COST 12)
+set(CONN_TESTS
+	test_session_start test_session_stop test_session_start_stop
+	test_open_exec test_open_exec_command test_open_exec_rejected
+	test_open_shell test_open_subsystem
+	test_session_write_read test_session_read_write_reverse
+	test_session_write_ext test_session_read_ext
+	test_session_poll_read test_session_poll_timeout
+	test_session_large_write test_session_multiple_writes
+	test_subsys_write_read test_subsys_multiple_writes
+	test_subsys_poll test_subsys_large_write
+	test_send_signal test_signal_after_data test_window_change
+	test_session_close_exit_code test_channel_close_subsys
+	test_eof_detection test_eof_half_close test_read_nomore_vs_eof
+	test_graceful_disconnect
+	test_two_channels test_accept_reject test_channel_independence
+	test_concurrent_write_read test_terminate_during_io
+	test_connection_drop_during_read test_connection_drop_during_write
+	test_cleanup_after_drop
+	test_session_start_twice test_accept_timeout_zero
+	test_accept_timeout_short test_session_poll_timeout_zero
+	test_auto_reject_x11 test_auto_reject_forwarded_tcpip
+	test_auto_reject_direct_tcpip test_auto_reject_session_server
+	test_window_adjust_from_peer test_data_after_eof
+	test_truncated_channel_data test_ext_data_after_eof
+	test_truncated_ext_data test_channel_request_want_reply
+	test_data_exceeds_window
+	test_session_poll_write test_session_write_after_eof
+	test_session_write_ext_after_eof test_subsys_write_after_close
+	test_subsys_poll_write test_subsys_poll_timeout_zero
+	test_read_event_empty test_signal_interleave_read
+	test_signal_interleave_read_ext test_truncated_channel_open
+	test_truncated_channel_request test_demux_short_payload
+	test_session_poll_read_empty test_session_write_window_zero
+	test_session_write_ext_window_zero test_accept_timeout_negative
+	test_setup_exec_rejected_by_callback test_truncated_open_confirmation
+	test_open_conf_unknown_channel test_channel_success_no_request
+	test_double_eof_close test_data_dlen_exceeds_payload
+	test_demux_chan_type_zero test_send_eof_already_sent
+	test_send_close_already_sent test_replenish_after_eof
+	test_replenish_low_window test_window_underflow_to_zero
+	test_window_add_overflow
+	test_chan_write_not_open test_chan_write_close_recv
+	test_subsystem_roundtrip test_accept_zc
+	test_session_poll_nsec_overflow test_accept_nsec_overflow
+	test_demux_data_truncation test_replenish_caps_buf_space
+	rx_truncation/default rx_truncation/clips_to_window
+	rx_bypass/pre_setup rx_bypass/disengages_post_setup
+	early_data/type_lock_subsystem
+	poll/terminate_surfaces_data poll/terminate_no_event_bit
+	null/chan_read null/chan_write null/chan_poll null/chan_close
+	null/chan_send_signal null/chan_send_window_change
+	alloc/open_exec_sweep alloc/open_shell_sweep
+	alloc/open_subsystem_sweep alloc/server_accept_sweep
+	subsys/write_zero
+	test_data_after_close test_ext_data_after_close
+	test_replenish_after_close test_truncated_window_adjust
+	test_poll_deadline_not_reset
+	chanreq/parse_valid chanreq/parse_empty_type chanreq/parse_no_data
+	chanreq/parse_truncated_type_len chanreq/parse_truncated_type
+	chanreq/parse_truncated_want_reply
+	zc/open_client zc/cancel null/zc_open
+	event/session_set_cb event/session_set_cb_toolate event/chan_set_cb
+	event/session_set_max event/session_set_max_toolate event/chan_set_max
+	pty/get_pty env/roundtrip
+)
+dssh_add_individual_tests(dssh_test_conn dssh_conn CONN_TESTS)
 
 # ================================================================
 # Tier 1b: Alloc failure tests (need mock allocator + mock I/O)
