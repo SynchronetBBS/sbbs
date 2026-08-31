@@ -1,8 +1,9 @@
 # ZMODEM implementation comparison: sexyz vs. lrzsz vs. zmtx/zmrx vs. Forsberg rzsz
 
-**Measured:** 2026-08-29, one host. Every implementation at the current
-release, including zmtx/zmrx **2.04**, which landed four days earlier and
-changes several conclusions a 2.02 checkout would have produced.
+**Measured:** 2026-08-29, one host; zmtx/zmrx re-measured 2026-08-30 at **2.05**,
+which fixes both defects this document reported against it. Every
+implementation is at its current release — a stale checkout of any of them
+changes the conclusions, as §1.1's dates are there to prevent.
 **Author:** Claude (analysis commissioned by Rob Swindell)
 **Scope:** Feature support, interoperability, error recovery, throughput and CPU
 cost of four ZMODEM implementations, **in both directions** — plus Forsberg's
@@ -49,14 +50,15 @@ Seven specifics:
 3. **sexyz has the most robust error recovery measured** — 10 of 10 sending and
    10 of 10 receiving at an error rate where the all-lrzsz pair manages 7 of 10
    and `zmtx` 0 of 5 (§6.1).
-4. **`zmtx` still cannot finish a transfer over a lossy link**, at the fastest
-   code in this comparison. 2.04 improved this — its retry budget now resets on
-   forward progress where 2.02's never did — but only on the ZRPOS path; NAK-
-   and timeout-driven recovery still drains it monotonically, and the transfer
-   fails at any rate at or above 5e-7 (§6.2).
-5. **`zmtx`'s ESCCTL support is broken**, in 2.04 as in 2.02 (§7.2), in exactly
-   the way Synchronet's was until 2026-08-24. A receiver that requests
-   control-character escaping cannot download from `zmtx` at all.
+4. **Both `zmtx` defects this document reported were fixed within a day of it
+   being written.** 2.05 (2026-08-30) resets the retry budget on any recovery
+   path, taking the error gate from 0 of 5 to 3 of 5 (§6.2), and folds CR into
+   the control class so ESCCTL escaping is correct and interoperable (§7.2).
+   The measurements for 2.02 and 2.04 are kept for contrast.
+5. **ESC8 now has a normative encoding and two implementations that agree on
+   it.** zmtx 2.05 adopted Forsberg's, and it interoperates with the 1997 DSZ
+   binary in both directions (§7.4) — which it did not before. sexyz implements
+   neither half and no longer asks for the mode (§7.2).
 6. **The ESC8 option has no agreed encoding, and sexyz no longer asks for it.**
    Running Forsberg's own 1997 DSZ under DOSBox settles what the bit means —
    `rz -E` sets it — and that the only two implementations of it encode it
@@ -81,7 +83,7 @@ Seven specifics:
 |---|---|---|
 | **sexyz** | v3.6 — `sexyz.c` 3.6, `zmodem.c` 2.7, `xmodem.c` 2.0 | Synchronet `master/~d3aba361a6`, GCC 14.2.0, Debian 13 |
 | **lrzsz** (`lsz`/`lrz`) | 0.12.21rc | Uwe Ohse's maintained fork of Forsberg's rzsz |
-| **zmtx/zmrx** | **2.04** (`3a5d2ed`, tag `v2.04`, 2026-08-25) | Jacques Mattheij, 1994; currently maintained by Stephen Hurd |
+| **zmtx/zmrx** | **2.05** (tag `v2.05`, 2026-08-30) plus `dfa97f0`; 2.04 and 2.02 measured for comparison | Jacques Mattheij, 1994; currently maintained by Stephen Hurd |
 | **Forsberg rzsz** | `sz` 3.73, 2003-01-30 | Omen Technology; built from the history repo's `modern` branch |
 | **Forsberg DSZ** (§7.4) | DSZ.EXE 1997-05-25 | Omen Technology's *commercial* DOS product; run under DOSBox, not throughput-benchmarked |
 
@@ -311,7 +313,7 @@ CPU-seconds to move 256 MiB, median across every partner:
 
 | Sender | CPU-s | MiB/CPU-s | | Receiver | CPU-s | MiB/CPU-s |
 |---|--:|--:|---|---|--:|--:|
-| **`zmtx`** | **0.38** | 674 | | **`zmrx`** | **0.62** | 413 |
+| **`zmtx`** | **0.44** | 582 | | **`zmrx`** | **0.62** | 413 |
 | `ztx_buf` (engine) | 0.69 | 371 | | sexyz | 0.68 | 376 |
 | `lsz` | 0.96 | 267 | | `zrx_buf` (engine) | 0.68 | 376 |
 | sexyz | 1.08 | 238 | | `lrz` | 1.28 | 200 |
@@ -320,6 +322,13 @@ CPU-seconds to move 256 MiB, median across every partner:
 sexyz and `zrx_buf` tie exactly on the receive side. That is the expected result
 and a useful check: sexyz's receive transport adds nothing measurable over a
 minimal one, so essentially all of the receive cost is the shared engine.
+
+The `zmtx` figure moved with 2.05: it sent for **0.38** CPU-seconds at 2.04,
+**0.48** at the 2.05 tag once ESC8, RLE, MobyTurbo and Pack-7 landed, and
+**0.44** at `dfa97f0`, "Recover standard transfer performance", which claws back
+most but not all of it. `zmrx`'s receive cost is unchanged at 0.62 throughout.
+The table above quotes 0.44; the rest of this section's ratios were measured
+against 2.04 and are noted where that matters.
 
 `zmrx` 2.04 is cheaper than sexyz in every column of §5.3, not just on the
 median — 0.52 against 0.56 behind `zmtx`, 0.62 against 0.68 behind `lsz`, 1.18
@@ -422,17 +431,24 @@ not meaningfully different from a 3/3 — Forsberg scored 3/3 on a loaded host,
 result here that is a category rather than a sample is `zmtx`'s, and §6.2 shows
 the code that produces it.
 
-### 6.2 `zmtx`: a retry budget that resets on only one of three paths
+### 6.2 `zmtx`: a retry budget that reset on only one of three paths (fixed in 2.05)
 
 `zmtx` fails at any rate that reliably injects errors, in 2.04 as in 2.02, and
 scores 0 of 5 at the gate rate. A rate sweep to `lrz`, both releases, same file:
 
-| Rate | `zmtx` **2.02** → `lrz` | `zmtx` **2.04** → `lrz` |
-|---|---|---|
-| 2e-7 | MISSING — 8,985,617 | **MATCH** — 8,979,003 |
-| 5e-7 | MISSING — 1,455,347 | MISSING — 1,987,502 |
-| 1e-6 | MISSING — 1,555,499 | MISSING — 2,136,796 |
-| 3e-6 | MISSING — 1,168,053 | MISSING — 1,615,751 |
+| Rate | `zmtx` **2.02** | `zmtx` **2.04** | `zmtx` **2.05** |
+|---|---|---|---|
+| 2e-7 | MISSING | **MATCH** | **MATCH** |
+| 5e-7 | MISSING | MISSING | **MATCH** |
+| 1e-6 | MISSING | MISSING | — |
+| 3e-6 | MISSING | MISSING | **MATCH** |
+
+**2.05 fixes this**, via `6e32e97` (2026-08-30), "Improve sender recovery
+progress handling". At the gate rate it scores **3 of 5** where 2.02 and 2.04
+both scored 0 of 5, and it completes the rate sweep. That is still short of
+sexyz's 10 of 10 and lrzsz's 7 of 10, so recovery is no longer structurally
+broken but remains the weakest of the three. The 2.02/2.04 analysis below
+explains what was wrong.
 
 (`lsz` and sexyz complete every one of those rates; see the gate table above.)
 
@@ -589,10 +605,18 @@ lrzsz shows what the rule should be (`zsendline_init()`, `zm.c`): for `015`,
 `if (Zctlesc) tab = 1` — always escape — while the conditional `'@'` rule is the
 *non*-ESCCTL case. The two are swapped.
 
-**This is still present in 2.04.** The 2.03 commit `7d2604c`, "Fix negotiated
-ZMODEM escaping", touches this exact function — but it adds *8th-bit* escaping
-(`TX_ESCAPE_8TH`) and leaves the CR rule untouched. The title refers to ESC8,
-not ESCCTL.
+**Fixed in 2.05**, by commit `82be5ad` (2026-08-30), which folds CR into the
+control class — `action = TX_ESCAPE_CONTROL | TX_ESCAPE_CR` — while keeping the
+`'@'` conditional as a separate test. That is the same shape as the Synchronet
+fix below. Re-measured: `zmtx` 2.05 now transfers byte-identically to
+`lrz -e`, to sexyz `-e`, and to its own `zmrx -e`, putting 5,245,010 bytes on
+the wire where sexyz puts 5,245,034 and `lsz` 5,245,032 for the same file —
+within 24 bytes, so the escape sets now agree. The 32,400-byte shortfall
+described above is gone.
+
+(The earlier 2.03 commit `7d2604c`, "Fix negotiated ZMODEM escaping", touches
+this same function but adds *8th-bit* escaping and left the CR rule alone; its
+title refers to ESC8, not ESCCTL. That is why 2.04 still failed.)
 
 **Synchronet's `zmodem.c` had this identical bug**, fixed 2026-08-24 by folding
 CR into the control class. The shared history is direct: Synchronet's send path
@@ -646,8 +670,24 @@ matches the other half: RLE *is* implemented in Forsberg's free source
 (`zmr.c`, `ZRESC`, frame types `ZBINR32 'D'` / `ZVBINR32 'd'`), while the
 8th-bit-quoting half never was, in any release from 1987 to 2003.
 
-**And the two ESC8 implementations in existence do not interoperate.** Asked for
-ESC8 by `zmrx -b`, DSZ acts on it — bytes with bit 7 set fall from 47.7 % of the
+**As of zmtx/zmrx 2.05, the two ESC8 implementations interoperate.** Commit
+`399e3b6` (2026-08-30), "Implement normative Omen ESC8 and RLE", adopts
+Forsberg's encoding rather than inventing one — its comment names "DSZ.EXE's
+ZMODEM-90 seven-bit encoder", and the code emits `SO` followed by the byte with
+bit 7 cleared, with special cases for `SO` itself, `0x80` and `0x7f`. Verified
+against the 1997 binary in both directions on a 16 KiB file:
+
+| Pair | Result |
+|---|---|
+| `zmtx` 2.05 → `DSZ rz -E` | **identical** |
+| `DSZ sz` → `zmrx -b` | **identical** |
+
+So a *de facto* normative ESC8 now exists — Forsberg's, with a second
+implementation matching it. **The rest of this subsection describes 2.04 and
+earlier**, and is kept because it is how the encoding was established and why
+the option is the way it is.
+
+Asked for ESC8 by `zmrx -b`, DSZ 2.04 acts on it — bytes with bit 7 set fall from 47.7 % of the
 wire to 3.4 %, and the residue is one repeated 3-byte sequence rather than data
 — but it also switches to frame type **`0x31` (`'1'`)**, which is not among the
 eight types any published `zmodem.h` defines (`ZBIN 'A'`, `ZHEX 'B'`,
@@ -774,23 +814,24 @@ is a minimum-throughput abort
 (§3.2): sexyz's timeouts reset on every byte, so a trickling transfer holds a
 node indefinitely.
 
-**For zmtx/zmrx 2.04** — the fastest and cheapest implementation measured in
-both directions, by roughly a factor of two, with two defects left on the
-sending side:
+**For zmtx/zmrx** — still the fastest and cheapest implementation measured in
+both directions, and as of 2.05 without either defect this document reported:
 
-- The retry budget resets only on the ZRPOS path (§6.2). NAK- and
-  timeout-driven recovery still consumes it permanently, so `zmtx` still cannot
-  complete a transfer at or above a 5e-7 error rate, scoring 0 of 5 at the gate
-  rate. 2.04 improved this materially over 2.02 and now reports the reason
-  rather than exiting silently; extending the reset to the other two paths would
-  finish the job.
-- ESCCTL escaping still omits carriage return (§7.2), so no ESCCTL receiver can
-  download from `zmtx`. `7d2604c` ("Fix negotiated ZMODEM escaping", 2.03)
-  addresses 8th-bit escaping and leaves this untouched. The fix Synchronet
-  applied on 2026-08-24 transfers directly.
+- The retry budget now resets on any recovery path, not just ZRPOS
+  (`6e32e97`). The gate goes from 0 of 5 to **3 of 5** — no longer structurally
+  broken, still the weakest of the three against sexyz's 10 of 10 and lrzsz's
+  7 of 10.
+- ESCCTL escaping now includes carriage return (`82be5ad`), and `zmtx` transfers
+  to every ESCCTL receiver tested with an escape set matching sexyz's and
+  lrzsz's to within 24 bytes on a 4 MiB file.
+- ESC8 is implemented to Forsberg's encoding (`399e3b6`) and interoperates with
+  DSZ 1997 both ways, making it the only implementation here that can talk to
+  the commercial line in that mode.
 
-`zmrx` has neither problem: it recovers 5 of 5 at the gate rate, and it is the
-only ESC8 implementation in the comparison that works.
+The cost shows in the sender: 0.38 CPU-seconds per 256 MiB at 2.04, 0.48 at the
+2.05 tag with the new features, 0.44 after `dfa97f0`. Still comfortably the
+cheapest sender measured, but the ratio against `lsz` narrowed from 2.5× to
+2.2×.
 
 **For anyone quoting these numbers.** Goodput without CPU is not interpretable
 (§4.2); instruction counts do not order CPU time (§5.2); a receiver's cost
