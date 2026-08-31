@@ -202,6 +202,8 @@ every profiled figure is paired with a wall-clock/CPU run of the same pair.
 | Segmented (ack per subpacket) | `-s`, both directions | — | `zmtx -s`, `zmrx -s` | — |
 | Window management | `-w#` (send) | `-w N` | `zmtx -w` | `-w N` |
 | Control-char escaping (ESCCTL) | `-e`, ini, **both directions** | `-e`, both directions | `zmrx -e` requests; sender honours it but **escaping is broken** (§7.2) | `-e` (sender) |
+| MobyTurbo (drop mandatory escaping on transparent links) | — | — | **yes** (`zmrx -m`, `-M` to refuse) | `-m` |
+| Omen Pack-7 (4 bytes into 5 printable) | — | — | **yes** (`zmrx -7`) | `-P` |
 | 8th-bit escaping (ESC8) | **no** — never requested, never honoured; the `Escape8thBit` key was removed (§7.2) | — | implements it (`zmrx -b`), incompatibly with DSZ | `rzsz` no; **DSZ `-E` yes** (§7.4) |
 | File-management option (ZFILE ZF1) | `-y`/`-p`/`-n`, ini `SendManagement` | `-y`/`-p`/`-n`/`-E`/`-Y` | `-o`/`-p`/`-n`, both ends | `-y`/`-p`/`-n` |
 | Batch / file lists | multiple, `@list`, `+list` | multiple | multiple | multiple |
@@ -308,6 +310,43 @@ Identical to two decimal places across implementations at the same block size:
 **+2.81 % to +2.82 %** for 8 KiB subpackets, **+2.55 %** for Forsberg's 1 KiB.
 That is the ZDLE escape rate on random data plus framing. Protocol efficiency is
 not a differentiator; every difference in this document is implementation cost.
+
+**Except for one option, which buys back most of that overhead.** Omen's
+MobyTurbo drops the mandatory escaping on links known to be transparent. ZMODEM
+must escape seven byte values — `0x18` (ZDLE), `0x10`, `0x11`, `0x13`, `0x90`,
+`0x91`, `0x93` — at one extra wire byte each, which is 7/256 = **2.73 %** of
+uniformly distributed data. zmtx/zmrx 2.05 implements it (`cf9bdb5`), so it can
+be measured; `zmrx -m` requests it:
+
+| Payload (1 MiB) | Standard | MobyTurbo | Saved |
+|---|--:|--:|--:|
+| random / compressed | 1,078,373 (+2.84 %) | 1,053,726 (+0.49 %) | **−2.29 %** |
+| text | 1,049,523 (+0.09 %) | 1,049,513 (+0.09 %) | −0.001 % |
+
+The split is exactly the escape rate: those seven values occupy 2.746 % of the
+random file and **0.000 %** of the text file, since none of them occurs in
+ordinary ASCII. MobyTurbo recovers the escape overhead and nothing else — the
+residual +0.49 % is framing, headers and CRCs, which it does not touch.
+
+Three things bound what that is worth. It is a **wire** saving, so it converts
+to throughput only where bandwidth binds; in this document's CPU-bound
+localhost regime it would be smaller. It needs a **transparent link** — the
+same precondition ESC8 exists to work around, inverted, and DSZ.DOC is explicit
+that it requires paths that do not eat control characters. And Forsberg
+measured about the same himself: DSZ.DOC's benchmark table shows Pro-YAM at 231
+cps standard against 237 with MobyTurbo on a 2400 bps link, **+2.6 %**, which
+lands within half a point of the figure above thirty-six years later.
+
+Like the 7-bit modes, it is requested by the receiver rather than imposed by the
+sender: §7.4's table has `DSZ sz -m` sending to sexyz and putting **8,626** bytes
+on the wire, byte-for-byte the same as `DSZ sz` without it, because sexyz never
+asks for the mode. A sender's `-m` against a receiver that does not request it
+is inert.
+
+For scale: the receive-path work of §3.5 moved sexyz from 2.35 to 0.68
+CPU-seconds per 256 MiB. MobyTurbo's ~2.3 % matters only where bandwidth is the
+binding constraint — which is exactly where BBS transfers used to live, and is
+why the option exists at all.
 
 ### 4.4 There is no per-file cost anywhere
 
