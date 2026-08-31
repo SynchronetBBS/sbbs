@@ -20,12 +20,12 @@ including against a 1997 DOS binary.
 
 **Every knob does something**, so there is no second `Escape8thBit` here.
 
-**But three of them fail hard rather than degrading**, which is the finding
-worth acting on. XMODEM has no capability negotiation — the receiver drives and
-the sender complies — so switching a capability *off* in `sexyz.ini` does not
-make sexyz negotiate downward. It makes sexyz unable to talk to a peer that
-requires that capability, and the failure is a timeout or an immediate abort
-with no diagnostic naming the cause.
+**Three of them fail hard rather than degrading**, and comparing each against
+lrzsz and DSZ sorts out whose fault that is. On CRC fallback sexyz behaves
+correctly and lrzsz does not; on **G-mode fallback sexyz is the one that fails
+where DSZ degrades**, which is the actionable finding here; and the receive-side
+block-size cap is a Synchronet-only setting with no counterpart to compare to,
+whose only reachable effect is to break a working transfer.
 
 ---
 
@@ -95,25 +95,46 @@ whether the wire or the outcome changed.
 
 ## 4. Findings
 
-### 4.1 `SendCRC=false` hangs against a CRC-only receiver
+The right question about all three is not "does sexyz fail" but **"does anyone
+else do better in the same situation"**, since XMODEM has no capability
+negotiation and someone has to degrade. Measured against both references, the
+answer differs per case — and in one of them sexyz is the best of the three.
 
-| Receiver | Result |
-|---|---|
-| `lrz --xmodem` (accepts checksum) | identical, 16,897 bytes |
-| `lrz --xmodem -c` (requires CRC) | **TIMEOUT** — nothing transferred |
+### 4.1 CRC fallback: sexyz is correct, lrzsz is the outlier
 
-In XMODEM the receiver drives: it sends `C` to request CRC-16 or `NAK` for
-checksum. With `SendCRC=false` sexyz will not answer `C`, and a receiver that
-only ever sends `C` waits forever. Both ends are behaving defensibly and the
-session still deadlocks, burning the full timeout with no message naming the
-cause.
+XMODEM-CRC specifies the degradation on the *receiver* side: it sends `C` to ask
+for CRC-16 and, after enough unanswered attempts, falls back to `NAK` for
+checksum. Put each receiver in front of a checksum-only sender
+(`sexyz sx` with `SendCRC=false`):
 
-### 4.2 `SendG=false` aborts against a G-mode receiver
+| Receiver | Falls back? | |
+|---|---|--:|
+| **sexyz `rc`** | **yes** — transfers, 16,898 bytes | 12 s |
+| **DSZ `rx`** (1997) | **yes** — transfers | — |
+| `lrz --xmodem -c` | **no** — nothing transferred | 40 s timeout |
 
-Sending YMODEM-1K to a receiver in G mode: with `SendG=true` the transfer
-completes (16,731 bytes on the wire); with `SendG=false` it dies after **18
-bytes**. Same shape as §4.1 — the capability is refused and there is no path
-back to a mode both ends can use.
+So the deadlock reported when `SendCRC=false` meets `lrz --xmodem -c` is lrzsz
+declining to degrade, not sexyz misbehaving. sexyz in the same role does the
+specified thing, and agrees with Forsberg's own implementation. Setting
+`SendCRC=false` is still a footgun — it makes sexyz unable to satisfy a
+CRC-insisting peer — but the missing fallback is at the other end.
+
+### 4.2 G-mode fallback: sexyz is the one that fails
+
+The mirror test, with a sender that refuses G (`sexyz sY` with `SendG=false`)
+in front of a G-mode receiver:
+
+| Receiver | Falls back? | |
+|---|---|--:|
+| **DSZ `rb -g`** (1997) | **yes** — transfers | — |
+| **sexyz `rg`** | **no** — `!Error fetching YMODEM header block` | 27 s |
+
+DSZ drops out of G mode and completes the transfer; sexyz gives up. This is a
+real gap on our side, and the clearest actionable item in this document: a
+receiver asked for G, offered a non-G sender, should transfer rather than fail.
+
+Sending, the same configuration shows as `SendG=false` dying after **18 bytes**
+against a G-mode receiver, against 16,731 bytes when `SendG=true`.
 
 ### 4.3 `[XMODEM] MaxBlockSize` is asymmetric, and its receive side breaks transfers
 
@@ -136,15 +157,28 @@ with `!File Transfer Failure`. The same pair succeeds at the default.
 So the one direction where the setting has an effect is the direction where its
 effect is to break an otherwise working transfer.
 
-### 4.4 What these three have in common
+### 4.4 What the comparison shows
 
-None is a dead option — every one demonstrably changes behaviour, which is what
-the audit was looking for. They share a different defect: **turning a capability
-off produces a hard failure rather than a negotiated fallback.** That is partly
-inherent to XMODEM, which has no capability negotiation, but the diagnostics
-could name the cause instead of leaving a timeout. A sysop who sets
-`SendCRC=false` and then cannot receive from half the terminals in the world has
-no way to connect the two facts from the log.
+None of the three is a dead option — each demonstrably changes behaviour, which
+is what the audit was looking for. Comparing against the other implementations
+sorts them into three different verdicts rather than one:
+
+| Situation | sexyz | lrzsz | DSZ |
+|---|---|---|---|
+| Receiver wants CRC, sender offers checksum | **falls back** | fails | **falls back** |
+| Receiver wants G, sender refuses G | **fails** | — (no G receiver tested) | **falls back** |
+| Receiver capped below the sender's block size | breaks mid-transfer | no equivalent setting | no equivalent setting |
+
+Only the middle row is a defect of ours by comparison. The first row is lrzsz's
+gap, not ours. The third has nothing to compare against — neither `lrz` nor DSZ
+exposes a receive-side block-size cap at all, so `MaxBlockSize` is a
+Synchronet-only setting whose sole reachable effect is to break a transfer that
+would otherwise work.
+
+The common thread worth fixing regardless: when a capability mismatch does end a
+session, nothing in the log names the cause. A sysop who sets `SendCRC=false`
+and then cannot send to half the terminals in the world has no way to connect
+the two facts.
 
 ---
 
