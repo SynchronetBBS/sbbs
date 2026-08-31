@@ -384,6 +384,20 @@ conn_cleanup(struct conn_ctx *ctx)
  * Helper: open an exec channel concurrently (client+server threads)
  * ================================================================ */
 
+/* Channel setup starts with a zero receive window on both sides.  Each side
+ * opens its window asynchronously after setup, so a completed open/accept
+ * does not by itself guarantee that an immediate non-blocking write works. */
+static int
+wait_stream_writable(dssh_channel ch)
+{
+	if (ch == NULL || ch->io_model != DSSH_IO_STREAM)
+		return 0;
+	int ev = dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
+	if ((ev & DSSH_POLL_WRITE) == 0)
+		return -1;
+	return 0;
+}
+
 struct open_exec_ctx {
 	dssh_session client;
 	dssh_session server;
@@ -404,7 +418,7 @@ client_open_exec_thread(void *arg)
 	dssh_chan_params_set_pty(&p, false);
 	ctx->client_ch = dssh_chan_open(ctx->client, &p);
 	dssh_chan_params_free(&p);
-	return 0;
+	return wait_stream_writable(ctx->client_ch);
 }
 
 static int
@@ -413,7 +427,7 @@ server_accept_exec_thread(void *arg)
 	struct open_exec_ctx *ctx = arg;
 	ctx->server_ch = dssh_chan_accept(ctx->server, ctx->cbs,
 	    ctx->accept_timeout);
-	return 0;
+	return wait_stream_writable(ctx->server_ch);
 }
 
 /*
@@ -424,24 +438,19 @@ static int
 open_exec_channel(struct open_exec_ctx *ctx)
 {
 	thrd_t ct, st;
+	int cr, sr;
 	if (thrd_create(&ct, client_open_exec_thread, ctx) != thrd_success)
 		return -1;
 	if (thrd_create(&st, server_accept_exec_thread, ctx) != thrd_success) {
 		thrd_join(ct, NULL);
 		return -1;
 	}
-	thrd_join(ct, NULL);
-	thrd_join(st, NULL);
+	thrd_join(ct, &cr);
+	thrd_join(st, &sr);
+	if (cr < 0 || sr < 0)
+		return -1;
 	if (ctx->client_ch == NULL || ctx->server_ch == NULL)
 		return -1;
-	/* The accepting side opens its receive window only after setup, via
-	 * asynchronous WINDOW_ADJUST.  Wait until that reaches the peer before
-	 * returning a stream channel that tests can write immediately. */
-	if (ctx->server_ch->io_model == DSSH_IO_STREAM) {
-		int ev = dssh_chan_poll(ctx->server_ch, DSSH_POLL_WRITE, 5000);
-		if ((ev & DSSH_POLL_WRITE) == 0)
-			return -1;
-	}
 	return 0;
 }
 
@@ -469,7 +478,7 @@ client_open_shell_thread(void *arg)
 	dssh_chan_params_set_size(&p, ctx->cols, ctx->rows, ctx->wpx, ctx->hpx);
 	ctx->client_ch = dssh_chan_open(ctx->client, &p);
 	dssh_chan_params_free(&p);
-	return 0;
+	return wait_stream_writable(ctx->client_ch);
 }
 
 static int
@@ -477,7 +486,7 @@ server_accept_shell_thread(void *arg)
 {
 	struct open_shell_ctx *ctx = arg;
 	ctx->server_ch = dssh_chan_accept(ctx->server, ctx->cbs, 30000);
-	return 0;
+	return wait_stream_writable(ctx->server_ch);
 }
 
 /* ================================================================
@@ -502,7 +511,7 @@ client_open_subsys_thread(void *arg)
 	dssh_chan_params_set_pty(&p, false);
 	ctx->client_ch = dssh_chan_open(ctx->client, &p);
 	dssh_chan_params_free(&p);
-	return 0;
+	return wait_stream_writable(ctx->client_ch);
 }
 
 static int
@@ -510,7 +519,7 @@ server_accept_subsys_thread(void *arg)
 {
 	struct open_subsys_ctx *ctx = arg;
 	ctx->server_ch = dssh_chan_accept(ctx->server, &accept_cbs_all, 30000);
-	return 0;
+	return wait_stream_writable(ctx->server_ch);
 }
 
 
