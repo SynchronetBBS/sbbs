@@ -52,9 +52,6 @@ ctest -R dssh_self           # integration selftests
 `build-cov/` is the coverage-instrumented build.  Always use full
 paths — never rely on the shell's current working directory.
 
-**ALWAYS run `pwd` before ANY command that interacts with the filesystem**
-(builds, tests, file reads/writes, coverage, git, etc.) to confirm you
-are in the expected directory.
 ```sh
 cmake --build build -j8              # build from source dir
 cmake --build build-cov -j8         # build coverage variant
