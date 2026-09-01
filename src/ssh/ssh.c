@@ -217,11 +217,11 @@ dssh_serialize_uint32(uint32_t val, uint8_t *buf, size_t bufsz, size_t *pos)
  * or a channel poll_cnd sees termination promptly instead of
  * blocking until an external event (like a socket close) wakes it.
  */
-DSSH_PRIVATE void
-session_set_terminate(struct dssh_session_s *sess)
+static bool
+session_mark_terminated(struct dssh_session_s *sess)
 {
 	if (atomic_exchange(&sess->terminate, true))
-		return;
+		return false;
 
 	/* Notify the application so it can close sockets or signal
 	 * its event loop, unblocking any I/O callbacks. */
@@ -229,29 +229,23 @@ session_set_terminate(struct dssh_session_s *sess)
 
 	if (tcb)
 		tcb(sess, sess->terminate_cbdata);
+	return true;
+}
 
-	/* Wake senders blocked during rekey.
-         * Hold tx_mtx so the broadcast cannot land between a sender's
-         * while-condition check and cnd_wait entry.  Use trylock because
-         * send_packet() calls set_terminate on fatal errors while already
-         * holding tx_mtx -- in that case the lock is already held so the
-         * broadcast is safe without re-acquiring.
-         *
-         * All lock/broadcast/unlock operations here are best-effort.
-         * dssh_thrd_check will not recurse because the atomic_exchange
-         * above ensures this function runs at most once. */
-	int tr = mtx_trylock(&sess->trans.tx_mtx);
-	if (tr == thrd_success) {
+static void
+session_wake_terminated(struct dssh_session_s *sess, bool tx_locked)
+{
+	/* Wake senders blocked during rekey.  The predicate is checked with
+	 * tx_mtx held, so an ordinary caller must acquire that mutex before
+	 * broadcasting.  A busy trylock does not establish ownership: another
+	 * thread may own the mutex and be about to enter cnd_wait. */
+	if (tx_locked) {
+		dssh_thrd_check(sess, cnd_broadcast(&sess->trans.rekey_cnd));
+	}
+	else if (dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_mtx)) == thrd_success) {
 		dssh_thrd_check(sess, cnd_broadcast(&sess->trans.rekey_cnd));
 		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
 	}
-	else if (tr == thrd_busy) {
-		/* tx_mtx held by our caller -- broadcast is still safe
-		 * because the caller's critical section prevents any
-		 * sender from entering cnd_wait. */
-		dssh_thrd_check(sess, cnd_broadcast(&sess->trans.rekey_cnd));
-	}
-	/* thrd_error: mutex corrupted, skip broadcast */
 
 	/* Wake demux thread stalled on an occupied TX slot */
 	if (dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx)) == thrd_success) {
@@ -279,6 +273,26 @@ session_set_terminate(struct dssh_session_s *sess)
 			dssh_thrd_check(sess, mtx_unlock(&sess->channel_mtx));
 		}
 	}
+}
+
+DSSH_PRIVATE void
+session_set_terminate(struct dssh_session_s *sess)
+{
+	if (session_mark_terminated(sess))
+		session_wake_terminated(sess, false);
+}
+
+DSSH_PRIVATE void
+session_set_terminate_tx_locked(struct dssh_session_s *sess)
+{
+	if (session_mark_terminated(sess))
+		session_wake_terminated(sess, true);
+}
+
+DSSH_PRIVATE void
+session_set_terminate_no_wake(struct dssh_session_s *sess)
+{
+	(void)session_mark_terminated(sess);
 }
 
 DSSH_PUBLIC int

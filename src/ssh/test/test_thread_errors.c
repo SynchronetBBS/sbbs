@@ -229,9 +229,10 @@ test_send_lock_fail(void)
 
 	dssh_test_thrd_fail_after(0);
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
-	send_packet(ctx.client, msg, sizeof(msg), NULL);
+	int ret = send_packet(ctx.client, msg, sizeof(msg), NULL);
 	dssh_test_thrd_reset();
 
+	ASSERT_ERR(ret, DSSH_ERROR_TERMINATED);
 	ASSERT_TRUE(ctx.client->terminate);
 
 	handshake_cleanup(&ctx);
@@ -299,9 +300,10 @@ test_recv_lock_fail(void)
 	uint8_t mt;
 	uint8_t *payload;
 	size_t plen;
-	recv_packet(ctx.server, &mt, &payload, &plen);
+	int ret = recv_packet(ctx.server, &mt, &payload, &plen);
 	dssh_test_thrd_reset();
 
+	ASSERT_ERR(ret, DSSH_ERROR_TERMINATED);
 	ASSERT_TRUE(ctx.server->terminate);
 
 	handshake_cleanup(&ctx);
@@ -345,6 +347,97 @@ test_set_terminate_lock_fail(void)
 	dssh_session_cleanup(ctx.client);
 	mock_io_free(&ctx.io);
 	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Termination must synchronize its rekey wake with tx_mtx even when
+ * another thread currently owns the mutex.  A trylock cannot tell
+ * whether that owner is the terminating thread.
+ * ================================================================ */
+
+struct terminate_wakeup_ctx {
+	dssh_session sess;
+	atomic_bool  owner_ready;
+	atomic_bool  enter_wait;
+	atomic_bool  terminator_done;
+	atomic_int   wait_result;
+};
+
+static int
+terminate_wakeup_owner(void *arg)
+{
+	struct terminate_wakeup_ctx *ctx = arg;
+
+	if (mtx_lock(&ctx->sess->trans.tx_mtx) != thrd_success)
+		return -1;
+	atomic_store(&ctx->owner_ready, true);
+	while (!atomic_load(&ctx->enter_wait))
+		thrd_yield();
+
+	struct timespec deadline;
+
+	dssh_deadline_from_ms(&deadline, 2000);
+	int wr = cnd_timedwait(&ctx->sess->trans.rekey_cnd,
+	    &ctx->sess->trans.tx_mtx, &deadline);
+
+	atomic_store(&ctx->wait_result, wr);
+	mtx_unlock(&ctx->sess->trans.tx_mtx);
+	return 0;
+}
+
+static int
+terminate_wakeup_terminator(void *arg)
+{
+	struct terminate_wakeup_ctx *ctx = arg;
+
+	session_set_terminate(ctx->sess);
+	atomic_store(&ctx->terminator_done, true);
+	return 0;
+}
+
+static int
+test_set_terminate_rekey_wakeup(void)
+{
+	dssh_session sess = dssh_session_init(true, 0);
+
+	ASSERT_NOT_NULL(sess);
+	struct terminate_wakeup_ctx ctx = {
+	    .sess = sess,
+	};
+	atomic_init(&ctx.owner_ready, false);
+	atomic_init(&ctx.enter_wait, false);
+	atomic_init(&ctx.terminator_done, false);
+	atomic_init(&ctx.wait_result, thrd_error);
+
+	thrd_t owner;
+	thrd_t terminator;
+
+	ASSERT_EQ(thrd_create(&owner, terminate_wakeup_owner, &ctx), thrd_success);
+	while (!atomic_load(&ctx.owner_ready))
+		thrd_yield();
+	ASSERT_EQ(thrd_create(&terminator, terminate_wakeup_terminator, &ctx), thrd_success);
+	while (!dssh_session_is_terminated(sess))
+		thrd_yield();
+
+	/* With the old trylock path, termination broadcasts and returns while
+	 * owner still holds tx_mtx.  Give it ample time to complete before the
+	 * owner enters cnd_timedwait, making the lost wake deterministic. */
+	struct timespec settle = { .tv_sec = 0, .tv_nsec = 100000000 };
+
+	thrd_sleep(&settle, NULL);
+	atomic_store(&ctx.enter_wait, true);
+	int owner_result;
+	int terminator_result;
+
+	ASSERT_EQ(thrd_join(owner, &owner_result), thrd_success);
+	ASSERT_EQ(thrd_join(terminator, &terminator_result), thrd_success);
+	ASSERT_EQ(owner_result, 0);
+	ASSERT_EQ(terminator_result, 0);
+	ASSERT_TRUE(atomic_load(&ctx.terminator_done));
+	ASSERT_EQ(atomic_load(&ctx.wait_result), thrd_success);
+
+	dssh_session_cleanup(sess);
 	return TEST_PASS;
 }
 
@@ -528,6 +621,7 @@ static struct dssh_test_entry tests[] = {
 	{ "thrd/send_unlock_fail",    test_send_unlock_fail },
 	{ "thrd/recv_lock_fail",      test_recv_lock_fail },
 	{ "thrd/set_terminate_fail",  test_set_terminate_lock_fail },
+	{ "thrd/set_terminate_rekey_wakeup", test_set_terminate_rekey_wakeup },
 	{ "thrd/send_sweep",          test_send_sweep },
 	{ "thrd/recv_sweep",          test_recv_sweep },
 	{ "thrd/start_init_sweep",    test_start_init_sweep },

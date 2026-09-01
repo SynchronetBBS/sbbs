@@ -39,7 +39,8 @@ int mock_io_init(struct mock_io_state *io, size_t capacity);
 void mock_io_free(struct mock_io_state *io);
 
 /*
- * Close one direction (unblocks any reader on that pipe).
+ * Shut down one direction (unblocks any reader on that pipe).  Descriptors
+ * remain allocated until mock_io_free() so concurrent I/O cannot race reuse.
  */
 void mock_io_close_c2s(struct mock_io_state *io);
 void mock_io_close_c2s_write(struct mock_io_state *io);

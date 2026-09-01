@@ -1043,7 +1043,7 @@ drain_tx_slots(struct dssh_session_s *sess)
 	/* session_set_terminate() acquires channel_mtx to wake channel
 	 * waiters, so it must not run from a per-channel slot helper. */
 	if (fatal)
-		session_set_terminate(sess);
+		session_set_terminate_tx_locked(sess);
 
 	if (any) {
 		int queue_lr = mtx_lock(&sess->trans.tx_queue_mtx);
@@ -1053,10 +1053,10 @@ drain_tx_slots(struct dssh_session_s *sess)
 			int ur = mtx_unlock(&sess->trans.tx_queue_mtx);
 
 			if (br != thrd_success || ur != thrd_success)
-				session_set_terminate(sess);
+				session_set_terminate_tx_locked(sess);
 		}
 		else
-			session_set_terminate(sess);
+			session_set_terminate_tx_locked(sess);
 	}
 }
 
@@ -1067,40 +1067,40 @@ DSSH_PRIVATE void
 tx_unlock_with_slots(struct dssh_session_s *sess)
 {
 	if (sess->terminate) {
-		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+		dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
 		return;
 	}
 
 	for (;;) {
-		int lr = dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx));
+		int lr = dssh_thrd_check_tx_locked(sess, mtx_lock(&sess->trans.tx_queue_mtx));
 
 		if (lr != thrd_success) {
-			dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
 			return;
 		}
 		sess->trans.tx_slots_pending = false;
-		int ur = dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
+		int ur = dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
 
 		if (ur != thrd_success) {
-			dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
 			return;
 		}
 
 		drain_tx_slots(sess);
 		if (sess->terminate) {
-			dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
 			return;
 		}
 
-		lr = dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx));
+		lr = dssh_thrd_check_tx_locked(sess, mtx_lock(&sess->trans.tx_queue_mtx));
 		if (lr != thrd_success) {
-			dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
 			return;
 		}
 		if (sess->trans.tx_slots_pending) {
-			ur = dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
+			ur = dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
 			if (ur != thrd_success) {
-				dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+				dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
 				return;
 			}
 			continue;
@@ -1110,8 +1110,8 @@ tx_unlock_with_slots(struct dssh_session_s *sess)
 		int tx_ur    = mtx_unlock(&sess->trans.tx_mtx);
 		int queue_ur = mtx_unlock(&sess->trans.tx_queue_mtx);
 
-		dssh_thrd_check(sess, queue_ur);
-		dssh_thrd_check(sess, tx_ur);
+		dssh_thrd_check_unlock(sess, tx_ur);
+		dssh_thrd_check_unlock(sess, queue_ur);
 		return;
 	}
 }
@@ -1178,8 +1178,8 @@ send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8
 		if (tr == thrd_success) {
 			int ret = send_packet_inner(sess, payload, payload_len, NULL);
 			if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
-				session_set_terminate(sess);
-			dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+				session_set_terminate_tx_locked(sess);
+			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
 			return ret;
 		}
 		/* tx_mtx busy pre-KEX should not happen — single
@@ -1200,7 +1200,7 @@ send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8
 		int ret = tx_finalize(sess, sess->trans.tx_packet, payload_len);
 
 		if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
-			session_set_terminate(sess);
+			session_set_terminate_tx_locked(sess);
 		tx_unlock_with_slots(sess);
 		return ret;
 	}
@@ -1298,7 +1298,13 @@ send_packet(struct dssh_session_s *sess, const uint8_t *payload, size_t payload_
 DSSH_PRIVATE uint8_t *
 send_begin(struct dssh_session_s *sess, uint8_t msg_type, size_t *max_len, int *err_out)
 {
-	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_mtx));
+	int lock_ret = mtx_lock(&sess->trans.tx_mtx);
+
+	if (lock_ret != thrd_success) {
+		dssh_thrd_check(sess, lock_ret);
+		*err_out = DSSH_ERROR_TERMINATED;
+		return NULL;
+	}
 
 	if (msg_type >= SSH_MSG_USERAUTH_REQUEST) {
 		struct timespec rk_ts;
@@ -1306,21 +1312,22 @@ send_begin(struct dssh_session_s *sess, uint8_t msg_type, size_t *max_len, int *
 			dssh_deadline_from_ms(&rk_ts, sess->timeout_ms);
 		while (sess->trans.rekey_in_progress && !sess->terminate) {
 			if (sess->timeout_ms <= 0) {
-				dssh_thrd_check(sess, cnd_wait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx));
+				dssh_thrd_check_tx_locked(sess,
+				    cnd_wait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx));
 			}
 			else {
-				if (dssh_thrd_check(sess,
+				if (dssh_thrd_check_tx_locked(sess,
 					cnd_timedwait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx, &rk_ts))
 				    == thrd_timedout) {
-					session_set_terminate(sess);
-					dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+					session_set_terminate_tx_locked(sess);
+					dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
 					*err_out = DSSH_ERROR_TERMINATED;
 					return NULL;
 				}
 			}
 		}
 		if (sess->terminate) {
-			dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
 			*err_out = DSSH_ERROR_TERMINATED;
 			return NULL;
 		}
@@ -1332,7 +1339,7 @@ send_begin(struct dssh_session_s *sess, uint8_t msg_type, size_t *max_len, int *
 
 	if (log_ret < 0 && log_ret != DSSH_ERROR_TOOLONG && log_ret != DSSH_ERROR_REKEY_NEEDED) {
 		atomic_store_explicit(&sess->log_mirror_suppressed, true, memory_order_relaxed);
-		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+		dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
 		DSSH_LOGF(sess, DSSH_LOG_ERROR, log_ret, "Failed to forward SSH diagnostic: %s",
 		    dssh_strerror(log_ret));
 		session_set_terminate(sess);
@@ -1378,7 +1385,7 @@ done:
 		dssh_cleanse(&sess->trans.tx_packet[9], cleanse_len);
 	}
 	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
-		session_set_terminate(sess);
+		session_set_terminate_tx_locked(sess);
 	tx_unlock_with_slots(sess);
 	return ret;
 }
@@ -1423,7 +1430,11 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 {
 	int ret;
 
-	dssh_thrd_check(sess, mtx_lock(&sess->trans.rx_mtx));
+	ret = mtx_lock(&sess->trans.rx_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
 
 	/* Refuse to receive if per-key packet count would exceed hard limit */
 	if (sess->trans.rx_since_rekey >= DSSH_REKEY_HARD_LIMIT) {

@@ -108,6 +108,7 @@ int send_window_adjust(dssh_session sess,
 int maybe_replenish_window(dssh_session sess, struct dssh_channel_s *ch);
 int demux_dispatch(dssh_session sess, uint8_t msg_type,
     uint8_t *payload, size_t payload_len);
+int detach_channel(dssh_session sess, struct dssh_channel_s *ch);
 int parse_channel_request(const uint8_t *payload, size_t payload_len,
     const uint8_t **rtype, uint32_t *rtype_len,
     bool *want_reply,

@@ -134,6 +134,11 @@ struct dssh_accept_queue {
 
 /* Set terminate flag and wake all library-owned condvar waiters. */
 DSSH_PRIVATE void session_set_terminate(struct dssh_session_s *sess);
+/* Same operation when the caller already owns trans.tx_mtx. */
+DSSH_PRIVATE void session_set_terminate_tx_locked(struct dssh_session_s *sess);
+/* Mark terminated without acquiring mutexes after an unlock error leaves
+ * ownership uncertain. */
+DSSH_PRIVATE void session_set_terminate_no_wake(struct dssh_session_s *sess);
 
 DSSH_PRIVATE bool dssh_log_enabled(struct dssh_session_s *sess, dssh_log_level level);
 DSSH_PRIVATE void dssh_log_emit(struct dssh_session_s *sess, dssh_log_level level, dssh_log_source source,
@@ -280,6 +285,12 @@ struct dssh_log_forward_queue {
 #define DSSH_IO_STREAM 1 /* dssh_chan_ stream API */
 #define DSSH_IO_ZC     2 /* dssh_chan_zc_ zero-copy API */
 
+enum dssh_channel_dispatch_state {
+	DSSH_CHANNEL_DISPATCH_IDLE = 0,
+	DSSH_CHANNEL_DISPATCH_ACTIVE,
+	DSSH_CHANNEL_DISPATCH_LOCK_FAILED,
+};
+
 struct dssh_channel_s {
 	/* Pointers and size_t (pointer-sized) */
 	struct dssh_session_s *sess; /* back-pointer (new API takes ch only) */
@@ -297,6 +308,10 @@ struct dssh_channel_s {
 	mtx_t       cb_mtx;  /* protects callback function pointer + cbdata pairs */
 	cnd_t       poll_cnd;
 	atomic_bool closing; /* set by close functions before cleanup */
+	/* A session has one demux thread, so at most one dispatch can own a
+	 * channel.  LOCK_FAILED prevents teardown when buf_mtx ownership became
+	 * uncertain after an unlock error. */
+	atomic_int dispatch_state;
 
 			     /* 4-byte */
 	uint32_t              local_id;
@@ -442,6 +457,25 @@ dssh_thrd_check(struct dssh_session_s *sess, int ret)
 {
 	if (ret != thrd_success && ret != thrd_busy && ret != thrd_timedout && !sess->terminate)
 		session_set_terminate(sess);
+	return ret;
+}
+
+/* Thread-call checker for operations performed while trans.tx_mtx is known
+ * to remain owned.  Unlock results use dssh_thrd_check_unlock() because a
+ * failed unlock leaves ownership uncertain. */
+static inline int
+dssh_thrd_check_tx_locked(struct dssh_session_s *sess, int ret)
+{
+	if (ret != thrd_success && ret != thrd_busy && ret != thrd_timedout && !sess->terminate)
+		session_set_terminate_tx_locked(sess);
+	return ret;
+}
+
+static inline int
+dssh_thrd_check_unlock(struct dssh_session_s *sess, int ret)
+{
+	if (ret != thrd_success && !sess->terminate)
+		session_set_terminate_no_wake(sess);
 	return ret;
 }
 

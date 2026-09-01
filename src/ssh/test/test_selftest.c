@@ -45,6 +45,16 @@ delay_window_adjust_after_send(dssh_session sess, uint8_t msg_type)
 	}
 }
 
+static void
+delay_setup_reply_after_send(dssh_session sess, uint8_t msg_type)
+{
+	if (sess == delayed_tx_sess && msg_type == SSH_MSG_CHANNEL_SUCCESS) {
+		struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+
+		thrd_sleep(&ts, NULL);
+	}
+}
+
 static int
 socket_tx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 {
@@ -800,7 +810,6 @@ test_self_exec_echo(void)
 
 	ASSERT_OK(dssh_session_start(ctx.client));
 	ASSERT_OK(dssh_session_start(ctx.server));
-
 	struct server_echo_arg sarg = { .ctx = &ctx };
 
 	ASSERT_OK(selftest_start_thread(&ctx, server_echo_thread, &sarg));
@@ -2784,6 +2793,8 @@ test_self_chan_send_break(void)
 
 	struct server_echo_arg sarg = { .ctx = &ctx };
 	ASSERT_OK(selftest_start_thread(&ctx, server_echo_thread, &sarg));
+	delayed_tx_sess = ctx.server;
+	dssh_test_tx_after_send_hook = delay_setup_reply_after_send;
 
 	dssh_channel ch = open_exec(ctx.client, "break-test");
 

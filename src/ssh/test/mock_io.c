@@ -5,9 +5,9 @@
  * read/write with natural close-unblocks-peer behavior -- no
  * condvars or timed waits needed.
  *
- * Fd fields are _Atomic int so that concurrent close from two
- * threads (e.g. both handshake threads failing) uses atomic_exchange
- * to guarantee exactly one close() per fd.
+ * Fd fields are _Atomic int.  The close helpers use shutdown() to unblock
+ * concurrent I/O without racing descriptor lifetime; pipe_free() performs
+ * the actual atomic-exchange + close after worker threads have joined.
  */
 
 #include <errno.h>
@@ -47,17 +47,17 @@ pipe_free(struct mock_io_pipe *p)
 static void
 pipe_close_write(struct mock_io_pipe *p)
 {
-	int fd = atomic_exchange(&p->wfd, -1);
+	int fd = atomic_load(&p->wfd);
 	if (fd >= 0)
-		close(fd);
+		shutdown(fd, SHUT_RDWR);
 }
 
 static void
 pipe_close_read(struct mock_io_pipe *p)
 {
-	int fd = atomic_exchange(&p->rfd, -1);
+	int fd = atomic_load(&p->rfd);
 	if (fd >= 0)
-		close(fd);
+		shutdown(fd, SHUT_RDWR);
 }
 
 /*

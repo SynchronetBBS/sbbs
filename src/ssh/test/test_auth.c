@@ -4759,6 +4759,9 @@ test_server_send_fail_service_accept(void)
 	thrd_t st;
 	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
 
+	/* Close s2c before the request can trigger SERVICE_ACCEPT. */
+	mock_io_close_s2c(&ctx.io);
+
 	/* Client: send SERVICE_REQUEST */
 	{
 		static const char svc[] = "ssh-userauth";
@@ -4770,10 +4773,6 @@ test_server_send_fail_service_accept(void)
 		pos += sizeof(svc) - 1;
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
-
-	/* Close s2c before the server sends SERVICE_ACCEPT */
-	mock_io_close_s2c(&ctx.io);
-	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
@@ -4821,6 +4820,9 @@ test_server_send_fail_none_success(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
+	/* Close s2c before the request can trigger USERAUTH_SUCCESS. */
+	mock_io_close_s2c(&ctx.io);
+
 	/* Send none auth request */
 	{
 		static const char user[] = "testuser";
@@ -4840,10 +4842,6 @@ test_server_send_fail_none_success(void)
 		pos += sizeof(method) - 1;
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
-
-	/* Close s2c before server sends USERAUTH_SUCCESS */
-	mock_io_close_s2c(&ctx.io);
-	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
@@ -4892,6 +4890,9 @@ test_server_send_fail_none_failure(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
+	/* Close s2c before the request can trigger USERAUTH_FAILURE. */
+	mock_io_close_s2c(&ctx.io);
+
 	/* Send none auth request */
 	{
 		static const char user[] = "testuser";
@@ -4911,10 +4912,6 @@ test_server_send_fail_none_failure(void)
 		pos += sizeof(method) - 1;
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
-
-	/* Close s2c before server sends USERAUTH_FAILURE */
-	mock_io_close_s2c(&ctx.io);
-	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
@@ -6244,11 +6241,12 @@ changereq_send_fail_server_thread(void *arg)
 	/* Receive password USERAUTH_REQUEST */
 	recv_packet(server, &msg_type, &payload, &payload_len);
 
-	/* Send PASSWD_CHANGEREQ */
-	send_packet(server, cr->response, cr->response_len, NULL);
-
-	/* Close c2s so client's send of new password fails */
+	/* Close c2s before sending PASSWD_CHANGEREQ so the client's next
+	 * request deterministically fails.  The old order allowed the client
+	 * to win the race, send successfully, and wait forever for a reply
+	 * from this server thread after it returned. */
 	mock_io_close_c2s(&cr->hctx->io);
+	send_packet(server, cr->response, cr->response_len, NULL);
 	return 0;
 }
 
@@ -7078,6 +7076,9 @@ test_server_send_fail_change_success(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
+	/* Close s2c before the request can trigger USERAUTH_SUCCESS. */
+	mock_io_close_s2c(&ctx.io);
+
 	/* Send password change request (change=true) */
 	{
 		uint8_t msg[128];
@@ -7091,10 +7092,6 @@ test_server_send_fail_change_success(void)
 		pos += 3;
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
-
-	/* Close s2c before server sends SUCCESS */
-	mock_io_close_s2c(&ctx.io);
-	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
@@ -7165,6 +7162,9 @@ test_server_send_fail_change_changereq(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
+	/* Close s2c before the request can trigger PASSWD_CHANGEREQ. */
+	mock_io_close_s2c(&ctx.io);
+
 	/* Send password change request */
 	{
 		uint8_t msg[128];
@@ -7178,10 +7178,6 @@ test_server_send_fail_change_changereq(void)
 		pos += 3;
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
-
-	/* Close s2c before server sends CHANGEREQ */
-	mock_io_close_s2c(&ctx.io);
-	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);
@@ -7232,6 +7228,9 @@ test_server_send_fail_change_failure(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
+	/* Close s2c before the request can trigger USERAUTH_FAILURE. */
+	mock_io_close_s2c(&ctx.io);
+
 	/* Send password change request */
 	{
 		uint8_t msg[128];
@@ -7245,10 +7244,6 @@ test_server_send_fail_change_failure(void)
 		pos += 3;
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
-
-	/* Close s2c before server sends FAILURE */
-	mock_io_close_s2c(&ctx.io);
-	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
 	ASSERT_TRUE(sa.result < 0);

@@ -23,6 +23,7 @@
 #include "ssh-internal.h"
 #include "dssh_test_internal.h"
 #include "dssh_test_alloc.h"
+#include "dssh_test_ossl.h"
 #include "mock_io.h"
 #include "test_dhgex_provider.h"
 
@@ -1960,7 +1961,9 @@ test_channel_independence(void)
 
 	/* Channel 2 should still work */
 	const uint8_t msg[] = "still alive";
-	dssh_chan_write(c2, 0, msg, sizeof(msg) - 1);
+	int write_ev = dssh_chan_poll(c2, DSSH_POLL_WRITE, 5000);
+	ASSERT_TRUE(write_ev & DSSH_POLL_WRITE);
+	ASSERT_EQ(dssh_chan_write(c2, 0, msg, sizeof(msg) - 1), sizeof(msg) - 1);
 
 	uint8_t buf[256];
 	int ev = dssh_chan_poll(sctx.ch2, DSSH_POLL_READ, 5000);
@@ -4508,6 +4511,227 @@ test_accept_zc(void)
 	return TEST_PASS;
 }
 
+/* A channel close on another thread must wait while demux has dropped
+ * buf_mtx to call a ZC consumer. */
+struct zc_close_race_state {
+	mtx_t mtx;
+	cnd_t cnd;
+	bool  entered;
+	bool  release;
+};
+
+static uint32_t
+blocking_zc_data_cb(dssh_channel ch, int stream, const uint8_t *data, size_t len, void *cbdata)
+{
+	(void)ch;
+	(void)stream;
+	(void)data;
+	struct zc_close_race_state *st = cbdata;
+
+	mtx_lock(&st->mtx);
+	st->entered = true;
+	cnd_broadcast(&st->cnd);
+	while (!st->release)
+		cnd_wait(&st->cnd, &st->mtx);
+	mtx_unlock(&st->mtx);
+	uint32_t consumed = len > UINT32_MAX ? UINT32_MAX : (uint32_t)len;
+
+	return consumed;
+}
+
+static int
+accept_subsys_blocking_zc(dssh_channel ch, const struct dssh_chan_params *p,
+	struct dssh_chan_accept_result *result, void *cbdata)
+{
+	(void)ch;
+	(void)p;
+	result->zc_cb = blocking_zc_data_cb;
+	result->zc_cbdata = cbdata;
+	return 0;
+}
+
+struct close_channel_ctx {
+	dssh_channel ch;
+	atomic_bool  started;
+	atomic_bool  done;
+	int          result;
+};
+
+static int
+close_channel_thread(void *arg)
+{
+	struct close_channel_ctx *ctx = arg;
+
+	atomic_store(&ctx->started, true);
+	ctx->result = dssh_chan_close(ctx->ch, -1);
+	atomic_store(&ctx->done, true);
+	return 0;
+}
+
+static int
+test_close_during_zc_callback(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct zc_close_race_state zc_st;
+	memset(&zc_st, 0, sizeof(zc_st));
+	if (mtx_init(&zc_st.mtx, mtx_plain) != thrd_success) {
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+	if (cnd_init(&zc_st.cnd) != thrd_success) {
+		mtx_destroy(&zc_st.mtx);
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	struct dssh_chan_accept_cbs zc_cbs = {
+		.subsystem = accept_subsys_blocking_zc,
+		.cbdata = &zc_st,
+	};
+	struct zc_accept_ctx sa = {
+		.server = ctx.server,
+		.cbs = &zc_cbs,
+	};
+	struct open_subsys_ctx oc = {
+		.client = ctx.client,
+		.server = ctx.server,
+		.subsystem = "close-during-zc",
+	};
+
+	thrd_t ct, st;
+	ASSERT_THRD_CREATE(&ct, client_open_subsys_thread, &oc);
+	ASSERT_THRD_CREATE(&st, server_accept_zc_thread, &sa);
+	thrd_join(ct, NULL);
+	thrd_join(st, NULL);
+	if (oc.client_ch == NULL || sa.server_ch == NULL) {
+		if (oc.client_ch != NULL)
+			dssh_chan_close(oc.client_ch, -1);
+		if (sa.server_ch != NULL)
+			dssh_chan_close(sa.server_ch, -1);
+		cnd_destroy(&zc_st.cnd);
+		mtx_destroy(&zc_st.mtx);
+		conn_cleanup(&ctx);
+		return TEST_SKIP;
+	}
+
+	static const uint8_t msg[] = "hold callback";
+	ASSERT_TRUE(dssh_chan_write(oc.client_ch, 0, msg, sizeof(msg)) > 0);
+
+	mtx_lock(&zc_st.mtx);
+	while (!zc_st.entered)
+		cnd_wait(&zc_st.cnd, &zc_st.mtx);
+	mtx_unlock(&zc_st.mtx);
+
+	struct close_channel_ctx close_ctx = {
+		.ch = sa.server_ch,
+		.result = DSSH_ERROR_INVALID,
+	};
+	atomic_init(&close_ctx.started, false);
+	atomic_init(&close_ctx.done, false);
+	thrd_t close_thread;
+	ASSERT_THRD_CREATE(&close_thread, close_channel_thread, &close_ctx);
+	while (!atomic_load(&close_ctx.started))
+		thrd_yield();
+	while (!atomic_load(&close_ctx.done) && !atomic_load(&sa.server_ch->closing))
+		thrd_yield();
+	bool closed_early = atomic_load(&close_ctx.done);
+
+	mtx_lock(&zc_st.mtx);
+	zc_st.release = true;
+	cnd_broadcast(&zc_st.cnd);
+	mtx_unlock(&zc_st.mtx);
+	thrd_join(close_thread, NULL);
+
+	ASSERT_FALSE(closed_early);
+	ASSERT_OK(close_ctx.result);
+	ASSERT_FALSE(dssh_session_is_terminated(ctx.server));
+	dssh_chan_close(oc.client_ch, -1);
+	cnd_destroy(&zc_st.cnd);
+	mtx_destroy(&zc_st.mtx);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static int
+test_dispatch_sync_failures(void)
+{
+	for (int n = 0; n < 5; n++) {
+		struct conn_ctx ctx;
+		if (conn_setup(&ctx) < 0)
+			return TEST_SKIP;
+
+		struct open_exec_ctx oc = {
+			.client = ctx.client,
+			.server = ctx.server,
+			.command = "dispatch-sync-failure",
+			.cbs = &accept_cbs_all,
+			.accept_timeout = 30000,
+		};
+		if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+			conn_cleanup(&ctx);
+			return TEST_FAIL;
+		}
+
+		uint8_t payload[9];
+		size_t pos = 0;
+
+		payload[pos++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
+		DSSH_PUT_U32(oc.server_ch->local_id, payload, &pos);
+		DSSH_PUT_U32(1, payload, &pos);
+		dssh_test_thrd_fail_after(n);
+		int ret = demux_dispatch(ctx.server, SSH_MSG_CHANNEL_WINDOW_ADJUST, payload, pos);
+
+		dssh_test_thrd_reset();
+		ASSERT_ERR(ret, DSSH_ERROR_TERMINATED);
+		ASSERT_TRUE(dssh_session_is_terminated(ctx.server));
+		/* conn_cleanup() joins the demux before freeing registered channels. */
+		conn_cleanup(&ctx);
+	}
+	return TEST_PASS;
+}
+
+static int
+test_detach_sync_failures(void)
+{
+	for (int n = 0; n < 2; n++) {
+		struct conn_ctx ctx;
+		if (conn_setup(&ctx) < 0)
+			return TEST_SKIP;
+
+		struct open_exec_ctx oc = {
+			.client = ctx.client,
+			.server = ctx.server,
+			.command = "detach-sync-failure",
+			.cbs = &accept_cbs_all,
+			.accept_timeout = 30000,
+		};
+		if (open_exec_channel(&oc) < 0 || oc.client_ch == NULL || oc.server_ch == NULL) {
+			conn_cleanup(&ctx);
+			return TEST_FAIL;
+		}
+
+		dssh_test_thrd_fail_after(n);
+		int ret = detach_channel(ctx.server, oc.server_ch);
+
+		dssh_test_thrd_reset();
+		if (n == 0)
+			ASSERT_ERR(ret, DSSH_ERROR_TERMINATED);
+		else
+			ASSERT_OK(ret);
+		ASSERT_TRUE(dssh_session_is_terminated(ctx.server));
+		/* A successful detach made this channel unreachable by demux, so
+		 * close the detached handle before session cleanup.  A failed detach
+		 * leaves it registered for session_stop() to free after joining demux. */
+		if (n == 1)
+			ASSERT_OK(dssh_chan_close(oc.server_ch, -1));
+		conn_cleanup(&ctx);
+	}
+	return TEST_PASS;
+}
+
 /* ================================================================
  * Item 74: bytebuf write truncation + window accounting
  * ================================================================ */
@@ -6606,6 +6830,9 @@ static struct dssh_test_entry tests[] = {
 
 	{ "test_subsystem_roundtrip",          test_subsystem_roundtrip },
 	{ "test_accept_zc",                    test_accept_zc },
+	{ "test_close_during_zc_callback",     test_close_during_zc_callback },
+	{ "test_dispatch_sync_failures",       test_dispatch_sync_failures },
+	{ "test_detach_sync_failures",         test_detach_sync_failures },
 
 	/* Deterministic branch coverage -- profiling-unstable */
 	{ "test_session_poll_nsec_overflow",   test_session_poll_nsec_overflow },
