@@ -78,6 +78,11 @@ build enforces `-Wconversion -Werror`; all implicit narrowing is a compile error
 All mutable state shared between the demux thread and API callers must be protected by locks or
 atomics. No unprotected shared mutable state.
 
+Locks MUST NEVER be held across application-provided callbacks or potentially blocking calls.
+Callbacks must be invoked with no library lock held. Before calling I/O, joining a thread, sleeping,
+or performing any other operation that may block, release every held lock; after reacquiring the
+required locks, revalidate all shared state before using it. No exceptions.
+
 ## No Deprecated Cryptography
 
 SHA-1-based algorithms (hmac-sha1, dh-group1-sha1, dh-group14-sha1, ssh-dss, 3des-cbc) are
