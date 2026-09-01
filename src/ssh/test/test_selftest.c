@@ -9,6 +9,7 @@
  */
 
 #include <errno.h>
+#include <poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <string.h>
@@ -50,6 +51,33 @@ enum callback_probe_kind {
 	CALLBACK_PROBE_RUNNING
 };
 
+/* Keep the application callbacks interruptible by session termination.
+ * Do not depend on cross-thread shutdown/close ordering to wake a blocking
+ * AF_UNIX socket operation on every supported platform. */
+static int
+socket_wait(int fd, short events, dssh_session sess)
+{
+	for (;;) {
+		if (dssh_session_is_terminated(sess))
+			return -1;
+		struct pollfd pfd = {
+			.fd = fd,
+			.events = events,
+		};
+		int ret = poll(&pfd, 1, 100);
+
+		if (ret < 0 && errno == EINTR)
+			continue;
+		if (ret < 0)
+			return -1;
+		if (ret == 0)
+			continue;
+		if ((pfd.revents & events) != 0
+		    || (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) != 0)
+			return 0;
+	}
+}
+
 static void
 run_callback_probe(dssh_session sess, enum callback_probe_kind kind)
 {
@@ -79,7 +107,7 @@ socket_tx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 	int fd = *(int *)cbdata;
 	size_t sent = 0;
 	while (sent < bufsz) {
-		if (dssh_session_is_terminated(sess))
+		if (socket_wait(fd, POLLOUT, sess) < 0)
 			return -1;
 		ssize_t n = send(fd, buf + sent, bufsz - sent, 0);
 		if (n < 0 && errno == EINTR)
@@ -108,7 +136,7 @@ socket_rx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 	int fd = *(int *)cbdata;
 	size_t got = 0;
 	while (got < bufsz) {
-		if (dssh_session_is_terminated(sess))
+		if (socket_wait(fd, POLLIN, sess) < 0)
 			return -1;
 		ssize_t n = recv(fd, buf + got, bufsz - got, 0);
 		if (n < 0 && errno == EINTR)
@@ -127,7 +155,7 @@ socket_rxline(uint8_t *buf, size_t bufsz, size_t *bytes_received,
 	int fd = *(int *)cbdata;
 	size_t have = 0;
 	while (have < bufsz) {
-		if (dssh_session_is_terminated(sess))
+		if (socket_wait(fd, POLLIN, sess) < 0)
 			return -1;
 		ssize_t n = recv(fd, &buf[have], 1, 0);
 		if (n < 0 && errno == EINTR)
