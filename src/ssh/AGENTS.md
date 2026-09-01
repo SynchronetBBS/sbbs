@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working on DeuceSSH.
 
+Before inspecting, modifying, building, or testing DeuceSSH, read `RULES.md` in
+full and follow it.  Its requirements are mandatory for all work in this
+repository.
+
 ## Project Overview
 
 **DeuceSSH** is a from-scratch SSH library in standard C17, implementing
