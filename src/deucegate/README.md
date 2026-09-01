@@ -27,6 +27,12 @@ deucegate --root /srv/gamesrv
 
 DeuceGate runs in the foreground and logs to stderr. SIGINT/SIGTERM or a Windows console shutdown stops the listener, active SSH sessions, and their doors cleanly.
 
+### systemd user service
+
+Linux users can run DeuceGate under their per-user systemd manager. A ready-to-customize unit, an optional hardening drop-in, and installation instructions are in [`examples/systemd`](examples/systemd/README.md). These files are included in the standalone DeuceGate source artifact.
+
+The example installs the executable as `~/.local/bin/deucegate`, uses `~/ib-gamesrv` as the GameSrv root, and sends output to the systemd journal. Change those paths to match the installation. A user service should normally use an unprivileged SSH port such as 2222 rather than port 22. To keep it running while the user is logged out, enable lingering for that account as described in the example instructions.
+
 ### SSH settings
 
 These optional keys belong in `[CONFIGURATION]` in `config/gamesrv.ini`:

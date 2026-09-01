@@ -1,0 +1,17 @@
+[Unit]
+Description=DeuceGate SSH door server
+Documentation=https://deucegate.bbsdev.net/
+
+[Service]
+Type=simple
+WorkingDirectory=%h
+ExecStartPre=%h/.local/bin/deucegate --root %h/ib-gamesrv --check-config
+ExecStart=%h/.local/bin/deucegate --root %h/ib-gamesrv
+StandardOutput=journal
+StandardError=journal
+Restart=on-failure
+RestartSec=10s
+TimeoutStopSec=30s
+
+[Install]
+WantedBy=default.target
