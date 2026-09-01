@@ -4962,6 +4962,9 @@ test_server_send_fail_password_success(void)
 		ASSERT_EQ(msg_type, SSH_MSG_SERVICE_ACCEPT);
 	}
 
+	/* Close s2c before the request can trigger USERAUTH_SUCCESS. */
+	mock_io_close_s2c(&ctx.io);
+
 	/* Send password auth request */
 	{
 		static const char user[] = "sysop";
@@ -4987,8 +4990,6 @@ test_server_send_fail_password_success(void)
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
-	/* Close s2c before server sends USERAUTH_SUCCESS */
-	mock_io_close_s2c(&ctx.io);
 	mock_io_close_c2s(&ctx.io);
 
 	thrd_join(st, NULL);
