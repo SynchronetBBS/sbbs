@@ -623,6 +623,24 @@ window_atomic_sub(atomic_uint_least32_t *win, uint32_t bytes)
 	}
 }
 
+/* Queue receive-window credit without advertising it yet.  Caller holds
+ * buf_mtx.  Only the transport drainer moves this credit to local_window. */
+static uint32_t
+queue_window_adjust_locked(struct dssh_channel_s *ch, uint32_t bytes)
+{
+	uint32_t outstanding = window_add(ch->local_window, ch->window_adjust_pending);
+
+	outstanding = window_add(outstanding, ch->window_adjust_inflight);
+	uint32_t capacity = UINT32_MAX - outstanding;
+	uint32_t queued   = bytes < capacity ? bytes : capacity;
+
+	if (queued > 0) {
+		ch->window_adjust_pending += queued;
+		atomic_store(&ch->wa_slot.ready, true);
+	}
+	return queued;
+}
+
 /* ================================================================
  * Low-level wire functions -- internal only.
  * Used by the high-level API; not part of the public interface.
@@ -635,18 +653,34 @@ send_window_adjust(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint3
 {
 	uint8_t msg[32];
 	size_t  pos = 0;
-
-	int ret;
+	int     ret;
 
 	msg[pos++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
 	DSSH_PUT_U32(ch->remote_id, msg, &pos);
 	DSSH_PUT_U32(bytes, msg, &pos);
 
+	if (dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
+	ch->window_adjust_inflight = window_add(ch->window_adjust_inflight, bytes);
+	if (dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
+
 	ret = send_packet(sess, msg, pos, NULL);
-	if (ret == 0) {
-		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+
+	if (dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
+	if (ret == 0)
 		ch->local_window = window_add(ch->local_window, bytes);
-		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+	if (bytes <= ch->window_adjust_inflight)
+		ch->window_adjust_inflight -= bytes;
+	else
+		ch->window_adjust_inflight = 0;
+	int br = cnd_broadcast(&ch->poll_cnd);
+	int ur = mtx_unlock(&ch->buf_mtx);
+
+	if (br != thrd_success || ur != thrd_success) {
+		session_set_terminate(sess);
+		return DSSH_ERROR_TERMINATED;
 	}
 	return ret;
 }
@@ -918,13 +952,16 @@ maybe_replenish_window(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 		return 0;
 	}
 
-	/* Replenish when window drops below half the target.
+	/* Replenish when advertised + queued credit drops below half the target.
          * Cap by free buffer space so we never grant more window
          * than the buffers can absorb. */
 	uint32_t add = 0;
+	uint32_t outstanding = window_add(ch->local_window, ch->window_adjust_pending);
 
-	if (ch->local_window < ch->window_max / 2) {
-		add = ch->window_max - ch->local_window;
+	outstanding = window_add(outstanding, ch->window_adjust_inflight);
+
+	if (outstanding < ch->window_max / 2) {
+		add = ch->window_max - outstanding;
 		if (ch->chan_type == DSSH_CHAN_SESSION) {
 			size_t buf_free = bytebuf_free_space(&ch->buf.stdout_buf);
 			size_t err_free = bytebuf_free_space(&ch->buf.stderr_buf);
@@ -934,25 +971,18 @@ maybe_replenish_window(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 			if (add > buf_cap)
 				add = buf_cap;
 		}
-		/* Pre-credit local_window under buf_mtx so it stays
-		 * consistent with the WINDOW_ADJUST we're about to issue.
-		 * Mirrors the ZC mode pattern in handle_channel_data —
-		 * if a subsequent demux call subtracts from local_window
-		 * before our adjust hits the wire, the math still works
-		 * out (we've optimistically applied the credit). */
-		if (add > 0)
-			ch->local_window = window_add(ch->local_window, add);
+		add = queue_window_adjust_locked(ch, add);
 	}
 
 	dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 
 	if (add > 0)
-		/* Use the wa_slot path (try-lock + coalescing slow path)
+		/* Schedule the pre-reserved wa_slot (try-lock + queued slow path)
 		 * so the WINDOW_ADJUST never has to wait for a bulk-data
 		 * sender to release tx_mtx — matters under heavy
 		 * bidirectional channel load.  Keeps stream-mode parity
 		 * with ZC mode, which has always used wa_slot. */
-		return send_to_wa_slot(sess, ch, add);
+		return schedule_wa_slot(sess);
 	return 0;
 }
 
@@ -1154,7 +1184,8 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch, c
 /*
  * Handle CHANNEL_DATA -- releases buf_mtx, calls the channel's zc_cb
  * with a direct pointer into rx_packet, then re-acquires buf_mtx and
- * adjusts local_window by the consumed amount returned by the callback.
+ * debits local_window by the delivered length, and grants back only the
+ * consumed amount returned by the callback.
  *
  * Called under buf_mtx.  Returns 1 if caller should return immediately
  * (channel closing), 0 otherwise.
@@ -1202,18 +1233,21 @@ handle_channel_data(struct dssh_session_s *sess, struct dssh_channel_s *ch, cons
 	if (bypass)
 		return 0;
 
-	if (consumed <= ch->local_window)
-		ch->local_window -= consumed;
+	uint32_t credit = consumed < dlen ? consumed : dlen;
+
+	if (dlen <= ch->local_window)
+		ch->local_window -= dlen;
 	else
 		ch->local_window = 0;
 
 	/* ZC mode only: send WINDOW_ADJUST for consumed bytes.
 	 * Stream mode uses maybe_replenish_window() after app reads. */
-	if (ch->io_model == DSSH_IO_ZC && consumed > 0) {
-		ch->local_window += consumed;
+	if (ch->io_model == DSSH_IO_ZC && credit > 0) {
+		credit = queue_window_adjust_locked(ch, credit);
 
 		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-		send_to_wa_slot(sess, ch, consumed);
+		if (credit > 0)
+			schedule_wa_slot(sess);
 		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 		if (atomic_load(&ch->closing)) {
 			dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
@@ -1269,18 +1303,21 @@ handle_channel_extended_data(struct dssh_session_s *sess, struct dssh_channel_s 
 	if (bypass)
 		return 0;
 
-	if (consumed <= ch->local_window)
-		ch->local_window -= consumed;
+	uint32_t credit = consumed < dlen ? consumed : dlen;
+
+	if (dlen <= ch->local_window)
+		ch->local_window -= dlen;
 	else
 		ch->local_window = 0;
 
 	/* ZC mode only: send WINDOW_ADJUST for consumed bytes.
 	 * Stream mode uses maybe_replenish_window() after app reads. */
-	if (ch->io_model == DSSH_IO_ZC && consumed > 0) {
-		ch->local_window += consumed;
+	if (ch->io_model == DSSH_IO_ZC && credit > 0) {
+		credit = queue_window_adjust_locked(ch, credit);
 
 		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
-		send_to_wa_slot(sess, ch, consumed);
+		if (credit > 0)
+			schedule_wa_slot(sess);
 		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
 		if (atomic_load(&ch->closing)) {
 			dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
@@ -1337,6 +1374,15 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type, uint8_t *payload, 
 	if (ch->chan_type == 0) {
 		dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
 		return 0;
+	}
+
+	/* A WINDOW_ADJUST sender calls the consumer without buf_mtx held.
+	 * The peer can receive that adjustment and race data back before
+	 * the callback returns.  Defer that data until the sender publishes
+	 * the corresponding local_window increase. */
+	if (msg_type == SSH_MSG_CHANNEL_DATA || msg_type == SSH_MSG_CHANNEL_EXTENDED_DATA) {
+		while (ch->window_adjust_inflight > 0 && !sess->terminate)
+			dssh_thrd_check(sess, cnd_wait(&ch->poll_cnd, &ch->buf_mtx));
 	}
 
 	switch (msg_type) {
@@ -2220,7 +2266,7 @@ zc_send_inner(struct dssh_channel_s *ch, size_t len)
 	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
 		session_set_terminate(sess);
 
-	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+	tx_unlock_with_slots(sess);
 	return ret;
 }
 
@@ -2232,7 +2278,7 @@ zc_cancel_inner(struct dssh_channel_s *ch)
 {
 	struct dssh_session_s *sess = ch->sess;
 
-	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+	tx_unlock_with_slots(sess);
 }
 
 /* ---- Internal stream ZC callback (RX path) ---- */

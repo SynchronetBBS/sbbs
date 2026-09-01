@@ -291,7 +291,8 @@ struct dssh_channel_s {
 	void                  *event_cbdata;
 
 	/* C11 synchronization (platform-dependent size).
-         * Lock order: channel_mtx -> buf_mtx -> cb_mtx -> tx_mtx. */
+	 * TX slot draining uses tx_mtx -> channel_mtx -> buf_mtx.
+	 * Callers must release buf_mtx before acquiring tx_mtx. */
 	mtx_t       buf_mtx;
 	mtx_t       cb_mtx;  /* protects callback function pointer + cbdata pairs */
 	cnd_t       poll_cnd;
@@ -301,6 +302,8 @@ struct dssh_channel_s {
 	uint32_t              local_id;
 	uint32_t              remote_id;
 	uint32_t              local_window;
+	uint32_t              window_adjust_pending;
+	uint32_t              window_adjust_inflight;
 	atomic_uint_least32_t remote_window;
 	uint32_t              remote_max_packet;
 	uint32_t              window_max;

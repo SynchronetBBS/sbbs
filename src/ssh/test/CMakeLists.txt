@@ -494,7 +494,8 @@ set(CONN_TESTS
 	test_double_eof_close test_data_dlen_exceeds_payload
 	test_demux_chan_type_zero test_send_eof_already_sent
 	test_send_close_already_sent test_replenish_after_eof
-	test_replenish_low_window test_window_underflow_to_zero
+	test_replenish_low_window test_replenish_queued_accounting
+	test_zc_consumption_clamped test_window_underflow_to_zero
 	test_window_add_overflow
 	test_chan_write_not_open test_chan_write_close_recv
 	test_subsystem_roundtrip test_accept_zc
@@ -641,6 +642,7 @@ set(SELFTEST_TESTS
 	test_self_handshake_curve25519
 	test_self_auth_password
 	test_self_exec_echo
+	test_self_window_adjust_race
 	test_self_exec_exit_code
 	test_self_shell_echo
 	test_self_shell_large_data

@@ -306,9 +306,7 @@ channel_slot_fixture_cleanup(dssh_session sess, struct channel_slot_fixture *fix
 static void
 arm_channel_wa_slot(struct dssh_channel_s *channel)
 {
-	memset(&channel->wa_slot.buf[9], 0, 9);
-	channel->wa_slot.buf[9] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
-	channel->wa_slot.payload_len = 9;
+	channel->window_adjust_pending = 1;
 	atomic_store(&channel->wa_slot.ready, true);
 }
 

@@ -3871,6 +3871,195 @@ test_maybe_replenish_low_window(void)
 	return TEST_PASS;
 }
 
+struct tx_hold_state {
+	dssh_session sess;
+	mtx_t        mtx;
+	cnd_t        cnd;
+	bool         locked;
+	bool         release;
+};
+
+static int
+hold_tx_until_released(void *arg)
+{
+	struct tx_hold_state *st = arg;
+
+	mtx_lock(&st->sess->trans.tx_mtx);
+	mtx_lock(&st->mtx);
+	st->locked = true;
+	cnd_broadcast(&st->cnd);
+	while (!st->release)
+		cnd_wait(&st->cnd, &st->mtx);
+	mtx_unlock(&st->mtx);
+	tx_unlock_with_slots(st->sess);
+	return 0;
+}
+
+static int
+test_replenish_queued_accounting(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "echo repqueue", .cbs = &accept_cbs_all,
+		.accept_timeout = 30000,
+	};
+	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	struct tx_hold_state st = { .sess = ctx.server };
+	ASSERT_EQ(mtx_init(&st.mtx, mtx_plain), thrd_success);
+	ASSERT_EQ(cnd_init(&st.cnd), thrd_success);
+	thrd_t holder;
+	ASSERT_THRD_CREATE(&holder, hold_tx_until_released, &st);
+
+	mtx_lock(&st.mtx);
+	while (!st.locked)
+		cnd_wait(&st.cnd, &st.mtx);
+	mtx_unlock(&st.mtx);
+
+	mtx_lock(&oc.server_ch->buf_mtx);
+	oc.server_ch->window_max = 32;
+	oc.server_ch->local_window = 1;
+	oc.server_ch->window_adjust_pending = 0;
+	oc.server_ch->window_adjust_inflight = 0;
+	mtx_unlock(&oc.server_ch->buf_mtx);
+
+	ASSERT_OK(maybe_replenish_window(ctx.server, oc.server_ch));
+	uint8_t fail[8];
+	size_t fail_pos = 0;
+
+	fail[fail_pos++] = SSH_MSG_CHANNEL_FAILURE;
+	DSSH_PUT_U32(oc.server_ch->remote_id, fail, &fail_pos);
+	ASSERT_OK(send_to_slot(ctx.server, &oc.server_ch->chan_fail_slot, fail, fail_pos));
+	mtx_lock(&oc.server_ch->buf_mtx);
+	uint32_t local = oc.server_ch->local_window;
+	uint32_t pending = oc.server_ch->window_adjust_pending;
+	uint32_t inflight = oc.server_ch->window_adjust_inflight;
+	bool wa_ready = atomic_load(&oc.server_ch->wa_slot.ready);
+	bool fail_ready = atomic_load(&oc.server_ch->chan_fail_slot.ready);
+	mtx_unlock(&oc.server_ch->buf_mtx);
+	ASSERT_EQ_U(local, 1);
+	ASSERT_EQ_U(pending, 31);
+	ASSERT_EQ_U(inflight, 0);
+	ASSERT_TRUE(wa_ready);
+	ASSERT_TRUE(fail_ready);
+
+	/* Pending credit participates in the threshold calculation, so a
+	 * second reader cannot queue a duplicate grant. */
+	ASSERT_OK(maybe_replenish_window(ctx.server, oc.server_ch));
+	mtx_lock(&oc.server_ch->buf_mtx);
+	pending = oc.server_ch->window_adjust_pending;
+	mtx_unlock(&oc.server_ch->buf_mtx);
+	ASSERT_EQ_U(pending, 31);
+
+	mtx_lock(&st.mtx);
+	st.release = true;
+	cnd_broadcast(&st.cnd);
+	mtx_unlock(&st.mtx);
+	thrd_join(holder, NULL);
+
+	mtx_lock(&oc.server_ch->buf_mtx);
+	local = oc.server_ch->local_window;
+	pending = oc.server_ch->window_adjust_pending;
+	inflight = oc.server_ch->window_adjust_inflight;
+	wa_ready = atomic_load(&oc.server_ch->wa_slot.ready);
+	fail_ready = atomic_load(&oc.server_ch->chan_fail_slot.ready);
+	mtx_unlock(&oc.server_ch->buf_mtx);
+	ASSERT_EQ_U(local, 32);
+	ASSERT_EQ_U(pending, 0);
+	ASSERT_EQ_U(inflight, 0);
+	ASSERT_FALSE(wa_ready);
+	ASSERT_FALSE(fail_ready);
+
+	cnd_destroy(&st.cnd);
+	mtx_destroy(&st.mtx);
+	dssh_chan_close(oc.server_ch, 0);
+	dssh_chan_close(oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+static uint32_t
+zc_accounting_cb(dssh_channel ch, int stream, const uint8_t *data, size_t len, void *cbdata)
+{
+	(void)ch;
+	(void)stream;
+	(void)data;
+	(void)len;
+	return *(uint32_t *)cbdata;
+}
+
+static int
+test_zc_consumption_clamped(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "echo zcclamp", .cbs = &accept_cbs_all,
+		.accept_timeout = 30000,
+	};
+	if (open_exec_channel(&oc) < 0 || !oc.client_ch || !oc.server_ch) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+
+	mtx_lock(&oc.server_ch->buf_mtx);
+	uint32_t consumed = UINT32_MAX;
+
+	oc.server_ch->io_model = DSSH_IO_ZC;
+	oc.server_ch->zc_cb = zc_accounting_cb;
+	oc.server_ch->zc_cbdata = &consumed;
+	oc.server_ch->local_window = 4;
+	oc.server_ch->window_max = 4;
+	oc.server_ch->setup_mode = false;
+	mtx_unlock(&oc.server_ch->buf_mtx);
+
+	uint8_t payload[16];
+	size_t pos = 0;
+	payload[pos++] = SSH_MSG_CHANNEL_DATA;
+	DSSH_PUT_U32(oc.server_ch->local_id, payload, &pos);
+	DSSH_PUT_U32(4, payload, &pos);
+	memcpy(&payload[pos], "four", 4);
+	pos += 4;
+
+	ASSERT_OK(demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos));
+	mtx_lock(&oc.server_ch->buf_mtx);
+	uint32_t local = oc.server_ch->local_window;
+	uint32_t pending = oc.server_ch->window_adjust_pending;
+	uint32_t inflight = oc.server_ch->window_adjust_inflight;
+	mtx_unlock(&oc.server_ch->buf_mtx);
+	ASSERT_EQ_U(local, 4);
+	ASSERT_EQ_U(pending, 0);
+	ASSERT_EQ_U(inflight, 0);
+
+	/* The full packet consumes peer credit even if the callback consumes
+	 * only part of it; only the consumed bytes are granted back. */
+	consumed = 2;
+	ASSERT_OK(demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos));
+	mtx_lock(&oc.server_ch->buf_mtx);
+	local = oc.server_ch->local_window;
+	pending = oc.server_ch->window_adjust_pending;
+	inflight = oc.server_ch->window_adjust_inflight;
+	mtx_unlock(&oc.server_ch->buf_mtx);
+	ASSERT_EQ_U(local, 2);
+	ASSERT_EQ_U(pending, 0);
+	ASSERT_EQ_U(inflight, 0);
+
+	dssh_chan_close(oc.server_ch, 0);
+	dssh_chan_close(oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
 static int
 test_demux_window_underflow_to_zero(void)
 {
@@ -4364,7 +4553,9 @@ test_demux_data_truncation_window(void)
 
 	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
 
-	ASSERT_EQ(oc.server_ch->local_window, (uint32_t)12);
+	/* The peer consumed ten bytes of window even though only four fit
+	 * in the stream buffer; dropped bytes are not granted back. */
+	ASSERT_EQ(oc.server_ch->local_window, (uint32_t)6);
 
 	dssh_chan_close(oc.server_ch, 0);
 	dssh_chan_close(oc.client_ch, 0);
@@ -6404,6 +6595,8 @@ static struct dssh_test_entry tests[] = {
 	{ "test_send_close_already_sent",      test_send_close_already_sent },
 	{ "test_replenish_after_eof",          test_maybe_replenish_after_eof },
 	{ "test_replenish_low_window",         test_maybe_replenish_low_window },
+	{ "test_replenish_queued_accounting",  test_replenish_queued_accounting },
+	{ "test_zc_consumption_clamped",        test_zc_consumption_clamped },
 	{ "test_window_underflow_to_zero",     test_demux_window_underflow_to_zero },
 	{ "test_window_add_overflow",          test_window_add_overflow },
 

@@ -31,6 +31,20 @@
  * Both client and server use the same callback functions.
  * ================================================================ */
 
+static dssh_session delayed_tx_sess;
+static atomic_bool  delayed_window_adjust;
+
+static void
+delay_window_adjust_after_send(dssh_session sess, uint8_t msg_type)
+{
+	if (sess == delayed_tx_sess && msg_type == SSH_MSG_CHANNEL_WINDOW_ADJUST) {
+		atomic_store(&delayed_window_adjust, true);
+		struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+
+		thrd_sleep(&ts, NULL);
+	}
+}
+
 static int
 socket_tx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 {
@@ -189,6 +203,8 @@ selftest_cleanup(struct selftest_ctx *ctx)
 		close(snap.client_fd);
 	if (snap.server_fd >= 0)
 		close(snap.server_fd);
+	delayed_tx_sess = NULL;
+	atomic_store(&delayed_window_adjust, false);
 	dssh_test_reset_global_config();
 }
 
@@ -820,6 +836,60 @@ test_self_exec_echo(void)
 	}
 	ASSERT_EQ_U(recvd, sizeof(data) - 1);
 	ASSERT_MEM_EQ(buf, data, sizeof(data) - 1);
+
+	dssh_chan_close(ch, 0);
+	thrd_join(ctx.server_thread, NULL);
+	ctx.server_thread_active = false;
+	ASSERT_EQ(sarg.result, 0);
+
+	selftest_cleanup(&ctx);
+	return TEST_PASS;
+}
+
+/* ================================================================
+ * Test: data races back while WINDOW_ADJUST tx callback is active
+ * ================================================================ */
+
+static int
+test_self_window_adjust_race(void)
+{
+	struct selftest_ctx ctx;
+	if (selftest_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	/* Delay after the server's WINDOW_ADJUST reaches the socket but
+	 * before tx_finalize(), send_packet(), and send_window_adjust()
+	 * return.  This deterministically opens the publication race. */
+	delayed_tx_sess = ctx.server;
+	atomic_store(&delayed_window_adjust, false);
+	dssh_test_tx_after_send_hook = delay_window_adjust_after_send;
+
+	ASSERT_OK(dssh_session_start(ctx.client));
+	ASSERT_OK(dssh_session_start(ctx.server));
+
+	struct server_echo_arg sarg = { .ctx = &ctx };
+
+	ASSERT_OK(selftest_start_thread(&ctx, server_echo_thread, &sarg));
+
+	dssh_channel ch = open_exec(ctx.client, "window-race");
+
+	ASSERT_NOT_NULL(ch);
+	int wev = dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
+
+	ASSERT_TRUE(wev > 0);
+	const uint8_t data[] = "window-race";
+	int64_t written = dssh_chan_write(ch, 0, data, sizeof(data) - 1);
+
+	ASSERT_EQ_U(written, sizeof(data) - 1);
+	int rev = dssh_chan_poll(ch, DSSH_POLL_READ, 5000);
+
+	ASSERT_TRUE(rev > 0);
+	uint8_t buf[32];
+	int64_t recvd = dssh_chan_read(ch, 0, buf, sizeof(buf));
+
+	ASSERT_EQ_U(recvd, sizeof(data) - 1);
+	ASSERT_MEM_EQ(buf, data, sizeof(data) - 1);
+	ASSERT_TRUE(atomic_load(&delayed_window_adjust));
 
 	dssh_chan_close(ch, 0);
 	thrd_join(ctx.server_thread, NULL);
@@ -2893,6 +2963,7 @@ static struct dssh_test_entry tests[] = {
 	{ "test_self_handshake_curve25519",     test_self_handshake_curve25519 },
 	{ "test_self_auth_password",            test_self_auth_password },
 	{ "test_self_exec_echo",               test_self_exec_echo },
+	{ "test_self_window_adjust_race",       test_self_window_adjust_race },
 	{ "test_self_exec_exit_code",          test_self_exec_exit_code },
 	{ "test_self_shell_echo",              test_self_shell_echo },
 	{ "test_self_shell_large_data",        test_self_shell_large_data },

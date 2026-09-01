@@ -177,6 +177,8 @@ struct dssh_chan_event {
  * the peer sent a zero-byte data message (legal per RFC 4254).
  * Callbacks MUST handle len == 0 as a no-op; it is NOT EOF.  EOF
  * is delivered separately as DSSH_EVENT_EOF on the event queue.
+ * A return value greater than len is clamped to len, so a callback
+ * cannot grant the peer more receive-window credit than it consumed.
  * The exception is a channel opened with DSSH_PARAM_ACCEPT_EARLY_
  * DATA, which delivers full pre-setup wire payloads without
  * window truncation. */

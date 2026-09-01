@@ -183,6 +183,7 @@ struct dssh_transport_state_s {
 	bool        client;
 	atomic_bool rekey_in_progress;     /* true between KEXINIT and NEWKEYS */
 	bool        rekey_pending;         /* deferred auto-rekey (set in recv_packet) */
+	bool        tx_slots_pending;      /* protected by tx_queue_mtx */
 
 				       /* Char arrays (naturally aligned, go last) */
 	char id_str[254];
@@ -224,7 +225,8 @@ DSSH_PRIVATE int      send_commit_sensitive(struct dssh_session_s *sess, size_t 
 DSSH_PRIVATE void     send_cancel(struct dssh_session_s *sess);
 DSSH_PRIVATE int      send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8_t *payload,
 	 size_t payload_len);
-DSSH_PRIVATE int      send_to_wa_slot(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint32_t bytes);
+DSSH_PRIVATE int      schedule_wa_slot(struct dssh_session_s *sess);
+DSSH_PRIVATE void     tx_unlock_with_slots(struct dssh_session_s *sess);
 DSSH_PRIVATE size_t   tx_slot_buf_size(size_t max_payload, size_t block_size, uint16_t mac_digest);
 DSSH_PRIVATE int      alloc_tx_slot(struct dssh_tx_slot *slot, size_t max_payload, size_t block_size,
 	 uint16_t mac_digest);
