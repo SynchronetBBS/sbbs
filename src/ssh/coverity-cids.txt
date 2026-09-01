@@ -29,14 +29,14 @@
 503390 IGNORE: false positive; handle_channel_request releases buf_mtx on every early-return path and its nested send/disconnect handling releases channel_mtx; the former nested channel-slot termination defect is fixed by deferred termination
 503391 IGNORE: false positive; accept_channel_init balances channel-table locks, and a failed open-confirmation send releases the termination path's accept_mtx before returning NULL
 503392 IGNORE: false positive; kexinit releases accept_mtx before rekey reacquires tx_mtx, so the claimed accept_mtx-to-tx_mtx side of the lock-order cycle does not exist
-503393 IGNORE: false positive; recv_packet_raw owns rx_mtx and its supported callers hold neither channel_mtx nor accept_mtx
-503396 IGNORE: false positive; the zero-copy API intentionally transfers the held tx_mtx from zc_getbuf through zc_send or zc_cancel
+503393 IGNORE: false positive; recv_packet_raw has a single RX owner and its supported callers hold neither channel_mtx nor accept_mtx
+503396 IGNORE: false positive; the zero-copy API intentionally transfers logical packet-engine ownership from zc_getbuf through zc_send or zc_cancel without retaining a mutex
 503397 IGNORE: false positive after the TX-slot termination fix; Coverity conflates successful channel_mtx acquisition with dssh_thrd_check's mutually exclusive error path into session_set_terminate
 503398 IGNORE: false positive; authentication is sequential and completes before dssh_session_start creates the demux thread
-503400 IGNORE: false positive; zc_send_inner holds tx_mtx but neither acquires nor inherits accept_mtx
+503400 IGNORE: false positive; zc_send_inner has exclusive packet-engine ownership but holds no mutex while sending and neither acquires nor inherits accept_mtx
 503401 IGNORE: false positive; got is below bufsz before subtraction and recv cannot return more than the requested remainder
 503403 IGNORE: false positive; handle_channel_request releases buf_mtx on the error path and does not inherit channel_mtx
-503404 IGNORE: intentional contract; send_begin transfers the held tx_mtx to send_commit or send_cancel
+503404 IGNORE: intentional contract; send_begin transfers logical packet-engine ownership to send_commit or send_cancel without retaining a mutex
 503405 IGNORE: false positive; auth_server_impl runs before connection mutex initialization and does not inherit channel_mtx
 503406 IGNORE: false positive; negotiate_algorithms neither acquires nor inherits channel_mtx
 503407 IGNORE: duplicate symptom of CID 503397; the underlying channel_mtx recursion is fixed by deferred termination
@@ -160,6 +160,6 @@
 505447 IGNORE: false positive; the reported reverse edge carries locks from dssh_thrd_check or session_set_terminate failure paths into a mutually exclusive successful path where those locks are not retained
 505449 IGNORE: false positive; rekey_in_progress is atomic_bool and this access is an atomic load, so tx_mtx is not required for race-free access
 505450 IGNORE: false positive; extra is a function-owned allocation passed to a synchronous serializer that does not retain it, so no other thread can change the pointer or allocation
-505457 IGNORE: false positive; caller_seq is a function-local scalar captured while tx_mtx is held and cannot be changed by another thread after any callee returns
+505457 IGNORE: false positive; caller_seq is a function-local scalar captured by the exclusive packet-engine owner and cannot be changed by another thread after any callee returns
 505458 IGNORE: false positive; send_commit_inner does not retain accept_mtx or channel_mtx because its callees release successful acquisitions and dssh_thrd_check's error path is mutually exclusive
 505459 IGNORE: false positive; Coverity carries accept_mtx or channel_mtx ownership out of tx_gather_with_packet and session_set_terminate even though both release those locks before returning

@@ -220,8 +220,14 @@ dssh_serialize_uint32(uint32_t val, uint8_t *buf, size_t bufsz, size_t *pos)
 static bool
 session_mark_terminated(struct dssh_session_s *sess)
 {
-	if (atomic_exchange(&sess->terminate, true))
-		return false;
+	return !atomic_exchange(&sess->terminate, true);
+}
+
+static void
+session_notify_terminated(struct dssh_session_s *sess)
+{
+	if (atomic_exchange(&sess->terminate_notified, true))
+		return;
 
 	/* Notify the application so it can close sockets or signal
 	 * its event loop, unblocking any I/O callbacks. */
@@ -229,48 +235,58 @@ session_mark_terminated(struct dssh_session_s *sess)
 
 	if (tcb)
 		tcb(sess, sess->terminate_cbdata);
-	return true;
 }
 
 static void
-session_wake_terminated(struct dssh_session_s *sess, bool tx_locked)
+session_wake_terminated(struct dssh_session_s *sess)
 {
-	/* Wake senders blocked during rekey.  The predicate is checked with
-	 * tx_mtx held, so an ordinary caller must acquire that mutex before
-	 * broadcasting.  A busy trylock does not establish ownership: another
-	 * thread may own the mutex and be about to enter cnd_wait. */
-	if (tx_locked) {
-		dssh_thrd_check(sess, cnd_broadcast(&sess->trans.rekey_cnd));
-	}
-	else if (dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_mtx)) == thrd_success) {
-		dssh_thrd_check(sess, cnd_broadcast(&sess->trans.rekey_cnd));
-		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+	/* Wake senders blocked on packet-engine ownership or rekey. */
+	if (dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_mtx)) == thrd_success) {
+		dssh_thrd_check_locked(sess, cnd_broadcast(&sess->trans.rekey_cnd));
+		dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
 	}
 
 	/* Wake demux thread stalled on an occupied TX slot */
 	if (dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx)) == thrd_success) {
-		dssh_thrd_check(sess, cnd_broadcast(&sess->trans.tx_slot_cnd));
-		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
+		dssh_thrd_check_locked(sess, cnd_broadcast(&sess->trans.tx_slot_cnd));
+		dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
 	}
 
 	/* Wake conn-layer waiters if initialized */
 	if (sess->conn_initialized) {
 		if (dssh_thrd_check(sess, mtx_lock(&sess->accept_mtx)) == thrd_success) {
-			dssh_thrd_check(sess, cnd_broadcast(&sess->accept_cnd));
-			dssh_thrd_check(sess, mtx_unlock(&sess->accept_mtx));
+			dssh_thrd_check_locked(sess, cnd_broadcast(&sess->accept_cnd));
+			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->accept_mtx));
 		}
 
-		/* Lock order: channel_mtx then buf_mtx. */
-		if (dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx)) == thrd_success) {
+		/* Pin and wake one channel at a time so channel_mtx is never held
+		 * while acquiring buf_mtx. */
+		for (;;) {
+			struct dssh_channel_s *ch = NULL;
+			if (dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx)) != thrd_success)
+				break;
 			for (size_t i = 0; i < sess->channel_count; i++) {
-				struct dssh_channel_s *ch = sess->channels[i];
+				struct dssh_channel_s *candidate = sess->channels[i];
 
-				if (dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx)) == thrd_success) {
-					dssh_thrd_check(sess, cnd_broadcast(&ch->poll_cnd));
-					dssh_thrd_check(sess, mtx_unlock(&ch->buf_mtx));
+				if (!atomic_exchange_explicit(&candidate->terminate_woken, true,
+				    memory_order_acq_rel)) {
+					atomic_fetch_add_explicit(&candidate->tx_refs, 1, memory_order_acq_rel);
+					ch = candidate;
+					break;
 				}
 			}
-			dssh_thrd_check(sess, mtx_unlock(&sess->channel_mtx));
+			if (dssh_thrd_check_unlock(sess, mtx_unlock(&sess->channel_mtx)) != thrd_success) {
+				if (ch != NULL)
+					atomic_fetch_sub_explicit(&ch->tx_refs, 1, memory_order_acq_rel);
+				break;
+			}
+			if (ch == NULL)
+				break;
+			if (dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx)) == thrd_success) {
+				dssh_thrd_check_locked(sess, cnd_broadcast(&ch->poll_cnd));
+				dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+			}
+			atomic_fetch_sub_explicit(&ch->tx_refs, 1, memory_order_acq_rel);
 		}
 	}
 }
@@ -278,21 +294,24 @@ session_wake_terminated(struct dssh_session_s *sess, bool tx_locked)
 DSSH_PRIVATE void
 session_set_terminate(struct dssh_session_s *sess)
 {
-	if (session_mark_terminated(sess))
-		session_wake_terminated(sess, false);
-}
-
-DSSH_PRIVATE void
-session_set_terminate_tx_locked(struct dssh_session_s *sess)
-{
-	if (session_mark_terminated(sess))
-		session_wake_terminated(sess, true);
+	(void)session_mark_terminated(sess);
+	if (atomic_load_explicit(&sess->lock_ownership_failed, memory_order_acquire))
+		return;
+	session_notify_terminated(sess);
+	if (!atomic_exchange(&sess->terminate_wake_started, true))
+		session_wake_terminated(sess);
 }
 
 DSSH_PRIVATE void
 session_set_terminate_no_wake(struct dssh_session_s *sess)
 {
-	(void)session_mark_terminated(sess);
+	atomic_store(&sess->terminate, true);
+}
+
+static bool
+session_api_forbidden(struct dssh_session_s *sess)
+{
+	return sess != NULL && dssh_io_callback_active(sess);
 }
 
 DSSH_PUBLIC int
@@ -300,6 +319,8 @@ dssh_session_set_cbdata(struct dssh_session_s *sess, void *tx_cbdata, void *rx_c
     void *extra_line_cbdata)
 {
 	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
@@ -320,6 +341,8 @@ dssh_session_set_debug_cb(struct dssh_session_s *sess, dssh_debug_cb cb, void *c
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
+		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
 	sess->debug_cb     = cb;
@@ -331,6 +354,8 @@ DSSH_PUBLIC int
 dssh_session_set_log_cb(struct dssh_session_s *sess, dssh_log_cb cb, void *cbdata)
 {
 	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
@@ -357,6 +382,8 @@ dssh_session_set_log_level(struct dssh_session_s *sess, dssh_log_level level)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
+		return DSSH_ERROR_INVALID;
 	if (level < DSSH_LOG_ERROR || level > DSSH_LOG_DEBUG)
 		return DSSH_ERROR_INVALID;
 	atomic_store_explicit(&sess->log_level, level, memory_order_relaxed);
@@ -367,6 +394,8 @@ DSSH_PUBLIC int
 dssh_session_set_unimplemented_cb(struct dssh_session_s *sess, dssh_unimplemented_cb cb, void *cbdata)
 {
 	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
@@ -380,6 +409,8 @@ dssh_session_set_banner_cb(struct dssh_session_s *sess, dssh_auth_banner_cb cb, 
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
+		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
 	sess->banner_cb     = cb;
@@ -391,6 +422,8 @@ DSSH_PUBLIC int
 dssh_session_set_global_request_cb(struct dssh_session_s *sess, dssh_global_request_cb cb, void *cbdata)
 {
 	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
@@ -404,6 +437,8 @@ dssh_session_set_terminate_cb(struct dssh_session_s *sess, dssh_terminate_cb cb,
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
+		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
 	sess->terminate_cb     = cb;
@@ -415,6 +450,8 @@ DSSH_PUBLIC int
 dssh_session_set_hostkey_verify_cb(struct dssh_session_s *sess, dssh_hostkey_verify_cb cb, void *cbdata)
 {
 	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
@@ -428,6 +465,8 @@ dssh_session_set_timeout(struct dssh_session_s *sess, int timeout_ms)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
+		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
 	sess->timeout_ms = timeout_ms;
@@ -438,6 +477,8 @@ DSSH_PUBLIC int
 dssh_session_set_rekey_seconds(struct dssh_session_s *sess, uint32_t seconds)
 {
 	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
 		return DSSH_ERROR_INVALID;
 	sess->trans.rekey_seconds = seconds;
 	return 0;
@@ -508,6 +549,8 @@ dssh_session_set_kex_filter(struct dssh_session_s *sess, const char * const *nam
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
+		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
 	char *new_csv = NULL;
@@ -524,6 +567,8 @@ DSSH_PUBLIC int
 dssh_session_set_key_algo_filter(struct dssh_session_s *sess, const char * const *names, size_t count)
 {
 	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
@@ -542,6 +587,8 @@ dssh_session_set_enc_filter(struct dssh_session_s *sess, const char * const *nam
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
+		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
 	char *new_csv = NULL;
@@ -559,6 +606,8 @@ dssh_session_set_mac_filter(struct dssh_session_s *sess, const char * const *nam
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
+		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;
 	char *new_csv = NULL;
@@ -575,6 +624,8 @@ DSSH_PUBLIC int
 dssh_session_set_comp_filter(struct dssh_session_s *sess, const char * const *names, size_t count)
 {
 	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (session_api_forbidden(sess))
 		return DSSH_ERROR_INVALID;
 	if (sess->demux_running)
 		return DSSH_ERROR_TOOLATE;

@@ -84,6 +84,10 @@ calling I/O, waiting, joining a thread, sleeping, or performing any other operat
 release every held lock. After reacquiring the required locks, revalidate all shared state before
 using it.
 
+A C11 condition-variable wait complies only when the associated mutex is the sole lock held: the
+wait operation must atomically release that mutex before blocking and reacquire it before returning.
+No other library lock may be held across the wait.
+
 ## No Deprecated Cryptography
 
 SHA-1-based algorithms (hmac-sha1, dh-group1-sha1, dh-group14-sha1, ssh-dss, 3des-cbc) are

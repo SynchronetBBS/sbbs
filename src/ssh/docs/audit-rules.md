@@ -182,20 +182,20 @@ All mutable shared state is protected:
 
 | State | Protection |
 |-------|-----------|
-| TX path (tx\_packet, tx\_seq, counters) | `tx_mtx` |
-| RX path (rx\_packet, rx\_seq, counters) | `rx_mtx` |
+| TX path (tx\_packet, tx\_seq, counters) | Exclusive ownership baton; state mutex held only for handoff |
+| RX path (rx\_packet, rx\_seq, counters) | Single demux/RX owner |
 | Channel table | `channel_mtx` |
 | Per-channel buffers, flags | `buf_mtx` |
 | Per-channel callbacks | `cb_mtx` |
 | Accept queue | `accept_mtx` + `accept_cnd` |
-| Rekey blocking | `rekey_cnd` under `tx_mtx` |
+| Rekey blocking | `rekey_cnd` with a short TX state mutex; C11 wait releases it while blocked |
 | TX slot queue | `tx_queue_mtx` + `tx_slot_cnd` |
 | terminate, initialized, demux\_running | `atomic_bool` |
 | remote\_window | `atomic_uint_least32_t` |
 | TX packet/byte counters | `atomic_uint_fast32_t` / `atomic_uint_fast64_t` |
 
-Lock order is documented and enforced:
-`channel_mtx` → `buf_mtx` → `cb_mtx` → `tx_mtx`.
+No lock is nested across acquisition of another possibly contended lock.
+Channel lifetimes are pinned while moving from the registry to per-channel state.
 
 Pre-start callbacks are protected by the `demux_running` +
 `thrd_create` happens-before guarantee.  `session_set_terminate` uses

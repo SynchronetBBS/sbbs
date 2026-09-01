@@ -39,8 +39,61 @@ static const char ssh_version_prefix[] = "SSH-2.0-";
 
 DSSH_TESTABLE struct dssh_transport_global_config gconf;
 
+static _Thread_local struct dssh_session_s *io_callback_session;
+static _Thread_local struct dssh_session_s *tx_owned_session;
+
+DSSH_PRIVATE bool
+dssh_io_callback_active(struct dssh_session_s *sess)
+{
+	(void)sess;
+	return io_callback_session != NULL;
+}
+
+static int
+call_io(struct dssh_session_s *sess, dssh_transport_io_cb cb, uint8_t *buf, size_t bufsz, void *cbdata)
+{
+	struct dssh_session_s *previous = io_callback_session;
+
+	io_callback_session = sess;
+	int ret = cb(buf, bufsz, sess, cbdata);
+	io_callback_session = previous;
+	return ret;
+}
+
+static int
+call_rx_line(struct dssh_session_s *sess, uint8_t *buf, size_t bufsz, size_t *received)
+{
+	struct dssh_session_s *previous = io_callback_session;
+
+	io_callback_session = sess;
+	int ret = gconf.rx_line(buf, bufsz, received, sess, sess->rx_line_cbdata);
+	io_callback_session = previous;
+	return ret;
+}
+
+static int
+call_extra_line(struct dssh_session_s *sess, uint8_t *buf, size_t bufsz)
+{
+	struct dssh_session_s *previous = io_callback_session;
+
+	io_callback_session = sess;
+	int ret = gconf.extra_line_cb(buf, bufsz, sess->extra_line_cbdata);
+	io_callback_session = previous;
+	return ret;
+}
+
+static int
+call_tx_gather(struct dssh_session_s *sess, const struct dssh_tx_iov *iov, size_t iovcnt)
+{
+	struct dssh_session_s *previous = io_callback_session;
+
+	io_callback_session = sess;
+	int ret = gconf.tx_gather(iov, iovcnt, sess, sess->tx_cbdata);
+	io_callback_session = previous;
+	return ret;
+}
+
 #ifdef DSSH_TESTING
-DSSH_TESTABLE void (*dssh_test_tx_after_send_hook)(struct dssh_session_s *sess, uint8_t msg_type);
 static _Atomic(struct dssh_session_s *) dssh_test_rx_count_sess;
 static _Atomic uint64_t dssh_test_rx_count_value;
 
@@ -124,8 +177,7 @@ version_rx(struct dssh_session_s *sess)
 	int    res;
 
 	while (!sess->terminate) {
-		res = gconf.rx_line(sess->trans.rx_packet, sess->trans.packet_buf_sz - 1, &received, sess,
-		    sess->rx_line_cbdata);
+		res = call_rx_line(sess, sess->trans.rx_packet, sess->trans.packet_buf_sz - 1, &received);
 		if (res < 0) {
 			session_set_terminate(sess);
 			return res;
@@ -145,7 +197,7 @@ version_rx(struct dssh_session_s *sess)
 		}
 		if (gconf.extra_line_cb) {
 			sess->trans.rx_packet[received] = 0;
-			res = gconf.extra_line_cb(sess->trans.rx_packet, received, sess->extra_line_cbdata);
+			res = call_extra_line(sess, sess->trans.rx_packet, received);
 			if (res < 0) {
 				session_set_terminate(sess);
 				return res;
@@ -186,7 +238,7 @@ version_tx(struct dssh_session_s *sess)
 	sess->trans.id_str[sz] = 0;
 	memcpy(&sess->trans.tx_packet[sz], "\r\n", 2);
 	sz += 2;
-	res = gconf.tx(sess->trans.tx_packet, sz, sess, sess->tx_cbdata);
+	res = call_io(sess, gconf.tx, sess->trans.tx_packet, sz, sess->tx_cbdata);
 	if (res < 0) {
 		session_set_terminate(sess);
 		return res;
@@ -217,7 +269,7 @@ find_key_algo(const char *name)
 DSSH_PUBLIC const char *
 dssh_transport_get_remote_version(struct dssh_session_s *sess)
 {
-	if (sess == NULL)
+	if (sess == NULL || dssh_io_callback_active(sess))
 		return NULL;
 	return sess->trans.remote_id_str;
 }
@@ -225,7 +277,7 @@ dssh_transport_get_remote_version(struct dssh_session_s *sess)
 DSSH_PUBLIC const char *
 dssh_transport_get_kex_name(struct dssh_session_s *sess)
 {
-	if (sess == NULL)
+	if (sess == NULL || dssh_io_callback_active(sess))
 		return NULL;
 	return sess->trans.kex_selected ? sess->trans.kex_selected->name : NULL;
 }
@@ -233,7 +285,7 @@ dssh_transport_get_kex_name(struct dssh_session_s *sess)
 DSSH_PUBLIC const char *
 dssh_transport_get_hostkey_name(struct dssh_session_s *sess)
 {
-	if (sess == NULL)
+	if (sess == NULL || dssh_io_callback_active(sess))
 		return NULL;
 	return sess->trans.key_algo_selected ? sess->trans.key_algo_selected->name : NULL;
 }
@@ -241,7 +293,7 @@ dssh_transport_get_hostkey_name(struct dssh_session_s *sess)
 DSSH_PUBLIC const char *
 dssh_transport_get_enc_name(struct dssh_session_s *sess)
 {
-	if (sess == NULL)
+	if (sess == NULL || dssh_io_callback_active(sess))
 		return NULL;
 	return sess->trans.enc_c2s_selected ? sess->trans.enc_c2s_selected->name : NULL;
 }
@@ -249,7 +301,7 @@ dssh_transport_get_enc_name(struct dssh_session_s *sess)
 DSSH_PUBLIC const char *
 dssh_transport_get_mac_name(struct dssh_session_s *sess)
 {
-	if (sess == NULL)
+	if (sess == NULL || dssh_io_callback_active(sess))
 		return NULL;
 	return sess->trans.mac_c2s_selected ? sess->trans.mac_c2s_selected->name : NULL;
 }
@@ -268,6 +320,8 @@ DSSH_PUBLIC int
 dssh_transport_handshake(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (dssh_io_callback_active(sess))
 		return DSSH_ERROR_INVALID;
 	if (sess->trans.client && sess->hostkey_verify_cb == NULL) {
 		DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_INIT,
@@ -307,8 +361,8 @@ fail:
 DSSH_TESTABLE bool
 rekey_needed(struct dssh_session_s *sess)
 {
-	/* tx counters are atomic -- read without tx_mtx.
-	 * rx counters are protected by rx_mtx (held by caller).
+	/* tx counters are atomic.  RX counters are owned by the sole receive
+	 * thread (handshake caller before start, demux afterward).
 	 * Match the atomic's fast-type; atomic_uint_fast32_t is 64-bit on
 	 * glibc x86_64, and -Werror=conversion balks at the narrowing. */
 	uint_fast32_t tx_pkts = atomic_load(&sess->trans.tx_since_rekey);
@@ -360,16 +414,37 @@ rekey(struct dssh_session_s *sess)
 	sess->trans.exchange_hash    = NULL;
 	sess->trans.exchange_hash_sz = 0;
 
-	/*
-         * Block application-layer sends during rekey (RFC 4253 s7.1).
-         * Set the flag under tx_mtx since send_packet checks it there.
-         */
-	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_mtx));
-	sess->trans.rekey_in_progress = true;
-	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+	/* Drain work that was queued before rekey, then publish the rekey
+	 * predicate while ownership prevents another application sender from
+	 * entering the packet engine between those operations. */
+	int res = tx_acquire(sess, SSH_MSG_IGNORE);
+
+	if (res < 0)
+		return res;
+	drain_tx_slots(sess);
+	if (atomic_load_explicit(&sess->terminate, memory_order_acquire)) {
+		tx_unlock_with_slots(sess);
+		return DSSH_ERROR_TERMINATED;
+	}
+	int state_lr = mtx_lock(&sess->trans.tx_mtx);
+
+	if (state_lr != thrd_success) {
+		dssh_thrd_check(sess, state_lr);
+		tx_unlock_with_slots(sess);
+		return DSSH_ERROR_TERMINATED;
+	}
+	atomic_store_explicit(&sess->trans.rekey_in_progress, true, memory_order_release);
+	int state_ur = mtx_unlock(&sess->trans.tx_mtx);
+
+	if (state_ur != thrd_success) {
+		dssh_thrd_check_unlock(sess, state_ur);
+		tx_unlock_with_slots(sess);
+		return DSSH_ERROR_TERMINATED;
+	}
+	tx_unlock_with_slots(sess);
 
 	/* Re-negotiate algorithms */
-	int res = kexinit(sess);
+	res = kexinit(sess);
 
 	if (res == 0)
 		res = kex(sess);
@@ -377,10 +452,32 @@ rekey(struct dssh_session_s *sess)
 		res = newkeys(sess);
 
 	/* Clear the flag and wake any blocked senders */
-	dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_mtx));
-	sess->trans.rekey_in_progress = false;
-	dssh_thrd_check(sess, cnd_broadcast(&sess->trans.rekey_cnd));
-	dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_mtx));
+	state_lr = mtx_lock(&sess->trans.tx_mtx);
+	if (state_lr == thrd_success) {
+		atomic_store_explicit(&sess->trans.rekey_in_progress, false, memory_order_release);
+		int br = cnd_broadcast(&sess->trans.rekey_cnd);
+		state_ur = mtx_unlock(&sess->trans.tx_mtx);
+		if (state_ur != thrd_success) {
+			dssh_thrd_check_unlock(sess, state_ur);
+			res = DSSH_ERROR_TERMINATED;
+		}
+		else if (br != thrd_success) {
+			dssh_thrd_check(sess, br);
+			res = DSSH_ERROR_TERMINATED;
+		}
+	}
+	else {
+		dssh_thrd_check(sess, state_lr);
+		res = DSSH_ERROR_TERMINATED;
+	}
+	/* Claim and release once to drain connection work accumulated during
+	 * rekey before application senders resume. */
+	if (res == 0) {
+		if (tx_owner_is_current(sess))
+			tx_unlock_with_slots(sess);
+		else if (tx_acquire(sess, SSH_MSG_IGNORE) == 0)
+			tx_unlock_with_slots(sess);
+	}
 
 	if (res < 0)
 		session_set_terminate(sess);
@@ -410,6 +507,8 @@ DSSH_PUBLIC int
 dssh_transport_disconnect(struct dssh_session_s *sess, uint32_t reason, const char *desc)
 {
 	if (sess == NULL || desc == NULL)
+		return DSSH_ERROR_INVALID;
+	if (dssh_io_callback_active(sess))
 		return DSSH_ERROR_INVALID;
 	size_t dlen = strlen(desc);
 
@@ -508,6 +607,43 @@ free_tx_slot(struct dssh_tx_slot *slot)
 	slot->payload_len = 0;
 }
 
+/* Resize a live slot without allocating under tx_queue_mtx.  A producer may
+ * fill the old buffer while the replacement is being allocated; the mutex
+ * serializes the final payload copy and pointer swap. */
+static int
+resize_tx_slot_live(struct dssh_session_s *sess, struct dssh_tx_slot *slot, size_t max_payload,
+    size_t block_size, uint16_t mac_digest)
+{
+	size_t need = tx_slot_buf_size(max_payload, block_size, mac_digest);
+
+	if (slot->buf != NULL && slot->buf_sz == need)
+		return 0;
+	uint8_t *replacement = malloc(need);
+
+	if (replacement == NULL)
+		return DSSH_ERROR_ALLOC;
+	int ret = mtx_lock(&sess->trans.tx_queue_mtx);
+
+	if (ret != thrd_success) {
+		free(replacement);
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	uint8_t *old = slot->buf;
+
+	if (old != NULL && atomic_load_explicit(&slot->ready, memory_order_acquire))
+		memcpy(&replacement[9], &old[9], slot->payload_len);
+	slot->buf = replacement;
+	slot->buf_sz = need;
+	ret = mtx_unlock(&sess->trans.tx_queue_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check_unlock(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	free(old);
+	return 0;
+}
+
 /*
  * Allocate (or resize) session-level TX slots for the current
  * negotiated algorithms.  Called from newkeys() after
@@ -520,10 +656,10 @@ alloc_session_slots(struct dssh_session_s *sess)
 	uint16_t mac = tx_mac_size(sess);
 	int      ret;
 
-	ret = alloc_tx_slot(&sess->trans.global_reply_slot, 1, bs, mac);
+	ret = resize_tx_slot_live(sess, &sess->trans.global_reply_slot, 1, bs, mac);
 	if (ret < 0)
 		return ret;
-	ret = alloc_tx_slot(&sess->trans.open_fail_slot, 16, bs, mac);
+	ret = resize_tx_slot_live(sess, &sess->trans.open_fail_slot, 16, bs, mac);
 	return ret;
 }
 
@@ -534,39 +670,99 @@ alloc_session_slots(struct dssh_session_s *sess)
 DSSH_PRIVATE int
 alloc_channel_slots(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
+	bool acquired = false;
+
+	if (!tx_owner_is_current(sess)) {
+		int acquire_ret = tx_acquire(sess, SSH_MSG_CHANNEL_OPEN);
+
+		if (acquire_ret < 0)
+			return acquire_ret;
+		acquired = true;
+	}
 	size_t   bs  = tx_block_size(sess);
 	uint16_t mac = tx_mac_size(sess);
 	int      ret;
 
 	ret = alloc_tx_slot(&ch->wa_slot, 9, bs, mac);
-	if (ret < 0)
-		return ret;
-	ret = alloc_tx_slot(&ch->chan_fail_slot, 8, bs, mac);
+	if (ret == 0)
+		ret = alloc_tx_slot(&ch->chan_fail_slot, 8, bs, mac);
+	if (acquired)
+		tx_unlock_with_slots(sess);
 	return ret;
 }
 
 /*
- * Resize all active channel slots after rekey.  Caller must hold
- * channel_mtx.
+ * Resize all active channel slots after rekey.  The registry mutex is held
+ * only while pinning the current channel set; allocation happens lock-free.
  */
 static int
 resize_channel_slots(struct dssh_session_s *sess)
 {
 	size_t   bs  = tx_block_size(sess);
 	uint16_t mac = tx_mac_size(sess);
+	struct dssh_channel_s **channels = NULL;
+	size_t                   capacity = 0;
+	size_t                   count;
+	int                      ret;
 
-	for (size_t i = 0; i < sess->channel_count; i++) {
-		struct dssh_channel_s *ch = sess->channels[i];
-		int                    ret;
+	for (;;) {
+		ret = mtx_lock(&sess->channel_mtx);
+		if (ret != thrd_success) {
+			dssh_thrd_check(sess, ret);
+			free(channels);
+			return DSSH_ERROR_TERMINATED;
+		}
+		count = sess->channel_count;
+		if (count <= capacity) {
+			for (size_t i = 0; i < count; i++) {
+				channels[i] = sess->channels[i];
+				atomic_fetch_add_explicit(&channels[i]->tx_refs, 1, memory_order_acq_rel);
+			}
+			ret = mtx_unlock(&sess->channel_mtx);
+			if (ret != thrd_success) {
+				for (size_t i = 0; i < count; i++)
+					atomic_fetch_sub_explicit(&channels[i]->tx_refs, 1, memory_order_acq_rel);
+				dssh_thrd_check_unlock(sess, ret);
+				free(channels);
+				return DSSH_ERROR_TERMINATED;
+			}
+			break;
+		}
+		ret = mtx_unlock(&sess->channel_mtx);
+		if (ret != thrd_success) {
+			dssh_thrd_check_unlock(sess, ret);
+			free(channels);
+			return DSSH_ERROR_TERMINATED;
+		}
+		if (count > SIZE_MAX / sizeof(*channels)) {
+			free(channels);
+			return DSSH_ERROR_ALLOC;
+		}
+		struct dssh_channel_s **larger = realloc(channels, count * sizeof(*channels));
 
-		ret = alloc_tx_slot(&ch->wa_slot, 9, bs, mac);
-		if (ret < 0)
-			return ret;
-		ret = alloc_tx_slot(&ch->chan_fail_slot, 8, bs, mac);
-		if (ret < 0)
-			return ret;
+		if (larger == NULL) {
+			free(channels);
+			return DSSH_ERROR_ALLOC;
+		}
+		channels = larger;
+		capacity = count;
 	}
-	return 0;
+
+	ret = 0;
+	for (size_t i = 0; i < count; i++) {
+		struct dssh_channel_s *ch = channels[i];
+		int                    alloc_ret;
+
+		alloc_ret = resize_tx_slot_live(sess, &ch->wa_slot, 9, bs, mac);
+		if (alloc_ret == 0)
+			alloc_ret = resize_tx_slot_live(sess, &ch->chan_fail_slot, 8, bs, mac);
+		if (ret == 0 && alloc_ret < 0)
+			ret = alloc_ret;
+	}
+	for (size_t i = 0; i < count; i++)
+		atomic_fetch_sub_explicit(&channels[i]->tx_refs, 1, memory_order_acq_rel);
+	free(channels);
+	return ret;
 }
 
 /* ================================================================
@@ -657,7 +853,7 @@ rx_mac_size(struct dssh_session_s *sess)
 
 /*
  * Finalize and send a packet whose payload is already in tx_packet.
- * Caller MUST hold tx_mtx.  The payload starts at tx_packet[9]
+ * Caller MUST own the packet engine.  No mutex is held.  The payload starts at tx_packet[9]
  * (past seq(4) + pkt_length(4) + pad_len(1)).  This function:
  *   - computes padding, writes pkt_length and pad_len
  *   - generates random padding
@@ -675,7 +871,7 @@ rx_mac_size(struct dssh_session_s *sess)
  * counters.  Sets *wire_out to the start of wire data (&buf[4])
  * and *wire_len_out to the total wire length.
  *
- * Caller MUST hold tx_mtx.  Used by tx_finalize (per-packet send)
+ * Caller MUST own the packet engine.  No mutex is held.  Used by tx_finalize (per-packet send)
  * and by the gather path (batch send).
  */
 DSSH_PRIVATE int
@@ -794,7 +990,7 @@ done:
 }
 
 /*
- * Update TX counters after a successful send.  Caller MUST hold tx_mtx.
+ * Update TX counters after a successful send.  Caller owns the packet engine.
  */
 static void
 tx_update_counters(struct dssh_session_s *sess, size_t wire_len)
@@ -810,7 +1006,7 @@ tx_update_counters(struct dssh_session_s *sess, size_t wire_len)
 }
 
 /*
- * Batch counter update for gather sends.  Caller MUST hold tx_mtx.
+ * Batch counter update for gather sends.  Caller owns the packet engine.
  */
 static void
 tx_update_counters_batch(struct dssh_session_s *sess, size_t count, size_t total_bytes)
@@ -826,7 +1022,7 @@ tx_update_counters_batch(struct dssh_session_s *sess, size_t count, size_t total
 }
 
 /*
- * Finalize and send a packet.  Caller MUST hold tx_mtx.
+ * Finalize and send a packet.  Caller owns the packet engine; no mutex is held.
  * Prepares the packet (padding/MAC/encrypt), sends via gconf.tx,
  * and updates counters on success.
  */
@@ -835,26 +1031,18 @@ tx_finalize(struct dssh_session_s *sess, uint8_t *buf, size_t payload_len)
 {
 	uint8_t *wire;
 	size_t   wire_len;
-#ifdef DSSH_TESTING
-	uint8_t msg_type = buf[9];
-#endif
 	int      ret = tx_finalize_prepare(sess, buf, payload_len, &wire, &wire_len);
 
 	if (ret < 0)
 		return ret;
-	ret = gconf.tx(wire, wire_len, sess, sess->tx_cbdata);
-	if (ret == 0) {
+	ret = call_io(sess, gconf.tx, wire, wire_len, sess->tx_cbdata);
+	if (ret == 0)
 		tx_update_counters(sess, wire_len);
-#ifdef DSSH_TESTING
-		if (dssh_test_tx_after_send_hook != NULL)
-			dssh_test_tx_after_send_hook(sess, msg_type);
-#endif
-	}
 	return ret;
 }
 
 /*
- * Core send logic.  Caller MUST hold tx_mtx.  Copies payload into
+ * Core send logic.  Caller owns the packet engine.  Copies payload into
  * tx_packet then calls tx_finalize for MAC/encrypt/send.
  */
 static int
@@ -873,7 +1061,7 @@ send_packet_inner(struct dssh_session_s *sess, const uint8_t *payload, size_t pa
 	return ret;
 }
 
-/* Drain callback-approved SSH_MSG_DEBUG records.  Caller holds tx_mtx.
+/* Drain callback-approved SSH_MSG_DEBUG records.  Caller owns the packet engine.
  * The queue lock is held only while copying one fixed-size entry. */
 static int
 drain_log_forwards(struct dssh_session_s *sess)
@@ -929,7 +1117,7 @@ window_add(uint32_t current, uint32_t bytes)
 }
 
 /*
- * Send a single ready slot.  Caller MUST hold tx_mtx.
+ * Send a single ready slot.  Caller owns the packet engine.
  * Returns true if the slot was ready and processed.
  */
 static bool
@@ -946,7 +1134,7 @@ drain_one_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, bool *fat
 }
 
 /* Send one queued receive-window adjustment.  Producers only update the
- * counters and ready flag under buf_mtx; the tx_mtx owner has exclusive
+ * counters and ready flag under buf_mtx; the packet-engine owner has exclusive
  * use of wa_slot.buf. */
 static bool
 drain_one_wa_slot(struct dssh_session_s *sess, struct dssh_channel_s *ch, bool *fatal)
@@ -1012,7 +1200,7 @@ drain_one_wa_slot(struct dssh_session_s *sess, struct dssh_channel_s *ch, bool *
 }
 
 /*
- * Drain all pre-allocated TX slots.  Caller MUST hold tx_mtx.
+ * Drain all pre-allocated TX slots.  Caller owns the packet engine.
  * Session-level slots drain first (protocol-critical).  Channel
  * slots drain in round-robin order starting from drain_next_ch
  * to ensure fair scheduling across channels.  Signals tx_slot_cnd
@@ -1028,34 +1216,59 @@ drain_tx_slots(struct dssh_session_s *sess)
 	any |= drain_one_slot(sess, &sess->trans.global_reply_slot, &fatal);
 	any |= drain_one_slot(sess, &sess->trans.open_fail_slot, &fatal);
 
-	/* Channel-level slots — round-robin starting at drain_next_ch */
+	/* Pin one ready channel at a time, then drop channel_mtx before
+	 * taking buf_mtx or invoking a transport callback. */
 	if (sess->conn_initialized) {
-		int channel_lr = dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx));
+		for (;;) {
+			struct dssh_channel_s *ch = NULL;
+			int channel_lr = mtx_lock(&sess->channel_mtx);
 
-		if (channel_lr == thrd_success) {
+			if (channel_lr != thrd_success) {
+				dssh_thrd_check(sess, channel_lr);
+				fatal = true;
+				break;
+			}
 			size_t n = sess->channel_count;
 
 			if (n > 0) {
 				size_t start = sess->trans.drain_next_ch % n;
 
 				for (size_t j = 0; j < n; j++) {
-					size_t                 idx = (start + j) % n;
-					struct dssh_channel_s *ch  = sess->channels[idx];
+					size_t idx = (start + j) % n;
+					struct dssh_channel_s *candidate = sess->channels[idx];
 
-					any |= drain_one_wa_slot(sess, ch, &fatal);
-					any |= drain_one_slot(sess, &ch->chan_fail_slot, &fatal);
+					if (atomic_load(&candidate->wa_slot.ready)
+					    || atomic_load(&candidate->chan_fail_slot.ready)) {
+						atomic_fetch_add_explicit(&candidate->tx_refs, 1, memory_order_acq_rel);
+						ch = candidate;
+						sess->trans.drain_next_ch = (idx + 1) % n;
+						break;
+					}
 				}
-				sess->trans.drain_next_ch = (start + 1) % n;
 			}
-			if (dssh_thrd_check(sess, mtx_unlock(&sess->channel_mtx)) != thrd_success)
+			int channel_ur = mtx_unlock(&sess->channel_mtx);
+
+			if (channel_ur != thrd_success) {
+				dssh_thrd_check_unlock(sess, channel_ur);
 				fatal = true;
+				if (ch != NULL)
+					atomic_fetch_sub_explicit(&ch->tx_refs, 1, memory_order_acq_rel);
+				break;
+			}
+			if (ch == NULL)
+				break;
+			any |= drain_one_wa_slot(sess, ch, &fatal);
+			any |= drain_one_slot(sess, &ch->chan_fail_slot, &fatal);
+			atomic_fetch_sub_explicit(&ch->tx_refs, 1, memory_order_acq_rel);
+			if (fatal)
+				break;
 		}
 	}
 
 	/* session_set_terminate() acquires channel_mtx to wake channel
 	 * waiters, so it must not run from a per-channel slot helper. */
 	if (fatal)
-		session_set_terminate_tx_locked(sess);
+		session_set_terminate(sess);
 
 	if (any) {
 		int queue_lr = mtx_lock(&sess->trans.tx_queue_mtx);
@@ -1064,78 +1277,227 @@ drain_tx_slots(struct dssh_session_s *sess)
 			int br = cnd_broadcast(&sess->trans.tx_slot_cnd);
 			int ur = mtx_unlock(&sess->trans.tx_queue_mtx);
 
-			if (br != thrd_success || ur != thrd_success)
-				session_set_terminate_tx_locked(sess);
+			if (ur != thrd_success)
+				dssh_thrd_check_unlock(sess, ur);
+			else if (br != thrd_success)
+				session_set_terminate(sess);
 		}
 		else
-			session_set_terminate_tx_locked(sess);
+			session_set_terminate(sess);
 	}
 }
 
-/* Drain slots queued while a TX callback was active, then hand tx_mtx
- * to any producer that queues after the final drain.  tx_queue_mtx closes
- * the otherwise-stranded gap between the last ready check and unlock. */
+static void
+tx_wake_owners(struct dssh_session_s *sess)
+{
+	int lr = mtx_lock(&sess->trans.tx_mtx);
+
+	if (lr != thrd_success) {
+		dssh_thrd_check(sess, lr);
+		return;
+	}
+	int br = cnd_broadcast(&sess->trans.rekey_cnd);
+	int ur = mtx_unlock(&sess->trans.tx_mtx);
+
+	if (ur != thrd_success)
+		dssh_thrd_check_unlock(sess, ur);
+	else if (br != thrd_success)
+		dssh_thrd_check(sess, br);
+}
+
+/* Acquire exclusive ownership of the packet engine.  tx_mtx is only held
+ * while testing/updating predicates and is released before this returns. */
+DSSH_PRIVATE int
+tx_acquire(struct dssh_session_s *sess, uint8_t msg_type)
+{
+	if (dssh_io_callback_active(sess))
+		return DSSH_ERROR_INVALID;
+	int lr = mtx_lock(&sess->trans.tx_mtx);
+
+	if (lr != thrd_success) {
+		dssh_thrd_check(sess, lr);
+		return DSSH_ERROR_TERMINATED;
+	}
+	struct timespec ts;
+	if (sess->timeout_ms > 0)
+		dssh_deadline_from_ms(&ts, sess->timeout_ms);
+	while ((atomic_load_explicit(&sess->trans.tx_owner_active, memory_order_acquire)
+	           || (msg_type >= SSH_MSG_USERAUTH_REQUEST
+	               && atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire)))
+	    && !sess->terminate) {
+		int wr;
+
+		if (sess->timeout_ms <= 0)
+			wr = cnd_wait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx);
+		else
+			wr = cnd_timedwait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx, &ts);
+		if (wr == thrd_timedout) {
+			int ur = mtx_unlock(&sess->trans.tx_mtx);
+
+			if (ur != thrd_success) {
+				dssh_thrd_check_unlock(sess, ur);
+			}
+			else
+				session_set_terminate(sess);
+			return DSSH_ERROR_TERMINATED;
+		}
+		if (wr != thrd_success) {
+			int ur = mtx_unlock(&sess->trans.tx_mtx);
+
+			if (ur != thrd_success) {
+				dssh_thrd_check_unlock(sess, ur);
+			}
+			else
+				dssh_thrd_check(sess, wr);
+			return DSSH_ERROR_TERMINATED;
+		}
+	}
+	if (sess->terminate) {
+		int ur = mtx_unlock(&sess->trans.tx_mtx);
+
+		if (ur != thrd_success)
+			dssh_thrd_check_unlock(sess, ur);
+		return DSSH_ERROR_TERMINATED;
+	}
+	tx_owned_session = sess;
+	atomic_store_explicit(&sess->trans.tx_owner_active, true, memory_order_release);
+	int ur = mtx_unlock(&sess->trans.tx_mtx);
+
+	if (ur != thrd_success) {
+		tx_owned_session = NULL;
+		atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+		dssh_thrd_check_unlock(sess, ur);
+		return DSSH_ERROR_TERMINATED;
+	}
+	return 0;
+}
+
+static int
+tx_try_acquire(struct dssh_session_s *sess, uint8_t msg_type)
+{
+	if (dssh_io_callback_active(sess))
+		return thrd_error;
+	int lr = mtx_trylock(&sess->trans.tx_mtx);
+
+	if (lr != thrd_success)
+		return lr;
+	int ret = thrd_busy;
+	if (!sess->terminate
+	    && !atomic_load_explicit(&sess->trans.tx_owner_active, memory_order_acquire)
+	    && (msg_type < SSH_MSG_USERAUTH_REQUEST
+	        || !atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire))) {
+		tx_owned_session = sess;
+		atomic_store_explicit(&sess->trans.tx_owner_active, true, memory_order_release);
+		ret = thrd_success;
+	}
+	int ur = mtx_unlock(&sess->trans.tx_mtx);
+
+	if (ur != thrd_success) {
+		if (ret == thrd_success)
+			tx_owned_session = NULL;
+		if (ret == thrd_success)
+			atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+		dssh_thrd_check_unlock(sess, ur);
+		return thrd_error;
+	}
+	return ret;
+}
+
+DSSH_PRIVATE bool
+tx_owner_is_current(struct dssh_session_s *sess)
+{
+	return tx_owned_session == sess;
+}
+
+/* Drain slots queued while a TX callback was active, then publish the
+ * packet engine as free.  tx_queue_mtx closes the otherwise-stranded gap
+ * between the last ready check and ownership release. */
 DSSH_PRIVATE void
 tx_unlock_with_slots(struct dssh_session_s *sess)
 {
+	if (!tx_owner_is_current(sess))
+		return;
 	if (sess->terminate) {
-		dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
+		tx_owned_session = NULL;
+		atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+		tx_wake_owners(sess);
+		return;
+	}
+	/* Connection-layer slots must not cross a key-exchange boundary.
+	 * Leave them queued until rekey clears the predicate. */
+	if (atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire)) {
+		tx_owned_session = NULL;
+		atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+		tx_wake_owners(sess);
 		return;
 	}
 
 	for (;;) {
-		int lr = dssh_thrd_check_tx_locked(sess, mtx_lock(&sess->trans.tx_queue_mtx));
+		int lr = mtx_lock(&sess->trans.tx_queue_mtx);
 
 		if (lr != thrd_success) {
-			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
+			tx_owned_session = NULL;
+			atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+			dssh_thrd_check(sess, lr);
+			tx_wake_owners(sess);
 			return;
 		}
 		sess->trans.tx_slots_pending = false;
-		int ur = dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
+		int ur = mtx_unlock(&sess->trans.tx_queue_mtx);
 
 		if (ur != thrd_success) {
-			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
+			tx_owned_session = NULL;
+			atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+			dssh_thrd_check_unlock(sess, ur);
+			tx_wake_owners(sess);
 			return;
 		}
 
 		drain_tx_slots(sess);
 		if (sess->terminate) {
-			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
+			tx_owned_session = NULL;
+			atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+			tx_wake_owners(sess);
 			return;
 		}
 
-		lr = dssh_thrd_check_tx_locked(sess, mtx_lock(&sess->trans.tx_queue_mtx));
+		lr = mtx_lock(&sess->trans.tx_queue_mtx);
 		if (lr != thrd_success) {
-			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
+			tx_owned_session = NULL;
+			atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+			dssh_thrd_check(sess, lr);
+			tx_wake_owners(sess);
 			return;
 		}
 		if (sess->trans.tx_slots_pending) {
-			ur = dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
+			ur = mtx_unlock(&sess->trans.tx_queue_mtx);
 			if (ur != thrd_success) {
-				dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
+				tx_owned_session = NULL;
+				atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+				dssh_thrd_check_unlock(sess, ur);
+				tx_wake_owners(sess);
 				return;
 			}
 			continue;
 		}
-		/* Both real unlocks must complete before either injected error
-		 * can terminate the session; termination itself takes tx_queue_mtx. */
-		int tx_ur    = mtx_unlock(&sess->trans.tx_mtx);
-		int queue_ur = mtx_unlock(&sess->trans.tx_queue_mtx);
-
-		dssh_thrd_check_unlock(sess, tx_ur);
-		dssh_thrd_check_unlock(sess, queue_ur);
+		tx_owned_session = NULL;
+		atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+		ur = mtx_unlock(&sess->trans.tx_queue_mtx);
+		if (ur != thrd_success)
+			dssh_thrd_check_unlock(sess, ur);
+		tx_wake_owners(sess);
 		return;
 	}
 }
 
 /*
  * Send a gathered iov via tx_gather callback, update counters.
- * Caller MUST hold tx_mtx.  Returns 0 on success.
+ * Caller MUST own the packet engine.  No mutex is held.  Returns 0 on success.
  */
 static int
 tx_send_gathered(struct dssh_session_s *sess, struct dssh_tx_iov *iov, size_t iovcnt, size_t total_bytes)
 {
-	int ret = gconf.tx_gather(iov, iovcnt, sess, sess->tx_cbdata);
+	int ret = call_tx_gather(sess, iov, iovcnt);
 
 	if (ret == 0)
 		tx_update_counters_batch(sess, iovcnt, total_bytes);
@@ -1146,12 +1508,13 @@ tx_send_gathered(struct dssh_session_s *sess, struct dssh_tx_iov *iov, size_t io
  * Drain control slots to completion, then send the caller's packet through
  * tx_gather.  Slot buffers cannot safely remain referenced by an iovec after
  * ready is cleared because the demux may immediately reuse them.
- * Caller MUST hold tx_mtx.
+ * Caller MUST own the packet engine.
  */
 DSSH_PRIVATE int
 tx_gather_with_packet(struct dssh_session_s *sess, uint8_t *buf, size_t payload_len)
 {
-	drain_tx_slots(sess);
+	if (!atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire))
+		drain_tx_slots(sess);
 
 	uint8_t *wire;
 	size_t   wire_len;
@@ -1167,7 +1530,7 @@ tx_gather_with_packet(struct dssh_session_s *sess, uint8_t *buf, size_t payload_
 
 /*
  * Write a fire-and-forget payload to a pre-allocated TX slot.
- * Fast path: acquire tx_mtx, drain slots, finalize+send directly.
+ * Fast path: reserve the packet engine, drain slots, finalize+send directly.
  * Slow path: wait for slot to become free, write payload, mark ready.
  *
  * The stall on an occupied slot applies RX backpressure — the demux
@@ -1186,22 +1549,22 @@ send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8
 	/* Pre-KEX: slot buffer not yet allocated.  Fall back to
 	 * send_packet_inner via tx_packet (always available). */
 	if (slot->buf == NULL) {
-		int tr = dssh_thrd_check(sess, mtx_trylock(&sess->trans.tx_mtx));
+		int tr = tx_try_acquire(sess, payload[0]);
 		if (tr == thrd_success) {
 			int ret = send_packet_inner(sess, payload, payload_len, NULL);
 			if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
-				session_set_terminate_tx_locked(sess);
-			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
+				session_set_terminate(sess);
+			tx_unlock_with_slots(sess);
 			return ret;
 		}
-		/* tx_mtx busy pre-KEX should not happen — single
+		/* A busy packet engine pre-KEX should not happen — single
 		 * thread at this point.  Terminate as a safeguard. */
 		session_set_terminate(sess);
 		return DSSH_ERROR_TERMINATED;
 	}
 
-	/* Fast path: try to send immediately */
-	int tr = dssh_thrd_check(sess, mtx_trylock(&sess->trans.tx_mtx));
+	/* Fast path: try to reserve the packet engine immediately */
+	int tr = tx_try_acquire(sess, payload[0]);
 
 	if (tr == thrd_success) {
 		/* Drain any prior slow-path payload, then use tx_packet for this
@@ -1212,9 +1575,13 @@ send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8
 		int ret = tx_finalize(sess, sess->trans.tx_packet, payload_len);
 
 		if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
-			session_set_terminate_tx_locked(sess);
+			session_set_terminate(sess);
 		tx_unlock_with_slots(sess);
 		return ret;
+	}
+	if (tr != thrd_busy) {
+		dssh_thrd_check(sess, tr);
+		return DSSH_ERROR_TERMINATED;
 	}
 
 	/* Slow path: stall until slot is free */
@@ -1231,12 +1598,14 @@ send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8
 	if (wait_failed) {
 		int ur = mtx_unlock(&sess->trans.tx_queue_mtx);
 
-		session_set_terminate(sess);
-		dssh_thrd_check(sess, ur);
+		if (ur == thrd_success)
+			session_set_terminate(sess);
+		else
+			dssh_thrd_check_unlock(sess, ur);
 		return DSSH_ERROR_TERMINATED;
 	}
 	if (sess->terminate) {
-		dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
+		dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
 		return DSSH_ERROR_TERMINATED;
 	}
 
@@ -1244,20 +1613,22 @@ send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8
 	slot->payload_len = (uint8_t)payload_len;
 	atomic_store(&slot->ready, true);
 	sess->trans.tx_slots_pending = true;
-	if (dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_queue_mtx)) != thrd_success)
+	if (dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_queue_mtx)) != thrd_success)
 		return DSSH_ERROR_TERMINATED;
 
-	tr = dssh_thrd_check(sess, mtx_trylock(&sess->trans.tx_mtx));
+	tr = tx_try_acquire(sess, payload[0]);
 	if (tr == thrd_success)
 		tx_unlock_with_slots(sess);
-	else if (tr != thrd_busy)
+	else if (tr != thrd_busy) {
+		dssh_thrd_check(sess, tr);
 		return DSSH_ERROR_TERMINATED;
+	}
 	return 0;
 }
 
 /*
- * Mark a pre-reserved CHANNEL_WINDOW_ADJUST ready for the current tx_mtx
- * owner.  If the mutex is free, this caller drains it immediately.
+ * Mark a pre-reserved CHANNEL_WINDOW_ADJUST ready for the current packet
+ * engine owner.  If the engine is free, this caller drains it immediately.
  */
 DSSH_PRIVATE int
 schedule_wa_slot(struct dssh_session_s *sess)
@@ -1268,15 +1639,17 @@ schedule_wa_slot(struct dssh_session_s *sess)
 	if (dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx)) != thrd_success)
 		return DSSH_ERROR_TERMINATED;
 	sess->trans.tx_slots_pending = true;
-	if (dssh_thrd_check(sess, mtx_unlock(&sess->trans.tx_queue_mtx)) != thrd_success)
+	if (dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_queue_mtx)) != thrd_success)
 		return DSSH_ERROR_TERMINATED;
 
-	int tr = dssh_thrd_check(sess, mtx_trylock(&sess->trans.tx_mtx));
+	int tr = tx_try_acquire(sess, SSH_MSG_CHANNEL_WINDOW_ADJUST);
 
 	if (tr == thrd_success)
 		tx_unlock_with_slots(sess);
-	else if (tr != thrd_busy)
+	else if (tr != thrd_busy) {
+		dssh_thrd_check(sess, tr);
 		return DSSH_ERROR_TERMINATED;
+	}
 	return 0;
 }
 
@@ -1299,59 +1672,33 @@ send_packet(struct dssh_session_s *sess, const uint8_t *payload, size_t payload_
 }
 
 /*
- * Acquire tx_mtx, block on rekey for application messages (type >= 50),
- * drain pending tx slots.  Returns a pointer into tx_packet[9] where the
+ * Reserve the packet engine, block on rekey for application messages
+ * (type >= 50), and drain pending tx slots.  Returns a pointer into
+ * tx_packet[9] where the
  * caller serializes the payload directly.  *max_len is the maximum
  * payload the caller may write.  Caller MUST call send_commit(),
- * send_commit_sensitive(), or send_cancel() to release tx_mtx.
+ * send_commit_sensitive(), or send_cancel() to release the reservation.
  *
  * Returns NULL on error (timeout, terminate); *err_out is set.
  */
 DSSH_PRIVATE uint8_t *
 send_begin(struct dssh_session_s *sess, uint8_t msg_type, size_t *max_len, int *err_out)
 {
-	int lock_ret = mtx_lock(&sess->trans.tx_mtx);
+	int acquire_ret = tx_acquire(sess, msg_type);
 
-	if (lock_ret != thrd_success) {
-		dssh_thrd_check(sess, lock_ret);
-		*err_out = DSSH_ERROR_TERMINATED;
+	if (acquire_ret < 0) {
+		*err_out = acquire_ret;
 		return NULL;
 	}
 
-	if (msg_type >= SSH_MSG_USERAUTH_REQUEST) {
-		struct timespec rk_ts;
-		if (sess->timeout_ms > 0)
-			dssh_deadline_from_ms(&rk_ts, sess->timeout_ms);
-		while (sess->trans.rekey_in_progress && !sess->terminate) {
-			if (sess->timeout_ms <= 0) {
-				dssh_thrd_check_tx_locked(sess,
-				    cnd_wait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx));
-			}
-			else {
-				if (dssh_thrd_check_tx_locked(sess,
-					cnd_timedwait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx, &rk_ts))
-				    == thrd_timedout) {
-					session_set_terminate_tx_locked(sess);
-					dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
-					*err_out = DSSH_ERROR_TERMINATED;
-					return NULL;
-				}
-			}
-		}
-		if (sess->terminate) {
-			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
-			*err_out = DSSH_ERROR_TERMINATED;
-			return NULL;
-		}
-	}
-
-	if (!tx_gather_enabled())
+	if (!tx_gather_enabled()
+	    && !atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire))
 		drain_tx_slots(sess);
 	int log_ret = drain_log_forwards(sess);
 
 	if (log_ret < 0 && log_ret != DSSH_ERROR_TOOLONG && log_ret != DSSH_ERROR_REKEY_NEEDED) {
 		atomic_store_explicit(&sess->log_mirror_suppressed, true, memory_order_relaxed);
-		dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_mtx));
+		tx_unlock_with_slots(sess);
 		DSSH_LOGF(sess, DSSH_LOG_ERROR, log_ret, "Failed to forward SSH diagnostic: %s",
 		    dssh_strerror(log_ret));
 		session_set_terminate(sess);
@@ -1365,10 +1712,12 @@ send_begin(struct dssh_session_s *sess, uint8_t msg_type, size_t *max_len, int *
 
 /* Finalize and send the payload already at tx_packet[9].  When
  * sensitive is true, scrub the payload before invoking a termination
- * callback or releasing tx_mtx. */
+ * callback or releasing packet-engine ownership. */
 static int
 send_commit_inner(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out, bool sensitive)
 {
+	if (!tx_owner_is_current(sess))
+		return DSSH_ERROR_INVALID;
 	int ret;
 	size_t max_payload = sess->trans.packet_buf_sz - 9;
 
@@ -1397,14 +1746,14 @@ done:
 		dssh_cleanse(&sess->trans.tx_packet[9], cleanse_len);
 	}
 	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
-		session_set_terminate_tx_locked(sess);
+		session_set_terminate(sess);
 	tx_unlock_with_slots(sess);
 	return ret;
 }
 
 /*
  * Finalize and send the payload already at tx_packet[9].
- * Releases tx_mtx.  Caller MUST have called send_begin() first.
+ * Releases packet-engine ownership.  Caller MUST have called send_begin() first.
  */
 DSSH_PRIVATE int
 send_commit(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out)
@@ -1413,8 +1762,8 @@ send_commit(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out)
 }
 
 /*
- * Finalize, send, and scrub a sensitive payload while tx_mtx remains
- * held.  Caller MUST have called send_begin() first.
+ * Finalize, send, and scrub a sensitive payload while packet-engine ownership
+ * remains reserved.  Caller MUST have called send_begin() first.
  */
 DSSH_PRIVATE int
 send_commit_sensitive(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out)
@@ -1423,12 +1772,14 @@ send_commit_sensitive(struct dssh_session_s *sess, size_t payload_len, uint32_t 
 }
 
 /*
- * Release tx_mtx without sending.  Use when serialization fails
+ * Release packet-engine ownership without sending.  Use when serialization fails
  * after send_begin() but before either commit function.
  */
 DSSH_PRIVATE void
 send_cancel(struct dssh_session_s *sess)
 {
+	if (!tx_owner_is_current(sess))
+		return;
 	tx_unlock_with_slots(sess);
 }
 
@@ -1442,22 +1793,15 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 {
 	int ret;
 
-	ret = mtx_lock(&sess->trans.rx_mtx);
-	if (ret != thrd_success) {
-		dssh_thrd_check(sess, ret);
-		return DSSH_ERROR_TERMINATED;
-	}
-
 	/* Refuse to receive if per-key packet count would exceed hard limit */
 	if (sess->trans.rx_since_rekey >= DSSH_REKEY_HARD_LIMIT) {
-		ret = DSSH_ERROR_REKEY_NEEDED;
-		goto rx_done;
+		return DSSH_ERROR_REKEY_NEEDED;
 	}
 
 	size_t bs = rx_block_size(sess);
 
 	/* Receive into rx_packet[4..], leaving [0..4) for seq prefix */
-	ret = gconf.rx(&sess->trans.rx_packet[4], bs, sess, sess->rx_cbdata);
+	ret = call_io(sess, gconf.rx, &sess->trans.rx_packet[4], bs, sess->rx_cbdata);
 	if (ret < 0)
 		goto rx_done;
 
@@ -1500,7 +1844,7 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 
 	size_t remaining = packet_total - bs;
 	if (remaining > 0) {
-		ret = gconf.rx(&sess->trans.rx_packet[4 + bs], remaining, sess, sess->rx_cbdata);
+		ret = call_io(sess, gconf.rx, &sess->trans.rx_packet[4 + bs], remaining, sess->rx_cbdata);
 		if (ret < 0)
 			goto rx_done;
 		if ((enc != NULL) && (enc->decrypt != NULL) && (enc_ctx != NULL)) {
@@ -1514,7 +1858,7 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
          * contiguous at rx_packet[0..4 + packet_length + 4). */
 	uint16_t mac_len = rx_mac_size(sess);
 	if (mac_len > 0) {
-		ret = gconf.rx(sess->trans.rx_mac_buf, mac_len, sess, sess->rx_cbdata);
+		ret = call_io(sess, gconf.rx, sess->trans.rx_mac_buf, mac_len, sess->rx_cbdata);
 		if (ret < 0)
 			goto rx_done;
 
@@ -1585,7 +1929,6 @@ rx_done:
          * connection is broken. */
 	if ((ret < 0) && (ret != DSSH_ERROR_REKEY_NEEDED))
 		session_set_terminate(sess);
-	dssh_thrd_check(sess, mtx_unlock(&sess->trans.rx_mtx));
 	return ret;
 }
 
@@ -2741,11 +3084,16 @@ newkeys(struct dssh_session_s *sess)
 	dssh_mac old_mac_c2s = sess->trans.mac_c2s_selected;
 	dssh_mac old_mac_s2c = sess->trans.mac_s2c_selected;
 
-	uint8_t newkeys_msg = SSH_MSG_NEWKEYS;
-	int     res         = send_packet(sess, &newkeys_msg, 1, NULL);
+	bool keep_owner = atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire);
+	int  res        = tx_acquire(sess, SSH_MSG_NEWKEYS);
 
 	if (res < 0)
 		return res;
+	uint8_t newkeys_msg = SSH_MSG_NEWKEYS;
+
+	res = send_packet_inner(sess, &newkeys_msg, 1, NULL);
+	if (res < 0)
+		goto newkeys_done;
 
 	uint8_t  msg_type;
 	uint8_t *payload;
@@ -2753,15 +3101,19 @@ newkeys(struct dssh_session_s *sess)
 
 	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0)
-		return res;
-	if (msg_type != SSH_MSG_NEWKEYS)
-		return DSSH_ERROR_PARSE;
+		goto newkeys_done;
+	if (msg_type != SSH_MSG_NEWKEYS) {
+		res = DSSH_ERROR_PARSE;
+		goto newkeys_done;
+	}
 
 	/* Save session ID on first KEX */
 	if (sess->trans.session_id == NULL) {
 		sess->trans.session_id = malloc(sess->trans.exchange_hash_sz);
-		if (sess->trans.session_id == NULL)
-			return DSSH_ERROR_ALLOC;
+		if (sess->trans.session_id == NULL) {
+			res = DSSH_ERROR_ALLOC;
+			goto newkeys_done;
+		}
 		memcpy(sess->trans.session_id, sess->trans.exchange_hash, sess->trans.exchange_hash_sz);
 		sess->trans.session_id_sz = sess->trans.exchange_hash_sz;
 	}
@@ -2774,29 +3126,33 @@ newkeys(struct dssh_session_s *sess)
 	res = encode_k_wire(sess->trans.shared_secret, sess->trans.shared_secret_sz, k_as_string, &k_mpint,
 	    &k_mpint_sz);
 	if (res < 0)
-		return res;
+		goto newkeys_done;
 
 	/* Derive keys, init contexts, reset counters */
 	res = derive_and_apply_keys(sess, k_mpint, k_mpint_sz, old_enc_c2s, old_enc_s2c, old_mac_c2s, old_mac_s2c);
 	free(k_mpint);
 	if (res < 0)
-		return res;
+		goto newkeys_done;
 
-	/* Allocate (or resize) TX slot buffers for the new algorithms.
-	 * All slots are !ready at this point — send_packet(NEWKEYS) above
-	 * drained the queue before sending, and no traffic flows until
-	 * rekey_in_progress is cleared. */
+	/* Allocate or resize TX slot buffers for the new algorithms.  A
+	 * producer may have queued work while rekey was in progress, so the
+	 * resize path preserves any live slot payload while replacing its
+	 * backing buffer. */
 	res = alloc_session_slots(sess);
 	if (res < 0)
-		return res;
+		goto newkeys_done;
 
 	/* Resize channel slots if demux thread is running (rekey case).
 	 * On initial KEX there are no channels yet. */
 	if (sess->conn_initialized) {
-		dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx));
 		res = resize_channel_slots(sess);
-		dssh_thrd_check(sess, mtx_unlock(&sess->channel_mtx));
 	}
+
+newkeys_done:
+	/* During rekey the caller clears rekey_in_progress before releasing
+	 * ownership, so no old-key connection packet can follow NEWKEYS. */
+	if (res < 0 || !keep_owner)
+		tx_unlock_with_slots(sess);
 	return res;
 }
 
@@ -2820,7 +3176,6 @@ transport_init(struct dssh_session_s *sess, size_t max_packet_size)
 	bool tx_mtx_ok       = false;
 	bool tx_queue_mtx_ok = false;
 	bool tx_slot_cnd_ok  = false;
-	bool rx_mtx_ok       = false;
 
 	sess->trans.packet_buf_sz = max_packet_size;
 	sess->trans.tx_packet     = malloc(4 + max_packet_size);
@@ -2840,13 +3195,11 @@ transport_init(struct dssh_session_s *sess, size_t max_packet_size)
 	if (cnd_init(&sess->trans.tx_slot_cnd) != thrd_success)
 		goto init_cleanup;
 	tx_slot_cnd_ok = true;
-	if (mtx_init(&sess->trans.rx_mtx, mtx_plain) != thrd_success)
-		goto init_cleanup;
-	rx_mtx_ok = true;
 	if (cnd_init(&sess->trans.rekey_cnd) != thrd_success)
 		goto init_cleanup;
 
 	sess->trans.rekey_in_progress = false;
+	atomic_init(&sess->trans.tx_owner_active, false);
 	sess->trans.rekey_pending     = false;
 
 	sess->trans.kex_selected      = NULL;
@@ -2877,8 +3230,6 @@ transport_init(struct dssh_session_s *sess, size_t max_packet_size)
 	return 0;
 
 init_cleanup:
-	if (rx_mtx_ok)
-		mtx_destroy(&sess->trans.rx_mtx);
 	if (tx_slot_cnd_ok)
 		cnd_destroy(&sess->trans.tx_slot_cnd);
 	if (tx_queue_mtx_ok)
@@ -2940,7 +3291,6 @@ transport_cleanup(struct dssh_session_s *sess)
 	cnd_destroy(&sess->trans.tx_slot_cnd);
 	mtx_destroy(&sess->trans.tx_mtx);
 	mtx_destroy(&sess->trans.tx_queue_mtx);
-	mtx_destroy(&sess->trans.rx_mtx);
 
 	/* Free session-level TX slot buffers */
 	free_tx_slot(&sess->trans.global_reply_slot);
@@ -3030,6 +3380,9 @@ dssh_session_init(bool client, size_t max_packet_size)
 	sess->default_max_events = DSSH_DEFAULT_MAX_EVENTS;
 	atomic_init(&sess->log_level, DSSH_LOG_ERROR);
 	atomic_init(&sess->termination_logged, false);
+	atomic_init(&sess->terminate_notified, false);
+	atomic_init(&sess->terminate_wake_started, false);
+	atomic_init(&sess->lock_ownership_failed, false);
 	atomic_init(&sess->log_mirror_suppressed, false);
 	sess->initialized        = true;
 	return sess;
@@ -3039,6 +3392,8 @@ DSSH_PUBLIC bool
 dssh_session_terminate(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
+		return false;
+	if (dssh_io_callback_active(sess))
 		return false;
 
 	bool t = true;
@@ -3065,6 +3420,8 @@ DSSH_PUBLIC void
 dssh_session_cleanup(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
+		return;
+	if (dssh_io_callback_active(sess))
 		return;
 	dssh_session_terminate(sess);
 	dssh_session_stop(sess);
@@ -3234,14 +3591,14 @@ rxline_from_rx(uint8_t *buf, size_t bufsz, size_t *bytes_received, struct dssh_s
 	int    res;
 
 	while (have < bufsz) {
-		res = gconf.rx(&buf[have], 1, sess, cbdata);
+		res = call_io(sess, gconf.rx, &buf[have], 1, cbdata);
 		if (res < 0)
 			return res;
 		have++;
 		if (buf[have - 1] == '\r') {
 			if (have >= bufsz)
 				return DSSH_ERROR_TOOLONG;
-			res = gconf.rx(&buf[have], 1, sess, cbdata);
+			res = call_io(sess, gconf.rx, &buf[have], 1, cbdata);
 			if (res < 0)
 				return res;
 			have++;
@@ -3321,7 +3678,6 @@ dssh_test_reset_global_config(void)
 
 	memset(&gconf, 0, sizeof(gconf));
 	gconf.used = false;
-	dssh_test_tx_after_send_hook = NULL;
 	atomic_store(&dssh_test_rx_count_sess, NULL);
 }
 

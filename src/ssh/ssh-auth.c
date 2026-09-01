@@ -996,6 +996,8 @@ DSSH_PUBLIC int
 dssh_auth_server(struct dssh_session_s *sess, const struct dssh_auth_server_cbs *cbs, uint8_t *username_out,
     size_t *username_out_len)
 {
+	if (sess != NULL && dssh_io_callback_active(sess))
+		return DSSH_ERROR_INVALID;
 	if ((cbs == NULL) || (sess == NULL))
 		return DSSH_ERROR_INVALID;
 	return auth_check_terminated(sess, auth_server_impl(sess, cbs, username_out, username_out_len));
@@ -1004,6 +1006,8 @@ dssh_auth_server(struct dssh_session_s *sess, const struct dssh_auth_server_cbs 
 DSSH_PUBLIC int
 dssh_auth_set_banner(struct dssh_session_s *sess, const char *message, const char *language)
 {
+	if (sess != NULL && dssh_io_callback_active(sess))
+		return DSSH_ERROR_INVALID;
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
 
@@ -1197,6 +1201,8 @@ get_methods_impl(struct dssh_session_s *sess, const char *username, char *method
 DSSH_PUBLIC int
 dssh_auth_get_methods(struct dssh_session_s *sess, const char *username, char *methods, size_t methods_sz)
 {
+	if (sess != NULL && dssh_io_callback_active(sess))
+		return DSSH_ERROR_INVALID;
 	if ((methods == NULL) || (username == NULL) || (sess == NULL))
 		return DSSH_ERROR_INIT;
 	return auth_check_terminated(sess, get_methods_impl(sess, username, methods, methods_sz));
@@ -1346,6 +1352,8 @@ DSSH_PUBLIC int
 dssh_auth_password(struct dssh_session_s *sess, const char *username, const char *password,
     dssh_auth_passwd_change_cb passwd_change_cb, void *passwd_change_cbdata)
 {
+	if (sess != NULL && dssh_io_callback_active(sess))
+		return DSSH_ERROR_INVALID;
 	if ((password == NULL) || (username == NULL) || (sess == NULL))
 		return DSSH_ERROR_INVALID;
 	return auth_check_terminated(sess,
@@ -1576,6 +1584,8 @@ DSSH_PUBLIC int
 dssh_auth_keyboard_interactive(struct dssh_session_s *sess, const char *username,
     dssh_auth_kbi_prompt_cb prompt_cb, void *cbdata)
 {
+	if (sess != NULL && dssh_io_callback_active(sess))
+		return DSSH_ERROR_INVALID;
 	if ((prompt_cb == NULL) || (username == NULL) || (sess == NULL))
 		return DSSH_ERROR_INVALID;
 	return auth_check_terminated(sess, auth_kbi_impl(sess, username, prompt_cb, cbdata));
@@ -1730,6 +1740,8 @@ auth_publickey_impl(struct dssh_session_s *sess, const char *username, const cha
 DSSH_PUBLIC int
 dssh_auth_publickey(struct dssh_session_s *sess, const char *username, const char *algo_name)
 {
+	if (sess != NULL && dssh_io_callback_active(sess))
+		return DSSH_ERROR_INVALID;
 	if ((algo_name == NULL) || (username == NULL) || (sess == NULL))
 		return DSSH_ERROR_INVALID;
 	return auth_check_terminated(sess, auth_publickey_impl(sess, username, algo_name));

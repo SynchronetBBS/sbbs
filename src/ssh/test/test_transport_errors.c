@@ -277,6 +277,8 @@ channel_slot_fixture_setup(dssh_session sess, struct channel_slot_fixture *fixtu
 	}
 
 	fixture->channel.sess = sess;
+	atomic_init(&fixture->channel.tx_refs, 0);
+	atomic_init(&fixture->channel.terminate_woken, false);
 	fixture->channels[0]  = &fixture->channel;
 	sess->channels         = fixture->channels;
 	sess->channel_count    = 1;
@@ -335,13 +337,13 @@ test_channel_slot_drain_fatal(void)
 	arm_channel_wa_slot(&fixture.channel);
 	test_enc_fail_encrypt_at(0);
 
-	if (mtx_lock(&ctx.client->trans.tx_mtx) != thrd_success) {
+	if (tx_acquire(ctx.client, SSH_MSG_IGNORE) < 0) {
 		channel_slot_fixture_cleanup(ctx.client, &fixture);
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
 	}
 	drain_tx_slots(ctx.client);
-	int tx_unlock_result = mtx_unlock(&ctx.client->trans.tx_mtx);
+	tx_unlock_with_slots(ctx.client);
 
 	bool terminated = dssh_session_is_terminated(ctx.client);
 	bool ready       = atomic_load(&fixture.channel.wa_slot.ready);
@@ -358,7 +360,6 @@ test_channel_slot_drain_fatal(void)
 	ASSERT_FALSE(initially_terminated);
 	ASSERT_TRUE(terminated);
 	ASSERT_FALSE(ready);
-	ASSERT_EQ(tx_unlock_result, thrd_success);
 	ASSERT_EQ(lock_result, thrd_success);
 	ASSERT_EQ(channel_unlock_result, thrd_success);
 	return TEST_PASS;
@@ -384,14 +385,14 @@ test_channel_slot_gather_fatal(void)
 	test_enc_fail_encrypt_at(0);
 	ctx.client->trans.tx_packet[9] = SSH_MSG_IGNORE;
 
-	if (mtx_lock(&ctx.client->trans.tx_mtx) != thrd_success) {
+	if (tx_acquire(ctx.client, SSH_MSG_IGNORE) < 0) {
 		channel_slot_fixture_cleanup(ctx.client, &fixture);
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
 	}
 	int gather_result = tx_gather_with_packet(ctx.client,
 	    ctx.client->trans.tx_packet, 1);
-	int tx_unlock_result = mtx_unlock(&ctx.client->trans.tx_mtx);
+	tx_unlock_with_slots(ctx.client);
 
 	bool terminated = dssh_session_is_terminated(ctx.client);
 	bool ready       = atomic_load(&fixture.channel.wa_slot.ready);
@@ -409,7 +410,6 @@ test_channel_slot_gather_fatal(void)
 	ASSERT_OK(gather_result);
 	ASSERT_TRUE(terminated);
 	ASSERT_FALSE(ready);
-	ASSERT_EQ(tx_unlock_result, thrd_success);
 	ASSERT_EQ(lock_result, thrd_success);
 	ASSERT_EQ(channel_unlock_result, thrd_success);
 	return TEST_PASS;

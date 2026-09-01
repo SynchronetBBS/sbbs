@@ -32,32 +32,50 @@
  * ================================================================ */
 
 static dssh_session delayed_tx_sess;
-static atomic_bool  delayed_window_adjust;
+static atomic_int   delayed_tx_countdown;
+static atomic_bool  delayed_tx_seen;
+static dssh_session callback_probe_sess;
+static dssh_session callback_probe_other_sess;
+static atomic_int   callback_probe_kind;
+static atomic_int   callback_probe_api_result;
+static atomic_int   callback_probe_other_api_result;
+static atomic_int   callback_probe_lock_result;
+static atomic_bool  callback_probe_is_terminated;
+static atomic_bool  callback_probe_terminate_result;
+
+enum callback_probe_kind {
+	CALLBACK_PROBE_NONE,
+	CALLBACK_PROBE_TX,
+	CALLBACK_PROBE_RX,
+	CALLBACK_PROBE_RUNNING
+};
 
 static void
-delay_window_adjust_after_send(dssh_session sess, uint8_t msg_type)
+run_callback_probe(dssh_session sess, enum callback_probe_kind kind)
 {
-	if (sess == delayed_tx_sess && msg_type == SSH_MSG_CHANNEL_WINDOW_ADJUST) {
-		atomic_store(&delayed_window_adjust, true);
-		struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+	if (sess != callback_probe_sess)
+		return;
+	int expected = (int)kind;
 
-		thrd_sleep(&ts, NULL);
-	}
-}
+	if (!atomic_compare_exchange_strong(&callback_probe_kind, &expected, CALLBACK_PROBE_RUNNING))
+		return;
+	atomic_store(&callback_probe_is_terminated, dssh_session_is_terminated(sess));
+	atomic_store(&callback_probe_api_result, dssh_session_set_rekey_seconds(sess, 1));
+	atomic_store(&callback_probe_other_api_result,
+	    dssh_session_set_rekey_seconds(callback_probe_other_sess, 1));
+	atomic_store(&callback_probe_terminate_result, dssh_session_terminate(sess));
+	int lock_result = mtx_trylock(&sess->trans.tx_mtx);
 
-static void
-delay_setup_reply_after_send(dssh_session sess, uint8_t msg_type)
-{
-	if (sess == delayed_tx_sess && msg_type == SSH_MSG_CHANNEL_SUCCESS) {
-		struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
-
-		thrd_sleep(&ts, NULL);
-	}
+	atomic_store(&callback_probe_lock_result, lock_result);
+	if (lock_result == thrd_success)
+		mtx_unlock(&sess->trans.tx_mtx);
+	atomic_store(&callback_probe_kind, CALLBACK_PROBE_NONE);
 }
 
 static int
 socket_tx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 {
+	run_callback_probe(sess, CALLBACK_PROBE_TX);
 	int fd = *(int *)cbdata;
 	size_t sent = 0;
 	while (sent < bufsz) {
@@ -70,12 +88,23 @@ socket_tx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 			return -1;
 		sent += (size_t)n;
 	}
+	if (sess == delayed_tx_sess && atomic_load(&delayed_tx_countdown) > 0) {
+		int previous = atomic_fetch_sub(&delayed_tx_countdown, 1);
+
+		if (previous == 1) {
+			atomic_store(&delayed_tx_seen, true);
+			struct timespec ts = { .tv_sec = 0, .tv_nsec = 100000000 };
+
+			thrd_sleep(&ts, NULL);
+		}
+	}
 	return 0;
 }
 
 static int
 socket_rx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
 {
+	run_callback_probe(sess, CALLBACK_PROBE_RX);
 	int fd = *(int *)cbdata;
 	size_t got = 0;
 	while (got < bufsz) {
@@ -214,7 +243,11 @@ selftest_cleanup(struct selftest_ctx *ctx)
 	if (snap.server_fd >= 0)
 		close(snap.server_fd);
 	delayed_tx_sess = NULL;
-	atomic_store(&delayed_window_adjust, false);
+	atomic_store(&delayed_tx_countdown, 0);
+	atomic_store(&delayed_tx_seen, false);
+	callback_probe_sess = NULL;
+	callback_probe_other_sess = NULL;
+	atomic_store(&callback_probe_kind, CALLBACK_PROBE_NONE);
 	dssh_test_reset_global_config();
 }
 
@@ -866,12 +899,11 @@ test_self_window_adjust_race(void)
 	if (selftest_setup(&ctx) < 0)
 		return TEST_FAIL;
 
-	/* Delay after the server's WINDOW_ADJUST reaches the socket but
-	 * before tx_finalize(), send_packet(), and send_window_adjust()
-	 * return.  This deterministically opens the publication race. */
+	/* The next server packet after the client write is WINDOW_ADJUST.
+	 * Block the real transport callback after that packet reaches the
+	 * socket to deterministically open the publication race. */
 	delayed_tx_sess = ctx.server;
-	atomic_store(&delayed_window_adjust, false);
-	dssh_test_tx_after_send_hook = delay_window_adjust_after_send;
+	atomic_store(&delayed_tx_seen, false);
 
 	ASSERT_OK(dssh_session_start(ctx.client));
 	ASSERT_OK(dssh_session_start(ctx.server));
@@ -887,6 +919,8 @@ test_self_window_adjust_race(void)
 
 	ASSERT_TRUE(wev > 0);
 	const uint8_t data[] = "window-race";
+
+	atomic_store(&delayed_tx_countdown, 1);
 	int64_t written = dssh_chan_write(ch, 0, data, sizeof(data) - 1);
 
 	ASSERT_EQ_U(written, sizeof(data) - 1);
@@ -898,7 +932,7 @@ test_self_window_adjust_race(void)
 
 	ASSERT_EQ_U(recvd, sizeof(data) - 1);
 	ASSERT_MEM_EQ(buf, data, sizeof(data) - 1);
-	ASSERT_TRUE(atomic_load(&delayed_window_adjust));
+	ASSERT_TRUE(atomic_load(&delayed_tx_seen));
 
 	dssh_chan_close(ch, 0);
 	thrd_join(ctx.server_thread, NULL);
@@ -2805,7 +2839,11 @@ test_self_chan_send_break(void)
 	struct server_echo_arg sarg = { .ctx = &ctx };
 	ASSERT_OK(selftest_start_thread(&ctx, server_echo_thread, &sarg));
 	delayed_tx_sess = ctx.server;
-	dssh_test_tx_after_send_hook = delay_setup_reply_after_send;
+	atomic_store(&delayed_tx_seen, false);
+	/* Server sends OPEN_CONFIRMATION, then CHANNEL_SUCCESS.  Delay the
+	 * latter in the real TX callback so the demux can receive BREAK while
+	 * the setup reply is still unwinding. */
+	atomic_store(&delayed_tx_countdown, 2);
 
 	dssh_channel ch = open_exec(ctx.client, "break-test");
 
@@ -2813,6 +2851,7 @@ test_self_chan_send_break(void)
 
 	/* Send break -- should not error */
 	ASSERT_OK(dssh_chan_send_break(ch, 500));
+	ASSERT_TRUE(atomic_load(&delayed_tx_seen));
 
 	dssh_chan_close(ch, -1);
 	thrd_join(ctx.server_thread, NULL);
@@ -2961,6 +3000,58 @@ test_self_chan_accept_env_reject(void)
 	return TEST_PASS;
 }
 
+/* Transport callbacks run without a library mutex.  Only
+ * dssh_session_is_terminated() for the callback's session is permitted;
+ * public work on either the same or another session fails. */
+static int
+test_self_io_callback_contract(void)
+{
+	struct selftest_ctx ctx;
+
+	if (selftest_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	callback_probe_sess = ctx.server;
+	callback_probe_other_sess = ctx.client;
+	atomic_store(&callback_probe_api_result, 0);
+	atomic_store(&callback_probe_other_api_result, 0);
+	atomic_store(&callback_probe_lock_result, thrd_error);
+	atomic_store(&callback_probe_is_terminated, true);
+	atomic_store(&callback_probe_terminate_result, true);
+	atomic_store(&callback_probe_kind, CALLBACK_PROBE_TX);
+	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0 };
+
+	ASSERT_OK(send_packet(ctx.server, msg, sizeof(msg), NULL));
+	ASSERT_EQ(atomic_load(&callback_probe_kind), CALLBACK_PROBE_NONE);
+	ASSERT_ERR(atomic_load(&callback_probe_api_result), DSSH_ERROR_INVALID);
+	ASSERT_ERR(atomic_load(&callback_probe_other_api_result), DSSH_ERROR_INVALID);
+	ASSERT_EQ(atomic_load(&callback_probe_lock_result), thrd_success);
+	ASSERT_FALSE(atomic_load(&callback_probe_is_terminated));
+	ASSERT_FALSE(atomic_load(&callback_probe_terminate_result));
+
+	callback_probe_sess = ctx.client;
+	callback_probe_other_sess = ctx.server;
+	atomic_store(&callback_probe_api_result, 0);
+	atomic_store(&callback_probe_other_api_result, 0);
+	atomic_store(&callback_probe_lock_result, thrd_error);
+	atomic_store(&callback_probe_is_terminated, true);
+	atomic_store(&callback_probe_terminate_result, true);
+	atomic_store(&callback_probe_kind, CALLBACK_PROBE_RX);
+	ASSERT_OK(dssh_session_start(ctx.client));
+	for (size_t i = 0; i < 100000
+	    && atomic_load(&callback_probe_kind) != CALLBACK_PROBE_NONE; i++)
+		thrd_yield();
+	ASSERT_EQ(atomic_load(&callback_probe_kind), CALLBACK_PROBE_NONE);
+	ASSERT_ERR(atomic_load(&callback_probe_api_result), DSSH_ERROR_INVALID);
+	ASSERT_ERR(atomic_load(&callback_probe_other_api_result), DSSH_ERROR_INVALID);
+	ASSERT_EQ(atomic_load(&callback_probe_lock_result), thrd_success);
+	ASSERT_FALSE(atomic_load(&callback_probe_is_terminated));
+	ASSERT_FALSE(atomic_load(&callback_probe_terminate_result));
+
+	selftest_cleanup(&ctx);
+	return TEST_PASS;
+}
+
 /* ================================================================
  * After-each cleanup: if a test FAILs mid-way (ASSERT bails out),
  * clean up the active selftest context so leaked demux/accept
@@ -3018,6 +3109,7 @@ static struct dssh_test_entry tests[] = {
 	{ "test_self_chan_send_break",         test_self_chan_send_break },
 	{ "test_self_chan_getters_after_accept", test_self_chan_getters_after_accept },
 	{ "test_self_chan_accept_env_reject",  test_self_chan_accept_env_reject },
+	{ "test_self_io_callback_contract",   test_self_io_callback_contract },
 };
 
 DSSH_TEST_MAIN(tests)

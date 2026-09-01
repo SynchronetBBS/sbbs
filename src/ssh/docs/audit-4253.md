@@ -679,18 +679,18 @@ during key exchange.
 > messages that **MAY** be in-flight before receiving SSH_MSG_KEXINIT.
 
 **CONFORMS** — During rekey, `send_packet()` blocks application-layer
-messages (type >= 50) under `tx_mtx` while `rekey_in_progress` is set.
+messages (type >= 50) through the TX ownership gate while `rekey_in_progress` is set.
 Transport/KEX messages (types 1–49) pass through.  The rekey path sets
-the flag under `tx_mtx` before sending KEXINIT and clears it after
+the flag under the short TX state mutex before sending KEXINIT and clears it after
 NEWKEYS, then broadcasts `rekey_cnd` to wake blocked senders.
 Application-layer in-flight messages from the peer are still processed
-normally by the demux thread since `recv_packet_raw()` releases
-`rx_mtx` between calls.
+normally by the demux thread under its single RX ownership.
 
 NOTE: The rx path (demux thread) sends packets during rekey (KEXINIT,
 KEX messages, NEWKEYS, reciprocal CLOSE, WINDOW_ADJUST, global request
 replies).  All sends go through `send_packet()` which acquires/releases
-`tx_mtx` per call.  No deadlock, but the rx→tx cross-path should be
+exclusive packet-engine ownership per call.  No mutex is held across the
+application callback, but the rx→tx cross-path should be
 audited for latency implications.
 
 ---

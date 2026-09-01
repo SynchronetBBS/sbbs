@@ -3887,7 +3887,8 @@ hold_tx_until_released(void *arg)
 {
 	struct tx_hold_state *st = arg;
 
-	mtx_lock(&st->sess->trans.tx_mtx);
+	if (tx_acquire(st->sess, SSH_MSG_CHANNEL_DATA) < 0)
+		return -1;
 	mtx_lock(&st->mtx);
 	st->locked = true;
 	cnd_broadcast(&st->cnd);
@@ -6303,7 +6304,7 @@ test_zc_cancel(void)
 	ASSERT_NOT_NULL(txbuf);
 	ASSERT_TRUE(max_len > 0);
 
-	/* Cancel -- should release tx_mtx without sending */
+	/* Cancel -- should release packet-engine ownership without sending */
 	res = dssh_chan_zc_cancel(oc.client_ch);
 	ASSERT_OK(res);
 

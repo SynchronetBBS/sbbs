@@ -69,8 +69,6 @@ bool name_in_filter(const char *name, size_t nlen, const char *filter);
  */
 extern struct dssh_transport_global_config gconf;
 
-/* Runs after a successful TX callback while tx_finalize() is still active. */
-extern void (*dssh_test_tx_after_send_hook)(dssh_session sess, uint8_t msg_type);
 /* Atomically arm a one-shot receive-counter value for the next packet
  * decoded by sess. */
 void dssh_test_arm_rx_bytes_before_count(dssh_session sess, uint64_t value);

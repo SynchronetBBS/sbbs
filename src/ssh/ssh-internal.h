@@ -134,11 +134,10 @@ struct dssh_accept_queue {
 
 /* Set terminate flag and wake all library-owned condvar waiters. */
 DSSH_PRIVATE void session_set_terminate(struct dssh_session_s *sess);
-/* Same operation when the caller already owns trans.tx_mtx. */
-DSSH_PRIVATE void session_set_terminate_tx_locked(struct dssh_session_s *sess);
 /* Mark terminated without acquiring mutexes after an unlock error leaves
  * ownership uncertain. */
 DSSH_PRIVATE void session_set_terminate_no_wake(struct dssh_session_s *sess);
+DSSH_PRIVATE bool dssh_io_callback_active(struct dssh_session_s *sess);
 
 DSSH_PRIVATE bool dssh_log_enabled(struct dssh_session_s *sess, dssh_log_level level);
 DSSH_PRIVATE void dssh_log_emit(struct dssh_session_s *sess, dssh_log_level level, dssh_log_source source,
@@ -308,6 +307,10 @@ struct dssh_channel_s {
 	mtx_t       cb_mtx;  /* protects callback function pointer + cbdata pairs */
 	cnd_t       poll_cnd;
 	atomic_bool closing; /* set by close functions before cleanup */
+	atomic_bool terminate_woken;
+	/* Keeps embedded TX slots alive while a transport owner drains them
+	 * without channel_mtx held. */
+	atomic_uint tx_refs;
 	/* A session has one demux thread, so at most one dispatch can own a
 	 * channel.  LOCK_FAILED prevents teardown when buf_mtx ownership became
 	 * uncertain after an unlock error. */
@@ -439,6 +442,9 @@ struct dssh_session_s {
 	atomic_bool conn_initialized;
 	atomic_int  log_level;
 	atomic_bool termination_logged;
+	atomic_bool terminate_notified;
+	atomic_bool terminate_wake_started;
+	atomic_bool lock_ownership_failed;
 	atomic_bool log_mirror_suppressed;
 	bool        auth_service_requested;
 };
@@ -460,22 +466,25 @@ dssh_thrd_check(struct dssh_session_s *sess, int ret)
 	return ret;
 }
 
-/* Thread-call checker for operations performed while trans.tx_mtx is known
- * to remain owned.  Unlock results use dssh_thrd_check_unlock() because a
- * failed unlock leaves ownership uncertain. */
+/* Use while a mutex is held or its ownership is uncertain.  Marking the
+ * session is lock-free; notification callbacks and wake-lock acquisition are
+ * deferred until a lock-free boundary calls session_set_terminate(). */
 static inline int
-dssh_thrd_check_tx_locked(struct dssh_session_s *sess, int ret)
+dssh_thrd_check_locked(struct dssh_session_s *sess, int ret)
 {
 	if (ret != thrd_success && ret != thrd_busy && ret != thrd_timedout && !sess->terminate)
-		session_set_terminate_tx_locked(sess);
+		session_set_terminate_no_wake(sess);
 	return ret;
 }
 
 static inline int
 dssh_thrd_check_unlock(struct dssh_session_s *sess, int ret)
 {
-	if (ret != thrd_success && !sess->terminate)
-		session_set_terminate_no_wake(sess);
+	if (ret != thrd_success) {
+		atomic_store_explicit(&sess->lock_ownership_failed, true, memory_order_release);
+		if (!sess->terminate)
+			session_set_terminate_no_wake(sess);
+	}
 	return ret;
 }
 

@@ -102,6 +102,10 @@ typedef struct dssh_session_s *dssh_session;
  * Must block until all bytes are transferred or
  * dssh_session_is_terminated(sess) returns true.
  * Returns 0 on success, negative error code on failure.
+ * The callback is invoked with no library mutex held.  It may call only
+ * dssh_session_is_terminated() for the session passed to the callback.
+ * Every other dssh_* call is forbidden and, where an error return is
+ * available, is rejected with DSSH_ERROR_INVALID.
  *
  * When dssh_session_is_terminated() returns true, the callback
  * MUST return a negative error code within a reasonable period.
@@ -120,6 +124,7 @@ typedef int (*dssh_transport_io_cb)(uint8_t *buf, size_t bufsz, dssh_session ses
  * Optional: pass NULL to dssh_transport_set_callbacks() to use a
  * default implementation that reads one byte at a time via the rx
  * callback.
+ * The callback restriction documented for dssh_transport_io_cb applies.
  */
 typedef int (*dssh_transport_rxline_cb)(uint8_t *buf, size_t bufsz, size_t *bytes_received, dssh_session sess,
     void *cbdata);
@@ -128,6 +133,7 @@ typedef int (*dssh_transport_rxline_cb)(uint8_t *buf, size_t bufsz, size_t *byte
  * Called for non-SSH lines received before the version string.
  * buf is NUL-terminated, bufsz is the length without NUL.
  * Return 0 to continue, negative to abort.
+ * The callback restriction documented for dssh_transport_io_cb applies.
  */
 typedef int (*dssh_transport_extra_line_cb)(uint8_t *buf, size_t bufsz, void *cbdata);
 
@@ -148,6 +154,8 @@ struct dssh_tx_iov {
  * Returns 0 on success (all iovs sent) or negative on error.  On error
  * an unknown number of bytes may have been sent — the session will be
  * terminated.
+ * The callback is invoked with no library mutex held.  The callback
+ * restriction documented for dssh_transport_io_cb applies.
  */
 typedef int (
     *dssh_transport_tx_gather_cb)(const struct dssh_tx_iov *iov, size_t iovcnt, dssh_session sess, void *cbdata);

@@ -77,12 +77,14 @@ Previous items 1-5, 7-10 fixed; 6, 11 resolved; 12 noted.
 
 ### ZC API details (design lines 555-720)
 - Inbound: callback receives pointer into rx_packet, valid only during callback
-- Outbound: `zc_getbuf` acquires tx_mtx, computes max_len from
+- Outbound: `zc_getbuf` reserves exclusive packet-engine ownership without
+  retaining a mutex, and computes max_len from
   min(remote_window, remote_max_packet, transport buffer) (ssh-conn.c:2212-2218)
 - tx_packet layout: [seq(4)][pkt_len(4)][pad_len(1)][chan_hdr][data][pad][mac]
 - tx_mac_scratch and rx_mac_scratch eliminated; contiguous MAC input via seq prefix
-- Lock order: channel_mtx → buf_mtx → cb_mtx → tx_mtx (ssh-internal.h:262)
-- `_Thread_local in_zc_rx` guards all TX functions from RX callback context
+- Channel lifetimes are pinned while registry and per-channel locks are acquired
+  in separate intervals; no lock is held across another contended acquisition
+- Thread-local callback guards reject forbidden API reentry on every session
 - WINDOW_ADJUST sent for ZC callback consumed bytes
 - `remote_window` is `atomic_uint_least32_t` with CAS saturating helpers;
   `zc_send_inner` deducts atomically without buf_mtx

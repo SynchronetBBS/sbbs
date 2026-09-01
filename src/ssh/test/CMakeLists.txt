@@ -676,6 +676,7 @@ set(SELFTEST_TESTS
 	test_self_chan_send_break
 	test_self_chan_getters_after_accept
 	test_self_chan_accept_env_reject
+	test_self_io_callback_contract
 )
 dssh_add_individual_tests(dssh_test_selftest dssh_self SELFTEST_TESTS)
 

@@ -293,6 +293,11 @@ I/O callbacks **must** return a negative error code within a reasonable
 period.  Failure to do so will cause `dssh_session_cleanup()` to hang
 on thread join.  Use the terminate callback to be notified:
 
+Transport I/O, line-receive, extra-line, and gather callbacks run with no
+DeuceSSH mutex held.  While one of these callbacks is active, it may call only
+`dssh_session_is_terminated()` on the session passed to it.  All other
+`dssh_*` calls are forbidden and are rejected where the API has an error return.
+
 ```c
 static int my_sock;
 
@@ -1405,20 +1410,21 @@ separate thread instead.
 uint8_t *buf;
 size_t max_len;
 
-/* Get pointer into tx_packet — acquires tx_mtx */
+/* Reserve the packet engine and get its data pointer (no mutex retained) */
 dssh_chan_zc_getbuf(ch, 0, &buf, &max_len);
 
 /* Build data directly in the buffer */
 memcpy(buf, my_data, my_len);
 
-/* Send — fills headers, MAC, encrypt, releases tx_mtx */
+/* Send — fills headers, MAC, encrypt, releases TX ownership */
 dssh_chan_zc_send(ch, my_len);
 
 /* Or cancel without sending */
 dssh_chan_zc_cancel(ch);
 ```
 
-**Contract:** `zc_getbuf` holds `tx_mtx`.  Call `zc_send` or
+**Contract:** `zc_getbuf` reserves exclusive packet-engine ownership without
+holding a mutex across the application fill interval.  Call `zc_send` or
 `zc_cancel` promptly — do not block between them.
 
 ## Server-Side Channel Accept
@@ -1510,7 +1516,9 @@ are sequential — no concurrent calls.
 **After `dssh_session_start()`**: the demux thread handles all receiving.
 The application calls `poll()` / `read()` / `write()` from any
 thread.  Per-channel `buf_mtx` protects buffer access; `poll_cnd`
-wakes waiters.  Transport-layer `tx_mtx` serializes sends.
+wakes waiters.  Transport sends use a short state mutex to hand off exclusive
+packet-engine ownership; packet construction, cryptographic callbacks, and
+application I/O callbacks run after that mutex is released.
 
 During rekeying, application-layer sends (message type >= 50) are
 blocked until NEWKEYS completes.

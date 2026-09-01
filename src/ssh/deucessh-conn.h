@@ -281,14 +281,15 @@ DSSH_PUBLIC const struct dssh_chan_params *dssh_chan_get_pty(dssh_channel ch);
 DSSH_PUBLIC dssh_channel dssh_chan_zc_open(dssh_session sess, const struct dssh_chan_params *params,
     dssh_chan_zc_cb cb, void *cbdata);
 
-/* Get pointer into tx_packet data area.  Acquires tx_mtx.
+/* Get pointer into the packet-engine data area.  Reserves exclusive TX ownership
+ * without retaining a mutex across the caller's fill interval.
  * Caller MUST call dssh_chan_zc_send or dssh_chan_zc_cancel promptly. */
 DSSH_PUBLIC int dssh_chan_zc_getbuf(dssh_channel ch, int stream, uint8_t **buf, size_t *max_len);
 
-/* Fill channel header, MAC, encrypt, send.  Releases tx_mtx. */
+/* Fill channel header, MAC, encrypt, send.  Releases TX ownership. */
 DSSH_PUBLIC int dssh_chan_zc_send(dssh_channel ch, size_t len);
 
-/* Release tx_mtx without sending. */
+/* Release TX ownership without sending. */
 DSSH_PUBLIC int dssh_chan_zc_cancel(dssh_channel ch);
 
 /* ---- Event callbacks (optional, alternative to poll + read_event) ---- */

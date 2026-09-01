@@ -107,7 +107,7 @@ struct dssh_tx_slot {
 
 struct dssh_transport_state_s {
 	/* 8-byte fixed */
-	uint64_t rx_bytes_since_rekey; /* bytes received since last (re)key (rx_mtx) */
+	uint64_t rx_bytes_since_rekey; /* bytes received since last (re)key (RX owner) */
 	time_t   rekey_time;           /* time of last (re)key */
 
 				       /* Pointers and size_t (pointer-sized) */
@@ -158,21 +158,21 @@ struct dssh_transport_state_s {
 	_Atomic dssh_comp      comp_s2c_selected;
 
 	/* C11 synchronization (platform-dependent size) */
-	cnd_t rekey_cnd;    /* wakes senders blocked during rekey */
+	cnd_t rekey_cnd;    /* wakes senders blocked by TX ownership/rekey */
+	/* tx_mtx protects only ownership/rekey predicates.  It is never held
+	 * while packet data is built or an I/O/module callback is invoked. */
 	mtx_t tx_mtx;
 	mtx_t tx_queue_mtx; /* protects tx_queue and tx_slot_cnd */
 	cnd_t tx_slot_cnd;  /* wakes demux stalled on occupied slot */
-	mtx_t rx_mtx;
-
-	/* Atomic tx counters -- read lock-free by rekey_needed() (recv
-         * thread), written under tx_mtx by send_packet()/newkeys(). */
+	/* Atomic TX counters -- read lock-free by rekey_needed() (RX
+	 * owner), written by the exclusive packet-engine owner. */
 	atomic_uint_fast32_t tx_since_rekey;
 	atomic_uint_fast64_t tx_bytes_since_rekey;
 
 	/* 4-byte */
 	uint32_t tx_seq;
 	uint32_t rx_seq;
-	uint32_t rx_since_rekey; /* packets received since last (re)key (rx_mtx) */
+	uint32_t rx_since_rekey; /* packets received since last (re)key (RX owner) */
 	uint32_t last_rx_seq;    /* seq number of last received packet */
 	uint32_t rekey_seconds;  /* time-based rekey threshold; 0 = disabled */
 
@@ -182,6 +182,7 @@ struct dssh_transport_state_s {
 	/* 1-byte */
 	bool        client;
 	atomic_bool rekey_in_progress;     /* true between KEXINIT and NEWKEYS */
+	atomic_bool tx_owner_active;       /* exclusive packet-engine owner */
 	bool        rekey_pending;         /* deferred auto-rekey (set in recv_packet) */
 	bool        tx_slots_pending;      /* protected by tx_queue_mtx */
 
@@ -226,6 +227,8 @@ DSSH_PRIVATE void     send_cancel(struct dssh_session_s *sess);
 DSSH_PRIVATE int      send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8_t *payload,
 	 size_t payload_len);
 DSSH_PRIVATE int      schedule_wa_slot(struct dssh_session_s *sess);
+DSSH_PRIVATE int      tx_acquire(struct dssh_session_s *sess, uint8_t msg_type);
+DSSH_PRIVATE bool     tx_owner_is_current(struct dssh_session_s *sess);
 DSSH_PRIVATE void     tx_unlock_with_slots(struct dssh_session_s *sess);
 DSSH_PRIVATE size_t   tx_slot_buf_size(size_t max_payload, size_t block_size, uint16_t mac_digest);
 DSSH_PRIVATE int      alloc_tx_slot(struct dssh_tx_slot *slot, size_t max_payload, size_t block_size,

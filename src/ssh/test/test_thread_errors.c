@@ -276,12 +276,10 @@ test_send_unlock_fail(void)
 	return TEST_PASS;
 }
 
-/*
- * recv_packet mtx_lock failure: first thrd call in recv_packet_raw
- * is mtx_lock(rx_mtx).  Inject failure, verify session terminates.
- */
+/* The demux is the sole RX owner, so recv_packet performs no C11 lock
+ * operation.  An armed thread-failure injector must remain untouched. */
 static int
-test_recv_lock_fail(void)
+test_recv_has_no_lock(void)
 {
 	struct handshake_ctx ctx;
 	if (handshake_setup(&ctx) < 0) {
@@ -303,8 +301,9 @@ test_recv_lock_fail(void)
 	int ret = recv_packet(ctx.server, &mt, &payload, &plen);
 	dssh_test_thrd_reset();
 
-	ASSERT_ERR(ret, DSSH_ERROR_TERMINATED);
-	ASSERT_TRUE(ctx.server->terminate);
+	ASSERT_OK(ret);
+	ASSERT_EQ(mt, SSH_MSG_SERVICE_REQUEST);
+	ASSERT_FALSE(ctx.server->terminate);
 
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
@@ -421,7 +420,7 @@ test_set_terminate_rekey_wakeup(void)
 		thrd_yield();
 
 	/* With the old trylock path, termination broadcasts and returns while
-	 * owner still holds tx_mtx.  Give it ample time to complete before the
+	 * another owner still has the packet engine.  Give it ample time to complete before the
 	 * owner enters cnd_timedwait, making the lost wake deterministic. */
 	struct timespec settle = { .tv_sec = 0, .tv_nsec = 100000000 };
 
@@ -484,9 +483,7 @@ test_send_sweep(void)
 	return TEST_PASS;
 }
 
-/*
- * Sweep: iterate over all thrd calls in recv_packet.
- */
+/* Verify the single-owner RX path has no injectable C11 synchronization. */
 static int
 test_recv_sweep(void)
 {
@@ -509,29 +506,9 @@ test_recv_sweep(void)
 	recv_packet(ctx.server, &mt, &payload, &plen);
 	int count = dssh_test_thrd_count();
 	dssh_test_thrd_reset();
-	ASSERT_TRUE(count >= 2);
+	ASSERT_EQ(count, 0);
 
 	handshake_cleanup(&ctx);
-
-	for (int n = 0; n < count; n++) {
-		if (handshake_setup(&ctx) < 0) {
-			handshake_cleanup(&ctx);
-			return TEST_SKIP;
-		}
-
-		ASSERT_OK(send_packet(ctx.client, msg,
-		    sizeof(msg), NULL));
-
-		dssh_test_thrd_fail_after(n);
-		recv_packet(ctx.server, &mt, &payload,
-		    &plen);
-		dssh_test_thrd_reset();
-
-		ASSERT_TRUE(ctx.server->terminate);
-
-		handshake_cleanup(&ctx);
-	}
-
 	return TEST_PASS;
 }
 
@@ -619,7 +596,7 @@ test_start_double(void)
 static struct dssh_test_entry tests[] = {
 	{ "thrd/send_lock_fail",      test_send_lock_fail },
 	{ "thrd/send_unlock_fail",    test_send_unlock_fail },
-	{ "thrd/recv_lock_fail",      test_recv_lock_fail },
+	{ "thrd/recv_has_no_lock",    test_recv_has_no_lock },
 	{ "thrd/set_terminate_fail",  test_set_terminate_lock_fail },
 	{ "thrd/set_terminate_rekey_wakeup", test_set_terminate_rekey_wakeup },
 	{ "thrd/send_sweep",          test_send_sweep },
