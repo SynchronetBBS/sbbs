@@ -41,6 +41,18 @@ DSSH_TESTABLE struct dssh_transport_global_config gconf;
 
 #ifdef DSSH_TESTING
 DSSH_TESTABLE void (*dssh_test_tx_after_send_hook)(struct dssh_session_s *sess, uint8_t msg_type);
+static _Atomic(struct dssh_session_s *) dssh_test_rx_count_sess;
+static _Atomic uint64_t dssh_test_rx_count_value;
+
+DSSH_TESTABLE void
+dssh_test_arm_rx_bytes_before_count(struct dssh_session_s *sess,
+    uint64_t value)
+{
+	atomic_store_explicit(&dssh_test_rx_count_value, value,
+	    memory_order_relaxed);
+	atomic_store_explicit(&dssh_test_rx_count_sess, sess,
+	    memory_order_release);
+}
 #endif
 
 /* ================================================================
@@ -1543,6 +1555,15 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 
 	DSSH_TRACE_W("rx msg_type=%u len=%zu", *msg_type, *payload_len);
 
+#ifdef DSSH_TESTING
+	struct dssh_session_s *count_sess = sess;
+
+	if (atomic_compare_exchange_strong_explicit(&dssh_test_rx_count_sess,
+	    &count_sess, NULL, memory_order_acq_rel, memory_order_acquire)) {
+		sess->trans.rx_bytes_since_rekey = atomic_load_explicit(
+		    &dssh_test_rx_count_value, memory_order_relaxed);
+	}
+#endif
 	sess->trans.last_rx_seq = sess->trans.rx_seq;
 	sess->trans.rx_seq++;
 	sess->trans.rx_since_rekey++;
@@ -3301,6 +3322,7 @@ dssh_test_reset_global_config(void)
 	memset(&gconf, 0, sizeof(gconf));
 	gconf.used = false;
 	dssh_test_tx_after_send_hook = NULL;
+	atomic_store(&dssh_test_rx_count_sess, NULL);
 }
 
 /*

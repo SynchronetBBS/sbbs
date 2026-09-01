@@ -1572,6 +1572,7 @@ test_self_rekey_preserves_channels(void)
 /* Server: accept channel, send burst of data, close */
 struct server_burst_arg {
 	struct selftest_ctx *ctx;
+	atomic_bool start;
 	int result;
 };
 
@@ -1587,6 +1588,12 @@ server_burst_thread(void *arg)
 
 	if (ch == NULL)
 		return 0;
+
+	while (!atomic_load_explicit(&a->start, memory_order_acquire)) {
+		if (dssh_session_is_terminated(ctx->server))
+			return 0;
+		thrd_yield();
+	}
 
 	/* Wait for peer's WINDOW_ADJUST */
 	dssh_chan_poll(ch, DSSH_POLL_WRITE, 30000);
@@ -1621,6 +1628,7 @@ test_self_rekey_inflight_data(void)
 	ASSERT_OK(dssh_session_start(ctx.server));
 
 	struct server_burst_arg sarg = { .ctx = &ctx };
+	atomic_init(&sarg.start, false);
 	ASSERT_OK(selftest_start_thread(&ctx, server_burst_thread, &sarg));
 
 	dssh_channel ch = open_exec(ctx.client,"burst");
@@ -1631,7 +1639,10 @@ test_self_rekey_inflight_data(void)
 	 * packet, then on the next recv_packet call starts rekey.
 	 * Remaining packets in the socket buffer arrive during the
 	 * kexinit wait loop. */
-	ctx.client->trans.rx_bytes_since_rekey = ctx.client->trans.enc_s2c_selected->bytes_per_key - 50;
+	uint64_t rx_count =
+	    ctx.client->trans.enc_s2c_selected->bytes_per_key - 50;
+	dssh_test_arm_rx_bytes_before_count(ctx.client, rx_count);
+	atomic_store_explicit(&sarg.start, true, memory_order_release);
 
 	/* Collect all data -- expect 500 bytes total */
 	uint8_t buf[1024];
