@@ -19,6 +19,8 @@
 struct mock_io_pipe {
 	_Atomic int rfd;    /* read end */
 	_Atomic int wfd;    /* write end */
+	atomic_bool read_closed;
+	atomic_bool write_closed;
 };
 
 struct mock_io_state {

@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "mock_io.h"
@@ -27,8 +28,22 @@ pipe_init(struct mock_io_pipe *p)
 	int fds[2];
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) < 0)
 		return -1;
+	struct timeval tv = {
+		.tv_sec = 0,
+		.tv_usec = 100000,
+	};
+	if (setsockopt(fds[0], SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0
+	    || setsockopt(fds[0], SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0
+	    || setsockopt(fds[1], SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0
+	    || setsockopt(fds[1], SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0) {
+		close(fds[0]);
+		close(fds[1]);
+		return -1;
+	}
 	atomic_store(&p->wfd, fds[0]);
 	atomic_store(&p->rfd, fds[1]);
+	atomic_store(&p->read_closed, false);
+	atomic_store(&p->write_closed, false);
 	return 0;
 }
 
@@ -47,6 +62,7 @@ pipe_free(struct mock_io_pipe *p)
 static void
 pipe_close_write(struct mock_io_pipe *p)
 {
+	atomic_store(&p->write_closed, true);
 	int fd = atomic_load(&p->wfd);
 	if (fd >= 0)
 		shutdown(fd, SHUT_RDWR);
@@ -55,6 +71,7 @@ pipe_close_write(struct mock_io_pipe *p)
 static void
 pipe_close_read(struct mock_io_pipe *p)
 {
+	atomic_store(&p->read_closed, true);
 	int fd = atomic_load(&p->rfd);
 	if (fd >= 0)
 		shutdown(fd, SHUT_RDWR);
@@ -67,7 +84,8 @@ static int
 pipe_write(struct mock_io_pipe *p, const uint8_t *data, size_t len)
 {
 	int fd = atomic_load(&p->wfd);
-	if (fd < 0)
+	if (fd < 0 || atomic_load(&p->write_closed)
+	    || atomic_load(&p->read_closed))
 		return -1;
 	size_t written = 0;
 	while (written < len) {
@@ -75,6 +93,12 @@ pipe_write(struct mock_io_pipe *p, const uint8_t *data, size_t len)
 		    MSG_NOSIGNAL);
 		if (n < 0 && errno == EINTR)
 			continue;
+		if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+			if (atomic_load(&p->write_closed)
+			    || atomic_load(&p->read_closed))
+				return -1;
+			continue;
+		}
 		if (n <= 0)
 			return -1;
 		written += (size_t)n;
@@ -89,13 +113,19 @@ static int
 pipe_read(struct mock_io_pipe *p, uint8_t *buf, size_t len)
 {
 	int fd = atomic_load(&p->rfd);
-	if (fd < 0)
+	if (fd < 0 || atomic_load(&p->read_closed))
 		return -1;
 	size_t have = 0;
 	while (have < len) {
 		ssize_t n = read(fd, buf + have, len - have);
 		if (n < 0 && errno == EINTR)
 			continue;
+		if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+			if (atomic_load(&p->read_closed)
+			    || atomic_load(&p->write_closed))
+				return -1;
+			continue;
+		}
 		if (n <= 0)
 			return -1;
 		have += (size_t)n;
@@ -111,7 +141,7 @@ pipe_readline(struct mock_io_pipe *p, uint8_t *buf, size_t bufsz,
     size_t *bytes_received)
 {
 	int fd = atomic_load(&p->rfd);
-	if (fd < 0)
+	if (fd < 0 || atomic_load(&p->read_closed))
 		return -1;
 	size_t have = 0;
 	for (;;) {
@@ -119,6 +149,12 @@ pipe_readline(struct mock_io_pipe *p, uint8_t *buf, size_t bufsz,
 		ssize_t n = read(fd, &ch, 1);
 		if (n < 0 && errno == EINTR)
 			continue;
+		if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+			if (atomic_load(&p->read_closed)
+			    || atomic_load(&p->write_closed))
+				return -1;
+			continue;
+		}
 		if (n <= 0)
 			return -1;
 		if (have < bufsz)
@@ -142,8 +178,12 @@ mock_io_init(struct mock_io_state *io, size_t capacity)
 	memset(io, 0, sizeof(*io));
 	atomic_store(&io->c2s.rfd, -1);
 	atomic_store(&io->c2s.wfd, -1);
+	atomic_store(&io->c2s.read_closed, true);
+	atomic_store(&io->c2s.write_closed, true);
 	atomic_store(&io->s2c.rfd, -1);
 	atomic_store(&io->s2c.wfd, -1);
+	atomic_store(&io->s2c.read_closed, true);
+	atomic_store(&io->s2c.write_closed, true);
 	if (pipe_init(&io->c2s) < 0)
 		return -1;
 	if (pipe_init(&io->s2c) < 0) {

@@ -1726,6 +1726,34 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type, uint8_t *payload, 
 	return 0;
 }
 
+#ifdef DSSH_TESTING
+static atomic_flag test_dispatch_gate = ATOMIC_FLAG_INIT;
+
+static void
+test_dispatch_enter(void)
+{
+	while (atomic_flag_test_and_set_explicit(&test_dispatch_gate,
+		memory_order_acquire))
+		thrd_yield();
+}
+
+static void
+test_dispatch_leave(void)
+{
+	atomic_flag_clear_explicit(&test_dispatch_gate, memory_order_release);
+}
+
+DSSH_TESTABLE int
+dssh_test_demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type,
+    uint8_t *payload, size_t payload_len)
+{
+	test_dispatch_enter();
+	int ret = demux_dispatch(sess, msg_type, payload, payload_len);
+	test_dispatch_leave();
+	return ret;
+}
+#endif
+
 /*
  * Handle CHANNEL_OPEN_CONFIRMATION -- recipient_channel is at offset 1.
  */
@@ -1885,12 +1913,18 @@ demux_thread_func(void *arg)
 
 		int dres = 0;
 
+#ifdef DSSH_TESTING
+		test_dispatch_enter();
+#endif
 		if (msg_type == SSH_MSG_CHANNEL_OPEN)
 			dres = demux_channel_open(sess, payload, payload_len);
 		else if (msg_type == SSH_MSG_CHANNEL_OPEN_CONFIRMATION)
 			dres = demux_open_confirmation(sess, payload, payload_len);
 		else if ((msg_type >= SSH_MSG_CHANNEL_OPEN_FAILURE) && (msg_type <= SSH_MSG_CHANNEL_FAILURE))
 			dres = demux_dispatch(sess, msg_type, payload, payload_len);
+#ifdef DSSH_TESTING
+		test_dispatch_leave();
+#endif
 
 		/* Parse errors from malformed peer messages are
 		 * non-fatal -- skip the packet.  I/O and serialize

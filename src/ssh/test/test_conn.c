@@ -3752,7 +3752,7 @@ test_demux_dispatch_chan_type_zero(void)
 	dssh_serialize_uint32(1, payload, sizeof(payload), &pos);
 	payload[pos++] = 'x';
 
-	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
+	dssh_test_demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
 
 	oc.server_ch->chan_type = saved_type;
 
@@ -4034,7 +4034,7 @@ test_zc_consumption_clamped(void)
 	memcpy(&payload[pos], "four", 4);
 	pos += 4;
 
-	ASSERT_OK(demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos));
+	ASSERT_OK(dssh_test_demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos));
 	mtx_lock(&oc.server_ch->buf_mtx);
 	uint32_t local = oc.server_ch->local_window;
 	uint32_t pending = oc.server_ch->window_adjust_pending;
@@ -4047,7 +4047,7 @@ test_zc_consumption_clamped(void)
 	/* The full packet consumes peer credit even if the callback consumes
 	 * only part of it; only the consumed bytes are granted back. */
 	consumed = 2;
-	ASSERT_OK(demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos));
+	ASSERT_OK(dssh_test_demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos));
 	mtx_lock(&oc.server_ch->buf_mtx);
 	local = oc.server_ch->local_window;
 	pending = oc.server_ch->window_adjust_pending;
@@ -4682,7 +4682,8 @@ test_dispatch_sync_failures(void)
 		DSSH_PUT_U32(oc.server_ch->local_id, payload, &pos);
 		DSSH_PUT_U32(1, payload, &pos);
 		dssh_test_thrd_fail_after(n);
-		int ret = demux_dispatch(ctx.server, SSH_MSG_CHANNEL_WINDOW_ADJUST, payload, pos);
+		int ret = dssh_test_demux_dispatch(ctx.server,
+		    SSH_MSG_CHANNEL_WINDOW_ADJUST, payload, pos);
 
 		dssh_test_thrd_reset();
 		ASSERT_ERR(ret, DSSH_ERROR_TERMINATED);
@@ -4775,7 +4776,7 @@ test_demux_data_truncation_window(void)
 	oc.server_ch->setup_mode = false;
 	mtx_unlock(&oc.server_ch->buf_mtx);
 
-	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
+	dssh_test_demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
 
 	/* The peer consumed ten bytes of window even though only four fit
 	 * in the stream buffer; dropped bytes are not granted back. */
@@ -4896,7 +4897,7 @@ test_rx_truncation_default(void)
 	size_t pos = build_channel_data(payload, sizeof(payload),
 	    oc.server_ch->local_id, 10);
 
-	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
+	dssh_test_demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
 
 	ASSERT_EQ(bytebuf_available(&oc.server_ch->buf.stdout_buf), (size_t)0);
 	ASSERT_EQ(oc.server_ch->local_window, (uint32_t)0);
@@ -4930,7 +4931,7 @@ test_rx_truncation_clips_to_window(void)
 	size_t pos = build_channel_data(payload, sizeof(payload),
 	    oc.server_ch->local_id, 10);
 
-	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
+	dssh_test_demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
 
 	/* cb saw len=4, wrote 4 bytes; local_window depleted. */
 	ASSERT_EQ(bytebuf_available(&oc.server_ch->buf.stdout_buf), (size_t)4);
@@ -4965,7 +4966,7 @@ test_rx_bypass_pre_setup(void)
 	size_t pos = build_channel_data(payload, sizeof(payload),
 	    oc.server_ch->local_id, 10);
 
-	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
+	dssh_test_demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
 
 	ASSERT_EQ(bytebuf_available(&oc.server_ch->buf.stdout_buf), (size_t)10);
 	/* Window was not credited for these out-of-budget bytes. */
@@ -5000,7 +5001,7 @@ test_rx_bypass_disengages_post_setup(void)
 	size_t pos = build_channel_data(payload, sizeof(payload),
 	    oc.server_ch->local_id, 10);
 
-	demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
+	dssh_test_demux_dispatch(ctx.server, SSH_MSG_CHANNEL_DATA, payload, pos);
 
 	ASSERT_EQ(bytebuf_available(&oc.server_ch->buf.stdout_buf), (size_t)0);
 	ASSERT_EQ(oc.server_ch->local_window, (uint32_t)0);

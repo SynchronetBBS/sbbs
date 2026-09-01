@@ -106,7 +106,7 @@ int conn_close(dssh_session sess, struct dssh_channel_s *ch);
 int send_window_adjust(dssh_session sess,
     struct dssh_channel_s *ch, uint32_t bytes);
 int maybe_replenish_window(dssh_session sess, struct dssh_channel_s *ch);
-int demux_dispatch(dssh_session sess, uint8_t msg_type,
+int dssh_test_demux_dispatch(dssh_session sess, uint8_t msg_type,
     uint8_t *payload, size_t payload_len);
 int detach_channel(dssh_session sess, struct dssh_channel_s *ch);
 int parse_channel_request(const uint8_t *payload, size_t payload_len,
