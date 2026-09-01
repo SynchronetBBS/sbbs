@@ -806,8 +806,10 @@ test_self_exec_echo(void)
 	for (int i = 0; i < 50; i++) {
 		int ev = dssh_chan_poll(ch,
 		    DSSH_POLL_READ, 1000);
-		if (ev <= 0)
+		if (ev < 0)
 			break;
+		if (ev == 0)
+			continue;
 		int64_t n = dssh_chan_read(ch, 0,
 		    buf + recvd, sizeof(buf) - recvd);
 		if (n <= 0)
@@ -853,19 +855,21 @@ test_self_exec_exit_code(void)
 	for (int i = 0; i < 50; i++) {
 		int ev = dssh_chan_poll(ch,
 		    DSSH_POLL_READ, 1000);
-		if (ev <= 0)
+		if (ev < 0)
 			break;
+		if (ev == 0)
+			continue;
 		int64_t n = dssh_chan_read(ch, 0,
 		    buf, sizeof(buf));
 		if (n <= 0)
 			break;
 	}
 
+	dssh_chan_close(ch, 0);
 	thrd_join(ctx.server_thread, NULL);
 	ctx.server_thread_active = false;
 	ASSERT_EQ(sarg.result, 0);
 
-	dssh_chan_close(ch, 0);
 	selftest_cleanup(&ctx);
 	return TEST_PASS;
 }
@@ -2573,11 +2577,17 @@ test_self_chan_read_peek(void)
 
 	const uint8_t data[] = "hello";
 
-	dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000);
-	dssh_chan_write(ch, 0, data, sizeof(data) - 1);
+	int wev = dssh_chan_poll(ch, DSSH_POLL_WRITE, 30000);
+
+	ASSERT_TRUE(wev > 0);
+	int64_t written = dssh_chan_write(ch, 0, data, sizeof(data) - 1);
+
+	ASSERT_EQ_U(written, sizeof(data) - 1);
 
 	/* Wait for echo data to arrive */
-	dssh_chan_poll(ch, DSSH_POLL_READ, 30000);
+	int rev = dssh_chan_poll(ch, DSSH_POLL_READ, 30000);
+
+	ASSERT_TRUE(rev > 0);
 
 	/* Peek: should report available bytes without consuming */
 	int64_t avail = dssh_chan_read(ch, 0, NULL, 0);
