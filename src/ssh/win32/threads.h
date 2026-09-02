@@ -55,6 +55,7 @@ int  cnd_timedwait(cnd_t *cnd, mtx_t *mtx, const struct timespec *ts);
 
 int  thrd_create(thrd_t *thr, thrd_start_t func, void *arg);
 int  thrd_join(thrd_t thr, int *res);
+void thrd_yield(void);
 
 #ifdef __cplusplus
 }

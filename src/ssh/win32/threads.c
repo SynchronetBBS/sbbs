@@ -162,3 +162,9 @@ thrd_join(thrd_t thr, int *res)
 	CloseHandle(thr);
 	return thrd_success;
 }
+
+void
+thrd_yield(void)
+{
+	SwitchToThread();
+}
