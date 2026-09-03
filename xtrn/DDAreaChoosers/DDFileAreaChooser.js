@@ -119,6 +119,10 @@
  *                            now used for color regions when displaying directories.
  *                            Fix: # items column now right-aligns correctly.  numFilesLen and
  *                            numDirsLen are now dynamic (consider subdir counts and lib dir counts).
+ * 2026-09-02 Eric Oulashin   Version 1.50
+ *                            Version number update to match the message area chooser.
+ *                            It seems this file area chooser doesn't have the same
+ *                            text alignment issue.
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -164,8 +168,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.49";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2026-02-27";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.50";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2026-09-02";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";

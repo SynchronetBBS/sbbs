@@ -124,6 +124,11 @@
  *                            Use dynamic subBoardDescLen based on numMsgsLen for color regions.
  *                            Fix: # items column now right-aligns correctly.  numItemsLen and
  *                            numMsgsLen are now dynamic (consider sub-group counts).
+ * 2026-09-01 Eric Oulashin   Version 1.50
+ *                            Fix: Long sub-board names no longer overflow into the # Posts or
+ *                            date columns. Names are truncated to the same width used by the
+ *                            list format string (printf %s width is a minimum, not a max).
+ *                            With help from Cursor AI.
  */
 
 /* Command-line arguments:
@@ -165,8 +170,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.49";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2026-02-27";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.50";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2026-09-02";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -1435,24 +1440,23 @@ function DDMsgAreaChooser_CreateLightbarMenu(pGrpName, pMsgAreaHeirarchyObj, pHe
 					menuItemObj.itemColor = itemColorIdxInfo.itemColorInfo;
 					menuItemObj.itemSelectedColor = itemColorIdxInfo.selectedItemColorInfo;
 					var formatStr = itemColorIdxInfo.formatStr;
-					// Note: this.areaChooser.subBoardNameLen and this.areaChooser.subBoardListPrintfInfo[grpIdx].nameLen
-					// are probably the same.
+					// Truncate to the format string's name width. printf %Ns is a minimum
+					// width; a longer name would push the # Posts / date columns out of alignment.
+					var nameForList = truncateStrToLen(this.msgAreaHeirarchyObj[pItemIdx].name, itemColorIdxInfo.nameLen);
 					// Get the timestamp of the last message, if configured to do so
 					if (this.areaChooser.showDatesInSubBoardList)
 					{
 						var lastMsgPostTimestamp = getLatestMsgTime(this.msgAreaHeirarchyObj[pItemIdx].subItemObj.code);
-						//this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStr
 						menuItemObj.text += format(formatStr, pItemIdx+1,
-												   this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen),
+												   nameForList,
 												   numItems,
 						                           strftime("%Y-%m-%d", lastMsgPostTimestamp),
 						                           strftime("%H:%M:%S", lastMsgPostTimestamp));
 					}
 					else
 					{
-						//this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStr
 						menuItemObj.text += format(formatStr, pItemIdx+1,
-												   this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen), numItems);
+												   nameForList, numItems);
 					}
 				}
 				else
@@ -1469,21 +1473,20 @@ function DDMsgAreaChooser_CreateLightbarMenu(pGrpName, pMsgAreaHeirarchyObj, pHe
 					menuItemObj.itemColor = itemColorIdxInfo.itemColorInfo;
 					menuItemObj.itemSelectedColor = itemColorIdxInfo.selectedItemColorInfo;
 					var formatStr = itemColorIdxInfo.formatStr;
+					var nameForList = truncateStrToLen(this.msgAreaHeirarchyObj[pItemIdx].name, itemColorIdxInfo.nameLen);
 					// Generate the item text
 					if (this.areaChooser.showDatesInSubBoardList)
 					{
 						var lastMsgPostTimestamp = getLatestMsgTime(this.msgAreaHeirarchyObj[pItemIdx].subItemObj.code);
-						//this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStrWithoutAreaNum
 						menuItemObj.text += format(formatStr,
-												  this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen), numItems,
+												  nameForList, numItems,
 						                          strftime("%Y-%m-%d", lastMsgPostTimestamp),
 						                          strftime("%H:%M:%S", lastMsgPostTimestamp));
 					}
 					else
 					{
-						//this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStrWithoutAreaNum
 						menuItemObj.text += format(formatStr,
-						                          this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen), numItems);
+						                          nameForList, numItems);
 					}
 				}
 			}
@@ -1755,7 +1758,8 @@ function DDMsgAreaChooser_GetSubBoardColorIndexInfoAndFormatStrForMenuItem(pItem
 	var retObj = {
 		itemColorInfo: [],
 		selectedItemColorInfo: [],
-		formatStr: ""
+		formatStr: "",
+		nameLen: this.subBoardNameLen
 	};
 
 	var itemNumHdrWidth = pItemNumHdrWidth - 1; // Leave room for the selected mark character
@@ -1771,7 +1775,9 @@ function DDMsgAreaChooser_GetSubBoardColorIndexInfoAndFormatStrForMenuItem(pItem
 			var timeWidth = 8;
 			var dateAndTimeWidth = dateWidth + timeWidth + 1;
 			var descWidth = console.screen_columns - itemNumHdrWidth - pNumItemsHdrWidth - dateWidth - timeWidth - 6;
-			//if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+			if (descWidth < 1)
+				descWidth = 1;
+			retObj.nameLen = descWidth;
 			retObj.formatStr = "%" + itemNumHdrWidth + "d %-" + descWidth + "s %" + pNumItemsHdrWidth + "d %-" + dateWidth + "s %-" + timeWidth + "s";
 
 			var itemNumStart = markEnd;
@@ -1804,10 +1810,12 @@ function DDMsgAreaChooser_GetSubBoardColorIndexInfoAndFormatStrForMenuItem(pItem
 			var itemNumEnd = itemNumStart + itemNumHdrWidth + 1;
 			var descStart = itemNumEnd;
 			var descWidth = console.screen_columns - itemNumHdrWidth - pNumItemsHdrWidth - 4;
+			if (descWidth < 1)
+				descWidth = 1;
+			retObj.nameLen = descWidth;
 			var descEnd = descStart + descWidth + 1;
 			var numItemsStart = descEnd;
 			var numItemsEnd = -1;
-			//if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
 			retObj.formatStr = "%" + itemNumHdrWidth + "d %-" + descWidth + "s %" + pNumItemsHdrWidth + "d";
 			retObj.itemColorInfo = [{start: markStart, end: markEnd, attrs: this.colors.areaMark},
 			                        {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNum},
@@ -1830,7 +1838,9 @@ function DDMsgAreaChooser_GetSubBoardColorIndexInfoAndFormatStrForMenuItem(pItem
 			var dateWidth = 10;
 			var timeWidth = 8;
 			var descWidth = console.screen_columns - itemNumHdrWidth - pNumItemsHdrWidth - dateWidth - timeWidth - 6;
-			//if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+			if (descWidth < 1)
+				descWidth = 1;
+			retObj.nameLen = descWidth;
 			retObj.formatStr = "%-" + descWidth + "s %" + pNumItemsHdrWidth + "d %-" + dateWidth + "s %-" + timeWidth + "s";
 
 			var descStart = markEnd;
@@ -1862,11 +1872,12 @@ function DDMsgAreaChooser_GetSubBoardColorIndexInfoAndFormatStrForMenuItem(pItem
 			// No dates in the sub-board list
 			var descStart = markEnd;
 			var descWidth = console.screen_columns - itemNumHdrWidth - pNumItemsHdrWidth - 4;
+			if (descWidth < 1)
+				descWidth = 1;
+			retObj.nameLen = descWidth;
 			var descEnd = descStart + descWidth + 1;
 			var numItemsStart = descEnd;
 			var numItemsEnd = -1;
-			//if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
-			//retObj.formatStr = "%" + itemNumHdrWidth + "d %-" + descWidth + "s %" + pNumItemsHdrWidth + "d";
 			retObj.formatStr = "%-" + descWidth + "s %" + pNumItemsHdrWidth + "d";
 			// Generate the color info arrays
 			if (typeof(pDescriptionPaddingLen) === "number" && pDescriptionPaddingLen > 0)
@@ -3600,6 +3611,20 @@ function DDMsgAreaChooser_GetSubNameLenAndNumMsgsLen(pGrpIdx)
 
 ////////////////////////////////////////////////////////////////////////////
 // Helper functions
+
+// Truncates a string to at most pMaxLen characters. printf %Ns is a minimum
+// field width, so callers must truncate before formatting or columns will shift.
+function truncateStrToLen(pStr, pMaxLen)
+{
+	if (typeof(pStr) !== "string")
+		return "";
+	var maxLen = (typeof(pMaxLen) === "number" ? pMaxLen : 0);
+	if (maxLen < 1)
+		return "";
+	if (pStr.length <= maxLen)
+		return pStr;
+	return pStr.substr(0, maxLen);
+}
 
 // Given a string of attribute characters, this function inserts the control code
 // in front of each attribute character and returns the new string.
