@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.50     2026-09-02   Bug fix: Text alignment issue in the message area
+                      chooser
 1.49     2026-02-27   Bug fix: Middle column color bleeding over into the column
                       for # of items for areas with less than 10,000 items.
                       Bug fix: The # items column right-aligns correctly and
