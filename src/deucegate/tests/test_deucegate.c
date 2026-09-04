@@ -163,6 +163,35 @@ nth_line(const uint8_t *data, size_t len, unsigned wanted, char *out, size_t out
 }
 
 static void
+test_expand_user_macros(void)
+{
+	dg_config_t cfg = {0};
+	dg_client_t client = {0};
+	char command[DG_PATH_MAX * 4], params[DG_PATH_MAX * 2];
+	str_list_t exports = strListInit();
+	strcpy(cfg.root, "/srv/gamesrv");
+	cfg.time_per_call = 60;
+	client.config = &cfg;
+	client.node = 1;
+	client.started = time(NULL);
+	strcpy(client.user.alias, "x; $(touch /tmp/pwned) ***PASSWORD");
+	strcpy(client.user.password_hash, "hash");
+	strcpy(command, "doors/***ALIAS/run");
+	strcpy(params, "-user \"***ALIAS\" -node *NODE");
+	CHECK(dg_expand_command(&client, 0, true, command, sizeof(command), params, sizeof(params), &exports));
+	CHECK(strcmp(command, "doors/${DEUCEGATE_ALIAS}/run") == 0);
+	CHECK(strcmp(params, "-user \"${DEUCEGATE_ALIAS}\" -node 1") == 0);
+	CHECK(strListCount(exports) == 1);
+	CHECK(exports[0] != NULL && strcmp(exports[0], "DEUCEGATE_ALIAS=x; $(touch /tmp/pwned) ***PASSWORD") == 0);
+	strListFree(&exports);
+
+	strcpy(command, "door");
+	strcpy(params, "-user ***ALIAS");
+	CHECK(dg_expand_command(&client, 0, false, command, sizeof(command), params, sizeof(params), NULL));
+	CHECK(strcmp(params, "-user x; $(touch /tmp/pwned) ***PASSWORD") == 0);
+}
+
+static void
 test_drop_files(void)
 {
 	dg_config_t cfg = {0};
@@ -288,6 +317,7 @@ main(int argc, char **argv)
 	test_legacy_password();
 	test_resource_limit_defaults(argv[1]);
 	test_drop_files();
+	test_expand_user_macros();
 	if (failures != 0) return 1;
 	puts("All DeuceGate tests passed.");
 	return 0;
