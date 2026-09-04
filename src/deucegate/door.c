@@ -1,6 +1,7 @@
 #include "deucegate.h"
 
 #include <ctype.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -150,14 +151,15 @@ free_door_environment(char **environment)
 }
 
 static char **
-door_environment(dg_encoding_t encoding, const char *language, const char *drop_path)
+door_environment(dg_encoding_t encoding, const char *language, const char *drop_path,
+    const str_list_t exports)
 {
-	size_t count = 0, used = 0;
+	size_t count = 0, used = 0, nexports = strListCount(exports);
 	char **environment;
 
 	while (environ != NULL && environ[count] != NULL)
 		count++;
-	environment = calloc(count + 4, sizeof(*environment));
+	environment = calloc(count + 4 + nexports, sizeof(*environment));
 	if (environment == NULL)
 		return NULL;
 	for (size_t i = 0; i < count; i++) {
@@ -201,7 +203,14 @@ door_environment(dg_encoding_t encoding, const char *language, const char *drop_
 			free_door_environment(environment);
 			return NULL;
 		}
-		snprintf(environment[used], len + 1, "%s%s", DG_DOOR_LANGUAGE_ENV, language);
+		snprintf(environment[used++], len + 1, "%s%s", DG_DOOR_LANGUAGE_ENV, language);
+	}
+	for (size_t i = 0; i < nexports; i++) {
+		environment[used] = strdup(exports[i]);
+		if (environment[used++] == NULL) {
+			free_door_environment(environment);
+			return NULL;
+		}
 	}
 	return environment;
 }
@@ -401,33 +410,90 @@ replace_all(char *buf, size_t bufsz, const char *needle, const char *replacement
 	}
 }
 
-static void
-expand_command(const dg_client_t *client, SOCKET handle, char *command, size_t commandsz,
-    char *parameters, size_t paramsz)
+#define DG_MACRO_MAX 64
+#define DG_MACRO_KEY_MAX 208
+
+typedef struct { char key[DG_MACRO_KEY_MAX]; char value[DG_PATH_MAX]; } dg_macro_t;
+
+static bool
+add_macro(dg_macro_t *table, size_t *count, const char *key, const char *fmt, ...)
 {
-	struct { const char *key; char value[DG_PATH_MAX]; } macros[17];
+	va_list ap;
+	if (*count >= DG_MACRO_MAX) return false;
+	snprintf(table[*count].key, sizeof(table[*count].key), "%s", key);
+	va_start(ap, fmt);
+	vsnprintf(table[*count].value, sizeof(table[*count].value), fmt, ap);
+	va_end(ap);
+	(*count)++;
+	return true;
+}
+
+static bool
+add_user_macro(dg_macro_t *table, size_t *count, bool shell, str_list_t *exports, const char *key,
+    const char *var, const char *raw, const char *command, const char *parameters)
+{
+	if (!shell) return add_macro(table, count, key, "%s", raw);
+	if (strstr(command, key) == NULL && strstr(parameters, key) == NULL) return true;
+	if (strListAppendFormat(exports, "%s=%s", var, raw) == NULL) return false;
+	return add_macro(table, count, key, "${%s}", var);
+}
+
+static bool
+expand_once(char *buf, size_t bufsz, const dg_macro_t *table, size_t count)
+{
+	char out[DG_PATH_MAX * 4];
+	size_t used = 0;
+	for (const char *p = buf; *p != 0;) {
+		size_t i, len = 1;
+		const char *text = p;
+		for (i = 0; i < count; i++) {
+			size_t klen = strlen(table[i].key);
+			if (strncmp(p, table[i].key, klen) == 0) {
+				text = table[i].value; len = strlen(text); p += klen;
+				break;
+			}
+		}
+		if (i == count) p++;
+		if (used + len >= sizeof(out) || used + len >= bufsz) return false;
+		memcpy(out + used, text, len); used += len;
+	}
+	out[used] = 0;
+	memcpy(buf, out, used + 1);
+	return true;
+}
+
+bool
+dg_expand_command(const dg_client_t *client, SOCKET handle, bool shell, char *command,
+    size_t commandsz, char *parameters, size_t paramsz, str_list_t *exports)
+{
+	dg_macro_t table[DG_MACRO_MAX];
+	size_t count = 0;
 	unsigned seconds = time_left(client);
-	memset(macros, 0, sizeof(macros));
-	macros[0].key = "*DORINFOx"; snprintf(macros[0].value, sizeof(macros[0].value), "%s/node%u/dorinfo%u.def", client->config->root, client->node, client->node);
-	macros[1].key = "*DORINFO1"; snprintf(macros[1].value, sizeof(macros[1].value), "%s/node%u/dorinfo1.def", client->config->root, client->node);
-	macros[2].key = "*DORINFO"; snprintf(macros[2].value, sizeof(macros[2].value), "%s/node%u/dorinfo.def", client->config->root, client->node);
-	macros[3].key = "*DOOR32"; snprintf(macros[3].value, sizeof(macros[3].value), "%s/node%u/door32.sys", client->config->root, client->node);
-	macros[4].key = "*DOORSYS"; snprintf(macros[4].value, sizeof(macros[4].value), "%s/node%u/door.sys", client->config->root, client->node);
-	macros[5].key = "*DOORFILE"; snprintf(macros[5].value, sizeof(macros[5].value), "%s/node%u/doorfile.sr", client->config->root, client->node);
-	macros[6].key = "*CHAIN"; snprintf(macros[6].value, sizeof(macros[6].value), "%s/node%u/chain.txt", client->config->root, client->node);
-	macros[7].key = "*BBSDEV"; snprintf(macros[7].value, sizeof(macros[7].value), "%s/node%u/BBSDEV.DRP", client->config->root, client->node);
-	macros[8].key = "*SOCKETHANDLE"; snprintf(macros[8].value, sizeof(macros[8].value), "%llu", (unsigned long long)(uintptr_t)handle);
-	macros[9].key = "*HANDLE"; strcpy(macros[9].value, macros[8].value);
-	macros[10].key = "*IPADDRESS"; strncpy(macros[10].value, client->remote_ip, sizeof(macros[10].value) - 1);
-	macros[11].key = "*MINUTESLEFT"; snprintf(macros[11].value, sizeof(macros[11].value), "%u", seconds / 60);
-	macros[12].key = "*SECONDSLEFT"; snprintf(macros[12].value, sizeof(macros[12].value), "%u", seconds);
-	macros[13].key = "*NODE"; snprintf(macros[13].value, sizeof(macros[13].value), "%u", client->node);
-	macros[14].key = "***ALIAS"; strncpy(macros[14].value, client->user.alias, sizeof(macros[14].value) - 1);
-	macros[15].key = "***USERNAME"; strcpy(macros[15].value, macros[14].value);
-	macros[16].key = "***PASSWORD"; strncpy(macros[16].value, client->user.password_hash, sizeof(macros[16].value) - 1);
-	for (size_t i = 0; i < 17; i++) {
-		replace_all(command, commandsz, macros[i].key, macros[i].value);
-		replace_all(parameters, paramsz, macros[i].key, macros[i].value);
+	bool ok = true;
+	add_macro(table, &count, "*DORINFOx", "%s/node%u/dorinfo%u.def", client->config->root, client->node, client->node);
+	add_macro(table, &count, "*DORINFO1", "%s/node%u/dorinfo1.def", client->config->root, client->node);
+	add_macro(table, &count, "*DORINFO", "%s/node%u/dorinfo.def", client->config->root, client->node);
+	add_macro(table, &count, "*DOOR32", "%s/node%u/door32.sys", client->config->root, client->node);
+	add_macro(table, &count, "*DOORSYS", "%s/node%u/door.sys", client->config->root, client->node);
+	add_macro(table, &count, "*DOORFILE", "%s/node%u/doorfile.sr", client->config->root, client->node);
+	add_macro(table, &count, "*CHAIN", "%s/node%u/chain.txt", client->config->root, client->node);
+	add_macro(table, &count, "*BBSDEV", "%s/node%u/BBSDEV.DRP", client->config->root, client->node);
+	add_macro(table, &count, "*SOCKETHANDLE", "%llu", (unsigned long long)(uintptr_t)handle);
+	add_macro(table, &count, "*HANDLE", "%llu", (unsigned long long)(uintptr_t)handle);
+	add_macro(table, &count, "*IPADDRESS", "%s", client->remote_ip);
+	add_macro(table, &count, "*MINUTESLEFT", "%u", seconds / 60);
+	add_macro(table, &count, "*SECONDSLEFT", "%u", seconds);
+	add_macro(table, &count, "*NODE", "%u", client->node);
+	{
+		const struct { const char *key, *var, *raw; } user[] = {
+			{"***ALIAS", "DEUCEGATE_ALIAS", client->user.alias},
+			{"***USERNAME", "DEUCEGATE_USERNAME", client->user.alias},
+			{"***PASSWORD", "DEUCEGATE_PASSWORD", client->user.password_hash},
+		};
+		for (size_t i = 0; i < sizeof(user) / sizeof(user[0]); i++) {
+			if (!add_user_macro(table, &count, shell, exports, user[i].key, user[i].var, user[i].raw, command, parameters))
+				return false;
+		}
 	}
 	if (*client->user.ini_path) {
 		FILE *fp = iniOpenFile(client->user.ini_path, false);
@@ -435,19 +501,21 @@ expand_command(const dg_client_t *client, SOCKET handle, char *command, size_t c
 			str_list_t ini = iniReadFile(fp), keys;
 			iniCloseFile(fp);
 			keys = ini != NULL ? iniGetKeyList(ini, "USER") : NULL;
-			for (size_t i = 0; keys != NULL && keys[i] != NULL; i++) {
+			for (size_t i = 0; ok && keys != NULL && keys[i] != NULL; i++) {
 				if (strnicmp(keys[i], "AdditionalInfo_", 15) == 0) {
-					char macro[192], value[DG_PATH_MAX];
+					char macro[DG_MACRO_KEY_MAX], var[DG_MACRO_KEY_MAX], raw[DG_PATH_MAX];
 					snprintf(macro, sizeof(macro), "***%s", keys[i] + 15);
-					iniGetSString(ini, "USER", keys[i], "", value, sizeof(value));
-					replace_all(command, commandsz, macro, value);
-					replace_all(parameters, paramsz, macro, value);
+					snprintf(var, sizeof(var), "DEUCEGATE_INFO_%s", keys[i] + 15);
+					for (char *p = var; *p != 0; p++) *p = isalnum((unsigned char)*p) ? (char)toupper((unsigned char)*p) : '_';
+					iniGetSString(ini, "USER", keys[i], "", raw, sizeof(raw));
+					ok = add_user_macro(table, &count, shell, exports, macro, var, raw, command, parameters);
 				}
 			}
 			if (keys != NULL) strListFree(&keys);
 			if (ini != NULL) strListFree(&ini);
 		}
 	}
+	return ok && expand_once(command, commandsz, table, count) && expand_once(parameters, paramsz, table, count);
 }
 
 static int
@@ -568,6 +636,7 @@ spawn_native_posix(const dg_client_t *client, const dg_door_t *door, SOCKET pair
 	char command[DG_PATH_MAX * 4], cmdpath[DG_PATH_MAX], params[DG_PATH_MAX * 2];
 	char drop_path[DG_PATH_MAX], node_tmp[DG_PATH_MAX];
 	char **environment;
+	str_list_t exports;
 	bool stdio = dg_stricmp(door->io, "Stdio") == 0;
 	dg_encoding_t encoding = effective_door_encoding(client, door);
 	int ptyfd = -1;
@@ -580,8 +649,25 @@ spawn_native_posix(const dg_client_t *client, const dg_door_t *door, SOCKET pair
 		snprintf(err, errsz, "cannot resolve BBSDEV.DRP path");
 		return false;
 	}
-	environment = door_environment(encoding, door_language(client), drop_path);
+	if (!stdio) {
+		if (socketpair(AF_UNIX, SOCK_STREAM, 0, pair) != 0) {
+			snprintf(err, errsz, "socketpair failed"); return false;
+		}
+		if (!dg_create_drop_files(client, "socket", pair[1], encoding, node_tmp, sizeof(node_tmp))) {
+			closesocket(pair[0]); closesocket(pair[1]);
+			snprintf(err, errsz, "cannot update drop files"); return false;
+		}
+	}
+	exports = strListInit();
+	if (!dg_expand_command(client, stdio ? 0 : pair[1], true, command, sizeof(command), params, sizeof(params), &exports)) {
+		if (!stdio) { closesocket(pair[0]); closesocket(pair[1]); }
+		strListFree(&exports);
+		snprintf(err, errsz, "expanded door command line is too long"); return false;
+	}
+	environment = door_environment(encoding, door_language(client), drop_path, exports);
+	strListFree(&exports);
 	if (environment == NULL) {
+		if (!stdio) { closesocket(pair[0]); closesocket(pair[1]); }
 		snprintf(err, errsz, "cannot create door environment");
 		return false;
 	}
@@ -589,18 +675,8 @@ spawn_native_posix(const dg_client_t *client, const dg_door_t *door, SOCKET pair
 		pid = forkpty(&ptyfd, NULL, NULL, NULL);
 		pair[0] = ptyfd; pair[1] = 0;
 	}
-	else {
-		if (socketpair(AF_UNIX, SOCK_STREAM, 0, pair) != 0) {
-			free_door_environment(environment);
-			snprintf(err, errsz, "socketpair failed"); return false;
-		}
-		if (!dg_create_drop_files(client, "socket", pair[1], encoding, node_tmp, sizeof(node_tmp))) {
-			closesocket(pair[0]); closesocket(pair[1]);
-			free_door_environment(environment);
-			snprintf(err, errsz, "cannot update drop files"); return false;
-		}
+	else
 		pid = fork();
-	}
 	if (pid < 0) {
 		if (!stdio) { closesocket(pair[0]); closesocket(pair[1]); }
 		free_door_environment(environment);
@@ -610,7 +686,6 @@ spawn_native_posix(const dg_client_t *client, const dg_door_t *door, SOCKET pair
 		if (!stdio) closesocket(pair[0]);
 		setsid();
 		chdir(client->config->root);
-		expand_command(client, stdio ? 0 : pair[1], command, sizeof(command), params, sizeof(params));
 		{
 			char shell[sizeof(command) + sizeof(params) + 8];
 			snprintf(shell, sizeof(shell), "\"%s\" %s", command, params);
@@ -656,8 +731,8 @@ spawn_native_windows(const dg_client_t *client, const dg_door_t *door, SOCKET pa
 	if ((strlen(cmdpath) < 2 || cmdpath[1] != ':') && !dg_path_join(command, sizeof(command), client->config->root, cmdpath)) return false;
 	else if (strlen(cmdpath) > 1 && cmdpath[1] == ':') snprintf(command, sizeof(command), "%s", cmdpath);
 	snprintf(params, sizeof(params), "%s", door->parameters);
-	expand_command(client, stdio ? 0 : pair[1], command, sizeof(command), params, sizeof(params));
-	if (snprintf(command_line, sizeof(command_line), "\"%s\" %s", command, params) >= (int)sizeof(command_line)) {
+	if (!dg_expand_command(client, stdio ? 0 : pair[1], false, command, sizeof(command), params, sizeof(params), NULL) ||
+	    snprintf(command_line, sizeof(command_line), "\"%s\" %s", command, params) >= (int)sizeof(command_line)) {
 		snprintf(err, errsz, "expanded door command line is too long"); return false;
 	}
 	si.cb = sizeof(si);
@@ -791,7 +866,9 @@ spawn_dos_posix(const dg_client_t *client, const dg_door_t *door, dg_child_t *ch
 		int ptyfd;
 		snprintf(command, sizeof(command), "%s", door->command);
 		snprintf(params, sizeof(params), "%s", door->parameters);
-		expand_command(client, 0, command, sizeof(command), params, sizeof(params));
+		if (!dg_expand_command(client, 0, false, command, sizeof(command), params, sizeof(params), NULL)) {
+			snprintf(err, errsz, "expanded door command line is too long"); return false;
+		}
 		replace_all(command, sizeof(command), client->config->root, "G:");
 		replace_all(params, sizeof(params), client->config->root, "G:");
 		if (!node_path(client, "external.bat", batch, sizeof(batch))) return false;
@@ -825,7 +902,10 @@ spawn_dos_posix(const dg_client_t *client, const dg_door_t *door, dg_child_t *ch
 	}
 	snprintf(command, sizeof(command), "%s", door->command);
 	snprintf(params, sizeof(params), "%s", door->parameters);
-	expand_command(client, 0, command, sizeof(command), params, sizeof(params));
+	if (!dg_expand_command(client, 0, false, command, sizeof(command), params, sizeof(params), NULL)) {
+		closesocket(listener);
+		snprintf(err, errsz, "expanded door command line is too long"); return false;
+	}
 	replace_all(command, sizeof(command), client->config->root, "C:");
 	replace_all(params, sizeof(params), client->config->root, "C:");
 	for (char *p = command; *p != 0; p++) if (*p == '/') *p = '\\';
@@ -892,7 +972,10 @@ spawn_dos_windows(const dg_client_t *client, const dg_door_t *door, dg_child_t *
 	}
 	snprintf(command, sizeof(command), "%s", door->command);
 	snprintf(params, sizeof(params), "%s", door->parameters);
-	expand_command(client, 0, command, sizeof(command), params, sizeof(params));
+	if (!dg_expand_command(client, 0, false, command, sizeof(command), params, sizeof(params), NULL)) {
+		closesocket(listener);
+		snprintf(err, errsz, "expanded door command line is too long"); return false;
+	}
 	replace_all(command, sizeof(command), client->config->root, "C:");
 	replace_all(params, sizeof(params), client->config->root, "C:");
 	for (char *p = command; *p != 0; p++) if (*p == '/') *p = '\\';

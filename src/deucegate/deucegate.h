@@ -9,6 +9,7 @@
 
 #include "gen_defs.h"
 #include "sockwrap.h"
+#include "str_list.h"
 
 #define DG_PATH_MAX 1024
 #define DG_ALIAS_MAX 64
@@ -120,6 +121,8 @@ bool dg_read_file(const char *path, uint8_t **data, size_t *len);
 bool dg_write_atomic(const char *path, const void *data, size_t len, unsigned mode);
 bool dg_mkdir_parent(const char *path);
 bool dg_alias_valid(const char *alias);
+bool dg_expand_command(const dg_client_t *client, SOCKET handle, bool shell, char *command,
+    size_t commandsz, char *parameters, size_t paramsz, str_list_t *exports);
 int dg_stricmp(const char *a, const char *b);
 char *dg_trim(char *s);
 bool dg_language_tag_valid(const char *tag);
