@@ -1727,6 +1727,12 @@ test_auth_roundtrip_multiple_attempts(void)
 static bool banner_received;
 static char banner_text[256];
 
+struct test_password_change_banner {
+	dssh_session sess;
+	int set_result;
+	bool seen_before_change;
+};
+
 static void
 test_banner_cb(const uint8_t *message, size_t message_len,
     const uint8_t *language, size_t language_len, void *cbdata)
@@ -1874,10 +1880,14 @@ test_password_change_cb_server(const uint8_t *username, size_t username_len,
     uint8_t **change_prompt, size_t *change_prompt_len,
     void *cbdata)
 {
+	struct test_password_change_banner *banner = cbdata;
+
 	(void)username;
 	(void)username_len;
 	(void)password;
 	(void)password_len;
+	banner->set_result = dssh_auth_set_banner(banner->sess,
+	    "Password change required\r\n", NULL);
 
 	/* Signal password change needed */
 	*change_prompt = malloc(16);
@@ -1896,7 +1906,11 @@ test_client_passwd_change_cb(const uint8_t *prompt, size_t prompt_len,
 	(void)prompt_len;
 	(void)language;
 	(void)language_len;
-	(void)cbdata;
+	if (cbdata != NULL) {
+		struct test_password_change_banner *banner = cbdata;
+
+		banner->seen_before_change = banner_received;
+	}
 
 	*new_password = malloc(7);
 	memcpy(*new_password, "newpass", 7);
@@ -1912,23 +1926,36 @@ test_auth_server_password_change(void)
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
 	}
+	banner_received = false;
+	banner_text[0] = 0;
+	dssh_session_set_banner_cb(ctx.client, test_banner_cb, NULL);
+
+	struct test_password_change_banner banner = {
+		.sess = ctx.server,
+		.set_result = DSSH_ERROR_INVALID,
+	};
 
 	struct auth_server_arg sa = {0};
 	sa.ctx = &ctx;
 	sa.cbs.methods_str = "password";
 	sa.cbs.password_cb = test_password_change_cb_server;
 	sa.cbs.passwd_change_cb = test_passwd_change_cb;
+	sa.cbs.cbdata = &banner;
 
 	thrd_t st;
 	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
 
 	/* Client: use dssh_auth_password with a change callback */
 	int res = dssh_auth_password(ctx.client, "testuser", "oldpass",
-	    test_client_passwd_change_cb, NULL);
+	    test_client_passwd_change_cb, &banner);
 	ASSERT_EQ(res, 0);
 
 	thrd_join(st, NULL);
 	ASSERT_EQ(sa.result, 0);
+	ASSERT_EQ(banner.set_result, 0);
+	ASSERT_TRUE(banner.seen_before_change);
+	ASSERT_TRUE(banner_received);
+	ASSERT_STR_EQ(banner_text, "Password change required\r\n");
 
 	handshake_cleanup(&ctx);
 	return TEST_PASS;
@@ -1946,14 +1973,26 @@ test_auth_server_password_change(void)
  * This test manually sends the probe first.
  * ================================================================ */
 
+static const char publickey_probe_banner[] = "Public key accepted\r\n";
+
+struct test_publickey_probe_data {
+	dssh_session sess;
+	int set_result;
+	bool probe_seen;
+};
+
 static int
 test_publickey_probe_cb(const uint8_t *username, size_t username_len,
     const char *algo_name, const uint8_t *pubkey_blob,
     size_t pubkey_blob_len, bool has_signature, void *cbdata)
 {
-	bool *probe_seen = cbdata;
-	if (!has_signature)
-		*probe_seen = true;
+	struct test_publickey_probe_data *data = cbdata;
+
+	if (!has_signature) {
+		data->probe_seen = true;
+		data->set_result = dssh_auth_set_banner(data->sess,
+		    publickey_probe_banner, NULL);
+	}
 	return DSSH_AUTH_SUCCESS;
 }
 
@@ -1966,13 +2005,16 @@ test_auth_server_publickey_probe(void)
 		return TEST_FAIL;
 	}
 
-	bool probe_seen = false;
+	struct test_publickey_probe_data probe = {
+		.sess = ctx.server,
+		.set_result = DSSH_ERROR_INVALID,
+	};
 
 	struct auth_server_arg sa = {0};
 	sa.ctx = &ctx;
 	sa.cbs.methods_str = "publickey";
 	sa.cbs.publickey_cb = test_publickey_probe_cb;
-	sa.cbs.cbdata = &probe_seen;
+	sa.cbs.cbdata = &probe;
 
 	thrd_t st;
 	ASSERT_TRUE(thrd_create(&st, auth_server_thread, &sa) == thrd_success);
@@ -2034,7 +2076,21 @@ test_auth_server_publickey_probe(void)
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 	}
 
-	/* Should receive PK_OK (msg type 60) */
+	/* The callback banner must arrive before PK_OK. */
+	{
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ASSERT_OK(recv_packet(ctx.client, &msg_type, &payload, &payload_len));
+		ASSERT_EQ(msg_type, SSH_MSG_USERAUTH_BANNER);
+		ASSERT_EQ_U(payload_len, 1 + 4 + sizeof(publickey_probe_banner) - 1 + 4);
+		ASSERT_EQ_U(DSSH_GET_U32(&payload[1]), sizeof(publickey_probe_banner) - 1);
+		ASSERT_MEM_EQ(&payload[5], publickey_probe_banner,
+		    sizeof(publickey_probe_banner) - 1);
+		ASSERT_EQ_U(DSSH_GET_U32(&payload[4 + sizeof(publickey_probe_banner)]), 0);
+	}
+
+	/* Should now receive PK_OK (msg type 60). */
 	{
 		uint8_t msg_type;
 		uint8_t *payload;
@@ -2050,7 +2106,8 @@ test_auth_server_publickey_probe(void)
 	mock_io_close_s2c(&ctx.io);
 	thrd_join(st, NULL);
 
-	ASSERT_TRUE(probe_seen);
+	ASSERT_TRUE(probe.probe_seen);
+	ASSERT_EQ(probe.set_result, 0);
 
 	handshake_cleanup(&ctx);
 	return TEST_PASS;

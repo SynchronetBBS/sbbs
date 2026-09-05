@@ -141,6 +141,11 @@ send_passwd_changereq(struct dssh_session_s *sess, const uint8_t *prompt, size_t
 	if ((prompt_len > UINT32_MAX) || (prompt_len > SIZE_MAX - PASSWD_CHANGEREQ_FIXED))
 		return DSSH_ERROR_INVALID;
 
+	int ret = flush_pending_banner(sess);
+
+	if (ret < 0)
+		return ret;
+
 	size_t   max;
 	int      err;
 	uint8_t *msg = send_begin(sess, SSH_MSG_USERAUTH_PASSWD_CHANGEREQ, &max, &err);
@@ -166,6 +171,11 @@ send_pk_ok(struct dssh_session_s *sess, const char *algo_name, size_t algo_len, 
 	if ((algo_len > UINT32_MAX) || (pubkey_blob_len > UINT32_MAX) || (algo_len > SIZE_MAX - 9)
 	    || (pubkey_blob_len > SIZE_MAX - 9 - algo_len))
 		return DSSH_ERROR_INVALID;
+
+	int ret = flush_pending_banner(sess);
+
+	if (ret < 0)
+		return ret;
 
 	size_t   max;
 	int      err;
