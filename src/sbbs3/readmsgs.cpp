@@ -543,7 +543,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 		}
 	}
 
-	if (useron.misc & RIP)
+	if (term->supports(RIP))
 		menu("msgscan");
 
 	if ((i = smb_locksmbhdr(&smb)) != 0) {

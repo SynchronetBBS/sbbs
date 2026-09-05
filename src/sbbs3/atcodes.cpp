@@ -806,22 +806,22 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return (useron.misc & AUTOTERM) ? text[On] : text[Off];
 
 	if (strcmp(sp, "ANSI") == 0)
-		return (useron.misc & ANSI) ? text[On] : text[Off];
+		return term->supports(ANSI) ? text[On] : text[Off];
 
 	if (strcmp(sp, "ASCII") == 0)
-		return (useron.misc & NO_EXASCII) ? text[On] : text[Off];
+		return term->charset() == CHARSET_ASCII ? text[On] : text[Off];
 
 	if (strcmp(sp, "COLOR") == 0)
-		return (useron.misc & COLOR) ? text[On] : text[Off];
+		return term->supports(COLOR) ? text[On] : text[Off];
 
 	if (strcmp(sp, "ICE") == 0)
-		return (useron.misc & ICE_COLOR) ? text[On] : text[Off];
+		return term->supports(ICE_COLOR) ? text[On] : text[Off];
 
 	if (strcmp(sp, "RIP") == 0)
-		return (useron.misc & RIP) ? text[On] : text[Off];
+		return term->supports(RIP) ? text[On] : text[Off];
 
 	if (strcmp(sp, "PETSCII") == 0)
-		return (useron.misc & PETSCII) ? text[On] : text[Off];
+		return term->charset() == CHARSET_PETSCII ? text[On] : text[Off];
 
 	if (strcmp(sp, "PETGRFX") == 0) {
 		if (term->charset() == CHARSET_PETSCII)
@@ -830,13 +830,13 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (strcmp(sp, "SWAPDEL") == 0)
-		return (useron.misc & SWAP_DELETE) ? text[On] : text[Off];
+		return term->supports(SWAP_DELETE) ? text[On] : text[Off];
 
 	if (strcmp(sp, "UTF8") == 0)
-		return (useron.misc & UTF8) ? text[On] : text[Off];
+		return term->charset() == CHARSET_UTF8 ? text[On] : text[Off];
 
 	if (strcmp(sp, "MOUSE") == 0)
-		return (useron.misc & MOUSE) ? text[On] : text[Off];
+		return term->supports(MOUSE) ? text[On] : text[Off];
 
 	if (strcmp(sp, "UPAUSE") == 0)
 		return (useron.misc & UPAUSE) ? text[On] : text[Off];

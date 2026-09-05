@@ -402,7 +402,7 @@ void sbbs_t::qwk_sec()
 		getusrsubs();
 	delfiles(cfg.temp_dir, ALLFILES);
 	while (online) {
-		if ((useron.misc & (RIP) || !(useron.misc & EXPERT))
+		if ((term->supports(RIP) || !(useron.misc & EXPERT))
 		    && (useron.logons < 2 || !(useron.rest & FLAG('Q'))))
 			menu("qwk");
 		action = NODE_TQWK;
@@ -415,7 +415,7 @@ void sbbs_t::qwk_sec()
 		if (sys_status & SS_ABORT || ch == quit_key() || ch == CR || !online)
 			break;
 		if (ch == '?') {
-			if ((useron.misc & (RIP) || !(useron.misc & EXPERT))
+			if ((term->supports(RIP) || !(useron.misc & EXPERT))
 			    && !(useron.rest & FLAG('Q')))
 				continue;
 			menu("qwk");

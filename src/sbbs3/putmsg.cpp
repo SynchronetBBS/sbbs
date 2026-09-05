@@ -446,7 +446,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 						continue;
 				}
 			}
-			if (str[l] == '!' && str[l + 1] == '|' && useron.misc & RIP) /* RIP */
+			if (str[l] == '!' && str[l + 1] == '|' && term->supports(RIP)) /* RIP */
 				term->lncntr = 0;             /* so defeat pause */
 			if (str[l] == '@' && !(mode & P_NOATCODES)) {
 				if (memcmp(str + l, "@EOF@", 5) == 0)

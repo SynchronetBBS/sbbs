@@ -53,7 +53,7 @@ void sbbs_t::multinodechat(int channel)
 
 	if (!chan_access(channel - 1))
 		return;
-	if (useron.misc & (RIP) || !(useron.misc & EXPERT))
+	if (term->supports(RIP) || !(useron.misc & EXPERT))
 		menu("multchat");
 	bputs(text[WelcomeToMultiChat]);
 	if (getnodedat(cfg.node_num, &thisnode, true)) {

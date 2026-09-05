@@ -189,7 +189,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 		llprintf("E", "read %smail", lm_mode & LM_UNREAD ? "un-read " : "");
 	}
 	const char* menu_file = (which == MAIL_ALL ? "allmail" : which == MAIL_SENT ? "sentmail" : "mailread");
-	if (useron.misc & RIP)
+	if (term->supports(RIP))
 		menu(menu_file);
 
 	bool wide = user_get_bool_property(&cfg, useron.number, property_section, "wide", false);
