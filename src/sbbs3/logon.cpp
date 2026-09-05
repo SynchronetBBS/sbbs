@@ -442,7 +442,7 @@ bool sbbs_t::logon_process()
 				c = 1;
 			}
 			if (node.status == NODE_INUSE && i != cfg.node_num && node.useron == useron.number
-			    && !useron_is_sysop() && !useron_is_guest()) {
+			    && !useron_is_sysop() && !(useron.exempt & FLAG('G'))) { // 'G' exemption = "Multiple Nodes"
 				llprintf(LOG_NOTICE, "+!", "On more than one node at the same time");
 				bputs(text[UserOnTwoNodes]);
 				return false;

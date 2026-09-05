@@ -126,6 +126,10 @@
   sender, recipient, or subject contains non-ASCII characters —
   field widths are now measured in screen columns rather than
   bytes (issue #1204)
+- Users with the `G` (Multiple Nodes) exemption may again log on
+  to more than one node at a time, rather than being disconnected
+  with "You can't possibly be in two places at the same time"
+  (regression from v3.21e, issue #1234)
 
 ## Web Server
 
