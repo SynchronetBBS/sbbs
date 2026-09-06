@@ -55,7 +55,7 @@ extern "C" {
 	#include <unistd.h>	/* _POSIX_THREADS definition on FreeBSD (at least) */
 
 	/* Win32 thread API wrappers */
-	ulong _beginthread(void( *start_address )( void * )
+	DLLEXPORT ulong _beginthread(void( *start_address )( void * )
 			,unsigned stack_size, void *arglist);
 
 	#define GetCurrentThreadId()		pthread_self()
@@ -98,8 +98,8 @@ extern "C" {
 /* Wrappers for POSIX thread (pthread) mutexes								*/
 /****************************************************************************/
 
-bool pthread_mutex_init_np(pthread_mutex_t *mtx, bool recursive);
-pthread_mutex_t pthread_mutex_initializer_np(bool recursive);
+DLLEXPORT bool pthread_mutex_init_np(pthread_mutex_t *mtx, bool recursive);
+DLLEXPORT pthread_mutex_t pthread_mutex_initializer_np(bool recursive);
 
 #if defined(_POSIX_THREADS)
 

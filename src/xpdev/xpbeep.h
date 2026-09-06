@@ -49,7 +49,7 @@ enum WAVE_SHAPE {
 #define XPBEEP_DEVICE_COREAUDIO  (1U<<6)
 #define XPBEEP_DEVICE_PIPEWIRE   (1U<<7)
 #define XPBEEP_DEVICE_DEFAULT (XPBEEP_DEVICE_WIN32 | XPBEEP_DEVICE_ALSA | XPBEEP_DEVICE_OSS | XPBEEP_DEVICE_PORTAUDIO | XPBEEP_DEVICE_PULSEAUDIO | XPBEEP_DEVICE_COREAUDIO | XPBEEP_DEVICE_PIPEWIRE)
-extern uint32_t xpbeep_sound_devices_enabled;
+extern DLLEXPORT uint32_t xpbeep_sound_devices_enabled;
 
 #ifdef __cplusplus
 extern "C" {

@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "gen_defs.h"
+#include "wrapdll.h"
 
 struct stbuf_raw {
 	size_t   sz;      // Size of the buffer
@@ -47,37 +48,37 @@ typedef struct stbuf_s {
  * Allocates a new buffer that will hold bufsz bytes
  * Returns NULL on failure
  */
-stbuf stbuf_malloc(size_t bufsz);
+DLLEXPORT stbuf stbuf_malloc(size_t bufsz);
 
 /*
  * Allocates and zeros a new buffer that will hold bufsz bytes
  * Returns NULL on failure
  */
-stbuf stbuf_zalloc(size_t bufsz);
+DLLEXPORT stbuf stbuf_zalloc(size_t bufsz);
 
 /*
  * Ensures the current length is less than or equal to len.
  * Returns true if the length was adjusted or false if it was already
  * small enough buf is NULL.
  */
-bool stbuf_truncate(stbuf buf, size_t len);
+DLLEXPORT bool stbuf_truncate(stbuf buf, size_t len);
 
 /*
  * Returns the current memory size of the buffer
  */
-size_t stbuf_msz(stbuf buf);
+DLLEXPORT size_t stbuf_msz(stbuf buf);
 
 /*
  * Resizes the buffer is possible to be able to contain newsz bytes
  * Returns true if the buffer can hold newsz bytes, false otherwise.
  */
-bool stbuf_atleast(stbuf *buf, size_t newsz);
+DLLEXPORT bool stbuf_atleast(stbuf *buf, size_t newsz);
 
 /*
  * Attempts to shrink the allocation of buf as small as possible
  * using realloc()
  */
-bool stbuf_lipo(stbuf *buf);
+DLLEXPORT bool stbuf_lipo(stbuf *buf);
 
 /*
  * Creates an empty stbuf in arbitrary memory mem where the memory block
@@ -86,19 +87,19 @@ bool stbuf_lipo(stbuf *buf);
  * and the address of mem changed. If allocated is false, the memory will
  * not be changed and mem will remain valid.
  */
-stbuf stbuf_frommem(void *mem, size_t sz, bool allocated);
+DLLEXPORT stbuf stbuf_frommem(void *mem, size_t sz, bool allocated);
 
 /*
  * free()s an stbuf
  */
-void stbuf_free(stbuf buf);
+DLLEXPORT void stbuf_free(stbuf buf);
 
 /*
  * The main function
  * Replaces rlen bytes in buf starting at offset start with ilen bytes from mem
  * It will resize buf as needed and return false on failure.
  */
-bool stbuf_memrepl(stbuf *buf, size_t start, size_t rlen, const void *mem, size_t ilen);
+DLLEXPORT bool stbuf_memrepl(stbuf *buf, size_t start, size_t rlen, const void *mem, size_t ilen);
 
 static STBUF_INLINE bool
 stbuf_strrepl(stbuf *buf, size_t start, size_t rlen, const char *str)

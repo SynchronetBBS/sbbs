@@ -28,6 +28,7 @@
 
 #include <pthread.h>
 #include "gen_defs.h"
+#include "wrapdll.h"
 
 #if defined(__solaris__)
 #include <xpsem.h>  /* u_int32_t */
@@ -40,11 +41,11 @@ typedef struct xpevent *xpevent_t;
 #if defined(__cplusplus)
 extern "C" {
 #endif
-xpevent_t   CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name);
-BOOL        SetEvent(xpevent_t event);
-BOOL        ResetEvent(xpevent_t event);
-BOOL        CloseEvent(xpevent_t event);
-DWORD       WaitForEvent(xpevent_t event, DWORD ms);
+DLLEXPORT xpevent_t   CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name);
+DLLEXPORT BOOL        SetEvent(xpevent_t event);
+DLLEXPORT BOOL        ResetEvent(xpevent_t event);
+DLLEXPORT BOOL        CloseEvent(xpevent_t event);
+DLLEXPORT DWORD       WaitForEvent(xpevent_t event, DWORD ms);
 #if defined(__cplusplus)
 }
 #endif

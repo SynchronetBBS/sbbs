@@ -52,7 +52,7 @@ extern "C" {
 	#include <glob.h>		/* POSIX.2 directory pattern matching function */
 
 	// Case-insensitive glob
-	int globi(const char *pattern, int flags, int (*errfunc) (const char *epath, int eerrno), glob_t *pglob);
+	DLLEXPORT int globi(const char *pattern, int flags, int (*errfunc) (const char *epath, int eerrno), glob_t *pglob);
 
 	#define MKDIR(dir)		mkdir(dir,0777)
 

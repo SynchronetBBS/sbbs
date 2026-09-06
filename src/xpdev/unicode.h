@@ -25,17 +25,18 @@
 #include <stdlib.h>
 #include "gen_defs.h"
 #include "unicode_defs.h"
+#include "wrapdll.h"
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-extern enum unicode_codepoint cp437_unicode_tbl[];
-bool unicode_is_whitespace(enum unicode_codepoint);
-bool unicode_is_zerowidth(enum unicode_codepoint);
-size_t unicode_width(enum unicode_codepoint, size_t zerowidth);
-char unicode_to_cp437(enum unicode_codepoint);
-char unicode_to_latin1(enum unicode_codepoint);
+extern DLLEXPORT enum unicode_codepoint cp437_unicode_tbl[];
+DLLEXPORT bool unicode_is_whitespace(enum unicode_codepoint);
+DLLEXPORT bool unicode_is_zerowidth(enum unicode_codepoint);
+DLLEXPORT size_t unicode_width(enum unicode_codepoint, size_t zerowidth);
+DLLEXPORT char unicode_to_cp437(enum unicode_codepoint);
+DLLEXPORT char unicode_to_latin1(enum unicode_codepoint);
 
 #if defined(__cplusplus)
 }

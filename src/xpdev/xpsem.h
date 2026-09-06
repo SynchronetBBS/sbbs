@@ -46,6 +46,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <inttypes.h>
+#include "wrapdll.h"
 
 /* Opaque type definition. */
 struct xp_sem;
@@ -61,17 +62,17 @@ typedef unsigned int	uint32_t;
 #if defined(__cplusplus)
 extern "C" {
 #endif
-int	 xp_sem_init (xp_sem_t *, int, unsigned int);
-int	 xp_sem_destroy (xp_sem_t *);
-xp_sem_t	*xp_sem_open (const char *, int, ...);
-int	 xp_sem_close (xp_sem_t *);
-int	 xp_sem_unlink (const char *);
-int	 xp_sem_wait (xp_sem_t *);
-int	 xp_sem_trywait (xp_sem_t *);
-int	 xp_sem_post (xp_sem_t *);
-int	 xp_sem_getvalue (xp_sem_t *, int *);
-int	 xp_sem_setvalue (xp_sem_t *, int);
-int  xp_sem_timedwait (xp_sem_t *sem, const struct timespec *abs_timeout);
+DLLEXPORT int	 xp_sem_init (xp_sem_t *, int, unsigned int);
+DLLEXPORT int	 xp_sem_destroy (xp_sem_t *);
+DLLEXPORT xp_sem_t	*xp_sem_open (const char *, int, ...);
+DLLEXPORT int	 xp_sem_close (xp_sem_t *);
+DLLEXPORT int	 xp_sem_unlink (const char *);
+DLLEXPORT int	 xp_sem_wait (xp_sem_t *);
+DLLEXPORT int	 xp_sem_trywait (xp_sem_t *);
+DLLEXPORT int	 xp_sem_post (xp_sem_t *);
+DLLEXPORT int	 xp_sem_getvalue (xp_sem_t *, int *);
+DLLEXPORT int	 xp_sem_setvalue (xp_sem_t *, int);
+DLLEXPORT int  xp_sem_timedwait (xp_sem_t *sem, const struct timespec *abs_timeout);
 #if defined(__cplusplus)
 }
 #endif

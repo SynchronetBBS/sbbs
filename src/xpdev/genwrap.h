@@ -277,8 +277,8 @@ extern "C" {
 #endif
 
 #if defined(NEEDS_STRLCPY)
-	size_t strlcpy(char *dst, const char *src, size_t size);
-	size_t strlcat(char *dst, const char *src, size_t dstsize);
+	DLLEXPORT size_t strlcpy(char *dst, const char *src, size_t size);
+	DLLEXPORT size_t strlcat(char *dst, const char *src, size_t dstsize);
 #endif
 
 #if defined(_WIN32)
@@ -412,7 +412,7 @@ DLLEXPORT char*		byte_estimate_to_str(uint64_t bytes, char* str, size_t size, ui
 /* Microsoft (e.g. DOS/Win32) real-time system clock API (ticks since process started) */
 typedef		clock_t				msclock_t;
 #define		MSCLOCKS_PER_SEC	1000
-msclock_t	msclock(void);
+DLLEXPORT msclock_t	msclock(void);
 
 DLLEXPORT bool		check_pid(pid_t);
 DLLEXPORT bool		terminate_pid(pid_t);

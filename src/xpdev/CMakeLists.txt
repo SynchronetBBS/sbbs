@@ -389,6 +389,10 @@ set(XPDEV_WITHOUT_CRYPTLIB FALSE)
 if(WITHOUT_CRYPTLIB)
 	set(XPDEV_WITHOUT_CRYPTLIB TRUE)
 endif()
+set(XPDEV_ELF_SYMBOL_VERSIONING FALSE)
+if(CMAKE_SYSTEM_NAME MATCHES "^(FreeBSD|GNU|Linux|NetBSD)$")
+	set(XPDEV_ELF_SYMBOL_VERSIONING TRUE)
+endif()
 
 configure_file(cmake/xpdev_config.h.in xpdev_config.h @ONLY)
 configure_file(cmake/xpdevFeatures.cmake.in xpdevFeatures.cmake @ONLY)
@@ -412,13 +416,22 @@ set_target_properties(xpdev_static_library PROPERTIES
 	OUTPUT_NAME xpdev
 	POSITION_INDEPENDENT_CODE ON)
 set_target_properties(xpdev_shared_library PROPERTIES
+	C_VISIBILITY_PRESET hidden
 	EXPORT_NAME shared
 	OUTPUT_NAME xpdev
 	SOVERSION ${PROJECT_VERSION_MAJOR}
 	VERSION ${PROJECT_VERSION})
+if(XPDEV_ELF_SYMBOL_VERSIONING)
+	target_link_options(xpdev_shared_library PRIVATE
+		"LINKER:--undefined-version"
+		"LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/cmake/xpdev.map")
+	set_property(TARGET xpdev_shared_library APPEND PROPERTY LINK_DEPENDS
+		${CMAKE_CURRENT_SOURCE_DIR}/cmake/xpdev.map)
+endif()
 if(WIN32)
 	set_target_properties(xpdev_static_library PROPERTIES OUTPUT_NAME xpdev_static)
-	set_target_properties(xpdev_shared_library PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+	set_target_properties(xpdev_shared_library PROPERTIES
+		OUTPUT_NAME xpdev-${PROJECT_VERSION_MAJOR})
 	target_compile_definitions(xpdev_shared_library PRIVATE WRAPPER_EXPORTS)
 	target_compile_definitions(xpdev_shared_library INTERFACE WRAPPER_IMPORTS)
 endif()

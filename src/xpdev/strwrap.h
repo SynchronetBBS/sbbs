@@ -2,14 +2,15 @@
 #define _STRWRAP_H_
 
 #include <string.h>
+#include "wrapdll.h"
 
 #if !defined _MSC_VER && !defined __BORLANDC__
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-char* itoa(int val, char* str, int radix);
-char* ltoa(long val, char* str, int radix);
+DLLEXPORT char* itoa(int val, char* str, int radix);
+DLLEXPORT char* ltoa(long val, char* str, int radix);
 #if defined(__cplusplus)
 }
 #endif

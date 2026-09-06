@@ -143,7 +143,7 @@ int listAttach(link_list_t* list)
 	return list->refs;
 }
 
-int listDettach(link_list_t* list)
+int listDetach(link_list_t* list)
 {
 	int refs;
 

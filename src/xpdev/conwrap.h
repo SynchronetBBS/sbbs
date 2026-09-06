@@ -22,14 +22,16 @@
 #ifndef _CONWRAP_H
 #define _CONWRAP_H
 
+#include "wrapdll.h"
+
 #if defined(__unix__)
 
-    void _termios_setup(void);
-    void _termios_reset(void);
-    void _echo_on(void);
-    void _echo_off(void);
-    int kbhit(void);
-    int getch(void);
+    DLLEXPORT void _termios_setup(void);
+    DLLEXPORT void _termios_reset(void);
+    DLLEXPORT void _echo_on(void);
+    DLLEXPORT void _echo_off(void);
+    DLLEXPORT int kbhit(void);
+    DLLEXPORT int getch(void);
 
 #else	/* DOS-Based */
 

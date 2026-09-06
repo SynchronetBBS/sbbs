@@ -23,6 +23,7 @@
 #define _DAT_FILE_H
 
 #include "str_list.h"
+#include "wrapdll.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -36,19 +37,19 @@ typedef str_list_t	(*dataLineParser_t)(const char*);
 typedef char*		(*dataLineCreator_t)(const str_list_t);
 
 /* columns arguments are optional (may be NULL) */
-str_list_t*	dataParseList(const str_list_t records, str_list_t* columns, dataLineParser_t);
-str_list_t*	dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t);
+DLLEXPORT str_list_t*	dataParseList(const str_list_t records, str_list_t* columns, dataLineParser_t);
+DLLEXPORT str_list_t*	dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t);
 
-str_list_t	dataCreateList(const str_list_t records[], const str_list_t columns, dataLineCreator_t);
-bool		dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t columns
+DLLEXPORT str_list_t	dataCreateList(const str_list_t records[], const str_list_t columns, dataLineCreator_t);
+DLLEXPORT bool		dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t columns
 						  ,const char* separator, dataLineCreator_t);
-FILE*		dataOpenFile(const char* path, const char* mode);
-int			dataCloseFile(FILE*);
-bool		dataListFree(str_list_t*);
+DLLEXPORT FILE*		dataOpenFile(const char* path, const char* mode);
+DLLEXPORT int			dataCloseFile(FILE*);
+DLLEXPORT bool		dataListFree(str_list_t*);
 
 /* CSV (comma separated value) API */
-char*		csvLineCreator(const str_list_t);
-str_list_t	csvLineParser(const char* line);
+DLLEXPORT char*		csvLineCreator(const str_list_t);
+DLLEXPORT str_list_t	csvLineParser(const char* line);
 #define		csvParseList(list,col)			dataParseList(list,col,csvLineParser)
 #define		csvCreateList(rec,col)			dataCreateList(rec,col,csvLineCreator)
 #define		csvReadFile(fp,col)				dataReadFile(fp,col,csvLineParser)
@@ -58,8 +59,8 @@ str_list_t	csvLineParser(const char* line);
 #define		cvsListFree(list)				dataListFree(list)
 
 /* Tab-delimited API */
-char*		tabLineCreator(const str_list_t);
-str_list_t	tabLineParser(const char* line);
+DLLEXPORT char*		tabLineCreator(const str_list_t);
+DLLEXPORT str_list_t	tabLineParser(const char* line);
 #define		tabParseList(list,col)			dataParseList(list,col,tabLineParser)
 #define		tabCreateList(rec,col)			dataCreateList(rec,col,tabLineCreator)
 #define		tabReadFile(fp,col)				dataReadFile(fp,col,tabLineParser)
