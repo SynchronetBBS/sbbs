@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(XPDev LANGUAGES C)
+project(XPDev VERSION 1.0 LANGUAGES C)
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -413,7 +413,9 @@ set_target_properties(xpdev_static_library PROPERTIES
 	POSITION_INDEPENDENT_CODE ON)
 set_target_properties(xpdev_shared_library PROPERTIES
 	EXPORT_NAME shared
-	OUTPUT_NAME xpdev)
+	OUTPUT_NAME xpdev
+	SOVERSION ${PROJECT_VERSION_MAJOR}
+	VERSION ${PROJECT_VERSION})
 if(WIN32)
 	set_target_properties(xpdev_static_library PROPERTIES OUTPUT_NAME xpdev_static)
 	set_target_properties(xpdev_shared_library PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -440,6 +442,10 @@ configure_package_config_file(
 	cmake/xpdevConfig.cmake.in
 	${CMAKE_CURRENT_BINARY_DIR}/xpdevConfig.cmake
 	INSTALL_DESTINATION ${XPDEV_INSTALL_CMAKEDIR})
+write_basic_package_version_file(
+	${CMAKE_CURRENT_BINARY_DIR}/xpdevConfigVersion.cmake
+	VERSION ${PROJECT_VERSION}
+	COMPATIBILITY SameMajorVersion)
 
 install(TARGETS xpdev_static_library xpdev_shared_library xpdev_default
 	EXPORT xpdevTargets
@@ -464,5 +470,6 @@ install(EXPORT xpdevTargets
 	DESTINATION ${XPDEV_INSTALL_CMAKEDIR})
 install(FILES
 	${CMAKE_CURRENT_BINARY_DIR}/xpdevConfig.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/xpdevConfigVersion.cmake
 	${CMAKE_CURRENT_BINARY_DIR}/xpdevFeatures.cmake
 	DESTINATION ${XPDEV_INSTALL_CMAKEDIR})

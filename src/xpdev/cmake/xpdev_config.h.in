@@ -1,6 +1,10 @@
 #ifndef XPDEV_CONFIG_H
 #define XPDEV_CONFIG_H
 
+#define XPDEV_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define XPDEV_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define XPDEV_VERSION "@PROJECT_VERSION@"
+
 /* Public ABI and platform capabilities of this xpdev library. */
 #cmakedefine01 XPDEV_HAS_INTTYPES_H
 #cmakedefine01 XPDEV_HAS_STDINT_H
