@@ -362,7 +362,7 @@ void PlayGame(void)
    /* Loop until game is over */
    for(;;)
    {
-      StartClock = msclock();
+      StartClock = xp_msclock();
 
       /* Display current line */
       if(od_control.user_ansi || od_control.user_avatar)
@@ -507,7 +507,7 @@ void PlayGame(void)
 
       /* Delay for about 1/10th of a second, to add a constant delay after */
       /* each line is displayed that does not depend on the connect speed. */
-      while(msclock() < StartClock + (((clock_t)MSCLOCKS_PER_SEC) / 10))
+      while(xp_msclock() < StartClock + (((clock_t)XP_MSCLOCKS_PER_SEC) / 10))
          od_sleep(0);
 
       /* Increase score */

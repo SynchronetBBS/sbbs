@@ -34,11 +34,11 @@
 
 static struct termios current;      /* our current term settings			*/
 static struct termios original;     /* old termios settings					*/
-static int            beensetup = 0; /* has _termios_setup() been called?	*/
+static int            beensetup = 0; /* has xp_termios_setup() been called? */
 static int            istty = 0;    /* is stdin a tty?						*/
 
 /* Resets the termios to its previous state */
-void _termios_reset(void)
+void xp_termios_reset(void)
 {
 	tcsetattr(STDIN_FILENO, TCSANOW, &original);
 }
@@ -53,7 +53,7 @@ void _termios_reset(void)
 void _sighandler_stop(int sig)
 {
 	/* clean up the terminal */
-	_termios_reset();
+	xp_termios_reset();
 
 	/* ... and stop */
 	kill(getpid(), SIGSTOP);
@@ -70,7 +70,7 @@ void _sighandler_cont(int sig)
 
 
 /* Prepares termios for non-blocking action */
-void _termios_setup(void)
+void xp_termios_setup(void)
 {
 	beensetup = 1;
 
@@ -86,7 +86,7 @@ void _termios_setup(void)
 	/* Let's install an exit function, also.  This way, we can reset
 	 * the termios silently
 	 */
-	atexit(_termios_reset);
+	atexit(xp_termios_reset);
 
 	/* install the Ctrl-Z handler */
 #ifndef __EMSCRIPTEN__
@@ -95,21 +95,21 @@ void _termios_setup(void)
 	signal(SIGCONT, _sighandler_cont);
 }
 
-void _echo_on(void)
+void xp_echo_on(void)
 {
 	tcgetattr(STDIN_FILENO, &current);
 	current.c_lflag |= ECHO;         /* turn on echoing */
 	tcsetattr(STDIN_FILENO, TCSANOW, &current);
 }
 
-void _echo_off(void)
+void xp_echo_off(void)
 {
 	tcgetattr(STDIN_FILENO, &current);
 	current.c_lflag &= ~ECHO;         /* turn off echoing */
 	tcsetattr(STDIN_FILENO, TCSANOW, &current);
 }
 
-int kbhit(void)
+int xp_kbhit(void)
 {
 	fd_set         inp;
 	struct timeval timeout = {0, 0};
@@ -121,7 +121,7 @@ int kbhit(void)
 	}
 
 	if (!beensetup)
-		_termios_setup();
+		xp_termios_setup();
 
 	/* set up select() args */
 	FD_ZERO(&inp);
@@ -132,12 +132,12 @@ int kbhit(void)
 	return 1;
 }
 
-int getch(void)
+int xp_getch(void)
 {
 	char c;
 
 	if (!beensetup)
-		_termios_setup();
+		xp_termios_setup();
 
 	/* get a char out of stdin */
 	if (read(STDIN_FILENO, &c, 1) == -1)

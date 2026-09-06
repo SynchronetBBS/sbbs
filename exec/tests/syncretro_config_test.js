@@ -342,7 +342,7 @@ check(file_exists(gate_snapshot),
 // syncretro_core_path() can legitimately resolve to "" against a real install
 // -- e.g. a [console] core whose case does not match the file on disk:
 // syncretro_core_path() resolves via case-sensitive directory(), while the
-// door's own sr_find_core() uses case-insensitive globi(), so the door loads
+// door's own sr_find_core() uses case-insensitive xp_globi(), so the door loads
 // the core fine while the lobby cannot find it to hash. (Not reproduced here
 // with an actual case mismatch: system.temp_dir lands on this test runner's
 // /sbbs CIFS mount, whose case-insensitive directory() would match the "wrong"

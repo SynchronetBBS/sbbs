@@ -28,7 +28,7 @@
 #include "xpbeep.h" /* BEEP */
 #include "genwrap.h"
 #include "dirwrap.h"    /* getfname */
-#include "conwrap.h"    /* kbhit */
+#include "conwrap.h"    /* xp_kbhit */
 
 #define NOT_ABORTABLE   (1 << 0)
 #define SHOW_DOT        (1 << 1)
@@ -231,7 +231,7 @@ int main(int argc, char **argv)
 					continue;
 				}
 			}
-			while (mode & NOT_ABORTABLE || !kbhit()) {
+			while (mode & NOT_ABORTABLE || !xp_kbhit()) {
 				if (!fgets(str, sizeof(str), stream))
 					break;
 				if (!isalnum(*str))

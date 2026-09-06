@@ -11,14 +11,10 @@ XPDEV_1.0 {
 		SetEvent;
 		WaitForEvent;
 		_beginthread;
-		_echo_off;
-		_echo_on;
 		_fsopen;
 		_fullpath;
 		_i64toa;
 		_splitpath;
-		_termios_reset;
-		_termios_setup;
 		_ui64toa;
 		backslash;
 		byte_count_to_str;
@@ -60,7 +56,6 @@ XPDEV_1.0 {
 		getSocketOptionByName;
 		getSocketOptionList;
 		get_errno;
-		getch;
 		getdircase;
 		getdirname;
 		getdirsize;
@@ -73,7 +68,6 @@ XPDEV_1.0 {
 		getfname;
 		getfreediskspace;
 		gettime;
-		globi;
 		gmtime_to_isoDateTime;
 		gmtime_to_isoDateTimeStr;
 		gmtime_to_isoTime;
@@ -229,7 +223,6 @@ XPDEV_1.0 {
 		isoDateTime_to_xpDateTime;
 		isoTimeZoneStr_parse;
 		itoa;
-		kbhit;
 		lastchar;
 		listAddNode;
 		listAddNodeData;
@@ -282,7 +275,6 @@ XPDEV_1.0 {
 		ltoa;
 		mkpath;
 		mktime32;
-		msclock;
 		msgQueueAttach;
 		msgQueueDetach;
 		msgQueueFind;
@@ -313,8 +305,6 @@ XPDEV_1.0 {
 		parse_byte_count;
 		parse_duration;
 		paths_are_same;
-		pthread_mutex_init_np;
-		pthread_mutex_initializer_np;
 		rdlock;
 		realloc_or_free;
 		removecase;
@@ -323,7 +313,6 @@ XPDEV_1.0 {
 		safe_strerror;
 		sane_mktime;
 		sane_timegm;
-		sem_trywait_block;
 		semfile_check;
 		semfile_first_line;
 		semfile_list_add;
@@ -422,7 +411,6 @@ XPDEV_1.0 {
 		unicode_to_cp437;
 		unicode_to_latin1;
 		unicode_width;
-		unix_beep;
 		unlock;
 		wildmatch;
 		wildmatchi;
@@ -456,15 +444,23 @@ XPDEV_1.0 {
 		xp_audio_stop;
 		xp_close_inherited_fds;
 		xp_dlopen;
+		xp_echo_off;
+		xp_echo_on;
 		xp_fast_timer64;
 		xp_fast_timer64_ms;
+		xp_getch;
 		xp_getdate;
+		xp_globi;
 		xp_inet_pton;
+		xp_kbhit;
 		xp_lockfile;
+		xp_msclock;
 		xp_play_sample;
 		xp_play_sample16s;
 		xp_printf_get_next;
 		xp_printf_get_type;
+		xp_pthread_mutex_init;
+		xp_pthread_mutex_initializer;
 		xp_random;
 		xp_randomize;
 		xp_sem_close;
@@ -476,8 +472,11 @@ XPDEV_1.0 {
 		xp_sem_setvalue;
 		xp_sem_timedwait;
 		xp_sem_trywait;
+		xp_sem_trywait_block;
 		xp_sem_unlink;
 		xp_sem_wait;
+		xp_termios_reset;
+		xp_termios_setup;
 		xp_timer;
 		xp_timer64;
 		xp_u8mono22k_to_s16stereo44k;

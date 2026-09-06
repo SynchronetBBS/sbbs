@@ -790,8 +790,8 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 	char      str[128];
 	char*     p;
 	time_t    start = time(NULL);
-	msclock_t now;
-	msclock_t lastring = 0;
+	xp_msclock_t now;
+	xp_msclock_t lastring = 0;
 	int       ring_count = 0;
 
 	ZERO_VAR(cid_name);
@@ -859,7 +859,7 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 					ZERO_VAR(cid_number);
 				}
 				else if (mdm_ring[0] && strcmp(p, mdm_ring) == 0 && mdm_manswer && mdm_answer[0]) {
-					now = msclock();
+					now = xp_msclock();
 					if (now < lastring || now - lastring > mdm_ringinterval)
 						ring_count = 0;
 					lastring = now;

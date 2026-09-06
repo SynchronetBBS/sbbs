@@ -26,7 +26,7 @@
 #include "nopen.h"
 #include "crc16.h"
 #include "crc32.h"
-#include "conwrap.h"    /* kbhit */
+#include "conwrap.h"    /* xp_kbhit */
 #include <stdarg.h>
 
 unsigned _stklen = 10000;
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
 			printf("Empty.\n");
 			continue;
 		}
-		while (!kbhit() && !ferror(smb.sid_fp) && msg.idx_offset) {
+		while (!xp_kbhit() && !ferror(smb.sid_fp) && msg.idx_offset) {
 			msg.idx_offset--;
 			fseek(smb.sid_fp, msg.idx_offset * sizeof(idxrec_t), SEEK_SET);
 			if (!fread(&msg.idx, 1, sizeof(idxrec_t), smb.sid_fp))
@@ -399,8 +399,8 @@ int main(int argc, char **argv)
 		}
 
 		smb_close(&smb);
-		if (kbhit()) {
-			getch();
+		if (xp_kbhit()) {
+			xp_getch();
 			fprintf(stdout, "Key pressed.\n");
 			break;
 		}

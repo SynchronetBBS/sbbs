@@ -31,7 +31,7 @@
 
 /* SMB-specific */
 #include "genwrap.h"
-#include "conwrap.h"    /* getch */
+#include "conwrap.h"    /* xp_getch */
 #include "dirwrap.h"    /* fexist */
 #include "filewrap.h"   /* filelength */
 #include "smblib.h"
@@ -224,8 +224,8 @@ int main(int argc, char **argv)
 			break;
 		if (pause_on_error && errlast != errors) {
 			fprintf(stderr, "%s\nHit any key to continue...", beep);
-			if (!getch())
-				getch();
+			if (!xp_getch())
+				xp_getch();
 			printf("\n");
 		}
 		errlast = errors;
@@ -1262,8 +1262,8 @@ int main(int argc, char **argv)
 
 	if (pause_on_error && errlast != errors) {
 		fprintf(stderr, "%s\nHit any key to continue...", beep);
-		if (!getch())
-			getch();
+		if (!xp_getch())
+			xp_getch();
 		fprintf(stderr, "\n");
 	}
 

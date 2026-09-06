@@ -43,7 +43,7 @@ link_list_t* listInit(link_list_t* list, int flags)
 #ifdef _WIN32
 		pthread_mutex_init(&list->mutex, NULL);
 #else
-		list->mutex = pthread_mutex_initializer_np(/* recursive: */ true);
+		list->mutex = xp_pthread_mutex_initializer(/* recursive: */ true);
 #endif
 	}
 
@@ -216,7 +216,7 @@ bool listSemTryWaitBlock(link_list_t* list, unsigned int timeout)
 	if (list == NULL || !(list->flags & LINK_LIST_SEMAPHORE))
 		return false;
 
-	return sem_trywait_block(&list->sem, timeout) == 0;
+	return xp_sem_trywait_block(&list->sem, timeout) == 0;
 }
 
 #endif

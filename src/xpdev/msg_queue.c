@@ -22,7 +22,7 @@
 #include <stdlib.h>     /* malloc */
 #include <string.h>     /* memset */
 
-#include "genwrap.h"    /* msclock() */
+#include "genwrap.h"    /* xp_msclock() */
 #include "threadwrap.h" /* pthread_self */
 #include "msg_queue.h"
 
@@ -153,11 +153,11 @@ static bool list_wait(link_list_t* list, int timeout)
 	clock_t start;
 	int     count;
 
-	start = msclock();
+	start = xp_msclock();
 	while ((count = listCountNodes(list)) == 0) {
 		if (timeout == 0)
 			break;
-		if (timeout > 0 && msclock() - start > timeout)
+		if (timeout > 0 && xp_msclock() - start > timeout)
 			break;
 		YIELD();
 	}
@@ -230,4 +230,3 @@ bool msgQueueWrite(msg_queue_t* q, const void* data, size_t length)
 {
 	return listPushNodeData(msgQueueWriteList(q), data, length) != NULL;
 }
-

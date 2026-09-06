@@ -765,7 +765,7 @@ function syncretro_lobby_state_key(rom)
 	/* An empty core hash means syncretro_core_path() could not find the file
 	 * the door will actually load -- reachable in practice, not just in
 	 * theory: syncretro_core_path() resolves via case-sensitive directory(),
-	 * while the door's own sr_find_core() uses case-insensitive globi(), so a
+	 * while the door's own sr_find_core() uses case-insensitive xp_globi(), so a
 	 * [console] core whose case does not match the file on disk loads fine in
 	 * the door but resolves to "" here. Falling through would key the
 	 * snapshot on romset and options alone, so a core upgrade would silently

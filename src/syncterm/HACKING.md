@@ -245,7 +245,7 @@ src/
 | `semwrap.c/h` | ~200 | POSIX sem_t wrapper (Win32 semaphore underneath) |
 | `datewrap.c/h` | ~320 | Thread-safe gmtime_r/localtime_r, DOS date structs |
 | `xpmap.c/h` | ~230 | Memory-mapped file I/O (mmap / CreateFileMapping) |
-| `conwrap.c/h` | ~190 | kbhit/getch on Unix via termios |
+| `conwrap.c/h` | ~190 | xp_kbhit/xp_getch on Unix via termios |
 | `sdlfuncs.c/h` | ~160 | SDL2 function pointer table for dynamic loading |
 | `named_str_list.c/h` | ~100 | Name-value pair array with case-insensitive search |
 | `xp_dl.c/h` | ~120 | Dynamic library loading with .so.N version fallback |
@@ -408,7 +408,7 @@ Atomic state flags track thread lifecycle:
 
 `conn_inbuf` and `conn_outbuf` are mutex-protected ring buffers with
 semaphores for blocking waits. API: `conn_buf_put/get/peek/bytes/free`.
-`conn_buf_wait_cond()` provides timed waits using `sem_trywait_block`.
+`conn_buf_wait_cond()` provides timed waits using `xp_sem_trywait_block`.
 
 #### Connection Flow
 

@@ -128,7 +128,7 @@ strlcat(char *dst, const char *src, size_t dsize)
 }
 #endif
 
-#ifdef _WIN32
+#if defined(NEEDS_STRCASESTR)
 /****************************************************************************/
 /* Case insensitive version of strstr()	- currently heavy-handed			*/
 /****************************************************************************/
@@ -617,7 +617,7 @@ char* strrev(char* str)
 }
 #endif
 
-#if !defined(__unix__)
+#if defined(NEEDS_STRTOK_R)
 
 /****************************************************************************/
 /* Implementations of the recursive (thread-safe) version of strtok			*/
@@ -806,7 +806,7 @@ char* _ui64toa(uint64_t val, char* str, int radix)
 
 /* Stupid real-time system clock implementation.	*/
 /********************************************************/
-clock_t msclock(void)
+clock_t xp_msclock(void)
 {
 	uint64_t t = (uint64_t)(xp_timer() * 1000);
 

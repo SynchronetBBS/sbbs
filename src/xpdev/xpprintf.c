@@ -33,7 +33,7 @@
 #include "xpprintf.h"
 #include "gen_defs.h"
 
-#if defined(_MSC_VER) || defined(__MSVCRT__)
+#if defined(NEEDS_VASPRINTF)
 int vasprintf(char **strptr, const char *format, va_list va)
 {
 	va_list va2;
@@ -52,7 +52,9 @@ int vasprintf(char **strptr, const char *format, va_list va)
 	va_end(va2);
 	return ret;
 }
+#endif
 
+#if defined(NEEDS_ASPRINTF)
 int asprintf(char **strptr, const char *format, ...)
 {
 	va_list va;

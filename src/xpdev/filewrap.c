@@ -329,7 +329,7 @@ int lock(int fd, off_t pos, off_t len)
 	return xp_lockfile(fd, pos, len, /* block */ false);
 }
 
-#if defined(_WIN32)
+#if defined(NEEDS_GETDELIM)
 static size_t
 p2roundup(size_t n)
 {

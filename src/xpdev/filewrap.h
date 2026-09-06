@@ -163,7 +163,7 @@ DLLEXPORT int	xp_lockfile(int fd, off_t pos, off_t len, bool block);
 	DLLEXPORT int	unlock(int fd, off_t pos, off_t len);
 #endif
 
-#if defined(_WIN32 )
+#if defined(NEEDS_GETDELIM)
 	DLLEXPORT ssize_t	getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream);
 #endif
 

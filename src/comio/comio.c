@@ -20,17 +20,17 @@
  ****************************************************************************/
 
 #include "comio.h"
-#include "genwrap.h"    /* msclock */
+#include "genwrap.h"    /* xp_msclock */
 
 size_t comReadBuf(COM_HANDLE handle, char* buf, size_t buflen, const char* terminators, int timeout)
 {
 	BYTE      ch;
 	size_t    len = 0;
-	msclock_t start = msclock();
+	xp_msclock_t start = xp_msclock();
 
 	while (len < buflen) {
 		if (!comReadByte(handle, &ch)) {
-			if (timeout != COM_INFINITE_TIMEOUT && msclock() - start >= timeout)
+			if (timeout != COM_INFINITE_TIMEOUT && xp_msclock() - start >= timeout)
 				break;
 			YIELD();
 			continue;

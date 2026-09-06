@@ -45,7 +45,7 @@
 #include "ver.h"
 
 /* XPDEV headers */
-#include "conwrap.h"    /* kbhit/getch */
+#include "conwrap.h"    /* xp_kbhit/xp_getch */
 #include "threadwrap.h" /* pthread_mutex_t */
 
 #ifdef __unix__
@@ -1964,11 +1964,11 @@ int main(int argc, char** argv)
 			}
 #endif
 
-			if (!kbhit()) {
+			if (!xp_kbhit()) {
 				YIELD();
 				continue;
 			}
-			ch = getch();
+			ch = xp_getch();
 			printf("%c\n", ch);
 			switch (ch) {
 				case 'q':
@@ -1976,7 +1976,7 @@ int main(int argc, char** argv)
 					/* default to no, prevent accidental quit */
 					printf("Confirm quit [y/N]: ");
 					fflush(stdout);
-					switch (toupper(getch())) {
+					switch (toupper(xp_getch())) {
 						case 'Y':
 							terminated = TRUE;
 							break;
@@ -2007,7 +2007,7 @@ int main(int argc, char** argv)
 				case 'd':   /* down node */
 				case 'i':   /* interrupt node */
 #ifdef __unix__
-					_echo_on(); /* turn on echoing so user can see what they type */
+					xp_echo_on(); /* turn on echoing so user can see what they type */
 #endif
 					printf("\nNode number: ");
 					if ((n = atoi(fgets(str, sizeof(str), stdin))) < 1)
@@ -2032,7 +2032,7 @@ int main(int argc, char** argv)
 					putnodedat(&scfg, n, &node, /* closeit: */ FALSE, nodefile);
 					printnodedat(&scfg, n, &node);
 #ifdef __unix__
-					_echo_off(); /* turn off echoing - failsafe */
+					xp_echo_off(); /* turn off echoing - failsafe */
 #endif
 					break;
 				case 'r':   /* recycle */
@@ -2040,7 +2040,7 @@ int main(int argc, char** argv)
 				case 't':   /* terminate */
 					prompt = "BBS, FTP, Web, Mail, Services, All, or [Cancel] ? ";
 					lputs(LOG_INFO, NULL);   /* display prompt */
-					int which = getch();
+					int which = xp_getch();
 					prompt = default_prompt;
 					switch (toupper(which)) {
 						case 'B':
@@ -2144,13 +2144,13 @@ int main(int argc, char** argv)
 					break;
 				case '!':   /* execute */
 #ifdef __unix__
-					_echo_on(); /* turn on echoing so user can see what they type */
+					xp_echo_on(); /* turn on echoing so user can see what they type */
 #endif
 					printf("Command line: ");
 					if (fgets(str, sizeof(str), stdin) != NULL)
 						printf("Result: %d\n", system(str));
 #ifdef __unix__
-					_echo_off(); /* turn off echoing - failsafe */
+					xp_echo_off(); /* turn off echoing - failsafe */
 #endif
 					break;
 				case 'a':   /* Show failed login attempts: */

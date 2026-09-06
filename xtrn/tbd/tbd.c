@@ -336,9 +336,9 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                                object[rmobj[(gy*11)+gx].item].name); } }
 
     timeout=time(NULL);                         /* Set timer on entry point */
-    tick_offset=(clock_t)(msclock()/(MSCLOCKS_PER_SEC/18.2))%19;
+    tick_offset=(clock_t)(xp_msclock()/(XP_MSCLOCKS_PER_SEC/18.2))%19;
     do {
-        clock_tick=(clock_t)(msclock()/(MSCLOCKS_PER_SEC/18.2))%19-tick_offset;
+        clock_tick=(clock_t)(xp_msclock()/(XP_MSCLOCKS_PER_SEC/18.2))%19-tick_offset;
         if(clock_tick<0)
             clock_tick+=19;
         ++clock_tick2;

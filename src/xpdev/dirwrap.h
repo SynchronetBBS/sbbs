@@ -52,7 +52,7 @@ extern "C" {
 	#include <glob.h>		/* POSIX.2 directory pattern matching function */
 
 	// Case-insensitive glob
-	DLLEXPORT int globi(const char *pattern, int flags, int (*errfunc) (const char *epath, int eerrno), glob_t *pglob);
+	DLLEXPORT int xp_globi(const char *pattern, int flags, int (*errfunc) (const char *epath, int eerrno), glob_t *pglob);
 
 	#define MKDIR(dir)		mkdir(dir,0777)
 
@@ -111,7 +111,7 @@ extern "C" {
 
 	DLLEXPORT int	glob(const char *pattern, int flags, void* unused, glob_t*);
 	DLLEXPORT void	globfree(glob_t*);
-	#define globi(a,b,c,d)	glob(a,b,c,d)
+	#define xp_globi(a,b,c,d)	glob(a,b,c,d)
 
 #endif
 

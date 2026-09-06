@@ -269,7 +269,7 @@ static int fp_glob_call(bool case_sensitive, const char *pattern, int flags, glo
 {
 	if (case_sensitive)
 		return glob(pattern, flags, NULL, out);
-	return globi(pattern, flags, NULL, out);
+	return xp_globi(pattern, flags, NULL, out);
 }
 
 static int fp_do_glob(const struct fp_state *s, const char *mask, int dir_glob, glob_t *out)

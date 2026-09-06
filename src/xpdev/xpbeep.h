@@ -197,9 +197,6 @@ DLLEXPORT void xp_audio_clear(xp_audio_handle_t h);
  * to stay time-ordered after the audio — e.g. at the end of an MML block
  * so following terminal text doesn't race past the last note. */
 DLLEXPORT void xp_audio_drain(xp_audio_handle_t h);
-#ifdef __unix__
-DLLEXPORT void unix_beep(int freq, int dur);
-#endif
 #ifdef __cplusplus
 }
 #endif

@@ -99,7 +99,7 @@
    Memcheck:Leak
    match-leak-kinds: definite
    ...
-   fun:pthread_mutex_initializer_np
+   fun:xp_pthread_mutex_initializer
 }
 {
    PulseAudio

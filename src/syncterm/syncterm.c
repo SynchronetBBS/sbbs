@@ -2638,7 +2638,7 @@ main(int argc, char **argv)
 					}
 				}
 				while (started > 0) {
-					if (sem_trywait_block(&download_complete_sem, 200) == 0) {
+					if (xp_sem_trywait_block(&download_complete_sem, 200) == 0) {
 						started--;
 					}
 					update_webget_progress(reqs, request_count, false);

@@ -332,7 +332,7 @@ void globfree(glob_t* glob)
 #else /* __unix__ */
 
 // Filename-case-insensitive version of glob()
-int globi(const char *p, int flags,
+int xp_globi(const char *p, int flags,
           int (*errfunc) (const char *epath, int eerrno),
           glob_t *g)
 {

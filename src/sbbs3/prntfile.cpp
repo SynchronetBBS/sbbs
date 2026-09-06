@@ -755,7 +755,7 @@ bool sbbs_t::menu_exists_in(const char *code, const char* ext, const char* subdi
 	// Display specified MINIMUM width file
 	glob_t g = {0};
 	safe_snprintf(path, MAX_PATH, "%s.c*.%s", prefix, ext);
-	if (globi(path, GLOB_NOESCAPE | GLOB_MARK, NULL, &g) == 0) {
+	if (xp_globi(path, GLOB_NOESCAPE | GLOB_MARK, NULL, &g) == 0) {
 		char*    p;
 		char     term[MAX_PATH + 1];
 		safe_snprintf(term, sizeof(term), ".%s", ext);

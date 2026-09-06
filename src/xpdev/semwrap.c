@@ -28,7 +28,7 @@
 #include <stdlib.h> /* NULL */
 
 int
-sem_trywait_block(sem_t *sem, unsigned long timeout)
+xp_sem_trywait_block(sem_t *sem, unsigned long timeout)
 {
 	int             retval;
 	struct timespec abstime;
@@ -60,7 +60,7 @@ int sem_init(sem_t* psem, int pshared, unsigned int value)
 	return 0;
 }
 
-int sem_trywait_block(sem_t* psem, unsigned long timeout)
+int xp_sem_trywait_block(sem_t* psem, unsigned long timeout)
 {
 	if (WaitForSingleObject(*(psem), timeout) != WAIT_OBJECT_0) {
 		errno = EAGAIN;

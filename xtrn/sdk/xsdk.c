@@ -544,8 +544,13 @@ int stdin_getch(void)
 	return(getc(stdin));
 }
 #else
-	#define stdin_kbhit kbhit
-	#define stdin_getch getch
+	#if defined USE_XPDEV
+		#define stdin_kbhit xp_kbhit
+		#define stdin_getch xp_getch
+	#else
+		#define stdin_kbhit kbhit
+		#define stdin_getch getch
+	#endif
 #endif
 
 int keyhit()
@@ -2056,7 +2061,11 @@ void initdata(void)
 		name_len=30;
 
 #ifdef __unix__
-	_termios_setup();
+	#if defined USE_XPDEV
+		xp_termios_setup();
+	#else
+		_termios_setup();
+	#endif
 #endif
 
 	if(client_socket==INVALID_SOCKET)

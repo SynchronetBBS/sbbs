@@ -693,7 +693,7 @@ static void ansi_keyparse(void *par)
 		timedout=0;
 		unknown=0;
 		if(timeout) {
-			if(sem_trywait_block(&got_key,timeout)) {
+			if(xp_sem_trywait_block(&got_key,timeout)) {
 				timedout=1;
 				sem_post(&goahead);
 				continue;

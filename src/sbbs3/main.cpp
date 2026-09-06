@@ -2599,9 +2599,9 @@ bool sbbs_t::WaitForOutbufDrained(int timeout)
 {
 	if (!WaitForOutbufEmpty(timeout))
 		return false;
-	msclock_t start = msclock();
+	xp_msclock_t start = xp_msclock();
 	while (output_thread_busy && output_thread_running) {
-		if ((int)(msclock() - start) >= timeout)
+		if ((int)(xp_msclock() - start) >= timeout)
 			return false;
 		SLEEP(1);
 	}

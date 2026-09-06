@@ -34,7 +34,7 @@
 	#include <signal.h>
 #endif
 
-#include "conwrap.h"        /* getch() */
+#include "conwrap.h"        /* xp_getch() */
 #include "load_cfg.h"       /* load_cfg() */
 #include "smblib.h"
 #include "scfglib.h"
@@ -3314,7 +3314,7 @@ void bail(int error_level)
 	}
 	if ((error_level && pause_on_abend) || pause_on_exit) {
 		fprintf(stderr, "\nHit any key...");
-		(void)getch();
+		(void)xp_getch();
 		fprintf(stderr, "\n");
 	}
 	exit(error_level);

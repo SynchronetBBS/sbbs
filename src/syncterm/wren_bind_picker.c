@@ -223,7 +223,7 @@ picker_glob(bool case_sensitive, const char *pattern, int flags, glob_t *out)
 {
 	memset(out, 0, sizeof(*out));
 	return case_sensitive ? glob(pattern, flags, NULL, out) :
-	    globi(pattern, flags, NULL, out);
+	    xp_globi(pattern, flags, NULL, out);
 }
 
 static bool

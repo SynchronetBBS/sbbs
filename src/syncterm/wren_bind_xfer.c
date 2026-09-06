@@ -98,9 +98,9 @@ static pthread_once_t init_once_ctl = PTHREAD_ONCE_INIT;
 static void
 xfer_init_once(void)
 {
-	pthread_mutex_init_np(&log_mtx,  /* recursive */ false);
-	pthread_mutex_init_np(&tick_mtx, /* recursive */ false);
-	pthread_mutex_init_np(&dlg.mtx,  /* recursive */ false);
+	xp_pthread_mutex_init(&log_mtx,  /* recursive */ false);
+	xp_pthread_mutex_init(&tick_mtx, /* recursive */ false);
+	xp_pthread_mutex_init(&dlg.mtx,  /* recursive */ false);
 	dlg.evt         = CreateEvent(NULL, /* manual */ TRUE,
 	                              /* initial */ FALSE, NULL);
 	worker_done_evt = CreateEvent(NULL, /* manual */ TRUE,

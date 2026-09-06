@@ -26,16 +26,18 @@
 
 #if defined(__unix__)
 
-    DLLEXPORT void _termios_setup(void);
-    DLLEXPORT void _termios_reset(void);
-    DLLEXPORT void _echo_on(void);
-    DLLEXPORT void _echo_off(void);
-    DLLEXPORT int kbhit(void);
-    DLLEXPORT int getch(void);
+    DLLEXPORT void xp_termios_setup(void);
+    DLLEXPORT void xp_termios_reset(void);
+    DLLEXPORT void xp_echo_on(void);
+    DLLEXPORT void xp_echo_off(void);
+    DLLEXPORT int xp_kbhit(void);
+    DLLEXPORT int xp_getch(void);
 
 #else	/* DOS-Based */
 
 	#include <conio.h>
+	#define xp_getch getch
+	#define xp_kbhit kbhit
 
 #endif
 

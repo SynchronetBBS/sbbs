@@ -56,8 +56,8 @@ DLLEXPORT int sem_init(sem_t*, int pshared, unsigned int value);
 DLLEXPORT int sem_post(sem_t*);
 DLLEXPORT int sem_getvalue(sem_t*, int* value);
 DLLEXPORT int sem_destroy(sem_t*);
-	#define sem_wait(psem)              sem_trywait_block(psem, INFINITE)
-	#define sem_trywait(psem)           sem_trywait_block(psem, 0)
+	#define sem_wait(psem)              xp_sem_trywait_block(psem, INFINITE)
+	#define sem_trywait(psem)           xp_sem_trywait_block(psem, 0)
 
 #elif defined(__OS2__)  /* These have *not* been tested! */
 
@@ -75,7 +75,7 @@ typedef HEV sem_t;
 #endif
 
 /* NOT POSIX */
-DLLEXPORT int sem_trywait_block(sem_t* psem, unsigned long timeout);
+DLLEXPORT int xp_sem_trywait_block(sem_t* psem, unsigned long timeout);
 
 
 /* Change semaphore to "unsignaled" (NOT POSIX) */

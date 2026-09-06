@@ -98,8 +98,8 @@ extern "C" {
 /* Wrappers for POSIX thread (pthread) mutexes								*/
 /****************************************************************************/
 
-DLLEXPORT bool pthread_mutex_init_np(pthread_mutex_t *mtx, bool recursive);
-DLLEXPORT pthread_mutex_t pthread_mutex_initializer_np(bool recursive);
+DLLEXPORT bool xp_pthread_mutex_init(pthread_mutex_t *mtx, bool recursive);
+DLLEXPORT pthread_mutex_t xp_pthread_mutex_initializer(bool recursive);
 
 #if defined(_POSIX_THREADS)
 
@@ -138,10 +138,10 @@ DLLEXPORT int pthread_once(pthread_once_t *oc, void (*init)(void));
 #endif
 
 #if !defined(PTHREAD_MUTEX_INITIALIZER_NP)
-	#define PTHREAD_MUTEX_INITIALIZER_NP			pthread_mutex_initializer_np(/* recursive: */FALSE)
+	#define PTHREAD_MUTEX_INITIALIZER_NP			xp_pthread_mutex_initializer(/* recursive: */FALSE)
 #endif
 #if !defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP)
-	#define PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP	pthread_mutex_initializer_np(/* recursive: */TRUE)
+	#define PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP	xp_pthread_mutex_initializer(/* recursive: */TRUE)
 #endif
 
 /************************************************************************/

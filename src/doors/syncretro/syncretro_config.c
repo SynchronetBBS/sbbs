@@ -51,7 +51,7 @@
   #include <unistd.h>   /* getcwd, chdir */
 #endif
 
-#include "dirwrap.h"   /* xpdev: mkpath(), FULLPATH(), fexist(), globi() */
+#include "dirwrap.h"   /* xpdev: mkpath(), FULLPATH(), fexist(), xp_globi() */
 #include "retro_core.h"      /* rc_core_ext(): the platform's core extension */
 #include "ini_file.h"        /* xpdev: iniReadFile / iniGet* / strListFree */
 #include "audio_mgr.h"       /* termgfx: TERMGFX_MUSIC_QUALITY_DEFAULT */
@@ -482,7 +482,7 @@ static int sr_glob_one(char *dst, size_t sz, const char *pattern, int complain)
 	int    found = 0;
 
 	memset(&g, 0, sizeof g);
-	if (globi(pattern, 0, NULL, &g) != 0)
+	if (xp_globi(pattern, 0, NULL, &g) != 0)
 		return 0;
 	if (g.gl_pathc == 1) {
 		snprintf(dst, sz, "%s", g.gl_pathv[0]);

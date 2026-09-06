@@ -237,7 +237,7 @@ void deleteuser(char *nam)
         {
             printf("\b\b\b\b\b%5i", d);
             printf("\nDo you mean %s (%s)? ", ubuf.realname, ubuf.handle);
-            key = toupper(getch());
+            key = toupper(xp_getch());
             if (key == 'Y')
             {
                 printf("Yes\n");
@@ -413,7 +413,7 @@ void setusersec(unsigned XINT sec, char *nam)
         {
             printf("\b\b\b\b\b%5i", d);
             printf("\nDo you mean %s (%s)? ", ubuf.realname, ubuf.handle);
-            key = toupper(getch());
+            key = toupper(xp_getch());
             if (key == 'Y')
             {
                 printf("Yes\n");

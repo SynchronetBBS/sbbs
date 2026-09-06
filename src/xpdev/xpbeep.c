@@ -3610,7 +3610,7 @@ bool xptone(double freq, DWORD duration, DWORD shape)
 /* Generate a tone at specified frequency for specified milliseconds		*/
 /* Thanks to Casey Martin (and Deuce) for this code							*/
 /****************************************************************************/
-void unix_beep(int freq, int dur)
+static void unix_beep(int freq, int dur)
 {
 #if (defined(__FreeBSD__) && defined(HAS_MACHINE_SPEAKER_H)) || ((defined(__OpenBSD__) || defined(__NetBSD__)) && defined(HAS_MACHINE_SPKR_H))
 	int    speaker_fd = -1;

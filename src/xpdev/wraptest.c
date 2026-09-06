@@ -178,18 +178,18 @@ int main()
 	/* getch test */
 	printf("\ngetch() test (ESC to continue)\n");
 	do {
-		ch = getch();
-		printf("getch() returned %d\n", ch);
+		ch = xp_getch();
+		printf("xp_getch() returned %d\n", ch);
 	} while (ch != ESC);
 
 	/* kbhit test */
 	printf("\nkbhit() test (any key to continue)\n");
-	while (!kbhit()) {
+	while (!xp_kbhit()) {
 		printf(".");
 		fflush(stdout);
 		SLEEP(500);
 	}
-	getch();    /* remove character from keyboard buffer */
+	xp_getch();    /* remove character from keyboard buffer */
 
 	/* BEEP test */
 	printf("\nBEEP() test\n");
@@ -205,9 +205,10 @@ int main()
 	t = time(NULL);
 	printf("sleeping... ");
 	fflush(stdout);
-	ticks = msclock();
+	ticks = xp_msclock();
 	SLEEP(5000);
-	printf("slept %ld seconds (%ld according to msclock)\n", time(NULL) - t, (msclock() - ticks) / MSCLOCKS_PER_SEC);
+	printf("slept %ld seconds (%ld according to xp_msclock)\n", time(NULL) - t
+	       , (long)((xp_msclock() - ticks) / XP_MSCLOCKS_PER_SEC));
 
 	/* Thread SLEEP test */
 	printf("\nThread SLEEP(5 second) test\n");
@@ -319,7 +320,7 @@ int main()
 	}
 	printf("\nsem_trywait_block test...");
 	t = time(NULL);
-	sem_trywait_block(&thread_data.parent_sem, 5000);
+	xp_sem_trywait_block(&thread_data.parent_sem, 5000);
 	printf("\ntimed-out after %ld seconds (should be 5 seconds)\n", time(NULL) - t);
 	sem_destroy(&thread_data.parent_sem);
 	sem_destroy(&thread_data.child_sem);
@@ -338,7 +339,7 @@ static void getkey(void)
 {
 	printf("Hit any key to continue...");
 	fflush(stdout);
-	getch();
+	xp_getch();
 	printf("\r%30s\r", "");
 	fflush(stdout);
 }
@@ -381,8 +382,8 @@ static void sem_test_thread_block(void* arg)
 	sem_post(&data->child_sem);     /* signal parent: we've started */
 
 	for (i = 0; i < 10; i++) {
-		if (sem_trywait_block(&data->parent_sem, 500))  {
-			printf(" sem_trywait_block() timed out");
+		if (xp_sem_trywait_block(&data->parent_sem, 500))  {
+			printf(" xp_sem_trywait_block() timed out");
 			sem_wait(&data->parent_sem);
 		}
 		else  {

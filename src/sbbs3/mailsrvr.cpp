@@ -5871,7 +5871,7 @@ static void sendmail_thread(void* arg)
 	while ((!terminated) && !terminate_sendmail) {
 		YIELD();
 		if (startup->options & MAIL_OPT_NO_SENDMAIL) {
-			sem_trywait_block(&sendmail_wakeup_sem, 1000);
+			xp_sem_trywait_block(&sendmail_wakeup_sem, 1000);
 			continue;
 		}
 
@@ -5896,7 +5896,7 @@ static void sendmail_thread(void* arg)
 		if (first_cycle)
 			first_cycle = false;
 		else
-			sem_trywait_block(&sendmail_wakeup_sem, startup->sem_chk_freq * 1000);
+			xp_sem_trywait_block(&sendmail_wakeup_sem, startup->sem_chk_freq * 1000);
 
 		SAFEPRINTF(smb.file, "%smail", scfg.data_dir);
 		smb.retry_time = scfg.smb_retry_time;

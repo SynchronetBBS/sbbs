@@ -23,9 +23,21 @@
 #define _GEN_DEFS_H
 
 /* CMake targets provide a generated capability header.  Other build systems
- * continue to provide the equivalent legacy macros on their command lines. */
+ * continue to use the legacy platform tests below. */
 #if defined(XPDEV_USE_CONFIG_H)
 #include "xpdev_config.h"
+#else
+#if defined(_MSC_VER) || defined(__MSVCRT__) || defined(__BORLANDC__)
+#define NEEDS_ASPRINTF
+#define NEEDS_VASPRINTF
+#endif
+#if defined(_WIN32)
+#define NEEDS_GETDELIM
+#define NEEDS_STRCASESTR
+#endif
+#if !defined(__unix__)
+#define NEEDS_STRTOK_R
+#endif
 #endif
 
 #if (__STDC_VERSION__ >= 199901L) || (__cplusplus >= 201103L)

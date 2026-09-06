@@ -281,7 +281,7 @@ extern "C" {
 	DLLEXPORT size_t strlcat(char *dst, const char *src, size_t dstsize);
 #endif
 
-#if defined(_WIN32)
+#if defined(NEEDS_STRCASESTR)
 	DLLEXPORT char* strcasestr(const char* haystack, const char* needle);
 #endif
 
@@ -371,7 +371,7 @@ DLLEXPORT int get_errno(void);
 #endif
 
 /* Win32 implementations of recursive (thread-safe) std C time functions on Unix */
-#if !defined(__unix__)
+#if defined(NEEDS_STRTOK_R)
 
 	DLLEXPORT char*	strtok_r(char *str, const char *delim, char **last);
 #endif
@@ -410,9 +410,9 @@ DLLEXPORT char*		byte_count_to_str(uint64_t bytes, char* str, size_t size);
 DLLEXPORT char*		byte_estimate_to_str(uint64_t bytes, char* str, size_t size, uint64_t unit, int precision);
 
 /* Microsoft (e.g. DOS/Win32) real-time system clock API (ticks since process started) */
-typedef		clock_t				msclock_t;
-#define		MSCLOCKS_PER_SEC	1000
-DLLEXPORT msclock_t	msclock(void);
+typedef		clock_t				xp_msclock_t;
+#define		XP_MSCLOCKS_PER_SEC	1000
+DLLEXPORT xp_msclock_t	xp_msclock(void);
 
 DLLEXPORT bool		check_pid(pid_t);
 DLLEXPORT bool		terminate_pid(pid_t);

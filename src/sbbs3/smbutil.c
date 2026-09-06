@@ -37,7 +37,7 @@ const char *mon[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun"
 #endif
 
 #if defined(_WIN32)
-	#include <conio.h>  /* getch() */
+	#include <conio.h>  /* xp_getch() */
 #endif
 
 /* ANSI */
@@ -1733,7 +1733,7 @@ void readmsgs(ulong start, ulong count)
 			continue;
 		}
 		printf("\nReading %s (?=Menu): ", smb.file);
-		switch (toupper(getch())) {
+		switch (toupper(xp_getch())) {
 			case '?':
 				printf("\n"
 				       "\n"
