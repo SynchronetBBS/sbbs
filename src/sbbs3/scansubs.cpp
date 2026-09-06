@@ -464,7 +464,7 @@ void sbbs_t::new_scan_cfg(uint misc)
 				break;
 			if (s == all_key()) {
 				t = subscan[usrsub[i][0]].cfg & misc;
-				if (misc & SUB_CFG_NSCAN && !t && !(useron.misc & FLAG('Q')))
+				if (misc & SUB_CFG_NSCAN && !t && !(useron.rest & UREST_QWK_NODE))
 					if (!noyes(text[MsgsToYouOnlyQ]))
 						misc |= SUB_CFG_YSCAN;
 				for (j = 0; j < usrsubs[i] && online; j++) {

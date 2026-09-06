@@ -130,6 +130,8 @@
   to more than one node at a time, rather than being disconnected
   with "You can't possibly be in two places at the same time"
   (regression from v3.21e, issue #1234)
+- QWK network nodes are no longer asked "Messages to you only"
+  when configuring new-scan for a whole group of sub-boards
 
 ## Web Server
 
