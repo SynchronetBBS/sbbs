@@ -4,7 +4,7 @@
 
 require("sbbsdefs.js", 'USER_EXPERT');
 require("nodedefs.js", 'NODE_CHAT');
-require("text.js", 'R_Chat');
+var shell = load({}, "shell_lib.js");
 
 // Over-ride these default values by creating/modifying the [chat] section in your ctrl/modopts.ini file
 var options = load("modopts.js", "chat");
@@ -32,14 +32,14 @@ for(var i in irc_servers)
 for(var i in irc_channels)
 	irc_channels[i] = irc_channels[i].trim();
 
-if(user.security.restrictions & UFLAG_C) {
-    write(bbs.text(R_Chat));
+if(user.security.restrictions & UREST_CHAT) {
+    write(bbs.text(bbs.text.R_Chat));
 	exit(0);
 }
 
 function on_or_off(on)
 {
-	return bbs.text(on ? On : Off);
+	return bbs.text(on ? bbs.text.On : bbs.text.Off);
 }
 
 // Set continue point for main menu commands
@@ -55,16 +55,16 @@ while(bbs.online && !console.aborted) {
 	// Update node status
 	bbs.node_action = NODE_CHAT;
 	bbs.nodesync();
-	write(bbs.text(ChatPrompt));
+	write(bbs.text(bbs.text.ChatPrompt));
 
-	var keys = "ACDJMPQST?\r"; // M added as a valid option for MRC
-	if(options.imsg && user.compare_ars(options.imsg_requirements))
+	var keys = "ACDJMPQST?\r"; // M added as a valid option
+	if(options.imsg && (options.imsg_requirements === undefined || user.compare_ars(options.imsg_requirements)))
 		keys += "I";
-	if(options.irc && user.compare_ars(options.irc_requirements))
+	if(options.irc && (options.irc_requirements === undefined || user.compare_ars(options.irc_requirements)))
 		keys += "R";
-	if(options.finger && user.compare_ars(options.finger_requirements))
+	if(options.finger && (options.finger_requirements === undefined || user.compare_ars(options.finger_requirements)))
 		keys += "F";
-	switch(console.getkeys(keys, K_UPPER)) {
+	switch(console.getkeys(keys, 0, K_UPPER)) {
 		case "S":
 			var val = user.chat_settings ^= CHAT_SPLITP;
 			write("\x01n\r\nPrivate split-screen chat is now: \x01h");
@@ -101,7 +101,7 @@ while(bbs.online && !console.aborted) {
 					break;
 				server = irc_servers[i];
 			}
-			if(user.security.level >= options.irc_seclevel || user.security.exemptions&UFLAG_C) {
+			if(user.security.level >= options.irc_seclevel || user.security.exemptions&UEXEMPT_CHAT_PAGE) {
 				write("\r\n\x01n\x01y\x01hIRC Server: ");
 				server = console.getstr(server, 40, K_EDIT|K_LINE|K_AUTODEL);
 				if(console.aborted || server.length < 4)
@@ -140,9 +140,7 @@ while(bbs.online && !console.aborted) {
 			bbs.private_chat();
 			break;
 		case 'C':
-			if(!bbs.page_sysop()
-				&& !deny(format(bbs.text(ChatWithGuruInsteadQ), system.guru || "The Guru")))
-				bbs.page_guru();
+			shell.page_sysop();
 			break;
 		case 'T':
 			bbs.page_guru();
