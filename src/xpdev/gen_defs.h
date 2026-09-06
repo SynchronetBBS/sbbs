@@ -27,7 +27,7 @@
 #if defined(XPDEV_USE_CONFIG_H)
 #include "xpdev_config.h"
 #else
-#if defined(_MSC_VER) || defined(__MSVCRT__) || defined(__BORLANDC__)
+#if defined(_WIN32) || defined(__BORLANDC__)
 #define NEEDS_ASPRINTF
 #define NEEDS_VASPRINTF
 #endif

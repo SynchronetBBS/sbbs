@@ -77,6 +77,9 @@ v2.11
 #include <ctype.h>
 
 #include "xsdk.h"
+#ifdef USE_XPDEV
+	#include "conwrap.h"
+#endif
 
 #define MAX_DECKS	100
 #define MAX_CARDS	10		/* maximum number of cards per hand */
@@ -219,7 +222,11 @@ int main(int argc, char **argv)
 	if(!node_dir[0]) {	  /* node directory not specified */
 		printf("usage: sbj <node directory> [/options]\r\n");
 		printf("\r\noptions: L = log wins/losses for each day\r\n");
+#ifdef USE_XPDEV
+		xp_getch();
+#else
 		getch();
+#endif
 		return(1); }
 
 	if(node_dir[strlen(node_dir)-1]!='\\'
