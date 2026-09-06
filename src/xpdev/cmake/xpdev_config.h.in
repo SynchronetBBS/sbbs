@@ -1,0 +1,82 @@
+#ifndef XPDEV_CONFIG_H
+#define XPDEV_CONFIG_H
+
+/* Public ABI and platform capabilities of this xpdev library. */
+#cmakedefine01 XPDEV_HAS_INTTYPES_H
+#cmakedefine01 XPDEV_HAS_STDINT_H
+#cmakedefine01 XPDEV_LINK_LIST_THREADSAFE
+#cmakedefine01 XPDEV_THREAD_SAFE_ENABLED
+#cmakedefine01 XPDEV_USE_XP_SEMAPHORES
+#cmakedefine01 XPDEV_PREFER_POLL
+#cmakedefine01 XPDEV_NEEDS_STRLCPY
+#cmakedefine01 XPDEV_USE_SNPRINTF
+#cmakedefine01 XPDEV_STATIC_SDL
+#cmakedefine01 XPDEV_WITHOUT_CRYPTLIB
+
+/* Build-time audio capabilities of this xpdev library. */
+#cmakedefine01 XPDEV_AUDIO_ENABLED
+#cmakedefine01 XPDEV_WITH_WASAPI
+#cmakedefine01 XPDEV_WITH_OSS
+#cmakedefine01 XPDEV_WITH_SDL_AUDIO
+#cmakedefine01 XPDEV_WITH_ALSA
+#cmakedefine01 XPDEV_WITH_PORTAUDIO
+#cmakedefine01 XPDEV_WITH_PULSEAUDIO
+#cmakedefine01 XPDEV_WITH_PIPEWIRE
+#cmakedefine01 XPDEV_WITH_COREAUDIO
+
+#define XPDEV_SOUNDCARD_H_IN @XPDEV_SOUNDCARD_H_IN@
+
+/* Legacy macros used by existing Synchronet consumers and public headers. */
+#if XPDEV_HAS_INTTYPES_H && !defined(HAS_INTTYPES_H)
+#define HAS_INTTYPES_H 1
+#endif
+#if XPDEV_HAS_STDINT_H && !defined(HAS_STDINT_H)
+#define HAS_STDINT_H 1
+#endif
+#if XPDEV_LINK_LIST_THREADSAFE && !defined(LINK_LIST_THREADSAFE)
+#define LINK_LIST_THREADSAFE 1
+#endif
+#if XPDEV_THREAD_SAFE_ENABLED && !defined(XPDEV_THREAD_SAFE)
+#define XPDEV_THREAD_SAFE 1
+#endif
+#if XPDEV_USE_XP_SEMAPHORES && !defined(USE_XP_SEMAPHORES)
+#define USE_XP_SEMAPHORES 1
+#endif
+#if XPDEV_PREFER_POLL && !defined(PREFER_POLL)
+#define PREFER_POLL 1
+#endif
+#if XPDEV_NEEDS_STRLCPY && !defined(NEEDS_STRLCPY)
+#define NEEDS_STRLCPY 1
+#endif
+#if XPDEV_USE_SNPRINTF && !defined(USE_SNPRINTF)
+#define USE_SNPRINTF 1
+#endif
+#if XPDEV_STATIC_SDL && !defined(STATIC_SDL)
+#define STATIC_SDL 1
+#endif
+#if XPDEV_WITHOUT_CRYPTLIB && !defined(WITHOUT_CRYPTLIB)
+#define WITHOUT_CRYPTLIB 1
+#endif
+#if XPDEV_WITH_OSS && !defined(SOUNDCARD_H_IN)
+#define SOUNDCARD_H_IN XPDEV_SOUNDCARD_H_IN
+#endif
+#if XPDEV_WITH_SDL_AUDIO && !defined(WITH_SDL_AUDIO)
+#define WITH_SDL_AUDIO 1
+#endif
+#if XPDEV_WITH_ALSA && !defined(USE_ALSA_SOUND)
+#define USE_ALSA_SOUND 1
+#endif
+#if XPDEV_WITH_PORTAUDIO && !defined(WITH_PORTAUDIO)
+#define WITH_PORTAUDIO 1
+#endif
+#if XPDEV_WITH_PULSEAUDIO && !defined(WITH_PULSEAUDIO)
+#define WITH_PULSEAUDIO 1
+#endif
+#if XPDEV_WITH_PIPEWIRE && !defined(WITH_PIPEWIRE)
+#define WITH_PIPEWIRE 1
+#endif
+#if XPDEV_WITH_COREAUDIO && !defined(WITH_COREAUDIO)
+#define WITH_COREAUDIO 1
+#endif
+
+#endif

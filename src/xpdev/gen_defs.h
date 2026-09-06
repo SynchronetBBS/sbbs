@@ -22,6 +22,12 @@
 #ifndef _GEN_DEFS_H
 #define _GEN_DEFS_H
 
+/* CMake targets provide a generated capability header.  Other build systems
+ * continue to provide the equivalent legacy macros on their command lines. */
+#if defined(XPDEV_USE_CONFIG_H)
+#include "xpdev_config.h"
+#endif
+
 #if (__STDC_VERSION__ >= 199901L) || (__cplusplus >= 201103L)
 # ifndef HAS_INTTYPES_H
 #  define HAS_INTTYPES_H

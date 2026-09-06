@@ -1,5 +1,26 @@
 @PACKAGE_INIT@
 
+include("${CMAKE_CURRENT_LIST_DIR}/xpdevFeatures.cmake")
+
+set(xpdev_FOUND TRUE)
+set(xpdev_audio_FOUND ${xpdev_AUDIO_ENABLED})
+foreach(component IN LISTS xpdev_FIND_COMPONENTS)
+	if(NOT component STREQUAL "audio")
+		set(xpdev_${component}_FOUND FALSE)
+	endif()
+endforeach()
+check_required_components(xpdev)
+if(NOT xpdev_FOUND)
+	if("audio" IN_LIST xpdev_FIND_COMPONENTS AND NOT xpdev_audio_FOUND)
+		set(xpdev_NOT_FOUND_MESSAGE
+			"This xpdev installation was built without an audio backend")
+	else()
+		set(xpdev_NOT_FOUND_MESSAGE
+			"xpdev does not provide one or more requested components")
+	endif()
+	return()
+endif()
+
 include(CMakeFindDependencyMacro)
 find_dependency(Threads)
 
@@ -8,14 +29,3 @@ if(@XPDEV_CONFIG_NEEDS_SDL2@)
 endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/xpdevTargets.cmake")
-
-if(@XPDEV_CONFIG_NEEDS_SDL2@)
-	# WITH_SDL_AUDIO is a public definition and gen_defs.h includes SDL.h.
-	# Propagate SDL's usage requirements even where xpdev loads it dynamically.
-	set_property(TARGET xpdev::static APPEND PROPERTY
-		INTERFACE_LINK_LIBRARIES SDL2::SDL2)
-	set_property(TARGET xpdev::shared APPEND PROPERTY
-		INTERFACE_LINK_LIBRARIES SDL2::SDL2)
-endif()
-
-check_required_components(xpdev)
