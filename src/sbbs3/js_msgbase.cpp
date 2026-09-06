@@ -1640,7 +1640,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 			if (((p->p->smb.status.attr & SMB_EMAIL) == 0) && (p->msg.idx.attr & MSG_PRIVATE)) {
 				if (user == NULL)
 					break;
-				if (!user_is_subop(scfg, p->p->smb.subnum, user, client) && !(user->rest & FLAG('Q'))) {
+				if (!user_is_subop(scfg, p->p->smb.subnum, user, client) && !(user->rest & UREST_QWK_NODE)) {
 					if (p->msg.idx.to != namecrc && p->msg.idx.from != namecrc
 					    && p->msg.idx.to != aliascrc && p->msg.idx.from != aliascrc
 					    && (user->number != 1 || p->msg.idx.to != sysop))

@@ -142,7 +142,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 		getstr_offset = i;
 		switch (ch) {
 			case CTRL_A: /* Ctrl-A for ANSI */
-				if (!(mode & K_MSG) || useron.rest & FLAG('A') || i > maxlen - 3)
+				if (!(mode & K_MSG) || useron.rest & UREST_ANSI || i > maxlen - 3)
 					break;
 				if (console & CON_INSERT) {
 					if (l < maxlen)
@@ -204,7 +204,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 			case CTRL_G: /* Bell */
 				if (!(mode & K_MSG))
 					break;
-				if (useron.rest & FLAG('B')) {
+				if (useron.rest & UREST_BEEP) {
 					if (i + 6 < maxlen) {
 						if (console & CON_INSERT) {
 							for (x = l + 6; x > i; x--)

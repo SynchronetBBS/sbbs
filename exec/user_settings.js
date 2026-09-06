@@ -147,7 +147,7 @@ function display_menu(thisuser)
 			,on_or_off(thisuser.settings & USER_NETMAIL), thisuser.netmail));
 	}
 	if (bbs.text(bbs.text.UserDefaultsQuiet).length
-		&& (thisuser.security.exemptions & UFLAG_Q)) {
+		&& (thisuser.security.exemptions & UEXEMPT_QUIET_NODE)) {
 		keys += 'D';
 		console.add_hotspot('D');
 		console.print(format(bbs.text(bbs.text.UserDefaultsQuiet)
@@ -176,7 +176,7 @@ var file_cfg = cfglib.read("file.ini");
 var main_cfg = cfglib.read("main.ini");
 
 var thisuser = new User(argv[0] || user.number);
-var user_is_guest = (thisuser.security.restrictions & UFLAG_G);
+var user_is_guest = (thisuser.security.restrictions & UREST_EDIT_DEFAULTS);
 
 while (bbs.online && !js.terminated) {
 	bbs.node_action = NODE_DFLT;

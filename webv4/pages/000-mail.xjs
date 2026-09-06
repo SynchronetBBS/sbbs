@@ -79,7 +79,7 @@
     </script>
 <? } ?>
 
-<? if (!(user.security.restrictions&UFLAG_E) && !(user.security.restrictions&UFLAG_M)) { ?>
+<? if (!(user.security.restrictions&UREST_EMAIL) && !(user.security.restrictions&UREST_SEND_NETMAIL)) { ?>
 	<button class="btn btn-default icon" aria-label="<? write(locale.strings.page_mail.button_post_new); ?>" title="<? write(locale.strings.page_mail.button_post_new); ?>" onclick="addNew('mail')">
 		<span class="glyphicon glyphicon-pencil"></span>
 	</button>

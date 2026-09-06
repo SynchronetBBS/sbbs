@@ -43,7 +43,7 @@ void sbbs_t::multinodechat(int channel)
 	long   i, j, k, n;
 	node_t node;
 
-	if (useron.rest & FLAG('C')) {
+	if (useron.rest & UREST_CHAT) {
 		bputs(text[R_Chat]);
 		return;
 	}
@@ -265,7 +265,7 @@ void sbbs_t::multinodechat(int channel)
 					putnodedat(cfg.node_num, &thisnode);
 					bputs(text[YoureOnTheAir]);
 					if (cfg.chan[channel - 1]->cost
-					    && !(useron.exempt & FLAG('J')))
+					    && !(useron.exempt & UEXEMPT_CHAT_COST))
 						subtract_cdt(&cfg, &useron, cfg.chan[channel - 1]->cost);
 				}
 				else switch (i) {    /* other command */
@@ -559,7 +559,7 @@ bool sbbs_t::guru_page(void)
 	int   file;
 	long  i;
 
-	if (useron.rest & FLAG('C')) {
+	if (useron.rest & UREST_CHAT) {
 		bputs(text[R_Chat]);
 		return false;
 	}
@@ -625,14 +625,14 @@ bool sbbs_t::sysop_page(void)
 	char str[256];
 	int  i;
 
-	if (useron.rest & FLAG('C')) {
+	if (useron.rest & UREST_CHAT) {
 		bputs(text[R_Chat]);
 		return false;
 	}
 
 	if (sysop_available(&cfg)
 	    || (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar, &useron, &client))
-	    || useron.exempt & FLAG('C')) {
+	    || useron.exempt & UEXEMPT_CHAT_PAGE) {
 
 		if (!(sys_status & SS_SYSPAGE)) {
 			logline("C", "paged sysop for chat");
@@ -695,7 +695,7 @@ bool sbbs_t::chan_access(int cnum)
 		bputs(text[CantAccessThatChannel]);
 		return false;
 	}
-	if (!(useron.exempt & FLAG('J')) && cfg.chan[cnum]->cost > user_available_credits(&useron)) {
+	if (!(useron.exempt & UEXEMPT_CHAT_COST) && cfg.chan[cnum]->cost > user_available_credits(&useron)) {
 		bputs(text[NotEnoughCredits]);
 		return false;
 	}
@@ -728,7 +728,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 		n = node_num;
 	else {
 
-		if (useron.rest & FLAG('C')) {
+		if (useron.rest & UREST_CHAT) {
 			bputs(text[R_Chat]);
 			return;
 		}
@@ -1329,7 +1329,7 @@ void sbbs_t::nodemsg()
 	getnodedat(cfg.node_num, &savenode);
 	wordwrap[0] = 0;
 	while (online && !done) {
-		if (useron.rest & FLAG('C')) {
+		if (useron.rest & UREST_CHAT) {
 			bputs(text[R_SendMessages]);
 			break;
 		}
@@ -1373,11 +1373,11 @@ void sbbs_t::nodemsg()
 				if (!usernumber)
 					break;
 
-				if (usernumber == 1 && useron.rest & FLAG('S')) { /* ! val fback */
+				if (usernumber == 1 && useron.rest & UREST_EMAIL_SYSOP) { /* ! val fback */
 					bprintf(text[R_Feedback], cfg.sys_op);
 					break;
 				}
-				if (usernumber != 1 && useron.rest & FLAG('E')) {
+				if (usernumber != 1 && useron.rest & UREST_EMAIL) {
 					bputs(text[R_Email]);
 					break;
 				}

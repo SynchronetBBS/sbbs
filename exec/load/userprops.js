@@ -11,7 +11,7 @@ function get(section, key, deflt, usernum)
 {
 	if(!usernum) {
 		usernum = user.number;
-		if(user.security.restrictions & UFLAG_G)
+		if(user.security.restrictions & UREST_EDIT_DEFAULTS)
 			return deflt;
 	}
 	var file = new File(filename(usernum));
@@ -32,7 +32,7 @@ function set(section, key, value, usernum)
 {
 	if(!usernum) {
 		usernum = user.number;
-		if(user.security.restrictions & UFLAG_G)
+		if(user.security.restrictions & UREST_EDIT_DEFAULTS)
 			return true;
 	}
 	var file = new File(filename(usernum));

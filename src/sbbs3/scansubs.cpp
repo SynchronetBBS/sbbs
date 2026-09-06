@@ -235,7 +235,7 @@ void sbbs_t::scanallsubs(int mode)
 	}
 	bprintf(text[MessageScanComplete], subs_scanned);
 	if (mode & SCAN_NEW && !(mode & (SCAN_MSGSONLY | SCAN_BACK | SCAN_TOYOU))
-	    && useron.misc & ANFSCAN && !(useron.rest & FLAG('T')) && ns_time != 0) {
+	    && useron.misc & ANFSCAN && !(useron.rest & UREST_TRANSFER) && ns_time != 0) {
 		xfer_cmds++;
 		scanalldirs(FL_ULTIME);
 	}
@@ -481,7 +481,7 @@ void sbbs_t::new_scan_cfg(uint misc)
 			}
 			j = (s & ~0x80000000L) - 1;
 			if (misc & SUB_CFG_NSCAN && !(subscan[usrsub[i][j]].cfg & misc)) {
-				if (!(useron.rest & FLAG('Q')) && !noyes(text[MsgsToYouOnlyQ]))
+				if (!(useron.rest & UREST_QWK_NODE) && !noyes(text[MsgsToYouOnlyQ]))
 					subscan[usrsub[i][j]].cfg |= SUB_CFG_YSCAN;
 				else
 					subscan[usrsub[i][j]].cfg &= ~SUB_CFG_YSCAN;

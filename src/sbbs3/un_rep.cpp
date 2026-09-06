@@ -138,7 +138,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	}
 	SAFEPRINTF(fname, "%sVOTING.DAT", cfg.temp_dir);
 	if (fexistcase(fname)) {
-		if (useron.rest & FLAG('V'))
+		if (useron.rest & UREST_VOTE)
 			bputs(text[R_Voting]);
 		else {
 			lprintf(LOG_DEBUG, "Reading %s", fname);
@@ -209,7 +209,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		long confnum = atol((char *)block + 1);
 		if (blocks < 2) {
 			if (block[0] == 'V' && blocks == 1 && voting != NULL) {  /* VOTING DATA */
-				if (!qwk_voting(&voting, l, (useron.rest & FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */ useron.alias, confnum, msg_filters)) {
+				if (!qwk_voting(&voting, l, (useron.rest & UREST_QWK_NODE) ? NET_QWK : NET_NONE, /* QWKnet ID : */ useron.alias, confnum, msg_filters)) {
 					lprintf(LOG_WARNING, "QWK vote failure, offset %ld of %s", l, getfname(msg_fname));
 					errors++;
 				}
@@ -224,7 +224,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			continue;
 		}
 
-		if (!qwk_new_msg(confnum, &msg, block, /* offset: */ l, headers, /* parse_sender_hfields: */ useron.rest & FLAG('Q') ? true:false)) {
+		if (!qwk_new_msg(confnum, &msg, block, /* offset: */ l, headers, /* parse_sender_hfields: */ useron.rest & UREST_QWK_NODE ? true:false)) {
 			errors++;
 			continue;
 		}
@@ -234,7 +234,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				bprintf("E-mail to %s: %s\r\n", msg.to, msg.subj);
 			else
 				bprintf("E-mail from %s to %s\r\n", msg.from, msg.to);
-			if (useron.rest & FLAG('E')) {
+			if (useron.rest & UREST_EMAIL) {
 				bputs(text[R_Email]);
 				continue;
 			}
@@ -254,8 +254,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 				}
 			}
 
-			if (useron.etoday >= cfg.level_emailperday[useron.level] && !(useron.exempt & FLAG('M'))
-			    && !(useron.rest & FLAG('Q'))) {
+			if (useron.etoday >= cfg.level_emailperday[useron.level] && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)
+			    && !(useron.rest & UREST_QWK_NODE)) {
 				bputs(text[TooManyEmailsToday]);
 				continue;
 			}
@@ -271,7 +271,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				bputs(text[UnknownUser]);
 				continue;
 			}
-			if (usernum == 1 && useron.rest & FLAG('S')) {
+			if (usernum == 1 && useron.rest & UREST_EMAIL_SYSOP) {
 				bprintf(text[R_Feedback], cfg.sys_op);
 				continue;
 			}
@@ -379,7 +379,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			}
 
 			/* if posting, add to new-scan config for QWKnet nodes automatically */
-			if (useron.rest & FLAG('Q'))
+			if (useron.rest & UREST_QWK_NODE)
 				subscan[n].cfg |= SUB_CFG_NSCAN;
 
 			if (msg.to != NULL) {
@@ -400,7 +400,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			}
 #endif
 
-			if (useron.rest & FLAG('Q') && !(cfg.sub[n]->misc & SUB_QNET)) {
+			if (useron.rest & UREST_QWK_NODE && !(cfg.sub[n]->misc & SUB_QNET)) {
 				bputs(text[CantPostOnSub]);
 				logline(LOG_NOTICE, "P!", "Attempted to post QWK message on non-QWKnet sub");
 				continue;
@@ -430,7 +430,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			}
 
 #if 0   /* This stuff isn't really necessary anymore */
-			if (!SYSOP && !(useron.rest & FLAG('Q'))) {
+			if (!SYSOP && !(useron.rest & UREST_QWK_NODE)) {
 				sprintf(str, "%-25.25s", "SYSOP");
 				if (!strnicmp((char *)block + 21, str, 25)) {
 					sprintf(str, "%-25.25s", username(&cfg, 1, tmp));
@@ -502,11 +502,11 @@ bool sbbs_t::unpack_rep(char* repfile)
 				if (destuser > 0) {
 					SAFEPRINTF4(str, text[MsgPostedToYouVia]
 					            , msg.from
-					            , (useron.rest & FLAG('Q')) ? useron.alias : "QWK"
+					            , (useron.rest & UREST_QWK_NODE) ? useron.alias : "QWK"
 					            , cfg.grp[cfg.sub[n]->grp]->sname, cfg.sub[n]->lname);
 					putsmsg(destuser, str);
 				}
-				if (!(useron.rest & FLAG('Q')))
+				if (!(useron.rest & UREST_QWK_NODE))
 					user_event(EVENT_POST);
 				tmsgs++;
 			} else {
@@ -518,7 +518,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		}   /* end of public message */
 	}
 
-	qwk_handle_remaining_votes(&voting, (useron.rest & FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */ useron.alias);
+	qwk_handle_remaining_votes(&voting, (useron.rest & UREST_QWK_NODE) ? NET_QWK : NET_NONE, /* QWKnet ID : */ useron.alias);
 
 	update_qwkroute(NULL);          /* Write ROUTE.DAT */
 
@@ -590,7 +590,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		}
 	}
 
-	if (useron.rest & FLAG('Q')) {             /* QWK Net Node */
+	if (useron.rest & UREST_QWK_NODE) {
 		if (fexistcase(msg_fname))
 			remove(msg_fname);
 		SAFEPRINTF(fname, "%sATTXREF.DAT", cfg.temp_dir);

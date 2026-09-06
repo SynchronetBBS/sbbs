@@ -66,7 +66,7 @@ if(user.number!=0) {
 if(user.number==0)
     template.user_greeting="Welcome, Guest.";
 else
-	if(!(user.security.restrictions&UFLAG_G)) {
+	if(!(user.security.restrictions&UREST_EDIT_DEFAULTS)) {
 	
 /* If it is the users Birthday, display a quick Happy Birthday */
 /* instead of the standard greeting. */

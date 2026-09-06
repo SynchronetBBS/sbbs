@@ -435,7 +435,7 @@ bool sbbs_t::answer()
 								client_on(client_socket, &client, /* update: */ TRUE);
 								SAFECOPY(connection, client.protocol);
 								if (getnodedat(cfg.node_num, &thisnode, true)) {
-									if ((useron.exempt & FLAG('Q') && useron.misc & QUIET))
+									if ((useron.exempt & UEXEMPT_QUIET_NODE && useron.misc & QUIET))
 										thisnode.status = NODE_QUIET;
 									else
 										thisnode.status = NODE_INUSE;
@@ -697,7 +697,7 @@ bool sbbs_t::answer()
 			useron.number = finduserstr(0, USER_IPADDR, client_ipaddr);
 			if (useron.number) {
 				getuserdat(&cfg, &useron);
-				if (!(useron.misc & AUTOLOGON) || !(useron.exempt & FLAG('V')))
+				if (!(useron.misc & AUTOLOGON) || !(useron.exempt & UEXEMPT_AUTOLOGON))
 					useron.number = 0;
 			}
 		}

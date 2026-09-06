@@ -344,7 +344,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		} else
 			lprintf(LOG_ERR, "ERROR %d (%s) restoring draft message: %s", errno, strerror(errno), draft);
 	}
-	else if (mode & WM_QUOTE && !(useron.rest & FLAG('J'))
+	else if (mode & WM_QUOTE && !(useron.rest & UREST_QUOTE)
 	         && ((mode & (WM_EMAIL | WM_NETMAIL) && cfg.sys_misc & SM_QUOTE_EM)
 	             || (!(mode & (WM_EMAIL | WM_NETMAIL)) && subnum != INVALID_SUB
 	                 && cfg.sub[subnum]->misc & SUB_QUOTE))) {
@@ -578,9 +578,9 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				free(buf);
 				return false;
 			}
-			if ((c == ESC || c == CTRL_A) && useron.rest & FLAG('A')) /* ANSI restriction */
+			if ((c == ESC || c == CTRL_A) && useron.rest & UREST_ANSI)
 				continue;
-			if (c == BEL && useron.rest & FLAG('B'))   /* Beep restriction */
+			if (c == BEL && useron.rest & UREST_BEEP)
 				continue;
 			if (!(console & CON_RAW_IN))   /* Ctrl-Z was hit */
 				break;
@@ -1477,19 +1477,19 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 		return false;
 	}
 
-	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & FLAG('M'))) {
+	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)) {
 		bputs(text[TooManyEmailsToday]);
 		return false;
 	}
-	if (useron.rest & FLAG('F')) {
+	if (useron.rest & UREST_FORWARD_MAIL) {
 		bputs(text[R_Forward]);
 		return false;
 	}
-	if (usernumber == 1 && useron.rest & FLAG('S')) {
+	if (usernumber == 1 && useron.rest & UREST_EMAIL_SYSOP) {
 		bprintf(text[R_Feedback], cfg.sys_op);
 		return false;
 	}
-	if (usernumber != 1 && useron.rest & FLAG('E')) {
+	if (usernumber != 1 && useron.rest & UREST_EMAIL) {
 		bputs(text[R_Email]);
 		return false;
 	}

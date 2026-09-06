@@ -4,7 +4,7 @@
 
  if(user.number || system.matchuser("Guest")) {
     template.ftp_url="ftp://";
-    if(user.number && !(user.security.restrictions&UFLAG_G))
+    if(user.number && !(user.security.restrictions&UREST_EDIT_DEFAULTS))
             template.ftp_url=template.ftp_url + user.alias + ":" + user.security.password + "&#064;";
 
     var host = http_request.host;
@@ -24,7 +24,7 @@
 template.leftnav=new Array;
 template.sublinks=new Array;
 
-if(user.number==0 || user.security.restrictions&UFLAG_G)
+if(user.number==0 || user.security.restrictions&UREST_EDIT_DEFAULTS)
     
     template.leftnav.push({html: '<li><a href="/login.ssjs">Login</a></li><li><a href="/newuser.ssjs">New User</a></li>' });
 else
@@ -34,13 +34,13 @@ if(user.number || (this.login!=undefined && system.matchuser("Guest")))
     template.leftnav.push({html: '<li><a href="/msgs">Message Groups</a></li>' });
 if( sub != 'mail' && (http_request.virtual_path == '/msgs/msg.ssjs' || http_request.virtual_path == '/msgs/msgs.ssjs'  || http_request.virtual_path == '/msgs/post.ssjs' || http_request.virtual_path == '/msgs/reply.ssjs' || http_request.virtual_path == '/msgs/savemsg.ssjs' || http_request.virtual_path == '/msgs/subinfo.ssjs' || http_request.virtual_path == '/msgs/subs.ssjs'))
 	do_sublinks();
-if(user.number==0 || user.security.restrictions&UFLAG_G) {
+if(user.number==0 || user.security.restrictions&UREST_EDIT_DEFAULTS) {
     }
 else
     template.leftnav.push({html: '<li><a href="/msgs/choosegroup.ssjs">Set Message Scan</a></li>' });
 if( sub != 'mail' && (http_request.virtual_path == '/msgs/choosesubs.ssjs' || http_request.virtual_path == '/msgs/updatesubs.ssjs'))
 	do_sublinks_settings();
-if(user.number==0 || user.security.restrictions&UFLAG_G) {
+if(user.number==0 || user.security.restrictions&UREST_EDIT_DEFAULTS) {
     }
 else
     if(doQWK)

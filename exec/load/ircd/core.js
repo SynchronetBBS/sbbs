@@ -400,7 +400,7 @@ function Check_QWK_Password(qwkid,password) {
 	if (!u)
 		return false;
 	if (   (password.toUpperCase() == u.security.password.toUpperCase())
-		&& (u.security.restrictions&UFLAG_Q)
+		&& (u.security.restrictions&UREST_QWK_NODE)
 	) {
 		return true;
 	}

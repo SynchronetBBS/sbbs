@@ -223,7 +223,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, int subnum, uint ptr, int mode, uint
 		}
 
 		if (idx.attr & MSG_PRIVATE && !(mode & LP_PRIVATE)
-		    && !sub_op(subnum) && !(useron.rest & FLAG('Q'))) {
+		    && !sub_op(subnum) && !(useron.rest & UREST_QWK_NODE)) {
 			if (idx.to != namecrc && idx.from != namecrc
 			    && idx.to != aliascrc && idx.from != aliascrc
 			    && (useron.number != 1 || idx.to != sysop))
@@ -1136,7 +1136,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 					break;
 				}
 
-				if (useron.rest & FLAG('V')) {
+				if (useron.rest & UREST_VOTE) {
 					bputs(text[R_Voting]);
 					domsg = false;
 					break;

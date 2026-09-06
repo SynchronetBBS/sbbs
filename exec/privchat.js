@@ -30,7 +30,7 @@ for(i = 0; i < argc; i++) {
 }
 
 if(!local) {
-    if (user.security.restrictions & UFLAG_C) {
+    if (user.security.restrictions & UREST_CHAT) {
         console.print(bbs.text(R_Chat));
         exit();
     }

@@ -351,7 +351,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 			term->newline();
 			answers++;
 		}
-		if (!msg->user_voted && !(useron.misc & EXPERT) && !(msg->hdr.auxattr & POLL_CLOSED) && !(useron.rest & FLAG('V')))
+		if (!msg->user_voted && !(useron.misc & EXPERT) && !(msg->hdr.auxattr & POLL_CLOSED) && !(useron.rest & UREST_VOTE))
 			mnemonics(text[VoteInThisPollNow]);
 		return true;
 	}
@@ -455,7 +455,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del, bool 
 				off_t length = flength(fpath);
 				if (length < 1)
 					bprintf(text[FileDoesNotExist], tp);
-				else if (!(useron.exempt & FLAG('T')) && cur_cps && !useron_is_sysop()
+				else if (!(useron.exempt & UEXEMPT_TIME_ONLINE) && cur_cps && !useron_is_sysop()
 				         && (ulong)(length / cur_cps) > timeleft)
 					bputs(text[NotEnoughTimeToDl]);
 				else {

@@ -43,7 +43,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 	action = NODE_SMAL;
 	nodesync();
 
-	if (cfg.sys_misc & SM_ANON_EM && useron.exempt & FLAG('A')
+	if (cfg.sys_misc & SM_ANON_EM && useron.exempt & UEXEMPT_ANONYMOUS
 	    && !noyes(text[AnonymousQ])) {
 		msg.hdr.attr |= MSG_ANONYMOUS;
 		wm_mode |= WM_ANON;

@@ -3465,7 +3465,7 @@ function getUserKey(pMode)
 	// If the user has the inactivity exemption (UFLAG_H), then use -1
 	// for no timeout with console.inkey(). Otherwise, use the configured
 	// timeout.
-	var inputTimeoutMS = (user.security.exemptions&UFLAG_H) ? -1 : console.inactivity_hangup * 1000;
+	var inputTimeoutMS = (user.security.exemptions&UEXEMPT_INACTIVITY) ? -1 : console.inactivity_hangup * 1000;
 
 	// If K_UTF8 is defined, then add it to getKeymode.  K_UTF8 specifies not to
 	// translate UTF-8 to CP437.

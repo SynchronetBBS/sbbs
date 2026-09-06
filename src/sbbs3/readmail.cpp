@@ -105,7 +105,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 	if (invoked)
 		return result;
 
-	if (which == MAIL_SENT && useron.rest & FLAG('K')) {
+	if (which == MAIL_SENT && useron.rest & UREST_READ_SENT_MAIL) {
 		bputs(text[R_ReadSentMail]);
 		return lm_mode;
 	}

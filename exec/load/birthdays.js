@@ -22,7 +22,7 @@ function birthdays(month, day)
 	for(u.number = 1; u.number <= lastuser; u.number++) {
 		if(u.settings&(USER_DELETED|USER_INACTIVE))
 			continue;
-		if(u.security.restrictions&(UFLAG_Q|UFLAG_G))
+		if(u.security.restrictions&(UREST_QWK_NODE|UREST_EDIT_DEFAULTS))
 			continue;
 		if(u.birthmonth != month)
 			continue;

@@ -52,7 +52,7 @@ for(key in http_request.query) {
         new_query+=encodeURIComponent(http_request.query[key]);
     }
 }
-if(user.security.restrictions&UFLAG_G)
+if(user.security.restrictions&UREST_EDIT_DEFAULTS)
     ShowMsg=GET_ALL_MESSAGES;
 else {
     if(new_query.length>0)
@@ -272,7 +272,7 @@ if(DateDescending) {
 }
 
 if(sub=='mail') {
-    template.can_post=!(user.security.restrictions&UFLAG_E);
+    template.can_post=!(user.security.restrictions&UREST_EMAIL);
     template.post_button_image="new_e-mail.gif";
 } else {
     template.can_post=msg_area.sub[sub].can_post;

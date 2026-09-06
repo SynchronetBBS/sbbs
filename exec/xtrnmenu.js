@@ -404,7 +404,7 @@ function filearea(filelib, filedir) {
 					str = bbs.get_filespec();
 					if ((str == null) || (file_area.lib_list.length == 0))
 						break;
-					if (user.security.restrictions & UFLAG_D) {
+					if (user.security.restrictions & UREST_DOWNLOAD) {
 						console.putmsg(bbs.text(R_Download), P_SAVEATR);
 						break;
 					}
@@ -578,7 +578,7 @@ function external_menu_custom(menuid)
 			console.clear(LIGHTGRAY);
 		}
 		
-		if (user.security.restrictions&UFLAG_X) {
+		if (user.security.restrictions&UREST_XTRN) {
 			write(options.restricted_user_msg);
 			break;
 		}
@@ -999,7 +999,7 @@ function special_menu(menutype, title, itemcount) {
 			console.clear(LIGHTGRAY);
 		}
 		
-		if (user.security.restrictions&UFLAG_X) {
+		if (user.security.restrictions&UREST_XTRN) {
 			write(options.restricted_user_msg);
 			break;
 		}
@@ -1298,7 +1298,7 @@ function search_menu(title, itemcount) {
 			console.clear(LIGHTGRAY);
 		}
 		
-		if (user.security.restrictions&UFLAG_X) {
+		if (user.security.restrictions&UREST_XTRN) {
 			write(options.restricted_user_msg);
 			break;
 		}
@@ -1705,7 +1705,7 @@ function favorites_menu(title, itemcount) {
 			console.clear(LIGHTGRAY);
 		}
 		
-		if (user.security.restrictions&UFLAG_X) {
+		if (user.security.restrictions&UREST_XTRN) {
 			write(options.restricted_user_msg);
 			break;
 		}

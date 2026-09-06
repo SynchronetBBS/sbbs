@@ -143,7 +143,7 @@ void sbbs_t::nodesync(bool clearline)
 				putnodedat(cfg.node_num, &thisnode);
 			}
 		}
-		if (useron.exempt & FLAG('H'))
+		if (useron.exempt & UEXEMPT_INACTIVITY)
 			console |= CON_NO_INACT;
 		else
 			console &= ~CON_NO_INACT;

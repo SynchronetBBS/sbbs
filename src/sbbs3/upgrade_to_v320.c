@@ -340,7 +340,7 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	if (user->prot < ' ')
 		user->prot = ' ';
 	getrec(userdat, U_MISC, 8, str); user->misc = ahtoul(str);
-	if (user->rest & FLAG('Q'))
+	if (user->rest & UREST_QWK_NODE)
 		user->misc &= ~SPIN;
 
 	getrec(userdat, U_LEECH, 2, str);
@@ -372,7 +372,7 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 
 	getrec(userdat, U_QWK, 8, str);
 	if (str[0] < ' ') {               /* v1c, so set defaults */
-		if (user->rest & FLAG('Q'))
+		if (user->rest & UREST_QWK_NODE)
 			user->qwk = QWK_DEFAULT | QWK_RETCTLA;
 		else
 			user->qwk = QWK_DEFAULT;

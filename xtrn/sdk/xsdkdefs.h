@@ -66,7 +66,7 @@
 #define SAVE_LINES	 4		/* Maximum number of lines to save			*/
 #define LINE_BUFSIZE 512    /* Size of line output buffer               */
 
-#ifndef _SBBSDEFS_H
+#ifndef SBBSDEFS_H_
 #define HIGH 8				/* High intensity attribute bit */
 
 							/* user_misc bits */
@@ -105,7 +105,7 @@
 #define XSDK_MODE_NOCONSOLE	(1<<0)	/* No Local Console					*/
 
 							/* Bits in 'mode' for getkey and getstr     */
-#ifndef _SBBSDEFS_H
+#ifndef SBBSDEFS_H_
 #define K_UPPER		(1<<0)	/* Converts all letters to upper case 		*/
 #define K_UPRLWR    (1<<1)  /* Upper/Lower case automatically           */
 #define K_NUMBER    (1<<2)  /* Allow numbers only                       */
@@ -123,12 +123,12 @@
 #endif
 							/* Miscellaneous Modem Settings (mdm_misc)	*/
 #define MDM_FLOWCTRL (1<<0)	/* Use flow control with modem				*/
-#ifndef _SBBSDEFS_H
+#ifndef SBBSDEFS_H_
 #define MDM_STAYHIGH (1<<1) /* Stay at highest DTE rate                 */
 #endif
 
 #define LOOP_NOPEN   50    	/* Retries before file access denied        */
-#ifndef _SBBSDEFS_H
+#ifndef SBBSDEFS_H_
 #define LOOP_NODEDAB 100	/* Retries on NODE.DAB locking/unlocking	*/
 #endif
 
@@ -286,7 +286,7 @@ enum {								/* Node Action */
 #define LFREE free
 #define FREE free
 
-#ifndef _SBBSDEFS_H
+#ifndef SBBSDEFS_H_
 #define KEY_BUFSIZE 256
 #endif
 

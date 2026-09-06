@@ -186,7 +186,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		wm_mode |= WM_PRIVATE;
 
 	if (cfg.sub[subnum]->misc & SUB_AONLY
-	    || (cfg.sub[subnum]->misc & SUB_ANON && useron.exempt & FLAG('A')
+	    || (cfg.sub[subnum]->misc & SUB_ANON && useron.exempt & UEXEMPT_ANONYMOUS
 	        && !noyes(text[AnonymousQ]))) {
 		msgattr |= MSG_ANONYMOUS;
 		wm_mode |= WM_ANON;

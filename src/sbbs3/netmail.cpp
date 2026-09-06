@@ -78,7 +78,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	smbmsg_t    msg;
 	memset(&msg, 0, sizeof(msg));
 
-	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & FLAG('M'))) {
+	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)) {
 		bputs(text[TooManyEmailsToday]);
 		return false;
 	}
@@ -165,11 +165,11 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 
 	truncsp(to);                /* Truncate off space */
 
-	SAFECOPY(from, (cfg.netmail_misc & NMAIL_ALIAS) || (useron.rest & FLAG('O')) ? useron.alias : useron.name);
+	SAFECOPY(from, (cfg.netmail_misc & NMAIL_ALIAS) || (useron.rest & UREST_REAL_NAME) ? useron.alias : useron.name);
 
 	/* Look-up in nodelist? */
 
-	if (cfg.netmail_cost && !(useron.exempt & FLAG('S'))) {
+	if (cfg.netmail_cost && !(useron.exempt & UEXEMPT_NETMAIL_COST)) {
 		if (user_available_credits(&useron) < cfg.netmail_cost) {
 			bputs(text[NotEnoughCredits]);
 			return false;
@@ -256,28 +256,28 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	msg.hdr.netattr |= NETMSG_LOCAL;
 	lprintf(LOG_DEBUG, "NetMail subject: %s", subj);
 	p = subj;
-	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & UEXEMPT_NETMAIL_ATTRS)
 	    && !strnicmp(p, "CR:", 3)) {     /* Crash over-ride by sysop */
 		p += 3;               /* skip CR: */
 		SKIP_WHITESPACE(p);
 		msg.hdr.netattr |= NETMSG_CRASH;
 	}
 
-	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & UEXEMPT_NETMAIL_ATTRS)
 	    && !strnicmp(p, "FR:", 3)) {     /* File request */
 		p += 3;               /* skip FR: */
 		SKIP_WHITESPACE(p);
 		msg.hdr.auxattr |= MSG_FILEREQUEST;
 	}
 
-	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & UEXEMPT_NETMAIL_ATTRS)
 	    && !strnicmp(p, "RR:", 3)) {     /* Return receipt request */
 		p += 3;               /* skip RR: */
 		SKIP_WHITESPACE(p);
 		msg.hdr.auxattr |= MSG_RECEIPTREQ;
 	}
 
-	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & UEXEMPT_NETMAIL_ATTRS)
 	    && !strnicmp(p, "FA:", 3)) {     /* File Attachment */
 		p += 3;               /* skip FA: */
 		SKIP_WHITESPACE(p);
@@ -345,7 +345,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	useron.emails = (uint)adjustuserval(&cfg, &useron, USER_EMAILS, 1);
 	logon_emails++;
 	useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, 1);
-	if (!(useron.exempt & FLAG('S')))
+	if (!(useron.exempt & UEXEMPT_NETMAIL_COST))
 		subtract_cdt(&cfg, &useron, cfg.netmail_cost);
 
 	bprintf(text[FidoNetMailSent], to, smb_faddrtoa(&dest_addr, tmp));
@@ -502,7 +502,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 		msg.hdr.when_imported.time = time32(NULL);
 		msg.hdr.when_imported.zone = sys_timezone(&cfg);
 
-		if (fromhub || useron.rest & FLAG('Q')) {
+		if (fromhub || useron.rest & UREST_QWK_NODE) {
 			net = NET_QWK;
 			smb_hfield(&msg, SENDERNETTYPE, sizeof(net), &net);
 			if (!strncmp(qwkbuf + l, "@VIA:", 5)) {
@@ -610,7 +610,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 
 	if (inet) {              /* Internet E-mail */
 
-		if (cfg.inetmail_cost && !(useron.exempt & FLAG('S'))) {
+		if (cfg.inetmail_cost && !(useron.exempt & UEXEMPT_NETMAIL_COST)) {
 			if (user_available_credits(&useron) < cfg.inetmail_cost) {
 				bputs(text[NotEnoughCredits]);
 				free(qwkbuf);
@@ -632,7 +632,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 		smb_hfield(&msg, RECIPIENTNETADDR, strlen(to), to);
 
 		bprintf(text[NetMailing], name, to
-		        , (cfg.inetmail_misc & NMAIL_ALIAS) || (useron.rest & FLAG('O')) ? useron.alias : useron.name
+		        , (cfg.inetmail_misc & NMAIL_ALIAS) || (useron.rest & UREST_REAL_NAME) ? useron.alias : useron.name
 		        , cfg.sys_inetaddr);
 	}
 
@@ -739,7 +739,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 			if (inet) {
 				if (cfg.inetmail_sem[0])      /* update semaphore file */
 					ftouch(cmdstr(cfg.inetmail_sem, nulstr, nulstr, NULL));
-				if (!(useron.exempt & FLAG('S')))
+				if (!(useron.exempt & UEXEMPT_NETMAIL_COST))
 					subtract_cdt(&cfg, &useron, cfg.inetmail_cost);
 			}
 
@@ -771,7 +771,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 
 	memset(&hdr, 0, sizeof(hdr));   /* Initialize header to null */
 
-	if (fromhub || useron.rest & FLAG('Q')) {
+	if (fromhub || useron.rest & UREST_QWK_NODE) {
 		snprintf(str, sizeof str, "%.25s", block + 46);              /* From */
 		truncsp(str);
 		snprintf(tmp, sizeof tmp, "@%s", sender_id);
@@ -779,14 +779,14 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 		strcat(str, tmp);
 	}
 	else
-		SAFECOPY(str, (cfg.netmail_misc & NMAIL_ALIAS) || (useron.rest & FLAG('O')) ? useron.alias : useron.name);
+		SAFECOPY(str, (cfg.netmail_misc & NMAIL_ALIAS) || (useron.rest & UREST_REAL_NAME) ? useron.alias : useron.name);
 	SAFECOPY(hdr.from, str);
 
 	SAFECOPY(hdr.to, to);
 
 	/* Look-up in nodelist? */
 
-	if (cfg.netmail_cost && !(useron.exempt & FLAG('S'))) {
+	if (cfg.netmail_cost && !(useron.exempt & UEXEMPT_NETMAIL_COST)) {
 		if (user_available_credits(&useron) < cfg.netmail_cost) {
 			bputs(text[NotEnoughCredits]);
 			free(qwkbuf);
@@ -844,7 +844,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 	snprintf(str, sizeof str, "%.25s", block + 71);      /* Title */
 	truncsp(str);
 	p = str;
-	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & UEXEMPT_NETMAIL_ATTRS)
 	    && !strnicmp(p, "CR:", 3)) {     /* Crash over-ride by sysop */
 		p += 3;               /* skip CR: */
 		if (*p == ' ')
@@ -852,7 +852,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 		hdr.attr |= FIDO_CRASH;
 	}
 
-	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & UEXEMPT_NETMAIL_ATTRS)
 	    && !strnicmp(p, "FR:", 3)) {     /* File request */
 		p += 3;               /* skip FR: */
 		if (*p == ' ')
@@ -860,7 +860,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 		hdr.attr |= FIDO_FREQ;
 	}
 
-	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & UEXEMPT_NETMAIL_ATTRS)
 	    && !strnicmp(p, "RR:", 3)) {     /* Return receipt request */
 		p += 3;               /* skip RR: */
 		if (*p == ' ')
@@ -868,7 +868,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 		hdr.attr |= FIDO_RRREQ;
 	}
 
-	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & UEXEMPT_NETMAIL_ATTRS)
 	    && !strnicmp(p, "FA:", 3)) {     /* File attachment */
 		p += 3;               /* skip FA: */
 		if (*p == ' ')
@@ -934,7 +934,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 	free((char *)qwkbuf);
 	if (cfg.netmail_sem[0])      /* update semaphore file */
 		ftouch(cmdstr(cfg.netmail_sem, nulstr, nulstr, NULL));
-	if (!(useron.exempt & FLAG('S')))
+	if (!(useron.exempt & UEXEMPT_NETMAIL_COST))
 		subtract_cdt(&cfg, &useron, cfg.netmail_cost);
 
 	useron.emails = (uint)adjustuserval(&cfg, &useron, USER_EMAILS, 1);
@@ -994,7 +994,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	strListStripStrings(rcpt_list, "<>");
 	size_t rcpt_count = strListDedupe(&rcpt_list, /* case-sensitive */ false);
 
-	if (useron.etoday + rcpt_count > cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & FLAG('M'))) {
+	if (useron.etoday + rcpt_count > cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)) {
 		strListFree(&rcpt_list);
 		bputs(text[TooManyEmailsToday]);
 		return false;
@@ -1013,7 +1013,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 
 	/* Get this user's Internet mailing address */
 	usermailaddr(&cfg, your_addr
-	             , (cfg.inetmail_misc & NMAIL_ALIAS) || (useron.rest & FLAG('O')) ? useron.alias : useron.name);
+	             , (cfg.inetmail_misc & NMAIL_ALIAS) || (useron.rest & UREST_REAL_NAME) ? useron.alias : useron.name);
 
 	if (rcpt_count > 1) { /* remove "self" from reply-all list */
 		int found = strListFind(rcpt_list, your_addr, /* case_sensitive */ false);
@@ -1029,7 +1029,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 		return false;
 	}
 
-	if (cfg.inetmail_cost && !(useron.exempt & FLAG('S'))) {
+	if (cfg.inetmail_cost && !(useron.exempt & UEXEMPT_NETMAIL_COST)) {
 		if (user_available_credits(&useron) < cfg.inetmail_cost * rcpt_count) {
 			strListFree(&rcpt_list);
 			bputs(text[NotEnoughCredits]);
@@ -1156,7 +1156,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	if (rcpt_count > 1)
 		smb_hfield_str(&msg, RECIPIENTLIST, to_list);
 
-	smb_hfield_str(&msg, SENDER, (cfg.inetmail_misc & NMAIL_ALIAS) || (useron.rest & FLAG('O')) ? useron.alias : useron.name);
+	smb_hfield_str(&msg, SENDER, (cfg.inetmail_misc & NMAIL_ALIAS) || (useron.rest & UREST_REAL_NAME) ? useron.alias : useron.name);
 
 	SAFEPRINTF(str, "%u", useron.number);
 	smb_hfield_str(&msg, SENDEREXT, str);
@@ -1255,7 +1255,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	if (cfg.inetmail_sem[0])      /* update semaphore file */
 		ftouch(cmdstr(cfg.inetmail_sem, nulstr, nulstr, NULL));
 
-	if (!(useron.exempt & FLAG('S')))
+	if (!(useron.exempt & UEXEMPT_NETMAIL_COST))
 		subtract_cdt(&cfg, &useron, cfg.inetmail_cost * rcpt_count);
 
 	useron.emails = (uint)adjustuserval(&cfg, &useron, USER_EMAILS, rcpt_count);
@@ -1282,7 +1282,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	FILE *      instream;
 	smbmsg_t    msg;
 
-	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & FLAG('M'))) {
+	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)) {
 		bputs(text[TooManyEmailsToday]);
 		return false;
 	}

@@ -10,7 +10,7 @@
 load("sbbsdefs.js");
 
 // Do nothing if executed with an authenticated non-Guest user account
-if(user.number && !(user.security.restrictions&UFLAG_G))
+if(user.number && !(user.security.restrictions&UREST_EDIT_DEFAULTS))
 	exit();	
 
 var sender_host = sender_address.slice(sender_address.indexOf('@')+1);

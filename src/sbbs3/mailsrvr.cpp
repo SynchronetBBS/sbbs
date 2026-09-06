@@ -4868,7 +4868,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 					stats.msgs_refused++;
 					continue;
 				}
-				if (relay_user.number != 0 && !(relay_user.exempt & FLAG('M'))
+				if (relay_user.number != 0 && !(relay_user.exempt & UEXEMPT_EMAIL_LIMIT)
 				    && rcpt_count + (waiting = getmail(&scfg, relay_user.number, /* sent: */ true, /* SPAM: */ false)) > startup->max_recipients) {
 					lprintf(LOG_NOTICE, "%04d %-5s %s !MAXIMUM PENDING SENT EMAILS (%lu) REACHED for User #%u (%s)"
 					        , socket, client.protocol, client_id, waiting, relay_user.number, relay_user.alias);
@@ -4880,7 +4880,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 			if (relay_user.number && getuserdat(&scfg, &relay_user) == USER_SUCCESS
 				&& (relay_user.etoday + rcpt_count) >= scfg.level_emailperday[relay_user.level]
-			    && !(relay_user.exempt & FLAG('M'))) {
+			    && !(relay_user.exempt & UEXEMPT_EMAIL_LIMIT)) {
 				lprintf(LOG_NOTICE, "%04d %-5s %s !EMAILS PER DAY LIMIT (%u) REACHED FOR USER #%u (%s)"
 				        , socket, client.protocol, client_id, scfg.level_emailperday[relay_user.level], relay_user.number, relay_user.alias);
 				SAFEPRINTF2(tmp, "Maximum emails per day (%u) for %s"
@@ -5195,14 +5195,14 @@ static bool smtp_client_thread(smtp_t* smtp)
 				continue;
 			}
 			if (cmd == SMTP_CMD_MAIL) {
-				if ((user.rest & FLAG('I')) && relay_user.number == 0) {
+				if ((user.rest & UREST_RX_INTERNET_MAIL) && relay_user.number == 0) {
 					lprintf(LOG_NOTICE, "%04d %-5s %s !I-restricted user-recipient #%u (%s) cannot receive unauthenticated SMTP mail"
 					        , socket, client.protocol, client_id, user.number, user.alias);
 					sockprintf(socket, client.protocol, session, "550 Closed mailbox: %s", rcpt_to);
 					stats.msgs_refused++;
 					continue;
 				}
-				if (startup->max_msgs_waiting && !(user.exempt & FLAG('W'))
+				if (startup->max_msgs_waiting && !(user.exempt & UEXEMPT_MAIL_WAITING)
 				    && (waiting = getmail(&scfg, user.number, /* sent: */ false, /* spam: */ false)) > startup->max_msgs_waiting) {
 					lprintf(LOG_NOTICE, "%04d %-5s %s !User-recipient #%u (%s) mailbox (%lu msgs) exceeds the maximum (%u) msgs waiting"
 					        , socket, client.protocol, client_id, user.number, user.alias, waiting, startup->max_msgs_waiting);

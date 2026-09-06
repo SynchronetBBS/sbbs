@@ -25,9 +25,9 @@ for(i=1;i<=lastuser;i++) {
 	u.number=i;
 	if(u.settings&USER_DELETED)
 		continue;
-	if(!show_qnet && (u.security.restrictions & UFLAG_Q))
+	if(!show_qnet && (u.security.restrictions & UREST_QWK_NODE))
 		continue;
-	if(u.security.restrictions & UFLAG_G) /* Don't Show Guest Account in User List */
+	if(u.security.restrictions & UREST_EDIT_DEFAULTS) /* Don't Show Guest Account in User List */
 		continue;
 	usr.alias=u.alias.toString();
 	usr.alias='<a href="/members/viewprofile.ssjs?showuser=' + u.number + '">' + usr.alias + '</a>';

@@ -31,7 +31,7 @@ system.settings &= ~SYS_RA_EMU; // Use (R)e-read and (A)uto-reply keys
 shell.help_key = '?';
 
 // Time display: used if unlimited time exemption, remaining otherwise
-const time_code = user.security.exemptions & UFLAG_T ? "@TUSED@" : "@TLEFT@";
+const time_code = user.security.exemptions & UEXEMPT_TIME_ONLINE ? "@TUSED@" : "@TLEFT@";
 
 // Prompt builder -
 

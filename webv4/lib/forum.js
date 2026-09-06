@@ -313,7 +313,7 @@ function getUserPollData(sub, id) {
 }
 
 function getMailHeaders(sent, ascending) {
-    if (sent !== undefined && sent && user.security.restrictions&UFLAG_K) return []; // They'll just see nothing.  Provide actual feedback?  Does anyone use REST K?
+    if (sent !== undefined && sent && user.security.restrictions&UREST_READ_SENT_MAIL) return []; // They'll just see nothing.  Provide actual feedback?  Does anyone use REST K?
     var headers = [];
     var msgBase = new MsgBase('mail');
     if (!msgBase.open()) return headers;
@@ -340,7 +340,7 @@ function get_mail_headers(filter, ascending) {
         spam: { read: 0, unread: 0 },
         inbox: { read: 0, unread: 0 },
     };
-    if (filter == 'sent' && user.security.restrictions&UFLAG_K) return ret; // I don't remember what this is for.
+    if (filter == 'sent' && user.security.restrictions&UREST_READ_SENT_MAIL) return ret; // I don't remember what this is for.
     const msg_base = new MsgBase('mail');
     if (!msg_base.open()) return ret;
     for (var n = msg_base.first_msg; n <= msg_base.last_msg; n++) {
@@ -495,7 +495,7 @@ function postMessage(sub, header, body) {
 // Called by postNew/postReply, not directly
 function postMail(header, body) {
     // Lazy ARS checks; we could check the *type* of email being sent, I guess.
-    if (user.security.restrictions&UFLAG_E || user.security.restrictions&UFLAG_M) {
+    if (user.security.restrictions&UREST_EMAIL || user.security.restrictions&UREST_SEND_NETMAIL) {
         return false;
     }
     if (typeof header.to !== 'string' || typeof header.subject !== 'string' || typeof body !== 'string') {
@@ -581,7 +581,7 @@ function postReply(sub, body, pid) {
 
 function postPoll(sub, subject, votes, results, answers, comments) {
 
-    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) return false;
+    if (user.alias == settings.guest || user.security.restrictions&UREST_VOTE) return false;
     if (typeof msg_area.sub[sub] === 'undefined' || !msg_area.sub[sub].can_post) return false;
     if (typeof subject !== 'string' || subject.length < 1) return false;
     if (!Array.isArray(answers) || answers.length < 2) return false;
@@ -670,7 +670,7 @@ function deleteMail(numbers) {
 
 function voteMessage(sub, number, up) {
     if (typeof msg_area.sub[sub] === 'undefined' && sub !== 'mail') return false;
-    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) return false;
+    if (user.alias == settings.guest || user.security.restrictions&UREST_VOTE) return false;
     if (msg_area.sub[sub].settings&SUB_NOVOTING) return false;
     number = parseInt(number);
     if (isNaN(number)) return false;
@@ -701,7 +701,7 @@ function voteMessage(sub, number, up) {
 function submitPollAnswers(sub, number, answers) {
     if (typeof msg_area.sub[sub] === 'undefined') return false;
     if (msg_area.sub[sub].settings&SUB_NOVOTING) return false;
-    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) return false;
+    if (user.alias == settings.guest || user.security.restrictions&UREST_VOTE) return false;
     number = parseInt(number);
     if (isNaN(number)) return false;
     var msgBase = new MsgBase(sub);

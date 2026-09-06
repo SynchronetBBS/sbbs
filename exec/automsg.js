@@ -48,7 +48,7 @@ function automsg()
 				console.printfile(automsg,P_NOABORT|P_NOATCODES|P_WORDWRAP|P_NOERROR);
 				break;
 			case 'W':
-				if(user.security.restrictions&UFLAG_W) {
+				if(user.security.restrictions&UREST_AUTO_MESSAGE) {
 					console.print(bbs.text(bbs.text.R_AutoMsg));
 					break;
 				}
@@ -73,7 +73,7 @@ function automsg()
 					break;
 				if(console.yesno(bbs.text(bbs.text.OK))) {
 					var anon = false;
-					if(user.security.exemptions&UFLAG_A) {
+					if(user.security.exemptions&UEXEMPT_ANONYMOUS) {
 						if(!console.noyes(bbs.text(bbs.text.AnonymousQ)))
 							anon = true;
 					}

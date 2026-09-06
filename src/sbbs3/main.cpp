@@ -4489,7 +4489,7 @@ void sbbs_t::logoffstats()
 	if (user_is_sysop(&useron) && !(cfg.sys_misc & SM_SYSSTAT))
 		return;
 
-	if (useron.rest & FLAG('Q'))   /* Don't count QWKnet nodes */
+	if (useron.rest & UREST_QWK_NODE)   /* Don't count QWKnet nodes */
 		return;
 
 	now = time(NULL);
@@ -4951,7 +4951,7 @@ void sbbs_t::daily_maint(void)
 		/***********************************************************/
 		/* Auto deletion based on expiration date or days inactive */
 		/***********************************************************/
-		if (!(user.exempt & FLAG('P'))     /* Not a permanent account */
+		if (!(user.exempt & UEXEMPT_PERMANENT)
 		    && !(user.misc & (DELETED | INACTIVE))   /* alive */
 		    && (cfg.sys_autodel && (now - user.laston) / (int)(24L * 60L * 60L)
 		        > cfg.sys_autodel)) {       /* Inactive too long */

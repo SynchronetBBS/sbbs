@@ -248,7 +248,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 	str_list_t dest_user_list = NULL;
 
 	/* Security Checks */
-	if (useron.rest & FLAG('U')) {
+	if (useron.rest & UREST_UPLOAD) {
 		bputs(text[R_Upload]);
 		return false;
 	}
@@ -256,7 +256,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 		bputs(text[CantUploadHere]);
 		return false;
 	}
-	if (!(useron.exempt & FLAG('U')) && !dir_op(dirnum)) {
+	if (!(useron.exempt & UEXEMPT_UPLOAD) && !dir_op(dirnum)) {
 		if (!chk_ar(cfg.dir[dirnum]->ul_ar, &useron, &client) || !chk_ar(cfg.lib[cfg.dir[dirnum]->lib]->ul_ar, &useron, &client)) {
 			bputs(dirnum == cfg.user_dir ? text[CantUploadToUser] :
 			      dirnum == cfg.sysop_dir ? text[CantUploadToSysop] : text[CantUploadHere]);
@@ -439,7 +439,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 	}
 
 	if (cfg.dir[dirnum]->misc & DIR_ANON && !(cfg.dir[dirnum]->misc & DIR_AONLY)
-	    && (dir_op(dirnum) || useron.exempt & FLAG('A'))) {
+	    && (dir_op(dirnum) || useron.exempt & UEXEMPT_ANONYMOUS)) {
 		if (!noyes(text[AnonymousQ]))
 			f.hdr.attr |= MSG_ANONYMOUS;
 	}

@@ -220,7 +220,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				format(
 					strings.message.header.voting.buttons.up,
 					header.number,
-					user.alias == settings.guest || user.security.restrictions&UFLAG_V || msgBase.cfg.settings&SUB_NOVOTING ? 'disabled' : '',
+					user.alias == settings.guest || user.security.restrictions&UREST_VOTE || msgBase.cfg.settings&SUB_NOVOTING ? 'disabled' : '',
 					header.number,
 					header.upvotes
 				)
@@ -229,7 +229,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				format(
 					strings.message.header.voting.buttons.down,
 					header.number,
-					user.alias == settings.guest || user.security.restrictions&UFLAG_V || msgBase.cfg.settings&SUB_NOVOTING ? 'disabled' : '',
+					user.alias == settings.guest || user.security.restrictions&UREST_VOTE || msgBase.cfg.settings&SUB_NOVOTING ? 'disabled' : '',
 					header.number,
 					header.downvotes
 				)
@@ -269,7 +269,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 			if (header.auxattr&POLL_CLOSED ||
 				pollData.answers > 0 ||
 				user.alias == settings.guest ||
-				user.security.restrictions&UFLAG_V
+				user.security.restrictions&UREST_VOTE
 			) {
 				header.poll_answers.forEach(
 					function (e, i) {
@@ -304,7 +304,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 				writeln(format(strings.message.body.poll.last, strings.message.body.poll.closed));
 			} else if (pollData.answers > 0) {
 				writeln(format(strings.message.body.poll.last, strings.message.body.poll.voted));
-			} else if (user.alias == settings.guest || user.security.restrictions&UFLAG_V || msgBase.cfg.settings&SUB_NOVOTING) {
+			} else if (user.alias == settings.guest || user.security.restrictions&UREST_VOTE || msgBase.cfg.settings&SUB_NOVOTING) {
 				writeln(format(strings.message.body.poll.last, strings.message.body.poll.disallowed));
 			} else {
 				writeln(
@@ -420,7 +420,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		writeln(strings.script.open);
 		if (settings.keyboard_navigation) writeln(strings.script.thread_navigation);
 		if (settings.vote_functions) {
-			if (user.alias != settings.guest || user.security.restrictions&UFLAG_V) {
+			if (user.alias != settings.guest || user.security.restrictions&UREST_VOTE) {
 				writeln(
 					format(strings.script.vote_functions, http_request.query.sub[0])
 				);
@@ -568,7 +568,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		writeln(format(strings.thread_list.controls.post, http_request.query.sub[0]));
 		if (settings.vote_functions &&
 			!(msg_area.sub[http_request.query.sub[0]].settings&SUB_NOVOTING) &&
-			!(user.security.restrictions&UFLAG_V)
+			!(user.security.restrictions&UREST_VOTE)
 		) {
 			writeln(format(strings.thread_list.controls.post_poll, http_request.query.sub[0]));
 		}

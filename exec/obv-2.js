@@ -27,7 +27,7 @@ system.settings &= ~SYS_RA_EMU;
 
 shell.help_key = '?';
 // If user has unlimited time, display time-used rather than time-remaining
-const time_code = user.security.exemptions & UFLAG_T ? "@TUSED@" : "@TLEFT@";
+const time_code = user.security.exemptions & UEXEMPT_TIME_ONLINE ? "@TUSED@" : "@TLEFT@";
 
 shell.main_menu = {
 	file: "obv-2/main",

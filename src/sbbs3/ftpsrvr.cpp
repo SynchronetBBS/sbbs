@@ -2053,7 +2053,7 @@ static bool can_upload(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
 {
 	if (!chk_ar(&scfg, lib->ar, user, client))
 		return false;
-	if (user->rest & FLAG('U'))
+	if (user->rest & UREST_UPLOAD)
 		return false;
 	if (user_is_dirop(&scfg, dir->dirnum, user, client))
 		return true;
@@ -2068,7 +2068,7 @@ static bool can_upload(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
 		return false;
 	if (chk_ar(&scfg, dir->ul_ar, user, client))
 		return true;
-	if ((user->exempt & FLAG('U')))
+	if ((user->exempt & UEXEMPT_UPLOAD))
 		return true;
 	return false;
 }
@@ -2077,13 +2077,13 @@ static bool can_delete_files(lib_t *lib, dir_t *dir, user_t *user, client_t *cli
 {
 	if (!chk_ar(&scfg, lib->ar, user, client))
 		return false;
-	if (user->rest & FLAG('R'))
+	if (user->rest & UREST_REMOVE_FILES)
 		return false;
 	if (!chk_ar(&scfg, dir->ar, user, client))
 		return false;
 	if (user_is_dirop(&scfg, dir->dirnum, user, client))
 		return true;
-	if (user->exempt & FLAG('R'))
+	if (user->exempt & UEXEMPT_REMOVE_FILES)
 		return true;
 	return false;
 }
@@ -2113,11 +2113,11 @@ static bool can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, f
 {
 	if (!chk_ar(&scfg, lib->ar, user, client))
 		return false;
-	if (user->rest & FLAG('U'))
+	if (user->rest & UREST_UPLOAD)
 		return false;
 	if (dir->dirnum != scfg.sysop_dir && dir->dirnum != scfg.upload_dir && !chk_ar(&scfg, dir->ar, user, client))
 		return false;
-	if (!user_is_dirop(&scfg, dir->dirnum, user, client) && !(user->exempt & FLAG('U'))) {
+	if (!user_is_dirop(&scfg, dir->dirnum, user, client) && !(user->exempt & UEXEMPT_UPLOAD)) {
 		if (!chk_ar(&scfg, dir->ul_ar, user, client) || !chk_ar(&scfg, lib->ul_ar, user, client))
 			return false;
 	}
@@ -2128,13 +2128,13 @@ static bool can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, f
 
 static bool can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
 {
-	if (user->rest & FLAG('R'))
+	if (user->rest & UREST_REMOVE_FILES)
 		return false;
 	if (!chk_ar(&scfg, lib->ar, user, client))
 		return false;
 	if (!chk_ar(&scfg, dir->ar, user, client))
 		return false;
-	if (user_is_dirop(&scfg, dir->dirnum, user, client) || (user->exempt & FLAG('R')))
+	if (user_is_dirop(&scfg, dir->dirnum, user, client) || (user->exempt & UEXEMPT_REMOVE_FILES))
 		return true;
 	return stricmp(file->from, user->alias) == 0;
 }
@@ -2631,7 +2631,7 @@ static void ctrl_thread(void* arg)
 					break;
 				continue;
 			}
-			if (user.rest & FLAG('T')) {
+			if (user.rest & UREST_TRANSFER) {
 				lprintf(LOG_NOTICE, "%04d <%s> !T RESTRICTED user #%d"
 				        , sock, user.alias, user.number);
 				user.number = 0;
@@ -2640,14 +2640,14 @@ static void ctrl_thread(void* arg)
 				continue;
 			}
 			if (user.ltoday >= scfg.level_callsperday[user.level]
-			    && !(user.exempt & FLAG('L'))) {
+			    && !(user.exempt & UEXEMPT_LOGONS)) {
 				lprintf(LOG_NOTICE, "%04d <%s> !MAXIMUM LOGONS (%d) reached for level %u"
 				        , sock, user.alias, scfg.level_callsperday[user.level], user.level);
 				sockprintf(sock, sess, "530 Maximum logons per day reached.");
 				user.number = 0;
 				continue;
 			}
-			if (user.rest & FLAG('L') && user.ltoday >= 1) {
+			if (user.rest & UREST_ONE_LOGON_PER_DAY && user.ltoday >= 1) {
 				lprintf(LOG_NOTICE, "%04d <%s> !L RESTRICTED user already on today"
 				        , sock, user.alias);
 				sockprintf(sock, sess, "530 Maximum logons per day reached.");
@@ -2694,7 +2694,7 @@ static void ctrl_thread(void* arg)
 				continue;
 			}
 
-			if (user.rest & FLAG('Q')) { // QWKnet accont
+			if (user.rest & UREST_QWK_NODE) {
 				snprintf(mutex_file.name, sizeof mutex_file.name, "%suser/%04u.ftp", scfg.data_dir, user.number);
 				if (!fmutex_open(&mutex_file, startup->host_name, /* max_age: */ 60 * 60)) {
 					lprintf(LOG_NOTICE, "%04d <%s> QWKnet account already logged-in to FTP server: %s (since %s)"
@@ -2725,7 +2725,7 @@ static void ctrl_thread(void* arg)
 			if (sysop)
 				sockprintf(sock, sess, "230-Sysop access granted.");
 			sockprintf(sock, sess, "230-%s logged in.", user.alias);
-			if (!(user.exempt & FLAG('D')) && user_available_credits(&user) > 0)
+			if (!(user.exempt & UEXEMPT_DOWNLOAD_COST) && user_available_credits(&user) > 0)
 				sockprintf(sock, sess, "230-You have %" PRIu64 " download credits."
 				           , user_available_credits(&user));
 			sockprintf(sock, sess, "230 You are allowed %lu minutes of use for this session."
@@ -4358,7 +4358,7 @@ static void ctrl_thread(void* arg)
 			else if (!strnicmp(cmd, "DELE ", 5))
 				delecmd = true;
 
-			if (!getsize && !getdate && user.rest & FLAG('D')) {
+			if (!getsize && !getdate && user.rest & UREST_DOWNLOAD) {
 				sockprintf(sock, sess, "550 Insufficient access.");
 				filepos = 0;
 				continue;
@@ -4649,7 +4649,7 @@ static void ctrl_thread(void* arg)
 					filepos = 0;
 					continue;
 				}
-				if (delecmd && !user_is_dirop(&scfg, dir, &user, &client) && !(user.exempt & FLAG('R'))) {
+				if (delecmd && !user_is_dirop(&scfg, dir, &user, &client) && !(user.exempt & UEXEMPT_REMOVE_FILES)) {
 					file_t f {};
 					if (!loadfile(&scfg, dir, p, &f, file_detail_normal, NULL)) {
 						lprintf(LOG_WARNING, "%04d <%s> !ERROR loading file (%s) in /%s/%s for %.4s command"
@@ -4772,7 +4772,7 @@ static void ctrl_thread(void* arg)
 
 		if (!strnicmp(cmd, "DESC", 4)) {
 
-			if (user.rest & FLAG('U')) {
+			if (user.rest & UREST_UPLOAD) {
 				sockprintf(sock, sess, "553 Insufficient access.");
 				continue;
 			}
@@ -4791,7 +4791,7 @@ static void ctrl_thread(void* arg)
 
 		if (!strnicmp(cmd, "STOR ", 5) || !strnicmp(cmd, "APPE ", 5)) {
 
-			if (user.rest & FLAG('U')) {
+			if (user.rest & UREST_UPLOAD) {
 				sockprintf(sock, sess, "553 Insufficient access.");
 				continue;
 			}
@@ -4875,7 +4875,7 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock, sess, "452 Directory is locked. Try again later.");
 					continue;
 				}
-				if (!user_is_dirop(&scfg, dir, &user, &client) && !(user.exempt & FLAG('U'))) {
+				if (!user_is_dirop(&scfg, dir, &user, &client) && !(user.exempt & UEXEMPT_UPLOAD)) {
 					if (!chk_ar(&scfg, scfg.dir[dir]->ul_ar, &user, &client)
 					    || !chk_ar(&scfg, scfg.lib[scfg.dir[dir]->lib]->ul_ar, &user, &client)) {
 						lprintf(LOG_WARNING, "%04d <%s> cannot upload to /%s/%s (insufficient access)"
@@ -5116,7 +5116,7 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 		bool mkdir_cmd = (strnicmp(cmd, "MKD ", 4) == 0 || strnicmp(cmd, "XMKD", 4) == 0);
-		if (mkdir_cmd && !(user.rest & (FLAG('G') | FLAG('U')))) {
+		if (mkdir_cmd && !(user.rest & (UREST_EDIT_DEFAULTS | UREST_UPLOAD))) {
 			p = cmd + 4;
 			SKIP_WHITESPACE(p);
 			sockprintf(sock, sess, "257 \"%s\" directory created (not really)", p);

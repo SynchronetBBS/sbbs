@@ -27,9 +27,9 @@ var now = time();
 for (var u = new User(1); u.number <= lastuser; ++u.number) {
 	if (u.settings & (USER_DELETED | USER_INACTIVE))
 		continue;
-	if (u.security.exemptions & UFLAG_P)
+	if (u.security.exemptions & UEXEMPT_PERMANENT)
 		continue;
-	if (u.security.restrictions & (UFLAG_G | UFLAG_Q))
+	if (u.security.restrictions & (UREST_EDIT_DEFAULTS | UREST_QWK_NODE))
 		continue;
 	if (u.stats.laston_date > now - seconds(threshold))
 		continue;

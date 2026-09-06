@@ -103,7 +103,7 @@
 	var usr = new User(1);
 	for(var u = 1; u < system.lastuser; u++) {
 		usr.number = u;
-		if(usr.settings&USER_DELETED || usr.security.restrictions&UFLAG_Q)
+		if(usr.settings&USER_DELETED || usr.security.restrictions&UREST_QWK_NODE)
 			continue;
 		var usr2 = copyProperties(usr, {});
 		users.push(copyProperties(usr.stats, usr2));

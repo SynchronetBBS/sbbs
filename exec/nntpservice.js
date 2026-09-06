@@ -157,7 +157,7 @@ function get_newsgroup_list()
 {
 	// list of newsgroup names the logged-in user has access to
 	var newsgroup_list = [];
-	if(include_mail && !(user.security.restrictions & UFLAG_G)) {
+	if(include_mail && !(user.security.restrictions & UREST_EDIT_DEFAULTS)) {
 		newsgroup_list.push("mail");
 	}
 	for(var g in msg_area.grp_list) {
@@ -194,7 +194,7 @@ while(client.socket.is_connected && !quit) {
 		sleep(bogus_cmd_counter * 1000);	// Throttle
 	}
 
-	if(user.security.restrictions&UFLAG_G	/* Only guest/anonymous logins can be "bogus" */
+	if(user.security.restrictions&UREST_EDIT_DEFAULTS	/* Only guest/anonymous logins can be "bogus" */
 		&& bogus_cmd_counter >= max_bogus_cmds) {
 		log(format("!TOO MANY BOGUS COMMANDS (%u)", bogus_cmd_counter));
 		if(filter_bogus_clients) {
@@ -215,7 +215,7 @@ while(client.socket.is_connected && !quit) {
 			continue;
 		}
 		if(client.socket.is_connected) {
-			if(user.security.exemptions&UFLAG_H)
+			if(user.security.exemptions&UEXEMPT_INACTIVITY)
 				continue;
 			log(LOG_WARNING, "!TIMEOUT waiting for request");
 		} else
@@ -246,7 +246,7 @@ while(client.socket.is_connected && !quit) {
 				case "PASS":
 					logout();
 					if(login(username,cmd.slice(2).join(" "))) {
-						if(no_anonymous && user.security.restrictions&UFLAG_G) {
+						if(no_anonymous && user.security.restrictions&UREST_EDIT_DEFAULTS) {
 							writeln("502 Anonymous/Guest logins disallowed");
 							logout();
 						} else
@@ -299,7 +299,7 @@ while(client.socket.is_connected && !quit) {
 				|| cmd[1].toUpperCase()=="ACTIVE") {	// RFC 2980 2.1.2
 				pattern=cmd[2];
  				writeln("215 list of newsgroups follows");
-				if(include_mail && !(user.security.restrictions & UFLAG_G) && wildmatch("mail", pattern)) {
+				if(include_mail && !(user.security.restrictions & UREST_EDIT_DEFAULTS) && wildmatch("mail", pattern)) {
 					var mb=new MsgBase("mail");
 					if(mb.open()==true) {
 						writeln(format("mail %u %u n", mb.last_msg, mb.first_msg));
@@ -330,7 +330,7 @@ while(client.socket.is_connected && !quit) {
 			else if(cmd[1].toUpperCase()=="NEWSGROUPS") {	// RFC 2980 2.1.6
 				pattern=cmd[2];
 				writeln("215 list of newsgroups and descriptions follows");
-				if(include_mail && !(user.security.restrictions & UFLAG_G) && wildmatch("mail", pattern))
+				if(include_mail && !(user.security.restrictions & UREST_EDIT_DEFAULTS) && wildmatch("mail", pattern))
 					writeln("mail your email");
 				for(g in msg_area.grp_list) {
 					for(s in msg_area.grp_list[g].sub_list) {
@@ -373,7 +373,7 @@ while(client.socket.is_connected && !quit) {
 		case "XGTITLE":
 			pattern=cmd[2];
 			writeln("282 list of newsgroups follows");
-			if(include_mail && !(user.security.restrictions & UFLAG_G) && wildmatch("mail", pattern))
+			if(include_mail && !(user.security.restrictions & UREST_EDIT_DEFAULTS) && wildmatch("mail", pattern))
 				writeln("mail your email");
 			for(g in msg_area.grp_list) {
 				for(s in msg_area.grp_list[g].sub_list) {
@@ -469,7 +469,7 @@ while(client.socket.is_connected && !quit) {
 				}
 				found=true;
 			}
-			else if(include_mail && !(user.security.restrictions & UFLAG_G) && cmd[1].toLowerCase()=="mail") {
+			else if(include_mail && !(user.security.restrictions & UREST_EDIT_DEFAULTS) && cmd[1].toLowerCase()=="mail") {
 				if(msgbase && msgbase.is_open)
 					msgbase.close();
 				msgbase=new MsgBase("mail");
@@ -723,7 +723,7 @@ while(client.socket.is_connected && !quit) {
 			current_article=hdr.number;
 
 /* Eliminate dupe loops
-			if(user.security.restrictions&UFLAG_Q && hdr!=null)
+			if(user.security.restrictions&UREST_QWK_NODE && hdr!=null)
 */
 			if(hdr.attr&MSG_DELETE) {
 				writeln("430 deleted message");
@@ -758,7 +758,7 @@ while(client.socket.is_connected && !quit) {
 				}
 
 				// force taglines for QNET Users on local messages
-				if(add_tag && user.security.restrictions&UFLAG_Q && !hdr.from_net_type)
+				if(add_tag && user.security.restrictions&UREST_QWK_NODE && !hdr.from_net_type)
 					body += "\r\n" + tearline + tagline;
 
 				if(!ex_ascii || (msgbase.cfg && msgbase.cfg.settings&SUB_ASCII)) {
@@ -852,7 +852,7 @@ while(client.socket.is_connected && !quit) {
 				continue;
 			}
 		case "POST":
-			if(user.security.restrictions&UFLAG_P) {
+			if(user.security.restrictions&UREST_POST) {
 				writeln("440 posting not allowed");
 				break;
 			}
@@ -926,12 +926,12 @@ while(client.socket.is_connected && !quit) {
 			if(hdr.to==undefined && hdr.newsgroups!=undefined)
 				hdr.to=hdr.newsgroups;
 
-			if(!(user.security.restrictions&(UFLAG_G|UFLAG_Q))) {	// !Guest and !Network Node
+			if(!(user.security.restrictions&(UREST_EDIT_DEFAULTS|UREST_QWK_NODE))) {	// !Guest and !Network Node
 				hdr.from=user.alias;
 				hdr.from_ext=user.number;
 			}
 
-			if(!(user.security.restrictions&UFLAG_Q))	// Treat this as a local message
+			if(!(user.security.restrictions&UREST_QWK_NODE))	// Treat this as a local message
 				hdr.from_net_type=NET_NONE;
 
 			if(system.trashcan("subject",hdr.subject)) {
@@ -990,7 +990,7 @@ while(client.socket.is_connected && !quit) {
 							}
 
 						    if(msg_area.grp_list[g].sub_list[s].settings&SUB_NAME
-							    && !(user.security.restrictions&(UFLAG_G|UFLAG_Q)))
+							    && !(user.security.restrictions&(UREST_EDIT_DEFAULTS|UREST_QWK_NODE)))
 							    hdr.from=user.name;	// Use real names
 							if(msg_area.grp_list[g].sub_list[s].is_moderated)
 								hdr.attr|=MSG_MODERATED;

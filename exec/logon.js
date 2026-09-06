@@ -71,7 +71,7 @@ if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.termi
 var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
 prompts.operation = "logon";
 
-if(user.security.restrictions&UFLAG_G) {
+if(user.security.restrictions&UREST_EDIT_DEFAULTS) {
 	console.cond_newline();
 	if (system.version_hex >= 0x32100) { // Replaces the 3.20 Guest Logon user prompts
 		var guest_options = load("modopts.js", "logon:guest_prompts");
@@ -166,7 +166,7 @@ if(!(user.chat_settings&CHAT_SPLITP) && console.term_supports(USER_ANSI))
 	user.chat_settings|=CHAT_SPLITP;
 
 // Inactivity exemption
-if(user.security.exemptions&UFLAG_H)
+if(user.security.exemptions&UEXEMPT_INACTIVITY)
 	console.status|=CON_NO_INACT;
 
 /******************************
@@ -271,7 +271,7 @@ if(options.rlogin_xtrn_menu
 		}
 	}
 	bbs.hangup();
-} else if(!(user.security.restrictions&UFLAG_G)
+} else if(!(user.security.restrictions&UREST_EDIT_DEFAULTS)
 	&& console.term_supports(USER_ANSI) 
 	&& options.set_avatar == true
 	&& bbs.mods.avatar_lib.options.enabled !== false) {

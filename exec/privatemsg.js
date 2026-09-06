@@ -17,7 +17,7 @@ var saved_node_action = bbs.node_action;
 
 outer_loop:
 while(bbs.online && !(console.aborted)) {
-	if(user.security.restrictions & UFLAG_C) {
+	if(user.security.restrictions & UREST_CHAT) {
 		console.print(bbs.text(R_SendMessages));
 		break; 
 	}

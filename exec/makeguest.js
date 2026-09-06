@@ -24,17 +24,17 @@ guest.gender='?';
 guest.comment="This is the auto-generated Guest/Anonymous user account.";
 
 // Setup intelligent security parameters
-guest.security.restrictions|=UFLAG_G;	// can't edit defaults (main 'Guest' indicator)
-guest.security.restrictions|=UFLAG_K;	// can't read sent mail
-guest.security.restrictions|=UFLAG_P;	// can't post messages
-guest.security.restrictions|=UFLAG_M;	// can't send network mail
-guest.security.restrictions|=UFLAG_W;	// can't write to the auto-message
-guest.security.restrictions|=UFLAG_R;	// can't remove files
-guest.security.restrictions|=UFLAG_C;	// can't chat
-guest.security.restrictions|=UFLAG_V;	// can't vote
-guest.security.exemptions|=UFLAG_G;		// multiple simultaneous logins
-guest.security.exemptions|=UFLAG_L;		// unlimited logons per day
-guest.security.exemptions|=UFLAG_T;		// unlimited time online
-guest.security.exemptions|=UFLAG_P;		// permanent (never expires)
+guest.security.restrictions|=UREST_EDIT_DEFAULTS;	// can't edit defaults (main 'Guest' indicator)
+guest.security.restrictions|=UREST_READ_SENT_MAIL;	// can't read sent mail
+guest.security.restrictions|=UREST_POST;	// can't post messages
+guest.security.restrictions|=UREST_SEND_NETMAIL;	// can't send network mail
+guest.security.restrictions|=UREST_AUTO_MESSAGE;	// can't write to the auto-message
+guest.security.restrictions|=UREST_REMOVE_FILES;	// can't remove files
+guest.security.restrictions|=UREST_CHAT;	// can't chat
+guest.security.restrictions|=UREST_VOTE;	// can't vote
+guest.security.exemptions|=UEXEMPT_MULTINODE;		// multiple simultaneous logins
+guest.security.exemptions|=UEXEMPT_LOGONS;		// unlimited logons per day
+guest.security.exemptions|=UEXEMPT_TIME_ONLINE;		// unlimited time online
+guest.security.exemptions|=UEXEMPT_PERMANENT;		// permanent (never expires)
 
 printf("Guest account (user #%d) created successfully.\r\n",guest.number);

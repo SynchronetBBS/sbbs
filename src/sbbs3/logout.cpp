@@ -55,7 +55,7 @@ void sbbs_t::logout()
 		clearbatdl();
 	}
 
-	if (sys_status & SS_USERON && thisnode.status != NODE_QUIET && !(useron.rest & FLAG('Q')) && user_login_state == user_logged_on) {
+	if (sys_status & SS_USERON && thisnode.status != NODE_QUIET && !(useron.rest & UREST_QWK_NODE) && user_login_state == user_logged_on) {
 		for (i = 1; i <= cfg.sys_nodes; i++) {
 			if (i != cfg.node_num) {
 				getnodedat(i, &node);

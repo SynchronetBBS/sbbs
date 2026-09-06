@@ -2410,7 +2410,7 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 					result = !not;
 				break;
 			case AR_QNODE:
-				if (user == NULL || !(user->rest & FLAG('Q')))
+				if (user == NULL || !(user->rest & UREST_QWK_NODE))
 					result = not;
 				else
 					result = !not;
@@ -3197,7 +3197,7 @@ bool user_posted_msg(scfg_t* cfg, user_t* user, int count)
 	user->posts = (uint)adjustuserval(cfg, user, USER_POSTS, count);
 	user->ptoday = (uint)adjustuserval(cfg, user, USER_PTODAY, count);
 
-	if (user->rest & FLAG('Q'))
+	if (user->rest & UREST_QWK_NODE)
 		return true;
 
 	return inc_post_stats(cfg, count);
@@ -3940,14 +3940,14 @@ bool user_can_post(scfg_t* cfg, int subnum, user_t* user, client_t* client, uint
 	if (!chk_ar(cfg, cfg->sub[subnum]->post_ar, user, client))
 		return false;
 	if (cfg->sub[subnum]->misc & (SUB_QNET | SUB_FIDO | SUB_PNET | SUB_INET)
-	    && user->rest & FLAG('N'))        /* network restriction? */
+	    && user->rest & UREST_NETWORKED_SUBS)
 		return false;
 	if ((cfg->sub[subnum]->misc & SUB_NAME)
-	    && (user->rest & (FLAG('Q') | FLAG('O'))) == FLAG('O'))
+	    && (user->rest & (UREST_QWK_NODE | UREST_REAL_NAME)) == UREST_REAL_NAME)
 		return false;
 	if (reason != NULL)
 		*reason = R_Post;
-	if (user->rest & FLAG('P'))            /* post restriction? */
+	if (user->rest & UREST_POST)
 		return false;
 	if (reason != NULL)
 		*reason = TooManyPostsToday;
@@ -4031,11 +4031,11 @@ bool user_can_upload(scfg_t* cfg, int dirnum, user_t* user, client_t* client, ui
 		return false;
 	if (reason != NULL)
 		*reason = R_Upload;
-	if (user->rest & FLAG('U'))            /* upload restriction? */
+	if (user->rest & UREST_UPLOAD)
 		return false;
-	if (user->rest & FLAG('T'))            /* transfer restriction? */
+	if (user->rest & UREST_TRANSFER)
 		return false;
-	if (!(user->exempt & FLAG('U'))        /* upload exemption */
+	if (!(user->exempt & UEXEMPT_UPLOAD)
 	    && !user_is_dirop(cfg, dirnum, user, client)) {
 		if (reason != NULL)
 			*reason = CantUploadHere;
@@ -4064,11 +4064,11 @@ bool user_can_download(scfg_t* cfg, int dirnum, user_t* user, client_t* client, 
 		return false;
 	if (reason != NULL)
 		*reason = R_Download;
-	if (user->rest & FLAG('D'))            /* download restriction? */
+	if (user->rest & UREST_DOWNLOAD)
 		return false;
-	if (user->rest & FLAG('T'))            /* transfer restriction? */
+	if (user->rest & UREST_TRANSFER)
 		return false;
-	if (cfg->level_downloadsperday[user->level] && !(user->exempt & FLAG('D'))
+	if (cfg->level_downloadsperday[user->level] && !(user->exempt & UEXEMPT_DOWNLOAD_COST)
 		&& user->dtoday >= cfg->level_downloadsperday[user->level]) {
 		if (reason != NULL)
 			*reason = NoMoreDownloads;
@@ -4083,7 +4083,7 @@ bool user_can_download(scfg_t* cfg, int dirnum, user_t* user, client_t* client, 
 /****************************************************************************/
 uint user_downloads_per_day(scfg_t* cfg, user_t* user)
 {
-	if (cfg->level_downloadsperday[user->level] && !(user->exempt & FLAG('D')))
+	if (cfg->level_downloadsperday[user->level] && !(user->exempt & UEXEMPT_DOWNLOAD_COST))
 		return cfg->level_downloadsperday[user->level];
 	return UINT_MAX;
 }
@@ -4095,7 +4095,7 @@ bool user_can_send_netmail(user_t* user)
 {
 	if (user == NULL || user->number == 0)
 		return false;
-	return !(user->rest & FLAG('M'));
+	return !(user->rest & UREST_SEND_NETMAIL);
 }
 
 /****************************************************************************/
@@ -4109,7 +4109,7 @@ bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, int usernumber,
 		*reason = R_Email;
 	if (user == NULL || user->number == 0)
 		return false;
-	if (net_type == NET_NONE && usernumber > 1 && user->rest & FLAG('E'))          /* local mail restriction? */
+	if (net_type == NET_NONE && usernumber > 1 && user->rest & UREST_EMAIL)
 		return false;
 	if (reason != NULL)
 		*reason = NoNetMailAllowed;
@@ -4121,11 +4121,11 @@ bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, int usernumber,
 		return false;
 	if (reason != NULL)
 		*reason = R_Feedback;
-	if (net_type == NET_NONE && usernumber == 1 && user->rest & FLAG('S'))         /* feedback restriction? */
+	if (net_type == NET_NONE && usernumber == 1 && user->rest & UREST_EMAIL_SYSOP)
 		return false;
 	if (reason != NULL)
 		*reason = TooManyEmailsToday;
-	if (user->etoday >= cfg->level_emailperday[user->level] && !(user->exempt & FLAG('M')))
+	if (user->etoday >= cfg->level_emailperday[user->level] && !(user->exempt & UEXEMPT_EMAIL_LIMIT))
 		return false;
 
 	return true;
@@ -4159,7 +4159,7 @@ bool user_is_guest(user_t* user)
 {
 	if (user == NULL)
 		return false;
-	return user->rest & FLAG('G');
+	return user->rest & UREST_EDIT_DEFAULTS;
 }
 
 /****************************************************************************/
@@ -4221,7 +4221,7 @@ bool download_is_free(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
 	if (user == NULL)
 		return false;
 
-	if (user->exempt & FLAG('D'))
+	if (user->exempt & UEXEMPT_DOWNLOAD_COST)
 		return true;
 
 	if (cfg->lib[cfg->dir[dirnum]->lib]->ex_ar[0] != 0
@@ -4245,7 +4245,7 @@ time_t gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 
 	now = time(NULL);
 
-	if (user->exempt & FLAG('T')) {    /* Time online exemption */
+	if (user->exempt & UEXEMPT_TIME_ONLINE) {
 		timeleft = cfg->level_timepercall[user->level];
 		if (timeleft < 10)             /* never get below 10 minutes for exempt users */
 			timeleft = 10;

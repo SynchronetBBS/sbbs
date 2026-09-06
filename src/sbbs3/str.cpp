@@ -234,7 +234,7 @@ void sbbs_t::userlist(int mode)
 				continue;
 		}
 		else if (mode == UL_DIR) {
-			if (user.rest & FLAG('T'))
+			if (user.rest & UREST_TRANSFER)
 				continue;
 			if (!usrlibs)
 				continue;

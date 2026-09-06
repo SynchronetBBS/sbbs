@@ -73,7 +73,7 @@ else  {
 }
 
 if(sub=='mail') {
-    template.can_post=!(user.security.restrictions&UFLAG_E);
+    template.can_post=!(user.security.restrictions&UREST_EMAIL);
     template.reply_button="send_reply.gif";
 } else {
     template.can_post=msg_area.sub[sub].can_post;

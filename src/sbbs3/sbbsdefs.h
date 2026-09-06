@@ -19,8 +19,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef _SBBSDEFS_H
-#define _SBBSDEFS_H
+#ifndef SBBSDEFS_H_
+#define SBBSDEFS_H_
 
 #include <time.h>
 
@@ -870,6 +870,59 @@ enum {                           // Values of mode for userlist function
 #define TM_YEAR(yy)     ((yy) % 100)
 #define sbbs_beep(f, d)  BEEP(f, d)
 #define mswait(x)       SLEEP(x)
+
+// Bit values for user.rest (user restrictions) - see text/menu/restrict.asc
+// Note: the same letter means something entirely different in user.exempt
+// Mirrored by UREST_*/UEXEMPT_* in exec/load/userdefs.js - keep in sync
+#define UREST_ANSI              FLAG('A') // 'A' ANSI: strip ANSI/Ctrl-A codes from user input
+#define UREST_BEEP              FLAG('B') // 'B' Beep: strip BEL characters from user input
+#define UREST_CHAT              FLAG('C') // 'C' Chat: may not page the sysop or use multi-node chat
+#define UREST_DOWNLOAD          FLAG('D') // 'D' Download: may not download files
+#define UREST_EMAIL             FLAG('E') // 'E' E-mail: may not send local e-mail (except to the sysop)
+#define UREST_FORWARD_MAIL      FLAG('F') // 'F' Forward mail: may not forward e-mail to a netmail address
+#define UREST_EDIT_DEFAULTS     FLAG('G') // 'G' Edit Defaults: may not change their settings (the Guest indicator, see user_is_guest())
+#define UREST_RX_INTERNET_MAIL  FLAG('I') // 'I' RX Internet Mail: may not receive Internet e-mail
+#define UREST_QUOTE             FLAG('J') // 'J' Quoting: may not quote messages when replying
+#define UREST_READ_SENT_MAIL    FLAG('K') // 'K' Read Mail Sent: may not re-read their own sent mail
+#define UREST_ONE_LOGON_PER_DAY FLAG('L') // 'L' Logon one/day: limited to a single logon per day
+#define UREST_SEND_NETMAIL      FLAG('M') // 'M' Send NetMail: may not send network mail
+#define UREST_NETWORKED_SUBS    FLAG('N') // 'N' Networked Subs: may not post on networked sub-boards
+#define UREST_REAL_NAME         FLAG('O') // 'O' Post w/RealName: alias is used in place of their real name on mail and posts
+#define UREST_POST              FLAG('P') // 'P' Post on any sub: may not post messages
+#define UREST_QWK_NODE          FLAG('Q') // 'Q' QWK Network Node: the account is a QWK network node, not a person
+#define UREST_REMOVE_FILES      FLAG('R') // 'R' Remove Files: may not remove files
+#define UREST_EMAIL_SYSOP       FLAG('S') // 'S' Email Sysop: may not send feedback to user #1
+#define UREST_TRANSFER          FLAG('T') // 'T' Transfers: may not access the file transfer areas
+#define UREST_UPLOAD            FLAG('U') // 'U' Upload: may not upload files
+#define UREST_VOTE              FLAG('V') // 'V' Voting: may not vote on messages or polls
+#define UREST_AUTO_MESSAGE      FLAG('W') // 'W' Auto-message: may not write to the auto-message
+#define UREST_XTRN              FLAG('X') // 'X' External Programs: may not run external programs
+
+// Bit values for user.exempt (user exemptions) - see text/menu/exempt.asc
+// Note: the same letter means something entirely different in user.rest
+// Mirrored by UREST_*/UEXEMPT_* in exec/load/userdefs.js - keep in sync
+#define UEXEMPT_ANONYMOUS       FLAG('A') // 'A' Anonymous: may post messages and send e-mail anonymously
+#define UEXEMPT_CHAT_PAGE       FLAG('C') // 'C' Chat Page: may page the sysop when unavailable
+#define UEXEMPT_DOWNLOAD_COST   FLAG('D') // 'D' Download Cost: downloads are free and not counted against the daily limit
+#define UEXEMPT_EXPIRE          FLAG('E') // 'E' Expire by Time: the account is not expired by the time-online policy
+#define UEXEMPT_NETMAIL_ATTRS   FLAG('F') // 'F' CR/FR/RR NetMail: may set the Crash/File-Request/Receipt-Request netmail attributes
+#define UEXEMPT_MULTINODE       FLAG('G') // 'G' Multiple Nodes: may be logged on to more than one node at a time
+#define UEXEMPT_INACTIVITY      FLAG('H') // 'H' Inactivity: not disconnected for inactivity
+#define UEXEMPT_INTERRUPT_NODE  FLAG('I') // 'I' Interrupt Nodes: may interrupt other nodes
+#define UEXEMPT_CHAT_COST       FLAG('J') // 'J' Chat Cost: chat channels are free
+#define UEXEMPT_LOGONS          FLAG('L') // 'L' Logons: unlimited logons per day
+#define UEXEMPT_EMAIL_LIMIT     FLAG('M') // 'M' Mail Sending: not subject to the per-day e-mail limit
+#define UEXEMPT_NODE_LOCK       FLAG('N') // 'N' Node Locking: may log on to a locked node
+#define UEXEMPT_QWK_PACKET_SIZE FLAG('O') // 'O' QWK Packet Size: not subject to the maximum QWK message count
+#define UEXEMPT_PERMANENT       FLAG('P') // 'P' Permanent: the account is never auto-deleted for inactivity
+#define UEXEMPT_QUIET_NODE      FLAG('Q') // 'Q' Quiet/Anon Node: may log on in quiet mode (invisible to other nodes)
+#define UEXEMPT_REMOVE_FILES    FLAG('R') // 'R' Remove Files: may remove or edit files uploaded by others
+#define UEXEMPT_NETMAIL_COST    FLAG('S') // 'S' NetMail Cost: network mail is free
+#define UEXEMPT_TIME_ONLINE     FLAG('T') // 'T' Time Online: not subject to the daily time limit
+#define UEXEMPT_UPLOAD          FLAG('U') // 'U' Upload Files: may upload to any directory (bypasses the upload ARS and limits)
+#define UEXEMPT_AUTOLOGON       FLAG('V') // 'V' AutoLogon Via IP: may be automatically logged on by IP address
+#define UEXEMPT_MAIL_WAITING    FLAG('W') // 'W' Mail Waiting: not subject to the maximum messages-waiting limit
+#define UEXEMPT_XTRN_COST       FLAG('X') // 'X' Xtrn Program Cost: external programs are free
 
 /**************************************/
 /* Text Attribute (color) Definitions */

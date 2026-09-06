@@ -3715,11 +3715,11 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 	if (usernumber < 1)
 		return JS_TRUE;
 
-	if (usernumber == 1 && sbbs->useron.rest & FLAG('S')) { /* ! val fback */
+	if (usernumber == 1 && sbbs->useron.rest & UREST_EMAIL_SYSOP) { /* ! val fback */
 		sbbs->bprintf(sbbs->text[R_Feedback], sbbs->cfg.sys_op);
 		return JS_TRUE;
 	}
-	if (usernumber > 1 && sbbs->useron.rest & FLAG('E')) {
+	if (usernumber > 1 && sbbs->useron.rest & UREST_EMAIL) {
 		sbbs->bputs(sbbs->text[R_Email]);
 		return JS_TRUE;
 	}

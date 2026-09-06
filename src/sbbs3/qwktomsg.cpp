@@ -251,7 +251,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 		msg->hdr.attr |= MSG_ANONYMOUS;
 	if (subnum == INVALID_SUB && cfg.sys_misc & SM_DELREADM)
 		msg->hdr.attr |= MSG_KILLREAD;
-	if ((fromhub || useron.rest & FLAG('Q')) &&
+	if ((fromhub || useron.rest & UREST_QWK_NODE) &&
 	    (hdrblk[0] == '*' || hdrblk[0] == '-' || hdrblk[0] == '`'))
 		msg->hdr.attr |= MSG_READ;
 
@@ -265,11 +265,11 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 	msg->hdr.when_imported.time = time32(NULL);
 	msg->hdr.when_imported.zone = sys_timezone(&cfg);
 
-	if (!(useron.rest & FLAG('Q')) && !fromhub && msg->hdr.when_written.zone == 0)
+	if (!(useron.rest & UREST_QWK_NODE) && !fromhub && msg->hdr.when_written.zone == 0)
 		msg->hdr.when_written = smb_when(msg->hdr.when_imported.time, msg->hdr.when_imported.zone);
 
 	hdrblk[116] = 0;  // don't include number of blocks in "re: msg number"
-	if (!(useron.rest & FLAG('Q')) && !fromhub)
+	if (!(useron.rest & UREST_QWK_NODE) && !fromhub)
 		msg->hdr.thread_back = atol((char *)hdrblk + 108);
 
 	if (subnum == INVALID_SUB) {       /* E-mail */
@@ -372,11 +372,11 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 			continue;
 		}
 		/* beep restrict */
-		if (!fromhub && qwkbuf[k] == BEL && useron.rest & FLAG('B'))
+		if (!fromhub && qwkbuf[k] == BEL && useron.rest & UREST_BEEP)
 			continue;
 		/* ANSI restriction */
 		if (!fromhub && (qwkbuf[k] == CTRL_A || qwkbuf[k] == ESC)
-		    && useron.rest & FLAG('A'))
+		    && useron.rest & UREST_ANSI)
 			continue;
 		if (qwkbuf[k] != CTRL_A && lastch != CTRL_A)
 			col++;
@@ -403,7 +403,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 	while (taillen && tail[taillen - 1] <= ' ') taillen--; /* remove trailing garbage */
 
 	/* Parse QWK Kludges (QWKE standard and SyncQNET legacy) here: */
-	if (useron.rest & FLAG('Q') || fromhub) {      /* QWK Net */
+	if (useron.rest & UREST_QWK_NODE || fromhub) {
 		if ((msg->from_net.type == NET_QWK && (p = (char*)msg->from_net.addr) != NULL)
 		    || (p = iniGetValue(kludges, ROOT_SECTION, "@VIA", NULL, NULL)) != NULL) {
 			if (!fromhub && p != msg->from_net.addr)

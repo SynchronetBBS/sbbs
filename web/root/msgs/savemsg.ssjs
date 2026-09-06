@@ -30,7 +30,7 @@ else {
     if(at > 0)
 		hdrs.to_net_type=netaddr_type(to);
 	if(hdrs.to_net_type!=NET_NONE) {
-		if(user.security.restrictions&UFLAG_M)
+		if(user.security.restrictions&UREST_SEND_NETMAIL)
 			error("You do not have permission to send netmail");
         if(hdrs.to_net_type!=NET_INTERNET && at > 0) {
             hdrs.to_net_addr = to.slice(at + 1);

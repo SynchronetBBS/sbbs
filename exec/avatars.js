@@ -339,7 +339,7 @@ function export_users(msgbase, realnames, all)
 			continue;
 		if(options.export_all !== true &&
 			(!u.stats.total_posts			// No need to export avatars for users that have never posted
-				|| (u.security.restrictions&(UFLAG_P|UFLAG_N|UFLAG_Q))) // or will never post
+				|| (u.security.restrictions&(UREST_POST|UREST_NETWORKED_SUBS|UREST_QWK_NODE))) // or will never post
 			) {
 			if(verbosity)
 				printf("User #%u hasn't or can't post, skipping\r\n", n);

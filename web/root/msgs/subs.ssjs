@@ -17,7 +17,7 @@ for(key in http_request.query) {
 }
 if(new_query.length>0)
 	new_query+='&amp;';
-if(user.security.restrictions&UFLAG_G)
+if(user.security.restrictions&UREST_EDIT_DEFAULTS)
 	ShowAll=true;
 else {
 	new_query+='show_all_subs=';

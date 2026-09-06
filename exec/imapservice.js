@@ -2033,7 +2033,7 @@ var authenticated_command_handlers = {
 		handler:function(args) {
 			var tag=args[0];
 
-			if (user.security.restrictions & UFLAG_G)
+			if (user.security.restrictions & UREST_EDIT_DEFAULTS)
 				untagged('NAMESPACE NIL NIL (("" ' + encode_string(sepchar) + '))');
 			else
 				untagged('NAMESPACE (("" ' + encode_string(sepchar) + ')) NIL NIL');

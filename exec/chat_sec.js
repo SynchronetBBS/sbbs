@@ -32,7 +32,7 @@ for(var i in irc_servers)
 for(var i in irc_channels)
 	irc_channels[i] = irc_channels[i].trim();
 
-if(user.security.restrictions & UFLAG_C) {
+if(user.security.restrictions & UREST_CHAT) {
     write(bbs.text(bbs.text.R_Chat));
 	exit(0);
 }
@@ -101,7 +101,7 @@ while(bbs.online && !console.aborted) {
 					break;
 				server = irc_servers[i];
 			}
-			if(user.security.level >= options.irc_seclevel || user.security.exemptions&UFLAG_C) {
+			if(user.security.level >= options.irc_seclevel || user.security.exemptions&UEXEMPT_CHAT_PAGE) {
 				write("\r\n\x01n\x01y\x01hIRC Server: ");
 				server = console.getstr(server, 40, K_EDIT|K_LINE|K_AUTODEL);
 				if(console.aborted || server.length < 4)

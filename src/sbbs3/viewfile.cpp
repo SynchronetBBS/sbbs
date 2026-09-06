@@ -35,7 +35,7 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 	format_filename(f->name, fname, sizeof(fname) - 1, /* pad: */ FALSE);
 
 	curdirnum = f->dir;   /* for ARS */
-	bool can_edit = dir_op(f->dir) || useron.exempt & FLAG('R') || stricmp(f->from, useron.alias) == 0;
+	bool can_edit = dir_op(f->dir) || useron.exempt & UEXEMPT_REMOVE_FILES || stricmp(f->from, useron.alias) == 0;
 	while (online) {
 		clearabort();
 		SAFEPRINTF(str, text[FileInfoPrompt], fname);

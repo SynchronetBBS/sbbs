@@ -674,14 +674,14 @@ baja["USER_EVENT"] = function(var1) {
 }
 // AUTO_MESSAGE
 baja["AUTO_MESSAGE"] = function() { 
-	var line = "if(!(user.security.restrictions&UFLAG_W)) {\r\n";
+	var line = "if(!(user.security.restrictions&UREST_AUTO_MESSAGE)) {\r\n";
 	line += "bbs.auto_msg();\r\n";
 	line += "}";
 	return line;
 }
 // USER_DEFAULTS
 baja["USER_DEFAULTS"] = function() { 
-	var line = "if(!(user.security.restrictions&UFLAG_G)) {\r\n";
+	var line = "if(!(user.security.restrictions&UREST_EDIT_DEFAULTS)) {\r\n";
 	line += "bbs.user_config();\r\n";
 	line += "}";
 	return line;

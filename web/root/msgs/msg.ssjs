@@ -90,7 +90,7 @@ else {
 }
 
 if(sub=='mail')
-    template.can_post=!(user.security.restrictions&UFLAG_E);
+    template.can_post=!(user.security.restrictions&UREST_EMAIL);
 else
     template.can_post=msg_area.sub[sub].can_post;
 

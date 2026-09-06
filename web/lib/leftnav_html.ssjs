@@ -4,7 +4,7 @@
 
  if(user.number || system.matchuser("Guest")) {
     template.ftp_url="ftp://";
-    if(user.number && !(user.security.restrictions&UFLAG_G))
+    if(user.number && !(user.security.restrictions&UREST_EDIT_DEFAULTS))
             template.ftp_url=template.ftp_url + user.alias + ":" + user.security.password + "&#064;";
 
     var host = http_request.host;
@@ -23,7 +23,7 @@
 
 template.leftnav=new Array;
 
-	if(user.number==0 || user.security.restrictions&UFLAG_G)
+	if(user.number==0 || user.security.restrictions&UREST_EDIT_DEFAULTS)
 	    template.leftnav.push({html: '<a href="/login.ssjs">Login</a><a href="/newuser.ssjs">New User</a>' });
 	else
 	    template.leftnav.push({html: '<a href="/members/externals.ssjs">External Programs</a><a href="/members/userlist.ssjs">User Listing</a><a href="/members/lastcallers.ssjs">Last Callers</a><a href="/members/info.ssjs">Information</a><a href="/members/themes.ssjs">Change Theme</a><a href="/members/newpw.ssjs">Change Password</a><a href="/msgs/msgs.ssjs?msg_sub=mail">E-mail</a>' });  
@@ -35,7 +35,7 @@ template.leftnav=new Array;
 	        template.leftnav.push({html: '<a href="/msgs/subs.ssjs?msg_grp=' + msg_area.grp_list[s].name + '">' + msg_area.grp_list[s].description + '</a>' });
 	  template.leftnav.push({ html: '</div>' });
 	}
-	if(user.number==0 || user.security.restrictions&UFLAG_G) {
+	if(user.number==0 || user.security.restrictions&UREST_EDIT_DEFAULTS) {
 	    }
 	else
 	    template.leftnav.push({html: '<a href="/msgs/choosegroup.ssjs">Set Message Scan</a>' });
@@ -45,7 +45,7 @@ template.leftnav=new Array;
 	            template.leftnav.push({html: '<a href="/msgs/choosesubs.ssjs?msg_grp=' + msg_area.grp_list[s].name + '">' + msg_area.grp_list[s].description + '</a>' });
 	    template.leftnav.push({ html: '</div>' });
 	}
-if(user.number==0 || user.security.restrictions&UFLAG_G) {
+if(user.number==0 || user.security.restrictions&UREST_EDIT_DEFAULTS) {
 	    }
 	else
 	    if(doQWK)

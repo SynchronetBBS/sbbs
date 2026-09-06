@@ -534,7 +534,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 			return 2;
 		}
 		if (ch == 'B' || ch == 'D') {    /* Flag for batch download */
-			if (useron.rest & FLAG('D')) {
+			if (useron.rest & UREST_DOWNLOAD) {
 				bputs(text[R_Download]);
 				return 2;
 			}
@@ -634,8 +634,8 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 		}
 
 		if ((ch == 'R' || ch == 'M')     /* Delete or Move */
-		    && !(useron.rest & FLAG('R'))
-		    && (dir_op(smb->dirnum) || useron.exempt & FLAG('R'))) {
+		    && !(useron.rest & UREST_REMOVE_FILES)
+		    && (dir_op(smb->dirnum) || useron.exempt & UEXEMPT_REMOVE_FILES)) {
 			if (total == 1) {
 				strcpy(str, "A");
 				d = 1;
@@ -818,7 +818,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 		}
 		SAFECOPY(dirpath, cfg.dir[f->dir]->path);
 		if ((mode == FI_REMOVE) && (!dir_op(dirnum) && stricmp(f->from
-		                                                       , useron.alias) && !(useron.exempt & FLAG('R'))))
+		                                                       , useron.alias) && !(useron.exempt & UEXEMPT_REMOVE_FILES)))
 			continue;
 		found++;
 		if (mode == FI_INFO) {
@@ -849,7 +849,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 				mnemonics(text[SysopRemoveFilePrompt]);
 				SAFECAT(str, "FMC");
 			}
-			else if (useron.exempt & FLAG('R')) {
+			else if (useron.exempt & UEXEMPT_REMOVE_FILES) {
 				mnemonics(text[RExemptRemoveFilePrompt]);
 				SAFECAT(str, "M");
 			}
@@ -912,7 +912,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 						}
 						lprintf(LOG_NOTICE, "deleted %s", path);
 					}
-					if (dir_op(dirnum) || useron.exempt & FLAG('R')) {
+					if (dir_op(dirnum) || useron.exempt & UEXEMPT_REMOVE_FILES) {
 						i = cfg.lib[cfg.dir[f->dir]->lib]->offline_dir;
 						if (i != dirnum && i != INVALID_DIR
 						    && !findfile(&cfg, i, f->name, NULL)) {
@@ -1007,7 +1007,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 			}
 
 			if (!(cfg.dir[f->dir]->misc & DIR_TFREE) && gettimetodl(&cfg, f, cur_cps) > timeleft && !dir_op(dirnum)
-			    && !(useron.exempt & FLAG('T'))) {
+			    && !(useron.exempt & UEXEMPT_TIME_ONLINE)) {
 				sync();
 				bputs(text[NotEnoughTimeToDl]);
 				mnemonics(text[QuitOrNext]);

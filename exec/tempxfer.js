@@ -7,7 +7,7 @@ require("file_size.js", 'file_size_str');
 
 var options = {};
 
-if(user.security.restrictions & UFLAG_D) {
+if(user.security.restrictions & UREST_DOWNLOAD) {
 	console.putmsg(bbs.text(bbs.text.R_Download));
 	exit();
 }

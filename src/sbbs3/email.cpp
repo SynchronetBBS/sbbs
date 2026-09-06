@@ -53,7 +53,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	if (remsg != NULL && title[0] == 0)
 		SAFECOPY_UTF8(title, remsg->subj);
 
-	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & FLAG('M'))) {
+	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)) {
 		bputs(text[TooManyEmailsToday]);
 		return false;
 	}
@@ -63,12 +63,12 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		return false;
 	}
 	bool to_sysop = user_is_sysop(&user);
-	if (to_sysop && useron.rest & FLAG('S')
+	if (to_sysop && useron.rest & UREST_EMAIL_SYSOP
 	    && (cfg.valuser != usernumber || useron.fbacks || useron.emails)) { /* ! val fback */
 		bprintf(text[R_Feedback], cfg.sys_op);
 		return false;
 	}
-	if (!to_sysop && useron.rest & FLAG('E')
+	if (!to_sysop && useron.rest & UREST_EMAIL
 	    && (cfg.valuser != usernumber || useron.fbacks || useron.emails)) {
 		bputs(text[R_Email]);
 		return false;
@@ -96,7 +96,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 			return false;
 	}
 
-	if (cfg.sys_misc & SM_ANON_EM && useron.exempt & FLAG('A')
+	if (cfg.sys_misc & SM_ANON_EM && useron.exempt & UEXEMPT_ANONYMOUS
 	    && !noyes(text[AnonymousQ])) {
 		msgattr |= MSG_ANONYMOUS;
 		mode |= WM_ANON;

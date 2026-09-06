@@ -1526,7 +1526,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		return false;
 	}
 
-	if (cfg.xtrn[xtrnnum]->cost && !(useron.exempt & FLAG('X'))) {    /* costs */
+	if (cfg.xtrn[xtrnnum]->cost && !(useron.exempt & UEXEMPT_XTRN_COST)) {
 		if (cfg.xtrn[xtrnnum]->cost > user_available_credits(&useron)) {
 			bputs(text[NotEnoughCredits]);
 			pause();

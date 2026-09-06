@@ -125,7 +125,7 @@ bool sbbs_t::newuser()
 	}
 	if (dupe_name) {
 		lprintf(LOG_NOTICE, "New user real name '%s' is a duplicate, setting O Restriction", useron.name);
-		useron.rest |= FLAG('O'); // Can't post or send netmail using real name (it's a duplicate)
+		useron.rest |= UREST_REAL_NAME; // Can't post or send netmail using real name (it's a duplicate)
 	}
 	truncsp(useron.handle);
 	if (useron.handle[0] == '\0') {

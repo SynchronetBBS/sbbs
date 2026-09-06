@@ -82,10 +82,10 @@ if(bbs.online && qnet) {
 	if(!bbs.online)
 		exit();
 	user.alias=alias;
-	user.security.restrictions|=UFLAG_Q;
-	user.security.exemptions|=UFLAG_L;
-	user.security.exemptions|=UFLAG_T;
-	user.security.exemptions|=UFLAG_D;
+	user.security.restrictions|=UREST_QWK_NODE;
+	user.security.exemptions|=UEXEMPT_LOGONS;
+	user.security.exemptions|=UEXEMPT_TIME_ONLINE;
+	user.security.exemptions|=UEXEMPT_DOWNLOAD_COST;
 }
 
 if(bbs.online && options.ask_sysop

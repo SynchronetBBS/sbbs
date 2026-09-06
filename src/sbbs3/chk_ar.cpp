@@ -252,7 +252,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 					result = !_not;
 				break;
 			case AR_QNODE:
-				if (!(user->rest & FLAG('Q')))
+				if (!(user->rest & UREST_QWK_NODE))
 					result = _not;
 				else
 					result = !_not;
@@ -837,7 +837,7 @@ void sbbs_t::getusrdirs()
 {
 	int i, j, k, l;
 
-	if (useron.rest & FLAG('T')) {
+	if (useron.rest & UREST_TRANSFER) {
 		usrlibs = 0;
 		return;
 	}

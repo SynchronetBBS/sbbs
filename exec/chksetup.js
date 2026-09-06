@@ -61,13 +61,13 @@ var tests = {
 		var usr = new User(1);
 		if(!usr.is_sysop)
 			output.push("User #1    is not a sysop");
-		if(usr.security.restrictions & UFLAG_G)
+		if(usr.security.restrictions & UREST_EDIT_DEFAULTS)
 			output.push("User #1    should not have the (G)uest restriction");
-		if(usr.security.restrictions & UFLAG_L)
+		if(usr.security.restrictions & UREST_ONE_LOGON_PER_DAY)
 			output.push("User #1    should not have the (L)ogon Once/Day restriction");
-		if(!(usr.security.exemptions & UFLAG_T))
+		if(!(usr.security.exemptions & UEXEMPT_TIME_ONLINE))
 			output.push("User #1    should have the (T)ime exemption");
-		if(!(usr.security.exemptions & UFLAG_L))
+		if(!(usr.security.exemptions & UEXEMPT_LOGONS))
 			output.push("User #1    should have the (L)ogon exemption");
 		if(system.operator.toLowerCase() != usr.alias.toLowerCase()
 			&& system.operator.toLowerCase() != usr.name.toLowerCase())
@@ -87,7 +87,7 @@ var tests = {
 				continue;
 			if(usr.settings & (USER_DELETED|USER_INACTIVE))
 				continue;
-			if(!(usr.security.restrictions & UFLAG_G))
+			if(!(usr.security.restrictions & UREST_EDIT_DEFAULTS))
 				continue;
 			guests++;
 			if(guests > 1 && options.verbose)
@@ -113,7 +113,7 @@ var tests = {
 				output.push(format("User #%-4u has a disallowed alias%s"
 					, usr.number
 					, options.verbose ? (': ' + usr.alias) : ''));
-			if(usr.security.restrictions & UFLAG_G)
+			if(usr.security.restrictions & UREST_EDIT_DEFAULTS)
 				continue;
 			if(typeof system.check_realname === "function" && !system.check_realname(usr.name))
 				output.push(format("User #%-4u has a disallowed name%s"
@@ -137,7 +137,7 @@ var tests = {
 				continue;
 			var password = usr.security.password;
 			if(password == '') {
-				if(!(usr.security.restrictions & UFLAG_G))
+				if(!(usr.security.restrictions & UREST_EDIT_DEFAULTS))
 					output.push(format("User #%-4u has no password", usr.number));
 				continue;
 			}

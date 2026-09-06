@@ -211,7 +211,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case USER_PROP_EMAIL:
 			s = usermailaddr(p->cfg, tmp
-			                 , (p->cfg->inetmail_misc & NMAIL_ALIAS) || (p->user->rest & FLAG('O')) ? p->user->alias : p->user->name);
+			                 , (p->cfg->inetmail_misc & NMAIL_ALIAS) || (p->user->rest & UREST_REAL_NAME) ? p->user->alias : p->user->name);
 			break;
 		case USER_PROP_ADDRESS:
 			s = p->user->address;

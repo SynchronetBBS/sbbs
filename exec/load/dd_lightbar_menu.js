@@ -1928,7 +1928,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			var mouseNoAction = false;
 			if (this.mouseEnabled)
 			{
-				mk = mouse_getkey(inputMode, !Boolean(user.security.exemptions&UFLAG_H) ? console.inactivity_hangup * 1000 : undefined, this.mouseEnabled);
+				mk = mouse_getkey(inputMode, !Boolean(user.security.exemptions&UEXEMPT_INACTIVITY) ? console.inactivity_hangup * 1000 : undefined, this.mouseEnabled);
 				if (mk.mouse !== null)
 				{
 					// See if the user clicked anywhere in the region where items are
@@ -4072,7 +4072,7 @@ function getKeyWithESCChars(pGetKeyMode)
 	// Input a key from the user and take action based on the user's input.  If
 	// the user has the H (inactivity) exemption, don't use an input timeout.
 	var userInput = "";
-	if (user.security.exemptions&UFLAG_H) // Inactivity exemption
+	if (user.security.exemptions&UEXEMPT_INACTIVITY) // Inactivity exemption
 		userInput = console.getkey(getKeyMode);
 	else
 		userInput = console.inkey(getKeyMode, console.inactivity_hangup * 1000);

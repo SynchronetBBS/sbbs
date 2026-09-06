@@ -2377,7 +2377,7 @@ function show_chatmenu()
 			case 'R':
 				menu_opt(function() {
 					var server = "irc.synchro.net 6667";
-					if(user.security.level >= 90 || user.security.exemptions&UFLAG_C) {
+					if(user.security.level >= 90 || user.security.exemptions&UEXEMPT_CHAT_PAGE) {
 						write("\001n\001y\001hIRC Server: ");
 						server=console.getstr(server, 40, K_EDIT|K_LINE|K_AUTODEL);
 						if(console.aborted)

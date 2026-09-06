@@ -34,7 +34,7 @@ function exec_xtrn_pre(prog)
 			options.restricted_user_msg = bbs.text(R_ExternalPrograms);
 		}
 		require("userdefs.js", "UFLAG_X");
-		if (user.security.restrictions&UFLAG_X) {
+		if (user.security.restrictions&UREST_XTRN) {
 			write(options.restricted_user_msg);
 			exit(1);
 		}

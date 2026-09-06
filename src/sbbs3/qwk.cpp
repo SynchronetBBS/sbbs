@@ -93,7 +93,7 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 	i = matchuser(cfg, node, FALSE);            /* Check if destination is a node */
 	if (i) {
-		if (getuserflags(cfg, i, USER_REST) & FLAG('Q')) {
+		if (getuserflags(cfg, i, USER_REST) & UREST_QWK_NODE) {
 			strncpy(fulladdr, node, maxlen);
 			return i;
 		}
@@ -118,7 +118,7 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 		i = matchuser(cfg, node, FALSE);            /* Check if next hop is a node */
 		if (i) {
-			if (getuserflags(cfg, i, USER_REST) & FLAG('Q')) {
+			if (getuserflags(cfg, i, USER_REST) & UREST_QWK_NODE) {
 				strncpy(fulladdr, inaddr, maxlen);
 				return i;
 			}
@@ -167,7 +167,7 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 	i = matchuser(cfg, node, FALSE);                /* Check if first hop is a node */
 	if (i) {
-		if (getuserflags(cfg, i, USER_REST) & FLAG('Q'))
+		if (getuserflags(cfg, i, USER_REST) & UREST_QWK_NODE)
 			return i;
 	}
 	fulladdr[0] = 0;
@@ -284,7 +284,7 @@ void sbbs_t::qwk_success(uint msgcnt, char bi, char prepack)
 	mail_t * mail;
 	smbmsg_t msg;
 
-	if (useron.rest & FLAG('Q')) { // Was if(!prepack) only
+	if (useron.rest & UREST_QWK_NODE) { // Was if(!prepack) only
 		char id[LEN_QWKID + 1];
 		SAFECOPY(id, useron.alias);
 		strlwr(id);
@@ -309,7 +309,7 @@ void sbbs_t::qwk_success(uint msgcnt, char bi, char prepack)
 
 	}
 
-	if (useron.rest & FLAG('Q'))
+	if (useron.rest & UREST_QWK_NODE)
 		useron.qwk |= (QWK_EMAIL | QWK_ALLMAIL | QWK_DELMAIL);
 	if (useron.qwk & (QWK_EMAIL | QWK_ALLMAIL)) {
 		snprintf(smb.file, sizeof smb.file, "%smail", cfg.data_dir);
@@ -398,12 +398,12 @@ void sbbs_t::qwk_sec()
 	}
 	for (i = 0; i < cfg.total_subs; i++)
 		sav_ptr[i] = subscan[i].ptr;
-	if (useron.rest & FLAG('Q'))
+	if (useron.rest & UREST_QWK_NODE)
 		getusrsubs();
 	delfiles(cfg.temp_dir, ALLFILES);
 	while (online) {
 		if ((term->supports(RIP) || !(useron.misc & EXPERT))
-		    && (useron.logons < 2 || !(useron.rest & FLAG('Q'))))
+		    && (useron.logons < 2 || !(useron.rest & UREST_QWK_NODE)))
 			menu("qwk");
 		action = NODE_TQWK;
 		sync();
@@ -416,7 +416,7 @@ void sbbs_t::qwk_sec()
 			break;
 		if (ch == '?') {
 			if ((term->supports(RIP) || !(useron.misc & EXPERT))
-			    && !(useron.rest & FLAG('Q')))
+			    && !(useron.rest & UREST_QWK_NODE))
 				continue;
 			menu("qwk");
 			continue;
@@ -613,7 +613,7 @@ void sbbs_t::qwk_sec()
 				i = 0;
 			bprintf(text[FiTransferTime], sectostr(i, tmp), cur_cps);
 			term->newline();
-			if (!(useron.exempt & FLAG('T')) && (uint)i > timeleft) {
+			if (!(useron.exempt & UEXEMPT_TIME_ONLINE) && (uint)i > timeleft) {
 				bputs(text[NotEnoughTimeToDl]);
 				break;
 			}

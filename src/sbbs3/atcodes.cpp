@@ -788,7 +788,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (!strcmp(sp, "EMAILADDR"))
 		return usermailaddr(&cfg, str
-		                    , (cfg.inetmail_misc & NMAIL_ALIAS) || (useron.rest & FLAG('O')) ? useron.alias : useron.name);
+		                    , (cfg.inetmail_misc & NMAIL_ALIAS) || (useron.rest & UREST_REAL_NAME) ? useron.alias : useron.name);
 
 	if (strcmp(sp, "NETMAIL") == 0)
 		return useron.netmail;

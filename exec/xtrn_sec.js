@@ -111,7 +111,7 @@ function external_program_menu(xsec)
 	while(bbs.online) {
 
 		console.aborted = false;
-		if(user.security.restrictions&UFLAG_X) {
+		if(user.security.restrictions&UREST_XTRN) {
 			write(options.restricted_user_msg);
 			break;
 		}
@@ -263,7 +263,7 @@ function external_section_menu()
     while(bbs.online) {
 
 		console.aborted = false;
-	    if(user.security.restrictions&UFLAG_X) {
+	    if(user.security.restrictions&UREST_XTRN) {
 		    write(options.restricted_user_msg);
 		    break;
 	    }

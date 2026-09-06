@@ -320,7 +320,7 @@ int sbbs_t::exec_file(csi_t *csi)
 		case CS_FILE_DOWNLOAD:
 			if (!usrlibs)
 				return 0;
-			if (useron.rest & FLAG('D')) {
+			if (useron.rest & UREST_DOWNLOAD) {
 				bputs(text[R_Download]);
 				return 0;
 			}
@@ -363,7 +363,7 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[NoUserDir]);
 				return 0;
 			}
-			if (useron.rest & FLAG('D')) {
+			if (useron.rest & UREST_DOWNLOAD) {
 				bputs(text[R_Download]);
 				return 0;
 			}
@@ -526,7 +526,7 @@ int sbbs_t::exec_file(csi_t *csi)
 		case CS_FILE_REMOVE:
 			if (!usrlibs)
 				return 0;
-			if (useron.rest & FLAG('R')) {
+			if (useron.rest & UREST_REMOVE_FILES) {
 				bputs(text[R_RemoveFiles]);
 				return 0;
 			}

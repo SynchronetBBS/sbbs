@@ -72,7 +72,7 @@ bool sbbs_t::logon_process()
 	if (useron.dlcps)
 		cur_cps = useron.dlcps;
 
-	if (useron.rest & FLAG('Q'))
+	if (useron.rest & UREST_QWK_NODE)
 		sys_status ^= SS_QWKLOGON;
 
 	if (useron_is_guest()) {
@@ -110,7 +110,7 @@ bool sbbs_t::logon_process()
 
 	if (thisnode.misc & NODE_LOCK) {
 		unlocknodedat(cfg.node_num);    /* must unlock! */
-		if (!useron_is_sysop() && !(useron.exempt & FLAG('N'))) {
+		if (!useron_is_sysop() && !(useron.exempt & UEXEMPT_NODE_LOCK)) {
 			bputs(text[NodeLocked]);
 			llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Locked node logon attempt"
 			              , useron.number, useron.alias);
@@ -127,7 +127,7 @@ bool sbbs_t::logon_process()
 		}
 	}
 
-	if ((useron.exempt & FLAG('Q') && useron.misc & QUIET))
+	if ((useron.exempt & UEXEMPT_QUIET_NODE && useron.misc & QUIET))
 		thisnode.status = NODE_QUIET;
 	else
 		thisnode.status = NODE_INUSE;
@@ -200,7 +200,7 @@ bool sbbs_t::logon_process()
 		term->cols = useron.cols;
 	update_nodeterm();
 	if (birthdate_is_valid(&cfg, useron.birth) && tm.tm_mon + 1 == getbirthmonth(&cfg, useron.birth) && tm.tm_mday == getbirthday(&cfg, useron.birth)
-	    && !(useron.rest & FLAG('Q'))) {
+	    && !(useron.rest & UREST_QWK_NODE)) {
 		if (text[HappyBirthday][0]) {
 			bputs(text[HappyBirthday]);
 			pause();
@@ -307,13 +307,13 @@ bool sbbs_t::logon_process()
 			pause();
 		}
 		if (useron.ltoday > cfg.level_callsperday[useron.level]
-		    && !(useron.exempt & FLAG('L'))) {
+		    && !(useron.exempt & UEXEMPT_LOGONS)) {
 			bputs(text[NoMoreLogons]);
 			llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Out of logons"
 			              , useron.number, useron.alias);
 			return false;
 		}
-		if (useron.rest & FLAG('L') && useron.ltoday > 1) {
+		if (useron.rest & UREST_ONE_LOGON_PER_DAY && useron.ltoday > 1) {
 			bputs(text[R_Logons]);
 			llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Out of logons"
 			              , useron.number, useron.alias);
@@ -343,7 +343,7 @@ bool sbbs_t::logon_process()
 
 	mqtt_user_login(mqtt, &client);
 
-	if (useron.rest & FLAG('Q')) {
+	if (useron.rest & UREST_QWK_NODE) {
 		llprintf("++", "(%04u)  %-25s  QWK Network Connection"
 		              , useron.number, useron.alias);
 		return true;
@@ -442,7 +442,7 @@ bool sbbs_t::logon_process()
 				c = 1;
 			}
 			if (node.status == NODE_INUSE && i != cfg.node_num && node.useron == useron.number
-			    && !useron_is_sysop() && !(useron.exempt & FLAG('G'))) { // 'G' exemption = "Multiple Nodes"
+			    && !useron_is_sysop() && !(useron.exempt & UEXEMPT_MULTINODE)) {
 				llprintf(LOG_NOTICE, "+!", "On more than one node at the same time");
 				bputs(text[UserOnTwoNodes]);
 				return false;

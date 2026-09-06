@@ -158,7 +158,7 @@ function batchmenu()
 				}
 				break;
 			case 'U':
-				if(user.security.restrictions & UFLAG_U) {
+				if(user.security.restrictions & UREST_UPLOAD) {
 					console.print(bbs.text(bbs.text.R_Upload));
 					break;
 				}

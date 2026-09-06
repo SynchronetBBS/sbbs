@@ -90,7 +90,7 @@ bool sbbs_t::start_batch_download()
 	int  error;
 	int  i, xfrprot;
 
-	if (useron.rest & FLAG('D')) {     /* Download restriction */
+	if (useron.rest & UREST_DOWNLOAD) {
 		bputs(text[R_Download]);
 		return false;
 	}
@@ -127,7 +127,7 @@ bool sbbs_t::start_batch_download()
 				bprintf(text[YouOnlyHaveNCredits]
 				        , u64toac(user_available_credits(&useron), tmp));
 			else if (!(cfg.dir[f.dir]->misc & DIR_TFREE) && gettimetodl(&cfg, &f, cur_cps) > timeleft
-			         && !dir_op(f.dir) && !(useron.exempt & FLAG('T')))
+			         && !dir_op(f.dir) && !(useron.exempt & UEXEMPT_TIME_ONLINE))
 				bputs(text[NotEnoughTimeToDl]);
 			else {
 				putnode_downloading(getfilesize(&cfg, &f));
@@ -187,7 +187,7 @@ bool sbbs_t::start_batch_download()
 	iniFreeStringList(filenames);
 	truncsp(list);
 
-	if (!(useron.exempt & FLAG('T')) && !useron_is_sysop() && totaltime > (int64_t)timeleft) {
+	if (!(useron.exempt & UEXEMPT_TIME_ONLINE) && !useron_is_sysop() && totaltime > (int64_t)timeleft) {
 		bputs(text[NotEnoughTimeToDl]);
 		return false;
 	}
@@ -616,7 +616,7 @@ bool sbbs_t::addtobatdl(file_t* f)
 			totalsize += f->size;
 			if (!(cfg.dir[f->dir]->misc & DIR_TFREE) && cur_cps)
 				totaltime += f->size / (ulong)cur_cps;
-			if (!(useron.exempt & FLAG('T')) && totaltime > timeleft) {
+			if (!(useron.exempt & UEXEMPT_TIME_ONLINE) && totaltime > timeleft) {
 				bprintf(text[CantAddToQueue], f->name);
 				bputs(text[NotEnoughTimeToDl]);
 			} else {

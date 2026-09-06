@@ -202,7 +202,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		        , p, p, p, p, p
 		        );
 		fclose(stream);
-		if (useron.rest & FLAG('Q')) {
+		if (useron.rest & UREST_QWK_NODE) {
 			/***********************/
 			/* Create NETFLAGS.DAT */
 			/***********************/
@@ -319,7 +319,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	}
 	SAFEPRINTF(str, "%sNEWFILES.DAT", cfg.temp_dir);
 	remove(str);
-	if (!(useron.rest & FLAG('T')) && useron.qwk & QWK_FILES)
+	if (!(useron.rest & UREST_TRANSFER) && useron.qwk & QWK_FILES)
 		files = create_filelist("NEWFILES.DAT", FL_ULTIME);
 	else
 		files = 0;
@@ -371,7 +371,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			else
 				ndx = NULL;
 
-			if (useron.rest & FLAG('Q'))
+			if (useron.rest & UREST_QWK_NODE)
 				mode |= QM_TO_QNET;
 			else
 				mode &= ~QM_TO_QNET;
@@ -431,12 +431,12 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	for (i = 0; i < usrgrps; i++) {
 		for (j = 0; j < usrsubs[i] && !msgabort(); j++) {
 			if (subscan[usrsub[i][j]].cfg & SUB_CFG_NSCAN
-			    || (!(useron.rest & FLAG('Q'))
+			    || (!(useron.rest & UREST_QWK_NODE)
 			        && cfg.sub[usrsub[i][j]]->misc & SUB_FORCED)) {
 				if (!chk_ar(cfg.sub[usrsub[i][j]]->read_ar, &useron, &client))
 					continue;
 				term->lncntr = 0;                       /* defeat pause */
-				if (useron.rest & FLAG('Q') && !(cfg.sub[usrsub[i][j]]->misc & SUB_QNET))
+				if (useron.rest & UREST_QWK_NODE && !(cfg.sub[usrsub[i][j]]->misc & SUB_QNET))
 					continue;   /* QWK Net Node and not QWK networked, so skip */
 
 				subs_scanned++;
@@ -463,9 +463,9 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 				}
 
 				k = 0;
-				if (useron.rest & FLAG('Q') ||  (useron.qwk & QWK_BYSELF))
+				if (useron.rest & UREST_QWK_NODE ||  (useron.qwk & QWK_BYSELF))
 					k |= LP_BYSELF;
-				if (useron.rest & FLAG('Q') || !(subscan[usrsub[i][j]].cfg & SUB_CFG_YSCAN))
+				if (useron.rest & UREST_QWK_NODE || !(subscan[usrsub[i][j]].cfg & SUB_CFG_YSCAN))
 					k |= LP_OTHERS;
 				if (useron.qwk & QWK_VOTING)
 					k |= LP_POLLS | LP_VOTES;
@@ -517,7 +517,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 					if (loadmsg(&msg, post[u].idx.number) < 1)
 						continue;
 
-					if (useron.rest & FLAG('Q')) {
+					if (useron.rest & UREST_QWK_NODE) {
 						if (msg.from_net.type && msg.from_net.type != NET_QWK &&
 						    !(cfg.sub[usrsub[i][j]]->misc & SUB_GATE)) { /* From other */
 							smb_freemsgmem(&msg);            /* net, don't gate */
@@ -562,7 +562,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 						submsgs++;
 					}
 					if (cfg.max_qwkmsgs
-					    && !(useron.exempt & FLAG('O')) && (*msgcnt) >= cfg.max_qwkmsgs) {
+					    && !(useron.exempt & UEXEMPT_QWK_PACKET_SIZE) && (*msgcnt) >= cfg.max_qwkmsgs) {
 						bputs(text[QWKmsgLimitReached]);
 						break;
 					}
@@ -630,7 +630,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		return false;
 	}
 
-	if (/*!prepack && */ useron.rest & FLAG('Q')) { /* If QWK Net node, check for files */
+	if (/*!prepack && */ useron.rest & UREST_QWK_NODE) { /* If QWK Net node, check for files */
 		char id[LEN_QWKID + 1];
 		SAFECOPY(id, useron.alias);
 		strlwr(id);
@@ -692,7 +692,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		return false;
 	}
 
-	if (!(useron.rest & FLAG('Q'))) {                  /* Don't include in network */
+	if (!(useron.rest & UREST_QWK_NODE)) {                  /* Don't include in network */
 		/***********************/					/* packets */
 		/* Copy QWK Text files */
 		/***********************/
@@ -757,7 +757,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		}
 	}
 
-	if (!prepack && useron.rest & FLAG('Q')) {
+	if (!prepack && useron.rest & UREST_QWK_NODE) {
 		dir = opendir(cfg.temp_dir);
 		while (dir != NULL && (dirent = readdir(dir)) != NULL) {
 			if (!stricmp(getfname(packet), dirent->d_name))   /* QWK packet */
