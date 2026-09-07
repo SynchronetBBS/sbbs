@@ -45,7 +45,7 @@
 		if (speed <= (x)) \
 		return B ## x
 
-speed_t rate_to_macro(unsigned long speed)
+static speed_t rate_to_macro(unsigned long speed)
 {
 	// Standard values
 	SUPPORTED_SPEED(0);
@@ -118,7 +118,7 @@ speed_t rate_to_macro(unsigned long speed)
 		if (speed == B ## x) \
 		return x;
 
-unsigned long macro_to_rate(speed_t speed)
+static unsigned long macro_to_rate(speed_t speed)
 {
 	// Standard values
 	SUPPORTED_SPEED(0);
