@@ -294,7 +294,11 @@ NewIFC_root_window(NewIfcObj parent, NewIfcObj *newobj)
 	*newrw = calloc(1, sizeof(struct root_window));
 	if (*newrw == NULL)
 		return NewIfc_error_allocation_failure;
-	(*newrw)->mtx = xp_pthread_mutex_initializer(true);
+	if (!xp_pthread_mutex_init(&(*newrw)->mtx, true)) {
+		free(*newrw);
+		*newrw = NULL;
+		return NewIfc_error_lock_failed;
+	}
 	(*newrw)->api.get = rw_get;
 	(*newrw)->api.set = rw_set;
 	(*newrw)->api.do_render = &rw_do_render;

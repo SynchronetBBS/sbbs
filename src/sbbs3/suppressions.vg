@@ -95,13 +95,6 @@
    fun:pthread_cond_init
 }
 {
-   FreeBSDPthreadMutexInitNP
-   Memcheck:Leak
-   match-leak-kinds: definite
-   ...
-   fun:xp_pthread_mutex_initializer
-}
-{
    PulseAudio
    Memcheck:Leak
    match-leak-kinds: definite

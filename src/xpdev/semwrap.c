@@ -42,7 +42,7 @@
 #include <stdlib.h> /* NULL */
 
 int
-xp_sem_trywait_block(sem_t *sem, unsigned long timeout)
+xp_sem_trywait_block(sem_t *sem, uint32_t timeout)
 {
 	int             retval;
 	long            nanoseconds;
@@ -110,7 +110,7 @@ int sem_init(sem_t* psem, int pshared, unsigned int value)
 	return 0;
 }
 
-int xp_sem_trywait_block(sem_t* psem, unsigned long timeout)
+int xp_sem_trywait_block(sem_t* psem, uint32_t timeout)
 {
 	DWORD result;
 
@@ -143,26 +143,6 @@ int sem_post(sem_t* psem)
 		return 0;
 
 	return win32_error(GetLastError());
-}
-
-int sem_getvalue(sem_t* psem, int* vp)
-{
-	int retval = 0;
-
-	if (psem == NULL || *psem == NULL || vp == NULL) {
-		errno = EINVAL;
-		return -1;
-	}
-	/* Note, this should REALLY be in a critical section... */
-	if (WaitForSingleObject(*(psem), 0) != WAIT_OBJECT_0)
-		*vp = 0;
-	else {
-		if (ReleaseSemaphore(*(psem), 1, (LPLONG)vp))
-			(*vp)++;
-		else
-			retval = -1;
-	}
-	return retval;
 }
 
 int sem_destroy(sem_t* psem)

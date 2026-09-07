@@ -118,30 +118,6 @@ bool xp_pthread_mutex_init(pthread_mutex_t *mutex, bool recursive)
 #endif
 }
 
-/****************************************************************************/
-/* Wrappers for POSIX thread (pthread) mutexes								*/
-/****************************************************************************/
-pthread_mutex_t xp_pthread_mutex_initializer(bool recursive)
-{
-	pthread_mutex_t     mutex;
-#if defined(_POSIX_THREADS)
-	pthread_mutexattr_t attr;
-	pthread_mutexattr_init(&attr);
-	if (recursive)
-#if defined(__linux__) && defined(PTHREAD_MUTEX_RECURSIVE_NP) && !defined(__USE_UNIX98)
-		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE_NP);
-#else
-		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-#endif
-	pthread_mutex_init(&mutex, &attr);
-	pthread_mutexattr_destroy(&attr);
-#else   /* Assumes recursive (e.g. Windows) */
-	(void)recursive;
-	pthread_mutex_init(&mutex, NULL);
-#endif
-	return mutex;
-}
-
 #if !defined(_POSIX_THREADS)
 
 int pthread_once(pthread_once_t *oc, void (*init)(void))

@@ -460,16 +460,13 @@ XPDEV_1.0 {
 		xp_printf_get_next;
 		xp_printf_get_type;
 		xp_pthread_mutex_init;
-		xp_pthread_mutex_initializer;
 		xp_random;
 		xp_randomize;
 		xp_sem_close;
 		xp_sem_destroy;
-		xp_sem_getvalue;
 		xp_sem_init;
 		xp_sem_open;
 		xp_sem_post;
-		xp_sem_setvalue;
 		xp_sem_timedwait;
 		xp_sem_trywait;
 		xp_sem_trywait_block;

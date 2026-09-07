@@ -39,7 +39,6 @@ extern "C" {
 		#define     sem_wait(x)         xp_sem_wait(x)
 		#define     sem_trywait(x)      xp_sem_trywait(x)
 		#define     sem_post(x)         xp_sem_post(x)
-		#define     sem_getvalue(x, y)       xp_sem_getvalue(x, y)
 		#define     sem_timedwait(x, y)  xp_sem_timedwait(x, y)
 		#define     sem_t               xp_sem_t
 	#else
@@ -54,7 +53,6 @@ extern "C" {
 typedef HANDLE sem_t;
 DLLEXPORT int sem_init(sem_t*, int pshared, unsigned int value);
 DLLEXPORT int sem_post(sem_t*);
-DLLEXPORT int sem_getvalue(sem_t*, int* value);
 DLLEXPORT int sem_destroy(sem_t*);
 	#define sem_wait(psem)              xp_sem_trywait_block(psem, INFINITE)
 	#define sem_trywait(psem)           xp_sem_trywait_block(psem, 0)
@@ -75,15 +73,11 @@ typedef HEV sem_t;
 #endif
 
 /* NOT POSIX */
-DLLEXPORT int xp_sem_trywait_block(sem_t* psem, unsigned long timeout);
+DLLEXPORT int xp_sem_trywait_block(sem_t* psem, uint32_t timeout);
 
 
-/* Change semaphore to "unsignaled" (NOT POSIX) */
-#ifdef USE_XP_SEMAPHORES
-#define sem_reset(psem)                 xp_sem_setvalue((psem), 0)
-#else
+/* Drain all currently available posts (NOT POSIX). */
 #define sem_reset(psem)                 while (sem_trywait(psem) == 0)
-#endif
 
 #if defined(__cplusplus)
 }

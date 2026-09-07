@@ -183,8 +183,8 @@ endif
 # redundant and at worst wrong: if CFLAGS happens to exist in the calling
 # environment, make re-exports the *augmented* value to sub-makes, and
 # sbbs3's -DLINK_LIST_THREADSAFE ends up compiling xpdev's single-threaded
-# link_list.o, which then references xp_sem_trywait_block() and
-# xp_pthread_mutex_initializer() -- functions only libxpdev_mt.a provides.
+# link_list.o, which then references synchronization functions that only
+# libxpdev_mt.a provides.
 unexport CFLAGS CCFLAGS CXXFLAGS MT_CFLAGS LDFLAGS MT_LDFLAGS
 
 # Compiler-specific options

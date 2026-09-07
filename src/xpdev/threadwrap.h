@@ -99,7 +99,6 @@ extern "C" {
 /****************************************************************************/
 
 DLLEXPORT bool xp_pthread_mutex_init(pthread_mutex_t *mtx, bool recursive);
-DLLEXPORT pthread_mutex_t xp_pthread_mutex_initializer(bool recursive);
 
 #if defined(_POSIX_THREADS)
 
@@ -135,13 +134,6 @@ typedef struct {
 #define PTHREAD_ONCE_INIT	{0};
 DLLEXPORT int pthread_once(pthread_once_t *oc, void (*init)(void));
 
-#endif
-
-#if !defined(PTHREAD_MUTEX_INITIALIZER_NP)
-	#define PTHREAD_MUTEX_INITIALIZER_NP			xp_pthread_mutex_initializer(/* recursive: */FALSE)
-#endif
-#if !defined(PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP)
-	#define PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP	xp_pthread_mutex_initializer(/* recursive: */TRUE)
 #endif
 
 /************************************************************************/

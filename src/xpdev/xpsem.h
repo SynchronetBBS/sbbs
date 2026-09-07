@@ -41,11 +41,7 @@
  */
 
 #include <limits.h>
-
-#include <sys/types.h>
-#include <fcntl.h>
-#include <pthread.h>
-#include <inttypes.h>
+#include <time.h>
 #include "wrapdll.h"
 
 /* Opaque type definition. */
@@ -54,10 +50,6 @@ typedef struct xp_sem *xp_sem_t;
 
 #define XP_SEM_FAILED	((xp_sem_t *)0)
 #define XP_SEM_VALUE_MAX	INT_MAX
-
-#if defined(__solaris__)
-typedef unsigned int	uint32_t;
-#endif
 
 #if defined(__cplusplus)
 extern "C" {
@@ -70,48 +62,9 @@ DLLEXPORT int	 xp_sem_unlink (const char *);
 DLLEXPORT int	 xp_sem_wait (xp_sem_t *);
 DLLEXPORT int	 xp_sem_trywait (xp_sem_t *);
 DLLEXPORT int	 xp_sem_post (xp_sem_t *);
-DLLEXPORT int	 xp_sem_getvalue (xp_sem_t *, int *);
-DLLEXPORT int	 xp_sem_setvalue (xp_sem_t *, int);
 DLLEXPORT int  xp_sem_timedwait (xp_sem_t *sem, const struct timespec *abs_timeout);
 #if defined(__cplusplus)
 }
 #endif
-
-/* Begin thread_private.h kluge */
-/*
- * These come out of (or should go into) thread_private.h - rather than have 
- * to copy (or symlink) the files from the source tree these definitions are 
- * inlined here.  Obviously these go away when this module is part of libc.
-*/
-
-struct xp_sem {
-#define XP_SEM_MAGIC       ((uint32_t) 0x09fa4012)
-        uint32_t       magic;
-        pthread_mutex_t lock;
-        pthread_cond_t  gtzero;
-        uint32_t       count;
-        uint32_t       nwaiters;
-};
-
-extern pthread_once_t _thread_init_once;
-extern int _threads_initialized;
-extern void  _thread_init (void);
-#define THREAD_INIT() \
-	(void) pthread_once(&_thread_init_once, _thread_init)
-#define THREAD_SAFE() \
-	(_threads_initialized != 0)
-
-#define _SEM_CHECK_VALIDITY(sem)		\
-	if (sem == NULL || *sem == NULL || (*(sem))->magic != XP_SEM_MAGIC) {	\
-		errno = EINVAL;			\
-		retval = -1;			\
-		goto RETURN;			\
-	}
-
-struct pthread_rwlockattr {
-        int             pshared;
-	};
-
-/* End thread_private.h kluge */
 
 #endif /* _XPSEM_H_ */

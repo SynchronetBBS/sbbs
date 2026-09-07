@@ -218,7 +218,7 @@ bool listSemTryWait(link_list_t* list)
 	return sem_trywait(&list->sem) == 0;
 }
 
-bool listSemTryWaitBlock(link_list_t* list, unsigned int timeout)
+bool listSemTryWaitBlock(link_list_t* list, uint32_t timeout)
 {
 	if (list == NULL || !(list->flags & LINK_LIST_SEMAPHORE))
 		return false;

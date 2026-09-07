@@ -92,7 +92,7 @@ DLLEXPORT int   listDetach(link_list_t*);
 DLLEXPORT bool  listSemPost(link_list_t*);
 DLLEXPORT bool  listSemWait(link_list_t*);
 DLLEXPORT bool  listSemTryWait(link_list_t*);
-DLLEXPORT bool  listSemTryWaitBlock(link_list_t*, unsigned int timeout);
+DLLEXPORT bool  listSemTryWaitBlock(link_list_t*, uint32_t timeout);
 #endif
 
 /* Lock/unlock linked lists (works best for mutex-protected lists) */

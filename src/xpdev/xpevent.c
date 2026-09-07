@@ -21,11 +21,23 @@
 
 #if defined(__unix__)
 
+#include <pthread.h>
 #include <stdio.h>      /* NULL */
 #include <stdlib.h>     /* malloc() */
 #include "eventwrap.h"
 #include "genwrap.h"
 #include "threadwrap.h"
+
+#define EVENT_MAGIC ((uint32_t)0x09fa4014)
+
+struct xpevent {
+	uint32_t        magic;
+	pthread_mutex_t lock;
+	pthread_cond_t  gtzero;
+	BOOL            value;
+	BOOL            mreset;
+	DWORD           nwaiters;
+};
 
 xpevent_t
 CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
@@ -222,7 +234,7 @@ WaitForEvent(xpevent_t event, DWORD ms)
 	if (event->value)
 		retval = WAIT_OBJECT_0;
 
-	while ((!(event->value)) || (event->verify != NULL && !event->verify(event->cbdata))) {
+	while (!event->value) {
 		if (event->nwaiters == UINT32_MAX) {
 			errno = EOVERFLOW;
 			retval = WAIT_FAILED;
