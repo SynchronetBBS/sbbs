@@ -52,31 +52,6 @@ xp_sem_trywait_block(sem_t *sem, unsigned long timeout)
 
 #include <limits.h>     /* INT_MAX */
 
-static int
-win32_error(DWORD error)
-{
-	switch (error) {
-		case ERROR_ACCESS_DENIED:
-			errno = EACCES;
-			break;
-		case ERROR_INVALID_HANDLE:
-		case ERROR_INVALID_PARAMETER:
-			errno = EINVAL;
-			break;
-		case ERROR_NOT_ENOUGH_MEMORY:
-		case ERROR_OUTOFMEMORY:
-			errno = ENOMEM;
-			break;
-		case ERROR_TOO_MANY_POSTS:
-			errno = EOVERFLOW;
-			break;
-		default:
-			errno = EIO;
-			break;
-	}
-	return -1;
-}
-
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
@@ -87,36 +62,26 @@ int sem_init(sem_t* psem, int pshared, unsigned int value)
 		return -1;
 	}
 	if (pshared != 0) {
-		errno = ENOSYS;
+		errno = EINVAL;
 		return -1;
 	}
 	if ((*(psem) = CreateSemaphore(NULL, value, INT_MAX, NULL)) == NULL)
-		return win32_error(GetLastError());
+		return -1;
 
 	return 0;
 }
 
 int xp_sem_trywait_block(sem_t* psem, unsigned long timeout)
 {
-	DWORD result;
-
 	if (psem == NULL || *psem == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
-	result = WaitForSingleObject(*psem, timeout);
-	switch (result) {
-		case WAIT_OBJECT_0:
-			return 0;
-		case WAIT_TIMEOUT:
-			errno = EAGAIN;
-			return -1;
-		case WAIT_FAILED:
-			return win32_error(GetLastError());
-		default:
-			errno = EIO;
-			return -1;
+	if (WaitForSingleObject(*psem, timeout) != WAIT_OBJECT_0) {
+		errno = EAGAIN;
+		return -1;
 	}
+	return 0;
 }
 
 int sem_post(sem_t* psem)
@@ -128,18 +93,27 @@ int sem_post(sem_t* psem)
 	if (ReleaseSemaphore(*psem, 1, NULL) == TRUE)
 		return 0;
 
-	return win32_error(GetLastError());
+	return -1;
 }
 
 int sem_getvalue(sem_t* psem, int* vp)
 {
+	int retval = 0;
+
 	if (psem == NULL || *psem == NULL || vp == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
-	/* Win32 has no documented, race-free query for a semaphore's count. */
-	errno = ENOSYS;
-	return -1;
+	/* Note, this should REALLY be in a critical section... */
+	if (WaitForSingleObject(*(psem), 0) != WAIT_OBJECT_0)
+		*vp = 0;
+	else {
+		if (ReleaseSemaphore(*(psem), 1, (LPLONG)vp))
+			(*vp)++;
+		else
+			retval = -1;
+	}
+	return retval;
 }
 
 int sem_destroy(sem_t* psem)
@@ -152,7 +126,7 @@ int sem_destroy(sem_t* psem)
 		*psem = NULL;
 		return 0;
 	}
-	return win32_error(GetLastError());
+	return -1;
 }
 
 #endif /* _WIN32 */
