@@ -856,7 +856,10 @@ dg_server_run(dg_config_t *cfg)
 	server_state.node_count = cfg->last_node - cfg->first_node + 1;
 	server_state.connection_capacity = cfg->ssh_max_connections;
 	server_state.ip_state_capacity = cfg->ssh_max_connections + 1024;
-	server_state.mutex = xp_pthread_mutex_initializer(false);
+	if (!xp_pthread_mutex_init(&server_state.mutex, false)) {
+		dg_log(DG_LOG_ERROR, "cannot initialize server mutex");
+		return 1;
+	}
 	server_state.nodes = calloc(server_state.node_count, sizeof(*server_state.nodes));
 	server_state.connections = calloc(server_state.connection_capacity, sizeof(*server_state.connections));
 	server_state.ip_states = calloc(server_state.ip_state_capacity, sizeof(*server_state.ip_states));
