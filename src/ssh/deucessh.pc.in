@@ -1,12 +1,12 @@
-prefix=@CMAKE_INSTALL_PREFIX@
+prefix=@DSSH_PC_PREFIX@
 exec_prefix=${prefix}
-libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
-includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@/deucessh
+libdir=@DSSH_PC_LIBDIR@
+includedir=@DSSH_PC_INCLUDEDIR@
 
 Name: deucessh
 Description: SSH protocol library (RFCs 4250-4254)
 Version: @PROJECT_VERSION@
-Requires.private: @DSSH_PC_REQUIRES_PRIVATE@
-Libs: -L${libdir} -ldeucessh
-Libs.private: @DSSH_PC_LIBS_PRIVATE@
+@DSSH_PC_REQUIRES_FIELD@: @DSSH_PC_REQUIRES_PRIVATE@
+Libs: @DSSH_PC_MAIN_LIBS@
+@DSSH_PC_LIBS_PRIVATE_LINE@
 Cflags: -I${includedir}

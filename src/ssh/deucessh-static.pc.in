@@ -1,0 +1,11 @@
+prefix=@DSSH_PC_PREFIX@
+exec_prefix=${prefix}
+libdir=@DSSH_PC_LIBDIR@
+includedir=@DSSH_PC_INCLUDEDIR@
+
+Name: deucessh-static
+Description: SSH protocol library (RFCs 4250-4254), static archive
+Version: @PROJECT_VERSION@
+Requires: @DSSH_PC_REQUIRES_PRIVATE@
+Libs: ${libdir}/@DSSH_PC_STATIC_LIBRARY@ @DSSH_PC_LIBS_PRIVATE@
+Cflags: -I${includedir}

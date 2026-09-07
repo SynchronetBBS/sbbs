@@ -180,6 +180,30 @@ else()
 	set(DSSH_PC_LIBS_PRIVATE "")
 endif()
 
+if(STDTHREADS_LIB)
+	string(APPEND DSSH_PC_LIBS_PRIVATE " ${STDTHREADS_LIB}")
+elseif(TARGET Threads::Threads AND CMAKE_THREAD_LIBS_INIT)
+	string(REPLACE ";" " " DSSH_PC_THREAD_LIBS
+		"${CMAKE_THREAD_LIBS_INIT}")
+	string(APPEND DSSH_PC_LIBS_PRIVATE " ${DSSH_PC_THREAD_LIBS}")
+endif()
+
+if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
+	set(DSSH_PC_CXX_RUNTIME_LIBRARIES
+		${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES})
+	foreach(lib IN LISTS CMAKE_C_IMPLICIT_LINK_LIBRARIES)
+		list(REMOVE_ITEM DSSH_PC_CXX_RUNTIME_LIBRARIES "${lib}")
+	endforeach()
+	foreach(lib IN LISTS DSSH_PC_CXX_RUNTIME_LIBRARIES)
+		if(IS_ABSOLUTE "${lib}" OR "${lib}" MATCHES "^-")
+			string(APPEND DSSH_PC_LIBS_PRIVATE " ${lib}")
+		else()
+			string(APPEND DSSH_PC_LIBS_PRIVATE " -l${lib}")
+		endif()
+	endforeach()
+endif()
+string(STRIP "${DSSH_PC_LIBS_PRIVATE}" DSSH_PC_LIBS_PRIVATE)
+
 if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
 	set(DSSH_ALG_SOURCES
 		kex/curve25519-sha256-openssl.c
@@ -489,7 +513,8 @@ include(CMakePackageConfigHelpers)
 install(TARGETS ${DEUCESSH_INSTALL_TARGETS}
 	EXPORT deucesshTargets
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(FILES ${DEUCESSH_PUBLIC_HEADERS}
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/deucessh)
@@ -507,15 +532,63 @@ write_basic_package_version_file(
 configure_file(deucesshConfig.cmake.in
 	${CMAKE_CURRENT_BINARY_DIR}/deucesshConfig.cmake @ONLY)
 
+# Derive the pkg-config prefix from the installed .pc file so packages remain
+# usable after `cmake --install --prefix ...` and when an MSYS/MinGW package is
+# moved to a different Windows installation root.
+if(IS_ABSOLUTE "${CMAKE_INSTALL_LIBDIR}")
+	set(DSSH_PC_PREFIX "${CMAKE_INSTALL_PREFIX}")
+	set(DSSH_PC_LIBDIR "${CMAKE_INSTALL_LIBDIR}")
+else()
+	file(RELATIVE_PATH DSSH_PC_PREFIX_FROM_PCDIR
+		"/${CMAKE_INSTALL_LIBDIR}/pkgconfig" "/")
+	string(REGEX REPLACE "/$" "" DSSH_PC_PREFIX_FROM_PCDIR
+		"${DSSH_PC_PREFIX_FROM_PCDIR}")
+	set(DSSH_PC_PREFIX
+		"\${pcfiledir}/${DSSH_PC_PREFIX_FROM_PCDIR}")
+	set(DSSH_PC_LIBDIR "\${prefix}/${CMAKE_INSTALL_LIBDIR}")
+endif()
+
+if(IS_ABSOLUTE "${CMAKE_INSTALL_INCLUDEDIR}")
+	set(DSSH_PC_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/deucessh")
+else()
+	set(DSSH_PC_INCLUDEDIR
+		"\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}/deucessh")
+endif()
+
+if(DEUCESSH_BUILD_STATIC)
+	set(DSSH_PC_STATIC_LIBRARY
+		"${CMAKE_STATIC_LIBRARY_PREFIX}deucessh${CMAKE_STATIC_LIBRARY_SUFFIX}")
+endif()
+
+if(DEUCESSH_BUILD_SHARED)
+	set(DSSH_PC_REQUIRES_FIELD "Requires.private")
+	set(DSSH_PC_MAIN_LIBS "-L\${libdir} -ldeucessh")
+	set(DSSH_PC_LIBS_PRIVATE_LINE
+		"Libs.private: ${DSSH_PC_LIBS_PRIVATE}")
+else()
+	set(DSSH_PC_REQUIRES_FIELD "Requires")
+	set(DSSH_PC_MAIN_LIBS
+		"\${libdir}/${DSSH_PC_STATIC_LIBRARY} ${DSSH_PC_LIBS_PRIVATE}")
+	set(DSSH_PC_LIBS_PRIVATE_LINE "")
+endif()
+
 configure_file(deucessh.pc.in
 	${CMAKE_CURRENT_BINARY_DIR}/deucessh.pc @ONLY)
+
+set(DEUCESSH_PC_FILES ${CMAKE_CURRENT_BINARY_DIR}/deucessh.pc)
+if(DEUCESSH_BUILD_STATIC)
+	configure_file(deucessh-static.pc.in
+		${CMAKE_CURRENT_BINARY_DIR}/deucessh-static.pc @ONLY)
+	list(APPEND DEUCESSH_PC_FILES
+		${CMAKE_CURRENT_BINARY_DIR}/deucessh-static.pc)
+endif()
 
 install(FILES
 	${CMAKE_CURRENT_BINARY_DIR}/deucesshConfig.cmake
 	${CMAKE_CURRENT_BINARY_DIR}/deucesshConfigVersion.cmake
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/deucessh)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/deucessh.pc
+install(FILES ${DEUCESSH_PC_FILES}
 	DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 # --- Example executables (not installed) ---
