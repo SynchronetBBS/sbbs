@@ -25,6 +25,7 @@
 #if !defined(__BORLANDC__)
 
 #include <stdarg.h>
+#include <stddef.h>
 #include "gen_defs.h"
 #include "wrapdll.h"
 

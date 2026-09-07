@@ -31,7 +31,7 @@
 #include "wrapdll.h"
 
 #if defined(__solaris__)
-#include <xpsem.h>  /* u_int32_t */
+#include "xpsem.h"  /* u_int32_t */
 #endif
 
 /* Opaque type definition. */

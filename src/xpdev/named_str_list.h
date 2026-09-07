@@ -1,6 +1,7 @@
 #ifndef NAMED_STR_LIST_H
 #define NAMED_STR_LIST_H
 
+#include "gen_defs.h"
 #include "wrapdll.h"
 
 #define NAMED_STR_LIST_LAST_INDEX     (~((size_t)(0)))

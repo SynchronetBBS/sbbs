@@ -117,15 +117,15 @@ set(HEADER
 	xpbeep.h
 	xpdatetime.h
 	xpendian.h
-	xpevent.h
 	xpmap.h
 	xpprintf.h
-	xpsem.h
 )
 
 if(NOT WIN32)
 	list(APPEND SOURCE xpevent.c)
 	list(APPEND SOURCE xpsem.c)
+	# Unix-only implementation headers included by eventwrap.h and semwrap.h.
+	list(APPEND HEADER xpevent.h xpsem.h)
 endif()
 
 check_symbol_exists(strlcpy string.h HAS_STRLCPY)
