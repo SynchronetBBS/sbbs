@@ -56,6 +56,8 @@ static sem_t	used_input;
 static sem_t	goahead;
 static sem_t	need_key;
 static BOOL	sent_ga=FALSE;
+/* got_input token reserved by ansi_kbhit() for ansi_getch(). */
+static BOOL	input_claimed=FALSE;
 static int ansix=1;
 static int ansiy=1;
 
@@ -841,37 +843,34 @@ static void ansi_keyparse(void *par)
 #endif
 static void ansi_keythread(void *params)
 {
-	int	sval=1;
-
 	SetThreadName("ANSI Key");
 	_beginthread(ansi_keyparse,1024,NULL);
 
 	for(;;) {
 		sem_wait(&need_key);
-		/* If you already have a key, don't get another */
-		sem_getvalue(&got_key,&sval);
-		if(!sval) {
+		/* A transient no-data result does not complete this request. */
+		do {
 			ansi_raw_inch=ciolib_ansi_readbyte_cb();
-			if(ansi_raw_inch >= 0 || ansi_raw_inch==-2)
-				sem_post(&got_key);
-			else
+			if(ansi_raw_inch < 0 && ansi_raw_inch != -2)
 				SLEEP(1);
-		}
-		else
-			SLEEP(1);
+		} while(ansi_raw_inch < 0 && ansi_raw_inch != -2);
+		sem_post(&got_key);
 	}
 }
 
 int ansi_kbhit(void)
 {
-	int	sval=1;
-
 	if(!sent_ga) {
 		sem_post(&goahead);
 		sent_ga=TRUE;
 	}
-	sem_getvalue(&got_input,&sval);
-	return(sval);
+	if(input_claimed)
+		return(TRUE);
+	if(sem_trywait(&got_input)==0) {
+		input_claimed=TRUE;
+		return(TRUE);
+	}
+	return(FALSE);
 }
 
 void ansi_setcursortype(int type)
@@ -892,7 +891,10 @@ int ansi_getch(void)
 		sem_post(&goahead);
 		sent_ga=TRUE;
 	}
-	sem_wait(&got_input);
+	if(input_claimed)
+		input_claimed=FALSE;
+	else
+		sem_wait(&got_input);
 	ch=ansi_inch&0xff;
 	ansi_inch=ansi_inch>>8;
 	sem_post(&used_input);
