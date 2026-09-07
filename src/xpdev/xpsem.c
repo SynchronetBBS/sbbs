@@ -206,8 +206,14 @@ xp_sem_post(xp_sem_t *sem)
 
 	assert_pthread_mutex_lock(&(*sem)->lock);
 
-	(*sem)->count++;
-	if ((*sem)->nwaiters > 0) {
+	if ((*sem)->count == XP_SEM_VALUE_MAX) {
+		errno = EOVERFLOW;
+		retval = -1;
+	} else {
+		(*sem)->count++;
+		retval = 0;
+	}
+	if (retval == 0 && (*sem)->nwaiters > 0) {
 		/*
 		 * We must use pthread_cond_broadcast() rather than
 		 * pthread_cond_signal() in order to assure that the highest
@@ -219,7 +225,6 @@ xp_sem_post(xp_sem_t *sem)
 
 	assert_pthread_mutex_unlock(&(*sem)->lock);
 
-	retval = 0;
 RETURN:
 	return retval;
 }
@@ -246,6 +251,11 @@ xp_sem_setvalue(xp_sem_t *sem, int sval)
 	int retval;
 
 	_SEM_CHECK_VALIDITY(sem);
+	if (sval < 0) {
+		errno = EINVAL;
+		retval = -1;
+		goto RETURN;
+	}
 
 	assert_pthread_mutex_lock(&(*sem)->lock);
 	(*sem)->count = (uint32_t)sval;

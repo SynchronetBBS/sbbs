@@ -102,7 +102,7 @@ extern void  _thread_init (void);
 	(_threads_initialized != 0)
 
 #define _SEM_CHECK_VALIDITY(sem)		\
-	if (sem==NULL || (*(sem))->magic != XP_SEM_MAGIC) {	\
+	if (sem == NULL || *sem == NULL || (*(sem))->magic != XP_SEM_MAGIC) {	\
 		errno = EINVAL;			\
 		retval = -1;			\
 		goto RETURN;			\
