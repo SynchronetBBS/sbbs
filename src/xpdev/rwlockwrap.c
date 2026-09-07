@@ -2,11 +2,12 @@
 
 #if defined(_WIN32)
 
+#include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 static struct rwlock_reader_thread *
-find_self(rwlock_t *lock, struct rwlock_reader_thread ***prev)
+find_self(rwlock_t *lock, struct rwlock_reader_thread ***prev, bool create)
 {
 	DWORD                        self = GetCurrentThreadId();
 	struct rwlock_reader_thread *ret;
@@ -20,6 +21,8 @@ find_self(rwlock_t *lock, struct rwlock_reader_thread ***prev)
 			*prev = &ret->next;
 		}
 	}
+	if (!create)
+		return NULL;
 	ret = calloc(1, sizeof(*ret));
 	if (ret == NULL)
 		return ret;
@@ -29,13 +32,44 @@ find_self(rwlock_t *lock, struct rwlock_reader_thread ***prev)
 	return ret;
 }
 
+static void
+remove_reader(rwlock_t *lock, struct rwlock_reader_thread *reader)
+{
+	struct rwlock_reader_thread **entry;
+
+	for (entry = &lock->rthreads; *entry != NULL; entry = &(*entry)->next) {
+		if (*entry == reader) {
+			*entry = reader->next;
+			free(reader);
+			return;
+		}
+	}
+}
+
 bool
 rwlock_init(rwlock_t *lock)
 {
-	InitializeCriticalSection(&lock->lk);
-	InitializeCriticalSection(&lock->wlk);
+	if (lock == NULL)
+		return false;
+	if (!InitializeCriticalSectionAndSpinCount(&lock->lk, 0))
+		return false;
+	if (!InitializeCriticalSectionAndSpinCount(&lock->wlk, 0)) {
+		DeleteCriticalSection(&lock->lk);
+		return false;
+	}
 	lock->zeror = CreateEvent(NULL, true, true, NULL);
+	if (lock->zeror == NULL) {
+		DeleteCriticalSection(&lock->wlk);
+		DeleteCriticalSection(&lock->lk);
+		return false;
+	}
 	lock->zerow = CreateEvent(NULL, true, true, NULL);
+	if (lock->zerow == NULL) {
+		CloseHandle(lock->zeror);
+		DeleteCriticalSection(&lock->wlk);
+		DeleteCriticalSection(&lock->lk);
+		return false;
+	}
 	lock->readers = 0;
 	lock->writers = 0;
 	lock->writers_waiting = 0;
@@ -50,7 +84,7 @@ rwlock_rdlock(rwlock_t *lock)
 	struct rwlock_reader_thread *rc;
 
 	EnterCriticalSection(&lock->lk);
-	rc = find_self(lock, NULL);
+	rc = find_self(lock, NULL, true);
 	if (rc == NULL) {
 		LeaveCriticalSection(&lock->lk);
 		return false;
@@ -59,7 +93,9 @@ rwlock_rdlock(rwlock_t *lock)
 		LeaveCriticalSection(&lock->lk);
 		if (WaitForSingleObject(lock->zerow, INFINITE) != WAIT_OBJECT_0) {
 			EnterCriticalSection(&lock->lk);
-			continue;
+			remove_reader(lock, rc);
+			LeaveCriticalSection(&lock->lk);
+			return false;
 		}
 		// Wait for current writer to release
 		EnterCriticalSection(&lock->wlk);
@@ -76,6 +112,12 @@ rwlock_rdlock(rwlock_t *lock)
 			continue;
 		}
 		else {
+			if (lock->readers == UINT_MAX || rc->count == UINT_MAX) {
+				remove_reader(lock, rc);
+				LeaveCriticalSection(&lock->lk);
+				LeaveCriticalSection(&lock->wlk);
+				return false;
+			}
 			lock->readers++;
 			rc->count++;
 			ResetEvent(lock->zeror);
@@ -83,6 +125,12 @@ rwlock_rdlock(rwlock_t *lock)
 			LeaveCriticalSection(&lock->wlk);
 			return true;
 		}
+	}
+	if (lock->readers == UINT_MAX || rc->count == UINT_MAX) {
+		if (rc->count == 0)
+			remove_reader(lock, rc);
+		LeaveCriticalSection(&lock->lk);
+		return false;
 	}
 	lock->readers++;
 	ResetEvent(lock->zeror);
@@ -98,17 +146,20 @@ rwlock_tryrdlock(rwlock_t *lock)
 	struct rwlock_reader_thread *rc;
 
 	EnterCriticalSection(&lock->lk);
-	rc = find_self(lock, NULL);
+	rc = find_self(lock, NULL, true);
 	if (rc == NULL) {
 		LeaveCriticalSection(&lock->lk);
 		return false;
 	}
-	if (rc->count || (lock->writers == 0 && lock->writers_waiting == 0)) {
+	if ((rc->count || (lock->writers == 0 && lock->writers_waiting == 0))
+	    && rc->count < UINT_MAX && lock->readers < UINT_MAX) {
 		rc->count++;
 		lock->readers++;
 		ResetEvent(lock->zeror);
 		ret = true;
 	}
+	if (!ret && rc->count == 0)
+		remove_reader(lock, rc);
 	LeaveCriticalSection(&lock->lk);
 	return ret;
 }
@@ -118,6 +169,10 @@ rwlock_wrlock(rwlock_t *lock)
 {
 	bool ret = false;
 	EnterCriticalSection(&lock->lk);
+	if (lock->writers_waiting == UINT_MAX) {
+		LeaveCriticalSection(&lock->lk);
+		return false;
+	}
 	lock->writers_waiting++;
 	ResetEvent(lock->zerow);
 	LeaveCriticalSection(&lock->lk);
@@ -127,7 +182,14 @@ rwlock_wrlock(rwlock_t *lock)
 	while (lock->readers) {
 		LeaveCriticalSection(&lock->lk);
 		LeaveCriticalSection(&lock->wlk);
-		WaitForSingleObject(lock->zeror, INFINITE);
+		if (WaitForSingleObject(lock->zeror, INFINITE) != WAIT_OBJECT_0) {
+			EnterCriticalSection(&lock->lk);
+			lock->writers_waiting--;
+			if (lock->writers_waiting == 0 && lock->writers == 0)
+				SetEvent(lock->zerow);
+			LeaveCriticalSection(&lock->lk);
+			return false;
+		}
 		EnterCriticalSection(&lock->wlk);
 		EnterCriticalSection(&lock->lk);
 	}
@@ -178,7 +240,7 @@ rwlock_unlock(rwlock_t *lock)
 	if (lock->writers) {
 		if (lock->writer == GetCurrentThreadId()) {
 			lock->writers--;
-			if ((lock->writers_waiting + lock->writers) == 0)
+			if (lock->writers_waiting == 0 && lock->writers == 0)
 				SetEvent(lock->zerow);
 			LeaveCriticalSection(&lock->lk);
 			LeaveCriticalSection(&lock->wlk);
@@ -188,7 +250,7 @@ rwlock_unlock(rwlock_t *lock)
 		return false;
 	}
 	if (lock->readers) {
-		rc = find_self(lock, &prev);
+		rc = find_self(lock, &prev, false);
 		if (rc && rc->count) {
 			rc->count--;
 			lock->readers--;
@@ -209,15 +271,25 @@ rwlock_unlock(rwlock_t *lock)
 bool
 rwlock_destroy(rwlock_t *lock)
 {
+	bool ret = true;
+
+	if (lock == NULL)
+		return false;
 	EnterCriticalSection(&lock->lk);
 	if (lock->readers || lock->writers || lock->writers_waiting || lock->rthreads) {
 		LeaveCriticalSection(&lock->lk);
 		return false;
 	}
 	LeaveCriticalSection(&lock->lk);
+	if (!CloseHandle(lock->zeror))
+		ret = false;
+	if (!CloseHandle(lock->zerow))
+		ret = false;
+	lock->zeror = NULL;
+	lock->zerow = NULL;
 	DeleteCriticalSection(&lock->lk);
 	DeleteCriticalSection(&lock->wlk);
-	return true;
+	return ret;
 }
 
 #elif defined(__unix__)

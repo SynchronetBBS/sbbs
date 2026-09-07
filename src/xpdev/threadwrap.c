@@ -93,6 +93,8 @@ bool xp_pthread_mutex_init(pthread_mutex_t *mutex, bool recursive)
 {
 #if defined(_POSIX_THREADS)
 	pthread_mutexattr_t attr;
+	int                 result;
+
 	if (pthread_mutexattr_init(&attr) != 0)
 		return false;
 	if (recursive)
@@ -107,13 +109,13 @@ bool xp_pthread_mutex_init(pthread_mutex_t *mutex, bool recursive)
 			return false;
 		}
 #endif
-	pthread_mutex_init(mutex, &attr);
+	result = pthread_mutex_init(mutex, &attr);
 	pthread_mutexattr_destroy(&attr);
+	return result == 0;
 #else   /* Assumes recursive (e.g. Windows) */
 	(void)recursive;
-	pthread_mutex_init(mutex, NULL);
+	return pthread_mutex_init(mutex, NULL) == 0;
 #endif
-	return true;
 }
 
 /****************************************************************************/
@@ -132,6 +134,7 @@ pthread_mutex_t xp_pthread_mutex_initializer(bool recursive)
 		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 #endif
 	pthread_mutex_init(&mutex, &attr);
+	pthread_mutexattr_destroy(&attr);
 #else   /* Assumes recursive (e.g. Windows) */
 	(void)recursive;
 	pthread_mutex_init(&mutex, NULL);

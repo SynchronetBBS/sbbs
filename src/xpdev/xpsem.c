@@ -235,6 +235,11 @@ xp_sem_getvalue(xp_sem_t *sem, int *sval)
 	int retval;
 
 	_SEM_CHECK_VALIDITY(sem);
+	if (sval == NULL) {
+		errno = EINVAL;
+		retval = -1;
+		goto RETURN;
+	}
 
 	assert_pthread_mutex_lock(&(*sem)->lock);
 	*sval = (int)(*sem)->count;

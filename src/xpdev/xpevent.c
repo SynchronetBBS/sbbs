@@ -31,27 +31,31 @@ xpevent_t
 CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
 {
 	xpevent_t event;
+	int       result;
+
+	(void)sec;
+	(void)name;
 
 	event = (xpevent_t)malloc(sizeof(struct xpevent));
-	if (event == NULL) {
-		errno = ENOSPC;
+	if (event == NULL)
 		return NULL;
-	}
 	memset(event, 0, sizeof(struct xpevent));
 
 	/*
 	 * Initialize
 	 */
-	if (pthread_mutex_init(&event->lock, NULL) != 0) {
+	result = pthread_mutex_init(&event->lock, NULL);
+	if (result != 0) {
 		free(event);
-		errno = ENOSPC;
+		errno = result;
 		return NULL;
 	}
 
-	if (pthread_cond_init(&event->gtzero, NULL) != 0) {
+	result = pthread_cond_init(&event->gtzero, NULL);
+	if (result != 0) {
 		pthread_mutex_destroy(&event->lock);
 		free(event);
-		errno = ENOSPC;
+		errno = result;
 		return NULL;
 	}
 
@@ -66,12 +70,19 @@ CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
 BOOL
 SetEvent(xpevent_t event)
 {
+	int result;
+	int unlock_result;
+
 	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
 		return FALSE;
 	}
 
-	assert_pthread_mutex_lock(&event->lock);
+	result = pthread_mutex_lock(&event->lock);
+	if (result != 0) {
+		errno = result;
+		return FALSE;
+	}
 
 	event->value = TRUE;
 	if (event->nwaiters > 0) {
@@ -81,10 +92,14 @@ SetEvent(xpevent_t event)
 		 * priority thread is run by the scheduler, since
 		 * pthread_cond_signal() signals waiting threads in FIFO order.
 		 */
-		pthread_cond_broadcast(&event->gtzero);
+		result = pthread_cond_broadcast(&event->gtzero);
 	}
 
-	assert_pthread_mutex_unlock(&event->lock);
+	unlock_result = pthread_mutex_unlock(&event->lock);
+	if (result != 0 || unlock_result != 0) {
+		errno = result != 0 ? result : unlock_result;
+		return FALSE;
+	}
 
 	return TRUE;
 }
@@ -92,16 +107,26 @@ SetEvent(xpevent_t event)
 BOOL
 ResetEvent(xpevent_t event)
 {
+	int result;
+
 	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
 		return FALSE;
 	}
 
-	assert_pthread_mutex_lock(&event->lock);
+	result = pthread_mutex_lock(&event->lock);
+	if (result != 0) {
+		errno = result;
+		return FALSE;
+	}
 
 	event->value = FALSE;
 
-	assert_pthread_mutex_unlock(&event->lock);
+	result = pthread_mutex_unlock(&event->lock);
+	if (result != 0) {
+		errno = result;
+		return FALSE;
+	}
 
 	return TRUE;
 }
@@ -109,31 +134,66 @@ ResetEvent(xpevent_t event)
 BOOL
 CloseEvent(xpevent_t event)
 {
-	BOOL ret = TRUE;
+	int result;
+
 	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
 		return FALSE;
 	}
 
 	/* Make sure there are no waiters. */
-	assert_pthread_mutex_lock(&event->lock);
+	result = pthread_mutex_lock(&event->lock);
+	if (result != 0) {
+		errno = result;
+		return FALSE;
+	}
 	if (event->nwaiters > 0) {
-		assert_pthread_mutex_unlock(&event->lock);
+		result = pthread_mutex_unlock(&event->lock);
+		if (result != 0) {
+			errno = result;
+			return FALSE;
+		}
 		errno = EBUSY;
 		return FALSE;
 	}
 
-	assert_pthread_mutex_unlock(&event->lock);
+	result = pthread_mutex_unlock(&event->lock);
+	if (result != 0) {
+		errno = result;
+		return FALSE;
+	}
 
-	if (pthread_mutex_destroy(&event->lock))
-		ret = FALSE;
-	if (pthread_cond_destroy(&event->gtzero))
-		ret = FALSE;
+	result = pthread_cond_destroy(&event->gtzero);
+	if (result != 0) {
+		errno = result;
+		return FALSE;
+	}
+	result = pthread_mutex_destroy(&event->lock);
+	if (result != 0) {
+		event->magic = 0;
+		errno = result;
+		return FALSE;
+	}
 	event->magic = 0;
 
 	free(event);
 
-	return ret;
+	return TRUE;
+}
+
+static int
+get_abstime(DWORD ms, struct timespec *abstime)
+{
+	struct timeval currtime;
+	long           nanoseconds;
+
+	if (gettimeofday(&currtime, NULL) != 0)
+		return -1;
+	abstime->tv_sec = currtime.tv_sec + (time_t)(ms / 1000);
+	nanoseconds = currtime.tv_usec * 1000 + (long)(ms % 1000) * 1000000;
+	abstime->tv_sec += nanoseconds / 1000000000;
+	abstime->tv_nsec = nanoseconds % 1000000000;
+	return 0;
 }
 
 DWORD
@@ -141,7 +201,7 @@ WaitForEvent(xpevent_t event, DWORD ms)
 {
 	DWORD           retval = WAIT_FAILED;
 	struct timespec abstime;
-	struct timeval  currtime;
+	int             result;
 
 	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
@@ -149,27 +209,31 @@ WaitForEvent(xpevent_t event, DWORD ms)
 	}
 
 	if (ms && ms != INFINITE) {
-		gettimeofday(&currtime, NULL);
-		abstime.tv_sec = currtime.tv_sec + ((currtime.tv_usec / 1000 + ms) / 1000);
-		abstime.tv_nsec = (currtime.tv_usec * 1000 + ms * 1000000) % 1000000000;
+		if (get_abstime(ms, &abstime) != 0)
+			return WAIT_FAILED;
 	}
 
-	assert_pthread_mutex_lock(&event->lock);
+	result = pthread_mutex_lock(&event->lock);
+	if (result != 0) {
+		errno = result;
+		return WAIT_FAILED;
+	}
 
 	if (event->value)
 		retval = WAIT_OBJECT_0;
 
 	while ((!(event->value)) || (event->verify != NULL && !event->verify(event->cbdata))) {
+		if (event->nwaiters == UINT32_MAX) {
+			errno = EOVERFLOW;
+			retval = WAIT_FAILED;
+			goto DONE;
+		}
 		event->nwaiters++;
 		switch (ms) {
 			case 0:
-				if (event->value)
-					retval = WAIT_OBJECT_0;
-				else
-					retval = WAIT_TIMEOUT;
+				retval = WAIT_TIMEOUT;
 				event->nwaiters--;
 				goto DONE;
-				break;
 			case INFINITE:
 				retval = pthread_cond_wait(&event->gtzero, &event->lock);
 				if (retval) {
@@ -202,7 +266,11 @@ DONE:
 			event->value = FALSE;
 	}
 
-	assert_pthread_mutex_unlock(&event->lock);
+	result = pthread_mutex_unlock(&event->lock);
+	if (result != 0) {
+		errno = result;
+		retval = WAIT_FAILED;
+	}
 
 	return retval;
 }

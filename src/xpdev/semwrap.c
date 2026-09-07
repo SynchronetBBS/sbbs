@@ -31,12 +31,16 @@ int
 xp_sem_trywait_block(sem_t *sem, unsigned long timeout)
 {
 	int             retval;
+	long            nanoseconds;
 	struct timespec abstime;
 	struct timeval  currtime;
 
-	gettimeofday(&currtime, NULL);
-	abstime.tv_sec = currtime.tv_sec + (currtime.tv_usec / 1000 + timeout) / 1000;
-	abstime.tv_nsec = (currtime.tv_usec * 1000 + timeout * 1000000) % 1000000000;
+	if (gettimeofday(&currtime, NULL) != 0)
+		return -1;
+	abstime.tv_sec = currtime.tv_sec + (time_t)(timeout / 1000);
+	nanoseconds = currtime.tv_usec * 1000 + (long)(timeout % 1000) * 1000000;
+	abstime.tv_sec += nanoseconds / 1000000000;
+	abstime.tv_nsec = nanoseconds % 1000000000;
 
 	retval = sem_timedwait(sem, &abstime);
 	if (retval && errno == ETIMEDOUT)
@@ -48,62 +52,107 @@ xp_sem_trywait_block(sem_t *sem, unsigned long timeout)
 
 #include <limits.h>     /* INT_MAX */
 
+static int
+win32_error(DWORD error)
+{
+	switch (error) {
+		case ERROR_ACCESS_DENIED:
+			errno = EACCES;
+			break;
+		case ERROR_INVALID_HANDLE:
+		case ERROR_INVALID_PARAMETER:
+			errno = EINVAL;
+			break;
+		case ERROR_NOT_ENOUGH_MEMORY:
+		case ERROR_OUTOFMEMORY:
+			errno = ENOMEM;
+			break;
+		case ERROR_TOO_MANY_POSTS:
+			errno = EOVERFLOW;
+			break;
+		default:
+			errno = EIO;
+			break;
+	}
+	return -1;
+}
+
 #if defined(__BORLANDC__)
 	#pragma argsused
 #endif
 int sem_init(sem_t* psem, int pshared, unsigned int value)
 {
-
-	if ((*(psem) = CreateSemaphore(NULL, value, INT_MAX, NULL)) == NULL)
+	if (psem == NULL || value > INT_MAX) {
+		errno = EINVAL;
 		return -1;
+	}
+	if (pshared != 0) {
+		errno = ENOSYS;
+		return -1;
+	}
+	if ((*(psem) = CreateSemaphore(NULL, value, INT_MAX, NULL)) == NULL)
+		return win32_error(GetLastError());
 
 	return 0;
 }
 
 int xp_sem_trywait_block(sem_t* psem, unsigned long timeout)
 {
-	if (WaitForSingleObject(*(psem), timeout) != WAIT_OBJECT_0) {
-		errno = EAGAIN;
+	DWORD result;
+
+	if (psem == NULL || *psem == NULL) {
+		errno = EINVAL;
 		return -1;
 	}
-
-	return 0;
+	result = WaitForSingleObject(*psem, timeout);
+	switch (result) {
+		case WAIT_OBJECT_0:
+			return 0;
+		case WAIT_TIMEOUT:
+			errno = EAGAIN;
+			return -1;
+		case WAIT_FAILED:
+			return win32_error(GetLastError());
+		default:
+			errno = EIO;
+			return -1;
+	}
 }
 
 int sem_post(sem_t* psem)
 {
-	if (ReleaseSemaphore(*(psem), 1, NULL) == TRUE)
+	if (psem == NULL || *psem == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (ReleaseSemaphore(*psem, 1, NULL) == TRUE)
 		return 0;
 
-	return -1;
+	return win32_error(GetLastError());
 }
 
 int sem_getvalue(sem_t* psem, int* vp)
 {
-#if 0       /* This only works on 9x *sniff* */
-	ReleaseSemaphore(*(psem), 0, (LPLONG)vp);
-	return 0;
-#else
-	/* Note, this should REALLY be in a critical section... */
-	int retval = 0;
-
-	if (WaitForSingleObject(*(psem), 0) != WAIT_OBJECT_0)
-		*vp = 0;
-	else {
-		if (ReleaseSemaphore(*(psem), 1, (LPLONG)vp))
-			(*vp)++;
-		else
-			retval = -1;
+	if (psem == NULL || *psem == NULL || vp == NULL) {
+		errno = EINVAL;
+		return -1;
 	}
-	return retval;
-#endif
+	/* Win32 has no documented, race-free query for a semaphore's count. */
+	errno = ENOSYS;
+	return -1;
 }
 
 int sem_destroy(sem_t* psem)
 {
-	if (CloseHandle(*(psem)) == TRUE)
+	if (psem == NULL || *psem == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+	if (CloseHandle(*psem) == TRUE) {
+		*psem = NULL;
 		return 0;
-	return -1;
+	}
+	return win32_error(GetLastError());
 }
 
 #endif /* _WIN32 */

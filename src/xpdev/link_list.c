@@ -40,15 +40,22 @@ link_list_t* listInit(link_list_t* list, int flags)
 
 #if defined(LINK_LIST_THREADSAFE)
 	if (list->flags & LINK_LIST_MUTEX) {
-#ifdef _WIN32
-		pthread_mutex_init(&list->mutex, NULL);
-#else
-		list->mutex = xp_pthread_mutex_initializer(/* recursive: */ true);
-#endif
+		if (!xp_pthread_mutex_init(&list->mutex, /* recursive: */ true)) {
+			list->flags &= ~LINK_LIST_MUTEX;
+			return NULL;
+		}
 	}
 
-	if (list->flags & LINK_LIST_SEMAPHORE)
-		sem_init(&list->sem, 0, 0);
+	if (list->flags & LINK_LIST_SEMAPHORE) {
+		if (sem_init(&list->sem, 0, 0) != 0) {
+			list->flags &= ~LINK_LIST_SEMAPHORE;
+			if (list->flags & LINK_LIST_MUTEX) {
+				pthread_mutex_destroy(&list->mutex);
+				list->flags &= ~LINK_LIST_MUTEX;
+			}
+			return NULL;
+		}
+	}
 #endif
 
 	if (flags & LINK_LIST_ATTACH)
