@@ -38,10 +38,10 @@ set(BF_SOURCE
 )
 
 add_executable(syncdraw ${SOURCE})
-require_libs(syncdraw xpdev ciolib)
+require_libs(syncdraw ciolib encode hash xpdev)
 
 add_executable(fontutil ${FU_SOURCE})
-require_libs(fontutil xpdev ciolib)
+require_libs(fontutil ciolib encode hash xpdev)
 
 add_executable(buildfont ${BF_SOURCE})
 require_libs(buildfont xpdev)
