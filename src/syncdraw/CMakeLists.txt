@@ -37,13 +37,20 @@ set(BF_SOURCE
 	buildfont.c
 )
 
-add_executable(syncdraw ${SOURCE})
+if(WITHOUT_GDI AND WITHOUT_SDL)
+	set(WIN_MAIN_TYPE "")
+else()
+	set(WIN_MAIN_TYPE WIN32)
+endif()
+
+add_executable(syncdraw ${WIN_MAIN_TYPE} ${SOURCE})
 require_libs(syncdraw ciolib encode hash xpdev)
 
-add_executable(fontutil ${FU_SOURCE})
+add_executable(fontutil ${WIN_MAIN_TYPE} ${FU_SOURCE})
 require_libs(fontutil ciolib encode hash xpdev)
 
 add_executable(buildfont ${BF_SOURCE})
 require_libs(buildfont xpdev)
+target_compile_definitions(buildfont PRIVATE SDL_MAIN_HANDLED)
 
 install(TARGETS syncdraw fontutil buildfont DESTINATION bin)
