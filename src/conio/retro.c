@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 
 #define BITMAP_CIOLIB_DRIVER
@@ -139,7 +140,7 @@ retro_keyboard(bool down, unsigned keycode, uint32_t character, uint16_t key_mod
 	if (down) {
 		// TODO: Map properly...
 		if (keybuffill < KEYBUFSIZE) {
-			struct keyvals *k = bsearch(&keycode, keyval, sizeof(keyval) / sizeof(keyval[0]), sizeof(keyval[0]), retro_keyval_cmp);
+			const struct keyvals *k = bsearch(&keycode, keyval, sizeof(keyval) / sizeof(keyval[0]), sizeof(keyval[0]), retro_keyval_cmp);
 
 			if (k) {
 				if (key_modifiers & RETROKMOD_ALT)
@@ -265,6 +266,7 @@ retro_get_system_av_info(struct retro_system_av_info* info)
 }
 
 static struct retro_input_descriptor rid[] = {
+	{ 0 },
 };
 
 RETRO_API void
@@ -401,7 +403,7 @@ retro_beep(void)
 int
 retro_kbhit(void)
 {
-	return keybuffill;
+	return (int)keybuffill;
 }
 
 int
