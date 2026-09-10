@@ -78,6 +78,11 @@ bool           opt_leave_msgptrs      = false;
 bool           opt_dump_area_file     = false;
 bool           opt_retoss_badmail     = false;/* Re-toss from the badecho/unknown msg sub */
 
+typedef struct {
+	char tag[FIDO_AREATAG_LEN + 1];
+	fidoaddr_t addr;
+} security_violation_t;
+
 /* statistics */
 ulong          netmail = 0; /* imported */
 ulong          echomail = 0; /* imported */
@@ -94,6 +99,7 @@ FILE *         fidologfile = NULL;
 str_list_t     subject_can;
 str_list_t     twit_list;
 str_list_t     bad_areas;
+link_list_t    security_violations;
 
 fidoaddr_t     sys_faddr = {1, 1, 1, 0};    /* Default system address: 1:1/1.0 */
 sbbsecho_cfg_t cfg;
@@ -1375,6 +1381,17 @@ bool area_is_linked(unsigned area_num, const fidoaddr_t* addr)
 		if (!memcmp(addr, &cfg.area[area_num].link[i], sizeof(fidoaddr_t)))
 			return true;
 	return false;
+}
+
+void record_security_violation(const char* areatag, const fidoaddr_t* addr)
+{
+	security_violation_t rec;
+
+	memset(&rec, 0, sizeof(rec));
+	SAFECOPY(rec.tag, areatag);
+	rec.addr = *addr;
+	if (listFindNode(&security_violations, &rec, sizeof(rec)) == NULL)
+		listPushNodeData(&security_violations, &rec, sizeof(rec));
 }
 
 void link_area(unsigned area_num, const fidoaddr_t* addr)
@@ -3276,6 +3293,7 @@ void cleanup(void)
 		}
 		strListFree(&bad_areas);
 	}
+	listFreeNodes(&security_violations);
 	while ((p = strListPop(&locked_bso_nodes)) != NULL) {
 		delfile(p, __LINE__);
 		free(p);
@@ -6335,6 +6353,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 					lprintf(LOG_WARNING, "%s: Security violation - %s not in Area File"
 					        , areatag, smb_faddrtoa(&pkt_orig, NULL));
 					printf("Security Violation (Not in %s)\n", cfg.areafile);
+					record_security_violation(areatag, &pkt_orig);
 					bad_packet = "security";
 					continue;
 				}
@@ -7137,6 +7156,11 @@ int main(int argc, char **argv)
 
 		if (echomail)
 			lprintf(LOG_INFO, "Imported: %5lu msgs total", echomail);
+		for (list_node_t* node = listFirstNode(&security_violations); node != NULL; node = listNextNode(node)) {
+			security_violation_t* rec = node->data;
+			lprintf(LOG_INFO, "Security Violation: %s %s"
+			        , rec->tag, smb_faddrtoa(&rec->addr, NULL));
+		}
 	}
 
 	if (opt_import_netmail && !terminated) {
