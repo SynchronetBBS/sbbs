@@ -656,7 +656,14 @@ USAGE:
 		       , errno, cfg.ctrl_dir);
 		exit(-1);
 	}
-	FULLPATH(cfg.ctrl_dir, ".", sizeof(cfg.ctrl_dir));
+	char abspath[MAX_PATH + 1];
+	if (FULLPATH(abspath, ".", sizeof(abspath)) == NULL
+	    || strlen(abspath) >= sizeof(cfg.ctrl_dir)) {
+		printf("!ERROR resolving control directory path (%zu chars max): %s\n"
+		       , sizeof(cfg.ctrl_dir) - 1, cfg.ctrl_dir);
+		exit(-1);
+	}
+	SAFECOPY(cfg.ctrl_dir, abspath);
 	backslashcolon(cfg.ctrl_dir);
 
 	if (import != NULL && *import != 0) {

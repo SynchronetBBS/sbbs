@@ -598,14 +598,14 @@ typedef struct
 	uint32_t		cdt_per_dollar; /* Credits per dollar */
 	uint16_t		cdt_up_pct; 	/* Pct of credits credited on uploads */
 	uint16_t		cdt_dn_pct; 	/* Pct of credits credited per download */
-	char		 	node_dir[LEN_DIR+1];
-	char		 	ctrl_dir[LEN_DIR+1];
-	char			data_dir[LEN_DIR+1];
-	char			text_dir[LEN_DIR+1];
-	char			exec_dir[LEN_DIR+1];
-	char			temp_dir[LEN_DIR+1];
-	char			mods_dir[LEN_DIR+1];
-	char			logs_dir[LEN_DIR+1];
+	char		 	node_dir[LEN_SYSDIR+1];
+	char		 	ctrl_dir[LEN_SYSDIR+1];
+	char			data_dir[LEN_SYSDIR+1];
+	char			text_dir[LEN_SYSDIR+1];
+	char			exec_dir[LEN_SYSDIR+1];
+	char			temp_dir[LEN_SYSDIR+1];
+	char			mods_dir[LEN_SYSDIR+1];
+	char			logs_dir[LEN_SYSDIR+1];
 	char			node_path[MAX_NODES][LEN_DIR+1]; /* paths to all node dirs */
 	int				sysop_dir;			/* Destination for uploads to sysop */
 	int				user_dir;			/* Directory for user to user xfers */
@@ -613,13 +613,13 @@ typedef struct
 	uint16_t		leech_pct;			/* Leech detection percentage */
 	uint16_t		leech_sec;			/* Minimum seconds before possible leech */
 	uint32_t		netmail_cost;		/* Cost in credits to send netmail */
-	char 			netmail_dir[LEN_DIR+1];    /* Directory to store netmail */
+	char 			netmail_dir[LEN_SYSDIR+1];    /* Directory to store netmail */
 	uint16_t		netmail_misc;		/* Miscellaneous bits regarding netmail */
 	uint32_t		inetmail_misc;		/* Miscellaneous bits regarding inetmail */
 	uint32_t		inetmail_cost;		/* Cost in credits to send Internet mail */
 	char			smtpmail_sem[LEN_DIR+1];	/* Inbound Internet Mail semaphore file */
 	char			inetmail_sem[LEN_DIR+1];	/* Outbound Internet Mail semaphore file */
-	char			echomail_dir[LEN_DIR+1];	/* Directory to store echomail in */
+	char			echomail_dir[LEN_SYSDIR+1];	/* Directory to store echomail in */
 	char			netmail_sem[LEN_DIR+1];		/* FidoNet NetMail semaphore */
 	char 			echomail_sem[LEN_DIR+1];	/* FidoNet EchoMail semaphore  */
 	char		 	origline[51];		/* Default EchoMail origin line */

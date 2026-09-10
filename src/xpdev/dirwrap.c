@@ -1038,6 +1038,7 @@ char * _fullpath(char *target, const char *path, size_t size)  {
 	char *out;
 	char *p;
 	bool  target_alloced = false;
+	char  cwd[MAX_PATH + 1];
 
 	if (target == NULL)  {
 		size = MAX_PATH + 1;
@@ -1046,38 +1047,55 @@ char * _fullpath(char *target, const char *path, size_t size)  {
 		}
 		target_alloced = true;
 	}
+	if (size < 1) {
+		return NULL;
+	}
 	out = target;
-	*out = 0;
+	*out = 0;	/* callers that ignore a NULL return must not read uninitialized memory */
 
 	if (*path != '/')  {
+		size_t prefix_len;
+		size_t sep_len = 0;	/* the '/' joining the prefix and the path, if any */
+
 		if (*path == '~') {
-			p = getenv("HOME");
-			if (p == NULL || strlen(p) + strlen(path) >= size) {
+			if ((p = getenv("HOME")) == NULL) {
 				if (target_alloced)
 					free(target);
 				return NULL;
 			}
-			strcpy(target, p);
-			out = strrchr(target, '\0');
-			path++;
+			path++;			/* the '~' itself is replaced by $HOME */
 		}
 		else {
-			p = getcwd(NULL, size);
-			if (p == NULL || strlen(p) + strlen(path) >= size) {
-				free(p);
+			if (getcwd(cwd, sizeof cwd) == NULL) {
 				if (target_alloced)
 					free(target);
 				return NULL;
 			}
-			strcpy(target, p);
-			free(p);
-			out = strrchr(target, '\0');
+			p = cwd;
+			sep_len = 1;
+		}
+		prefix_len = strlen(p);
+		if (prefix_len + sep_len + strlen(path) >= size) {
+			if (target_alloced)
+				free(target);
+			return NULL;
+		}
+		memcpy(target, p, prefix_len + 1);
+		out = target + prefix_len;
+		if (sep_len) {
 			*(out++) = '/';
 			*out = 0;
-			out--;
+			out--;		/* the normalization loop below must start at the '/' */
 		}
 	}
-	strncat(target, path, size - 1);
+	/* Truncation here would silently yield a valid-looking but wrong path;
+	   the normalization below can only shorten the result, never lengthen it. */
+	if (strlcat(target, path, size) >= size) {
+		*target = 0;
+		if (target_alloced)
+			free(target);
+		return NULL;
+	}
 
 /*	if(stat(target,&sb))
 		return NULL;
@@ -1137,7 +1155,9 @@ bool isabspath(const char *filename)
 {
 	char path[MAX_PATH + 1];
 
-	return stricmp(filename, FULLPATH(path, filename, sizeof(path))) == 0;
+	if (FULLPATH(path, filename, sizeof(path)) == NULL)
+		return false;
+	return stricmp(filename, path) == 0;
 }
 
 /****************************************************************************/

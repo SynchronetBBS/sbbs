@@ -525,17 +525,22 @@ char* prep_dir(const char* base, char* path, size_t buflen)
 	char  str[MAX_PATH + 1];
 	char  abspath[MAX_PATH + 1];
 	char  ch;
+	int   len;
 
 	if (!path[0])
 		return path;
 	if (path[0] != '\\' && path[0] != '/' && path[1] != ':') { /* Relative directory */
 		ch = *lastchar(base);
 		if (ch == '\\' || ch == '/')
-			SAFEPRINTF2(str, "%s%s", base, path);
+			len = snprintf(str, sizeof(str), "%s%s", base, path);
 		else
-			SAFEPRINTF3(str, "%s%c%s", base, PATH_DELIM, path);
+			len = snprintf(str, sizeof(str), "%s%c%s", base, PATH_DELIM, path);
 	} else
-		SAFECOPY(str, path);
+		len = snprintf(str, sizeof(str), "%s", path);
+	/* Reserve room for the delimiter appended by backslashcolon() (which does
+	   not bounds-check) and the '.' appended after it */
+	if (len < 0 || (size_t)len + 2 >= sizeof(str))
+		return NULL;
 
 #ifdef __unix__             /* Change backslashes to forward slashes on Unix */
 	for (p = str; *p; p++)
@@ -545,10 +550,15 @@ char* prep_dir(const char* base, char* path, size_t buflen)
 
 	backslashcolon(str);
 	SAFECAT(str, ".");               /* Change C: to C:. and C:\SBBS\ to C:\SBBS\. */
-	FULLPATH(abspath, str, buflen);   /* Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC */
+	/* Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC.  Reserve a byte for the
+	   trailing path delimiter appended by backslash() below. */
+	if (FULLPATH(abspath, str, sizeof(abspath) - 1) == NULL)
+		return NULL;
 	backslash(abspath);
+	if (strlen(abspath) >= buflen)
+		return NULL;
 
-	strncpy(path, abspath, buflen);
+	strlcpy(path, abspath, buflen);
 	return path;
 }
 

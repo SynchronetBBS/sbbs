@@ -29,6 +29,7 @@
 #include "fidodefs.h"   // fmsghdr_t, fpkthdr_t, FIDO_*, etc.
 #include "xpbeep.h"     // BEEP()
 #include "str_list.h"   // str_list_t
+#include "ini_file.h"   // INI_MAX_VALUE_LEN
 
 /*************/
 /* Constants */
@@ -87,6 +88,13 @@
 
 #define LEN_DIR     100     // Maximum length of directory paths
 #define LEN_CMD     100     // Maximum length of command lines
+
+// Maximum length of a fully-resolved system directory path (scfg_t.ctrl_dir and
+// friends).  Matches the ctrl_dir/temp_dir fields of the per-server startup_t,
+// which these are copied from.  Deliberately not MAX_PATH, which is PATH_MAX
+// (4096) on Linux: scfg_t is instantiated MAX_NODES times by the terminal
+// server (main.cpp's node_scfg[]).
+#define LEN_SYSDIR  (INI_MAX_VALUE_LEN - 1)
 
 #define LEN_CODE    16      // Maximum length of internal codes
 #define LEN_QWKID   8       // Maximum length of QWK-ID

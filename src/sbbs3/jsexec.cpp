@@ -1539,7 +1539,11 @@ extern "C" int main(int argc, char **argv
 #else
 	char relpath[MAX_PATH + 1];
 	SAFECOPY(relpath, scfg.ctrl_dir);
-	FULLPATH(scfg.ctrl_dir, relpath, sizeof scfg.ctrl_dir);
+	if (FULLPATH(scfg.ctrl_dir, relpath, sizeof scfg.ctrl_dir) == NULL) {
+		fprintf(errfp, "!ERROR resolving ctrl directory path (%zu chars max): %s\n"
+		        , sizeof scfg.ctrl_dir - 1, relpath);
+		return do_bail(1);
+	}
 	if (change_cwd && chdir(scfg.ctrl_dir) != 0)
 		fprintf(errfp, "!ERROR changing directory to: %s\n", scfg.ctrl_dir);
 
