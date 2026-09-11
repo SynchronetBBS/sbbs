@@ -63,6 +63,11 @@ typedef unsigned char uchar;
 
 #define SMB_MAX_HDR_LEN     0xffffU     /* Message header length is 16-bit */
 
+/* Longest extension smblib appends to smb_t.file (".hash", ".lock"), counting
+   the dot.  smb_t.file is sized to leave room for it, so the derived filenames
+   still fit a MAX_PATH + 1 buffer. */
+#define SMB_MAX_FILE_EXT_LEN 5
+
 #define SMB_SELFPACK        0           /* Self-packing storage allocation */
 #define SMB_FASTALLOC       1           /* Fast allocation */
 
@@ -673,7 +678,7 @@ typedef struct {                /* Message or File */
 
 typedef struct {                /* Message/File base */
 
-	char file[128];             /* Path and base filename (no extension) */
+	char file[MAX_PATH + 1 - SMB_MAX_FILE_EXT_LEN]; /* Path and base filename (no extension) */
 	FILE* sdt_fp;               /* File pointer for data (.sdt) file */
 	FILE* shd_fp;               /* File pointer for header (.shd) file */
 	FILE* sid_fp;               /* File pointer for index (.sid) file */

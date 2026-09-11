@@ -161,7 +161,7 @@ char *usage = "\nusage: chksmb [-opts] <path/to/base[.shd]> [...]\n"
 
 int main(int argc, char **argv)
 {
-	char     str[128], *p, *beep = "";
+	char     str[MAX_PATH + 1], *p, *beep = "";
 	char     from[26];
 	char*    body;
 	char*    tail;
