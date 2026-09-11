@@ -879,7 +879,7 @@ int edit_fileopts(scfg_t *cfg, user_t *user)
 
 int edit_comment(scfg_t *cfg, user_t *user)
 {
-	char str[1024];
+	char str[MAX_PATH + 1];
 	char editor[1024];
 
 	sprintf(str,"%s %suser/%04u.msg",geteditor(editor, sizeof editor),cfg->data_dir,user->number);

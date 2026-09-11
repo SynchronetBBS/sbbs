@@ -1772,7 +1772,7 @@ void dir_toggle_options(dir_t* dir)
 void dir_cfg(int libnum)
 {
 	static int   dflt, bar, adv_dflt, opt_dflt;
-	char         str[128], str2[128], code[128], path[MAX_PATH + 1], done = 0;
+	char         str[MAX_PATH + 1], str2[128], code[128], path[MAX_PATH + 1], done = 0;
 	char         data_dir[MAX_PATH + 1];
 	int          j, n;
 	int          i, dirnum[MAX_OPTS + 1];
@@ -2337,7 +2337,7 @@ void dir_cfg(int libnum)
 void dir_defaults_cfg(int libnum)
 {
 	static int dflt;
-	char       str[128];
+	char       str[MAX_PATH + 1];
 	dir_t*     dir = &cfg.lib[libnum]->dir_defaults;
 
 	while (1) {

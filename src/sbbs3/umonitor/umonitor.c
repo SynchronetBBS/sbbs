@@ -313,7 +313,7 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node, int *curp, int *barp) {
 	stats_t	nstats;
 	char	statbuf[6*78];		/* Buffer to hold the stats for passing to uifc.showbuf() */
 	char	str[4][4][12];
-	char	heading[128];
+	char	heading[MAX_PATH + 1];
 	char	usrname[128];
 	char	tmp[128];
 	ulong	free;
@@ -447,7 +447,7 @@ int view_logs(scfg_t *cfg)
 {
 	char**	opt;
 	int		i;
-	char	str[1024];
+	char	str[MAX_PATH + 1];
 	struct tm tm;
 	struct tm tm_yest;
 	time_t	now;
@@ -575,7 +575,7 @@ int qwk_callouts(scfg_t *cfg)
 {
 	char**	opt;
 	int		i,j;
-	char	str[1024];
+	char	str[MAX_PATH + 1];
 
 	if(cfg->total_qhubs<1) {
 		uifc.msg("No QWK hubs configured!");
@@ -619,7 +619,7 @@ int run_events(scfg_t *cfg)
 {
 	char**	opt;
 	int		i,j;
-	char	str[1024];
+	char	str[MAX_PATH + 1];
 
 	if((opt=(char **)alloca(sizeof(char *)*(cfg->total_events+1)))==NULL)
 		allocfail(sizeof(char *)*(cfg->total_events+1));
@@ -728,7 +728,7 @@ int edit_cfg(scfg_t *cfg)
 {
 	char**	opt;
 	int		i;
-	char	cmd[1024];
+	char	cmd[MAX_PATH + 1];
 	char	editcmd[1024];
 
 	const int num_opts = 16;
@@ -776,7 +776,7 @@ int edit_can(scfg_t *cfg)
 {
 	char**	opt;
 	int		i;
-	char	cmd[1024];
+	char	cmd[MAX_PATH + 1];
 	char	editcmd[1024];
 
 	const int num_opts = 11;
@@ -832,7 +832,7 @@ int main(int argc, char** argv)  {
 	int		main_dflt=0;
 	int		main_bar=0;
 	int		sys_cur=0;
-	char	str[256],ctrl_dir[MAX_PATH + 1];
+	char	str[MAX_PATH + 1],ctrl_dir[MAX_PATH + 1];
 	char*	text[TOTAL_TEXT] = {NULL};
 	int		i,j;
 	node_t	node;

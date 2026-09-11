@@ -2205,7 +2205,7 @@ static void ctrl_thread(void* arg)
 {
 	unsigned          mlsx_feats = (MLSX_TYPE | MLSX_PERM | MLSX_SIZE | MLSX_MODIFY | MLSX_OWNER | MLSX_UNIQUE | MLSX_CREATE);
 	char              buf[512];
-	char              str[128];
+	char              str[MAX_PATH + 1];
 	char              tmp[128];
 	char              uniq[33];
 	char              owner[33];

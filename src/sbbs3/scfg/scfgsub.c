@@ -134,7 +134,7 @@ static int prev_subnum(sub_t* sub)
 void sub_cfg(int grpnum)
 {
 	static int   dflt, tog_dflt, tog_bar, opt_dflt, net_dflt, adv_dflt, bar;
-	char         str[128], str2[128], done = 0, code[128];
+	char         str[MAX_PATH + 1], str2[128], done = 0, code[128];
 	char         path[MAX_PATH + 1];
 	char         data_dir[MAX_PATH + 1];
 	int          j, m, n;

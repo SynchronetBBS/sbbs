@@ -5613,7 +5613,7 @@ int export_netmail(void)
 	printf("\nExporting Outbound NetMail from %smail to %s*.msg ...\n", scfg.data_dir, scfg.netmail_dir);
 
 	if (email->shd_fp == NULL) {
-		sprintf(email->file, "%smail", scfg.data_dir);
+		SAFEPRINTF(email->file, "%smail", scfg.data_dir);
 		email->retry_time = scfg.smb_retry_time;
 		if ((i = smb_open(email)) != SMB_SUCCESS) {
 			lprintf(LOG_ERR, "ERROR %d (%s) line %d opening mailbase: %s", i, email->last_error, __LINE__, email->file);

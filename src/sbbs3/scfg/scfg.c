@@ -45,7 +45,7 @@ static bool     auto_save = false;
 extern bool     all_msghdr;
 extern bool     no_msghdr;
 char **         opt;
-char            tmp[256];
+char            tmp[MAX_PATH + 1];
 char            error[256];
 char*           area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code Suffix", NULL };
 static char     title[128];

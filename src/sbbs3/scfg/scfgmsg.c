@@ -525,7 +525,7 @@ void msgs_cfg()
 	static int   dflt, msgs_dflt, bar;
 	static int   import_list_type;
 	static int   export_list_type;
-	char         str[256], str2[256], done = 0;
+	char         str[MAX_PATH + 1], str2[256], done = 0;
 	char         tmp[128];
 	int          j, k;
 	int          i, file;

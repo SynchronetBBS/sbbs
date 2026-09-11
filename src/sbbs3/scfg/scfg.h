@@ -103,7 +103,7 @@ extern scfg_t      cfg;
 extern uifcapi_t   uifc;
 extern char        item;
 extern char **     opt;
-extern char        tmp[256];
+extern char        tmp[MAX_PATH + 1];
 extern char        error[256];
 extern const char *nulstr;
 extern char *      invalid_code, *num_flags;
