@@ -4522,8 +4522,32 @@ void sbbs_t::logoffstats()
 }
 
 
+// GitLab #1179
+static void update_client_ini(sbbs_t* sbbs, const time_t* done)
+{
+	char path[MAX_PATH + 1];
+
+	SAFEPRINTF(path, "%sclient.ini", sbbs->cfg.node_dir);
+	FILE* fp = iniOpenFile(path, /* for_modify: */ true);
+	if (fp == NULL)
+		return;
+	str_list_t ini = iniReadFile(fp);
+	if (ini == NULL) {
+		iniCloseFile(fp);
+		return;
+	}
+	iniSetUInteger(&ini, ROOT_SECTION, "user", (uint)sbbs->useron.number, NULL);
+	iniSetString(&ini, ROOT_SECTION, "name", sbbs->useron.alias, NULL);
+	if (done != NULL)
+		iniSetUInteger(&ini, ROOT_SECTION, "done", (uint)*done, NULL);
+	iniWriteFile(fp, ini);
+	iniCloseFile(fp);
+	iniFreeStringList(ini);
+}
+
 void sbbs_t::register_login()
 {
+	update_client_ini(this, /* done: */ NULL);
 	if (user_login_state >= user_logged_in)
 		return;
 	if (useron.pass[0]) {
@@ -4686,14 +4710,7 @@ void node_thread(void* arg)
 	sbbs->logout();
 
 	time_t now = time(NULL);
-	SAFEPRINTF(str, "%sclient.ini", sbbs->cfg.node_dir);
-	FILE* fp = fopen(str, "at");
-	if (fp != NULL) {
-		fprintf(fp, "user=%u\n", sbbs->useron.number);
-		fprintf(fp, "name=%s\n", sbbs->useron.alias);
-		fprintf(fp, "done=%u\n", (uint)now);
-		fclose(fp);
-	}
+	update_client_ini(sbbs, &now);
 
 	if (sbbs->sys_status & SS_DAILY) { // New day, run daily events/maintenance
 		sbbs->daily_maint();
