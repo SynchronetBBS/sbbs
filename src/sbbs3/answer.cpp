@@ -421,7 +421,14 @@ bool sbbs_t::answer()
 							break;
 						}
 						if (((startup->options & (BBS_OPT_ALLOW_SFTP | BBS_OPT_SSH_ANYAUTH)) == BBS_OPT_ALLOW_SFTP) && tnamelen == 4 && strncmp(tname, "sftp", 4) == 0) {
-							if (useron.number) {
+							if (useron.number && !user_is_active(&useron)) {
+								lprintf(LOG_NOTICE, "%04d SFTP !DELETED or INACTIVE user #%u, disconnecting."
+								        , client_socket.load(), useron.number);
+								badlogin(useron.alias, /* passwd: */ NULL, "SSH", &client_addr, /* delay: */ false);
+								useron.number = 0;
+								activate_ssh = false;
+							}
+							else if (useron.number) {
 								activate_ssh = init_sftp(cid);
 								term->cols = 0;
 								term->rows = 0;
@@ -700,6 +707,14 @@ bool sbbs_t::answer()
 				if (!(useron.misc & AUTOLOGON) || !(useron.exempt & UEXEMPT_AUTOLOGON))
 					useron.number = 0;
 			}
+		}
+
+		if (useron.number && !user_is_active(&useron)) {
+			lprintf(LOG_NOTICE, "!DELETED or INACTIVE user #%u", useron.number);
+			bputs(text[UnknownUser]);
+			badlogin(useron.alias, /* passwd: */ NULL);
+			useron.number = 0;
+			hangup();
 		}
 
 		if (!online) {
