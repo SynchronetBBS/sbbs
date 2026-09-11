@@ -103,6 +103,21 @@ check(none.lobby && typeof none.lobby === "object", "lobby object when no files"
 check(none.text && typeof none.text === "object", "text object when no files");
 check(none.idle && typeof none.idle === "object", "idle object when no files");
 
+// Section names are matched case-insensitively, as File.iniGetObject() does.
+// syncretro_lobby_ini() now indexes a one-shot parse (GitLab #1211) rather
+// than calling iniGetObject() per section, so this is the JS-side lookup's
+// job -- and [console] name must still be the console's name, not the
+// section name (iniGetAllObjects's default name property would overwrite it).
+var casedir = system.temp_dir + "syncretro_cfgtest_case/";
+mkpath(casedir);
+f = new File(casedir + "syncretro.ini");
+f.open("w");
+f.write("[Console]\nname = Cased\nshort = Case\n");
+f.close();
+var cased = syncretro_lobby_ini(casedir);
+check_str(cased.console.name, "Cased", "section name is case-insensitive");
+check_str(cased.console.short, "Case", "[console] name is the console, not the section");
+
 // A full copy as the overlay resolves identically to no overlay at all -- the
 // property that makes the spec's migration safe.
 var copydir = system.temp_dir + "syncretro_cfgtest_copy/";

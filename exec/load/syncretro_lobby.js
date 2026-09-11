@@ -193,24 +193,56 @@ function syncretro_lobby_print(key, args)
 	console.putmsg(args && args.length ? format.apply(null, [s].concat(args)) : s);
 }
 
+/* One file, parsed once. File.iniGetObject() rewinds and re-reads via
+ * iniReadFiles on every call, so one call per section used to cost a full-file
+ * parse each -- ten-plus on a lobby entry (GitLab #1211).
+ *
+ * "_section" holds the [section] name. The default name property is "name",
+ * which a section's own `name = ` key (e.g. [console]) would overwrite -- the
+ * same trap games.ini hits below. Section names are lower-cased so a lookup
+ * matches File.iniGetObject()'s case-insensitive section find. */
+function syncretro_lobby_ini_file(f)
+{
+	var map = {};
+	var rows, i, name;
+
+	if (!f)
+		return map;
+	rows = f.iniGetAllObjects("_section", false, true);
+	if (!rows)
+		return map;
+	for (i = 0; i < rows.length; i++) {
+		name = rows[i]._section;
+		delete rows[i]._section;
+		if (name)
+			map[String(name).toLowerCase()] = rows[i];
+	}
+	return map;
+}
+
 /* One section, shipped then overlaid. `blanks` keeps a key that is present but
  * EMPTY -- a real override in [lobby] and [text] ("draw nothing", "no display
  * file"), where iniGetObject would otherwise drop it and make it
- * indistinguishable from an absent key. */
+ * indistinguishable from an absent key. `base`/`local` are already-parsed
+ * section maps from syncretro_lobby_ini_file(). */
 function syncretro_lobby_ini_section(base, local, section, blanks)
 {
 	var out = {};
-	var b, l, k;
+	var b, l, k, v;
 
-	b = base ? base.iniGetObject(section, false, blanks) : null;
-	l = local ? local.iniGetObject(section, false, blanks) : null;
+	b = base[section];
+	l = local[section];
 	if (b) {
-		for (k in b)
-			out[k] = b[k];
+		for (k in b) {
+			v = b[k];
+			out[k] = (!blanks && v === "") ? undefined : v;
+		}
 	}
 	if (l) {
-		for (k in l)
-			out[k] = l[k];
+		for (k in l) {
+			v = l[k];
+			out[k] = (!blanks && v === "") ? undefined : v;
+		}
 	}
 	return out;
 }
@@ -230,31 +262,35 @@ function syncretro_lobby_ini(dir)
 {
 	var base  = new File(backslash(dir) + "syncretro.ini");
 	var local = new File(backslash(dir) + "syncretro.local.ini");
-	var out;
+	var base_map, local_map, out;
 
 	if (!base.open("r"))
 		base = null;
 	if (!local.open("r"))
 		local = null;
 
-	out = {
-		console: syncretro_lobby_ini_section(base, local, "console", false),
-		roms:    syncretro_lobby_ini_section(base, local, "roms", false),
-		lobby:   syncretro_lobby_ini_section(base, local, "lobby", true),
-		text:    syncretro_lobby_ini_section(base, local, "text", true),
-		idle:    syncretro_lobby_ini_section(base, local, "idle", false),
-		/* [options]: the core options pinned in syncretro.ini/local (retro_options.h)
-		 * -- resolved here only so syncretro_lobby_state_key() can flatten them into
-		 * the snapshot staleness key; never sent to the door on the command line.
-		 * [state]: the sysop's suspend/resume switch (auto_resume). */
-		options: syncretro_lobby_ini_section(base, local, "options", false),
-		state:   syncretro_lobby_ini_section(base, local, "state", false)
-	};
+	base_map  = syncretro_lobby_ini_file(base);
+	local_map = syncretro_lobby_ini_file(local);
 
 	if (base)
 		base.close();
 	if (local)
 		local.close();
+
+	out = {
+		console: syncretro_lobby_ini_section(base_map, local_map, "console", false),
+		roms:    syncretro_lobby_ini_section(base_map, local_map, "roms", false),
+		lobby:   syncretro_lobby_ini_section(base_map, local_map, "lobby", true),
+		text:    syncretro_lobby_ini_section(base_map, local_map, "text", true),
+		idle:    syncretro_lobby_ini_section(base_map, local_map, "idle", false),
+		/* [options]: the core options pinned in syncretro.ini/local (retro_options.h)
+		 * -- resolved here only so syncretro_lobby_state_key() can flatten them into
+		 * the snapshot staleness key; never sent to the door on the command line.
+		 * [state]: the sysop's suspend/resume switch (auto_resume). */
+		options: syncretro_lobby_ini_section(base_map, local_map, "options", false),
+		state:   syncretro_lobby_ini_section(base_map, local_map, "state", false)
+	};
+
 	return out;
 }
 
