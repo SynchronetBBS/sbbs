@@ -75,7 +75,7 @@ function Line(copyfrom)
 		this.text = copyfrom.text;
 		this.attr = copyfrom.attr;
 		this.hardcr = copyfrom.hardcr;
-		this.kludged = copyfrom.kludged;
+		this.kludged = copyfrom.kludged && copyfrom.text.length > 0;
 		this.firstchar = copyfrom.firstchar;
 		this.selected = copyfrom.selected;
 	}
@@ -291,12 +291,17 @@ function unwrap_line(l)
 	var first=true;
 	var old_lines=line.length;
 
+	/* An empty line cannot end in the middle of a word. */
+	if(line[l] != undefined && line[l].text.length == 0)
+		line[l].kludged=false;
 	while(!done && line[l+1]!=undefined) {
 		if(line[l]==undefined) {
 			draw_line(l);
 			l++;
 			break;
 		}
+		if(line[l].text.length == 0)
+			line[l].kludged=false;
 		/* There's a hardcr... all done now. */
 		if(line[l].hardcr)
 			break;
@@ -318,11 +323,6 @@ function unwrap_line(l)
 				if(line[l+1].text.length==0) {
 					line[l].kludged=false;
 					line[l].hardcr=line[l+1].hardcr;
-					/*
-					 * TODO: If we splice out the next line,
-					 *       line[l+1] != undefined is not longer
-					 *       guaranteed...
-					 */
 					line.splice(l+1,1);
 				}
 				if(words[1].search(/\s/)!=-1)
@@ -332,6 +332,9 @@ function unwrap_line(l)
 			else
 				line[l].kludged=false;
 		}
+		/* The unkludge above may have consumed and removed the next line. */
+		if(line[l+1] == undefined || line[l].hardcr)
+			break;
 		/* Get first word(s) of next line */
 		if(space < 1) {
 			words=null;
@@ -1819,10 +1822,9 @@ function edit(quote_first)
 					line[ypos].attr=line[ypos].attr.substr(0,xpos);
 					line[ypos].hardcr=true;
 					draw_line(ypos,xpos);
-					if(line[ypos].kludged) {
-						line[ypos+1].kludged=true;
-						line[ypos].kludged=false;
-					}
+					line[ypos+1].kludged=line[ypos].kludged
+							&& line[ypos+1].text.length > 0;
+					line[ypos].kludged=false;
 					draw_line(ypos+1);
 				}
 				try_next_line();
@@ -1937,7 +1939,8 @@ function edit(quote_first)
 					line[ypos].text=line[ypos].text.substr(1);
 					line[ypos].attr=line[ypos].attr.substr(1);
 				}
-				draw_line(ypos,xpos);
+				if(!rewrap())
+					draw_line(ypos,xpos);
 				break;
 			case '\x18':	/* CTRL-X (PgDn in SyncEdit) */
 				break;
