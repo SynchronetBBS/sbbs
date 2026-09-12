@@ -34,7 +34,9 @@
 
 #ifdef USE_MOSQUITTO
 	#include <mosquitto.h>
-	#include <mqtt_protocol.h>
+	#if LIBMOSQUITTO_VERSION_NUMBER < 2001000 /* GitLab #1119 */
+		#include <mqtt_protocol.h>
+	#endif
 typedef struct mosquitto* mqtt_handle_t;
 #else
 typedef void* mqtt_handle_t;
