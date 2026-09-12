@@ -3764,6 +3764,12 @@ emulation-aware logic.
 | `CTerm.write(s)`
 | Send `s` to `cterm_write` — bypass the wire, render directly.
 
+| `CTerm.sendKey(key)`
+| Send a local `Key` code through the same active-emulation mapping used for
+  keyboard input.  Returns `true` when `cterm` handles the key, or `false`
+  when no mapping exists.  For example, `CTerm.sendKey(Key.enter)` sends the
+  Prestel `_` terminator rather than a literal carriage return.
+
 | `CTerm.suspended`, `CTerm.suspended = b`
 | Read or write the wire-pump suspend flag.  When set true, the main
   loop stops draining bytes from the conn buffer.  Bytes pile up in the

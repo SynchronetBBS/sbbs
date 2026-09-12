@@ -1109,6 +1109,9 @@ foreign class CTerm {
   foreign static scrollbackPos
   foreign static scrollbackStart
   foreign static emulation
+  // Send a local key through cterm's active emulation mapping.  Returns
+  // true when cterm handles the key, false when it has no mapping.
+  foreign static sendKey(key)
   foreign static doorwayMode
   foreign static doorwayMode=(b)
   foreign static music

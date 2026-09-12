@@ -1145,6 +1145,7 @@ static const struct binding BINDINGS[] = {
 
 	/* CTerm */
 	{ "CTerm", true, "emulation",          fn_CTerm_emulation       },
+	{ "CTerm", true, "sendKey(_)",         fn_CTerm_sendKey         },
 	{ "CTerm", true, "x",                  fn_CTerm_x               },
 	{ "CTerm", true, "y",                  fn_CTerm_y               },
 	{ "CTerm", true, "originX",            fn_CTerm_originX         },

@@ -361,6 +361,29 @@ fn_CTerm_emulation(WrenVM *vm)
 	wrenSetSlotDouble(vm, 0, cterm != NULL ? (double)cterm->emulation : 0.0);
 }
 
+/* CTerm.sendKey(key) - pass a local key through the same active-emulation
+ * encoder used by doterm() for physical keyboard input. */
+void
+fn_CTerm_sendKey(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_NUM) {
+		wren_throw(vm, "CTerm.sendKey: key must be a number");
+		return;
+	}
+	double value = wrenGetSlotDouble(vm, 1);
+	if (!(value >= 0.0 && value <= UINT16_MAX)) {
+		wren_throw(vm, "CTerm.sendKey: key out of range");
+		return;
+	}
+	int key = (int)value;
+	if (value != (double)key) {
+		wren_throw(vm, "CTerm.sendKey: key must be an integer");
+		return;
+	}
+	wrenSetSlotBool(vm, 0, cterm != NULL &&
+	    cterm_handle_key(cterm, key) == CTERM_KEY_HANDLED);
+}
+
 void
 fn_CTerm_x(WrenVM *vm)
 {

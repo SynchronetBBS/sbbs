@@ -12,12 +12,13 @@
 // Loaded into its own "connected" module; pulls bindings from the
 // foundational "syncterm" module via import.
 
-import "syncterm" for Hook, Conn, BBS, CTerm, ConnType, Emulation
+import "syncterm" for Hook, Key, Conn, BBS, CTerm, ConnType
 
 class Connected {
-  // Enter byte differs in ATASCII (CR is 0x9B there, not 0x0D).
-  static enter_ {
-    return CTerm.emulation == Emulation.atascii ? "\x9b" : "\r"
+  static sendComponent_(value) {
+    if (value.count == 0) return
+    Conn.send(value)
+    CTerm.sendKey(Key.enter)
   }
 
   static sendLogin() {
@@ -30,11 +31,9 @@ class Connected {
                    ct != ConnType.rloginReversed &&
                    ct != ConnType.ssh
 
-    var e = enter_
-
-    if (sendUser && BBS.user.count > 0)     Conn.send(BBS.user + e)
-    if (sendPass && BBS.password.count > 0) Conn.send(BBS.password + e)
-    if (BBS.syspass.count > 0)              Conn.send(BBS.syspass + e)
+    if (sendUser) sendComponent_(BBS.user)
+    if (sendPass) sendComponent_(BBS.password)
+    sendComponent_(BBS.syspass)
   }
 }
 

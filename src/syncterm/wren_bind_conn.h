@@ -31,6 +31,7 @@ void fn_Conn_peek(WrenVM *vm);
 void fn_Conn_recv(WrenVM *vm);
 
 void fn_CTerm_emulation(WrenVM *vm);
+void fn_CTerm_sendKey(WrenVM *vm);
 void fn_CTerm_x(WrenVM *vm);
 void fn_CTerm_y(WrenVM *vm);
 void fn_CTerm_attr(WrenVM *vm);
