@@ -362,6 +362,24 @@ static struct {
 };
 
 /*
+ * Convert a layout-resolved printable character to the AT Set 1 index used
+ * by ScanCodes[].  NSEvent.charactersIgnoringModifiers supplies exactly the
+ * hardware-independent value AppKit recommends for keyboard equivalents.
+ */
+static int
+ascii_to_scancode(unichar ch)
+{
+	if (ch < ' ' || ch > '~')
+		return -1;
+	for (size_t i = 1; i < sizeof(ScanCodes) / sizeof(ScanCodes[0]); i++) {
+		if ((ScanCodes[i].base & 0xff) == ch
+		    || (ScanCodes[i].shift & 0xff) == ch)
+			return (int)i;
+	}
+	return -1;
+}
+
+/*
  * Display data for drawRect — either raw rectlist (external scaling,
  * CG does the upscale) or pre-scaled graphics_buffer (internal scaling,
  * 1:1 backing pixel mapping).
@@ -545,6 +563,9 @@ cg_get_content_size(int *w, int *h)
 - (void)keyDown:(NSEvent *)event
 {
 	NSEventModifierFlags mods = event.modifierFlags;
+	NSString *basicChars = event.charactersIgnoringModifiers;
+	unichar basic = basicChars.length > 0
+	    ? [basicChars characterAtIndex:0] : 0;
 	unsigned short vk = event.keyCode;
 	uint16_t evdev = cg_evdev_from_vk(vk);
 	BOOL hasCmd = (mods & NSEventModifierFlagCommand) != 0;
@@ -571,19 +592,30 @@ cg_get_content_size(int *w, int *h)
 	 */
 
 	/* Cmd+Q: macOS quit convention → CIO_KEY_QUIT */
-	if (hasCmd && vk == kVK_ANSI_Q) {
+	if (hasCmd && !hasCtrl && !hasShift && !hasOpt
+	    && (basic == 'q' || basic == 'Q')) {
 		cg_send_key(CIO_KEY_QUIT);
 		return;
 	}
 
 	/* Cmd+V: macOS paste convention → Shift-Insert */
-	if (hasCmd && vk == kVK_ANSI_V) {
+	if (hasCmd && !hasCtrl && !hasShift && !hasOpt
+	    && (basic == 'v' || basic == 'V')) {
 		cg_send_key(CIO_KEY_SHIFT_IC);
 		return;
 	}
 
-	/* Opt+Enter: toggle fullscreen */
-	if (hasOpt && vk == kVK_Return) {
+	/* Standard macOS full-screen shortcut. */
+	if (hasCtrl && hasCmd && !hasShift && !hasOpt
+	    && (basic == 'f' || basic == 'F')) {
+		[cg_window toggleFullScreen:nil];
+		return;
+	}
+
+	/* Cmd+Enter is SyncTERM's Alt+Enter; retain Opt+Enter as a legacy
+	 * native-Mac equivalent.  X11 accepts both main and keypad Enter. */
+	if ((hasCmd || hasOpt)
+	    && (vk == kVK_Return || vk == kVK_ANSI_KeypadEnter)) {
 		[cg_window toggleFullScreen:nil];
 		return;
 	}
@@ -609,14 +641,12 @@ cg_get_content_size(int *w, int *h)
 			/* Control key combos that produce control chars */
 			if (hasCtrl && ch >= 1 && ch <= 26) {
 				/* Check if the scancode table has a better mapping */
-				if (vk < 128) {
-					int at = vk_to_at[vk];
-					if (at > 0 && at < (int)(sizeof(ScanCodes)/sizeof(ScanCodes[0]))) {
-						WORD val = ScanCodes[at].ctrl;
-						if (val != 0xffff) {
-							cg_send_key(val);
-							return;
-						}
+				int at = ascii_to_scancode(basic);
+				if (at > 0) {
+					WORD val = ScanCodes[at].ctrl;
+					if (val != 0xffff) {
+						cg_send_key(val);
+						return;
 					}
 				}
 				cg_send_key(ch);
@@ -648,7 +678,11 @@ cg_get_content_size(int *w, int *h)
 	/* Fall through to scancode table for function/nav keys and
 	 * Cmd combos (Cmd is our Alt). */
 	if (vk < 128) {
-		int at = vk_to_at[vk];
+		BOOL logicalPrintable = (hasCmd || hasCtrl)
+		    && basic >= ' ' && basic < NSUpArrowFunctionKey;
+		int at = logicalPrintable ? ascii_to_scancode(basic) : -1;
+		if (!logicalPrintable)
+			at = vk_to_at[vk];
 		if (at > 0 && at < (int)(sizeof(ScanCodes)/sizeof(ScanCodes[0]))) {
 			WORD val;
 			if (hasCmd)
@@ -1392,8 +1426,9 @@ cg_create_menus(void)
 	NSMenuItem *fsItem = [[NSMenuItem alloc]
 	    initWithTitle:@"Toggle Fullscreen"
 	    action:@selector(doFullscreen:)
-	    keyEquivalent:@"\r"];
-	[fsItem setKeyEquivalentModifierMask:NSEventModifierFlagOption];
+	    keyEquivalent:@"f"];
+	[fsItem setKeyEquivalentModifierMask:
+	    NSEventModifierFlagControl | NSEventModifierFlagCommand];
 	[viewMenu addItem:fsItem];
 
 	[viewItem setSubmenu:viewMenu];

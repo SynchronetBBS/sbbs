@@ -77,6 +77,48 @@ struct xkb_state;
 #define XKB_MOD_INVALID			(0xffffffffU)
 #define XKB_KEYMAP_KEY_NO_KEYMAP	0
 
+/* Stable X11/XKB keysym values used without a compile-time XKB dependency. */
+#define XKB_KEY_BackSpace	0xff08
+#define XKB_KEY_Tab		0xff09
+#define XKB_KEY_Return		0xff0d
+#define XKB_KEY_Escape		0xff1b
+#define XKB_KEY_Delete		0xffff
+#define XKB_KEY_Home		0xff50
+#define XKB_KEY_Left		0xff51
+#define XKB_KEY_Up		0xff52
+#define XKB_KEY_Right		0xff53
+#define XKB_KEY_Down		0xff54
+#define XKB_KEY_Prior		0xff55
+#define XKB_KEY_Next		0xff56
+#define XKB_KEY_End		0xff57
+#define XKB_KEY_Begin		0xff58
+#define XKB_KEY_Print		0xff61
+#define XKB_KEY_Insert		0xff63
+#define XKB_KEY_KP_Enter	0xff8d
+#define XKB_KEY_KP_Home		0xff95
+#define XKB_KEY_KP_Left		0xff96
+#define XKB_KEY_KP_Up		0xff97
+#define XKB_KEY_KP_Right	0xff98
+#define XKB_KEY_KP_Down		0xff99
+#define XKB_KEY_KP_Prior	0xff9a
+#define XKB_KEY_KP_Next		0xff9b
+#define XKB_KEY_KP_End		0xff9c
+#define XKB_KEY_KP_Begin	0xff9d
+#define XKB_KEY_KP_Insert	0xff9e
+#define XKB_KEY_KP_Delete	0xff9f
+#define XKB_KEY_KP_Multiply	0xffaa
+#define XKB_KEY_KP_Add		0xffab
+#define XKB_KEY_KP_Subtract	0xffad
+#define XKB_KEY_KP_Decimal	0xffae
+#define XKB_KEY_KP_Divide	0xffaf
+#define XKB_KEY_KP_0		0xffb0
+#define XKB_KEY_KP_9		0xffb9
+#define XKB_KEY_F1		0xffbe
+#define XKB_KEY_F10		0xffc7
+#define XKB_KEY_F11		0xffc8
+#define XKB_KEY_F12		0xffc9
+#define XKB_KEY_ISO_Left_Tab	0xfe20
+
 static struct {
 	void *handle;
 	struct xkb_context *(*context_new)(int flags);
@@ -426,6 +468,102 @@ static struct {
 	{	0x8600, 0x8800, 0x8a00, 0x8c00 }, /* key 88 - F12 */
 };
 
+/*
+ * Return the AT Set 1 index for a printable key after the active XKB
+ * layout has translated it.  Modified shortcuts are defined by the
+ * character printed on the key, not by its physical US-QWERTY position.
+ */
+static int
+ascii_to_scancode(uint32_t ch)
+{
+	if (ch < ' ' || ch > '~')
+		return -1;
+	for (size_t i = 1; i < sizeof(ScanCodes) / sizeof(ScanCodes[0]); i++) {
+		if ((ScanCodes[i].base & 0xff) == ch
+		    || (ScanCodes[i].shift & 0xff) == ch)
+			return (int)i;
+	}
+	return -1;
+}
+
+/* Map a layout-resolved XKB symbol to the same BIOS table index as X11. */
+static int
+keysym_to_scancode(uint32_t sym)
+{
+	static const uint8_t kp_scan[] = {
+		82, 79, 80, 81, 75, 76, 77, 71, 72, 73
+	};
+	int scan = ascii_to_scancode(sym);
+
+	if (scan >= 0)
+		return scan;
+	if (sym >= XKB_KEY_F1 && sym <= XKB_KEY_F10)
+		return 59 + (int)(sym - XKB_KEY_F1);
+	if (sym >= XKB_KEY_F11 && sym <= XKB_KEY_F12)
+		return 87 + (int)(sym - XKB_KEY_F11);
+	if (sym >= XKB_KEY_KP_0 && sym <= XKB_KEY_KP_9)
+		return kp_scan[sym - XKB_KEY_KP_0];
+
+	switch (sym) {
+	case XKB_KEY_Escape:
+		return 1;
+	case XKB_KEY_BackSpace:
+		return 14;
+	case XKB_KEY_Tab:
+	case XKB_KEY_ISO_Left_Tab:
+		return 15;
+	case XKB_KEY_Return:
+	case XKB_KEY_KP_Enter:
+		return 28;
+	case XKB_KEY_Print:
+		return 55;
+	case XKB_KEY_Home:
+	case XKB_KEY_KP_Home:
+		return 71;
+	case XKB_KEY_Up:
+	case XKB_KEY_KP_Up:
+		return 72;
+	case XKB_KEY_Prior:
+	case XKB_KEY_KP_Prior:
+		return 73;
+	case XKB_KEY_KP_Subtract:
+		return 74;
+	case XKB_KEY_Left:
+	case XKB_KEY_KP_Left:
+		return 75;
+	case XKB_KEY_Begin:
+	case XKB_KEY_KP_Begin:
+		return 76;
+	case XKB_KEY_Right:
+	case XKB_KEY_KP_Right:
+		return 77;
+	case XKB_KEY_KP_Add:
+		return 78;
+	case XKB_KEY_End:
+	case XKB_KEY_KP_End:
+		return 79;
+	case XKB_KEY_Down:
+	case XKB_KEY_KP_Down:
+		return 80;
+	case XKB_KEY_Next:
+	case XKB_KEY_KP_Next:
+		return 81;
+	case XKB_KEY_Insert:
+	case XKB_KEY_KP_Insert:
+		return 82;
+	case XKB_KEY_Delete:
+	case XKB_KEY_KP_Delete:
+	case XKB_KEY_KP_Decimal:
+		return 83;
+	case XKB_KEY_KP_Multiply:
+		return ascii_to_scancode('*');
+	case XKB_KEY_KP_Divide:
+		return ascii_to_scancode('/');
+	default:
+		return -1;
+	}
+}
+
 static void update_surface_size(int w, int h);
 
 /*
@@ -474,7 +612,13 @@ static void
 send_scancode(uint32_t evdev_key, bool pressed)
 {
 	uint32_t tevdev_key;
+	uint32_t keysym = 0;
+	int scancode;
 	WORD keyval = 0xffff;
+
+	/* wl_keyboard's xkb_v1 format defines key + 8 as the XKB keycode. */
+	if (xkb_st)
+		keysym = xkb.state_key_get_one_sym(xkb_st, evdev_key + 8);
 
 	/*
 	 * Handle extended navigation keys that have evdev codes
@@ -522,10 +666,30 @@ send_scancode(uint32_t evdev_key, bool pressed)
 		return;
 	}
 
-	/* Alt+Left/Right: snap window scaling to prev/next integer */
+	/* Alt+Enter: toggle full-screen, matching the X11/SDL backends. */
+	if (alt_held
+	    && ((xkb_st && (keysym == XKB_KEY_Return
+	                    || keysym == XKB_KEY_KP_Enter))
+	        || (!xkb_st && (evdev_key == EVDEV_KEY_ENTER
+	                        || evdev_key == EVDEV_KEY_KPENTER)))) {
+		if (fullscreen)
+			xdg_toplevel_unset_fullscreen(xdg_top);
+		else
+			xdg_toplevel_set_fullscreen(xdg_top, NULL);
+		wl_surface_commit(wl_surf);
+		return;
+	}
+
+	/* Alt+Left/Right: snap window scaling to prev/next integer. */
 	if (alt_held && !maximized && !fullscreen
-	    && (tevdev_key == 75 || tevdev_key == 77)) {
-		snap_resize(tevdev_key == 77);
+	    && ((xkb_st && (keysym == XKB_KEY_Left
+	                    || keysym == XKB_KEY_KP_Left
+	                    || keysym == XKB_KEY_Right
+	                    || keysym == XKB_KEY_KP_Right))
+	        || (!xkb_st && (tevdev_key == 75 || tevdev_key == 77)))) {
+		snap_resize(xkb_st
+		    ? keysym == XKB_KEY_Right || keysym == XKB_KEY_KP_Right
+		    : tevdev_key == 77);
 		return;
 	}
 
@@ -560,15 +724,19 @@ send_scancode(uint32_t evdev_key, bool pressed)
 		}
 	}
 
-	if (tevdev_key < sizeof(ScanCodes) / sizeof(ScanCodes[0])) {
+	/* The XKB keysym supplies semantic meaning.  Raw evdev/AT indexing is
+	 * only the fallback when the compositor did not provide a usable map. */
+	scancode = xkb_st ? keysym_to_scancode(keysym) : (int)tevdev_key;
+	if (scancode > 0
+	    && scancode < (int)(sizeof(ScanCodes) / sizeof(ScanCodes[0]))) {
 		if (alt_held)
-			keyval = ScanCodes[tevdev_key].alt;
+			keyval = ScanCodes[scancode].alt;
 		else if (ctrl_held)
-			keyval = ScanCodes[tevdev_key].ctrl;
+			keyval = ScanCodes[scancode].ctrl;
 		else if (shift_held)
-			keyval = ScanCodes[tevdev_key].shift;
+			keyval = ScanCodes[scancode].shift;
 		else
-			keyval = ScanCodes[tevdev_key].base;
+			keyval = ScanCodes[scancode].base;
 	}
 
 	if (keyval != 0xffff) {
@@ -904,15 +1072,10 @@ kb_key(void *data, struct wl_keyboard *keyboard,
 	ciokey_gotevent((uint16_t)key, pressed);
 
 	/*
-	 * Wayland sends evdev keycodes.  The evdev keycode is the
-	 * Linux input event code, which is the AT Set 1 make code.
-	 * The ScanCodes[] table uses AT Set 1 indices directly.
-	 *
-	 * Note: wl_keyboard sends key+8 for backward compat with X11,
-	 * but the Wayland protocol specifies raw evdev codes without
-	 * the +8 offset.  However, some compositors may or may not...
-	 * The spec says: "key is a platform-specific key code... on
-	 * Linux it is the evdev keycode" — no offset.
+	 * key is platform-specific.  The xkb_v1 keymap contract defines
+	 * key + 8 as its XKB keycode; send_scancode() uses that mapping for
+	 * semantic input.  On Linux, key itself is also the evdev code used
+	 * for physical-key reporting and as the no-XKB fallback.
 	 */
 	send_scancode(key, pressed);
 }
