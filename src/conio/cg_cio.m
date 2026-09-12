@@ -18,6 +18,7 @@
  ****************************************************************************/
 
 #include <stdarg.h>
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,7 +53,7 @@ static int cg_key_pipe[2];
 sem_t cg_init_complete;
 sem_t cg_mode_set;
 sem_t cg_launched_sem;
-int cg_initialized;
+_Atomic int cg_initialized;
 
 /* Main thread override state */
 static sem_t cg_main_sem;

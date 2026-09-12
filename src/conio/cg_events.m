@@ -21,6 +21,7 @@
 #import <Carbon/Carbon.h> /* for kVK_ virtual keycodes */
 
 #include <stdbool.h>
+#include <stdatomic.h>
 #include <string.h>
 #include <pthread.h>
 
@@ -54,7 +55,7 @@
 /* From cg_cio.m */
 extern sem_t cg_init_complete;
 extern sem_t cg_mode_set;
-extern int cg_initialized;
+extern _Atomic int cg_initialized;
 extern void cg_send_key(uint16_t key);
 
 /*
@@ -90,7 +91,7 @@ static int cg_init_mode;
 static CGFloat cg_backing_scale = 1.0;
 static bool cg_modifier_down[EVDEV_KEY_MAX + 1];
 
-static bool cg_app_shutting_down;
+static atomic_bool cg_app_shutting_down;
 
 /*
  * macOS virtual keycode → AT Set 1 scancode mapping.

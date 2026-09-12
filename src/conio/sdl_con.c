@@ -84,6 +84,8 @@ struct sdl_keyvals {
 static pthread_mutex_t sdl_headlock;
 static struct rectlist *update_list = NULL;
 static struct rectlist *update_list_tail = NULL;
+/* Protected by sdl_ufunc_mtx. */
+static bool sdl_shutting_down;
 extern int sdl_video_initialized;
 
 #ifdef __DARWIN__
@@ -285,6 +287,10 @@ static void sdl_user_func(int func, ...)
 	ev.user.data2=NULL;
 	ev.user.code=func;
 	assert_pthread_mutex_lock(&sdl_ufunc_mtx);
+	if (sdl_shutting_down) {
+		assert_pthread_mutex_unlock(&sdl_ufunc_mtx);
+		return;
+	}
 	while (1) {
 		va_start(argptr, func);
 		switch(func) {
@@ -340,6 +346,13 @@ static int sdl_user_func_ret(int func, ...)
 	ev.user.code=func;
 	va_start(argptr, func);
 	assert_pthread_mutex_lock(&sdl_ufunc_mtx);
+	if (sdl_shutting_down) {
+		assert_pthread_mutex_unlock(&sdl_ufunc_mtx);
+		va_end(argptr);
+		return func == SDL_USEREVENT_QUIT ? 0 : -1;
+	}
+	if (func == SDL_USEREVENT_QUIT)
+		sdl_shutting_down = true;
 	/* Drain the swamp */
 	while(1) {
 		switch(func) {
