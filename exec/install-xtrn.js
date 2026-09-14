@@ -595,10 +595,13 @@ for(var i in ini_list) {
 	var ini_path = ini_list[i];
 	// Resolve a relative path against ctrl_dir first (as documented), so the
 	// install path is spelled the same way as system.ctrl_dir (e.g. via a
-	// symlink) and the relative startup_dir can be calculated from it
+	// symlink) and the relative startup_dir can be calculated from it. Only
+	// if the .ini file is found there: '.' is always a directory in ctrl_dir.
 	if (!/^([\/\\~]|[A-Za-z]:)/.test(ini_path)) {
 		var ctrl_path = fullpath(system.ctrl_dir + ini_path);
-		if (file_exists(ctrl_path) || file_isdir(ctrl_path))
+		if (file_isdir(ctrl_path))
+			ctrl_path = backslash(ctrl_path) + ini_fname;
+		if (file_exists(ctrl_path))
 			ini_path = ctrl_path;
 	}
 	// Locate the .ini file
