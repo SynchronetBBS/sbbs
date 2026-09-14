@@ -333,10 +333,13 @@ function install(ini_fname)
 	if (!xtrn_cfg)
 		return "Failed to read " + system.ctrl_dir + "xtrn.ini";
 	
-	var startup_dir = ini_fname.substr(0, Math.max(ini_fname.lastIndexOf("/"), ini_fname.lastIndexOf("\\"), 0));
-	startup_dir = relpath.get(system.ctrl_dir, startup_dir);
+	// startup_dir (relative to ctrl_dir) is for values written to config files.
+	// install_dir (absolute) is for file access: a relative path calculated
+	// across a symlink may not resolve from the current working directory.
+	var install_dir = backslash(ini_fname.substr(0, Math.max(ini_fname.lastIndexOf("/"), ini_fname.lastIndexOf("\\"), 0)));
+	var startup_dir = relpath.get(system.ctrl_dir, install_dir);
 
-	var result = install_exec_cmd(ini_file, "pre-exec:", startup_dir);
+	var result = install_exec_cmd(ini_file, "pre-exec:", install_dir);
 	if(result !== true)
 		return result;
 
@@ -377,11 +380,11 @@ function install(ini_fname)
 	for (var i = 0; i < list.length && !done; i++) {
 		var item = list[i];
 		var result = false;
-		var src = file_getcase(startup_dir + item.filename);
+		var src = file_getcase(install_dir + item.filename);
 		if (!src)
-			alert("Copy source file does not exist: " + startup_dir + item.filename);
+			alert("Copy source file does not exist: " + install_dir + item.filename);
 		else {
-			var dest = file_getcase(startup_dir + item.dest);
+			var dest = file_getcase(install_dir + item.dest);
 			var keep = false;
 			if (dest && !item.overwrite) {
 				var msg = "Copy destination file already exists: " + dest;
@@ -398,7 +401,7 @@ function install(ini_fname)
 				result = true;
 			else {
 				if (!dest)
-					dest = startup_dir + item.dest;
+					dest = install_dir + item.dest;
 				result = file_copy(src, dest);
 			}
 		}
@@ -413,7 +416,7 @@ function install(ini_fname)
 	for (var i = 0; i < list.length && !done; i++) {
 		var item = list[i];
 		var a = item.filename.split(':');
-		item.filename = startup_dir + a[0];
+		item.filename = install_dir + a[0];
 		if(!file_exists(item.filename))
 			item.filename = file_cfgname(system.ctrl_dir, a[0]);
 		item.section = a[1] || null;
@@ -491,7 +494,7 @@ function install(ini_fname)
 	}
 	
 	if(done === false) {
-		result = install_exec_cmd(ini_file, "exec:", startup_dir);
+		result = install_exec_cmd(ini_file, "exec:", install_dir);
 		if(typeof result !== 'boolean')
 			return result;
 		done = !result;
