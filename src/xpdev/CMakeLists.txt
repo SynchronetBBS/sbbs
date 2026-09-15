@@ -25,6 +25,7 @@ set(WITHOUT_COREAUDIO OFF CACHE BOOL "Disable Core Audio (macOS)")
 
 include(CheckSymbolExists)
 include(CheckIncludeFiles)
+include(CMakePushCheckState)
 find_package(Threads REQUIRED)
 if(NOT WITHOUT_SDL_AUDIO)
 	if(WIN32)
@@ -128,6 +129,12 @@ if(NOT WIN32)
 	list(APPEND HEADER xpevent.h xpsem.h)
 endif()
 
+cmake_push_check_state()
+# Probe with the feature macros the targets compile with: glibc 2.36 declares
+# asprintf/vasprintf only under _GNU_SOURCE.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_DEFAULT_SOURCE -D_GNU_SOURCE)
+endif()
 check_symbol_exists(strlcpy string.h HAS_STRLCPY)
 check_symbol_exists(asprintf stdio.h HAS_ASPRINTF)
 check_symbol_exists(vasprintf stdio.h HAS_VASPRINTF)
@@ -137,6 +144,7 @@ check_symbol_exists(strtok_r string.h HAS_STRTOK_R)
 check_symbol_exists(random stdlib.h HAS_RANDOM_FUNC) 
 check_symbol_exists(srandomdev stdlib.h HAS_SRANDOMDEV_FUNC)
 check_symbol_exists(mkstemp stdlib.h HAS_MKSTEMP_FUNC)
+cmake_pop_check_state()
 
 check_include_files(inttypes.h HAS_INTTYPES_H)
 check_include_files(stdint.h HAS_STDINT_H)
