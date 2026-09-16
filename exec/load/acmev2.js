@@ -161,6 +161,20 @@ ACMEv2.prototype.accept_challenge = function(challenge)
 	return JSON.parse(ret);
 };
 
+/*
+ * Returns the server-supplied reason a challenge was marked invalid.
+ */
+ACMEv2.prototype.challenge_error = function(challenge)
+{
+	if (challenge.error !== undefined) {
+		if (challenge.error.detail !== undefined)
+			return challenge.error.detail;
+		if (challenge.error.type !== undefined)
+			return challenge.error.type;
+	}
+	return "no reason given";
+};
+
 ACMEv2.prototype.poll_authorization = function(auth)
 {
 	log(LOG_DEBUG, "Polling authorization.");
@@ -171,12 +185,14 @@ ACMEv2.prototype.poll_authorization = function(auth)
 		return false;
 	this.update_nonce();
 
+	var name = (ret.identifier === undefined) ? auth : ret.identifier.value;
 	for (var challenge in ret.challenges) {
 		if (ret.challenges[challenge].status == 'valid')
 			return true;
 		if (ret.challenges[challenge].status == 'invalid') {
 			log(LOG_DEBUG, JSON.stringify(ret.challenges[challenge]));
-			throw ("Authorization failed... "+auth);
+			throw new Error("Authorization failed for "+name+" ("+ret.challenges[challenge].type+"): "+
+				this.challenge_error(ret.challenges[challenge]));
 		}
 	}
 	return false;

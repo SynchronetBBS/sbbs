@@ -6,6 +6,8 @@ require("acmev2.js", "ACMEv2");
 var ks_fname = backslash(system.ctrl_dir)+"letsyncrypt.key";
 var setting_fname = backslash(system.ctrl_dir)+"letsyncrypt.ini";
 var sks_fname = backslash(system.ctrl_dir)+"ssl.cert";
+var sks_new_fname = sks_fname+".new";
+var sks_old_fname = sks_fname+".old";
 var main_ini_fname = backslash(system.ctrl_dir)+"main.ini";
 var recycle_sem = backslash(system.ctrl_dir)+"recycle";
 
@@ -18,7 +20,18 @@ function at_least_a_third()
 
 	if (!file_exists(sks_fname))
 		return false;
-	sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.READONLY);
+	/*
+	 * An unreadable keyset (truncated, corrupt, wrong system password) must
+	 * mean "renew it", not an uncaught exception - otherwise a damaged
+	 * ssl.cert wedges every future run of this script.
+	 */
+	try {
+		sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.READONLY);
+	}
+	catch(e0) {
+		log(LOG_WARNING, "Unable to read "+sks_fname+": "+e0);
+		return false;
+	}
 	try {
 		cert = sks.get_public_key("ssl_cert");
 	}
@@ -53,14 +66,29 @@ function create_dnsnames(names) {
 	return ext;
 }
 
+function retry_rename(from, to)
+{
+	var i;
+
+	for (i = 0; i < 10; i++) {
+		if (file_rename(from, to))
+			return true;
+		mswait(100);
+	}
+	return false;
+}
+
 function authorize_order(acme, order, webroots)
 {
 	var auth;
 	var authz;
 	var challenge;
 	var completed=0;
+	var failures=[];
 	var fulfilled;
 	var i;
+	var name;
+	var timed_out;
 	var tmp;
 	var token;
 	var tokens=[];
@@ -73,6 +101,7 @@ function authorize_order(acme, order, webroots)
 		for (auth in order.authorizations) {
 			fulfilled = false;
 			authz = acme.get_authorization(order.authorizations[auth]);
+			name = (authz.identifier === undefined) ? order.authorizations[auth] : authz.identifier.value;
 			if (authz.status == 'valid') {
 				completed++;
 				continue;
@@ -108,30 +137,31 @@ function authorize_order(acme, order, webroots)
 					fulfilled = true;
 				}
 			}
+			if (!fulfilled) {
+				failures.push("No http-01 challenge offered for "+name);
+				continue;
+			}
 			/*
 			 * Wait for server to confirm
 			 */
 			waittime = 1000;
-			if (fulfilled) {
-				try {
-					while (!acme.poll_authorization(order.authorizations[auth])) {
-						if (waittime > 64000) {
-							throw("Authorization timeout");
-						}
-						mswait(waittime);
-						waittime *= 2;
-					}
-					completed++;
-				}
-				catch (e) {
-					if (e === 'Authorization timeout')
-						throw(e);
+			timed_out = false;
+			try {
+				while (!acme.poll_authorization(order.authorizations[auth])) {
 					if (waittime > 64000) {
-						throw("Authorization timeout");
+						timed_out = true;
+						throw("Authorization timeout for "+name);
 					}
 					mswait(waittime);
 					waittime *= 2;
 				}
+				completed++;
+			}
+			catch (e) {
+				failures.push((e.message === undefined) ? e : e.message);
+				/* A slow responder will just be slow again - stop here. */
+				if (timed_out)
+					break;
 			}
 		}
 	}
@@ -140,11 +170,22 @@ function authorize_order(acme, order, webroots)
 			file_remove(tokens[i]);
 		throw(autherr);
 	}
-	if (!completed)
-		throw("No challenges fulfilled!");
 
 	for (i in tokens)
 		file_remove(tokens[i]);
+
+	/*
+	 * A single invalid authorization invalidates the whole order, so there is
+	 * nothing to finalize.  Name every identifier that failed and why, rather
+	 * than letting finalize_order() report an opaque 403 later on.
+	 */
+	if (failures.length > 0) {
+		for (i in failures)
+			log(LOG_ERR, failures[i]);
+		throw(failures.join("; "));
+	}
+	if (!completed)
+		throw("No challenges fulfilled!");
 }
 
 /*
@@ -408,22 +449,34 @@ if (renew) {
 	cert.label = "ssl_certchain";
 
 	/*
-	 * Now delete/create the keyset with the key and cert
+	 * Build the keyset in a temporary file and rename it into place.  Failing
+	 * part-way through must leave the working certificate alone: it holds the
+	 * only copy of its private key, so destroying it before the replacement
+	 * exists takes TLS down at the next recycle with no way back.
 	 */
-	for (i=0; i < 10 && file_exists(sks_fname); i++) {
-		if (file_remove(sks_fname))
-			break;
-		mswait(100);
-	}
-	if (i == 10)
-		throw("Unable to delete file "+sks_fname);
-
-	sks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.CREATE);
+	file_remove(sks_new_fname);
+	sks = new CryptKeyset(sks_new_fname, CryptKeyset.KEYOPT.CREATE);
 	sks.add_private_key(rsa, syspass);
 	sks.add_public_key(cert);
 	sks.close();
 	if(sks_group_readable)
-		file_chmod(sks_fname, 0x1a0); //0640
+		file_chmod(sks_new_fname, 0x1a0); //0640
+
+	/*
+	 * rename() does not replace an existing file on Windows, so move the old
+	 * certificate aside instead of deleting it - if the second rename fails it
+	 * can be put back.
+	 */
+	file_remove(sks_old_fname);
+	if (file_exists(sks_fname) && !retry_rename(sks_fname, sks_old_fname)) {
+		file_remove(sks_new_fname);
+		throw("Unable to rename "+sks_fname+" to "+sks_old_fname);
+	}
+	if (!retry_rename(sks_new_fname, sks_fname)) {
+		retry_rename(sks_old_fname, sks_fname);
+		throw("Unable to rename "+sks_new_fname+" to "+sks_fname);
+	}
+	file_remove(sks_old_fname);
 
 	/*
 	 * Recycle webserver
