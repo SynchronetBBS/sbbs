@@ -686,7 +686,16 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 			return;
 		}
 
+		if ((i = smb_locksmbhdr(&smb)) != SMB_SUCCESS) {   /* #1241 */
+			smb_close(&smb);
+			smb_stack(&smb, SMB_STACK_POP);
+			errormsg(WHERE, ERR_LOCK, smb.file, i, smb.last_error);
+			free(qwkbuf);
+			smb_freemsgmem(&msg);
+			return;
+		}
 		if ((i = smb_open_da(&smb)) != 0) {
+			smb_unlocksmbhdr(&smb);
 			smb_close(&smb);
 			smb_stack(&smb, SMB_STACK_POP);
 			errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
@@ -701,6 +710,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 		smb_close_da(&smb);
 
 		if (offset < 0) {   /* #1170 */
+			smb_unlocksmbhdr(&smb);
 			smb_close(&smb);
 			smb_stack(&smb, SMB_STACK_POP);
 			errormsg(WHERE, ERR_ALLOC, smb.file, length);
