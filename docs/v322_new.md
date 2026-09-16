@@ -587,6 +587,18 @@
   `fixsmb` to repair them
 - `smbutil` no longer leaks memory or leaves the message base
   locked on Ctrl-C/break abort
+- `smbutil p` (pack) is now error-safe. A message whose data cannot
+  be read is logged with its message number and skipped; previously
+  the pack aborted silently at that point, leaving the message base
+  with no `.shd` file at all. Any failure after the original files
+  are moved aside now restores them, and the packed replacements are
+  written and verified before they replace the originals
+- `smbutil p` no longer discards messages larger than 16MB. That
+  limit was arbitrary and the message was dropped from the base
+  rather than merely left uncompacted; the bound is now the message
+  base format's own, so a message carrying a large attachment
+  survives a pack. MIME attachments are stored base64-encoded, so
+  the old limit discarded attachments larger than about 12MB
 
 ## sexyz (X/Y/ZMODEM file transfer)
 

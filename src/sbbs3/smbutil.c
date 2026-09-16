@@ -1016,6 +1016,86 @@ typedef struct {
 	ulong old, new;
 } datoffset_t;
 
+/* The msgbase files packmsgs() moves aside (to "<file>.<ext>_") while it
+   builds their packed replacements (in "<file>.<ext>$"). */
+enum {
+	PACK_SHA, PACK_SDA, PACK_SDT, PACK_SHD, PACK_SID, PACK_FILES
+};
+static const char* const pack_ext[PACK_FILES] = { "sha", "sda", "sdt", "shd", "sid" };
+
+/****************************************************************************/
+/* Rename one msgbase file to its "_" (original) name, recording it in the	*/
+/* 'moved' set so pack_rollback() knows to put it back.						*/
+/****************************************************************************/
+static bool pack_move_aside(int which, uint* moved)
+{
+	char fname[MAX_PATH + 1];
+	char tmpfname[MAX_PATH + 1];
+
+	SAFEPRINTF2(fname, "%s.%s", smb.file, pack_ext[which]);
+	SAFEPRINTF2(tmpfname, "%s.%s_", smb.file, pack_ext[which]);
+	if (rename(fname, tmpfname) != 0) {
+		fprintf(errfp, "\n%s!Error %d (%s) renaming %s to %s\n"
+		        , beep, errno, strerror(errno), fname, tmpfname);
+		return false;
+	}
+	*moved |= 1 << which;
+	return true;
+}
+
+/****************************************************************************/
+/* Undo a failed pack: discard the half-built replacements and move every	*/
+/* file in the 'moved' set back to its live name.							*/
+/* All msgbase files must be closed before calling this.					*/
+/****************************************************************************/
+static bool pack_rollback(uint moved)
+{
+	char fname[MAX_PATH + 1];
+	char tmpfname[MAX_PATH + 1];
+	int  i;
+	bool result = true;
+
+	if (moved == 0)
+		return true;
+
+	for (i = 0; i < PACK_FILES; i++) {          /* discard the partial replacements */
+		SAFEPRINTF2(fname, "%s.%s$", smb.file, pack_ext[i]);
+		(void)remove(fname);
+	}
+	for (i = 0; i < PACK_FILES; i++) {
+		if (!(moved & (1 << i)))
+			continue;
+		SAFEPRINTF2(fname, "%s.%s", smb.file, pack_ext[i]);
+		SAFEPRINTF2(tmpfname, "%s.%s_", smb.file, pack_ext[i]);
+		(void)remove(fname);                    /* the empty replacement, if any */
+		if (rename(tmpfname, fname) != 0) {
+			fprintf(errfp, "\n%s!Error %d (%s) restoring %s from %s\n"
+			        , beep, errno, strerror(errno), tmpfname, fname);
+			result = false;
+		}
+	}
+	if (result)
+		fprintf(errfp, "\n%s!Pack aborted: %s restored to its pre-pack state\n", beep, smb.file);
+	else
+		fprintf(errfp, "\n%s!Pack aborted and %s could NOT be fully restored:"
+		        " the '_' files still hold the original message base\n", beep, smb.file);
+	return result;
+}
+
+/****************************************************************************/
+/* Abandon a pack in progress, leaving the msgbase as it was found.			*/
+/****************************************************************************/
+static void pack_abort(uint moved)
+{
+	smb_unlocksmbhdr(&smb);     /* needs shd_fp, so unlock before closing */
+	smb_close_ha(&smb);
+	smb_close_da(&smb);
+	smb_close_fp(&smb.sdt_fp);
+	smb_close_fp(&smb.shd_fp);
+	smb_close_fp(&smb.sid_fp);
+	pack_rollback(moved);
+}
+
 /****************************************************************************/
 /* Removes all unused blocks from SDT and SHD files 						*/
 /****************************************************************************/
@@ -1028,6 +1108,8 @@ void packmsgs(ulong packable)
 	off_t        length;
 	FILE *       tmp_sdt, *tmp_shd, *tmp_sid;
 	BOOL         error = FALSE;
+	uint         moved = 0;     /* set of PACK_* files renamed to "<ext>_" */
+	ulong        skipped = 0;
 	smbhdr_t     hdr;
 	smbmsg_t     msg;
 	datoffset_t *datoffset = NULL;
@@ -1154,10 +1236,23 @@ void packmsgs(ulong packable)
 	}
 
 	if (!(smb.status.attr & SMB_HYPERALLOC)) {
-		rewind(smb.sha_fp);
-		CHSIZE_FP(smb.sha_fp, 0);        /* Reset both allocation tables */
-		rewind(smb.sda_fp);
-		CHSIZE_FP(smb.sda_fp, 0);
+		/* Moved aside rather than truncated in place so an aborted pack can
+		   be rolled back: against an emptied .sda the next message written
+		   would land on top of live data (#1171). */
+		smb_close_ha(&smb);
+		smb_close_da(&smb);
+		if (!pack_move_aside(PACK_SHA, &moved) || !pack_move_aside(PACK_SDA, &moved)) {
+			pack_abort(moved);
+			return;
+		}
+		/* Re-opening creates them empty (O_CREAT) */
+		if ((i = smb_open_ha(&smb)) != SMB_SUCCESS
+		    || (i = smb_open_da(&smb)) != SMB_SUCCESS) {
+			fprintf(errfp, "\n%s!Error %d (%s) re-creating allocation files\n"
+			        , beep, i, smb.last_error);
+			pack_abort(moved);
+			return;
+		}
 	}
 
 	if (smb.status.attr & SMB_HYPERALLOC && !(mode & NOANALYSIS)) {
@@ -1215,54 +1310,36 @@ void packmsgs(ulong packable)
 	}
 
 	smb_close_fp(&smb.sdt_fp);
-	sprintf(fname, "%s.sdt", smb.file);
-	sprintf(tmpfname, "%s.sdt_", smb.file);
-	if (rename(fname, tmpfname) != 0) {
-		smb_unlocksmbhdr(&smb);
-		smb_close_ha(&smb);
-		smb_close_da(&smb);
-		fprintf(errfp, "\n%s!Error %d (%s) renaming %s to %s\n", beep, errno, strerror(errno), fname, tmpfname);
+	if (!pack_move_aside(PACK_SDT, &moved)) {
+		pack_abort(moved);
 		return;
 	}
+	SAFEPRINTF2(tmpfname, "%s.%s_", smb.file, pack_ext[PACK_SDT]);
 	if ((smb.sdt_fp = fopen(tmpfname, "rb")) == NULL) {
-		smb_unlocksmbhdr(&smb);
-		smb_close_ha(&smb);
-		smb_close_da(&smb);
 		fprintf(errfp, "\n%s!Error %d (%s) opening %s for reading\n", beep, errno, strerror(errno), tmpfname);
+		pack_abort(moved);
 		return;
 	}
 	smb_close_fp(&smb.shd_fp);
-	sprintf(fname, "%s.shd", smb.file);
-	sprintf(tmpfname, "%s.shd_", smb.file);
-	if (rename(fname, tmpfname) != 0) {
-		smb_unlocksmbhdr(&smb);
-		smb_close_ha(&smb);
-		smb_close_da(&smb);
-		fprintf(errfp, "\n%s!Error %d (%s) renaming %s to %s\n", beep, errno, strerror(errno), fname, tmpfname);
+	if (!pack_move_aside(PACK_SHD, &moved)) {
+		pack_abort(moved);
 		return;
 	}
+	SAFEPRINTF2(tmpfname, "%s.%s_", smb.file, pack_ext[PACK_SHD]);
 	if ((smb.shd_fp = fopen(tmpfname, "rb")) == NULL) {
-		smb_unlocksmbhdr(&smb);
-		smb_close_ha(&smb);
-		smb_close_da(&smb);
 		fprintf(errfp, "\n%s!Error %d (%s) opening %s for reading\n", beep, errno, strerror(errno), tmpfname);
+		pack_abort(moved);
 		return;
 	}
 	smb_close_fp(&smb.sid_fp);
-	sprintf(fname, "%s.sid", smb.file);
-	sprintf(tmpfname, "%s.sid_", smb.file);
-	if (rename(fname, tmpfname) != 0) {
-		smb_unlocksmbhdr(&smb);
-		smb_close_ha(&smb);
-		smb_close_da(&smb);
-		fprintf(errfp, "\n%s!Error %d (%s) renaming %s to %s\n", beep, errno, strerror(errno), fname, tmpfname);
+	if (!pack_move_aside(PACK_SID, &moved)) {
+		pack_abort(moved);
 		return;
 	}
+	SAFEPRINTF2(tmpfname, "%s.%s_", smb.file, pack_ext[PACK_SID]);
 	if ((smb.sid_fp = fopen(tmpfname, "rb")) == NULL) {
-		smb_unlocksmbhdr(&smb);
-		smb_close_ha(&smb);
-		smb_close_da(&smb);
 		fprintf(errfp, "\n%s!Error %d (%s) opening %s for reading\n", beep, errno, strerror(errno), tmpfname);
+		pack_abort(moved);
 		return;
 	}
 
@@ -1273,11 +1350,6 @@ void packmsgs(ulong packable)
 	sprintf(fname, "%s.sid$", smb.file);
 	tmp_sid = fopen(fname, "wb");
 	if (!tmp_sdt || !tmp_shd || !tmp_sid) {
-		smb_unlocksmbhdr(&smb);
-		if (!(smb.status.attr & SMB_HYPERALLOC)) {
-			smb_close_ha(&smb);
-			smb_close_da(&smb);
-		}
 		if (tmp_sdt != NULL)
 			fclose(tmp_sdt);
 		if (tmp_shd != NULL)
@@ -1285,6 +1357,7 @@ void packmsgs(ulong packable)
 		if (tmp_sid != NULL)
 			fclose(tmp_sid);
 		fprintf(errfp, "\n%s!Error opening temp files\n", beep);
+		pack_abort(moved);
 		return;
 	}
 	setvbuf(tmp_sdt, NULL, _IOFBF, 2 * 1024);
@@ -1293,25 +1366,34 @@ void packmsgs(ulong packable)
 	if (!(smb.status.attr & SMB_HYPERALLOC)
 	    && (datoffset = (datoffset_t *)malloc(sizeof(datoffset_t) * smb.status.total_msgs))
 	    == NULL) {
-		smb_unlocksmbhdr(&smb);
-		smb_close_ha(&smb);
-		smb_close_da(&smb);
 		fclose(tmp_sdt);
 		fclose(tmp_shd);
 		fclose(tmp_sid);
 		fprintf(errfp, "\n%s!Error allocating memory\n", beep);
+		pack_abort(moved);
 		return;
 	}
 	fseek(smb.shd_fp, 0L, SEEK_SET);
 	if (fread(&hdr, 1, sizeof(smbhdr_t), smb.shd_fp) < 1) {
+		fprintf(errfp, "\n%s!Error reading base header record of %s\n", beep, smb.file);
 		free(datoffset);
+		fclose(tmp_sdt);
+		fclose(tmp_shd);
+		fclose(tmp_sid);
+		pack_abort(moved);
 		return;
 	}
 	fwrite(&hdr, 1, sizeof(smbhdr_t), tmp_shd);
 	fwrite(&(smb.status), 1, sizeof(smbstatus_t), tmp_shd);
 	for (l = sizeof(smbhdr_t) + sizeof(smbstatus_t); l < smb.status.header_offset; l++) {
 		if (fread(&ch, 1, 1, smb.shd_fp) < 1) {     /* copy additional base header records */
+			fprintf(errfp, "\n%s!Error reading additional base header record at offset %lu of %s\n"
+			        , beep, l, smb.file);
 			free(datoffset);
+			fclose(tmp_sdt);
+			fclose(tmp_shd);
+			fclose(tmp_sid);
+			pack_abort(moved);
 			return;
 		}
 		fwrite(&ch, 1, 1, tmp_shd);
@@ -1329,15 +1411,17 @@ void packmsgs(ulong packable)
 		}
 		i = smb_lockmsghdr(&smb, &msg);
 		if (i) {
-			fprintf(errfp, "\n%s!smb_lockmsghdr returned %d: %s\n"
-			        , beep, i, smb.last_error);
+			fprintf(errfp, "\n%s!smb_lockmsghdr returned %d: %s - message #%lu skipped\n"
+			        , beep, i, smb.last_error, (ulong)msg.idx.number);
+			skipped++;
 			continue;
 		}
 		i = smb_getmsghdr(&smb, &msg);
 		smb_unlockmsghdr(&smb, &msg);
 		if (i) {
-			fprintf(errfp, "\n%s!smb_getmsghdr returned %d: %s\n"
-			        , beep, i, smb.last_error);
+			fprintf(errfp, "\n%s!smb_getmsghdr returned %d: %s - message #%lu skipped\n"
+			        , beep, i, smb.last_error, (ulong)msg.idx.number);
+			skipped++;
 			continue;
 		}
 		if (msg.hdr.attr & MSG_DELETE) {
@@ -1358,34 +1442,54 @@ void packmsgs(ulong packable)
 			msg.hdr.offset = datoffset[m].new;
 			smb_incmsgdat(&smb, datoffset[m].new, smb_getmsgdatlen(&msg), 1);
 		} else {
+			off_t offset;
+			off_t dat_offset = msg.hdr.offset;
+			bool  allocated = false;
 
 			if (!(smb.status.attr & SMB_HYPERALLOC))
 				datoffset[datoffsets].old = msg.hdr.offset;
 
-			fseek(smb.sdt_fp, msg.hdr.offset, SEEK_SET);
-
 			m = smb_getmsgdatlen(&msg);
-			if (m > 16L * 1024L * 1024L) {
-				fprintf(errfp, "\n%s!Invalid data length (%lu)\n", beep, m);
+			if (m > SMB_MAX_DAT_LEN) {
+				fprintf(errfp, "\n%s!Invalid data length (%lu) for message #%lu - message skipped\n"
+				        , beep, m, (ulong)msg.hdr.number);
+				skipped++;
+				smb_freemsgmem(&msg);
 				continue;
 			}
 
-			off_t offset;
+			if (fseeko(smb.sdt_fp, dat_offset, SEEK_SET) != 0) {
+				fprintf(errfp, "\n%s!Error %d (%s) seeking to data offset %" PRIdOFF
+				        " for message #%lu - message skipped\n"
+				        , beep, errno, strerror(errno), dat_offset, (ulong)msg.hdr.number);
+				skipped++;
+				smb_freemsgmem(&msg);
+				continue;
+			}
+
 			if (!(smb.status.attr & SMB_HYPERALLOC)) {
 				offset = smb_fallocdat(&smb, (uint32_t)m, 1);
 				if (offset < 0) {
-					fprintf(errfp, "\n%s!Data allocation failure: %ld\n", beep, (long)offset);
+					fprintf(errfp, "\n%s!Data allocation failure %ld (%s) for message #%lu"
+					        " - message skipped\n"
+					        , beep, (long)offset, smb.last_error, (ulong)msg.hdr.number);
+					skipped++;
+					smb_freemsgmem(&msg);
 					continue;
 				}
 				datoffset[datoffsets].new = (uint32_t)offset;
 				datoffsets++;
+				allocated = true;
 				fseeko(tmp_sdt, offset, SEEK_SET);
 			}
 			else {
 				fseek(tmp_sdt, 0L, SEEK_END);
 				offset = ftello(tmp_sdt);
 				if (offset < 0) {
-					fprintf(errfp, "\n%s!ftell() ERROR %d\n", beep, errno);
+					fprintf(errfp, "\n%s!ftello() ERROR %d (%s) - message #%lu skipped\n"
+					        , beep, errno, strerror(errno), (ulong)msg.hdr.number);
+					skipped++;
+					smb_freemsgmem(&msg);
 					continue;
 				}
 			}
@@ -1395,19 +1499,28 @@ void packmsgs(ulong packable)
 
 			n = smb_datblocks(m);
 			for (m = 0; m < n; m++) {
-				if (fread(buf, 1, SDT_BLOCK_LEN, smb.sdt_fp) < 1) {
-					free(datoffset);
-					return;
+				if (fread(buf, 1, SDT_BLOCK_LEN, smb.sdt_fp) != SDT_BLOCK_LEN) {
+					fprintf(errfp, "\n%s!Error reading data block %lu of %lu at offset %" PRIdOFF
+					        " for message #%lu - message skipped\n"
+					        , beep, m + 1, n, dat_offset + ((off_t)m * SDT_BLOCK_LEN)
+					        , (ulong)msg.hdr.number);
+					break;
 				}
 				if (!m && *(ushort *)buf != XLAT_NONE && *(ushort *)buf != XLAT_LZH) {
-					printf("\nUnsupported translation type (%04X)\n"
-					       , *(ushort *)buf);
+					fprintf(errfp, "\n%s!Unsupported translation type (%04X)"
+					        " for message #%lu - message skipped\n"
+					        , beep, *(ushort *)buf, (ulong)msg.hdr.number);
 					break;
 				}
 				fwrite(buf, 1, SDT_BLOCK_LEN, tmp_sdt);
 			}
-			if (m < n)
+			if (m < n) {    /* data unusable: drop this message rather than the whole base */
+				if (allocated)  /* don't leave a mapping another index could adopt */
+					datoffsets--;
+				skipped++;
+				smb_freemsgmem(&msg);
 				continue;
+			}
 		}
 
 		/* Write the new index entry */
@@ -1418,7 +1531,10 @@ void packmsgs(ulong packable)
 		else
 			offset = smb_fallochdr(&smb, (ulong)length) + smb.status.header_offset;
 		if (offset < 0) {
-			fprintf(errfp, "\n%s!header allocation ERROR %ld\n", beep, (long)offset);
+			fprintf(errfp, "\n%s!Header allocation failure %ld (%s) for message #%lu"
+			        " - message skipped\n"
+			        , beep, (long)offset, smb.last_error, (ulong)msg.hdr.number);
+			skipped++;
 		} else {
 			msg.idx.offset = (uint32_t)offset;
 			smb_init_idx(&smb, &msg);
@@ -1449,50 +1565,48 @@ void packmsgs(ulong packable)
 		smb_close_da(&smb);
 	}
 
-	/* Change *.shd$ into *.shd */
-	fclose(smb.shd_fp), smb.shd_fp = NULL;
-	fclose(tmp_shd);
-	sprintf(fname, "%s.shd_", smb.file);
-	if (remove(fname) != 0) {
+	/* Flush and check the replacements before doing anything irreversible:
+	   a write failure here (a full disk) would otherwise swap in a truncated
+	   message base. */
+	error = ferror(tmp_sdt) || ferror(tmp_shd) || ferror(tmp_sid);
+	if (fclose(tmp_sdt) != 0)
 		error = TRUE;
-		fprintf(errfp, "\n%s!Error %d removing %s\n", beep, errno, fname);
-	}
-	*lastchar(fname) = '\0';
-	sprintf(tmpfname, "%s.shd$", smb.file);
-	if (!error && rename(tmpfname, fname) != 0) {
+	if (fclose(tmp_shd) != 0)
 		error = TRUE;
-		fprintf(errfp, "\n%s!Error %d renaming %s to %s\n", beep, errno, tmpfname, fname);
-	}
-
-
-	/* Change *.sdt$ into *.sdt */
-	fclose(smb.sdt_fp), smb.sdt_fp = NULL;
-	fclose(tmp_sdt);
-	sprintf(fname, "%s.sdt_", smb.file);
-	if (!error && remove(fname) != 0) {
+	if (fclose(tmp_sid) != 0)
 		error = TRUE;
-		fprintf(errfp, "\n%s!Error %d removing %s\n", beep, errno, fname);
-	}
-	*lastchar(fname) = '\0';
-	sprintf(tmpfname, "%s.sdt$", smb.file);
-	if (!error && rename(tmpfname, fname) != 0) {
-		error = TRUE;
-		fprintf(errfp, "\n%s!Error %d renaming %s to %s\n", beep, errno, tmpfname, fname);
+	if (error) {
+		fprintf(errfp, "\n%s!Error %d (%s) writing the packed replacement files\n"
+		        , beep, errno, strerror(errno));
+		pack_abort(moved);
+		return;
 	}
 
-	/* Change *.sid$ into *.sid */
-	fclose(smb.sid_fp), smb.sid_fp = NULL;
-	fclose(tmp_sid);
-	sprintf(fname, "%s.sid_", smb.file);
-	if (!error && remove(fname) != 0) {
-		error = TRUE;
-		fprintf(errfp, "\n%s!Error %d removing %s\n", beep, errno, fname);
+	smb_unlocksmbhdr(&smb);
+	smb_close_fp(&smb.shd_fp);
+	smb_close_fp(&smb.sdt_fp);
+	smb_close_fp(&smb.sid_fp);
+
+	/* Swap the packed replacements in */
+	for (i = PACK_SDT; i <= PACK_SID; i++) {
+		SAFEPRINTF2(fname, "%s.%s", smb.file, pack_ext[i]);
+		SAFEPRINTF2(tmpfname, "%s.%s$", smb.file, pack_ext[i]);
+		if (rename(tmpfname, fname) != 0) {
+			fprintf(errfp, "\n%s!Error %d (%s) renaming %s to %s\n"
+			        , beep, errno, strerror(errno), tmpfname, fname);
+			pack_abort(moved);
+			return;
+		}
 	}
-	*lastchar(fname) = '\0';
-	sprintf(tmpfname, "%s.sid$", smb.file);
-	if (!error && rename(tmpfname, fname) != 0) {
-		error = TRUE;
-		fprintf(errfp, "\n%s!Error %d renaming %s to %s\n", beep, errno, tmpfname, fname);
+
+	/* Committed: discard the originals */
+	for (i = 0; i < PACK_FILES; i++) {
+		if (!(moved & (1 << i)))
+			continue;
+		SAFEPRINTF2(tmpfname, "%s.%s_", smb.file, pack_ext[i]);
+		if (remove(tmpfname) != 0)
+			fprintf(errfp, "\n%s!Error %d (%s) removing %s\n"
+			        , beep, errno, strerror(errno), tmpfname);
 	}
 
 	if ((i = smb_unlock(&smb)) != 0)
@@ -1516,6 +1630,8 @@ void packmsgs(ulong packable)
 		fprintf(errfp, "\n%s!smb_putstatus returned %d: %s\n"
 		        , beep, i, smb.last_error);
 	smb_unlocksmbhdr(&smb);
+	if (skipped)
+		fprintf(errfp, "\n%s!%lu message(s) could not be packed and were dropped\n", beep, skipped);
 	printf("\nDone.\n\n");
 }
 
