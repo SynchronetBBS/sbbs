@@ -700,6 +700,15 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 			offset = smb_allocdat(&smb, length, 1);
 		smb_close_da(&smb);
 
+		if (offset < 0) {   /* #1170 */
+			smb_close(&smb);
+			smb_stack(&smb, SMB_STACK_POP);
+			errormsg(WHERE, ERR_ALLOC, smb.file, length);
+			free(qwkbuf);
+			smb_freemsgmem(&msg);
+			return;
+		}
+
 		smb_fseek(smb.sdt_fp, offset, SEEK_SET);
 		xlat = XLAT_NONE;
 		smb_fwrite(&smb, &xlat, 2, smb.sdt_fp);

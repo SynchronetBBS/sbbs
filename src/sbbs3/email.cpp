@@ -204,6 +204,14 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		offset = smb_allocdat(&smb, length, 1);
 	smb_close_da(&smb);
 
+	if (offset < 0) {   /* #1170 */
+		smb_unlocksmbhdr(&smb);
+		smb_close(&smb);
+		smb_stack(&smb, SMB_STACK_POP);
+		errormsg(WHERE, ERR_ALLOC, smb.file, length);
+		return false;
+	}
+
 	if ((instream = fnopen(&file, msgpath, O_RDONLY | O_BINARY)) == NULL) {
 		smb_freemsgdat(&smb, offset, length, 1);
 		smb_unlocksmbhdr(&smb);

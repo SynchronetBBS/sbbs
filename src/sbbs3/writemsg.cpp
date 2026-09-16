@@ -1913,6 +1913,14 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 		smb_close_da(&newsmb);
 	}
 
+	if (offset < 0) {   /* #1170 */
+		free(buf);
+		smb_unlocksmbhdr(&newsmb);
+		smb_close(&newsmb);
+		errormsg(WHERE, ERR_ALLOC, newsmb.file, length);
+		return false;
+	}
+
 	newmsg.hdr.offset = (uint32_t)offset;
 	newmsg.hdr.version = smb_ver();
 
