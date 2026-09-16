@@ -129,7 +129,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 
 		if (length) {
 
-			if (length >= 0x80000000 || length < 0) {
+			if (length > SMB_MAX_DAT_LEN || length < 0) {
 				sprintf(smb->last_error, "%s message length: 0x%" PRIXMAX, __FUNCTION__, (intmax_t)length);
 				retval = SMB_ERR_DAT_LEN;
 				break;
@@ -153,6 +153,15 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 
 			if (offset < 0) {
 				retval = (int)offset;
+				break;
+			}
+			/* Reachable only when hyper-allocated (the allocators enforce this
+			   themselves), where no blocks have been allocated to free here. */
+			if (offset > SMB_MAX_DAT_OFFSET - length) {
+				safe_snprintf(smb->last_error, sizeof(smb->last_error)
+				              , "%s data offset (%" PRIdOFF ") + length (%" PRIdOFF ") exceeds %" PRIdOFF
+				              , __FUNCTION__, offset, length, SMB_MAX_DAT_OFFSET);
+				retval = SMB_ERR_DAT_OFFSET;
 				break;
 			}
 			msg->hdr.offset = (uint32_t)offset;

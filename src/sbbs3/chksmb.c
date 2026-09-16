@@ -731,7 +731,7 @@ int main(int argc, char **argv)
 					for (i = 0; i < msg.hdr.total_dfields; i++) {
 						if (terminated)
 							break;
-						fseek(smb.sdt_fp, msg.hdr.offset + msg.dfield[i].offset, SEEK_SET);
+						fseeko(smb.sdt_fp, (off_t)msg.hdr.offset + msg.dfield[i].offset, SEEK_SET);
 						if (!fread(&xlat, 2, 1, smb.sdt_fp))
 							xlat = 0xffff;
 						lzh = 0;
@@ -802,7 +802,7 @@ int main(int argc, char **argv)
 								       , n, msg.dfield[n].offset);
 							dfieldoffset++;
 						}
-						if (msg.dfield[n].length & 0x80000000UL) {
+						if (msg.dfield[n].length > SMB_MAX_DAT_LEN) {
 							msgerr = TRUE;
 							if (extinfo)
 								printf("MSGERR: Invalid Data Field [%lu] Length: %" PRIu32 "\n"

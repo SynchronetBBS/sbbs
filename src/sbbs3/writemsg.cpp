@@ -1848,7 +1848,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 		return false;
 	}
 
-	if (fseek(smb.sdt_fp, msg->hdr.offset, SEEK_SET) != 0
+	if (fseeko(smb.sdt_fp, (off_t)msg->hdr.offset, SEEK_SET) != 0
 	    || fread(buf, length, 1, smb.sdt_fp) != 1) {
 		free(buf);
 		errormsg(WHERE, ERR_READ, smb.file, length);

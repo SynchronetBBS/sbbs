@@ -63,6 +63,15 @@ typedef unsigned char uchar;
 
 #define SMB_MAX_HDR_LEN     0xffffU     /* Message header length is 16-bit */
 
+/* Longest data (body + tail) a single message may store (see SMB_ERR_DAT_LEN) */
+#define SMB_MAX_DAT_LEN     ((off_t)0x7fffffff)
+
+/* Storage offsets live in 32-bit fields (msghdr_t.offset for the data file,
+   idxrec_t.offset for the header file), so a message's data must *end* at or
+   below these offsets, not merely begin there (#12). */
+#define SMB_MAX_DAT_OFFSET  ((off_t)0xffffffff)
+#define SMB_MAX_HDR_OFFSET  ((off_t)0xffffffff)
+
 /* Longest extension smblib appends to smb_t.file (".hash", ".lock"), counting
    the dot.  smb_t.file is sized to leave room for it, so the derived filenames
    still fit a MAX_PATH + 1 buffer. */

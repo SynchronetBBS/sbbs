@@ -120,8 +120,8 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 			default:    /* ignore other data types */
 				continue;
 		}
-		fseek(smb->sdt_fp, msg->hdr.offset + msg->dfield[i].offset
-		      , SEEK_SET);
+		smb_fseek(smb->sdt_fp, (off_t)msg->hdr.offset + msg->dfield[i].offset
+		          , SEEK_SET);
 		if (fread(&xlat, 1, sizeof(xlat), smb->sdt_fp) != sizeof(xlat))
 			continue;
 		lzh = 0;

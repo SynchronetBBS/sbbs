@@ -31,6 +31,13 @@
 - Windows: `sbbs.exe`, `sbbsNTsvcs.exe`, `jsexec.exe`, and
   `sbbsctrl.exe` are now large-address-aware, so they can use up to
   ~4GB (rather than 2GB) of address space on 64-bit Windows
+- Message base data storage limit raised from 2GB to 4GB. A base's
+  `.sdt` (data) file could not previously grow beyond 2GB; once it
+  reached that size, every new message was rejected with
+  `!ERROR -120 (smb_fallocdat invalid data offset: ...)`. Applies to
+  both fast-allocation and self-packing message bases. A base that
+  reaches the new 4GB limit is now refused cleanly, rather than
+  storing a message at an offset the base cannot address
 - The system-wide message and file totals (`@TMSG@`, `@TFILE@`,
   `system.stats.total_messages`, `system.stats.total_files`) are now
   counted at most once per new `totals_interval` (default 10 minutes)

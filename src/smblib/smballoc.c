@@ -23,6 +23,17 @@
 #include "genwrap.h"
 
 /****************************************************************************/
+/* Would data of 'length' bytes stored at 'offset' fit within the offsets	*/
+/* the SMB format can express? (see SMB_MAX_DAT_OFFSET)						*/
+/****************************************************************************/
+static bool valid_dat_offset(off_t offset, off_t length)
+{
+	if (offset < 0 || length < 0)
+		return false;
+	return offset <= SMB_MAX_DAT_OFFSET - length;
+}
+
+/****************************************************************************/
 /* Finds unused space in data file based on block allocation table and		*/
 /* marks space as used in allocation table.                                 */
 /* File must be opened read/write DENY ALL									*/
@@ -45,7 +56,7 @@ off_t smb_allocdat(smb_t* smb, off_t length, uint16_t refs)
 	j = 0;    /* j is consecutive unused block counter */
 	fflush(smb->sda_fp);
 	rewind(smb->sda_fp);
-	while (!feof(smb->sda_fp) && (int)offset >= 0) {
+	while (!feof(smb->sda_fp) && offset <= SMB_MAX_DAT_OFFSET) {
 		if (smb_fread(smb, &i, sizeof(i), smb->sda_fp) != sizeof(i))
 			break;
 		offset += SDT_BLOCK_LEN;
@@ -54,12 +65,14 @@ off_t smb_allocdat(smb_t* smb, off_t length, uint16_t refs)
 		else
 			j = 0;
 		if (j == blocks) {
-			offset -= (blocks * SDT_BLOCK_LEN);
+			offset -= ((off_t)blocks * SDT_BLOCK_LEN);
 			break;
 		}
 	}
-	if ((int)offset < 0) {
-		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s invalid data offset: %" PRIdOFF, __FUNCTION__, offset);
+	if (!valid_dat_offset(offset, (off_t)blocks * SDT_BLOCK_LEN)) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s invalid data offset: %" PRIdOFF " (%u blocks, max %" PRIdOFF ")"
+		              , __FUNCTION__, offset, blocks, SMB_MAX_DAT_OFFSET);
 		return SMB_ERR_DAT_OFFSET;
 	}
 	clearerr(smb->sda_fp);
@@ -99,10 +112,18 @@ off_t smb_fallocdat(smb_t* smb, off_t length, uint16_t refs)
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s rewinding", __FUNCTION__);
 		return SMB_ERR_SEEK;
 	}
-	offset = (ftell(smb->sda_fp) / sizeof(refs)) * SDT_BLOCK_LEN;
-	if ((int)offset < 0) {
+	offset = ftello(smb->sda_fp);
+	if (offset < 0) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error)
-		              , "%s invalid data offset: %" PRIdOFF, __FUNCTION__, offset);
+		              , "%s %d '%s' telling allocation file position", __FUNCTION__
+		              , get_errno(), strerror(get_errno()));
+		return SMB_ERR_SEEK;
+	}
+	offset = (offset / (off_t)sizeof(refs)) * SDT_BLOCK_LEN;
+	if (!valid_dat_offset(offset, (off_t)blocks * SDT_BLOCK_LEN)) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s invalid data offset: %" PRIdOFF " (%u blocks, max %" PRIdOFF ")"
+		              , __FUNCTION__, offset, blocks, SMB_MAX_DAT_OFFSET);
 		return SMB_ERR_DAT_OFFSET;
 	}
 	for (l = 0; l < blocks; l++)
@@ -130,6 +151,8 @@ int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 	int      l, blocks;
 	off_t    sda_offset;
 	off_t    flen;
+	off_t    sda_blocks;
+	off_t    sdt_blocks;
 
 	if (offset < 0)
 		return SMB_ERR_DAT_OFFSET;
@@ -179,8 +202,8 @@ int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 			i -= refs;
 
 		// Completely free? and at end of SDA? Just truncate record from end of file
-		if (i == 0 && ftell(smb->sda_fp) == flen) {
-			if (chsize(fileno(smb->sda_fp), (int)sda_offset) == 0) {
+		if (i == 0 && ftello(smb->sda_fp) == flen) {
+			if (chsize(fileno(smb->sda_fp), sda_offset) == 0) {
 				flen = sda_offset;
 				continue;
 			}
@@ -202,8 +225,10 @@ int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 		}
 	}
 	fflush(smb->sda_fp);
-	if (filelength(fileno(smb->sdt_fp)) / SDT_BLOCK_LEN > (int)(filelength(fileno(smb->sda_fp)) / sizeof(uint16_t)))
-		if (chsize(fileno(smb->sdt_fp), (int)(filelength(fileno(smb->sda_fp)) / sizeof(uint16_t)) * SDT_BLOCK_LEN) != 0)
+	sda_blocks = filelength(fileno(smb->sda_fp)) / (off_t)sizeof(uint16_t);
+	sdt_blocks = filelength(fileno(smb->sdt_fp)) / SDT_BLOCK_LEN;
+	if (sda_blocks >= 0 && sdt_blocks > sda_blocks)
+		if (chsize(fileno(smb->sdt_fp), sda_blocks * SDT_BLOCK_LEN) != 0)
 			retval = SMB_ERR_TRUNCATE;
 	if (da_opened)
 		smb_close_da(smb);
@@ -317,8 +342,8 @@ int smb_freemsghdr(smb_t* smb, off_t offset, uint length)
 
 	sha_offset = offset / SHD_BLOCK_LEN;
 	if (filelength(fileno(smb->sha_fp)) <= (sha_offset + blocks)) {
-		if (chsize(fileno(smb->sha_fp), (int)sha_offset) == 0) {
-			if (chsize(fileno(smb->shd_fp), (int)(smb->status.header_offset + offset)) != 0) {
+		if (chsize(fileno(smb->sha_fp), sha_offset) == 0) {
+			if (chsize(fileno(smb->shd_fp), (off_t)smb->status.header_offset + offset) != 0) {
 				safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s header truncation failure", __FUNCTION__);
 				return SMB_ERR_TRUNCATE;
 			}
@@ -327,7 +352,7 @@ int smb_freemsghdr(smb_t* smb, off_t offset, uint length)
 	}
 
 	if (fseeko(smb->sha_fp, sha_offset, SEEK_SET)) {
-		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s seeking to %d", __FUNCTION__, (int)sha_offset);
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s seeking to %" PRIdOFF, __FUNCTION__, sha_offset);
 		return SMB_ERR_SEEK;
 	}
 	for (l = 0; l < blocks; l++)
@@ -431,7 +456,8 @@ off_t smb_allochdr(smb_t* smb, uint length)
 off_t smb_fallochdr(smb_t* smb, uint length)
 {
 	uchar c = 1;
-	uint  l, blocks, offset;
+	uint  l, blocks;
+	off_t offset;
 
 	if (smb->sha_fp == NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
@@ -444,7 +470,20 @@ off_t smb_fallochdr(smb_t* smb, uint length)
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s rewinding", __FUNCTION__);
 		return SMB_ERR_SEEK;
 	}
-	offset = ftell(smb->sha_fp) * SHD_BLOCK_LEN;
+	offset = ftello(smb->sha_fp);
+	if (offset < 0) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s %d '%s' telling allocation file position", __FUNCTION__
+		              , get_errno(), strerror(get_errno()));
+		return SMB_ERR_SEEK;
+	}
+	offset *= SHD_BLOCK_LEN;
+	if (offset > SMB_MAX_HDR_OFFSET - ((off_t)blocks * SHD_BLOCK_LEN)) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s invalid header offset: %" PRIdOFF " (%u blocks, max %" PRIdOFF ")"
+		              , __FUNCTION__, offset, blocks, SMB_MAX_HDR_OFFSET);
+		return SMB_ERR_HDR_OFFSET;
+	}
 	for (l = 0; l < blocks; l++)
 		if (!fwrite(&c, 1, 1, smb->sha_fp)) {
 			safe_snprintf(smb->last_error, sizeof(smb->last_error)
@@ -462,7 +501,7 @@ off_t smb_fallochdr(smb_t* smb, uint length)
 /************************************************************************/
 off_t smb_hallochdr(smb_t* smb)
 {
-	uint offset;
+	off_t offset;
 
 	if (smb->shd_fp == NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
@@ -473,14 +512,21 @@ off_t smb_hallochdr(smb_t* smb)
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s rewinding", __FUNCTION__);
 		return SMB_ERR_SEEK;
 	}
-	offset = ftell(smb->shd_fp);
-	if (offset < smb->status.header_offset)    /* Header file truncated?!? */
+	offset = ftello(smb->shd_fp);
+	if (offset < (off_t)smb->status.header_offset)    /* Header file truncated?!? */
 		return smb->status.header_offset;
 
 	offset -= smb->status.header_offset;      /* SMB headers not included */
 
 	/* Even block boundry */
 	offset += PAD_LENGTH_FOR_ALIGNMENT(offset, SHD_BLOCK_LEN);
+
+	if (offset > SMB_MAX_HDR_OFFSET) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s invalid header offset: %" PRIdOFF " (max %" PRIdOFF ")"
+		              , __FUNCTION__, offset, SMB_MAX_HDR_OFFSET);
+		return SMB_ERR_HDR_OFFSET;
+	}
 
 	return offset;
 }
@@ -511,7 +557,7 @@ off_t smb_hallocdat(smb_t* smb)
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s rewinding", __FUNCTION__);
 		return SMB_ERR_SEEK;
 	}
-	offset = ftell(smb->sdt_fp);
+	offset = ftello(smb->sdt_fp);
 	if (offset < 0) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error)
 		              , "%s invalid file offset: %" PRIdOFF, __FUNCTION__, offset);
@@ -520,6 +566,13 @@ off_t smb_hallocdat(smb_t* smb)
 
 	/* Make sure even block boundry */
 	offset += PAD_LENGTH_FOR_ALIGNMENT(offset, SDT_BLOCK_LEN);
+
+	if (offset > SMB_MAX_DAT_OFFSET) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s invalid data offset: %" PRIdOFF " (max %" PRIdOFF ")"
+		              , __FUNCTION__, offset, SMB_MAX_DAT_OFFSET);
+		return SMB_ERR_DAT_OFFSET;
+	}
 
 	return offset;
 }
