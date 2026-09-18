@@ -356,8 +356,9 @@ var   DIR_FILETAGS  =(1<<23);	/* Allow files to have user-specified tags 	*/
 								/* Bits in xtrn[x] and xedit[x].settings	*/
 					    		/********************************************/
 var XTRN_MULTIUSER	=(1<<0);	/* allow multi simultaneous users			*/
-var XTRN_ANSI		=(1<<1);	/* user must have ANSI, same as ^^^			*/
-var XTRN_IO_INTS 	=(1<<2);	/* Intercept I/O interrupts 				*/
+var XTRN_ANSI		=(1<<1);	/* Unused (no effect)						*/
+var XTRN_STDIO		=(1<<2);	/* Intercept Standard I/O					*/
+var XTRN_IO_INTS	=XTRN_STDIO;/* Deprecated alias of XTRN_STDIO			*/
 var XTRN_MODUSERDAT	=(1<<3);	/* Program can modify user data 			*/
 var XTRN_WWIVCOLOR	=(1<<4);	/* Program uses WWIV color codes			*/
 var XTRN_EVENTONLY	=(1<<5);	/* Program executes as event only			*/
@@ -383,6 +384,7 @@ var XTRN_TEMP_DIR	=(1<<24);	/* Place drop files in temp dir				*/
 var XTRN_UART		=(1<<25);	/* Enable the virtual UART driver			*/
 var XTRN_FOSSIL		=(1<<26);	/* Enable the int14h/FOSSIL driver			*/
 var XTRN_NODISPLAY	=(1<<27);	/* Disable local screen/display				*/
+var XTRN_KEEP_CTRL_A=(1<<28);	/* Retain Ctrl-A codes in quoted text		*/
 var XTRN_CONIO		=(1<<31);	/* Intercept Windows Console I/O (Drwy)		*/
 					    		/********************************************/
 

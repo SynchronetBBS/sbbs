@@ -112,7 +112,7 @@ static bool new_external_program(unsigned new_xtrn_num, unsigned section)
 	}
 	memset(new_xtrn, 0, sizeof(*new_xtrn));
 	new_xtrn->sec = section;
-	new_xtrn->misc = MULTIUSER;
+	new_xtrn->misc = XTRN_MULTIUSER;
 
 	xtrn_t ** new_xtrn_list = realloc(cfg.xtrn, sizeof(xtrn_t *) * (cfg.total_xtrns + 1));
 	if (new_xtrn_list == NULL) {
@@ -155,7 +155,7 @@ static bool new_external_editor(unsigned new_xedit_num)
 		return false;
 	}
 	memset(new_xedit, 0, sizeof(*new_xedit));
-	new_xedit->misc |= QUOTEWRAP;
+	new_xedit->misc |= XTRN_QUOTEWRAP;
 
 	xedit_t** new_xedit_list = realloc(cfg.xedit, sizeof(xedit_t *) * (cfg.total_xedits + 1));
 	if (new_xedit_list == NULL) {
@@ -1078,7 +1078,7 @@ const char* io_method(uint32_t mode)
 	        , mode & XTRN_UART ? "UART" : (mode & XTRN_FOSSIL) ? "FOSSIL"
 	            : (mode & XTRN_STDIO ? "Standard"
 	                : mode & XTRN_CONIO ? "Console": (mode & XTRN_NATIVE ? "Socket" : "FOSSIL or UART"))
-	        , (mode & (XTRN_STDIO | WWIVCOLOR)) == (XTRN_STDIO | WWIVCOLOR) ? ", WWIV Color" : ""
+	        , (mode & (XTRN_STDIO | XTRN_WWIVCOLOR)) == (XTRN_STDIO | XTRN_WWIVCOLOR) ? ", WWIV Color" : ""
 	        , (mode & (XTRN_STDIO | XTRN_NOECHO)) == (XTRN_STDIO | XTRN_NOECHO) ? ", No Echo" : ""
 	        , (mode & XTRN_BIN) ? ", Untranslated" : "");
 	return str;
@@ -1163,7 +1163,7 @@ void choose_io_method(uint32_t* misc)
 				(*misc) &= ~XTRN_UART | XTRN_FOSSIL;
 				uifc.changes = TRUE;
 			}
-			k = ((*misc) & WWIVCOLOR) ? 0:1;
+			k = ((*misc) & XTRN_WWIVCOLOR) ? 0:1;
 			uifc.helpbuf =
 				"`Program Uses WWIV Color Codes:`\n"
 				"\n"
@@ -1173,12 +1173,12 @@ void choose_io_method(uint32_t* misc)
 			k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0
 			              , "Program Uses WWIV Color Codes"
 			              , uifcYesNoOpts);
-			if (!k && !((*misc) & WWIVCOLOR)) {
-				(*misc) |= WWIVCOLOR;
+			if (!k && !((*misc) & XTRN_WWIVCOLOR)) {
+				(*misc) |= XTRN_WWIVCOLOR;
 				uifc.changes = TRUE;
 			}
-			else if (k == 1 && ((*misc) & WWIVCOLOR)) {
-				(*misc) &= ~WWIVCOLOR;
+			else if (k == 1 && ((*misc) & XTRN_WWIVCOLOR)) {
+				(*misc) &= ~XTRN_WWIVCOLOR;
 				uifc.changes = TRUE;
 			}
 			k = ((*misc) & XTRN_NOECHO) ? 1:0;
@@ -1201,21 +1201,21 @@ void choose_io_method(uint32_t* misc)
 			break;
 		case 1: /* FOSSIL or UART or Socket */
 			if (((*misc) & (XTRN_STDIO | XTRN_UART | XTRN_FOSSIL)) != 0) {
-				(*misc) &= ~(XTRN_UART | XTRN_FOSSIL | XTRN_STDIO | WWIVCOLOR | XTRN_NOECHO);
+				(*misc) &= ~(XTRN_UART | XTRN_FOSSIL | XTRN_STDIO | XTRN_WWIVCOLOR | XTRN_NOECHO);
 				uifc.changes = TRUE;
 			}
 			break;
 		case 2: /* UART */
 			if (((*misc) & (XTRN_STDIO | XTRN_UART | XTRN_FOSSIL)) != XTRN_UART) {
 				(*misc) |= XTRN_UART;
-				(*misc) &= ~(XTRN_FOSSIL | XTRN_STDIO | WWIVCOLOR | XTRN_NOECHO);
+				(*misc) &= ~(XTRN_FOSSIL | XTRN_STDIO | XTRN_WWIVCOLOR | XTRN_NOECHO);
 				uifc.changes = TRUE;
 			}
 			break;
 		case 3: /* FOSSIL */
 			if (((*misc) & (XTRN_STDIO | XTRN_UART | XTRN_FOSSIL)) != XTRN_FOSSIL) {
 				(*misc) |= XTRN_FOSSIL;
-				(*misc) &= ~(XTRN_UART | XTRN_STDIO | WWIVCOLOR | XTRN_NOECHO);
+				(*misc) &= ~(XTRN_UART | XTRN_STDIO | XTRN_WWIVCOLOR | XTRN_NOECHO);
 				uifc.changes = TRUE;
 			}
 			break;
@@ -1365,14 +1365,14 @@ void xtrn_cfg(int section)
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Execution Requirements"
 			         , cfg.xtrn[i]->run_arstr);
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Multiple Concurrent Users"
-			         , cfg.xtrn[i]->misc & MULTIUSER ? "Yes" : "No");
+			         , cfg.xtrn[i]->misc & XTRN_MULTIUSER ? "Yes" : "No");
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", native_opt
 			         , cfg.xtrn[i]->misc & XTRN_NATIVE ? "Yes" : "No");
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "I/O Method", io_method(cfg.xtrn[i]->misc));
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", use_shell_opt
 			         , cfg.xtrn[i]->misc & XTRN_SH ? "Yes" : "No");
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Modify User Data"
-			         , cfg.xtrn[i]->misc & MODUSERDAT ? "Yes" : "No");
+			         , cfg.xtrn[i]->misc & XTRN_MODUSERDAT ? "Yes" : "No");
 			switch (cfg.xtrn[i]->event) {
 				case EVENT_LOGON:
 					strcpy(str, "Logon");
@@ -1402,7 +1402,7 @@ void xtrn_cfg(int section)
 					strcpy(str, "No");
 					break;
 			}
-			if ((cfg.xtrn[i]->misc & EVENTONLY) && cfg.xtrn[i]->event)
+			if ((cfg.xtrn[i]->misc & XTRN_EVENTONLY) && cfg.xtrn[i]->event)
 				strcat(str, ", Only");
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Execute on Event", str);
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Pause After Execution"
@@ -1410,10 +1410,10 @@ void xtrn_cfg(int section)
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Disable Local Display"
 			         , cfg.xtrn[i]->misc & XTRN_NODISPLAY ? "Yes" : "No");
 			snprintf(opt[k++], MAX_OPLN, "%-23.23s%-4s%s", "BBS Drop File Type"
-			         , (cfg.xtrn[i]->type != XTRN_NONE && (cfg.xtrn[i]->misc & REALNAME)) ? "(R)":nulstr
+			         , (cfg.xtrn[i]->type != XTRN_NONE && (cfg.xtrn[i]->misc & XTRN_REALNAME)) ? "(R)":nulstr
 			         , dropfile(cfg.xtrn[i]->type, cfg.xtrn[i]->misc));
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Place Drop File In"
-			         , cfg.xtrn[i]->misc & STARTUPDIR ? "Start-Up Directory":cfg.xtrn[i]->misc & XTRN_TEMP_DIR ? "Temp Directory" : "Node Directory");
+			         , cfg.xtrn[i]->misc & XTRN_STARTUPDIR ? "Start-Up Directory":cfg.xtrn[i]->misc & XTRN_TEMP_DIR ? "Temp Directory" : "Node Directory");
 			snprintf(opt[k++], MAX_OPLN, "Time Options...");
 			opt[k][0] = 0;
 			uifc.helpbuf =
@@ -1542,7 +1542,7 @@ void xtrn_cfg(int section)
 					getar(str, cfg.xtrn[i]->run_arstr, /* helpbuf: */ NULL);
 					break;
 				case __COUNTER__:
-					toggle_flag("Supports Multiple Users", &cfg.xtrn[i]->misc, MULTIUSER, false,
+					toggle_flag("Supports Multiple Users", &cfg.xtrn[i]->misc, XTRN_MULTIUSER, false,
 					            "`Supports Multiple Users:`\n"
 					            "\n"
 					            "If this online program supports multiple simultaneous users (nodes),\n"
@@ -1560,7 +1560,7 @@ void xtrn_cfg(int section)
 					break;
 				case __COUNTER__:
 					toggle_flag("Program Can Modify User Data"
-					            , &cfg.xtrn[i]->misc, MODUSERDAT, false,
+					            , &cfg.xtrn[i]->misc, XTRN_MODUSERDAT, false,
 					            "`Program Can Modify User Data:`\n"
 					            "\n"
 					            "Set to `Yes` if this program is capable of changing the data of users\n"
@@ -1619,14 +1619,14 @@ void xtrn_cfg(int section)
 						uifc.changes = TRUE;
 					}
 					if (!cfg.xtrn[i]->event) {
-						if (cfg.xtrn[i]->misc & EVENTONLY) {
-							cfg.xtrn[i]->misc &= ~EVENTONLY;
+						if (cfg.xtrn[i]->misc & XTRN_EVENTONLY) {
+							cfg.xtrn[i]->misc &= ~XTRN_EVENTONLY;
 							uifc.changes = TRUE;
 						}
 						break;
 					}
 					toggle_flag("Execute as Event Only"
-					            , &cfg.xtrn[i]->misc, EVENTONLY, false,
+					            , &cfg.xtrn[i]->misc, XTRN_EVENTONLY, false,
 					            "`Execute Online Program as Event Only:`\n"
 					            "\n"
 					            "If you would like this online program to execute as an event only\n"
@@ -1725,16 +1725,16 @@ void xtrn_cfg(int section)
 						uifc.changes = TRUE;
 					}
 					if (cfg.xtrn[i]->type && cfg.xtrn[i]->type != XTRN_BBSDEV && cfg.uq & UQ_ALIASES) {
-						k = (cfg.xtrn[i]->misc & REALNAME) ? 0:1;
+						k = (cfg.xtrn[i]->misc & XTRN_REALNAME) ? 0:1;
 						k = uifc.list(WIN_MID, 0, 0, 0, &k, 0, "Use Real Names", uifcYesNoOpts);
 						if (k == -1)
 							break;
-						if (k == 0 && !(cfg.xtrn[i]->misc & REALNAME)) {
-							cfg.xtrn[i]->misc |= REALNAME;
+						if (k == 0 && !(cfg.xtrn[i]->misc & XTRN_REALNAME)) {
+							cfg.xtrn[i]->misc |= XTRN_REALNAME;
 							uifc.changes = TRUE;
 						}
-						else if (k == 1 && (cfg.xtrn[i]->misc & REALNAME)) {
-							cfg.xtrn[i]->misc &= ~REALNAME;
+						else if (k == 1 && (cfg.xtrn[i]->misc & XTRN_REALNAME)) {
+							cfg.xtrn[i]->misc &= ~XTRN_REALNAME;
 							uifc.changes = TRUE;
 						}
 					}
@@ -1752,7 +1752,7 @@ void xtrn_cfg(int section)
 					}
 					break;
 				case __COUNTER__:
-					k = (cfg.xtrn[i]->misc & STARTUPDIR) ? 1 : (cfg.xtrn[i]->misc & XTRN_TEMP_DIR) ? 2 : 0;
+					k = (cfg.xtrn[i]->misc & XTRN_STARTUPDIR) ? 1 : (cfg.xtrn[i]->misc & XTRN_TEMP_DIR) ? 2 : 0;
 					strcpy(opt[0], "Node Directory");
 					strcpy(opt[1], "Start-up Directory");
 					strcpy(opt[2], "Temporary Directory");
@@ -1775,17 +1775,17 @@ void xtrn_cfg(int section)
 					;
 					k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0, "Create Drop File In"
 					              , opt);
-					if (!k && (cfg.xtrn[i]->misc & (STARTUPDIR | XTRN_TEMP_DIR)) != 0) {
-						cfg.xtrn[i]->misc &= ~(STARTUPDIR | XTRN_TEMP_DIR);
+					if (!k && (cfg.xtrn[i]->misc & (XTRN_STARTUPDIR | XTRN_TEMP_DIR)) != 0) {
+						cfg.xtrn[i]->misc &= ~(XTRN_STARTUPDIR | XTRN_TEMP_DIR);
 						uifc.changes = TRUE;
 					}
-					else if (k == 1 && (cfg.xtrn[i]->misc & (STARTUPDIR | XTRN_TEMP_DIR)) != STARTUPDIR) {
-						cfg.xtrn[i]->misc &= ~(STARTUPDIR | XTRN_TEMP_DIR);
-						cfg.xtrn[i]->misc |= STARTUPDIR;
+					else if (k == 1 && (cfg.xtrn[i]->misc & (XTRN_STARTUPDIR | XTRN_TEMP_DIR)) != XTRN_STARTUPDIR) {
+						cfg.xtrn[i]->misc &= ~(XTRN_STARTUPDIR | XTRN_TEMP_DIR);
+						cfg.xtrn[i]->misc |= XTRN_STARTUPDIR;
 						uifc.changes = TRUE;
 					}
-					else if (k == 2 && (cfg.xtrn[i]->misc & (STARTUPDIR | XTRN_TEMP_DIR)) != XTRN_TEMP_DIR) {
-						cfg.xtrn[i]->misc &= ~(STARTUPDIR | XTRN_TEMP_DIR);
+					else if (k == 2 && (cfg.xtrn[i]->misc & (XTRN_STARTUPDIR | XTRN_TEMP_DIR)) != XTRN_TEMP_DIR) {
+						cfg.xtrn[i]->misc &= ~(XTRN_STARTUPDIR | XTRN_TEMP_DIR);
 						cfg.xtrn[i]->misc |= XTRN_TEMP_DIR;
 						uifc.changes = TRUE;
 					}
@@ -1804,7 +1804,7 @@ void xtrn_cfg(int section)
 							strcpy(str, "None");
 						snprintf(opt[k++], MAX_OPLN, "%-25.25s%s", "Maximum Time", str);
 						snprintf(opt[k++], MAX_OPLN, "%-25.25s%s", "Suspended (Free) Time"
-						         , cfg.xtrn[i]->misc & FREETIME ? "Yes" : "No");
+						         , cfg.xtrn[i]->misc & XTRN_FREETIME ? "Yes" : "No");
 						snprintf(opt[k++], MAX_OPLN, "%-25.25s%s", "Monitor Time Left"
 						         , cfg.xtrn[i]->misc & XTRN_CHKTIME ? "Yes" : "No");
 						if (cfg.xtrn[i]->max_inactivity)
@@ -1857,7 +1857,7 @@ void xtrn_cfg(int section)
 								break;
 							case 2:
 								toggle_flag("Suspended (Free) Time"
-								            , &cfg.xtrn[i]->misc, FREETIME, false,
+								            , &cfg.xtrn[i]->misc, XTRN_FREETIME, false,
 								            "`Suspended (Free) Time:`\n"
 								            "\n"
 								            "If you want the user's time online to be suspended while running this\n"
@@ -2007,26 +2007,26 @@ void xedit_cfg()
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", use_shell_opt
 			         , cfg.xedit[i]->misc & XTRN_SH ? "Yes" : "No");
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Record Terminal Width"
-			         , cfg.xedit[i]->misc & SAVECOLUMNS ? "Yes" : "No");
+			         , cfg.xedit[i]->misc & XTRN_SAVECOLUMNS ? "Yes" : "No");
 			str[0] = 0;
-			if (cfg.xedit[i]->misc & QUOTEWRAP) {
+			if (cfg.xedit[i]->misc & XTRN_QUOTEWRAP) {
 				if (cfg.xedit[i]->quotewrap_cols == 0)
 					SAFECOPY(str, ", for terminal width");
 				else
 					SAFEPRINTF(str, ", for %u columns", (uint)cfg.xedit[i]->quotewrap_cols);
 			}
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s%s", "Word-wrap Quoted Text"
-			         , cfg.xedit[i]->misc & QUOTEWRAP ? "Yes":"No", str);
+			         , cfg.xedit[i]->misc & XTRN_QUOTEWRAP ? "Yes":"No", str);
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Retain Ctrl-A Codes in Quotes"
-			         , cfg.xedit[i]->misc & KEEP_CTRL_A ? "Yes":"No");
+			         , cfg.xedit[i]->misc & XTRN_KEEP_CTRL_A ? "Yes":"No");
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Automatically Quoted Text"
-			         , cfg.xedit[i]->misc & QUOTEALL ? "All":cfg.xedit[i]->misc & QUOTENONE
+			         , cfg.xedit[i]->misc & XTRN_QUOTEALL ? "All":cfg.xedit[i]->misc & XTRN_QUOTENONE
 			        ? "None" : "Prompt User");
-			SAFECOPY(str, cfg.xedit[i]->misc & QUICKBBS ? "MSGINF/MSGTMP ": "EDITOR.INF/RESULT.ED");
+			SAFECOPY(str, cfg.xedit[i]->misc & XTRN_QUICKBBS ? "MSGINF/MSGTMP ": "EDITOR.INF/RESULT.ED");
 			if (cfg.xedit[i]->misc & XTRN_LWRCASE)
 				strlwr(str);
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s %s", "Editor Information Files"
-			         , cfg.xedit[i]->misc & QUICKBBS ? "QuickBBS":"WWIV", str);
+			         , cfg.xedit[i]->misc & XTRN_QUICKBBS ? "QuickBBS":"WWIV", str);
 			const char* p;
 			if (cfg.xedit[i]->misc & XTRN_UTF8) {
 				p = "N/A";
@@ -2049,7 +2049,7 @@ void xedit_cfg()
 			}
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Handle Soft CRs", p);
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Strip FidoNet Kludges"
-			         , cfg.xedit[i]->misc & STRIPKLUDGE ? "Yes":"No");
+			         , cfg.xedit[i]->misc & XTRN_STRIPKLUDGE ? "Yes":"No");
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Support UTF-8 Encoding"
 			         , cfg.xedit[i]->misc & XTRN_UTF8 ? "Yes":"No");
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "BBS Drop File Type"
@@ -2147,7 +2147,7 @@ void xedit_cfg()
 					break;
 				case 7:
 					toggle_flag("Record Terminal Width"
-					            , &cfg.xedit[i]->misc, SAVECOLUMNS, false,
+					            , &cfg.xedit[i]->misc, XTRN_SAVECOLUMNS, false,
 					            "`Record Terminal Width:`\n"
 					            "\n"
 					            "When set to `Yes`, Synchronet will store the current terminal width\n"
@@ -2160,7 +2160,7 @@ void xedit_cfg()
 					            );
 					break;
 				case 8:
-					k = (cfg.xedit[i]->misc & QUOTEWRAP) ? 0:1;
+					k = (cfg.xedit[i]->misc & XTRN_QUOTEWRAP) ? 0:1;
 					uifc.helpbuf =
 						"`Word-wrap Quoted Text:`\n"
 						"\n"
@@ -2174,8 +2174,8 @@ void xedit_cfg()
 					switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0
 					                  , "Word-wrap Quoted Text", uifcYesNoOpts)) {
 						case 0:
-							if (!(cfg.xedit[i]->misc & QUOTEWRAP)) {
-								cfg.xedit[i]->misc |= QUOTEWRAP;
+							if (!(cfg.xedit[i]->misc & XTRN_QUOTEWRAP)) {
+								cfg.xedit[i]->misc |= XTRN_QUOTEWRAP;
 								uifc.changes = TRUE;
 							}
 							SAFEPRINTF(str, "%u", (uint)cfg.xedit[i]->quotewrap_cols);
@@ -2194,26 +2194,26 @@ void xedit_cfg()
 							}
 							break;
 						case 1:
-							if (cfg.xedit[i]->misc & QUOTEWRAP) {
-								cfg.xedit[i]->misc &= ~QUOTEWRAP;
+							if (cfg.xedit[i]->misc & XTRN_QUOTEWRAP) {
+								cfg.xedit[i]->misc &= ~XTRN_QUOTEWRAP;
 								uifc.changes = TRUE;
 							}
 							break;
 					}
 					break;
 				case 9:
-					toggle_flag("Retain Ctrl-A Codes in Quoted Text", &cfg.xedit[i]->misc, KEEP_CTRL_A, false
+					toggle_flag("Retain Ctrl-A Codes in Quoted Text", &cfg.xedit[i]->misc, XTRN_KEEP_CTRL_A, false
 						, "`Retain Ctrl-A Codes in Quoted Text:`\n"
 						"\n"
 						"If this editor supports Ctrl-A codes in the generated `QUOTES.TXT` file,\n"
 						"set this option to `Yes`.\n");
 					break;
 				case 10:
-					switch (cfg.xedit[i]->misc & (QUOTEALL | QUOTENONE)) {
+					switch (cfg.xedit[i]->misc & (XTRN_QUOTEALL | XTRN_QUOTENONE)) {
 						case 0:     /* prompt user */
 							k = 2;
 							break;
-						case QUOTENONE:
+						case XTRN_QUOTENONE:
 							k = 1;
 							break;
 						default:    /* all */
@@ -2239,23 +2239,23 @@ void xedit_cfg()
 					;
 					k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0, "Automatically Quoted Text"
 					              , opt);
-					if (!k && !(cfg.xedit[i]->misc & QUOTEALL)) {
-						cfg.xedit[i]->misc |= QUOTEALL;
-						cfg.xedit[i]->misc &= ~QUOTENONE;
+					if (!k && !(cfg.xedit[i]->misc & XTRN_QUOTEALL)) {
+						cfg.xedit[i]->misc |= XTRN_QUOTEALL;
+						cfg.xedit[i]->misc &= ~XTRN_QUOTENONE;
 						uifc.changes = TRUE;
 					}
-					else if (k == 1 && !(cfg.xedit[i]->misc & QUOTENONE)) {
-						cfg.xedit[i]->misc |= QUOTENONE;
-						cfg.xedit[i]->misc &= ~QUOTEALL;
+					else if (k == 1 && !(cfg.xedit[i]->misc & XTRN_QUOTENONE)) {
+						cfg.xedit[i]->misc |= XTRN_QUOTENONE;
+						cfg.xedit[i]->misc &= ~XTRN_QUOTEALL;
 						uifc.changes = TRUE;
 					}
-					else if (k == 2 && cfg.xedit[i]->misc & (QUOTENONE | QUOTEALL)) {
-						cfg.xedit[i]->misc &= ~(QUOTENONE | QUOTEALL);
+					else if (k == 2 && cfg.xedit[i]->misc & (XTRN_QUOTENONE | XTRN_QUOTEALL)) {
+						cfg.xedit[i]->misc &= ~(XTRN_QUOTENONE | XTRN_QUOTEALL);
 						uifc.changes = TRUE;
 					}
 					break;
 				case 11:
-					k = cfg.xedit[i]->misc & QUICKBBS ? 0:1;
+					k = cfg.xedit[i]->misc & XTRN_QUICKBBS ? 0:1;
 					strcpy(opt[0], "QuickBBS MSGINF/MSGTMP");
 					strcpy(opt[1], "WWIV EDITOR.INF/RESULT.ED");
 					opt[2][0] = 0;
@@ -2269,12 +2269,12 @@ void xedit_cfg()
 					              , opt);
 					if (k == -1)
 						break;
-					if (!k && !(cfg.xedit[i]->misc & QUICKBBS)) {
-						cfg.xedit[i]->misc |= QUICKBBS;
+					if (!k && !(cfg.xedit[i]->misc & XTRN_QUICKBBS)) {
+						cfg.xedit[i]->misc |= XTRN_QUICKBBS;
 						uifc.changes = TRUE;
 					}
-					else if (k == 1 && (cfg.xedit[i]->misc & QUICKBBS)) {
-						cfg.xedit[i]->misc &= ~QUICKBBS;
+					else if (k == 1 && (cfg.xedit[i]->misc & XTRN_QUICKBBS)) {
+						cfg.xedit[i]->misc &= ~XTRN_QUICKBBS;
 						uifc.changes = TRUE;
 					}
 					goto lowercase_filename;
@@ -2313,7 +2313,7 @@ void xedit_cfg()
 					break;
 				case 13:
 					toggle_flag("Strip FidoNet Kludge Lines"
-					            , &cfg.xedit[i]->misc, STRIPKLUDGE, false,
+					            , &cfg.xedit[i]->misc, XTRN_STRIPKLUDGE, false,
 					            "`Strip FidoNet Kludge Lines From Messages:`\n"
 					            "\n"
 					            "If this message editor adds FidoNet Kludge lines to the message text,\n"

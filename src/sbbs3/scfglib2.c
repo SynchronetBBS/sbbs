@@ -420,7 +420,7 @@ bool read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		arstr(NULL, cfg->xedit[i]->arstr, cfg, cfg->xedit[i]->ar);
 
 		cfg->xedit[i]->type = (uint8_t)iniGetUInteger(section, NULL, "type", 0);
-		cfg->xedit[i]->soft_cr = iniGetUInteger(section, NULL, "soft_cr", (cfg->xedit[i]->misc & QUICKBBS) ? XEDIT_SOFT_CR_EXPAND : XEDIT_SOFT_CR_RETAIN);
+		cfg->xedit[i]->soft_cr = iniGetUInteger(section, NULL, "soft_cr", (cfg->xedit[i]->misc & XTRN_QUICKBBS) ? XEDIT_SOFT_CR_EXPAND : XEDIT_SOFT_CR_RETAIN);
 		cfg->xedit[i]->quotewrap_cols = iniGetUInteger(section, NULL, "quotewrap_cols", 0);
 	}
 	iniFreeStringList(list);

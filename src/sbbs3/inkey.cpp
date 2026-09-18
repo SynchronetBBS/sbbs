@@ -225,7 +225,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 				long hk_mode = 0;
 				if (cfg.hotkey[i]->misc & XTRN_STDIO) {
 					hk_mode |= EX_STDIO;
-					if (cfg.hotkey[i]->misc & WWIVCOLOR)
+					if (cfg.hotkey[i]->misc & XTRN_WWIVCOLOR)
 						hk_mode |= EX_WWIV;
 				}
 				if (cfg.hotkey[i]->misc & XTRN_NATIVE)

@@ -419,7 +419,7 @@ JSBool js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				val = OBJECT_TO_JSVAL(progobj);
 				prog_index = -1;
 				if ((p->user == NULL || chk_ar(p->cfg, p->cfg->xtrn[d]->ar, p->user, p->client))
-				    && !(p->cfg->xtrn[d]->event && p->cfg->xtrn[d]->misc & EVENTONLY)) {
+				    && !(p->cfg->xtrn[d]->event && p->cfg->xtrn[d]->misc & XTRN_EVENTONLY)) {
 
 					if (!JS_GetArrayLength(cx, prog_list, &prog_index))
 						return JS_FALSE;

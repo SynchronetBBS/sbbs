@@ -403,37 +403,45 @@ typedef enum {                       // Values for xtrn_t.event
 
 #define NODE_ANY        0           // special qhub/event_t.node value
 
-// Bits in xtrn_t.misc
-#define MULTIUSER       (1 << 0)      // allow multi simultaneous users
-#define XTRN_ANSI       (1 << 1)      // LEGACY (not used)
-#define XTRN_STDIO      (1 << 2)      // Intercept Standard I/O (aka IO_INTS)
-#define MODUSERDAT      (1 << 3)      // Program can modify user data
-#define WWIVCOLOR       (1 << 4)      // Program uses WWIV color codes
-#define EVENTONLY       (1 << 5)      // Program executes as event only
-#define STARTUPDIR      (1 << 6)      // Create drop file in start-up dir
-#define REALNAME        (1 << 7)      // Use real name in drop file
-#define SWAP            (1 << 8)      // Swap for this door
-#define FREETIME        (1 << 9)      // Free time while in this door
-#define QUICKBBS        (1 << 10)     // QuickBBS style editor
-#define XTRN_BIN        (1 << 11)     // Binary I/O: no charset/LF translation (== EX_BIN); was EXPANDLF
-#define QUOTEALL        (1 << 12)     // Automatically quote all of msg
-#define QUOTENONE       (1 << 13)     // Automatically quote none of msg
-#define XTRN_NATIVE     (1 << 14)     // Native application (EX_NATIVE)
-#define STRIPKLUDGE     (1 << 15)     // Strip FTN Kludge lines from msg
-#define XTRN_CHKTIME    (1 << 16)     // Check time online (EX_CHKTIME)
-#define XTRN_LWRCASE    (1 << 17)     // Use lowercase drop-file names
-#define XTRN_SH         (1 << 18)     // Use command shell to execute
-#define XTRN_PAUSE      (1 << 19)     // Force a screen pause on exit
-#define XTRN_NOECHO     (1 << 20)     // Don't echo stdin to stdout
-#define QUOTEWRAP       (1 << 21)     // Word-wrap quoted message text
-#define SAVECOLUMNS     (1 << 22)     // Save/share current terminal width
-#define XTRN_UTF8       (1 << 23)     // External program supports UTF-8
-#define XTRN_TEMP_DIR   (1 << 24)     // Place drop files in temp dir
-#define XTRN_UART       (1 << 25)     // Enable the virtual UART driver
-#define XTRN_FOSSIL     (1 << 26)     // Enable the int14h/FOSSIL driver
-#define XTRN_NODISPLAY  (1 << 27)     // Disable local screen/display
-#define KEEP_CTRL_A     (1 << 28)     // Strip Ctrl-A quotes from quoted text
-#define XTRN_CONIO      (1U << 31)    // Intercept Windows Console I/O (Drwy)
+// Bits in xtrn_t.misc, also used in xedit_t, page_t, and hotkey_t .misc
+// (event_t.misc uses EVENT_* bits plus XTRN_NATIVE, XTRN_SH, and EX_BG).
+// Comments name the xtrn.ini/chat.ini section types that use each bit.
+// Stored as the raw 'settings' value in those .ini files and exposed to JS
+// (exec/load/sbbsdefs.js) as .settings, so a retired bit may still be set
+// in existing configurations: clear it on load before giving it a new use.
+// "== EX_*": the same bit is passed to external(); "=> EX_*": translated.
+#define XTRN_MULTIUSER   (1 << 0)   // prog: allow multiple simultaneous users
+#define XTRN_ANSI        (1 << 1)   // UNUSED, but still set in some existing configs
+#define XTRN_STDIO       (1 << 2)   // prog, editor, pager, hotkey: Standard I/O => EX_STDIO
+#define XTRN_MODUSERDAT  (1 << 3)   // prog: program can modify user data (MODUSER.DAT)
+#define XTRN_WWIVCOLOR   (1 << 4)   // prog, editor, hotkey: WWIV color codes, w/XTRN_STDIO (== EX_WWIV)
+#define XTRN_EVENTONLY   (1 << 5)   // prog: executes as event only
+#define XTRN_STARTUPDIR  (1 << 6)   // prog: create drop file in start-up dir
+#define XTRN_REALNAME    (1 << 7)   // prog: use real name in drop file
+#define XTRN_SWAP        (1 << 8)   // UNUSED (MS-DOS swapping), but still set in some existing configs
+#define XTRN_FREETIME    (1 << 9)   // prog: free time while in this program
+#define XTRN_QUICKBBS    (1 << 10)  // editor: QuickBBS MSGINF/MSGTMP (vs. WWIV EDITOR.INF/RESULT.ED)
+#define XTRN_BIN         (1 << 11)  // prog, editor, pager, hotkey: untranslated I/O (== EX_BIN), was EXPANDLF
+#define XTRN_QUOTEALL    (1 << 12)  // editor: automatically quote all of msg
+#define XTRN_QUOTENONE   (1 << 13)  // editor: automatically quote none of msg
+#define XTRN_NATIVE      (1 << 14)  // prog, editor, pager, hotkey, event: native program (== EX_NATIVE)
+#define XTRN_STRIPKLUDGE (1 << 15)  // editor: strip FTN kludge lines from msg
+#define XTRN_CHKTIME     (1 << 16)  // prog: check time online (== EX_CHKTIME)
+#define XTRN_LWRCASE     (1 << 17)  // prog, editor: use lowercase drop-file names
+#define XTRN_SH          (1 << 18)  // prog, editor, pager, hotkey, event: use command shell => EX_SH
+#define XTRN_PAUSE       (1 << 19)  // prog: force a screen pause on exit
+#define XTRN_NOECHO      (1 << 20)  // prog: don't echo stdin to stdout, w/XTRN_STDIO (== EX_NOECHO)
+#define XTRN_QUOTEWRAP   (1 << 21)  // editor: word-wrap quoted message text
+#define XTRN_SAVECOLUMNS (1 << 22)  // editor: save/share current terminal width
+#define XTRN_UTF8        (1 << 23)  // editor: supports UTF-8
+#define XTRN_TEMP_DIR    (1 << 24)  // prog: place drop files in temp dir
+#define XTRN_UART        (1 << 25)  // prog: enable the virtual UART driver (== EX_UART)
+#define XTRN_FOSSIL      (1 << 26)  // prog: enable the int14h/FOSSIL driver (== EX_FOSSIL)
+#define XTRN_NODISPLAY   (1 << 27)  // prog: disable local screen/display (== EX_NODISPLAY)
+#define XTRN_KEEP_CTRL_A (1 << 28)  // editor: retain Ctrl-A codes in quoted text
+//                       (1 << 29)  // free
+//                       (1 << 30)  // free (EX_NOLOG's bit, but misc bits are never passed wholesale)
+#define XTRN_CONIO       (1U << 31) // prog: console I/O (== EX_CONIO); drop files only, not in SCFG
 
 // Bits in user.qwk
 #define QWK_FILES       (1 << 0)      // Include new files list
@@ -776,7 +784,7 @@ enum {                            // readmail and delmailidx which types
 #define EX_STDOUT   (1 << 1)      // Copy DOS output to remote
 #define EX_OUTL     (1 << 2)      // Use _lputc() for local output (*legacy*)
 #define EX_STDIN    (1 << 3)      // Trap int 16h keyboard input requests
-#define EX_WWIV     WWIVCOLOR     // Expand WWIV color codes to ANSI sequence
+#define EX_WWIV     XTRN_WWIVCOLOR // Expand WWIV color codes to ANSI sequence
 #define EX_SWAP     (1 << 5)      // Swap out for this external (*legacy*)
 #define EX_POPEN    (1 << 7)      // Leave COM port open	(*legacy*)
 #define EX_OFFLINE  (1 << 8)      // Run this program offline

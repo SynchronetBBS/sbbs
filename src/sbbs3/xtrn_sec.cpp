@@ -1484,7 +1484,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 const char* sbbs_t::xtrn_dropdir(const xtrn_t* xtrn, char* buf, size_t maxlen)
 {
 	const char* p = cfg.node_dir;
-	if (xtrn->misc & STARTUPDIR)
+	if (xtrn->misc & XTRN_STARTUPDIR)
 		p = xtrn->path;
 	else if (xtrn->misc & XTRN_TEMP_DIR)
 		p = cfg.temp_dir;
@@ -1539,7 +1539,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	if (exec_mod("pre external program execution", cfg.prextrn_mod, &invoked, "%s", cfg.xtrn[xtrnnum]->code) != 0 && invoked)
 		return false;
 
-	if (!(cfg.xtrn[xtrnnum]->misc & MULTIUSER)) {
+	if (!(cfg.xtrn[xtrnnum]->misc & XTRN_MULTIUSER)) {
 		for (i = 1; i <= cfg.sys_nodes; i++) {
 			getnodedat(i, &node);
 			c = i;
@@ -1620,7 +1620,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		lprintf(LOG_ERR, "BBSDEV.DRP path is not absolute: %s", path);
 		return false;
 	}
-	if (cfg.xtrn[xtrnnum]->misc & REALNAME) {
+	if (cfg.xtrn[xtrnnum]->misc & XTRN_REALNAME) {
 		SAFECOPY(name, useron.name);
 	} else {
 		SAFECOPY(name, useron.alias);
@@ -1655,8 +1655,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		mode |= EX_UART;
 	else if (cfg.xtrn[xtrnnum]->misc & XTRN_FOSSIL)
 		mode |= EX_FOSSIL;
-	mode |= (cfg.xtrn[xtrnnum]->misc & (XTRN_BIN | XTRN_CHKTIME | XTRN_NATIVE | XTRN_NOECHO | XTRN_NODISPLAY | WWIVCOLOR));
-	if (cfg.xtrn[xtrnnum]->misc & MODUSERDAT) {        /* Delete MODUSER.DAT */
+	mode |= (cfg.xtrn[xtrnnum]->misc & (XTRN_BIN | XTRN_CHKTIME | XTRN_NATIVE | XTRN_NOECHO | XTRN_NODISPLAY | XTRN_WWIVCOLOR));
+	if (cfg.xtrn[xtrnnum]->misc & XTRN_MODUSERDAT) {        /* Delete MODUSER.DAT */
 		SAFEPRINTF(str, "%sMODUSER.DAT", dropdir);    /* if for some weird  */
 		(void)removecase(str);                      /* reason it's there  */
 	}
@@ -1667,7 +1667,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	if (cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*' && !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
 		SAFEPRINTF2(startup_dir, "%s\\%s", DOSEMU_XTRN_DRIVE, getdirname(cfg.xtrn[xtrnnum]->path));
 		backslash(startup_dir);
-		if (cfg.xtrn[xtrnnum]->misc & STARTUPDIR)
+		if (cfg.xtrn[xtrnnum]->misc & XTRN_STARTUPDIR)
 			SAFEPRINTF2(drop_file, "%s%s", startup_dir, getfname(path));
 		else if (cfg.xtrn[xtrnnum]->misc & XTRN_TEMP_DIR)
 			SAFEPRINTF2(drop_file, "%s%s", DOSEMU_TEMP_DIR, getfname(path));
@@ -1684,7 +1684,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	if (cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV
 	    && cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*'
 	    && !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
-		if (cfg.xtrn[xtrnnum]->misc & STARTUPDIR)
+		if (cfg.xtrn[xtrnnum]->misc & XTRN_STARTUPDIR)
 			SAFEPRINTF(drop_file, "C:\\%s", getfname(path));
 		else if (cfg.xtrn[xtrnnum]->misc & XTRN_TEMP_DIR)
 			SAFEPRINTF(drop_file, "D:\\TEMP\\%s", getfname(path));
@@ -1726,7 +1726,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	         , cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV ? drop_file : NULL);
 	end = time(NULL);
 
-	if (cfg.xtrn[xtrnnum]->misc & FREETIME)
+	if (cfg.xtrn[xtrnnum]->misc & XTRN_FREETIME)
 		starttime += end - start;
 	if (cfg.xtrn[xtrnnum]->clean[0]) {
 		external(cmdstr(cfg.xtrn[xtrnnum]->clean, drop_file, startup_dir, NULL, mode)
@@ -1759,7 +1759,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 			fcloselog(fp);
 		}
 	}
-	if (cfg.xtrn[xtrnnum]->misc & MODUSERDAT)  /* Modify user data */
+	if (cfg.xtrn[xtrnnum]->misc & XTRN_MODUSERDAT)  /* Modify user data */
 		moduserdat(xtrnnum);
 
 	if (getnodedat(cfg.node_num, &thisnode, true)) {

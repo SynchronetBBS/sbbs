@@ -38,7 +38,7 @@ char* sbbs_t::msg_tmp_fname(int xedit, char* path, size_t len)
 	safe_snprintf(path, len, "%sINPUT.MSG", cfg.temp_dir);
 
 	if (xedit && chk_ar(cfg.xedit[xedit - 1]->ar, &useron, &client)) {
-		if (cfg.xedit[xedit - 1]->misc & QUICKBBS)
+		if (cfg.xedit[xedit - 1]->misc & XTRN_QUICKBBS)
 			safe_snprintf(path, len, "%sMSGTMP", cfg.node_dir); /* QuickBBS editors are dumb */
 		if (cfg.xedit[xedit - 1]->misc & XTRN_LWRCASE)
 			strlwr(getfname(path));
@@ -92,7 +92,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 	if (tails)
 		mode |= GETMSGTXT_TAILS;
 	if ((buf = smb_getmsgtxt(smb, msg, mode)) != NULL) {
-		if (useron_xedit && (cfg.xedit[useron_xedit - 1]->misc & KEEP_CTRL_A))
+		if (useron_xedit && (cfg.xedit[useron_xedit - 1]->misc & XTRN_KEEP_CTRL_A))
 			strip_invalid_attr(buf);
 		else
 			remove_ctrl_a(buf, buf);
@@ -122,7 +122,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 				}
 			}
 		}
-		if (!useron_xedit || (useron_xedit && (cfg.xedit[useron_xedit - 1]->misc & QUOTEWRAP))) {
+		if (!useron_xedit || (useron_xedit && (cfg.xedit[useron_xedit - 1]->misc & XTRN_QUOTEWRAP))) {
 			int wrap_cols = 0;
 			if (useron_xedit > 0)
 				wrap_cols = cfg.xedit[useron_xedit - 1]->quotewrap_cols;
@@ -188,7 +188,7 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 		if (buf[l] == CTRL_A) {
 			/* Strip FidoNet Kludge Lines? */
 			if (useron_xedit
-			    && cfg.xedit[useron_xedit - 1]->misc & STRIPKLUDGE) {
+			    && cfg.xedit[useron_xedit - 1]->misc & XTRN_STRIPKLUDGE) {
 				l++;
 				char* kludge = buf + l;
 				if (editor_details[0] == 0 && strncmp(kludge, "NOTE:", 5) == 0) {
@@ -351,7 +351,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 
 		/* Quote entire message to MSGTMP or INPUT.MSG */
 
-		if (useron_xedit && cfg.xedit[useron_xedit - 1]->misc & QUOTEALL) {
+		if (useron_xedit && cfg.xedit[useron_xedit - 1]->misc & XTRN_QUOTEALL) {
 			if (!fexist(quotes_fname(useron_xedit, path, sizeof(path))))
 				(void)fexistcase(path);
 			if ((stream = fnopen(NULL, path, O_RDONLY)) == NULL) {
@@ -386,7 +386,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 
 		/* Quote nothing to MSGTMP or INPUT.MSG automatically */
 
-		else if (useron_xedit && cfg.xedit[useron_xedit - 1]->misc & QUOTENONE)
+		else if (useron_xedit && cfg.xedit[useron_xedit - 1]->misc & XTRN_QUOTENONE)
 			;
 
 		else if (yesno(text[QuoteMessageQ])) {
@@ -618,7 +618,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 
 		if (cfg.xedit[useron_xedit - 1]->misc & XTRN_STDIO) {
 			ex_mode |= EX_STDIO;
-			if (cfg.xedit[useron_xedit - 1]->misc & WWIVCOLOR)
+			if (cfg.xedit[useron_xedit - 1]->misc & XTRN_WWIVCOLOR)
 				ex_mode |= EX_WWIV;
 		}
 		if (cfg.xedit[useron_xedit - 1]->misc & XTRN_NATIVE)
@@ -829,7 +829,7 @@ void sbbs_t::editor_info_to_msg(smbmsg_t* msg, const char* editor, const char* c
 	if (useron_xedit > 0 && !chk_ar(cfg.xedit[useron_xedit - 1]->ar, &useron, &client))
 		useron_xedit = 0;
 
-	if (editor == NULL || useron_xedit == 0 || (cfg.xedit[useron_xedit - 1]->misc & SAVECOLUMNS))
+	if (editor == NULL || useron_xedit == 0 || (cfg.xedit[useron_xedit - 1]->misc & XTRN_SAVECOLUMNS))
 		smb_hfield_bin(msg, SMB_COLUMNS, term->cols);
 
 	if (!str_is_ascii(msg->subj) && utf8_str_is_valid(msg->subj))
@@ -860,7 +860,7 @@ void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const ch
 
 	SAFEPRINTF(path, "%sresult.ed", cfg.node_dir);
 	(void)removecase(path);
-	if (cfg.xedit[xeditnum]->misc & QUICKBBS) {
+	if (cfg.xedit[xeditnum]->misc & XTRN_QUICKBBS) {
 		SAFEPRINTF2(path, "%s%s", cfg.node_dir, cfg.xedit[xeditnum]->misc & XTRN_LWRCASE ? "msginf":"MSGINF");
 		(void)removecase(path);
 		if ((fp = fopen(path, "wb")) == NULL) {
@@ -1339,7 +1339,7 @@ bool sbbs_t::editfile(char *fname, uint maxlines, int wmode, const char* to, con
 			ex_mode |= EX_BIN;
 		if (cfg.xedit[useron_xedit - 1]->misc & XTRN_STDIO) {
 			ex_mode |= EX_STDIO;
-			if (cfg.xedit[useron_xedit - 1]->misc & WWIVCOLOR)
+			if (cfg.xedit[useron_xedit - 1]->misc & XTRN_WWIVCOLOR)
 				ex_mode |= EX_WWIV;
 		}
 		cls();
