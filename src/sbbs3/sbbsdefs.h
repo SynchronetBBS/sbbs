@@ -439,7 +439,7 @@ typedef enum {                       // Values for xtrn_t.event
 #define XTRN_FOSSIL      (1 << 26)  // prog: enable the int14h/FOSSIL driver (== EX_FOSSIL)
 #define XTRN_NODISPLAY   (1 << 27)  // prog: disable local screen/display (== EX_NODISPLAY)
 #define XTRN_KEEP_CTRL_A (1 << 28)  // editor: retain Ctrl-A codes in quoted text
-//                       (1 << 29)  // free
+#define XTRN_CLS         (1 << 29)  // prog: clear user's terminal/screen before executing
 //                       (1 << 30)  // free (EX_NOLOG's bit, but misc bits are never passed wholesale)
 #define XTRN_CONIO       (1U << 31) // prog: console I/O (== EX_CONIO); drop files only, not in SCFG
 
@@ -806,6 +806,11 @@ enum {                            // readmail and delmailidx which types
 #else
 #define EX_WILDCARD 0
 #endif
+
+// Fixed event (fevent_t.misc) bits: EX_* mode bits plus EVENT_DISABLED and these
+// Logon/New User event options, which must stay bits that external() ignores
+#define FEVENT_CLS      XTRN_CLS    // Clear screen before executing
+#define FEVENT_PAUSE    XTRN_PAUSE  // Pause after executing
 
 // Linux-DOSemu path/drive hackeroo
 #define DOSEMU_NODE_DRIVE   "D:"

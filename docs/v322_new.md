@@ -119,6 +119,10 @@
   emit output already encoded for the remote terminal (its own
   UTF-8 or raw graphics), with no CP437-to-UTF-8 translation or
   bare-LF-to-CRLF expansion applied by the BBS
+- New option to **clear the screen before running** a door or a
+  Logon/New User fixed event, pausing first if the user may not
+  have seen text still on the screen (e.g. for a logon program
+  that clears the screen itself, issue #1243)
 - WWIV `CHAIN.TXT` drop file: the time-of-call and time-used fields
   (lines 24 and 25) are now populated rather than always zero
 - `PCBOARD.SYS` drop file: the download-allowance, conference and
@@ -324,6 +328,9 @@
   *Untranslated*, shown in the option summary) — applies to doors,
   external editors, and sysop page programs, and global hot keys
   gained their own **I/O Method** option
+- Online program **Pause After Execution** option is replaced by
+  **Terminal Control** (`Clear` before and/or `Pause` after
+  execution), also offered for Logon and New User fixed events
 
 ## Customization
 

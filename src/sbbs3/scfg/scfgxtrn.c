@@ -354,7 +354,54 @@ void xprogs_cfg()
 	}
 }
 
-bool edit_fixed_event(const char* name, char* cmd, uint32_t* misc, const char* help)
+static const char* term_ctrl_str(uint32_t misc, uint cls_flag, uint pause_flag)
+{
+	static char str[32];
+
+	str[0] = '\0';
+	if (misc & cls_flag)
+		SAFECAT(str, "Clear");
+	if (misc & pause_flag)
+		SAFECAT(str, str[0] ? ", Pause" : "Pause");
+	if (str[0] == '\0')
+		SAFECOPY(str, "None");
+	return str;
+}
+
+// Writes to buf rather than opt[] so gen_option_index.py doesn't index this
+// option under the fixed events that don't offer it
+static void term_ctrl_opt(char* buf, uint32_t misc, uint cls_flag, uint pause_flag)
+{
+	snprintf(buf, MAX_OPLN, "%-27s%s", "Terminal Control", term_ctrl_str(misc, cls_flag, pause_flag));
+}
+
+static void term_ctrl_cfg(uint32_t* misc, uint cls_flag, uint pause_flag)
+{
+	if (toggle_flag("Clear Screen Before Execution", misc, cls_flag, false,
+	                "`Clear Screen Before Execution:`\n"
+	                "\n"
+	                "Set this option to ~Yes~ if you would like the user's terminal screen\n"
+	                "cleared just before the program executes.  If there is text on the\n"
+	                "screen the user may not have seen yet, they are first prompted to\n"
+	                "`[Hit a key]`, so that text is not cleared away unread.\n"
+	                "\n"
+	                "This can be useful for programs that clear or overwrite the screen\n"
+	                "when they start, especially programs executed during logon.\n"
+	                ) < 0)
+		return;
+	toggle_flag("Pause After Execution", misc, pause_flag, false,
+	            "`Pause Screen After Execution:`\n"
+	            "\n"
+	            "Set this option to ~Yes~ if you would like an automatic screen pause\n"
+	            "(`[Hit a key]` prompt) to appear after the program executes.\n"
+	            "\n"
+	            "This can be useful if the program displays information just before\n"
+	            "exiting or you want to debug a program with a program not running\n"
+	            "correctly.\n"
+	            );
+}
+
+bool edit_fixed_event(const char* name, char* cmd, uint32_t* misc, bool term_ctrl, const char* help)
 {
 	char title[128];
 	static int dflt;
@@ -367,6 +414,8 @@ bool edit_fixed_event(const char* name, char* cmd, uint32_t* misc, const char* h
 		snprintf(opt[i++], MAX_OPLN, "%-27s%s", native_opt, (*misc & EX_NATIVE) ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-27s%s", use_shell_opt, (*misc & EX_SH) ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-27s%s", "Command Line", cmd);
+		if (term_ctrl)
+			term_ctrl_opt(opt[i++], *misc, FEVENT_CLS, FEVENT_PAUSE);
 		opt[i][0] = 0;
 		uifc.helpbuf = (char*)help;
 		switch (uifc.list(WIN_ACT | WIN_SAV | WIN_MID, 0, 0, 0, &dflt, 0, title, opt)) {
@@ -386,12 +435,15 @@ bool edit_fixed_event(const char* name, char* cmd, uint32_t* misc, const char* h
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command"
 				           , cmd, LEN_CMD, K_EDIT);
 				break;
+			case 4:
+				term_ctrl_cfg(misc, FEVENT_CLS, FEVENT_PAUSE);
+				break;
 		}
 	}
 	return false;
 }
 
-void cfg_fixed_events(const char* name, fevent_t* event, const char* help)
+void cfg_fixed_events(const char* name, fevent_t* event, bool term_ctrl, const char* help)
 {
 	char title[128];
 	int i;
@@ -419,7 +471,7 @@ void cfg_fixed_events(const char* name, fevent_t* event, const char* help)
 		if (msk == MSK_INS) {
 			*cmd = '\0';
 			misc = EX_NATIVE;
-			if (edit_fixed_event(name, cmd, &misc, help)) {
+			if (edit_fixed_event(name, cmd, &misc, term_ctrl, help)) {
 				int count = strListCount(event->cmd);
 				strListInsert(&event->cmd, cmd, i);
 				event->misc = realloc_or_free(event->misc, sizeof(*event->misc) * (count + 1));
@@ -471,7 +523,7 @@ void cfg_fixed_events(const char* name, fevent_t* event, const char* help)
 		if (event->cmd == NULL || event->cmd[i] == NULL)
 			continue;
 		SAFECOPY(cmd, event->cmd[i]);
-		if (edit_fixed_event(name, cmd, &event->misc[i], help)) {
+		if (edit_fixed_event(name, cmd, &event->misc[i], term_ctrl, help)) {
 			if (strcmp(cmd, event->cmd[i]) != 0) {
 				free(event->cmd[i]);
 				event->cmd[i] = strdup(cmd);
@@ -533,17 +585,20 @@ void fevents_cfg()
 			case -1:
 				return;
 			case 0:
-				cfg_fixed_events("New User", &cfg.sys_newuser,
+				cfg_fixed_events("New User", &cfg.sys_newuser, true,
 				           "`New User Event:`\n"
 				           "\n"
 				           "This is the command line for a program that will execute after a new\n"
 				           "user registration has completed.\n"
+				           "\n"
+				           "`Terminal Control` can clear the user's screen before the program executes\n"
+				           "and pause after it exits.\n"
 				           SCFG_CMDLINE_PREFIX_HELP
 				           SCFG_CMDLINE_SPEC_HELP
 				           );
 				break;
 			case 1:
-				cfg_fixed_events("Logon", &cfg.sys_logon,
+				cfg_fixed_events("Logon", &cfg.sys_logon, true,
 				           "`Logon Event:`\n"
 				           "\n"
 				           "This is the command line for a program that will execute during the\n"
@@ -554,12 +609,15 @@ void fevents_cfg()
 				           "(e.g. door) in the logon sequence of users that includes interaction or\n"
 				           "requires account information (e.g. drop files), you probably want to use\n"
 						   "an `Online External Program` configured to run as a logon event, instead.\n"
+				           "\n"
+				           "`Terminal Control` can clear the user's screen before the program executes\n"
+				           "and pause after it exits.\n"
 				           SCFG_CMDLINE_PREFIX_HELP
 				           SCFG_CMDLINE_SPEC_HELP
 				           );
 				break;
 			case 2:
-				cfg_fixed_events("Logout", &cfg.sys_logout,
+				cfg_fixed_events("Logout", &cfg.sys_logout, false,
 				           "`Logout Event:`\n"
 				           "\n"
 				           "This is the command line for a program that will execute during the\n"
@@ -573,7 +631,7 @@ void fevents_cfg()
 				           );
 				break;
 			case 3:
-				cfg_fixed_events("Daily", &cfg.sys_daily,
+				cfg_fixed_events("Daily", &cfg.sys_daily, false,
 				           "`Daily Event:`\n"
 				           "\n"
 				           "This is the command line for a program that will run after the first\n"
@@ -583,7 +641,7 @@ void fevents_cfg()
 				           );
 				break;
 			case 4:
-				cfg_fixed_events("Weekly", &cfg.sys_weekly,
+				cfg_fixed_events("Weekly", &cfg.sys_weekly, false,
 				           "`Weekly Event:`\n"
 				           "\n"
 				           "Enter a command line for a program that will run once each new week.\n"
@@ -594,7 +652,7 @@ void fevents_cfg()
 				           );
 				break;
 			case 5:
-				cfg_fixed_events("Monthly", &cfg.sys_monthly,
+				cfg_fixed_events("Monthly", &cfg.sys_monthly, false,
 				           "`Monthly Event:`\n"
 				           "\n"
 				           "Enter a command line for a program that will run once each new month.\n"
@@ -1405,8 +1463,8 @@ void xtrn_cfg(int section)
 			if ((cfg.xtrn[i]->misc & XTRN_EVENTONLY) && cfg.xtrn[i]->event)
 				strcat(str, ", Only");
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Execute on Event", str);
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Pause After Execution"
-			         , cfg.xtrn[i]->misc & XTRN_PAUSE ? "Yes" : "No");
+			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Terminal Control"
+			         , term_ctrl_str(cfg.xtrn[i]->misc, XTRN_CLS, XTRN_PAUSE));
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Disable Local Display"
 			         , cfg.xtrn[i]->misc & XTRN_NODISPLAY ? "Yes" : "No");
 			snprintf(opt[k++], MAX_OPLN, "%-23.23s%-4s%s", "BBS Drop File Type"
@@ -1635,16 +1693,7 @@ void xtrn_cfg(int section)
 					            );
 					break;
 				case __COUNTER__:
-					toggle_flag("Pause After Execution", &cfg.xtrn[i]->misc, XTRN_PAUSE, false,
-					            "`Pause Screen After Execution:`\n"
-					            "\n"
-					            "Set this option to ~Yes~ if you would like an automatic screen pause\n"
-					            "(`[Hit a key]` prompt) to appear after the program executes.\n"
-					            "\n"
-					            "This can be useful if the program displays information just before\n"
-					            "exiting or you want to debug a program with a program not running\n"
-					            "correctly.\n"
-					            );
+					term_ctrl_cfg(&cfg.xtrn[i]->misc, XTRN_CLS, XTRN_PAUSE);
 					break;
 				case __COUNTER__:
 					toggle_flag("Disable Local Screen Display"

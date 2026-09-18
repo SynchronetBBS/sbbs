@@ -1573,6 +1573,9 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		}
 	}
 
+	if (cfg.xtrn[xtrnnum]->misc & XTRN_CLS)
+		cls();
+
 	if (cfg.xtrn[xtrnnum]->misc & XTRN_TEMP_DIR)
 		delfiles(cfg.temp_dir, ALLFILES);
 	xtrn_dropdir(cfg.xtrn[xtrnnum], dropdir, sizeof(dropdir));

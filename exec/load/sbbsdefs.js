@@ -385,6 +385,7 @@ var XTRN_UART		=(1<<25);	/* Enable the virtual UART driver			*/
 var XTRN_FOSSIL		=(1<<26);	/* Enable the int14h/FOSSIL driver			*/
 var XTRN_NODISPLAY	=(1<<27);	/* Disable local screen/display				*/
 var XTRN_KEEP_CTRL_A=(1<<28);	/* Retain Ctrl-A codes in quoted text		*/
+var XTRN_CLS		=(1<<29);	/* Clear screen before executing			*/
 var XTRN_CONIO		=(1<<31);	/* Intercept Windows Console I/O (Drwy)		*/
 					    		/********************************************/
 

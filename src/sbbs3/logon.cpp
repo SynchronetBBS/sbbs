@@ -388,9 +388,13 @@ bool sbbs_t::logon_process()
 		if (cfg.sys_logon.misc[i] & EVENT_DISABLED)
 			continue;
 		lprintf(LOG_DEBUG, "Executing logon event: %s", cfg.sys_logon.cmd[i]);
+		if (cfg.sys_logon.misc[i] & FEVENT_CLS)
+			cls();
 		external(cmdstr(cfg.sys_logon.cmd[i], nulstr, nulstr, NULL, cfg.sys_logon.misc[i]), EX_STDOUT | cfg.sys_logon.misc[i]); /* EX_SH */
 		if (!online)
 			return false;
+		if (cfg.sys_logon.misc[i] & FEVENT_PAUSE)
+			pause();
 	}
 
 	if (sys_status & SS_QWKLOGON)

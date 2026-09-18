@@ -254,7 +254,7 @@ void node_cfg()
 				}
 				break;
 			case __COUNTER__:
-				edit_fixed_event("Daily", cfg.node_daily_cmd, &cfg.node_daily_misc,
+				edit_fixed_event("Daily", cfg.node_daily_cmd, &cfg.node_daily_misc, false,
 				           "`Daily Event:`\n"
 				           "\n"
 				           "If you have an event that this node's terminal server should run every\n"

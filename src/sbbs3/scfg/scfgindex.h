@@ -3898,6 +3898,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Toggle Options > Mouse Hot-spots in Menus/Prompts"
 	},
 	{
+		"Msg/File Total Interval",
+		"Advanced Options",
+		"System > Advanced Options > Msg/File Total Interval"
+	},
+	{
 		"Multinode Chat Actions",
 		"Chat Features",
 		"Chat Features > Multinode Chat Actions"
@@ -4416,11 +4421,6 @@ static const scfg_option_t scfg_option_index[] = {
 		"Password Protection",
 		"Chat Channel",
 		"Chat Features > Multinode Chat Channels > Chat Channel > Password Protection"
-	},
-	{
-		"Pause After Execution",
-		"Online Program",
-		"External Programs > Online Programs (Doors) > Online Programs... > Online Program > Pause After Execution"
 	},
 	{
 		"Permanent Operator Msgs",
@@ -10026,6 +10026,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Temporary Ban Threshold",
 		"Failed Login Attempts...",
 		"Servers > Services Server > Failed Login Attempts... > Temporary Ban Threshold"
+	},
+	{
+		"Terminal Control",
+		"Online Program",
+		"External Programs > Online Programs (Doors) > Online Programs... > Online Program > Terminal Control"
 	},
 	{
 		"Terminal Server",

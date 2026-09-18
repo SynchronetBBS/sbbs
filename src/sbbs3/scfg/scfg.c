@@ -167,7 +167,7 @@ void sort_dirs(int libnum)
 	}
 }
 
-void toggle_flag(const char* title, uint* misc, uint flag, bool invert, const char* help)
+int toggle_flag(const char* title, uint* misc, uint flag, bool invert, const char* help)
 {
 	int k = ((*misc) & flag) == invert;
 	if (help != NULL)
@@ -181,6 +181,7 @@ void toggle_flag(const char* title, uint* misc, uint flag, bool invert, const ch
 		*misc &= ~flag;
 		uifc.changes = TRUE;
 	}
+	return k;
 }
 
 void wizard_msg(int page, int total, const char* text)

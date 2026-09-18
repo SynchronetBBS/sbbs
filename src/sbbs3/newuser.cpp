@@ -296,7 +296,11 @@ bool sbbs_t::newuser()
 		if (cfg.sys_newuser.misc[i] & EVENT_DISABLED)
 			continue;
 		lprintf(LOG_DEBUG, "Executing new user system event: %s", cfg.sys_newuser.cmd[i]);
+		if (cfg.sys_newuser.misc[i] & FEVENT_CLS)
+			cls();
 		external(cmdstr(cfg.sys_newuser.cmd[i], nulstr, nulstr, NULL, cfg.sys_newuser.misc[i]), EX_STDOUT | cfg.sys_newuser.misc[i]); /* EX_SH */
+		if (cfg.sys_newuser.misc[i] & FEVENT_PAUSE)
+			pause();
 	}
 	getuseron(WHERE);   // In case event(s) modified user data
 	logline("N+", "New user registration completed");
