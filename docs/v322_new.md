@@ -478,6 +478,10 @@
   `DATE`/`TIME`, nested `COMMAND`, `HELP` and `/?`; `DIR` switches
   (`/W /B /S /O /L /P`) with MM-DD-YY dates; doors appear as
   `C:\DOORS\<section>\<program>.EXE`
+- The Synchronet (Novice) shell is now JavaScript (`simple.js`),
+  completing the port of the stock command shells from Baja; a customized
+  `mods/simple.bin` (or `mods/sdos.bin`) is no longer used, since a shell's
+  `.js` in `exec/` takes precedence over a `.bin` in `mods/`
 - `shell_lib.send_email()` / `send_netmail()` accept a `to` /
   `address` argument; the email-menu **A**ttachment command
   works again (regression from a v3.21 refactor)

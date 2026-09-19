@@ -53,9 +53,10 @@ Two kinds of stock command shells live here. A feature touching one shell
 usually needs the equivalent change in the others (check all of them).
 
 ### Inventory
-- **Baja** (`*.src` compiled to `*.bin`): `simple`, `matrix`, `ftp`
-  (`obv-2`, `wwiv`, `sdos`, `wildcat`, `major` have been ported to JS).
-  Structured as labeled sections (`:main`, `:file_transfers`, `:main_info`,
+- **Baja** (`*.src` compiled to `*.bin`): none of the stock command shells
+  any more (`simple`, `obv-2`, `wwiv`, `sdos`, `wildcat` and `major` have
+  all been ported to JS); `matrix.src` and `ftp.src` remain. Baja shells are
+  structured as labeled sections (`:main`, `:file_transfers`, `:main_info`,
   `:file_info`, …) with `cmdkey X` handlers gated by a `getcmd
   "?...keys..."` allowed-key string.
 - **JavaScript**:
@@ -66,6 +67,9 @@ usually needs the equivalent change in the others (check all of them).
   - `lbshell.js` — lightbar shell. **No modal info sub-sections**; it builds
     inline lightbar `typemenu`s on the fly. Don't try to mirror the
     Baja/Classic `:file_info` structure here.
+  - `simple.js` — Synchronet (Novice): word commands typed at a prompt
+    (`getstr`, not hot keys) under `text/menu/simple/*` menus; anything
+    unrecognized at the main menu goes to `str_cmds.js` with no `;` prefix.
   - `sdos.js` — MS-DOS COMMAND.COM look-alike: typed command lines, not
     hot keys. Its "directory listings" are generated from a virtual drive
     C: in the script (the BBS functions are `.EXE`/`.COM` entries, doors

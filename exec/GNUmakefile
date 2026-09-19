@@ -11,7 +11,6 @@ endif
 all :	\
 	ftp.bin \
 	matrix.bin \
-	simple.bin \
 
 %.bin : %.src $(BAJAPATH)
 	@$(BAJAPATH) /q $<

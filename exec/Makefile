@@ -9,7 +9,6 @@
 all : 	\
     ftp.bin \
 	matrix.bin \
-	simple.bin \
 
 .src.bin:
 	@baja.exe /q $<
