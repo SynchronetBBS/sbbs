@@ -478,7 +478,7 @@ typedef enum {                       // Values for xtrn_t.event
 #define QHUB_UTF8       (1 << 18)     // Include UTF-8 characters
 #define QHUB_WORDWRAP   (1 << 19)     // Word-wrap message text
 #define QHUB_MIME       (1 << 20)     // Include MIME-encoded message text
-#define QHUB_NATIVE     (1 << 31)     // Native call-out script
+#define QHUB_NATIVE     (1U << 31)    // Native call-out script
 
 // Bits in user.chat
 #define CHAT_ECHO   (1 << 0)  // Multinode chat echo
