@@ -55,7 +55,9 @@ usually needs the equivalent change in the others (check all of them).
 ### Inventory
 - **Baja** (`*.src` compiled to `*.bin`): none of the stock command shells
   any more (`simple`, `obv-2`, `wwiv`, `sdos`, `wildcat` and `major` have
-  all been ported to JS); only `matrix.src` remains. Baja shells are
+  all been ported to JS). Only `matrix.src` is left, and nothing builds it
+  any more: `exec/` has no makefile, so a sysop who wants `matrix.bin`
+  compiles it with the `baja` utility. Baja shells are
   structured as labeled sections (`:main`, `:file_transfers`, `:main_info`,
   `:file_info`, …) with `cmdkey X` handlers gated by a `getcmd
   "?...keys..."` allowed-key string.

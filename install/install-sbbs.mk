@@ -147,7 +147,7 @@ endif
 
 default: install
 
-build: localdefs binaries baja externals
+build: localdefs binaries externals
 
 localdefs: src
 	echo $(MKFLAGS) | tr ' ' '\n' > $(REPODIR)/src/build/localdefs.mk
@@ -161,9 +161,6 @@ sbbs3:	src
 
 sexpots:	src
 	$(MAKE) -C $(REPODIR)/src/sexpots $(MKFLAGS)
-
-baja:	run sbbs3
-	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS) BAJAPATH=$(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/baja
 
 sbj:	run
 	$(MAKE) -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS) SRC_ROOT=$(REPODIR)/src XPDEV=$(REPODIR)/src/xpdev/

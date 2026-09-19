@@ -478,6 +478,11 @@
   `DATE`/`TIME`, nested `COMMAND`, `HELP` and `/?`; `DIR` switches
   (`/W /B /S /O /L /P`) with MM-DD-YY dates; doors appear as
   `C:\DOORS\<section>\<program>.EXE`
+- Baja modules in `exec/` are no longer built during installation: the
+  makefiles there are gone, as is the `baja` step of the Linux installer.
+  The only Baja source left is `matrix.src` (an optional light-bar logon
+  module, unused by a stock configuration), which a sysop can still
+  compile with the `baja` utility
 - The Baja FTP client (`ftp.src`/`ftp.bin`) has been ported to JavaScript
   as `ftpclient.js` (the new name avoids shadowing the `load/ftp.js`
   library for scripts that `require('ftp.js')`); sysops with an external
