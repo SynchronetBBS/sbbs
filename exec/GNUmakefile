@@ -9,7 +9,6 @@ ifndef BAJAPATH
 endif
 
 all :	\
-	ftp.bin \
 	matrix.bin \
 
 %.bin : %.src $(BAJAPATH)

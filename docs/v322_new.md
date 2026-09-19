@@ -478,6 +478,10 @@
   `DATE`/`TIME`, nested `COMMAND`, `HELP` and `/?`; `DIR` switches
   (`/W /B /S /O /L /P`) with MM-DD-YY dates; doors appear as
   `C:\DOORS\<section>\<program>.EXE`
+- The Baja FTP client (`ftp.src`/`ftp.bin`) has been ported to JavaScript
+  as `ftpclient.js` (the new name avoids shadowing the `load/ftp.js`
+  library for scripts that `require('ftp.js')`); sysops with an external
+  program or command that ran `?ftp` should change it to `?ftpclient`
 - The Synchronet (Novice) shell is now JavaScript (`simple.js`),
   completing the port of the stock command shells from Baja; a customized
   `mods/simple.bin` (or `mods/sdos.bin`) is no longer used, since a shell's

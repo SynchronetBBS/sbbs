@@ -116,7 +116,7 @@ FTP.prototype.delete = FTP.prototype.dele;
 
 FTP.prototype.list = function(path)
 {
-	return this.do_get("LIST "+path);
+	return this.do_get("LIST" + (path === undefined || path === '' ? '' : ' ' + path));
 }
 FTP.prototype.dir = FTP.prototype.list;
 
@@ -308,6 +308,8 @@ FTP.prototype.do_sendfile = function(src, data_socket)
 			break;
 		}
 		total += buf.length;
+		if (typeof this.progress === 'function')
+			this.progress(total);
 
 	} while((!f.eof) && data_socket.is_connected && this.socket.is_connected);
 	data_socket.close();
@@ -509,6 +511,8 @@ FTP.prototype.do_get = function(cmd, dest)
 				ret += rbuf;
 			else
 				f.write(rbuf);
+			if (typeof this.progress === 'function')
+				this.progress(total);
 		}
 		else {
 			throw new Error("recv timeout");

@@ -7,7 +7,6 @@
 # $id: $
 
 all : 	\
-    ftp.bin \
 	matrix.bin \
 
 .src.bin:
