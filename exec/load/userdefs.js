@@ -55,6 +55,8 @@ var QWK_MSGID		= (1<<14);	// Include @MSGID and @REPLY in msgs
 var QWK_HEADERS	= (1<<16);	// Include HEADERS.DAT file					
 var QWK_VOTING	= (1<<17);	// Include VOTING.DAT
 var QWK_UTF8      = (1<<18);	// Include UTF-8 characters
+var QWK_WORDWRAP	= (1<<19);	// Word-wrap message text
+var QWK_MIME		= (1<<20);	// Include MIME-encoded message text
 
 //**********************************************************************
 // user.chat_settings						

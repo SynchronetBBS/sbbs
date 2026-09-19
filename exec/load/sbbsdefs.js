@@ -41,6 +41,7 @@ var   SYS_WWIV 		=(1<<9); 	/* Expand WWIV color codes in messages		*/
 var   SYS_CELERITY	=(1<<10);	/* Expand Celerity color codes in messages	*/
 var   SYS_RENEGADE	=(1<<11);	/* Expand Renegade color codes in messages	*/
 var   SYS_ECHO_PW	=(1<<12);	/* Echo passwords locally					*/
+var   SYS_SYSPASSLOGIN=(1<<13);	/* Require system password for sysop login	*/
 var   SYS_AUTO_DST	=(1<<14);	/* Automatic Daylight Savings Toggle (US)	*/
 var   SYS_R_SYSOP	=(1<<15);	/* Allow remote sysop logon/commands		*/
 var   SYS_QUOTE_EM	=(1<<16);	/* Allow quoting of e-mail					*/
@@ -72,8 +73,9 @@ var	LOGIN_PWPROMPT	=(1<<2);	// Always display password prompt, even for bad logi
 var   SS_TMPSYSOP	=(1<<2);	/* Temporary Sysop Status					*/
 var   SS_USERON		=(1<<3);	/* A User is logged on to the BBS			*/
 var   SS_LCHAT		=(1<<4);	/* Local chat in progress					*/
-var   SS_DAILY		=(1<<9);	/* Execute System Daily Event on logoff 	*/
-var   SS_INUEDIT	=(1<<10);	/* Inside Alt-Useredit section 				*/
+var   SS_NEW_MONTH	=(1<<8);	/* Execute System Monthly Event				*/
+var   SS_NEW_DAY	=(1<<9);	/* Execute System Daily Event				*/
+var   SS_NEW_WEEK	=(1<<10);	/* Execute System Weekly Event				*/
 var   SS_ABORT		=(1<<11);	/* Global abort input or output flag		*/
 var   SS_SYSPAGE	=(1<<12);	/* Paging sysop								*/
 var   SS_GURUCHAT	=(1<<14);	/* Guru chat in progress					*/
@@ -84,13 +86,15 @@ var   SS_IN_CTRLP	=(1<<19);	/* Inside ctrl-p send node message func		*/
 var   SS_NEWUSER	=(1<<20);	/* New User online 							*/
 var   SS_NEST_PF	=(1<<22);	/* Nested in printfile function				*/
 var   SS_SPLITP		=(1<<24);	/* Split-screen private chat				*/
-var   SS_NEWDAY		=(1<<25);	/* Date changed while online				*/
+var   SS_DATE_CHANGED=(1<<25);	/* Date changed while online				*/
 var   SS_RLOGIN		=(1<<26);	/* Current login via BSD RLogin				*/
 var   SS_FILEXFER	=(1<<27);	/* File transfer in progress, halt spy		*/
 var   SS_SSH		=(1<<28);	/* Current login via Secure Shell (SSH)     */
 var   SS_MOFF		=(1<<29);	/* Disable node/time messages				*/
 var   SS_QWKLOGON   =(1<<30);	/* QWK logon 								*/
 var   SS_FASTLOGON  =(1<<31);	/* Fast logon                               */
+var   SS_DAILY		=(SS_NEW_DAY|SS_NEW_MONTH|SS_NEW_WEEK);
+var   SS_NEWDAY		=SS_DATE_CHANGED;	/* Deprecated alias of SS_DATE_CHANGED		*/
 					    		/********************************************/
 
 						    	/********************************************/
@@ -127,6 +131,7 @@ var   ON_REMOTE		=2;			/* Online remotely							*/
 var CON_PASSWORD	=(1<<1);	// Password input mode, e.g. echo *'s
 var CON_PAUSE		=(1<<4);	// Temporary pause over-ride (same as UPAUSE)
 var CON_RAW_IN   	=(1<<8);	// Raw input mode - no editing capabilities
+var CON_RIGHTARROW	=(1<<9);	// Right arrow hit, exiting from getstr()
 var CON_ECHO_OFF 	=(1<<10);	// Output disabled
 var CON_UPARROW  	=(1<<11);	// Up arrow hit - move up one line
 var CON_DOWNARROW 	=(1<<12);	// Down arrow hit - from getstr()
@@ -249,6 +254,7 @@ var   UQ_NONETMAIL	=(1<<18);	/* Don't ask for e-mail/netmail address		*/
 var   UQ_NOUPRLWR   =(1<<19);   /* Don't force upper/lower case strings		*/
 var   UQ_COLORTERM  =(1<<20);   /* Ask if new user has color terminal	    */
 var   UQ_DUPNETMAIL =(1<<21);	/* Don't allow duplicate netmail address    */
+var   UQ_NOSPACEREQ	=(1<<22);	/* Don't require space in real names		*/
 					    		/********************************************/
 
 							    /********************************************/
@@ -273,6 +279,7 @@ var   NM_LOWPRIO	=(1<<15);	/* Always use low priority input			*/
 var   NM_7BITONLY	=(1<<16);	/* Except 7-bit input only (E71 terminals)	*/
 var   NM_RESETVID	=(1<<17);	/* Reset video mode between callers?		*/
 var   NM_NOPAUSESPIN=(1<<18);	/* No spinning cursor at pause prompt		*/
+var   NM_CLOSENODEDAB=(1<<19);	/* Keep node.dab file closed (for Samba)	*/
 					    		/********************************************/
 
 						    	/********************************************/
@@ -352,6 +359,14 @@ var   DIR_NOHASH    =(1<<22);	/* Don't auto calculate/store file hashes 	*/
 var   DIR_FILETAGS  =(1<<23);	/* Allow files to have user-specified tags 	*/
 					    		/********************************************/
 
+								/********************************************/
+								/* Bit values for file_area.settings		*/
+								/********************************************/
+var   FM_SAFEST		=(1<<1);	/* Only allow the safest upload filenames	*/
+var   FM_SPACES		=(1<<2);	/* Allow spaces in uploaded filenames		*/
+var   FM_EXASCII	=(1<<3);	/* Allow extended-ASCII/UTF-8 filenames		*/
+					    		/********************************************/
+
 					    		/********************************************/
 								/* Bits in xtrn[x] and xedit[x].settings	*/
 					    		/********************************************/
@@ -395,12 +410,12 @@ var XTRN_CONIO		=(1<<31);	/* Intercept Windows Console I/O (Drwy)		*/
 var XTRN_NONE		= 0;		/* No data file needed						*/
 var XTRN_SBBS		= 1;		/* Synchronet external						*/
 var XTRN_WWIV		= 2;		/* WWIV external							*/
-var XTRN_GAP		= 3;		/* Gap door 								*/
+var XTRN_DOOR_SYS	= 3;		/* 52-line DOOR.SYS							*/
 var XTRN_RBBS		= 4;		/* RBBS, QBBS, or Remote Access 			*/
 var XTRN_WILDCAT	= 5;		/* Wildcat									*/
 var XTRN_PCBOARD	= 6;		/* PCBoard									*/
 var XTRN_SPITFIRE	= 7;		/* SpitFire 								*/
-var XTRN_UTI		= 8;		/* UTI Doors - MegaMail 					*/
+var XTRN_GAP		= 8;		/* 31-line DOOR.SYS (GAP)					*/
 var XTRN_SR			= 9;		/* Solar Realms 							*/
 var XTRN_RBBS1 		= 10;		/* DORINFO1.DEF always						*/
 var XTRN_TRIBBS		= 11;		/* TRIBBS.SYS								*/
@@ -437,6 +452,9 @@ var   EX_BG			=(1<<10);	/* Back-ground/detached process				*/
 var   EX_BIN		=(1<<11);	/* Binary mode (no Unix LF to CR/LF)		*/
 var   EX_NATIVE		=(1<<14);	/* Native 32-bit application (XTRN_NATIVE)	*/
 var   EX_CHKTIME	=(1<<16);	/* Check time left (XTRN_CHKTIME)			*/
+var   EX_NOECHO		=(1<<20);	/* Don't echo stdin to stdout (XTRN_NOECHO)	*/
+var   EX_UART		=(1<<25);	/* Enable virtual UART driver (XTRN_UART)	*/
+var   EX_FOSSIL		=(1<<26);	/* Enable the FOSSIL driver (XTRN_FOSSIL)	*/
 var   EX_NODISPLAY	=(1<<27);	/* Disable local screen/display (XTRN_NODISPLAY):
 									   on Windows, no console window (CREATE_NO_WINDOW) */
 var   EX_NOLOG      =(1<<30);	/* Don't log intercepted stdio              */
@@ -456,6 +474,7 @@ var   EVENT_BIRTHDAY=4;			/* Execute on birthday						*/
 var   EVENT_POST	=5;			/* Execute after message posted				*/
 var   EVENT_UPLOAD	=6;			/* Execute after file uploaded				*/
 var   EVENT_DOWNLOAD=7;			/* Execute after file downloaded			*/
+var   EVENT_LOCAL_CHAT=8;		/* Execute upon local/sysop chat			*/
 					    		/********************************************/
 
 								/********************************************/
@@ -544,6 +563,8 @@ var FL_DLTIME		=(1<<1);	/* List files by download time              */
 var FL_NO_HDR		=(1<<2);	/* Don't list directory header              */
 var FL_FINDDESC		=(1<<3);	/* Find text in description                 */
 var FL_EXFIND		=(1<<4);	/* Find text in description - extended info */
+var FL_FIND			=FL_FINDDESC;/* Same as FL_FINDDESC						*/
+var FL_EXT			=FL_EXFIND;	/* Same as FL_EXFIND						*/
 var FL_VIEW			=(1<<5);	/* View ZIP/ARC/GIF etc. info               */
 								/********************************************/
 
@@ -656,6 +677,13 @@ var LEN_CID 			=45;	/* Caller ID (phone number or IP address) 		*/
 var LEN_ARSTR			=40;	/* Max length of Access Requirement string		*/
 var LEN_CHATACTCMD		=9;		/* Chat action command							*/
 var LEN_CHATACTOUT		=65;	/* Chat action output string					*/
+var LEN_LANG			=8;		/* Language code								*/
+var LEN_HOST			=60;	/* User hostname								*/
+var LEN_CONNECTION		=8;		/* Connection description						*/
+var LEN_EXTDESC			=5000;	/* Extended file description					*/
+var LEN_RAINBOW			=40;	/* Rainbow attribute array length				*/
+var MIN_PASS_LEN		=4;		/* Minimum user password length					*/
+var RAND_PASS_LEN		=8;		/* Length of generated random passwords			*/
 								/************************************************/
 
 
