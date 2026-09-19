@@ -65,8 +65,9 @@ instead, where it is durably tied to the exact diff it describes.
   quirk. Keep it to the fact that isn't visible in the code — the invariant,
   the off-by-one that's intentional, the ordering constraint — not a paragraph.
 - **A direct GitLab issue reference** when a fix or workaround exists because
-  of a tracked problem: `// GitLab #1178` (or `(#1178)`), on or beside the code
-  it concerns. The *details* of the problem — the analysis, the repro, the debate
+  of a tracked problem: `// #1178` (or `(#1178)`), on or beside the code it
+  concerns. Just the number: never write "GitLab" in the reference. The
+  *details* of the problem — the analysis, the repro, the debate
   — live in the GitLab issue, which auto-links to the fixing commit. The
   in-code reference is a pointer, not a retelling.
 - **Terse tool/analyzer directives** that must sit at the code site to work,
