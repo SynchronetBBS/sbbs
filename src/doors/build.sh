@@ -58,6 +58,7 @@ targets() {
 	syncretro    cmake  syncretro
 	syncrpg      sh     syncrpg
 	syncscumm    sh     syncscumm
+	syncdrive    cmake  syncdrive
 	clans        make   clans-src      build
 	dgnlance     make   dgnlance/src
 	freevote     make   freevote/src
