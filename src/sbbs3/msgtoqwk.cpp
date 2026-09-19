@@ -242,7 +242,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 		for (i = 0; i < msg->total_hfields; i++) {
 			if (msg->hfield[i].type == RFC822HEADER) {
 				char* p = (char*)msg->hfield_dat[i];
-				if (getmsgtxt_mode == GETMSGTXT_PLAIN) { // Strip MIME headers when we're doing the MIME decoding
+				if (getmsgtxt_mode & GETMSGTXT_PLAIN) { // Strip MIME headers when we're doing the MIME decoding
 					if (strnicmp(p, "MIME-Version:", 13) == 0)
 						continue;
 					if (strnicmp(p, "Content-Type:", 13) == 0)
