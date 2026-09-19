@@ -23,6 +23,15 @@
 #include "qwk.h"
 #include "filedat.h"
 
+/* Returns false if any write to the stream, including the final flush, failed */
+static bool fclose_checked(FILE* fp)
+{
+	bool ok = ferror(fp) == 0;
+	if (fclose(fp) != 0)
+		ok = false;
+	return ok;
+}
+
 /****************************************************************************/
 /* Creates QWK packet, returning 1 if successful, 0 if not. 				*/
 /****************************************************************************/
@@ -43,6 +52,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	uint        files, submsgs, msgs, netfiles = 0, preqwk = 0;
 	uint32_t    lastmsg;
 	uint        subs_scanned = 0;
+	bool        write_error = false;
 	float       f; /* Sparky is responsible */
 	time_t      start;
 	mail_t *    mail;
@@ -417,8 +427,11 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			}
 			if (online == ON_REMOTE)
 				bprintf(text[QWKPackedEmail], mailmsgs);
-			if (ndx)
-				fclose(ndx);
+			if (ndx != NULL && !fclose_checked(ndx)) {
+				SAFEPRINTF(str, "%s000.NDX", cfg.temp_dir);
+				errormsg(WHERE, ERR_WRITE, str, 0);
+				write_error = true;
+			}
 		}
 		smb_close(&smb);                    /* Close the e-mail */
 		if (mailmsgs)
@@ -572,8 +585,11 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 				if (online == ON_REMOTE && !(sys_status & SS_ABORT))
 					bprintf(text[QWKPackedSubboard], submsgs, (*msgcnt));
 				if (ndx) {
-					fclose(ndx);
 					SAFEPRINTF2(str, "%s%u.NDX", cfg.temp_dir, conf);
+					if (!fclose_checked(ndx)) {
+						errormsg(WHERE, ERR_WRITE, str, 0);
+						write_error = true;
+					}
 					if (!flength(str))
 						remove(str);
 				}
@@ -610,20 +626,43 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	}
 
 	BOOL voting_data = FALSE;
-	fclose(qwk);            /* close MESSAGE.DAT */
-	if (hdrs != NULL)
-		fclose(hdrs);       /* close HEADERS.DAT */
+	if (!fclose_checked(qwk)) {
+		SAFEPRINTF(str, "%sMESSAGES.DAT", cfg.temp_dir);
+		errormsg(WHERE, ERR_WRITE, str, 0);
+		write_error = true;
+	}
+	if (hdrs != NULL && !fclose_checked(hdrs)) {
+		SAFEPRINTF(str, "%sHEADERS.DAT", cfg.temp_dir);
+		errormsg(WHERE, ERR_WRITE, str, 0);
+		write_error = true;
+	}
 	if (voting != NULL) {
 		voting_data = ftell(voting);
-		fclose(voting);
+		if (!fclose_checked(voting)) {
+			SAFEPRINTF(str, "%sVOTING.DAT", cfg.temp_dir);
+			errormsg(WHERE, ERR_WRITE, str, 0);
+			write_error = true;
+		}
 	}
 	if (personal) {
-		fclose(personal);        /* close PERSONAL.NDX */
 		SAFEPRINTF(str, "%sPERSONAL.NDX", cfg.temp_dir);
+		if (!fclose_checked(personal)) {
+			errormsg(WHERE, ERR_WRITE, str, 0);
+			write_error = true;
+		}
 		if (!flength(str))
 			remove(str);
 	}
 	term->newline();
+
+	// #1244
+	SAFEPRINTF(str, "%sMESSAGES.DAT", cfg.temp_dir);
+	if (!write_error && flength(str) < QWK_BLOCK_LEN) {
+		errormsg(WHERE, ERR_LEN, str, (int)flength(str));
+		write_error = true;
+	}
+	if (write_error)
+		return false;
 
 	if (!prepack && online != ON_LOCAL && ((sys_status & SS_ABORT) || !online)) {
 		bputs(text[Aborted]);
