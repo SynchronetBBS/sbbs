@@ -361,9 +361,9 @@ function list_files()
 		console.print(format(bbs.text(bbs.text.NFilesListed), result));
 }
 
-function view_file_info(mode)
+function view_file_info(mode, filespec)
 {
-	var str=bbs.get_filespec();
+	var str=filespec || bbs.get_filespec();
 	if(!str)
 		return;
 	if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, mode) && str != '*') {
@@ -396,9 +396,9 @@ function view_file_info(mode)
 	}
 }
 
-function view_files()
+function view_files(filespec)
 {
-	var str=bbs.get_filespec();
+	var str=filespec || bbs.get_filespec();
 	if(!str)
 		return;
 	if(!bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FL_VIEW) && str != '*') {

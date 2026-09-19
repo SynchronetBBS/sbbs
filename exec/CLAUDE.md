@@ -53,10 +53,11 @@ Two kinds of stock command shells live here. A feature touching one shell
 usually needs the equivalent change in the others (check all of them).
 
 ### Inventory
-- **Baja** (`*.src` compiled to `*.bin`): `obv-2`, `wwiv`, `sdos`, `wildcat`,
-  `major`, `simple`, `matrix`, `ftp`. Structured as labeled sections (`:main`,
-  `:file_transfers`, `:main_info`, `:file_info`, …) with `cmdkey X` handlers
-  gated by a `getcmd "?...keys..."` allowed-key string.
+- **Baja** (`*.src` compiled to `*.bin`): `simple`, `matrix`, `ftp`
+  (`obv-2`, `wwiv`, `sdos`, `wildcat`, `major` have been ported to JS).
+  Structured as labeled sections (`:main`, `:file_transfers`, `:main_info`,
+  `:file_info`, …) with `cmdkey X` handlers gated by a `getcmd
+  "?...keys..."` allowed-key string.
 - **JavaScript**:
   - `default.js` — **Synchronet Classic, the primary default shell.** Its
     command tables map keys to eval strings that call functions in
@@ -65,6 +66,10 @@ usually needs the equivalent change in the others (check all of them).
   - `lbshell.js` — lightbar shell. **No modal info sub-sections**; it builds
     inline lightbar `typemenu`s on the fly. Don't try to mirror the
     Baja/Classic `:file_info` structure here.
+  - `sdos.js` — MS-DOS COMMAND.COM look-alike: typed command lines, not
+    hot keys. Its "directory listings" are generated from a virtual drive
+    C: in the script (the BBS functions are `.EXE`/`.COM` entries, doors
+    are `C:\DOORS\<section>\<code>.EXE`), not from menu files.
   - `menushell.js` / `menushell-lb.js` — data-driven; commands come from the
     catalog in `load/menu-commands.js` (e.g. `Commands.System.Version`).
     Which command appears on which menu is sysop menu-data config, not code.

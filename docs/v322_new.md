@@ -472,6 +472,12 @@
   as-is, with no attribute-code interpretation. Guest users get
   default settings; per-user settings are no longer saved for
   guests
+- The DOS Shell (SDOS) is now JavaScript (`sdos.js`) and acts much more
+  like MS-DOS 5 COMMAND.COM: programs run by name or by relative/absolute
+  path, with or without `.COM`/`.EXE`; `PATH`, `PROMPT`, `SET`, `ECHO`,
+  `DATE`/`TIME`, nested `COMMAND`, `HELP` and `/?`; `DIR` switches
+  (`/W /B /S /O /L /P`) with MM-DD-YY dates; doors appear as
+  `C:\DOORS\<section>\<program>.EXE`
 - `shell_lib.send_email()` / `send_netmail()` accept a `to` /
   `address` argument; the email-menu **A**ttachment command
   works again (regression from a v3.21 refactor)
