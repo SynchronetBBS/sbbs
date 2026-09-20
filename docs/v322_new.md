@@ -66,6 +66,9 @@
 - All servers now de-duplicate repeated identical error log
   messages, so a single sustained fault no longer floods
   `error.log`
+- `[Mail] POP3Interface` and `[Web] TLSInterface` now default to their
+  own server's `Interface` rather than `[Global] Interface`, so adding
+  (for example) `::` to `[Mail] Interface` now enables IPv6 for POP3 too
 
 ## Terminal Server
 

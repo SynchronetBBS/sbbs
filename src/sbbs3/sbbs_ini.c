@@ -425,6 +425,7 @@ bool sbbs_read_ini(
 	global_startup_t global_buf;
 	struct in6_addr  wildcard6 = {{{0}}};
 	char *           global_interfaces;
+	char *           server_interfaces;
 
 	if (global == NULL) {
 		memset(&global_buf, 0, sizeof(global_buf));
@@ -473,7 +474,7 @@ bool sbbs_read_ini(
 			SAFECOPY(services->ini_fname, ini_fname);
 	}
 
-	global_interfaces = strListCombine(global->interfaces, NULL, 16384, ",");
+	global_interfaces = strListCombine(global->interfaces, NULL, INI_MAX_VALUE_LEN, ",");
 	if (global == &global_buf)
 		iniFreeStringList(global->interfaces);
 
@@ -702,8 +703,10 @@ bool sbbs_read_ini(
 		    = iniGetShortInt(list, section, "SubmissionPort", IPPORT_SUBMISSION);
 		mail->submissions_port
 		    = iniGetShortInt(list, section, "TLSSubmissionPort", IPPORT_SUBMISSIONS);
+		server_interfaces = strListCombine(mail->interfaces, NULL, INI_MAX_VALUE_LEN, ",");
 		mail->pop3_interfaces
-		    = iniGetStringList(list, section, "POP3Interface", ",", global_interfaces);
+		    = iniGetStringList(list, section, "POP3Interface", ",", server_interfaces);
+		free(server_interfaces);
 		mail->pop3_port
 		    = iniGetShortInt(list, section, "POP3Port", IPPORT_POP3);
 		mail->pop3s_port
@@ -870,8 +873,10 @@ bool sbbs_read_ini(
 		}
 		web->interfaces
 		    = iniGetStringList(list, section, strInterfaces, ",", global_interfaces);
+		server_interfaces = strListCombine(web->interfaces, NULL, INI_MAX_VALUE_LEN, ",");
 		web->tls_interfaces
-		    = iniGetStringList(list, section, "TLSInterface", ",", global_interfaces);
+		    = iniGetStringList(list, section, "TLSInterface", ",", server_interfaces);
+		free(server_interfaces);
 		web->port
 		    = iniGetUInt16(list, section, strPort, IPPORT_HTTP);
 		web->tls_port
@@ -1277,6 +1282,11 @@ bool sbbs_write_ini(
 			else if (!iniSetStringList(lp, section, strInterfaces, ",", mail->interfaces, &style))
 				break;
 
+			if (strListCmp(mail->pop3_interfaces, mail->interfaces) == 0)
+				iniRemoveValue(lp, section, "POP3Interface");
+			else if (!iniSetStringList(lp, section, "POP3Interface", ",", mail->pop3_interfaces, &style))
+				break;
+
 			if (mail->outgoing4.s_addr == global->outgoing4.s_addr)
 				iniRemoveValue(lp, section, strOutgoing4);
 			else if (!iniSetIpAddress(lp, section, strOutgoing4, mail->outgoing4.s_addr, &style))
@@ -1507,7 +1517,7 @@ bool sbbs_write_ini(
 			else if (!iniSetStringList(lp, section, strInterfaces, ",", web->interfaces, &style))
 				break;
 
-			if (strListCmp(web->tls_interfaces, global->interfaces) == 0)
+			if (strListCmp(web->tls_interfaces, web->interfaces) == 0)
 				iniRemoveValue(lp, section, "TLSInterface");
 			else if (!iniSetStringList(lp, section, "TLSInterface", ",", web->tls_interfaces, &style))
 				break;
