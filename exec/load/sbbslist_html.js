@@ -353,7 +353,7 @@ for(i in list) {
 			var num = ver.substring(x + 8);
 			stats.version[num] = (stats.version[num] || 0) + 1;
 		}
-		const prefix = "Synchronet BBS for ";
+		var prefix = "Synchronet BBS for ";
 		x = ver.indexOf(prefix);
 		if (x == 0) {
 			var os = ver.substring(prefix.length);
