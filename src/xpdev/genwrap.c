@@ -1186,17 +1186,25 @@ int xp_system(const char* cmdline)
 {
 #ifdef _WIN32
 	if (GetConsoleWindow() == NULL) {
-		const char* comspec = getenv("COMSPEC");
+		/* Declare before the first statement: Borland C++ (sbbsctrl/useredit) is C89. */
+		const char*         comspec;
+		char*               cmd;
+		size_t              len;
+		STARTUPINFOA        si;
+		PROCESS_INFORMATION pi;
+		BOOL                success;
+		DWORD               exit_code = 0;
+
+		comspec = getenv("COMSPEC");
 		if (comspec == NULL)
 			comspec = "cmd.exe";
-		size_t len = strlen(comspec) + strlen(cmdline) + 16;
-		char*  cmd = malloc(len);
+		len = strlen(comspec) + strlen(cmdline) + 16;
+		cmd = malloc(len);
 		if (cmd == NULL)
 			return -1;
 		/* /S: cmd.exe strips the outermost quote-pair and runs the rest
 		   verbatim, so any quoting or redirection within survives. */
 		snprintf(cmd, len, "\"%s\" /S /C \"%s\"", comspec, cmdline);
-		STARTUPINFOA si;
 		memset(&si, 0, sizeof si);
 		si.cb = sizeof si;
 		si.hStdInput = std_handle(STD_INPUT_HANDLE);
@@ -1207,17 +1215,15 @@ int xp_system(const char* cmdline)
 		   have written to the caller's file or pipe. */
 		if (si.hStdInput != NULL || si.hStdOutput != NULL || si.hStdError != NULL)
 			si.dwFlags = STARTF_USESTDHANDLES;
-		PROCESS_INFORMATION pi;
 		memset(&pi, 0, sizeof pi);
 		/* Inherit handles, as system() does: a command-line can name a handle
 		   for the child to pick up (services.cpp hands a native service its
 		   socket that way). */
-		BOOL success = CreateProcessA(comspec, cmd, NULL, NULL, /* inherit: */ TRUE
-			, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+		success = CreateProcessA(comspec, cmd, NULL, NULL, /* inherit: */ TRUE
+		                         , CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
 		free(cmd);
 		if (!success)
 			return -1;
-		DWORD exit_code = 0;
 		WaitForSingleObject(pi.hProcess, INFINITE);
 		GetExitCodeProcess(pi.hProcess, &exit_code);
 		CloseHandle(pi.hThread);
@@ -1243,23 +1249,37 @@ int xp_system(const char* cmdline)
 int xp_popen(const char* cmdline, str_list_t* lines)
 {
 #ifdef _WIN32
+	/* Declare before the first statement: Borland C++ (sbbsctrl/useredit) is C89. */
 	SECURITY_ATTRIBUTES sa;
+	STARTUPINFOA        si;
+	PROCESS_INFORMATION pi;
+	HANDLE              rd;
+	HANDLE              wr;
+	const char*         comspec;
+	char*               cmd;
+	size_t              len;
+	BOOL                success;
+	DWORD               exit_code = -1;
+	char*               output = NULL;
+	size_t              output_len = 0;
+	char                buf[4000];
+	DWORD               rd_len;
+	char*               p;
+
 	memset(&sa, 0, sizeof sa);
 	sa.nLength = sizeof sa;
 	sa.bInheritHandle = TRUE;   /* the child needs the write end */
 
-	HANDLE rd;
-	HANDLE wr;
 	if (!CreatePipe(&rd, &wr, &sa, 0))
 		return -1;
 	/* ... but not the read end, or the pipe would never report EOF. */
 	SetHandleInformation(rd, HANDLE_FLAG_INHERIT, 0);
 
-	const char* comspec = getenv("COMSPEC");
+	comspec = getenv("COMSPEC");
 	if (comspec == NULL)
 		comspec = "cmd.exe";
-	size_t len = strlen(comspec) + strlen(cmdline) + 16;
-	char*  cmd = malloc(len);
+	len = strlen(comspec) + strlen(cmdline) + 16;
+	cmd = malloc(len);
 	if (cmd == NULL) {
 		CloseHandle(rd);
 		CloseHandle(wr);
@@ -1269,7 +1289,6 @@ int xp_popen(const char* cmdline, str_list_t* lines)
 	   verbatim, so any quoting or redirection within survives. */
 	snprintf(cmd, len, "\"%s\" /S /C \"%s\"", comspec, cmdline);
 
-	STARTUPINFOA si;
 	memset(&si, 0, sizeof si);
 	si.cb = sizeof si;
 	si.dwFlags = STARTF_USESTDHANDLES;
@@ -1277,10 +1296,9 @@ int xp_popen(const char* cmdline, str_list_t* lines)
 	si.hStdOutput = wr;
 	/* popen(,"r") captures stdout only, leaving stderr to the parent's. */
 	si.hStdError = std_handle(STD_ERROR_HANDLE);
-	PROCESS_INFORMATION pi;
 	memset(&pi, 0, sizeof pi);
-	BOOL success = CreateProcessA(comspec, cmd, NULL, NULL, /* inherit: */ TRUE
-		, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+	success = CreateProcessA(comspec, cmd, NULL, NULL, /* inherit: */ TRUE
+	                         , CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
 	free(cmd);
 	CloseHandle(wr);    /* the child holds the only write end now */
 	if (!success) {
@@ -1288,10 +1306,6 @@ int xp_popen(const char* cmdline, str_list_t* lines)
 		return -1;
 	}
 
-	char*  output = NULL;
-	size_t output_len = 0;
-	char   buf[4000];
-	DWORD  rd_len;
 	while (ReadFile(rd, buf, sizeof buf, &rd_len, NULL) && rd_len > 0) {
 		char* np = realloc_or_free(output, output_len + rd_len + 1);
 		if (np == NULL) {
@@ -1305,22 +1319,23 @@ int xp_popen(const char* cmdline, str_list_t* lines)
 	}
 	CloseHandle(rd);
 
-	DWORD exit_code = -1;
 	WaitForSingleObject(pi.hProcess, INFINITE);
 	GetExitCodeProcess(pi.hProcess, &exit_code);
 	CloseHandle(pi.hThread);
 	CloseHandle(pi.hProcess);
 
-	char* p = output;
+	p = output;
 	while (p != NULL && *p != '\0') {
 		char* eol = strchr(p, '\n');
+		char  save;
+
 		if (eol == NULL) {
 			strListPush(lines, p);
 			break;
 		}
 		/* Keep the new-line with its line, then put back the first char of
 		   the next one. */
-		char save = *(eol + 1);
+		save = *(eol + 1);
 		*(eol + 1) = '\0';
 		strListPush(lines, p);
 		*(eol + 1) = save;
@@ -1332,7 +1347,7 @@ int xp_popen(const char* cmdline, str_list_t* lines)
 	FILE* fp = popen(cmdline, "r");
 	if (fp == NULL)
 		return -1;
-	char buf[1024];
+	char  buf[1024];
 	while (fgets(buf, sizeof buf, fp) != NULL)
 		strListPush(lines, buf);
 	return pclose(fp);

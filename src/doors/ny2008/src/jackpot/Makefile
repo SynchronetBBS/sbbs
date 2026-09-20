@@ -14,8 +14,8 @@ LDFLAGS += -L${ODOOR_SRC}/libs-`uname`
 
 all : jackpot
 
-jackpot : jackpot.cpp jackpot.h dirwrap.o filewrap.o genwrap.o
-	$(CXX) $(CFLAGS) ${LDFLAGS} jackpot.cpp dirwrap.o filewrap.o genwrap.o -o ../../jackpot -lODoors
+jackpot : jackpot.cpp jackpot.h dirwrap.o filewrap.o genwrap.o str_list.o
+	$(CXX) $(CFLAGS) ${LDFLAGS} jackpot.cpp dirwrap.o filewrap.o genwrap.o str_list.o -o ../../jackpot -lODoors
 
 dirwrap.o:
 	$(CC) $(CFLAGS) -c ${XPDEV_SRC}/dirwrap.c
@@ -25,6 +25,9 @@ filewrap.o:
 
 genwrap.o:
 	$(CC) $(CFLAGS) -c ${XPDEV_SRC}/genwrap.c
+
+str_list.o:
+	$(CC) $(CFLAGS) -c ${XPDEV_SRC}/str_list.c
 
 clean:
 	rm -f ../../jackpot

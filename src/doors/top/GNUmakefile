@@ -38,14 +38,17 @@ $(OBJDIR)datewrap.o: $(OBJDIR) ../../xpdev/datewrap.c ../../xpdev/datewrap.h ../
 $(OBJDIR)strwrap.o: $(OBJDIR) ../../xpdev/strwrap.c ../../xpdev/strwrap.h ../../xpdev/gen_defs.h ../../xpdev/wrapdll.h
 	$(CC) $(CCFLAGS) -c ../../xpdev/strwrap.c -o $(OBJDIR)strwrap.o
 
+$(OBJDIR)str_list.o: $(OBJDIR) ../../xpdev/str_list.c ../../xpdev/str_list.h ../../xpdev/genwrap.h ../../xpdev/gen_defs.h ../../xpdev/wrapdll.h
+	$(CC) $(CCFLAGS) -c ../../xpdev/str_list.c -o $(OBJDIR)str_list.o
+
 $(OBJDIR)conwrap.o: $(OBJDIR) ../../xpdev/conwrap.c ../../xpdev/conwrap.h ../../xpdev/gen_defs.h ../../xpdev/wrapdll.h
 	$(CC) $(CCFLAGS) -c ../../xpdev/conwrap.c -o $(OBJDIR)conwrap.o
 
-topact.$(OS) : topact.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o
-	$(CC) $(LDFLAGS) $(CCFLAGS) topact.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o -lm -o topact.$(OS)
+topact.$(OS) : topact.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o $(OBJDIR)str_list.o
+	$(CC) $(LDFLAGS) $(CCFLAGS) topact.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o $(OBJDIR)str_list.o -lm -o topact.$(OS)
 
-topmaint.$(OS) : topmaint.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o $(OBJDIR)datewrap.o $(OBJDIR)conwrap.o
-	$(CC) $(LDFLAGS) $(CCFLAGS) topmaint.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o $(OBJDIR)datewrap.o $(OBJDIR)conwrap.o -lm -o topmaint.$(OS)
+topmaint.$(OS) : topmaint.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o $(OBJDIR)datewrap.o $(OBJDIR)conwrap.o $(OBJDIR)str_list.o
+	$(CC) $(LDFLAGS) $(CCFLAGS) topmaint.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o $(OBJDIR)datewrap.o $(OBJDIR)conwrap.o $(OBJDIR)str_list.o -lm -o topmaint.$(OS)
 
 # Implicit C Compile Rule
 $(OBJDIR)%.o : %.c
@@ -92,6 +95,7 @@ OBJS := $(OBJDIR)actions.o \
 	$(OBJDIR)genwrap.o \
 	$(OBJDIR)datewrap.o \
 	$(OBJDIR)strwrap.o \
+	$(OBJDIR)str_list.o \
 	$(OBJDIR)matchgam.o \
 	$(OBJDIR)slots.o \
 #        $(OBJDIR)bbswc.o \	# Experimental
