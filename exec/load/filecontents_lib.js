@@ -27,9 +27,14 @@ var UNSAFE = /[$`]/;
 // Extensions worth attempting.  The terminal viewer's catch-all hands every
 // unmatched type to archive.js, but a bulk populator should not try to
 // enumerate every .txt in the base.
+//
+// 'exe' is here for the self-extracting archives a file base is full of:
+// libarchive finds the Zip or 7-Zip data inside the stub rather than
+// insisting it start at offset 0.  A plain program simply fails to extract,
+// which is stored like any other negative verdict and not retried.
 var ARCHIVE_TYPES = ['zip', '7z', 'tgz', 'tar', 'gz', 'bz2',
                      'rar', 'lha', 'lzh', 'iso', 'cab',
-                     'arc', 'arj', 'zoo'];
+                     'arc', 'arj', 'zoo', 'exe'];
 
 var dirmap = null;
 var held = {};
@@ -317,6 +322,13 @@ function extract_external(path)
 		try {
 			var obj = JSON.parse(text);
 			if (obj !== null && obj.lsarContents !== undefined) {
+				// An archive it recognizes but cannot read yields an empty
+				// listing and a non-zero lsarError -- a self-extracting .exe
+				// whose stub offsets it won't follow, say.  Storing that as an
+				// empty archive would misreport it; let the caller record the
+				// failure instead.
+				if (obj.lsarContents.length === 0 && obj.lsarError)
+					return null;
 				items = [];
 				for (var i = 0; i < obj.lsarContents.length; i++) {
 					var e = obj.lsarContents[i];

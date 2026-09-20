@@ -537,6 +537,10 @@
   installed. Affects the game-data fetchers for SyncDOOM,
   SyncDuke, SyncAlert, SyncDawn, SyncNES and the ScummVM-based
   doors, several of which previously checked nothing
+- Web file index (`webfileindex.ssjs`): an archive's listing is
+  stored per file area and re-served instead of re-opening the
+  archive on every view, and the viewer now covers ARC, ARJ and
+  ZOO (via `lsar`, when installed) and self-extracting `.exe`
 - `dns.js`: `resolve()`, `resolveIPv4()` and `resolveIPv6()` return the
   resolved addresses again when used in synchronous mode
 - HatchIT (`hatchit.js`) now exits with a meaningful status (0 =

@@ -234,12 +234,11 @@ function file_type(filename)
 
 function archive_file(filename)
 {
-	var ext = file_type(filename);
-	if(!ext)
-		return false;
-	/* 'arc' is listed by an external tool, not libarchive; on a host without
-	   one the view reports that rather than rendering a listing. */
-	return ['zip', '7z', 'tgz', 'rar', 'lha', 'lzh', 'iso', 'cab', 'arc'].indexOf(ext.toLowerCase()) >= 0;
+	/* Defer to the library rather than keeping a second list of extensions
+	   here.  Some of them ('arc', 'arj', 'zoo') are listed by an external tool
+	   rather than libarchive; on a host without one the view reports that
+	   rather than rendering a listing. */
+	return contents.is_archive(filename);
 }
 
 function image_file(filename)
