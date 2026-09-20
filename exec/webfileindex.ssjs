@@ -1,6 +1,7 @@
 var start = new Date();
 
 require("file_size.js", "file_size_float");
+load("filecontents_lib.js");
 var vs15 = "&#xFE0E;";
 var folder = "&#x1F5C0;";
 var file_folder = "&#x1F4C1;";
@@ -233,7 +234,9 @@ function archive_file(filename)
 	var ext = file_type(filename);
 	if(!ext)
 		return false;
-	return ['zip', '7z', 'tgz', 'rar', 'lha', 'lzh', 'iso', 'cab'].indexOf(ext.toLowerCase()) >= 0;
+	/* 'arc' is listed by an external tool, not libarchive; on a host without
+	   one the view reports that rather than rendering a listing. */
+	return ['zip', '7z', 'tgz', 'rar', 'lha', 'lzh', 'iso', 'cab', 'arc'].indexOf(ext.toLowerCase()) >= 0;
 }
 
 function image_file(filename)
@@ -322,14 +325,15 @@ function view_file(filename)
 
 function view_archive(filename)
 {
-	var list;
-	try {
-		list = Archive(filename).list(false);
-	} catch(e) {
-		log(LOG_DEBUG, filename + " " + e);
-		writeln(file_getname(filename) + e); //": Unsupported archive");
+	var rec = filecontents_list(filename);
+
+	if(rec === null || rec.err !== undefined) {
+		var why = (rec === null) ? "Unable to read archive" : rec.err;
+		log(LOG_DEBUG, filename + " " + why);
+		writeln(html_encode(file_getname(filename) + ": " + why, true, false));
 		return;
-        }
+	}
+	var list = filecontents_entries(rec);
 
 	writeln('<table>');
 	for(var i in list) {
@@ -337,7 +341,9 @@ function view_archive(filename)
 		if(file.type != 'file')
 			continue;
 		writeln('<tr>');
-		writeln('<td>' + file.name.bold());
+		/* Entry names come from inside the archive, where
+		   ILLEGAL_FILENAME_CHARS does not constrain them. */
+		writeln('<td>' + html_encode(file.name, true, false).bold());
 		writeln('<td align=right>' + file.size);
 		writeln('<td>' + system.timestr(file.time).slice(4));
 	}
