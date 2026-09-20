@@ -67,7 +67,10 @@ var sorting_description = {
 	"SIZE_D": "Size decreasing"
 };
 
-function file_size(file)
+/* Named to avoid shadowing the file_size() and file_date() globals, which
+   take a path and return a number; these take a file object and return
+   HTML.  Any library loaded here would otherwise get these instead. */
+function file_size_cell(file)
 {
 	var size = file_size_float(file.size, 1, 1);
 
@@ -76,7 +79,7 @@ function file_size(file)
 	return "<div title='SHA1: " + file.sha1 + "'>" + size + "</div>";
 }
 
-function file_date(file)
+function file_date_cell(file)
 {
 	if(!file.added)
 		return "";
@@ -146,8 +149,8 @@ function dir_index(dir)
 			write("<a href=\"?view=" + encodeURIComponent(f.name) + "\" title='View'>" + view_icon + "</a>");
 		write("</td>");
 		write("<td><a title='Download' href=\"" + encodeURIComponent(f.name) + "\">" + f.name.bold() + "</a></td>");
-		write("<td align=right>" + file_size(f) + "</td>");
-		write("<td align=right>" + file_date(f) + "</td>");
+		write("<td align=right>" + file_size_cell(f) + "</td>");
+		write("<td align=right>" + file_date_cell(f) + "</td>");
 		write('<td class="desc" onclick="showExtDesc(event)">');
 		write(utf8_encode(f.desc || ''));
 		if (f.extdesc !== undefined) {

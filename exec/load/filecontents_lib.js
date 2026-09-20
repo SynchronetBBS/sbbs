@@ -22,6 +22,13 @@ var FILECONTENTS_EXTRACTORS = 1;
 // filename, so refuse to hand those to an external tool at all.
 var FILECONTENTS_UNSAFE = /[$`]/;
 
+// Extensions worth attempting.  The terminal viewer's catch-all hands every
+// unmatched type to archive.js, but a bulk populator should not try to
+// enumerate every .txt in the base.
+var FILECONTENTS_ARCHIVE_TYPES = ['zip', '7z', 'tgz', 'tar', 'gz', 'bz2',
+                                  'rar', 'lha', 'lzh', 'iso', 'cab',
+                                  'arc', 'arj', 'zoo'];
+
 var filecontents_dirmap = null;
 var filecontents_held = {};
 var filecontents_onexit = false;
@@ -29,6 +36,33 @@ var filecontents_onexit = false;
 function filecontents_store(dircode)
 {
 	return backslash(system.data_dir + "dirs") + dircode + FILECONTENTS_EXT;
+}
+
+function filecontents_is_archive(filename)
+{
+	var m = file_getname(filename).match(/\.([^.]+)$/);
+
+	if (m === null)
+		return false;
+	return FILECONTENTS_ARCHIVE_TYPES.indexOf(m[1].toLowerCase()) >= 0;
+}
+
+// Read file metadata through the File object rather than the global functions
+// of the same purpose.  A consumer can shadow those with an incompatible
+// signature, and a library must not depend on the caller's scope being clean.
+function filecontents_size(path)
+{
+	return new File(path).length;
+}
+
+function filecontents_date(path)
+{
+	return new File(path).date;
+}
+
+function filecontents_exists(path)
+{
+	return new File(path).exists;
 }
 
 // Map an absolute file path back to the file area holding it.  archive.js is
@@ -105,7 +139,7 @@ function filecontents_release()
 function filecontents_read(dircode)
 {
 	var fname = filecontents_store(dircode);
-	if (!file_exists(fname))
+	if (!filecontents_exists(fname))
 		return { v: FILECONTENTS_VERSION, files: {} };
 
 	var f = new File(fname);
@@ -142,7 +176,7 @@ function filecontents_write(dircode, obj)
 		return false;
 	}
 	// Replace rather than rewrite, so a reader never sees a half-written store.
-	if (file_exists(fname))
+	if (filecontents_exists(fname))
 		file_remove(fname);
 	return file_rename(tmp, fname);
 }
@@ -153,7 +187,7 @@ function filecontents_current(rec, path)
 {
 	if (rec === undefined || rec === null)
 		return false;
-	if (rec.sz !== file_size(path) || rec.mt !== file_date(path))
+	if (rec.sz !== filecontents_size(path) || rec.mt !== filecontents_date(path))
 		return false;
 	if (rec.err !== undefined && rec.xv !== FILECONTENTS_EXTRACTORS)
 		return false;
@@ -197,8 +231,8 @@ function filecontents_extract(path)
 {
 	var rec = {
 		t: "archive",
-		sz: file_size(path),
-		mt: file_date(path),
+		sz: filecontents_size(path),
+		mt: filecontents_date(path),
 		xv: FILECONTENTS_EXTRACTORS
 	};
 	var list;
@@ -257,7 +291,7 @@ function filecontents_extract_external(path)
 	var list = null;
 
 	if (system.exec("lsar -j \"" + path + "\" > \"" + tmp + "\"") == 0
-	    && file_exists(tmp)) {
+	    && filecontents_exists(tmp)) {
 		var f = new File(tmp);
 		if (f.open("r")) {
 			var text = f.read();
