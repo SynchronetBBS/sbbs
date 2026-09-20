@@ -6,7 +6,7 @@
 //
 // SpiderMonkey 1.8.5: no let/const, no arrow functions, no Object.keys().
 
-load("filecontents_lib.js");
+var contents = load({}, "filecontents_lib.js");
 
 var failures = 0;
 
@@ -50,21 +50,21 @@ check(arc !== null, "found an .arc to test with");
 
 /* ---- path to area mapping ---- */
 
-check(filecontents_area(zip) !== undefined,
-      "filecontents_area() resolves a file-base path");
-check(filecontents_area("/tmp/definitely-not-in-a-file-area.zip") === undefined,
-      "filecontents_area() returns undefined outside every file area");
+check(contents.area(zip) !== undefined,
+      "contents.area() resolves a file-base path");
+check(contents.area("/tmp/definitely-not-in-a-file-area.zip") === undefined,
+      "contents.area() returns undefined outside every file area");
 
 /* ---- XAD date parsing ---- */
 
-var d = filecontents_xaddate("1989-12-25 01:02:00 -0800");
-check(d > 0, "filecontents_xaddate() parses an lsar timestamp (got " + d + ")");
-check(filecontents_xaddate(undefined) === 0,
-      "filecontents_xaddate() tolerates a missing date");
+var d = contents.xaddate("1989-12-25 01:02:00 -0800");
+check(d > 0, "contents.xaddate() parses an lsar timestamp (got " + d + ")");
+check(contents.xaddate(undefined) === 0,
+      "contents.xaddate() tolerates a missing date");
 
 /* ---- extraction: libarchive path ---- */
 
-var rec = filecontents_extract(zip);
+var rec = contents.extract(zip);
 check(rec.t === "archive", "zip record is typed archive");
 check(rec.x === "libarchive", "zip extracted by libarchive (got " + rec.x + ")");
 check(rec.err === undefined, "zip extracted without error");
@@ -78,7 +78,7 @@ if (rec.l && rec.l.length)
 /* ---- extraction: external-tool fallback ---- */
 
 if (arc !== null) {
-	var arec = filecontents_extract(arc);
+	var arec = contents.extract(arc);
 	check(arec.x === "lsar",
 	      "arc fell back to lsar (got " + arec.x
 	      + (arec.err ? ", err=" + arec.err : "") + ")");
@@ -92,23 +92,26 @@ if (arc !== null) {
 
 /* ---- shell safety ---- */
 
-check(filecontents_extract_external("/tmp/evil$(id).arc") === null,
+check(contents.extract_external("/tmp/evil$(id).arc") === null,
       "external tool refused for a path containing $");
-check(filecontents_extract_external("/tmp/evil`id`.arc") === null,
+check(contents.extract_external("/tmp/evil`id`.arc") === null,
       "external tool refused for a path containing a backtick");
 
 /* ---- store round trip ---- */
 
-var code = filecontents_area(zip);
-var store_file = filecontents_store(code);
+var code = contents.area(zip);
+var store_file = contents.store_path(code);
 var preexisting = file_exists(store_file);
 
-check(filecontents_get(zip) === null, "nothing stored for the zip yet");
-check(filecontents_put(zip, rec) === true, "filecontents_put() stored the record");
+/* Not "nothing is stored yet": the store is live and may already hold this
+   area, so test the absent case on a name that cannot be there. */
+check(contents.get(file_getname(zip) + ".not-a-real-file") === null,
+      "contents.get() returns null for a file with no record");
+check(contents.put(zip, rec) === true, "contents.put() stored the record");
 check(file_exists(store_file), "store file was created: " + store_file);
 
-var got = filecontents_get(zip);
-check(got !== null, "filecontents_get() returns the stored record");
+var got = contents.get(zip);
+check(got !== null, "contents.get() returns the stored record");
 if (got !== null) {
 	check(got.l.length === rec.l.length, "round-tripped listing has the same length");
 	check(got.x === rec.x, "round-tripped extractor survives");
@@ -117,22 +120,22 @@ if (got !== null) {
 /* ---- staleness ---- */
 
 var stale = { t: "archive", sz: rec.sz + 1, mt: rec.mt, xv: 1, l: [] };
-check(filecontents_current(stale, zip) === false,
+check(contents.current(stale, zip) === false,
       "a size mismatch invalidates a record");
 stale = { t: "archive", sz: rec.sz, mt: rec.mt + 1, xv: 1, l: [] };
-check(filecontents_current(stale, zip) === false,
+check(contents.current(stale, zip) === false,
       "an mtime mismatch invalidates a record");
 stale = { t: "archive", sz: rec.sz, mt: rec.mt, xv: 0, err: "nope" };
-check(filecontents_current(stale, zip) === false,
+check(contents.current(stale, zip) === false,
       "an old extractor version invalidates a stored failure");
 stale = { t: "archive", sz: rec.sz, mt: rec.mt, xv: 0, l: [] };
-check(filecontents_current(stale, zip) === true,
+check(contents.current(stale, zip) === true,
       "an old extractor version does NOT invalidate a successful listing");
 
 /* ---- put outside a file area is a benign false ---- */
 
-check(filecontents_put("/tmp/not-in-an-area.zip", rec) === false,
-      "filecontents_put() declines a path outside every file area");
+check(contents.put("/tmp/not-in-an-area.zip", rec) === false,
+      "contents.put() declines a path outside every file area");
 
 /* ---- cleanup ---- */
 

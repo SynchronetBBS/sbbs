@@ -2,65 +2,69 @@
 //
 // Viewers read a stored listing instead of re-opening the archive on every
 // view.  See GitLab issue #1247 for the design and the measurements behind it.
+//
+// Load it into its own scope:  var contents = load({}, "filecontents_lib.js");
 
 require("sbbsdefs.js", "LOG_DEBUG");
 
-var FILECONTENTS_EXT = ".contents";
+var EXT = ".contents";
 
 // Record format version.  Guards the encoding.
-var FILECONTENTS_VERSION = 1;
+var VERSION = 1;
 
 // Extractor-set version.  Guards the *verdict* rather than the encoding: a
 // negative record stored because nothing could read the file has to be
 // re-examined when the extractor set changes, and nothing else would trigger
 // that, since the file itself never changed.
-var FILECONTENTS_EXTRACTORS = 1;
+var EXTRACTORS = 1;
 
 // ILLEGAL_FILENAME_CHARS already excludes " and \, so double-quoting a path for
 // the shell cannot be broken out of that way.  $ and a backtick are still
 // expanded by sh *inside* double quotes, and both are legal in a file-base
 // filename, so refuse to hand those to an external tool at all.
-var FILECONTENTS_UNSAFE = /[$`]/;
+var UNSAFE = /[$`]/;
 
 // Extensions worth attempting.  The terminal viewer's catch-all hands every
 // unmatched type to archive.js, but a bulk populator should not try to
 // enumerate every .txt in the base.
-var FILECONTENTS_ARCHIVE_TYPES = ['zip', '7z', 'tgz', 'tar', 'gz', 'bz2',
-                                  'rar', 'lha', 'lzh', 'iso', 'cab',
-                                  'arc', 'arj', 'zoo'];
+var ARCHIVE_TYPES = ['zip', '7z', 'tgz', 'tar', 'gz', 'bz2',
+                     'rar', 'lha', 'lzh', 'iso', 'cab',
+                     'arc', 'arj', 'zoo'];
 
-var filecontents_dirmap = null;
-var filecontents_held = {};
-var filecontents_onexit = false;
+var dirmap = null;
+var held = {};
+var onexit_registered = false;
 
-function filecontents_store(dircode)
+function store_path(dircode)
 {
-	return backslash(system.data_dir + "dirs") + dircode + FILECONTENTS_EXT;
+	return backslash(system.data_dir + "dirs") + dircode + EXT;
 }
 
-function filecontents_is_archive(filename)
+function is_archive(filename)
 {
 	var m = file_getname(filename).match(/\.([^.]+)$/);
 
 	if (m === null)
 		return false;
-	return FILECONTENTS_ARCHIVE_TYPES.indexOf(m[1].toLowerCase()) >= 0;
+	return ARCHIVE_TYPES.indexOf(m[1].toLowerCase()) >= 0;
 }
 
 // Read file metadata through the File object rather than the global functions
-// of the same purpose.  A consumer can shadow those with an incompatible
-// signature, and a library must not depend on the caller's scope being clean.
-function filecontents_size(path)
+// of the same purpose.  A calling script's top-level declarations land on the
+// global object, so a consumer can replace those globals outright, and loading
+// this library into its own scope does not prevent that: the scope object is
+// prepended to the chain, not substituted for it.
+function fsize(path)
 {
 	return new File(path).length;
 }
 
-function filecontents_date(path)
+function fdate(path)
 {
 	return new File(path).date;
 }
 
-function filecontents_exists(path)
+function fexists(path)
 {
 	return new File(path).exists;
 }
@@ -71,34 +75,34 @@ function filecontents_exists(path)
 //
 // An area the caller cannot see (ARS-filtered in the terminal server) simply
 // will not match, and the caller falls back to extracting without storing.
-function filecontents_area(path)
+function area(path)
 {
 	var full = fullpath(path);
 	var name = file_getname(full);
 	var dir = backslash(full.substr(0, full.length - name.length));
 
-	if (filecontents_dirmap === null) {
-		filecontents_dirmap = {};
+	if (dirmap === null) {
+		dirmap = {};
 		for (var code in file_area.dir) {
 			var d = file_area.dir[code];
 			var key = backslash(fullpath(d.path));
 			// Index both spellings, so a lookup works whether or not the
 			// volume is case-sensitive without having to probe which.
-			if (filecontents_dirmap[key] === undefined)
-				filecontents_dirmap[key] = d.code;
+			if (dirmap[key] === undefined)
+				dirmap[key] = d.code;
 			var lc = key.toLowerCase();
-			if (filecontents_dirmap[lc] === undefined)
-				filecontents_dirmap[lc] = d.code;
+			if (dirmap[lc] === undefined)
+				dirmap[lc] = d.code;
 		}
 	}
-	if (filecontents_dirmap[dir] !== undefined)
-		return filecontents_dirmap[dir];
-	return filecontents_dirmap[dir.toLowerCase()];
+	if (dirmap[dir] !== undefined)
+		return dirmap[dir];
+	return dirmap[dir.toLowerCase()];
 }
 
-function filecontents_lock(dircode)
+function lock(dircode)
 {
-	var fname = filecontents_store(dircode) + ".lock";
+	var fname = store_path(dircode) + ".lock";
 	var start = time();
 
 	while (!file_mutex(fname, "filecontents", 60)) {
@@ -106,45 +110,45 @@ function filecontents_lock(dircode)
 			return false;
 		sleep(250);
 	}
-	filecontents_held[dircode] = fname;
+	held[dircode] = fname;
 	// An out-of-memory error is not a catchable exception, so release from an
 	// exit handler too, else an aborted script strands the lock file.
-	if (!filecontents_onexit && typeof js == 'object' && js.on_exit !== undefined) {
-		js.on_exit("filecontents_release();");
-		filecontents_onexit = true;
+	if (!onexit_registered && typeof js == 'object' && js.on_exit !== undefined) {
+		js.on_exit("release();");
+		onexit_registered = true;
 	}
 	return true;
 }
 
-function filecontents_unlock(dircode)
+function unlock(dircode)
 {
-	if (filecontents_held[dircode] === undefined)
+	if (held[dircode] === undefined)
 		return;
-	file_remove(filecontents_held[dircode]);
-	delete filecontents_held[dircode];
+	file_remove(held[dircode]);
+	delete held[dircode];
 }
 
-function filecontents_release()
+function release()
 {
 	var codes = [];
 	var code;
 
-	// Collect first: filecontents_unlock() deletes from the object.
-	for (code in filecontents_held)
+	// Collect first: unlock() deletes from the object.
+	for (code in held)
 		codes.push(code);
 	for (var i = 0; i < codes.length; i++)
-		filecontents_unlock(codes[i]);
+		unlock(codes[i]);
 }
 
-function filecontents_read(dircode)
+function read_store(dircode)
 {
-	var fname = filecontents_store(dircode);
-	if (!filecontents_exists(fname))
-		return { v: FILECONTENTS_VERSION, files: {} };
+	var fname = store_path(dircode);
+	if (!fexists(fname))
+		return { v: VERSION, files: {} };
 
 	var f = new File(fname);
 	if (!f.open("r"))
-		return { v: FILECONTENTS_VERSION, files: {} };
+		return { v: VERSION, files: {} };
 	var text = f.read();
 	f.close();
 
@@ -153,17 +157,17 @@ function filecontents_read(dircode)
 		obj = JSON.parse(text);
 	} catch (e) {
 		log(LOG_WARNING, "filecontents: unparsable store " + fname + ": " + e);
-		return { v: FILECONTENTS_VERSION, files: {} };
+		return { v: VERSION, files: {} };
 	}
-	if (obj === null || typeof obj != 'object' || obj.v !== FILECONTENTS_VERSION
+	if (obj === null || typeof obj != 'object' || obj.v !== VERSION
 	    || typeof obj.files != 'object')
-		return { v: FILECONTENTS_VERSION, files: {} };
+		return { v: VERSION, files: {} };
 	return obj;
 }
 
-function filecontents_write(dircode, obj)
+function write_store(dircode, obj)
 {
-	var fname = filecontents_store(dircode);
+	var fname = store_path(dircode);
 	var tmp = fname + ".tmp";
 	var f = new File(tmp);
 
@@ -176,122 +180,103 @@ function filecontents_write(dircode, obj)
 		return false;
 	}
 	// Replace rather than rewrite, so a reader never sees a half-written store.
-	if (filecontents_exists(fname))
+	if (fexists(fname))
 		file_remove(fname);
 	return file_rename(tmp, fname);
 }
 
 // A record is current when the file it describes has not changed and neither
 // the encoding nor (for a stored failure) the extractor set has moved on.
-function filecontents_current(rec, path)
+function current(rec, path)
 {
 	if (rec === undefined || rec === null)
 		return false;
-	if (rec.sz !== filecontents_size(path) || rec.mt !== filecontents_date(path))
+	if (rec.sz !== fsize(path) || rec.mt !== fdate(path))
 		return false;
-	if (rec.err !== undefined && rec.xv !== FILECONTENTS_EXTRACTORS)
+	if (rec.err !== undefined && rec.xv !== EXTRACTORS)
 		return false;
 	return true;
 }
 
 // Return the stored record for a path, or null when absent or stale.
-function filecontents_get(path)
+function get(path)
 {
-	var code = filecontents_area(path);
+	var code = area(path);
 	if (code === undefined)
 		return null;
-	var store = filecontents_read(code);
+	var store = read_store(code);
 	var rec = store.files[file_getname(path)];
-	if (!filecontents_current(rec, path))
+	if (!current(rec, path))
 		return null;
 	return rec;
 }
 
 // Store a record for a path.  Returns false when the file lies outside every
 // file area, which is not an error: there is nowhere to persist it.
-function filecontents_put(path, rec)
+function put(path, rec)
 {
-	var code = filecontents_area(path);
+	var code = area(path);
 	if (code === undefined)
 		return false;
-	if (!filecontents_lock(code))
+	if (!lock(code))
 		return false;
 	try {
-		var store = filecontents_read(code);
+		var store = read_store(code);
 		store.files[file_getname(path)] = rec;
-		return filecontents_write(code, store);
+		return write_store(code, store);
 	} finally {
-		filecontents_unlock(code);
+		unlock(code);
 	}
 }
 
 // Enumerate an archive with libarchive, falling back to an external tool for
 // formats it does not support (notably ARC, which it cannot read at all).
-function filecontents_extract(path)
+function extract(path)
 {
 	var rec = {
 		t: "archive",
-		sz: filecontents_size(path),
-		mt: filecontents_date(path),
-		xv: FILECONTENTS_EXTRACTORS
+		sz: fsize(path),
+		mt: fdate(path),
+		xv: EXTRACTORS
 	};
-	var list;
+	var items;
 	var i;
 
 	try {
-		list = Archive(path).list(false);
+		items = Archive(path).list(false);
 		rec.x = "libarchive";
 	} catch (e) {
-		var ext = filecontents_extract_external(path);
+		var ext = extract_external(path);
 		if (ext === null) {
 			rec.x = "libarchive";
 			rec.err = String(e).replace(/^Error:\s*/, "");
 			return rec;
 		}
-		list = ext;
+		items = ext;
 		rec.x = "lsar";
 	}
 
 	rec.l = [];
-	for (i = 0; i < list.length; i++)
-		if (list[i].type == 'file')
-			rec.l.push([list[i].name, list[i].size, list[i].time]);
+	for (i = 0; i < items.length; i++)
+		if (items[i].type == 'file')
+			rec.l.push([items[i].name, items[i].size, items[i].time]);
 	return rec;
-}
-
-// Expand a stored record into the object shape Archive.list() returns, so a
-// consumer's rendering loop does not care which it was handed.  Only name,
-// size and time are stored, so a caller needing crc32 or format must extract.
-function filecontents_entries(rec)
-{
-	var list = [];
-
-	if (rec === null || rec === undefined || rec.l === undefined)
-		return list;
-	for (var i = 0; i < rec.l.length; i++)
-		list.push({
-			type: 'file',
-			name: rec.l[i][0],
-			size: rec.l[i][1],
-			time: rec.l[i][2]
-		});
-	return list;
 }
 
 // Redirect the tool's output to a file rather than using system.popen(), whose
 // _popen() needs a console and so fails inside a Windows service.  system.exec()
 // runs through /bin/sh -c or cmd.exe /c, so redirection works on both.
-function filecontents_extract_external(path)
+function extract_external(path)
 {
-	if (FILECONTENTS_UNSAFE.test(path))
+	if (UNSAFE.test(path))
 		return null;
 
 	var tmp = system.temp_dir + "fc"
 	          + time().toString(36) + random(0x7fffffff).toString(36) + ".json";
-	var list = null;
+	var items = null;
 
 	if (system.exec("lsar -j \"" + path + "\" > \"" + tmp + "\"") == 0
-	    && filecontents_exists(tmp)) {
+	    && fexists(tmp)) {
 		var f = new File(tmp);
 		if (f.open("r")) {
 			var text = f.read();
@@ -299,14 +284,14 @@ function filecontents_extract_external(path)
 			try {
 				var obj = JSON.parse(text);
 				if (obj !== null && obj.lsarContents !== undefined) {
-					list = [];
+					items = [];
 					for (var i = 0; i < obj.lsarContents.length; i++) {
 						var e = obj.lsarContents[i];
-						list.push({
+						items.push({
 							type: 'file',
 							name: e.XADFileName,
 							size: e.XADFileSize,
-							time: filecontents_xaddate(e.XADLastModificationDate)
+							time: xaddate(e.XADLastModificationDate)
 						});
 					}
 				}
@@ -316,11 +301,11 @@ function filecontents_extract_external(path)
 		}
 	}
 	file_remove(tmp);
-	return list;
+	return items;
 }
 
 // "1989-12-25 01:02:00 -0800" -> Unix time
-function filecontents_xaddate(str)
+function xaddate(str)
 {
 	if (typeof str != 'string')
 		return 0;
@@ -330,19 +315,40 @@ function filecontents_xaddate(str)
 	return Math.floor(t / 1000);
 }
 
+// Expand a stored record into the object shape Archive.list() returns, so a
+// consumer's rendering loop does not care which it was handed.  Only name,
+// size and time are stored, so a caller needing crc32 or format must extract.
+function entries(rec)
+{
+	var items = [];
+
+	if (rec === null || rec === undefined || rec.l === undefined)
+		return items;
+	for (var i = 0; i < rec.l.length; i++)
+		items.push({
+			type: 'file',
+			name: rec.l[i][0],
+			size: rec.l[i][1],
+			time: rec.l[i][2]
+		});
+	return items;
+}
+
 // The three-tier read path: serve a current record, else extract and store,
 // else report the failure and store that so the next view does not retry.
 // Set no_extract to serve tier 1 only (leaving process spawning off a path
 // that should not do it).
-function filecontents_list(path, no_extract)
+function list(path, no_extract)
 {
-	var rec = filecontents_get(path);
+	var rec = get(path);
 
 	if (rec === null) {
 		if (no_extract)
 			return null;
-		rec = filecontents_extract(path);
-		filecontents_put(path, rec);
+		rec = extract(path);
+		put(path, rec);
 	}
 	return rec;
 }
+
+this;

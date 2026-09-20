@@ -1,7 +1,7 @@
 var start = new Date();
 
 require("file_size.js", "file_size_float");
-load("filecontents_lib.js");
+var contents = load({}, "filecontents_lib.js");
 var vs15 = "&#xFE0E;";
 var folder = "&#x1F5C0;";
 var file_folder = "&#x1F4C1;";
@@ -328,7 +328,7 @@ function view_file(filename)
 
 function view_archive(filename)
 {
-	var rec = filecontents_list(filename);
+	var rec = contents.list(filename);
 
 	if(rec === null || rec.err !== undefined) {
 		var why = (rec === null) ? "Unable to read archive" : rec.err;
@@ -336,7 +336,7 @@ function view_archive(filename)
 		writeln(html_encode(file_getname(filename) + ": " + why, true, false));
 		return;
 	}
-	var list = filecontents_entries(rec);
+	var list = contents.entries(rec);
 
 	writeln('<table>');
 	for(var i in list) {

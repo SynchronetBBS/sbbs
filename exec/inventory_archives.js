@@ -16,7 +16,7 @@
 
 "use strict";
 
-load("filecontents_lib.js");
+var contents = load({}, "filecontents_lib.js");
 
 // Merge accumulated records into the store this often.  Extraction runs
 // unlocked and only the merge takes the area lock, so a long run does not hold
@@ -82,15 +82,15 @@ function flush(code, pending, count)
 {
 	if (opt.dry || !count)
 		return true;
-	if (!filecontents_lock(code)) {
+	if (!contents.lock(code)) {
 		print("!timeout locking the store for " + code);
 		return false;
 	}
-	var store = filecontents_read(code);
+	var store = contents.read_store(code);
 	for (var name in pending)
 		store.files[name] = pending[name];
-	var ok = filecontents_write(code, store);
-	filecontents_unlock(code);
+	var ok = contents.write_store(code, store);
+	contents.unlock(code);
 	if (!ok)
 		print("!error writing the store for " + code);
 	return ok;
@@ -113,14 +113,14 @@ function inventory_area(code)
 	fb.close();
 
 	totals.areas++;
-	var store = filecontents_read(code);
+	var store = contents.read_store(code);
 	var pending = {};
 	var npending = 0;
 
 	for (var i = 0; i < names.length; i++) {
 		if (opt.max && totals.extracted >= opt.max)
 			break;
-		if (!filecontents_is_archive(names[i])) {
+		if (!contents.is_archive(names[i])) {
 			totals.skipped++;
 			continue;
 		}
@@ -129,11 +129,11 @@ function inventory_area(code)
 			totals.missing++;
 			continue;
 		}
-		if (!opt.force && filecontents_current(store.files[names[i]], path)) {
+		if (!opt.force && contents.current(store.files[names[i]], path)) {
 			totals.current++;
 			continue;
 		}
-		var rec = filecontents_extract(path);
+		var rec = contents.extract(path);
 		totals.extracted++;
 		if (rec.err !== undefined) {
 			totals.failed++;

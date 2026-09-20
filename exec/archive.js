@@ -5,7 +5,7 @@
 
 "use strict";
 
-load("filecontents_lib.js");
+var contents = load({}, "filecontents_lib.js");
 
 var cmd = argv.shift();
 var verbose = 0;
@@ -70,13 +70,13 @@ function list(filename, verbose)
 	/* A stored listing holds only name, size and time, so verbose output (which
 	   prints CRC and compression format) still has to read the archive. */
 	if(!verbose) {
-		var rec = filecontents_list(filename);
+		var rec = contents.list(filename);
 		if(rec !== null && rec.err !== undefined) {
 			log(LOG_DEBUG, filename + " " + rec.err);
 			alert(file_getname(filename) + ": " + rec.err);
 			return;
 		}
-		list = filecontents_entries(rec);
+		list = contents.entries(rec);
 	}
 	if(list === null) {
 		try {
