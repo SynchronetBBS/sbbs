@@ -4513,17 +4513,19 @@ static int fastcgi_read_wait_timeout(void *arg)
 	}
 
 	if (socket_readable(cd->sock, startup->max_cgi_inactivity * 1000)) {
+		// A zero return means "not ready" to the caller, which re-polls with no
+		// delay; a dead socket stays readable, so failures must terminate. #1246
 		if (recv(cd->sock, (char *)&cd->header, offsetof(struct fastcgi_header, len), MSG_WAITALL) != offsetof(struct fastcgi_header, len)) {
 			errprintf(LOG_ERR, WHERE, "FastCGI failed to read header");
-			return ret;
+			return ret | CGI_PROCESS_TERMINATED;
 		}
 		if (cd->header.ver != FCGI_VERSION_1) {
 			errprintf(LOG_ERR, WHERE, "Unknown FastCGI version %d", cd->header.ver);
-			return ret;
+			return ret | CGI_PROCESS_TERMINATED;
 		}
 		if (htons(cd->header.id) != 1) {
 			errprintf(LOG_ERR, WHERE, "Unknown FastCGI session ID %d", htons(cd->header.id));
-			return ret;
+			return ret | CGI_PROCESS_TERMINATED;
 		}
 		switch (cd->header.type) {
 			case FCGI_STDOUT:
@@ -4547,7 +4549,7 @@ static int fastcgi_read_wait_timeout(void *arg)
 				// Read and discard the entire message...
 				body = fastcgi_read_body(cd->sock);
 				if (body == NULL)
-					return ret;
+					return ret | CGI_PROCESS_TERMINATED;
 				free(body);
 				break;
 			default:
@@ -4555,7 +4557,7 @@ static int fastcgi_read_wait_timeout(void *arg)
 				// Read and discard the entire message...
 				body = fastcgi_read_body(cd->sock);
 				if (body == NULL)
-					return ret;
+					return ret | CGI_PROCESS_TERMINATED;
 				free(body);
 				break;
 		}
