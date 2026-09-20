@@ -67,6 +67,17 @@ var MAX_AWAYLEN = 80;       /* Maximum away message length */
 var MAX_USERHOST = 6;       /* Maximum arguments to USERHOST command */
 var MAX_REALNAME = 50;      /* Maximum length of users real name field */
 
+/* The rehash semaphore is polled with a blocking stat(), so how often we
+   look at it is how often we're willing to block on ctrl_dir.  That dir is
+   not always local (SBBSCTRL can name a network share), and a wedged share
+   blocks the single-threaded callback engine along with everything else. */
+var REHASH_POLL_MSECS = 15000;     /* Normal ircd.rehash poll interval */
+var REHASH_POLL_MAX_MSECS = 300000;/* Backoff ceiling when ctrl_dir is slow */
+var REHASH_SLOW_SECS = 1;          /* A stat this slow means ctrl_dir is sick */
+
+var STALL_TICK_MSECS = 1000;       /* Event-loop watchdog tick */
+var STALL_THRESHOLD_SECS = 10;     /* A tick gap this big is a real stall */
+
 var SERVER_UPTIME = system.timer;
 var SERVER_UPTIME_STRF = strftime("%a %b %d %Y at %H:%M:%S %Z",Epoch());
 
@@ -155,12 +166,82 @@ Startup();
 js.do_callbacks = true;
 js.branch_limit = 0; /* Disable infinite loop detection */
 
+/* Polling the rehash semaphore means a blocking stat() of ctrl_dir on the
+   one thread that also services every socket.  When ctrl_dir lives on a
+   network share (SBBSCTRL can name one) and that share wedges, each poll
+   can block for minutes: the daemon stops answering PINGs and the entire
+   network splits off.  So poll at a leisurely interval, and back off
+   further -- up to REHASH_POLL_MAX_MSECS -- for as long as the stat itself
+   is slow, rather than piling into a dead filesystem once a second. */
+var Rehash_Poll_Msecs = REHASH_POLL_MSECS;
+
+function adjust_rehash_poll_interval(elapsed) {
+	if (elapsed >= REHASH_SLOW_SECS) {
+		if (Rehash_Poll_Msecs >= REHASH_POLL_MAX_MSECS)
+			return;
+		Rehash_Poll_Msecs = Math.min(
+			Rehash_Poll_Msecs * 2,
+			REHASH_POLL_MAX_MSECS
+		);
+		log(LOG_WARNING, format(
+			"Reading %sircd.rehash took %.1f seconds, "
+			+ "backing off to one check every %u seconds",
+			system.ctrl_dir,
+			elapsed,
+			Rehash_Poll_Msecs / 1000
+		));
+		return;
+	}
+	if (Rehash_Poll_Msecs == REHASH_POLL_MSECS)
+		return;
+	Rehash_Poll_Msecs = REHASH_POLL_MSECS;
+	log(LOG_NOTICE, format(
+		"%s is responsive again, resuming one check every %u seconds",
+		system.ctrl_dir,
+		Rehash_Poll_Msecs / 1000
+	));
+}
+
 function config_rehash_semaphore_check() {
-	if(file_date(system.ctrl_dir + "ircd.rehash") > Time_Config_Read) {
-		Read_Config_File();
+	/* Re-arm from finally: a throw out of Read_Config_File() must not be
+	   what stops us ever looking at the semaphore again. */
+	try {
+		var started = system.timer;
+		var semaphore_date = file_date(system.ctrl_dir + "ircd.rehash");
+
+		adjust_rehash_poll_interval(system.timer - started);
+		if (semaphore_date > Time_Config_Read)
+			Read_Config_File();
+	} finally {
+		js.setTimeout(config_rehash_semaphore_check, Rehash_Poll_Msecs);
 	}
 }
-js.setInterval(config_rehash_semaphore_check, 1000 /* milliseconds */);
+js.setTimeout(config_rehash_semaphore_check, Rehash_Poll_Msecs);
+
+/* Everything here runs on a single thread, so anything that blocks -- a
+   stat() of an unreachable ctrl_dir, a suspended machine, a long GC --
+   freezes every timer at once and every peer looks silent when we come
+   back.  Watch the gap between our own ticks so IRCClient_check_timeout()
+   can tell "the peer went away" from "we weren't running"; see
+   Stall_Generation in ircd/core.js. */
+var Last_Stall_Tick = system.timer;
+
+function stall_watchdog() {
+	var now = system.timer;
+	var gap = now - Last_Stall_Tick;
+
+	Last_Stall_Tick = now;
+	if (gap < STALL_THRESHOLD_SECS)
+		return;
+	Stall_Generation++;
+	log(LOG_WARNING, format(
+		"Callback engine stalled for %.1f seconds, "
+		+ "forgiving one ping round on every connection",
+		gap
+	));
+	gnotice(format("Server stalled for %.1f seconds.", gap));
+}
+js.setInterval(stall_watchdog, STALL_TICK_MSECS);
 
 /* When Synchronet's services subsystem (the Windows control panel, or
    sbbscon/the service manager on Linux) asks us to stop, it sets

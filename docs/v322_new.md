@@ -457,6 +457,18 @@
   reports (rather than dials) a `[Server]` section naming itself.
   Such a link exhausted the JavaScript stack and terminated the
   IRCd the moment it dropped
+- The IRCd no longer disconnects every link when the daemon itself
+  was what stopped responding: a blocked file operation, a
+  suspended machine or a very long garbage collection freezes all
+  of its timers at once, and every connection was then closed for
+  "Ping Timeout" on the way back. A stall is now detected and
+  logged (and reported to opers), and each connection gets one
+  more ping round to answer before it's closed
+- The IRCd checks the `ctrl/ircd.rehash` semaphore every 15
+  seconds rather than every second, and backs off further (up to
+  5 minutes) while `ctrl` is slow to answer. A `ctrl` directory on
+  a network share that stopped responding used to block the whole
+  daemon once a second, splitting every server off the network
 - `ircd.ini` supports the same `SYSTEM_HOST_NAME`, `SYSTEM_NAME`,
   `SYSTEM_QWKID` and `VERSION_NOTICE` macros as `ircd.conf`, and
   `ircd_conf2ini.js` and `ircdcfg.js` preserve them. Previously a

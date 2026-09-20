@@ -2821,14 +2821,37 @@ function IRCClient_setusermode(modestr) {
 	return bcast_modestr;
 }
 
+/* Bumped by the event-loop watchdog in ircd.js every time the callback
+   engine is found to have been stalled (blocking file I/O on a network
+   ctrl_dir, a suspended machine, a very long GC).  A stall freezes us, not
+   the network: an unanswered PING that spans one says nothing about the
+   peer, and killing every link over it turns a local hiccup into a
+   network-wide split. */
+var Stall_Generation = 0;
+
 function IRCClient_check_timeout() {
+	var now = system.timer;
+
+	if (this.stall_generation === undefined) {
+		this.stall_generation = Stall_Generation;
+	} else if (this.stall_generation !== Stall_Generation) {
+		this.stall_generation = Stall_Generation;
+		if (this.pinged) {
+			/* We were asleep, not ignored: restart this PING's clock and
+			   give the peer one more full round to answer.  Any PONG that
+			   arrived while we were stalled is still queued and will clear
+			   this before the next check. */
+			this.pinged = now;
+			return 0;
+		}
+	}
 	if (   !this.pinged
-		&& ((system.timer - this.idletime) > YLines[this.ircclass].pingfreq)
+		&& ((now - this.idletime) > YLines[this.ircclass].pingfreq)
 	) {
-		this.pinged = system.timer;
+		this.pinged = now;
 		this.rawout("PING :" + ServerName);
 	} else if (   this.pinged
-				&& ((system.timer - this.pinged) > YLines[this.ircclass].pingfreq)
+				&& ((now - this.pinged) > YLines[this.ircclass].pingfreq)
 	) {
 		this.quit(format("Ping Timeout (%d seconds)", YLines[this.ircclass].pingfreq));
 		return 1;
