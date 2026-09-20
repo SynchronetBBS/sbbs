@@ -5,6 +5,8 @@
 
 "use strict";
 
+load("filecontents_lib.js");
+
 var cmd = argv.shift();
 var verbose = 0;
 var json = false;
@@ -63,13 +65,27 @@ switch(cmd) {
 
 function list(filename, verbose)
 {
-	var list;
-	try {
-		 list = Archive(filename).list(Boolean(verbose));
-	} catch(e) {
-		log(LOG_DEBUG, filename + " " + e);
-		alert(file_getname(filename) + ": Unsupported archive");
-		return;
+	var list = null;
+
+	/* A stored listing holds only name, size and time, so verbose output (which
+	   prints CRC and compression format) still has to read the archive. */
+	if(!verbose) {
+		var rec = filecontents_list(filename);
+		if(rec !== null && rec.err !== undefined) {
+			log(LOG_DEBUG, filename + " " + rec.err);
+			alert(file_getname(filename) + ": " + rec.err);
+			return;
+		}
+		list = filecontents_entries(rec);
+	}
+	if(list === null) {
+		try {
+			 list = Archive(filename).list(Boolean(verbose));
+		} catch(e) {
+			log(LOG_DEBUG, filename + " " + e);
+			alert(file_getname(filename) + ": Unsupported archive");
+			return;
+		}
 	}
 
 	if(sort)
