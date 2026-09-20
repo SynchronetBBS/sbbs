@@ -132,6 +132,27 @@ stale = { t: "archive", sz: rec.sz, mt: rec.mt, xv: 0, l: [] };
 check(contents.current(stale, zip) === true,
       "an old extractor version does NOT invalidate a successful listing");
 
+/* ---- per-host extractor capability ---- */
+
+var tool = contents.external();
+check(tool.indexOf("lsar/") === 0,
+      "contents.external() finds lsar and its version (got '" + tool + "')");
+
+var noext = { t: "archive", sz: rec.sz, mt: rec.mt, xv: 1,
+              err: "Unrecognized archive format", ext: "" };
+check(contents.current(noext, zip) === false,
+      "a failure recorded by a host with no external tool is not trusted here");
+
+var sameext = { t: "archive", sz: rec.sz, mt: rec.mt, xv: 1,
+                err: "Unrecognized archive format", ext: tool };
+check(contents.current(sameext, zip) === true,
+      "a failure recorded with the same tool this host has is trusted");
+
+var otherext = { t: "archive", sz: rec.sz, mt: rec.mt, xv: 1,
+                 err: "Unrecognized archive format", ext: "someothertool" };
+check(contents.current(otherext, zip) === false,
+      "a failure recorded with a different tool is re-examined");
+
 /* ---- put outside a file area is a benign false ---- */
 
 check(contents.put("/tmp/not-in-an-area.zip", rec) === false,

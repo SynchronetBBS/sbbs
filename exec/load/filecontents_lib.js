@@ -34,6 +34,7 @@ var ARCHIVE_TYPES = ['zip', '7z', 'tgz', 'tar', 'gz', 'bz2',
 var dirmap = null;
 var held = {};
 var onexit_registered = false;
+var external_tool = null;
 
 function store_path(dircode)
 {
@@ -67,6 +68,47 @@ function fdate(path)
 function fexists(path)
 {
 	return new File(path).exists;
+}
+
+function tmpname()
+{
+	return system.temp_dir + "fc"
+	       + time().toString(36) + random(0x7fffffff).toString(36) + ".tmp";
+}
+
+// Which external lister this host has, or "" for none.
+//
+// The store is shared between hosts that do not necessarily have the same
+// tools installed, so a "cannot read this" verdict reached on a host with no
+// external lister must not be trusted by one that has it.  Recording the tool
+// alongside the verdict lets the better-equipped host notice and re-examine.
+//
+// Probe by redirecting stdout only: a missing command reports on stderr and
+// leaves the file empty, on both /bin/sh and cmd.exe.
+function external()
+{
+	if (external_tool !== null)
+		return external_tool;
+
+	var tmp = tmpname();
+	var text = "";
+
+	external_tool = "";
+	system.exec("lsar -v > \"" + tmp + "\"");
+	if (fexists(tmp) && fsize(tmp) > 0) {
+		var f = new File(tmp);
+		if (f.open("r")) {
+			text = f.read();
+			f.close();
+		}
+		// Include the version: hosts sharing a store can have builds years
+		// apart (1.8.1 and 1.10.8 are both in the wild), and a format the
+		// older one rejects may well be one the newer one reads.
+		var m = String(text).match(/v?(\d+(?:\.\d+)+)/);
+		external_tool = "lsar/" + (m === null ? "?" : m[1]);
+	}
+	file_remove(tmp);
+	return external_tool;
 }
 
 // Map an absolute file path back to the file area holding it.  archive.js is
@@ -185,8 +227,11 @@ function write_store(dircode, obj)
 	return file_rename(tmp, fname);
 }
 
-// A record is current when the file it describes has not changed and neither
-// the encoding nor (for a stored failure) the extractor set has moved on.
+// A record is current when the file it describes has not changed.  A stored
+// failure additionally has to have been reached under the same conditions this
+// host can offer: the same extractor set, and the same external tool.  A
+// verdict of "unreadable" from a host without an external lister says nothing
+// about a host that has one.
 function current(rec, path)
 {
 	if (rec === undefined || rec === null)
@@ -194,6 +239,8 @@ function current(rec, path)
 	if (rec.sz !== fsize(path) || rec.mt !== fdate(path))
 		return false;
 	if (rec.err !== undefined && rec.xv !== EXTRACTORS)
+		return false;
+	if (rec.err !== undefined && rec.ext !== external())
 		return false;
 	return true;
 }
@@ -250,6 +297,7 @@ function extract(path)
 		if (ext === null) {
 			rec.x = "libarchive";
 			rec.err = String(e).replace(/^Error:\s*/, "");
+			rec.ext = external();
 			return rec;
 		}
 		items = ext;
@@ -268,11 +316,10 @@ function extract(path)
 // runs through /bin/sh -c or cmd.exe /c, so redirection works on both.
 function extract_external(path)
 {
-	if (UNSAFE.test(path))
+	if (UNSAFE.test(path) || external() === "")
 		return null;
 
-	var tmp = system.temp_dir + "fc"
-	          + time().toString(36) + random(0x7fffffff).toString(36) + ".json";
+	var tmp = tmpname();
 	var items = null;
 
 	if (system.exec("lsar -j \"" + path + "\" > \"" + tmp + "\"") == 0
