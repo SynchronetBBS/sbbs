@@ -71,7 +71,7 @@ bool sbbs_t::batch_upload()
 /****************************************************************************/
 static const char* quoted_string(const char* str, char* buf, size_t maxlen)
 {
-	if (strchr(str, ' ') == NULL)
+	if (strcspn(str, SHELL_QUOTE_CHARS) == strlen(str))
 		return str;
 	safe_snprintf(buf, maxlen, "\"%s\"", str);
 	return buf;
