@@ -79,8 +79,8 @@ if (rec.l && rec.l.length)
 
 if (arc !== null) {
 	var arec = contents.extract(arc);
-	check(arec.x === "lsar",
-	      "arc fell back to lsar (got " + arec.x
+	check(arec.x.indexOf("lsar/") === 0,
+	      "arc fell back to a versioned lsar (got " + arec.x
 	      + (arec.err ? ", err=" + arec.err : "") + ")");
 	check(arec.err === undefined, "arc extracted without error");
 	check(arec.l !== undefined && arec.l.length > 0,

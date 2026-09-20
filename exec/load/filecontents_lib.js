@@ -301,7 +301,12 @@ function extract(path)
 			return rec;
 		}
 		items = ext;
-		rec.x = "lsar";
+		// Same identity string the failure path records, so a listing can be
+		// traced to the build that produced it: lsar returns a partial listing
+		// for a truncated archive rather than failing, and builds differ on
+		// where they draw that line.  libarchive exposes no version to JS, so
+		// the native path stays unqualified.
+		rec.x = external();
 	}
 
 	rec.l = [];
