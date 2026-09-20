@@ -1230,6 +1230,18 @@ void xfer_opts()
 						"If the protocol doesn't support a certain method of transfer, or you\n"
 						"don't wish it to be available for a certain method of transfer, leave\n"
 						"the command line for that method blank.\n"
+						"\n"
+						"In an upload or download command line, `%f` is the path of the file being\n"
+						"transferred.  In a batch upload command line, `%f` is the path of a\n"
+						"list-file naming the files the user has queued and `%g` is the directory\n"
+						"to receive them into.\n"
+						"\n"
+						"In a batch download command line, `%f` is the path of a list-file that\n"
+						"contains the full path of each queued file, one per line, and `%s`\n"
+						"expands to all of those paths on the command line itself, separated by\n"
+						"spaces (each quoted if it contains a space).  Prefer the list-file: the\n"
+						"expanded command line is truncated at 511 characters, so `%s` silently\n"
+						"drops files from a large batch.\n"
 					;
 					i = uifc.list(wmode, 0, 0, 34, &prot_dflt, &prot_bar, "File Transfer Protocols", opt);
 					if (i == -1)
