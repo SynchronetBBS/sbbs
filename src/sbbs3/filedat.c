@@ -1211,7 +1211,7 @@ char* prep_file_desc(const char* ext, char* dest)
 
 static const char* quoted_string(const char* str, char* buf, size_t maxlen)
 {
-	if (strchr(str, ' ') == NULL)
+	if (strcspn(str, SHELL_QUOTE_CHARS) == strlen(str))
 		return str;
 	safe_snprintf(buf, maxlen, "\"%s\"", str);
 	return buf;
@@ -1451,6 +1451,12 @@ bool allowed_filename(scfg_t* cfg, const char *fname)
 
 	size_t len = strlen(fname);
 	if (len < 1 || (cfg->filename_maxlen > 1 && len > cfg->filename_maxlen))
+		return false;
+
+	/* Unconditional: a name containing one of these survives the double-quotes	*/
+	/* cmdstr() puts around it and is still expanded by sh, so no amount of		*/
+	/* quoting makes it safe to substitute into a shell command line.			*/
+	if (strcspn(fname, SHELL_EXPANSION_CHARS) != len)
 		return false;
 
 	if (cfg->file_misc & FM_SAFEST)

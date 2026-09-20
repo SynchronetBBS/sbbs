@@ -416,6 +416,9 @@ void xfer_opts()
 					"    Filenames beginning or ending in period (`.`)\n"
 					"    Filenames containing consecutive periods (`..`)\n"
 					"    Filenames containing illegal characters (`" ILLEGAL_FILENAME_CHARS "`)\n"
+					/* SHELL_EXPANSION_CHARS spelled out: a back-tick can't appear	*/
+					/* in a helpbuf, where it toggles highlighting instead.			*/
+					"    Filenames containing a dollar-sign (`$`) or a back-tick\n"
 					"    Filenames containing control characters (ASCII 0-31 and 127)\n"
 				;
 				i = uifc.list(WIN_RHT, 0, 0, 0, &j, NULL, "Allowed Characters in Uploaded Filenames", opt);

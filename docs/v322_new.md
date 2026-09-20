@@ -52,6 +52,14 @@
   on every user record: `data/user/user.tab` is now read sequentially
   in bulk. With ~1,400 user slots and the data directory on an SMB
   share, this removed ~2,900 lock round-trips per count
+- Users can no longer upload filenames containing `$` or a back-tick: a
+  command shell expands both even inside the double-quotes Synchronet
+  puts around a filename passed to an external program
+- Filenames (and `%a` / `%o` values) substituted into an external
+  program's command line are now quoted when they contain any character
+  a command shell would interpret, not just a space. On Unix-like
+  systems those quotes are now honored when the program is run without
+  a shell, so such a filename reaches the program intact
 
 ## Servers
 

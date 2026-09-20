@@ -1881,13 +1881,33 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 			argv[2] = fullcmdline;
 			argv[3] = NULL;
 		} else {
-			argv[0] = fullcmdline;    /* point to the beginning of the string */
-			argc = 1;
-			for (i = 0; fullcmdline[i] && argc < MAX_ARGS; i++)    /* Break up command line */
-				if (fullcmdline[i] == ' ') {
-					fullcmdline[i] = 0;           /* insert nulls */
-					argv[argc++] = fullcmdline + i + 1; /* point to the beginning of the next arg */
+			// Break the command line up into arguments.  No shell is involved on
+			// this path, so the double-quotes cmdstr() puts around a substituted
+			// value containing SHELL_QUOTE_CHARS have to be honored and removed
+			// here -- left in, they'd reach the program as part of the filename.
+			// Runs of spaces are collapsed rather than yielding empty arguments.
+			char* rp = fullcmdline;
+			argc = 0;
+			while (*rp != '\0' && argc < MAX_ARGS) {
+				while (*rp == ' ')
+					rp++;
+				if (*rp == '\0')
+					break;
+				char* wp = rp;    // compacted in place: 'wp' never passes 'rp'
+				argv[argc++] = wp;
+				bool quoted = false;
+				while (*rp != '\0' && (quoted || *rp != ' ')) {
+					if (*rp == '"') {
+						quoted = !quoted;
+						rp++;
+						continue;
+					}
+					*wp++ = *rp++;
 				}
+				if (*rp != '\0')
+					rp++;         // step over the delimiting space
+				*wp = '\0';
+			}
 			argv[argc] = NULL;
 		}
 
@@ -2186,7 +2206,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 
 static const char* quoted_string(const char* str, char* buf, size_t maxlen)
 {
-	if (strchr(str, ' ') == NULL)
+	if (strcspn(str, SHELL_QUOTE_CHARS) == strlen(str))
 		return str;
 	safe_snprintf(buf, maxlen, "\"%s\"", str);
 	return buf;

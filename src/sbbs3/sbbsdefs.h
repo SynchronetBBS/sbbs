@@ -54,6 +54,16 @@
 #define MAX_FILEEXT_LEN         15
 #define ILLEGAL_FILENAME_CHARS  "\\/|<>:\";,%?*"
 #define SAFEST_FILENAME_CHARS   "-._0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+// Characters a command shell (sh or cmd.exe) would interpret in a substituted
+// command-line value, but does not interpret inside double-quotes: cmdstr()
+// quotes any value containing one of these.  Some are already illegal in a
+// filename; they're listed here for the values that aren't filenames (%a user
+// alias, %o sysop name).  '"' is absent because quoting cannot protect it --
+// it would end the quoted string instead.
+#define SHELL_QUOTE_CHARS       " \t&;,=^()<>|'*?[]{}~#"
+// Characters sh expands even INSIDE double-quotes, so cmdstr() quoting can't
+// neutralize them.  Kept out of uploaded filenames by allowed_filename().
+#define SHELL_EXPANSION_CHARS   "$`"
 
 #define BIND_FAILURE_HELP   "!Another application or service may be using this port"
 #define UNKNOWN_LOAD_ERROR  "Unknown load error - Library mismatch?"
