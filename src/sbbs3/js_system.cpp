@@ -2017,7 +2017,7 @@ js_sys_exec(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
-	ret = system(cmd);
+	ret = xp_system(cmd);
 	free(cmd);
 	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(ret));
@@ -2029,10 +2029,8 @@ static JSBool
 js_popen(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *    argv = JS_ARGV(cx, arglist);
-	char       str[1024];
 	char*      cmd = NULL;
-	FILE*      fp;
-	jsint      line = 0;
+	str_list_t output = NULL;
 	jsval      val;
 	JSObject*  array;
 	JSString*  js_str;
@@ -2053,29 +2051,18 @@ js_popen(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
-	if ((fp = popen(cmd, "r")) == NULL) {
-		free(cmd);
-		JS_RESUMEREQUEST(cx, rc);
-		return JS_TRUE;
-	}
+	xp_popen(cmd, &output);
 	free(cmd);
-	while (!feof(fp)) {
-		if (fgets(str, sizeof(str), fp) == NULL)
-			break;
-		JS_RESUMEREQUEST(cx, rc);
-		if ((js_str = JS_NewStringCopyZ(cx, str)) == NULL) {
-			rc = JS_SUSPENDREQUEST(cx);
-			break;
-		}
-		val = STRING_TO_JSVAL(js_str);
-		if (!JS_SetElement(cx, array, line++, &val)) {
-			rc = JS_SUSPENDREQUEST(cx);
-			break;
-		}
-		rc = JS_SUSPENDREQUEST(cx);
-	}
-	pclose(fp);
 	JS_RESUMEREQUEST(cx, rc);
+
+	for (jsint line = 0; output != NULL && output[line] != NULL; line++) {
+		if ((js_str = JS_NewStringCopyZ(cx, output[line])) == NULL)
+			break;
+		val = STRING_TO_JSVAL(js_str);
+		if (!JS_SetElement(cx, array, line, &val))
+			break;
+	}
+	strListFree(&output);
 
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
 
@@ -2551,8 +2538,8 @@ static jsSyncMethodSpec js_system_functions[] = {
 	 , JSDOCSTR("Execute a native system/shell command-line, returns <i>0</i> on success")
 	 , 311},
 	{"popen",           js_popen,           0,  JSTYPE_ARRAY,   JSDOCSTR("command-line")
-	 , JSDOCSTR("Execute a native system/shell command-line, returns array of captured output lines on success "
-		        "(<b>only functional on UNIX systems</b>)")
+	 , JSDOCSTR("Execute a native system/shell command-line, returns array of captured output lines "
+		        "(standard output only) on success")
 	 , 311},
 #ifndef JSDOOR
 	{"check_syspass",   js_chksyspass,      1,  JSTYPE_BOOLEAN, JSDOCSTR("password")

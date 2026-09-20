@@ -26,6 +26,7 @@
 #include <string.h>		/* strerror() */
 #include <time.h>		/* clock_t */
 #include "gen_defs.h"	/* ulong */
+#include "str_list.h"	/* str_list_t */
 #include "wrapdll.h"	/* DLLEXPORT and */
 
 #if defined(__unix__)
@@ -296,6 +297,13 @@ DLLEXPORT char*		truncnl(char* str);
 
 /* Re-entrant version of strerror() */
 DLLEXPORT char*		safe_strerror(int errnum, char* buf, size_t buflen);
+
+/* system(), without the console window it pops up on Windows */
+DLLEXPORT int		xp_system(const char* cmdline);
+
+/* popen(cmd, "r") read to EOF: captured output lines appended to *lines	*/
+/* (a str_list_t initialized to NULL), functional on Windows too			*/
+DLLEXPORT int		xp_popen(const char* cmdline, str_list_t* lines);
 
 /*********************/
 /* Utility Functions */

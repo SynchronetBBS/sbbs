@@ -1113,8 +1113,8 @@ bool extract_diz(scfg_t* cfg, file_t* f, str_list_t diz_fnames, char* path, size
 	char     files[512];
 	char     cmd[1024];
 	strListCombine(diz_fnames, files, sizeof files, " ");
-	// system() might return non-zero and still succeed in extracting *one* of the DIZ files:
-	if (system(cmdstr(cfg, /* user: */ NULL, fextr->cmd, archive, files, cmd, sizeof cmd)) != 0)
+	// The extractor might return non-zero and still succeed in extracting *one* of the DIZ files:
+	if (xp_system(cmdstr(cfg, /* user: */ NULL, fextr->cmd, archive, files, cmd, sizeof cmd)) != 0)
 		;
 	for (i = 0; diz_fnames[i] != NULL; i++) {
 		safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fnames[i]);

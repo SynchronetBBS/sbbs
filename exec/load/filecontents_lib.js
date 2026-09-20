@@ -70,12 +70,6 @@ function fexists(path)
 	return new File(path).exists;
 }
 
-function tmpname()
-{
-	return system.temp_dir + "fc"
-	       + time().toString(36) + random(0x7fffffff).toString(36) + ".tmp";
-}
-
 // Which external lister this host has, or "" for none.
 //
 // The store is shared between hosts that do not necessarily have the same
@@ -83,31 +77,23 @@ function tmpname()
 // external lister must not be trusted by one that has it.  Recording the tool
 // alongside the verdict lets the better-equipped host notice and re-examine.
 //
-// Probe by redirecting stdout only: a missing command reports on stderr and
-// leaves the file empty, on both /bin/sh and cmd.exe.
+// Probe by capturing stdout only: a missing command reports on stderr, which
+// system.popen() doesn't capture, so it simply yields nothing.
 function external()
 {
 	if (external_tool !== null)
 		return external_tool;
 
-	var tmp = tmpname();
-	var text = "";
+	var text = system.popen("lsar -v").join("");
 
 	external_tool = "";
-	system.exec("lsar -v > \"" + tmp + "\"");
-	if (fexists(tmp) && fsize(tmp) > 0) {
-		var f = new File(tmp);
-		if (f.open("r")) {
-			text = f.read();
-			f.close();
-		}
+	if (text.length > 0) {
 		// Include the version: hosts sharing a store can have builds years
 		// apart (1.8.1 and 1.10.8 are both in the wild), and a format the
 		// older one rejects may well be one the newer one reads.
-		var m = String(text).match(/v?(\d+(?:\.\d+)+)/);
+		var m = text.match(/v?(\d+(?:\.\d+)+)/);
 		external_tool = "lsar/" + (m === null ? "?" : m[1]);
 	}
-	file_remove(tmp);
 	return external_tool;
 }
 
@@ -316,43 +302,36 @@ function extract(path)
 	return rec;
 }
 
-// Redirect the tool's output to a file rather than using system.popen(), whose
-// _popen() needs a console and so fails inside a Windows service.  system.exec()
-// runs through /bin/sh -c or cmd.exe /c, so redirection works on both.
+// system.popen() captures the tool's stdout and nothing else: its complaints
+// about an archive it can't read go to stderr and stay out of the JSON, and
+// the command never gets a console window of its own on Windows.
 function extract_external(path)
 {
 	if (UNSAFE.test(path) || external() === "")
 		return null;
 
-	var tmp = tmpname();
+	var text = system.popen("lsar -j \"" + path + "\"").join("");
 	var items = null;
 
-	if (system.exec("lsar -j \"" + path + "\" > \"" + tmp + "\"") == 0
-	    && fexists(tmp)) {
-		var f = new File(tmp);
-		if (f.open("r")) {
-			var text = f.read();
-			f.close();
-			try {
-				var obj = JSON.parse(text);
-				if (obj !== null && obj.lsarContents !== undefined) {
-					items = [];
-					for (var i = 0; i < obj.lsarContents.length; i++) {
-						var e = obj.lsarContents[i];
-						items.push({
-							type: 'file',
-							name: e.XADFileName,
-							size: e.XADFileSize,
-							time: xaddate(e.XADLastModificationDate)
-						});
-					}
+	if (text.length > 0) {
+		try {
+			var obj = JSON.parse(text);
+			if (obj !== null && obj.lsarContents !== undefined) {
+				items = [];
+				for (var i = 0; i < obj.lsarContents.length; i++) {
+					var e = obj.lsarContents[i];
+					items.push({
+						type: 'file',
+						name: e.XADFileName,
+						size: e.XADFileSize,
+						time: xaddate(e.XADLastModificationDate)
+					});
 				}
-			} catch (e) {
-				log(LOG_DEBUG, "filecontents: unparsable lsar output for " + path);
 			}
+		} catch (e) {
+			log(LOG_DEBUG, "filecontents: unparsable lsar output for " + path);
 		}
 	}
-	file_remove(tmp);
 	return items;
 }
 

@@ -2903,21 +2903,16 @@ static void ctrl_thread(void* arg)
 		if (!strnicmp(cmd, "SITE EXEC ", 10) && sysop) {
 			p = cmd + 10;
 			SKIP_WHITESPACE(p);
-#ifdef __unix__
-			fp = popen(p, "r");
-			if (fp == NULL)
+			str_list_t output = NULL;
+			int result = xp_popen(p, &output);
+			if (result == -1)
 				sockprintf(sock, sess, "500 Error %d opening pipe to: %s", errno, p);
 			else {
-				while (!feof(fp)) {
-					if (fgets(str, sizeof(str), fp) == NULL)
-						break;
-					sockprintf(sock, sess, "200-%s", str);
-				}
-				sockprintf(sock, sess, "200 %s returned %d", p, pclose(fp));
+				for (size_t i = 0; output != NULL && output[i] != NULL; i++)
+					sockprintf(sock, sess, "200-%s", truncnl(output[i]));
+				sockprintf(sock, sess, "200 %s returned %d", p, result);
 			}
-#else
-			sockprintf(sock, sess, "200 system(%s) returned %d", p, system(p));
-#endif
+			strListFree(&output);
 			continue;
 		}
 

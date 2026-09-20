@@ -30,6 +30,7 @@
 #include <math.h>       /* fmod */
 
 #include "strwrap.h"        /* strdup */
+#include "str_list.h"       /* strListPush() */
 #include "ini_file.h"
 
 #if defined(__unix__)
@@ -1161,6 +1162,181 @@ char* safe_strerror(int errnum, char *buf, size_t buflen)
 	strerror_r(errnum, buf, buflen);
 #endif
 	return buf;
+}
+
+#ifdef _WIN32
+/* GetStdHandle(), normalized: NULL when the process has no such handle */
+static HANDLE std_handle(DWORD id)
+{
+	HANDLE h = GetStdHandle(id);
+
+	return h == INVALID_HANDLE_VALUE ? NULL : h;
+}
+#endif
+
+/****************************************************************************/
+/* Like system(), but without the console window that Windows creates for	*/
+/* a command-line run by a process with no console of its own (a service,	*/
+/* or a GUI app like sbbsctrl): the shell allocates one, so every command	*/
+/* flashes a window onto the sysop's desktop.								*/
+/* A caller that does have a console keeps using system(), whose child		*/
+/* inherits that console (and thus still writes its output there).			*/
+/****************************************************************************/
+int xp_system(const char* cmdline)
+{
+#ifdef _WIN32
+	if (GetConsoleWindow() == NULL) {
+		const char* comspec = getenv("COMSPEC");
+		if (comspec == NULL)
+			comspec = "cmd.exe";
+		size_t len = strlen(comspec) + strlen(cmdline) + 16;
+		char*  cmd = malloc(len);
+		if (cmd == NULL)
+			return -1;
+		/* /S: cmd.exe strips the outermost quote-pair and runs the rest
+		   verbatim, so any quoting or redirection within survives. */
+		snprintf(cmd, len, "\"%s\" /S /C \"%s\"", comspec, cmdline);
+		STARTUPINFOA si;
+		memset(&si, 0, sizeof si);
+		si.cb = sizeof si;
+		si.hStdInput = std_handle(STD_INPUT_HANDLE);
+		si.hStdOutput = std_handle(STD_OUTPUT_HANDLE);
+		si.hStdError = std_handle(STD_ERROR_HANDLE);
+		/* Redirected (rather than absent) standard handles have to be passed
+		   along, or the new console would swallow output that system() would
+		   have written to the caller's file or pipe. */
+		if (si.hStdInput != NULL || si.hStdOutput != NULL || si.hStdError != NULL)
+			si.dwFlags = STARTF_USESTDHANDLES;
+		PROCESS_INFORMATION pi;
+		memset(&pi, 0, sizeof pi);
+		/* Inherit handles, as system() does: a command-line can name a handle
+		   for the child to pick up (services.cpp hands a native service its
+		   socket that way). */
+		BOOL success = CreateProcessA(comspec, cmd, NULL, NULL, /* inherit: */ TRUE
+			, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+		free(cmd);
+		if (!success)
+			return -1;
+		DWORD exit_code = 0;
+		WaitForSingleObject(pi.hProcess, INFINITE);
+		GetExitCodeProcess(pi.hProcess, &exit_code);
+		CloseHandle(pi.hThread);
+		CloseHandle(pi.hProcess);
+		return (int)exit_code;
+	}
+#endif
+	return system(cmdline);
+}
+
+/****************************************************************************/
+/* Run a command and capture its standard output, appending one string per	*/
+/* line (the new-line included, as fgets() leaves it) to *lines, a string	*/
+/* list the caller initializes to NULL and frees with strListFree().		*/
+/* Returns the command's exit status (0 on success), or -1 if it could not	*/
+/* be run at all.															*/
+/*																			*/
+/* This is popen(cmd, "r"), read to EOF, pclose() -- except on Windows,		*/
+/* where it doesn't go through _popen(): that requires the calling process	*/
+/* to have a console of its own, and hangs (or fails) in one that doesn't,	*/
+/* e.g. a service or a GUI app.  Nor does it create a console window.		*/
+/****************************************************************************/
+int xp_popen(const char* cmdline, str_list_t* lines)
+{
+#ifdef _WIN32
+	SECURITY_ATTRIBUTES sa;
+	memset(&sa, 0, sizeof sa);
+	sa.nLength = sizeof sa;
+	sa.bInheritHandle = TRUE;   /* the child needs the write end */
+
+	HANDLE rd;
+	HANDLE wr;
+	if (!CreatePipe(&rd, &wr, &sa, 0))
+		return -1;
+	/* ... but not the read end, or the pipe would never report EOF. */
+	SetHandleInformation(rd, HANDLE_FLAG_INHERIT, 0);
+
+	const char* comspec = getenv("COMSPEC");
+	if (comspec == NULL)
+		comspec = "cmd.exe";
+	size_t len = strlen(comspec) + strlen(cmdline) + 16;
+	char*  cmd = malloc(len);
+	if (cmd == NULL) {
+		CloseHandle(rd);
+		CloseHandle(wr);
+		return -1;
+	}
+	/* /S: cmd.exe strips the outermost quote-pair and runs the rest
+	   verbatim, so any quoting or redirection within survives. */
+	snprintf(cmd, len, "\"%s\" /S /C \"%s\"", comspec, cmdline);
+
+	STARTUPINFOA si;
+	memset(&si, 0, sizeof si);
+	si.cb = sizeof si;
+	si.dwFlags = STARTF_USESTDHANDLES;
+	si.hStdInput = std_handle(STD_INPUT_HANDLE);
+	si.hStdOutput = wr;
+	/* popen(,"r") captures stdout only, leaving stderr to the parent's. */
+	si.hStdError = std_handle(STD_ERROR_HANDLE);
+	PROCESS_INFORMATION pi;
+	memset(&pi, 0, sizeof pi);
+	BOOL success = CreateProcessA(comspec, cmd, NULL, NULL, /* inherit: */ TRUE
+		, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+	free(cmd);
+	CloseHandle(wr);    /* the child holds the only write end now */
+	if (!success) {
+		CloseHandle(rd);
+		return -1;
+	}
+
+	char*  output = NULL;
+	size_t output_len = 0;
+	char   buf[4000];
+	DWORD  rd_len;
+	while (ReadFile(rd, buf, sizeof buf, &rd_len, NULL) && rd_len > 0) {
+		char* np = realloc_or_free(output, output_len + rd_len + 1);
+		if (np == NULL) {
+			output_len = 0;
+			break;
+		}
+		output = np;
+		memcpy(output + output_len, buf, rd_len);
+		output_len += rd_len;
+		output[output_len] = '\0';
+	}
+	CloseHandle(rd);
+
+	DWORD exit_code = -1;
+	WaitForSingleObject(pi.hProcess, INFINITE);
+	GetExitCodeProcess(pi.hProcess, &exit_code);
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+
+	char* p = output;
+	while (p != NULL && *p != '\0') {
+		char* eol = strchr(p, '\n');
+		if (eol == NULL) {
+			strListPush(lines, p);
+			break;
+		}
+		/* Keep the new-line with its line, then put back the first char of
+		   the next one. */
+		char save = *(eol + 1);
+		*(eol + 1) = '\0';
+		strListPush(lines, p);
+		*(eol + 1) = save;
+		p = eol + 1;
+	}
+	free(output);
+	return (int)exit_code;
+#else
+	FILE* fp = popen(cmdline, "r");
+	if (fp == NULL)
+		return -1;
+	char buf[1024];
+	while (fgets(buf, sizeof buf, fp) != NULL)
+		strListPush(lines, buf);
+	return pclose(fp);
+#endif
 }
 
 /****************************************************************************/

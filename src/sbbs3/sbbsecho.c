@@ -608,14 +608,14 @@ bool delfile(const char *filename, int line)
 }
 
 /****************************************************************************/
-/* Runs an external program directly using system()							*/
+/* Runs an external program directly using xp_system()						*/
 /****************************************************************************/
 int execute(char *cmdline)
 {
 	int retval;
 
 	lprintf(LOG_DEBUG, "Executing: %s", cmdline);
-	if ((retval = system(cmdline)) != 0)
+	if ((retval = xp_system(cmdline)) != 0)
 		lprintf(LOG_ERR, "ERROR executing '%s' system returned: %d, errno: %d (%s)"
 		        , cmdline, retval, errno, strerror(errno));
 

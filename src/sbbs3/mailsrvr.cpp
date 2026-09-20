@@ -3586,7 +3586,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 						if (mp->native) {
 							lprintf(LOG_DEBUG, "%04d %-5s %s Executing external command: %s"
 							        , socket, client.protocol, client_id, str);
-							if ((j = system(str)) != 0) {
+							if ((j = xp_system(str)) != 0) {
 								lprintf(LOG_NOTICE, "%04d %-5s %s system(%s) returned %d (errno: %d)"
 								        , socket, client.protocol, client_id, str, j, errno);
 								if (mp->ignore_on_error) {

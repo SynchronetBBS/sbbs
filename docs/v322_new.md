@@ -573,6 +573,10 @@
 - Windows: scripts using socket callbacks (`Socket.on()`,
   e.g. the IRC daemon) no longer stop accepting new connections
   once the process reaches 64 open sockets
+- `system.popen()` now works on Windows too (it previously
+  required the calling process to have a console of its own)
+- Windows: `system.exec()` no longer flashes a console window
+  onto the desktop when run from a server or `sbbsctrl.exe`
 - Windows: `Socket.error_str` now reports the actual error for
   errors with a long description (e.g. a connection timeout),
   rather than "Error 122 getting error description"

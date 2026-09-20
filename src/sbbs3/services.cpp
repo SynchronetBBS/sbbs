@@ -1533,7 +1533,7 @@ static void native_static_service_thread(void* arg)
 	SAFEPRINTF(fullcmd, cmd, socket_dup);
 
 	do {
-		int result = system(fullcmd);
+		int result = xp_system(fullcmd);
 		if (result != 0)
 			errprintf(LOG_ERR, WHERE, "%04d %s '%s' returned %d"
 			          , inst.socket, inst.service->protocol, fullcmd, result);
@@ -1677,7 +1677,7 @@ static void native_service_thread(void* arg)
 		SAFECOPY(cmd, service->cmd);
 	SAFEPRINTF(fullcmd, cmd, socket_dup);
 
-	int result = system(fullcmd);
+	int result = xp_system(fullcmd);
 	if (result != 0)
 		errprintf(LOG_ERR, WHERE, "%04d %s '%s' returned %d"
 		          , socket, service->protocol, fullcmd, result);
