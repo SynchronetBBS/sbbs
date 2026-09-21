@@ -279,6 +279,11 @@
 - Finger: forwarded requests (`user@host@target`) no longer
   answer with the wrong user (the name was being truncated by
   one character)
+- NNTP and IMAP: message text is no longer advertised as
+  `format=flowed` unless the message says it is, so a reader no
+  longer re-wraps hard-wrapped text or reflows its quoted blocks
+- A `format=` parameter on a part of a multi-part MIME message is
+  now honored (previously only a single-part message's was)
 - `websocketservice.js`: the file it writes beside each relayed
   connection now names the authenticated web session's user, not
   just the client's IP address, so the service behind the relay

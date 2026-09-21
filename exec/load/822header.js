@@ -124,8 +124,12 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 		}
 		if(content_type==undefined && default_content_type !== false) {
 			var charset = this.text_charset || (this.is_utf8 ? "UTF-8" : "IBM437");
-			this.rfc822 += "Content-Type: text/plain; charset=" + charset + "; ";
-			this.rfc822 += "format=" + ((this.auxattr & MSG_FIXED_FORMAT) ? "fixed" : "flowed") + "\r\n";
+			/* An omitted format parameter means "fixed" (RFC 3676), the safe claim
+			   for message text that was never generated as flowed */
+			this.rfc822 += "Content-Type: text/plain; charset=" + charset;
+			if(this.auxattr & MSG_FIXED_FORMAT)
+				this.rfc822 += "; format=fixed";
+			this.rfc822 += "\r\n";
 			this.rfc822 += "Content-Transfer-Encoding: 8bit\r\n";
 		}
 

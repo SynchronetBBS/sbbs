@@ -449,7 +449,8 @@ void smb_parse_content_type(const char* content_type, char** subtype, char** cha
    recursion, so that 'index' enumerates across nested containers rather than
    restarting at each level */
 static const char* mime_getpart(const char* buf, const char* content_type, const char* content_match
-                                , int depth, enum content_transfer_encoding* encoding, char** charset, char* attachment, size_t attachment_len, int index, int* found)
+                                , int depth, enum content_transfer_encoding* encoding, char** charset, uint32_t* auxattr
+                                , char* attachment, size_t attachment_len, int index, int* found)
 {
 	const char* txt;
 	char*       p;
@@ -526,19 +527,19 @@ static const char* mime_getpart(const char* buf, const char* content_type, const
 		const char* cp;
 		if ((match_len && strnicmp(content_type, match1, match_len) && strnicmp(content_type, match2, match_len))
 		    || (attachment != NULL && !mime_getattachment(txt, p, attachment, attachment_len))) {
-			if ((cp = mime_getpart(p, content_type, content_match, depth + 1, encoding, charset, attachment, attachment_len, index, found)) != NULL)
+			if ((cp = mime_getpart(p, content_type, content_match, depth + 1, encoding, charset, auxattr, attachment, attachment_len, index, found)) != NULL)
 				return cp;
 			continue;
 		}
 		if ((*found)++ != index) {
-			if ((cp = mime_getpart(p, content_type, content_match, depth + 1, encoding, charset, attachment, attachment_len, index, found)) != NULL)
+			if ((cp = mime_getpart(p, content_type, content_match, depth + 1, encoding, charset, auxattr, attachment, attachment_len, index, found)) != NULL)
 				return cp;
 			continue;
 		}
 		if (encoding != NULL)
 			*encoding = mime_getxferencoding(txt, p);
-		if (charset != NULL)
-			smb_parse_content_type(content_type, NULL, charset, NULL);
+		if (charset != NULL || auxattr != NULL)
+			smb_parse_content_type(content_type, NULL, charset, auxattr);
 
 		txt = p + 4;    // strlen("\r\n\r\n")
 		SKIP_WHITESPACE(txt);
@@ -561,11 +562,11 @@ char* smb_getplaintext(smbmsg_t* msg, char* buf)
 		return NULL;
 	if (strStartsWith_i(msg->content_type, "multipart/") > 0) {
 		int found = 0;
-		txt = mime_getpart(buf, msg->content_type, "text/plain", 0, &xfer_encoding, &msg->text_charset
+		txt = mime_getpart(buf, msg->content_type, "text/plain", 0, &xfer_encoding, &msg->text_charset, &msg->hdr.auxattr
 		                   , /* attachment: */ NULL, /* attachment_len: */ 0, /* index: */ 0, &found);
 		if (txt == NULL) {
 			found = 0;
-			txt = mime_getpart(buf, msg->content_type, "text/html", 0, &xfer_encoding, &msg->text_charset
+			txt = mime_getpart(buf, msg->content_type, "text/html", 0, &xfer_encoding, &msg->text_charset, &msg->hdr.auxattr
 			                   , /* attachment: */ NULL, /* attachment_len: */ 0, /* index: */ 0, &found);
 			if (txt == NULL)
 				return NULL;
@@ -613,7 +614,7 @@ uint8_t* smb_getattachment(smbmsg_t* msg, char* buf, char* filename, size_t file
 		return NULL;
 	if (strStartsWith_i(msg->content_type, "multipart/") > 0) {
 		int found = 0;
-		txt = mime_getpart(buf, msg->content_type, /* match-type: */ NULL, 0, &xfer_encoding, /* charset: */ NULL
+		txt = mime_getpart(buf, msg->content_type, /* match-type: */ NULL, 0, &xfer_encoding, /* charset: */ NULL, /* auxattr: */ NULL
 		                   , /* attachment: */ filename, filename_len, index, &found);
 		if (txt != NULL && *txt && xfer_encoding == CONTENT_TRANFER_ENCODING_BASE64) {
 			size_t len = strlen(txt);

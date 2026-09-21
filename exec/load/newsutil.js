@@ -134,7 +134,10 @@ function write_news_header(hdr,writeln)
 					break;
 			}
 		}
-		writeln("Content-Type: text/plain; charset=" + charset + "; format=" + ((hdr.auxattr & MSG_FIXED_FORMAT) ? "fixed" : "flowed"));
+		/* An omitted format parameter means "fixed" (RFC 3676), the safe claim
+		   for message text that was never generated as flowed */
+		writeln("Content-Type: text/plain; charset=" + charset
+			+ ((hdr.auxattr & MSG_FIXED_FORMAT) ? "; format=fixed" : ""));
 		writeln("Content-Transfer-Encoding: 8bit");
 	}
 }
