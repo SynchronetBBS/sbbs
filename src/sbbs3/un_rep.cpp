@@ -506,8 +506,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 					            , cfg.grp[cfg.sub[n]->grp]->sname, cfg.sub[n]->lname);
 					putsmsg(destuser, str);
 				}
-				if (!(useron.rest & UREST_QWK_NODE))
+				if (!(useron.rest & UREST_QWK_NODE)) {
+					char topic[128];
+					snprintf(topic, sizeof(topic), "post/%s", cfg.sub[n]->code);
+					snprintf(str, sizeof(str), "%u\t%s\t%u\t%u\t%s\t%s"
+					         , useron.number, useron.alias, useron.ptoday, useron.posts, msg.to, msg.subj);
+					mqtt_pub_timestamped_msg(mqtt, TOPIC_BBS_ACTION, topic, time(NULL), str);
 					user_event(EVENT_POST);
+				}
 				tmsgs++;
 			} else {
 				if (dupe)
