@@ -1,0 +1,23 @@
+# Locally built door binaries (not tracked; built via build.sh / build.bat)
+/syncdrive
+/syncdrive.exe
+
+# Live sysop-edited config, seeded from syncdrive.example.ini by install-xtrn.
+/syncdrive.ini
+
+# Sysop-supplied Test Drive (1987) game data, installed by getdata.js.
+# Test Drive is commercial content and is not shipped with this door.
+/TDEGA.EXE
+/tdega.exe
+/CARS.TXT
+/cars.txt
+/TDSND.SND
+/tdsnd.snd
+/SCORES
+/scores
+*.PES
+*.pes
+*.BIN
+*.bin
+*.SS
+*.ss

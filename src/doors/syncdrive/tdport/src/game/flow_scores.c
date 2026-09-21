@@ -7,6 +7,7 @@
 #include "../platform/input.h"
 #include "../platform/res.h"
 #include "../platform/timer.h"
+#include "host_term_ext.h"   /* SYNCDRIVE: alias + SCORES lock (PROVENANCE.md) */
 
 /* 0x12DB high_scores — game_flow.md §4 (verified) */
 int high_scores(s32 new_score)
@@ -14,14 +15,28 @@ int high_scores(s32 new_score)
     /* original: char names[160], cars[160]; long scores[8] (uninitialised stack). One spare row here. */
     char names[9 * 20], cars[9 * 20];
     s32 scores[9];
+    char name[20];
     memset(names, 0, sizeof names);
     memset(cars, 0, sizeof cars);
     memset(scores, 0, sizeof scores);
 
     scores_load(names, scores, cars);
-    if (new_score > scores[7]) {                         /* signed 32-bit, strictly greater */
-        scores_enter_name(new_score, DSS(DS_g_selectedCar), names, scores, cars);
-        scores_save(names, scores, cars);
+    if (new_score > scores[7]) {
+        /* SYNCDRIVE: take the name first, then re-read, insert and save under a lock, so two nodes
+         * qualifying at once both land in the table (PROVENANCE.md patch 1). */
+        scores_get_name(new_score, DSS(DS_g_selectedCar), name);
+        if (name[0] != 0) {
+            host_scores_lock();
+            memset(names, 0, sizeof names);
+            memset(cars, 0, sizeof cars);
+            memset(scores, 0, sizeof scores);
+            scores_load(names, scores, cars);
+            if (new_score > scores[7]) {
+                scores_insert(name, new_score, DSS(DS_g_selectedCar), names, scores, cars);
+                scores_save(names, scores, cars);
+            }
+            host_scores_unlock();
+        }
     }
     int r = scores_show(names, scores, cars);
     if (r == -1) r = credits_show();
@@ -64,11 +79,10 @@ void scores_load(char *names, s32 *scores, char *cars)
     }
 }
 
-/* 0x1482 scores_enter_name — game_flow.md §4 (verified against disassembly 0x1482-0x162D) */
-void scores_enter_name(s32 score, int car, char *names, s32 *scores, char *cars)
+/* 0x1482 scores_enter_name, split by SYNCDRIVE into scores_get_name + scores_insert (PROVENANCE.md patch 1) */
+void scores_get_name(s32 score, int car, char *name)
 {
-    char name[20];
-    memset(name, 0, sizeof name);
+    memset(name, 0, 20);
     gfx_clear_screen(0);
     snd_play_oneshot(far_rd(DGROUP, DS_g_songHiScore));
     gfx_select_target(gfx_screen_desc());
@@ -79,21 +93,33 @@ void scores_enter_name(s32 score, int car, char *names, s32 *scores, char *cars)
     draw_text_centered(DSTR(EGA_CGA(0x30E, 0x304)), 0xA0);                /* "of Test Drive's best drivers." */
     gfx_draw_text(DSTR(EGA_CGA(0x32C, 0x322)), 0x14, 0xB4);               /* "Enter your name:" */
     draw_rect_outline(0xAC, 0xAF, 0x13C, 0xBE, 0xFF);     /* colour 0xFFFF */
-    text_input_line(name, 15, 0xB8, 0xB4, 3000);
-    if (name[0] != 0) {
-        int i, j;
-        for (i = 0; i < 8; i++)
-            if (scores[i] < score) break;                 /* hi signed, lo unsigned = signed long < */
-        for (j = 6; j >= i; j--) {
-            strncpy(names + (j + 1) * 20, names + j * 20, 20);
-            strncpy(cars + (j + 1) * 20, cars + j * 20, 20);
-            scores[j + 1] = scores[j];
-        }
-        strncpy(names + i * 20, name, 20);
-        strncpy(cars + i * 20, flow_car_name(car), 20);
-        scores[i] = score;
+    if (host_player_name()[0] != 0) {
+        /* SYNCDRIVE: the caller's BBS alias, not editable */
+        strncpy(name, host_player_name(), 19);
+        gfx_draw_text(name, 0xB8, 0xB4);
+        kbd_flush();
+        set_deadline(300);                                /* 3 s at 100 Hz, or any key */
+        menu_key();
+    } else {
+        text_input_line(name, 15, 0xB8, 0xB4, 3000);
     }
     snd_stop_oneshot();
+    (void)score;
+}
+
+void scores_insert(const char *name, s32 score, int car, char *names, s32 *scores, char *cars)
+{
+    int i, j;
+    for (i = 0; i < 8; i++)
+        if (scores[i] < score) break;                     /* hi signed, lo unsigned = signed long < */
+    for (j = 6; j >= i; j--) {
+        strncpy(names + (j + 1) * 20, names + j * 20, 20);
+        strncpy(cars + (j + 1) * 20, cars + j * 20, 20);
+        scores[j + 1] = scores[j];
+    }
+    strncpy(names + i * 20, name, 20);
+    strncpy(cars + i * 20, flow_car_name(car), 20);
+    scores[i] = score;
 }
 
 /* 0x162E scores_save — game_flow.md §4 (verified) */

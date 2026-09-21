@@ -15,4 +15,14 @@
 
 ## Local patches
 
-None yet.
+1. `src/game/flow_scores.c`: `scores_enter_name()` split into
+   `scores_get_name()` and `scores_insert()`. With a BBS alias
+   (`host_player_name()`), the name box shows the alias, which cannot be
+   edited, flushes keys still queued from driving (`kbd_flush()`) so they
+   cannot skip the screen instantly, and waits for a key or 3 seconds.
+   `scores_get_name()` stops the qualifying jingle (`snd_stop_oneshot()`)
+   before returning, so it always runs before the locked save. `high_scores()`
+   takes the name first, then re-reads SCORES, inserts if the score still
+   qualifies, and saves, all under `host_scores_lock()`, so concurrent
+   sessions do not overwrite each other. Without an alias the original editor
+   is used.

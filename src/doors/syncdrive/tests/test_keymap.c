@@ -40,7 +40,7 @@ int main(void)
 	r = DOWN(TERMGFX_KEY_PAGEDOWN, 0, 0);
 	assert(r.bios == 0x5100 && r.xt == 0x51);
 	r = DOWN(TERMGFX_KEY_KP5, 0, 0);
-	assert(r.bios == 0x4C00 && r.xt == 0);
+	assert(r.bios == 0x4C00 && r.xt == 0x4C);
 
 	/* A release carries only the scan code, for the held-key table. */
 	r = UP(TERMGFX_KEY_UP, 0, 0);
@@ -69,12 +69,26 @@ int main(void)
 	assert(DOWN('!', '!', TERMGFX_MOD_SHIFT).bios == 0x0221);
 	assert(DOWN('.', '.', 0).bios == 0x342E);
 	assert(DOWN('?', '?', TERMGFX_MOD_SHIFT).bios == 0x353F);
-	assert(DOWN(TERMGFX_KEY_F1, 0, 0).bios == 0x3B00);
+	assert(DOWN(TERMGFX_KEY_F3, 0, 0).bios == 0x3D00);
 	assert(DOWN(TERMGFX_KEY_F9, 0, 0).bios == 0x4300);
 
-	/* Ctrl letters: the game's Ctrl-P pause and Ctrl-K pass through. */
+	/* Ctrl letters: the game's Ctrl-P pause passes through. */
 	assert(DOWN('p', 0, TERMGFX_MOD_CTRL).bios == 0x1910);
-	assert(DOWN('k', 0, TERMGFX_MOD_CTRL).bios == 0x250B);
+
+	/* F1 and Ctrl-K open the door's help card; neither reaches the game
+	 * (the game's Ctrl-K only leaves joystick mode, which is disabled). */
+	r = DOWN(TERMGFX_KEY_F1, 0, 0);
+	assert(r.bios == 0 && r.action == KEYMAP_ACT_HELP);
+	r = DOWN('k', 0, TERMGFX_MOD_CTRL);
+	assert(r.bios == 0 && r.action == KEYMAP_ACT_HELP);
+	r = UP(TERMGFX_KEY_F1, 0, 0);
+	assert(r.action == KEYMAP_ACT_NONE);
+
+	/* A release with Ctrl/Alt still held must still clear the held-key
+	 * table entry for 'a'/'z' (the held scan code is set before the
+	 * Ctrl/Alt early return, not after it). */
+	r = UP('a', 0, TERMGFX_MOD_CTRL);
+	assert(r.xt == 0x1E && r.bios == 0 && r.down == 0);
 
 	/* Door keys: F2 sound toggle, Ctrl-F fit toggle; neither reaches the game. */
 	r = DOWN(TERMGFX_KEY_F2, 0, 0);

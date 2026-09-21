@@ -30,6 +30,7 @@ cdf8d1a767d559db559a0b829e1bb3b0.
 
 Split the sixel capture on DCS ... ST and convert each with
 `convert sixel:<file> <png>` to look at the frames. This script runs the
-Accolade logo, the "Accolade presents" card with the car reveal, and settles
-on the car-select spec screen (the last frames show a car with its stats
-table) before quitting.
+Accolade logo, the "Accolade presents" card with the car reveal, and the
+car-select spec screen (a car with its stats table, around frame 150); the
+last `enter` selects that car, so the final frames show it driving off before
+the script quits.

@@ -38,7 +38,11 @@ static void read_ini(int *frame_rate)
 	ini = iniReadFile(f);
 	fclose(f);
 	iniGetString(ini, "input", "held_keys", "auto", val);
-	host_set_held_keys_allowed(strcmp(val, "off") != 0);
+	if (stricmp(val, "off") == 0 || stricmp(val, "false") == 0
+	    || stricmp(val, "no") == 0 || stricmp(val, "0") == 0) {
+		host_set_held_keys_allowed(false);
+		fputs("syncdrive: held-key driving off (syncdrive.ini)\n", stderr);
+	}
 	*frame_rate = iniGetInteger(ini, "game", "frame_rate", *frame_rate);
 	strListFree(&ini);
 }
@@ -84,6 +88,7 @@ int main(int argc, char **argv)
 		if (termgfx_door32_is_path(argv[i]) && termgfx_door32_read(argv[i], &d) == 0)
 			host_set_player_name(d.alias);
 	}
+	fputs("syncdrive: key-repeat driving until the terminal reports a key release\n", stderr);
 	read_ini(&frame_rate);
 	host_set_data_dir(data != NULL ? data : game);
 	if (!host_init(game, 1))

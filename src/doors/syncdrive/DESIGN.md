@@ -84,6 +84,7 @@ src/doors/syncdrive/
     host_term.c         implements tdport's host.h on termgfx_termio
     host_term_ext.h     door-only host calls used by the score patch (sec. 8)
     keymap.c/.h         termgfx key events -> XT scan-code key words
+    help_card.c/.h      F1 / Ctrl-K key-help card, drawn as text over the frame
     keyscript.c/.h      SYNCDRIVE_KEYS key script for headless test runs
     alias.c/.h          BBS alias -> the game's 15-character name field
     frame.c/.h          XRGB frame -> indexed 320x200 + palette
@@ -158,11 +159,14 @@ neither costs bandwidth nor resets the idle clock.
 | Enter, Esc, Backspace, printable ASCII | scan code + ASCII, for menus and text entry |
 | F2 | toggles the game's sound (injects the game's Ctrl-Q / Ctrl-S) |
 | Ctrl-F | door key: toggles true-aspect / fill fit (`termgfx_termio_fit_cycle()`), as in SyncConquer and SyncSCUMM |
+| F1, Ctrl-K | door key: the help card, as in SyncSCUMM; the game is frozen while it is up |
 
 - termgfx reserves Ctrl-S (stats bar) and Ctrl-Q / Ctrl-C (quit), so the game's
   own sound keys cannot reach it; F2 replaces them.
 - Ctrl-J (the game's switch to joystick control) is dropped: `host_joy_read()`
-  always reports no joystick. Ctrl-K (keyboard control) is harmless and passes.
+  always reports no joystick. Ctrl-K (the game's switch back to keyboard
+  control) would do nothing with the joystick disabled, so it opens the help
+  card instead.
 - Ctrl-P (the game's pause) passes through; termio does not reserve it.
 - **Held keys.** `host_xt_key_down()` answers from a held-key table fed by
   KEY_DOWN / KEY_UP events. The door starts in the original key-repeat mode
@@ -227,9 +231,12 @@ terminal probe, so the probed screen size includes the reclaimed row, and
 restores the status-line type it read back from the terminal when the door
 exits. A terminal without a status line ignores the sequence. The door adds
 nothing for this.
-Door-only argv entries are stripped with `termgfx_termio_consumed()` before the
-engine's options (`--frame-rate`, `--bios-keys`) are parsed. `--check` runs
-the loader alone and exits, for `getdata.js`.
+The door's own `main()` parses `--game-dir=`, `--data-dir=`, and `--check`
+directly; any other argv entry is ignored, and the engine itself takes none.
+The engine's frame rate and held-key behavior are not argv options at all:
+they come from `syncdrive.ini` (`[game] frame_rate`, `[input] held_keys`),
+read by `read_ini()` before `host_init()`. `--check` runs the loader alone and
+exits, for `getdata.js`.
 
 Door settings, `syncdrive.ini` (template `syncdrive.example.ini`): termio's
 standard keys (`sixel_max`, `[audio]`), plus `[input] held_keys = auto|off`

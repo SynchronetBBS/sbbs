@@ -17,6 +17,7 @@ add_executable(syncdrive ${TD_SOURCES}
 	door/host_term.c
 	door/frame.c
 	door/keymap.c
+	door/help_card.c
 	door/keyscript.c
 	door/speaker.c
 	door/alias.c

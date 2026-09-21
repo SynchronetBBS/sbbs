@@ -16,6 +16,7 @@
 
 #include "alias.h"
 #include "frame.h"
+#include "help_card.h"
 #include "host_term_ext.h"
 #include "keymap.h"
 #include "keyscript.h"
@@ -149,20 +150,57 @@ static void kbd_push(u16 key)
 	kbd_tail          = next;
 }
 
+/* The help card: the game is frozen while it is up (no ticks, no frames), and
+ * the tick and frame clocks skip the paused time so nothing catches up. */
+static void help_modal(void)
+{
+	termgfx_input_event_t ev;
+	uint32_t              t0 = termgfx_plat_now_ms();
+	uint32_t              paused;
+
+	help_card_show();
+	for (;;) {
+		termgfx_termio_pump();
+		if (termgfx_termio_hung_up() || termgfx_termio_quit_requested())
+			exit(0);
+		if (termgfx_termio_next_event(&ev)) {
+			if (ev.type == TERMGFX_EV_KEY_DOWN)
+				break;
+			continue;
+		}
+		termgfx_plat_sleep_ms(10);
+	}
+	memset(held, 0, sizeof held);
+	paused          = termgfx_plat_now_ms() - t0;
+	clock_start_ms += paused;
+	if (next_frame_ms != 0)
+		next_frame_ms += paused;
+	help_card_dismiss();
+	termgfx_termio_present(frame_idx, frame_pal);
+}
+
 static void handle_key(const termgfx_input_event_t *ev)
 {
 	keymap_result_t r = keymap_translate(ev);
 
+	if (ev->type == TERMGFX_EV_KEY_UP && held_keys_allowed && !held_keys) {
+		held_keys = true;         /* this terminal reports releases */
+		fputs("syncdrive: held-key driving on (terminal reports key releases)\n", stderr);
+		/* Keys pressed on the legacy (no-release) path before this
+		 * negotiation never got a release; without this they would
+		 * read as held forever. */
+		memset(held, 0, sizeof held);
+	}
 	if (r.xt != 0 && r.xt < 128)
 		held[r.xt] = r.down != 0;
-	if (!r.down && held_keys_allowed)
-		held_keys = true;         /* this terminal reports releases */
 	if (r.bios != 0)
 		kbd_push(r.bios);
 	if (r.action == KEYMAP_ACT_SOUND_TOGGLE)
 		kbd_push(keymap_sound_toggle_key((DSB(DS_snd_flags) & 4) != 0));
 	else if (r.action == KEYMAP_ACT_FIT_CYCLE)
 		termgfx_termio_fit_cycle();
+	else if (r.action == KEYMAP_ACT_HELP)
+		help_modal();
 }
 
 static void run_script(uint32_t now)
@@ -248,6 +286,14 @@ bool host_joy_read(s16 *x, s16 *y, u8 *buttons)
 
 /* ------------------------------------------------------------ audio */
 
+static void audio_flush(void)
+{
+	if (pcm_frames == 0)
+		return;
+	termgfx_termio_audio_stream(pcm, pcm_frames);
+	pcm_frames = 0;
+}
+
 static void audio_for_one_tick(void)
 {
 	size_t n;
@@ -260,17 +306,11 @@ static void audio_for_one_tick(void)
 	n         = (size_t)pcm_frac;
 	pcm_frac -= (double)n;
 	if (pcm_frames + n > sizeof pcm / sizeof pcm[0] / 2)
-		n = sizeof pcm / sizeof pcm[0] / 2 - pcm_frames;
+		audio_flush();
+	if (n > sizeof pcm / sizeof pcm[0] / 2)
+		n = sizeof pcm / sizeof pcm[0] / 2;
 	speaker_render(&spk, pcm + pcm_frames * 2, n);
 	pcm_frames += n;
-}
-
-static void audio_flush(void)
-{
-	if (pcm_frames == 0)
-		return;
-	termgfx_termio_audio_stream(pcm, pcm_frames);
-	pcm_frames = 0;
 }
 
 void host_speaker(u16 divisor, bool on)

@@ -41,7 +41,8 @@ int   credits_show(void);                                           /* 0x186E */
 /* ---- flow_scores.c */
 int   high_scores(s32 new_score);                                   /* 0x12DB */
 void  scores_load(char *names, s32 *scores, char *cars);            /* 0x1369 */
-void  scores_enter_name(s32 score, int car, char *names, s32 *scores, char *cars); /* 0x1482 */
+void  scores_get_name(s32 score, int car, char *name);                            /* 0x1482 */
+void  scores_insert(const char *name, s32 score, int car, char *names, s32 *scores, char *cars);
 void  scores_save(char *names, s32 *scores, char *cars);            /* 0x162E */
 int   scores_show(char *names, s32 *scores, char *cars);            /* 0x16D7 */
 

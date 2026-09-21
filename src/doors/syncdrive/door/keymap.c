@@ -33,13 +33,14 @@ static void special(keymap_result_t *r, int keycode)
 		case TERMGFX_KEY_END:       r->bios = 0x4F00; r->xt = 0x4F; break;
 		case TERMGFX_KEY_PAGEUP:    r->bios = 0x4900; r->xt = 0x49; break;
 		case TERMGFX_KEY_PAGEDOWN:  r->bios = 0x5100; r->xt = 0x51; break;
-		case TERMGFX_KEY_KP5:       r->bios = 0x4C00; break;
+		case TERMGFX_KEY_KP5:       r->bios = 0x4C00; r->xt = 0x4C; break;
 		case TERMGFX_KEY_INSERT:    r->bios = 0x5200; break;
 		case TERMGFX_KEY_DELETE:    r->bios = 0x5300; break;
 		case TERMGFX_KEY_ENTER:     r->bios = 0x1C0D; break;
 		case TERMGFX_KEY_ESCAPE:    r->bios = 0x011B; break;
 		case TERMGFX_KEY_BACKSPACE: r->bios = 0x0E08; break;
 		case TERMGFX_KEY_TAB:       r->bios = 0x0F09; break;
+		case TERMGFX_KEY_F1:        r->action = KEYMAP_ACT_HELP; break;
 		case TERMGFX_KEY_F2:        r->action = KEYMAP_ACT_SOUND_TOGGLE; break;
 		default:
 			if (keycode >= TERMGFX_KEY_F1 && keycode <= TERMGFX_KEY_F9)
@@ -57,9 +58,13 @@ static void printable(keymap_result_t *r, int keycode, int ascii, int mods)
 		int     i    = lower - 'a';
 		uint8_t scan = letter_scan[i];
 
+		if (lower == 'a' || lower == 'z')
+			r->xt = scan;
 		if (mods & TERMGFX_MOD_CTRL) {
 			if (lower == 'f')
 				r->action = KEYMAP_ACT_FIT_CYCLE;
+			else if (lower == 'k')
+				r->action = KEYMAP_ACT_HELP;
 			else if (lower != 'j')
 				r->bios = (uint16_t)(scan << 8 | (i + 1));
 			return;
@@ -69,8 +74,6 @@ static void printable(keymap_result_t *r, int keycode, int ascii, int mods)
 			return;
 		}
 		r->bios = (uint16_t)(scan << 8 | (uint8_t)(ascii ? ascii : keycode));
-		if (lower == 'a' || lower == 'z')
-			r->xt = scan;
 		return;
 	}
 	for (k = 0; k < sizeof char_scan / sizeof char_scan[0]; k++) {

@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include "termgfx_termio.h"
 
-enum { KEYMAP_ACT_NONE, KEYMAP_ACT_SOUND_TOGGLE, KEYMAP_ACT_FIT_CYCLE };
+enum { KEYMAP_ACT_NONE, KEYMAP_ACT_SOUND_TOGGLE, KEYMAP_ACT_FIT_CYCLE, KEYMAP_ACT_HELP };
 
 typedef struct {
 	uint16_t bios;
