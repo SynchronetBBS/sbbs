@@ -396,7 +396,7 @@ void smb_parse_content_type(const char* content_type, char** subtype, char** cha
 		char* format;
 		if (auxattr != NULL &&
 		    ((format = strcasestr(p, " format=")) != NULL
-		     || (format = strcasestr(p, ";foramt=")) != NULL
+		     || (format = strcasestr(p, ";format=")) != NULL
 		     || (format = strcasestr(p, "\tformat=")) != NULL)) {
 			bool quoted = false;
 			format += 8;
