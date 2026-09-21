@@ -20,10 +20,42 @@ the sysop-facing side (installing, supplying the game data, controls).
 
 ## Build and test
 
+### Linux / Unix
+
 ```
 ./build.sh            # configure, build, run unit tests
 ./build/syncdrive --check --game-dir=game
 ```
+
+### Windows (MSVC)
+
+```
+build.bat            :: Win32 release + unit tests
+build.bat clean      :: wipe the build tree first, then build
+build-msvc\Release\syncdrive.exe --check --game-dir=game
+```
+
+The binary lands in `build-msvc\Release\`. Needs Visual Studio 2022
+(`build.bat` finds the bundled CMake if none is on `PATH`) and, for sound,
+libsndfile from a classic-mode vcpkg prefix at
+`C:\vcpkg\installed\x86-windows-static-md` -- `vcpkg install
+libsndfile:x86-windows-static-md`. It is not optional in the way the siblings'
+JPEG-XL tier is: the speaker PCM is generated in-process, but termgfx streams
+it to SyncTERM as Ogg/Opus, and without libsndfile that encoder is a stub and
+every chunk is dropped, so the door runs silent. Absent the prefix, `build.bat`
+warns and builds on. No libjxl is looked for -- this door serves the sixel tier
+only. As on *nix, building does not deploy, and `jsexec deploy.js` installs
+what was built.
+
+**Win32 (x86) is the one supported Windows target.** A Win32 door runs on both
+a Win32 and a Win64 Synchronet host -- the DOOR32.SYS comm handle is
+32-bit-significant and crosses the process-bitness boundary fine -- so one
+Win32 binary covers every Windows BBS. The code is 64-bit-clean, so
+`cmake -A x64` still compiles, but no x64 binary is shipped or tested.
+
+The high-score lock test needs a second process contending for the lock and
+uses `fork()`, so it is built and run on *nix only; the other five unit tests
+run on both platforms.
 
 Dev game data lives in `game/` (gitignored). Fetch it from
 https://archive.org/download/TestDrive_1987/Test%20Drive.zip; TDEGA.EXE md5

@@ -28,13 +28,63 @@ target_include_directories(syncdrive BEFORE PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/
 target_include_directories(syncdrive PRIVATE ${TDPORT} ${CMAKE_CURRENT_SOURCE_DIR}/door)
 set_target_properties(syncdrive PROPERTIES LINKER_LANGUAGE CXX)
 
-# tdport reads multi-byte values through byte pointers (see its mem.h).
-set_source_files_properties(${TD_SOURCES} PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-w")
-target_compile_options(syncdrive PRIVATE -Wall -Wextra)
+# The vendored engine compiles warning-free-by-fiat (-w / /w): it is frozen, so
+# a warning there is not actionable.  GCC/Clang additionally need
+# -fno-strict-aliasing, because tdport reads multi-byte values through byte
+# pointers (see its mem.h); MSVC has no equivalent switch and needs none.
+# (Our own sources keep MSVC's default /W3, which is why only the vendored ones
+# are given a flag here; cl then reports a cosmetic D9025 for the override.)
+if(MSVC)
+	set_source_files_properties(${TD_SOURCES} PROPERTIES COMPILE_OPTIONS "/w")
+else()
+	set_source_files_properties(${TD_SOURCES} PROPERTIES COMPILE_OPTIONS "-fno-strict-aliasing;-w")
+	target_compile_options(syncdrive PRIVATE -Wall -Wextra)
+endif()
+
+# ---------------------------------------------------------------------------
+# MSVC / Windows.  Win32 (x86) is the one supported Windows target -- see
+# build.bat's header for why.  The door's platform difference is all inside
+# termgfx + xpdev, so this is only the CRT quiets, the Winsock link and the
+# symbol-map flags, mirroring ../syncmoo1 and ../syncretro.
+# ---------------------------------------------------------------------------
+if(MSVC)
+	target_compile_definitions(syncdrive PRIVATE
+		_CRT_SECURE_NO_WARNINGS          # fopen/strcpy/snprintf "use the _s variant"
+		_CRT_NONSTDC_NO_DEPRECATE        # open/close/strdup POSIX names
+		_WINSOCK_DEPRECATED_NO_WARNINGS) # inet_addr et al. reached via sockwrap.h
+
+	# Winsock: the door's DOOR32.SYS handle is a SOCKET (see termgfx_termio.c).
+	target_link_libraries(syncdrive ws2_32)
+
+	# /MAP leaves a symbol map beside the binary, so procdump+cdb can symbolize
+	# a crash dump; /OPT:REF,/OPT:ICF keep the optimizations /DEBUG would
+	# otherwise disable (cf. syncmoo1/syncretro).  /Zi and /DEBUG bite only in a
+	# configuration other than Release|Win32: for that one,
+	# src/Directory.Build.targets -- auto-imported into every vcxproj under src/,
+	# this build's generated ones included -- suppresses PDBs, to keep mspdbsrv
+	# out of the toolchain.
+	target_compile_options(syncdrive PRIVATE /Zi)
+	target_link_options(syncdrive PRIVATE /MAP /DEBUG /OPT:REF /OPT:ICF)
+endif()
 
 # termgfx without WITH_JXL: sixel only (DESIGN.md sec. 1).
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../termgfx termgfx)
 target_link_libraries(syncdrive termgfx)
+
+# libsndfile is not optional for SOUND here, whatever termgfx's own status line
+# says: the speaker PCM goes out through termgfx's audio stream, whose Ogg/Opus
+# encoder is a stub without it, and a chunk that will not encode is dropped
+# (termgfx/audio_stream.c).  Silent door, no other symptom -- so say so at
+# configure time.  MSVC only: there find_package(CONFIG) is the one detection
+# path termgfx has, so its result here is the same answer termgfx got.
+if(MSVC)
+	find_package(SndFile CONFIG QUIET)
+	if(NOT SndFile_FOUND)
+		message(WARNING "syncdrive: libsndfile not found -- the door will build and run, SILENT. "
+		                "Install it (vcpkg install libsndfile:x86-windows-static-md) and point "
+		                "CMAKE_PREFIX_PATH at the prefix, as build.bat does.")
+	endif()
+endif()
 
 if("${CMAKE_PROJECT_NAME}" STREQUAL "${PROJECT_NAME}")
 	set(WITHOUT_CRYPTO ON CACHE BOOL "" FORCE)
@@ -45,7 +95,10 @@ if("${CMAKE_PROJECT_NAME}" STREQUAL "${PROJECT_NAME}")
 	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev xpdev EXCLUDE_FROM_ALL)
 endif()
 target_include_directories(syncdrive PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
-target_link_libraries(syncdrive xpdev m pthread ${CMAKE_DL_LIBS})
+target_link_libraries(syncdrive xpdev)
+if(NOT WIN32)
+	target_link_libraries(syncdrive m pthread ${CMAKE_DL_LIBS})
+endif()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../build/SynchronetMacros.cmake)
 synchronet_gitinfo(syncdrive)

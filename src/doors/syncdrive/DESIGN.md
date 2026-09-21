@@ -91,7 +91,7 @@ src/doors/syncdrive/
     speaker.c/.h        PIT divisor + gate -> band-limited square-wave PCM
     scores_lock.c       cross-process lock around the SCORES merge
   tests/                unit tests for the door/ modules
-  CMakeLists.txt  build.sh  deploy.js   (Windows build.bat: follow-up)
+  CMakeLists.txt  build.sh  build.bat  deploy.js
   PROVENANCE.md  CLAUDE.md  README.md
 xtrn/syncdrive/
   install-xtrn.ini  getdata.js  README.md  syncdrive.example.ini

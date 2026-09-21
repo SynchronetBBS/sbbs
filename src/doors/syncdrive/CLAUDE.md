@@ -14,8 +14,15 @@ by `door/host_term.c`. Pure logic goes in its own `door/*.c` with a test in
 
 ## Build and test
 
-    ./build.sh            # configure, build, run unit tests
+    ./build.sh            # Linux/Unix: configure, build, run unit tests
     ./build/syncdrive --check --game-dir=game
+    build.bat             :: Windows: Win32 MSVC release + unit tests
+
+Our code has to compile under GCC/Clang **and** MSVC (the vendored `tdport/`
+already does). Reach POSIX facilities through the xpdev wrappers --
+`stricmp()` from `genwrap.h`, `open`/`xp_lockfile` from `filewrap.h`, paths
+from `dirwrap.h` -- rather than including `<strings.h>` or `<unistd.h>`, and
+leave clock/sleep/socket I/O to termgfx, which already carries that seam.
 
 Dev game data lives in `game/` (gitignored). Fetch it from
 https://archive.org/download/TestDrive_1987/Test%20Drive.zip; TDEGA.EXE md5

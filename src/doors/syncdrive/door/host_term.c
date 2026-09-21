@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 #include "host.h"
 #include "mem.h"
@@ -13,6 +12,7 @@
 #include "termgfx_termio.h"
 #include "termgfx_plat.h"
 #include "dirwrap.h"
+#include "genwrap.h"
 
 #include "alias.h"
 #include "frame.h"
@@ -398,7 +398,7 @@ char *host_game_path(const char *name, bool create)
 {
 	char path[2048];
 
-	if (strcasecmp(name, "SCORES") == 0) {
+	if (stricmp(name, "SCORES") == 0) {
 		snprintf(path, sizeof path, "%s/SCORES", data_dir);
 		if (create || fexist(path))
 			return strdup(path);

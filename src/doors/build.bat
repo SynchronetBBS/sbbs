@@ -196,7 +196,7 @@ rem   msbuild  an MSVC solution named by SLN_<name>, built with MSBuild
 rem
 rem Order does not matter: every door vendors what it needs.
 :targets
-set "TARGETS=syncconquer syncdoom syncduke syncmoo1 syncretro syncrpg syncscumm clans"
+set "TARGETS=syncconquer syncdoom syncdrive syncduke syncmoo1 syncretro syncrpg syncscumm clans"
 for %%T in (%TARGETS%) do (
     set "KIND_%%T=bat"
     set "DIR_%%T=%%T"

@@ -423,6 +423,12 @@
 - New: **SyncArcade** (`xtrn/syncarcade`) — arcade classics via
   MAME 2003-Plus, with high scores shared by every caller the
   way a real cabinet's are
+- New: **Test Drive** (`xtrn/syncdrive`) — Accolade's 1987
+  sports-car racing classic as a door, rendered over the terminal
+  as sixel graphics with PC-speaker sound and high scores shared
+  by every caller. Builds and runs on both Linux and Windows
+  (Win32). The original DOS game data is sysop-supplied, not
+  shipped
 - New: **Avatar Chat** — avatar-first conversations with
   optional ANSI-art send/view and MOTD support
 - New: `typemd.js` and `load/md2asc.js` — Markdown viewer that
