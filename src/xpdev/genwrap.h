@@ -305,6 +305,13 @@ DLLEXPORT int		xp_system(const char* cmdline);
 /* (a str_list_t initialized to NULL), functional on Windows too			*/
 DLLEXPORT int		xp_popen(const char* cmdline, str_list_t* lines);
 
+/* popen(), portably: connects a stream to the command's standard			*/
+/* output ("r"), its input ("w") or both ("r+"), 'b' appended for binary.	*/
+/* *child receives a token for xp_pipe_close(), which closes the stream		*/
+/* and waits for the command to exit, returning its status as pclose() does	*/
+DLLEXPORT FILE*		xp_pipe_open(const char* cmdline, const char* mode, intptr_t* child);
+DLLEXPORT int		xp_pipe_close(FILE* fp, intptr_t child);
+
 /*********************/
 /* Utility Functions */
 /*********************/

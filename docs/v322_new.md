@@ -579,6 +579,9 @@
   once the process reaches 64 open sockets
 - `system.popen()` now works on Windows too (it previously
   required the calling process to have a console of its own)
+- `File.popen()` now works on Windows too, and its bidirectional
+  (`'r+'`) mode — which glibc's `popen()` rejects — now works on
+  Linux; `close()` waits for the command to exit
 - Windows: `system.exec()` no longer flashes a console window
   onto the desktop when run from a server or `sbbsctrl.exe`
 - Windows: `Socket.error_str` now reports the actual error for

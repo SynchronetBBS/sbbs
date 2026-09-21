@@ -48,7 +48,8 @@ typedef struct
 	BOOL uuencoded;
 	BOOL b64encoded;
 	BOOL network_byte_order;
-	BOOL pipe;          /* Opened with popen() use pclose() to close */
+	BOOL pipe;          /* Opened with xp_pipe_open(): xp_pipe_close() to close */
+	intptr_t pipe_child;
 	ini_style_t ini_style;
 
 } private_t;
@@ -193,6 +194,21 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+/* Close the stream, waiting for the command to exit if it is a pipe */
+static int close_file(private_t* p)
+{
+	int result;
+
+	if (p->pipe)
+		result = xp_pipe_close(p->fp, p->pipe_child);
+	else
+		result = fclose(p->fp);
+	p->fp = NULL;
+	p->pipe = FALSE;
+	p->pipe_child = 0;
+	return result;
+}
+
 static JSBool
 js_popen(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -228,7 +244,7 @@ js_popen(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	p->fp = popen(p->name, p->mode);
+	p->fp = xp_pipe_open(p->name, p->mode, &p->pipe_child);
 	if (p->fp != NULL) {
 		p->pipe = TRUE;
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
@@ -260,14 +276,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-#ifdef __unix__
-	if (p->pipe)
-		pclose(p->fp);
-	else
-#endif
-	fclose(p->fp);
-
-	p->fp = NULL;
+	close_file(p);
 	dbprintf(FALSE, p, "closed: %s", p->name);
 
 	JS_RESUMEREQUEST(cx, rc);
@@ -2211,10 +2220,8 @@ js_delete(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if (p->fp != NULL) {   /* close it if it's open */
-		fclose(p->fp);
-		p->fp = NULL;
-	}
+	if (p->fp != NULL)     /* close it if it's open */
+		close_file(p);
 
 	rc = JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(remove(p->name) == 0));
@@ -2929,7 +2936,9 @@ static jsSyncMethodSpec js_file_functions[] = {
 		        "<tt>r&nbsp</tt> read the programs stdout;<br>"
 		        "<tt>w&nbsp</tt> write to the programs stdin<br>"
 		        "<tt>r+</tt> open for both reading stdout and writing stdin<br>"
-		        "(<b>only functional on UNIX systems</b>)"
+		        "Append <tt>b</tt> to the mode for binary (no new-line translation).<br>"
+		        "In <tt>'r+'</tt> mode, call <tt>flush()</tt> between writing and reading.<br>"
+		        "<tt>close()</tt> waits for the command to exit."
 		        )
 	 , 315},
 	{"close",           js_close,           0,  JSTYPE_VOID,    JSDOCSTR("")
@@ -3083,7 +3092,7 @@ static void js_finalize_file(JSContext *cx, JSObject *obj)
 		return;
 
 	if (p->fp != NULL)
-		fclose(p->fp);
+		close_file(p);
 
 	dbprintf(FALSE, p, "finalized: %s", p->name);
 
