@@ -11,7 +11,7 @@
 - Build shim: compat/SDL3/SDL.h maps the SDL calls in tdport/src/mem.c to
   libc, so mem.c compiles unedited.
 - The game data (TDEGA.EXE, *.PES, ...) is not part of upstream or of this
-  door; sysops supply it (xtrn/testdrive/getdata.js).
+  door; sysops supply it (xtrn/syncdrive/getdata.js).
 
 ## Local patches
 

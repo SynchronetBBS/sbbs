@@ -22,7 +22,7 @@ high-score entry and merges the table under a cross-process lock.
 
 ## Global Constraints
 
-- Binary `syncdrive`; package dir `xtrn/testdrive/`; door name passed to
+- Binary `syncdrive`; package dir `xtrn/syncdrive/`; door name passed to
   termio: `termgfx_termio_set_app_name("syncdrive")`.
 - Engine: upstream `https://github.com/kylofon/test-drive-sdl3` at commit
   `a4d23077770fcc2cae81680fe4e3fd73163c0915` (2026-09-18), MIT. Vendored
@@ -87,7 +87,7 @@ src/doors/syncdrive/
     CMakeLists.txt
     test_frame.c  test_keymap.c  test_keyscript.c  test_speaker.c
     test_alias.c  test_scores_lock.c
-xtrn/testdrive/
+xtrn/syncdrive/
   install-xtrn.ini  getdata.js  README.md  syncdrive.example.ini
 src/doors/build.sh               add the syncdrive row
 ```
@@ -2061,7 +2061,7 @@ If the process hangs to the 60 s timeout, a busy-wait loop is not reaching
 - Build shim: compat/SDL3/SDL.h maps the SDL calls in tdport/src/mem.c to
   libc, so mem.c compiles unedited.
 - The game data (TDEGA.EXE, *.PES, ...) is not part of upstream or of this
-  door; sysops supply it (xtrn/testdrive/getdata.js).
+  door; sysops supply it (xtrn/syncdrive/getdata.js).
 
 ## Local patches
 
@@ -2292,11 +2292,11 @@ Replace "None yet." in `PROVENANCE.md` with:
 
 ---
 
-### Task 7: Package: xtrn/testdrive, deploy.js, README
+### Task 7: Package: xtrn/syncdrive, deploy.js, README
 
 **Files:**
-- Create: `xtrn/testdrive/install-xtrn.ini`, `xtrn/testdrive/getdata.js`,
-  `xtrn/testdrive/README.md`, `xtrn/testdrive/syncdrive.example.ini`,
+- Create: `xtrn/syncdrive/install-xtrn.ini`, `xtrn/syncdrive/getdata.js`,
+  `xtrn/syncdrive/README.md`, `xtrn/syncdrive/syncdrive.example.ini`,
   `src/doors/syncdrive/deploy.js`, `src/doors/syncdrive/README.md`
 
 **Interfaces:**
@@ -2311,7 +2311,7 @@ Replace "None yet." in `PROVENANCE.md` with:
 //
 //     jsexec src/doors/syncdrive/deploy.js
 //
-// xtrn.ini launches the binary directly (see xtrn/testdrive/install-xtrn.ini),
+// xtrn.ini launches the binary directly (see xtrn/syncdrive/install-xtrn.ini),
 // so it must be FLAT in the door dir. SpiderMonkey 1.8.5.
 //
 // Copyright(C) 2026 Rob Swindell. GPL-2.0.
@@ -2321,7 +2321,7 @@ load("door_deploy.js");
 exit(door_deploy({
 	name:   "syncdrive",
 	srcdir: js.exec_dir,
-	xtrn:   "testdrive",
+	xtrn:   "syncdrive",
 	subdir: false,
 	direct_launch: true
 }));
@@ -2329,10 +2329,10 @@ exit(door_deploy({
 
 - [ ] **Step 2: install-xtrn.ini**
 
-`xtrn/testdrive/install-xtrn.ini`:
+`xtrn/syncdrive/install-xtrn.ini`:
 ```ini
 ; Test Drive (syncdrive) installer data for install-xtrn.js
-;   jsexec install-xtrn ../xtrn/testdrive
+;   jsexec install-xtrn ../xtrn/syncdrive
 
 Name: Test Drive
 Desc: Accolade's 1987 sports-car racing classic, as a graphical BBS door. Requires a sixel-capable graphics terminal (e.g. SyncTERM).
@@ -2342,12 +2342,12 @@ Subs: Racing, Driving
 Inst: 2026/09/18
 
 ; The door: a native binary with raw socket I/O, fed the DOOR32.SYS drop file
-; (%f). The high-score table lives in data/testdrive/ (%j = the data dir),
+; (%f). The high-score table lives in data/syncdrive/ (%j = the data dir),
 ; shared by every node. startup_dir is left unset, so the door runs from this
 ; directory, where the game data is installed.
-[prog:TESTDRIV]
+[prog:SYNCDRIVE]
 name          = Test Drive
-cmd           = syncdrive%. %f --data-dir=%jtestdrive/
+cmd           = syncdrive%. %f --data-dir=%jsyncdrive/
 type          = XTRN_DOOR32
 settings      = XTRN_NATIVE | XTRN_BIN | XTRN_MULTIUSER | XTRN_NODISPLAY
 execution_ars = ANSI
@@ -2359,16 +2359,16 @@ dest = syncdrive.ini
 ; The original Test Drive data is commercial content and is NOT shipped with
 ; this door. Drop your copy (the zip, the loose files, or a game folder) into
 ; this directory; getdata.js installs the files it needs. Re-runnable:
-;     jsexec ../xtrn/testdrive/getdata.js
+;     jsexec ../xtrn/syncdrive/getdata.js
 [exec:getdata.js]
 note     = Test Drive needs its original DOS game files (you supply them -- not shipped).
-prompt   = Install the Test Drive game data now from a copy placed in the testdrive door directory?
+prompt   = Install the Test Drive game data now from a copy placed in the syncdrive door directory?
 required = false
 ```
 
 - [ ] **Step 3: syncdrive.example.ini**
 
-`xtrn/testdrive/syncdrive.example.ini`:
+`xtrn/syncdrive/syncdrive.example.ini`:
 ```ini
 ; syncdrive.ini -- Test Drive door settings. Copied from syncdrive.example.ini
 ; by the installer; edit the copy.
@@ -2394,7 +2394,7 @@ frame_rate = 8
 
 - [ ] **Step 4: getdata.js**
 
-`xtrn/testdrive/getdata.js`:
+`xtrn/syncdrive/getdata.js`:
 ```js
 // getdata.js -- install Test Drive (1987) game data for the syncdrive door
 // from a copy the sysop placed in the door directory. Downloads nothing.
@@ -2402,10 +2402,10 @@ frame_rate = 8
 // Accepts: the loose files in the door dir, files in a subfolder (an
 // extracted game folder), or an archive (.zip etc.) in the door dir. Copies
 // TDEGA.EXE, CARS.TXT, TDSND.SND, *.PES, *.BIN, *.SS, verifies with
-// `syncdrive --check`, and seeds data/testdrive/SCORES from the copy's SCORES
+// `syncdrive --check`, and seeds data/syncdrive/SCORES from the copy's SCORES
 // when there is no high-score table yet.
 //
-//     jsexec ../xtrn/testdrive/getdata.js
+//     jsexec ../xtrn/syncdrive/getdata.js
 //
 // SpiderMonkey 1.8.5. Copyright (C) 2026 Rob Swindell. GPL-2.0.
 
@@ -2522,7 +2522,7 @@ function main()
 		print("Test Drive is commercial content and is NOT shipped with this door.");
 		print("Put your copy (the zip, the loose files, or the game folder) in:");
 		print("    " + dir);
-		print("and re-run:  jsexec ../xtrn/testdrive/getdata.js");
+		print("and re-run:  jsexec ../xtrn/syncdrive/getdata.js");
 		return 1;
 	}
 
@@ -2539,7 +2539,7 @@ function main()
 		print("  jsexec src/doors/syncdrive/deploy.js); skipping the TDEGA.EXE check.");
 	}
 
-	scores_dir = backslash(system.data_dir + "testdrive");
+	scores_dir = backslash(system.data_dir + "syncdrive");
 	if (!file_exists(scores_dir + "SCORES") && file_exists(dir + "SCORES")) {
 		mkpath(scores_dir);
 		if (file_copy(dir + "SCORES", scores_dir + "SCORES"))
@@ -2556,29 +2556,29 @@ if (typeof SYNCDRIVE_GETDATA_NO_MAIN == "undefined")
 - [ ] **Step 5: Try getdata.js against a scratch door dir**
 
 ```bash
-d=$(mktemp -d)/testdrive/ && mkdir -p "$d"
-cp ~/sbbs/xtrn/testdrive/getdata.js "$d"
+d=$(mktemp -d)/syncdrive/ && mkdir -p "$d"
+cp ~/sbbs/xtrn/syncdrive/getdata.js "$d"
 cp ~/sbbs/src/doors/syncdrive/build/syncdrive "$d"
 curl -sSL -o "$d/Test Drive.zip" 'https://archive.org/download/TestDrive_1987/Test%20Drive.zip'
 /sbbs/exec/jsexec -n "$d/getdata.js"; echo "rc=$?"; ls "$d"
 ```
 Expected: extracted files listed, `rc=0`, `Success`. Note: the seeding step
-writes the live `data/testdrive/SCORES` only if absent; to avoid touching the
-live install here, run it before `data/testdrive/` exists only if you intend
+writes the live `data/syncdrive/SCORES` only if absent; to avoid touching the
+live install here, run it before `data/syncdrive/` exists only if you intend
 to seed it, else temporarily comment out the seeding and restore it. Run the
 script a second time: it must again end in `Success` without re-copying.
 Then `rm -rf` the scratch dir.
 
 - [ ] **Step 6: README files**
 
-`xtrn/testdrive/README.md`: sysop-facing, describing behavior, not source
+`xtrn/syncdrive/README.md`: sysop-facing, describing behavior, not source
 files (no C function names). Sections: what the door is; requirements
 (sixel terminal, SyncTERM recommended); installing (`jsexec install-xtrn
-../xtrn/testdrive`, where to put the game data, that it is not shipped and
+../xtrn/syncdrive`, where to put the game data, that it is not shipped and
 where the verified copy came from); controls table (arrows/keypad steer and
 shift through the gear gate, A/Z shift, Esc quits a drive, Ctrl-P pause, F2
 sound on/off, Ctrl-F fit to screen / true aspect, Ctrl-S stats, Ctrl-Q quit
-the door); the shared high-score table in `data/testdrive/SCORES` named by
+the door); the shared high-score table in `data/syncdrive/SCORES` named by
 BBS alias; `syncdrive.ini` settings. Plain ASCII punctuation.
 
 `src/doors/syncdrive/README.md`: developer-facing: what the door is, a link to
@@ -2598,10 +2598,10 @@ to `/sbbs`).
 Ask the user to run, from `~/sbbs/src/doors/syncdrive`:
 ```
 jsexec deploy.js
-jsexec install-xtrn ../xtrn/testdrive
+jsexec install-xtrn ../xtrn/syncdrive
 ```
-and to place the Test Drive zip in `xtrn/testdrive/` before the installer's
-data step (or re-run `jsexec ../xtrn/testdrive/getdata.js` afterwards).
+and to place the Test Drive zip in `xtrn/syncdrive/` before the installer's
+data step (or re-run `jsexec ../xtrn/syncdrive/getdata.js` afterwards).
 
 - [ ] **Step 2: Live checklist (with the user, SyncTERM 80x25)**
 
@@ -2611,7 +2611,7 @@ data step (or re-run `jsexec ../xtrn/testdrive/getdata.js` afterwards).
   key is held, gear shifts with A/Z.
 - Crash, police chase, stage results.
 - High-score entry shows the alias in the box and cannot be edited; the entry
-  appears in `data/testdrive/SCORES`.
+  appears in `data/syncdrive/SCORES`.
 - F2 toggles sound; PC-speaker sound is clean (no clicks at note edges).
 - Ctrl-F toggles 614x384 (bars) and 640x384 (fill); the user picks the default.
 - Ctrl-S stats bar; Ctrl-P pause; Ctrl-Q quits back to the BBS prompt.
@@ -2633,14 +2633,14 @@ not listed there, add nothing.
 ```bash
 cd ~/sbbs
 git diff --cached --stat          # must be empty or only our paths
-git add src/doors/syncdrive xtrn/testdrive
+git add src/doors/syncdrive xtrn/syncdrive
 cat > /tmp/syncdrive-msg2 <<'EOF'
 syncdrive: shared high scores under the BBS alias; installable package
 
 Split the high-score entry so the name box shows the caller's BBS alias
 (not editable) and the table is re-read, merged and written under a lock
-on data/testdrive/SCORES.lck, so sessions that qualify at the same time do
-not overwrite each other. Add xtrn/testdrive: the installer data, a
+on data/syncdrive/SCORES.lck, so sessions that qualify at the same time do
+not overwrite each other. Add xtrn/syncdrive: the installer data, a
 getdata.js that installs a sysop-supplied copy of the original game files
 and verifies TDEGA.EXE, and the sysop README.
 
@@ -2653,5 +2653,5 @@ Adjust the message to what actually changed in Task 8's fixes. Do not push.
 
 - [ ] **Step 5: Update memory**
 
-Update `project_testdrive_door.md` in the memory dir: status (committed,
+Update `project_syncdrive_door.md` in the memory dir: status (committed,
 live-tested), the fit decision from Ctrl-F, and any open items.

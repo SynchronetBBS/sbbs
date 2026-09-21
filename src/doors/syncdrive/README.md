@@ -15,7 +15,7 @@ for the ours-vs-vendored coding contract before touching any source in this
 directory.
 
 The installed package (binary, `syncdrive.ini`, the data-install helper) lives
-in `xtrn/testdrive/`; see [its README](../../../xtrn/testdrive/README.md) for
+in `xtrn/syncdrive/`; see [its README](../../../xtrn/syncdrive/README.md) for
 the sysop-facing side (installing, supplying the game data, controls).
 
 ## Build and test
@@ -51,7 +51,7 @@ the script quits.
 jsexec deploy.js
 ```
 
-Installs the freshly-built binary into the live `xtrn/testdrive/` package (or
+Installs the freshly-built binary into the live `xtrn/syncdrive/` package (or
 the in-tree bundle when there is no live install), flat, as
 `ctrl/xtrn.ini`'s direct launch requires. Building never touches a live
 install; deploying is a separate, explicit step, so a fresh build can be run

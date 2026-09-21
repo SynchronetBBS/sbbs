@@ -2,7 +2,7 @@
 
 **Status:** design approved 2026-09-18, pre-implementation. v1 needs no
 termgfx changes; sec. 14 is deferred until the fit has been judged live.
-**Binary:** `syncdrive`. **Package:** `xtrn/testdrive/`.
+**Binary:** `syncdrive`. **Package:** `xtrn/syncdrive/`.
 **Engine:** [kylofon/test-drive-sdl3](https://github.com/kylofon/test-drive-sdl3)
 (`tdport/`, MIT), a faithful C reimplementation of Accolade / Distinctive
 Software's *Test Drive* (1987), EGA build (`TDEGA.EXE`).
@@ -65,10 +65,10 @@ against the engine's loader: `TDEGA.EXE` is 66517 bytes, md5
 `cdf8d1a767d559db559a0b829e1bb3b0`, and loads with image size 81424 bytes,
 DGROUP 1C9A.
 
-`xtrn/testdrive/getdata.js` follows the SyncMOO1 model: the sysop drops the zip,
+`xtrn/syncdrive/getdata.js` follows the SyncMOO1 model: the sysop drops the zip,
 the loose files, or an extracted game folder into the door directory, and the
 script copies the needed files into place. It downloads nothing. It verifies
-the result by running `syncdrive --check`, and seeds `data/testdrive/SCORES`
+the result by running `syncdrive --check`, and seeds `data/syncdrive/SCORES`
 from the copy's `SCORES` file when no table exists yet.
 
 ## 4. Layout
@@ -93,7 +93,7 @@ src/doors/syncdrive/
   tests/                unit tests for the door/ modules
   CMakeLists.txt  build.sh  deploy.js   (Windows build.bat: follow-up)
   PROVENANCE.md  CLAUDE.md  README.md
-xtrn/testdrive/
+xtrn/syncdrive/
   install-xtrn.ini  getdata.js  README.md  syncdrive.example.ini
 ```
 
@@ -215,9 +215,9 @@ RMS equals its peak); the sysop's `[audio]` volume applies after decode.
 `install-xtrn.ini`:
 
 ```
-[prog:TESTDRIV]
+[prog:SYNCDRIVE]
 name     = Test Drive
-cmd      = syncdrive%. %f --data-dir=%jtestdrive/
+cmd      = syncdrive%. %f --data-dir=%jsyncdrive/
 type     = XTRN_DOOR32
 settings = XTRN_NATIVE | XTRN_BIN | XTRN_MULTIUSER | XTRN_NODISPLAY
 ```

@@ -4,10 +4,10 @@
 // Accepts: the loose files in the door dir, files in a subfolder (an
 // extracted game folder), or an archive (.zip etc.) in the door dir. Copies
 // TDEGA.EXE, CARS.TXT, TDSND.SND, *.PES, *.BIN, *.SS, verifies with
-// `syncdrive --check`, and seeds data/testdrive/SCORES from the copy's SCORES
+// `syncdrive --check`, and seeds data/syncdrive/SCORES from the copy's SCORES
 // when there is no high-score table yet.
 //
-//     jsexec ../xtrn/testdrive/getdata.js
+//     jsexec ../xtrn/syncdrive/getdata.js
 //
 // SpiderMonkey 1.8.5. Copyright (C) 2026 Rob Swindell. GPL-2.0.
 
@@ -124,7 +124,7 @@ function main()
 		print("Test Drive is commercial content and is NOT shipped with this door.");
 		print("Put your copy (the zip, the loose files, or the game folder) in:");
 		print("    " + dir);
-		print("and re-run:  jsexec ../xtrn/testdrive/getdata.js");
+		print("and re-run:  jsexec ../xtrn/syncdrive/getdata.js");
 		return 1;
 	}
 
@@ -153,7 +153,7 @@ function main()
 		print("  jsexec src/doors/syncdrive/deploy.js); skipping the TDEGA.EXE check.");
 	}
 
-	scores_dir = backslash(system.data_dir + "testdrive");
+	scores_dir = backslash(system.data_dir + "syncdrive");
 	if (!file_exists(scores_dir + "SCORES") && file_exists(dir + "SCORES")) {
 		mkpath(scores_dir);
 		if (file_copy(dir + "SCORES", scores_dir + "SCORES"))

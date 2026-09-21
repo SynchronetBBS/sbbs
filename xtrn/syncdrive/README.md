@@ -5,7 +5,7 @@ Accolade's 1987 sports-car racing classic, as a Synchronet external program
 release, rendered to the caller's terminal as sixel graphics with PC-speaker
 sound. Single player, keyboard only.
 
-This directory (`xtrn/testdrive/`) is the installed door -- the `syncdrive`
+This directory (`xtrn/syncdrive/`) is the installed door -- the `syncdrive`
 binary, `syncdrive.ini`, the data-install helper, and the game data all live
 here. The **source** lives in `src/doors/syncdrive/` of the Synchronet source
 tree.
@@ -29,8 +29,8 @@ for you -- no manual SCFG entry needed. Launch it any of these ways:
   (the `xtrn-setup` module), included by default in the **Operator**
   external-programs section. Find **Test Drive** in the list and install it.
 - **SBBSCTRL (Windows)** -- **File -> Run -> Install External Programs**.
-- **Command line** -- `jsexec install-xtrn ../xtrn/testdrive`.
-- **Terminal sysop command** -- `;exec ?install-xtrn ../xtrn/testdrive`.
+- **Command line** -- `jsexec install-xtrn ../xtrn/syncdrive`.
+- **Terminal sysop command** -- `;exec ?install-xtrn ../xtrn/syncdrive`.
 
 The installer registers the door, seeds `syncdrive.ini` from
 `syncdrive.example.ini` (it never overwrites an existing one without asking),
@@ -60,7 +60,7 @@ It copies the files the door needs into place, verifies the result, and
 alone -- so re-running only fills in what's still missing:
 
 ```
-jsexec ../xtrn/testdrive/getdata.js
+jsexec ../xtrn/syncdrive/getdata.js
 ```
 
 If no complete copy is found, it says so and tells you where to put one; it
@@ -96,7 +96,7 @@ for the whole session.
 ## High scores
 
 There is one high-score table for the whole BBS, shared by every node, kept in
-`data/testdrive/SCORES`. Entries are named by the caller's own BBS alias,
+`data/syncdrive/SCORES`. Entries are named by the caller's own BBS alias,
 which is filled in automatically and can't be changed at the entry screen.
 The name field holds up to 15 characters; a longer alias is cut off there.
 
