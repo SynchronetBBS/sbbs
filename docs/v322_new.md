@@ -610,6 +610,10 @@
   returning telegrams for user #1)
 - `console.gotoxy()` validates its arguments more carefully and
   reports errors usefully (issue #1107)
+- `conio.init()` now recognizes the mode names longer than six
+  characters: `CURSES_IBM` and `CURSES_ASCII` were silently
+  starting plain `CURSES` instead, and `CONIO_FULLSCREEN` and
+  `SDL_FULLSCREEN` were rejected outright
 - `html_encode()` now supports the Ctrl-AU and Ctrl-AV
   (sysop-defined high / low attribute) codes added in v3.21c,
   and ignores Ctrl-AE (iCE colors) sequences instead of breaking

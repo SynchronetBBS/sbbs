@@ -291,7 +291,7 @@ js_conio_init(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *    argv = JS_ARGV(cx, arglist);
 	int        ciolib_mode = CIOLIB_MODE_AUTO;
-	char       mode[7];
+	char       mode[32];
 	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -314,7 +314,7 @@ js_conio_init(JSContext *cx, uintN argc, jsval *arglist)
 			ciolib_mode = CIOLIB_MODE_CURSES;
 		else if (!stricmp(mode, "CURSES_IBM"))
 			ciolib_mode = CIOLIB_MODE_CURSES_IBM;
-		else if (!stricmp(mode, "CURSES_ACSCII"))
+		else if (!stricmp(mode, "CURSES_ASCII"))
 			ciolib_mode = CIOLIB_MODE_CURSES_ASCII;
 		else if (!stricmp(mode, "SDL"))
 			ciolib_mode = CIOLIB_MODE_SDL;

@@ -23,7 +23,7 @@ function header(title) {
 	writeln("a:active { text-decoration: none; }");
 	writeln("div.form-container { margin-bottom: .5rem; }");
 	writeln("div.form-container > form { display: inline; margin-right: .5rem; }");
-	writeln("div.table-container { overlow: auto; }");
+	writeln("div.table-container { overflow: auto; }");
 	writeln("div.img-container { width: 50%; height: 50%; }");
 	writeln("table { border-collapse: collapse; }");
 	writeln("thead th { position: sticky; top: 0; background-color: white; }");
