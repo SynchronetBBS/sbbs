@@ -3246,7 +3246,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 		        "<tr><td align=top><tt>thread_next</tt><td>Message number of the next reply to the original message in this thread"
 		        "<tr><td align=top><tt>thread_first</tt><td>Message number of the first reply to this message"
 		        "<tr><td align=top><tt>votes</tt><td>Bit-field of votes if ballot, maximum allowed votes per ballot if poll"
-		        "<tr><td align=top><tt>priority</tt><td>Priority value following the <i>X-Priority</i> email header schcme "
+		        "<tr><td align=top><tt>priority</tt><td>Priority value following the <i>X-Priority</i> email header scheme "
 		        "(1 = highest, 3 = normal, 5 = lowest, 0 = unspecified)"
 		        "<tr><td align=top><tt>delivery_attempts</tt><td>Number of failed delivery attempts (e.g. over SMTP)"
 		        "<tr><td align=top><tt>field_list[].type</tt><td>Other SMB header fields (type)"

@@ -51,7 +51,7 @@ body=body.split("&#13;&#10;").join("<br>");
 <p><?xjs write(body); ?></p>
 
 <hr>
-<p><div id="ToggleAll" style="visibility: hidden"><input type="button" name="Collapse All" value="Collapse All" alt="Collpase All" onClick="collapse_all()"><input type="button" name="Expand All" value="Expand All" alt="Expand All" onClick="expand_all()"></div></p>
+<p><div id="ToggleAll" style="visibility: hidden"><input type="button" name="Collapse All" value="Collapse All" alt="Collapse All" onClick="collapse_all()"><input type="button" name="Expand All" value="Expand All" alt="Expand All" onClick="expand_all()"></div></p>
 
 <?xjs
 // "Comments"

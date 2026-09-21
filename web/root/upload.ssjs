@@ -18,7 +18,7 @@ function post(query)
     }
 	var fname = file_getname(query.filename[0]);
 	if(!check_filename(fname)) {
-		log(LOG_WARNING, "Attempted disallowed filname: " + fname);
+		log(LOG_WARNING, "Attempted disallowed filename: " + fname);
 		return "500 Filename not allowed";
 	}
 	var fdesc;

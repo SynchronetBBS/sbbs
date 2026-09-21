@@ -43,7 +43,7 @@ while(!js.terminated) {
 		uifc.help_text =
 			"`Synchronet File Manager`\n" +
 			"\n" +
-			"This utility provides an alternate method for system oeprators to add\n" +
+			"This utility provides an alternate method for system operators to add\n" +
 			"and manage files in their Synchronet filebases.\n" +
 			"\n" +
 			"The operations available are:\n" +

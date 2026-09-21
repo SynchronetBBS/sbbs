@@ -1097,7 +1097,7 @@ static jsSyncMethodSpec js_functions[] = {
 	 , JSDOCSTR("Output string to the console."), 315},
 	{"setfont",         js_conio_setfont,       2
 	 , JSTYPE_NUMBER, JSDOCSTR("font [, force, fnum]")
-	 , JSDOCSTR("Set a current font to the specified font.  If force is set, will change video modes if the current one callot use the specified font.  fnum selects which current font to change:<br>"
+	 , JSDOCSTR("Set a current font to the specified font.  If force is set, will change video modes if the current one cannot use the specified font.  fnum selects which current font to change:<br>"
 		        "<table><tr><td>0</td><td>Default font</td></tr>"
 		        "<tr><td>1</td><td>Main font</td></tr>"
 		        "<tr><td>2</td><td>First alternate font</td></tr>"

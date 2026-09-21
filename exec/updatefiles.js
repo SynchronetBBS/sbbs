@@ -1,5 +1,5 @@
 if(argc < 1) {
-	alert("No directory code specfiied");
+	alert("No directory code specified");
 	exit(0);
 }
 var fbase = new FileBase(argv[0]);

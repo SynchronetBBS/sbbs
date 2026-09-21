@@ -487,7 +487,7 @@ telnets_input_thread(void *args)
 			if (status < 0) {
 				if (!conn_api.terminate) {
 					if (status != XP_TLS_ERR_CLOSED)	/* not a clean close */
-						xp_tls_error_message(telnets_session, "recieving data");
+						xp_tls_error_message(telnets_session, "receiving data");
 					conn_api.terminate = true;
 				}
 				break;

@@ -2534,7 +2534,7 @@ void sys_cfg(void)
 								"`New User Editor:`\n"
 								"\n"
 								"You can use this option to select the default editor for new users\n"
-								"and 'Guest' (G-restriced) account logons.\n"
+								"and 'Guest' (G-restricted) account logons.\n"
 							;
 							i = uifc.list(WIN_SAV | WIN_RHT, 2, 1, 13, &i, 0, "Editors", opt);
 							if (i == -1)

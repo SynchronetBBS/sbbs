@@ -198,7 +198,7 @@ while(!file.eof && !js.terminated) {
 							dd=file.readBin(1);
 							cc=file.readBin(1);
 							bb=file.readBin(1);
-							writeln("Time Sigature: " + format("%u/%u",nn,Math.pow(2,dd)));
+							writeln("Time Signature: " + format("%u/%u",nn,Math.pow(2,dd)));
 							break;
 						default:
 							while(file.position < end_of_event) {

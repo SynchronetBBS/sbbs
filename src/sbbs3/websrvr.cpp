@@ -5300,7 +5300,7 @@ static bool exec_cgi(http_session_t *session)
 				}
 			}
 			else {
-				lprintf(LOG_INFO, "%04d %-5s [%s] FAILED polling CGI stding for write"
+				lprintf(LOG_INFO, "%04d %-5s [%s] FAILED polling CGI stdin for write"
 					, session->socket, session->client.protocol, session->host_ip);
 				close(in_pipe[1]);
 				close(out_pipe[0]);
@@ -7027,7 +7027,7 @@ void http_session_thread(void* arg)
 	/* Start up the output buffer */
 	/* FREE()d in this block (RingBufDispose before all returns) */
 	if (RingBufInit(&(session.outbuf), OUTBUF_LEN)) {
-		errprintf(LOG_ERR, WHERE, "%04d Canot create output ringbuffer!", session.socket);
+		errprintf(LOG_ERR, WHERE, "%04d Cannot create output ringbuffer!", session.socket);
 		close_session_no_rb(&session);
 		thread_down();
 		return;

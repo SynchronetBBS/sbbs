@@ -230,7 +230,7 @@ help(void)
 		" ALT+-    - Draw mode",
 		" ALT+K    - Ascii table",
 		" ALT+H    - This screen",
-		" ESC      - Enter menue mode(=right buton)",
+		" ESC      - Enter menu mode(=right button)",
 		"",
 		"<EOH>"
 	};

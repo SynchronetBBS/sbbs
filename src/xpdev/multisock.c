@@ -544,7 +544,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 							// Command and Version
 							if (read_socket(ret, hapstr, 1, xpms_set->lprintf) == false) {
 								btox(haphex, hapstr, 1, sizeof(haphex), xpms_set->lprintf);
-								xpms_set->lprintf(LOG_ERR, "%04d * HAPROXY looking for Verson/Command - failed [%s]", ret, haphex);
+								xpms_set->lprintf(LOG_ERR, "%04d * HAPROXY looking for Version/Command - failed [%s]", ret, haphex);
 								closesocket(ret);
 								goto error_return;
 							}

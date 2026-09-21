@@ -386,7 +386,7 @@ function GetFromWebSocketClientVersion7() {
                         return null;
                         
                     case 9: // Ping frame
-                        log(LOG_DEBUG, "Client setnt a ping frame");
+                        log(LOG_DEBUG, "Client sent a ping frame");
                         // TODO Protocol says to respond with a pong frame
                         break;
                         

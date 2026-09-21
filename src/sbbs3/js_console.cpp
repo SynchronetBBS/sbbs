@@ -507,7 +507,7 @@ static const char*        con_prop_desc[] = {
 	, "Detected width of 'ZERO-WIDTH' UNICODE characters, in columns (either 0 or 1)"
 	, "Detected CTerm (SyncTERM) version as an integer > 1000 where major version is cterm_version / 1000 and minor version is cterm_version % 1000"
 	, "Number of seconds before disconnection due to user/keyboard inactivity (in getkey/getstr)"
-	, "Number of seconds before warning the user of pending disconnection due to user/keybard inactivity (or 0 if disabled)"
+	, "Number of seconds before warning the user of pending disconnection due to user/keyboard inactivity (or 0 if disabled)"
 	, "User/keyboard inactivity timeout reference value (time_t format)"
 	, "Number of seconds before disconnection due to socket inactivity (in input_thread)"
 	, "Number of low time-left (5 or fewer minutes remaining) warnings displayed to user"

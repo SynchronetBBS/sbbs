@@ -321,7 +321,7 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 
 		rc = JS_SUSPENDREQUEST(dbg->cx);
 		if ((line = dbg->getline()) == NULL) {
-			dbg->puts("Error readin input\n");
+			dbg->puts("Error reading input\n");
 			JS_RESUMEREQUEST(dbg->cx, rc);
 			continue;
 		}

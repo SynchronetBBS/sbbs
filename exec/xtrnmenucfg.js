@@ -279,7 +279,7 @@ var editItems = function(menuid) {
                                     }
                                 }
                                 if (keyused) {
-                                    uifc.msg("This input key is alread used for another item");
+                                    uifc.msg("This input key is already used for another item");
                                     oktopaste = false;
                                 } else {
                                     copyitem.input = selection2;
@@ -539,7 +539,7 @@ function present_select_targettype(item)
     uifc.help_text = word_wrap(
         "This is the type of target this item points to.\r\n\r\n"
         + "custommenu is a custom menu defined in this tool.\r\n\r\n"
-        + "xtrnmenu is a standard Syncrhonet External Section Menu (refer to the scfg tool).\r\n\r\n"
+        + "xtrnmenu is a standard Synchronet External Section Menu (refer to the scfg tool).\r\n\r\n"
         + "xtrnprog is a direct link to an external program (refer to the scfg tool)"
         + "command is a synchronet command line. See http://wiki.synchro.net/config:cmdline"
         + "recentall is a special menu of most recently used games, by all users"

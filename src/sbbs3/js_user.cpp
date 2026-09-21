@@ -965,7 +965,7 @@ static const char*        user_prop_desc[] = {
 	, "Logon time (time_t format)"
 	, "Record is currently cached in memory"
 	, "User has a System Operator's security level"
-	, "User has the 'Guest' restrction"
+	, "User has the 'Guest' restriction"
 	, "User account is active, not deleted or marked inactive"
 	, "Batch upload list file path/name"
 	, "Batch download list file path/name"

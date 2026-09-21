@@ -1049,7 +1049,7 @@ USAGE:
 		uifc.helpbuf=  "`Synchronet UNIX Monitor\n"
 		               "`------------------\n"
 		                "Welcome to the Synchronet UNIX Monitor.\n"
-		                "Displayed on this screen are the statitics for the BBS\n"
+		                "Displayed on this screen are the statistics for the BBS\n"
 		                "You can scroll through the list starting at \"System Options\" \n"
 		                "Pressing Enter on each will give a menu of option to perform.\n"
 		                "Additionally these keys are available from this screen:\n\n"

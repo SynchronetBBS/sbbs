@@ -165,7 +165,7 @@ void usage(void)
 	       "(default=%d)\n", s);
 	printf("               t set timer count value (in ms) "
 	       "(default=%d)\n", t);
-	printf("               v visual text diplay of val (no val=cr/lf)\n");
+	printf("               v visual text display of val (no val=cr/lf)\n");
 	printf("               x quit program immediately (leave tone on)\n");
 	printf("       opts  = d display dot for each note\n");
 	printf("               f display frequency or note value\n");

@@ -1296,7 +1296,7 @@ function quote_help()
 	console.cleartoeol();
 	console.write("\r\n CTRL-A - Select all                     CTRL-R - Redraw screen");
 	console.cleartoeol();
-	console.write("\r\n CTRL-B - Move to begining of message    CTRL-^ - Move up one line");
+	console.write("\r\n CTRL-B - Move to beginning of message   CTRL-^ - Move up one line");
 	console.cleartoeol();
 	console.write("\r\n CTRL-E - Move to end of message         CTRL-_ - Quick exit (no save)");
 	console.cleartoeol();

@@ -783,7 +783,7 @@ int edit_proto(scfg_t *cfg, user_t *user)
 			j=i;
 	}
 	opt[i]="";
-	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Default Protcol",opt)) {
+	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Default Protocol",opt)) {
 		case -1:
 			break;
 		case 0:

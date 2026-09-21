@@ -81,7 +81,7 @@ void bail(int retval)
 		if (bin_file[0] != 0)
 			remove(bin_file);
 		if (pause_on_error) {
-			printf("\nHit enter to contiue...");
+			printf("\nHit enter to continue...");
 			getchar();
 		}
 	}
