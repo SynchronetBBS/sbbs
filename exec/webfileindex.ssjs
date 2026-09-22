@@ -325,6 +325,24 @@ function view_file(filename)
 	writeln("<br />");
 }
 
+/* Text from inside an archive, where ILLEGAL_FILENAME_CHARS does not
+   constrain entry names: anything in there may contain markup, an ANSI
+   escape sequence or a Ctrl-A code, none of which html_encode() should be
+   rendering as markup of its own.  Character set is whatever the archiving
+   tool used, so treat a name that is already valid UTF-8 as such and
+   everything else as CP437, the same test newsutil.js applies to a
+   message body. */
+function archive_text(str)
+{
+	/* ex_ascii, white_space, ansi and ctrl_a all off: escape what HTML
+	   requires and nothing else. */
+	var html = html_encode(str, false, false, false, false);
+
+	if(str_is_utf8(str))
+		return html;
+	return utf8_encode(html);
+}
+
 function view_archive(filename)
 {
 	var rec = contents.list(filename);
@@ -332,7 +350,7 @@ function view_archive(filename)
 	if(rec === null || rec.err !== undefined) {
 		var why = (rec === null) ? "Unable to read archive" : rec.err;
 		log(LOG_DEBUG, filename + " " + why);
-		writeln(html_encode(file_getname(filename) + ": " + why, true, false));
+		writeln(archive_text(file_getname(filename) + ": " + why));
 		return;
 	}
 	var list = contents.entries(rec);
@@ -343,9 +361,7 @@ function view_archive(filename)
 		if(file.type != 'file')
 			continue;
 		writeln('<tr>');
-		/* Entry names come from inside the archive, where
-		   ILLEGAL_FILENAME_CHARS does not constrain them. */
-		writeln('<td>' + html_encode(file.name, true, false).bold());
+		writeln('<td>' + archive_text(file.name).bold());
 		writeln('<td align=right>' + file.size);
 		writeln('<td>' + system.timestr(file.time).slice(4));
 	}
