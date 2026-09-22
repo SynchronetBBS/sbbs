@@ -170,6 +170,21 @@ try {
 	if (!(file.added > before))
 		throw new Error("readd_always did not update the added date: " + before + " -> " + file.added);
 
+	/* A file object carrying no header-field property at all is a partial
+	   update, not an error: auxdata alone, or a header value alone. */
+	seed();
+	fb = open_base();
+	if (!fb.update(NAMES[0], { auxdata: '{"only":"auxdata"}' }))
+		throw new Error("update with an auxdata-only object failed: " + fb.last_error);
+	if (!fb.update(NAMES[1], { cost: 42 }))
+		throw new Error("update with a cost-only object failed: " + fb.last_error);
+	fb.close();
+	file = stored();
+	if (!text_is(file.auxdata, '{"only":"auxdata"}'))
+		throw new Error("auxdata-only update did not store: " + JSON.stringify(file.auxdata));
+	check("desc survived an auxdata-only update", file.desc, "first");
+	check("cost-only update", stored(NAMES[1]).cost, 42);
+
 	/* Renaming while the text changes keeps working, and the index follows. */
 	seed();
 	fb = open_base();

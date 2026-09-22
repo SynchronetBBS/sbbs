@@ -468,7 +468,10 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	char*       cp = NULL;
 	size_t      cp_sz = 0;
 	jsval       val;
-	int         result = SMB_ERR_NOT_FOUND;
+	/* Not every property assigns to this: an object of nothing but extdesc,
+	   auxdata or a header value (cost, added, times_downloaded) is a perfectly
+	   good partial update, so success is the starting point. */
+	int         result = SMB_SUCCESS;
 
 	const char* prop_name = "name";
 	if (JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
