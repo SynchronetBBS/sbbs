@@ -1377,7 +1377,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	char*  auxdata = NULL;
 	rc = JS_SUSPENDREQUEST(cx);
 	if (filename != NULL && fileobj != NULL
-	    && (p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_extdesc)) == SMB_SUCCESS) {
+	    && (p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_auxdata)) == SMB_SUCCESS) {
 		p->smb_result = parse_file_properties(cx, fileobj, &file, &extdesc, &auxdata);
 		if (p->smb_result == SMB_SUCCESS
 		    && strcmp(filename, file.name) != 0 && smb_findfile(&p->smb, file.name, NULL) == SMB_SUCCESS) {
@@ -1385,8 +1385,12 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 			p->smb_result = SMB_DUPE_MSG;
 			result = JS_FALSE;
 		}
+		/* Only extract the DIZ when explicitly asked to, or when the file has no
+		   extended description to keep: an update that simply doesn't mention the
+		   extended description must not replace the stored one. */
 		if (p->smb_result == SMB_SUCCESS
-		    && (extdesc == NULL || use_diz_always == true)
+		    && (use_diz_always == true
+		        || (extdesc == NULL && (file.extdesc == NULL || *file.extdesc == '\0')))
 		    && dirnum_is_valid(scfg, file.dir)
 		    && (scfg->dir[file.dir]->misc & DIR_DIZ)) {
 			get_diz(scfg, &file, &extdesc);
@@ -1405,8 +1409,15 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 			} else {
 				if (file.extdesc != NULL)
 					truncsp(file.extdesc);
-				if (!readd_always && strcmp(extdesc ? extdesc : "", file.extdesc ? file.extdesc : "") == 0
-				    && strcmp(auxdata ? auxdata : "", file.auxdata ? file.auxdata : "") == 0) {
+				if (file.auxdata != NULL)
+					truncsp(file.auxdata);
+				/* A property absent from the file object means "leave it alone",
+				   so keep the stored text rather than writing over it with NULL.
+				   An empty string still clears it. */
+				const char* new_extdesc = (extdesc != NULL) ? extdesc : file.extdesc;
+				const char* new_auxdata = (auxdata != NULL) ? auxdata : file.auxdata;
+				if (!readd_always && strcmp(new_extdesc ? new_extdesc : "", file.extdesc ? file.extdesc : "") == 0
+				    && strcmp(new_auxdata ? new_auxdata : "", file.auxdata ? file.auxdata : "") == 0) {
 					p->smb_result = smb_putfile(&p->smb, &file);
 					if (p->smb_result != SMB_SUCCESS) {
 						JS_ReportError(cx, "%d writing '%s'", p->smb_result, file.name);
@@ -1416,7 +1427,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 					if ((p->smb_result = smb_removefile_by_name(&p->smb, filename)) == SMB_SUCCESS) {
 						if (readd_always)
 							file.hdr.when_imported.time = 0; // we want the file to appear as "new"
-						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, auxdata, newfname);
+						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, new_extdesc, new_auxdata, newfname);
 						invalidate_file_total();
 					}
 					else {
