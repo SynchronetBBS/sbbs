@@ -3413,7 +3413,15 @@ function _url_key(url) {
         var proto = /bbsdocumentary\.com/.test(lookup) ? 'http://' : 'https://';
         lookup = proto + lookup;
     }
-    return lookup.replace(/#.*$/, '').replace(/[.,;:!?)\]]+$/, '');
+    lookup = lookup.replace(/#.*$/, '').replace(/[.,;:!?)\]]+$/, '');
+    /* GitLab serves an issue at both /-/issues/<iid> and the newer
+     * /-/work_items/<iid>; the git_issues tool returns the latter, but a
+     * model asked for a link writes the former (the path every human-facing
+     * GitLab link uses).  Without this, strip_fake_urls() sees a URL that
+     * no tool returned and deletes a link that is in fact real -- leaving a
+     * dangling "check for the full list".  Treat the two paths as one key. */
+    lookup = lookup.replace(/\/-\/work_items\/(\d+)/, '/-/issues/$1');
+    return lookup;
 }
 
 /* URLs the model can see verbatim in the transcript window it was
