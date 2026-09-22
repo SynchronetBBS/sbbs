@@ -326,6 +326,160 @@ int smb_putfile(smb_t* smb, smbfile_t* file)
 }
 
 /****************************************************************************/
+/* Replaces the extended description and/or auxiliary data of an existing	*/
+/* file record in place.  The record keeps its number, its header and its	*/
+/* position in the index, and at no point does it stop existing, which is	*/
+/* the difference from removing and re-adding it to write new data blocks.	*/
+/* The new blocks are written before the old ones are freed, so a failure	*/
+/* part-way through leaks blocks (which chksmb reports and fixsmb reclaims)	*/
+/* rather than losing the file record.										*/
+/****************************************************************************/
+int smb_updatefile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, const char* auxdata)
+{
+	int       retval;
+	uint16_t  xlat = XLAT_NONE;
+	size_t    bodylen = 0;
+	size_t    taillen = 0;
+	uint16_t  total_dfields = 0;
+	uint16_t  old_total_dfields;
+	dfield_t* new_dfield = NULL;
+	dfield_t* old_dfield;
+	off_t     length;
+	off_t     offset = 0;
+	off_t     old_offset;
+	off_t     l = 0;
+
+	if (!SMB_IS_OPEN(smb)) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
+		return SMB_ERR_NOT_OPEN;
+	}
+
+	if (extdesc != NULL && *extdesc != '\0')
+		bodylen = strlen(extdesc) + sizeof(xlat);   /* xlat string terminator */
+	if (auxdata != NULL && *auxdata != '\0')
+		taillen = strlen(auxdata) + sizeof(xlat);
+	length = (off_t)(bodylen + taillen);
+	if (length > SMB_MAX_DAT_LEN) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s data length: 0x%" PRIXMAX
+		              , __FUNCTION__, (intmax_t)length);
+		return SMB_ERR_DAT_LEN;
+	}
+
+	if (length > 0 && (new_dfield = (dfield_t*)malloc(sizeof(dfield_t) * 2)) == NULL) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s allocating data fields", __FUNCTION__);
+		return SMB_ERR_MEM;
+	}
+
+	if ((retval = smb_locksmbhdr(smb)) != SMB_SUCCESS) {
+		FREE_AND_NULL(new_dfield);
+		return retval;
+	}
+
+	/* try */
+	do {
+		if ((retval = smb_getstatus(smb)) != SMB_SUCCESS)
+			break;
+
+		if (length > 0) {
+			/* Allocate Data Blocks */
+			if (smb->status.attr & SMB_HYPERALLOC)
+				offset = smb_hallocdat(smb);
+			else {
+				if ((retval = smb_open_da(smb)) != SMB_SUCCESS)
+					break;
+				if (storage == SMB_FASTALLOC)
+					offset = smb_fallocdat(smb, length, 1);
+				else
+					offset = smb_allocdat(smb, length, 1);
+				smb_close_da(smb);
+			}
+			if (offset < 0) {
+				retval = (int)offset;
+				break;
+			}
+			if (smb_fseek(smb->sdt_fp, offset, SEEK_SET) != 0) {
+				safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s seek error %d", __FUNCTION__, errno);
+				retval = SMB_ERR_SEEK;
+				break;
+			}
+			if (bodylen > 0) {
+				new_dfield[total_dfields].type = TEXT_BODY;
+				new_dfield[total_dfields].offset = 0;
+				new_dfield[total_dfields].length = (uint32_t)bodylen;
+				total_dfields++;
+				if (smb_fwrite(smb, &xlat, sizeof(xlat), smb->sdt_fp) != sizeof(xlat)
+				    || smb_fwrite(smb, extdesc, bodylen - sizeof(xlat), smb->sdt_fp) != bodylen - sizeof(xlat)) {
+					safe_snprintf(smb->last_error, sizeof(smb->last_error)
+					              , "%s writing body (%d bytes)", __FUNCTION__, (int)bodylen);
+					retval = SMB_ERR_WRITE;
+					break;
+				}
+			}
+			if (taillen > 0) {
+				new_dfield[total_dfields].type = TEXT_TAIL;
+				new_dfield[total_dfields].offset = (uint32_t)bodylen;
+				new_dfield[total_dfields].length = (uint32_t)taillen;
+				total_dfields++;
+				if (smb_fwrite(smb, &xlat, sizeof(xlat), smb->sdt_fp) != sizeof(xlat)
+				    || smb_fwrite(smb, auxdata, taillen - sizeof(xlat), smb->sdt_fp) != taillen - sizeof(xlat)) {
+					safe_snprintf(smb->last_error, sizeof(smb->last_error)
+					              , "%s writing tail (%d bytes)", __FUNCTION__, (int)taillen);
+					retval = SMB_ERR_WRITE;
+					break;
+				}
+			}
+			for (l = length; l % SDT_BLOCK_LEN; l++) {
+				if (smb_fputc(0, smb->sdt_fp) != 0)
+					break;
+			}
+			if (l % SDT_BLOCK_LEN) {
+				safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s writing data padding", __FUNCTION__);
+				retval = SMB_ERR_WRITE;
+				break;
+			}
+			fflush(smb->sdt_fp);
+		}
+
+		/* The new text is on disk: point the record at it, keeping the old
+		   data fields around to free once the header write has succeeded. */
+		old_offset = file->hdr.offset;
+		old_dfield = file->dfield;
+		old_total_dfields = file->hdr.total_dfields;
+		file->hdr.offset = (uint32_t)offset;
+		file->dfield = new_dfield;
+		file->hdr.total_dfields = total_dfields;
+
+		if ((retval = smb_putfile(smb, file)) != SMB_SUCCESS) {
+			file->hdr.offset = (uint32_t)old_offset;
+			file->dfield = old_dfield;
+			file->hdr.total_dfields = old_total_dfields;
+			if (length > 0)
+				smb_freemsgdat(smb, offset, (uint)length, 1);
+			break;
+		}
+		new_dfield = NULL;  /* owned by 'file' now */
+
+		if (old_total_dfields > 0) {
+			smbfile_t old_file;
+
+			ZERO_VAR(old_file);
+			old_file.hdr.offset = (uint32_t)old_offset;
+			old_file.hdr.total_dfields = old_total_dfields;
+			old_file.dfield = old_dfield;
+			smb_freemsg_dfields(smb, &old_file, 1);
+		}
+		free(old_dfield);
+
+	} while (0);
+	/* finally */
+
+	FREE_AND_NULL(new_dfield);
+	smb_unlocksmbhdr(smb);  /* smb_freemsgdat() may have released it already */
+
+	return retval;
+}
+
+/****************************************************************************/
 /****************************************************************************/
 void smb_freefilemem(smbfile_t* file)
 {

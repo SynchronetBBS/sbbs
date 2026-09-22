@@ -1423,10 +1423,19 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 						JS_ReportError(cx, "%d writing '%s'", p->smb_result, file.name);
 						result = JS_FALSE;
 					}
+				} else if (!readd_always) {
+					// The text changed: write new data blocks in place, so the file
+					// keeps its number and index position and never stops existing.
+					p->smb_result = smb_updatefile(&p->smb, &file, SMB_SELFPACK, new_extdesc, new_auxdata);
+					if (p->smb_result != SMB_SUCCESS) {
+						JS_ReportError(cx, "%d updating '%s'", p->smb_result, file.name);
+						result = JS_FALSE;
+					}
 				} else {
+					// Re-adding is the point of readd_always: the file is removed and
+					// added back so that it dates, and lists, as newly imported.
 					if ((p->smb_result = smb_removefile_by_name(&p->smb, filename)) == SMB_SUCCESS) {
-						if (readd_always)
-							file.hdr.when_imported.time = 0; // we want the file to appear as "new"
+						file.hdr.when_imported.time = 0; // we want the file to appear as "new"
 						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, new_extdesc, new_auxdata, newfname);
 						invalidate_file_total();
 					}
