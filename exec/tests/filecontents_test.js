@@ -1,8 +1,8 @@
-// filecontents_test.js -- exercises the per-file-area content listing store.
+// filecontents_test.js -- exercises the stored archive content listings.
 // Run: jsexec exec/tests/filecontents_test.js
 //
-// Writes one data/dirs/<code>.contents file for the area holding the first ZIP
-// it finds, and removes it again.
+// Stores a listing in the auxdata of the first ZIP it finds in a file area,
+// and puts that record's auxdata back the way it found it afterwards.
 //
 // SpiderMonkey 1.8.5: no let/const, no arrow functions, no Object.keys().
 
@@ -65,7 +65,7 @@ check(contents.xaddate(undefined) === 0,
 /* ---- extraction: libarchive path ---- */
 
 var rec = contents.extract(zip);
-check(rec.t === "archive", "zip record is typed archive");
+check(rec.v === 1, "zip record carries the format version");
 check(rec.x === "libarchive", "zip extracted by libarchive (got " + rec.x + ")");
 check(rec.err === undefined, "zip extracted without error");
 check(rec.l !== undefined && rec.l.length > 0,
@@ -100,15 +100,50 @@ check(contents.extract_external("/tmp/evil`id`.arc") === null,
 /* ---- store round trip ---- */
 
 var code = contents.area(zip);
-var store_file = contents.store_path(code);
-var preexisting = file_exists(store_file);
+var zipname = file_getname(zip);
 
-/* Not "nothing is stored yet": the store is live and may already hold this
-   area, so test the absent case on a name that cannot be there. */
-check(contents.get(file_getname(zip) + ".not-a-real-file") === null,
+/* The record is live data, so remember its auxdata and restore it at the end.
+   Its description travels with every update() this test makes, because a build
+   without the fix for it rejects a file object carrying nothing but auxdata. */
+var original = null;
+var zipdesc;
+var fb = new FileBase(code);
+if (fb.open()) {
+	var before = fb.get(zipname, FileBase.DETAIL.AUXDATA);
+	if (before !== null) {
+		zipdesc = before.desc;
+		if (before.auxdata !== undefined)
+			original = before.auxdata;
+	}
+	fb.close();
+}
+
+function set_auxdata(value)
+{
+	var base = new FileBase(code);
+	if (!base.open())
+		return false;
+	var props = { auxdata: value };
+	if (zipdesc !== undefined)
+		props.desc = zipdesc;
+	var ok = base.update(zipname, props);
+	base.close();
+	return ok;
+}
+
+/* Not "nothing is stored yet": these are live file areas and may already hold
+   a listing, so test the absent case on a name that cannot be there. */
+check(contents.get(zipname + ".not-a-real-file") === null,
       "contents.get() returns null for a file with no record");
 check(contents.put(zip, rec) === true, "contents.put() stored the record");
-check(file_exists(store_file), "store file was created: " + store_file);
+
+fb = new FileBase(code);
+if (fb.open()) {
+	var stored_aux = fb.get(zipname, FileBase.DETAIL.AUXDATA).auxdata;
+	fb.close();
+	check(stored_aux !== undefined && stored_aux.indexOf("archive_contents") >= 0,
+	      "the listing went into the file record's auxdata under its own key");
+}
 
 var got = contents.get(zip);
 check(got !== null, "contents.get() returns the stored record");
@@ -119,16 +154,16 @@ if (got !== null) {
 
 /* ---- staleness ---- */
 
-var stale = { t: "archive", sz: rec.sz + 1, mt: rec.mt, xv: 1, l: [] };
+var stale = { v: 1, sz: rec.sz + 1, mt: rec.mt, xv: 1, l: [] };
 check(contents.current(stale, zip) === false,
       "a size mismatch invalidates a record");
-stale = { t: "archive", sz: rec.sz, mt: rec.mt + 1, xv: 1, l: [] };
+stale = { v: 1, sz: rec.sz, mt: rec.mt + 1, xv: 1, l: [] };
 check(contents.current(stale, zip) === false,
       "an mtime mismatch invalidates a record");
-stale = { t: "archive", sz: rec.sz, mt: rec.mt, xv: 0, err: "nope" };
+stale = { v: 1, sz: rec.sz, mt: rec.mt, xv: 0, err: "nope" };
 check(contents.current(stale, zip) === false,
       "an old extractor version invalidates a stored failure");
-stale = { t: "archive", sz: rec.sz, mt: rec.mt, xv: 0, l: [] };
+stale = { v: 1, sz: rec.sz, mt: rec.mt, xv: 0, l: [] };
 check(contents.current(stale, zip) === true,
       "an old extractor version does NOT invalidate a successful listing");
 
@@ -138,17 +173,17 @@ var tool = contents.external();
 check(tool.indexOf("lsar/") === 0,
       "contents.external() finds lsar and its version (got '" + tool + "')");
 
-var noext = { t: "archive", sz: rec.sz, mt: rec.mt, xv: 1,
+var noext = { v: 1, sz: rec.sz, mt: rec.mt, xv: 1,
               err: "Unrecognized archive format", ext: "" };
 check(contents.current(noext, zip) === false,
       "a failure recorded by a host with no external tool is not trusted here");
 
-var sameext = { t: "archive", sz: rec.sz, mt: rec.mt, xv: 1,
+var sameext = { v: 1, sz: rec.sz, mt: rec.mt, xv: 1,
                 err: "Unrecognized archive format", ext: tool };
 check(contents.current(sameext, zip) === true,
       "a failure recorded with the same tool this host has is trusted");
 
-var otherext = { t: "archive", sz: rec.sz, mt: rec.mt, xv: 1,
+var otherext = { v: 1, sz: rec.sz, mt: rec.mt, xv: 1,
                  err: "Unrecognized archive format", ext: "someothertool" };
 check(contents.current(otherext, zip) === false,
       "a failure recorded with a different tool is re-examined");
@@ -158,11 +193,25 @@ check(contents.current(otherext, zip) === false,
 check(contents.put("/tmp/not-in-an-area.zip", rec) === false,
       "contents.put() declines a path outside every file area");
 
-/* ---- cleanup ---- */
+/* ---- auxdata this library did not write is left alone ---- */
 
-if (!preexisting && file_exists(store_file)) {
-	file_remove(store_file);
-	check(!file_exists(store_file), "store file removed again");
+if (set_auxdata("not json, somebody else's metadata")) {
+	check(contents.put(zip, rec) === false,
+	      "contents.put() declines to overwrite unrecognized auxdata");
+	check(contents.get(zip) === null,
+	      "contents.get() reports no record when the auxdata isn't ours");
+}
+
+/* ---- cleanup: put the record's auxdata back ---- */
+
+set_auxdata(original === null ? "" : original);
+fb = new FileBase(code);
+if (fb.open()) {
+	var after = fb.get(zipname, FileBase.DETAIL.AUXDATA);
+	fb.close();
+	var restored = (after === null || after.auxdata === undefined) ? null : after.auxdata;
+	check(String(restored).replace(/\s*$/, '') === String(original).replace(/\s*$/, ''),
+	      "the file record's auxdata was restored");
 }
 
 print("");

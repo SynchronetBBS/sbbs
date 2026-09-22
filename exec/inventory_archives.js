@@ -1,5 +1,5 @@
-// Populate the per-file-area content store (data/dirs/<code>.contents) by
-// enumerating the archives in one or more file areas.
+// Store the content listings of the archives in one or more file areas, so a
+// viewer can serve them without opening the archive.
 //
 // Nothing has to be pre-populated: viewers extract and store on a miss.  This
 // exists to warm cold areas ahead of demand, and to re-examine stored failures
@@ -17,11 +17,6 @@
 "use strict";
 
 var contents = load({}, "filecontents_lib.js");
-
-// Merge accumulated records into the store this often.  Extraction runs
-// unlocked and only the merge takes the area lock, so a long run does not hold
-// viewers off an area while it works.
-var FLUSH_EVERY = 50;
 
 var opt = {
 	force: false,
@@ -77,25 +72,6 @@ for (var a = 0; a < argv.length; a++) {
 	}
 }
 
-// Merge what has been extracted so far into the area's store.
-function flush(code, pending, count)
-{
-	if (opt.dry || !count)
-		return true;
-	if (!contents.lock(code)) {
-		print("!timeout locking the store for " + code);
-		return false;
-	}
-	var store = contents.read_store(code);
-	for (var name in pending)
-		store.files[name] = pending[name];
-	var ok = contents.write_store(code, store);
-	contents.unlock(code);
-	if (!ok)
-		print("!error writing the store for " + code);
-	return ok;
-}
-
 function inventory_area(code)
 {
 	var d = file_area.dir[code];
@@ -113,9 +89,6 @@ function inventory_area(code)
 	fb.close();
 
 	totals.areas++;
-	var store = contents.read_store(code);
-	var pending = {};
-	var npending = 0;
 
 	for (var i = 0; i < names.length; i++) {
 		if (opt.max && totals.extracted >= opt.max)
@@ -129,7 +102,7 @@ function inventory_area(code)
 			totals.missing++;
 			continue;
 		}
-		if (!opt.force && contents.current(store.files[names[i]], path)) {
+		if (!opt.force && contents.get(path) !== null) {
 			totals.current++;
 			continue;
 		}
@@ -145,17 +118,11 @@ function inventory_area(code)
 			if (!opt.quiet)
 				print(format("%-24s %-12s %u entries", names[i], rec.x, rec.l.length));
 		}
-		pending[names[i]] = rec;
-		npending++;
-		if (npending >= FLUSH_EVERY) {
-			flush(code, pending, npending);
-			pending = {};
-			npending = 0;
-		}
+		if (!opt.dry && !contents.put(path, rec))
+			print("!error storing the listing for " + names[i]);
 		if (opt.delay)
 			sleep(opt.delay);
 	}
-	flush(code, pending, npending);
 }
 
 if (!codes.length)

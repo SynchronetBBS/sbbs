@@ -1,15 +1,21 @@
-// Library for the per-file-area content listing store: data/dirs/<code>.contents
+// Library for stored archive content listings.
 //
-// Viewers read a stored listing instead of re-opening the archive on every
-// view.  See GitLab issue #1247 for the design and the measurements behind it.
+// A viewer reads the stored listing instead of re-opening the archive on every
+// view.  The listing is kept in the file record's own auxdata, so reading one
+// costs that record's data blocks rather than a file area's worth of listings,
+// and it is removed along with the record it describes.  See #1247 for the
+// design and the measurements behind it.
 //
 // Load it into its own scope:  var contents = load({}, "filecontents_lib.js");
 
 require("sbbsdefs.js", "LOG_DEBUG");
 
-var EXT = ".contents";
+// auxdata is a general-purpose per-file slot rather than ours, so the listing
+// goes under a key of its own and anything else found there is preserved.
+var AUXKEY = "archive_contents";
 
-// Record format version.  Guards the encoding.
+// Record format version.  Guards the encoding: a record written in a form this
+// code does not know is treated as absent and re-extracted.
 var VERSION = 1;
 
 // Extractor-set version.  Guards the *verdict* rather than the encoding: a
@@ -37,14 +43,7 @@ var ARCHIVE_TYPES = ['zip', '7z', 'tgz', 'tar', 'gz', 'bz2',
                      'arc', 'arj', 'zoo', 'exe'];
 
 var dirmap = null;
-var held = {};
-var onexit_registered = false;
 var external_tool = null;
-
-function store_path(dircode)
-{
-	return backslash(system.data_dir + "dirs") + dircode + EXT;
-}
 
 function is_archive(filename)
 {
@@ -133,89 +132,36 @@ function area(path)
 	return dirmap[dir.toLowerCase()];
 }
 
-function lock(dircode)
+// The file record, at the detail level that carries auxdata.  Opening the base
+// per operation keeps this re-entrant: the terminal viewer, the web server and
+// the populator all reach the same record from different processes.
+function open_base(dircode)
 {
-	var fname = store_path(dircode) + ".lock";
-	var start = time();
+	var fb = new FileBase(dircode);
 
-	while (!file_mutex(fname, "filecontents", 60)) {
-		if (time() - start >= 10)
-			return false;
-		sleep(250);
-	}
-	held[dircode] = fname;
-	// An out-of-memory error is not a catchable exception, so release from an
-	// exit handler too, else an aborted script strands the lock file.
-	if (!onexit_registered && typeof js == 'object' && js.on_exit !== undefined) {
-		js.on_exit("release();");
-		onexit_registered = true;
-	}
-	return true;
+	if (!fb.open())
+		return null;
+	return fb;
 }
 
-function unlock(dircode)
+// The auxdata object for a file record, {} when it has none, or null when it
+// holds something this library did not write and cannot parse.
+function parse_aux(file)
 {
-	if (held[dircode] === undefined)
-		return;
-	file_remove(held[dircode]);
-	delete held[dircode];
-}
-
-function release()
-{
-	var codes = [];
-	var code;
-
-	// Collect first: unlock() deletes from the object.
-	for (code in held)
-		codes.push(code);
-	for (var i = 0; i < codes.length; i++)
-		unlock(codes[i]);
-}
-
-function read_store(dircode)
-{
-	var fname = store_path(dircode);
-	if (!fexists(fname))
-		return { v: VERSION, files: {} };
-
-	var f = new File(fname);
-	if (!f.open("r"))
-		return { v: VERSION, files: {} };
-	var text = f.read();
-	f.close();
-
 	var obj;
+
+	if (file === null || file === undefined || file.auxdata === undefined)
+		return {};
+	if (file.auxdata.replace(/\s*$/, '') === '')
+		return {};
 	try {
-		obj = JSON.parse(text);
+		obj = JSON.parse(file.auxdata);
 	} catch (e) {
-		log(LOG_WARNING, "filecontents: unparsable store " + fname + ": " + e);
-		return { v: VERSION, files: {} };
+		return null;
 	}
-	if (obj === null || typeof obj != 'object' || obj.v !== VERSION
-	    || typeof obj.files != 'object')
-		return { v: VERSION, files: {} };
+	if (obj === null || typeof obj != 'object')
+		return null;
 	return obj;
-}
-
-function write_store(dircode, obj)
-{
-	var fname = store_path(dircode);
-	var tmp = fname + ".tmp";
-	var f = new File(tmp);
-
-	if (!f.open("w"))
-		return false;
-	var ok = f.write(JSON.stringify(obj));
-	f.close();
-	if (!ok) {
-		file_remove(tmp);
-		return false;
-	}
-	// Replace rather than rewrite, so a reader never sees a half-written store.
-	if (fexists(fname))
-		file_remove(fname);
-	return file_rename(tmp, fname);
 }
 
 // A record is current when the file it describes has not changed.  A stored
@@ -226,6 +172,8 @@ function write_store(dircode, obj)
 function current(rec, path)
 {
 	if (rec === undefined || rec === null)
+		return false;
+	if (rec.v !== VERSION)
 		return false;
 	if (rec.sz !== fsize(path) || rec.mt !== fdate(path))
 		return false;
@@ -242,11 +190,17 @@ function get(path)
 	var code = area(path);
 	if (code === undefined)
 		return null;
-	var store = read_store(code);
-	var rec = store.files[file_getname(path)];
-	if (!current(rec, path))
+	var fb = open_base(code);
+	if (fb === null)
 		return null;
-	return rec;
+	try {
+		var aux = parse_aux(fb.get(file_getname(path), FileBase.DETAIL.AUXDATA));
+		if (aux === null || !current(aux[AUXKEY], path))
+			return null;
+		return aux[AUXKEY];
+	} finally {
+		fb.close();
+	}
 }
 
 // Store a record for a path.  Returns false when the file lies outside every
@@ -256,14 +210,35 @@ function put(path, rec)
 	var code = area(path);
 	if (code === undefined)
 		return false;
-	if (!lock(code))
+	var fb = open_base(code);
+	if (fb === null)
 		return false;
 	try {
-		var store = read_store(code);
-		store.files[file_getname(path)] = rec;
-		return write_store(code, store);
+		var name = file_getname(path);
+		var file = fb.get(name, FileBase.DETAIL.AUXDATA);
+		if (file === null)
+			return false;
+		var aux = parse_aux(file);
+		if (aux === null) {
+			// Auxdata this library did not write: leave someone else's
+			// metadata alone rather than replacing it with a listing.
+			log(LOG_DEBUG, "filecontents: unrecognized auxdata left alone: " + name);
+			return false;
+		}
+		aux[AUXKEY] = rec;
+		var props = { auxdata: JSON.stringify(aux) };
+		// Hand the description and the extended description back rather than
+		// trusting the running build with either.  An older FileBase.update()
+		// wrote NULL over any text the file object didn't carry, and failed
+		// outright (SMB_ERR_NOT_FOUND) on an object holding nothing but
+		// auxdata.  Naming both costs nothing on a build that needs neither.
+		if (file.desc !== undefined)
+			props.desc = file.desc;
+		if (file.extdesc !== undefined)
+			props.extdesc = file.extdesc;
+		return fb.update(name, props) === true;
 	} finally {
-		unlock(code);
+		fb.close();
 	}
 }
 
@@ -272,7 +247,7 @@ function put(path, rec)
 function extract(path)
 {
 	var rec = {
-		t: "archive",
+		v: VERSION,
 		sz: fsize(path),
 		mt: fdate(path),
 		xv: EXTRACTORS
