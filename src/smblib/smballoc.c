@@ -34,6 +34,67 @@ static bool valid_dat_offset(off_t offset, off_t length)
 }
 
 /****************************************************************************/
+/* Reads the 'blocks' consecutive data allocation records starting at		*/
+/* 'sda_offset' (a byte offset into the .sda file) in one read, rather than	*/
+/* one seek+read per record: on a network share each of those is a round	*/
+/* trip to the file server.													*/
+/* Returns a malloc'd array the caller must free, or NULL on error.			*/
+/****************************************************************************/
+static uint16_t* read_dat_alloc(smb_t* smb, off_t sda_offset, uint blocks, const char* func, int* result)
+{
+	uint16_t* rec;
+
+	if ((rec = malloc(blocks * sizeof(*rec))) == NULL) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s malloc failure of %u allocation records", func, blocks);
+		*result = SMB_ERR_MEM;
+		return NULL;
+	}
+	clearerr(smb->sda_fp);
+	if (fseeko(smb->sda_fp, sda_offset, SEEK_SET)) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s %d '%s' seeking to %" PRIdOFF " of allocation file", func
+		              , get_errno(), strerror(get_errno()), sda_offset);
+		free(rec);
+		*result = SMB_ERR_SEEK;
+		return NULL;
+	}
+	if (smb_fread(smb, rec, blocks * sizeof(*rec), smb->sda_fp) != blocks * sizeof(*rec)) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s reading %u allocation records at offset %" PRIdOFF, func
+		              , blocks, sda_offset);
+		free(rec);
+		*result = SMB_ERR_READ;
+		return NULL;
+	}
+	*result = SMB_SUCCESS;
+	return rec;
+}
+
+/****************************************************************************/
+/* Writes 'blocks' consecutive data allocation records to 'sda_offset' in	*/
+/* one write																*/
+/****************************************************************************/
+static int write_dat_alloc(smb_t* smb, off_t sda_offset, const uint16_t* rec, uint blocks, const char* func)
+{
+	if (blocks < 1)
+		return SMB_SUCCESS;
+	if (fseeko(smb->sda_fp, sda_offset, SEEK_SET)) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s %d '%s' seeking to %" PRIdOFF " of allocation file", func
+		              , get_errno(), strerror(get_errno()), sda_offset);
+		return SMB_ERR_SEEK;
+	}
+	if (fwrite(rec, sizeof(*rec), blocks, smb->sda_fp) != blocks) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s writing %u allocation records at offset %" PRIdOFF, func
+		              , blocks, sda_offset);
+		return SMB_ERR_WRITE;
+	}
+	return SMB_SUCCESS;
+}
+
+/****************************************************************************/
 /* Finds unused space in data file based on block allocation table and		*/
 /* marks space as used in allocation table.                                 */
 /* File must be opened read/write DENY ALL									*/
@@ -145,14 +206,15 @@ off_t smb_fallocdat(smb_t* smb, off_t length, uint16_t refs)
 /****************************************************************************/
 int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 {
-	bool     da_opened = false;
-	int      retval = SMB_SUCCESS;
-	uint16_t i;
-	int      l, blocks;
-	off_t    sda_offset;
-	off_t    flen;
-	off_t    sda_blocks;
-	off_t    sdt_blocks;
+	bool      da_opened = false;
+	int       retval = SMB_SUCCESS;
+	int       i;
+	uint16_t* rec;
+	uint      l, blocks, keep;
+	off_t     sda_offset;
+	off_t     flen;
+	off_t     sda_blocks;
+	off_t     sdt_blocks;
 
 	if (offset < 0)
 		return SMB_ERR_DAT_OFFSET;
@@ -177,52 +239,25 @@ int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 	if (!smb->smbhdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
 
-	clearerr(smb->sda_fp);
-	// Free from the last block first
-	for (l = blocks - 1; l >= 0; l--) {
-		sda_offset = ((offset / SDT_BLOCK_LEN) + l) * sizeof(i);
-		if (fseeko(smb->sda_fp, sda_offset, SEEK_SET)) {
-			safe_snprintf(smb->last_error, sizeof(smb->last_error)
-			              , "%s %d '%s' seeking to %" PRIdOFF " of allocation file", __FUNCTION__
-			              , get_errno(), strerror(get_errno())
-			              , sda_offset);
-			retval = SMB_ERR_SEEK;
-			break;
+	sda_offset = (offset / SDT_BLOCK_LEN) * (off_t)sizeof(*rec);
+	if ((rec = read_dat_alloc(smb, sda_offset, blocks, __FUNCTION__, &retval)) != NULL) {
+		for (l = 0; l < blocks; l++) {
+			if (refs == SMB_ALL_REFS || refs > rec[l])
+				rec[l] = 0;     /* don't want to go negative */
+			else
+				rec[l] -= refs;
 		}
-		if (smb_fread(smb, &i, sizeof(i), smb->sda_fp) != sizeof(i)) {
-			safe_snprintf(smb->last_error, sizeof(smb->last_error)
-			              , "%s reading allocation record at offset %" PRIdOFF, __FUNCTION__
-			              , sda_offset);
-			retval = SMB_ERR_READ;
-			break;
+		// Completely free records at the end of the SDA? Just truncate them from the end of file
+		keep = blocks;
+		if (sda_offset + (off_t)blocks * (off_t)sizeof(*rec) == flen) {
+			while (keep > 0 && rec[keep - 1] == 0)
+				keep--;
+			if (keep < blocks
+			    && chsize(fileno(smb->sda_fp), sda_offset + (off_t)keep * (off_t)sizeof(*rec)) != 0)
+				keep = blocks;
 		}
-		if (refs == SMB_ALL_REFS || refs > i)
-			i = 0;          /* don't want to go negative */
-		else
-			i -= refs;
-
-		// Completely free? and at end of SDA? Just truncate record from end of file
-		if (i == 0 && ftello(smb->sda_fp) == flen) {
-			if (chsize(fileno(smb->sda_fp), sda_offset) == 0) {
-				flen = sda_offset;
-				continue;
-			}
-		}
-
-		if (fseek(smb->sda_fp, -(int)sizeof(i), SEEK_CUR)) {
-			safe_snprintf(smb->last_error, sizeof(smb->last_error)
-			              , "%s %d '%s' seeking backwards 2 bytes in allocation file", __FUNCTION__
-			              , get_errno(), strerror(get_errno()));
-			retval = SMB_ERR_SEEK;
-			break;
-		}
-		if (!fwrite(&i, sizeof(i), 1, smb->sda_fp)) {
-			safe_snprintf(smb->last_error, sizeof(smb->last_error)
-			              , "%s writing allocation bytes at offset %" PRIdOFF, __FUNCTION__
-			              , sda_offset);
-			retval = SMB_ERR_WRITE;
-			break;
-		}
+		retval = write_dat_alloc(smb, sda_offset, rec, keep, __FUNCTION__);
+		free(rec);
 	}
 	fflush(smb->sda_fp);
 	sda_blocks = filelength(fileno(smb->sda_fp)) / (off_t)sizeof(uint16_t);
@@ -243,39 +278,27 @@ int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 /****************************************************************************/
 int smb_incdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 {
-	uint16_t i;
-	uint     l, blocks;
+	uint16_t* rec;
+	uint      l, blocks;
+	off_t     sda_offset;
+	int       retval;
 
 	if (smb->sda_fp == NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
 		return SMB_ERR_NOT_OPEN;
 	}
-	clearerr(smb->sda_fp);
 	blocks = smb_datblocks(length);
-	for (l = 0; l < blocks; l++) {
-		if (fseeko(smb->sda_fp, ((offset / SDT_BLOCK_LEN) + l) * sizeof(i), SEEK_SET)) {
-			safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s seeking to %" PRIdOFF, __FUNCTION__
-			              , ((offset / SDT_BLOCK_LEN) + l) * sizeof(i));
-			return SMB_ERR_SEEK;
-		}
-		if (smb_fread(smb, &i, sizeof(i), smb->sda_fp) != sizeof(i)) {
-			safe_snprintf(smb->last_error, sizeof(smb->last_error)
-			              , "%s reading allocation record at offset %" PRIdOFF, __FUNCTION__
-			              , ((offset / SDT_BLOCK_LEN) + l) * sizeof(i));
-			return SMB_ERR_READ;
-		}
-		i += refs;
-		if (fseek(smb->sda_fp, -(int)sizeof(i), SEEK_CUR)) {
-			safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s rewinding %d", __FUNCTION__, -(int)sizeof(i));
-			return SMB_ERR_SEEK;
-		}
-		if (!fwrite(&i, sizeof(i), 1, smb->sda_fp)) {
-			safe_snprintf(smb->last_error, sizeof(smb->last_error)
-			              , "%s writing allocation record at offset %" PRIdOFF, __FUNCTION__
-			              , ((offset / SDT_BLOCK_LEN) + l) * sizeof(i));
-			return SMB_ERR_WRITE;
-		}
-	}
+	if (blocks < 1)
+		return SMB_SUCCESS;
+	sda_offset = (offset / SDT_BLOCK_LEN) * (off_t)sizeof(*rec);
+	if ((rec = read_dat_alloc(smb, sda_offset, blocks, __FUNCTION__, &retval)) == NULL)
+		return retval;
+	for (l = 0; l < blocks; l++)
+		rec[l] += refs;
+	retval = write_dat_alloc(smb, sda_offset, rec, blocks, __FUNCTION__);
+	free(rec);
+	if (retval != SMB_SUCCESS)
+		return retval;
 	return fflush(smb->sda_fp); /* SMB_SUCCESS == 0 */
 }
 

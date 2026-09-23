@@ -19,7 +19,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define SMBUTIL_VER "3.21"
+#define SMBUTIL_VER "3.22"
 char        compiler[32];
 
 const char *wday[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};

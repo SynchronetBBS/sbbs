@@ -202,7 +202,7 @@ int main(int argc, char **argv)
 	hash_t**      hashes;
 	time_t        now = time(NULL);
 
-	fprintf(stderr, "\nCHKSMB v3.21-%s %s/%s SMBLIB %s - Check Synchronet Message/File Base\n"
+	fprintf(stderr, "\nCHKSMB v3.22-%s %s/%s SMBLIB %s - Check Synchronet Message/File Base\n"
 	        , PLATFORM_DESC, GIT_BRANCH, GIT_HASH, smb_lib_ver());
 
 	if (argc < 2) {
