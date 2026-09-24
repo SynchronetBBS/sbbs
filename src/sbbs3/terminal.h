@@ -66,6 +66,8 @@ public:
 	unsigned lbuflen{0};               /* Number of characters in line buffer */
 	char     lbuf[LINE_BUFSIZE + 1]{}; /* Temp storage for each line output */
 	enum output_rate cur_output_rate{output_rate_unlimited};
+	enum output_rate saved_output_rate{output_rate_unlimited};
+	bool     rate_suspended{false};
 	unsigned mouse_mode{MOUSE_MODE_OFF};            // Mouse reporting mode flags
 	bool pause_hotspot{false};
 	bool optimize_gotoxy{false};
@@ -318,6 +320,25 @@ public:
 		}
 	}
 	virtual void set_output_rate(enum output_rate speed) {}
+
+	/* True while output is inside a DCS/OSC/PM/APC control string. */
+	virtual bool in_control_string() { return false; }
+
+	/* SyncTERM paces every wire byte against the emulated rate, so a
+	   bulk control string must not be sent under it. */
+	void suspend_output_rate() {
+		if (rate_suspended || cur_output_rate == output_rate_unlimited)
+			return;
+		saved_output_rate = cur_output_rate;
+		set_output_rate(output_rate_unlimited);
+		rate_suspended = true;
+	}
+	void restore_output_rate() {
+		if (!rate_suspended)
+			return;
+		set_output_rate(saved_output_rate);
+		rate_suspended = false;
+	}
 
 	virtual uint print_cols(int mode) {
 		uint cols = this->cols;

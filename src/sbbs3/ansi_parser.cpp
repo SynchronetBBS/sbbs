@@ -1,6 +1,15 @@
 #include "ansi_parser.h"
 
 #include <stdio.h>
+void
+ANSI_Parser::append(unsigned char ch)
+{
+	if (ansi_sequence.length() < max_sequence_len)
+		ansi_sequence += ch;
+	else
+		sequence_overflow++;
+}
+
 enum ansiState
 ANSI_Parser::parse(unsigned char ch)
 {
@@ -8,11 +17,11 @@ ANSI_Parser::parse(unsigned char ch)
 		case ansiState_none:
 			if (ch == '\x1b') {
 				state = ansiState_esc;
-				ansi_sequence += ch;
+				append(ch);
 			}
 			break;
 		case ansiState_esc:
-			ansi_sequence += ch;
+			append(ch);
 			if (ch == '[') {
 				state = ansiState_csi;
 				ansi_params = "";
@@ -39,7 +48,7 @@ ANSI_Parser::parse(unsigned char ch)
 			}
 			break;
 		case ansiState_csi:
-			ansi_sequence += ch;
+			append(ch);
 			if (ch >= '0' && ch <= '?') {
 				if (ansi_params == "" && ch >= '<' && ch <= '?')
 					ansi_was_private = true;
@@ -58,7 +67,7 @@ ANSI_Parser::parse(unsigned char ch)
 			}
 			break;
 		case ansiState_intermediate:
-			ansi_sequence += ch;
+			append(ch);
 			if (ch >= ' ' && ch <= '/') {
 				ansi_ibs += ch;
 				state = ansiState_intermediate;
@@ -72,19 +81,19 @@ ANSI_Parser::parse(unsigned char ch)
 			}
 			break;
 		case ansiState_string: // APS, DCS, PM, or OSC
-			ansi_sequence += ch;
+			append(ch);
 			if (ch == '\x1b')
 				state = ansiState_esc;
 			else if (!((ch >= '\b' && ch <= '\r') || (ch >= ' ' && ch <= '~')))
 				state = ansiState_broken;
 			break;
 		case ansiState_sos: // SOS
-			ansi_sequence += ch;
+			append(ch);
 			if (ch == '\x1b')
 				state = ansiState_sos_esc;
 			break;
 		case ansiState_sos_esc: // ESC inside SOS
-			ansi_sequence += ch;
+			append(ch);
 			if (ch == '\\')
 				state = ansiState_esc;
 			else if (ch == 'X')
@@ -114,6 +123,7 @@ ANSI_Parser::reset()
 	ansi_params.clear();
 	ansi_ibs.clear();
 	ansi_sequence.clear();
+	sequence_overflow = 0;
 	state = ansiState_none;
 	ansi_final_byte = 0;
 	ansi_was_cc = false;
