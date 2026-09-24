@@ -603,7 +603,8 @@ typedef enum {                       // Values for xtrn_t.event
 #define AUTOLOGON   (1 << 22)     // AutoLogon via IP
 #define HTML_UNUSED (1 << 23)     // Using Zuul/HTML terminal
 #define NOPAUSESPIN (1 << 24)     // No spinning cursor at pause prompt
-// Bit 25 is undefined but NOT free: it is set in existing user records.
+// Bit 25 was CTERM_FONTS, removed in 462ff72b05 (slot-13-task, 2019-07-12).
+// Terminal auto-detection set it, so it persists in pre-2020 user records.
 #define PETSCII     (1 << 26)     // Commodore PET/CBM terminal
 #define SWAP_DELETE (1 << 27)     // Swap Delete and Backspace keys
 #define ICE_COLOR   (1 << 28)     // Bright background color support
