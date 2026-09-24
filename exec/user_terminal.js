@@ -81,6 +81,11 @@ while(bbs.online && !js.terminated) {
 		console.add_hotspot('M');
 		console.newline();
 	}
+	console.print(format(options.option_with_val_fmt, 'S', options.text_sound || gettext("Sound")
+		, on_or_off(!(user.settings & USER_NO_SOUND))));
+	keys += 'S';
+	console.add_hotspot('S');
+	console.newline();
 	if (!term_supports(USER_PETSCII)) {
 		console.print(format(options.option_with_val_fmt, 'B', options.text_backspace || gettext("Backspace")
 			, (user.settings & USER_SWAP_DELETE) ? options.text_del || gettext("DEL") : options.text_ctrl_h || gettext("Ctrl-H")));
@@ -151,6 +156,9 @@ while(bbs.online && !js.terminated) {
 		case 'M':
 			console.newline();
 			prompts.get_mouse(user);
+			break;
+		case 'S':
+			user.settings ^= USER_NO_SOUND;
 			break;
 		case 'Q':
 		case '\r':

@@ -109,15 +109,6 @@ function display_menu(thisuser)
 		console.print(format(bbs.text(bbs.text.UserDefaultsCLS)
 			,on_or_off(thisuser.settings & USER_CLRSCRN)));
 	}
-	// Guarded: this string post-dates some binaries, and bbs.text() returns
-	// undefined for an id the running binary does not have.
-	if (typeof bbs.text.UserDefaultsSound != "undefined"
-	    && bbs.text(bbs.text.UserDefaultsSound).length) {
-		keys += 'V';
-		console.add_hotspot('V');
-		console.print(format(bbs.text(bbs.text.UserDefaultsSound)
-			,on_or_off(!(thisuser.settings & USER_NO_SOUND))));
-	}
 	if (bbs.text(bbs.text.UserDefaultsAskNScan).length) {
 		keys += 'N';
 		console.add_hotspot('N');
@@ -222,9 +213,6 @@ while (bbs.online && !js.terminated) {
 			break;
 		case 'C':
 			thisuser.settings ^= USER_CLRSCRN;
-			break;
-		case 'V':
-			thisuser.settings ^= USER_NO_SOUND;
 			break;
 		case 'D':
 			thisuser.settings ^= USER_QUIET;

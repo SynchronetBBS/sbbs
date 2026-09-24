@@ -966,7 +966,6 @@ enum text {
 	,SeekHelp
 	,InvalidSearchExpression
 	,UeditARSearchPrompt
-	,UserDefaultsSound
 
 	,TOTAL_TEXT
 };
