@@ -2,6 +2,16 @@
 
 ## General
 
+- New `@SOUND:`, `@MUSIC:`, `@MUSICVOL:`, `@MUSICOFF@`, `@SOUNDOFF@` and
+  `@CACHE_AUDIO:` @-codes play sound effects and background music in the
+  user's terminal, from files in `text/sound` (see the README there).
+  Terminals that cannot decode audio are detected when the user connects
+  and are sent nothing at all. Bounded by `max_sound_file_size` and
+  `max_cache_file_size` in `ctrl/main.ini`
+- New user setting (Terminal settings in the user defaults menu) to
+  suppress BBS-initiated sound, covering both the terminal bell and the
+  new audio @-codes
+
 - Optional **internal MQTT 5.0 broker** built into Synchronet (no
   external libmosquitto dependency)
 - Optional **internal MQTT 5.0 client**, used as a fallback when
