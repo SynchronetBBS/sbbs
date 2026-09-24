@@ -1144,3 +1144,4 @@
 	" \1h@QUITCHAR@\1n\1c=@Quit@\r\n\1-"
 "\1n\1h\1rInvalid search expression: \1c%s\1n\r\n"         948 InvalidSearchExpression
 "\1_\1\\\1y\1hAR string to search for\1\\: "               949 UeditARSearchPrompt
+"\1n\1b[\1h\1wV\1n\1b] \1hSound Effects and Music\1n\1b: \1c%s\r\n"  950 UserDefaultsSound

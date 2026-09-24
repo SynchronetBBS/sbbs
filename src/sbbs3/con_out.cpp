@@ -378,6 +378,8 @@ size_t sbbs_t::cp437_out(int ich)
 		return 0;
 	if (!online)
 		return 0;
+	if (ch == '\a' && (sys_status & SS_USERON) && (useron.misc & NO_SOUND))
+		return 1;
 
 	// Many of the low CP437 characters will print on many terminals,
 	// so we may want to translate some of them.

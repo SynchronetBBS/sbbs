@@ -824,6 +824,21 @@ function query_audio()
 {
 	if(_audio_caps !== undefined)
 		return _audio_caps;
+	// A user who has muted BBS-initiated sound gets silence, with no round trip.
+	// user.settings is user.misc, so this works on builds predating the flag:
+	// the bit is simply never set there.
+	if(typeof user != "undefined" && user.number
+	    && (user.settings & USER_NO_SOUND)) {
+		_audio_caps = -1;
+		return _audio_caps;
+	}
+	// Synchronet detects this during terminal auto-detection; when it says yes
+	// there is nothing left to ask. A false reading cannot tell "no libsndfile"
+	// from "no audio APC at all", so that case still queries.
+	if(typeof console != "undefined" && console.audio_files === true) {
+		_audio_caps = 1;
+		return _audio_caps;
+	}
 	var r = query_fb('\x1b_SyncTERM:Q;libsndfile\x1b\\', 'n');
 	var m = r.match(/\x1b\[=7;100;([01])n/);
 	_audio_caps = m ? parseInt(m[1], 10) : -1;

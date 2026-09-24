@@ -847,6 +847,9 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strcmp(sp, "PAUSESPIN") == 0)
 		return (useron.misc & NOPAUSESPIN) ? text[Off] : text[On];
 
+	if (strcmp(sp, "SOUND") == 0)
+		return (useron.misc & NO_SOUND) ? text[Off] : text[On];
+
 	if (strcmp(sp, "EXPERT") == 0)
 		return (useron.misc & EXPERT) ? text[On] : text[Off];
 
