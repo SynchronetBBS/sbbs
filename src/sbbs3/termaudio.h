@@ -29,6 +29,16 @@
 /* Refuse an absurd boost: the APC's dB parser is unclamped. */
 #define TERMAUDIO_DB_MAX   (20.0f)
 
+/* Mixer channel conventions, shared with exec/load/cterm_lib.js. Both
+   implementations write to one terminal, so they must agree: 0 and 1 are
+   cterm's own streams and cannot be queued onto, 2 is reserved for music,
+   3..15 rotate for effects. A Queue empties the slot it reads, so every play
+   needs its own Load. */
+#define TERMAUDIO_CHAN_MUSIC 2
+#define TERMAUDIO_CHAN_FIRST 3
+#define TERMAUDIO_CHAN_LAST  15
+#define TERMAUDIO_SLOT_LAST  255
+
 #ifdef __cplusplus
 extern "C" {
 #endif

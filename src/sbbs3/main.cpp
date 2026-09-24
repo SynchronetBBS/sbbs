@@ -4033,6 +4033,8 @@ sbbs_t::~sbbs_t()
 	listFree(&smb_list);
 
 	free(mod_callstack); // Don't need to free the strings themselves since they're all const ptrs
+	strListFree(&audio_cache_names);
+	strListFree(&audio_warned);
 
 #ifdef USE_CRYPTLIB
 	if (ssh_mutex_created && pthread_mutex_destroy(&ssh_mutex))

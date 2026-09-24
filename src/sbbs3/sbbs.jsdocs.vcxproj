@@ -730,6 +730,7 @@
     </ClCompile>
     <ClCompile Include="terminal.cpp" />
     <ClCompile Include="termaudio.c" />
+    <ClCompile Include="termaudio_cache.cpp" />
     <ClCompile Include="text_defaults.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>

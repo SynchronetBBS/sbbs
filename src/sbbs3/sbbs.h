@@ -772,6 +772,25 @@ public:
 #endif
 	;
 	str_list_t mod_callstack{};
+
+	/* Terminal audio session state (termaudio_cache.cpp). The client's C;S
+	   cache lives on its own disk and outlives the session, so these track
+	   what this session has already put there. */
+	str_list_t audio_cache_names{};
+	str_list_t audio_warned{};
+	bool       audio_cache_listed{false};
+	unsigned   audio_next_slot{0};
+	unsigned   audio_next_chan{0};
+
+	bool recv_apc_reply(char* buf, size_t bufsz, size_t* len, unsigned timeout_ms);
+	void audio_warn_once(const char* path, const char* reason);
+	void audio_cache_list(void);
+	bool audio_cache_file(const char* path, char* cachename, size_t cnsz
+	                      , uint32_t maxsize);
+	void audio_play(const char* cachename, bool music, float db);
+	void audio_flush_all(void);
+	void audio_flush_music(unsigned fade_ms);
+	void audio_music_volume(float db);
 	void	clearvars(csi_t *bin);
 	void	freevars(csi_t *bin);
 	char**	getstrvar(csi_t *bin, uint32_t name);

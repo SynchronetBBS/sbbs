@@ -106,6 +106,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/telnet$(OFILE)\
 			$(MTOBJODIR)/terminal$(OFILE)\
 			$(MTOBJODIR)/termaudio$(OFILE)\
+			$(MTOBJODIR)/termaudio_cache$(OFILE)\
 			$(MTOBJODIR)/text_sec$(OFILE)\
 			$(MTOBJODIR)/tmp_xfer$(OFILE)\
 			$(MTOBJODIR)/trash$(OFILE)\
