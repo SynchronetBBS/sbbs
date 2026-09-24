@@ -58,6 +58,8 @@ public:
 	unsigned tabstop{8};               /* Current symmetric-tabstop (size) */
 	unsigned lastcrcol{0};             /* Column when last CR occured (previously lastlinelen) */
 	unsigned cterm_version{0};	   /* (MajorVer*1000) + MinorVer */
+	bool     audio_apc{false};	   /* Terminal answered the audio feature query */
+	bool     audio_files{false};	   /* Terminal can decode audio files (libsndfile) */
 	unsigned lncntr{0};                /* Line Counter - for PAUSE */
 	unsigned latr{ANSI_NORMAL};        /* Starting attribute of line buffer */
 	uint32_t curatr{ANSI_NORMAL};      /* Current Text Attributes Always */
@@ -151,7 +153,8 @@ public:
 	// Create from Terminal*, ie: Update
 	Terminal(Terminal *t) : row{t->row}, column{t->column},
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastcrcol{t->lastcrcol}, 
-	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
+	    cterm_version{t->cterm_version}, audio_apc{t->audio_apc},
+	    audio_files{t->audio_files}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
 	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
 	    suspend_lbuf{t->suspend_lbuf},
 	    mouse_hotspots{t->mouse_hotspots}, sbbs{t->sbbs}, flags_{get_flags(t->sbbs)},
@@ -173,7 +176,8 @@ public:
 	// Create from sbbsptr* and Terminal*, ie: Create a copy
 	Terminal(sbbs_t *sbbsptr, Terminal *t) : row{t->row}, column{t->column},
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastcrcol{t->lastcrcol}, 
-	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
+	    cterm_version{t->cterm_version}, audio_apc{t->audio_apc},
+	    audio_files{t->audio_files}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
 	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
 	    suspend_lbuf{t->suspend_lbuf},
 	    mouse_hotspots{listPtrInit(0)}, sbbs{sbbsptr}, flags_{get_flags(t->sbbs)},

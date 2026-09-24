@@ -22,6 +22,7 @@
 #include <stddef.h> // size_t for base64.h
 #include "base64.h"
 #include "sbbs.h"
+#include "termaudio.h"
 #include "telnet.h"
 #include "ssl.h"
 
@@ -599,6 +600,7 @@ bool sbbs_t::answer()
 			term_out( "\r\n"      /* locate cursor at column 1 */
 			        "\x1b[s"    /* save cursor position (necessary for HyperTerm auto-ANSI) */
 			        "\x1b[0c"   /* Request CTerm version */
+			        "\x1b_SyncTERM:Q;libsndfile\x1b\\"  /* Query terminal audio-file support */
 			        "\x1b[255B" /* locate cursor as far down as possible */
 			        "\x1b[255C" /* locate cursor as far right as possible */
 			        "\x1b[30;40m" // black on black
@@ -678,6 +680,14 @@ bool sbbs_t::answer()
 					} else if (sscanf(p, "[=67;84;101;114;109;%u;%u", &x, &y) == 2 && *lastchar(p) == 'c') {
 						lprintf(LOG_INFO, "received CTerm version report: %u.%u", x, y);
 						term->cterm_version = (x * 1000) + y;
+					} else {
+						int audio_state = termaudio_parse_audio_state(p);
+						if (audio_state >= 0) {
+							lprintf(LOG_DEBUG, "received terminal audio state report: libsndfile=%d"
+							        , audio_state);
+							term->audio_apc = true;
+							term->audio_files = (audio_state == 1);
+						}
 					}
 					p = strtok_r(NULL, "\x1b", &tokenizer);
 				}

@@ -47,6 +47,7 @@ enum {
 	, CON_PROP_CHARSET
 	, CON_PROP_UNICODE_ZEROWIDTH
 	, CON_PROP_CTERM_VERSION
+	, CON_PROP_AUDIO_FILES
 	, CON_PROP_WORDWRAP
 	, CON_PROP_QUESTION
 	, CON_PROP_MAX_GETKEY_INACTIVITY
@@ -153,6 +154,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CON_PROP_CTERM_VERSION:
 			val = sbbs->term->cterm_version;
 			break;
+		case CON_PROP_AUDIO_FILES:
+			*vp = BOOLEAN_TO_JSVAL(sbbs->term->audio_files);
+			return JS_TRUE;
 		case CON_PROP_MAX_GETKEY_INACTIVITY:
 			val = sbbs->cfg.max_getkey_inactivity;
 			break;
@@ -447,6 +451,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "charset", CON_PROP_CHARSET, JSPROP_ENUMERATE | JSPROP_READONLY, 31702},
 	{   "unicode_zerowidth", CON_PROP_UNICODE_ZEROWIDTH, CON_PROP_FLAGS, 320},
 	{   "cterm_version", CON_PROP_CTERM_VERSION, CON_PROP_FLAGS, 317},
+	{   "audio_files", CON_PROP_AUDIO_FILES, JSPROP_ENUMERATE | JSPROP_READONLY, 322},
 	{   "max_getkey_inactivity", CON_PROP_MAX_GETKEY_INACTIVITY, CON_PROP_FLAGS, 320},
 	{   "inactivity_hangup", CON_PROP_MAX_GETKEY_INACTIVITY, 0, 31401},                  // alias
 	{   "getkey_inactivity_warning", CON_PROP_GETKEY_INACTIVITY_WARN, JSPROP_ENUMERATE | JSPROP_READONLY, 32002},
@@ -506,6 +511,7 @@ static const char*        con_prop_desc[] = {
 	, "Terminal character set (i.e. 'UTF-8', 'CP437', 'CBM-ASCII', or 'US-ASCII')"
 	, "Detected width of 'ZERO-WIDTH' UNICODE characters, in columns (either 0 or 1)"
 	, "Detected CTerm (SyncTERM) version as an integer > 1000 where major version is cterm_version / 1000 and minor version is cterm_version % 1000"
+	, "Terminal can decode audio files (libsndfile present in the client)"
 	, "Number of seconds before disconnection due to user/keyboard inactivity (in getkey/getstr)"
 	, "Number of seconds before warning the user of pending disconnection due to user/keyboard inactivity (or 0 if disabled)"
 	, "User/keyboard inactivity timeout reference value (time_t format)"
