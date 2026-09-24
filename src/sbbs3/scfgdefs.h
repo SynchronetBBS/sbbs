@@ -676,6 +676,8 @@ typedef struct
 	uint			stats_interval;		// Statistics read interval in seconds (cache duration)
 	uint			cache_filter_files;
 	uint			totals_interval;	// Message/file re-count interval in seconds (0=disabled)
+	uint32_t		max_sound_file_size;	// @SOUND:/@MUSIC:, sent during a display file
+	uint32_t		max_cache_file_size;	// @CACHE_AUDIO:, preloaded deliberately
 
 	// Run-time state information (not configuration)
 

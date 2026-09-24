@@ -188,6 +188,8 @@ bool write_main_cfg(scfg_t* cfg)
 	iniSetUInteger(&ini, ROOT_SECTION, "cdt_min_value", cfg->cdt_min_value, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "max_minutes", cfg->max_minutes, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "cdt_per_dollar", cfg->cdt_per_dollar, NULL);
+	iniSetUInteger(&ini, ROOT_SECTION, "max_sound_file_size", cfg->max_sound_file_size, NULL);
+	iniSetUInteger(&ini, ROOT_SECTION, "max_cache_file_size", cfg->max_cache_file_size, NULL);
 	iniSetBool(&ini, ROOT_SECTION, "new_install", cfg->new_install, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "guest_msgscan_init", cfg->guest_msgscan_init, NULL);
 	iniSetBool(&ini, ROOT_SECTION, "hq_password", cfg->hq_password, NULL);

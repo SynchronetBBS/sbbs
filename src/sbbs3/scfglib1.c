@@ -186,6 +186,8 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->cdt_min_value =  iniGetUInt16(ini, ROOT_SECTION, "cdt_min_value", 0);
 	cfg->max_minutes = iniGetInteger(ini, ROOT_SECTION, "max_minutes", 0);
 	cfg->cdt_per_dollar = (uint32_t)iniGetBytes(ini, ROOT_SECTION, "cdt_per_dollar", 1, 0);
+	cfg->max_sound_file_size = (uint32_t)iniGetBytes(ini, ROOT_SECTION, "max_sound_file_size", 1, 256 * 1024);
+	cfg->max_cache_file_size = (uint32_t)iniGetBytes(ini, ROOT_SECTION, "max_cache_file_size", 1, 4 * 1024 * 1024);
 	cfg->guest_msgscan_init = iniGetInteger(ini, ROOT_SECTION, "guest_msgscan_init", 0);
 	cfg->hq_password = iniGetBool(ini, ROOT_SECTION, "hq_password", false);
 	cfg->min_pwlen = iniGetInteger(ini, ROOT_SECTION, "min_password_length", 0);
