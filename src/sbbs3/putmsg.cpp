@@ -89,6 +89,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 	int                  i;
 	unsigned             col = term->column;
 	uint                 l = 0;
+	uint                 ansi_start = 0; // offset of the control sequence being parsed
 	uint                 lines_printed = 0;
 	struct mouse_hotspot hot_spot = {};
 
@@ -393,6 +394,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			 * (The last is done that way for backward compatibility)
 			 */
 			if (term->supports(ANSI)) {
+				if (ansiParser.current_state() == ansiState_none)
+					ansi_start = l;
 				switch (ansiParser.parse(str[l])) {
 					case ansiState_broken:
 						// TODO: Maybe just strip the CSI or something?
@@ -436,7 +439,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 								if (strchr("AFkBEeHfJdu", ansiParser.ansi_final_byte) != nullptr)    /* ANSI anim */
 									term->lncntr = 0; /* so defeat pause */
 							}
-							term_out(ansiParser.ansi_sequence.c_str(), ansiParser.ansi_sequence.length());
+							term_out(str + ansi_start, (l - ansi_start) + 1);
 						}
 						ansiParser.reset();
 						l++;

@@ -910,8 +910,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	/* Stopping sound is deliberately not gated on NO_SOUND: the flag can be
 	   set while a loop is already playing. */
 	if (strcmp(sp, "MUSICOFF") == 0 || strncmp(sp, "MUSICOFF:", 9) == 0) {
-		if (term->audio_files)
-			audio_flush_music(sp[8] == ':' ? (unsigned)atoi(sp + 9) : 0);
+		{
+			int fade = (sp[8] == ':') ? atoi(sp + 9) : 0;
+			if (term->audio_files)
+				audio_flush_music(fade > 0 ? (unsigned)fade : 0);
+		}
 		return nulstr;
 	}
 

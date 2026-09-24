@@ -22,6 +22,7 @@
    overflow, which costs bandwidth but is never wrong. */
 #define TERMAUDIO_LIST_BUFSIZE 8192
 #define TERMAUDIO_LIST_MAX     64
+#define TERMAUDIO_MAX_WARNED   32
 
 /****************************************************************************/
 /* Reads an APC reply (ESC _ ... ESC \) from the remote, storing the bytes	*/
@@ -37,8 +38,10 @@ bool sbbs_t::recv_apc_reply(char* buf, size_t bufsz, size_t* len, unsigned timeo
 	if (buf == NULL || bufsz == 0 || len == NULL)
 		return false;
 	*len = 0;
-	clearabort();
+	time_t deadline = time(NULL) + ((timeout_ms / 1000) + 2);
 	while (online && !(sys_status & SS_ABORT)) {
+		if (time(NULL) > deadline)
+			return false;
 		if ((ch = incom(timeout_ms)) == NOINP)
 			return false;
 		switch (state) {
@@ -86,6 +89,11 @@ void sbbs_t::audio_warn_once(const char* path, const char* reason)
 		return;
 	if (strListFind(audio_warned, path, /* case_sensitive: */ true) >= 0)
 		return;
+	/* Bounded: @-codes are reachable from message text on a sub-board whose
+	   n_pmode clears P_NOATCODES, so a single post could otherwise name an
+	   unlimited number of distinct missing files. */
+	if (strListCount(audio_warned) >= TERMAUDIO_MAX_WARNED)
+		return;
 	strListPush(&audio_warned, path);
 	lprintf(LOG_WARNING, "audio file %s %s", path, reason);
 }
@@ -108,8 +116,11 @@ void sbbs_t::audio_cache_list(void)
 	if (audio_cache_names == NULL)
 		audio_cache_names = strListInit();
 
+	term->suspend_output_rate();
 	term_out("\x1b_SyncTERM:C;L;sbbs_*\x1b\\");
-	if (!recv_apc_reply(body, sizeof(body), &len, 3000)) {
+	bool got = recv_apc_reply(body, sizeof(body), &len, 3000);
+	term->restore_output_rate();
+	if (!got) {
 		lprintf(LOG_DEBUG, "no C;L reply; treating the client cache as empty");
 		return;                     /* empty list: everything re-uploads */
 	}
@@ -145,7 +156,7 @@ bool sbbs_t::audio_cache_file(const char* path, char* cachename, size_t cnsz
 		audio_warn_once(path, "is missing or empty");
 		return false;
 	}
-	if ((uint32_t)len > maxsize) {
+	if (len > (off_t)maxsize) {
 		audio_warn_once(path, "exceeds the configured size limit");
 		return false;
 	}
@@ -187,6 +198,7 @@ bool sbbs_t::audio_cache_file(const char* path, char* cachename, size_t cnsz
 		return false;
 	}
 	if (b64_encode(b64, b64size, data, (size_t)len) > 0) {
+		bool saved_lbuf = term->suspend_lbuf;
 		term->suspend_output_rate();
 		term->suspend_lbuf = true;
 		term_out("\x1b_SyncTERM:C;S;");
@@ -194,7 +206,7 @@ bool sbbs_t::audio_cache_file(const char* path, char* cachename, size_t cnsz
 		term_out(";");
 		term_out(b64);
 		term_out("\x1b\\");
-		term->suspend_lbuf = false;
+		term->suspend_lbuf = saved_lbuf;
 		term->restore_output_rate();
 		strListPush(&audio_cache_names, name);
 		ok = true;

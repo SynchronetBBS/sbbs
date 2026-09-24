@@ -121,6 +121,39 @@ int main(void)
 		CHECK(st == ansiState_broken, "illegal byte still breaks a capped string");
 	}
 
+	/* --- a caller must reconstruct a control string from its own source buffer,
+	   not from ansi_sequence. putmsg() passes sequences through to the client
+	   this way; using the capped copy would drop the terminator and leave the
+	   client swallowing everything after it. --- */
+	{
+		ANSI_Parser p;
+		std::string seq = "\x1b_SyncTERM:C;S;n;";
+		seq.append(8192, 'D');
+		seq += "\x1b\\";
+		std::string tail = "AFTER";
+		std::string input = seq + tail;
+		std::string emitted, passthrough;
+		size_t start = 0;
+
+		for (size_t i = 0; i < input.length(); i++) {
+			if (p.current_state() == ansiState_none)
+				start = i;
+			enum ansiState st = p.parse((unsigned char)input[i]);
+			if (st == ansiState_final) {
+				emitted.assign(input, start, i - start + 1);
+				p.reset();
+			} else if (st == ansiState_none) {
+				passthrough += input[i];
+			}
+		}
+		CHECK(emitted == seq, "source span reconstructs the whole sequence (%u of %u bytes)"
+		      , (unsigned)emitted.length(), (unsigned)seq.length());
+		CHECK(passthrough == tail, "text after the sequence still passes through");
+		/* The capped copy is deliberately NOT sufficient for that job: */
+		CHECK(p.ansi_sequence.length() < seq.length(),
+		      "ansi_sequence alone would have been short");
+	}
+
 	printf("%d tests run, %d failed\n", tests_run, tests_failed);
 	return tests_failed == 0 ? 0 : 1;
 }
