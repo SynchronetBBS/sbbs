@@ -2947,6 +2947,10 @@ void sys_cfg(void)
 						, cfg.cache_filter_files > 0 ? duration_to_vstr(cfg.cache_filter_files, str, sizeof str) : strDisabled);
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Msg/File Total Interval"
 						, cfg.totals_interval > 0 ? duration_to_vstr(cfg.totals_interval, str, sizeof str) : strDisabled);
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Max Sound File Size"
+						, byte_count_to_str(cfg.max_sound_file_size, tmp, sizeof tmp));
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Max Cached File Size"
+						, byte_count_to_str(cfg.max_cache_file_size, tmp, sizeof tmp));
 					opt[i][0] = 0;
 					uifc.helpbuf =
 						"`System Advanced Options:`\n"
@@ -3452,6 +3456,65 @@ void sys_cfg(void)
 							           , "Message/File Total Interval (cache duration)"
 							           , str, 10, K_UPPER | K_EDIT);
 							cfg.totals_interval = (uint)parse_duration(str);
+							break;
+						case 24:
+							uifc.helpbuf =
+								"`Maximum Sound File Size:`\n"
+								"\n"
+								"The largest sound file the `@SOUND:` and `@MUSIC:` @-codes will send\n"
+								"to a user's terminal.  A larger file is not played, and the reason\n"
+								"is logged once per file.\n"
+								"\n"
+								"These two @-codes send the file while a display file is being drawn,\n"
+								"so the user waits for it.  The file is sent once per terminal and\n"
+								"cached there, not once per call, so the wait falls on a user's first\n"
+								"visit only.\n"
+								"\n"
+								"`Max Cached File Size` governs `@CACHE_AUDIO:`, which sends a file\n"
+								"without playing it and is meant to be placed where a pause is\n"
+								"expected, such as the logon sequence.  That limit is higher for\n"
+								"exactly that reason.\n"
+								"\n"
+								"Sound files are read from the `sound` sub-directory of your `text`\n"
+								"directory.  Terminals that cannot play audio are detected when the\n"
+								"user connects and are sent nothing at all.\n"
+								"\n"
+								"This setting takes effect after the terminal server is recycled.\n"
+								"\n"
+								"If unsure, leave this value set to `256K`, the default.\n"
+							;
+							byte_count_to_str(cfg.max_sound_file_size, str, sizeof(str));
+							if (uifc.input(WIN_MID | WIN_SAV, 0, 0
+							               , "Maximum Sound File Size (in bytes)"
+							               , str, 10, K_EDIT | K_UPPER) > 0)
+								cfg.max_sound_file_size = (uint32_t)parse_byte_count(str, 1);
+							break;
+						case 25:
+							uifc.helpbuf =
+								"`Maximum Cached File Size:`\n"
+								"\n"
+								"The largest sound file the `@CACHE_AUDIO:` @-code will send to a\n"
+								"user's terminal.  A larger file is not sent, and the reason is\n"
+								"logged once per file.\n"
+								"\n"
+								"`@CACHE_AUDIO:` sends a file without playing it, so that a later\n"
+								"`@MUSIC:` or `@SOUND:` naming the same file starts immediately.\n"
+								"Place it where a pause is already expected, such as the logon\n"
+								"sequence, and this limit can be generous.\n"
+								"\n"
+								"The file is sent once per terminal and kept there between calls, so\n"
+								"a large piece of background music costs a user only their first\n"
+								"visit.\n"
+								"\n"
+								"This setting takes effect after the terminal server is recycled.\n"
+								"\n"
+								"If unsure, leave this value set to `4M`, the default.\n"
+							;
+							byte_count_to_str(cfg.max_cache_file_size, str, sizeof(str));
+							if (uifc.input(WIN_MID | WIN_SAV, 0, 0
+							               , "Maximum Cached File Size (in bytes)"
+							               , str, 10, K_EDIT | K_UPPER) > 0)
+								cfg.max_cache_file_size = (uint32_t)parse_byte_count(str, 1);
 							break;
 					}
 				}
