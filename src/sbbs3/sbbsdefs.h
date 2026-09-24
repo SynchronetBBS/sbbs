@@ -603,11 +603,12 @@ typedef enum {                       // Values for xtrn_t.event
 #define AUTOLOGON   (1 << 22)     // AutoLogon via IP
 #define HTML_UNUSED (1 << 23)     // Using Zuul/HTML terminal
 #define NOPAUSESPIN (1 << 24)     // No spinning cursor at pause prompt
-#define NO_SOUND    (1 << 25)     // Suppress BBS-initiated sound (bell and terminal audio)
+// Bit 25 is undefined but NOT free: it is set in existing user records.
 #define PETSCII     (1 << 26)     // Commodore PET/CBM terminal
 #define SWAP_DELETE (1 << 27)     // Swap Delete and Backspace keys
 #define ICE_COLOR   (1 << 28)     // Bright background color support
 #define UTF8        (1 << 29)     // UTF-8 terminal
+#define NO_SOUND    (1 << 30)     // Suppress BBS-initiated sound (bell and terminal audio)
 #define MOUSE       (1U << 31)    // Mouse supported terminal
 
 // TODO: Really, NO_EXASCII  and UTF8 are not terminal flags.

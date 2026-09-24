@@ -28,11 +28,11 @@ var USER_WIP 		    = (1<<21);	// Supports WIP terminal emulation
 var USER_AUTOLOGON    = (1<<22);	// AutoLogon via IP							
 var USER_HTML		    = (1<<23);	// Using Deuce's HTML terminal (*cough*)	
 var USER_NOPAUSESPIN  = (1<<24);	// No spinning cursor at pause prompt		
-var USER_NO_SOUND     = (1<<25);	// Suppress BBS-initiated sound (bell and audio)
 var USER_PETSCII      = (1<<26);	// Commodore PET (e.g. C64) terminal		
 var USER_SWAP_DELETE  = (1<<27);	// Swap the DEL and backspace keys			
 var USER_ICE_COLOR    = (1<<28);	// Bright background color support
 var USER_UTF8 		= (1<<29);	// UTF-8 terminal
+var USER_NO_SOUND     = (1<<30);	// Suppress BBS-initiated sound (bell and audio)
 var USER_MOUSE		= (1<<31);	// Terminal supports mouse reporting
 
 //**********************************************************************
