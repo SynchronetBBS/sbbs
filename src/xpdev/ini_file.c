@@ -1837,12 +1837,12 @@ static bool isTrue(const char* value)
 		return false;
 
 	/* Truncate value at first space, tab or semicolon for purposes of checking for special boolean words. */
-	/* This allows comments or white-space to immediately follow a special boolean word: "True", "Yes", or "On" */
+	/* This allows comments or white-space to immediately follow a special boolean word: "True", "Yes", "Y", or "On" */
 	p = str;
 	FIND_CHARSET(p, "; \t");
 	*p = 0;
 
-	is_true = (stricmp(str, "true") == 0 || stricmp(str, "YES") == 0 || stricmp(str, "ON") == 0);
+	is_true = (stricmp(str, "true") == 0 || stricmp(str, "YES") == 0 || stricmp(str, "Y") == 0 || stricmp(str, "ON") == 0);
 	free(str);
 	return is_true;
 }
