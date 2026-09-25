@@ -142,6 +142,15 @@ int main(void)
 		termaudio_cache_name(md5, "", name, sizeof(name));
 		CHECK(strcmp(name, "sbbs_000102030405060708090a0b0c0d0e0f") == 0,
 		      "empty ext omits the dot, got '%s'", name);
+		/* The name is sent inside an APC, where ';' separates fields, so only
+		   alphanumerics may pass from the extension. */
+		termaudio_cache_name(md5, "og;g", name, sizeof(name));
+		CHECK(strchr(name, ';') == NULL, "';' stripped from extension, got '%s'", name);
+		CHECK(strcmp(name, "sbbs_000102030405060708090a0b0c0d0e0f.ogg") == 0,
+		      "remaining alphanumerics kept, got '%s'", name);
+		termaudio_cache_name(md5, ";\x1b\\", name, sizeof(name));
+		CHECK(strcmp(name, "sbbs_000102030405060708090a0b0c0d0e0f") == 0,
+		      "an extension with nothing usable omits the dot, got '%s'", name);
 		termaudio_cache_name(md5, "verylongextension", name, sizeof(name));
 		CHECK(strlen(name) < TERMAUDIO_MAX_CACHE_NAME, "long ext truncated");
 		/* Different content must give a different name: that property is what
@@ -167,16 +176,37 @@ int main(void)
 	CHECK(termaudio_parse_audio_state("[=7;101;1n") == -1, "wrong feature id");
 	CHECK(termaudio_parse_audio_state("[=8;100;1n") == -1, "wrong report id");
 
-	/* --- Review Focus 5: C;L reply parsing --- */
+	/* --- Review Focus 5: C;L reply parsing. An entry is accepted only when
+	   the MD5 the client reports for the file matches the hash in its
+	   content-addressed name: message text can store a file under one of our
+	   names with C;S, and trusting the name alone would play it. --- */
 	{
 		char   names[4][TERMAUDIO_MAX_CACHE_NAME];
 		size_t n;
+#define H1 "0123456789abcdef0123456789abcdef"
+#define H2 "fedcba9876543210fedcba9876543210"
 
-		n = termaudio_parse_file_list("SyncTERM:C;L\nsbbs_aa.wav\tdeadbeef\n"
-		                              "sbbs_bb.ogg\tcafebabe\n", names, 4);
-		CHECK(n == 2, "two names parsed, got %u", (unsigned)n);
-		CHECK(strcmp(names[0], "sbbs_aa.wav") == 0, "first name");
-		CHECK(strcmp(names[1], "sbbs_bb.ogg") == 0, "second name");
+		n = termaudio_parse_file_list("SyncTERM:C;L\nsbbs_" H1 ".wav\t" H1 "\n"
+		                              "sbbs_" H2 ".ogg\t" H2 "\n", names, 4);
+		CHECK(n == 2, "two matching entries parsed, got %u", (unsigned)n);
+		CHECK(strcmp(names[0], "sbbs_" H1 ".wav") == 0, "first name");
+		CHECK(strcmp(names[1], "sbbs_" H2 ".ogg") == 0, "second name");
+
+		n = termaudio_parse_file_list("SyncTERM:C;L\nsbbs_" H1 ".ogg\t" H2 "\n", names, 4);
+		CHECK(n == 0, "contents not matching the name are rejected (a planted file)");
+		n = termaudio_parse_file_list("SyncTERM:C;L\nsbbs_" H1 "\t" H1 "\n", names, 4);
+		CHECK(n == 1, "a name with no extension is accepted");
+		n = termaudio_parse_file_list("SyncTERM:C;L\nsbbs_" H1 ".ogg\t"
+		                              "0123456789ABCDEF0123456789ABCDEF\n", names, 4);
+		CHECK(n == 1, "digest compared case-insensitively");
+		n = termaudio_parse_file_list("SyncTERM:C;L\nsbbs_" H1 ".ogg\t" H1 "\r\n", names, 4);
+		CHECK(n == 1, "trailing CR on the digest tolerated");
+		n = termaudio_parse_file_list("SyncTERM:C;L\ntheme.ogg\t" H1 "\n", names, 4);
+		CHECK(n == 0, "a name that is not ours is ignored");
+		n = termaudio_parse_file_list("SyncTERM:C;L\nsbbs_0123.ogg\t0123\n", names, 4);
+		CHECK(n == 0, "a short hash is rejected");
+		n = termaudio_parse_file_list("SyncTERM:C;L\nsbbs_" H1 "x.ogg\t" H1 "\n", names, 4);
+		CHECK(n == 0, "trailing junk after the hash is rejected");
 
 		n = termaudio_parse_file_list("SyncTERM:C;L\n", names, 4);
 		CHECK(n == 0, "header-only body yields nothing");
@@ -188,11 +218,70 @@ int main(void)
 		CHECK(n == 0, "line with no tab is skipped, not accepted");
 		n = termaudio_parse_file_list("SyncTERM:C;L\n\tnoname\n", names, 4);
 		CHECK(n == 0, "empty name before the tab is skipped");
-		n = termaudio_parse_file_list("SyncTERM:C;L\nsbbs_a.wav\tdead", names, 4);
+		n = termaudio_parse_file_list("SyncTERM:C;L\nsbbs_" H1 ".wav\t" H1, names, 4);
 		CHECK(n == 1, "final line without newline still parsed");
-		n = termaudio_parse_file_list("SyncTERM:C;L\na\t1\nb\t2\nc\t3\nd\t4\ne\t5\n",
-		                              names, 4);
+		n = termaudio_parse_file_list("SyncTERM:C;L\n"
+		                              "sbbs_" H1 ".a\t" H1 "\n" "sbbs_" H1 ".b\t" H1 "\n"
+		                              "sbbs_" H1 ".c\t" H1 "\n" "sbbs_" H1 ".d\t" H1 "\n"
+		                              "sbbs_" H1 ".e\t" H1 "\n", names, 4);
 		CHECK(n == 4, "stops at maxnames without overrunning, got %u", (unsigned)n);
+#undef H1
+#undef H2
+	}
+
+	/* --- APC reply scanning. Bytes that are not part of the reply are keys the
+	   user typed while the server waited, and must be handed back rather than
+	   discarded; the reply itself must be consumed to its terminator even when
+	   it does not fit, or its remainder is later read as keystrokes. --- */
+	{
+		termaudio_apc_scan_t sc;
+		char                 buf[64];
+		const char*          in;
+		bool                 done = false;
+		size_t               i;
+
+#define FEED(str) do { done = false; for (in = (str); *in != '\0' && !done; in++) \
+					   done = termaudio_apc_scan_feed(&sc, (unsigned char)*in); \
+} while (0)
+
+		termaudio_apc_scan_init(&sc, buf, sizeof(buf));
+		FEED("\x1b_SyncTERM:C;L\nx\ty\n\x1b\\");
+		CHECK(done && strcmp(buf, "SyncTERM:C;L\nx\ty\n") == 0, "clean reply collected");
+		CHECK(sc.npush == 0, "nothing handed back for a clean reply");
+
+		termaudio_apc_scan_init(&sc, buf, sizeof(buf));
+		FEED("ab\x1b_X\x1b\\");
+		CHECK(done && strcmp(buf, "X") == 0, "reply found after typed keys");
+		CHECK(sc.npush == 2 && memcmp(sc.pushback, "ab", 2) == 0, "typed keys handed back");
+
+		termaudio_apc_scan_init(&sc, buf, sizeof(buf));
+		FEED("\x1b[A\x1b_X\x1b\\");
+		CHECK(done && strcmp(buf, "X") == 0, "reply found after an arrow key");
+		CHECK(sc.npush == 3 && memcmp(sc.pushback, "\x1b[A", 3) == 0,
+		      "the arrow key's whole sequence handed back, got %u bytes", (unsigned)sc.npush);
+
+		termaudio_apc_scan_init(&sc, buf, sizeof(buf));
+		FEED("\x1b\x1b_X\x1b\\");
+		CHECK(done && sc.npush == 1 && sc.pushback[0] == '\x1b',
+		      "a lone ESC before the reply handed back");
+
+		termaudio_apc_scan_init(&sc, buf, 8);
+		FEED("\x1b_0123456789abcdefghij\x1b\\");
+		CHECK(done, "an oversized reply is still consumed to its terminator");
+		CHECK(sc.overflow && strlen(buf) == 7, "and truncated to fit, got %u", (unsigned)strlen(buf));
+		CHECK(sc.npush == 0, "no part of an oversized reply leaks out as keys");
+
+		termaudio_apc_scan_init(&sc, buf, sizeof(buf));
+		FEED("k\x1b");
+		termaudio_apc_scan_finish(&sc);
+		CHECK(!done && sc.npush == 2 && memcmp(sc.pushback, "k\x1b", 2) == 0,
+		      "giving up returns a held ESC along with earlier keys");
+
+		termaudio_apc_scan_init(&sc, buf, sizeof(buf));
+		for (i = 0; i < TERMAUDIO_PUSHBACK_MAX + 50; i++)
+			(void)termaudio_apc_scan_feed(&sc, 'z');
+		CHECK(sc.npush == TERMAUDIO_PUSHBACK_MAX, "handed-back keys are bounded");
+#undef FEED
 	}
 
 	printf("%d tests run, %d failed\n", tests_run, tests_failed);

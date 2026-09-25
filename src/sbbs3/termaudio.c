@@ -147,11 +147,22 @@ void termaudio_cache_name(const uint8_t md5[16], const char* ext
 		tmp[n++] = hex[(md5[i] >> 4) & 0x0f];
 		tmp[n++] = hex[md5[i] & 0x0f];
 	}
-	if (ext != NULL && *ext != '\0' && n + 1 < sizeof(tmp)) {
-		size_t e = 0;
+	/* The name travels inside an APC, where ';' separates fields and ESC ends
+	   the string, so only alphanumerics are taken from the extension. */
+	if (ext != NULL && n + 1 < sizeof(tmp)) {
+		size_t dot = n;
+		size_t kept = 0;
+		size_t e;
+
 		tmp[n++] = '.';
-		while (ext[e] != '\0' && e < 8 && n + 1 < sizeof(tmp))
-			tmp[n++] = ext[e++];
+		for (e = 0; ext[e] != '\0' && kept < 8 && n + 1 < sizeof(tmp); e++) {
+			if (isalnum((unsigned char)ext[e])) {
+				tmp[n++] = ext[e];
+				kept++;
+			}
+		}
+		if (kept == 0)
+			n = dot;                /* nothing usable: no dot either */
 	}
 	tmp[n] = '\0';
 	if (n + 1 > outsz)
@@ -181,6 +192,29 @@ int termaudio_parse_audio_state(const char* token)
 	return value ? 1 : 0;
 }
 
+/* True when name is "sbbs_<32 hex>" or "sbbs_<32 hex>.<ext>" and digest, the
+   MD5 the client reports for that file, is the same 32 hex digits. */
+static bool termaudio_entry_valid(const char* name, size_t nlen
+                                  , const char* digest, size_t dlen)
+{
+	const size_t prefix = 5;        /* "sbbs_" */
+	size_t       i;
+
+	while (dlen > 0 && isspace((unsigned char)digest[dlen - 1]))
+		dlen--;
+	if (dlen != 32 || nlen < prefix + 32 || strncmp(name, "sbbs_", prefix) != 0)
+		return false;
+	if (nlen > prefix + 32 && name[prefix + 32] != '.')
+		return false;
+	for (i = 0; i < 32; i++) {
+		if (!isxdigit((unsigned char)name[prefix + i]) || !isxdigit((unsigned char)digest[i]))
+			return false;
+		if (tolower((unsigned char)name[prefix + i]) != tolower((unsigned char)digest[i]))
+			return false;
+	}
+	return true;
+}
+
 size_t termaudio_parse_file_list(const char* body
                                  , char names[][TERMAUDIO_MAX_CACHE_NAME]
                                  , size_t maxnames)
@@ -201,7 +235,8 @@ size_t termaudio_parse_file_list(const char* body
 			first_line = false;   /* the "SyncTERM:C;L" header */
 		} else if (tab != NULL && tab > p) {
 			size_t nlen = (size_t)(tab - p);
-			if (nlen < TERMAUDIO_MAX_CACHE_NAME) {
+			if (nlen < TERMAUDIO_MAX_CACHE_NAME
+			    && termaudio_entry_valid(p, nlen, tab + 1, (size_t)(end - (tab + 1)))) {
 				memcpy(names[count], p, nlen);
 				names[count][nlen] = '\0';
 				count++;
@@ -212,4 +247,90 @@ size_t termaudio_parse_file_list(const char* body
 		p = eol + 1;
 	}
 	return count;
+}
+
+enum {
+	TERMAUDIO_SCAN_WAIT,        /* before the reply */
+	TERMAUDIO_SCAN_INTRO,       /* an ESC seen; is it the reply's? */
+	TERMAUDIO_SCAN_BODY,
+	TERMAUDIO_SCAN_BODY_ESC,    /* an ESC in the body; is it the terminator? */
+	TERMAUDIO_SCAN_DONE
+};
+
+static void termaudio_scan_push(termaudio_apc_scan_t* sc, unsigned char ch)
+{
+	if (sc->npush < TERMAUDIO_PUSHBACK_MAX)
+		sc->pushback[sc->npush++] = ch;
+}
+
+static void termaudio_scan_append(termaudio_apc_scan_t* sc, unsigned char ch)
+{
+	if (sc->len + 1 < sc->bufsz)
+		sc->buf[sc->len++] = (char)ch;
+	else
+		sc->overflow = true;
+}
+
+void termaudio_apc_scan_init(termaudio_apc_scan_t* sc, char* buf, size_t bufsz)
+{
+	memset(sc, 0, sizeof(*sc));
+	sc->state = TERMAUDIO_SCAN_WAIT;
+	sc->buf = buf;
+	sc->bufsz = bufsz;
+	if (buf != NULL && bufsz > 0)
+		buf[0] = '\0';
+}
+
+bool termaudio_apc_scan_feed(termaudio_apc_scan_t* sc, unsigned char ch)
+{
+	switch (sc->state) {
+		case TERMAUDIO_SCAN_WAIT:
+			if (ch == '\x1b')
+				sc->state = TERMAUDIO_SCAN_INTRO;
+			else
+				termaudio_scan_push(sc, ch);
+			break;
+		case TERMAUDIO_SCAN_INTRO:
+			if (ch == '_') {
+				sc->state = TERMAUDIO_SCAN_BODY;
+				break;
+			}
+			termaudio_scan_push(sc, '\x1b');        /* that ESC was a key's */
+			if (ch != '\x1b') {
+				termaudio_scan_push(sc, ch);
+				sc->state = TERMAUDIO_SCAN_WAIT;
+			}
+			break;
+		case TERMAUDIO_SCAN_BODY:
+			if (ch == '\x1b')
+				sc->state = TERMAUDIO_SCAN_BODY_ESC;
+			else
+				termaudio_scan_append(sc, ch);
+			break;
+		case TERMAUDIO_SCAN_BODY_ESC:
+			if (ch == '\\') {
+				if (sc->buf != NULL && sc->bufsz > 0)
+					sc->buf[sc->len] = '\0';
+				sc->state = TERMAUDIO_SCAN_DONE;
+				return true;
+			}
+			termaudio_scan_append(sc, '\x1b');
+			if (ch != '\x1b') {
+				termaudio_scan_append(sc, ch);
+				sc->state = TERMAUDIO_SCAN_BODY;
+			}
+			break;
+		default:                                    /* after the reply */
+			termaudio_scan_push(sc, ch);
+			break;
+	}
+	return false;
+}
+
+void termaudio_apc_scan_finish(termaudio_apc_scan_t* sc)
+{
+	if (sc->state == TERMAUDIO_SCAN_INTRO)
+		termaudio_scan_push(sc, '\x1b');
+	if (sc->buf != NULL && sc->bufsz > 0 && sc->state != TERMAUDIO_SCAN_DONE)
+		sc->buf[sc->len < sc->bufsz ? sc->len : sc->bufsz - 1] = '\0';
 }

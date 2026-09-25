@@ -39,6 +39,20 @@
 #define TERMAUDIO_CHAN_LAST  15
 #define TERMAUDIO_SLOT_LAST  255
 
+/* Keys typed while waiting for an APC reply that will be handed back */
+#define TERMAUDIO_PUSHBACK_MAX 128
+
+/* Scans received bytes for an APC reply (ESC _ ... ESC \\). */
+typedef struct {
+	int state;
+	char* buf;                    /* the reply body, NUL-terminated when done */
+	size_t bufsz;
+	size_t len;
+	bool overflow;                /* the body did not fit and was truncated */
+	unsigned char pushback[TERMAUDIO_PUSHBACK_MAX];
+	size_t npush;                 /* bytes that were not part of the reply */
+} termaudio_apc_scan_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -76,11 +90,25 @@ void termaudio_cache_name(const uint8_t md5[16], const char* ext
 int termaudio_parse_audio_state(const char* token);
 
 /* Parse a C;L reply body into cache names. The body's first line is the
-   "SyncTERM:C;L" header; each later line is "<name> TAB <md5> LF". Ignores
-   malformed lines. Returns the number of names written. */
+   "SyncTERM:C;L" header; each later line is "<name> TAB <md5> LF". Only
+   entries whose reported MD5 matches the hash in their "sbbs_<hash>" name
+   are returned, since message text can store a file under one of our names.
+   Returns the number of names written. */
 size_t termaudio_parse_file_list(const char* body
                                  , char names[][TERMAUDIO_MAX_CACHE_NAME]
                                  , size_t maxnames);
+
+void termaudio_apc_scan_init(termaudio_apc_scan_t* sc, char* buf, size_t bufsz);
+
+/* Feed one received byte; returns true once the reply's terminator is seen.
+   Bytes that are not part of an APC reply, such as keys typed while waiting,
+   collect in pushback[] for the caller to return to the input stream. A reply
+   too large for buf is still consumed to its terminator, and truncated. */
+bool termaudio_apc_scan_feed(termaudio_apc_scan_t* sc, unsigned char ch);
+
+/* Call when giving up before the reply completes: returns a held ESC to
+   pushback[]. */
+void termaudio_apc_scan_finish(termaudio_apc_scan_t* sc);
 
 #ifdef __cplusplus
 }

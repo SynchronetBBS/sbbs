@@ -23,60 +23,42 @@
 #define TERMAUDIO_LIST_BUFSIZE 8192
 #define TERMAUDIO_LIST_MAX     64
 #define TERMAUDIO_MAX_WARNED   32
+#define TERMAUDIO_MAX_MEMO     64
 
 /****************************************************************************/
 /* Reads an APC reply (ESC _ ... ESC \) from the remote, storing the bytes	*/
-/* between the introducer and the terminator. Returns false on timeout,		*/
-/* overflow, or disconnect.													*/
+/* between the introducer and the terminator. A reply too large for buf is	*/
+/* still read to its end, and returned truncated. Keys the user typed while	*/
+/* waiting are returned to the input stream. Returns false on timeout or		*/
+/* disconnect.																*/
 /****************************************************************************/
 bool sbbs_t::recv_apc_reply(char* buf, size_t bufsz, size_t* len, unsigned timeout_ms)
 {
-	enum { state_esc, state_intro, state_body, state_body_esc } state = state_esc;
-	size_t rsp = 0;
-	int    ch;
+	termaudio_apc_scan_t sc;
+	bool                 done = false;
+	int                  ch;
+	size_t               i;
 
 	if (buf == NULL || bufsz == 0 || len == NULL)
 		return false;
 	*len = 0;
+	termaudio_apc_scan_init(&sc, buf, bufsz);
 	time_t deadline = time(NULL) + ((timeout_ms / 1000) + 2);
-	while (online && !(sys_status & SS_ABORT)) {
-		if (time(NULL) > deadline)
-			return false;
+	while (!done && online && !(sys_status & SS_ABORT) && time(NULL) <= deadline) {
 		if ((ch = incom(timeout_ms)) == NOINP)
-			return false;
-		switch (state) {
-			case state_esc:
-				if (ch == ESC)
-					state = state_intro;
-				break;
-			case state_intro:
-				state = (ch == '_') ? state_body : state_esc;
-				break;
-			case state_body:
-				if (ch == ESC) {
-					state = state_body_esc;
-					break;
-				}
-				if (rsp + 1 >= bufsz)
-					return false;
-				buf[rsp++] = (char)ch;
-				break;
-			case state_body_esc:
-				if (ch == '\\') {
-					buf[rsp] = '\0';
-					*len = rsp;
-					return true;
-				}
-				/* A stray ESC inside the body: keep it and carry on. */
-				if (rsp + 2 >= bufsz)
-					return false;
-				buf[rsp++] = ESC;
-				buf[rsp++] = (char)ch;
-				state = state_body;
-				break;
-		}
+			break;
+		done = termaudio_apc_scan_feed(&sc, (unsigned char)ch);
 	}
-	return false;
+	if (!done)
+		termaudio_apc_scan_finish(&sc);
+	for (i = 0; i < sc.npush; i++)
+		ungetkey((char)sc.pushback[i]);
+	if (!done)
+		return false;
+	if (sc.overflow)
+		lprintf(LOG_DEBUG, "APC reply truncated to %u bytes", (unsigned)sc.len);
+	*len = sc.len;
+	return true;
 }
 
 /****************************************************************************/
@@ -132,6 +114,41 @@ void sbbs_t::audio_cache_list(void)
 }
 
 /****************************************************************************/
+/* Finds the cache name recorded this session for path, if the file's size	*/
+/* and modification time are unchanged since it was named.					*/
+/****************************************************************************/
+static bool audio_memo_find(str_list_t memo, const char* path, off_t len, time_t mtime
+                            , char* name, size_t namesz)
+{
+	size_t i;
+
+	for (i = 0; memo != NULL && memo[i] != NULL; i++) {
+		char*       end;
+		long long   size = strtoll(memo[i], &end, 10);
+		long long   when;
+		const char* n;
+		const char* tab;
+
+		if (*end != '\t')
+			continue;
+		when = strtoll(end + 1, &end, 10);
+		if (*end != '\t')
+			continue;
+		n = end + 1;
+		if ((tab = strchr(n, '\t')) == NULL)
+			continue;
+		if (size != (long long)len || when != (long long)mtime || strcmp(tab + 1, path) != 0)
+			continue;
+		if ((size_t)(tab - n) >= namesz)
+			return false;
+		memcpy(name, n, (size_t)(tab - n));
+		name[tab - n] = '\0';
+		return true;
+	}
+	return false;
+}
+
+/****************************************************************************/
 /* Uploads path to the client's cache unless it is already there, and writes	*/
 /* the content-addressed cache name. Returns false if the file cannot be		*/
 /* read or exceeds maxsize.													*/
@@ -146,6 +163,7 @@ bool sbbs_t::audio_cache_file(const char* path, char* cachename, size_t cnsz
 	char*       b64;
 	size_t      b64size;
 	const char* ext;
+	time_t      mtime;
 	char        name[TERMAUDIO_MAX_CACHE_NAME];
 	bool        ok = false;
 
@@ -163,6 +181,19 @@ bool sbbs_t::audio_cache_file(const char* path, char* cachename, size_t cnsz
 	if (len > (off_t)maxsize && len > (off_t)cfg.max_cache_file_size) {
 		audio_warn_once(path, "exceeds the configured size limits");
 		return false;
+	}
+	/* A file unchanged since it was named this session need not be read and
+	   hashed again just to find the client already holds it. */
+	mtime = fdate(path);
+	if (audio_memo_find(audio_name_memo, path, len, mtime, name, sizeof(name))) {
+		if (!audio_cache_listed)
+			audio_cache_list();
+		if (strListFind(audio_cache_names, name, /* case_sensitive: */ true) >= 0) {
+			if (strlen(name) >= cnsz)
+				return false;
+			strcpy(cachename, name);
+			return true;
+		}
 	}
 	if ((data = (char*)malloc((size_t)len)) == NULL)
 		return false;
@@ -187,6 +218,15 @@ bool sbbs_t::audio_cache_file(const char* path, char* cachename, size_t cnsz
 		return false;
 	}
 	strcpy(cachename, name);
+	if (strListCount(audio_name_memo) < TERMAUDIO_MAX_MEMO) {
+		char entry[MAX_PATH + TERMAUDIO_MAX_CACHE_NAME + 64];
+		char probe[TERMAUDIO_MAX_CACHE_NAME];
+		if (!audio_memo_find(audio_name_memo, path, len, mtime, probe, sizeof(probe))) {
+			safe_snprintf(entry, sizeof(entry), "%lld\t%lld\t%s\t%s"
+			              , (long long)len, (long long)mtime, name, path);
+			strListPush(&audio_name_memo, entry);
+		}
+	}
 
 	if (!audio_cache_listed)
 		audio_cache_list();

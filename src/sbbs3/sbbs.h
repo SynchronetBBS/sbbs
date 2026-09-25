@@ -778,6 +778,7 @@ public:
 	   what this session has already put there. */
 	str_list_t audio_cache_names{};
 	str_list_t audio_warned{};
+	str_list_t audio_name_memo{};     /* "size TAB mtime TAB name TAB path" */
 	bool       audio_cache_listed{false};
 	unsigned   audio_next_slot{0};
 	unsigned   audio_next_chan{0};
