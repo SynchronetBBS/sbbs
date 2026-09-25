@@ -1312,6 +1312,7 @@ int xp_popen(const char* cmdline, str_list_t* lines)
 	while (ReadFile(rd, buf, sizeof buf, &rd_len, NULL) && rd_len > 0) {
 		char* np = realloc_or_free(output, output_len + rd_len + 1);
 		if (np == NULL) {
+			output = NULL;      /* realloc_or_free() already freed it */
 			output_len = 0;
 			break;
 		}
