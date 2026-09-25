@@ -1611,13 +1611,13 @@ function command_loop()
 		console.line_counter = 0;
 		console.aborted = false;
 		pager = null;
-		screen_cleared = false;
 
 		if (echo_on) {
 			if (!blank && !screen_cleared)
 				out("\r\n");
 			out("\x01n" + render_prompt());
 		}
+		screen_cleared = false;
 		var line = console.getstr("", MAX_CMDLINE, K_NONE, history);
 		blank = !line.trim();
 		if (blank)
