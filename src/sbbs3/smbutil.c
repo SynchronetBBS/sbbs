@@ -1097,6 +1097,29 @@ static void pack_abort(uint moved)
 }
 
 /****************************************************************************/
+/* Release the data just copied for a message the pack is dropping.			*/
+/* Pack only appends to the new SDT and SDA, so that data is the last		*/
+/* allocation in each, and truncating back to its offset frees it.			*/
+/* (smb_freemsgdat() can't be used here: it unlocks the SMB header and		*/
+/* truncates smb.sdt_fp, which is the original data file being read.)		*/
+/****************************************************************************/
+static void pack_drop_dat(FILE* tmp_sdt, off_t offset)
+{
+	off_t sda_length = (offset / SDT_BLOCK_LEN) * (off_t)sizeof(uint16_t);
+
+	fflush(tmp_sdt);
+	if (chsize(fileno(tmp_sdt), offset) != 0)
+		fprintf(errfp, "\n%s!Error %d (%s) truncating packed data file to %" PRIdOFF "\n"
+		        , beep, errno, strerror(errno), offset);
+	if (smb.status.attr & SMB_HYPERALLOC)
+		return;
+	fflush(smb.sda_fp);
+	if (chsize(fileno(smb.sda_fp), sda_length) != 0)
+		fprintf(errfp, "\n%s!Error %d (%s) truncating data allocation file to %" PRIdOFF "\n"
+		        , beep, errno, strerror(errno), sda_length);
+}
+
+/****************************************************************************/
 /* Removes all unused blocks from SDT and SHD files 						*/
 /****************************************************************************/
 void packmsgs(ulong packable)
@@ -1434,17 +1457,19 @@ void packmsgs(ulong packable)
 			smb_freemsgmem(&msg);
 			continue;
 		}
+		bool dat_shared = false;    /* data already copied for another index */
+		bool dat_copied = false;    /* data copied for this message */
+		bool allocated = false;     /* ...and mapped in datoffset[] */
 		for (m = 0; m < datoffsets; m++)
 			if (msg.hdr.offset == datoffset[m].old)
 				break;
 		if (m < datoffsets) {              /* another index pointed to this data */
 //			printf("duplicate data at offset %08" PRIx32 "\n", msg.hdr.offset);
 			msg.hdr.offset = datoffset[m].new;
-			smb_incmsgdat(&smb, datoffset[m].new, smb_getmsgdatlen(&msg), 1);
+			dat_shared = true;  /* referenced once the header is allocated */
 		} else {
 			off_t offset;
 			off_t dat_offset = msg.hdr.offset;
-			bool  allocated = false;
 
 			if (!(smb.status.attr & SMB_HYPERALLOC))
 				datoffset[datoffsets].old = msg.hdr.offset;
@@ -1517,10 +1542,12 @@ void packmsgs(ulong packable)
 			if (m < n) {    /* data unusable: drop this message rather than the whole base */
 				if (allocated)  /* don't leave a mapping another index could adopt */
 					datoffsets--;
+				pack_drop_dat(tmp_sdt, offset);
 				skipped++;
 				smb_freemsgmem(&msg);
 				continue;
 			}
+			dat_copied = true;
 		}
 
 		/* Write the new index entry */
@@ -1534,8 +1561,15 @@ void packmsgs(ulong packable)
 			fprintf(errfp, "\n%s!Header allocation failure %ld (%s) for message #%lu"
 			        " - message skipped\n"
 			        , beep, (long)offset, smb.last_error, (ulong)msg.hdr.number);
+			if (dat_copied) {
+				if (allocated)
+					datoffsets--;
+				pack_drop_dat(tmp_sdt, msg.hdr.offset);
+			}
 			skipped++;
 		} else {
+			if (dat_shared)
+				smb_incmsgdat(&smb, msg.hdr.offset, smb_getmsgdatlen(&msg), 1);
 			msg.idx.offset = (uint32_t)offset;
 			smb_init_idx(&smb, &msg);
 			fwrite(&msg.idx, 1, idxreclen, tmp_sid);
