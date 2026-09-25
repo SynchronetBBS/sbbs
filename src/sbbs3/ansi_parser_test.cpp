@@ -196,6 +196,46 @@ int main(void)
 		      "a completed CSI does not report ansi_was_string, so it stays in lbuf");
 	}
 
+	/* --- CSI parameters are capped too: SGR handling rescans them once per
+	   parameter, so an uncapped parameter string costs cubic time --- */
+	{
+		ANSI_Parser    p;
+		std::string    params = "38;5;196";
+		while (params.length() < 3 * ANSI_Parser::max_sequence_len)
+			params += ";0";
+		enum ansiState st = feed(p, "\x1b[" + params + "m");
+		CHECK(st == ansiState_final, "CSI with overlong parameters reaches final state");
+		CHECK(p.ansi_final_byte == 'm', "overlong CSI keeps its final byte");
+		CHECK(p.ansi_params.length() <= ANSI_Parser::max_sequence_len,
+		      "ansi_params capped (%u > %u)", (unsigned)p.ansi_params.length()
+		      , (unsigned)ANSI_Parser::max_sequence_len);
+		CHECK(p.count_params() <= ANSI_Parser::max_sequence_len,
+		      "parameter count bounded by the cap (%u)", p.count_params());
+		CHECK(p.get_pval(0, 0) == 38 && p.get_pval(1, 0) == 5 && p.get_pval(2, 0) == 196,
+		      "leading parameters survive the cap");
+	}
+	{
+		ANSI_Parser    p;
+		enum ansiState st = feed(p, "\x1b[?" + std::string(2 * ANSI_Parser::max_sequence_len, '1') + "S");
+		CHECK(st == ansiState_final && p.ansi_was_private && p.ansi_params[0] == '?',
+		      "overlong private CSI keeps its private marker");
+	}
+	{
+		ANSI_Parser    p;
+		enum ansiState st = feed(p, "\x1b[" + std::string(2 * ANSI_Parser::max_sequence_len, '$') + "p");
+		CHECK(st == ansiState_final && p.ansi_final_byte == 'p', "CSI with overlong intermediates reaches final");
+		CHECK(p.ansi_ibs.length() <= ANSI_Parser::max_sequence_len,
+		      "ansi_ibs capped (%u > %u)", (unsigned)p.ansi_ibs.length()
+		      , (unsigned)ANSI_Parser::max_sequence_len);
+		CHECK(p.ansi_ibs != "$", "overlong intermediates don't collapse to a single one");
+	}
+	{
+		ANSI_Parser    p;
+		enum ansiState st = feed(p, "\x1b" + std::string(2 * ANSI_Parser::max_sequence_len, '(') + "B");
+		CHECK(st == ansiState_final && p.ansi_ibs.length() <= ANSI_Parser::max_sequence_len,
+		      "ESC with overlong intermediates: ansi_ibs capped (%u)", (unsigned)p.ansi_ibs.length());
+	}
+
 	printf("%d tests run, %d failed\n", tests_run, tests_failed);
 	return tests_failed == 0 ? 0 : 1;
 }

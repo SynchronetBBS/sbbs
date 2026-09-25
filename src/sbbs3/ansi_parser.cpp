@@ -10,6 +10,13 @@ ANSI_Parser::append(unsigned char ch)
 		sequence_overflow++;
 }
 
+void
+ANSI_Parser::append(std::string& field, unsigned char ch)
+{
+	if (field.length() < max_sequence_len)
+		field += ch;
+}
+
 enum ansiState
 ANSI_Parser::parse(unsigned char ch)
 {
@@ -35,7 +42,7 @@ ANSI_Parser::parse(unsigned char ch)
 				ansi_was_string = true;
 			}
 			else if (ch >= ' ' && ch <= '/') {
-				ansi_ibs += ch;
+				append(ansi_ibs, ch);
 				state = ansiState_intermediate;
 			}
 			else if (ch >= '0' && ch <= '~') {
@@ -52,10 +59,10 @@ ANSI_Parser::parse(unsigned char ch)
 			if (ch >= '0' && ch <= '?') {
 				if (ansi_params == "" && ch >= '<' && ch <= '?')
 					ansi_was_private = true;
-				ansi_params += ch;
+				append(ansi_params, ch);
 			}
 			else if (ch >= ' ' && ch <= '/') {
-				ansi_ibs += ch;
+				append(ansi_ibs, ch);
 				state = ansiState_intermediate;
 			}
 			else if (ch >= '@' && ch <= '~') {
@@ -69,7 +76,7 @@ ANSI_Parser::parse(unsigned char ch)
 		case ansiState_intermediate:
 			append(ch);
 			if (ch >= ' ' && ch <= '/') {
-				ansi_ibs += ch;
+				append(ansi_ibs, ch);
 				state = ansiState_intermediate;
 			}
 			else if (ch >= '@' && ch <= '~') {

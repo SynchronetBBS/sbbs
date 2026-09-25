@@ -24,7 +24,8 @@ public:
 	unsigned count_params();
 	unsigned get_pval(unsigned pnum, unsigned dflt);
 
-	/* ansi_sequence never exceeds this; bytes past it are only counted. */
+	/* ansi_sequence, ansi_params and ansi_ibs never exceed this; bytes past
+	   it are dropped (and counted in sequence_overflow for ansi_sequence). */
 	static const size_t max_sequence_len = 1024;
 	size_t      sequence_overflow{0};
 
@@ -38,6 +39,7 @@ public:
 
 private:
 	void append(unsigned char ch);
+	void append(std::string& field, unsigned char ch);
 
 	enum ansiState state{ansiState_none}; // track ANSI escape seq output
 };
