@@ -101,8 +101,11 @@ ANSI_Parser::parse(unsigned char ch)
 			break;
 		case ansiState_sos_esc: // ESC inside SOS
 			append(ch);
-			if (ch == '\\')
-				state = ansiState_esc;
+			if (ch == '\\') {
+				state = ansiState_final;
+				ansi_was_cc = true;
+				ansi_final_byte = ch;
+			}
 			else if (ch == 'X')
 				state = ansiState_broken;
 			else

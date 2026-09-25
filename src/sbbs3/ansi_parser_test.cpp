@@ -196,6 +196,29 @@ int main(void)
 		      "a completed CSI does not report ansi_was_string, so it stays in lbuf");
 	}
 
+	/* --- SOS ends on its ST, the same way the other control strings do --- */
+	{
+		ANSI_Parser    p;
+		ANSI_Parser    apc;
+		enum ansiState st = feed(p, "\x1bXhello\x1b\\");
+		feed(apc, "\x1b_hello\x1b\\");
+		CHECK(st == ansiState_final, "SOS reaches final state on ST (state %d)", st);
+		CHECK(p.ansi_was_string, "SOS flagged as a string");
+		CHECK(p.ansi_final_byte == apc.ansi_final_byte && p.ansi_was_cc == apc.ansi_was_cc,
+		      "SOS ends like APC (final byte %02X, was_cc %d)", p.ansi_final_byte, p.ansi_was_cc);
+		CHECK(p.ansi_sequence == "\x1bXhello\x1b\\", "SOS sequence recorded whole");
+	}
+	{
+		ANSI_Parser    p;
+		enum ansiState st = feed(p, "\x1bXa\x1b" "bc\x1b\\");
+		CHECK(st == ansiState_final, "ESC + other byte inside SOS is content (state %d)", st);
+	}
+	{
+		ANSI_Parser    p;
+		enum ansiState st = feed(p, "\x1bXa\x1bX");
+		CHECK(st == ansiState_broken, "SOS inside SOS is broken (state %d)", st);
+	}
+
 	/* --- CSI parameters are capped too: SGR handling rescans them once per
 	   parameter, so an uncapped parameter string costs cubic time --- */
 	{
