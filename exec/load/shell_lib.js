@@ -8,29 +8,34 @@
 require("sbbsdefs.js", "USER_EXPERT");
 require("gettext.js", "gettext");
 
-// Build list of current subs/dirs in each group/library
-// This hack is required because the 'bbs' object doesn't expose the current
-// sub/dir for any group/library except the current
-var curgrp = bbs.curgrp;
-var curlib = bbs.curlib;
-var cursub = [];
-var curdir = [];
 var usrsubs = [];
 var usrdirs = [];
 var usrgrps = msg_area.grp_list.length;
 var usrlibs = file_area.lib_list.length;
-for(var i = 0; i < usrgrps; ++i) {
-	bbs.curgrp = i;
-	cursub[i] = bbs.cursub;
+for(var i = 0; i < usrgrps; ++i)
 	usrsubs[i] = msg_area.grp_list[i].sub_list.length;
-}
-for(var i = 0; i < usrlibs; ++i) {
-	bbs.curlib = i;
-	curdir[i] = bbs.curdir;
+for(var i = 0; i < usrlibs; ++i)
 	usrdirs[i] = file_area.lib_list[i].dir_list.length;
+
+// The 'bbs' object only exposes the current sub/dir of the current
+// group/library, so select the group/library briefly to read it
+function cursub(grp)
+{
+	var curgrp = bbs.curgrp;
+	bbs.curgrp = grp;
+	var sub = bbs.cursub;
+	bbs.curgrp = curgrp;
+	return sub;
 }
-bbs.curgrp = curgrp;
-bbs.curlib = curlib;
+
+function curdir(lib)
+{
+	var curlib = bbs.curlib;
+	bbs.curlib = lib;
+	var dir = bbs.curdir;
+	bbs.curlib = curlib;
+	return dir;
+}
 
 function get_num(str, max)
 {
@@ -108,8 +113,9 @@ function show_subs(grp)
 		return;
 	console.newline();
 	console.print(format(bbs.text(bbs.text.SubLstHdr), msg_area.grp_list[grp].description));
+	var sub = cursub(grp);
 	for(var i=0; i < usrsubs[grp] && !console.aborted; ++i) {
-		if(i==cursub[grp]) console.print('*');
+		if(i==sub) console.print('*');
 		else console.print(' ');
 		var str = format(bbs.text(bbs.text.SubLstFmt),i+1
 			,msg_area.grp_list[grp].sub_list[i].description, ""
@@ -140,7 +146,7 @@ function select_msg_area()
 				j--;
 		}
 		show_subs(j);
-		console.mnemonics(format(bbs.text(bbs.text.JoinWhichSub), cursub[j]+1));
+		console.mnemonics(format(bbs.text(bbs.text.JoinWhichSub), cursub(j)+1));
 		i=console.getnum(usrsubs[j]);
 		console.clear_hotspots();
 		if(i==-1) {
@@ -149,7 +155,7 @@ function select_msg_area()
 			continue;
 		}
 		if(!i)
-			i=cursub[j];
+			i=cursub(j);
 		else
 			i--;
 		bbs.curgrp=j;
@@ -186,8 +192,9 @@ function show_dirs(lib)
 		return;
 	console.newline();
 	console.print(format(bbs.text(bbs.text.DirLstHdr), file_area.lib_list[lib].description));
+	var dir = curdir(lib);
 	for(var i=0; i < usrdirs[lib] && !console.aborted; ++i) {
-		if(i==curdir[lib]) console.print('*');
+		if(i==dir) console.print('*');
 		else console.print(' ');
 		var str = format(bbs.text(bbs.text.DirLstFmt),i+1
 			,file_area.lib_list[lib].dir_list[i].description, ""
@@ -219,7 +226,7 @@ function select_file_area()
 				j--;
 		}
 		show_dirs(j);
-		console.mnemonics(format(bbs.text(bbs.text.JoinWhichDir), curdir[j]+1));
+		console.mnemonics(format(bbs.text(bbs.text.JoinWhichDir), curdir(j)+1));
 		i=console.getnum(usrdirs[j]);
 		console.clear_hotspots();
 		if(i==-1) {
@@ -228,7 +235,7 @@ function select_file_area()
 			continue;
 		}
 		if(!i)
-			i=curdir[j];
+			i=curdir(j);
 		else
 			i--;
 		bbs.curlib=j;
@@ -433,7 +440,6 @@ function sub_up()
 		bbs.cursub = 0;
 	else
 		bbs.cursub++;
-	cursub[bbs.curgrp] = bbs.cursub;
 }
 
 function sub_down()
@@ -442,7 +448,6 @@ function sub_down()
 		bbs.cursub = msg_area.grp_list[bbs.curgrp].sub_list.length - 1;
 	else
 		bbs.cursub--;
-	cursub[bbs.curgrp] = bbs.cursub;
 }
 
 function grp_up()
@@ -467,7 +472,6 @@ function dir_up()
 		bbs.curdir = 0;
 	else
 		bbs.curdir++;
-	curdir[bbs.curdir] = bbs.curdir;
 }
 
 function dir_down()
@@ -476,7 +480,6 @@ function dir_down()
 		bbs.curdir = file_area.lib_list[bbs.curlib].dir_list.length - 1;
 	else
 		bbs.curdir--;
-	curdir[bbs.curdir] = bbs.curdir;
 }
 
 function lib_up()
