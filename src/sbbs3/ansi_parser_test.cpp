@@ -154,6 +154,48 @@ int main(void)
 		      "ansi_sequence alone would have been short");
 	}
 
+	/* --- the parser states term_out() relies on to keep a whole control string,
+	   introducer and terminator included, out of the line buffer. It records
+	   where a sequence begins while the parser is idle, and rolls the buffer
+	   back when a sequence ends having been a string. --- */
+	{
+		ANSI_Parser p;
+		const std::string apc = "\x1b_SyncTERM:A;Flush;C=2\x1b\\";
+		enum ansiState st = ansiState_none;
+		bool idle_at_esc = false, esc_before_intro = false, was_str_before_intro = true;
+		bool string_before_st_esc = false, esc_before_st = false, was_str_before_st = false;
+
+		for (size_t i = 0; i < apc.length(); i++) {
+			if (i == 0)
+				idle_at_esc = (p.current_state() == ansiState_none);
+			if (i == 1) {
+				esc_before_intro = (p.current_state() == ansiState_esc);
+				was_str_before_intro = p.ansi_was_string;
+			}
+			if (i == apc.length() - 2)
+				string_before_st_esc = (p.current_state() == ansiState_string);
+			if (i == apc.length() - 1) {
+				esc_before_st = (p.current_state() == ansiState_esc);
+				was_str_before_st = p.ansi_was_string;
+			}
+			st = p.parse((unsigned char)apc[i]);
+		}
+		CHECK(idle_at_esc, "parser idle when the opening ESC arrives");
+		CHECK(esc_before_intro && !was_str_before_intro,
+		      "introducer arrives in esc state, not yet known to be a string");
+		CHECK(string_before_st_esc, "terminator's ESC arrives in string state");
+		CHECK(esc_before_st && was_str_before_st,
+		      "terminator's final byte arrives in esc state, known to be a string");
+		CHECK(st == ansiState_final && p.ansi_was_string,
+		      "a completed control string reports ansi_was_string at final");
+	}
+	{
+		ANSI_Parser p;
+		enum ansiState st = feed(p, "\x1b[1;31m");
+		CHECK(st == ansiState_final && !p.ansi_was_string,
+		      "a completed CSI does not report ansi_was_string, so it stays in lbuf");
+	}
+
 	printf("%d tests run, %d failed\n", tests_run, tests_failed);
 	return tests_failed == 0 ? 0 : 1;
 }

@@ -493,6 +493,9 @@ size_t sbbs_t::term_out(int ich)
 		return 0;
 	if (!online)
 		return 0;
+	// A sequence starting at this byte begins here in the line buffer.
+	if (term->parser_idle())
+		term->lbuf_seq_start = term->lbuflen;
 	// We do this before parse_output() so parse_output() can
 	// prevent \n from ending up at the start of the line buffer.
 	if (term->lbuflen < LINE_BUFSIZE && !term->suspend_lbuf
@@ -505,7 +508,16 @@ size_t sbbs_t::term_out(int ich)
 		// not part of C64 PETSCII.
 		term->lbuf[term->lbuflen++] = ch;
 	}
-	if (!term->parse_output(ch))
+	bool send = term->parse_output(ch);
+	// restoreline() replays the line buffer, so a control string must not
+	// leave its introducer or terminator there: replaying "ESC _" alone
+	// opens a string the terminal never sees closed.
+	if (term->control_string_ended) {
+		term->control_string_ended = false;
+		if (term->lbuflen > term->lbuf_seq_start)
+			term->lbuflen = term->lbuf_seq_start;
+	}
+	if (!send)
 		return 1;
 	if (ch == TELNET_IAC && !(telnet_mode & TELNET_MODE_OFF)) {
 		if (outcom(TELNET_IAC))

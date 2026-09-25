@@ -72,6 +72,8 @@ public:
 	bool pause_hotspot{false};
 	bool optimize_gotoxy{false};
 	bool suspend_lbuf{0};
+	unsigned lbuf_seq_start{0};         // lbuflen when the current sequence began
+	bool     control_string_ended{false}; // a DCS/OSC/PM/APC/SOS just completed
 	link_list_t *mouse_hotspots{nullptr};
 
 protected:
@@ -323,6 +325,9 @@ public:
 
 	/* True while output is inside a DCS/OSC/PM/APC control string. */
 	virtual bool in_control_string() { return false; }
+
+	/* True when no control sequence is in progress. */
+	virtual bool parser_idle() { return true; }
 
 	/* SyncTERM paces every wire byte against the emulated rate, so a
 	   bulk control string must not be sent under it. */

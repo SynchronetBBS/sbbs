@@ -861,6 +861,10 @@ bool ANSI_Terminal::in_control_string() {
 	return ansiParser.current_state() == ansiState_string;
 }
 
+bool ANSI_Terminal::parser_idle() {
+	return ansiParser.current_state() == ansiState_none;
+}
+
 bool ANSI_Terminal::parse_output(char ich) {
 	unsigned char ch = static_cast<unsigned char>(ich);
 
@@ -873,9 +877,11 @@ bool ANSI_Terminal::parse_output(char ich) {
 				handle_control_code();
 			else if (!ansiParser.ansi_was_string)
 				handle_control_sequence();
+			control_string_ended = ansiParser.ansi_was_string;
 			ansiParser.reset();
 			return true;
 		case ansiState_broken:
+			control_string_ended = ansiParser.ansi_was_string;
 			sbbs->lprintf(LOG_WARNING, "Sent %zu-character broken ANSI sequence '%s'%s"
 				, ansiParser.ansi_sequence.length() + ansiParser.sequence_overflow
 				, ansiParser.ansi_sequence.c_str()
