@@ -119,6 +119,18 @@ bool termaudio_resolve_path(const char* text_dir, const char* arg
 	return true;
 }
 
+bool termaudio_resolve_sound(const char* text_dir, const char* arg
+                             , char* out, size_t outsz)
+{
+	char rel[256];
+
+	/* The first stage refuses any separator, so the prefix cannot be escaped;
+	   the second joins the result to text_dir. */
+	if (!termaudio_resolve_path("sound/", arg, /* allow_subdir: */ false, rel, sizeof(rel)))
+		return false;
+	return termaudio_resolve_path(text_dir, rel, /* allow_subdir: */ true, out, outsz);
+}
+
 void termaudio_cache_name(const uint8_t md5[16], const char* ext
                           , char* out, size_t outsz)
 {

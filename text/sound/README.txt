@@ -13,8 +13,9 @@ file or text string, e.g.:
     @SOUNDOFF@                  stop everything
     @CACHE_AUDIO:theme.ogg@     send it ahead of time, without playing
 
-@SOUND: and @MUSIC: take a bare filename in this directory.
-@CACHE_AUDIO: may name a subdirectory under text/.
+All of these take a bare filename in this directory, so @CACHE_AUDIO:
+sends exactly the file that a later @SOUND: or @MUSIC: of the same name
+will play.
 
 Formats
 -------
@@ -38,7 +39,8 @@ They differ because @SOUND: and @MUSIC: upload while a display file is
 drawing, where a delay is noticeable, and @CACHE_AUDIO: is placed
 deliberately where one is not. Put @CACHE_AUDIO: for a large piece of
 music somewhere a pause is expected, such as the logon sequence, and the
-matching @MUSIC: will start instantly.
+matching @MUSIC: will start instantly. A file larger than
+max_sound_file_size plays only once it has been preloaded this way.
 
 Who hears it
 ------------

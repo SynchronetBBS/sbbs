@@ -156,8 +156,12 @@ bool sbbs_t::audio_cache_file(const char* path, char* cachename, size_t cnsz
 		audio_warn_once(path, "is missing or empty");
 		return false;
 	}
-	if (len > (off_t)maxsize) {
-		audio_warn_once(path, "exceeds the configured size limit");
+	/* maxsize bounds what may be SENT now. A larger file can still be played
+	   if @CACHE_AUDIO: already put it on the client, and only the cache name,
+	   which needs the contents, can tell. So before reading, refuse only what
+	   neither limit allows. */
+	if (len > (off_t)maxsize && len > (off_t)cfg.max_cache_file_size) {
+		audio_warn_once(path, "exceeds the configured size limits");
 		return false;
 	}
 	if ((data = (char*)malloc((size_t)len)) == NULL)
@@ -190,6 +194,11 @@ bool sbbs_t::audio_cache_file(const char* path, char* cachename, size_t cnsz
 	if (strListFind(audio_cache_names, name, /* case_sensitive: */ true) >= 0) {
 		free(data);
 		return true;                /* client holds it already; no wire traffic */
+	}
+	if (len > (off_t)maxsize) {
+		free(data);
+		audio_warn_once(path, "exceeds the configured size limit; preload it with @CACHE_AUDIO:");
+		return false;
 	}
 
 	b64size = (((size_t)len + 2) / 3) * 4 + 16;

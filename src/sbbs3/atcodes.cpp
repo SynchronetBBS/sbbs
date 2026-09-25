@@ -854,7 +854,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strncmp(sp, "SOUND:", 6) == 0 || strncmp(sp, "MUSIC:", 6) == 0) {
 		bool  music = (*sp == 'M');
 		char  arg[128];
-		char  rel[sizeof(arg) + 8];
 		char  path[MAX_PATH + 1];
 		char  cachename[TERMAUDIO_MAX_CACHE_NAME];
 		float db = TERMAUDIO_DB_UNITY;
@@ -868,14 +867,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			if (!termaudio_parse_volume(vol + 1, &db))
 				db = TERMAUDIO_DB_UNITY;
 		}
-		/* Two stages: the first validates the sysop's argument as a bare
-		   filename and prepends the subdirectory, the second joins it to
-		   text_dir. Neither can be talked out of text/sound. */
-		if (!termaudio_resolve_path("sound/", arg, /* allow_subdir: */ false
-		                            , rel, sizeof(rel)))
-			return nulstr;
-		if (!termaudio_resolve_path(cfg.text_dir, rel, /* allow_subdir: */ true
-		                            , path, sizeof(path)))
+		if (!termaudio_resolve_sound(cfg.text_dir, arg, path, sizeof(path)))
 			return nulstr;
 		if (!audio_cache_file(path, cachename, sizeof(cachename)
 		                      , cfg.max_sound_file_size))
@@ -890,8 +882,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 		if (!term->audio_files || (useron.misc & NO_SOUND))
 			return nulstr;
-		if (!termaudio_resolve_path(cfg.text_dir, sp + 12, /* allow_subdir: */ true
-		                            , path, sizeof(path)))
+		if (!termaudio_resolve_sound(cfg.text_dir, sp + 12, path, sizeof(path)))
 			return nulstr;
 		(void)audio_cache_file(path, cachename, sizeof(cachename)
 		                       , cfg.max_cache_file_size);

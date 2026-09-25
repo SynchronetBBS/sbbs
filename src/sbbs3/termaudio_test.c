@@ -111,6 +111,22 @@ int main(void)
 	CHECK(!termaudio_resolve_path("/sbbs/text/", "x.wav", true, path, 8),
 	      "too-small output buffer rejected, not truncated");
 
+	/* --- sound-file resolution, shared by @SOUND:, @MUSIC: and @CACHE_AUDIO:
+	   so a file cached ahead of time is the same file the others play --- */
+	CHECK(termaudio_resolve_sound("/sbbs/text/", "theme.ogg", path, sizeof(path))
+	      && strcmp(path, "/sbbs/text/sound/theme.ogg") == 0,
+	      "bare name resolves under text/sound, got '%s'", path);
+	CHECK(!termaudio_resolve_sound("/sbbs/text/", "music/theme.ogg", path, sizeof(path)),
+	      "subdirectory rejected");
+	CHECK(!termaudio_resolve_sound("/sbbs/text/", "../theme.ogg", path, sizeof(path)),
+	      "dot-dot rejected");
+	CHECK(!termaudio_resolve_sound("/sbbs/text/", "/etc/passwd", path, sizeof(path)),
+	      "absolute rejected");
+	CHECK(!termaudio_resolve_sound("/sbbs/text/", "", path, sizeof(path)),
+	      "empty rejected");
+	CHECK(!termaudio_resolve_sound("/sbbs/text/", "theme.ogg", path, 12),
+	      "too-small output buffer rejected, not truncated");
+
 	/* --- cache naming --- */
 	{
 		uint8_t md5[16];

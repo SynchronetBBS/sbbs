@@ -58,6 +58,13 @@ bool termaudio_parse_volume(const char* arg, float* db);
 bool termaudio_resolve_path(const char* text_dir, const char* arg
                             , bool allow_subdir, char* out, size_t outsz);
 
+/* Resolve a sound @-code argument: a bare filename in the sound
+   sub-directory of text_dir. @SOUND:, @MUSIC: and @CACHE_AUDIO: all use this,
+   so a file cached ahead of time is the file the others play. Returns false
+   on rejection. */
+bool termaudio_resolve_sound(const char* text_dir, const char* arg
+                             , char* out, size_t outsz);
+
 /* Content-addressed client cache name: "sbbs_<32 hex>.<ext>". ext may be NULL
    or empty, and is truncated to 8 characters. */
 void termaudio_cache_name(const uint8_t md5[16], const char* ext
