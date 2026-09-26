@@ -1,10 +1,10 @@
 # DROPFILE.INI: a named-value door drop file (draft)
 
-Draft 0.2 · 2026-09-26 · Rob Swindell
+Draft 0.3 · 2026-09-26 · Rob Swindell
 
 ## Status and goals
 
-DROPFILE.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.2; the file name is a working name. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
+DROPFILE.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.3; the file name is a working name. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
 
 Goals:
 
@@ -138,10 +138,15 @@ Keys that describe the file itself. All are optional, so the section may be empt
 | --- | --- | --- | --- | --- |
 | `SYS_SOFTWARE` | text | yes | Display name and version of the system's software; not for parsing (see `SYS_VENDOR` and `SYS_VERSION`) | |
 | `SYS_NAME` | text | yes | Name of the system | |
-| `SYS_OP` | text | yes | Alias of the system operator (sysop) | |
+| `SYS_OP` | text | yes | Name of the system operator (sysop), as the host is configured with it: an alias, handle or real name | |
 | `SYS_NODE_NUM` | int | yes | Node number, starting at `1`; a single-node system writes `1` | |
 | `SYS_NODE_COUNT` | int | no | Number of nodes the system is configured for, which is also its highest node number | unknown |
 | `SYS_QWKID` | ascii | no | The system's short ID: 1 to 8 characters that are valid in a DOS file name, with letters in uppercase, not starting with a digit. It is the ID used for QWK packets and QWK networks, and also serves to identify the system to inter-BBS doors and games. It is unique within a network, not necessarily worldwide | unknown |
+| `SYS_HOSTNAME` | ascii | no | The host's public Internet host name, such as `bbs.example.com`, for building links or telling users where to connect | unknown |
+| `SYS_FTN_ADDR` | ascii | no | The host's primary FidoNet Technology Network (FTN) address, in `zone:net/node` or `zone:net/node.point` form, such as `1:103/705`, for inter-BBS games that exchange data over FTN | unknown |
+| `SYS_LOCATION` | text | no | Where the host is, as its sysop describes it, such as `Los Angeles, California` | unknown |
+| `SYS_OP_AVAILABLE` | bool | no | `1` = the sysop is available to be paged for chat | `0` |
+| `SYS_DATE_FORMAT` | token | no | The order the host shows dates in: `mdy` (month, day, year), `dmy` or `ymd`, so a door can show dates the same way | unknown |
 | `SYS_VENDOR` | ascii | no | The vendor name the system uses in its `X_<VENDOR>_` keys, in uppercase, such as `SBBS` | unknown |
 | `SYS_VERSION` | ascii | no | Version of the system's software in the vendor's own format, such as `3.22a`; compared only by doors that know that vendor | unknown |
 
@@ -210,7 +215,7 @@ These are this spec's own names, used by both `COMM_CHARSET` and `TERM_CHARSET`:
 | `USER_ALIAS` | text | unless `local` | The user's alias | |
 | `USER_NUMBER` | int | unless `local` | The user's number on this host; may be reused after the account is deleted | |
 | `USER_KEY` | ascii | no | Opaque key that never changes for the account and is never reused on this host; ASCII letters, digits, `-`, `_` and `.` only, at most 64 characters | none |
-| `USER_ROLE` | token | no | `user`, `cosysop` or `sysop` | `user` |
+| `USER_ROLE` | token | no | `user`, `cosysop`, `sysop` or `guest`. `guest` is an account shared by callers who haven't registered, so a door SHOULD NOT save progress or rankings for it as one person's | `user` |
 | `USER_LANG` | ascii | no | BCP 47 [BCP47] language tag, such as `en-US` | unknown |
 | `USER_REALNAME` | text | no | Real name (see Security and privacy) | none |
 | `USER_LOCATION` | text | no | Location as the user entered it | none |
@@ -219,7 +224,10 @@ These are this spec's own names, used by both `COMM_CHARSET` and `TERM_CHARSET`:
 | `USER_IP` | ascii | no | The IP address the user connected from, in IPv4 dotted-decimal or IPv6 text form (see Security and privacy) | none |
 | `USER_HOSTNAME` | ascii | no | The host name of `USER_IP`, from a reverse DNS lookup | none |
 | `USER_CALLER_ID` | ascii | no | The calling phone number from Caller ID, for a dial-up caller | none |
-| `USER_HANDLE` | text | no | The user's short nickname for chat, such as in multi-node or inter-BBS chat doors | none |
+| `USER_PROTOCOL` | token | no | How the caller reached the host: `telnet`, `rlogin`, `ssh`, `raw` (a plain TCP connection), `websocket` or `serial` (a serial line, through a modem or a direct cable). | unknown |
+| `USER_HANDLE` | text | no | The user's short nickname, such as for multi-node or inter-BBS chat doors. It may be an amateur radio call sign or another short name the user is known by | none |
+| `USER_EMAIL` | ascii | no | The user's e-mail address on this host, such as `Joe.Bob@bbs.example.com`, where the host accepts mail for its users | none |
+| `USER_NETMAIL` | ascii | no | The address the user's mail is forwarded to: an Internet e-mail address, or a FidoNet address such as `1:103/705` (see Security and privacy) | none |
 
 A host that can't guarantee a key that is never reused, for example because it reuses deleted users' numbers internally, leaves `USER_KEY` out. A door that keeps per-user data SHOULD key it on `USER_KEY`, not on the alias or number, and falls back to `USER_NUMBER` when `USER_KEY` is missing. Its characters are safe in file names on DOS, Windows and POSIX, but a DOS door that needs an 8.3 name derives one, such as a hash.
 
@@ -241,7 +249,7 @@ There is no standard security level key. A level's range, its ordering (whether 
 | `TERM_RIP` | ascii | RIPscrip version the terminal reported, as `<major>.<minor>`, such as `1.54` from a `RIPSCRIP015400` reply to `CSI !`; or `unknown` when the terminal supports RIPscrip but reported no version, such as when the user set RIP manually. Written only when `TERM_TYPE` is `ansi`; missing means no RIPscrip | none |
 | `TERM_CHARSET` | ascii | The caller's terminal character set, from the names listed under `COMM_CHARSET`. It equals `COMM_CHARSET` when the host passes the door's bytes through untranslated, and may differ when the host translates them | unknown |
 | `TERM_MONO` | bool | `1` = no color, because the terminal can't show it or the user turned it off: the door may send ANSI sequences but no color changes, whatever `TERM_COLORS` says | `0` |
-| `TERM_SWAP_DELETE` | bool | `1` = the terminal sends DEL (`0x7F`) for its Backspace key and BS (`0x08`) for its Delete key, so a door doing its own line editing swaps the two | `0` |
+| `TERM_BACKSPACE` | int | The byte the terminal's Backspace key sends: `8` (BS) or `127` (DEL). A door treats the other of the two as Delete, as it does `CSI 3 ~`. A host may learn it from the user's settings, or from a DECRQM query for mode 67 (DECBKM) on a terminal that answers one | `8` |
 | `TERM_NAME` | text | Terminal program name as the terminal reported it, such as `SyncTERM` | unknown |
 | `TERM_CTERM` | ascii | CTerm revision from `CSI c`, with the reply's `;` separators turned into dots: `<major>.<minor>`, such as `1.332`, or `<major>.<minor>.<fork>` from a forked CTerm, such as `1.332.4` (see below) | not CTerm |
 
@@ -323,7 +331,7 @@ The file carries no secrets and grants no privileges, and personal details beyon
 
 - Producers MUST NOT write passwords, authentication tokens or other secrets.
 - `USER_ROLE=sysop` tells the door who the sysop is. It is not authentication and grants no operating-system privileges.
-- `USER_REALNAME`, `USER_LOCATION`, `USER_BIRTHDATE`, `USER_GENDER`, `USER_IP`, `USER_HOSTNAME` and `USER_CALLER_ID` are optional, so a producer MAY leave any of them out, for example because the sysop chose not to share it. A door MUST NOT treat the last three as authentication.
+- `USER_REALNAME`, `USER_LOCATION`, `USER_BIRTHDATE`, `USER_GENDER`, `USER_IP`, `USER_HOSTNAME`, `USER_CALLER_ID`, `USER_EMAIL` and `USER_NETMAIL` are optional, so a producer MAY leave any of them out, for example because the sysop chose not to share it. A door MUST NOT treat the last three as authentication.
 - Text values come from users. A door MUST NOT pass them to a shell or use them as a format string, and MUST handle non-ASCII characters and 255-byte lines.
 - The file is read-only input. A door MUST NOT use it to return changes to the host.
 
@@ -346,6 +354,7 @@ SYS_OP=Example Sysop
 SYS_NODE_NUM=3
 SYS_NODE_COUNT=8
 SYS_QWKID=EXAMPLE
+SYS_HOSTNAME=bbs.example.com
 
 [comm]
 COMM_TYPE=socket
@@ -358,6 +367,7 @@ USER_NUMBER=42
 USER_KEY=42-1693526400
 USER_ROLE=user
 USER_LANG=de
+USER_PROTOCOL=ssh
 
 [terminal]
 TERM_COLS=132
@@ -527,6 +537,9 @@ DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for
 - **Mapping from Synchronet data:**
   - `SYS_VENDOR` = `SBBS`, and `SYS_VERSION` = Synchronet's version number followed by its revision letter, such as `3.22a`.
   - `SYS_NODE_COUNT` = the configured number of nodes, and `SYS_QWKID` = the system's QWK ID.
+  - `SYS_HOSTNAME` = the system's Internet host name (`system.host_name`), `SYS_LOCATION` = its configured location, `SYS_FTN_ADDR` = the first of its FidoNet addresses, `SYS_OP_AVAILABLE` from whether the sysop is set as available for chat, and `SYS_DATE_FORMAT` from the configured date format (`MMDDYY`, `DDMMYY` or `YYMMDD` as `mdy`, `dmy` or `ymd`).
+  - `USER_PROTOCOL` from the client's protocol (`Telnet`, `RLogin` or `SSH`, in lowercase), or `serial` for a dial-up call through SEXPOTS. A caller reaching the Terminal Server through the WebSocket service arrives as `telnet`.
+  - `USER_EMAIL` = the user's Internet address on the system (`user.email`), `USER_NETMAIL` = the user's forwarding address (`user.netmail`), and `USER_ROLE=guest` for a guest account (`user.is_guest`).
   - `USER_KEY` = `<number>-<firston>`: the user number and the account's creation time (as a Unix time), which together are never reused.
   - `USER_ROLE` = `sysop` when the user has sysop access; otherwise `user`.
   - `X_SBBS_LEVEL` = the user's security level; see Vendor keys and MODUSER.DAT below for the other `X_SBBS_` keys.
@@ -547,7 +560,7 @@ DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for
   - `PREF_SOUND=0` when the user's "no sound" setting (`NO_SOUND`) is on, which Synchronet already defines as suppressing both BEL and terminal audio.
   - `USER_HANDLE` from the user's chat handle.
   - `PREF_ALERTS=0` when activity alerts are off (`CHAT_NOACT`), and `PREF_QUIET=1` in quiet mode (`QUIET`).
-  - `TERM_SWAP_DELETE=1` when the user's terminal settings swap Delete and Backspace (`SWAP_DELETE`).
+  - `TERM_BACKSPACE=127` when the user's terminal settings swap Delete and Backspace (`SWAP_DELETE`); otherwise it's left out, meaning `8`.
   - The optional personal keys are written when the user's record has them, as Synchronet already does for the same details in DOOR.SYS and other drop files.
 - **Text lengths:** Synchronet's limits, in bytes as stored. A CP437 string holds that many characters. A string stored as UTF-8 may hold fewer, and a CP437 string written with `FILE_UTF8=1` can take up to 3 bytes per character.
 
@@ -631,6 +644,7 @@ Work Synchronet needs beyond writing the file itself, before every key above can
     - ZL4KJ: d32, a Free Pascal door kit
     - thewebexpert: bbs-door-server, a multi-node DOSBox door server for Synchronet
     - CryptoJones: the AdmiralBBS door specification
+    - Smooth (Phenom Productions): Phenom Dropfile, a JSON drop file for Mystic BBS [PHENOM]
   - The r/bbs community, with a post linking to the draft.
 
 ## References
@@ -643,6 +657,7 @@ Work Synchronet needs beyond writing the file itself, before every key above can
 - [DOOR32] "DOOR32 Revision 1 Specifications", February 23, 2001. <https://github.com/NuSkooler/ansi-bbs/blob/master/docs/dropfile_formats/door32_sys.txt>
 - [DTS-0001] Mecklenburg, D., "Doorware Technical Standard 0001" (DOOR.SYS), version 0.07 beta, January 14, 1992. <https://github.com/NuSkooler/ansi-bbs/blob/master/docs/dropfile_formats/dts_0001_0_07.txt>
 - [BBSDEV.DRP] "BBSDEV.DRP 1.0". <https://realdeuce.github.io/bbsdev.drp/>
+- [PHENOM] Smooth <PHENOM>, "Phenom Dropfile" v1.2 (JSON and line-based drop files for Mystic BBS), Phenom Productions, May 11, 2022. <https://web.archive.org/web/20250725102445/http://phenomprod.com/releases/mystic/pn-dropfile12.zip>
 - [FSC-0015] "FOSSIL" specification, FidoNet Technical Standards Committee. <http://ftsc.org/docs/fsc-0015.001>
 - [CTERM] "CTerm terminal emulation" (SyncTERM), in the Synchronet source tree. <https://gitlab.synchro.net/main/sbbs/-/blob/master/src/conio/cterm.adoc>
 - [XTERM] Dickey, T., "XTerm Control Sequences". <https://invisible-island.net/xterm/ctlseqs/ctlseqs.html>
