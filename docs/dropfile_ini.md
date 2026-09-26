@@ -1,10 +1,10 @@
 # DROPFILE.INI: a named-value door drop file (draft)
 
-Draft 0.1 · 2026-09-23 · Rob Swindell
+Draft 0.2 · 2026-09-26 · Rob Swindell
 
 ## Status and goals
 
-DROPFILE.INI hands a door the details of a BBS session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. This is draft 0.1; the file name is a working name. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
+DROPFILE.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.2; the file name is a working name. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
 
 Goals:
 
@@ -18,7 +18,7 @@ Goals:
 
 Non-goals:
 
-- Returning data to the BBS. The file is read-only input. A BBS MAY offer its own way back, such as Synchronet's MODUSER.DAT.
+- Returning data to the host. The file is read-only input. A host MAY offer its own way back, such as Synchronet's MODUSER.DAT.
 - Authentication. Nothing in the file grants privileges.
 
 ## Why INI
@@ -37,16 +37,16 @@ INI is also familiar to sysops and door authors, most BBS software already reads
 
 ## File name and discovery
 
-The BBS points the door to the file with the environment variable `DROPFILE_INI` or on the door's command line, so the file can have any name. Its customary name is `DROPFILE.INI`, which a BBS SHOULD use unless the door expects another; it may be in lowercase (`dropfile.ini`) on a file system that keeps case. A file with any other name MUST keep the `.INI` extension, which no older drop file uses, so a door that chooses its parser by file name can recognize the format. A BBS that uses another name must give the door the full path, since a door that searches a directory or its current directory looks only for `DROPFILE.INI`.
+The host points the door to the file with the environment variable `DROPFILE_INI` or on the door's command line, so the file can have any name. Its customary name is `DROPFILE.INI`, which a host SHOULD use unless the door expects another; it may be in lowercase (`dropfile.ini`) on a file system that keeps case. A file with any other name MUST keep the `.INI` extension, which no older drop file uses, so a door that chooses its parser by file name can recognize the format. A host that uses another name must give the door the full path, since a door that searches a directory or its current directory looks only for `DROPFILE.INI`.
 
-- When more than one node can run the door at the same time, no two nodes' files may share a path, or they would overwrite each other. A BBS that gives every node the same file name, such as `DROPFILE.INI`, MUST therefore write each node's file in a directory specific to that node, such as a per-node directory; one that gives each node its own file name, such as `NODE1.INI`, MAY use a shared directory. A single-node BBS, or a BBS that lets only one node at a time run the door, MAY write the file in a shared directory, such as the door's own directory, under any name.
-- The BBS MUST finish writing the file and close it before starting the door. A DOS emulator that is already running may not see a new file, because DOSBox caches directory listings, so the BBS starts the emulator after writing the file or mounts the directory with caching turned off.
-- The BBS MUST give the door the file's absolute path, including the file name, in the `DROPFILE_INI` environment variable, on the door's command line, or both. It SHOULD set `DROPFILE_INI` wherever it can. Some DOS doors can't receive it: an emulator such as DOSBox doesn't pass the host's environment through, and a DOS environment of a few hundred bytes may have no room left. For those, the command line is the only way.
+- When more than one node can run the door at the same time, no two nodes' files may share a path, or they would overwrite each other. A host that gives every node the same file name, such as `DROPFILE.INI`, MUST therefore write each node's file in a directory specific to that node, such as a per-node directory; one that gives each node its own file name, such as `NODE1.INI`, MAY use a shared directory. A single-node host, or a host that lets only one node at a time run the door, MAY write the file in a shared directory, such as the door's own directory, under any name.
+- The host MUST finish writing the file and close it before starting the door. A DOS emulator that is already running may not see a new file, because DOSBox caches directory listings, so the host starts the emulator after writing the file or mounts the directory with caching turned off.
+- The host MUST give the door the file's absolute path, including the file name, in the `DROPFILE_INI` environment variable, on the door's command line, or both. It SHOULD set `DROPFILE_INI` wherever it can. Some DOS doors can't receive it: an emulator such as DOSBox doesn't pass the host's environment through, and a DOS environment of a few hundred bytes may have no room left. For those, the command line is the only way.
 - In `DROPFILE_INI` the path has no quotes and no shell escaping, even when it contains spaces.
 - The path uses the syntax of the environment the door runs in. For a DOS door run under an emulator, it is the DOS path the door sees, such as `C:\NODE1\DROPFILE.INI`, not the host path.
-- A path given to a DOS door, in `DROPFILE_INI`, on its command line or in `TEMP_DIR`, MUST fit DOS's limits: every directory and file name 8.3, at most 64 characters for the directory part and 80 for the whole path. A DOS command line holds at most 126 characters, including the door's other arguments, so the BBS SHOULD keep the path short, such as `C:\NODE1\DROPFILE.INI`.
-- A BBS MUST be able to pass the path on the door's command line, as many DOS doors expect. The sysop places the path on the door's configured command line where the door expects it. A door SHOULD accept the path on its command line, as a bare argument unless it documents a switch of its own, so it still works where the environment variable can't reach it, and uses `DROPFILE_INI` when it isn't given one. A door SHOULD also accept the directory that contains the file, as many doors take a drop file directory today, and MAY look for a file named `DROPFILE.INI`, in any case, in its current directory when given nothing else. A door given a directory looks there for `DROPFILE.INI` the same way.
-- The file SHOULD be readable only by the BBS and the door, and the BBS SHOULD remove it after the door exits.
+- A path given to a DOS door, in `DROPFILE_INI`, on its command line or in `TEMP_DIR`, MUST fit DOS's limits: every directory and file name 8.3, at most 64 characters for the directory part and 80 for the whole path. A DOS command line holds at most 126 characters, including the door's other arguments, so the host SHOULD keep the path short, such as `C:\NODE1\DROPFILE.INI`.
+- A host MUST be able to pass the path on the door's command line, as many DOS doors expect. The sysop places the path on the door's configured command line where the door expects it. A door SHOULD accept the path on its command line, as a bare argument unless it documents a switch of its own, so it still works where the environment variable can't reach it, and uses `DROPFILE_INI` when it isn't given one. A door SHOULD also accept the directory that contains the file, as many doors take a drop file directory today, and MAY look for a file named `DROPFILE.INI`, in any case, in its current directory when given nothing else. A door given a directory looks there for `DROPFILE.INI` the same way.
+- The file SHOULD be readable only by the host and the door, and the host SHOULD remove it after the door exits.
 - A file for a DOS door has an 8.3 name, which `DROPFILE.INI` is. A door that looks the file up by name, in a directory or its current directory, matches the name without regard to case.
 
 ## File representation
@@ -90,7 +90,7 @@ There is no quoting or escaping. A value can contain `=`, `:`, `[`, `"` and `\` 
 
 A simple reader can skip comment and section handling: comment lines and section headers can't match any key, because no key starts with `;` or `[`, and headers contain no `=`.
 
-Text values are in CP437, or in UTF-8 when `FILE_UTF8` is `1`. The choice is independent of `COMM_CHARSET`: a BBS that stores only CP437 text MAY write CP437 text for a door on a UTF-8 connection, and the door converts text values before sending them. A producer MUST NOT write `FILE_UTF8=1` unless it knows the door supports UTF-8, for example because the sysop configured the door that way, so a door that can't decode UTF-8 never receives it. A producer writing CP437 replaces characters that have no CP437 equivalent with `?`. ASCII text is valid either way. Keys and non-text values are always ASCII, so a reader can find `FILE_UTF8` before decoding any text.
+Text values are in CP437, or in UTF-8 when `FILE_UTF8` is `1`. The choice is independent of `COMM_CHARSET`: a host that stores only CP437 text MAY write CP437 text for a door on a UTF-8 connection, and the door converts text values before sending them. A producer MUST NOT write `FILE_UTF8=1` unless it knows the door supports UTF-8, for example because the sysop configured the door that way, so a door that can't decode UTF-8 never receives it. A producer writing CP437 replaces characters that have no CP437 equivalent with `?`. ASCII text is valid either way. Keys and non-text values are always ASCII, so a reader can find `FILE_UTF8` before decoding any text.
 
 ## Value types
 
@@ -117,33 +117,33 @@ Every numeric value is decimal; the file has no hexadecimal. C's `strtol()` (or 
 
 Values can exceed 32767, the limit of the default integer type in Turbo C (`int`), Turbo Pascal (`Integer`) and QBasic (`%`); `TIME_LEFT` does after about 9.1 hours. A DOS reader stores int values in a 32-bit type: `long`, `LongInt`, or a QBasic `&` variable.
 
-Time limits are given as seconds remaining (`TIME_LEFT`), not as a clock time. A DOS door often has no `TZ` setting, and under emulation its clock may not match the BBS's, but any door can count down seconds from when it started.
+Time limits are given as seconds remaining (`TIME_LEFT`), not as a clock time. A DOS door often has no `TZ` setting, and under emulation its clock may not match the host's, but any door can count down seconds from when it started.
 
 ## Defined keys
 
-Five keys are always required: `BBS_SOFTWARE`, `BBS_NAME`, `BBS_SYSOP`, `BBS_NODE` and `COMM_TYPE`. `COMM_CHARSET`, `USER_ALIAS` and `USER_NUMBER` are also required unless `COMM_TYPE` is `local`, where no caller is connected; then the user keys, if present, describe the account the door runs under. The connection keys marked "for" a type are required with that type. Every other key is optional, and the Default column says what a missing key means.
+Five keys are always required: `SYS_SOFTWARE`, `SYS_NAME`, `SYS_OP`, `SYS_NODE_NUM` and `COMM_TYPE`. `COMM_CHARSET`, `USER_ALIAS` and `USER_NUMBER` are also required unless `COMM_TYPE` is `local`, where no caller is connected; then the user keys, if present, describe the account the door runs under. The connection keys marked "for" a type are required with that type. Every other key is optional, and the Default column says what a missing key means.
 
 ### File: `[file]`
 
-Keys that describe the file itself. All are optional, so the section may be empty or left out. A producer SHOULD always write `FILE_TIME`, leaving out the UTC offset if it doesn't know it. A door MAY log it or show it to the sysop, but SHOULD NOT refuse to run because of it, since a DOS door's clock often doesn't match the BBS's.
+Keys that describe the file itself. All are optional, so the section may be empty or left out. A producer SHOULD always write `FILE_TIME`, leaving out the UTC offset if it doesn't know it. A door MAY log it or show it to the sysop, but SHOULD NOT refuse to run because of it, since a DOS door's clock often doesn't match the host's.
 
 | Key | Type | Meaning | Default |
 | --- | --- | --- | --- |
 | `FILE_UTF8` | bool | `1` = every text value in the file is UTF-8 | `0` (CP437) |
-| `FILE_TIME` | ascii | Local date and time the BBS wrote the file, in ISO 8601 form with its UTC offset, such as `2026-09-25T14:30:00-07:00`, or without the offset (`2026-09-25T14:30:00`) when the BBS doesn't know it. It is for people and logs, to spot a stale file left by a misconfigured BBS or door, not for measuring time: a door uses `TIME_LEFT` for that | none |
+| `FILE_TIME` | ascii | Local date and time the host wrote the file, in ISO 8601 form with its UTC offset, such as `2026-09-25T14:30:00-07:00`, or without the offset (`2026-09-25T14:30:00`) when the host doesn't know it. It is for people and logs, to spot a stale file left by a misconfigured host or door, not for measuring time: a door uses `TIME_LEFT` for that | none |
 
-### BBS: `[bbs]`
+### System: `[system]`
 
 | Key | Type | Req. | Meaning | Default |
 | --- | --- | --- | --- | --- |
-| `BBS_SOFTWARE` | text | yes | Display name and version of the BBS software; not for parsing (see `BBS_VENDOR` and `BBS_VERSION`) | |
-| `BBS_NAME` | text | yes | Name of the board | |
-| `BBS_SYSOP` | text | yes | Sysop's alias | |
-| `BBS_NODE` | int | yes | Node number, starting at `1`; a single-node BBS writes `1` | |
-| `BBS_NODES` | int | no | Number of nodes the BBS is configured for, which is also its highest node number | unknown |
-| `BBS_ID` | ascii | no | The BBS's short system ID: 1 to 8 characters that are valid in a DOS file name, with letters in uppercase, not starting with a digit. It is the ID used for QWK packets and QWK networks, and also serves to identify the BBS to inter-BBS doors and games. It is unique within a network, not necessarily worldwide | unknown |
-| `BBS_VENDOR` | ascii | no | The vendor name the BBS uses in its `X_<VENDOR>_` keys, in uppercase, such as `SBBS` | unknown |
-| `BBS_VERSION` | ascii | no | Version of the BBS software in the vendor's own format, such as `3.22a`; compared only by doors that know that vendor | unknown |
+| `SYS_SOFTWARE` | text | yes | Display name and version of the system's software; not for parsing (see `SYS_VENDOR` and `SYS_VERSION`) | |
+| `SYS_NAME` | text | yes | Name of the system | |
+| `SYS_OP` | text | yes | Alias of the system operator (sysop) | |
+| `SYS_NODE_NUM` | int | yes | Node number, starting at `1`; a single-node system writes `1` | |
+| `SYS_NODE_COUNT` | int | no | Number of nodes the system is configured for, which is also its highest node number | unknown |
+| `SYS_QWKID` | ascii | no | The system's short ID: 1 to 8 characters that are valid in a DOS file name, with letters in uppercase, not starting with a digit. It is the ID used for QWK packets and QWK networks, and also serves to identify the system to inter-BBS doors and games. It is unique within a network, not necessarily worldwide | unknown |
+| `SYS_VENDOR` | ascii | no | The vendor name the system uses in its `X_<VENDOR>_` keys, in uppercase, such as `SBBS` | unknown |
+| `SYS_VERSION` | ascii | no | Version of the system's software in the vendor's own format, such as `3.22a`; compared only by doors that know that vendor | unknown |
 
 ### Connection: `[comm]`
 
@@ -151,7 +151,7 @@ Keys that describe the file itself. All are optional, so the section may be empt
 | --- | --- | --- | --- | --- |
 | `COMM_TYPE` | token | yes | How the door talks to the caller (list below) | |
 | `COMM_CHARSET` | ascii | unless `local` | Character set the door MUST use on the connection (list below) | |
-| `COMM_HANDLE` | handle | for `socket`, `telnet`, `serial` | Inherited socket or serial handle, native to the door's platform. It MUST be an open handle: a BBS without one uses another type, such as `stdio`, never a placeholder such as `-1` | |
+| `COMM_HANDLE` | handle | for `socket`, `telnet`, `serial` | Inherited socket or serial handle, native to the door's platform. It MUST be an open handle: a host without one uses another type, such as `stdio`, never a placeholder such as `-1` | |
 | `COMM_PORT` | int | for `fossil`, `uart` | COM port number, 1-based (`1` = COM1; FOSSIL `DX` = `COMM_PORT` - 1) | |
 | `UART_BASE` | int | for `uart` | UART I/O base address, in decimal, such as `1016` for COM1 | |
 | `UART_IRQ` | int | for `uart` | UART IRQ, 0 through 15 | |
@@ -161,10 +161,10 @@ Keys that describe the file itself. All are optional, so the section may be empt
 
 | Token | Meaning |
 | --- | --- |
-| `local` | The door uses its local console. No caller is connected; a BBS doesn't use this type for a caller's session. |
-| `stdio` | Caller input on standard input (`stdin`, descriptor 0; Win32 `STD_INPUT_HANDLE`) and output on standard output (`stdout`, descriptor 1; Win32 `STD_OUTPUT_HANDLE`), carrying only terminal bytes: the BBS has done any Telnet, SSH or WebSocket processing, passes each input byte on as it arrives, and does no echo or line editing. Standard error (`stderr`, descriptor 2; Win32 `STD_ERROR_HANDLE`) doesn't reach the caller. |
-| `socket` | A connected socket carrying only terminal bytes; the BBS has already done any Telnet, SSH or WebSocket processing. |
-| `telnet` | A connected socket carrying the caller's Telnet stream. The door handles the Telnet protocol itself: it answers option negotiations, sends a `0xFF` data byte as `IAC IAC`, and handles CR NUL. The BBS uses this type only for a caller that is actually on Telnet. The BBS has usually negotiated ECHO, SUPPRESS-GO-AHEAD and BINARY already; the door MAY negotiate them again. |
+| `local` | The door uses its local console. No caller is connected; a host doesn't use this type for a caller's session. |
+| `stdio` | Caller input on standard input (`stdin`, descriptor 0; Win32 `STD_INPUT_HANDLE`) and output on standard output (`stdout`, descriptor 1; Win32 `STD_OUTPUT_HANDLE`), carrying only terminal bytes: the host has done any Telnet, SSH or WebSocket processing, passes each input byte on as it arrives, and does no echo or line editing. Standard error (`stderr`, descriptor 2; Win32 `STD_ERROR_HANDLE`) doesn't reach the caller. |
+| `socket` | A connected socket carrying only terminal bytes; the host has already done any Telnet, SSH or WebSocket processing. |
+| `telnet` | A connected socket carrying the caller's Telnet stream. The door handles the Telnet protocol itself: it answers option negotiations, sends a `0xFF` data byte as `IAC IAC`, and handles CR NUL. The host uses this type only for a caller that is actually on Telnet. The host has usually negotiated ECHO, SUPPRESS-GO-AHEAD and BINARY already; the door MAY negotiate them again. |
 | `serial` | An open, configured serial port, as a handle native to the door's platform: a POSIX file descriptor, a Win32 COM handle or an OS/2 handle. |
 | `fossil` | An initialized FOSSIL driver [FSC-0015]. |
 | `uart` | Direct DOS UART access. |
@@ -173,9 +173,9 @@ DOOR32.SYS's [DOOR32] comm type `0` (local) corresponds to `local`. Its type `1`
 
 A missing `COMM_RATE` doesn't mean a local session. A tool that converts this file to DOOR.SYS or DORINFO1.DEF writes a nonzero rate, such as `38400`, because several door kits treat a rate of 0 as local.
 
-For `socket`, `telnet` and `serial`, the door inherits a handle to a socket or port that the BBS also holds. The door's copy is its own handle, but the blocking mode (`O_NONBLOCK` on POSIX, `FIONBIO` on Windows) and the socket or port options belong to the shared socket or port, so a setting the door changes is still in effect after it exits. The rules below keep the door and the BBS from breaking each other.
+For `socket`, `telnet` and `serial`, the door inherits a handle to a socket or port that the host also holds. The door's copy is its own handle, but the blocking mode (`O_NONBLOCK` on POSIX, `FIONBIO` on Windows) and the socket or port options belong to the shared socket or port, so a setting the door changes is still in effect after it exits. The rules below keep the door and the host from breaking each other.
 
-The BBS:
+The host:
 
 - MUST make the handle inheritable, keep it valid in the door's process for the whole session, and keep its own reference open, so the door closing its copy doesn't end the connection;
 - MUST pass a socket in blocking mode, because Winsock has no documented call that reports a socket's blocking mode, so a Windows door can't find out otherwise;
@@ -186,13 +186,13 @@ The BBS:
 The door:
 
 - MAY change the blocking mode and the socket or port options it needs, and SHOULD restore the original values before it exits;
-- MUST NOT call `shutdown()` on the socket, which ends the connection for the BBS too; closing its own handle is enough;
+- MUST NOT call `shutdown()` on the socket, which ends the connection for the host too; closing its own handle is enough;
 - MUST tolerate a failed option call: a `socket` may be one end of a local socket pair, where TCP options don't apply;
 - SHOULD keep the handle from being inherited by programs it starts (close-on-exec on POSIX, not inheritable on Windows), unless it deliberately hands the session to one;
 - on POSIX, SHOULD ignore `SIGPIPE` or write with `MSG_NOSIGNAL`, so a caller hanging up doesn't kill the door, and SHOULD exit promptly when a read returns end of file or an error;
 - on Windows, calls `WSAStartup()` before using an inherited socket, and remembers that `WSAEventSelect()` and `WSAAsyncSelect()` switch the socket to non-blocking mode: to restore blocking mode it first clears that association, such as with `WSAEventSelect(s, NULL, 0)`.
 
-`COMM_CHARSET` is the character set the door must send and expect on the connection, which isn't necessarily the caller's terminal character set (`TERM_CHARSET`). When the BBS translates the door's output, for example from CP437 to UTF-8, the value is the encoding the door writes (`CP437`). When the BBS doesn't translate, the value is the caller's actual encoding, even one the door can't produce. A door that can't use the given character set SHOULD tell the user and exit rather than send bytes the terminal will misdisplay. It writes that message in printable US-ASCII, which CP437, UTF-8 and US-ASCII terminals all display the same way, using only uppercase letters, digits, spaces and common punctuation, ending each line with CR LF: on a PETSCII terminal, lowercase ASCII letters can show as graphics characters.
+`COMM_CHARSET` is the character set the door must send and expect on the connection, which isn't necessarily the caller's terminal character set (`TERM_CHARSET`). When the host translates the door's output, for example from CP437 to UTF-8, the value is the encoding the door writes (`CP437`). When the host doesn't translate, the value is the caller's actual encoding, even one the door can't produce. A door that can't use the given character set SHOULD tell the user and exit rather than send bytes the terminal will misdisplay. It writes that message in printable US-ASCII, which CP437, UTF-8 and US-ASCII terminals all display the same way, using only uppercase letters, digits, spaces and common punctuation, ending each line with CR LF: on a PETSCII terminal, lowercase ASCII letters can show as graphics characters.
 
 | Name | Character set |
 | --- | --- |
@@ -208,38 +208,38 @@ These are this spec's own names, used by both `COMM_CHARSET` and `TERM_CHARSET`:
 | Key | Type | Req. | Meaning | Default |
 | --- | --- | --- | --- | --- |
 | `USER_ALIAS` | text | unless `local` | The user's alias | |
-| `USER_NUMBER` | int | unless `local` | The user's number on this BBS; may be reused after the account is deleted | |
-| `USER_KEY` | ascii | no | Opaque key that never changes for the account and is never reused on this BBS; ASCII letters, digits, `-`, `_` and `.` only, at most 64 characters | none |
+| `USER_NUMBER` | int | unless `local` | The user's number on this host; may be reused after the account is deleted | |
+| `USER_KEY` | ascii | no | Opaque key that never changes for the account and is never reused on this host; ASCII letters, digits, `-`, `_` and `.` only, at most 64 characters | none |
 | `USER_ROLE` | token | no | `user`, `cosysop` or `sysop` | `user` |
 | `USER_LANG` | ascii | no | BCP 47 [BCP47] language tag, such as `en-US` | unknown |
 | `USER_REALNAME` | text | no | Real name (see Security and privacy) | none |
 | `USER_LOCATION` | text | no | Location as the user entered it | none |
 | `USER_BIRTHDATE` | date | no | Date of birth | none |
-| `USER_GENDER` | text | no | As the BBS stores it, often a single character such as `M` or `F` whose meanings the BBS defines | none |
+| `USER_GENDER` | text | no | As the host stores it, often a single character such as `M` or `F` whose meanings the host defines | none |
 | `USER_IP` | ascii | no | The IP address the user connected from, in IPv4 dotted-decimal or IPv6 text form (see Security and privacy) | none |
 | `USER_HOSTNAME` | ascii | no | The host name of `USER_IP`, from a reverse DNS lookup | none |
 | `USER_CALLER_ID` | ascii | no | The calling phone number from Caller ID, for a dial-up caller | none |
 | `USER_HANDLE` | text | no | The user's short nickname for chat, such as in multi-node or inter-BBS chat doors | none |
 
-A BBS that can't guarantee a key that is never reused, for example because it reuses deleted users' numbers internally, leaves `USER_KEY` out. A door that keeps per-user data SHOULD key it on `USER_KEY`, not on the alias or number, and falls back to `USER_NUMBER` when `USER_KEY` is missing. Its characters are safe in file names on DOS, Windows and POSIX, but a DOS door that needs an 8.3 name derives one, such as a hash.
+A host that can't guarantee a key that is never reused, for example because it reuses deleted users' numbers internally, leaves `USER_KEY` out. A door that keeps per-user data SHOULD key it on `USER_KEY`, not on the alias or number, and falls back to `USER_NUMBER` when `USER_KEY` is missing. Its characters are safe in file names on DOS, Windows and POSIX, but a DOS door that needs an 8.3 name derives one, such as a hash.
 
 A door with translations matches `USER_LANG` against the tags it has by BCP 47 lookup [RFC4647]: it compares tags case-insensitively, and when there is no exact match it drops subtags from the end and tries again, so `de-DE` or `de-AT` finds a `de` translation. If nothing matches, it uses its default language.
 
-Behind a proxy or web gateway, `USER_IP` is the address the BBS trusts as the caller's: the address the gateway forwarded, when the BBS is configured to trust that gateway, and otherwise the gateway's own.
+Behind a proxy or web gateway, `USER_IP` is the address the host trusts as the caller's: the address the gateway forwarded, when the host is configured to trust that gateway, and otherwise the gateway's own.
 
-There is no standard security level key. A level's range, its ordering (whether higher means more access) and even whether it is numeric differ between BBS packages, so a standard key whose meaning depends on the BBS that wrote it would mislead doors. A BBS MAY write its levels in vendor keys, such as Synchronet's `X_SBBS_LEVEL`, and a door that needs access control can use `USER_ROLE`.
+There is no standard security level key. A level's range, its ordering (whether higher means more access) and even whether it is numeric differ between BBS packages, so a standard key whose meaning depends on the host that wrote it would mislead doors. A host MAY write its levels in vendor keys, such as Synchronet's `X_SBBS_LEVEL`, and a door that needs access control can use `USER_ROLE`.
 
 ### Terminal: `[terminal]`
 
-`TERM_` keys describe the caller's terminal: what it is and what it can do. The BBS may have detected a value or taken it from the user's manual terminal settings, for example when the user has turned off automatic terminal detection. `PREF_` keys (next section) are the user's choices about how doors should behave, whatever the terminal can do. All keys in this section are optional. A missing `TERM_` key reads as its default. In the capability table below, the default `0` means the BBS didn't detect the capability, not that the terminal lacks it, so a door MAY query the terminal itself before relying on it. Producers SHOULD always write `TERM_TYPE`, since a missing one means `dumb`.
+`TERM_` keys describe the caller's terminal: what it is and what it can do. The host may have detected a value or taken it from the user's manual terminal settings, for example when the user has turned off automatic terminal detection. `PREF_` keys (next section) are the user's choices about how doors should behave, whatever the terminal can do. All keys in this section are optional. A missing `TERM_` key reads as its default. In the capability table below, the default `0` means the host didn't detect the capability, not that the terminal lacks it, so a door MAY query the terminal itself before relying on it. Producers SHOULD always write `TERM_TYPE`, since a missing one means `dumb`.
 
 | Key | Type | Meaning | Default |
 | --- | --- | --- | --- |
 | `TERM_COLS` | int | Width in character cells | `80` |
-| `TERM_ROWS` | int | Usable height in character cells, excluding any BBS status line | `24` |
+| `TERM_ROWS` | int | Usable height in character cells, excluding any status line the host adds | `24` |
 | `TERM_TYPE` | token | The kind of terminal: `dumb` (plain text, no cursor control), `ansi` (ANSI escape sequences) or `petscii` (Commodore PETSCII control codes). A RIPscrip terminal is `ansi`, with `TERM_RIP` set | `dumb` |
 | `TERM_RIP` | ascii | RIPscrip version the terminal reported, as `<major>.<minor>`, such as `1.54` from a `RIPSCRIP015400` reply to `CSI !`; or `unknown` when the terminal supports RIPscrip but reported no version, such as when the user set RIP manually. Written only when `TERM_TYPE` is `ansi`; missing means no RIPscrip | none |
-| `TERM_CHARSET` | ascii | The caller's terminal character set, from the names listed under `COMM_CHARSET`. It equals `COMM_CHARSET` when the BBS passes the door's bytes through untranslated, and may differ when the BBS translates them | unknown |
+| `TERM_CHARSET` | ascii | The caller's terminal character set, from the names listed under `COMM_CHARSET`. It equals `COMM_CHARSET` when the host passes the door's bytes through untranslated, and may differ when the host translates them | unknown |
 | `TERM_MONO` | bool | `1` = no color, because the terminal can't show it or the user turned it off: the door may send ANSI sequences but no color changes, whatever `TERM_COLORS` says | `0` |
 | `TERM_SWAP_DELETE` | bool | `1` = the terminal sends DEL (`0x7F`) for its Backspace key and BS (`0x08`) for its Delete key, so a door doing its own line editing swaps the two | `0` |
 | `TERM_NAME` | text | Terminal program name as the terminal reported it, such as `SyncTERM` | unknown |
@@ -247,7 +247,7 @@ There is no standard security level key. A level's range, its ordering (whether 
 
 A forked CTerm adds its own revision as a third field and leaves the first two as the CTerm revision it was forked from. A door checking for a CTerm feature compares only `<major>.<minor>`; the third field means something only to a door that knows that fork. Each field is a decimal number, so compare them numerically, not as text: `1.40` is older than `1.332`.
 
-Capabilities the BBS detected. The source column names the query each comes from; several are CTerm-only (SyncTERM and its forks). The device attributes are the reply to `CSI c`, and the CTerm device attributes [CTERM] the reply to `CSI < c`; the source column refers to the numbered values in those replies. All are optional: a missing bool reads as `0`, a missing `TERM_COLORS` as `16`, and any other missing int or token as unknown, and either way it means the BBS didn't detect the capability.
+Capabilities the host detected. The source column names the query each comes from; several are CTerm-only (SyncTERM and its forks). The device attributes are the reply to `CSI c`, and the CTerm device attributes [CTERM] the reply to `CSI < c`; the source column refers to the numbered values in those replies. All are optional: a missing bool reads as `0`, a missing `TERM_COLORS` as `16`, and any other missing int or token as unknown, and either way it means the host didn't detect the capability.
 
 | Key | Type | Meaning | Source |
 | --- | --- | --- | --- |
@@ -272,7 +272,7 @@ Capabilities the BBS detected. The source column names the query each comes from
 | `TERM_CELL_WIDTH` | int | Character cell width in pixels | `CSI = 3 n` |
 | `TERM_CELL_HEIGHT` | int | Character cell height in pixels | `CSI = 3 n` |
 
-`TERM_SIXEL_SCALE` can't be inferred from the terminal's name or identity, so a BBS writes it only after measuring it: it draws the same small sixel with `pan` set to 1 and then to 2, requests a cursor position report after each, and compares how far each moved the cursor, a technique from [VT340TEST]. A missing key means it wasn't measured. A door that needs it can run the same probe, or encode sixels at 1:1, which displays correctly on every terminal.
+`TERM_SIXEL_SCALE` can't be inferred from the terminal's name or identity, so a host writes it only after measuring it: it draws the same small sixel with `pan` set to 1 and then to 2, requests a cursor position report after each, and compares how far each moved the cursor, a technique from [VT340TEST]. A missing key means it wasn't measured. A door that needs it can run the same probe, or encode sixels at 1:1, which displays correctly on every terminal.
 
 Without `TERM_PIXEL_COLS` and `TERM_PIXEL_ROWS`, a door should keep sixel images within 1000 by 1000 pixels: xterm doesn't answer `CSI ? 2 ; 1 S` by default and discards a larger sixel entirely.
 
@@ -284,11 +284,11 @@ All keys in this section are optional.
 
 | Key | Type | Meaning | Default |
 | --- | --- | --- | --- |
-| `TIME_LEFT` | int | Seconds the user has left, measured when the BBS writes the file and already shortened for any scheduled BBS event, so a door needs no separate event time | no limit |
-| `TEMP_DIR` | text | A directory only this node uses, which the door may write to during the session, in the path syntax the door sees (the DOS path under emulation), with no trailing separator. The BBS MAY empty it after the door exits, so it isn't for data that must last | none |
-| `LOCAL_DISPLAY` | bool | `0` = don't show the session on the BBS host's own screen: the door doesn't mirror its output to a local console or window. Doesn't apply when `COMM_TYPE` is `local`, where the local console is the session itself | `1` |
+| `TIME_LEFT` | int | Seconds the user has left, measured when the host writes the file and already shortened for any scheduled host event, so a door needs no separate event time | no limit |
+| `TEMP_DIR` | text | A directory only this node uses, which the door may write to during the session, in the path syntax the door sees (the DOS path under emulation), with no trailing separator. The host MAY empty it after the door exits, so it isn't for data that must last | none |
+| `LOCAL_DISPLAY` | bool | `0` = don't show the session on the host's own screen: the door doesn't mirror its output to a local console or window. Doesn't apply when `COMM_TYPE` is `local`, where the local console is the session itself | `1` |
 
-A door MUST exit before `TIME_LEFT` seconds have passed since it started. The time between the BBS writing the file and the door starting, such as an emulator booting, isn't counted, so the BBS SHOULD enforce the limit independently. A door that counts time in minutes rounds up, so a positive `TIME_LEFT` never becomes zero minutes, which some door kits treat as no time left or as no limit.
+A door MUST exit before `TIME_LEFT` seconds have passed since it started. The time between the host writing the file and the door starting, such as an emulator booting, isn't counted, so the host SHOULD enforce the limit independently. A door that counts time in minutes rounds up, so a positive `TIME_LEFT` never becomes zero minutes, which some door kits treat as no time left or as no limit.
 
 ### User preferences: `[preferences]`
 
@@ -304,13 +304,13 @@ All keys in this section are optional.
 | `PREF_ALERTS` | bool | `0` = the user doesn't want notices of other users' activity, such as another user entering the door | `1` |
 | `PREF_QUIET` | bool | `1` = don't announce this user's activity, such as entering or leaving the door, to other users | `0` |
 
-A door that honors a preference SHOULD NOT also ask the user for it, so the user sets it once on the BBS for all doors.
+A door that honors a preference SHOULD NOT also ask the user for it, so the user sets it once on the host for all doors.
 
 ## Extensions and versioning
 
 Anyone can add keys without a spec change by using a vendor prefix, and standard keys are added to this spec without changing the format, so the file has no version key.
 
-- **Vendor keys** have the form `X_<VENDOR>_<NAME>` and go in a section named `[x-<vendor>]`, such as `X_SBBS_LEVEL` in `[x-sbbs]`. `<VENDOR>` is a short name for the product that defines the key, in uppercase ASCII letters and digits only, with no `_`, so the first `_` after `X_` ends it. The section name is `x-` followed by the vendor name in lowercase. The product documents its keys. A BBS names its own vendor in `BBS_VENDOR`. A list of vendor names can be kept with this spec to avoid clashes, but using a prefix doesn't require listing it.
+- **Vendor keys** have the form `X_<VENDOR>_<NAME>` and go in a section named `[x-<vendor>]`, such as `X_SBBS_LEVEL` in `[x-sbbs]`. `<VENDOR>` is a short name for the product that defines the key, in uppercase ASCII letters and digits only, with no `_`, so the first `_` after `X_` ends it. The section name is `x-` followed by the vendor name in lowercase. The product documents its keys. A host names its own vendor in `SYS_VENDOR`. A list of vendor names can be kept with this spec to avoid clashes, but using a prefix doesn't require listing it.
 - **Key names are unique across all sections.** A new standard key never reuses a name from another section, and a vendor key is kept unique by its `X_<VENDOR>_` prefix.
 - **New standard keys** are added to this spec with a stated section, type and default. Because readers ignore unknown keys and treat missing ones as their default, adding a key doesn't break existing doors.
 - **A key's meaning never changes.** A change of meaning or type needs a new key name. A producer MAY write both the old and new keys during a transition.
@@ -325,7 +325,7 @@ The file carries no secrets and grants no privileges, and personal details beyon
 - `USER_ROLE=sysop` tells the door who the sysop is. It is not authentication and grants no operating-system privileges.
 - `USER_REALNAME`, `USER_LOCATION`, `USER_BIRTHDATE`, `USER_GENDER`, `USER_IP`, `USER_HOSTNAME` and `USER_CALLER_ID` are optional, so a producer MAY leave any of them out, for example because the sysop chose not to share it. A door MUST NOT treat the last three as authentication.
 - Text values come from users. A door MUST NOT pass them to a shell or use them as a format string, and MUST handle non-ASCII characters and 255-byte lines.
-- The file is read-only input. A door MUST NOT use it to return changes to the BBS.
+- The file is read-only input. A door MUST NOT use it to return changes to the host.
 
 ## Examples and minimal readers
 
@@ -337,15 +337,15 @@ A native door on a socket, with a muted user, CTerm capabilities and one vendor 
 FILE_UTF8=1
 FILE_TIME=2026-09-23T15:15:00-07:00
 
-[bbs]
-BBS_SOFTWARE=Synchronet 3.22a
-BBS_VENDOR=SBBS
-BBS_VERSION=3.22a
-BBS_NAME=Example BBS
-BBS_SYSOP=Example Sysop
-BBS_NODE=3
-BBS_NODES=8
-BBS_ID=EXAMPLE
+[system]
+SYS_SOFTWARE=Synchronet 3.22a
+SYS_VENDOR=SBBS
+SYS_VERSION=3.22a
+SYS_NAME=Example host
+SYS_OP=Example Sysop
+SYS_NODE_NUM=3
+SYS_NODE_COUNT=8
+SYS_QWKID=EXAMPLE
 
 [comm]
 COMM_TYPE=socket
@@ -394,11 +394,11 @@ X_SBBS_LEVEL=50
 A DOS door on a FOSSIL driver, with only the required keys plus two optional ones; the screen size is the default 80 by 24:
 
 ```ini
-[bbs]
-BBS_SOFTWARE=Example BBS 2.1
-BBS_NAME=Retro Board
-BBS_SYSOP=Sysop
-BBS_NODE=1
+[system]
+SYS_SOFTWARE=Example BBS 2.1
+SYS_NAME=Retro Board
+SYS_OP=Sysop
+SYS_NODE_NUM=1
 
 [comm]
 COMM_TYPE=fossil
@@ -525,8 +525,8 @@ DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for
 - **Doors that use Windows console interception** (`XTRN_CONIO`), where Synchronet relays a door's Windows console to the caller, can't use this type: the door would see its local console while a caller is connected, which `local` doesn't allow. Standard-I/O doors use `stdio`.
 - **Doors written in JavaScript** that Synchronet runs inside its own process can't use this type; they already have the `user`, `console` and `system` objects.
 - **Mapping from Synchronet data:**
-  - `BBS_VENDOR` = `SBBS`, and `BBS_VERSION` = Synchronet's version number followed by its revision letter, such as `3.22a`.
-  - `BBS_NODES` = the configured number of nodes, and `BBS_ID` = the system's QWK ID.
+  - `SYS_VENDOR` = `SBBS`, and `SYS_VERSION` = Synchronet's version number followed by its revision letter, such as `3.22a`.
+  - `SYS_NODE_COUNT` = the configured number of nodes, and `SYS_QWKID` = the system's QWK ID.
   - `USER_KEY` = `<number>-<firston>`: the user number and the account's creation time (as a Unix time), which together are never reused.
   - `USER_ROLE` = `sysop` when the user has sysop access; otherwise `user`.
   - `X_SBBS_LEVEL` = the user's security level; see Vendor keys and MODUSER.DAT below for the other `X_SBBS_` keys.
@@ -557,11 +557,11 @@ DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for
   | `USER_REALNAME` | 25 |
   | `USER_LOCATION` | 30 |
   | `USER_GENDER` | 1 (a single character, `M` or `F` by default; the sysop can configure others) |
-  | `BBS_NAME` | 40 |
-  | `BBS_SYSOP` | 40 |
+  | `SYS_NAME` | 40 |
+  | `SYS_OP` | 40 |
   | `USER_HANDLE` | 8 |
 
-- **Handles:** a `socket` door gets one end of a loopback TCP connection that Synchronet bridges to the caller, whatever the caller's protocol. After the door exits, Synchronet already sets the socket back to blocking mode and re-applies its socket options (`main.cpp`), which covers the BBS side of the handle rules.
+- **Handles:** a `socket` door gets one end of a loopback TCP connection that Synchronet bridges to the caller, whatever the caller's protocol. After the door exits, Synchronet already sets the socket back to blocking mode and re-applies its socket options (`main.cpp`), which covers the host side of the handle rules.
 - **Terminal capability queries** need a round trip each, and an unanswered one can stall for up to 3 seconds. Synchronet would run them once per session, before the first door launch, and cache the results, as `exec/load/cterm_lib.js` already does for the CTerm device attributes. This adds the kitty keyboard query (`CSI ? u`) and, optionally, the `TERM_SIXEL_SCALE` probe, which paints two small slivers on screen that the door's first screen covers. Capabilities that weren't detected are left out.
 
 ### Vendor keys and MODUSER.DAT
