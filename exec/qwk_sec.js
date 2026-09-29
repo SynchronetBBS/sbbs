@@ -6,17 +6,35 @@
 
 require("sbbsdefs.js", "SCAN_CFG_NEW");
 
-// The first letter of the (translatable) Quit text, unless that letter is
-// already one of the menu's command keys (#1242)
-function quit_key(cmd_keys)
+// The menu's command keys, from the (translatable) command-word text strings.
+// Keys that collide are logged for the sysop; the first command in this order
+// keeps the key, and Quit falls back to 'Q' (#1242).
+function command_keys()
 {
-	var quit = console.quit_key;
+	var cmds = [
+		{ name: "Download",  key: console.download_key },
+		{ name: "Upload",    key: console.upload_key },
+		{ name: "Configure", key: console.configure_key },
+		{ name: "Select",    key: console.select_key },
+		{ name: "Pointers",  key: console.pointers_key },
+		{ name: "Quit",      key: console.quit_key }
+	];
+	var keys = {};
+	var used = { '?': "Help" };
 
-	if(quit >= 'a' && quit <= 'z')	// like C toupper(), ASCII only
-		quit = quit.toUpperCase();
-	if(quit != 'Q' && (!quit || cmd_keys.indexOf(quit) >= 0) && cmd_keys.indexOf('Q') < 0)
-		return 'Q';
-	return quit;
+	for(var i = 0; i < cmds.length; i++) {
+		var key = cmds[i].key;
+		if(used[key] !== undefined) {
+			log(LOG_ERR, format("QWK menu: %s and %s command keys collide ('%s') for language '%s'"
+				, used[key], cmds[i].name, key, user.lang));
+			if(cmds[i].name != "Quit" || used['Q'] !== undefined)
+				continue;
+			key = 'Q';
+		}
+		used[key] = cmds[i].name;
+		keys[cmds[i].name] = key;
+	}
+	return keys;
 }
 
 function remove_temp_files()
@@ -151,7 +169,13 @@ function qwk_settings()
 
 function qwk_menu()
 {
-	var cmd_keys = "?UDCSP";
+	var keys = command_keys();
+	var cmd_keys = "?";
+
+	for(var name in keys) {
+		if(name != "Quit")
+			cmd_keys += keys[name];
+	}
 
 	while(bbs.online) {
 		if(menu_every_prompt())
@@ -159,39 +183,35 @@ function qwk_menu()
 		bbs.node_action = NODE_TQWK;
 		bbs.nodesync();
 		console.print(bbs.text(bbs.text.QWKPrompt), P_ATCODES);
-		var quit = quit_key(cmd_keys);
-		var ch = console.getkeys(cmd_keys + "\r" + quit, 0);
+		var quit = keys.Quit;
+		var ch = console.getkeys(cmd_keys + "\r" + (quit || ""), 0);
 		if(typeof ch == "string" && ch > ' ')
 			bbs.log_key(ch);
 		if(console.aborted || typeof ch != "string" || ch == quit || ch == '\r' || !bbs.online)
 			break;
-		switch(ch) {
-			case '?':
-				if((console.term_supports(USER_RIP) || !(user.settings & USER_EXPERT))
-					&& !is_qwk_node())
-					break;
-				bbs.menu("qwk");
-				break;
-			case 'S':
-				bbs.cfg_msg_scan(SCAN_CFG_NEW);
-				remove_temp_files();
-				break;
-			case 'P':
-				bbs.cfg_msg_ptrs();
-				remove_temp_files();
-				break;
-			case 'C':
-				qwk_settings();
-				remove_temp_files();
-				console.clear_hotspots();
-				break;
-			case 'D':
-				bbs.qwk_download();
-				break;
-			case 'U':
-				bbs.qwk_upload();
-				break;
+		if(ch == '?') {
+			if((console.term_supports(USER_RIP) || !(user.settings & USER_EXPERT))
+				&& !is_qwk_node())
+				continue;
+			bbs.menu("qwk");
 		}
+		else if(ch == keys.Select) {
+			bbs.cfg_msg_scan(SCAN_CFG_NEW);
+			remove_temp_files();
+		}
+		else if(ch == keys.Pointers) {
+			bbs.cfg_msg_ptrs();
+			remove_temp_files();
+		}
+		else if(ch == keys.Configure) {
+			qwk_settings();
+			remove_temp_files();
+			console.clear_hotspots();
+		}
+		else if(ch == keys.Download)
+			bbs.qwk_download();
+		else if(ch == keys.Upload)
+			bbs.qwk_upload();
 	}
 }
 
