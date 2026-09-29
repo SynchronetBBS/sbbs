@@ -950,4 +950,9 @@ const char* const text_id[]={
 	,"SeekHelp"
 	,"InvalidSearchExpression"
 	,"UeditARSearchPrompt"
+	,"Upload"
+	,"Download"
+	,"Configure"
+	,"Select"
+	,"Pointers"
 };

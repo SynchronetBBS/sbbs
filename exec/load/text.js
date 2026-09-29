@@ -956,7 +956,12 @@ var FindStringNotFound=946;
 var SeekHelp=947;
 var InvalidSearchExpression=948;
 var UeditARSearchPrompt=949;
+var Upload=950;
+var Download=951;
+var Configure=952;
+var Select=953;
+var Pointers=954;
 
-var TOTAL_TEXT=949;
+var TOTAL_TEXT=954;
 
 this;

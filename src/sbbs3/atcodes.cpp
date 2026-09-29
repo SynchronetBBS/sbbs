@@ -555,6 +555,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			rainbow_index = -1;
 		else if (strcmp(sp + 8, "RAND") == 0)
 			rainbow_index = sbbs_random(rainbow_len());
+		else if (strcmp(sp + 8, "DEFAULT") == 0)
+			memcpy(rainbow, cfg.rainbow, sizeof rainbow);
 		else if (strchr(sp + 8, ':') != NULL) {
 			memset(rainbow, 0, sizeof rainbow);
 			parse_attr_str_list(&cfg, rainbow, LEN_RAINBOW, sp + 8);
@@ -1302,6 +1304,31 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (strcmp(sp, "QUITCHAR") == 0) {
 		safe_snprintf(str, maxlen, "%c", quit_key());
+		return str;
+	}
+
+	if (strcmp(sp, "UPLOADCHAR") == 0) {
+		safe_snprintf(str, maxlen, "%c", upload_key());
+		return str;
+	}
+
+	if (strcmp(sp, "DOWNLOADCHAR") == 0) {
+		safe_snprintf(str, maxlen, "%c", download_key());
+		return str;
+	}
+
+	if (strcmp(sp, "CONFIGURECHAR") == 0) {
+		safe_snprintf(str, maxlen, "%c", configure_key());
+		return str;
+	}
+
+	if (strcmp(sp, "SELECTCHAR") == 0) {
+		safe_snprintf(str, maxlen, "%c", select_key());
+		return str;
+	}
+
+	if (strcmp(sp, "POINTERSCHAR") == 0) {
+		safe_snprintf(str, maxlen, "%c", pointers_key());
 		return str;
 	}
 

@@ -77,11 +77,21 @@ enum {
 	, CON_PROP_LIST_KEY
 	, CON_PROP_NEXT_KEY
 	, CON_PROP_PREV_KEY
+	, CON_PROP_UPLOAD_KEY
+	, CON_PROP_DOWNLOAD_KEY
+	, CON_PROP_CONFIGURE_KEY
+	, CON_PROP_SELECT_KEY
+	, CON_PROP_POINTERS_KEY
 
 	, CON_PROP_OUTPUT_RATE
 };
 
 extern JSClass js_console_class;
+static JSString* js_key_str(JSContext* cx, char key)
+{
+	return JS_NewStringCopyN(cx, &key, 1);
+}
+
 static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval     idval;
@@ -228,31 +238,51 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 
 		case CON_PROP_YES_KEY:
-			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[Yes], 1)) == NULL)
+			if ((js_str = js_key_str(cx, sbbs->yes_key())) == NULL)
 				return JS_FALSE;
 			break;
 		case CON_PROP_NO_KEY:
-			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[No], 1)) == NULL)
+			if ((js_str = js_key_str(cx, sbbs->no_key())) == NULL)
 				return JS_FALSE;
 			break;
 		case CON_PROP_QUIT_KEY:
-			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[Quit], 1)) == NULL)
+			if ((js_str = js_key_str(cx, sbbs->quit_key())) == NULL)
 				return JS_FALSE;
 			break;
 		case CON_PROP_ALL_KEY:
-			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[All], 1)) == NULL)
+			if ((js_str = js_key_str(cx, sbbs->all_key())) == NULL)
 				return JS_FALSE;
 			break;
 		case CON_PROP_LIST_KEY:
-			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[List], 1)) == NULL)
+			if ((js_str = js_key_str(cx, sbbs->list_key())) == NULL)
 				return JS_FALSE;
 			break;
 		case CON_PROP_NEXT_KEY:
-			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[Next], 1)) == NULL)
+			if ((js_str = js_key_str(cx, sbbs->next_key())) == NULL)
 				return JS_FALSE;
 			break;
 		case CON_PROP_PREV_KEY:
-			if ((js_str = JS_NewStringCopyN(cx, sbbs->text[Previous], 1)) == NULL)
+			if ((js_str = js_key_str(cx, sbbs->prev_key())) == NULL)
+				return JS_FALSE;
+			break;
+		case CON_PROP_UPLOAD_KEY:
+			if ((js_str = js_key_str(cx, sbbs->upload_key())) == NULL)
+				return JS_FALSE;
+			break;
+		case CON_PROP_DOWNLOAD_KEY:
+			if ((js_str = js_key_str(cx, sbbs->download_key())) == NULL)
+				return JS_FALSE;
+			break;
+		case CON_PROP_CONFIGURE_KEY:
+			if ((js_str = js_key_str(cx, sbbs->configure_key())) == NULL)
+				return JS_FALSE;
+			break;
+		case CON_PROP_SELECT_KEY:
+			if ((js_str = js_key_str(cx, sbbs->select_key())) == NULL)
+				return JS_FALSE;
+			break;
+		case CON_PROP_POINTERS_KEY:
+			if ((js_str = js_key_str(cx, sbbs->pointers_key())) == NULL)
 				return JS_FALSE;
 			break;
 
@@ -484,6 +514,11 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "list_key", CON_PROP_LIST_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32000},
 	{   "next_key", CON_PROP_NEXT_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32000},
 	{   "prev_key", CON_PROP_PREV_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32000},
+	{   "upload_key", CON_PROP_UPLOAD_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
+	{   "download_key", CON_PROP_DOWNLOAD_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
+	{   "configure_key", CON_PROP_CONFIGURE_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
+	{   "select_key", CON_PROP_SELECT_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
+	{   "pointers_key", CON_PROP_POINTERS_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
 	{0}
 };
 
@@ -549,6 +584,11 @@ static const char*        con_prop_desc[] = {
 	, "Key associated with listing all available options (e.g. 'L') - <small>READ ONLY</small>"
 	, "Key associated with selecting next available option (e.g. 'N') - <small>READ ONLY</small>"
 	, "Key associated with selecting previous available option (e.g. 'P') - <small>READ ONLY</small>"
+	, "Key associated with uploading (e.g. 'U') - <small>READ ONLY</small>"
+	, "Key associated with downloading (e.g. 'D') - <small>READ ONLY</small>"
+	, "Key associated with configuring (e.g. 'C') - <small>READ ONLY</small>"
+	, "Key associated with selecting (e.g. 'S') - <small>READ ONLY</small>"
+	, "Key associated with (message) pointers (e.g. 'P') - <small>READ ONLY</small>"
 	, NULL
 };
 #endif

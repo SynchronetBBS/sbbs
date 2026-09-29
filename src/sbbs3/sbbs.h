@@ -637,6 +637,11 @@ public:
 	char	list_key(void) { return toupper(*text[List]); }
 	char	next_key(void) { return toupper(*text[Next]); }
 	char	prev_key(void) { return toupper(*text[Previous]); }
+	char	upload_key(void) { return toupper(*text[Upload]); }
+	char	download_key(void) { return toupper(*text[Download]); }
+	char	configure_key(void) { return toupper(*text[Configure]); }
+	char	select_key(void) { return toupper(*text[Select]); }
+	char	pointers_key(void) { return toupper(*text[Pointers]); }
 
 	char 	dszlog[127]{};	/* DSZLOG environment variable */
 	int     keybuftop=0, keybufbot=0;    /* Keyboard input buffer pointers (for ungetkey) */

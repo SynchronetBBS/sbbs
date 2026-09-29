@@ -1144,3 +1144,8 @@
 	" \1h@QUITCHAR@\1n\1c=@Quit@\r\n\1-"
 "\1n\1h\1rInvalid search expression: \1c%s\1n\r\n"         948 InvalidSearchExpression
 "\1_\1\\\1y\1hAR string to search for\1\\: "               949 UeditARSearchPrompt
+"Upload"                                                     950 Upload
+"Download"                                                   951 Download
+"Configure"                                                  952 Configure
+"Select"                                                     953 Select
+"Pointers"                                                   954 Pointers

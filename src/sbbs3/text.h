@@ -966,6 +966,11 @@ enum text {
 	,SeekHelp
 	,InvalidSearchExpression
 	,UeditARSearchPrompt
+	,Upload
+	,Download
+	,Configure
+	,Select
+	,Pointers
 
 	,TOTAL_TEXT
 };
