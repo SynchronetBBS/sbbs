@@ -1,0 +1,6 @@
+# Live sysop config, copied from the *.example.ini files
+/mrc-client.ini
+/mrc-connector.ini
+
+# Stats written by mrc-connector.js
+/mrcstats.dat
