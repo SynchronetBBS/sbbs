@@ -369,6 +369,14 @@
   ours (and safe from the upgrade that refreshes the `exec`, `text` and `xtrn`
   directories). A per-host (`<name>.<hostname>.<ext>`) or per-platform
   variation still wins over it where one exists.
+- New `@UPLOADCHAR@`, `@DOWNLOADCHAR@`, `@CONFIGURECHAR@`, `@SELECTCHAR@`,
+  and `@POINTERSCHAR@` command-key @-codes (the first letters of the new
+  command-word text strings); the QWK menu files and `qwk_sec.js` use them,
+  so the QWK menu's command keys follow translations (#1242)
+- New `D` @-code format modifier (`@CODE|D@` or `@CODE-D@`): lower-case the
+  expanded value, the counterpart of `U`
+- New `@RAINBOW:DEFAULT@` restores the configured rainbow colors after a
+  `@RAINBOW:<list>@`
 - New PCBoard @-code aliases (issue #940):
   - `CARRIER` (= `CONN`)
   - `PROLTR` (= `PROT`)
@@ -391,6 +399,8 @@
   - `FindStringNotFound`
   - `InvalidSearchExpression` (boolean-search parse errors)
   - `UeditARSearchPrompt` (user editor's `/` AR-string search prompt)
+  - `Upload`, `Download`, `Configure`, `Select`, `Pointers` (translatable
+    command words)
 - Changed text.dat strings:
   - `SeekPrompt` restyled to `<filename> (?=Help)` form (the key
     list moved into `SeekHelp`)
@@ -663,6 +673,9 @@
   back-fills `File.sha256_hex` (via cryptlib) on pre-3.22 builds
 - New `bbs.qwk_download()`, `bbs.qwk_upload()`, and
   `bbs.get_archive_formats()` methods
+- New `console.upload_key`, `download_key`, `configure_key`, `select_key`,
+  and `pointers_key` properties; all `console.*_key` properties now return
+  an uppercase key
 
 ## JSexec
 
