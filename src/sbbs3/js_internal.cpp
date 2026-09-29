@@ -302,7 +302,8 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 
 	/* Infinite loop? */
 	if (cb->limit && cb->counter > cb->limit) {
-		JS_ReportError(cx, "Infinite loop (%lu operation callbacks) detected", cb->counter);
+		JS_ReportError(cx, "Infinite loop (%u operation callbacks, limit %u%s) detected"
+		               , cb->counter, cb->limit, cb->bg ? ", background" : "");
 		cb->counter = 0;
 		return JS_FALSE;
 	}
