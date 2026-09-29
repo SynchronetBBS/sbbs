@@ -624,7 +624,7 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 		}
 		rewind(smb->sid_fp);
 		for (uint32_t i = 0; i < smb->status.total_files; i++) {
-			if (strnicmp(fidx[i].name, fname, sizeof(fname) - 1) == 0) {
+			if (fidx[i].idx.number == file->idx.number) {
 				removed++;
 				continue;
 			}
