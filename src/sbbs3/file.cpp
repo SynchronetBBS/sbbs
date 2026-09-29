@@ -285,7 +285,7 @@ bool sbbs_t::editfilename(file_t* f)
 	if (strcmp(str, f->name) == 0)
 		return true;
 	/* rename */
-	if (stricmp(str, f->name) && findfile(&cfg, f->dir, str, NULL)) {
+	if (findfile_other(&cfg, f->dir, str, f->idx.number)) {
 		bprintf(text[FileAlreadyThere], str);
 		return false;
 	}

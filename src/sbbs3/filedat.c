@@ -55,6 +55,26 @@ bool findfile(scfg_t* cfg, int dirnum, const char *filename, file_t* file)
 	return result == SMB_SUCCESS;
 }
 
+/****************************************************************************/
+/* Is 'filename' (ignoring case) the name of a file other than message		*/
+/* 'number' in the directory?												*/
+/****************************************************************************/
+bool findfile_other(scfg_t* cfg, int dirnum, const char *filename, uint32_t number)
+{
+	smb_t smb;
+
+	if (cfg == NULL || filename == NULL)
+		return false;
+
+	if (!smb_init_dir(cfg, &smb, dirnum))
+		return false;
+	if (smb_open_index(&smb) != SMB_SUCCESS)
+		return false;
+	int result = smb_findfile_other(&smb, filename, number);
+	smb_close(&smb);
+	return result == SMB_SUCCESS;
+}
+
 // This function may be called without opening the file base (for fast new-scans)
 time_t newfiletime(smb_t* smb)
 {

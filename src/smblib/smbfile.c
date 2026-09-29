@@ -277,6 +277,33 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 }
 
 /****************************************************************************/
+/* CASE-INSENSITIVE 'filename' search through index for a file other than	*/
+/* message 'number', e.g. to check that renaming that file won't duplicate	*/
+/* another's name, when the new name may differ from its own only in case	*/
+/****************************************************************************/
+int smb_findfile_other(smb_t* smb, const char* filename, uint32_t number)
+{
+	char fname[SMB_FILEIDX_NAMELEN + 1];
+
+	if (smb->sid_fp == NULL) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
+		return SMB_ERR_NOT_OPEN;
+	}
+	smb_fileidxname(filename, fname, sizeof(fname));
+	rewind(smb->sid_fp);
+	while (!feof(smb->sid_fp)) {
+		fileidxrec_t fidx;
+
+		if (smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
+			break;
+		TERMINATE(fidx.name);
+		if (fidx.idx.number != 0 && fidx.idx.number != number && stricmp(fidx.name, fname) == 0)
+			return SMB_SUCCESS;
+	}
+	return SMB_ERR_NOT_FOUND;
+}
+
+/****************************************************************************/
 /****************************************************************************/
 int smb_loadfile(smb_t* smb, const char* filename, smbfile_t* file, enum file_detail detail)
 {

@@ -1387,7 +1387,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 			strcpy(filename, file.name);
 		p->smb_result = parse_file_properties(cx, fileobj, &file, &extdesc, &auxdata);
 		if (p->smb_result == SMB_SUCCESS
-		    && strcmp(filename, file.name) != 0 && smb_findfile(&p->smb, file.name, NULL) == SMB_SUCCESS) {
+		    && strcmp(filename, file.name) != 0 && smb_findfile_other(&p->smb, file.name, file.idx.number) == SMB_SUCCESS) {
 			JS_ReportError(cx, "file (%s) already exists in base", file.name);
 			p->smb_result = SMB_DUPE_MSG;
 			result = JS_FALSE;
