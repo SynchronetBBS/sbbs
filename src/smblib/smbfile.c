@@ -215,7 +215,8 @@ char* smb_fileidxname(const char* filename, char* buf, size_t maxlen)
 
 /****************************************************************************/
 /* Find file in index via either/or:										*/
-/* -  CASE-INSENSITIVE 'filename' search through index (no wildcards)		*/
+/* -  CASE-INSENSITIVE 'filename' search through index (no wildcards),	*/
+/*    preferring an exact-case match										*/
 /* -  file content size and hash details found in 'file'					*/
 /****************************************************************************/
 int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
@@ -235,6 +236,8 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 		return SMB_ERR_NOT_OPEN;
 	}
 	f->dir = smb->dirnum;
+	long         match_offset = -1; /* of the first case-insensitive match */
+	fileidxrec_t match;
 	rewind(smb->sid_fp);
 	while (!feof(smb->sid_fp)) {
 		fileidxrec_t fidx;
@@ -246,10 +249,15 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 		f->idx_offset = offset++;
 
 		if (filename != NULL) {
-			if (stricmp(fidx.name, fname) != 0)
-				continue;
-			f->file_idx = fidx;
-			return SMB_SUCCESS;
+			if (strcmp(fidx.name, fname) == 0) {
+				f->file_idx = fidx;
+				return SMB_SUCCESS;
+			}
+			if (match_offset < 0 && stricmp(fidx.name, fname) == 0) {
+				match = fidx;
+				match_offset = f->idx_offset;
+			}
+			continue;
 		}
 
 		if (file == NULL)
@@ -272,6 +280,11 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 			f->file_idx = fidx;
 			return SMB_SUCCESS;
 		}
+	}
+	if (match_offset >= 0) {
+		f->file_idx = match;
+		f->idx_offset = match_offset;
+		return SMB_SUCCESS;
 	}
 	return SMB_ERR_NOT_FOUND;
 }
