@@ -31,18 +31,16 @@
 int sbbs_t::viewfile(file_t* f, bool ext)
 {
 	char ch, str[256];
-	char fname[13];     /* This is one of the only 8.3 filename formats left! (used for display purposes only) */
-	format_filename(f->name, fname, sizeof(fname) - 1, /* pad: */ FALSE);
 
 	curdirnum = f->dir;   /* for ARS */
 	bool can_edit = dir_op(f->dir) || useron.exempt & UEXEMPT_REMOVE_FILES || stricmp(f->from, useron.alias) == 0;
 	while (online) {
 		clearabort();
-		SAFEPRINTF(str, text[FileInfoPrompt], fname);
+		SAFEPRINTF(str, text[FileInfoPrompt], f->name);
 		if (ext) {
 			showfileinfo(f);
 			if (can_edit)
-				SAFEPRINTF(str, text[FileInfoEditPrompt], fname);
+				SAFEPRINTF(str, text[FileInfoEditPrompt], f->name);
 		} else
 			viewfilecontents(f);
 		sync();
@@ -119,6 +117,10 @@ bool sbbs_t::viewfilecontents(file_t* f)
 	char path[MAX_PATH + 1];
 
 	getfilepath(&cfg, f, path);
+	// The user just sees "File not found": the missing file is the sysop's to fix
+	if (!fexistcase(path))
+		lprintf(LOG_WARNING, "File (%s) in directory (%s) not found: %s", f->name
+		        , dirnum_is_valid(f->dir) ? cfg.dir[f->dir]->code : "?", path);
 	uint savedir = curdirnum;
 	curdirnum = f->dir; /* for ARS */
 	bool result = viewfile(path);
