@@ -1,17 +1,19 @@
+"use strict";
+
 // QWK Message Packet menu
 // The default system "QWK Section" loadable module for Synchronet v3.22
 // i.e. in SCFG->System->Loadable Modules->QWK Section
 
 require("sbbsdefs.js", "SCAN_CFG_NEW");
 
-"use strict";
-
 // The first letter of the (translatable) Quit text, unless that letter is
 // already one of the menu's command keys (#1242)
 function quit_key(cmd_keys)
 {
-	var quit = console.quit_key.toUpperCase();
+	var quit = console.quit_key;
 
+	if(quit >= 'a' && quit <= 'z')	// like C toupper(), ASCII only
+		quit = quit.toUpperCase();
 	if(quit != 'Q' && (!quit || cmd_keys.indexOf(quit) >= 0) && cmd_keys.indexOf('Q') < 0)
 		return 'Q';
 	return quit;
@@ -41,10 +43,22 @@ function yes_no(value)
 	return bbs.text(value ? bbs.text.Yes : bbs.text.No);
 }
 
+// Like the C++ bprintf() of a text string: a string with no % specifiers is
+// printed as-is, with @-codes expanded
+function print_text(text_id)
+{
+	var text = bbs.text(text_id);
+
+	if(text.indexOf('%') < 0)
+		console.print(text, P_ATCODES);
+	else
+		console.print(format.apply(js.global, [text].concat(Array.prototype.slice.call(arguments, 1))));
+}
+
 function print_setting(key, text_id, value)
 {
 	console.add_hotspot(key);
-	console.print(format(bbs.text(text_id), value));
+	print_text(text_id, value);
 }
 
 function select_archive_type()
@@ -63,7 +77,7 @@ function qwk_settings()
 	while(bbs.online) {
 		var qwk = user.qwk_settings;
 		console.clear();
-		console.print(format(bbs.text(bbs.text.QWKSettingsHdr), user.alias, user.number));
+		print_text(bbs.text.QWKSettingsHdr, user.alias, user.number);
 		print_setting('A', bbs.text.QWKSettingsCtrlA
 			, (qwk & QWK_EXPCTLA) ? "Expand to ANSI" : (qwk & QWK_RETCTLA) ? "Leave in" : "Strip");
 		print_setting('T', bbs.text.QWKSettingsArchive, user.temp_file_ext);
