@@ -1306,6 +1306,9 @@ public:
 	/* qwk.cpp */
 	uint	qwkmail_last = 0;
 	void	qwk_sec(void);
+	bool	qwk_download(void);
+	bool	qwk_upload(void);
+	str_list_t user_archive_formats(void);
 	uint	total_qwknodes = 0;
 	struct qwknode {
 		char	id[LEN_QWKID+1];

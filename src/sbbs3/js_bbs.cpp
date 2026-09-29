@@ -2262,6 +2262,61 @@ js_qwk_sec(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_qwk_download(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*    sbbs;
+	jsrefcount rc;
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->qwk_download()));
+	JS_RESUMEREQUEST(cx, rc);
+	return JS_TRUE;
+}
+
+static JSBool
+js_qwk_upload(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*    sbbs;
+	jsrefcount rc;
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->qwk_upload()));
+	JS_RESUMEREQUEST(cx, rc);
+	return JS_TRUE;
+}
+
+static JSBool
+js_get_archive_formats(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*   sbbs;
+	JSObject* array;
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+
+	if ((array = JS_NewArrayObject(cx, 0, NULL)) == NULL)
+		return JS_FALSE;
+	str_list_t list = sbbs->user_archive_formats();
+	for (jsint i = 0; list != NULL && list[i] != NULL; i++) {
+		JSString* str = JS_NewStringCopyZ(cx, list[i]);
+		if (str == NULL)
+			break;
+		jsval val = STRING_TO_JSVAL(str);
+		if (!JS_SetElement(cx, array, i, &val))
+			break;
+	}
+	strListFree(&list);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
+	return JS_TRUE;
+}
+
+static JSBool
 js_xtrn_sec(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *    argv = JS_ARGV(cx, arglist);
@@ -4905,6 +4960,21 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"qwk_sec",         js_qwk_sec,         0,  JSTYPE_VOID,    JSDOCSTR("")
 	 , JSDOCSTR("Enter the QWK message packet upload/download/config section.")
 	 , 310
+	},
+	{"qwk_download",    js_qwk_download,    0,  JSTYPE_BOOLEAN, JSDOCSTR("")
+	 , JSDOCSTR("Pack and send a QWK packet of new messages to the user. "
+		        "Message scan pointers are advanced only if the packet is sent successfully.<br>"
+		        "Returns <tt>true</tt> if the packet was sent.")
+	 , 322
+	},
+	{"qwk_upload",      js_qwk_upload,      0,  JSTYPE_BOOLEAN, JSDOCSTR("")
+	 , JSDOCSTR("Receive and import a QWK reply (REP) packet from the user.<br>"
+		        "Returns <tt>true</tt> if a REP packet was received and imported.")
+	 , 322
+	},
+	{"get_archive_formats", js_get_archive_formats, 0, JSTYPE_ARRAY, JSDOCSTR("")
+	 , JSDOCSTR("Returns an array of the archive formats (file extensions) the current user may choose for QWK packets.")
+	 , 322
 	},
 	{"text_sec",        js_text_sec,        0,  JSTYPE_VOID,    JSDOCSTR("")
 	 , JSDOCSTR("Enter the text files section.")

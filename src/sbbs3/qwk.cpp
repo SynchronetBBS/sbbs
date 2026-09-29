@@ -383,21 +383,11 @@ void sbbs_t::qwk_success(uint msgcnt, char bi, char prepack)
 /****************************************************************************/
 void sbbs_t::qwk_sec()
 {
-	char      str[256], tmp2[256], ch;
-	char      tmp[512];
-	int       error;
+	char      str[256], ch;
 	int       s;
 	int       i;
-	uint      msgcnt{};
-	uint32_t* sav_ptr;
 
 	getusrdirs();
-	if ((sav_ptr = (uint32_t *)malloc(sizeof(uint32_t) * cfg.total_subs)) == NULL) {
-		errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(uint32_t) * cfg.total_subs);
-		return;
-	}
-	for (i = 0; i < cfg.total_subs; i++)
-		sav_ptr[i] = subscan[i].ptr;
 	if (useron.rest & UREST_QWK_NODE)
 		getusrsubs();
 	delfiles(cfg.temp_dir, ALLFILES);
@@ -429,8 +419,6 @@ void sbbs_t::qwk_sec()
 		}
 		if (ch == 'P') {
 			new_scan_ptr_cfg();
-			for (i = 0; i < cfg.total_subs; i++)
-				sav_ptr[i] = subscan[i].ptr;
 			delfiles(cfg.temp_dir, ALLFILES);
 			continue;
 		}
@@ -514,12 +502,7 @@ void sbbs_t::qwk_sec()
 						break;
 					case 'T':
 					{
-						str_list_t ext_list = strListDup(cfg.supported_archive_formats);
-						for (i = 0; i < cfg.total_fcomps; i++) {
-							if (strListFind(ext_list, cfg.fcomp[i]->ext, /* case-sensitive */ FALSE) < 0
-							    && chk_ar(cfg.fcomp[i]->ar, &useron, &client))
-								strListPush(&ext_list, cfg.fcomp[i]->ext);
-						}
+						str_list_t ext_list = user_archive_formats();
 						for (i = 0; ext_list[i] != NULL; i++)
 							uselect(1, i, text[ArchiveTypeHeading], ext_list[i], NULL);
 						s = uselect(0, 0, 0, 0, 0);
@@ -594,96 +577,122 @@ void sbbs_t::qwk_sec()
 		}
 
 		if (ch == 'D') {   /* Download QWK Packet of new messages */
-			snprintf(str, sizeof str, "%s%s.qwk", cfg.temp_dir, cfg.sys_id);
-			if (!fexistcase(str) && !pack_qwk(str, &msgcnt, 0)) {
-				for (i = 0; i < cfg.total_subs; i++)
-					subscan[i].ptr = sav_ptr[i];
-				last_ns_time = ns_time;
-				remove(str);
-				continue;
-			}
-
-			off_t l = flength(str);
-			bprintf(text[FiFilename], getfname(str));
-			bprintf(text[FiFileSize], u64toac(l, tmp)
-			        , byte_estimate_to_str(l, tmp2, sizeof(tmp2), /* units: */ 1024, /* precision: */ 1));
-
-			if (l > 0L && cur_cps)
-				i = (uint)(l / (uint)cur_cps);
-			else
-				i = 0;
-			bprintf(text[FiTransferTime], sectostr(i, tmp), cur_cps);
-			term->newline();
-			if (!(useron.exempt & UEXEMPT_TIME_ONLINE) && (uint)i > timeleft) {
-				bputs(text[NotEnoughTimeToDl]);
-				break;
-			}
-			/***************/
-			/* Send Packet */
-			/***************/
-			i = protnum(useron.prot, XFER_DOWNLOAD);
-			if (i >= cfg.total_prots) {
-				char keys[128];
-				xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
-				quit = append_quit_key(keys, sizeof keys);
-				mnemonics(text[ProtocolOrQuit]);
-				ch = (char)getkeys(keys, 0);
-				if (ch == quit || sys_status & SS_ABORT || !online) {
-					for (i = 0; i < cfg.total_subs; i++)
-						subscan[i].ptr = sav_ptr[i]; /* re-load saved pointers */
-					last_ns_time = ns_time;
-					continue;
-				}
-				i = protnum(ch, XFER_DOWNLOAD);
-			}
-			if (i < cfg.total_prots) {
-				snprintf(str, sizeof str, "%s%s.qwk", cfg.temp_dir, cfg.sys_id);
-				snprintf(tmp2, sizeof tmp2, "%s.qwk", cfg.sys_id);
-				error = protocol(cfg.prot[i], XFER_DOWNLOAD, str, nulstr, false);
-				if (!checkprotresult(cfg.prot[i], error, tmp2)) {
-					last_ns_time = ns_time;
-					for (i = 0; i < cfg.total_subs; i++)
-						subscan[i].ptr = sav_ptr[i]; /* re-load saved pointers */
-				} else {
-					qwk_success(msgcnt, 0, 0);
-					for (i = 0; i < cfg.total_subs; i++)
-						sav_ptr[i] = subscan[i].ptr;
-				}
-				autohangup();
-			}
-			else {   /* if not valid protocol (hungup?) */
-				for (i = 0; i < cfg.total_subs; i++)
-					subscan[i].ptr = sav_ptr[i];
-				last_ns_time = ns_time;
-			}
+			qwk_download();
+			continue;
 		}
-
-		else if (ch == 'U') { /* Upload REP Packet */
-			delfiles(cfg.temp_dir, ALLFILES);
-			bprintf(text[UploadingREP], cfg.sys_id);
-
-			/******************/
-			/* Receive Packet */
-			/******************/
-			char keys[128];
-			xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
-			quit = append_quit_key(keys, sizeof keys);
-			mnemonics(text[ProtocolOrQuit]);
-			ch = (char)getkeys(keys, 0);
-			if (ch == quit || sys_status & SS_ABORT || !online)
-				continue;
-			i = protnum(ch, XFER_UPLOAD);
-			if (i >= cfg.total_prots)  /* This shouldn't happen */
-				continue;
-			snprintf(str, sizeof str, "%s%s.rep", cfg.temp_dir, cfg.sys_id);
-			protocol(cfg.prot[i], XFER_UPLOAD, str, nulstr, true);
-			unpack_rep();
-			delfiles(cfg.temp_dir, ALLFILES);
-			//autohangup();
+		if (ch == 'U') {   /* Upload REP Packet */
+			qwk_upload();
+			continue;
 		}
 	}
 	delfiles(cfg.temp_dir, ALLFILES);
+}
+
+/****************************************************************************/
+/* Pack and send a QWK packet of new messages.								*/
+/* Message scan pointers are only advanced if the packet is sent.			*/
+/****************************************************************************/
+bool sbbs_t::qwk_download()
+{
+	char      path[MAX_PATH + 1];
+	char      fname[MAX_PATH + 1];
+	char      tmp[256];
+	char      tmp2[256];
+	uint      msgcnt{};
+	bool      sent = false;
+	uint32_t* sav_ptr;
+
+	if ((sav_ptr = (uint32_t *)malloc(sizeof(uint32_t) * cfg.total_subs)) == NULL) {
+		errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(uint32_t) * cfg.total_subs);
+		return false;
+	}
+	for (int i = 0; i < cfg.total_subs; i++)
+		sav_ptr[i] = subscan[i].ptr;
+	snprintf(path, sizeof path, "%s%s.qwk", cfg.temp_dir, cfg.sys_id);
+	snprintf(fname, sizeof fname, "%s.qwk", cfg.sys_id);
+	remove(path);
+	if (pack_qwk(path, &msgcnt, /* prepack: */ false)) {
+		off_t l = flength(path);
+		bprintf(text[FiFilename], getfname(path));
+		bprintf(text[FiFileSize], u64toac(l, tmp)
+		        , byte_estimate_to_str(l, tmp2, sizeof(tmp2), /* units: */ 1024, /* precision: */ 1));
+		uint secs = 0;
+		if (l > 0L && cur_cps)
+			secs = (uint)(l / (uint)cur_cps);
+		bprintf(text[FiTransferTime], sectostr(secs, tmp), cur_cps);
+		term->newline();
+		if (!(useron.exempt & UEXEMPT_TIME_ONLINE) && secs > timeleft)
+			bputs(text[NotEnoughTimeToDl]);
+		else {
+			int prot = protnum(useron.prot, XFER_DOWNLOAD);
+			if (prot >= cfg.total_prots) {
+				char keys[128];
+				xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
+				char quit = append_quit_key(keys, sizeof keys);
+				mnemonics(text[ProtocolOrQuit]);
+				char ch = (char)getkeys(keys, 0);
+				if (ch != quit && !(sys_status & SS_ABORT) && online)
+					prot = protnum(ch, XFER_DOWNLOAD);
+			}
+			if (prot < cfg.total_prots) {
+				int error = protocol(cfg.prot[prot], XFER_DOWNLOAD, path, nulstr, false);
+				sent = checkprotresult(cfg.prot[prot], error, fname);
+				if (sent)
+					qwk_success(msgcnt, 0, 0);
+				autohangup();
+			}
+		}
+	}
+	if (!sent) {
+		for (int i = 0; i < cfg.total_subs; i++)
+			subscan[i].ptr = sav_ptr[i];
+		last_ns_time = ns_time;
+	}
+	remove(path);
 	free(sav_ptr);
+	return sent;
+}
+
+/****************************************************************************/
+/* Receive and import a REP packet.											*/
+/****************************************************************************/
+bool sbbs_t::qwk_upload()
+{
+	char path[MAX_PATH + 1];
+	char keys[128];
+
+	delfiles(cfg.temp_dir, ALLFILES);
+	bprintf(text[UploadingREP], cfg.sys_id);
+	xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
+	char quit = append_quit_key(keys, sizeof keys);
+	mnemonics(text[ProtocolOrQuit]);
+	char ch = (char)getkeys(keys, 0);
+	if (ch == quit || (sys_status & SS_ABORT) || !online)
+		return false;
+	int prot = protnum(ch, XFER_UPLOAD);
+	if (prot >= cfg.total_prots)
+		return false;
+	snprintf(path, sizeof path, "%s%s.rep", cfg.temp_dir, cfg.sys_id);
+	protocol(cfg.prot[prot], XFER_UPLOAD, path, nulstr, true);
+	bool result = unpack_rep();
+	delfiles(cfg.temp_dir, ALLFILES);
+	return result;
+}
+
+/****************************************************************************/
+/* Archive formats (file extensions) the current user may choose for QWK	*/
+/* packets. Caller must strListFree() the result.							*/
+/****************************************************************************/
+str_list_t sbbs_t::user_archive_formats()
+{
+	str_list_t ext_list = strListDup(cfg.supported_archive_formats);
+
+	for (int i = 0; i < cfg.total_fcomps; i++) {
+		if (strListFind(ext_list, cfg.fcomp[i]->ext, /* case-sensitive */ FALSE) < 0
+		    && chk_ar(cfg.fcomp[i]->ar, &useron, &client))
+			strListPush(&ext_list, cfg.fcomp[i]->ext);
+	}
+	return ext_list;
 }
 
 void sbbs_t::qwksetptr(int subnum, char *buf, int reset)
