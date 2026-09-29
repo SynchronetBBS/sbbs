@@ -80,6 +80,8 @@ bool               pause_on_exit = false;
 bool               pause_on_error = false;
 bool               terminated = false;
 bool               recycled;
+volatile int       terminate_signal;
+volatile int       recycle_signal;
 bool               require_cfg = true;
 int                log_level = DEFAULT_LOG_LEVEL;
 int                err_level = DEFAULT_ERR_LOG_LVL;
@@ -1170,15 +1172,17 @@ long js_exec(const char *fname, const char* buf, char** args)
 	return result;
 }
 
+// Signal handlers: set flags only. lprintf() locks output_mutex, so calling it
+// here deadlocks when the signal interrupts an lprintf() in progress.
 void break_handler(int type)
 {
-	lprintf(LOG_NOTICE, "\n-> Terminated Locally (signal: %d)", type);
+	terminate_signal = type;
 	terminated = true;
 }
 
 void recycle_handler(int type)
 {
-	lprintf(LOG_NOTICE, "\n-> Recycled Locally (signal: %d)", type);
+	recycle_signal = type;
 	recycled = true;
 	cb.terminated = &recycled;
 }
@@ -1623,6 +1627,12 @@ extern "C" int main(int argc, char **argv
 		fprintf(statfp, "\n");
 
 		result = js_exec(module, js_buf, &argv[argn]);
+		if (terminate_signal)
+			lprintf(LOG_NOTICE, "\n-> Terminated Locally (signal: %d)", terminate_signal);
+		if (recycle_signal) {
+			lprintf(LOG_NOTICE, "\n-> Recycled Locally (signal: %d)", recycle_signal);
+			recycle_signal = 0;
+		}
 		JS_RemoveObjectRoot(js_cx, &js_glob);
 		JS_ENDREQUEST(js_cx);
 		YIELD();
