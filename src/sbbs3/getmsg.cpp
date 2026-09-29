@@ -154,6 +154,12 @@ const char* sbbs_t::msghdr_field(const smbmsg_t* msg, const char* str, char* buf
 
 	utf8_strlcpy(buf, str, buflen);
 	utf8_to_cp437_inplace(buf);
+	// Some code points (e.g. U+263A) map to CP437 control characters (e.g.
+	// Ctrl-A), which bputs() would then interpret rather than display
+	for (char* p = buf; *p != '\0'; ++p) {
+		if ((uchar)*p < ' ')
+			*p = CP437_INVERTED_QUESTION_MARK;
+	}
 
 	return buf;
 }
