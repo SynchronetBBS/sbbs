@@ -3713,7 +3713,7 @@ void sys_cfg(void)
 							mods_changed |= cfg_loadable_modules("Temporary File Transfer", &cfg.tempxfer_mod, mod_bar, 0);
 							break;
 						case 31:
-							mods_changed |= cfg_loadable_modules("QWK Section", &cfg.qwksec_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("QWK Section", &cfg.qwksec_mod, mod_bar, 1);
 							break;
 						case 32:
 							mods_changed |= cfg_loadable_modules("Select Item", &cfg.uselect_mod, mod_bar, 0);
