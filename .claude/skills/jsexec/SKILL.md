@@ -428,6 +428,38 @@ Other verified behavior:
 - Running as a non-`sbbs` user can create log/data files with wrong ownership;
   prefer `sudo -u sbbs jsexec ...` or stick to read-only probes.
 
+## `cfg->size (X) != sizeof(scfg_t) (Y)` that survives a rebuild (CIFS mount)
+
+```
+!ERROR loading configuration files: cfg->size (48344) != sizeof(scfg_t) (48368)
+```
+
+`cfg->size` is the `scfg_t` size compiled into the `jsexec` that ran;
+`sizeof(scfg_t)` is `libsbbs.so`'s. Normally this means the two were built from
+different sources. If it persists after a clean rebuild **and the install's
+`exec/` is reached through a Linux CIFS/SMB mount**, suspect the mount instead.
+
+While **any** process is still executing the old binary through the mount path,
+the Linux CIFS client hands every *new* exec of that path the same old cached
+image and reports the old mtime, even though `read()` returns the new bytes. So
+`md5sum`, `objdump` and gdb all see the new file while a plain run keeps
+executing the old one. It clears as soon as the last holder exits.
+
+- **Test:** copy the fresh binary to a new name on the server-side path and run
+  it through the mount. The copy works; the original path still fails. `stat`
+  on the mount path showing an older mtime than the build output is another
+  tell.
+- **Fix:** stop the long-running holder, or as root
+  `echo 3 > /proc/sys/vm/drop_caches` (no remount needed).
+- **Prevent:** start long-lived jsexec services (IRC bots, daemons) from the
+  build output directory or the server-side path, not through the mount.
+  Otherwise one long-running service freezes the image that every timed event,
+  cron job and mail helper gets, and those fail silently until the next
+  `scfg_t` size change makes the mismatch visible.
+
+A stale image whose struct sizes happen to match runs without complaint against
+the new `libsbbs.so`, so this can go unnoticed for a long time.
+
 ## Windows / debug-build invocation
 
 On Windows, the **installed** `jsexec.exe` (under `<install>\exec\`, typically
