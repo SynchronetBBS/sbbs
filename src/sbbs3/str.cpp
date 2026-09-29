@@ -768,11 +768,47 @@ bool sbbs_t::inputnstime32(time32_t *dt)
 	return retval;
 }
 
+/****************************************************************************/
+/* Does 'str' (user input) start with the first non-blank letter of 'word'?	*/
+/****************************************************************************/
+static bool meridiem_match(const char* str, const char* word)
+{
+	SKIP_WHITESPACE(word);
+	return *word != '\0' && toupper((uchar)*str) == toupper((uchar)*word);
+}
+
+/****************************************************************************/
+/* Parse an hour: 0-23 (24-hour), or 1-12 followed by am or pm (#1265)		*/
+/****************************************************************************/
+static bool parse_hour(char* str, bool military, char** text, int* hour)
+{
+	char* p;
+	long  h = strtol(str, &p, 10);
+
+	if (p == str || h < 0)
+		return false;
+	SKIP_WHITESPACE(p);
+	if (*p == '\0') {
+		if (h > 23)
+			return false;
+		*hour = (int)h;
+		return true;
+	}
+	if (military || h < 1 || h > 12)
+		return false;
+	if (meridiem_match(p, text[NScanAmQ]))
+		*hour = (int)(h % 12);
+	else if (meridiem_match(p, text[NScanPmQ]))
+		*hour = (int)(h % 12) + 12;
+	else
+		return false;
+	return true;
+}
+
 bool sbbs_t::inputnstime(time_t *dt)
 {
 	int       hour;
 	struct tm tm;
-	bool      pm = false;
 	char      str[256];
 
 	bputs(text[NScanDate]);
@@ -821,29 +857,21 @@ bool sbbs_t::inputnstime(time_t *dt)
 		return false;
 	}
 	bputs(text[NScanHour]);
-	if (cfg.sys_misc & SM_MILITARY)
-		hour = tm.tm_hour;
+	bool military = (cfg.sys_misc & SM_MILITARY) != 0;
+	if (military)
+		snprintf(str, sizeof str, "%d", tm.tm_hour);
 	else {
-		if (tm.tm_hour == 0) { /* 12 midnite */
-			pm = false;
+		hour = tm.tm_hour % 12;
+		if (hour == 0)
 			hour = 12;
-		}
-		else if (tm.tm_hour > 12) {
-			hour = tm.tm_hour - 12;
-			pm = true;
-		}
-		else {
-			hour = tm.tm_hour;
-			pm = false;
-		}
+		snprintf(str, sizeof str, "%d%s", hour, text[tm.tm_hour >= 12 ? NScanPmQ : NScanAmQ]);
 	}
-	ultoa(hour, str, 10);
-	if (!getstr(str, 2, K_EDIT | K_AUTODEL | K_NUMBER | K_NOCRLF) || sys_status & SS_ABORT) {
+	if (!getstr(str, military ? 2 : 12, K_EDIT | K_AUTODEL | K_NOCRLF | (military ? K_NUMBER : 0))
+	    || sys_status & SS_ABORT) {
 		term->newline();
 		return false;
 	}
-	tm.tm_hour = atoi(str);
-	if (tm.tm_hour > 24) {
+	if (!parse_hour(str, military, text, &tm.tm_hour)) {
 		term->newline();
 		return false;
 	}
@@ -861,21 +889,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 		return false;
 	}
 	tm.tm_sec = 0;
-	if (!(cfg.sys_misc & SM_MILITARY) && tm.tm_hour && tm.tm_hour < 13) {
-		if (pm && yesno(text[NScanPmQ])) {
-			if (tm.tm_hour < 12)
-				tm.tm_hour += 12;
-		}
-		else if (!pm && !yesno(text[NScanAmQ])) {
-			if (tm.tm_hour < 12)
-				tm.tm_hour += 12;
-		}
-		else if (tm.tm_hour == 12)
-			tm.tm_hour = 0;
-	}
-	else {
-		term->newline();
-	}
+	term->newline();
 	tm.tm_isdst = -1; /* Do not adjust for DST */
 	*dt = mktime(&tm);
 	return true;
