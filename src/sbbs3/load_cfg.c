@@ -420,6 +420,7 @@ void free_cfg(scfg_t* cfg)
 	free_loadable_module(&cfg->postxtrn_mod);
 	free_loadable_module(&cfg->tempxfer_mod);
 	free_loadable_module(&cfg->batxfer_mod);
+	free_loadable_module(&cfg->qwksec_mod);
 	free_loadable_module(&cfg->uselect_mod);
 }
 

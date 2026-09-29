@@ -3556,6 +3556,7 @@ void sys_cfg(void)
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "View File Info", strListCombine(cfg.fileinfo_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Batch Transfer", strListCombine(cfg.batxfer_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Temp Transfer", strListCombine(cfg.tempxfer_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "QWK Section", strListCombine(cfg.qwksec_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Select Item", strListCombine(cfg.uselect_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Sync", strListCombine(cfg.sync_mod.cmd, str, sizeof str, list_sep));
 					opt[i][0] = 0;
@@ -3597,6 +3598,7 @@ void sys_cfg(void)
 						"`View File Info`   User views detailed information on files in a directory\n"
 						"`Batch Transfer`   Batch file transfer menu\n"
 						"`Temp Transfer`    Temporary/archive file transfer menu\n"
+						"`QWK Section`      QWK message packet menu\n"
 						"`Select Item`      User selects a numbered item from a list of options\n"
 						"`Sync`             Node is periodically synchronized (comm/disk I/O flush)\n"
 						"\n"
@@ -3711,9 +3713,12 @@ void sys_cfg(void)
 							mods_changed |= cfg_loadable_modules("Temporary File Transfer", &cfg.tempxfer_mod, mod_bar, 0);
 							break;
 						case 31:
-							mods_changed |= cfg_loadable_modules("Select Item", &cfg.uselect_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("QWK Section", &cfg.qwksec_mod, mod_bar, 0);
 							break;
 						case 32:
+							mods_changed |= cfg_loadable_modules("Select Item", &cfg.uselect_mod, mod_bar, 0);
+							break;
+						case 33:
 							mods_changed |= cfg_loadable_modules("Synchronize", &cfg.sync_mod, mod_bar, 0);
 							break;
 					}

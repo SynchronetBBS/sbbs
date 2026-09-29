@@ -659,6 +659,7 @@ typedef struct
     struct loadable_module postxtrn_mod;		/* External Program post-execution module */
 	struct loadable_module tempxfer_mod;
 	struct loadable_module batxfer_mod;
+	struct loadable_module qwksec_mod;
 	struct loadable_module uselect_mod;
 	uchar			smb_retry_time; 		/* Seconds to retry on SMBs */
 	uchar			inactivity_warn;		// percentage

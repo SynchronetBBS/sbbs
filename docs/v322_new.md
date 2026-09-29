@@ -164,6 +164,9 @@
   (regression from v3.21e, issue #1234)
 - QWK network nodes are no longer asked "Messages to you only"
   when configuring new-scan for a whole group of sub-boards
+- QWK packet downloads no longer skip messages when the transfer would
+  exceed the user's time left, and no longer resend a stale packet after
+  a failed transfer
 
 ## Web Server
 
@@ -454,6 +457,9 @@
   (with `?raw` for the original `.md` as `text/plain`)
 - New: `uselect_rip.js` — RIP-capable "Select Item" loadable
   module; `RIPScrollbar` gains a horizontal mode
+- New: `qwk_sec.js`: the QWK message packet menu is now a loadable
+  module (SCFG->System->Loadable Modules->QWK Section), replacing the
+  built-in menu
 - DD File Lister gains a full RIP user interface for RIP-
   capable terminals
 - DD Message Reader gains per-subboard message-attribute toggles
@@ -655,6 +661,8 @@
   large archives are never held in memory)
 - New `load("sha256.js")` library provides `sha256_of_file()`, and
   back-fills `File.sha256_hex` (via cryptlib) on pre-3.22 builds
+- New `bbs.qwk_download()`, `bbs.qwk_upload()`, and
+  `bbs.get_archive_formats()` methods
 
 ## JSexec
 
