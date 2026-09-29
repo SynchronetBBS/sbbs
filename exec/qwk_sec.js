@@ -24,9 +24,13 @@ function command_keys()
 
 	for(var i = 0; i < cmds.length; i++) {
 		var key = cmds[i].key;
-		if(used[key] !== undefined) {
-			log(LOG_ERR, format("QWK menu: %s and %s command keys collide ('%s') for language '%s'"
-				, used[key], cmds[i].name, key, user.lang));
+		var problem = null;
+		if(!key || key <= ' ')
+			problem = format("%s command key is empty", cmds[i].name);
+		else if(used[key] !== undefined)
+			problem = format("%s and %s command keys collide ('%s')", used[key], cmds[i].name, key);
+		if(problem) {
+			log(LOG_ERR, format("QWK menu: %s for language '%s'", problem, user.lang));
 			if(cmds[i].name != "Quit" || used['Q'] !== undefined)
 				continue;
 			key = 'Q';

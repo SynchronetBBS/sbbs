@@ -629,19 +629,19 @@ public:
 	char 	*text_sav[TOTAL_TEXT]{};		/* Text from text.dat/text.ini */
 	bool	text_replaced[TOTAL_TEXT]{};
 	std::unordered_map<std::string, int> text_id_map{};
-	char	yes_key(void) { return toupper(*text[Yes]); }
-	char	no_key(void) { return toupper(*text[No]); }
-	char	quit_key(void) { return toupper(*text[Quit]); }
+	char	yes_key(void) { return toupper((uchar)*text[Yes]); }
+	char	no_key(void) { return toupper((uchar)*text[No]); }
+	char	quit_key(void) { return toupper((uchar)*text[Quit]); }
 	char*	quit_key(char* str) { str[0] = quit_key(); str[1] = '\0'; return str; }
-	char	all_key(void) { return toupper(*text[All]); }
-	char	list_key(void) { return toupper(*text[List]); }
-	char	next_key(void) { return toupper(*text[Next]); }
-	char	prev_key(void) { return toupper(*text[Previous]); }
-	char	upload_key(void) { return toupper(*text[Upload]); }
-	char	download_key(void) { return toupper(*text[Download]); }
-	char	configure_key(void) { return toupper(*text[Configure]); }
-	char	select_key(void) { return toupper(*text[Select]); }
-	char	pointers_key(void) { return toupper(*text[Pointers]); }
+	char	all_key(void) { return toupper((uchar)*text[All]); }
+	char	list_key(void) { return toupper((uchar)*text[List]); }
+	char	next_key(void) { return toupper((uchar)*text[Next]); }
+	char	prev_key(void) { return toupper((uchar)*text[Previous]); }
+	char	upload_key(void) { return toupper((uchar)*text[Upload]); }
+	char	download_key(void) { return toupper((uchar)*text[Download]); }
+	char	configure_key(void) { return toupper((uchar)*text[Configure]); }
+	char	select_key(void) { return toupper((uchar)*text[Select]); }
+	char	pointers_key(void) { return toupper((uchar)*text[Pointers]); }
 
 	char 	dszlog[127]{};	/* DSZLOG environment variable */
 	int     keybuftop=0, keybufbot=0;    /* Keyboard input buffer pointers (for ungetkey) */
