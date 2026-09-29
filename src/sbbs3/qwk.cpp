@@ -408,11 +408,12 @@ void sbbs_t::qwk_sec()
 		action = NODE_TQWK;
 		sync();
 		bputs(text[QWKPrompt]);
-		snprintf(str, sizeof str, "?UDCSP\r%c", quit_key());
+		SAFECOPY(str, "?UDCSP\r");
+		char quit = append_quit_key(str, sizeof str);
 		ch = (char)getkeys(str, 0);
 		if (ch > ' ')
 			logch(ch, 0);
-		if (sys_status & SS_ABORT || ch == quit_key() || ch == CR || !online)
+		if (sys_status & SS_ABORT || ch == quit || ch == CR || !online)
 			break;
 		if (ch == '?') {
 			if ((term->supports(RIP) || !(useron.misc & EXPERT))
@@ -624,10 +625,10 @@ void sbbs_t::qwk_sec()
 			if (i >= cfg.total_prots) {
 				char keys[128];
 				xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
-				SAFECAT(keys, quit_key(str));
+				quit = append_quit_key(keys, sizeof keys);
 				mnemonics(text[ProtocolOrQuit]);
 				ch = (char)getkeys(keys, 0);
-				if (ch == quit_key() || sys_status & SS_ABORT || !online) {
+				if (ch == quit || sys_status & SS_ABORT || !online) {
 					for (i = 0; i < cfg.total_subs; i++)
 						subscan[i].ptr = sav_ptr[i]; /* re-load saved pointers */
 					last_ns_time = ns_time;
@@ -666,10 +667,10 @@ void sbbs_t::qwk_sec()
 			/******************/
 			char keys[128];
 			xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
-			SAFECAT(keys, quit_key(str));
+			quit = append_quit_key(keys, sizeof keys);
 			mnemonics(text[ProtocolOrQuit]);
 			ch = (char)getkeys(keys, 0);
-			if (ch == quit_key() || sys_status & SS_ABORT || !online)
+			if (ch == quit || sys_status & SS_ABORT || !online)
 				continue;
 			i = protnum(ch, XFER_UPLOAD);
 			if (i >= cfg.total_prots)  /* This shouldn't happen */

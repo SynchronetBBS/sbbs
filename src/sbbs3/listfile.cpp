@@ -522,7 +522,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 				pause();
 			return 2;
 		}
-		if (ch == quit_key() || sys_status & SS_ABORT)
+		if (ch == unique_quit_key("?SP-TBDEVRM") || sys_status & SS_ABORT)
 			return -1;
 		if (ch == 'S')
 			return 0;
@@ -842,7 +842,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 		    || mode == FI_OFFLINE) {
 			sync();
 //			term->newline();
-			SAFEPRINTF(str, "VDERN\r%c", quit_key());
+			SAFECOPY(str, "VDERN\r");
 			if (m > 1)
 				SAFECAT(str, "P-\b");
 			if (dir_op(dirnum)) {
@@ -855,8 +855,9 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 			}
 			else
 				mnemonics(text[UserRemoveFilePrompt]);
+			char quit = append_quit_key(str, sizeof str);
 			char key = getkeys(str, 0);
-			if (key == quit_key()) {
+			if (key == quit) {
 				found = -1;
 				done = 1;
 				break;

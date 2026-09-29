@@ -395,7 +395,6 @@ void sbbs_t::seqwait(uint devnum)
 bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 {
 	char keys[128];
-	char tmp[128];
 	char ch;
 	int  i;
 	int  error;
@@ -404,11 +403,11 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 	i = protnum(prot, XFER_DOWNLOAD);
 	if (i >= cfg.total_prots) {
 		xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
-		SAFECAT(keys, quit_key(tmp));
+		char quit = append_quit_key(keys, sizeof keys);
 		mnemonics(text[ProtocolOrQuit]);
 		ch = (char)getkeys(keys, 0);
 
-		if (ch == quit_key() || sys_status & SS_ABORT)
+		if (ch == quit || sys_status & SS_ABORT)
 			return false;
 		i = protnum(ch, XFER_DOWNLOAD);
 		if (i >= cfg.total_prots)

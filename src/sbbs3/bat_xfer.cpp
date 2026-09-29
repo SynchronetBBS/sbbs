@@ -42,13 +42,13 @@ bool sbbs_t::batch_upload()
 		return false;
 	}
 	xfer_prot_menu(XFER_BATCH_UPLOAD, &useron, keys, sizeof keys);
-	SAFECAT(keys, quit_key(str));
+	char quit = append_quit_key(keys, sizeof keys);
 	if (!create_batchup_lst())
 		return false;
 	sync();
 	mnemonics(text[ProtocolOrQuit]);
 	ch = (char)getkeys(keys, 0);
-	if (ch == quit_key() || !online)
+	if (ch == quit || !online)
 		return false;
 	i = protnum(ch, XFER_BATCH_UPLOAD);
 	if (i >= cfg.total_prots)
@@ -195,11 +195,11 @@ bool sbbs_t::start_batch_download()
 	if (i >= cfg.total_prots) {
 		char keys[128];
 		xfer_prot_menu(XFER_BATCH_DOWNLOAD, &useron, keys, sizeof keys);
-		SAFECAT(keys, quit_key(str));
+		char quit = append_quit_key(keys, sizeof keys);
 		sync();
 		mnemonics(text[ProtocolOrQuit]);
 		ch = (char)getkeys(keys, 0);
-		if (ch == quit_key() || sys_status & SS_ABORT)
+		if (ch == quit || sys_status & SS_ABORT)
 			return false;
 		i = protnum(ch, XFER_BATCH_DOWNLOAD);
 	}
