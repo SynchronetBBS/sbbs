@@ -326,6 +326,67 @@ bool sbbs_t::editfiledesc(file_t* f)
 	return true;
 }
 
+// Edit the extended description, keeping the auxiliary data (#1269)
+bool sbbs_t::editfileextdesc(file_t* f)
+{
+	char   msgtmp[MAX_PATH + 1];
+	char*  extdesc;
+	char*  auxdata;
+	smb_t  dirsmb;
+	FILE*  fp;
+	off_t  length;
+	size_t len;
+	int    result;
+
+	if ((result = smb_open_dir(&cfg, &dirsmb, f->dir)) != SMB_SUCCESS) {
+		errormsg(WHERE, ERR_OPEN, dirsmb.file, result, dirsmb.last_error);
+		return false;
+	}
+	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
+	(void)removecase(msgtmp);
+	msgtotxt(&dirsmb, f, msgtmp, /* header: */ false, GETMSGTXT_BODY_ONLY);
+	if (!editfile(msgtmp, cfg.level_linespermsg[useron.level], WM_EXPANDLF, f->to, f->from, f->subj, nulstr)
+	    || (length = flength(msgtmp)) < 1) {
+		smb_close(&dirsmb);
+		return false;
+	}
+	if ((extdesc = (char*)malloc((size_t)length + 1)) == NULL) {
+		smb_close(&dirsmb);
+		errormsg(WHERE, ERR_ALLOC, msgtmp, (size_t)length + 1);
+		return false;
+	}
+	if ((fp = fopen(msgtmp, "rb")) == NULL) {
+		free(extdesc);
+		smb_close(&dirsmb);
+		errormsg(WHERE, ERR_OPEN, msgtmp, O_RDONLY);
+		return false;
+	}
+	len = fread(extdesc, 1, (size_t)length, fp);
+	fclose(fp);
+	extdesc[len] = '\0';
+	if (len >= 2 && extdesc[len - 2] == '\r' && extdesc[len - 1] == '\n')
+		extdesc[len - 2] = '\0';
+
+	if ((auxdata = smb_getmsgtxt(&dirsmb, f, GETMSGTXT_TAIL_ONLY)) != NULL) {
+		// Drop the line terminator smb_getmsgtxt() appends to each data field
+		len = strlen(auxdata);
+		if (len >= 2 && auxdata[len - 2] == '\r' && auxdata[len - 1] == '\n')
+			auxdata[len - 2] = '\0';
+	}
+	if ((result = smb_getmsgidx(&dirsmb, f)) == SMB_SUCCESS)
+		result = smb_updatefile(&dirsmb, f, SMB_SELFPACK, extdesc, auxdata);
+	if (result != SMB_SUCCESS)
+		errormsg(WHERE, ERR_WRITE, dirsmb.file, result, dirsmb.last_error);
+	else {
+		smb_freemsgtxt(f->extdesc);
+		f->extdesc = smb_getmsgtxt(&dirsmb, f, GETMSGTXT_BODY_ONLY);
+	}
+	free(extdesc);
+	smb_freemsgtxt(auxdata);
+	smb_close(&dirsmb);
+	return result == SMB_SUCCESS;
+}
+
 bool sbbs_t::editfileinfo(file_t* f)
 {
 	char str[MAX_PATH + 1];
@@ -342,13 +403,8 @@ bool sbbs_t::editfileinfo(file_t* f)
 		if ((f->tags == NULL && *tags != '\0') || (f->tags != NULL && strcmp(tags, f->tags)))
 			smb_new_hfield_str(f, SMB_TAGS, tags);
 	}
-	if (!noyes(text[EditExtDescriptionQ])) {
-		if (editmsg(&smb, f)) {
-			if (f->extdesc != NULL)
-				smb_freemsgtxt(f->extdesc);
-			f->extdesc = smb_getmsgtxt(&smb, f, GETMSGTXT_BODY_ONLY);
-		}
-	}
+	if (!noyes(text[EditExtDescriptionQ]))
+		editfileextdesc(f);
 	if (dir_op(f->dir)) {
 		char uploader[LEN_ALIAS + 1];
 		SAFECOPY(uploader, f->from);
