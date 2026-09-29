@@ -778,7 +778,9 @@ static bool meridiem_match(const char* str, const char* word)
 }
 
 /****************************************************************************/
-/* Parse an hour: 0-23 (24-hour), or 1-12 followed by am or pm (#1265)		*/
+/* Parse an hour: 1-12 followed by am or pm, or 0-23 (24-hour; only 0 and	*/
+/* 13-23 when not using a 24-hour clock, where a bare 1-12 is ambiguous)	*/
+/* (#1265)														*/
 /****************************************************************************/
 static bool parse_hour(char* str, bool military, char** text, int* hour)
 {
@@ -789,7 +791,7 @@ static bool parse_hour(char* str, bool military, char** text, int* hour)
 		return false;
 	SKIP_WHITESPACE(p);
 	if (*p == '\0') {
-		if (h > 23)
+		if (h > 23 || (!military && h >= 1 && h <= 12)) // 1-12 is ambiguous without am/pm
 			return false;
 		*hour = (int)h;
 		return true;
@@ -866,14 +868,28 @@ bool sbbs_t::inputnstime(time_t *dt)
 			hour = 12;
 		snprintf(str, sizeof str, "%d%s", hour, text[tm.tm_hour >= 12 ? NScanPmQ : NScanAmQ]);
 	}
-	if (!getstr(str, military ? 2 : 12, K_EDIT | K_AUTODEL | K_NOCRLF | (military ? K_NUMBER : 0))
-	    || sys_status & SS_ABORT) {
+	char orig[sizeof str];
+	SAFECOPY(orig, str);
+	while (true) {
+		if (!getstr(str, military ? 2 : 12, K_EDIT | K_AUTODEL | K_NOCRLF | (military ? K_NUMBER : 0))
+		    || sys_status & SS_ABORT) {
+			term->newline();
+			return false;
+		}
+		if (parse_hour(str, military, text, &tm.tm_hour))
+			break;
+		// Re-prompt with an acceptable value: an hour of 1-12 without am/pm
+		// gets the original time's am/pm, anything else the original value
+		char* p;
+		long  h = strtol(str, &p, 10);
+		bool  bare = (p != str);
+		SKIP_WHITESPACE(p);
+		if (!military && bare && *p == '\0' && h >= 1 && h <= 12)
+			snprintf(str, sizeof str, "%ld%s", h, text[tm.tm_hour >= 12 ? NScanPmQ : NScanAmQ]);
+		else
+			SAFECOPY(str, orig);
 		term->newline();
-		return false;
-	}
-	if (!parse_hour(str, military, text, &tm.tm_hour)) {
-		term->newline();
-		return false;
+		bputs(text[NScanHour]);
 	}
 
 	bputs(text[NScanMinute]);

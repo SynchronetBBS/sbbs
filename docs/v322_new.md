@@ -172,8 +172,9 @@
   protocol, or the file-list Delete key); Quit uses Q there instead
   (issue #1242)
 - New-scan date/time entry: the hour field now shows its am/pm (e.g.
-  "1 pm") and accepts "1 am", "1 pm", or a 24-hour hour (0-23), instead
-  of asking a separate "pm?"/"am?" question (issue #1265)
+  "1 pm") and accepts "1 am", "1 pm", or a 24-hour hour of 0 or 13-23,
+  re-prompting for an ambiguous hour of 1-12 without am/pm, instead of
+  asking a separate "pm?"/"am?" question (issue #1265)
 
 ## Web Server
 
