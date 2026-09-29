@@ -1,11 +1,11 @@
+"use strict";
+
 // Batch File Transfer menu
 // The default system "Batch Transfer" loadable module for Synchronet v3.21
 // i.e. in SCFG->System->Loadable Modules->Batch Transfer
 
 require("sbbsdefs.js", "USER_RIP");
 require("file_size.js", "file_size_float");
-
-"use strict";
 
 function batch_list_read(fname)
 {
@@ -39,7 +39,7 @@ function est_duration(size)
 function batchmenu()
 {
 	var sort;
-	const menu_code = "batchxfr"
+	var menu_code = "batchxfr";
 	if(bbs.batch_dnload_total < 1 && bbs.batch_upload_total < 1 && file_area.upload_dir == undefined) {
 		console.print(bbs.text(bbs.text.NoFilesInBatchQueue));
 		return;
@@ -53,7 +53,7 @@ function batchmenu()
 		}
 		bbs.nodesync();
 		console.print(bbs.text(bbs.text.BatchMenuPrompt));
-		const keys = "CDLRU?\r" + console.quit_key;
+		var keys = "CDLRU?\r" + console.quit_key;
 		var ch = console.getkeys(keys, 0);
 		switch(ch) {
 			case '?':
