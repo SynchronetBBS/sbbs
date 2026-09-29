@@ -418,7 +418,8 @@ static char* node_connection_desc(sbbs_t* sbbs, ushort conn, char* str)
 void sbbs_t::printnodedat(uint number, node_t* node)
 {
 	int  i;
-	char hour, mer[3];
+	char        hour;
+	const char* mer;
 	char tmp[512];
 
 	attr(cfg.color[clr_nodenum]);
@@ -474,23 +475,23 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			if (node->action == NODE_DLNG) {
 				if (cfg.sys_misc & SM_MILITARY) {
 					hour = node->aux / 60;
-					mer[0] = 0;
+					mer = "";
 				}
 				else if ((node->aux / 60) >= 12) {
 					if (node->aux / 60 == 12)
 						hour = 12;
 					else
 						hour = (node->aux / 60) - 12;
-					strcpy(mer, "pm");
+					mer = text[NScanPmQ];
 				}
 				else {
 					if ((node->aux / 60) == 0)    /* 12 midnite */
 						hour = 12;
 					else
 						hour = node->aux / 60;
-					strcpy(mer, "am");
+					mer = text[NScanAmQ];
 				}
-				bprintf(" ETA %02d:%02d %s"
+				bprintf(" ETA %02d:%02d%s"
 				        , hour, node->aux % 60, mer);
 			}
 			break;

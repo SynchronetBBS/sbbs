@@ -171,6 +171,9 @@
   letter (e.g. Spanish "Dejar" vs. the QWK menu's Download, a transfer
   protocol, or the file-list Delete key); Quit uses Q there instead
   (issue #1242)
+- New-scan date/time entry: the hour field now shows its am/pm (e.g.
+  "1 pm") and accepts "1 am", "1 pm", or a 24-hour hour (0-23), instead
+  of asking a separate "pm?"/"am?" question (issue #1265)
 
 ## Web Server
 
@@ -407,6 +410,10 @@
     command words)
 - Stock Spanish and French `Quit` translations changed to "Terminar" and
   "Quitter", which no longer collide with the QWK menu's Download key
+- Dates and times (weekday and month names, am/pm, "Never") and node
+  status/activity text now follow the user's language (`text.<lang>.ini`)
+  instead of always using the system's default text; am/pm now come from
+  the `NScanAmQ`/`NScanPmQ` text strings
 - Changed text.dat strings:
   - `SeekPrompt` restyled to `<filename> (?=Help)` form (the key
     list moved into `SeekHelp`)

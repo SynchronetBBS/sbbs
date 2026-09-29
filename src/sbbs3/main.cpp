@@ -3684,6 +3684,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 
 	for (i = 0; i < TOTAL_TEXT; i++)
 		text[i] = text_sav[i] = global_text[i];
+	cfg.text = text;
 
 	memcpy(rainbow, cfg.rainbow, sizeof rainbow);
 }
