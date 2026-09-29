@@ -31,7 +31,7 @@
 !|@AA2YSend Message to Another Node|@AA3CControl Key Command Menu
 !|@AA3YChange Directory, or Type Number|@A94BChange Library, or Type /Number
 !|@AA5ADownload File from Any Directory|@AA5ODownload User to User
-!|@AA62Batch/Bidirectional|@AA6GUpload File to Current Directory
+!|@AA62Batch File Transfer|@AA6GUpload File to Current Directory
 !|@AA6UUpload File User to User|@AA78Upload File to Sysop Directory|10000$ETW$
 !|#|#|#
 
