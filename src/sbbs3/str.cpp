@@ -878,8 +878,10 @@ bool sbbs_t::inputnstime(time_t *dt)
 		}
 		if (parse_hour(str, military, text, &tm.tm_hour))
 			break;
-		// Re-prompt with an acceptable value: an hour of 1-12 without am/pm
-		// gets the original time's am/pm, anything else the original value
+		// Re-prompt in place with an acceptable value: an hour of 1-12 without
+		// am/pm gets the original time's am/pm, anything else the original value
+		term->backspace(strlen(str));
+		outchar('\a');
 		char* p;
 		long  h = strtol(str, &p, 10);
 		bool  bare = (p != str);
@@ -888,8 +890,6 @@ bool sbbs_t::inputnstime(time_t *dt)
 			snprintf(str, sizeof str, "%ld%s", h, text[tm.tm_hour >= 12 ? NScanPmQ : NScanAmQ]);
 		else
 			SAFECOPY(str, orig);
-		term->newline();
-		bputs(text[NScanHour]);
 	}
 
 	bputs(text[NScanMinute]);
