@@ -310,9 +310,8 @@ int smb_incdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 /****************************************************************************/
 int smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
-	int      i = SMB_SUCCESS;
-	bool     da_opened = false;
-	uint16_t x;
+	int  i = SMB_SUCCESS;
+	bool da_opened = false;
 
 	if (smb->status.attr & SMB_HYPERALLOC)  /* Nothing to do */
 		return SMB_SUCCESS;
@@ -326,11 +325,7 @@ int smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 	if (!smb->smbhdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
 
-	for (x = 0; x < msg->hdr.total_dfields; x++) {
-		if ((i = smb_incdat(smb, msg->hdr.offset + msg->dfield[x].offset
-		                    , msg->dfield[x].length, refs)) != SMB_SUCCESS)
-			break;
-	}
+	i = smb_incdat(smb, msg->hdr.offset, smb_getmsgdatlen(msg), refs);
 	smb_unlocksmbhdr(smb);
 
 	if (da_opened)
@@ -391,15 +386,7 @@ int smb_freemsghdr(smb_t* smb, off_t offset, uint length)
 /****************************************************************************/
 int smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
-	int      i;
-	uint16_t x;
-
-	for (x = 0; x < msg->hdr.total_dfields; x++) {
-		if ((i = smb_freemsgdat(smb, msg->hdr.offset + msg->dfield[x].offset
-		                        , msg->dfield[x].length, refs)) != SMB_SUCCESS)
-			return i;
-	}
-	return SMB_SUCCESS;
+	return smb_freemsgdat(smb, msg->hdr.offset, smb_getmsgdatlen(msg), refs);
 }
 
 /****************************************************************************/

@@ -809,25 +809,23 @@ int main(int argc, char **argv)
 								       , n, msg.dfield[n].length);
 							dfieldlength++;
 						}
-						fseek(smb.sda_fp
-						      , ((msg.hdr.offset + msg.dfield[n].offset) / SDT_BLOCK_LEN) * 2
-						      , SEEK_SET);
-						for (m = 0; m < msg.dfield[n].length; m += SDT_BLOCK_LEN) {
-							if (terminated)
-								break;
-							/* TODO: LE Only */
-							i = 0;
-							if (!fread(&i, 2, 1, smb.sda_fp) || !i) {
-								fprintf(stderr
-								        , "%sActive Data Block %lu.%" PRIu32 " marked free\n"
-								        , beep, n, m / SHD_BLOCK_LEN);
-								msgerr = TRUE;
-								if (extinfo)
-									printf("MSGERR: Active Data Block %lu.%" PRIu32 " "
-									       "marked free\n"
-									       , n, m / SHD_BLOCK_LEN);
-								datactalloc++;
-							}
+					}
+					/* Every block the data spans, not just where each field starts (#1253) */
+					fseek(smb.sda_fp, (msg.hdr.offset / SDT_BLOCK_LEN) * 2, SEEK_SET);
+					for (m = 0; m < smb_datblocks(smb_getmsgdatlen(&msg)); m++) {
+						if (terminated)
+							break;
+						/* TODO: LE Only */
+						i = 0;
+						if (!fread(&i, 2, 1, smb.sda_fp) || !i) {
+							fprintf(stderr
+							        , "%sActive Data Block %" PRIu32 " marked free\n"
+							        , beep, msg.hdr.offset / SDT_BLOCK_LEN + m);
+							msgerr = TRUE;
+							if (extinfo)
+								printf("MSGERR: Active Data Block %" PRIu32 " marked free\n"
+								       , msg.hdr.offset / SDT_BLOCK_LEN + m);
+							datactalloc++;
 						}
 					}
 				}

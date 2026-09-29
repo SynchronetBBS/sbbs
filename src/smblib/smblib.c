@@ -726,7 +726,8 @@ uint smb_getmsghdrlen(smbmsg_t* msg)
 }
 
 /****************************************************************************/
-/* Figures out the total length of the data buffer for 'msg'                */
+/* Figures out the total length of the data buffer for 'msg': from the		*/
+/* header's data offset to the end of the furthest data field				*/
 /* Returns length															*/
 /****************************************************************************/
 uint smb_getmsgdatlen(smbmsg_t* msg)
@@ -734,8 +735,10 @@ uint smb_getmsgdatlen(smbmsg_t* msg)
 	int  i;
 	uint length = 0L;
 
-	for (i = 0; i < msg->hdr.total_dfields; i++)
-		length += msg->dfield[i].length;
+	for (i = 0; i < msg->hdr.total_dfields; i++) {
+		if (msg->dfield[i].length > 0 && msg->dfield[i].offset + msg->dfield[i].length > length)
+			length = msg->dfield[i].offset + msg->dfield[i].length;
+	}
 	return length;
 }
 

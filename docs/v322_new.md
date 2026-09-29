@@ -719,6 +719,14 @@
   base format's own, so a message carrying a large attachment
   survives a pack. MIME attachments are stored base64-encoded, so
   the old limit discarded attachments larger than about 12MB
+- Message data blocks are now reference-counted over the message's
+  whole data, matching how they are allocated. Previously the block a
+  signature (message tail) spilled into was never freed on delete,
+  and after `fixsmb` or `smbutil p`, deleting a message could free
+  blocks still in use, which a new message could then overwrite.
+  `chksmb` now reports such blocks as "Misallocated Active Data
+  Blocks", which `fixsmb` repairs; check self-packing bases (the mail
+  base in particular) with `chksmb` after upgrading (issue #1253)
 
 ## sexyz (X/Y/ZMODEM file transfer)
 
