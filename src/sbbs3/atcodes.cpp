@@ -51,6 +51,7 @@ struct atcode_format {
 	bool doubled = false;
 	bool thousep = false;       // thousands-separated
 	bool uppercase = false;
+	bool lowercase = false;
 	bool width_specified = false;
 	char* parse(char* sp) {
 		char* p;
@@ -61,6 +62,8 @@ struct atcode_format {
 				thousep = true;
 			if (strchr(p, 'U') != NULL)
 				uppercase = true;
+			if (strchr(p, 'D') != NULL)
+				lowercase = true;
 			if (strchr(p, 'L') != NULL)
 				align = left;
 			else if (strchr(p, 'R') != NULL)
@@ -90,6 +93,8 @@ struct atcode_format {
 			thousep = true;
 		else if ((p = strstr(sp, "-U")) != NULL)
 			uppercase = true;
+		else if ((p = strstr(sp, "-D")) != NULL)
+			lowercase = true;
 		else if ((p = strstr(sp, "->")) != NULL)  /* wrap */
 			truncated = false;
 		if (p != NULL) {
@@ -194,10 +199,17 @@ int sbbs_t::show_atcode(const char *instr, uint cols, JSObject* obj)
 		cp = upper;
 	}
 
+	char lower[128];
+	if (fmt.lowercase) {
+		SAFECOPY(lower, cp);
+		strlwr(lower);
+		cp = lower;
+	}
+
 	if (p == NULL || fmt.truncated == false || (fmt.width_specified == false && fmt.align == fmt.none))
 		fmt.disp_len = strlen(cp);
 
-	if (fmt.uppercase && fmt.align == fmt.none)
+	if ((fmt.uppercase || fmt.lowercase) && fmt.align == fmt.none)
 		fmt.align = fmt.left;
 
 	if (fmt.truncated && strchr(cp, '\n') == NULL) {
@@ -425,6 +437,13 @@ const char* sbbs_t::formatted_atcode(const char* sp, char* str, size_t maxlen, i
 		SAFECOPY(upper, cp);
 		strupr(upper);
 		cp = upper;
+	}
+
+	char          lower[128];
+	if (fmt.lowercase) {
+		SAFECOPY(lower, cp);
+		strlwr(lower);
+		cp = lower;
 	}
 
 	if (p == NULL || fmt.truncated == false || (fmt.width_specified == false && fmt.align == fmt.none))
