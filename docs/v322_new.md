@@ -167,6 +167,10 @@
 - QWK packet downloads no longer skip messages when the transfer would
   exceed the user's time left, and no longer resend a stale packet after
   a failed transfer
+- A translated Quit word no longer disables a command with the same first
+  letter (e.g. Spanish "Dejar" vs. the QWK menu's Download, a transfer
+  protocol, or the file-list Delete key); Quit uses Q there instead
+  (issue #1242)
 
 ## Web Server
 
@@ -401,6 +405,8 @@
   - `UeditARSearchPrompt` (user editor's `/` AR-string search prompt)
   - `Upload`, `Download`, `Configure`, `Select`, `Pointers` (translatable
     command words)
+- Stock Spanish and French `Quit` translations changed to "Terminar" and
+  "Quitter", which no longer collide with the QWK menu's Download key
 - Changed text.dat strings:
   - `SeekPrompt` restyled to `<filename> (?=Help)` form (the key
     list moved into `SeekHelp`)
