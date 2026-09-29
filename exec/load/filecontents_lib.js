@@ -214,10 +214,13 @@ function put(path, rec)
 	if (fb === null)
 		return false;
 	try {
-		var name = file_getname(path);
-		var file = fb.get(name, FileBase.DETAIL.AUXDATA);
+		var file = fb.get(file_getname(path), FileBase.DETAIL.AUXDATA);
 		if (file === null)
 			return false;
+		// The lookup ignores case but update() does not: name the record by
+		// its stored spelling, not the one on disk (UserEdit.exe filed as
+		// useredit.exe), or update() takes the difference for a rename.
+		var name = file.name;
 		var aux = parse_aux(file);
 		if (aux === null) {
 			// Auxdata this library did not write: leave someone else's

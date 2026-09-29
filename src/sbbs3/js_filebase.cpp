@@ -1381,6 +1381,10 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	rc = JS_SUSPENDREQUEST(cx);
 	if (filename != NULL && fileobj != NULL
 	    && (p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_auxdata)) == SMB_SUCCESS) {
+		/* The lookup ignores case: carry on with the stored name, so a caller
+		   spelling it differently isn't taken as renaming the file to itself */
+		if (stricmp(filename, file.name) == 0 && strcmp(filename, file.name) != 0)
+			strcpy(filename, file.name);
 		p->smb_result = parse_file_properties(cx, fileobj, &file, &extdesc, &auxdata);
 		if (p->smb_result == SMB_SUCCESS
 		    && strcmp(filename, file.name) != 0 && smb_findfile(&p->smb, file.name, NULL) == SMB_SUCCESS) {
