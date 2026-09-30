@@ -597,9 +597,9 @@ int smb_renewfile(smb_t* smb, smbfile_t* file, int storage, const char* path)
 /****************************************************************************/
 int smb_removefile(smb_t* smb, smbfile_t* file)
 {
-	int  result;
-	int  removed = 0;
-	char fname[SMB_FILEIDX_NAMELEN + 1] = "";
+	int           result;
+	uint32_t      removed = 0;
+	fileidxrec_t* fidx;
 
 	if (file->total_hfields < 1) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s header has %u fields"
@@ -610,20 +610,47 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 	if (!smb->smbhdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
 
-	file->hdr.attr |= MSG_DELETE;
-	if ((result = smb_putmsghdr(smb, file)) != SMB_SUCCESS) {
-		smb_unlocksmbhdr(smb);
-		return result;
-	}
 	if ((result = smb_getstatus(smb)) != SMB_SUCCESS) {
 		smb_unlocksmbhdr(smb);
 		return result;
 	}
+	// Find the file's index record before changing anything
+	if ((fidx = malloc((smb->status.total_files + 1) * sizeof(*fidx))) == NULL) {
+		smb_unlocksmbhdr(smb);
+		return SMB_ERR_MEM;
+	}
+	rewind(smb->sid_fp);
+	if (fread(fidx, sizeof(*fidx), smb->status.total_files, smb->sid_fp) != smb->status.total_files) {
+		free(fidx);
+		smb_unlocksmbhdr(smb);
+		return SMB_ERR_READ;
+	}
+	for (uint32_t i = 0; i < smb->status.total_files; i++) {
+		if (fidx[i].idx.number == file->idx.number)
+			removed++;
+	}
+	if (removed < 1) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s index record %" PRIu32 " not found (%s)"
+		              , __FUNCTION__, file->idx.number, file->name == NULL ? "" : file->name);
+		free(fidx);
+		smb_unlocksmbhdr(smb);
+		return SMB_ERR_NOT_FOUND;
+	}
+
+	file->hdr.attr |= MSG_DELETE;
+	if ((result = smb_putmsghdr(smb, file)) != SMB_SUCCESS) {
+		free(fidx);
+		smb_unlocksmbhdr(smb);
+		return result;
+	}
 	if ((result = smb_open_ha(smb)) != SMB_SUCCESS) {
+		free(fidx);
 		smb_unlocksmbhdr(smb);
 		return result;
 	}
 	if ((result = smb_open_da(smb)) != SMB_SUCCESS) {
+		smb_close_ha(smb);
+		free(fidx);
 		smb_unlocksmbhdr(smb);
 		return result;
 	}
@@ -632,25 +659,11 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 	smb_close_da(smb);
 
 	// Now remove from index:
-	smb_fileidxname(file->name, fname, sizeof(fname));
 	if (result == SMB_SUCCESS) {
 		rewind(smb->sid_fp);
-		fileidxrec_t* fidx = malloc(smb->status.total_files * sizeof(*fidx));
-		if (fidx == NULL) {
-			smb_unlocksmbhdr(smb);
-			return SMB_ERR_MEM;
-		}
-		if (fread(fidx, sizeof(*fidx), smb->status.total_files, smb->sid_fp) != smb->status.total_files) {
-			free(fidx);
-			smb_unlocksmbhdr(smb);
-			return SMB_ERR_READ;
-		}
-		rewind(smb->sid_fp);
 		for (uint32_t i = 0; i < smb->status.total_files; i++) {
-			if (fidx[i].idx.number == file->idx.number) {
-				removed++;
+			if (fidx[i].idx.number == file->idx.number)
 				continue;
-			}
 			if (fwrite(fidx + i, sizeof(*fidx), 1, smb->sid_fp) != 1) {
 				safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s re-writing index"
 				              , __FUNCTION__);
@@ -658,25 +671,19 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 				break;
 			}
 		}
-		free(fidx);
 		if (result == SMB_SUCCESS) {
-			if (removed < 1) {
-				safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s name not found: %s"
-				              , __FUNCTION__, fname);
-				result = SMB_ERR_NOT_FOUND;
-			} else {
-				fflush(smb->sid_fp);
-				smb->status.total_files -= removed;
-				if (chsize(fileno(smb->sid_fp), smb->status.total_files * sizeof(*fidx)) != 0) {
-					safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s error %d truncating index"
-					              , __FUNCTION__, errno);
-					result = SMB_ERR_DELETE;
-				} else
-					result = smb_putstatus(smb);
-			}
+			fflush(smb->sid_fp);
+			smb->status.total_files -= removed;
+			if (chsize(fileno(smb->sid_fp), smb->status.total_files * sizeof(*fidx)) != 0) {
+				safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s error %d truncating index"
+				              , __FUNCTION__, errno);
+				result = SMB_ERR_DELETE;
+			} else
+				result = smb_putstatus(smb);
 		}
 	}
 
+	free(fidx);
 	smb_unlocksmbhdr(smb);
 	return result;
 }

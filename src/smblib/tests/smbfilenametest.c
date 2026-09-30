@@ -154,6 +154,27 @@ void Test_RemoveByIndexNumber(CuTest* tc)
 	smb_close(&smb);
 }
 
+/* A file with no index record loaded is refused before anything is changed */
+void Test_RemoveWithoutIndexRecordChangesNothing(CuTest* tc)
+{
+	smb_t     smb = create_case_dupes(tc);
+	smbfile_t file;
+
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS
+	                      , smb_loadfile(&smb, "A.txt", &file, file_detail_normal));
+	file.idx.number = 0;
+	CuAssertIntEquals(tc, SMB_ERR_NOT_FOUND, smb_removefile(&smb, &file));
+	CuAssertIntEquals(tc, 0, file.hdr.attr & MSG_DELETE);
+	smb_freefilemem(&file);
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_getstatus(&smb));
+	CuAssertIntEquals(tc, 3, smb.status.total_files);
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS
+	                      , smb_loadfile(&smb, "A.txt", &file, file_detail_normal));
+	CuAssertIntEquals(tc, 0, file.hdr.attr & MSG_DELETE);
+	smb_freefilemem(&file);
+	smb_close(&smb);
+}
+
 CuSuite* SmbFileNameTestSuite(void)
 {
 	CuSuite* suite = CuSuiteNew();
@@ -162,6 +183,7 @@ CuSuite* SmbFileNameTestSuite(void)
 	SUITE_ADD_TEST(suite, Test_FindOtherSkipsOnlyTheNamedFile);
 	SUITE_ADD_TEST(suite, Test_RemoveOnlyTheFilesOwnRecord);
 	SUITE_ADD_TEST(suite, Test_RemoveByIndexNumber);
+	SUITE_ADD_TEST(suite, Test_RemoveWithoutIndexRecordChangesNothing);
 	return suite;
 }
 
