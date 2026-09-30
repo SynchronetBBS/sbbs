@@ -4,7 +4,7 @@
 4CÀKÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ0BÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜK
 BÛßHCN¢BßÛK
 BÛHC /W NCWhisper to another @UserNoun@W @POS:39@BÛK
-BÛHC /L NC@List@ all node activityW @POS:39@BÛK
+BÛHC /L NC@List@ all @Node@ activityW @POS:39@BÛK
 BÛHC /* NC@List@ chat channelsW @POS:39@BÛK
 BÛHC /# NC@Change@ chat channel number @POS:39@BÛK
 BÛ HC/E NC@Toggle@ echo statusWC @POS:39@BÛK

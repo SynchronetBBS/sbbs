@@ -4,8 +4,8 @@
 C¿KƒƒƒƒƒƒƒƒƒƒƒŸ0B‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹
 €ﬂWâBﬂ4 HWJoin a Chat NBﬂWâBﬂ€
 € HCJY NCJoin/initiate multinode chatWÖB€
-€ HCPNC Join/start private node/node chatG B€
-€ HCCY NC@Chat@ with Sysop: HY@SYSAVAIL-L####@NG B€
+€ HCPNC Join/start private @Node@/@Node@ chatG B€
+€ HCCY NC@Chat@ with @Sysop@: HY@SYSAVAIL-L####@NG B€
 € HCTY NCTalk with The Guru (AI)WäB€
 € HCFY NCFinger (query) remote @UserNoun@/systemW B€
 € HCRY NCInternet Relay Chat (IRC)WàB€

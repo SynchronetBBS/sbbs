@@ -8,6 +8,6 @@
 N  H4C³ [YZC]Set Scan Areas Y  CÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄY C  [YVC]ote           ³
 0  4³ [Y$C]Time Bank       [YGC]oodbye          [Y/GC]oodbye FastY C [YUC]sers w/Access ³
 0  4³ [Y/LC]ist Nodes      [YWC]ho's online     [YCC]hat @MenuNoun@ @POS:60@[YXC]pert Toggle @POS:77@³
-0  4³ [Y!C]Offline @MailNoun@ @POS:24@[YEC]mail @MenuNoun@ @POS:43@[YFC]ile @MenuNoun@ @POS:60@[YQC]uit to Main @POS:77@³
+0  4³ [Y!C]Offline @MailNoun@ @POS:24@[YEC]mail @MenuNoun@ @POS:43@[YFC]ile @MenuNoun@ @POS:60@[YQC]uit to @Main@ @POS:77@³
 0  4ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 Z

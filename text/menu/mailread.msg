@@ -5,7 +5,7 @@
 €ﬂWêB≥WêBﬂ€
 €HC<CR> NC@Next@ msgW @POS:20@B≥C - @POS:25@Previous msgW @POS:39@B€
 € HC[ ]NC @Search@ ToW @POS:20@B≥HC{ }Y NC@Search@ FromW @POS:39@B€
-€ HC< > NC@Search@ Subj @POS:20@B≥ HC/NB @POS:25@C@Search@ TextW @POS:39@B€
+€ HC< > NC@Search@ Subj @POS:20@B≥ HC/NB @POS:25@C@Search@ @Text@W @POS:39@B€
 €  HCLNB  C@List@ msgs @POS:20@B≥C H!NC @POS:25@Reverse listW @POS:39@B€
 €  HCTNB  C@Next@ ten msgsB≥C HNNB @POS:25@C@Next@ unreadW @POS:39@B€
 €  HC@MSGREREAD@NB  CRe-read msg  B≥W HC@MSGREPLY@NB  C@Reply@ to msg @POS:39@B€

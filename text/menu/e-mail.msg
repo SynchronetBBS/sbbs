@@ -5,7 +5,7 @@
 €ﬂWäBﬂ€H4WSend MailNB€ﬂWäBﬂ€
 € HCSY NC@Send@ @MailNoun@ to a local @UserNoun@W @POS:39@B€
 € HCAY NC@Send@ @FileNoun@ attachmentW @POS:39@B€
-€ HCFY NC@Send@ feedback to the sysopW @POS:39@B€
+€ HCFY NC@Send@ feedback to the @Sysop@W @POS:39@B€
 € HCNY NC@Send@ NetMail (Fido/QWK/Internet)W @POS:39@B€
 €€‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹€€
 €ﬂWäBﬂH4W Read Mail NBﬂWäBﬂH4W 

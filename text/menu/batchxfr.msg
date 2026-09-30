@@ -1,6 +1,6 @@
 @TRUNCATE@NHY@HOT@N@CLEAR@
 4CÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄK¿
-C³ HYBatch @FileNoun@ Transfer @MenuNoun@ N4K³
+C³ HYBatch @FileNoun@ @Transfer@ @MenuNoun@ N4K³
 CÀKÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ0BÜÜÜÜÜÜÜÜÜÜÜ
 Ûß„ß4 HWUpload/DownloadNBÛH4WFilesNBÛß„ßÛ
 Û HYU NC@Upload@H NC@FilesNoun@ in upload queueW @POS:39@BÛ
@@ -10,6 +10,6 @@
 Û HYR NCRemove @FilesNoun@ from batch queuesGW @POS:39@BÛ
 Û HYC NCClear batch queuesWBÛ
 Û²ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ²Û
-ÛW HY@QUITCHAR@ NC@Quit@ to @FileNoun@ Transfer @MenuNoun@WB@POS:39@Û
+ÛW HY@QUITCHAR@ NC@Quit@ to @FileNoun@ @Transfer@ @MenuNoun@WB@POS:39@Û
 ÛÛÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÛÛ
 Z

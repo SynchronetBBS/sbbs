@@ -9,6 +9,6 @@
 ÛW HCBNC Batch @FileNoun@ flagging @POS:28@state:W HY@FILEFLAG|L3@NG BÛ
 Û HCEY NCExtended descriptions  state: HY@FILEDESC|L3@N BÛ
 Û²ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ²Û
-Û HCQY NC@Quit@ to @FileNoun@ Transfer @MenuNoun@W @POS:39@BÛ
+Û HCQY NC@Quit@ to @FileNoun@ @Transfer@ @MenuNoun@W @POS:39@BÛ
 ÛÛÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÛÛ
 Z

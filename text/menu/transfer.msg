@@ -1,7 +1,7 @@
 @TRUNCATE@@INCLUDE:%zmenu/head.msg@hy@HOT@n
 4b0€€€€€4 hwList/Flag Files nb€€€€€€€4 hwFile Area Selection nb€€€€€€€€€4 hwFile Search  nb€€€€€€
 €ò€ò€ò€
-€  hyL nc@List@ @FilesNoun@ in dir @POS:27@b€ hyJ ncJump to new @FileNoun@ area b€ @POS:56@hyF nc@Find@ text in descrip b€
+€  hyL nc@List@ @FilesNoun@ in dir @POS:27@b€ hyJ ncJump to new @FileNoun@ @Area@ b€ @POS:56@hyF nc@Find@ @Text@ in descrip b€
 €  hyN nc@New@ @FileNoun@ scan @POS:27@b€ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ€ @POS:56@hyS nc@Search@ for filename @POS:79@b€
 €  hyE ncExtended @FileNoun@ info @POS:27@b€ @POS:34@hy* nc@List@ directories b€ @POS:79@€
 €ò€Ñhy/* nc@List@ libraries @POS:53@b€€€€€€4 hwOther Commands nb€€€€€
@@ -10,8 +10,8 @@
    hyD nc@Download@ @FileNoun@ @POS:27@b€ @POS:53@€ @POS:56@hyR ncRemove/edit @FileNoun@
    hyU nc@Upload@ @FileNoun@ @POS:27@b€€€€€€€€€€4 hwGo to nb€€€€€€€€€€ @POS:56@hyI ncInformation
   hy/D nc@Download@ from @UserNoun@ @POS:27@b€ @POS:53@€ @POS:56@hyV nc@View@ @FileNoun@ contents
-  hy/U nc@Upload@ to @UserNoun@ @POS:27@b€ hyQ ncMain/@MessageNoun@ section @POS:53@b€ hy/L ncNode activity
-   hyZ nc@Upload@ to sysop @POS:27@b€ hyC ncChat section @POS:53@b€ hy^K ncCtrl-key @MenuNoun@
-   hyB ncBatch/Bi-dir xfers   b€ hyT ncTemp dir/Archive cmds b€  hyO ncLogoff BBS (or hy/Onc)
-b ò€ò€  @SYSONLY@hy!nc Sysop Menu@SYSONLY@
+  hy/U nc@Upload@ to @UserNoun@ @POS:27@b€ hyQ nc@Main@/@MessageNoun@ @Section@ @POS:53@b€ hy/L nc@Node@ activity
+   hyZ nc@Upload@ to @Sysop@ @POS:27@b€ hyC ncChat @Section@ @POS:53@b€ hy^K ncCtrl-key @MenuNoun@
+   hyB ncBatch/Bi-dir xfers   b€ hyT ncTemp dir/Archive cmds b€  hyO nc@Logoff@ BBS (or hy/Onc)
+b ò€ò€  @SYSONLY@hy!nc @Sysop@ Menu@SYSONLY@
 @HOT:OFF@@INCLUDE:%zmenu/tail.msg@

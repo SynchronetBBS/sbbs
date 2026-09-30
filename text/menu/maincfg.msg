@@ -9,6 +9,6 @@
 Û HCR NCReload new-scan config & pointers WBÛ
 Û HCW NCSave new-scan config & pointers   WBÛ
 Û²ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ²Û
-Û HCQ NC@Quit@ to Main/@MessageNoun@ @MenuNoun@ @POS:39@WBÛ
+Û HCQ NC@Quit@ to @Main@/@MessageNoun@ @MenuNoun@ @POS:39@WBÛ
 ÛÛÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÛÛ
 Z
