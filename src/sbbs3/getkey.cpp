@@ -498,35 +498,6 @@ cmd_keys_scope::~cmd_keys_scope()
 }
 
 /****************************************************************************/
-/* Returns the (possibly translated) Quit key, unless it collides with one	*/
-/* of the command keys in 'cmd_keys', in which case 'Q' is returned.		*/
-/****************************************************************************/
-char sbbs_t::unique_quit_key(const char* cmd_keys)
-{
-	char quit = quit_key();
-
-	if (quit != 'Q' && (quit == '\0' || strchr(cmd_keys, quit) != NULL)
-	    && strchr(cmd_keys, 'Q') == NULL)
-		return 'Q';
-	return quit;
-}
-
-/****************************************************************************/
-/* Appends the unique Quit key to 'keys' (for getkeys) and returns it		*/
-/****************************************************************************/
-char sbbs_t::append_quit_key(char* keys, size_t size)
-{
-	char   quit = unique_quit_key(keys);
-	size_t len = strlen(keys);
-
-	if (len + 1 < size) {
-		keys[len] = quit;
-		keys[len + 1] = '\0';
-	}
-	return quit;
-}
-
-/****************************************************************************/
 /* Prints PAUSE message and waits for a key stoke                           */
 /* Returns false if aborted by user											*/
 /****************************************************************************/

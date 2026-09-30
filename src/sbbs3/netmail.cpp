@@ -230,10 +230,11 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 		{ /* Remote */
 			char keys[128];
 			xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
-			SAFECAT(keys, quit_key(str));
+			cmd_keys_scope keys_scope(this, keys);
+			add_quit_key(keys, sizeof keys);
 			mnemonics(text[ProtocolOrQuit]);
 			ch = (char)getkeys(keys, 0);
-			if (ch == quit_key() || sys_status & SS_ABORT) {
+			if (is_quit_key(ch) || sys_status & SS_ABORT) {
 				bputs(text[Aborted]);
 				return false;
 			}
@@ -1093,10 +1094,11 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 		{ /* Remote */
 			char keys[128];
 			xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
-			SAFECAT(keys, quit_key(str));
+			cmd_keys_scope keys_scope(this, keys);
+			add_quit_key(keys, sizeof keys);
 			mnemonics(text[ProtocolOrQuit]);
 			ch = (char)getkeys(keys, 0);
-			if (ch == quit_key() || sys_status & SS_ABORT) {
+			if (is_quit_key(ch) || sys_status & SS_ABORT) {
 				bputs(text[Aborted]);
 				strListFree(&rcpt_list);
 				(void)remove(msgpath);

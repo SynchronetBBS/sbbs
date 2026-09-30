@@ -262,16 +262,20 @@ void sbbs_t::new_scan_ptr_cfg()
 			bprintf(text[CfgGrpLstFmt], i + 1, cfg.grp[usrgrp[i]]->lname);
 		}
 		sync();
+		snprintf(keys, sizeof keys, "%c", all_key());
+		cmd_keys_scope keys_scope(this, keys);
+		add_quit_key(keys, sizeof keys);
 		mnemonics(text[WhichOrAll]);
-		snprintf(keys, sizeof keys, "%c%c", all_key(), quit_key());
 		s = getkeys(keys, usrgrps);
 		if (!s || s == -1 || s == quit_key())
 			break;
 		if (s == all_key()) {
+			SAFECOPY(keys, text[DateLastKeys]);
+			cmd_keys_scope date_keys_scope(this, keys);
+			add_quit_key(keys, sizeof keys);
 			mnemonics(text[SetMsgPtrPrompt]);
-			SAFEPRINTF2(keys, "%s%c", text[DateLastKeys], quit_key());
 			s = getkeys(keys, 9999);
-			if (s == -1 || s == quit_key())
+			if (s == -1 || (s != 0 && s == quit_key()))
 				continue;
 			if (s == text[DateLastKeys][0]) {
 				t = time(NULL);
@@ -329,8 +333,10 @@ void sbbs_t::new_scan_ptr_cfg()
 				        , t ? timestr(t) : text[All], nulstr);
 			}
 			sync();
+			snprintf(keys, sizeof keys, "%c", all_key());
+			cmd_keys_scope keys_scope(this, keys);
+			add_quit_key(keys, sizeof keys);
 			mnemonics(text[WhichOrAll]);
-			snprintf(keys, sizeof keys, "%c%c", all_key(), quit_key());
 			s = getkeys(keys, usrsubs[i]);
 			if (sys_status & SS_ABORT) {
 				term->lncntr = 0;
@@ -339,10 +345,12 @@ void sbbs_t::new_scan_ptr_cfg()
 			if (s == -1 || !s || s == quit_key())
 				break;
 			if (s == all_key()) {    /* The entire group */
+				SAFECOPY(keys, text[DateLastKeys]);
+				cmd_keys_scope date_keys_scope(this, keys);
+				add_quit_key(keys, sizeof keys);
 				mnemonics(text[SetMsgPtrPrompt]);
-				SAFEPRINTF2(keys, "%s%c", text[DateLastKeys], quit_key());
 				s = getkeys(keys, 9999);
-				if (s == -1 || s == quit_key())
+				if (s == -1 || (s != 0 && s == quit_key()))
 					continue;
 				if (s == text[DateLastKeys][0]) {
 					t = l ? l : time(NULL);
@@ -378,10 +386,12 @@ void sbbs_t::new_scan_ptr_cfg()
 			}
 			else {
 				j = (s & ~0x80000000L) - 1;
+				SAFECOPY(keys, text[DateLastKeys]);
+				cmd_keys_scope date_keys_scope(this, keys);
+				add_quit_key(keys, sizeof keys);
 				mnemonics(text[SetMsgPtrPrompt]);
-				SAFEPRINTF2(keys, "%s%c", text[DateLastKeys], quit_key());
 				s = getkeys(keys, 9999);
-				if (s == -1 || s == quit_key())
+				if (s == -1 || (s != 0 && s == quit_key()))
 					continue;
 				if (s == text[DateLastKeys][0]) {
 					t = getmsgtime(usrsub[i][j], subscan[usrsub[i][j]].ptr);
@@ -452,11 +462,13 @@ void sbbs_t::new_scan_cfg(uint misc)
 				        text[ToYouOnly] : text[On] : text[Off]);
 			}
 			sync();
+			snprintf(keys, sizeof keys, "%c", all_key());
+			cmd_keys_scope keys_scope(this, keys);
+			add_quit_key(keys, sizeof keys);
 			if (misc & SUB_CFG_NSCAN)
 				mnemonics(text[NScanCfgWhichSub]);
 			else
 				mnemonics(text[SScanCfgWhichSub]);
-			snprintf(keys, sizeof keys, "%c%c", all_key(), quit_key());
 			s = getkeys(keys, usrsubs[i]);
 			if (sys_status & SS_ABORT) {
 				term->lncntr = 0;

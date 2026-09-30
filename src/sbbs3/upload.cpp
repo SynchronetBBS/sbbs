@@ -456,15 +456,14 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 	} else {
 		xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
 		sync();
-		if (dirnum == cfg.user_dir || !cfg.max_batup)  /* no batch user to user xfers */
-			mnemonics(text[ProtocolOrQuit]);
-		else {
-			mnemonics(text[ProtocolBatchOrQuit]);
+		bool batch = !(dirnum == cfg.user_dir || !cfg.max_batup);  /* no batch user to user xfers */
+		if (batch)
 			SAFECAT(keys, "B");
-		}
-		char quit = append_quit_key(keys, sizeof keys);
+		cmd_keys_scope keys_scope(this, keys);
+		add_quit_key(keys, sizeof keys);
+		mnemonics(text[batch ? ProtocolBatchOrQuit : ProtocolOrQuit]);
 		ch = (char)getkeys(keys, 0);
-		if (ch == quit || (sys_status & SS_ABORT))
+		if (is_quit_key(ch) || (sys_status & SS_ABORT))
 			result = false;
 		else if (ch == 'B') {
 			if (batup_total() >= cfg.max_batup)
@@ -577,11 +576,12 @@ bool sbbs_t::recvfile(char *fname, char prot, bool autohang)
 		ch = toupper(prot);
 	else {
 		xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
-		char quit = append_quit_key(keys, sizeof keys);
+		cmd_keys_scope keys_scope(this, keys);
+		add_quit_key(keys, sizeof keys);
 		mnemonics(text[ProtocolOrQuit]);
 		ch = (char)getkeys(keys, 0);
 
-		if (ch == quit || sys_status & SS_ABORT)
+		if (is_quit_key(ch) || sys_status & SS_ABORT)
 			return false;
 	}
 	i = protnum(ch, XFER_UPLOAD);

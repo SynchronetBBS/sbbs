@@ -507,6 +507,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 			break;
 
 	term->cond_blankline();
+	cmd_keys_scope keys_scope(this, "?SP-TBDEVRM");
 	while (online) {
 		bprintf(text[BatchFlagPrompt]
 		        , ulib + 1
@@ -522,7 +523,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 				pause();
 			return 2;
 		}
-		if (ch == unique_quit_key("?SP-TBDEVRM") || sys_status & SS_ABORT)
+		if (is_quit_key(ch) || sys_status & SS_ABORT)
 			return -1;
 		if (ch == 'S')
 			return 0;
@@ -845,19 +846,20 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 			SAFECOPY(str, "VDERN\r");
 			if (m > 1)
 				SAFECAT(str, "P-\b");
+			int prompt = UserRemoveFilePrompt;
 			if (dir_op(dirnum)) {
-				mnemonics(text[SysopRemoveFilePrompt]);
+				prompt = SysopRemoveFilePrompt;
 				SAFECAT(str, "FMC");
 			}
 			else if (useron.exempt & UEXEMPT_REMOVE_FILES) {
-				mnemonics(text[RExemptRemoveFilePrompt]);
+				prompt = RExemptRemoveFilePrompt;
 				SAFECAT(str, "M");
 			}
-			else
-				mnemonics(text[UserRemoveFilePrompt]);
-			char quit = append_quit_key(str, sizeof str);
+			cmd_keys_scope keys_scope(this, str);
+			add_quit_key(str, sizeof str);
+			mnemonics(text[prompt]);
 			char key = getkeys(str, 0);
-			if (key == quit) {
+			if (is_quit_key(key) || sys_status & SS_ABORT) {
 				found = -1;
 				done = 1;
 				break;
@@ -1031,14 +1033,15 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 			current_file = f;
 			xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
 			current_file = nullptr;
-			sync();
-			mnemonics(text[ProtocolBatchQuitOrNext]);
 			SAFECAT(keys, "BN\r");
-			SAFECAT(keys, quit_key(str));
 			if (m > 1)
 				SAFECAT(keys, "\b-");
+			cmd_keys_scope keys_scope(this, keys);
+			add_quit_key(keys, sizeof keys);
+			sync();
+			mnemonics(text[ProtocolBatchQuitOrNext]);
 			ch = (char)getkeys(keys, 0);
-			if (ch == quit_key()) {
+			if (is_quit_key(ch) || sys_status & SS_ABORT) {
 				found = -1;
 				done = 1;
 			}

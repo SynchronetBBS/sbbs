@@ -472,7 +472,8 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del, bool 
 					if (length > 0L && text[DownloadAttachedFileQ][0] && yesno(str)) {
 						{   /* Remote User */
 							xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
-							SAFECAT(keys, quit_key(str));
+							cmd_keys_scope keys_scope(this, keys);
+							add_quit_key(keys, sizeof keys);
 							mnemonics(text[ProtocolOrQuit]);
 							ch = (char)getkeys(keys, 0);
 							i = protnum(ch, XFER_DOWNLOAD);

@@ -639,7 +639,6 @@ public:
 	char	cur_cmd_keys[128]{};
 	bool	cmd_keys_declared = false;
 	char	cur_quit_key = 0;
-	char*	quit_key(char* str) { str[0] = quit_key(); str[1] = '\0'; return str; }
 	char	all_key(void) { return toupper((uchar)*text[All]); }
 	char	list_key(void) { return toupper((uchar)*text[List]); }
 	char	next_key(void) { return toupper((uchar)*text[Next]); }
@@ -1043,8 +1042,6 @@ public:
 	/* getkey.cpp */
 	char	getkey(int mode = K_NONE);
 	int		getkeys(const char *str, uint max, int mode = K_UPPER);
-	char	unique_quit_key(const char* cmd_keys);
-	char	append_quit_key(char* keys, size_t size);
 	bool	ungetkey(char ch, bool insert = false);		/* Places 'ch' into the input buffer    */
 	bool	ungetkeys(const char* str, bool insert = false);
 	char	question[MAX_TEXTDAT_ITEM_LEN+1]{};

@@ -432,10 +432,11 @@ bool sbbs_t::qwk_download()
 			if (prot >= cfg.total_prots) {
 				char keys[128];
 				xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
-				char quit = append_quit_key(keys, sizeof keys);
+				cmd_keys_scope keys_scope(this, keys);
+				add_quit_key(keys, sizeof keys);
 				mnemonics(text[ProtocolOrQuit]);
 				char ch = (char)getkeys(keys, 0);
-				if (ch != quit && !(sys_status & SS_ABORT) && online)
+				if (!is_quit_key(ch) && !(sys_status & SS_ABORT) && online)
 					prot = protnum(ch, XFER_DOWNLOAD);
 			}
 			if (prot < cfg.total_prots) {
@@ -468,10 +469,11 @@ bool sbbs_t::qwk_upload()
 	delfiles(cfg.temp_dir, ALLFILES);
 	bprintf(text[UploadingREP], cfg.sys_id);
 	xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
-	char quit = append_quit_key(keys, sizeof keys);
+	cmd_keys_scope keys_scope(this, keys);
+	add_quit_key(keys, sizeof keys);
 	mnemonics(text[ProtocolOrQuit]);
 	char ch = (char)getkeys(keys, 0);
-	if (ch == quit || (sys_status & SS_ABORT) || !online)
+	if (is_quit_key(ch) || (sys_status & SS_ABORT) || !online)
 		return false;
 	int prot = protnum(ch, XFER_UPLOAD);
 	if (prot >= cfg.total_prots)
