@@ -1,4 +1,4 @@
-lnhc@FileNoun@ Listing:
+@TRUNCATE@lnhc@FileNoun@ Listing:
 ‹ncÚÄÄÄÄÄÄÄÄIf nhc+ ncthen extended description exists, but not displayed
 ‹³ÚÄÄÄÄÄÄÄ@FileNoun@ flag for fast tagging
 ÚFilename   ³³    ÚÄÄ@FileNoun@ size

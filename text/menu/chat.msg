@@ -1,4 +1,4 @@
-NHC@HOT@N@CLEAR@
+@TRUNCATE@NHC@HOT@N@CLEAR@
 4CÚÄÄÄÄÄÄÄÄÄÄÄK¿
 C³ HYChat @MenuNoun@ N4K³
 CÀKÄÄÄÄÄÄÄÄÄÄÄÙ0BÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ

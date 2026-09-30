@@ -1,4 +1,4 @@
-NHC@HOT@N@CLEAR@
+@TRUNCATE@NHC@HOT@N@CLEAR@
 4CÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄK¿
 C³ HYMain Section Information @MenuNoun@ N4K³
 CÀKÄ0Bßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß4KÙ0BÜÜÜÜÜÜ

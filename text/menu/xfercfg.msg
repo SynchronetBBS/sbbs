@@ -1,4 +1,4 @@
-NHC@HOT@N@CLEAR@
+@TRUNCATE@NHC@HOT@N@CLEAR@
 4CÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄK¿
 C³ HY@FileNoun@ Configuration N4K³
 CÀKÄ0Bßßßßßßßßßßßßßßßßßßß4KÙ0BÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ

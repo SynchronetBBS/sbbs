@@ -1,4 +1,4 @@
-@INCLUDE:%zmenu/head.msg@hc@HOT@n
+@TRUNCATE@@INCLUDE:%zmenu/head.msg@hc@HOT@n
  bşhş wRead/Post @MessagesNoun@ @POS:29@nbşhş w@MessageNoun@ Area Selection @POS:57@nbşhş wElectronic @MailNoun@
 bÚnbÄÄ¿–hÚnbÄÄ¿—hÚnbÄÄ¿
 ³ hcNnb³ w@New@ message scan @POS:28@b³ hcJnb³ wJump to new msg area @POS:56@b³ hcEnb³ w@Read@/@Send@ E-mail

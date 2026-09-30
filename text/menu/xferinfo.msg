@@ -1,4 +1,4 @@
-NHY@HOT@N@CLEAR@
+@TRUNCATE@NHY@HOT@N@CLEAR@
 4CÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄK¿
 C³ HY@FileNoun@ Section Information @MenuNoun@ N4K³
 CÀKÄ0Bßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß4KÙßß0BÜÜÜÜ

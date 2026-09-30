@@ -1,4 +1,4 @@
-NHC@HOT@N@CLEAR@
+@TRUNCATE@NHC@HOT@N@CLEAR@
 4CÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄK¿
 C³ HYElectronic @MailNoun@ @MenuNoun@ N4K³
 CÀKÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ0BÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ

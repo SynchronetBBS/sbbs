@@ -1,4 +1,4 @@
-NHY@HOT@N@CLEAR@
+@TRUNCATE@NHY@HOT@N@CLEAR@
 4CзддддддддддддддддддддддддддK©
 CЁ HYBatch @FileNoun@ Transfer @MenuNoun@ N4KЁ
 CюKдддддддддддддддддддддддддды0Bэээээээээээ

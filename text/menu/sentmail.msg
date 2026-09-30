@@ -1,4 +1,4 @@
-N@CLEAR@HC@HOT@
+@TRUNCATE@N@CLEAR@HC@HOT@
 N4CзддддддддддддддддддддддддддддK©
 CЁ  HYReading Sent @MailNoun@ @MenuNoun@ @POS:30@N4KЁ
 CюKдддддддддддддддддддддддддддды0Bэээээээээ

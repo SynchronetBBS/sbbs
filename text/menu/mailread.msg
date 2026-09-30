@@ -1,4 +1,4 @@
-N@CLEAR@HC@HOT@
+@TRUNCATE@N@CLEAR@HC@HOT@
 N4CÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄK¿
 C³  HYReading @MailNoun@ @MenuNoun@ @POS:25@N4K³
 CÀKÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ0BÜÜÜÜÜÜÜÜÜÜÜÜÜÜ

@@ -1,4 +1,4 @@
-NHC@HOT@N@CLEAR@
+@TRUNCATE@NHC@HOT@N@CLEAR@
 4CÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄK¿
 C³ HY@MessageNoun@ Scan Configuration N4K³
 CÀKÄ0Bßßßßßßßßßßßßßßßßßßßßßßßßßßß4KÙ0BÜÜÜÜÜÜÜÜÜ

@@ -1,4 +1,4 @@
-@INCLUDE:%zmenu/head.msg@hy@HOT@n
+@TRUNCATE@@INCLUDE:%zmenu/head.msg@hy@HOT@n
 4b0ЫЫЫЫЫ4 hwList/Flag Files nbЫЫЫЫЫЫЫ4 hwFile Area Selection nbЫЫЫЫЫЫЫЫЫ4 hwFile Search  nbЫЫЫЫЫЫ
 ЫЫЫЫ
 Ы  hyL nc@List@ files in dir @POS:27@bЫ hyJ ncJump to new file area bЫ @POS:56@hyF nc@Find@ text in descrip bЫ
