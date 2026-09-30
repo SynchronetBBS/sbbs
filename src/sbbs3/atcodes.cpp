@@ -1301,7 +1301,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		i = atoi(sp + 4);
 		if (i >= 1)  // Convert to 0-based
 			i--;
-		for (l = i - term->column; l > 0; l--)
+		for (l = (long)i - (long)term->column; l > 0; l--)
 			outchar(' ');
 		return nulstr;
 	}

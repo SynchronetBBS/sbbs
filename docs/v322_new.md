@@ -432,6 +432,8 @@
   now searched across all extensions before the stock dir, and
   mods width-variant files (e.g. `.40col.ans`) no longer require
   a plain same-extension mods file to exist (issue #1182)
+- Fixed: `@POS:n@` printed a near-endless run of spaces when the cursor
+  was already past column n (64-bit *nix builds, since v3.21c)
 - Fixed: the Unicode @-codes (`@U+XXXX@`, `@CHECKMARK@`,
   `@ELLIPSIS@`, `@COPY@`, `@SOUNDCOPY@`, `@REGISTERED@`,
   `@TRADEMARK@`, `@DEGREE_C@`, `@DEGREE_F@`, `@WIDE:text@`) now
