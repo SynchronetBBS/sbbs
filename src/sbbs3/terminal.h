@@ -58,6 +58,7 @@ public:
 	unsigned tabstop{8};               /* Current symmetric-tabstop (size) */
 	unsigned lastcrcol{0};             /* Column when last CR occured (previously lastlinelen) */
 	unsigned cterm_version{0};	   /* (MajorVer*1000) + MinorVer */
+	unsigned cterm_fork{0};	   /* Third component of a forked CTerm's version report, 0 if not a fork */
 	bool     audio_apc{false};	   /* Terminal answered the audio feature query */
 	bool     audio_files{false};	   /* Terminal can decode audio files (libsndfile) */
 	unsigned lncntr{0};                /* Line Counter - for PAUSE */
@@ -157,7 +158,7 @@ public:
 	// Create from Terminal*, ie: Update
 	Terminal(Terminal *t) : row{t->row}, column{t->column},
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastcrcol{t->lastcrcol}, 
-	    cterm_version{t->cterm_version}, audio_apc{t->audio_apc},
+	    cterm_version{t->cterm_version}, cterm_fork{t->cterm_fork}, audio_apc{t->audio_apc},
 	    audio_files{t->audio_files}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
 	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
 	    suspend_lbuf{t->suspend_lbuf},
@@ -180,7 +181,7 @@ public:
 	// Create from sbbsptr* and Terminal*, ie: Create a copy
 	Terminal(sbbs_t *sbbsptr, Terminal *t) : row{t->row}, column{t->column},
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastcrcol{t->lastcrcol}, 
-	    cterm_version{t->cterm_version}, audio_apc{t->audio_apc},
+	    cterm_version{t->cterm_version}, cterm_fork{t->cterm_fork}, audio_apc{t->audio_apc},
 	    audio_files{t->audio_files}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
 	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
 	    suspend_lbuf{t->suspend_lbuf},

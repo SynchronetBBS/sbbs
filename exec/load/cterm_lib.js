@@ -42,6 +42,8 @@ if(console.cterm_version === undefined || console.cterm_version < 0) {
 	if(response) {
 		da_response = response.split(/;/);
 		console.cterm_version = (parseInt(da_response[da_ver_major], 10)*1000) + parseInt(da_response[da_ver_minor], 10);
+		// A forked CTerm (e.g. TERMinator) reports a third component: its own revision
+		console.cterm_fork = da_response.length > da_ver_minor + 1 ? (parseInt(da_response[da_ver_minor + 1], 10) || 0) : 0;
 	}
 }
 

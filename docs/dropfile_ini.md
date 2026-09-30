@@ -544,7 +544,7 @@ DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for
   - `USER_ROLE` = `sysop` when the user has sysop access; otherwise `user`.
   - `X_SBBS_LEVEL` = the user's security level; see Vendor keys and MODUSER.DAT below for the other `X_SBBS_` keys.
   - `FILE_UTF8` and `COMM_CHARSET` as described under Encodings below, and `TERM_CHARSET` from the user's terminal character set, the same value Synchronet writes as `chars` in the node's `terminal.ini`, with `PETSCII` in place of its `CBM-ASCII`.
-  - `TERM_CTERM` from the CTerm revision Synchronet detected. Synchronet stores only `<major>.<minor>` today, so it can't write a fork's third field until #1250 is fixed.
+  - `TERM_CTERM` from the CTerm revision Synchronet detected, including a fork's third field (`console.cterm_fork`, #1250).
   - `TERM_TYPE` from the user's terminal type, the same value Synchronet writes as `type` in the node's `terminal.ini`, in lowercase and with `RIP` written as `ansi`; `TERM_RIP` when that type is `RIP`, with the version from the logon detection reply, or `unknown` when RIP was set manually; and `TERM_BRIGHT_BG` from `ICE_COLOR`, whether auto-detected or set manually, and `TERM_MONO=1` when the settings have `ANSI` without `COLOR` (XTRN.DAT's `Mono`).
   - `TERM_DOORWAY` when the terminal identified itself as CTerm.
   - `TERM_SIXEL` for CTerm from its device attribute 4, as Synchronet's JavaScript library `cterm_lib.js` already does. Synchronet sends `CSI c` at logon but parses only CTerm's reply, so other terminals get the key only after a to-do below.

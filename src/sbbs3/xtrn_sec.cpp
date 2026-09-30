@@ -1150,7 +1150,9 @@ bool sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		snprintf(line[6], sizeof(line[6]), "%u", MAX(1, MIN(term->rows, UINT16_MAX)));
 		SAFECOPY(line[7], term->supports(ANSI) ? "Y" : "N");
 		SAFECOPY(line[8], term->supports(RIP) ? "Y" : "N");
-		if (term->cterm_version != 0)
+		if (term->cterm_fork != 0) // A forked CTerm retains its third (fork revision) component
+			snprintf(line[9], sizeof(line[9]), "%u.%u.%u", term->cterm_version / 1000, term->cterm_version % 1000, term->cterm_fork);
+		else if (term->cterm_version != 0)
 			snprintf(line[9], sizeof(line[9]), "%u.%u", term->cterm_version / 1000, term->cterm_version % 1000);
 		if (!user_is_sysop(&useron)) {
 			time_t deadline = time(NULL) + tleft;

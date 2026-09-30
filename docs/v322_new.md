@@ -714,6 +714,10 @@
   an uppercase key
 - New `console.cmd_keys` property: a script declares its menu's command
   keys so `console.quit_key` (and `@QUITCHAR@`) avoid them
+- New `console.cterm_fork` property: the third component of a
+  forked CTerm's (e.g. TERMinator's) version report, also written to the
+  `BBSDEV.DRP` drop file; `console.cterm_version` still holds the
+  CTerm version the fork was based on
 
 ## JSexec
 

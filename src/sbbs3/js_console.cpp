@@ -47,6 +47,7 @@ enum {
 	, CON_PROP_CHARSET
 	, CON_PROP_UNICODE_ZEROWIDTH
 	, CON_PROP_CTERM_VERSION
+	, CON_PROP_CTERM_FORK
 	, CON_PROP_AUDIO_FILES
 	, CON_PROP_WORDWRAP
 	, CON_PROP_QUESTION
@@ -164,6 +165,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case CON_PROP_CTERM_VERSION:
 			val = sbbs->term->cterm_version;
+			break;
+		case CON_PROP_CTERM_FORK:
+			val = sbbs->term->cterm_fork;
 			break;
 		case CON_PROP_AUDIO_FILES:
 			*vp = BOOLEAN_TO_JSVAL(sbbs->term->audio_files);
@@ -389,6 +393,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_CTERM_VERSION:
 			sbbs->term->cterm_version = val;
 			break;
+		case CON_PROP_CTERM_FORK:
+			sbbs->term->cterm_fork = val;
+			break;
 		case CON_PROP_MAX_GETKEY_INACTIVITY:
 			sbbs->cfg.max_getkey_inactivity = (uint16_t)val;
 			break;
@@ -493,6 +500,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "charset", CON_PROP_CHARSET, JSPROP_ENUMERATE | JSPROP_READONLY, 31702},
 	{   "unicode_zerowidth", CON_PROP_UNICODE_ZEROWIDTH, CON_PROP_FLAGS, 320},
 	{   "cterm_version", CON_PROP_CTERM_VERSION, CON_PROP_FLAGS, 317},
+	{   "cterm_fork", CON_PROP_CTERM_FORK, CON_PROP_FLAGS, 322},
 	{   "audio_files", CON_PROP_AUDIO_FILES, JSPROP_ENUMERATE | JSPROP_READONLY, 322},
 	{   "max_getkey_inactivity", CON_PROP_MAX_GETKEY_INACTIVITY, CON_PROP_FLAGS, 320},
 	{   "inactivity_hangup", CON_PROP_MAX_GETKEY_INACTIVITY, 0, 31401},                  // alias
@@ -558,7 +566,9 @@ static const char*        con_prop_desc[] = {
 	, "Terminal type (i.e. 'ANSI', 'RIP', 'PETSCII', or 'DUMB')"
 	, "Terminal character set (i.e. 'UTF-8', 'CP437', 'CBM-ASCII', or 'US-ASCII')"
 	, "Detected width of 'ZERO-WIDTH' UNICODE characters, in columns (either 0 or 1)"
-	, "Detected CTerm (SyncTERM) version as an integer > 1000 where major version is cterm_version / 1000 and minor version is cterm_version % 1000"
+	, "Detected CTerm (SyncTERM) version as an integer > 1000 where major version is cterm_version / 1000 and minor version is cterm_version % 1000 "
+	"(for a forked CTerm, this is the version of CTerm it was forked from; see <tt>cterm_fork</tt>)"
+	, "Detected CTerm fork revision: the third component of a forked CTerm's version report (e.g. 4 for a reported version of 1.332.4), or 0 if the terminal is not a CTerm fork"
 	, "Terminal can decode audio files (libsndfile present in the client)"
 	, "Number of seconds before disconnection due to user/keyboard inactivity (in getkey/getstr)"
 	, "Number of seconds before warning the user of pending disconnection due to user/keyboard inactivity (or 0 if disabled)"

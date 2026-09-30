@@ -4391,6 +4391,7 @@ void sbbs_t::reset_logon_vars(void)
 		term->cols = startup->default_term_width;
 		term->lncntr = 0;
 		term->cterm_version = 0;
+		term->cterm_fork = 0;
 		term->audio_apc = false;
 		term->audio_files = false;
 		term->lbuflen = 0;

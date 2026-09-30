@@ -656,7 +656,8 @@ bool sbbs_t::answer()
 				char*    p = strtok_r(str, "\x1b", &tokenizer);
 				unsigned cursor_pos_report = 0;
 				while (p != NULL) {
-					int x, y;
+					int      x, y;
+					unsigned fork = 0;
 
 					if (terminal[0] == 0)
 						SAFECOPY(terminal, "ANSI");
@@ -677,9 +678,14 @@ bool sbbs_t::answer()
 								unicode_zerowidth = x - 1;
 							}
 						}
-					} else if (sscanf(p, "[=67;84;101;114;109;%u;%u", &x, &y) == 2 && *lastchar(p) == 'c') {
-						lprintf(LOG_INFO, "received CTerm version report: %u.%u", x, y);
+					} else if (sscanf(p, "[=67;84;101;114;109;%u;%u;%u", &x, &y, &fork) >= 2 && *lastchar(p) == 'c') {
+						// A forked CTerm (e.g. TERMinator) reports a third component: its own revision
+						if (fork != 0)
+							lprintf(LOG_INFO, "received CTerm version report: %u.%u.%u (fork)", x, y, fork);
+						else
+							lprintf(LOG_INFO, "received CTerm version report: %u.%u", x, y);
 						term->cterm_version = (x * 1000) + y;
+						term->cterm_fork = fork;
 					} else {
 						int audio_state = termaudio_parse_audio_state(p);
 						if (audio_state >= 0) {
