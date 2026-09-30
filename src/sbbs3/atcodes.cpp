@@ -226,6 +226,12 @@ int sbbs_t::show_atcode(const char *instr, uint cols, JSObject* obj)
 		else
 			fmt.disp_len += strlen(cp) - utf8_str_count_width(cp, /* min: */ 1, /* max: */ 2, unicode_zerowidth);
 	}
+	// Text displayed in the auto-mouse hot-spot attribute is a hot-spot
+	bool     hot = hot_attr != 0 && curatr == hot_attr && *cp != '\0'
+	               && strlen(cp) < sizeof(mouse_hotspot::cmd) && strcspn(cp, " \t\r\n") == strlen(cp);
+	unsigned hot_col = term->column;
+	unsigned hot_row = term->row;
+
 	if (fmt.align == fmt.left)
 		bprintf(pmode, "%-*.*s", fmt.disp_len, fmt.disp_len, cp);
 	else if (fmt.align == fmt.right)
@@ -250,6 +256,9 @@ int sbbs_t::show_atcode(const char *instr, uint cols, JSObject* obj)
 			bprintf(pmode, "%.*s", fmt.disp_len, cp);
 	} else
 		bprintf(pmode, "%.*s", fmt.disp_len, cp);
+
+	if (hot && term->row == hot_row && term->column > hot_col)
+		term->add_hotspot(cp, hungry_hotspots, hot_col, term->column - 1, hot_row);
 
 	return len;
 }

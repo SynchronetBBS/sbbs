@@ -52,6 +52,7 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 
 	ansiParser.reset();
 	char ret = putmsgfrag(buf, mode, org_cols, obj);
+	hot_attr = 0;
 	if (ansiParser.current_state() != ansiState_none)
 		lprintf(LOG_DEBUG, "Incomplete ANSI stripped from end");
 	memcpy(rainbow, cfg.rainbow, sizeof rainbow);
