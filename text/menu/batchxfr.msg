@@ -10,6 +10,6 @@
 Û HYR NCRemove files from batch queuesGWƒBÛ
 Û HYC NCClear batch queuesWBÛ
 Û²ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ²Û
-ÛW HYQ NCQuit to File Transfer menuWB‡Û
+ÛW HY@QUITCHAR@ NC@Quit@ to File Transfer menuWB@POS:39@Û
 ÛÛÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÛÛ
 Z
