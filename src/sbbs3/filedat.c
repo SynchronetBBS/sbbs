@@ -56,6 +56,118 @@ bool findfile(scfg_t* cfg, int dirnum, const char *filename, file_t* file)
 }
 
 /****************************************************************************/
+/* Upload duplicate-check cache												*/
+/* The size and hash values of every file in each directory consulted, read	*/
+/* from that directory's index once and kept for the life of the cache		*/
+/* (e.g. one batch upload) instead of re-reading every index from disk for	*/
+/* each uploaded file. A directory is loaded the first time it's consulted.	*/
+/****************************************************************************/
+struct dupe_cache_rec {
+	uint64_t size;
+	struct hash_info hash;
+};
+
+struct dupe_cache_dir {
+	bool loaded;
+	size_t count;
+	struct dupe_cache_rec* rec;
+};
+
+struct dupe_cache {
+	int total_dirs;
+	struct dupe_cache_dir* dir;     /* indexed by dirnum */
+};
+
+dupe_cache_t* dupe_cache_create(scfg_t* cfg)
+{
+	if (cfg == NULL)
+		return NULL;
+	dupe_cache_t* cache = calloc(1, sizeof *cache);
+	if (cache == NULL)
+		return NULL;
+	cache->dir = calloc(cfg->total_dirs, sizeof *cache->dir);
+	if (cache->dir == NULL) {
+		free(cache);
+		return NULL;
+	}
+	cache->total_dirs = cfg->total_dirs;
+	return cache;
+}
+
+void dupe_cache_free(dupe_cache_t* cache)
+{
+	if (cache == NULL)
+		return;
+	for (int i = 0; i < cache->total_dirs; i++)
+		free(cache->dir[i].rec);
+	free(cache->dir);
+	free(cache);
+}
+
+/* Read the directory's file index, as findfile() does for each lookup */
+static bool dupe_cache_load(dupe_cache_t* cache, scfg_t* cfg, int dirnum)
+{
+	struct dupe_cache_dir* dir = &cache->dir[dirnum];
+	smb_t                  smb;
+
+	dir->loaded = true; /* an unreadable index is not retried: findfile() would fail the same way each time */
+	if (!smb_init_dir(cfg, &smb, dirnum))
+		return false;
+	if (smb_open_index(&smb) != SMB_SUCCESS)
+		return false;
+	off_t  len = filelength(fileno(smb.sid_fp));
+	size_t max = len > 0 ? (size_t)len / sizeof(fileidxrec_t) : 0;
+	if (max > 0 && (dir->rec = malloc(max * sizeof *dir->rec)) != NULL) {
+		rewind(smb.sid_fp);
+		while (dir->count < max) {
+			fileidxrec_t fidx;
+			if (smb_fread(&smb, &fidx, sizeof fidx, smb.sid_fp) != sizeof fidx)
+				break;
+			dir->rec[dir->count].size = smb_getfilesize(&fidx.idx);
+			dir->rec[dir->count].hash = fidx.hash;
+			dir->count++;
+		}
+	}
+	smb_close(&smb);
+	return true;
+}
+
+/* Equivalent to findfile(cfg, dirnum, NULL, file): is there a file in the directory with the same size and hash values? */
+bool dupe_cache_findfile(dupe_cache_t* cache, scfg_t* cfg, int dirnum, file_t* file)
+{
+	if (cache == NULL || cfg == NULL || file == NULL || dirnum < 0 || dirnum >= cache->total_dirs)
+		return false;
+	struct dupe_cache_dir* dir = &cache->dir[dirnum];
+	if (!dir->loaded && !dupe_cache_load(cache, cfg, dirnum))
+		return false;
+	uint64_t               size = smb_getfilesize(&file->idx);
+	if ((file->file_idx.hash.flags & SMB_HASH_MASK) == 0 && size == 0)
+		return false;
+	for (size_t i = 0; i < dir->count; i++)
+		if (smb_filehash_match(size, &file->file_idx.hash, dir->rec[i].size, &dir->rec[i].hash))
+			return true;
+	return false;
+}
+
+/* Record a file just added to the directory, so later lookups find it too */
+bool dupe_cache_addfile(dupe_cache_t* cache, int dirnum, uint64_t size, const struct hash_info* hash)
+{
+	if (cache == NULL || hash == NULL || dirnum < 0 || dirnum >= cache->total_dirs)
+		return false;
+	struct dupe_cache_dir* dir = &cache->dir[dirnum];
+	if (!dir->loaded) /* the index will be read, with this file in it, when first consulted */
+		return true;
+	struct dupe_cache_rec* rec = realloc(dir->rec, (dir->count + 1) * sizeof *rec);
+	if (rec == NULL)
+		return false;
+	dir->rec = rec;
+	rec[dir->count].size = size;
+	rec[dir->count].hash = *hash;
+	dir->count++;
+	return true;
+}
+
+/****************************************************************************/
 /* Is 'filename' (ignoring case) the name of a file other than message		*/
 /* 'number' in the directory?												*/
 /****************************************************************************/

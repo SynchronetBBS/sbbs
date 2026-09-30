@@ -383,11 +383,26 @@ bool sbbs_t::create_batchup_lst()
 /****************************************************************************/
 /* Processes files that were supposed to be received in the batch queue     */
 /****************************************************************************/
+/* Reads each directory's file index once for the whole batch (see uploadfile) */
+struct upload_dupe_cache_scope {
+	sbbs_t* sbbs;
+	upload_dupe_cache_scope(sbbs_t* sbbs) : sbbs(sbbs)
+	{
+		sbbs->upload_dupe_cache = dupe_cache_create(&sbbs->cfg);
+	}
+	~upload_dupe_cache_scope()
+	{
+		dupe_cache_free(sbbs->upload_dupe_cache);
+		sbbs->upload_dupe_cache = nullptr;
+	}
+};
+
 bool sbbs_t::process_batch_upload_queue()
 {
 	char       src[MAX_PATH + 1];
 	char       dest[MAX_PATH + 1];
 	int        uploaded = 0;
+	upload_dupe_cache_scope dupe_cache_scope(this);
 
 	str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_UPLOAD);
 	str_list_t filenames = iniGetSectionList(ini, /* prefix: */ NULL);

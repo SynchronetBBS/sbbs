@@ -40,6 +40,12 @@ DLLEXPORT time_t		lastfiletime(smb_t*); // Reads the last index record
 
 DLLEXPORT bool			findfile(scfg_t* cfg, int dirnum, const char *filename, file_t*);
 DLLEXPORT bool			findfile_other(scfg_t* cfg, int dirnum, const char *filename, uint32_t number);
+/* Upload duplicate-check cache: each directory's index read once for the life of the cache (e.g. one batch upload) */
+typedef struct dupe_cache dupe_cache_t;
+DLLEXPORT dupe_cache_t*	dupe_cache_create(scfg_t*);
+DLLEXPORT void			dupe_cache_free(dupe_cache_t*);
+DLLEXPORT bool			dupe_cache_findfile(dupe_cache_t*, scfg_t*, int dirnum, file_t*); // like findfile(cfg, dirnum, NULL, file)
+DLLEXPORT bool			dupe_cache_addfile(dupe_cache_t*, int dirnum, uint64_t size, const struct hash_info*);
 DLLEXPORT bool			loadfile(scfg_t*, int dirnum, const char* filename, file_t*, enum file_detail, int* result);
 DLLEXPORT file_t*		loadfiles(smb_t*, const char* filespec, time_t, enum file_detail, enum file_sort, size_t* count);
 DLLEXPORT void			sortfiles(file_t*, size_t count, enum file_sort);

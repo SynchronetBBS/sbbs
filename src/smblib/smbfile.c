@@ -219,6 +219,29 @@ char* smb_fileidxname(const char* filename, char* buf, size_t maxlen)
 /*    preferring an exact-case match										*/
 /* -  file content size and hash details found in 'file'					*/
 /****************************************************************************/
+/****************************************************************************/
+/* Returns true if a file of 'size' bytes with the hash values in 'hash'    */
+/* matches a file index record of 'idx_size' bytes with the hash values in  */
+/* 'idx_hash': a zero 'size' matches any size and only the hash types       */
+/* flagged in hash->flags are compared                                      */
+/****************************************************************************/
+bool smb_filehash_match(uint64_t size, const struct hash_info* hash, uint64_t idx_size, const struct hash_info* idx_hash)
+{
+	if (size > 0 && size != idx_size)
+		return false;
+	if ((hash->flags & SMB_HASH_CRC16) && hash->data.crc16 != idx_hash->data.crc16)
+		return false;
+	if ((hash->flags & SMB_HASH_CRC32) && hash->data.crc32 != idx_hash->data.crc32)
+		return false;
+	if ((hash->flags & SMB_HASH_MD5)
+	    && memcmp(hash->data.md5, idx_hash->data.md5, sizeof(hash->data.md5)) != 0)
+		return false;
+	if ((hash->flags & SMB_HASH_SHA1)
+	    && memcmp(hash->data.sha1, idx_hash->data.sha1, sizeof(hash->data.sha1)) != 0)
+		return false;
+	return true;
+}
+
 int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 {
 	long       offset = 0;
@@ -264,22 +287,12 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 			continue;
 
 		fsize = smb_getfilesize(&f->idx);
-		if ((f->file_idx.hash.flags & SMB_HASH_MASK) != 0 || fsize > 0) {
-			if (fsize > 0 && fsize != smb_getfilesize(&fidx.idx))
-				continue;
-			if ((f->file_idx.hash.flags & SMB_HASH_CRC16) && f->file_idx.hash.data.crc16 != fidx.hash.data.crc16)
-				continue;
-			if ((f->file_idx.hash.flags & SMB_HASH_CRC32) && f->file_idx.hash.data.crc32 != fidx.hash.data.crc32)
-				continue;
-			if ((f->file_idx.hash.flags & SMB_HASH_MD5)
-			    && memcmp(f->file_idx.hash.data.md5, fidx.hash.data.md5, sizeof(fidx.hash.data.md5)) != 0)
-				continue;
-			if ((f->file_idx.hash.flags & SMB_HASH_SHA1)
-			    && memcmp(f->file_idx.hash.data.sha1, fidx.hash.data.sha1, sizeof(fidx.hash.data.sha1)) != 0)
-				continue;
-			f->file_idx = fidx;
-			return SMB_SUCCESS;
-		}
+		if ((f->file_idx.hash.flags & SMB_HASH_MASK) == 0 && fsize == 0)
+			continue;
+		if (!smb_filehash_match(fsize, &f->file_idx.hash, smb_getfilesize(&fidx.idx), &fidx.hash))
+			continue;
+		f->file_idx = fidx;
+		return SMB_SUCCESS;
 	}
 	if (match_offset >= 0) {
 		f->file_idx = match;

@@ -3942,6 +3942,8 @@ sbbs_t::~sbbs_t()
 {
 	int i;
 
+	dupe_cache_free(upload_dupe_cache); /* normally freed at the end of the batch upload that created it */
+
 	useron.number = 0;
 
 #ifdef _DEBUG

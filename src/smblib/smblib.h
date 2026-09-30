@@ -298,6 +298,7 @@ SMBEXPORT int       smb_getfile(smb_t*, smbfile_t*, enum file_detail);
 SMBEXPORT int       smb_putfile(smb_t*, smbfile_t*);
 SMBEXPORT int       smb_updatemsgtxt(smb_t*, smbmsg_t*, int storage, const char* body, const char* tail);
 SMBEXPORT int       smb_updatefile(smb_t*, smbfile_t*, int storage, const char* extdesc, const char* auxdata);
+SMBEXPORT bool      smb_filehash_match(uint64_t size, const struct hash_info*, uint64_t idx_size, const struct hash_info* idx_hash);
 SMBEXPORT int       smb_findfile(smb_t*, const char* filename, smbfile_t*);
 SMBEXPORT int       smb_findfile_other(smb_t*, const char* filename, uint32_t number);
 SMBEXPORT int       smb_loadfile(smb_t*, const char* filename, smbfile_t*, enum file_detail);

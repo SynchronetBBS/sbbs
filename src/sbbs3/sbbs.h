@@ -737,6 +737,7 @@ public:
 	int*	usrdirs = nullptr;		/* Num of dirs with access for each lib */
 	int		cursubnum = INVALID_SUB;	/* For ARS */
 	int		curdirnum = INVALID_DIR;	/* For ARS */
+	struct dupe_cache* upload_dupe_cache{nullptr};	/* Set during a batch upload: directory indexes read once per batch (see uploadfile) */
 	uint 	timeleft = 60 * 10;	/* Number of seconds user has left online */
 
 	int current_subnum() {	if (SMB_IS_OPEN(&smb)) return smb.subnum; return usrgrps ? usrsub[curgrp][cursub[curgrp]] : INVALID_SUB; }

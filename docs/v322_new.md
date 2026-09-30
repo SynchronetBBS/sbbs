@@ -122,6 +122,10 @@
 - More than 255 QWK network hubs are now supported
 - Removed unnecessary terminal color-change codes (regression
   from v3.21)
+- Batch uploads: the duplicate-file scan reads each directory's file
+  index once per batch instead of once per uploaded file, and each file
+  is named as its post-processing (upload testers, hashing, duplicate
+  scan) starts (issue #1132)
 - Fix: the message reader's title search (`>` and `<`, in sub-boards
   and in mail) could jump to an unrelated message whose title merely
   shared a 16-bit CRC with the current one; the titles are now
@@ -426,6 +430,8 @@
   - `Search`, `View`, `Chat`, `Reply`, `Send`, `Read`, `Delete`, `Edit`,
     `Change`, `Toggle`, `Find`, `Scan`, `Forward`, `PostVerb`, `New`
     (translatable words for menus and prompts)
+  - `ProcessingUploadedFile` (names each file as its upload
+    post-processing starts)
   - `Main`, `Text`, `Sysop`, `Transfer`, `Area`, `Logoff`, `Section`, `Node`
     (more translatable words for menus and prompts)
   - `FileNoun`, `FilesNoun`, `MessageNoun`, `MessagesNoun`, `MenuNoun`,

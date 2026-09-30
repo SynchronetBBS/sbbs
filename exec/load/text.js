@@ -992,8 +992,9 @@ var MenuNoun=982;
 var MailNoun=983;
 var UserNoun=984;
 var UsersNoun=985;
+var ProcessingUploadedFile=986;
 
-var TOTAL_TEXT=985;
+var TOTAL_TEXT=986;
 
 /* Former names of renamed strings */
 var NScanPmQ=406;
