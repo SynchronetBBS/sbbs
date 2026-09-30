@@ -971,6 +971,21 @@ enum text {
 	,Configure
 	,Select
 	,Pointers
+	,Search
+	,View
+	,Chat
+	,Reply
+	,Send
+	,Read
+	,Delete
+	,Edit
+	,Change
+	,Toggle
+	,Find
+	,Scan
+	,Forward
+	,PostVerb
+	,New
 
 	,TOTAL_TEXT
 };

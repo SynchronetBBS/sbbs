@@ -961,8 +961,23 @@ var Download=951;
 var Configure=952;
 var Select=953;
 var Pointers=954;
+var Search=955;
+var View=956;
+var Chat=957;
+var Reply=958;
+var Send=959;
+var Read=960;
+var Delete=961;
+var Edit=962;
+var Change=963;
+var Toggle=964;
+var Find=965;
+var Scan=966;
+var Forward=967;
+var PostVerb=968;
+var New=969;
 
-var TOTAL_TEXT=954;
+var TOTAL_TEXT=969;
 
 /* Former names of renamed strings */
 var NScanPmQ=406;

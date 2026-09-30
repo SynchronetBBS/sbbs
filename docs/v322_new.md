@@ -409,6 +409,9 @@
   - `UeditARSearchPrompt` (user editor's `/` AR-string search prompt)
   - `Upload`, `Download`, `Configure`, `Select`, `Pointers` (translatable
     command words)
+  - `Search`, `View`, `Chat`, `Reply`, `Send`, `Read`, `Delete`, `Edit`,
+    `Change`, `Toggle`, `Find`, `Scan`, `Forward`, `PostVerb`, `New`
+    (translatable words for menus and prompts)
 - Stock Spanish and French `Quit` translations changed to "Salir" and
   "Quitter"
 - Dates and times (weekday and month names, am/pm, "Never") and node
