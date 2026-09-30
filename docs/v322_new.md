@@ -326,6 +326,11 @@
 - Helpful error message when passed a directory instead of a
   config or `.ini` file on the command line
 
+- Fix: importing a netmail message from a packet wrote a stored-message
+  (`*.msg`) header over the start of the packet file, corrupting any
+  messages that followed it in the same packet ("Grunged message", bad
+  packet); regression in SBBSecho 3.37 (v3.21c)
+
 ## BinkIT
 
 - `data/binkstats.ini` no longer logs successful binkp/1.1 callouts

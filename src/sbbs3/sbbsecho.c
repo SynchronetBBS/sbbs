@@ -4854,8 +4854,8 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 			fmsgbuf = getfmsg(*fp, NULL);
 			if (fmsgbuf == NULL)
 				return IMPORT_FAILURE;
-			update_fmsghdr(&hdr, FIDO_RECV, *fp);
-			if (!is_pkt) {
+			if (!is_pkt) { /* Only a stored message (*.msg) has a header to update: never write into a packet */
+				update_fmsghdr(&hdr, FIDO_RECV, *fp);
 				fclose(*fp); /* Gotta close it here for areamgr stuff */
 				*fp = NULL;
 			}
@@ -5043,7 +5043,8 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 				lprintf(LOG_ERR, "ERROR %d moving attached file from %s to %s for NetMail %s", i, fpath, tmp, info);
 		}
 	}
-	update_fmsghdr(&hdr, FIDO_RECV, *fp);
+	if (!is_pkt) /* Only a stored message (*.msg) has a header to update: never write into a packet */
+		update_fmsghdr(&hdr, FIDO_RECV, *fp);
 	netmail++;
 	if (robot != NULL)
 		robot->recv_count++;
