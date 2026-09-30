@@ -3981,14 +3981,14 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum, bool* f
 		smbfile->status.max_msgs = scfg.sub[subnum]->maxmsgs;
 		if (scfg.sub[subnum]->misc & SUB_LZH)
 			xlat = XLAT_LZH;
-
-		msg.idx.time = msg.hdr.when_imported.time;    /* needed for MSG-ID generation */
-		msg.idx.number = smbfile->status.last_msg + 1;      /* needed for MSG-ID generation */
-
-		/* Generate default (RFC822) message-id (always) */
-		get_msgid(&scfg, subnum, &msg, msg_id, sizeof(msg_id));
-		smb_hfield_str(&msg, RFC822MSGID, msg_id);
 	}
+
+	msg.idx.time = msg.hdr.when_imported.time;    /* needed for MSG-ID generation */
+	msg.idx.number = smbfile->status.last_msg + 1;      /* needed for MSG-ID generation */
+
+	/* Generate default (RFC822) message-id (always, for netmail and echomail) */
+	get_msgid(&scfg, subnum, &msg, msg_id, sizeof(msg_id));
+	smb_hfield_str(&msg, RFC822MSGID, msg_id);
 	if (smbfile->status.max_crcs == 0 || (subnum == INVALID_SUB && usernumber == 0))
 		dupechk_hashes &= ~(1 << SMB_HASH_SOURCE_BODY);
 	/* Bad echo area collects a *lot* of messages, and thus, hashes - so no dupe checking */

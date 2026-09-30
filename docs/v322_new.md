@@ -331,6 +331,11 @@
   messages that followed it in the same packet ("Grunged message", bad
   packet); regression in SBBSecho 3.37 (v3.21c)
 
+- Fix: netmail messages imported into the mail base (including SBBSecho's
+  own notifications, e.g. "FAILED Area Management Request") had no
+  Message-ID, which chksmb reports; one is now generated as it always
+  was for imported echomail (issue #1167)
+
 ## BinkIT
 
 - `data/binkstats.ini` no longer logs successful binkp/1.1 callouts
