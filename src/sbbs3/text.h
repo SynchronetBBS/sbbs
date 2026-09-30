@@ -422,8 +422,8 @@ enum text {
 	,NScanDay
 	,NScanHour
 	,NScanMinute
-	,NScanPmQ
-	,NScanAmQ
+	,PM
+	,AM
 	,PasswordTooShort
 	,PasswordNotChanged
 	,PasswordInvalid

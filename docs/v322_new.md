@@ -414,8 +414,11 @@
 - Dates and times (weekday and month names, am/pm, "Never") and node
   status/activity text now follow the user's language (`text.<lang>.ini`)
   instead of always using the system's default text; am/pm now come from
-  the `NScanAmQ`/`NScanPmQ` text strings
+  the `AM`/`PM` text strings
 - Changed text.dat strings:
+  - `NScanAmQ`/`NScanPmQ` renamed to `AM`/`PM` (now used wherever a time
+    is shown or entered); the old names are still accepted in `text.ini`
+    files and by scripts
   - `SeekPrompt` restyled to `<filename> (?=Help)` form (the key
     list moved into `SeekHelp`)
   - `SearchStringPrompt` now hints at the `?=help` binding

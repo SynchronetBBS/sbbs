@@ -35,6 +35,8 @@ DLLEXPORT bool      load_cfg(scfg_t*, char* text[], size_t total_text, bool prep
 DLLEXPORT void      free_cfg(scfg_t*);
 DLLEXPORT void      free_text(char* text[]);
 DLLEXPORT int       get_text_num(const char* id);
+DLLEXPORT int       get_text_alias_num(const char* id);
+DLLEXPORT const char* get_text_alias(size_t index, int* num);
 DLLEXPORT int       get_lang_count(scfg_t*);
 DLLEXPORT str_list_t get_lang_list(scfg_t*);
 DLLEXPORT str_list_t get_lang_desc_list(scfg_t*, char* text[]);

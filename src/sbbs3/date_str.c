@@ -377,13 +377,13 @@ char* timestr(scfg_t* cfg, time32_t t, char* str)
 			hour = 12;
 		else
 			hour = tm.tm_hour - 12;
-		mer = (cfg->text == NULL) ? " pm" : cfg->text[NScanPmQ];
+		mer = (cfg->text == NULL) ? " pm" : cfg->text[PM];
 	} else {
 		if (tm.tm_hour == 0)
 			hour = 12;
 		else
 			hour = tm.tm_hour;
-		mer = (cfg->text == NULL) ? " am" : cfg->text[NScanAmQ];
+		mer = (cfg->text == NULL) ? " am" : cfg->text[AM];
 	}
 	snprintf(str, LEN_DATETIME + 1, "%s %s %02u %4u %02u:%02u%s"
 	         , w[tm.tm_wday], m[tm.tm_mon], tm.tm_mday, 1900 + tm.tm_year

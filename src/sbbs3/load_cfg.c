@@ -36,6 +36,35 @@ static void prep_cfg(scfg_t* cfg);
 
 int     lprintf(int level, const char *fmt, ...);   /* log output */
 
+// Former text string ID names, still accepted (e.g. in text.ini files)
+static const struct {
+	const char* name;
+	int num;
+} text_id_alias[] = {
+	{ "NScanPmQ", PM },
+	{ "NScanAmQ", AM },
+};
+
+// Returns 0-based text string index of a former text string ID name,
+// or TOTAL_TEXT if 'id' is not one
+int get_text_alias_num(const char* id)
+{
+	for (size_t i = 0; i < sizeof text_id_alias / sizeof text_id_alias[0]; ++i)
+		if (strcmp(text_id_alias[i].name, id) == 0)
+			return text_id_alias[i].num;
+	return TOTAL_TEXT;
+}
+
+// Returns the former text string ID name at 'index' (and its 0-based text
+// string index in 'num'), or NULL past the end
+const char* get_text_alias(size_t index, int* num)
+{
+	if (index >= sizeof text_id_alias / sizeof text_id_alias[0])
+		return NULL;
+	*num = text_id_alias[index].num;
+	return text_id_alias[index].name;
+}
+
 // Returns 0-based text string index
 int get_text_num(const char* id)
 {
@@ -48,8 +77,8 @@ int get_text_num(const char* id)
 	}
 	for (i = 0; i < TOTAL_TEXT; ++i)
 		if (strcmp(text_id[i], id) == 0)
-			break;
-	return i;
+			return i;
+	return get_text_alias_num(id);
 }
 
 /****************************************************************************/

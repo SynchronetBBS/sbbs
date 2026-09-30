@@ -482,14 +482,14 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 						hour = 12;
 					else
 						hour = (node->aux / 60) - 12;
-					mer = text[NScanPmQ];
+					mer = text[PM];
 				}
 				else {
 					if ((node->aux / 60) == 0)    /* 12 midnite */
 						hour = 12;
 					else
 						hour = node->aux / 60;
-					mer = text[NScanAmQ];
+					mer = text[AM];
 				}
 				bprintf(" ETA %02d:%02d%s"
 				        , hour, node->aux % 60, mer);

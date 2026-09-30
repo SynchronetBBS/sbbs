@@ -496,8 +496,8 @@
 "  \1yDay: \1w"                                           403 NScanDay
 "  \1yHour: \1w"                                          404 NScanHour
 "  \1yMinute: \1w"                                        405 NScanMinute
-" pm"                                                   406 NScanPmQ
-" am"                                                   407 NScanAmQ
+" pm"                                                   406 PM
+" am"                                                   407 AM
 "\1r\1h\1iNot long enough!\1n"                              408 PasswordTooShort
 "\1r\1h\1iThat's your current password!\1n"                 409 PasswordNotChanged
 "\1r\1h\1iYou call that a password?\1n"                     410 PasswordInvalid

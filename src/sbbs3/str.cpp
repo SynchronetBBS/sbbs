@@ -40,11 +40,13 @@ int sbbs_t::get_text_num(const char* id)
 		i = index->second;
 	else {
 		for (i = 0; i < TOTAL_TEXT; ++i) {
-			if (strcmp(text_id[i], id) == 0) {
-				text_id_map[id] = i;
+			if (strcmp(text_id[i], id) == 0)
 				break;
-			}
 		}
+		if (i >= TOTAL_TEXT)
+			i = get_text_alias_num(id);
+		if (i < TOTAL_TEXT)
+			text_id_map[id] = i;
 	}
 	return i;
 }
@@ -798,9 +800,9 @@ static bool parse_hour(char* str, bool military, char** text, int* hour)
 	}
 	if (military || h < 1 || h > 12)
 		return false;
-	if (meridiem_match(p, text[NScanAmQ]))
+	if (meridiem_match(p, text[AM]))
 		*hour = (int)(h % 12);
-	else if (meridiem_match(p, text[NScanPmQ]))
+	else if (meridiem_match(p, text[PM]))
 		*hour = (int)(h % 12) + 12;
 	else
 		return false;
@@ -866,7 +868,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 		hour = tm.tm_hour % 12;
 		if (hour == 0)
 			hour = 12;
-		snprintf(str, sizeof str, "%d%s", hour, text[tm.tm_hour >= 12 ? NScanPmQ : NScanAmQ]);
+		snprintf(str, sizeof str, "%d%s", hour, text[tm.tm_hour >= 12 ? PM : AM]);
 	}
 	char orig[sizeof str];
 	SAFECOPY(orig, str);
@@ -887,7 +889,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 		bool  bare = (p != str);
 		SKIP_WHITESPACE(p);
 		if (!military && bare && *p == '\0' && h >= 1 && h <= 12)
-			snprintf(str, sizeof str, "%ld%s", h, text[tm.tm_hour >= 12 ? NScanPmQ : NScanAmQ]);
+			snprintf(str, sizeof str, "%ld%s", h, text[tm.tm_hour >= 12 ? PM : AM]);
 		else
 			SAFECOPY(str, orig);
 	}

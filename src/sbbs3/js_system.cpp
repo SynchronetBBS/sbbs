@@ -3099,6 +3099,13 @@ JSBool js_CreateTextProperties(JSContext* cx, JSObject* parent)
 		if (!JS_SetProperty(cx, text, text_id[i], &val))
 			return JS_FALSE;
 	}
+	const char* alias;
+	int         num;
+	for (size_t i = 0; (alias = get_text_alias(i, &num)) != NULL; ++i) {
+		val = INT_TO_JSVAL(num + 1);
+		if (!JS_SetProperty(cx, text, alias, &val))
+			return JS_FALSE;
+	}
 	return JS_TRUE;
 }
 
