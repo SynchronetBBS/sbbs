@@ -136,8 +136,7 @@ bool sbbs_t::uploadfile(file_t* f)
 			progress(text[Scanning], i, usrlibs);
 			for (int j = 0; j < usrdirs[i]; j++, k++) {
 				if (cfg.dir[usrdir[i][j]]->misc & DIR_DUPES
-				    && (upload_dupe_cache != NULL ? dupe_cache_findfile(upload_dupe_cache, &cfg, usrdir[i][j], f)
-				        : findfile(&cfg, usrdir[i][j], /* filename: */ NULL, f))) {
+				    && dupe_cache_findfile(upload_dupe_cache, &cfg, usrdir[i][j], f)) {
 					bprintf(text[FileAlreadyOnline], f->name, lib_name(usrdir[i][j]), dir_name(usrdir[i][j]));
 					if (!dir_op(f->dir)) {
 						remove(path);
@@ -185,7 +184,7 @@ bool sbbs_t::uploadfile(file_t* f)
 		return false;
 	}
 	if (upload_dupe_cache != NULL) /* so a later file in the same batch is checked against this one too */
-		dupe_cache_addfile(upload_dupe_cache, f->dir, length, &f->file_idx.hash);
+		dupe_cache_addfile(upload_dupe_cache, f->dir, f->name, length, &f->file_idx.hash);
 	/* Don't credit the upload until it's actually in the database */
 	if (!(cfg.dir[f->dir]->misc & DIR_NOSTAT)) {
 		logon_ulb += length;  /* Update 'this call' stats */

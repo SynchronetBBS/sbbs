@@ -219,6 +219,7 @@
     <ClCompile Include="..\encode\lzh.c" />
     <ClCompile Include="..\hash\crc16.c" />
     <ClCompile Include="..\hash\crc32.c" />
+    <ClCompile Include="..\hash\fnv1a.c" />
     <ClCompile Include="..\hash\md5.c" />
     <ClCompile Include="..\hash\sha1.c" />
     <ClCompile Include="..\hash\sha256.c" />

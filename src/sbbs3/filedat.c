@@ -31,6 +31,7 @@
 #include "scfglib.h"
 #include "sauce.h"
 #include "crc32.h"
+#include "fnv1a.h"   // fnv1a32_str()
 #include "utf8.h"
 
 /* libarchive: */
@@ -57,12 +58,14 @@ bool findfile(scfg_t* cfg, int dirnum, const char *filename, file_t* file)
 
 /****************************************************************************/
 /* Upload duplicate-check cache												*/
-/* The size and hash values of every file in each directory consulted, read	*/
-/* from that directory's index once and kept for the life of the cache		*/
-/* (e.g. one batch upload) instead of re-reading every index from disk for	*/
-/* each uploaded file. A directory is loaded the first time it's consulted.	*/
+/* The name hash, size and hash values of every file in each directory		*/
+/* consulted, read from that directory's index once and kept for the life	*/
+/* of the cache (e.g. one batch upload) instead of re-reading every index	*/
+/* from disk for each uploaded file. A directory is loaded the first time	*/
+/* it's consulted.															*/
 /****************************************************************************/
 struct dupe_cache_rec {
+	uint32_t namehash;  /* dupe_cache_idxnamehash() of the index name */
 	uint64_t size;
 	struct hash_info hash;
 };
@@ -77,6 +80,24 @@ struct dupe_cache {
 	int total_dirs;
 	struct dupe_cache_dir* dir;     /* indexed by dirnum */
 };
+
+/* Hash of an index (already smb_fileidxname()-normalized) name, ignoring case */
+static uint32_t dupe_cache_idxnamehash(const char* idxname)
+{
+	char name[SMB_FILEIDX_NAMELEN + 1];
+
+	SAFECOPY(name, idxname);
+	strlwr(name);
+	return fnv1a32_str(name);
+}
+
+/* Hash of a filename as its index name would be hashed */
+static uint32_t dupe_cache_namehash(const char* filename)
+{
+	char idxname[SMB_FILEIDX_NAMELEN + 1];
+
+	return dupe_cache_idxnamehash(smb_fileidxname(filename, idxname, sizeof idxname));
+}
 
 dupe_cache_t* dupe_cache_create(scfg_t* cfg)
 {
@@ -123,6 +144,8 @@ static bool dupe_cache_load(dupe_cache_t* cache, scfg_t* cfg, int dirnum)
 			fileidxrec_t fidx;
 			if (smb_fread(&smb, &fidx, sizeof fidx, smb.sid_fp) != sizeof fidx)
 				break;
+			TERMINATE(fidx.name);
+			dir->rec[dir->count].namehash = dupe_cache_idxnamehash(fidx.name);
 			dir->rec[dir->count].size = smb_getfilesize(&fidx.idx);
 			dir->rec[dir->count].hash = fidx.hash;
 			dir->count++;
@@ -133,9 +156,12 @@ static bool dupe_cache_load(dupe_cache_t* cache, scfg_t* cfg, int dirnum)
 }
 
 /* Equivalent to findfile(cfg, dirnum, NULL, file): is there a file in the directory with the same size and hash values? */
+/* With no cache (NULL), that's exactly what it does */
 bool dupe_cache_findfile(dupe_cache_t* cache, scfg_t* cfg, int dirnum, file_t* file)
 {
-	if (cache == NULL || cfg == NULL || file == NULL || dirnum < 0 || dirnum >= cache->total_dirs)
+	if (cache == NULL)
+		return findfile(cfg, dirnum, /* filename: */ NULL, file);
+	if (cfg == NULL || file == NULL || dirnum < 0 || dirnum >= cache->total_dirs)
 		return false;
 	struct dupe_cache_dir* dir = &cache->dir[dirnum];
 	if (!dir->loaded && !dupe_cache_load(cache, cfg, dirnum))
@@ -149,10 +175,29 @@ bool dupe_cache_findfile(dupe_cache_t* cache, scfg_t* cfg, int dirnum, file_t* f
 	return false;
 }
 
-/* Record a file just added to the directory, so later lookups find it too */
-bool dupe_cache_addfile(dupe_cache_t* cache, int dirnum, uint64_t size, const struct hash_info* hash)
+/* Equivalent to findfile(cfg, dirnum, filename, NULL): is there a file with this name (ignoring case) in the directory? */
+/* The cached name hashes only narrow the search: a hit is confirmed by reading the index, so a false positive costs */
+/* one index read rather than a false "already online" verdict. With no cache (NULL), the index is simply read. */
+bool dupe_cache_findname(dupe_cache_t* cache, scfg_t* cfg, int dirnum, const char* filename)
 {
-	if (cache == NULL || hash == NULL || dirnum < 0 || dirnum >= cache->total_dirs)
+	if (cache == NULL)
+		return findfile(cfg, dirnum, filename, /* file: */ NULL);
+	if (cfg == NULL || filename == NULL || dirnum < 0 || dirnum >= cache->total_dirs)
+		return false;
+	struct dupe_cache_dir* dir = &cache->dir[dirnum];
+	if (!dir->loaded && !dupe_cache_load(cache, cfg, dirnum))
+		return false;
+	uint32_t               namehash = dupe_cache_namehash(filename);
+	for (size_t i = 0; i < dir->count; i++)
+		if (dir->rec[i].namehash == namehash)
+			return findfile(cfg, dirnum, filename, /* file: */ NULL);
+	return false;
+}
+
+/* Record a file just added to the directory, so later lookups find it too */
+bool dupe_cache_addfile(dupe_cache_t* cache, int dirnum, const char* filename, uint64_t size, const struct hash_info* hash)
+{
+	if (cache == NULL || filename == NULL || hash == NULL || dirnum < 0 || dirnum >= cache->total_dirs)
 		return false;
 	struct dupe_cache_dir* dir = &cache->dir[dirnum];
 	if (!dir->loaded) /* the index will be read, with this file in it, when first consulted */
@@ -161,6 +206,7 @@ bool dupe_cache_addfile(dupe_cache_t* cache, int dirnum, uint64_t size, const st
 	if (rec == NULL)
 		return false;
 	dir->rec = rec;
+	rec[dir->count].namehash = dupe_cache_namehash(filename);
 	rec[dir->count].size = size;
 	rec[dir->count].hash = *hash;
 	dir->count++;

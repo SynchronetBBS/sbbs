@@ -464,7 +464,7 @@ bool sbbs_t::process_batch_upload_queue()
 			progress(text[SearchingForDupes], x, usrlibs);
 			for (y = 0; y < usrdirs[x]; y++)
 				if (cfg.dir[usrdir[x][y]]->misc & DIR_DUPES
-				    && findfile(&cfg, usrdir[x][y], dirent->d_name, NULL))
+				    && dupe_cache_findname(upload_dupe_cache, &cfg, usrdir[x][y], dirent->d_name))
 					break;
 			if (y < usrdirs[x])
 				break;

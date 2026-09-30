@@ -45,7 +45,8 @@ typedef struct dupe_cache dupe_cache_t;
 DLLEXPORT dupe_cache_t*	dupe_cache_create(scfg_t*);
 DLLEXPORT void			dupe_cache_free(dupe_cache_t*);
 DLLEXPORT bool			dupe_cache_findfile(dupe_cache_t*, scfg_t*, int dirnum, file_t*); // like findfile(cfg, dirnum, NULL, file)
-DLLEXPORT bool			dupe_cache_addfile(dupe_cache_t*, int dirnum, uint64_t size, const struct hash_info*);
+DLLEXPORT bool			dupe_cache_findname(dupe_cache_t*, scfg_t*, int dirnum, const char* filename); // like findfile(cfg, dirnum, filename, NULL)
+DLLEXPORT bool			dupe_cache_addfile(dupe_cache_t*, int dirnum, const char* filename, uint64_t size, const struct hash_info*);
 DLLEXPORT bool			loadfile(scfg_t*, int dirnum, const char* filename, file_t*, enum file_detail, int* result);
 DLLEXPORT file_t*		loadfiles(smb_t*, const char* filespec, time_t, enum file_detail, enum file_sort, size_t* count);
 DLLEXPORT void			sortfiles(file_t*, size_t count, enum file_sort);
