@@ -986,6 +986,14 @@ enum text {
 	,Forward
 	,PostVerb
 	,New
+	,FileNoun
+	,FilesNoun
+	,MessageNoun
+	,MessagesNoun
+	,MenuNoun
+	,MailNoun
+	,UserNoun
+	,UsersNoun
 
 	,TOTAL_TEXT
 };

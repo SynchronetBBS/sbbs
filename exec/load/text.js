@@ -976,8 +976,16 @@ var Scan=966;
 var Forward=967;
 var PostVerb=968;
 var New=969;
+var FileNoun=970;
+var FilesNoun=971;
+var MessageNoun=972;
+var MessagesNoun=973;
+var MenuNoun=974;
+var MailNoun=975;
+var UserNoun=976;
+var UsersNoun=977;
 
-var TOTAL_TEXT=969;
+var TOTAL_TEXT=977;
 
 /* Former names of renamed strings */
 var NScanPmQ=406;

@@ -1164,3 +1164,11 @@
 "Forward"                                                    967 Forward
 "Post"                                                       968 PostVerb
 "New"                                                        969 New
+"File"                                                       970 FileNoun
+"Files"                                                      971 FilesNoun
+"Message"                                                    972 MessageNoun
+"Messages"                                                   973 MessagesNoun
+"Menu"                                                       974 MenuNoun
+"Mail"                                                       975 MailNoun
+"User"                                                       976 UserNoun
+"Users"                                                      977 UsersNoun

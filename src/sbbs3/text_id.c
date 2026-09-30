@@ -970,4 +970,12 @@ const char* const text_id[]={
 	,"Forward"
 	,"PostVerb"
 	,"New"
+	,"FileNoun"
+	,"FilesNoun"
+	,"MessageNoun"
+	,"MessagesNoun"
+	,"MenuNoun"
+	,"MailNoun"
+	,"UserNoun"
+	,"UsersNoun"
 };
