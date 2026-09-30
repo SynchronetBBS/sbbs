@@ -631,7 +631,14 @@ public:
 	std::unordered_map<std::string, int> text_id_map{};
 	char	yes_key(void) { return toupper((uchar)*text[Yes]); }
 	char	no_key(void) { return toupper((uchar)*text[No]); }
-	char	quit_key(void) { return toupper((uchar)*text[Quit]); }
+	char	quit_key(void);
+	void	set_cmd_keys(const char* keys);
+	const char* cmd_keys(void) { return cmd_keys_declared ? cur_cmd_keys : ""; }
+	void	add_quit_key(char* keys, size_t size);
+	bool	is_quit_key(char ch) { return ch != 0 && ch == quit_key(); }
+	char	cur_cmd_keys[128]{};
+	bool	cmd_keys_declared = false;
+	char	cur_quit_key = 0;
 	char*	quit_key(char* str) { str[0] = quit_key(); str[1] = '\0'; return str; }
 	char	all_key(void) { return toupper((uchar)*text[All]); }
 	char	list_key(void) { return toupper((uchar)*text[List]); }
@@ -1399,6 +1406,18 @@ public:
 	bool init_sftp(int channel_id);
 	bool sftp_end(void);
 
+};
+
+// Declares a prompt's command keys for its lifetime, then restores the
+// previous declaration
+class cmd_keys_scope {
+	sbbs_t* sbbs;
+	char    saved_keys[sizeof(sbbs_t::cur_cmd_keys)];
+	bool    saved_declared;
+	char    saved_quit_key;
+public:
+	cmd_keys_scope(sbbs_t* sbbs, const char* keys);
+	~cmd_keys_scope();
 };
 
 #include "terminal.h"

@@ -433,6 +433,71 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 }
 
 /****************************************************************************/
+/* Returns the Quit key: the first letter of the (translatable) Quit text,	*/
+/* or, while command keys are declared, that letter resolved against them	*/
+/* (0 when no letter is available)											*/
+/****************************************************************************/
+char sbbs_t::quit_key()
+{
+	if (cmd_keys_declared)
+		return cur_quit_key;
+	return toupper((uchar)*text[Quit]);
+}
+
+/****************************************************************************/
+/* Declares (or with NULL/"", clears) the current prompt's command keys		*/
+/****************************************************************************/
+void sbbs_t::set_cmd_keys(const char* keys)
+{
+	if (keys == nullptr || *keys == '\0') {
+		cmd_keys_declared = false;
+		cur_cmd_keys[0] = '\0';
+		return;
+	}
+	SAFECOPY(cur_cmd_keys, keys);
+	strupr(cur_cmd_keys);
+	cmd_keys_declared = true;
+	char quit = toupper((uchar)*text[Quit]);
+	if (quit != '\0' && strchr(cur_cmd_keys, quit) == NULL)
+		cur_quit_key = quit;
+	else if (strchr(cur_cmd_keys, 'Q') == NULL)
+		cur_quit_key = 'Q';
+	else {
+		cur_quit_key = 0;
+		lprintf(LOG_ERR, "No Quit key available: '%s' and 'Q' are both command keys (%s), language '%s'"
+		        , text[Quit], cur_cmd_keys, useron.lang);
+	}
+}
+
+/****************************************************************************/
+/* Appends the Quit key (if there is one) to a getkeys() key list			*/
+/****************************************************************************/
+void sbbs_t::add_quit_key(char* keys, size_t size)
+{
+	char   quit = quit_key();
+	size_t len = strlen(keys);
+
+	if (quit != 0 && len + 1 < size) {
+		keys[len] = quit;
+		keys[len + 1] = '\0';
+	}
+}
+
+cmd_keys_scope::cmd_keys_scope(sbbs_t* sbbs, const char* keys)
+	: sbbs(sbbs), saved_declared(sbbs->cmd_keys_declared), saved_quit_key(sbbs->cur_quit_key)
+{
+	SAFECOPY(saved_keys, sbbs->cur_cmd_keys);
+	sbbs->set_cmd_keys(keys);
+}
+
+cmd_keys_scope::~cmd_keys_scope()
+{
+	SAFECOPY(sbbs->cur_cmd_keys, saved_keys);
+	sbbs->cmd_keys_declared = saved_declared;
+	sbbs->cur_quit_key = saved_quit_key;
+}
+
+/****************************************************************************/
 /* Returns the (possibly translated) Quit key, unless it collides with one	*/
 /* of the command keys in 'cmd_keys', in which case 'Q' is returned.		*/
 /****************************************************************************/

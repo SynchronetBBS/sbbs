@@ -553,6 +553,7 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	struct js_runq_entry *    rq_head;
 	struct js_runq_entry *    rq_tail;
 	struct js_listener_entry *listeners;
+	cmd_keys_scope keys_scope(this, nullptr);
 
 
 	if (js_cx == NULL)

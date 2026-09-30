@@ -82,6 +82,7 @@ enum {
 	, CON_PROP_CONFIGURE_KEY
 	, CON_PROP_SELECT_KEY
 	, CON_PROP_POINTERS_KEY
+	, CON_PROP_CMD_KEYS
 
 	, CON_PROP_OUTPUT_RATE
 };
@@ -89,7 +90,7 @@ enum {
 extern JSClass js_console_class;
 static JSString* js_key_str(JSContext* cx, char key)
 {
-	return JS_NewStringCopyN(cx, &key, 1);
+	return JS_NewStringCopyN(cx, &key, key == 0 ? 0 : 1);
 }
 
 static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
@@ -285,6 +286,10 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if ((js_str = js_key_str(cx, sbbs->pointers_key())) == NULL)
 				return JS_FALSE;
 			break;
+		case CON_PROP_CMD_KEYS:
+			if ((js_str = JS_NewStringCopyZ(cx, sbbs->cmd_keys())) == NULL)
+				return JS_FALSE;
+			break;
 
 		default:
 			return JS_TRUE;
@@ -412,6 +417,13 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_GETSTR_OFFSET:
 			sbbs->getstr_offset = val;
 			break;
+		case CON_PROP_CMD_KEYS:
+			JSVALUE_TO_MSTRING(cx, *vp, sval, NULL);
+			if (sval == NULL)
+				break;
+			sbbs->set_cmd_keys(sval);
+			free(sval);
+			break;
 		case CON_PROP_QUESTION:
 			JSVALUE_TO_MSTRING(cx, *vp, sval, NULL);
 			if (sval == NULL)
@@ -519,6 +531,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "configure_key", CON_PROP_CONFIGURE_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
 	{   "select_key", CON_PROP_SELECT_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
 	{   "pointers_key", CON_PROP_POINTERS_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
+	{   "cmd_keys", CON_PROP_CMD_KEYS, JSPROP_ENUMERATE, 32200},
 	{0}
 };
 
@@ -579,7 +592,7 @@ static const char*        con_prop_desc[] = {
 	, "Number of character spaces available in the keyboard input buffer - <small>READ ONLY</small>"
 	, "Key associated with a positive acknowledgment (e.g. 'Y') - <small>READ ONLY</small>"
 	, "Key associated with a negative acknowledgment (e.g. 'N') - <small>READ ONLY</small>"
-	, "Key associated with a exiting a menu (e.g. 'Q') - <small>READ ONLY</small>"
+	, "Key associated with a exiting a menu (e.g. 'Q', or an empty string when <tt>cmd_keys</tt> leaves none) - <small>READ ONLY</small>"
 	, "Key associated with selecting all available options (e.g. 'A') - <small>READ ONLY</small>"
 	, "Key associated with listing all available options (e.g. 'L') - <small>READ ONLY</small>"
 	, "Key associated with selecting next available option (e.g. 'N') - <small>READ ONLY</small>"
@@ -589,6 +602,9 @@ static const char*        con_prop_desc[] = {
 	, "Key associated with configuring (e.g. 'C') - <small>READ ONLY</small>"
 	, "Key associated with selecting (e.g. 'S') - <small>READ ONLY</small>"
 	, "Key associated with (message) pointers (e.g. 'P') - <small>READ ONLY</small>"
+	, "Command keys of the current prompt or menu: while set, <tt>quit_key</tt> (and the <tt>QUITCHAR</tt> @-code and <tt>~@Quit@</tt> mnemonic) "
+	  "is the first letter of the Quit text unless that is one of these keys, then 'Q', then an empty string when 'Q' is also one. "
+	  "Set to an empty string when done."
 	, NULL
 };
 #endif
