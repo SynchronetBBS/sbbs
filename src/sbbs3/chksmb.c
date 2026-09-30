@@ -812,7 +812,8 @@ int main(int argc, char **argv)
 					}
 					/* Every block the data spans, not just where each field starts (#1253) */
 					fseek(smb.sda_fp, (msg.hdr.offset / SDT_BLOCK_LEN) * 2, SEEK_SET);
-					for (m = 0; m < smb_datblocks(smb_getmsgdatlen(&msg)); m++) {
+					uint32_t datblocks = smb_datblocks(smb_getmsgdatlen(&msg));
+					for (m = 0; m < datblocks; m++) {
 						if (terminated)
 							break;
 						/* TODO: LE Only */
