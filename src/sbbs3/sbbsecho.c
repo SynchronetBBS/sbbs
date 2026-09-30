@@ -1106,6 +1106,74 @@ bool new_pkthdr(fpkthdr_t* hdr, fidoaddr_t orig, fidoaddr_t dest, const nodecfg_
 	return true;
 }
 
+/* FTS-5003 identifier for a MIME (IANA) character set name, NULL if none */
+static const char* ftn_charset_from_mime(const char* mime_charset)
+{
+	/* Names compared ignoring case, '-' and '_' */
+	static const struct {
+		const char* mime;
+		const char* ftn;
+	} charsets[] = {
+		{ "iso88591",    "LATIN-1 2" },
+		{ "latin1",      "LATIN-1 2" },
+		{ "iso88592",    "LATIN-2 2" },
+		{ "latin2",      "LATIN-2 2" },
+		{ "iso88599",    "LATIN-5 2" },
+		{ "latin5",      "LATIN-5 2" },
+		{ "iso885915",   "LATIN-9 2" },
+		{ "latin9",      "LATIN-9 2" },
+		{ "windows1250", "CP1250 2" },
+		{ "cp1250",      "CP1250 2" },
+		{ "windows1251", "CP1251 2" },
+		{ "cp1251",      "CP1251 2" },
+		{ "windows1252", "CP1252 2" },
+		{ "cp1252",      "CP1252 2" },
+		{ "ibm437",      FIDO_CHARSET_CP437 },
+		{ "cp437",       FIDO_CHARSET_CP437 },
+		{ "ibm850",      "CP850 2" },
+		{ "cp850",       "CP850 2" },
+		{ "ibm852",      "CP852 2" },
+		{ "cp852",       "CP852 2" },
+		{ "ibm866",      "CP866 2" },
+		{ "cp866",       "CP866 2" },
+	};
+	char   name[32];
+	size_t len = 0;
+
+	if (mime_charset == NULL)
+		return NULL;
+	for (const char* p = mime_charset; *p != '\0'; p++) {
+		if (*p == '-' || *p == '_')
+			continue;
+		if (len >= sizeof(name) - 1)
+			return NULL;
+		name[len++] = (char)tolower((uchar) * p);
+	}
+	name[len] = '\0';
+	for (size_t i = 0; i < sizeof(charsets) / sizeof(charsets[0]); i++) {
+		if (strcmp(name, charsets[i].mime) == 0)
+			return charsets[i].ftn;
+	}
+	return NULL;
+}
+
+/* FTS-5003 CHRS identifier for a message exported with 'text', followed by
+   'origin' (CP437, from the configuration) when not NULL */
+static const char* ftn_charset(const smbmsg_t* msg, const char* text, const char* origin)
+{
+	const char* charset;
+
+	if (msg->ftn_charset != NULL)
+		return msg->ftn_charset;
+	if (smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8))
+		return FIDO_CHARSET_UTF8;
+	if (str_is_ascii(text))
+		return (origin == NULL || str_is_ascii(origin)) ? FIDO_CHARSET_ASCII : FIDO_CHARSET_CP437;
+	if ((charset = ftn_charset_from_mime(msg->text_charset)) != NULL) // #1259
+		return charset;
+	return FIDO_CHARSET_CP437;
+}
+
 /******************************************************************************
  This function will create a netmail message (FTS-1 "stored message" format).
  If file is non-zero, will set file attachment bit (for bundles).
@@ -1272,16 +1340,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		for (int i = 0; i < msg->total_hfields; i++)
 			if (msg->hfield[i].type == FIDOCTRL)
 				fprintf(fp, "\1%.512s\r", (char*)msg->hfield_dat[i]);
-		const char* charset = msg->ftn_charset;
-		if (charset == NULL) {
-			if (smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8))
-				charset = FIDO_CHARSET_UTF8;
-			else if (str_is_ascii(body))
-				charset = FIDO_CHARSET_ASCII;
-			else
-				charset = FIDO_CHARSET_CP437;
-		}
-		fprintf(fp, "\1CHRS: %s\r", charset);
+		fprintf(fp, "\1CHRS: %s\r", ftn_charset(msg, body, /* origin: */ NULL));
 		fprintf(fp, "\1FORMAT: %s\r", (msg->hdr.auxattr & MSG_FIXED_FORMAT) ? "fixed" : "flowed");
 		if (msg->editor != NULL)
 			fprintf(fp, "\1NOTE: %s\r", msg->editor);
@@ -5304,17 +5363,11 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, uint32_t r
 			if (msg.from_net.type != NET_FIDO && !(scfg.sub[subnum]->misc & SUB_NOTAG))
 				strlcpy(originline, scfg.sub[subnum]->origline[0] ? scfg.sub[subnum]->origline : scfg.origline, sizeof originline);
 
-			const char* charset = msg.ftn_charset;
+			const char* charset;
 			if (scfg.sub[subnum]->misc & SUB_ASCII)
 				charset = FIDO_CHARSET_ASCII;
-			if (charset == NULL) {
-				if (smb_msg_is_utf8(&msg) || (msg.hdr.auxattr & MSG_HFIELDS_UTF8))
-					charset = FIDO_CHARSET_UTF8;
-				else if (str_is_ascii(buf) && str_is_ascii(originline))
-					charset = FIDO_CHARSET_ASCII;
-				else
-					charset = FIDO_CHARSET_CP437;
-			}
+			else
+				charset = ftn_charset(&msg, buf, originline);
 			f += sprintf(fmsgbuf + f, "\1CHRS: %s\r", charset);
 			f += sprintf(fmsgbuf + f, "\1FORMAT: %s\r", (msg.hdr.auxattr & MSG_FIXED_FORMAT) ? "fixed" : "flowed");
 			if (msg.editor != NULL)
@@ -5373,13 +5426,13 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, uint32_t r
 				if (!tear) {  /* No previous tear line */
 					strcat(fmsgbuf, tear_line('-'));
 				}
-				if (stricmp(charset, FIDO_CHARSET_ASCII) == 0)
-					ascii_str((uchar *)originline);
-				else if (stricmp(charset, FIDO_CHARSET_UTF8) == 0) {
+				if (stricmp(charset, FIDO_CHARSET_UTF8) == 0) {
 					char tmp[sizeof originline];
 					if (cp437_to_utf8_str(originline, tmp, sizeof tmp, /* min-char-val: */ '\x80') > 1)
 						strlcpy(originline, tmp, sizeof originline);
 				}
+				else if (stricmp(charset, FIDO_CHARSET_CP437) != 0) // The configured origin line is CP437
+					ascii_str((uchar *)originline);
 				snprintf(str, sizeof str, " * Origin: %s (%s)\r"
 				         , originline
 				         , smb_faddrtoa(&scfg.sub[subnum]->faddr, NULL));
