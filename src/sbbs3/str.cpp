@@ -771,12 +771,23 @@ bool sbbs_t::inputnstime32(time32_t *dt)
 }
 
 /****************************************************************************/
-/* Does 'str' (user input) start with the first non-blank letter of 'word'?	*/
+/* Is 'str' (user input) the first 'len' characters of 'word' (ignoring	*/
+/* case and the word's leading white-space)?								*/
 /****************************************************************************/
-static bool meridiem_match(const char* str, const char* word)
+static bool meridiem_match(const char* str, const char* word, size_t len)
 {
 	SKIP_WHITESPACE(word);
-	return *word != '\0' && toupper((uchar)*str) == toupper((uchar)*word);
+	return len > 0 && strnicmp(str, word, len) == 0;
+}
+
+/****************************************************************************/
+/* Is 'str' (user input) all of 'word' (ignoring case and the word's		*/
+/* leading white-space)?													*/
+/****************************************************************************/
+static bool meridiem_is(const char* str, const char* word)
+{
+	SKIP_WHITESPACE(word);
+	return *word != '\0' && stricmp(str, word) == 0;
 }
 
 /****************************************************************************/
@@ -800,12 +811,17 @@ static bool parse_hour(char* str, bool military, char** text, int* hour)
 	}
 	if (military || h < 1 || h > 12)
 		return false;
-	if (meridiem_match(p, text[AM]))
-		*hour = (int)(h % 12);
-	else if (meridiem_match(p, text[PM]))
-		*hour = (int)(h % 12) + 12;
-	else
-		return false;
+	truncsp(p);
+	bool am = meridiem_is(p, text[AM]);
+	bool pm = meridiem_is(p, text[PM]);
+	if (am == pm) { // an abbreviation must be of only one of the words
+		size_t len = strlen(p);
+		am = meridiem_match(p, text[AM], len);
+		pm = meridiem_match(p, text[PM], len);
+		if (am == pm)
+			return false;
+	}
+	*hour = (int)(h % 12) + (pm ? 12 : 0);
 	return true;
 }
 
