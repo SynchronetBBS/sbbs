@@ -159,6 +159,7 @@ SMBEXPORT int       smb_putmsghdr(smb_t*, smbmsg_t*);
 SMBEXPORT void      smb_freemsgmem(smbmsg_t*);
 SMBEXPORT void      smb_freemsghdrmem(smbmsg_t*);
 SMBEXPORT uint      smb_hdrblocks(uint length);
+SMBEXPORT uint      smb_msghdrblocks(smbmsg_t*);
 SMBEXPORT uint      smb_datblocks(off_t length);
 SMBEXPORT int       smb_copymsgmem(smb_t*, smbmsg_t* destmsg, smbmsg_t* srcmsg);
 SMBEXPORT int       smb_tzutc(int16_t timezone);

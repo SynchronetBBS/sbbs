@@ -1310,7 +1310,7 @@ void packmsgs(ulong packable)
 				m += smb_hdrblocks(msg.hdr.length);
 				n += smb_datblocks(smb_getmsgdatlen(&msg));
 			}
-			size = smb_hdrblocks(smb_getmsghdrlen(&msg)) * SHD_BLOCK_LEN;
+			size = smb_msghdrblocks(&msg) * SHD_BLOCK_LEN;
 			smb_freemsgmem(&msg);
 		}
 

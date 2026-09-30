@@ -231,12 +231,15 @@ int fixsmb(char* sub)
 				printf("\n(%06lX) smb_getmsghdr returned %d:\n%s\n", l, i, smb.last_error);
 			continue;
 		}
-		size = smb_hdrblocks(smb_getmsghdrlen(&msg)) * SHD_BLOCK_LEN;
+		size = smb_msghdrblocks(&msg) * SHD_BLOCK_LEN;
 		printf("#%-5" PRIu32 " (%06lX) %-25.25s ", msg.hdr.number, l
 		       , msg.hdr.type == SMB_MSG_TYPE_FILE ? msg.subj : msg.from);
 
+		/* A deleted header (e.g. the old copy of a relocated header) does not
+		   make a live header with the same number a duplicate */
+		BOOL counted = !(msg.hdr.attr & MSG_DELETE) || smb_undelete;
 		dupe_msgnum = FALSE;
-		for (i = 0; i < total && !dupe_msgnum; i++)
+		for (i = 0; counted && i < total && !dupe_msgnum; i++)
 			if (msg.hdr.number == numbers[i])
 				dupe_msgnum = TRUE;
 
@@ -245,7 +248,7 @@ int fixsmb(char* sub)
 			msg.hdr.number = highest + 1;
 			dupe_msgnum = FALSE;
 		}
-		if (!dupe_msgnum) {
+		if (counted && !dupe_msgnum) {
 			total++;
 			if ((numbers = realloc_or_free(numbers, total * sizeof(*numbers))) == NULL) {
 				fprintf(stderr, "realloc failure: %lu\n", total * sizeof(*numbers));

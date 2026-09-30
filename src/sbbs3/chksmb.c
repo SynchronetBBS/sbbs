@@ -445,7 +445,7 @@ int main(int argc, char **argv)
 				continue;
 			}
 			smb_unlockmsghdr(&smb, &msg);
-			size = smb_hdrblocks(smb_getmsghdrlen(&msg)) * SHD_BLOCK_LEN;
+			size = smb_msghdrblocks(&msg) * SHD_BLOCK_LEN;
 
 			if (msg.hdr.type == SMB_MSG_TYPE_FILE)
 				SAFECOPY(from, msg.subj);

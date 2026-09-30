@@ -2178,6 +2178,24 @@ uint smb_hdrblocks(uint length)
 }
 
 /****************************************************************************/
+/* Returns number of header blocks occupied by header 'msg' as read from	*/
+/* the header file (to step to the next header): its stored length, or its	*/
+/* calculated length when that is less, and at least one block.  A header	*/
+/* whose fields add up to more than its stored length is corrupt, and		*/
+/* stepping by the calculated length would skip the headers that follow.	*/
+/****************************************************************************/
+uint smb_msghdrblocks(smbmsg_t* msg)
+{
+	uint length = smb_getmsghdrlen(msg);
+	uint blocks;
+
+	if (msg->hdr.length < length)
+		length = msg->hdr.length;
+	blocks = smb_hdrblocks(length);
+	return blocks > 0 ? blocks : 1;
+}
+
+/****************************************************************************/
 /* Returns difference from specified timezone and UTC/GMT (in minutes)		*/
 /****************************************************************************/
 int smb_tzutc(int16_t zone)
