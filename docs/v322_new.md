@@ -168,9 +168,9 @@
   exceed the user's time left, and no longer resend a stale packet after
   a failed transfer
 - A translated Quit word no longer disables a command with the same first
-  letter (e.g. Spanish "Dejar" vs. the QWK menu's Download, a transfer
-  protocol, or the file-list Delete key); Quit uses Q there instead
-  (issue #1242)
+  letter: each prompt resolves the Quit key against its own command keys
+  (the translated letter, else Q, else no letter, leaving Ctrl-C), and
+  shows the key it accepts, e.g. "(Q)Salir" (issue #1242)
 - New-scan date/time entry: the hour field now shows its am/pm (e.g.
   "1 pm") and accepts "1 am", "1 pm", or a 24-hour hour of 0 or 13-23,
   re-prompting for an ambiguous hour of 1-12 without am/pm, instead of
@@ -409,8 +409,8 @@
   - `UeditARSearchPrompt` (user editor's `/` AR-string search prompt)
   - `Upload`, `Download`, `Configure`, `Select`, `Pointers` (translatable
     command words)
-- Stock Spanish and French `Quit` translations changed to "Terminar" and
-  "Quitter", which no longer collide with the QWK menu's Download key
+- Stock Spanish and French `Quit` translations changed to "Salir" and
+  "Quitter"
 - Dates and times (weekday and month names, am/pm, "Never") and node
   status/activity text now follow the user's language (`text.<lang>.ini`)
   instead of always using the system's default text; am/pm now come from
@@ -695,6 +695,8 @@
 - New `console.upload_key`, `download_key`, `configure_key`, `select_key`,
   and `pointers_key` properties; all `console.*_key` properties now return
   an uppercase key
+- New `console.cmd_keys` property: a script declares its menu's command
+  keys so `console.quit_key` (and `@QUITCHAR@`) avoid them
 
 ## JSexec
 

@@ -190,6 +190,7 @@ while(bbs.online) {
 	console.line_counter=0;	// defeat pause
 	console.clearline();
 	console.print("\x01n\xfe \x01h\x01bInterBBS \x01n\xfe ");
+	console.cmd_keys = "LTM";
 	console.mnemonics("Anyone: ~Telegram,\x01\\ Active-Users: ~Message/~List, or ~@Quit@: ");
 	console.aborted = false;
 	var key;

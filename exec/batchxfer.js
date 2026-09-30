@@ -52,6 +52,7 @@ function batchmenu()
 			bbs.menu("batchxfr");
 		}
 		bbs.nodesync();
+		console.cmd_keys = "CDLRU?";
 		console.print(bbs.text(bbs.text.BatchMenuPrompt));
 		var keys = "CDLRU?\r" + console.quit_key;
 		var ch = console.getkeys(keys, 0);

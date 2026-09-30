@@ -118,6 +118,7 @@ while(bbs.online) {
 			}
 		}
 		bbs.nodesync();
+		console.cmd_keys = user.is_sysop ? "?ARED" : "?";
 		var keys = console.quit_key + "?";
 		if(user.is_sysop) {
 			keys += "ARED";

@@ -8,7 +8,7 @@ require("sbbsdefs.js", "SCAN_CFG_NEW");
 
 // The menu's command keys, from the (translatable) command-word text strings.
 // Keys that collide are logged for the sysop; the first command in this order
-// keeps the key, and Quit falls back to 'Q' (#1242).
+// keeps the key. The Quit key is resolved against the others (#1242).
 function command_keys()
 {
 	var cmds = [
@@ -16,11 +16,11 @@ function command_keys()
 		{ name: "Upload",    key: console.upload_key },
 		{ name: "Configure", key: console.configure_key },
 		{ name: "Select",    key: console.select_key },
-		{ name: "Pointers",  key: console.pointers_key },
-		{ name: "Quit",      key: console.quit_key }
+		{ name: "Pointers",  key: console.pointers_key }
 	];
 	var keys = {};
 	var used = { '?': "Help" };
+	var cmd_keys = "?";
 
 	for(var i = 0; i < cmds.length; i++) {
 		var key = cmds[i].key;
@@ -31,13 +31,15 @@ function command_keys()
 			problem = format("%s and %s command keys collide ('%s')", used[key], cmds[i].name, key);
 		if(problem) {
 			log(LOG_ERR, format("QWK menu: %s for language '%s'", problem, user.lang));
-			if(cmds[i].name != "Quit" || used['Q'] !== undefined)
-				continue;
-			key = 'Q';
+			continue;
 		}
 		used[key] = cmds[i].name;
 		keys[cmds[i].name] = key;
+		cmd_keys += key;
 	}
+	console.cmd_keys = cmd_keys;
+	keys.Quit = console.quit_key;
+	keys.cmd_keys = cmd_keys;
 	return keys;
 }
 
@@ -174,12 +176,7 @@ function qwk_settings()
 function qwk_menu()
 {
 	var keys = command_keys();
-	var cmd_keys = "?";
-
-	for(var name in keys) {
-		if(name != "Quit")
-			cmd_keys += keys[name];
-	}
+	var cmd_keys = keys.cmd_keys;
 
 	while(bbs.online) {
 		if(menu_every_prompt())
@@ -191,7 +188,7 @@ function qwk_menu()
 		var ch = console.getkeys(cmd_keys + "\r" + (quit || ""), 0);
 		if(typeof ch == "string" && ch > ' ')
 			bbs.log_key(ch);
-		if(console.aborted || typeof ch != "string" || ch == quit || ch == '\r' || !bbs.online)
+		if(console.aborted || typeof ch != "string" || (quit && ch == quit) || ch == '\r' || !bbs.online)
 			break;
 		if(ch == '?') {
 			if((console.term_supports(USER_RIP) || !(user.settings & USER_EXPERT))
