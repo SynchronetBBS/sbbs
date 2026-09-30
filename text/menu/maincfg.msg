@@ -2,13 +2,13 @@
 4CÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄK¿
 C³ HY@MessageNoun@ Scan Configuration N4K³
 CÀKÄ0Bßßßßßßßßßßßßßßßßßßßßßßßßßßß4KÙ0BÜÜÜÜÜÜÜÜÜ
-Û HCNY NCAreas to scan for new messagesW‚BßÛ
-ÛW HCSY NCAreas to scan for your messagesW‚BÛ
+Û HCNY NCAreas to scan for new @MessagesNoun@W @POS:38@BßÛ
+ÛW HCSY NCAreas to scan for your @MessagesNoun@W @POS:39@BÛ
 Û HCP NCSet new-scan pointersWŒBÛ
 Û HCI NCReinitialize new-scan pointersWƒBÛ
 Û HCR NCReload new-scan config & pointers WBÛ
 Û HCW NCSave new-scan config & pointers   WBÛ
 Û²ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ²Û
-Û HCQ NC@Quit@ to Main/@MessageNoun@ menu @POS:39@WBÛ
+Û HCQ NC@Quit@ to Main/@MessageNoun@ @MenuNoun@ @POS:39@WBÛ
 ÛÛÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÛÛ
 Z

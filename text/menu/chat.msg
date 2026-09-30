@@ -7,7 +7,7 @@
 Û HCPNC Join/start private node/node chatG BÛ
 Û HCCY NC@Chat@ with Sysop: HY@SYSAVAIL-L####@NG BÛ
 Û HCTY NCTalk with The Guru (AI)WŠBÛ
-Û HCFY NCFinger (query) remote user/systemW BÛ
+Û HCFY NCFinger (query) remote @UserNoun@/systemW BÛ
 Û HCRY NCInternet Relay Chat (IRC)WˆBÛ
 Û HCIY NCInterBBS Instant MessagingW‡BÛ
 Û²ÄÄÄÄÄÄÄÄÄÄÄÄß4 HWToggles NBßÄÄÄÄÄÄÄÄÄÄÄÄ²Û
@@ -15,6 +15,6 @@
 Û HCA NCNode activity alertsW‚Cstate: HY@ALERTS-L3@NG BÛ
 ÛHC SY NCSplit-screen chatW…Cstate:G HY@SPLITP-L3@N BÛ
 Û²ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ²Û
-Û HCQY NC@Quit@ chat menuW @POS:39@BÛ
+Û HCQY NC@Quit@ chat @MenuNoun@W @POS:39@BÛ
 4K C HYAnytime: C^UN4Csers online  H^PN4Crivate msgH 
 Z

@@ -7,6 +7,6 @@
 ÛW HCVY NCSynchronet version informationWBWƒBÛ
 Û HCSY NCInformation on current sub-boardBG  BÛ
 Û²ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ²Û
-Û HCQ NC@Quit@ to Main menuWBW @POS:39@BÛ
+Û HCQ NC@Quit@ to Main @MenuNoun@WBW @POS:39@BÛ
 ÛÛÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÛÛ
 Z
