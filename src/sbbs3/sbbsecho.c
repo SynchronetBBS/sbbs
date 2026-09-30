@@ -1314,7 +1314,14 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 			}
 			fprintf(fp, "\r");
 		}
-		fprintf(fp, "\1MSGID: %s %08lx\r", smb_faddrtoa(&faddr, NULL), (ulong)time32(NULL));
+		/* FTS-0009: the serial must be unique, and several netmails can be
+		   created within the same second (e.g. a list split into parts) */
+		static uint32_t last_serial;
+		uint32_t        serial = (uint32_t)time32(NULL);
+		if (serial <= last_serial)
+			serial = last_serial + 1;
+		last_serial = serial;
+		fprintf(fp, "\1MSGID: %s %08lx\r", smb_faddrtoa(&faddr, NULL), (ulong)serial);
 	} else {
 		if (msg->ftn_msgid != NULL)
 			fprintf(fp, "\1MSGID: %.256s\r", msg->ftn_msgid);
