@@ -1322,7 +1322,10 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (strcmp(sp, "QUITCHAR") == 0) {
-		safe_snprintf(str, maxlen, "%c", quit_key());
+		char key = quit_key();
+		if (key == 0)
+			return nulstr;
+		safe_snprintf(str, maxlen, "%c", key);
 		return str;
 	}
 
@@ -2808,8 +2811,23 @@ char* sbbs_t::expand_atcodes(const char* src, char* buf, size_t size, const smbm
 				*at = '\0';
 				src += strlen(str) + 2;
 				const char* p = formatted_atcode(str, tmp, sizeof tmp, pmode);
-				if (p != NULL)
-					dst += strlcpy(dst, p, end - dst);
+				if (p != NULL) {
+					// A "~@Quit@" mnemonic: when the Quit key is not the word's
+					// first letter, show the key itself (or no key at all)
+					if (dst > buf && dst[-1] == '~' && strcmp(str, "Quit") == 0) {
+						char key = quit_key();
+						if (key != toupper((uchar)*p)) {
+							--dst;
+							if (key != 0) {
+								char mne[8];
+								snprintf(mne, sizeof mne, term->can_highlight() ? "(~%c)" : "~%c", key);
+								dst += strlcpy(dst, mne, end - dst);
+							}
+						}
+					}
+					if (dst < end)
+						dst += strlcpy(dst, p, end - dst);
+				}
 				continue;
 			}
 		}
