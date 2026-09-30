@@ -587,6 +587,7 @@ int sbbs_t::getmsgnum(int subnum, time_t t)
 
 /****************************************************************************/
 /* Returns the time of the message number pointed to by 'ptr'               */
+/* or 0 if 'ptr' is before the first message (no messages have been read)   */
 /****************************************************************************/
 time_t sbbs_t::getmsgtime(int subnum, uint ptr)
 {
@@ -613,9 +614,13 @@ time_t sbbs_t::getmsgtime(int subnum, uint ptr)
 		smb_close(&smb);
 		return 0;
 	}
-	if (!ptr || msg.idx.number >= ptr) {           /* ptr is before first message */
+	if (!ptr || msg.idx.number > ptr) {            /* ptr is before first message */
 		smb_close(&smb);
-		return msg.idx.time;                   /* so return time of first msg */
+		return 0;
+	}
+	if (msg.idx.number == ptr) {
+		smb_close(&smb);
+		return msg.idx.time;
 	}
 
 	if (smb_getlastidx(&smb, &lastidx)) {              /* Get last message index */

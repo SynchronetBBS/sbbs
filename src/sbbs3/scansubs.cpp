@@ -326,7 +326,7 @@ void sbbs_t::new_scan_ptr_cfg()
 				if (t > l)
 					l = (uint32_t)t;
 				bprintf(text[SubPtrLstFmt], j + 1, cfg.sub[usrsub[i][j]]->lname
-				        , timestr(t), nulstr);
+				        , t ? timestr(t) : text[All], nulstr);
 			}
 			sync();
 			mnemonics(text[WhichOrAll]);
@@ -345,7 +345,7 @@ void sbbs_t::new_scan_ptr_cfg()
 				if (s == -1 || s == quit_key())
 					continue;
 				if (s == text[DateLastKeys][0]) {
-					t = l;
+					t = l ? l : time(NULL);
 					if (inputnstime(&t) && !(sys_status & SS_ABORT)) {
 						for (j = 0; j < usrsubs[i] && online; j++) {
 							progress(text[LoadingMsgPtrs], j, usrsubs[i]);
@@ -385,6 +385,8 @@ void sbbs_t::new_scan_ptr_cfg()
 					continue;
 				if (s == text[DateLastKeys][0]) {
 					t = getmsgtime(usrsub[i][j], subscan[usrsub[i][j]].ptr);
+					if (t == 0)
+						t = time(NULL);
 					if (inputnstime(&t) && !(sys_status & SS_ABORT)) {
 						bputs(text[LoadingMsgPtrs]);
 						subscan[usrsub[i][j]].ptr = getmsgnum(usrsub[i][j], t);
