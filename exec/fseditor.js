@@ -1147,14 +1147,16 @@ function make_strings(soft,embed_colour)
 			attrs+=line[i].attr;
 		}
 		if(soft || line[i].hardcr) {
-			/* Trim whitespace from end */
-			str=str.replace(/([ \t]*)$/,function (str, spaces, offset, s) {
-				if(!embed_colour) {
-					/* Remove attributes for trimmed spaces */
-					attrs=attrs.substr(0,attrs.length-spaces.length);
-				}
-				return('');
-			});
+			/* Trim whitespace from end, except from a signature delimiter ("-- ") */
+			if(line[i].text != "-- ") {
+				str=str.replace(/([ \t]*)$/,function (str, spaces, offset, s) {
+					if(!embed_colour) {
+						/* Remove attributes for trimmed spaces */
+						attrs=attrs.substr(0,attrs.length-spaces.length);
+					}
+					return('');
+				});
+			}
 			str+='\r\n';
 			attrs+=attrs.substr(-1)+attrs.substr(-1);
 		}
