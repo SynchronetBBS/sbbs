@@ -416,6 +416,16 @@
     (more translatable words for menus and prompts)
   - `FileNoun`, `FilesNoun`, `MessageNoun`, `MessagesNoun`, `MenuNoun`,
     `MailNoun`, `UserNoun`, `UsersNoun` (translatable nouns: "File", etc.)
+- The stock menu files display their most common command words and nouns
+  from the text strings (e.g. `@List@ files in dir`), so a word translated
+  in `text.<lang>.ini` appears in every menu and a language needs few or no
+  menu files of its own; rows keep their columns with `@POS@` and are
+  clipped at the margin with `@TRUNCATE@` when a translation is too long
+- Stock Spanish, French and German text: the single-word strings are
+  translated (command words, nouns, month and weekday abbreviations) and
+  several wrong entries corrected
+- `@HOT@` mouse hot-spots now include text displayed by an @-code in the
+  hot-spot color (the QWK and mail menu command keys are clickable again)
 - Stock Spanish and French `Quit` translations changed to "Salir" and
   "Quitter"
 - Dates and times (weekday and month names, am/pm, "Never") and node
