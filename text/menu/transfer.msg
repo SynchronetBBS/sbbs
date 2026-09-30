@@ -12,6 +12,6 @@
   hy/D nc@Download@ from @UserNoun@ @POS:27@b€ @POS:53@€ @POS:56@hyV nc@View@ @FileNoun@ contents
   hy/U nc@Upload@ to @UserNoun@ @POS:27@b€ hyQ nc@Main@/@MessageNoun@ @Section@ @POS:53@b€ hy/L nc@Node@ activity
    hyZ nc@Upload@ to @Sysop@ @POS:27@b€ hyC ncChat @Section@ @POS:53@b€ hy^K ncCtrl-key @MenuNoun@
-   hyB ncBatch/Bi-dir xfers   b€ hyT ncTemp dir/Archive cmds b€  hyO nc@Logoff@ BBS (or hy/Onc)
+   hyB ncBatch @Transfer@ @MenuNoun@ @POS:27@b€ hyT ncTemp dir/Archive cmds b€  hyO nc@Logoff@ BBS (or hy/Onc)
 b ò€ò€  @SYSONLY@hy!nc @Sysop@ Menu@SYSONLY@
 @HOT:OFF@@INCLUDE:%zmenu/tail.msg@
