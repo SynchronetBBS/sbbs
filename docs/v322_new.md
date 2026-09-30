@@ -979,3 +979,9 @@ BBS over MQTT 5.0 (TLS-PSK, TLS+CA, or mTLS).
   prefix for the per-server log
 - Restored the "SBBSCTRL environment variable missing" startup
   warning
+
+## Synchronet Virtual DOS Modem (svdm.exe) for Windows
+
+- v0.7: no longer consumes a full CPU core while waiting for a call or
+  connected (issue #1176); `SocketSelectTimeout` now defaults to 1 (ms),
+  set it to 0 to restore the previous spin-wait while online

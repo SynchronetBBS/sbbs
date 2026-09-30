@@ -41,7 +41,7 @@
 #include "git_hash.h"
 
 #define TITLE "Synchronet Virtual DOS Modem for Windows"
-#define VERSION "0.6"
+#define VERSION "0.7"
 
 bool              external_socket;
 union xp_sockaddr addr;
@@ -1175,6 +1175,7 @@ int main(int argc, char** argv)
 	cfg.server_binary = TRUE;
 	cfg.port = IPPORT_TELNET;
 	cfg.address_family = ADDRESS_FAMILY_UNSPEC;
+	cfg.socket_select_timeout = 1;
 	SAFECOPY(cfg.client_file, "client.ini");
 	SAFECOPY(cfg.busy_notice, "\r\nSorry, not available right now\r\n");
 	SAFEPRINTF(cfg.answer_banner, "\r\n" TITLE " v" VERSION " Copyright %s Rob Swindell\r\n", &__DATE__[7]);
@@ -1412,20 +1413,34 @@ int main(int argc, char** argv)
 	ULONGLONG lastrx = 0;
 	int       largest_recv = 0;
 
-	while (WaitForSingleObject(process_info.hProcess, cfg.main_loop_delay) != WAIT_OBJECT_0) {
-		ULONGLONG now = xp_timer64();
-		if (modem.online) {
+	timeBeginPeriod(1); // 1ms granularity for the waits below
+
+	for (;;) {
+		// The mailslot can't be waited upon: every pass must block in either
+		// select() or the process wait, or this loop spins a CPU (#1176)
+		DWORD delay = cfg.main_loop_delay;
+		bool  blocked = false;
+		result = 0;
+		if (modem.online && xp_timer64() - lastrx >= rx_delay) {
 			fd_set         fds = {0};
 			FD_SET(sock, &fds);
-			struct timeval tv = { 0, cfg.socket_select_timeout * 1000 };
+			struct timeval tv = { cfg.socket_select_timeout / 1000, (cfg.socket_select_timeout % 1000) * 1000 };
 			result = select(/* ignored: */ 0, &fds, NULL, NULL, &tv);
-			if (result != 0) {
-				if (result == SOCKET_ERROR)
-					dprintf("select returned SOCKET_ERROR (%d) at %llu", WSAGetLastError(), now);
-				else
-					dprintf("select returned %d at %llu", result, now);
+			if (result == SOCKET_ERROR)
+				dprintf("select returned SOCKET_ERROR (%d) at %llu", WSAGetLastError(), xp_timer64());
+			else {
+				if (result != 0)
+					dprintf("select returned %d at %llu", result, xp_timer64());
+				blocked = true; // for SocketSelectTimeout, which may deliberately be 0
 			}
-			if (now - lastrx >= rx_delay &&  result == 1) {
+		}
+		if (!blocked && delay < 1)
+			delay = 1;
+		if (WaitForSingleObject(process_info.hProcess, delay) == WAIT_OBJECT_0)
+			break;
+		ULONGLONG now = xp_timer64();
+		if (modem.online) {
+			if (result == 1) {
 				int rd = recv(sock, buf, rx_buflen, /* flags: */ 0);
 				dprintf("recv returned %d", rd);
 				if (rd <= 0) {
@@ -1555,6 +1570,8 @@ int main(int argc, char** argv)
 			}
 		}
 	}
+
+	timeEndPeriod(1);
 
 	int retval = EXIT_SUCCESS;
 	fp = fopen("DOSXTRN.RET", "r");
