@@ -1,5 +1,5 @@
 N▀HRздддддддддддддддддддддддддддддддддддддддддддддддддддддд©
-N▀HRЁ4         WSynchronet Reneclone Email System Menu       0RЁ
+N▀HRЁ4         WSynchronet Reneclone Email System @MenuNoun@ @POS:68@0RЁ
 N▀HRюдддддддддддддддддддддддддддддддддддддддддддддддддддддды4Y@HOT@
 0R  4Cздддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддддд©
 0  4Ё [YRC]ead Email       [YEC]nter Email      [YNC]etmail      [YFC]eedback to SysOp Ё

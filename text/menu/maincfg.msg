@@ -1,6 +1,6 @@
 NHC@HOT@N@CLEAR@
 4CÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄK¿
-C³ HYMessage Scan Configuration N4K³
+C³ HY@MessageNoun@ Scan Configuration N4K³
 CÀKÄ0Bßßßßßßßßßßßßßßßßßßßßßßßßßßß4KÙ0BÜÜÜÜÜÜÜÜÜ
 Û HCNY NCAreas to scan for new messagesW‚BßÛ
 ÛW HCSY NCAreas to scan for your messagesW‚BÛ
@@ -9,6 +9,6 @@
 Û HCR NCReload new-scan config & pointers WBÛ
 Û HCW NCSave new-scan config & pointers   WBÛ
 Û²ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ²Û
-Û HCQ NCQuit to Main/Message menu         WBÛ
+Û HCQ NC@Quit@ to Main/@MessageNoun@ menu @POS:39@WBÛ
 ÛÛÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÛÛ
 Z

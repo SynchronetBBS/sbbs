@@ -10,7 +10,7 @@
  [CSB]earch for filenames
  [CVB]iew file contents
 N HB[CRB]emove file
-NHCFile Menu
+NHC@FileNoun@ @MenuNoun@
 WÚÄNÄÄÄÄÄÄÄÄÄ¿‚HM~~~~~~~~~NƒHBGet [CIB]nfo
 N³H BTransferW N³HBLog [COB]ff
 NÀÄÄÄÄÄÄÄÄÄHÄÙNHBorN HB[CQB]uit
