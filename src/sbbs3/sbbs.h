@@ -957,6 +957,7 @@ public:
 
 	/* getmsg.cpp */
 	int		loadmsg(smbmsg_t *msg, uint number);
+	bool	msg_subject_matches(const idxrec_t& idx, const smbmsg_t& msg);
 	void	show_msgattr(const smbmsg_t*);
 	void	show_msghdr(smb_t*, const smbmsg_t*, const char *subj = NULL, const char* from = NULL, const char* to = NULL);
 	bool	show_msg(smb_t*, smbmsg_t*, int p_mode = 0, post_t* post = NULL);

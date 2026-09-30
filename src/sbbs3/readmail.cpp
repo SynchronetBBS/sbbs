@@ -554,9 +554,9 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 					smb_unlocksmbhdr(&smb);
 				}
 				break;
-			case '>':
+			case '>':   /* Search Title forward */
 				for (u = smb.curmsg + 1; u < smb.msgs; u++)
-					if (mail[u].subj == msg.idx.subj)
+					if (msg_subject_matches(mail[u], msg))
 						break;
 				if (u < smb.msgs)
 					smb.curmsg = u;
@@ -567,7 +567,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 				break;
 			case '<':   /* Search Title backward */
 				for (i = smb.curmsg - 1; i > -1; i--)
-					if (mail[i].subj == msg.idx.subj)
+					if (msg_subject_matches(mail[i], msg))
 						break;
 				if (i > -1)
 					smb.curmsg = i;

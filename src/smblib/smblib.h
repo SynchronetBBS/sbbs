@@ -217,6 +217,7 @@ SMBEXPORT hash_t**  smb_msghashes(smbmsg_t*, const uchar* text, int source_mask)
 SMBEXPORT int       smb_addhashes(smb_t*, hash_t** hash_list, bool skip_marked);
 SMBEXPORT uint16_t  smb_name_crc(const char* name);
 SMBEXPORT uint16_t  smb_subject_crc(const char *subj);
+SMBEXPORT bool      smb_subject_match(const char* subj1, const char* subj2);
 SMBEXPORT void      smb_freehashes(hash_t**);
 SMBEXPORT int smb_getmsgidx_by_time(smb_t*, idxrec_t*, time_t);
 SMBEXPORT int smb_hashfile(const char* path, off_t, struct hash_data*);

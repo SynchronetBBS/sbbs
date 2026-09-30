@@ -122,6 +122,10 @@
 - More than 255 QWK network hubs are now supported
 - Removed unnecessary terminal color-change codes (regression
   from v3.21)
+- Fix: the message reader's title search (`>` and `<`, in sub-boards
+  and in mail) could jump to an unrelated message whose title merely
+  shared a 16-bit CRC with the current one; the titles are now
+  compared (issue #1208)
 - Fixed double-counting of terminal columns for Unicode output on
   UTF-8 terminals, which made word-wrap, right-margin truncation
   and centering wrap early (regression from v3.21, issue #1200)

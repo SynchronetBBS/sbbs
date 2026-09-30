@@ -369,6 +369,17 @@ int smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 	return retval;
 }
 
+/* Returns 'subj' with any leading "RE:" prefixes (and following spaces) skipped */
+static const char* skip_subject_re(const char* subj)
+{
+	while (strnicmp(subj, "RE:", 3) == 0) {
+		subj += 3;
+		while (*subj == ' ')
+			subj++;
+	}
+	return subj;
+}
+
 uint16_t smb_subject_crc(const char* subj)
 {
 	char*    str;
@@ -377,11 +388,7 @@ uint16_t smb_subject_crc(const char* subj)
 	if (subj == NULL)
 		return 0;
 
-	while (!strnicmp(subj, "RE:", 3)) {
-		subj += 3;
-		while (*subj == ' ')
-			subj++;
-	}
+	subj = skip_subject_re(subj);
 
 	if ((str = strdup(subj)) == NULL)
 		return 0xffff;
@@ -392,6 +399,31 @@ uint16_t smb_subject_crc(const char* subj)
 	free(str);
 
 	return crc;
+}
+
+/* Returns true if the two subjects are the same title: leading "RE:" prefixes,  */
+/* letter case, and trailing white-space are ignored, exactly as they are by     */
+/* smb_subject_crc(). Use this to confirm a match of idxrec_t.subj values, which */
+/* are only 16 bits wide and so collide for unrelated titles.                    */
+bool smb_subject_match(const char* subj1, const char* subj2)
+{
+	size_t len1;
+	size_t len2;
+
+	if (subj1 == NULL || subj2 == NULL)
+		return subj1 == subj2;
+
+	subj1 = skip_subject_re(subj1);
+	subj2 = skip_subject_re(subj2);
+
+	len1 = strlen(subj1);
+	while (len1 > 0 && IS_WHITESPACE(subj1[len1 - 1]))
+		len1--;
+	len2 = strlen(subj2);
+	while (len2 > 0 && IS_WHITESPACE(subj2[len2 - 1]))
+		len2--;
+
+	return len1 == len2 && strnicmp(subj1, subj2, len1) == 0;
 }
 
 uint16_t smb_name_crc(const char* name)

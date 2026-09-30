@@ -27,6 +27,27 @@
 #include "utf8.h"
 
 /****************************************************************************/
+/* Returns true if the message indexed by 'idx' (in the open msg base) has  */
+/* the same title as 'msg'. The 16-bit subject CRC in the index is only a   */
+/* candidate filter (unrelated titles collide), so on a CRC match the       */
+/* header is read and the actual subjects are compared to decide.           */
+/****************************************************************************/
+bool sbbs_t::msg_subject_matches(const idxrec_t& idx, const smbmsg_t& msg)
+{
+	if (idx.subj != msg.idx.subj)
+		return false;
+
+	smbmsg_t piece{};
+	piece.idx.offset = idx.offset;
+	if (loadmsg(&piece, idx.number) < 0)
+		return false;
+	smb_unlockmsghdr(&smb, &piece);
+	bool match = smb_subject_match(piece.subj, msg.subj);
+	smb_freemsgmem(&piece);
+	return match;
+}
+
+/****************************************************************************/
 /* Loads an SMB message from the open msg base the fastest way possible 	*/
 /* first by offset, and if that's the wrong message, then by number.        */
 /* Returns >=0 if the message was loaded and left locked, otherwise < 0.	*/

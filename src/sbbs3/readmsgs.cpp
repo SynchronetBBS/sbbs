@@ -173,9 +173,22 @@ post_t * sbbs_t::loadposts(uint32_t *posts, int subnum, uint ptr, int mode, uint
 				continue;
 			if (!can_view_deleted_msgs(subnum))
 				continue;
-			if (!sub_op(subnum)          /* not sub-op */
-			    && idx.from != namecrc && idx.from != aliascrc) /* not for you */
-				continue;
+			if (!sub_op(subnum)) {       /* not sub-op: only your own deleted msgs */
+				if (idx.from != namecrc && idx.from != aliascrc) /* not from you */
+					continue;
+				msg.idx = idx;           /* CRC is only a candidate filter: confirm by name */
+				if (!smb_lockmsghdr(&smb, &msg)) {
+					if (!smb_getmsghdr(&smb, &msg)) {
+						if (stricmp(msg.from, useron.alias) != 0
+						    && stricmp(msg.from, useron.name) != 0)
+							skip = 1;
+						smb_freemsgmem(&msg);
+					}
+					smb_unlockmsghdr(&smb, &msg);
+				}
+				if (skip)
+					continue;
+			}
 		}
 
 		if ((idx.attr & (MSG_MODERATED | MSG_VALIDATED | MSG_DELETE)) == MSG_MODERATED) {
@@ -1536,7 +1549,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				break;
 			case '>':   /* Search Title forward */
 				for (u = smb.curmsg + 1; u < smb.msgs; u++)
-					if (post[u].idx.subj == msg.idx.subj)
+					if (msg_subject_matches(post[u].idx, msg))
 						break;
 				if (u < smb.msgs)
 					smb.curmsg = u;
@@ -1548,7 +1561,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				break;
 			case '<':   /* Search Title backward */
 				for (i = smb.curmsg - 1; i > -1; i--)
-					if (post[i].idx.subj == msg.idx.subj)
+					if (msg_subject_matches(post[i].idx, msg))
 						break;
 				if (i > -1)
 					smb.curmsg = i;
