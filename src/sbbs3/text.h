@@ -986,6 +986,14 @@ enum text {
 	,Forward
 	,PostVerb
 	,New
+	,Main
+	,Text
+	,Sysop
+	,Transfer
+	,Area
+	,Logoff
+	,Section
+	,Node
 	,FileNoun
 	,FilesNoun
 	,MessageNoun

@@ -976,16 +976,24 @@ var Scan=966;
 var Forward=967;
 var PostVerb=968;
 var New=969;
-var FileNoun=970;
-var FilesNoun=971;
-var MessageNoun=972;
-var MessagesNoun=973;
-var MenuNoun=974;
-var MailNoun=975;
-var UserNoun=976;
-var UsersNoun=977;
+var Main=970;
+var Text=971;
+var Sysop=972;
+var Transfer=973;
+var Area=974;
+var Logoff=975;
+var Section=976;
+var Node=977;
+var FileNoun=978;
+var FilesNoun=979;
+var MessageNoun=980;
+var MessagesNoun=981;
+var MenuNoun=982;
+var MailNoun=983;
+var UserNoun=984;
+var UsersNoun=985;
 
-var TOTAL_TEXT=977;
+var TOTAL_TEXT=985;
 
 /* Former names of renamed strings */
 var NScanPmQ=406;
