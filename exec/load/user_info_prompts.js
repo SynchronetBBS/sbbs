@@ -680,15 +680,17 @@ function get_protocol(user, options)
 		user = js.global.user;
 	if (!options)
 		options = {};
-	var keylist = console.quit_key;
 	console.newline();
 	console.print(options.choose_protocol_or_none
 		|| gettext("Choose a default file transfer protocol (or [ENTER] for None):", "choose_protocol_or_none"));
 	console.newline(2);
-	keylist += bbs.xfer_prot_menu();
+	var keylist = bbs.xfer_prot_menu();
+	console.cmd_keys = keylist;
+	var quit = console.quit_key;
 	console.mnemonics(options.ProtocolOrQuit || bbs.text(bbs.text.ProtocolOrQuit));
-	var kp = console.getkeys(keylist);
-	if (kp === console.quit_key || console.aborted)
+	var kp = console.getkeys(keylist + quit);
+	console.cmd_keys = "";
+	if ((quit && kp === quit) || console.aborted)
 		return false;
 	user.download_protocol = kp;
 	if (kp && console.yesno(options.HangUpAfterXferQ || bbs.text(bbs.text.HangUpAfterXferQ)))

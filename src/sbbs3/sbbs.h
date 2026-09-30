@@ -825,7 +825,7 @@ public:
 	void	user_info(void);
 	void	xfer_policy(void);
 
-	char*	xfer_prot_menu(enum XFER_TYPE, user_t* user = nullptr, char* buf = nullptr, size_t size = 0);
+	char*	xfer_prot_menu(enum XFER_TYPE, user_t* user = nullptr, char* buf = nullptr, size_t size = 0, const char* extra_keys = nullptr);
 	void	node_stats(uint node_num);
 	void	sys_stats(void);
 	void	logonlist(const char* args = "");

@@ -1167,8 +1167,11 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 					vote.hdr.attr = MSG_VOTE;
 					notice = text[PollVoteNotice];
 				} else {
+					char keys[8] = "UD";
+					cmd_keys_scope keys_scope(this, keys);
+					add_quit_key(keys, sizeof keys);
 					mnemonics(text[VoteMsgUpDownOrQuit]);
-					int cmd = getkeys("UDQ", 0);
+					int cmd = getkeys(keys, 0);
 					if (cmd != 'U' && cmd != 'D')
 						break;
 					vote.hdr.attr = (cmd == 'U' ? MSG_UPVOTE : MSG_DOWNVOTE);

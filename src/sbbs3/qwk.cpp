@@ -431,8 +431,8 @@ bool sbbs_t::qwk_download()
 			int prot = protnum(useron.prot, XFER_DOWNLOAD);
 			if (prot >= cfg.total_prots) {
 				char keys[128];
+				cmd_keys_scope keys_scope(this, nullptr);
 				xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
-				cmd_keys_scope keys_scope(this, keys);
 				add_quit_key(keys, sizeof keys);
 				mnemonics(text[ProtocolOrQuit]);
 				char ch = (char)getkeys(keys, 0);
@@ -468,8 +468,8 @@ bool sbbs_t::qwk_upload()
 
 	delfiles(cfg.temp_dir, ALLFILES);
 	bprintf(text[UploadingREP], cfg.sys_id);
+	cmd_keys_scope keys_scope(this, nullptr);
 	xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
-	cmd_keys_scope keys_scope(this, keys);
 	add_quit_key(keys, sizeof keys);
 	mnemonics(text[ProtocolOrQuit]);
 	char ch = (char)getkeys(keys, 0);

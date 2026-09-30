@@ -229,8 +229,8 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 		}
 		{ /* Remote */
 			char keys[128];
+			cmd_keys_scope keys_scope(this, nullptr);
 			xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
-			cmd_keys_scope keys_scope(this, keys);
 			add_quit_key(keys, sizeof keys);
 			mnemonics(text[ProtocolOrQuit]);
 			ch = (char)getkeys(keys, 0);
@@ -1093,8 +1093,8 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 		}
 		{ /* Remote */
 			char keys[128];
+			cmd_keys_scope keys_scope(this, nullptr);
 			xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
-			cmd_keys_scope keys_scope(this, keys);
 			add_quit_key(keys, sizeof keys);
 			mnemonics(text[ProtocolOrQuit]);
 			ch = (char)getkeys(keys, 0);

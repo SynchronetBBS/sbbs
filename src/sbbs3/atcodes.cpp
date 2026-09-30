@@ -2816,7 +2816,7 @@ char* sbbs_t::expand_atcodes(const char* src, char* buf, size_t size, const smbm
 					// first letter, show the key itself (or no key at all)
 					if (dst > buf && dst[-1] == '~' && strcmp(str, "Quit") == 0) {
 						char key = quit_key();
-						if (key != toupper((uchar)*p)) {
+						if (key != (char)toupper((uchar)*p)) {
 							--dst;
 							if (key != 0) {
 								char mne[8];

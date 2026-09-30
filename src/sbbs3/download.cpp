@@ -402,8 +402,8 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 
 	i = protnum(prot, XFER_DOWNLOAD);
 	if (i >= cfg.total_prots) {
+		cmd_keys_scope keys_scope(this, nullptr);
 		xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
-		cmd_keys_scope keys_scope(this, keys);
 		add_quit_key(keys, sizeof keys);
 		mnemonics(text[ProtocolOrQuit]);
 		ch = (char)getkeys(keys, 0);

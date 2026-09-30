@@ -136,8 +136,8 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 			(void)remove(msgpath);
 			return false;
 		}
+		cmd_keys_scope keys_scope(this, nullptr);
 		xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
-		cmd_keys_scope keys_scope(this, keys);
 		add_quit_key(keys, sizeof keys);
 		mnemonics(text[ProtocolOrQuit]);
 		ch = (char)getkeys(keys, 0);

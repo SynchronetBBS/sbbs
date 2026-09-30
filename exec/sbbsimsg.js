@@ -312,3 +312,4 @@ while(bbs.online) {
 			break prompt;
 	}
 }
+console.cmd_keys = "";

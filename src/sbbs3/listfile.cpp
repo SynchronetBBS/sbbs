@@ -1031,12 +1031,9 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 				continue;
 			}
 			current_file = f;
-			xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
+			cmd_keys_scope keys_scope(this, nullptr);
+			xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys, m > 1 ? "BN\r\b-" : "BN\r");
 			current_file = nullptr;
-			SAFECAT(keys, "BN\r");
-			if (m > 1)
-				SAFECAT(keys, "\b-");
-			cmd_keys_scope keys_scope(this, keys);
 			add_quit_key(keys, sizeof keys);
 			sync();
 			mnemonics(text[ProtocolBatchQuitOrNext]);

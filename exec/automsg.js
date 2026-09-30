@@ -38,12 +38,16 @@ function automsg()
 	var automsg = system.data_dir + "msgs/auto.msg";
 	while(bbs.online && !js.termiated && !console.aborted) {
 		bbs.nodesync();
+		console.cmd_keys = "RWD";
 		if(user.is_sysop)
 			console.mnemonics(options.sysop_prompt
-				|| "\r\nAuto Message - ~Read, ~Write, ~Delete or \x01\\~Quit: ");
+				|| "\r\nAuto Message - ~Read, ~Write, ~Delete or \x01\\~@Quit@: ");
 		else
 			console.mnemonics(options.prompt || bbs.text(bbs.text.AutoMsg));
-		switch(console.getkeys("RWQD",0)) {
+		var quit = console.quit_key;
+		var ch = console.getkeys("RWD" + quit, 0);
+		console.cmd_keys = "";
+		switch(ch) {
 			case 'R':
 				console.printfile(automsg,P_NOABORT|P_NOATCODES|P_WORDWRAP|P_NOERROR);
 				break;
@@ -97,7 +101,7 @@ function automsg()
 				if(user.is_sysop && !console.noyes(format(bbs.text(bbs.text.DeleteTextFileQ), automsg)))
 					file_remove(automsg);
 				break;
-			case 'Q':
+			case quit:
 				return;
 		}
 	}

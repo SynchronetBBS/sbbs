@@ -41,8 +41,8 @@ bool sbbs_t::batch_upload()
 		bputs(text[UploadQueueIsEmpty]);
 		return false;
 	}
+	cmd_keys_scope keys_scope(this, nullptr);
 	xfer_prot_menu(XFER_BATCH_UPLOAD, &useron, keys, sizeof keys);
-	cmd_keys_scope keys_scope(this, keys);
 	add_quit_key(keys, sizeof keys);
 	if (!create_batchup_lst())
 		return false;
@@ -195,8 +195,8 @@ bool sbbs_t::start_batch_download()
 	i = protnum(useron.prot, XFER_BATCH_DOWNLOAD);
 	if (i >= cfg.total_prots) {
 		char keys[128];
+		cmd_keys_scope keys_scope(this, nullptr);
 		xfer_prot_menu(XFER_BATCH_DOWNLOAD, &useron, keys, sizeof keys);
-		cmd_keys_scope keys_scope(this, keys);
 		add_quit_key(keys, sizeof keys);
 		sync();
 		mnemonics(text[ProtocolOrQuit]);

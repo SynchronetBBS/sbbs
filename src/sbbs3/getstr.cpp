@@ -650,8 +650,8 @@ int sbbs_t::getnum(uint max, uint dflt)
 		ch = getkey(K_UPPER);
 		if (ch > 0x7f)
 			continue;
-		if (ch == quit_key()) {
-			outchar(quit_key());
+		if (is_quit_key(ch)) {
+			outchar(ch);
 			if (useron.misc & COLDKEYS)
 				ch = getkey(K_UPPER);
 			if (ch == BS || ch == DEL) {

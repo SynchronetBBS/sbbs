@@ -2513,7 +2513,10 @@ js_xfer_prot_menu(JSContext *cx, uintN argc, jsval *arglist)
 		xfer_type = ((xfer_type == XFER_UPLOAD) ? XFER_BATCH_UPLOAD : XFER_BATCH_DOWNLOAD);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->xfer_prot_menu(xfer_type, &sbbs->useron, keys, sizeof keys);
+	{
+		cmd_keys_scope keys_scope(sbbs, nullptr);
+		sbbs->xfer_prot_menu(xfer_type, &sbbs->useron, keys, sizeof keys);
+	}
 	JSString* js_str = JS_NewStringCopyZ(cx, keys);
 	if (js_str == nullptr)
 		return JS_FALSE;

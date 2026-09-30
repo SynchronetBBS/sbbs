@@ -44,6 +44,7 @@ function batchmenu()
 		console.print(bbs.text(bbs.text.NoFilesInBatchQueue));
 		return;
 	}
+	console.cmd_keys = "CDLRU?";
 	if(console.term_supports(USER_RIP) && !(user.settings & USER_EXPERT))
 		bbs.menu("batchxfr");
 	while(bbs.online && (file_area.upload_dir !== undefined || bbs.batch_dnload_total || bbs.batch_upload_total)) {
@@ -52,7 +53,6 @@ function batchmenu()
 			bbs.menu("batchxfr");
 		}
 		bbs.nodesync();
-		console.cmd_keys = "CDLRU?";
 		console.print(bbs.text(bbs.text.BatchMenuPrompt));
 		var keys = "CDLRU?\r" + console.quit_key;
 		var ch = console.getkeys(keys, 0);

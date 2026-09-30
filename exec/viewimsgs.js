@@ -43,6 +43,7 @@ while (bbs.online && !console.aborted) {
             break;
     }
 }
+console.cmd_keys = "";
 if(!displayed)
 	writeln("Sorry, no messages.");
 displayed;

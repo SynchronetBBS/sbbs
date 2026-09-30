@@ -1143,40 +1143,53 @@ const char* prot_menu_file[] = {
 	, "biprot"
 };
 
-char* sbbs_t::xfer_prot_menu(enum XFER_TYPE type, user_t* user, char* keys, size_t size)
+/****************************************************************************/
+/* Displays the transfer protocol menu for 'type' and returns (in 'keys')	*/
+/* the available protocol keys followed by 'extra_keys', which are declared	*/
+/* as the current command keys before anything is displayed				*/
+/****************************************************************************/
+char* sbbs_t::xfer_prot_menu(enum XFER_TYPE type, user_t* user, char* keys, size_t size, const char* extra_keys)
 {
-	if (type == XFER_DOWNLOAD && current_file != nullptr)
-		menu("download", P_NOERROR);
-	size_t count = 0;
-	bool   menu_used = menu(prot_menu_file[type], P_NOERROR);
 	if (user == nullptr)
 		user = &useron;
-	term->cond_blankline();
-	int    printed = 0;
-	for (int i = 0; i < cfg.total_prots; i++) {
+	auto available = [&](int i) {
 		if (!chk_ar(cfg.prot[i]->ar, user, &client))
-			continue;
-		if (type == XFER_UPLOAD && cfg.prot[i]->ulcmd[0] == 0)
-			continue;
-		if (type == XFER_DOWNLOAD && cfg.prot[i]->dlcmd[0] == 0)
-			continue;
-		if (type == XFER_BATCH_UPLOAD && cfg.prot[i]->batulcmd[0] == 0)
-			continue;
-		if (type == XFER_BATCH_DOWNLOAD && cfg.prot[i]->batdlcmd[0] == 0)
-			continue;
-		if (keys != nullptr && count + 1 < size)
-			keys[count++] = cfg.prot[i]->mnemonic;
-		if (menu_used)
-			continue;
-		if (printed && (term->cols < 80 || (printed % 2) == 0))
-			term->newline();
-		bprintf(text[TransferProtLstFmt], cfg.prot[i]->mnemonic, cfg.prot[i]->name);
-		printed++;
-	}
-	if (keys != nullptr)
+			return false;
+		switch (type) {
+			case XFER_UPLOAD:         return cfg.prot[i]->ulcmd[0] != 0;
+			case XFER_DOWNLOAD:       return cfg.prot[i]->dlcmd[0] != 0;
+			case XFER_BATCH_UPLOAD:   return cfg.prot[i]->batulcmd[0] != 0;
+			case XFER_BATCH_DOWNLOAD: return cfg.prot[i]->batdlcmd[0] != 0;
+			default:                  return true;
+		}
+	};
+	if (keys != nullptr && size > 0) {
+		size_t count = 0;
+		for (int i = 0; i < cfg.total_prots; i++) {
+			if (available(i) && count + 1 < size)
+				keys[count++] = cfg.prot[i]->mnemonic;
+		}
 		keys[count] = '\0';
-	if (!menu_used)
+		if (extra_keys != nullptr)
+			strlcat(keys, extra_keys, size);
+		set_cmd_keys(keys);
+	}
+	if (type == XFER_DOWNLOAD && current_file != nullptr)
+		menu("download", P_NOERROR);
+	bool menu_used = menu(prot_menu_file[type], P_NOERROR);
+	term->cond_blankline();
+	if (!menu_used) {
+		int printed = 0;
+		for (int i = 0; i < cfg.total_prots; i++) {
+			if (!available(i))
+				continue;
+			if (printed && (term->cols < 80 || (printed % 2) == 0))
+				term->newline();
+			bprintf(text[TransferProtLstFmt], cfg.prot[i]->mnemonic, cfg.prot[i]->name);
+			printed++;
+		}
 		term->newline();
+	}
 	return keys;
 }
 

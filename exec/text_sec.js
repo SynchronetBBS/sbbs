@@ -108,6 +108,7 @@ while(bbs.online) {
 		var list = read_list(usrsec[cursec]);
 		var menu = "text" + (cursec + 1);
 		console.aborted = false;
+		console.cmd_keys = user.is_sysop ? "?ARED" : "?";
 		if(bbs.menu_exists(menu))
 			bbs.menu(menu);
 		else {
@@ -118,7 +119,6 @@ while(bbs.online) {
 			}
 		}
 		bbs.nodesync();
-		console.cmd_keys = user.is_sysop ? "?ARED" : "?";
 		var keys = console.quit_key + "?";
 		if(user.is_sysop) {
 			keys += "ARED";
@@ -241,4 +241,5 @@ while(bbs.online) {
 				break;
 		}
 	}
+	console.cmd_keys = "";
 }

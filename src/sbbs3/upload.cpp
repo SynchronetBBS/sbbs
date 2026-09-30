@@ -454,12 +454,10 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 	if (fexistcase(path)) {   /* File is on disk */
 		result = uploadfile(&f);
 	} else {
-		xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
-		sync();
 		bool batch = !(dirnum == cfg.user_dir || !cfg.max_batup);  /* no batch user to user xfers */
-		if (batch)
-			SAFECAT(keys, "B");
-		cmd_keys_scope keys_scope(this, keys);
+		cmd_keys_scope keys_scope(this, nullptr);
+		xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys, batch ? "B" : nullptr);
+		sync();
 		add_quit_key(keys, sizeof keys);
 		mnemonics(text[batch ? ProtocolBatchOrQuit : ProtocolOrQuit]);
 		ch = (char)getkeys(keys, 0);
@@ -575,8 +573,8 @@ bool sbbs_t::recvfile(char *fname, char prot, bool autohang)
 	if (prot)
 		ch = toupper(prot);
 	else {
+		cmd_keys_scope keys_scope(this, nullptr);
 		xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
-		cmd_keys_scope keys_scope(this, keys);
 		add_quit_key(keys, sizeof keys);
 		mnemonics(text[ProtocolOrQuit]);
 		ch = (char)getkeys(keys, 0);
