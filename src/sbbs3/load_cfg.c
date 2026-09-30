@@ -26,6 +26,7 @@
 #include "datewrap.h"
 #include "xpdatetime.h"
 #include "text.h"   /* TOTAL_TEXT */
+#include "text_alias.h"
 #include "readtext.h"
 #include "ini_file.h"
 #if defined(SBBS) && defined(USE_CRYPTLIB)
@@ -36,22 +37,24 @@ static void prep_cfg(scfg_t* cfg);
 
 int     lprintf(int level, const char *fmt, ...);   /* log output */
 
-// Former text string ID names, still accepted (e.g. in text.ini files)
-static const struct {
-	const char* name;
-	int num;
-} text_id_alias[] = {
-	{ "NScanPmQ", PM },
-	{ "NScanAmQ", AM },
-};
+// Returns 0-based text string index of a current text string ID name,
+// or TOTAL_TEXT if 'id' is not one
+static int get_text_id_num(const char* id)
+{
+	int i;
+	for (i = 0; i < TOTAL_TEXT; ++i)
+		if (strcmp(text_id[i], id) == 0)
+			break;
+	return i;
+}
 
 // Returns 0-based text string index of a former text string ID name,
 // or TOTAL_TEXT if 'id' is not one
 int get_text_alias_num(const char* id)
 {
-	for (size_t i = 0; i < sizeof text_id_alias / sizeof text_id_alias[0]; ++i)
-		if (strcmp(text_id_alias[i].name, id) == 0)
-			return text_id_alias[i].num;
+	for (size_t i = 0; i < TEXT_ID_ALIASES; ++i)
+		if (strcmp(text_id_alias[i].old_name, id) == 0)
+			return get_text_id_num(text_id_alias[i].name);
 	return TOTAL_TEXT;
 }
 
@@ -59,10 +62,10 @@ int get_text_alias_num(const char* id)
 // string index in 'num'), or NULL past the end
 const char* get_text_alias(size_t index, int* num)
 {
-	if (index >= sizeof text_id_alias / sizeof text_id_alias[0])
+	if (index >= TEXT_ID_ALIASES)
 		return NULL;
-	*num = text_id_alias[index].num;
-	return text_id_alias[index].name;
+	*num = get_text_id_num(text_id_alias[index].name);
+	return text_id_alias[index].old_name;
 }
 
 // Returns 0-based text string index
@@ -75,10 +78,10 @@ int get_text_num(const char* id)
 			return TOTAL_TEXT;
 		return i - 1;
 	}
-	for (i = 0; i < TOTAL_TEXT; ++i)
-		if (strcmp(text_id[i], id) == 0)
-			return i;
-	return get_text_alias_num(id);
+	i = get_text_id_num(id);
+	if (i >= TOTAL_TEXT)
+		i = get_text_alias_num(id);
+	return i;
 }
 
 /****************************************************************************/

@@ -7,6 +7,7 @@
 #include "gen_defs.h"
 #include "str_util.h"
 #include "getctrl.h"
+#include "text_alias.h"
 
 /****************************************************************************/
 /* Reads special TEXT.DAT printf style text lines, splicing multiple lines, */
@@ -239,6 +240,7 @@ int main(int argc, char **argv)
 	}
 	fprintf(text_id, "// Synchronet text.dat string identifiers\n\n");
 	fprintf(text_id, "const char* const text_id[]={\n");
+	int alias_num[TEXT_ID_ALIASES] = {0};
 	do {
 		i++;
 		p = readtext(text_dat, &comment);
@@ -256,6 +258,10 @@ int main(int argc, char **argv)
 			fprintf(text_h, "\t%c%s\n", i == 1?' ':',', macro);
 			truncstr(macro, " \t");
 			fprintf(text_js, "var %s=%d;\n", macro, i);
+			for (size_t a = 0; a < TEXT_ID_ALIASES; ++a) {
+				if (strcmp(text_id_alias[a].name, macro) == 0)
+					alias_num[a] = i;
+			}
 			fprintf(text_id, "\t%c\"%s\"\n", i == 1 ? ' ' : ',', macro);
 			fprintf(text_defaults_c, "\t%c%s // %s\n", i == 1?' ':',', cstr, comment);
 		}
@@ -270,6 +276,15 @@ int main(int argc, char **argv)
 	fclose(text_h);
 	fputs("\n", text_js);
 	fprintf(text_js, "var TOTAL_TEXT=%d;\n", i - 1);
+	fputs("\n/* Former names of renamed strings */\n", text_js);
+	for (size_t a = 0; a < TEXT_ID_ALIASES; ++a) {
+		if (alias_num[a] == 0) {
+			fprintf(stderr, "Alias %s refers to unknown text ID: %s\n"
+			        , text_id_alias[a].old_name, text_id_alias[a].name);
+			continue;
+		}
+		fprintf(text_js, "var %s=%d;\n", text_id_alias[a].old_name, alias_num[a]);
+	}
 	fprintf(text_js, "\nthis;\n");
 	fclose(text_js);
 	fputs("};\n", text_defaults_c);

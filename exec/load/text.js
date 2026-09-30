@@ -964,4 +964,8 @@ var Pointers=954;
 
 var TOTAL_TEXT=954;
 
+/* Former names of renamed strings */
+var NScanPmQ=406;
+var NScanAmQ=407;
+
 this;
