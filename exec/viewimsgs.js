@@ -3,7 +3,8 @@
 require("sbbsdefs.js", 'P_NOATCODES');
 require("key_defs.js", 'KEY_HOME');
 
-var prev_key = bbs.text.Previous[0];
+var prev_key = console.prev_key;
+var next_key = console.next_key;
 var num = -1;
 var displayed = 0;
 loop:
@@ -18,9 +19,9 @@ while (bbs.online && !console.aborted) {
     print("\1n\1cInstant messages displayed \1h" + timestamp);
     console.printfile(msg, P_NOATCODES | P_AUTO_UTF8);
 	++displayed;
-    console.cmd_keys = "RPN";
+    console.cmd_keys = "R" + prev_key + next_key;
     console.mnemonics("\r\n~@Quit@, ~Recent, ~@Previous@ or [~@Next@]: ");
-    switch(console.getkeys("\b-+[]\x02\x1e\x0a\x1d\x06RPN\r" + console.quit_key, 0)) {
+    switch(console.getkeys("\b-+[]\x02\x1e\x0a\x1d\x06R" + prev_key + next_key + "\r" + console.quit_key, 0)) {
         case 'R':
         case KEY_HOME:
             num = -1;
