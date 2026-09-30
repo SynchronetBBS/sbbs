@@ -25,6 +25,19 @@
 
 /****************************************************************************/
 /****************************************************************************/
+/* Makes the file being processed the subject of the @FILE_* codes (e.g. in text strings) while in scope */
+struct current_file_scope {
+	sbbs_t* sbbs;
+	current_file_scope(sbbs_t* sbbs, file_t* f) : sbbs(sbbs)
+	{
+		sbbs->current_file = f;
+	}
+	~current_file_scope()
+	{
+		sbbs->current_file = nullptr;
+	}
+};
+
 bool sbbs_t::uploadfile(file_t* f)
 {
 	char  path[MAX_PATH + 1];
@@ -36,7 +49,8 @@ bool sbbs_t::uploadfile(file_t* f)
 	FILE* stream;
 
 	curdirnum = f->dir;
-	bprintf(text[ProcessingUploadedFile], f->name);
+	current_file_scope file_scope(this, f);
+	bputs(text[ProcessingUploadedFile]);
 	if (findfile(&cfg, f->dir, f->name, NULL)) {
 		errormsg(WHERE, ERR_CHK, f->name, f->dir);
 		return false;

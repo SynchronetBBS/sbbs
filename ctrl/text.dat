@@ -1180,4 +1180,4 @@
 "Mail"                                                       983 MailNoun
 "User"                                                       984 UserNoun
 "Users"                                                      985 UsersNoun
-"\r\n\1n\1hProcessing uploaded file \1c%s\1n ...\r\n"        986 ProcessingUploadedFile
+"\r\n\1n\1hProcessing uploaded file \1c@FILE_NAME@\1n @ELLIPSIS@\r\n" 986 ProcessingUploadedFile
