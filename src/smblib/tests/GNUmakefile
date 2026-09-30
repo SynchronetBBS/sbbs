@@ -26,7 +26,8 @@ TEST_DEPS = $(SMBLIB) $(ENCODE_LIB) $(HASH_LIB) $(XPDEV_LIB)
 TESTS = $(EXEODIR)$(DIRSEP)smbidxtest \
         $(EXEODIR)$(DIRSEP)smbfiletest \
         $(EXEODIR)$(DIRSEP)smbfilenametest \
-        $(EXEODIR)$(DIRSEP)smballoctest
+        $(EXEODIR)$(DIRSEP)smballoctest \
+        $(EXEODIR)$(DIRSEP)smbupdatetest
 
 .PHONY: all test
 all: $(TESTS)
@@ -49,3 +50,7 @@ $(EXEODIR)$(DIRSEP)smbfilenametest: smbfilenametest.c $(CUTEST_SRC)$(DIRSEP)CuTe
 $(EXEODIR)$(DIRSEP)smballoctest: smballoctest.c $(CUTEST_SRC)$(DIRSEP)CuTest.c $(TEST_DEPS) | $(EXEODIR)
 	@echo Linking $@
 	$(QUIET)$(CC) $(CFLAGS) smballoctest.c $(CUTEST_SRC)$(DIRSEP)CuTest.c -o $@ $(LDFLAGS) $(TEST_LIBS)
+
+$(EXEODIR)$(DIRSEP)smbupdatetest: smbupdatetest.c $(CUTEST_SRC)$(DIRSEP)CuTest.c $(TEST_DEPS) | $(EXEODIR)
+	@echo Linking $@
+	$(QUIET)$(CC) $(CFLAGS) smbupdatetest.c $(CUTEST_SRC)$(DIRSEP)CuTest.c -o $@ $(LDFLAGS) $(TEST_LIBS)

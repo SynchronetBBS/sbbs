@@ -1698,123 +1698,54 @@ void sbbs_t::automsg()
 /****************************************************************************/
 bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 {
-	char     buf[SDT_BLOCK_LEN];
-	char     msgtmp[MAX_PATH + 1];
-	uint16_t xlat;
-	int      file, i, j, x;
-	long     length;
-	off_t    offset;
-	FILE *   instream;
-	bool     is_msg = (msg->hdr.type == SMB_MSG_TYPE_NORMAL);
+	char   msgtmp[MAX_PATH + 1];
+	char*  buf;
+	char*  tail;
+	FILE*  fp;
+	off_t  length;
+	size_t len;
+	int    i;
+	bool   is_msg = (msg->hdr.type == SMB_MSG_TYPE_NORMAL);
 
-	if (!msg->hdr.total_dfields) {
-		if (!is_msg)
-			smb_dfield(msg, TEXT_BODY, 0);
-		else
-			return false;
-	}
+	if (!msg->hdr.total_dfields && is_msg)
+		return false;
 
 	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
 	(void)removecase(msgtmp);
-	msgtotxt(smb, msg, msgtmp, /* header: */ false, /* mode: */ is_msg ? GETMSGTXT_ALL : GETMSGTXT_BODY_ONLY);
+	msgtotxt(smb, msg, msgtmp, /* header: */ false, /* mode: */ GETMSGTXT_BODY_ONLY);
 	if (!editfile(msgtmp, cfg.level_linespermsg[useron.level], WM_EXPANDLF, msg->to, msg->from, msg->subj, subnum_is_valid(smb->subnum) ? cfg.sub[smb->subnum]->sname : nulstr))
 		return false;
-	length = (long)flength(msgtmp);
-	if (length < 1L)
+	if ((length = flength(msgtmp)) < 1)
 		return false;
-
-	length += 2;   /* +2 for translation string */
-
-	if ((i = smb_locksmbhdr(smb)) != SMB_SUCCESS) {
-		errormsg(WHERE, ERR_LOCK, smb->file, i, smb->last_error);
+	if ((buf = (char*)malloc((size_t)length + 1)) == NULL) {
+		errormsg(WHERE, ERR_ALLOC, msgtmp, (size_t)length + 1);
 		return false;
 	}
-
-	if ((i = smb_getstatus(smb)) != SMB_SUCCESS) {
-		errormsg(WHERE, ERR_READ, smb->file, i, smb->last_error);
+	if ((fp = fopen(msgtmp, "rb")) == NULL) {
+		free(buf);
+		errormsg(WHERE, ERR_OPEN, msgtmp, O_RDONLY);
 		return false;
 	}
+	len = fread(buf, 1, (size_t)length, fp);
+	fclose(fp);
+	buf[len] = '\0';
+	if (len >= 2 && buf[len - 2] == '\r' && buf[len - 1] == '\n')
+		buf[len - 2] = '\0';
 
-	if (!(smb->status.attr & SMB_HYPERALLOC)) {
-		if ((i = smb_open_da(smb)) != SMB_SUCCESS) {
-			errormsg(WHERE, ERR_OPEN, smb->file, i, smb->last_error);
-			return false;
-		}
-		if ((i = smb_freemsg_dfields(smb, msg, 1)) != SMB_SUCCESS)
-			errormsg(WHERE, ERR_WRITE, smb->file, i, smb->last_error);
+	// Only the body was edited: keep the tail (#1270)
+	if ((tail = smb_getmsgtxt(smb, msg, GETMSGTXT_TAIL_ONLY)) != NULL) {
+		// Drop the line terminator smb_getmsgtxt() appends to each data field
+		len = strlen(tail);
+		if (len >= 2 && tail[len - 2] == '\r' && tail[len - 1] == '\n')
+			tail[len - 2] = '\0';
 	}
-
-	msg->dfield[0].type = TEXT_BODY;              /* Make one single data field */
-	msg->dfield[0].length = length;
-	msg->dfield[0].offset = 0;
-	if (is_msg) {
-		for (x = 1; x < msg->hdr.total_dfields; x++) {     /* Clear the other data fields */
-			msg->dfield[x].type = UNUSED;             /* so we leave the header length */
-			msg->dfield[x].length = 0;                /* unchanged */
-			msg->dfield[x].offset = 0;
-		}
-	}
-
-	if (smb->status.attr & SMB_HYPERALLOC)
-		offset = smb_hallocdat(smb);
-	else {
-		if (is_msg
-		    && ((smb->subnum != INVALID_SUB && cfg.sub[smb->subnum]->misc & SUB_FAST)
-		        || (smb->subnum == INVALID_SUB && cfg.sys_misc & SM_FASTMAIL)))
-			offset = smb_fallocdat(smb, length, 1);
-		else
-			offset = smb_allocdat(smb, length, 1);
-		smb_close_da(smb);
-	}
-
-	if (offset < 0) {
-		smb_unlocksmbhdr(smb);
-		errormsg(WHERE, ERR_ALLOC, msgtmp, length);
-		return false;
-	}
-
-	msg->hdr.offset = (uint32_t)offset;
-	if ((file = open(msgtmp, O_RDONLY | O_BINARY)) == -1
-	    || (instream = fdopen(file, "rb")) == NULL) {
-		smb_unlocksmbhdr(smb);
-		smb_freemsgdat(smb, offset, length, 1);
-		errormsg(WHERE, ERR_OPEN, msgtmp, O_RDONLY | O_BINARY);
-		return false;
-	}
-
-	setvbuf(instream, NULL, _IOFBF, FNOPEN_BUF_SIZE);
-	fseeko(smb->sdt_fp, offset, SEEK_SET);
-	xlat = XLAT_NONE;
-	if (fwrite(&xlat, 2, 1, smb->sdt_fp) != 1) {
-		errormsg(WHERE, ERR_WRITE, smb->file, 2);
-		smb_unlocksmbhdr(smb);
-		smb_freemsgdat(smb, offset, length, 1);
-		return false;
-	}
-	x = SDT_BLOCK_LEN - 2;              /* Don't read/write more than 255 */
-	while (!feof(instream)) {
-		memset(buf, 0, x);
-		j = fread(buf, 1, x, instream);
-		if (j < 1)
-			break;
-		if (j > 1 && (j != x || feof(instream)) && buf[j - 1] == LF && buf[j - 2] == CR)
-			buf[j - 1] = buf[j - 2] = 0; /* Convert to NULL */
-		if (fwrite(buf, j, 1, smb->sdt_fp) != 1) {
-			fclose(instream);
-			errormsg(WHERE, ERR_WRITE, smb->file, j);
-			smb_unlocksmbhdr(smb);
-			smb_freemsgdat(smb, offset, length, 1);
-			return false;
-		}
-		x = SDT_BLOCK_LEN;
-	}
-	fflush(smb->sdt_fp);
-	fclose(instream);
-
-	smb_unlocksmbhdr(smb);
-	msg->hdr.length = (ushort)smb_getmsghdrlen(msg);
-	if ((i = smb_putmsghdr(smb, msg)) != SMB_SUCCESS)
+	// Writes the new text before freeing the old (#1252)
+	if ((i = smb_getmsgidx(smb, msg)) == SMB_SUCCESS)
+		i = smb_updatemsgtxt(smb, msg, smb_storage_mode(&cfg, smb), buf, tail);
+	if (i != SMB_SUCCESS)
 		errormsg(WHERE, ERR_WRITE, smb->file, i, smb->last_error);
+	free(buf);
+	smb_freemsgtxt(tail);
 	return i == SMB_SUCCESS;
 }
 

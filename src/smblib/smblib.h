@@ -295,6 +295,7 @@ SMBEXPORT int smb_addfile_withlist(smb_t*, smbfile_t*, int storage, const char* 
 SMBEXPORT int       smb_renewfile(smb_t*, smbfile_t*, int storage, const char* path);
 SMBEXPORT int       smb_getfile(smb_t*, smbfile_t*, enum file_detail);
 SMBEXPORT int       smb_putfile(smb_t*, smbfile_t*);
+SMBEXPORT int       smb_updatemsgtxt(smb_t*, smbmsg_t*, int storage, const char* body, const char* tail);
 SMBEXPORT int       smb_updatefile(smb_t*, smbfile_t*, int storage, const char* extdesc, const char* auxdata);
 SMBEXPORT int       smb_findfile(smb_t*, const char* filename, smbfile_t*);
 SMBEXPORT int       smb_findfile_other(smb_t*, const char* filename, uint32_t number);
