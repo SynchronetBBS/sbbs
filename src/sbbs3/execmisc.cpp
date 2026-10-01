@@ -72,7 +72,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							bprintf("%d", *lp);
 					}
 					else
-						putmsg(cmdstr(*pp, path, csi->str, buf)
+						putmsg(cmdstr(*pp, path, csi->str, buf, sizeof buf, EX_UNSPECIFIED)
 						       , P_SAVEATR | P_NOABORT | P_NOATCODES);
 					csi->ip += 4;
 					return 0;
@@ -81,9 +81,9 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					op = *(csi->ip - 1);
 					p = format_string(this, csi);
 					if (op == VAR_PRINTF)
-						putmsg(cmdstr(p, path, csi->str, buf), P_SAVEATR | P_NOABORT | P_NOATCODES);
+						putmsg(cmdstr(p, path, csi->str, buf, sizeof buf, EX_UNSPECIFIED), P_SAVEATR | P_NOABORT | P_NOATCODES);
 					else {
-						lputs(LOG_INFO, cmdstr(p, path, csi->str, buf));
+						lputs(LOG_INFO, cmdstr(p, path, csi->str, buf, sizeof buf, EX_UNSPECIFIED));
 					}
 					free(p);
 					return 0;
@@ -239,7 +239,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4; /* Skip variable name */
 					if (pp)
 						*pp = copystrvar(csi, *pp
-						                 , cmdstr((char *)csi->ip, path, csi->str, buf));
+						                 , cmdstr((char *)csi->ip, path, csi->str, buf, sizeof buf, EX_UNSPECIFIED));
 					while (*(csi->ip++));    /* Find NULL */
 					return 0;
 				case SET_INT_VAR:
@@ -254,7 +254,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4; /* Skip variable name */
 					if (pp && *pp)
 						csi->logic = stricmp(*pp
-						                     , cmdstr((char *)csi->ip, path, csi->str, buf));
+						                     , cmdstr((char *)csi->ip, path, csi->str, buf, sizeof buf, EX_UNSPECIFIED));
 					else {  /* Uninitialized str var */
 						if (*(csi->ip) == 0)    /* Blank static str */
 							csi->logic = LOGIC_TRUE;
@@ -267,7 +267,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip variable name */
 					if (pp && *pp && strstr(*pp
-					                        , cmdstr((char *)csi->ip, path, csi->str, buf)))
+					                        , cmdstr((char *)csi->ip, path, csi->str, buf, sizeof buf, EX_UNSPECIFIED)))
 						csi->logic = LOGIC_TRUE;
 					else
 						csi->logic = LOGIC_FALSE;
@@ -279,7 +279,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4; /* Skip variable name */
 					if (pp && *pp)
 						csi->logic = strnicmp(*pp
-						                      , cmdstr((char *)csi->ip, path, csi->str, buf), i);
+						                      , cmdstr((char *)csi->ip, path, csi->str, buf, sizeof buf, EX_UNSPECIFIED), i);
 					else
 						csi->logic = LOGIC_FALSE;
 					while (*(csi->ip++));    /* Find NULL */
@@ -530,7 +530,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip variable name */
 					p = format_string(this, csi);
-					cmdstr(p, path, csi->str, str);
+					cmdstr(p, path, csi->str, str, sizeof str, EX_UNSPECIFIED);
 					if (pp)
 						*pp = copystrvar(csi, *pp, str);
 					free(p);
@@ -933,7 +933,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 				case CHKFILE_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
-					if (pp && *pp && fexistcase(cmdstr(*pp, path, csi->str, buf)))
+					if (pp && *pp && fexistcase(cmdstr(*pp, path, csi->str, buf, sizeof buf, EX_UNSPECIFIED)))
 						csi->logic = LOGIC_TRUE;
 					else
 						csi->logic = LOGIC_FALSE;
@@ -1004,7 +1004,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 				case RECEIVE_FILE_VIA:
 					j = *(csi->ip - 1);
 					ch = *(csi->ip++);    /* Protocol */
-					cmdstr((char *)csi->ip, csi->str, csi->str, str);
+					cmdstr((char *)csi->ip, csi->str, csi->str, str, sizeof str, EX_UNSPECIFIED);
 					while (*(csi->ip++));   /* Find NULL */
 					i = protnum(ch, j == SEND_FILE_VIA ? XFER_DOWNLOAD : XFER_UPLOAD);
 					csi->logic = LOGIC_FALSE;
@@ -1062,7 +1062,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 2;
 					csi->logic = LOGIC_FALSE;
 					if (*(csi->ip - 7) == FIO_OPEN) {
-						cmdstr((char *)csi->ip, path, csi->str, str);
+						cmdstr((char *)csi->ip, path, csi->str, str, sizeof str, EX_UNSPECIFIED);
 						while (*(csi->ip++));    /* skip filename */
 					}
 					else {
@@ -1382,7 +1382,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4;
 					p = format_string(this, csi);
 					if (lp1 && *lp1 < csi->files) {
-						cmdstr(p, path, csi->str, str);
+						cmdstr(p, path, csi->str, str, sizeof str, EX_UNSPECIFIED);
 						fwrite(str, 1, strlen(str), csi->file[*lp1]);
 					}
 					free(p);
@@ -1591,7 +1591,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 			}
 			if (text[i] != text_sav[i] && text[i] != nulstr)
 				free(text[i]);
-			j = strlen(cmdstr((char *)csi->ip, path, csi->str, buf));
+			j = strlen(cmdstr((char *)csi->ip, path, csi->str, buf, sizeof buf, EX_UNSPECIFIED));
 			if (!j)
 				text[i] = (char*)nulstr;
 			else

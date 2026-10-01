@@ -1305,7 +1305,7 @@ int sbbs_t::exec(csi_t *csi)
 								text[i] = text_sav[i];
 							}
 						SAFEPRINTF2(str, "%s%s.dat"
-						            , cfg.ctrl_dir, cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
+						            , cfg.ctrl_dir, cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED));
 						if ((stream = fnopen(&file, str, O_RDONLY)) == NULL) {
 							errormsg(WHERE, ERR_OPEN, str, O_RDONLY);
 							break;
@@ -1339,7 +1339,7 @@ int sbbs_t::exec(csi_t *csi)
 				while (*(csi->ip++));    /* Find NULL */
 				return 0;
 			case CS_LOG:
-				log(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
+				log(cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED));
 				break;
 			case CS_GETCMD:
 				csi->cmd = (uchar)getkeys((char*)csi->ip, 0);
@@ -1384,33 +1384,33 @@ int sbbs_t::exec(csi_t *csi)
 				mnemonics((char*)csi->ip);
 				break;
 			case CS_PRINT:
-				putmsg(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR | P_NOABORT | ((cfg.sys_misc & SM_XATTR_SUPPORT) << P_XATTR_SHIFT));
+				putmsg(cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED), P_SAVEATR | P_NOABORT | ((cfg.sys_misc & SM_XATTR_SUPPORT) << P_XATTR_SHIFT));
 				break;
 			case CS_PRINT_LOCAL:
-				lputs(LOG_INFO, cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
+				lputs(LOG_INFO, cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED));
 				break;
 			case CS_PRINT_REMOTE:
-				term_out(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
+				term_out(cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED));
 				break;
 			case CS_PRINTFILE:
-				printfile(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR);
+				printfile(cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED), P_SAVEATR);
 				break;
 			case CS_PRINTFILE_REMOTE:
 				if (online != ON_REMOTE)
 					break;
-				printfile(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR);
+				printfile(cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED), P_SAVEATR);
 				break;
 			case CS_PRINTFILE_LOCAL:
 				lprintf(LOG_WARNING, "PRINTFILE_LOCAL is no longer functional");
 				break;
 			case CS_CHKFILE:
-				csi->logic = !fexistcase(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
+				csi->logic = !fexistcase(cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED));
 				break;
 			case CS_EXEC:
-				external(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), 0);
+				external(cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED), 0);
 				break;
 			case CS_EXEC_INT:
-				external(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), EX_STDIO);
+				external(cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED), EX_STDIO);
 				break;
 			case CS_EXEC_XTRN:
 				for (i = 0; i < cfg.total_xtrns; i++)
@@ -1420,19 +1420,19 @@ int sbbs_t::exec(csi_t *csi)
 					exec_xtrn(i);
 				break;
 			case CS_EXEC_BIN:
-				exec_bin(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), csi, /* startup_dir: */ NULL);
+				exec_bin(cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED), csi, /* startup_dir: */ NULL);
 				break;
 			case CS_YES_NO:
-				csi->logic = !yesno(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
+				csi->logic = !yesno(cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED));
 				break;
 			case CS_NO_YES:
-				csi->logic = !noyes(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
+				csi->logic = !noyes(cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED));
 				break;
 			case CS_MENU:
-				menu(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
+				menu(cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED));
 				break;
 			case CS_SETSTR:
-				strcpy(csi->str, cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
+				strcpy(csi->str, cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED));
 				break;
 			case CS_SET_MENU_DIR:
 				cmdstr((char*)csi->ip, path, csi->str, menu_dir);
@@ -1441,7 +1441,7 @@ int sbbs_t::exec(csi_t *csi)
 				cmdstr((char*)csi->ip, path, csi->str, menu_file);
 				break;
 			case CS_COMPARE_STR:
-				csi->logic = stricmp(csi->str, cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
+				csi->logic = stricmp(csi->str, cmdstr((char*)csi->ip, path, csi->str, (char*)buf, sizeof buf, EX_UNSPECIFIED));
 				break;
 			case CS_COMPARE_KEYS:
 				for (i = 0; csi->ip[i]; i++)

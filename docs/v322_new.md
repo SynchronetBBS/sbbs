@@ -126,6 +126,9 @@
   index once per batch instead of once per uploaded file, and each file
   is named as its post-processing (upload testers, hashing, duplicate
   scan) starts (issue #1132)
+- Fix: a long `@TYPE:` or `@INCLUDE:` @-code argument could overflow a
+  stack buffer (issue #1191); over-long command lines are now also
+  logged when truncated
 - Fix: terminal commands embedded in message text (APC strings, e.g.
   SyncTERM's file-store command, which could plant a file in every
   reader's SyncTERM cache) are stripped when a message is displayed;

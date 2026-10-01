@@ -2220,17 +2220,27 @@ static const char* quoted_string(const char* str, char* buf, size_t maxlen)
 /*****************************************************************************/
 char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, int mode)
 {
+	/* An unsized caller-supplied buffer must be at least as large as the member buffer */
+	return cmdstr(instr, fpath, fspec, outstr, sizeof(cmdstr_output), mode);
+}
+
+char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, size_t outlen, int mode)
+{
 	char str[MAX_PATH + 1], *cmd;
 	int  i, j, len;
 	bool native = (mode == EX_UNSPECIFIED) || native_executable(&cfg, instr, mode);
 	(void) native;
 
-	if (outstr == NULL)
+	if (outstr == NULL) {
 		cmd = cmdstr_output;
+		outlen = sizeof(cmdstr_output);
+	}
 	else
 		cmd = outstr;
+	if (outlen < 1)
+		return cmd;
 	len = strlen(instr);
-	int maxlen = (int)sizeof(cmdstr_output) - 1;
+	int maxlen = (int)outlen - 1;
 	for (i = j = 0; i < len && j < maxlen; i++) {
 		if (instr[i] == '%') {
 			i++;
@@ -2438,6 +2448,8 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 			cmd[j++] = instr[i];
 	}
 	cmd[j] = 0;
+	if (i < len)
+		lprintf(LOG_WARNING, "cmdstr() output truncated at %d chars: %s", maxlen, instr);
 
 	return cmd;
 }

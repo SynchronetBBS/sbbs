@@ -899,7 +899,8 @@ public:
 	bool	inputnstime32(time32_t *dt);
 	bool	inputnstime(time_t *dt);
 	bool	chkpass(char *pass, user_t* user, bool unique = false);
-	char *	cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, int mode = EX_UNSPECIFIED);
+	char *	cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, size_t outlen, int mode);
+	char *	cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, int mode = EX_UNSPECIFIED); // outstr, when not NULL, must hold sizeof(cmdstr_output)
 	char	cmdstr_output[512]{};
 	char*	ultoac(uint32_t, char*, char sep=',');
 	char*	u64toac(uint64_t, char*, char sep=',');
