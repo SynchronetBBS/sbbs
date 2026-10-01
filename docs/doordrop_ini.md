@@ -206,7 +206,7 @@ The door:
 - on POSIX, SHOULD ignore `SIGPIPE` or write with `MSG_NOSIGNAL`, so a caller hanging up doesn't kill the door, and SHOULD exit promptly when a read returns end of file or an error;
 - on Windows, calls `WSAStartup()` before using an inherited socket, and remembers that `WSAEventSelect()` and `WSAAsyncSelect()` switch the socket to non-blocking mode: to restore blocking mode it first clears that association, such as with `WSAEventSelect(s, NULL, 0)`.
 
-`COMM_CHARSET` is the character set the door must send and expect on the connection, which isn't necessarily the caller's terminal character set (`TERM_CHARSET`). When the host translates the door's output, for example from CP437 to UTF-8, the value is the encoding the door writes (`CP437`). When the host doesn't translate, the value is the caller's actual encoding, even one the door can't produce. A door that can't use the given character set SHOULD tell the user and exit rather than send bytes the terminal will misdisplay. It writes that message in printable US-ASCII, which CP437, UTF-8 and US-ASCII terminals all display the same way, using only uppercase letters, digits, spaces and common punctuation, ending each line with CR LF: on a PETSCII terminal, lowercase ASCII letters can show as graphics characters.
+`COMM_CHARSET` is the character set the door must send and expect on the connection, which isn't necessarily the caller's terminal character set (`TERM_CHARSET`). When the host translates the door's output, for example from CP437 to UTF-8, the value is the encoding the door writes (`CP437`). When the host doesn't translate, the value is the caller's actual encoding, even one the door can't produce. A door that can't use the given character set SHOULD tell the user and exit rather than send bytes the terminal will misdisplay. It writes that message in printable US-ASCII, which CP437, UTF-8 and US-ASCII terminals all display the same way, using only uppercase letters, digits, spaces and common punctuation, ending each line with CR LF, except on an ATASCII terminal, where the line ends with `0x9B` and CR LF would show as two graphics characters: on a PETSCII terminal, lowercase ASCII letters can show as graphics characters.
 
 | Name | Character set |
 | --- | --- |
@@ -214,8 +214,9 @@ The door:
 | `UTF-8` | UTF-8 |
 | `US-ASCII` | 7-bit ASCII |
 | `PETSCII` | Commodore PETSCII |
+| `ATASCII` | Atari 8-bit ATASCII [ATASCII] |
 
-These are this spec's own names, used by both `COMM_CHARSET` and `TERM_CHARSET`: three match IANA names or aliases, and `PETSCII` has no IANA registration. Producers write them exactly as listed, so a consumer MAY compare them case-sensitively, as it may a token. For a character set not listed, a producer MAY use its IANA name; a consumer compares such a name case-insensitively, as IANA names are.
+These are this spec's own names, used by both `COMM_CHARSET` and `TERM_CHARSET`: three match IANA names or aliases, and `PETSCII` and `ATASCII` have no IANA registration. Producers write them exactly as listed, so a consumer MAY compare them case-sensitively, as it may a token. For a character set not listed, a producer MAY use its IANA name; a consumer compares such a name case-insensitively, as IANA names are.
 
 ### User: `[user]`
 
@@ -254,7 +255,7 @@ There is no standard security level key. A level's range, its ordering (whether 
 | --- | --- | --- | --- |
 | `TERM_COLS` | int | Width in character cells | `80` |
 | `TERM_ROWS` | int | Usable height in character cells, excluding any status line the host adds | `24` |
-| `TERM_TYPE` | token | The kind of terminal: `dumb` (plain text, no cursor control), `ansi` (ANSI escape sequences), `avatar` (AVATAR/0+ [FSC-0025], which includes ANSI, so a door without AVATAR output treats it as `ansi`) or `petscii` (Commodore PETSCII control codes). A RIPscrip terminal is `ansi`, with `TERM_RIP` set | `dumb` |
+| `TERM_TYPE` | token | The kind of terminal: `dumb` (plain text, no cursor control), `ansi` (ANSI escape sequences), `avatar` (AVATAR/0+ [FSC-0025], which includes ANSI, so a door without AVATAR output treats it as `ansi`) `petscii` (Commodore PETSCII control codes) or `atascii` (Atari 8-bit ATASCII control codes, with `0x9B` as end of line). A RIPscrip terminal is `ansi`, with `TERM_RIP` set | `dumb` |
 | `TERM_RIP` | ascii | RIPscrip version the terminal reported, as `<major>.<minor>`, such as `1.54` from a `RIPSCRIP015400` reply to `CSI !`; or `unknown` when the terminal supports RIPscrip but reported no version, such as when the user set RIP manually. Written only when `TERM_TYPE` is `ansi`; missing means no RIPscrip | none |
 | `TERM_CHARSET` | ascii | The caller's terminal character set, from the names listed under `COMM_CHARSET`. It equals `COMM_CHARSET` when the host passes the door's bytes through untranslated, and may differ when the host translates them | unknown |
 | `TERM_MONO` | bool | `1` = no color, because the terminal can't show it or the user turned it off: the door may send ANSI sequences but no color changes, whatever `TERM_COLORS` says | `0` |
@@ -611,7 +612,7 @@ DOORDROP.INI would be one more drop file type that the sysop selects in SCFG for
   - `FILE_UTF8` and `COMM_CHARSET` as described under Encodings below, and `TERM_CHARSET` from the user's terminal character set, the same value Synchronet writes as `chars` in the node's `terminal.ini`, with `PETSCII` in place of its `CBM-ASCII`.
   - `TERM_TERMINFO` from the terminal type the client sent, the same string Synchronet logs at logon from Telnet TERMINAL-TYPE, the SSH pty request or RLogin; left out when the client sent none. `TERM_NAME` needs a query Synchronet doesn't send yet (a to-do below).
   - `TERM_CTERM` from the CTerm revision Synchronet detected, including a fork's third field (`console.cterm_fork`, #1250).
-  - `TERM_TYPE` from the user's terminal type, the same value Synchronet writes as `type` in the node's `terminal.ini`, in lowercase and with `RIP` written as `ansi`; never `avatar`, which Synchronet doesn't detect or support; `TERM_RIP` when that type is `RIP`, with the version from the logon detection reply, or `unknown` when RIP was set manually; and `TERM_BRIGHT_BG` from `ICE_COLOR`, whether auto-detected or set manually, and `TERM_MONO=1` when the settings have `ANSI` without `COLOR` (XTRN.DAT's `Mono`).
+  - `TERM_TYPE` from the user's terminal type, the same value Synchronet writes as `type` in the node's `terminal.ini`, in lowercase and with `RIP` written as `ansi`; never `avatar` or `atascii`, which Synchronet doesn't detect or support; `TERM_RIP` when that type is `RIP`, with the version from the logon detection reply, or `unknown` when RIP was set manually; and `TERM_BRIGHT_BG` from `ICE_COLOR`, whether auto-detected or set manually, and `TERM_MONO=1` when the settings have `ANSI` without `COLOR` (XTRN.DAT's `Mono`).
   - `TERM_DOORWAY` when the terminal identified itself as CTerm.
   - `TERM_SIXEL` for CTerm from its device attribute 4, as Synchronet's JavaScript library `cterm_lib.js` already does. Synchronet sends `CSI c` at logon but parses only CTerm's reply, so other terminals get the key only after a to-do below.
   - `TERM_MOUSE` from the mouse capability detected for the session: `2` when the terminal answered the DECRQM request for mode 1016, or is a CTerm recent enough to report pixels; `1` when it answered for mode 1006 or set CTerm device attribute 7, or when detection was silent and the user's mouse setting is on; otherwise left out. `PREF_MOUSE=0` when the user's mouse setting (`MOUSE`) is off. Today that setting is Synchronet's only record of mouse support, answering "Does your terminal support mouse reporting"; the to-do below separates capability from consent.
@@ -714,7 +715,7 @@ Work Synchronet needs beyond writing the file itself, before every key above can
 ## Open questions
 
 - [x] **Name:** `DOORDROP.INI` and `DOORDROP_INI`, from draft 0.7; `DROPFILE.INI` was too close to DTS-0001's `DROPFILE.###`. (Case needs no decision: the door gets the full path, and a door that looks the file up by name anyway must ignore case.)
-- [ ] **ATASCII:** add `atascii` to the character sets and `TERM_TYPE` once a door or host author wants to consume it; no definition without a consumer and a tester. (`avatar` was added for converters from DORINFO1.DEF; see Coverage of older drop files.)
+- [x] **ATASCII and AVATAR:** both added. `atascii` is a character set and a `TERM_TYPE`, as `petscii` is, since ATASCII is a glyph set and a control-code set at once; `avatar` was added for converters from DORINFO1.DEF (see Coverage of older drop files). No host writes either yet.
 - [ ] **Keys the older drop files have and this one doesn't:** the proposals under Coverage of older drop files (`USER_PHONE`, `USER_LOGONS`, `USER_LAST_ON`, the transfer totals, `TIME_USED`): add them, or leave them to vendor keys?
 - [ ] **Other file encodings:** a `FILE_CHARSET` key for CP866, CP850, CP865 or Amiga Latin-1 doors was declined as unneeded; revisit if a host or door that can't move to UTF-8 asks for it.
 - [ ] **`SESSION_ID`:** a value unique per launch, so a door can tell a fresh file from one it has already seen, and host and door logs can be matched?
@@ -751,6 +752,7 @@ Work Synchronet needs beyond writing the file itself, before every key above can
 - [BBSDEV.DRP] "BBSDEV.DRP 1.0". <https://realdeuce.github.io/bbsdev.drp/>
 - [PHENOM] Smooth <PHENOM>, "Phenom Dropfile" v1.2 (JSON and line-based drop files for Mystic BBS), Phenom Productions, May 11, 2022. <https://web.archive.org/web/20250725102445/http://phenomprod.com/releases/mystic/pn-dropfile12.zip>
 - [FSC-0015] "FOSSIL" specification, FidoNet Technical Standards Committee. <http://ftsc.org/docs/fsc-0015.001>
+- [ATASCII] "ATASCII", Wikipedia. <https://en.wikipedia.org/wiki/ATASCII>
 - [FSC-0025] Stanislav, G., "AVATAR video terminal specification" (AVATAR/0+), FidoNet Technical Standards Committee. <http://ftsc.org/docs/fsc-0025.001>
 - [CTERM] "CTerm terminal emulation" (SyncTERM), in the Synchronet source tree. <https://gitlab.synchro.net/main/sbbs/-/blob/master/src/conio/cterm.adoc>
 - [XTERM] Dickey, T., "XTerm Control Sequences". <https://invisible-island.net/xterm/ctlseqs/ctlseqs.html>
