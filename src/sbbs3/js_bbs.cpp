@@ -2303,15 +2303,22 @@ js_get_archive_formats(JSContext *cx, uintN argc, jsval *arglist)
 	if ((array = JS_NewArrayObject(cx, 0, NULL)) == NULL)
 		return JS_FALSE;
 	str_list_t list = sbbs->user_archive_formats();
+	bool       success = true;
 	for (jsint i = 0; list != NULL && list[i] != NULL; i++) {
 		JSString* str = JS_NewStringCopyZ(cx, list[i]);
-		if (str == NULL)
+		if (str == NULL) {
+			success = false;
 			break;
+		}
 		jsval val = STRING_TO_JSVAL(str);
-		if (!JS_SetElement(cx, array, i, &val))
+		if (!JS_SetElement(cx, array, i, &val)) {
+			success = false;
 			break;
+		}
 	}
 	strListFree(&list);
+	if (!success) /* out of memory: propagate the pending exception rather than return a partial list */
+		return JS_FALSE;
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
 	return JS_TRUE;
 }
@@ -4966,7 +4973,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	},
 	{"qwk_download",    js_qwk_download,    0,  JSTYPE_BOOLEAN, JSDOCSTR("")
 	 , JSDOCSTR("Pack and send a QWK packet of new messages to the user. "
-		        "Message scan pointers are advanced only if the packet is sent successfully.<br>"
+		        "Message scan pointers are advanced only if the packet is sent successfully. "
+		        "The node's temporary directory is cleared afterwards.<br>"
 		        "Returns <tt>true</tt> if the packet was sent.")
 	 , 322
 	},

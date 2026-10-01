@@ -404,14 +404,24 @@ bool sbbs_t::qwk_download()
 	char      tmp2[256];
 	uint      msgcnt{};
 	bool      sent = false;
-	uint32_t* sav_ptr;
+	struct saved_ptrs {
+		uint32_t ptr;   /* new-scan pointer */
+		uint32_t last;  /* the on-line reader's resume position */
+	}* saved;
 
-	if ((sav_ptr = (uint32_t *)malloc(sizeof(uint32_t) * cfg.total_subs)) == NULL) {
-		errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(uint32_t) * cfg.total_subs);
+	/* The setup the QWK section does before running its module, for callers outside it (#1260) */
+	getusrdirs();
+	if (useron.rest & UREST_QWK_NODE)
+		getusrsubs();
+
+	if ((saved = (struct saved_ptrs*)malloc(sizeof(*saved) * cfg.total_subs)) == NULL) {
+		errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(*saved) * cfg.total_subs);
 		return false;
 	}
-	for (int i = 0; i < cfg.total_subs; i++)
-		sav_ptr[i] = subscan[i].ptr;
+	for (int i = 0; i < cfg.total_subs; i++) {
+		saved[i].ptr = subscan[i].ptr;
+		saved[i].last = subscan[i].last;
+	}
 	snprintf(path, sizeof path, "%s%s.qwk", cfg.temp_dir, cfg.sys_id);
 	snprintf(fname, sizeof fname, "%s.qwk", cfg.sys_id);
 	remove(path);
@@ -448,13 +458,15 @@ bool sbbs_t::qwk_download()
 			}
 		}
 	}
-	if (!sent) {
-		for (int i = 0; i < cfg.total_subs; i++)
-			subscan[i].ptr = sav_ptr[i];
+	if (!sent) { /* pack_qwk() advanced both pointers of every packed message: put them back (#1261) */
+		for (int i = 0; i < cfg.total_subs; i++) {
+			subscan[i].ptr = saved[i].ptr;
+			subscan[i].last = saved[i].last;
+		}
 		last_ns_time = ns_time;
 	}
-	remove(path);
-	free(sav_ptr);
+	delfiles(cfg.temp_dir, ALLFILES); /* the packet and the files pack_qwk() built it from (#1260) */
+	free(saved);
 	return sent;
 }
 
@@ -480,6 +492,10 @@ bool sbbs_t::qwk_upload()
 		return false;
 	snprintf(path, sizeof path, "%s%s.rep", cfg.temp_dir, cfg.sys_id);
 	protocol(cfg.prot[prot], XFER_UPLOAD, path, nulstr, true);
+	/* The setup the QWK section does before running its module, for callers outside it (#1260) */
+	getusrdirs();
+	if (useron.rest & UREST_QWK_NODE)
+		getusrsubs();
 	bool result = unpack_rep();
 	delfiles(cfg.temp_dir, ALLFILES);
 	return result;

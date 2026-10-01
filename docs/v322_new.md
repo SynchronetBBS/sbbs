@@ -133,6 +133,9 @@
   SyncTERM's file-store command, which could plant a file in every
   reader's SyncTERM cache) are stripped when a message is displayed;
   display files are unaffected (issue #1254)
+- Fix: after a failed QWK packet download, reading a sub-board on-line
+  resumed at the last packed message instead of where the user left
+  off (issue #1261)
 - Fix: the message reader's title search (`>` and `<`, in sub-boards
   and in mail) could jump to an unrelated message whose title merely
   shared a 16-bit CRC with the current one; the titles are now
@@ -759,6 +762,13 @@
 - New `P_NOAPC` mode flag for `console.putmsg()` and friends: strip
   APC strings (terminal commands) from untrusted text; the message
   readers set it for message text
+- Fix: `bbs.qwk_download()` and `bbs.qwk_upload()` work when called
+  from outside the QWK section (a custom shell or module): they do the
+  section's own per-user setup, and the download clears the node's
+  temporary directory instead of leaving the packet's component files
+  behind (issue #1260)
+- Fix: `bbs.get_archive_formats()` throws on an allocation failure
+  instead of returning a partial list (issue #1262)
 - New `console.cterm_fork` property: the third component of a
   forked CTerm's (e.g. TERMinator's) version report, also written to the
   `BBSDEV.DRP` drop file; `console.cterm_version` still holds the
