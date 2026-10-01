@@ -794,6 +794,8 @@
 - Fix: `smbutil r` (read messages) with its input redirected (a script,
   a cron job, no terminal) spun forever reprinting its prompt; it now
   stops at end of input (issue #1256)
+- Fix: `smbutil L` (lock message base) left no lock file behind, so
+  the base was never actually locked (regression from v3.21e)
 - Small (1-2 record) `.sid` / `.shd` index-vs-status divergences
   are now auto-repaired when adding messages, instead of
   hard-failing with `SMB_ERR_FILE_LEN` (-206) and producing a
