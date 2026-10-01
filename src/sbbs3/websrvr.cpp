@@ -1152,6 +1152,11 @@ static int close_session_socket(http_session_t *session)
 			pthread_mutex_unlock(&session->outbuf_write);
 		HANDLE_CRYPT_CALL(destroy_session(lprintf, session->tls_sess), session, "destroying session");
 	}
+	// Drop this session from current_connections *before* the descriptor is
+	// closed, so the list never names a closed (and possibly re-used) fd:
+	// shutdown_sessions() shuts down whatever the list holds, under the list
+	// lock, and this removal takes that same lock.
+	listRemoveTaggedNode(&current_connections, session->socket, /* free_data */ true);
 	return close_socket(&session->socket);
 }
 
@@ -7256,7 +7261,6 @@ void http_session_thread(void* arg)
 		}
 		close_request(&session);
 	}
-	listRemoveTaggedNode(&current_connections, socket, /* free_data */ true);
 
 	http_logoff(&session, socket, __LINE__);
 
@@ -7303,6 +7307,23 @@ void web_terminate(void)
 {
 	lprintf(LOG_INFO, "Web Server terminate");
 	terminate_server = true;
+}
+
+// Shutdown (don't close) the socket of every session still in
+// current_connections, to wake its threads out of whatever socket wait they
+// are in (request read, TLS close dance, output send) so they can exit.  Each
+// session thread owns and closes its own descriptor; close_session_socket()
+// removes the session from the list under the list lock before doing so, so
+// a socket seen here is still open.  Same approach as the terminal server's
+// node sockets at terminate/recycle (8101584ded, symbol-19-seek, 2026-07-05).
+static void shutdown_sessions(void)
+{
+	listLock(&current_connections);
+	for (list_node_t* node = listFirstNode(&current_connections); node != NULL; node = listNextNode(node)) {
+		lprintf(LOG_INFO, "%04d Shutting down socket of session from %s", node->tag, (char*)node->data);
+		shutdown(node->tag, SHUT_RDWR);
+	}
+	listUnlock(&current_connections);
 }
 
 static void cleanup(int code)
@@ -8073,6 +8094,7 @@ void web_server(void* arg)
 				if (time(NULL) - start > startup->max_inactivity) { // crash here Nov-14-2025, startup is invalid non-NULL pointer
 					lprintf(LOG_WARNING, "!TIMEOUT waiting for %d active clients"
 					        , protected_uint32_value(active_clients));
+					shutdown_sessions();
 					break;
 				}
 				mswait(100);
