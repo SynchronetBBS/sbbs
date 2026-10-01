@@ -2,10 +2,11 @@
 
 ## General
 
-- A configuration string value (in `ctrl/*.ini`) longer than the field
-  that holds it was silently cut at load time; it is now logged as a
-  warning naming the key, the limit and the value, since values reach
-  those files by many paths (SCFG, scripts, hand editing)
+- A configuration string value (in `ctrl/*.ini`, including the server
+  settings in `sbbs.ini`) longer than the field that holds it was
+  silently cut at load time; it is now logged as a warning naming the
+  key, the limit and the value, since values reach those files by many
+  paths (SCFG, scripts, hand editing)
 - New `@SOUND:`, `@MUSIC:`, `@MUSICVOL:`, `@MUSICOFF@`, `@SOUNDOFF@` and
   `@CACHE_AUDIO:` @-codes play sound effects and background music in the
   user's terminal, from files in `text/sound` (see the README there).

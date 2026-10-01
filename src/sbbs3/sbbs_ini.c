@@ -310,6 +310,35 @@ static bool set_rate_limit_settings(str_list_t* lp, const char* section, struct 
 
 static const struct in6_addr wildcard6;
 
+/* The leading members every *_startup_t shares, so one pointer type can reach any of them */
+struct startup_common {
+	STARTUP_COMMON_ELEMENTS
+};
+
+/* Where a problem found while reading is reported: the log callback of the startup struct */
+/* being filled, when the host program installed one (sbbscon, sbbsctrl); otherwise dropped */
+static struct startup_common* ini_log_target;
+
+/* Reads an .ini string value into a fixed-size startup field, as iniGetString() + SAFECOPY() */
+/* did, but reports a value that had to be truncated: values reach the file by many paths */
+static char* ini_get_str(char* dst, size_t dstlen, str_list_t list, const char* section, const char* key, const char* dflt)
+{
+	char   value[INI_MAX_VALUE_LEN];
+	char*  src = iniGetString(list, section, key, dflt, value);
+	size_t len = strlen(src);
+
+	if (len >= dstlen && ini_log_target != NULL && ini_log_target->lputs != NULL) {
+		char msg[INI_MAX_VALUE_LEN + 128];
+		safe_snprintf(msg, sizeof msg, "!Config value '%s' truncated from %lu to %lu chars: %s"
+		              , key, (ulong)len, (ulong)(dstlen - 1), src);
+		ini_log_target->lputs(ini_log_target->cbdata, LOG_WARNING, msg);
+	}
+	strncpy(dst, src, dstlen);
+	dst[dstlen - 1] = '\0';
+	return dst;
+}
+#define INI_GET_STR(dst, list, section, key, dflt)  ini_get_str(dst, sizeof(dst), list, section, key, dflt)
+
 static bool get_ini_globals(str_list_t list, global_startup_t* global)
 {
 	const char* section = "Global";
@@ -335,7 +364,7 @@ static bool get_ini_globals(str_list_t list, global_startup_t* global)
 	if (*p)
 		SAFECOPY(global->host_name, value);
 
-	SAFECOPY(global->login_ars, iniGetString(list, section, strLoginRequirements, nulstr, value));
+	INI_GET_STR(global->login_ars, list, section, strLoginRequirements, nulstr);
 
 	global->sem_chk_freq = (uint16_t)iniGetDuration(list, section, strSemFileCheckFrequency, DEFAULT_SEM_CHK_FREQ);
 	global->interfaces = iniGetStringList(list, section, strInterfaces, ",", "0.0.0.0,::");
@@ -420,7 +449,6 @@ bool sbbs_read_ini(
 	const char*      default_dosemuconf_path;
 #endif
 #endif
-	char             value[INI_MAX_VALUE_LEN];
 	str_list_t       list;
 	global_startup_t global_buf;
 	struct in6_addr  wildcard6 = {{{0}}};
@@ -443,6 +471,9 @@ bool sbbs_read_ini(
 
 	list = iniReadFiles(fp, /* includes: */ true);
 
+	/* Report through whichever startup struct the caller provided (the global one has no log callback) */
+	ini_log_target = (struct startup_common*)(bbs != NULL ? (void*)bbs : ftp != NULL ? (void*)ftp
+	                                          : web != NULL ? (void*)web : mail != NULL ? (void*)mail : (void*)services);
 	if (!get_ini_globals(list, global)) {
 		iniFreeStringList(list);
 		return false;
@@ -480,6 +511,8 @@ bool sbbs_read_ini(
 
 	/***********************************************************************/
 	section = "BBS";
+	if (bbs != NULL)
+		ini_log_target = (struct startup_common*)bbs;
 
 	if (run_bbs != NULL)
 		*run_bbs = iniGetBool(list, section, strAutoStart, true);
@@ -536,14 +569,11 @@ bool sbbs_read_ini(
 		/* JavaScript operating parameters */
 		sbbs_get_js_settings(list, section, &bbs->js, &global->js);
 
-		SAFECOPY(bbs->host_name
-		         , iniGetString(list, section, strHostName, global->host_name, value));
+		INI_GET_STR(bbs->host_name, list, section, strHostName, global->host_name);
 
-		SAFECOPY(bbs->temp_dir
-		         , iniGetString(list, section, strTempDirectory, global->temp_dir, value));
+		INI_GET_STR(bbs->temp_dir, list, section, strTempDirectory, global->temp_dir);
 
-		SAFECOPY(bbs->login_ars
-		         , iniGetString(list, section, strLoginRequirements, global->login_ars, value));
+		INI_GET_STR(bbs->login_ars, list, section, strLoginRequirements, global->login_ars);
 
 		bbs->default_term_width = iniGetUInteger(list, section, "DefaultTermWidth", TERM_COLS_DEFAULT);
 		bbs->default_term_height = iniGetUInteger(list, section, "DefaultTermHeight", TERM_ROWS_DEFAULT);
@@ -555,10 +585,8 @@ bool sbbs_read_ini(
 		default_term_ansi = "pc3";
 	#endif
 
-		SAFECOPY(bbs->xtrn_term_ansi
-		         , iniGetString(list, section, "ExternalTermANSI", default_term_ansi, value));
-		SAFECOPY(bbs->xtrn_term_dumb
-		         , iniGetString(list, section, "ExternalTermDumb", "dumb", value));
+		INI_GET_STR(bbs->xtrn_term_ansi, list, section, "ExternalTermANSI", default_term_ansi);
+		INI_GET_STR(bbs->xtrn_term_dumb, list, section, "ExternalTermDumb", "dumb");
 
 	#if defined(__linux__) || defined(__FreeBSD__)
 	#if defined(__FreeBSD__)
@@ -567,12 +595,10 @@ bool sbbs_read_ini(
 		default_dosemu_path = "/usr/bin/dosemu.bin";
 		default_dosemuconf_path = "";
 
-		SAFECOPY(bbs->dosemuconf_path
-		         , iniGetString(list, section, "DOSemuConfPath", default_dosemuconf_path, value));
+		INI_GET_STR(bbs->dosemuconf_path, list, section, "DOSemuConfPath", default_dosemuconf_path);
 	#endif
 		bbs->usedosemu = iniGetBool(list, section, "UseDOSemu", true);
-		SAFECOPY(bbs->dosemu_path
-		         , iniGetString(list, section, "DOSemuPath", default_dosemu_path, value));
+		INI_GET_STR(bbs->dosemu_path, list, section, "DOSemuPath", default_dosemu_path);
 	#endif
 
 		sbbs_get_sound_settings(list, section, &bbs->sound, &global->sound);
@@ -600,11 +626,13 @@ bool sbbs_read_ini(
 		bbs->max_session_inactivity = (uint16_t)iniGetDuration(list, section, strMaxSessionInactivity, 10 * 60);
 		bbs->max_sftp_inactivity = (uint16_t)iniGetDuration(list, section, strMaxSFTPInactivity, FTP_DEFAULT_MAX_INACTIVITY);
 
-		SAFECOPY(bbs->web_file_vpath_prefix, iniGetString(list, "web", strFileVPathPrefix, nulstr, value));
+		INI_GET_STR(bbs->web_file_vpath_prefix, list, "web", strFileVPathPrefix, nulstr);
 	}
 
 	/***********************************************************************/
 	section = "FTP";
+	if (ftp != NULL)
+		ini_log_target = (struct startup_common*)ftp;
 
 	if (run_ftp != NULL)
 		*run_ftp = iniGetBool(list, section, strAutoStart, true);
@@ -647,21 +675,16 @@ bool sbbs_read_ini(
 		ftp->pasv_port_high
 		    = iniGetShortInt(list, section, "PasvPortHigh", 0xffff);
 
-		SAFECOPY(ftp->host_name
-		         , iniGetString(list, section, strHostName, global->host_name, value));
+		INI_GET_STR(ftp->host_name, list, section, strHostName, global->host_name);
 
-		SAFECOPY(ftp->index_file_name
-		         , iniGetString(list, section, "IndexFileName", "00index", value));
+		INI_GET_STR(ftp->index_file_name, list, section, "IndexFileName", "00index");
 
 		sbbs_get_sound_settings(list, section, &ftp->sound, &global->sound);
 
-		SAFECOPY(ftp->temp_dir
-		         , iniGetString(list, section, strTempDirectory, global->temp_dir, value));
+		INI_GET_STR(ftp->temp_dir, list, section, strTempDirectory, global->temp_dir);
 
-		SAFECOPY(ftp->login_ars
-		         , iniGetString(list, section, strLoginRequirements, global->login_ars, value));
-		SAFECOPY(ftp->login_info_save
-				 , iniGetString(list, section, strLoginInfoSave, "", value));
+		INI_GET_STR(ftp->login_ars, list, section, strLoginRequirements, global->login_ars);
+		INI_GET_STR(ftp->login_info_save, list, section, strLoginInfoSave, "");
 
 		ftp->log_level
 		    = iniGetLogLevel(list, section, strLogLevel, global->log_level);
@@ -681,6 +704,8 @@ bool sbbs_read_ini(
 
 	/***********************************************************************/
 	section = "Mail";
+	if (mail != NULL)
+		ini_log_target = (struct startup_common*)mail;
 
 	if (run_mail != NULL)
 		*run_mail = iniGetBool(list, section, strAutoStart, true);
@@ -734,49 +759,32 @@ bool sbbs_read_ini(
 		mail->connect_timeout
 		    = (uint32_t)iniGetDuration(list, section, "ConnectTimeout", MAIL_DEFAULT_CONNECT_TIMEOUT);
 
-		SAFECOPY(mail->host_name
-		         , iniGetString(list, section, strHostName, global->host_name, value));
+		INI_GET_STR(mail->host_name, list, section, strHostName, global->host_name);
 
-		SAFECOPY(mail->temp_dir
-		         , iniGetString(list, section, strTempDirectory, global->temp_dir, value));
+		INI_GET_STR(mail->temp_dir, list, section, strTempDirectory, global->temp_dir);
 
-		SAFECOPY(mail->login_ars
-		         , iniGetString(list, section, strLoginRequirements, global->login_ars, value));
-		SAFECOPY(mail->archive_ars
-		         , iniGetString(list, section, strArchiveRequirements, nulstr, value));
+		INI_GET_STR(mail->login_ars, list, section, strLoginRequirements, global->login_ars);
+		INI_GET_STR(mail->archive_ars, list, section, strArchiveRequirements, nulstr);
 
-		SAFECOPY(mail->relay_server
-		         , iniGetString(list, section, "RelayServer", nulstr, value));
-		SAFECOPY(mail->relay_user
-		         , iniGetString(list, section, "RelayUsername", nulstr, value));
-		SAFECOPY(mail->relay_pass
-		         , iniGetString(list, section, "RelayPassword", nulstr, value));
+		INI_GET_STR(mail->relay_server, list, section, "RelayServer", nulstr);
+		INI_GET_STR(mail->relay_user, list, section, "RelayUsername", nulstr);
+		INI_GET_STR(mail->relay_pass, list, section, "RelayPassword", nulstr);
 
 		mail->dkim_sign = iniGetBool(list, section, "DKIMSign", false);
-		SAFECOPY(mail->dkim_domain
-		         , iniGetString(list, section, "DKIMDomain", nulstr, value));
-		SAFECOPY(mail->dkim_selector
-		         , iniGetString(list, section, "DKIMSelector", "mail", value));
+		INI_GET_STR(mail->dkim_domain, list, section, "DKIMDomain", nulstr);
+		INI_GET_STR(mail->dkim_selector, list, section, "DKIMSelector", "mail");
 
-		SAFECOPY(mail->dns_server
-		         , iniGetString(list, section, "DNSServer", nulstr, value));
+		INI_GET_STR(mail->dns_server, list, section, "DNSServer", nulstr);
 
-		SAFECOPY(mail->default_user
-		         , iniGetString(list, section, "DefaultUser", nulstr, value));
-		SAFECOPY(mail->post_to
-		         , iniGetString(list, section, "PostTo", nulstr, value));
+		INI_GET_STR(mail->default_user, list, section, "DefaultUser", nulstr);
+		INI_GET_STR(mail->post_to, list, section, "PostTo", nulstr);
 
-		SAFECOPY(mail->dnsbl_hdr
-		         , iniGetString(list, section, "DNSBlacklistHeader", "X-DNSBL", value));
-		SAFECOPY(mail->dnsbl_tag
-		         , iniGetString(list, section, "DNSBlacklistSubject", "SPAM", value));
+		INI_GET_STR(mail->dnsbl_hdr, list, section, "DNSBlacklistHeader", "X-DNSBL");
+		INI_GET_STR(mail->dnsbl_tag, list, section, "DNSBlacklistSubject", "SPAM");
 
-		SAFECOPY(mail->pop3_sound
-		         , iniGetString(list, section, "POP3Sound", nulstr, value));
-		SAFECOPY(mail->inbound_sound
-		         , iniGetString(list, section, "InboundSound", nulstr, value));
-		SAFECOPY(mail->outbound_sound
-		         , iniGetString(list, section, "OutboundSound", nulstr, value));
+		INI_GET_STR(mail->pop3_sound, list, section, "POP3Sound", nulstr);
+		INI_GET_STR(mail->inbound_sound, list, section, "InboundSound", nulstr);
+		INI_GET_STR(mail->outbound_sound, list, section, "OutboundSound", nulstr);
 		sbbs_get_sound_settings(list, section, &mail->sound, &global->sound);
 
 		/* JavaScript Operating Parameters */
@@ -803,6 +811,8 @@ bool sbbs_read_ini(
 
 	/***********************************************************************/
 	section = "Services";
+	if (services != NULL)
+		ini_log_target = (struct startup_common*)services;
 
 	if (run_services != NULL)
 		*run_services = iniGetBool(list, section, strAutoStart, true);
@@ -827,19 +837,14 @@ bool sbbs_read_ini(
 		/* JavaScript operating parameters */
 		sbbs_get_js_settings(list, section, &services->js, &global->js);
 
-		SAFECOPY(services->host_name
-		         , iniGetString(list, section, strHostName, global->host_name, value));
+		INI_GET_STR(services->host_name, list, section, strHostName, global->host_name);
 
-		SAFECOPY(services->temp_dir
-		         , iniGetString(list, section, strTempDirectory, global->temp_dir, value));
+		INI_GET_STR(services->temp_dir, list, section, strTempDirectory, global->temp_dir);
 
-		SAFECOPY(services->login_ars
-		         , iniGetString(list, section, strLoginRequirements, global->login_ars, value));
-		SAFECOPY(services->login_info_save
-		         , iniGetString(list, section, strLoginInfoSave, "", value));
+		INI_GET_STR(services->login_ars, list, section, strLoginRequirements, global->login_ars);
+		INI_GET_STR(services->login_info_save, list, section, strLoginInfoSave, "");
 
-		SAFECOPY(services->services_ini
-		         , iniGetString(list, section, strIniFileName, "services.ini", value));
+		INI_GET_STR(services->services_ini, list, section, strIniFileName, "services.ini");
 
 		sbbs_get_sound_settings(list, section, &services->sound, &global->sound);
 
@@ -860,6 +865,8 @@ bool sbbs_read_ini(
 
 	/***********************************************************************/
 	section = "Web";
+	if (web != NULL)
+		ini_log_target = (struct startup_common*)web;
 
 	if (run_web != NULL)
 		*run_web = iniGetBool(list, section, strAutoStart, false);
@@ -891,42 +898,29 @@ bool sbbs_read_ini(
 		/* JavaScript operating parameters */
 		sbbs_get_js_settings(list, section, &web->js, &global->js);
 
-		SAFECOPY(web->host_name
-		         , iniGetString(list, section, strHostName, global->host_name, value));
+		INI_GET_STR(web->host_name, list, section, strHostName, global->host_name);
 
-		SAFECOPY(web->temp_dir
-		         , iniGetString(list, section, strTempDirectory, global->temp_dir, value));
+		INI_GET_STR(web->temp_dir, list, section, strTempDirectory, global->temp_dir);
 
-		SAFECOPY(web->login_ars
-		         , iniGetString(list, section, strLoginRequirements, global->login_ars, value));
-		SAFECOPY(web->login_info_save
-		         , iniGetString(list, section, strLoginInfoSave, "", value));
+		INI_GET_STR(web->login_ars, list, section, strLoginRequirements, global->login_ars);
+		INI_GET_STR(web->login_info_save, list, section, strLoginInfoSave, "");
 
-		SAFECOPY(web->root_dir
-		         , iniGetString(list, section, "RootDirectory", WEB_DEFAULT_ROOT_DIR, value));
-		SAFECOPY(web->error_dir
-		         , iniGetString(list, section, "ErrorDirectory", WEB_DEFAULT_ERROR_DIR, value));
-		SAFECOPY(web->cgi_dir
-		         , iniGetString(list, section, "CGIDirectory", WEB_DEFAULT_CGI_DIR, value));
-		SAFECOPY(web->default_auth_list
-		         , iniGetString(list, section, "Authentication", WEB_DEFAULT_AUTH_LIST, value));
-		SAFECOPY(web->logfile_base
-		         , iniGetString(list, section, "HttpLogFile", nulstr, value));
-		SAFECOPY(web->file_index_script
-		         , iniGetString(list, section, strFileIndexScript, nulstr, value));
-		SAFECOPY(web->file_vpath_prefix
-		         , iniGetString(list, section, strFileVPathPrefix, nulstr, value));
+		INI_GET_STR(web->root_dir, list, section, "RootDirectory", WEB_DEFAULT_ROOT_DIR);
+		INI_GET_STR(web->error_dir, list, section, "ErrorDirectory", WEB_DEFAULT_ERROR_DIR);
+		INI_GET_STR(web->cgi_dir, list, section, "CGIDirectory", WEB_DEFAULT_CGI_DIR);
+		INI_GET_STR(web->default_auth_list, list, section, "Authentication", WEB_DEFAULT_AUTH_LIST);
+		INI_GET_STR(web->logfile_base, list, section, "HttpLogFile", nulstr);
+		INI_GET_STR(web->file_index_script, list, section, strFileIndexScript, nulstr);
+		INI_GET_STR(web->file_vpath_prefix, list, section, strFileVPathPrefix, nulstr);
 		web->file_vpath_for_vhosts = iniGetBool(list, section, strFileVPathForVHosts, false);
 
-		SAFECOPY(web->default_cgi_content
-		         , iniGetString(list, section, "DefaultCGIContent", WEB_DEFAULT_CGI_CONTENT, value));
+		INI_GET_STR(web->default_cgi_content, list, section, "DefaultCGIContent", WEB_DEFAULT_CGI_CONTENT);
 
 		web->index_file_name
 		    = iniGetStringList(list, section, "IndexFileNames", ",", "index.html,index.ssjs");
 		web->cgi_ext
 		    = iniGetStringList(list, section, "CGIExtensions", ",", ".cgi");
-		SAFECOPY(web->ssjs_ext
-		         , iniGetString(list, section, "JavaScriptExtension", ".ssjs", value));
+		INI_GET_STR(web->ssjs_ext, list, section, "JavaScriptExtension", ".ssjs");
 
 		web->max_cgi_inactivity
 		    = (uint16_t)iniGetDuration(list, section, "MaxCgiInactivity", WEB_DEFAULT_MAX_CGI_INACTIVITY);  /* seconds */
@@ -952,10 +946,8 @@ bool sbbs_read_ini(
 		web->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
 		web->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
 		web->rate_limit = get_rate_limit_settings(list, section);
-		SAFECOPY(web->proxy_ip_header
-		         , iniGetString(list, section, "RemoteIPHeader", nulstr, value));
-		SAFECOPY(web->custom_log_fmt
-		         , iniGetString(list, section, "CustomLogFormat", nulstr, value));
+		INI_GET_STR(web->proxy_ip_header, list, section, "RemoteIPHeader", nulstr);
+		INI_GET_STR(web->custom_log_fmt, list, section, "CustomLogFormat", nulstr);
 	}
 
 	free(global_interfaces);
