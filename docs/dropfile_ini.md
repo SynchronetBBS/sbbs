@@ -1,10 +1,10 @@
 # DROPFILE.INI: a named-value door drop file (draft)
 
-Draft 0.5 · 2026-09-30 · Rob Swindell
+Draft 0.6 · 2026-09-30 · Rob Swindell
 
 ## Status and goals
 
-DROPFILE.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.5; the file name is a working name. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
+DROPFILE.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.6; the file name is a working name. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
 
 Goals:
 
@@ -305,8 +305,18 @@ All keys in this section are optional.
 | `TIME_LEFT` | int | Seconds the user has left, measured when the host writes the file and already shortened for any scheduled host event, so a door needs no separate event time | no limit |
 | `TEMP_DIR` | path | A directory only this node uses, which the door may write to during the session, in the path syntax the door sees (the DOS path under emulation), with no trailing separator. The host MAY empty it after the door exits, so it isn't for data that must last | none |
 | `LOCAL_DISPLAY` | bool | `0` = don't show the session on the host's own screen: the door doesn't mirror its output to a local console or window. Doesn't apply when `COMM_TYPE` is `local`, where the local console is the session itself | `1` |
+| `IDLE_LIMIT` | int | Seconds without input from the caller after which the host ends the session. A door uses it to warn the user before that happens, or to run its own idle timer when it exchanges terminal queries that the host may count as input | no limit |
 
 A door MUST exit before `TIME_LEFT` seconds have passed since it started. The time between the host writing the file and the door starting, such as an emulator booting, isn't counted, so the host SHOULD enforce the limit independently. A door that counts time in minutes rounds up, so a positive `TIME_LEFT` never becomes zero minutes, which some door kits treat as no time left or as no limit.
+
+### Door: `[door]`
+
+The configured entry the host launched. Both keys are optional. They matter to a program installed under more than one entry, such as a game engine with one entry per title, which otherwise has no way to learn which entry started it.
+
+| Key | Type | Meaning | Default |
+| --- | --- | --- | --- |
+| `DOOR_CODE` | ascii | The host's identifier for this entry, as the sysop configured it, such as `SYNCRPG`; unique among the host's entries | none |
+| `DOOR_NAME` | text | The entry's display name, as the sysop configured it, such as `Legend of the Red Dragon` | none |
 
 ### User preferences: `[preferences]`
 
@@ -404,12 +414,18 @@ TERM_CELL_HEIGHT=16
 
 [session]
 TIME_LEFT=2700
+IDLE_LIMIT=300
+
+[door]
+DOOR_CODE=SYNCRPG
+DOOR_NAME=SyncRPG
 
 [preferences]
 PREF_SOUND=0
 
 [x-sbbs]
 X_SBBS_LEVEL=50
+X_SBBS_SECTION=GAMES
 ```
 
 A DOS door on a FOSSIL driver, with only the required keys plus two optional ones; the screen size is the default 80 by 24:
@@ -561,7 +577,8 @@ Everything DOOR32.SYS, DORINFO1.DEF, DOORFILE.SR, BBSDEV.DRP and Phenom Dropfile
 | Call sign | CHAIN.TXT | `USER_HANDLE` |
 | User comment, doors opened, message left | DOOR.SYS 50 to 52 | Out of scope |
 | Street address and postal code | XTRN.DAT | Left out: more personal than `USER_LOCATION`, and no door is known to use them |
-| Guru name, network type, sysop next, from front-end, door number | XTRN.DAT, DORINFO1.DEF, SFDOORS.DAT, CALLINFO.BBS | Out of scope: host-specific |
+| Door number | CALLINFO.BBS | `DOOR_CODE` |
+| Guru name, network type, sysop next, from front-end | XTRN.DAT, DORINFO1.DEF, SFDOORS.DAT | Out of scope: host-specific |
 
 A converter to an older format also needs values this file never carries, such as a nonzero rate (see `COMM_RATE`), and writes the older format's placeholders for them.
 
@@ -578,6 +595,7 @@ DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for
 - **Environment:** `xtrn.cpp`, which launches doors, sets `DROPFILE_INI` on every door launch path: native programs, DOS programs run under DOSEMU on Linux, and DOS programs run under emulation on Windows.
 - **Command line:** a door's command line in SCFG can contain `%` placeholders that Synchronet replaces at launch. `%F` becomes the full path of the door's drop file, and `%f` the same path in quotes. For a DOS door run under emulation, it is the DOS path the door sees. Both already exist, so they give the DROPFILE.INI path with no change.
 - **Doors that use Windows console interception** (`XTRN_CONIO`), where Synchronet relays a door's Windows console to the caller, can't use this type: the door would see its local console while a caller is connected, which `local` doesn't allow. Standard-I/O doors use `stdio`.
+- **Standard-I/O echo:** `stdio` requires that the host echo nothing, but Synchronet echoes a standard-I/O door's input back to the caller unless the door's no-echo option (`XTRN_NOECHO`) is set. For a door of this drop file type, Synchronet treats that option as set.
 - **Doors written in JavaScript** that Synchronet runs inside its own process can't use this type; they already have the `user`, `console` and `system` objects.
 - **Mapping from Synchronet data:**
   - `SYS_VENDOR` = `SBBS`, and `SYS_VERSION` = Synchronet's version number followed by its revision letter, such as `3.22a`.
@@ -595,7 +613,9 @@ DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for
   - `TERM_DOORWAY` when the terminal identified itself as CTerm.
   - `TERM_SIXEL` for CTerm from its device attribute 4, as Synchronet's JavaScript library `cterm_lib.js` already does. Synchronet sends `CSI c` at logon but parses only CTerm's reply, so other terminals get the key only after a to-do below.
   - `TERM_MOUSE` from the mouse capability detected for the session: `2` when the terminal answered the DECRQM request for mode 1016, or is a CTerm recent enough to report pixels; `1` when it answered for mode 1006 or set CTerm device attribute 7, or when detection was silent and the user's mouse setting is on; otherwise left out. `PREF_MOUSE=0` when the user's mouse setting (`MOUSE`) is off. Today that setting is Synchronet's only record of mouse support, answering "Does your terminal support mouse reporting"; the to-do below separates capability from consent.
-  - `TIME_LEFT` from the user's remaining time in this session, which Synchronet already shortens for an upcoming timed event; omitted for the sysop, who has no time limit.
+  - `TIME_LEFT` from the user's remaining time in this session, which Synchronet already shortens for an upcoming timed event, plus the door's extra time, and capped at the door's maximum time; omitted for the sysop, who has no time limit. For a door with free time (`XTRN_FREETIME`), where the user's clock stops while in it, the value is the lesser of the door's maximum time and the time until the next timed event, and is omitted when neither applies, since the user's remaining time would make the door exit when Synchronet wouldn't have.
+  - `IDLE_LIMIT` from the door's maximum inactivity setting when nonzero, otherwise the Terminal Server's; omitted when both are zero.
+  - `DOOR_CODE` from the program's internal code, `DOOR_NAME` from its configured name, and `X_SBBS_SECTION` from the internal code of the section it belongs to.
   - `USER_IP` and `USER_HOSTNAME` from the client's address and host name, and `USER_CALLER_ID` from the Caller ID number SEXPOTS passes for a dial-up call. For a dial-up call Synchronet stores that number in the client's address field in place of an IP address, so the writer puts it in `USER_CALLER_ID` and leaves `USER_IP` out. A host name Synchronet couldn't resolve is left out too.
   - `USER_LANG` from the user's language code, which names the `ctrl/text.<code>.ini` file the user's text comes from. The stock codes (`de`, `es`, `fr`) are already valid tags. The writer changes any `_` to `-`, so a code such as `pt_BR` becomes `pt-BR`, then checks the result against BCP 47 syntax, and leaves the key out when the code is blank (the default language, which Synchronet doesn't record) or still isn't a valid tag. Sysops SHOULD name language files with ISO 639-1 codes, since a well-formed code that isn't a real language, such as `sp`, can't be detected.
   - `LOCAL_DISPLAY=0` when the door's "Disable Local Screen Display" option (`XTRN_NODISPLAY`) is set, the same option that sets the screen field in DOOR.SYS and PCBOARD.SYS.
@@ -640,6 +660,14 @@ Synchronet can apply changes a door makes to the user's account: when a door's "
 
 MODUSER.DAT is Synchronet-specific and outside this specification.
 
+One more `[x-sbbs]` key describes the door rather than the user:
+
+| Key | Type | Meaning |
+| --- | --- | --- |
+| `X_SBBS_SECTION` | ascii | The internal code of the external program section (the menu grouping) the door entry belongs to, such as `GAMES`; left out for a door run outside a section, such as a timed event |
+
+Sections are Synchronet's own way of grouping doors, which is why this isn't a standard `DOOR_` key: most hosts have no equivalent to write.
+
 ### Encodings
 
 Two independent rules set the encoding keys:
@@ -676,6 +704,9 @@ Work Synchronet needs beyond writing the file itself, before every key above can
 - [ ] **`TERM_KEYS_KITTY`:** add the kitty keyboard query (`CSI ? u`) to the once-per-session capability queries.
 - [ ] **`TERM_SIXEL_SCALE` (optional):** add the sixel scale probe to the once-per-session capability queries.
 - [ ] **`FILE_UTF8`:** add the "Support UTF-8 Encoding" option (`XTRN_UTF8`) for doors in SCFG; today it exists only for message editors.
+- [ ] **Standard-I/O echo:** imply the no-echo option for a door of this drop file type, so `stdio` means what the spec says.
+- [ ] **"Use Real Name" option (`XTRN_REALNAME`):** in the older formats it swaps the single name field to the real name. This file has separate keys, so it must never alter `USER_ALIAS`; use it as the per-door gate for writing `USER_REALNAME`, alongside or instead of the personal-details option above. Decide separately whether a door should be told to address the user by real name, which would be a policy key rather than this bit.
+- [ ] **WWIV color codes (`XTRN_WWIVCOLOR`):** Synchronet rewrites WWIV color codes in a standard-I/O door's output when this option is set, the same kind of fact about the connection as `COMM_CHARSET`. Decide whether a door needs an `[x-sbbs]` key saying so.
 - [ ] **`USER_LANG`:** move the BCP 47 syntax check that the BBSDEV.DRP writer uses (`bbsdev_language_tag_valid()` in `xtrn_sec.cpp`) into a shared helper, so both writers use it.
 
 ## Open questions
