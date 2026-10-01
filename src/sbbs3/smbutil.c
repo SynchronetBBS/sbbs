@@ -52,6 +52,7 @@ const char *mon[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun"
 #include "str_util.h"
 #include "utf8.h"
 #include "conwrap.h"
+#include "filewrap.h"   /* isatty, STDIN_FILENO */
 #include "xpdatetime.h"
 #include "git_branch.h"
 #include "git_hash.h"
@@ -1884,6 +1885,12 @@ void readmsgs(ulong start, ulong count)
 		}
 		printf("\nReading %s (?=Menu): ", smb.file);
 		switch (toupper(xp_getch())) {
+			case 0: /* end of input or a read error, unless it's a console (where it can prefix an extended key) */
+				if (!isatty(STDIN_FILENO)) {
+					printf("End of input\n");
+					done = 1;
+				}
+				break;
 			case '?':
 				printf("\n"
 				       "\n"

@@ -134,13 +134,13 @@ int xp_kbhit(void)
 
 int xp_getch(void)
 {
-	char c;
+	char c = 0;
 
 	if (!beensetup)
 		xp_termios_setup();
 
-	/* get a char out of stdin */
-	if (read(STDIN_FILENO, &c, 1) == -1)
+	/* get a char out of stdin: 0 on a read error or at end of input (read() returns 0, not -1, at EOF) */
+	if (read(STDIN_FILENO, &c, 1) <= 0)
 		return 0;
 
 	return c;

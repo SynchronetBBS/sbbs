@@ -31,6 +31,7 @@
     DLLEXPORT void xp_echo_on(void);
     DLLEXPORT void xp_echo_off(void);
     DLLEXPORT int xp_kbhit(void);
+    /* Returns 0 on a read error or at end of input (e.g. stdin redirected from /dev/null) */
     DLLEXPORT int xp_getch(void);
 
 #else	/* DOS-Based */
