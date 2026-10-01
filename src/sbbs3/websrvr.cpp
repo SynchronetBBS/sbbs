@@ -7330,9 +7330,30 @@ static void cleanup(int code)
 {
 	bool     waited = false;
 	uint32_t threads;
+	time_t   start = time(NULL);
+	time_t   kicked = start;
 
 	while ((threads = protected_uint32_value(thread_count)) > 1) {
-		lprintf(LOG_INFO, "0000 Waiting for %d child threads to terminate", threads - 1);
+		time_t now = time(NULL);
+		if (now - start > TIMEOUT_THREAD_WAIT) {
+			// A thread blocked somewhere other than its client socket (a
+			// script in a native call, a CGI pipe, a mutex) is out of reach
+			// of shutdown_sessions().  Give up rather than hold the whole
+			// server (and under systemd, the stop timeout) hostage to it;
+			// the counter is left alone so its eventual thread_down() is
+			// harmless.
+			lprintf(LOG_ERR, "0000 !TIMEOUT waiting for %u child thread(s) to terminate", threads - 1);
+			break;
+		}
+		// A session that completed its TLS handshake after the first
+		// shutdown_sessions() pass is only now in current_connections, so
+		// kick again periodically.  Each pass also logs what is still
+		// connected.
+		if (now - kicked >= 5) {
+			shutdown_sessions();
+			kicked = now;
+		}
+		lprintf(LOG_INFO, "0000 Waiting for %u child threads to terminate", threads - 1);
 		mswait(1000);
 		waited = true;
 		listSemPost(&log_list);
@@ -8131,7 +8152,10 @@ void web_server(void* arg)
 
 	} while (!terminate_server);
 
-	protected_uint32_destroy(thread_count);
+	if (protected_uint32_value(thread_count) > 1)
+		lprintf(LOG_WARNING, "!!!! Terminating with %u child thread(s) still running", protected_uint32_value(thread_count) - 1);
+	else
+		protected_uint32_destroy(thread_count);
 	delete request_rate_limiter, request_rate_limiter = nullptr;
 	delete connect_rate_limiter, connect_rate_limiter = nullptr;
 }
