@@ -412,6 +412,7 @@ function list_msg(msg, digits, selected, sort, msg_ctrl, exclude, is_operator)
 function msg_pmode(msgbase, msg)
 {
 	var pmode = msg.is_utf8 ? P_UTF8 : P_NONE;
+	pmode |= P_NOAPC; // message text is untrusted: no terminal commands (e.g. SyncTERM file stores) from it
 	if(msg.from_ext !== "1")
 		pmode |= P_NOATCODES;
 	if(msgbase.cfg) {

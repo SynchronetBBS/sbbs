@@ -40,12 +40,16 @@ add_library(termgfx STATIC
     termgfx_termio.c
     termgfx_quant.c
     sbbs_node.c
-    # FNV-1a lives in the project hash library (src/hash) -- every door's
-    # client-cache names are content-addressed with it, and so is the text
-    # renderer's per-cell signature. Compiled in directly (the TU has no
-    # dependencies at all) rather than add_subdirectory()ing the hash lib,
-    # which would drag crc/md5/sha and their xpdev link into every door.
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../hash/fnv1a.c)
+    # FNV-1a and MD5 live in the project hash library (src/hash) -- every door's
+    # client-cache names are content-addressed with FNV-1a (so is the text
+    # renderer's per-cell signature), and MD5 is what SyncTERM's C;L cache
+    # listing reports per file, so audio_mgr.c checks a listed file against the
+    # door's own copy with it. Compiled in directly (neither TU links anything;
+    # md5.h only needs xpdev's gen_defs.h, already on the private include path)
+    # rather than add_subdirectory()ing the hash lib, which would drag crc/sha
+    # and their xpdev link into every door.
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../hash/fnv1a.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../hash/md5.c)
 
 # Public: consumers that #include "sixel.h" / "sbbs_node.h" get this dir, and
 # the hash lib's dir so a door can #include "fnv1a.h" the same way.

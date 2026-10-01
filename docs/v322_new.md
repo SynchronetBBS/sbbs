@@ -126,6 +126,10 @@
   index once per batch instead of once per uploaded file, and each file
   is named as its post-processing (upload testers, hashing, duplicate
   scan) starts (issue #1132)
+- Fix: terminal commands embedded in message text (APC strings, e.g.
+  SyncTERM's file-store command, which could plant a file in every
+  reader's SyncTERM cache) are stripped when a message is displayed;
+  display files are unaffected (issue #1254)
 - Fix: the message reader's title search (`>` and `<`, in sub-boards
   and in mail) could jump to an unrelated message whose title merely
   shared a 16-bit CRC with the current one; the titles are now
@@ -237,6 +241,11 @@
 ## Mail Server
 
 - Adopt the shared rate-limit auto-filter (see Servers)
+- Fix: POP3 passwords and SMTP AUTH credentials no longer appear in
+  the mail server log (with the receive/response debug options on)
+  unless the "Echo Passwords Locally" system option is set (issue
+  #1267); sysops who ran with `DEBUG_RX_RSP` should treat their old
+  mail logs as sensitive
 - New **DKIM signing of outbound mail** (RFC 6376, relaxed/relaxed,
   rsa-sha256): the SendMail thread can sign each outgoing message
   with a `DKIM-Signature` header so receivers can authenticate it as
@@ -734,6 +743,9 @@
   an uppercase key
 - New `console.cmd_keys` property: a script declares its menu's command
   keys so `console.quit_key` (and `@QUITCHAR@`) avoid them
+- New `P_NOAPC` mode flag for `console.putmsg()` and friends: strip
+  APC strings (terminal commands) from untrusted text; the message
+  readers set it for message text
 - New `console.cterm_fork` property: the third component of a
   forked CTerm's (e.g. TERMinator's) version report, also written to the
   `BBSDEV.DRP` drop file; `console.cterm_version` still holds the

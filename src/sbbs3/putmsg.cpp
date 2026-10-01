@@ -435,6 +435,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 							lprintf(LOG_DEBUG, "Stripping CTSFI sequence");
 						else if (ansiParser.ansi_sequence.substr(0, 16) == "\x1b_SyncTERM:Q;JXL")
 							lprintf(LOG_DEBUG, "Stripping CTQJS sequence");
+						else if ((mode & P_NOAPC) && ansiParser.ansi_sequence.substr(0, 2) == "\x1b_")
+							lprintf(LOG_DEBUG, "Stripping APC sequence from untrusted text");
 						else {
 							if ((!ansiParser.ansi_was_private) && ansiParser.ansi_ibs == "") {
 								if (strchr("AFkBEeHfJdu", ansiParser.ansi_final_byte) != nullptr)    /* ANSI anim */

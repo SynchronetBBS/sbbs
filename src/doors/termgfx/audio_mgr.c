@@ -9,7 +9,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>        /* isxdigit/tolower: the MD5 digests in a C;L cache listing (cl_md5) */
 #include <time.h>         /* clock_gettime: SFX channel busy tracking (sfx_now_ms) */
+#include "md5.h"          /* MD5 of the door's own copy, to check a client-cached file against (file_md5_hex) */
 /* Music transcode runs on a worker thread so a first-play render doesn't freeze the game.  The
  * portable threading is all xpdev: threadwrap gives the mutex (pthread_mutex_* -- native pthreads
  * on *nix, Win32 critical sections on Windows) and _beginthread; the bundled semwrap gives the
@@ -225,10 +227,13 @@ void termgfx_audio_probe(termgfx_audio_t *m)
 // SyncTERM persists C;S'd files on disk per-BBS; "SyncTERM:C;L;<glob>" lists them
 // (reply: ESC _ SyncTERM:C;L \n  <path>\t<md5> ...  ESC \). At tier-ready we ask
 // which music files the client already holds, then skip the (re-)upload of any
-// whose content-addressed name is present -- the client Loads it from its own
-// cache, no Store. Mirrors the zmachine's v6cacheList (name-presence, not MD5,
-// since our names are content-addressed). Best-effort: a client that ignores C;L
-// just never matches, so we upload as before.
+// whose content-addressed name is present WITH the MD5 of the door's own copy --
+// the client Loads it from its own cache, no Store. Name-presence alone is not
+// proof of content: the client's cache is written by anything its terminal
+// displays (a C;S in message text, say), so a planted file under our name must
+// not be played. Same check the zmachine's v6isCached and syncterm_cache.js
+// make. Best-effort: a client that ignores C;L just never matches, so we upload
+// as before.
 static const char CL_MARK[] = "\x1b_SyncTERM:C;L\n";
 #define CL_MARK_LEN (sizeof(CL_MARK) - 1)
 
@@ -306,10 +311,12 @@ static void cl_feed(termgfx_audio_t *m, const uint8_t *buf, int len)
 }
 
 // 1 if the captured C;L list contains `base` as a whole filename (a path component
-// at the end of an entry -- preceded by '/' or line start, followed by TAB/EOL).
-static int cl_has(termgfx_audio_t *m, const char *base)
+// at the end of an entry -- preceded by '/' or line start, followed by TAB/EOL),
+// copying the MD5 hex digest listed for it (the field after the TAB) into `md5`
+// (33 bytes); an entry with no digest field does not count.
+static int cl_md5(termgfx_audio_t *m, const char *base, char *md5)
 {
-	size_t bl = strlen(base), i;
+	size_t bl = strlen(base), i, j;
 
 	if (!m->cl_done || m->cl_data == NULL || bl == 0)
 		return 0;
@@ -318,10 +325,31 @@ static int cl_has(termgfx_audio_t *m, const char *base)
 			continue;
 		if (i != 0 && m->cl_data[i - 1] != '/' && m->cl_data[i - 1] != '\n')
 			continue;
-		if (i + bl == m->cl_len || m->cl_data[i + bl] == '\t' || m->cl_data[i + bl] == '\n')
-			return 1;
+		if (i + bl >= m->cl_len || m->cl_data[i + bl] != '\t')
+			continue;
+		for (j = 0; j < 32 && i + bl + 1 + j < m->cl_len && isxdigit((unsigned char)m->cl_data[i + bl + 1 + j]); j++)
+			md5[j] = (char)tolower((unsigned char)m->cl_data[i + bl + 1 + j]);
+		md5[j] = '\0';
+		return j == 32;
 	}
 	return 0;
+}
+
+static size_t mus_read_file(const char *path, uint8_t **out);   // defined with the music cache below
+
+// MD5 hex digest (33 bytes) of the file at `path`; 0 if it can't be read.
+static int file_md5_hex(const char *path, char *md5)
+{
+	uint8_t *data;
+	size_t   len = mus_read_file(path, &data);
+	BYTE     digest[MD5_DIGEST_SIZE];
+
+	if (len == 0)
+		return 0;
+	MD5_calc(digest, data, len);
+	free(data);
+	MD5_hex(md5, digest);
+	return 1;
 }
 
 // Append `buf` to the fixed rolling tail window used to bridge the feature-101
@@ -912,6 +940,7 @@ int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, float db, int
 	char     leaf[MUSNAME_MAX + 8];
 	char     cachefn[96];
 	char     path[MUS_CACHE_DIR_MAX + MUSNAME_MAX + 8];
+	char     clmd5[33], mymd5[33];           // MD5 hex: the client's listed copy, the door's own
 	uint8_t *ogg;
 	size_t   ogglen;
 
@@ -934,9 +963,12 @@ int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, float db, int
 	snprintf(leaf, sizeof(leaf), "%s.ogg", key);
 	cache_name(m, "music", leaf, cachefn, sizeof(cachefn));   // "<prefix>/music/<key>.ogg"
 
-	// STATE 1 -- the client's persistent cache already holds this OGG (C;L name hit):
-	// Load it straight from there, NO Store/upload, NO disk read, NO render.
-	if (cl_has(m, leaf)) {                       // match the "<key>.ogg" basename
+	// STATE 1 -- the client's persistent cache already holds this OGG (C;L name hit)
+	// and its listed MD5 is that of the door's own copy: Load it straight from there,
+	// NO Store/upload, NO render. Without a door-side copy to check against, the
+	// client's file is not trusted and we fall through to upload (STATE 2/3).
+	if (cl_md5(m, leaf, clmd5) && mus_disk_path(m, key, path, sizeof(path))
+	    && file_md5_hex(path, mymd5) && strcmp(clmd5, mymd5) == 0) {   // MD5_hex() is lower-case hex
 		mus_remember(m, key);                   // session bookkeeping (no Store needed)
 		mus_ship(m, cachefn, db);
 		strncpy(m->music_name, key, sizeof(m->music_name) - 1);

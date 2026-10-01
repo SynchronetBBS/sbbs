@@ -411,6 +411,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 		p_mode = P_NOATCODES;
 	else if (msg->hdr.auxattr & MSG_FIXED_FORMAT)
 		p_mode &= ~(P_WORDWRAP | P_MARKUP);
+	p_mode |= P_NOAPC; /* message text is untrusted: no terminal commands (e.g. SyncTERM file stores) from it */
 	putmsg(p, p_mode, msg->columns);
 	smb_freemsgtxt(txt);
 	if (term->column)

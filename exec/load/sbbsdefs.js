@@ -224,6 +224,7 @@ var   P_ATCODES		=(1<<20);	// Trusted @-codes in formatted string
 var   P_MODS        =(1<<21);   // Display from mods/text dir, if file is there
 var   P_CENTER      =(1<<22);   // Center the output based on widest line
 var   P_80COLS      =(1<<23);   // Format the output for 80-column display
+var   P_NOAPC       =(1<<24);   // Strip APC strings (e.g. SyncTERM commands) from untrusted text
 var   P_WILDCAT     =(1<<27);   // Support Wildcat @xx@ color codes
 var   P_PCBOARD     =(1<<28);   // Support PCBoard @Xxx color codes
 var   P_WWIV        =(1<<29);   // Support WWIV (^C) color codes
