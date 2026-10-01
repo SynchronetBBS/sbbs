@@ -1203,6 +1203,118 @@ static bool hfields_are_utf8(const smbmsg_t* msg)
 	return msg != NULL && (smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8));
 }
 
+/* FSP-1030 (FRL-1021) UCSFROM/UCSTO/UCSSUBJ kludges carry a UTF-8 header field
+   in full when it does not fit its FTS-0001 field */
+enum ucs_field { UCS_FROM, UCS_TO, UCS_SUBJ, UCS_FIELD_COUNT };
+static const char* ucs_kludges[UCS_FIELD_COUNT] = {
+	[UCS_FROM] = "UCSFROM:",
+	[UCS_TO] = "UCSTO:",
+	[UCS_SUBJ] = "UCSSUBJ:",
+};
+
+/* The field to put in a UCS* kludge on export, or NULL if none is needed */
+static const char* ucs_kludge_value(const smbmsg_t* msg, const char* kludge, const char* field, size_t size)
+{
+	if (field == NULL || strlen(field) < size || !hfields_are_utf8(msg) || !utf8_str_is_valid(field))
+		return NULL;
+	if (fidoctrl_line_exists(msg, kludge))
+		return NULL;
+	return field;
+}
+
+/* On import, a UCS* kludge only replaces the header field it extends, so it
+   cannot substitute a different name or subject. The field may end in a partial
+   UTF-8 sequence, cut by the sender's tosser. */
+static bool ucs_kludge_extends(const char* field, const char* full)
+{
+	size_t len = strlen(field);
+
+	for (size_t trim = 0; trim < 4 && trim < len; trim++) {
+		if (trim > 0 && (uchar)field[len - trim] < 0x80)
+			break;
+		if (strncmp(full, field, len - trim) == 0)
+			return true;
+	}
+	return false;
+}
+
+static int ucs_kludge_index(const char* line)
+{
+	for (int i = 0; i < UCS_FIELD_COUNT; i++)
+		if (strncmp(line, ucs_kludges[i], strlen(ucs_kludges[i])) == 0)
+			return i;
+	return -1;
+}
+
+/* Value of the first control line 'kludge' (e.g. "CHRS:") in a message body */
+static const char* find_control_line(const char* fbuf, const char* kludge, size_t* len)
+{
+	size_t klen = strlen(kludge);
+
+	for (const char* p = fbuf; (p = strchr(p, CTRL_A)) != NULL; p++) {
+		if (p != fbuf && p[-1] != '\r' && p[-1] != '\n')
+			continue;
+		if (strncmp(p + 1, kludge, klen) != 0)
+			continue;
+		const char* val = p + 1 + klen;
+		while (*val == ' ')
+			val++;
+		const char* end = val;
+		while (*end != '\0' && *end != '\r' && *end != '\n')
+			end++;
+		while (end > val && (uchar)end[-1] <= ' ')
+			end--;
+		*len = end - val;
+		return val;
+	}
+	return NULL;
+}
+
+static bool fmsg_is_utf8(const char* fbuf)
+{
+	const char* chrs;
+	size_t      len;
+
+	if ((chrs = find_control_line(fbuf, "CHRS:", &len)) != NULL
+	    || (chrs = find_control_line(fbuf, "CHARSET:", &len)) != NULL)
+		return len >= 5 && strncmp(chrs, "UTF-8", 5) == 0;
+	return cfg.auto_utf8 && !str_is_ascii(fbuf) && utf8_str_is_valid(fbuf);
+}
+
+/* An incoming message's From/To/Subject, extended by its UCS* kludges where
+   they apply. Filtering and recipient matching use these, so a field cut to
+   fit the packet header can neither hide from a filter nor match the wrong
+   local user. */
+struct full_hfields {
+	char value[UCS_FIELD_COUNT][256];
+	bool extended[UCS_FIELD_COUNT];
+};
+
+static void get_full_hfields(const char* fbuf, const fmsghdr_t* hdr, struct full_hfields* full)
+{
+	const char* field[UCS_FIELD_COUNT] = { hdr->from, hdr->to, hdr->subj };
+	bool        utf8 = fbuf != NULL && fmsg_is_utf8(fbuf);
+
+	for (int i = 0; i < UCS_FIELD_COUNT; i++) {
+		const char* val;
+		size_t      len;
+
+		full->extended[i] = false;
+		SAFECOPY(full->value[i], field[i]);
+		if (!utf8 || *field[i] == '\0'
+		    || (val = find_control_line(fbuf, ucs_kludges[i], &len)) == NULL
+		    || len < 1 || len >= sizeof full->value[i])
+			continue;
+		char tmp[sizeof full->value[i]];
+		memcpy(tmp, val, len);
+		tmp[len] = '\0';
+		if (!utf8_str_is_valid(tmp) || !ucs_kludge_extends(field[i], tmp))
+			continue;
+		SAFECOPY(full->value[i], tmp);
+		full->extended[i] = true;
+	}
+}
+
 /******************************************************************************
  This function will create a netmail message (FTS-1 "stored message" format).
  If file is non-zero, will set file attachment bit (for bundles).
@@ -1372,6 +1484,13 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 	if (msg != NULL) {
 		if (msg->columns)
 			fprintf(fp, "\1COLS: %u\r", (unsigned int)msg->columns);
+		const char* ucs;
+		if ((ucs = ucs_kludge_value(msg, "UCSFROM:", from, sizeof hdr.from)) != NULL)
+			fprintf(fp, "\1UCSFROM: %s\r", ucs);
+		if ((ucs = ucs_kludge_value(msg, "UCSTO:", to, sizeof hdr.to)) != NULL)
+			fprintf(fp, "\1UCSTO: %s\r", ucs);
+		if ((ucs = ucs_kludge_value(msg, "UCSSUBJ:", subject, sizeof hdr.subj)) != NULL)
+			fprintf(fp, "\1UCSSUBJ: %s\r", ucs);
 		/* Unknown kludge lines are added here */
 		for (int i = 0; i < msg->total_hfields; i++)
 			if (msg->hfield[i].type == FIDOCTRL)
@@ -3621,28 +3740,33 @@ enum {
 /****************************************************************************/
 int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum, bool* forwarded)
 {
-	uchar      ch, stail[MAX_TAILLEN + 1], *sbody;
-	char       msg_id[256], str[128], *p;
-	char       cmd[512];
-	bool       done, cr;
-	int        i;
-	ushort     xlat = XLAT_NONE, net;
-	ulong      l, m, length, bodylen, taillen;
-	ulong      save;
-	long       dupechk_hashes = SMB_HASH_SOURCE_DUPE;
-	fidoaddr_t faddr, origaddr, destaddr;
-	smb_t*     smbfile;
-	smbmsg_t   msg;
-	time32_t   now = time32(NULL);
-	ulong      max_msg_age = (subnum == INVALID_SUB) ? cfg.max_netmail_age : cfg.max_echomail_age;
+	uchar               ch, stail[MAX_TAILLEN + 1], *sbody;
+	char                msg_id[256], str[128], *p;
+	char                cmd[512];
+	bool                done, cr;
+	int                 i;
+	ushort              xlat = XLAT_NONE, net;
+	ulong               l, m, length, bodylen, taillen;
+	ulong               save;
+	long                dupechk_hashes = SMB_HASH_SOURCE_DUPE;
+	fidoaddr_t          faddr, origaddr, destaddr;
+	smb_t*              smbfile;
+	smbmsg_t            msg;
+	time32_t            now = time32(NULL);
+	ulong               max_msg_age = (subnum == INVALID_SUB) ? cfg.max_netmail_age : cfg.max_echomail_age;
+	struct full_hfields full;
 
-	if (find2strs_in_list(hdr->from, hdr->to, twit_list, NULL)) {
-		lprintf(LOG_INFO, "Filtering message from %s to %s", hdr->from, hdr->to);
+	get_full_hfields(fbuf, hdr, &full);
+
+	if (find2strs_in_list(hdr->from, hdr->to, twit_list, NULL)
+	    || find2strs_in_list(full.value[UCS_FROM], full.value[UCS_TO], twit_list, NULL)) {
+		lprintf(LOG_INFO, "Filtering message from %s to %s", full.value[UCS_FROM], full.value[UCS_TO]);
 		return IMPORT_FILTERED_TWIT;
 	}
 
-	if (findstr_in_list(hdr->subj, subject_can, NULL)) {
-		lprintf(LOG_INFO, "Filtering message from %s with subject: %s", hdr->from, hdr->subj);
+	if (findstr_in_list(hdr->subj, subject_can, NULL)
+	    || findstr_in_list(full.value[UCS_SUBJ], subject_can, NULL)) {
+		lprintf(LOG_INFO, "Filtering message from %s with subject: %s", full.value[UCS_FROM], full.value[UCS_SUBJ]);
 		return IMPORT_FILTERED_SUBJ;
 	}
 
@@ -3681,8 +3805,8 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum, bool* f
 	destaddr.node = hdr->destnode;
 	destaddr.point = hdr->destpoint;
 
-	smb_hfield_str(&msg, SENDER, hdr->from);
-	smb_hfield_str(&msg, RECIPIENT, hdr->to);
+	smb_hfield_str(&msg, SENDER, full.value[UCS_FROM]);
+	smb_hfield_str(&msg, RECIPIENT, full.value[UCS_TO]);
 
 	if (usernumber) {
 		user_t user = { .number = usernumber };
@@ -3705,7 +3829,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum, bool* f
 		}
 	}
 
-	smb_hfield_str(&msg, SUBJECT, hdr->subj);
+	smb_hfield_str(&msg, SUBJECT, full.value[UCS_SUBJ]);
 
 	if (fbuf == NULL) {
 		lprintf(LOG_ERR, "ERROR line %d allocating fbuf", __LINE__);
@@ -3891,6 +4015,10 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum, bool* f
 					smb_hfield(&msg, FIDOBBSID, (ushort)(m - l), fbuf + l);
 			}
 
+			else if ((i = ucs_kludge_index(fbuf + l + 1)) >= 0 && full.extended[i]) {
+				/* FSP-1030: already applied to the header field */
+			}
+
 			else {      /* Unknown kludge line */
 				while (l < length && fbuf[l] <= ' ' && fbuf[l] >= 0) l++;
 				m = l;
@@ -3974,8 +4102,10 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum, bool* f
 		return IMPORT_FILTERED_EMPTY;
 	}
 
+	char full_from[sizeof full.value[UCS_FROM] + 64];
+	SAFEPRINTF2(full_from, "%s@%s", full.value[UCS_FROM], smb_faddrtoa(&origaddr, NULL));
 	SAFEPRINTF2(str, "%s@%s", hdr->from, smb_faddrtoa(&origaddr, NULL));
-	if (findstr_in_list(str, twit_list, NULL)) {
+	if (findstr_in_list(str, twit_list, NULL) || findstr_in_list(full_from, twit_list, NULL)) {
 		lprintf(LOG_INFO, "Filtering message from %s to %s", str, hdr->to);
 		smb_freemsgmem(&msg);
 		free(sbody);
@@ -4836,9 +4966,20 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 		}
 	}
 
+	struct full_hfields full;
+	off_t               pos = ftello(*fp);
+	fmsgbuf = (pos < 0) ? NULL : getfmsg(*fp, NULL);
+	get_full_hfields(fmsgbuf, &hdr, &full);
+	FREE_AND_NULL(fmsgbuf);
+	if (pos >= 0 && fseeko(*fp, pos, SEEK_SET) != 0) {
+		lprintf(LOG_ERR, "%s ERROR %d (%s) seeking to message body", info, errno, strerror(errno));
+		return IMPORT_FAILURE;
+	}
+	const char* to = full.value[UCS_TO];
+
 	struct robot* robot = NULL;
 	for (unsigned u = 0; u < cfg.robot_count; u++) {
-		if (stricmp(hdr.to, cfg.robot_list[u].name) == 0) {
+		if (stricmp(to, cfg.robot_list[u].name) == 0) {
 			robot = &cfg.robot_list[u];
 			hdr.attr |= robot->attr;
 			lprintf(LOG_DEBUG, "%s NetMail received for robot: %s", info, robot->name);
@@ -4877,9 +5018,9 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 	}
 
 	if (robot == NULL) {
-		if (stricmp(hdr.to, FIDO_AREAMGR_NAME) == 0
-		    || stricmp(hdr.to, "SBBSecho") == 0
-		    || stricmp(hdr.to, FIDO_PING_NAME) == 0) {
+		if (stricmp(to, FIDO_AREAMGR_NAME) == 0
+		    || stricmp(to, "SBBSecho") == 0
+		    || stricmp(to, FIDO_PING_NAME) == 0) {
 			fmsgbuf = getfmsg(*fp, NULL);
 			if (fmsgbuf == NULL)
 				return IMPORT_FAILURE;
@@ -4902,7 +5043,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 			if (stricmp(hdr.from, hdr.to) == 0)
 				lprintf(LOG_NOTICE, "Refusing to auto-reply to NetMail from %s", hdr.from);
 			else {
-				if (stricmp(hdr.to, FIDO_PING_NAME) == 0) {
+				if (stricmp(to, FIDO_PING_NAME) == 0) {
 
 					lprintf(LOG_INFO, "PING (for %s) Request received from %s", faddrtoa(&addr), hdr.from);
 
@@ -4972,16 +5113,16 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 			return IMPORT_SUCCESS;
 		}
 
-		usernumber = atoi(hdr.to);
+		usernumber = atoi(to);
 		if (usernumber) {   /* Addressed by user number: don't accept an inactive account */
 			user_t user = { .number = usernumber };
 			if (getuserdat(&scfg, &user) != USER_SUCCESS || !user_is_active(&user))
 				usernumber = 0;
 		}
-		if (!usernumber && strListFind(cfg.sysop_alias_list, hdr.to, /* case sensitive: */ false) >= 0)
+		if (!usernumber && strListFind(cfg.sysop_alias_list, to, /* case sensitive: */ false) >= 0)
 			usernumber = 1;
 		if (!usernumber)
-			usernumber = lookup_user(&scfg, &user_list, hdr.to);
+			usernumber = lookup_user(&scfg, &user_list, to);
 		if (!usernumber && cfg.default_recipient[0])
 			usernumber = matchuser(&scfg, cfg.default_recipient, TRUE);
 		if (!usernumber) {
@@ -5319,7 +5460,8 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, uint32_t r
 
 			lprintf(LOG_DEBUG, "Exporting %s message #%u from %s to %s in area: %s"
 			        , scfg.sub[subnum]->code, msg.hdr.number, msg.from, msg.to, tag);
-			fmsgbuflen = strlen(buf) + 4096; /* over alloc for kludge lines */
+			fmsgbuflen = strlen(buf) + 4096 /* over alloc for kludge lines */
+			             + strlen(msg.from) + strlen(msg.to) + strlen(msg.subj);
 			fmsgbuf = malloc(fmsgbuflen);
 			if (!fmsgbuf) {
 				lprintf(LOG_ERR, "ERROR line %d allocating %lu bytes for fmsgbuf"
@@ -5385,6 +5527,16 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, uint32_t r
 
 			if (rescan)
 				f += sprintf(fmsgbuf + f, "\1RESCANNED %s\r", smb_faddrtoa(&scfg.sub[subnum]->faddr, NULL));
+
+			if (!to_ascii) {
+				const char* ucs;
+				if ((ucs = ucs_kludge_value(&msg, "UCSFROM:", msg.from, sizeof hdr.from)) != NULL)
+					f += sprintf(fmsgbuf + f, "\1UCSFROM: %s\r", ucs);
+				if ((ucs = ucs_kludge_value(&msg, "UCSTO:", msg.to, sizeof hdr.to)) != NULL)
+					f += sprintf(fmsgbuf + f, "\1UCSTO: %s\r", ucs);
+				if ((ucs = ucs_kludge_value(&msg, "UCSSUBJ:", msg.subj, sizeof hdr.subj)) != NULL)
+					f += sprintf(fmsgbuf + f, "\1UCSSUBJ: %s\r", ucs);
+			}
 
 			/* Unknown kludge lines are added here */
 			for (l = 0; l < msg.total_hfields && f < fmsgbuflen; l++)
@@ -6549,8 +6701,10 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			if (result == SMB_SUCCESS) {       /* Successful import */
 				lprintf(LOG_DEBUG, "%s: Imported message from %s (%s) to %s, subject: %s"
 				        , areatag, hdr.from, fmsghdr_srcaddr_str(&hdr), hdr.to, hdr.subj);
-				uint usernum;
-				if (i != cfg.badecho && cfg.echomail_notify && (usernum = lookup_user(&scfg, &user_list, hdr.to)) != 0) {
+				uint                usernum;
+				struct full_hfields full;
+				get_full_hfields(fmsgbuf, &hdr, &full);
+				if (i != cfg.badecho && cfg.echomail_notify && (usernum = lookup_user(&scfg, &user_list, full.value[UCS_TO])) != 0) {
 					user_t user = { .number = usernum };
 					lprintf(LOG_DEBUG, "%s: Local message recipient (%s): user #%u"
 						, areatag, hdr.to, user.number);
@@ -6566,7 +6720,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 							safe_snprintf(str, sizeof(str)
 					              , text[FidoEchoMailReceived]
 					              , timestr(&scfg, time32(NULL), tmp)
-					              , hdr.from
+					              , full.value[UCS_FROM]
 					              , scfg.grp[scfg.sub[cfg.area[i].sub]->grp]->sname
 					              , scfg.sub[cfg.area[i].sub]->sname);
 							if ((result = putsmsg(&scfg, user.number, str)) != USER_SUCCESS)

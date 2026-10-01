@@ -360,6 +360,11 @@
 
 ## SBBSecho
 
+- FSP-1030 `UCSFROM`/`UCSTO`/`UCSSUBJ` control lines: exported UTF-8
+  messages carry the full To, From, or Subject when it does not fit the
+  packet header, and imported ones restore it; twit/subject filtering and
+  local recipient matching use the full fields
+
 - Helpful error message when passed a directory instead of a
   config or `.ini` file on the command line
 
