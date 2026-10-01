@@ -620,6 +620,27 @@ static int sockreadline(SOCKET socket, const char* prot, CRYPT_SESSION sess, cha
 	return rd;
 }
 
+/* A received line, for logging: a POP3 password or SMTP AUTH initial response it */
+/* carries is redacted unless the sysop chose to log passwords (SM_ECHO_PW)        */
+static const char* loggable_line(const char* line)
+{
+	if (scfg.sys_misc & SM_ECHO_PW)
+		return line;
+	if (strnicmp(line, "PASS ", 5) == 0)
+		return "PASS <redacted>";
+	if (strnicmp(line, "AUTH PLAIN ", 11) == 0)
+		return "AUTH PLAIN <credentials>";
+	if (strnicmp(line, "AUTH LOGIN ", 11) == 0)
+		return "AUTH LOGIN <credentials>";
+	return line;
+}
+
+/* A line that is nothing but credentials (an SMTP AUTH response), for logging */
+static const char* credentials_str(const char* line)
+{
+	return (scfg.sys_misc & SM_ECHO_PW) ? line : "<credentials>";
+}
+
 static bool sockgetrsp(SOCKET socket, const char* prot, CRYPT_SESSION sess, const char* rsp, char *buf, int len)
 {
 	int rd;
@@ -633,7 +654,7 @@ static bool sockgetrsp(SOCKET socket, const char* prot, CRYPT_SESSION sess, cons
 		}
 		if (buf[3] == '-') { /* Multi-line response */
 			if (startup->options & MAIL_OPT_DEBUG_RX_RSP)
-				lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, prot, buf);
+				lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, prot, loggable_line(buf));
 			continue;
 		}
 		if (rsp != NULL && strnicmp(buf, rsp, strlen(rsp))) {
@@ -643,7 +664,7 @@ static bool sockgetrsp(SOCKET socket, const char* prot, CRYPT_SESSION sess, cons
 		break;
 	}
 	if (startup->options & MAIL_OPT_DEBUG_RX_RSP)
-		lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, prot, buf);
+		lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, prot, loggable_line(buf));
 	return true;
 }
 
@@ -671,7 +692,7 @@ static int sockgetrsp_opt(SOCKET socket, const char* prot, CRYPT_SESSION sess, c
 			if (strncmp(buf, mopt, moptlen) == 0)
 				ret = 1;
 			if (startup->options & MAIL_OPT_DEBUG_RX_RSP)
-				lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, prot, buf);
+				lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, prot, loggable_line(buf));
 			continue;
 		}
 		if (strnicmp(buf, rsp, strlen(rsp))) {
@@ -686,7 +707,7 @@ static int sockgetrsp_opt(SOCKET socket, const char* prot, CRYPT_SESSION sess, c
 		ret = 1;
 	free(mopt);
 	if (startup->options & MAIL_OPT_DEBUG_RX_RSP)
-		lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, prot, buf);
+		lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, prot, loggable_line(buf));
 	return ret;
 }
 
@@ -1525,7 +1546,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 				break;
 			truncsp(buf);
 			if (startup->options & MAIL_OPT_DEBUG_POP3)
-				lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, client.protocol, buf);
+				lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, client.protocol, loggable_line(buf));
 			if (!host_exempt.listed(host_ip, host_name)) {
 				std::string rl_key = rate_limit_key(host_ip, &startup->rate_limit);
 				unsigned    denials = 0;
@@ -4391,7 +4412,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			break;
 		}
 		strip_ctrl(buf, buf);
-		lprintf(LOG_DEBUG, "%04d %-5s %s RX: %s", socket, client.protocol, client_id, buf);
+		lprintf(LOG_DEBUG, "%04d %-5s %s RX: %s", socket, client.protocol, client_id, loggable_line(buf));
 		if (!strnicmp(buf, "HELO", 4)) {
 			p = buf + 4;
 			SKIP_WHITESPACE(p);
@@ -4444,9 +4465,9 @@ static bool smtp_client_thread(smtp_t* smtp)
 					continue;
 				}
 				if (startup->options & MAIL_OPT_DEBUG_RX_RSP)
-					lprintf(LOG_DEBUG, "%04d %-5s %s RX: %s", socket, client.protocol, client_id, buf);
+					lprintf(LOG_DEBUG, "%04d %-5s %s RX: %s", socket, client.protocol, client_id, credentials_str(buf));
 				if (b64_decode(user_name, sizeof(user_name), buf, rd) < 1 || str_has_ctrl(user_name)) {
-					lprintf(LOG_NOTICE, "%04d %-5s %s !Bad AUTH LOGIN username argument: %s", socket, client.protocol, client_id, buf);
+					lprintf(LOG_NOTICE, "%04d %-5s %s !Bad AUTH LOGIN username argument: %s", socket, client.protocol, client_id, credentials_str(buf));
 					badlogin(socket, session, badarg_rsp, NULL, NULL, &client, &smtp->client_addr);
 					continue;
 				}
@@ -4457,9 +4478,9 @@ static bool smtp_client_thread(smtp_t* smtp)
 					continue;
 				}
 				if (startup->options & MAIL_OPT_DEBUG_RX_RSP)
-					lprintf(LOG_DEBUG, "%04d %-5s %s RX: %s", socket, client.protocol, client_id, buf);
+					lprintf(LOG_DEBUG, "%04d %-5s %s RX: %s", socket, client.protocol, client_id, credentials_str(buf));
 				if (b64_decode(user_pass, sizeof(user_pass), buf, rd) < 1 || str_has_ctrl(user_pass)) {
-					lprintf(LOG_NOTICE, "%04d %-5s %s !Bad AUTH LOGIN password argument: %s", socket, client.protocol, client_id, buf);
+					lprintf(LOG_NOTICE, "%04d %-5s %s !Bad AUTH LOGIN password argument: %s", socket, client.protocol, client_id, credentials_str(buf));
 					badlogin(socket, session, badarg_rsp, user_name, NULL, &client, &smtp->client_addr);
 					continue;
 				}
@@ -4476,12 +4497,12 @@ static bool smtp_client_thread(smtp_t* smtp)
 						continue;
 					}
 					if (startup->options & MAIL_OPT_DEBUG_RX_RSP)
-						lprintf(LOG_DEBUG, "%04d %-5s %s RX: %s", socket, client.protocol, client_id, buf);
+						lprintf(LOG_DEBUG, "%04d %-5s %s RX: %s", socket, client.protocol, client_id, credentials_str(buf));
 					p = buf;
 				}
 				ZERO_VAR(tmp);
 				if (b64_decode(tmp, sizeof(tmp), p, strlen(p)) < 1 || str_has_ctrl(tmp)) {
-					lprintf(LOG_NOTICE, "%04d %-5s %s !Bad AUTH PLAIN argument: %s", socket, client.protocol, client_id, p);
+					lprintf(LOG_NOTICE, "%04d %-5s %s !Bad AUTH PLAIN argument: %s", socket, client.protocol, client_id, credentials_str(p));
 					badlogin(socket, session, badarg_rsp, NULL, NULL, &client, &smtp->client_addr);
 					continue;
 				}
@@ -4586,10 +4607,10 @@ static bool smtp_client_thread(smtp_t* smtp)
 				continue;
 			}
 			if (startup->options & MAIL_OPT_DEBUG_RX_RSP)
-				lprintf(LOG_DEBUG, "%04d %-5s %s RX: %s", socket, client.protocol, client_id, buf);
+				lprintf(LOG_DEBUG, "%04d %-5s %s RX: %s", socket, client.protocol, client_id, credentials_str(buf));
 
 			if (b64_decode(response, sizeof(response), buf, rd) < 1 || str_has_ctrl(response)) {
-				lprintf(LOG_NOTICE, "%04d %-5s %s !Bad AUTH CRAM-MD5 response: %s", socket, client.protocol, client_id, buf);
+				lprintf(LOG_NOTICE, "%04d %-5s %s !Bad AUTH CRAM-MD5 response: %s", socket, client.protocol, client_id, credentials_str(buf));
 				sockprintf(socket, client.protocol, session, badarg_rsp);
 				continue;
 			}
