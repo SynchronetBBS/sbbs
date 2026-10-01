@@ -1174,6 +1174,35 @@ static const char* ftn_charset(const smbmsg_t* msg, const char* text, const char
 	return FIDO_CHARSET_CP437;
 }
 
+/* Copy a header field into a fixed-length FTN header field (FTS-0001), never
+   leaving a partial UTF-8 sequence at the end (#1276). When 'to_ascii' is set,
+   the UTF-8 source is converted before (not after) truncation. */
+static void copy_hfield(char* dst, size_t size, const char* src, bool utf8, bool to_ascii)
+{
+	char* p = to_ascii ? strdup(src) : NULL;
+
+	if (p != NULL) {
+		utf8_to_cp437_inplace(p);
+		ascii_str((uchar *)p);
+		src = p;
+		utf8 = false;
+	}
+	if (utf8 && utf8_str_is_valid(src))
+		utf8_strlcpy(dst, src, size);
+	else
+		strlcpy(dst, src, size);
+	if (to_ascii && p == NULL) {
+		utf8_to_cp437_inplace(dst);
+		ascii_str((uchar *)dst);
+	}
+	free(p);
+}
+
+static bool hfields_are_utf8(const smbmsg_t* msg)
+{
+	return msg != NULL && (smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8));
+}
+
 /******************************************************************************
  This function will create a netmail message (FTS-1 "stored message" format).
  If file is non-zero, will set file attachment bit (for bundles).
@@ -1283,9 +1312,9 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 	         , tm->tm_mday, mon[tm->tm_mon], TM_YEAR(tm->tm_year)
 	         , tm->tm_hour, tm->tm_min, tm->tm_sec);
 
-	SAFECOPY(hdr.to, to);
-	SAFECOPY(hdr.from, from);
-	SAFECOPY(hdr.subj, subject);
+	copy_hfield(hdr.to, sizeof hdr.to, to, hfields_are_utf8(msg), /* to_ascii: */ false);
+	copy_hfield(hdr.from, sizeof hdr.from, from, hfields_are_utf8(msg), /* to_ascii: */ false);
+	copy_hfield(hdr.subj, sizeof hdr.subj, subject, hfields_are_utf8(msg), /* to_ascii: */ false);
 
 	(void)fwrite(&hdr, sizeof(fmsghdr_t), 1, fp);
 	fwrite_intl_control_line(fp, &hdr);
@@ -5268,7 +5297,10 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, uint32_t r
 			if (msg.hdr.attr & MSG_PRIVATE)
 				hdr.attr |= FIDO_PRIVATE;
 
-			SAFECOPY(hdr.from, msg.from);
+			bool to_ascii = (scfg.sub[subnum]->misc & SUB_ASCII) && smb_msg_is_utf8(&msg);
+			copy_hfield(hdr.from, sizeof hdr.from, msg.from, hfields_are_utf8(&msg), to_ascii);
+			copy_hfield(hdr.to, sizeof hdr.to, msg.to, hfields_are_utf8(&msg), to_ascii);
+			copy_hfield(hdr.subj, sizeof hdr.subj, msg.subj, hfields_are_utf8(&msg), to_ascii);
 
 			tt = smb_time(msg.hdr.when_written);
 			if ((tm = localtime(&tt)) != NULL)
@@ -5276,22 +5308,14 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, uint32_t r
 				        , tm->tm_mday, mon[tm->tm_mon], TM_YEAR(tm->tm_year)
 				        , tm->tm_hour, tm->tm_min, tm->tm_sec);
 
-			SAFECOPY(hdr.to, msg.to);
-
-			SAFECOPY(hdr.subj, msg.subj);
-
 			buf = smb_getmsgtxt(&smb, &msg, GETMSGTXT_ALL);
 			if (!buf) {
 				smb_unlockmsghdr(&smb, &msg);
 				smb_freemsgmem(&msg);
 				continue;
 			}
-			if ((scfg.sub[subnum]->misc & SUB_ASCII) && smb_msg_is_utf8(&msg)) {
+			if (to_ascii)
 				utf8_to_cp437_inplace(buf);
-				utf8_to_cp437_inplace(hdr.to), ascii_str((uchar *)hdr.to);
-				utf8_to_cp437_inplace(hdr.from), ascii_str((uchar *)hdr.from);
-				utf8_to_cp437_inplace(hdr.subj), ascii_str((uchar *)hdr.subj);
-			}
 
 			lprintf(LOG_DEBUG, "Exporting %s message #%u from %s to %s in area: %s"
 			        , scfg.sub[subnum]->code, msg.hdr.number, msg.from, msg.to, tag);

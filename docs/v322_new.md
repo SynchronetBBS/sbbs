@@ -373,6 +373,11 @@
   Message-ID, which chksmb reports; one is now generated as it always
   was for imported echomail (issue #1167)
 
+- Fix: exported UTF-8 messages could have a To, From, or Subject field
+  cut to the packet's field length in the middle of a multi-byte
+  character; the cut now falls on a character boundary, and for ASCII-only
+  sub-boards the field is converted before it is shortened (issue #1276)
+
 ## BinkIT
 
 - `data/binkstats.ini` no longer logs successful binkp/1.1 callouts
