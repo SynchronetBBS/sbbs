@@ -2270,8 +2270,10 @@ int main(int argc, char **argv)
 								return i;
 							}
 							printf("%s locked successfully\n", smb.file);
-							if (cmd[y] == 'L')   // Lock base
+							if (cmd[y] == 'L') { // Lock base
+								smb.is_locked = false; // so smb_close() leaves the lock file behind
 								break;
+							}
 							switch (toupper(cmd[y])) {
 								case 'P':
 									packmsgs(atol(cmd + y + 1));
