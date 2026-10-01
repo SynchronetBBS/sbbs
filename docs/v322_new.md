@@ -190,6 +190,10 @@
 
 ## Web Server
 
+- Fix: an uncaught error in a server-side script is now logged only
+  and the request fails with a 500 response; the error text (which
+  could echo request data) and the script's path are no longer sent
+  to the client (issue #1203)
 - New **subnet-aggregated connection rate limiter**, in addition
   to the per-request rate limiter from v3.21c, enforced at accept
   time (counts even aborted TLS handshakes that never produce a

@@ -296,6 +296,7 @@ struct http_session_t {
 	JSObject* js_cookie;
 	JSObject* js_request;
 	js_callback_t js_callback;
+	bool js_error;  /* a JavaScript error (not a warning) was reported while running the script */
 	subscan_t *subscan;
 
 	/* Ring Buffer Stuff */
@@ -5633,8 +5634,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 
 	if (report == NULL) {
 		lprintf(LOG_ERR, "%04d %-5s [%s] !JavaScript: %s", session->socket, session->client.protocol, session->host_ip, message);
-		if (content_file_open(session))
-			fprintf(session->req.fp, "!JavaScript: %s", message);
+		session->js_error = true;
 		return;
 	}
 
@@ -5671,10 +5671,11 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		pthread_mutex_unlock(&mutex);
 	}
 
+	/* Logged only: the message (which may echo request data) and the script's path are not for the client */
 	lprintf(log_level, "%04d %-5s [%s] !JavaScript %s%s%s: %s, Request: %s"
 	        , session->socket, session->client.protocol, session->host_ip, warning, file, line, message, session->req.request_line);
-	if (content_file_open(session))
-		fprintf(session->req.fp, "!JavaScript %s%s%s: %s", warning, file, line, message);
+	if (!JSREPORT_IS_WARNING(report->flags))
+		session->js_error = true;
 }
 
 static void js_writebuf(http_session_t *session, const char *buf, size_t buflen)
@@ -6495,6 +6496,7 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 			, session->socket, session->client.protocol, session->host_ip, script);
 		start = xp_timer();
 		js_PrepareToExecute(session->js_cx, session->js_glob, script, /* startup_dir */ NULL, session->js_glob);
+		session->js_error = false;
 		JS_ExecuteScript(session->js_cx, session->js_glob, js_script, &rval);
 		js_EvalOnExit(session->js_cx, session->js_glob, &session->js_callback);
 		JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
@@ -6506,8 +6508,12 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 	FCLOSE_OPEN_FILE(session->req.fp);
 
 	/* Read http_reply object */
-	if (!session->req.sent_headers)
-		retval = ssjs_send_headers(session, false);
+	if (!session->req.sent_headers) {
+		if (session->js_error) /* the script failed: an error response, not whatever it produced before failing */
+			retval = false;
+		else
+			retval = ssjs_send_headers(session, false);
+	}
 
 	/* Free up temporary resources here */
 
