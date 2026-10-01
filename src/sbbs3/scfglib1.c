@@ -46,7 +46,6 @@ bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	char        errstr[256];
 	FILE*       fp;
 	str_list_t  ini;
-	char        value[INI_MAX_VALUE_LEN];
 	bool        result = false;
 
 	const char* fname = "node.ini";
@@ -64,12 +63,12 @@ bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	} else
 		result = true;
 
-	SAFECOPY(cfg->node_phone, iniGetString(ini, ROOT_SECTION, "phone", "", value));
-	SAFECOPY(cfg->node_daily_cmd, iniGetString(ini, ROOT_SECTION, "daily", "", value));
+	INI_GET_STR(cfg->node_phone, ini, ROOT_SECTION, "phone", "");
+	INI_GET_STR(cfg->node_daily_cmd, ini, ROOT_SECTION, "daily", "");
 	cfg->node_daily_misc = iniGetUInteger(ini, ROOT_SECTION, "daily_settings", 0);
-	SAFECOPY(cfg->text_dir, iniGetString(ini, ROOT_SECTION, "text_dir", "../text/", value));
-	SAFECOPY(cfg->temp_dir, iniGetString(ini, ROOT_SECTION, "temp_dir", "temp", value));
-	SAFECOPY(cfg->node_arstr, iniGetString(ini, ROOT_SECTION, "ars", "", value));
+	INI_GET_STR(cfg->text_dir, ini, ROOT_SECTION, "text_dir", "../text/");
+	INI_GET_STR(cfg->temp_dir, ini, ROOT_SECTION, "temp_dir", "temp");
+	INI_GET_STR(cfg->node_arstr, ini, ROOT_SECTION, "ars", "");
 	arstr(NULL, cfg->node_arstr, cfg, cfg->node_ar);
 
 	cfg->node_misc = iniGetUInteger(ini, ROOT_SECTION, "settings", 0);
@@ -138,6 +137,37 @@ static fevent_t read_fixed_event(scfg_t* cfg, str_list_t ini, const char* name)
 /****************************************************************************/
 /* Reads in main.ini and initializes the associated variables				*/
 /****************************************************************************/
+int lprintf(int level, const char *fmt, ...);   /* log output */
+
+/****************************************************************************/
+/* Copies an .ini string value into a fixed-size config field, as SAFECOPY	*/
+/* does, but logs a warning when the value had to be truncated: a value can	*/
+/* reach the file by many paths (SCFG, scripts, hand editing), and SCFG's	*/
+/* own input limit is not the only one in play.								*/
+/****************************************************************************/
+char* scfg_strcpy(char* dst, size_t dstlen, const char* src, const char* key)
+{
+	size_t len = strlen(src);
+
+	if (len >= dstlen)
+		lprintf(LOG_WARNING, "!Config value '%s' truncated from %lu to %lu chars: %s"
+		        , key, (ulong)len, (ulong)(dstlen - 1), src);
+	strncpy(dst, src, dstlen);
+	dst[dstlen - 1] = '\0';
+	return dst;
+}
+
+/****************************************************************************/
+/* Reads an .ini string value (as iniGetString() does) into a fixed-size	*/
+/* config field, logging a warning when the value had to be truncated		*/
+/****************************************************************************/
+char* scfg_ini_get_str(char* dst, size_t dstlen, str_list_t list, const char* section, const char* key, const char* dflt)
+{
+	char value[INI_MAX_VALUE_LEN];
+
+	return scfg_strcpy(dst, dstlen, iniGetString(list, section, key, dflt, value), key);
+}
+
 bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
 	bool        result = false;
@@ -161,15 +191,15 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			result = true;
 	}
 
-	SAFECOPY(cfg->sys_name, iniGetString(ini, ROOT_SECTION, "name", "", value));
-	SAFECOPY(cfg->sys_op, iniGetString(ini, ROOT_SECTION, "operator", "", value));
-	SAFECOPY(cfg->sys_pass, iniGetString(ini, ROOT_SECTION, "password", "", value));
+	INI_GET_STR(cfg->sys_name, ini, ROOT_SECTION, "name", "");
+	INI_GET_STR(cfg->sys_op, ini, ROOT_SECTION, "operator", "");
+	INI_GET_STR(cfg->sys_pass, ini, ROOT_SECTION, "password", "");
 	cfg->sys_pass_timeout = iniGetUInt32(ini, ROOT_SECTION, "password_timeout", 15 /* minutes */);
-	SAFECOPY(cfg->sys_id, iniGetString(ini, ROOT_SECTION, "qwk_id", "", value));
-	SAFECOPY(cfg->sys_guru, iniGetString(ini, ROOT_SECTION, "guru", "", value));
-	SAFECOPY(cfg->sys_location, iniGetString(ini, ROOT_SECTION, "location", "", value));
-	SAFECOPY(cfg->sys_phonefmt, iniGetString(ini, ROOT_SECTION, "phonefmt", "", value));
-	SAFECOPY(cfg->sys_chat_arstr, iniGetString(ini, ROOT_SECTION, "chat_ars", "", value));
+	INI_GET_STR(cfg->sys_id, ini, ROOT_SECTION, "qwk_id", "");
+	INI_GET_STR(cfg->sys_guru, ini, ROOT_SECTION, "guru", "");
+	INI_GET_STR(cfg->sys_location, ini, ROOT_SECTION, "location", "");
+	INI_GET_STR(cfg->sys_phonefmt, ini, ROOT_SECTION, "phonefmt", "");
+	INI_GET_STR(cfg->sys_chat_arstr, ini, ROOT_SECTION, "chat_ars", "");
 	arstr(NULL, cfg->sys_chat_arstr, cfg, cfg->sys_chat_ar);
 
 	cfg->sys_timezone = iniGetInt16(ini, ROOT_SECTION, "timezone", 0);
@@ -229,7 +259,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t         node_dirs = iniGetKeyList(section, NULL);
 	cfg->sys_nodes = (uint16_t)strListCount(node_dirs);
 	for (size_t i = 0; i < cfg->sys_nodes; i++) {
-		SAFECOPY(cfg->node_path[i], iniGetString(section, NULL, node_dirs[i], "", value));
+		INI_GET_STR(cfg->node_path[i], section, NULL, node_dirs[i], "");
 #if defined(__unix__)
 		strlwr(cfg->node_path[i]);
 #endif
@@ -239,10 +269,10 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->sys_lastnode = iniGetInteger(ini, ROOT_SECTION, "lastnode", cfg->sys_nodes);
 
 	section = iniGetParsedSection(sections, "dir", /* cut: */ true);
-	SAFECOPY(cfg->data_dir, iniGetString(section, NULL, "data", "../data/", value));
-	SAFECOPY(cfg->exec_dir, iniGetString(section, NULL, "exec", "../exec/", value));
-	SAFECOPY(cfg->mods_dir, iniGetString(section, NULL, "mods", "../mods/", value));
-	SAFECOPY(cfg->logs_dir, iniGetString(section, NULL, "logs", cfg->data_dir, value));
+	INI_GET_STR(cfg->data_dir, section, NULL, "data", "../data/");
+	INI_GET_STR(cfg->exec_dir, section, NULL, "exec", "../exec/");
+	INI_GET_STR(cfg->mods_dir, section, NULL, "mods", "../mods/");
+	INI_GET_STR(cfg->logs_dir, section, NULL, "logs", cfg->data_dir);
 
 	/*********************/
 	/* New User Settings */
@@ -250,15 +280,15 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	section = iniGetParsedSection(sections, "newuser", /* cut: */ true);
 	cfg->uq = iniGetUInteger(section, NULL, "questions", DEFAULT_NEWUSER_QS);
 
-	SAFECOPY(cfg->new_genders, iniGetString(section, NULL, "gender_options", "MFX", value));
-	SAFECOPY(cfg->new_pass, iniGetString(section, NULL, "password", "", value));
-	SAFECOPY(cfg->new_magic, iniGetString(section, NULL, "magic_word", "", value));
-	SAFECOPY(cfg->new_sif, iniGetString(section, NULL, "sif", "", value));
-	SAFECOPY(cfg->new_sof, iniGetString(section, NULL, "sof", cfg->new_sif, value));
+	INI_GET_STR(cfg->new_genders, section, NULL, "gender_options", "MFX");
+	INI_GET_STR(cfg->new_pass, section, NULL, "password", "");
+	INI_GET_STR(cfg->new_magic, section, NULL, "magic_word", "");
+	INI_GET_STR(cfg->new_sif, section, NULL, "sif", "");
+	INI_GET_STR(cfg->new_sof, section, NULL, "sof", cfg->new_sif);
 	cfg->new_prot = *iniGetString(section, NULL, "download_protocol", " ", value);
 	char new_shell[LEN_CODE + 1];
-	SAFECOPY(new_shell, iniGetString(section, NULL, "command_shell", "default", value));
-	SAFECOPY(cfg->new_xedit, iniGetString(section, NULL, "editor", "", value));
+	INI_GET_STR(new_shell, section, NULL, "command_shell", "default");
+	INI_GET_STR(cfg->new_xedit, section, NULL, "editor", "");
 
 	cfg->new_level = iniGetInteger(section, NULL, "level", 50);
 	cfg->new_flags1 = iniGetUInt32(section, NULL, "flags1", 0);
@@ -294,9 +324,9 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->mqtt.enabled = iniGetBool(section, NULL, "enabled", false);
 	cfg->mqtt.internal_broker = iniGetBool(section, NULL, "InternalBroker", false);
 	cfg->mqtt.verbose = iniGetBool(section, NULL, "verbose", true);
-	SAFECOPY(cfg->mqtt.username, iniGetString(section, NULL, "username", "", value));
-	SAFECOPY(cfg->mqtt.password, iniGetString(section, NULL, "password", "", value));
-	SAFECOPY(cfg->mqtt.broker_addr, iniGetString(section, NULL, "broker_addr", "127.0.0.1", value));
+	INI_GET_STR(cfg->mqtt.username, section, NULL, "username", "");
+	INI_GET_STR(cfg->mqtt.password, section, NULL, "password", "");
+	INI_GET_STR(cfg->mqtt.broker_addr, section, NULL, "broker_addr", "127.0.0.1");
 	cfg->mqtt.broker_port = iniGetUInt16(section, NULL, "broker_port", IPPORT_MQTT);
 	cfg->mqtt.keepalive = iniGetIntInRange(section, NULL, "keepalive", 5, 60, INT_MAX); // seconds
 	cfg->mqtt.publish_qos = iniGetIntInRange(section, NULL, "publish_qos", 0, 0, 2);
@@ -304,12 +334,12 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->mqtt.protocol_version = iniGetIntInRange(section, NULL, "protocol_version", 3, 4, 5);
 	cfg->mqtt.log_level = iniGetLogLevel(section, NULL, "LogLevel", LOG_INFO);
 	cfg->mqtt.tls.mode = iniGetIntInRange(section, NULL, "tls_mode", MQTT_TLS_DISABLED, MQTT_TLS_DISABLED, MQTT_TLS_SBBS);
-	SAFECOPY(cfg->mqtt.tls.cafile, iniGetString(section, NULL, "tls_cafile", "", value));
-	SAFECOPY(cfg->mqtt.tls.certfile, iniGetString(section, NULL, "tls_certfile", "", value));
-	SAFECOPY(cfg->mqtt.tls.keyfile, iniGetString(section, NULL, "tls_keyfile", "", value));
-	SAFECOPY(cfg->mqtt.tls.keypass, iniGetString(section, NULL, "tls_keypass", "", value));
-	SAFECOPY(cfg->mqtt.tls.psk, iniGetString(section, NULL, "tls_psk", "", value));
-	SAFECOPY(cfg->mqtt.tls.identity, iniGetString(section, NULL, "tls_identity", "", value));
+	INI_GET_STR(cfg->mqtt.tls.cafile, section, NULL, "tls_cafile", "");
+	INI_GET_STR(cfg->mqtt.tls.certfile, section, NULL, "tls_certfile", "");
+	INI_GET_STR(cfg->mqtt.tls.keyfile, section, NULL, "tls_keyfile", "");
+	INI_GET_STR(cfg->mqtt.tls.keypass, section, NULL, "tls_keypass", "");
+	INI_GET_STR(cfg->mqtt.tls.psk, section, NULL, "tls_psk", "");
+	INI_GET_STR(cfg->mqtt.tls.identity, section, NULL, "tls_identity", "");
 
 	/***********/
 	/* Modules */
@@ -404,8 +434,8 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		const char* name = shell_list[i];
 		section = iniGetParsedSection(sections, name, /* cut: */ true);
 		SAFECOPY(cfg->shell[i]->code, name + 6);
-		SAFECOPY(cfg->shell[i]->name, iniGetString(section, NULL, "name", name + 6, value));
-		SAFECOPY(cfg->shell[i]->arstr, iniGetString(section, NULL, "ars", "", value));
+		INI_GET_STR(cfg->shell[i]->name, section, NULL, "name", name + 6);
+		INI_GET_STR(cfg->shell[i]->arstr, section, NULL, "ars", "");
 		arstr(NULL, cfg->shell[i]->arstr, cfg, cfg->shell[i]->ar);
 		cfg->shell[i]->misc = iniGetUInteger(section, NULL, "settings", 0);
 		if (stricmp(cfg->shell[i]->code, new_shell) == 0)
@@ -424,16 +454,16 @@ void read_sub_ini_section(scfg_t* cfg, str_list_t ini, const char* section, sub_
 	char value[INI_MAX_VALUE_LEN];
 
 	SAFECOPY(sub->code_suffix, code);
-	SAFECOPY(sub->lname, iniGetString(ini, section, "description", code, value));
-	SAFECOPY(sub->sname, iniGetString(ini, section, "name", code, value));
-	SAFECOPY(sub->qwkname, iniGetString(ini, section, "qwk_name", code, value));
-	SAFECOPY(sub->data_dir, iniGetString(ini, section, "data_dir", "", value));
+	INI_GET_STR(sub->lname, ini, section, "description", code);
+	INI_GET_STR(sub->sname, ini, section, "name", code);
+	INI_GET_STR(sub->qwkname, ini, section, "qwk_name", code);
+	INI_GET_STR(sub->data_dir, ini, section, "data_dir", "");
 
-	SAFECOPY(sub->arstr, iniGetString(ini, section, "ars", "", value));
-	SAFECOPY(sub->read_arstr, iniGetString(ini, section, "read_ars", "", value));
-	SAFECOPY(sub->post_arstr, iniGetString(ini, section, "post_ars", "", value));
-	SAFECOPY(sub->op_arstr, iniGetString(ini, section, "operator_ars", "", value));
-	SAFECOPY(sub->mod_arstr, iniGetString(ini, section, "moderated_ars", "", value));
+	INI_GET_STR(sub->arstr, ini, section, "ars", "");
+	INI_GET_STR(sub->read_arstr, ini, section, "read_ars", "");
+	INI_GET_STR(sub->post_arstr, ini, section, "post_ars", "");
+	INI_GET_STR(sub->op_arstr, ini, section, "operator_ars", "");
+	INI_GET_STR(sub->mod_arstr, ini, section, "moderated_ars", "");
 
 	arstr(NULL, sub->arstr, cfg, sub->ar);
 	arstr(NULL, sub->read_arstr, cfg, sub->read_ar);
@@ -445,11 +475,11 @@ void read_sub_ini_section(scfg_t* cfg, str_list_t ini, const char* section, sub_
 	if ((sub->misc & (SUB_FIDO | SUB_INET)) && !(sub->misc & SUB_QNET))
 		sub->misc |= SUB_NOVOTING;
 
-	SAFECOPY(sub->tagline, iniGetString(ini, section, "qwknet_tagline", "", value));
-	SAFECOPY(sub->origline, iniGetString(ini, section, "fidonet_origin", "", value));
-	SAFECOPY(sub->post_sem, iniGetString(ini, section, "post_sem", "", value));
-	SAFECOPY(sub->newsgroup, iniGetString(ini, section, "newsgroup", "", value));
-	SAFECOPY(sub->area_tag, iniGetString(ini, section, "area_tag", "", value));
+	INI_GET_STR(sub->tagline, ini, section, "qwknet_tagline", "");
+	INI_GET_STR(sub->origline, ini, section, "fidonet_origin", "");
+	INI_GET_STR(sub->post_sem, ini, section, "post_sem", "");
+	INI_GET_STR(sub->newsgroup, ini, section, "newsgroup", "");
+	INI_GET_STR(sub->area_tag, ini, section, "area_tag", "");
 
 	sub->faddr = smb_atofaddr(NULL, iniGetString(ini, section, "fidonet_addr", "", value));
 	sub->maxmsgs = iniGetInteger(ini, section, "max_msgs", 0);
@@ -474,7 +504,6 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	char        errstr[256];
 	FILE*       fp;
 	str_list_t  ini;
-	char        value[INI_MAX_VALUE_LEN];
 	bool        result = false;
 
 	const char* fname = "msgs.ini";
@@ -504,7 +533,7 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t         section = iniGetParsedSection(sections, "QWK", /* cut: */ true);
 	cfg->max_qwkmsgs = iniGetInteger(section, NULL, "max_msgs", 0);
 	cfg->max_qwkmsgage = iniGetInteger(section, NULL, "max_age", 0);
-	SAFECOPY(cfg->qnet_tagline, iniGetString(section, NULL, "default_tagline", "", value));
+	INI_GET_STR(cfg->qnet_tagline, section, NULL, "default_tagline", "");
 
 	/* E-Mail stuff */
 	section = iniGetParsedSection(sections, "mail", /* cut: */ true);
@@ -530,9 +559,9 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		section = iniGetParsedSection(sections, name, /* cut: */ true);
 		memset(cfg->grp[i], 0, sizeof(grp_t));
 		SAFECOPY(cfg->grp[i]->sname, name + 4);
-		SAFECOPY(cfg->grp[i]->lname, iniGetString(section, NULL, "description", name + 4, value));
-		SAFECOPY(cfg->grp[i]->code_prefix, iniGetString(section, NULL, "code_prefix", "", value));
-		SAFECOPY(cfg->grp[i]->arstr, iniGetString(section, NULL, "ars", "", value));
+		INI_GET_STR(cfg->grp[i]->lname, section, NULL, "description", name + 4);
+		INI_GET_STR(cfg->grp[i]->code_prefix, section, NULL, "code_prefix", "");
+		INI_GET_STR(cfg->grp[i]->arstr, section, NULL, "ars", "");
 		arstr(NULL, cfg->grp[i]->arstr, cfg, cfg->grp[i]->ar);
 		cfg->grp[i]->sort = iniGetInteger(section, NULL, "sort", 0);
 	}
@@ -601,10 +630,10 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	for (int i = 0; i < cfg->total_subs; i++)
 		cfg->sub[i]->faddr = *nearest_sysfaddr(cfg, &cfg->sub[i]->faddr);
 
-	SAFECOPY(cfg->origline, iniGetString(section, NULL, "default_origin", "", value));
-	SAFECOPY(cfg->netmail_sem, iniGetString(section, NULL, "netmail_sem", "", value));
-	SAFECOPY(cfg->echomail_sem, iniGetString(section, NULL, "echomail_sem", "", value));
-	SAFECOPY(cfg->netmail_dir, iniGetString(section, NULL, "netmail_dir", "", value));
+	INI_GET_STR(cfg->origline, section, NULL, "default_origin", "");
+	INI_GET_STR(cfg->netmail_sem, section, NULL, "netmail_sem", "");
+	INI_GET_STR(cfg->echomail_sem, section, NULL, "echomail_sem", "");
+	INI_GET_STR(cfg->netmail_dir, section, NULL, "netmail_dir", "");
 	cfg->netmail_misc = iniGetUInt16(section, NULL, "netmail_settings", 0);
 	cfg->netmail_cost = iniGetUInt32(section, NULL, "netmail_cost", 0);
 
@@ -631,10 +660,10 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		cfg->qhub[i]->freq = iniGetUInt16(section, NULL, "freq", 0);
 		cfg->qhub[i]->days = (uint8_t)iniGetUInteger(section, NULL, "days", 0);
 		cfg->qhub[i]->node = iniGetUInteger(section, NULL, "node_num", 0);
-		SAFECOPY(cfg->qhub[i]->call, iniGetString(section, NULL, "call", "", value));
-		SAFECOPY(cfg->qhub[i]->pack, iniGetString(section, NULL, "pack", "", value));
-		SAFECOPY(cfg->qhub[i]->unpack, iniGetString(section, NULL, "unpack", "", value));
-		SAFECOPY(cfg->qhub[i]->fmt, iniGetString(section, NULL, "format", "zip", value));
+		INI_GET_STR(cfg->qhub[i]->call, section, NULL, "call", "");
+		INI_GET_STR(cfg->qhub[i]->pack, section, NULL, "pack", "");
+		INI_GET_STR(cfg->qhub[i]->unpack, section, NULL, "unpack", "");
+		INI_GET_STR(cfg->qhub[i]->fmt, section, NULL, "format", "zip");
 		cfg->qhub[i]->misc = iniGetUInteger(section, NULL, "settings", 0);
 
 		char       str[128];
@@ -657,7 +686,7 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			uint       mode;
 			confnum = atoi(qsub_list[j] + strlen(str));
 			str_list_t subsection = iniGetParsedSection(sections, qsub_list[j], /* cut: */ true);
-			SAFECOPY(subcode, iniGetString(subsection, NULL, "sub", "", value));
+			INI_GET_STR(subcode, subsection, NULL, "sub", "");
 			subnum = getsubnum(cfg, subcode);
 			mode = iniGetUInteger(subsection, NULL, "mode", 0);
 			if (subnum_is_valid(cfg, subnum)) {
@@ -677,9 +706,9 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/* Internet */
 	/************/
 	section = iniGetParsedSection(sections, "Internet", /* cut: */ true);
-	SAFECOPY(cfg->sys_inetaddr, iniGetString(section, NULL, "addr", "", value));
-	SAFECOPY(cfg->inetmail_sem, iniGetString(section, NULL, "netmail_sem", "", value));
-	SAFECOPY(cfg->smtpmail_sem, iniGetString(section, NULL, "smtp_sem", "", value));
+	INI_GET_STR(cfg->sys_inetaddr, section, NULL, "addr", "");
+	INI_GET_STR(cfg->inetmail_sem, section, NULL, "netmail_sem", "");
+	INI_GET_STR(cfg->smtpmail_sem, section, NULL, "smtp_sem", "");
 	cfg->inetmail_misc = iniGetUInteger(section, NULL, "netmail_settings", 0);
 	cfg->inetmail_cost = iniGetUInt32(section, NULL, "cost", 0);
 

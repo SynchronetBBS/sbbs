@@ -42,6 +42,10 @@ DLLEXPORT bool  read_file_cfg(scfg_t* cfg, char* error, size_t);
 DLLEXPORT bool  read_msgs_cfg(scfg_t* cfg, char* error, size_t);
 DLLEXPORT bool  read_chat_cfg(scfg_t* cfg, char* error, size_t);
 DLLEXPORT char* prep_path(char* path);
+DLLEXPORT char* scfg_strcpy(char* dst, size_t dstlen, const char* src, const char* key);
+DLLEXPORT char* scfg_ini_get_str(char* dst, size_t dstlen, str_list_t list, const char* section, const char* key, const char* dflt);
+/* Read an .ini string value into a fixed-size config field, logging a warning if it had to be truncated */
+#define INI_GET_STR(dst, list, section, key, dflt)	scfg_ini_get_str(dst, sizeof(dst), list, section, key, dflt)
 DLLEXPORT char* prep_dir(const char* base, char* path, size_t);
 DLLEXPORT void  make_data_dirs(scfg_t* cfg);
 
