@@ -316,6 +316,12 @@
 ## Services
 
 - Adopt the shared rate-limit auto-filter (see Servers)
+- Fix: shutdown no longer waits for a service script's blocking
+  socket read to time out (an idle NNTP session could hold it for five
+  minutes, past systemd's stop timeout): `Socket.recvline()` and
+  `recv()` return early when the script is terminated, and while
+  clients are still connected the log names which services hold them
+  (issue #1255)
 - Rate-limited connections now log a `NOTICE` before being
   dropped, matching the other servers (previously dropped
   silently)

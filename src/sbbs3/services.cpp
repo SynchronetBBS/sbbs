@@ -2646,8 +2646,18 @@ void services_thread(void* arg)
 		/* Wait for Dynamic Service Threads to terminate */
 		if (active_clients()) {
 			lprintf(LOG_INFO, "0000 Waiting for %lu clients to disconnect", active_clients());
+			time_t last_report = time(NULL);
 			while (active_clients()) {
 				mswait(500);
+				if (time(NULL) - last_report >= 10) { /* say which services are holding things up (#1255) */
+					for (i = 0; i < (int)services; i++) {
+						ulong count = protected_uint32_value(*service[i].clients);
+						if (count)
+							lprintf(LOG_NOTICE, "0000 %s still has %lu client%s connected"
+							        , service[i].protocol, count, count == 1 ? "" : "s");
+					}
+					last_report = time(NULL);
+				}
 			}
 			lprintf(LOG_INFO, "0000 Done waiting for clients to disconnect");
 		}

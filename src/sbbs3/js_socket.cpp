@@ -47,6 +47,7 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj);
 static JSBool js_ioctlsocket(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_listen(JSContext *cx, uintN argc, jsval *arglist);
 static js_callback_t * js_get_callback(JSContext *cx);
+static js_callback_t * js_find_callback(JSContext *cx);
 static JSBool js_getsockopt(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_peek(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_poll(JSContext *cx, uintN argc, jsval *arglist);
@@ -302,6 +303,26 @@ bool js_socket_tls_readable(js_socket_private_t* p)
 /* Returns > 0 upon successful data received (even if there was an error or disconnection) */
 /* Returns -1 upon error (and no data received) */
 /* Returns 0 upon timeout or disconnection (and no data received) */
+/* Has the script this socket belongs to been told to terminate (e.g. a server shutdown)? */
+static bool js_socket_terminated(js_socket_private_t *p)
+{
+	return p->js_cb != NULL && p->js_cb->terminated != NULL && *p->js_cb->terminated;
+}
+
+/* Like socket_readable(sock, timeout * 1000), but gives up early if the script is terminated (#1255) */
+static bool js_socket_readable(js_socket_private_t *p, int timeout)
+{
+	time_t start = time(NULL);
+
+	do {
+		if (js_socket_terminated(p))
+			return false;
+		if (socket_readable(p->sock, timeout > 0 ? 1000 : 0))
+			return true;
+	} while (timeout > 0 && time(NULL) - start < timeout);
+	return false;
+}
+
 static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf, size_t len, int flags, int timeout)
 {
 	ptrdiff_t total = 0;
@@ -336,7 +357,7 @@ static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf
 				ret = -1;
 			else {
 				ret = 0;
-				if (socket_readable(p->sock, timeout * 1000))
+				if (js_socket_readable(p, timeout))
 					ret = recv(p->sock, static_cast<char *>(buf), len, flags);
 			}
 		}
@@ -1663,6 +1684,10 @@ js_sock_read_check(js_socket_private_t *p, time_t start, int32 timeout, int i)
 {
 	bool rd;
 
+	if (js_socket_terminated(p)) { /* e.g. server shutdown: don't wait out the caller's timeout (#1255) */
+		dbprintf(false, p, "recvline aborted: script terminated (received: %d)", i);
+		return 2;
+	}
 	if (!socket_check(p->sock, &rd, NULL, 1000)) {
 		store_socket_error(p, SOCKET_ERRNO, NULL);
 		return 2;
@@ -2058,6 +2083,20 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
+}
+
+/* The script's callback struct, or NULL if this context has no "js" object (no error reported) */
+static js_callback_t *
+js_find_callback(JSContext *cx)
+{
+	JSObject* scope = JS_GetScopeChain(cx);
+	jsval     val = JSVAL_NULL;
+
+	while (scope != NULL && (!JS_LookupProperty(cx, scope, "js", &val) || val == JSVAL_VOID || !JSVAL_IS_OBJECT(val)))
+		scope = JS_GetParent(cx, scope);
+	if (scope == NULL || JSVAL_TO_OBJECT(val) == NULL)
+		return NULL;
+	return static_cast<js_callback_t *>(JS_GetPrivate(cx, JSVAL_TO_OBJECT(val)));
 }
 
 static js_callback_t *
@@ -3009,6 +3048,7 @@ JSObject* js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock, CRYPT_C
 	if ((p = (js_socket_private_t*)malloc(sizeof(js_socket_private_t))) == NULL)
 		return NULL;
 	memset(p, 0, sizeof(js_socket_private_t));
+	p->js_cb = js_find_callback(cx); /* so blocking reads can notice the script's termination (#1255) */
 
 	p->sock = sock;
 	p->external = true;
@@ -3270,6 +3310,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		goto fail;
 	}
 	memset(p, 0, sizeof(js_socket_private_t));
+	p->js_cb = js_find_callback(cx); /* so blocking reads can notice the script's termination (#1255) */
 	p->sock = INVALID_SOCKET;
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -3569,6 +3610,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	memset(p, 0, sizeof(js_socket_private_t));
+	p->js_cb = js_find_callback(cx); /* so blocking reads can notice the script's termination (#1255) */
 	p->type = type;
 	p->set = set;
 	p->sock = INVALID_SOCKET;
@@ -3677,6 +3719,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	memset(p, 0, sizeof(js_socket_private_t));
+	p->js_cb = js_find_callback(cx); /* so blocking reads can notice the script's termination (#1255) */
 
 	if ((p->sock = open_socket(domain, type, protocol)) == INVALID_SOCKET) {
 		JS_ReportError(cx, "open_socket failed with error %d", SOCKET_ERRNO);
@@ -3817,6 +3860,7 @@ JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, const ch
 	if ((p = (js_socket_private_t*)malloc(sizeof(js_socket_private_t))) == NULL)
 		return NULL;
 	memset(p, 0, sizeof(js_socket_private_t));
+	p->js_cb = js_find_callback(cx); /* so blocking reads can notice the script's termination (#1255) */
 
 	p->set = set;
 	p->sock = INVALID_SOCKET;
