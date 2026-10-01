@@ -1,10 +1,10 @@
 # DROPFILE.INI: a named-value door drop file (draft)
 
-Draft 0.4 · 2026-09-30 · Rob Swindell
+Draft 0.5 · 2026-09-30 · Rob Swindell
 
 ## Status and goals
 
-DROPFILE.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.4; the file name is a working name. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
+DROPFILE.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.5; the file name is a working name. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
 
 Goals:
 
@@ -25,7 +25,7 @@ Non-goals:
 
 The format is the simplest one that meets all of the goals above. Each alternative fails at least one:
 
-- **Positional files** (DOOR.SYS, DORINFO1.DEF, DOOR32.SYS) give a value its meaning by line number. A producer must write every line, inventing placeholders for data it doesn't have. A new field can only be appended, and one missing or extra line shifts every later value. DOOR.SYS [DTS-0001] already exists in 52-line and 31-line forms that doors must tell apart. Named keys remove all of this.
+- **Positional files** (DOOR.SYS, DORINFO1.DEF, DOOR32.SYS) give a value its meaning by line number. A producer must write every line, inventing placeholders for data it doesn't have. A new field can only be appended, and one missing or extra line shifts every later value. DOOR.SYS [DOOR.SYS] already exists in 52-line and 31-line forms that doors must tell apart. Named keys remove all of this.
 - **JSON** needs a real parser, with string escapes, nesting and `\u` sequences, which is impractical in QBasic or Turbo Pascal on DOS. It must be UTF-8 [RFC8259], so it can't carry CP437 text for doors that can't decode UTF-8. One malformed byte makes the whole file unreadable.
 - **TOML** is the nearest alternative, but its strings must be quoted and escaped, and it must be UTF-8. A DOS door would need a TOML parser to read a value that INI gives it with `Pos('=', S)`.
 - **YAML** is a large specification with significant indentation and implicit typing: under YAML 1.1 an unquoted `NO` or `Y` becomes a boolean, and under any version `1.10` becomes the number `1.1`. No DOS door has a YAML parser.
@@ -35,9 +35,11 @@ The format is the simplest one that meets all of the goals above. Each alternati
 
 INI is also familiar to sysops and door authors, most BBS software already reads and writes it, and a sysop can read the file in any text editor when a door misbehaves.
 
+A named-value drop file was proposed once before. DTS-0001 [DTS-0001], a 1992 draft, defined a `DROPFILE.###` of `LABEL = DATA` lines in any order, with no setting required, a default for each, a list of 5D network addresses, and a `CHANGES.###` file for returning edits. It never went past a beta draft or gained a host, but it reached the same conclusions as this spec, and its settings are compared under Coverage of older drop files.
+
 ## File name and discovery
 
-The host points the door to the file with the environment variable `DROPFILE_INI` or on the door's command line, so the file can have any name. Its customary name is `DROPFILE.INI`, which a host SHOULD use unless the door expects another; it may be in lowercase (`dropfile.ini`) on a file system that keeps case. A file with any other name MUST keep the `.INI` extension, which no older drop file uses, so a door that chooses its parser by file name can recognize the format. A host that uses another name must give the door the full path, since a door that searches a directory or its current directory looks only for `DROPFILE.INI`.
+The host points the door to the file with the environment variable `DROPFILE_INI` or on the door's command line, so the file can have any name. Its customary name is `DROPFILE.INI`, which a host SHOULD use unless the door expects another; it may be in lowercase (`dropfile.ini`) on a file system that keeps case. A file with any other name MUST keep the `.INI` extension, which no older drop file uses, so a door that chooses its parser by file name can recognize the format. Because the door always receives the path, it SHOULD open exactly that path rather than look for the file by name. Some doors are configured with a drop file directory and look for a known file name in it; a door that does so with this file MUST match the name without regard to case, since the name and its case are the host's choice, and still accepts a full path, since the host may have used another name.
 
 - When more than one node can run the door at the same time, no two nodes' files may share a path, or they would overwrite each other. A host that gives every node the same file name, such as `DROPFILE.INI`, MUST therefore write each node's file in a directory specific to that node, such as a per-node directory; one that gives each node its own file name, such as `NODE1.INI`, MAY use a shared directory. A single-node host, or a host that lets only one node at a time run the door, MAY write the file in a shared directory, such as the door's own directory, under any name.
 - The host MUST finish writing the file and close it before starting the door. A DOS emulator that is already running may not see a new file, because DOSBox caches directory listings, so the host starts the emulator after writing the file or mounts the directory with caching turned off.
@@ -45,9 +47,9 @@ The host points the door to the file with the environment variable `DROPFILE_INI
 - In `DROPFILE_INI` the path has no quotes and no shell escaping, even when it contains spaces.
 - The path uses the syntax of the environment the door runs in. For a DOS door run under an emulator, it is the DOS path the door sees, such as `C:\NODE1\DROPFILE.INI`, not the host path.
 - A path given to a DOS door, in `DROPFILE_INI`, on its command line or in `TEMP_DIR`, MUST fit DOS's limits: every directory and file name 8.3, at most 64 characters for the directory part and 80 for the whole path. A DOS command line holds at most 126 characters, including the door's other arguments, so the host SHOULD keep the path short, such as `C:\NODE1\DROPFILE.INI`.
-- A host MUST be able to pass the path on the door's command line, as many DOS doors expect. The sysop places the path on the door's configured command line where the door expects it. A door SHOULD accept the path on its command line, as a bare argument unless it documents a switch of its own, so it still works where the environment variable can't reach it, and uses `DROPFILE_INI` when it isn't given one. A door SHOULD also accept the directory that contains the file, as many doors take a drop file directory today, and MAY look for a file named `DROPFILE.INI`, in any case, in its current directory when given nothing else. A door given a directory looks there for `DROPFILE.INI` the same way.
+- A host MUST be able to pass the path on the door's command line, as many DOS doors expect. The sysop places the path on the door's configured command line where the door expects it. A door SHOULD accept the path on its command line, as a bare argument unless it documents a switch of its own, so it still works where the environment variable can't reach it, and uses `DROPFILE_INI` when it isn't given one. Given neither, it reports that and exits. A door MAY instead accept a directory and look for `DROPFILE.INI` in it, as doors configured with a drop file directory do today, but this is discouraged: the door must then match the name case-insensitively and can't be given a file with another name.
 - The file SHOULD be readable only by the host and the door, and the host SHOULD remove it after the door exits.
-- A file for a DOS door has an 8.3 name, which `DROPFILE.INI` is. A door that looks the file up by name, in a directory or its current directory, matches the name without regard to case.
+- A file for a DOS door has an 8.3 name, which `DROPFILE.INI` is.
 
 ## File representation
 
@@ -55,11 +57,11 @@ Each line is blank, a comment, a section header (`[name]`), or `KEY=value`. A va
 
 Section headers are there for readers that require them, such as Win32 `GetPrivateProfileString()` and Python's `configparser`. Key names don't depend on them: every key name is unique across the whole file, which is why most keys repeat their section in a prefix (`USER_ALIAS` in `[user]`, `TERM_COLS` in `[terminal]`). A reader can look keys up by section, or ignore section headers entirely and match key names alone, and gets the same value either way.
 
-In this spec, **whitespace** means ASCII space (`0x20`) and tab (`0x09`). A **control character** is any byte `0x00` through `0x1F` or `0x7F`, and in UTF-8 text also any code point U+0080 through U+009F. The definition applies to CP437 text too, where those bytes would otherwise display as symbols such as `☺` and `⌂`: a DOS reader can't tell such a symbol from a control code, CR and LF split the line, and many DOS text-mode readers stop at `0x1A` (Ctrl-Z) as end of file. Text also MUST NOT contain a non-breaking space, which nobody can see: byte `0xFF` in CP437, which on a Telnet connection is also the IAC command byte, or U+00A0 in UTF-8.
+In this spec, **whitespace** means ASCII space (`0x20`) and tab (`0x09`). A **control character** is any byte `0x00` through `0x1F` or `0x7F`, and in UTF-8 text also any code point U+0080 through U+009F, the line and paragraph separators U+2028 and U+2029, and the bidirectional format characters U+202A through U+202E and U+2066 through U+2069. The last two groups are invisible, and the separators split a line in readers such as Python's `str.splitlines()` and a JavaScript multiline regular expression: an alias of `A`, U+2028, `USER_ROLE=sysop` is 19 bytes, fits a short name field, and would make such a reader see a second key. The definition applies to CP437 text too, where those bytes would otherwise display as symbols such as `☺` and `⌂`: a DOS reader can't tell such a symbol from a control code, CR and LF split the line, and many DOS text-mode readers stop at `0x1A` (Ctrl-Z) as end of file. Text also MUST NOT contain a non-breaking space, which nobody can see: byte `0xFF` in CP437, which on a Telnet connection is also the IAC command byte, or U+00A0 in UTF-8.
 
 Producers MUST:
 
-- write keys, section headers and all non-text values in ASCII, and text values in UTF-8 if `FILE_UTF8` is `1` and in CP437 otherwise, with no byte-order mark;
+- write keys, section headers and all values other than text and path in ASCII, text values in UTF-8 if `FILE_UTF8` is `1` and in CP437 otherwise, and path values as the file system gives them, with no byte-order mark;
 - end every line, including the last, with CRLF, and write nothing after the final CRLF, including no Ctrl-Z end-of-file marker;
 - write a section header before the first key, with `[file]`, when written, as the first section (comment lines may come before it);
 - write each key in its assigned section, and each section at most once; a section MAY be empty, with no keys between its header and the next, and a producer MAY leave out a section that has no keys;
@@ -67,7 +69,7 @@ Producers MUST:
 - write keys in uppercase ASCII letters, digits and `_`, starting with a letter, at most 32 characters;
 - write no spaces or tabs around the key or the `=`;
 - write no control characters in a value, and no leading or trailing whitespace;
-- keep every line to at most 255 bytes, not counting CRLF, so it fits a Turbo Pascal `string`. A value can therefore be at most 255 bytes minus the key's length and the `=`, and since keys are at most 32 characters, no value exceeds 222 bytes; a longer value is cut at a character boundary;
+- keep every line to at most 255 bytes, not counting CRLF, so it fits a Turbo Pascal `string`. A value can therefore be at most 255 bytes minus the key's length and the `=`, and since keys are at most 32 characters, no value exceeds 222 bytes; a longer text value is cut at a character boundary, and a longer value of any other type is left out, since a cut path, address or host name is worse than none;
 - write each key at most once.
 
 A stored string can break these rules, such as a user name with a trailing space or a CP437 `☺`. The producer replaces each non-breaking space (CP437 `0xFF` or U+00A0) with a space, removes leading and trailing whitespace, and replaces each control character with `?`, as it does for characters that have no equivalent in the file's text encoding. If an optional key's value is then empty, the producer leaves the key out. If a required text key's value is then empty, the producer writes `?`.
@@ -76,7 +78,7 @@ A comment is a line whose first character is `;`. A consumer MAY also treat a li
 
 Consumers:
 
-- MUST accept CRLF as a line terminator and SHOULD also accept LF alone as one;
+- MUST accept CRLF as a line terminator and SHOULD also accept LF alone as one. A reader that splits on LF alone, as many POSIX readers do, removes the CR left at the end of each line; otherwise every value ends in a CR, and a comparison such as `COMM_TYPE` against `socket` fails;
 - SHOULD treat a Ctrl-Z (`0x1A`) as the end of the file, as DOS text-mode reads already do;
 - MAY remove whitespace around a key or a value, which changes nothing in a conforming file;
 - MAY compare keys case-sensitively, because producers write them in uppercase;
@@ -84,6 +86,7 @@ Consumers:
 - MUST ignore keys they don't recognize, and other lines that contain no `=`;
 - SHOULD use the first occurrence if a key appears twice;
 - MUST treat a missing optional key as its stated default;
+- MUST treat a token, or a value from a list this spec defines, that they don't recognize as the key's default, never as a more capable or more privileged value: an unknown `USER_ROLE` is `user`, an unknown `TERM_TYPE` is `dumb`, and an unknown `TERM_SIXEL_SCALE` is unknown. Bool values above `1` are the exception, under Value types;
 - need to check only the values they use. A door that reads three keys doesn't have to validate the rest of the file.
 
 There is no quoting or escaping. A value can contain `=`, `:`, `[`, `"` and `\` as literal characters, but cannot contain a line break.
@@ -94,7 +97,7 @@ Text values are in CP437, or in UTF-8 when `FILE_UTF8` is `1`. The choice is ind
 
 ## Value types
 
-Every key has one of eight types, each parseable with a standard library call or a short loop.
+Every key has one of nine types, each parseable with a standard library call or a short loop.
 
 | Type | Form | Example |
 | --- | --- | --- |
@@ -106,6 +109,7 @@ Every key has one of eight types, each parseable with a standard library call or
 | bool | `0` (false) or any other unsigned decimal (true), in the form of an `int`; `1` is the only true value unless the key's definition names others | `1` |
 | token | Lowercase ASCII word from a list defined by this spec | `socket` |
 | date | `YYYY-MM-DD` | `1970-01-01` |
+| path | A file system path in the syntax of the environment the door runs in, written byte for byte as the host's file system gives it, never converted to the file's text encoding and never cut: a path that contains a control character or doesn't fit is left out | `C:\NODE1` |
 
 A consumer reads a bool with the same decimal parser it uses for ints, or with Win32's `GetPrivateProfileInt()`, and tests the result: `0` is false and any other value is true, as in `atol(value) != 0` in C or `VAL(s$) <> 0` in QBasic. It MUST NOT compare the value against `1`. A producer writes `0` or `1` unless the key's definition names another value.
 
@@ -145,7 +149,7 @@ Keys that describe the file itself. All are optional, so the section may be empt
 | `SYS_NODE_COUNT` | int | no | Number of nodes the system is configured for, which is also its highest node number | unknown |
 | `SYS_QWKID` | ascii | no | The system's short ID: 1 to 8 characters that are valid in a DOS file name, with letters in uppercase, not starting with a digit. It is the ID used for QWK packets and QWK networks, and also serves to identify the system to inter-BBS doors and games. It is unique within a network, not necessarily worldwide | unknown |
 | `SYS_HOSTNAME` | ascii | no | The host's public Internet host name, such as `bbs.example.com`, for building links or telling users where to connect | unknown |
-| `SYS_FTN_ADDR` | ascii | no | The host's primary FidoNet Technology Network (FTN) address, in `zone:net/node` or `zone:net/node.point` form, such as `1:103/705`, for inter-BBS games that exchange data over FTN | unknown |
+| `SYS_FTN_ADDR` | ascii | no | The host's FidoNet Technology Network (FTN) addresses, comma-separated with the primary first, each in `zone:net/node` or `zone:net/node.point` form and optionally followed by `@domain` naming its network, such as `1:103/705@fidonet,21:1/121@fsxnet`, for inter-BBS games that exchange data over FTN. A game on an othernet looks for the address in that network's zone or domain rather than taking the first | unknown |
 | `SYS_LOCATION` | text | no | Where the host is, as its sysop describes it, such as `Los Angeles, California` | unknown |
 | `SYS_OP_AVAILABLE` | bool | no | `1` = the sysop is available to be paged for chat | `0` |
 | `SYS_DATE_FORMAT` | token | no | The order the host shows dates in: `mdy` (month, day, year), `dmy` or `ymd`, so a door can show dates the same way | unknown |
@@ -185,6 +189,7 @@ For `socket`, `telnet` and `serial`, the door inherits a handle to a socket or p
 The host:
 
 - MUST make the handle inheritable, keep it valid in the door's process for the whole session, and keep its own reference open, so the door closing its copy doesn't end the connection;
+- MUST keep other sessions' handles out of the door: a Windows host that runs its nodes as threads passes only the intended handle, with `PROC_THREAD_ATTRIBUTE_HANDLE_LIST` or by making every other handle non-inheritable, or a door started at the same moment inherits another node's socket; a POSIX host marks every other descriptor close-on-exec;
 - MUST pass a socket in blocking mode, because Winsock has no documented call that reports a socket's blocking mode, so a Windows door can't find out otherwise;
 - MUST pass a serial handle with its speed and framing already configured;
 - MAY set socket options, such as `TCP_NODELAY`, as it chooses;
@@ -216,7 +221,7 @@ These are this spec's own names, used by both `COMM_CHARSET` and `TERM_CHARSET`:
 | --- | --- | --- | --- | --- |
 | `USER_ALIAS` | text | unless `local` | The user's alias | |
 | `USER_NUMBER` | int | unless `local` | The user's number on this host; may be reused after the account is deleted | |
-| `USER_KEY` | ascii | no | Opaque key that never changes for the account and is never reused on this host; ASCII letters, digits, `-`, `_` and `.` only, at most 64 characters | none |
+| `USER_KEY` | ascii | no | Opaque key that never changes for the account and is never reused on this host; ASCII letters, digits, `-`, `_` and `.` only, starting with a letter or digit, at most 64 characters | none |
 | `USER_ROLE` | token | no | `user`, `cosysop`, `sysop` or `guest`. `guest` is an account shared by callers who haven't registered, so a door SHOULD NOT save progress or rankings for it as one person's | `user` |
 | `USER_LANG` | ascii | no | BCP 47 [BCP47] language tag, such as `en-US` | unknown |
 | `USER_REALNAME` | text | no | Real name (see Security and privacy) | none |
@@ -231,7 +236,7 @@ These are this spec's own names, used by both `COMM_CHARSET` and `TERM_CHARSET`:
 | `USER_EMAIL` | ascii | no | The user's e-mail address on this host, such as `Joe.Bob@bbs.example.com`, where the host accepts mail for its users | none |
 | `USER_NETMAIL` | ascii | no | The address the user's mail is forwarded to: an Internet e-mail address, or a FidoNet address such as `1:103/705` (see Security and privacy) | none |
 
-A host that can't guarantee a key that is never reused, for example because it reuses deleted users' numbers internally, leaves `USER_KEY` out. A door that keeps per-user data SHOULD key it on `USER_KEY`, not on the alias or number, and falls back to `USER_NUMBER` when `USER_KEY` is missing. Its characters are safe in file names on DOS, Windows and POSIX, but a DOS door that needs an 8.3 name derives one, such as a hash.
+A host that can't guarantee a key that is never reused, for example because it reuses deleted users' numbers internally, leaves `USER_KEY` out. A door that keeps per-user data SHOULD key it on `USER_KEY`, not on the alias or number, and falls back to `USER_NUMBER` when `USER_KEY` is missing. Its characters are safe in file names on DOS, Windows and POSIX, but the value as a whole may not be: it could be a Windows device name such as `CON` or `COM1`, with or without an extension. A door that uses it in a path puts a constant in front of it, such as `u-`, which rules those out, or hashes it; a DOS door that needs an 8.3 name hashes it in any case.
 
 A door with translations matches `USER_LANG` against the tags it has by BCP 47 lookup [RFC4647]: it compares tags case-insensitively, and when there is no exact match it drops subtags from the end and tries again, so `de-DE` or `de-AT` finds a `de` translation. If nothing matches, it uses its default language.
 
@@ -247,13 +252,16 @@ There is no standard security level key. A level's range, its ordering (whether 
 | --- | --- | --- | --- |
 | `TERM_COLS` | int | Width in character cells | `80` |
 | `TERM_ROWS` | int | Usable height in character cells, excluding any status line the host adds | `24` |
-| `TERM_TYPE` | token | The kind of terminal: `dumb` (plain text, no cursor control), `ansi` (ANSI escape sequences) or `petscii` (Commodore PETSCII control codes). A RIPscrip terminal is `ansi`, with `TERM_RIP` set | `dumb` |
+| `TERM_TYPE` | token | The kind of terminal: `dumb` (plain text, no cursor control), `ansi` (ANSI escape sequences), `avatar` (AVATAR/0+ [FSC-0025], which includes ANSI, so a door without AVATAR output treats it as `ansi`) or `petscii` (Commodore PETSCII control codes). A RIPscrip terminal is `ansi`, with `TERM_RIP` set | `dumb` |
 | `TERM_RIP` | ascii | RIPscrip version the terminal reported, as `<major>.<minor>`, such as `1.54` from a `RIPSCRIP015400` reply to `CSI !`; or `unknown` when the terminal supports RIPscrip but reported no version, such as when the user set RIP manually. Written only when `TERM_TYPE` is `ansi`; missing means no RIPscrip | none |
 | `TERM_CHARSET` | ascii | The caller's terminal character set, from the names listed under `COMM_CHARSET`. It equals `COMM_CHARSET` when the host passes the door's bytes through untranslated, and may differ when the host translates them | unknown |
 | `TERM_MONO` | bool | `1` = no color, because the terminal can't show it or the user turned it off: the door may send ANSI sequences but no color changes, whatever `TERM_COLORS` says | `0` |
 | `TERM_BACKSPACE` | int | The byte the terminal's Backspace key sends: `8` (BS) or `127` (DEL). A door treats the other of the two as Delete, as it does `CSI 3 ~`. A host may learn it from the user's settings, or from a DECRQM query for mode 67 (DECBKM) on a terminal that answers one | `8` |
-| `TERM_NAME` | text | Terminal program name as the terminal reported it, such as `SyncTERM` | unknown |
+| `TERM_NAME` | text | The terminal program's name as the program itself reported it, from a query that asks a terminal to identify itself, such as XTVERSION (`CSI > 0 q`) [XTERM] or SyncTERM's `APC SyncTERM:VER`; not the terminfo name, which is `TERM_TERMINFO` | unknown |
+| `TERM_TERMINFO` | ascii | The terminal type name the caller's client sent, from Telnet TERMINAL-TYPE [RFC1091], the SSH pty request [RFC4254] or the RLogin connection, such as `xterm-256color` or `ansi`, for doors that use curses or terminfo. The host passes it on as received, without checking it; a door that doesn't find it in its terminfo database uses one that matches `TERM_TYPE` | unknown |
 | `TERM_CTERM` | ascii | CTerm revision from `CSI c`, with the reply's `;` separators turned into dots: `<major>.<minor>`, such as `1.332`, or `<major>.<minor>.<fork>` from a forked CTerm, such as `1.332.4` (see below) | not CTerm |
+
+`TERM_COLS` and `TERM_ROWS` are the size when the host wrote the file. The host, not the door, receives a later Telnet NAWS or SSH window-change message, so a door on a `socket`, `stdio` or other connection hears nothing of a resize during the session. A door that cares queries the terminal itself, such as with `CSI 18 t` [XTERM] or a cursor position report after moving the cursor to row 999, column 999.
 
 A forked CTerm adds its own revision as a third field and leaves the first two as the CTerm revision it was forked from. A door checking for a CTerm feature compares only `<major>.<minor>`; the third field means something only to a door that knows that fork. Each field is a decimal number, so compare them numerically, not as text: `1.40` is older than `1.332`.
 
@@ -295,7 +303,7 @@ All keys in this section are optional.
 | Key | Type | Meaning | Default |
 | --- | --- | --- | --- |
 | `TIME_LEFT` | int | Seconds the user has left, measured when the host writes the file and already shortened for any scheduled host event, so a door needs no separate event time | no limit |
-| `TEMP_DIR` | text | A directory only this node uses, which the door may write to during the session, in the path syntax the door sees (the DOS path under emulation), with no trailing separator. The host MAY empty it after the door exits, so it isn't for data that must last | none |
+| `TEMP_DIR` | path | A directory only this node uses, which the door may write to during the session, in the path syntax the door sees (the DOS path under emulation), with no trailing separator. The host MAY empty it after the door exits, so it isn't for data that must last | none |
 | `LOCAL_DISPLAY` | bool | `0` = don't show the session on the host's own screen: the door doesn't mirror its output to a local console or window. Doesn't apply when `COMM_TYPE` is `local`, where the local console is the session itself | `1` |
 
 A door MUST exit before `TIME_LEFT` seconds have passed since it started. The time between the host writing the file and the door starting, such as an emulator booting, isn't counted, so the host SHOULD enforce the limit independently. A door that counts time in minutes rounds up, so a positive `TIME_LEFT` never becomes zero minutes, which some door kits treat as no time left or as no limit.
@@ -333,8 +341,9 @@ Anyone can add keys without a spec change by using a vendor prefix, and standard
 The file carries no secrets and grants no privileges, and personal details beyond the alias are the sysop's choice.
 
 - Producers MUST NOT write passwords, authentication tokens or other secrets.
+- The file is only as trustworthy as whoever can write it, since `USER_KEY` and `USER_ROLE` decide whose saved game loads and who gets sysop functions inside the door. A host SHOULD make the file writable only by itself. A door that can also be started outside a host, such as directly over SSH or by a door server, and takes the path on its command line is trusting whoever gave it that path as the host. A door that opens the path it was given can't pick up a stale file from another session; one that looks for the file by name in a directory can, which is another reason to prefer the path.
 - `USER_ROLE=sysop` tells the door who the sysop is. It is not authentication and grants no operating-system privileges.
-- `USER_REALNAME`, `USER_LOCATION`, `USER_BIRTHDATE`, `USER_GENDER`, `USER_IP`, `USER_HOSTNAME`, `USER_CALLER_ID`, `USER_EMAIL` and `USER_NETMAIL` are optional, so a producer MAY leave any of them out, for example because the sysop chose not to share it. A door MUST NOT treat the last three as authentication.
+- `USER_REALNAME`, `USER_LOCATION`, `USER_BIRTHDATE`, `USER_GENDER`, `USER_IP`, `USER_HOSTNAME`, `USER_CALLER_ID`, `USER_EMAIL` and `USER_NETMAIL` are optional, so a producer MAY leave any of them out, for example because the sysop chose not to share it. A host SHOULD let the sysop decide per door whether it writes them, since a door may be closed source or send what it reads to other systems. A door MUST NOT treat the last three as authentication.
 - Text values come from users. A door MUST NOT pass them to a shell or use them as a format string, and MUST handle non-ASCII characters and 255-byte lines.
 - The file is read-only input. A door MUST NOT use it to return changes to the host.
 
@@ -524,6 +533,40 @@ A native door can use its platform's INI API instead, within these limits:
 - **Win32 `GetPrivateProfileString()`** removes a pair of quotes around a whole value, so the alias `"Joe"` comes back as `Joe`. It also reads a file with no byte-order mark in the system ANSI code page, so it doesn't decode UTF-8 text values. A Windows door that needs text values exactly reads them with a simple reader like the ones above.
 - **Python `configparser`** expands `%` in values by default, and fails on an alias such as `100%Joe`. Create it with `configparser.ConfigParser(interpolation=None)` and read the file as UTF-8 or CP437 according to `FILE_UTF8` (Python codecs `utf-8` and `cp437`).
 
+## Coverage of older drop files
+
+This section isn't part of the specification. It compares the keys above with the fields of the drop files this format is meant to replace, so a converter from one of them, or a door moving from one, can see what has no key and why. The formats checked are the ones Synchronet writes: DOOR.SYS [DOOR.SYS], DOOR32.SYS [DOOR32], DORINFO1.DEF, WWIV's CHAIN.TXT, Wildcat's CALLINFO.BBS, Spitfire's SFDOORS.DAT, TriBBS's TRIBBS.SYS, PCBOARD.SYS, Solar Realms' DOORFILE.SR, BBSDEV.DRP [BBSDEV.DRP] and Synchronet's own XTRN.DAT, plus Phenom Dropfile [PHENOM], a Mystic BBS script that writes the same 13 values as JSON and as one value per line.
+
+Everything DOOR32.SYS, DORINFO1.DEF, DOORFILE.SR, BBSDEV.DRP and Phenom Dropfile carry has a key, except as noted below for the password, security level, AVATAR, host operating system and host directories. Phenom's two capability flags, loadable fonts and extended palette, are `TERM_FONTS_LOADABLE` and `TERM_PALETTE_EXT`; Phenom infers them from the terminal's Telnet type name (`SYNCTERM`), where this file carries what the host detected. The fields of the other formats that have no key:
+
+| Field | In | Disposition |
+| --- | --- | --- |
+| Password | DOOR.SYS 14, CALLINFO.BBS, SFDOORS.DAT, TRIBBS.SYS | Left out on purpose (see Security and privacy). A converter writes a blank or placeholder |
+| Security level | every format | Left out on purpose (see User); a host writes it as a vendor key, and a converter to an older format takes it from there |
+| AVATAR terminal | DORINFO1.DEF graphics `2` | Added in draft 0.5 as `TERM_TYPE=avatar`, for converters; no host writes it yet |
+| Home and work phone numbers | DOOR.SYS 12 and 13, CALLINFO.BBS, SFDOORS.DAT, TRIBBS.SYS, XTRN.DAT | No key. Proposed: optional `USER_PHONE` (text), personal like `USER_CALLER_ID` |
+| Total logons | DOOR.SYS 16, CALLINFO.BBS | No key. Proposed: optional `USER_LOGONS` (int) |
+| Last call date and time | DOOR.SYS 17 and 45, CHAIN.TXT, CALLINFO.BBS | No key. Proposed: optional `USER_LAST_ON` (date) |
+| Upload and download totals, files and kilobytes | DOOR.SYS 28 to 31 and 46 to 49, CHAIN.TXT, CALLINFO.BBS, SFDOORS.DAT | No key. Proposed, if file-area doors want them: `USER_UPLOADS`, `USER_DOWNLOADS` (int) and `USER_UPLOAD_BYTES`, `USER_DOWNLOAD_BYTES` (uint64); the daily limits stay host-specific |
+| Time used this call, logon time | DOOR.SYS 44, CHAIN.TXT, SFDOORS.DAT, PCBOARD.SYS | No key. Proposed: optional `TIME_USED` (int, seconds), for doors that show it |
+| Credits, gold, time credits | XTRN.DAT, CHAIN.TXT, DOOR.SYS 42 | Vendor keys (Synchronet's `X_SBBS_CREDITS`, `X_SBBS_MINUTES`); no common meaning |
+| Expiration date, flags, exemptions, restrictions | XTRN.DAT, DOOR.SYS 25, TRIBBS.SYS | Vendor keys, as the security level |
+| Default transfer protocol | DOOR.SYS 27, CALLINFO.BBS | Out of scope: a letter whose meaning is the host's |
+| Conferences, current conference or file area, highest message read, file new-scan date | DOOR.SYS 23, 24 and 43, CALLINFO.BBS, SFDOORS.DAT | Out of scope: host-specific identifiers |
+| Host directories: MAIN and GEN, gfiles, data, ctrl, log file, BBS root | DOOR.SYS 33 and 34, CHAIN.TXT, XTRN.DAT, Phenom `bbsdir` | Out of scope; a door's own data directories are an open question |
+| Host operating system | Phenom `ostype` | Out of scope: a door's own binary or runtime knows what it runs on |
+| Serial line details: data bits, parity, error correction, locked rate, flow control, modem strings | DOOR.SYS 3 and 38, CHAIN.TXT, SFDOORS.DAT, TRIBBS.SYS, XTRN.DAT | Out of scope: a `serial`, `fossil` or `uart` port is handed over configured |
+| Printer toggle, page bell, caller alarm, default color, record locking | DOOR.SYS 7 to 9, 40 and 41, PCBOARD.SYS | Out of scope: the host's local settings |
+| User age | CHAIN.TXT | Derived from `USER_BIRTHDATE` |
+| Call sign | CHAIN.TXT | `USER_HANDLE` |
+| User comment, doors opened, message left | DOOR.SYS 50 to 52 | Out of scope |
+| Street address and postal code | XTRN.DAT | Left out: more personal than `USER_LOCATION`, and no door is known to use them |
+| Guru name, network type, sysop next, from front-end, door number | XTRN.DAT, DORINFO1.DEF, SFDOORS.DAT, CALLINFO.BBS | Out of scope: host-specific |
+
+A converter to an older format also needs values this file never carries, such as a nonzero rate (see `COMM_RATE`), and writes the older format's placeholders for them.
+
+DTS-0001 [DTS-0001], the 1992 named-value proposal, overlaps this spec closely: its `BOARD`, `SOFTWARE`, `NETADDRESS`, `SYSOP`, `SYSOPAKA`, `PORT`, `PORTADDR`, `PORTIRQ`, `USER`, `USERAKA`, `ORIGIN`, `WIDTH`, `HEIGHT`, `MODES`, `BIRTHDAY` and `TIMELEFT` all have keys here, with `NEXTEVENT` folded into `TIME_LEFT`. Its settings without a key fall into the rows above (password, security level and `MAXSECURITY`, phone numbers, calls, last and current call times, protocol, transfer totals and limit, serial line details) or are its own: `TIMEBANKED`, `TIMEPERMSG`, `CHATSLEFT` and `PAGESLEFT` are host policy, better left to vendor keys; `REQFILE` and `REQFILES` are file requests from the user to the door; and `MSGAREA`, `REPLYINGTO`, `REPLYTOPIC`, `QUOTEFILE` and `REPLYFILE` serve a message editor, which this spec has no keys for (an open question).
+
 ## Synchronet implementation notes
 
 This section isn't part of the specification. It records how Synchronet would write the file, as one worked example; authors of other BBS software can skip it. It uses Synchronet's own terms: SCFG is Synchronet's configuration program, the `XTRN_*` names are per-door option flags set there, and file names such as `xtrn_sec.cpp` are Synchronet source files.
@@ -539,15 +582,16 @@ DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for
 - **Mapping from Synchronet data:**
   - `SYS_VENDOR` = `SBBS`, and `SYS_VERSION` = Synchronet's version number followed by its revision letter, such as `3.22a`.
   - `SYS_NODE_COUNT` = the configured number of nodes, and `SYS_QWKID` = the system's QWK ID.
-  - `SYS_HOSTNAME` = the system's Internet host name (`system.host_name`), `SYS_LOCATION` = its configured location, `SYS_FTN_ADDR` = the first of its FidoNet addresses, `SYS_OP_AVAILABLE` from whether the sysop is set as available for chat, and `SYS_DATE_FORMAT` from the configured date format (`MMDDYY`, `DDMMYY` or `YYMMDD` as `mdy`, `dmy` or `ymd`).
+  - `SYS_HOSTNAME` = the system's Internet host name (`system.host_name`), `SYS_LOCATION` = its configured location, `SYS_FTN_ADDR` = all of its FidoNet addresses, primary first, without `@domain`, since the domain names live in SBBSecho's configuration rather than the main one, `SYS_OP_AVAILABLE` from whether the sysop is set as available for chat, and `SYS_DATE_FORMAT` from the configured date format (`MMDDYY`, `DDMMYY` or `YYMMDD` as `mdy`, `dmy` or `ymd`).
   - `USER_PROTOCOL` from the client's protocol (`Telnet`, `RLogin` or `SSH`, in lowercase), or `serial` for a dial-up call through SEXPOTS. A caller reaching the Terminal Server through the WebSocket service arrives as `telnet`.
   - `USER_EMAIL` = the user's Internet address on the system (`user.email`), `USER_NETMAIL` = the user's forwarding address (`user.netmail`), and `USER_ROLE=guest` for a guest account (`user.is_guest`).
   - `USER_KEY` = `<number>-<firston>`: the user number and the account's creation time (as a Unix time), which together are never reused.
   - `USER_ROLE` = `sysop` when the user has sysop access; otherwise `user`.
   - `X_SBBS_LEVEL` = the user's security level; see Vendor keys and MODUSER.DAT below for the other `X_SBBS_` keys.
   - `FILE_UTF8` and `COMM_CHARSET` as described under Encodings below, and `TERM_CHARSET` from the user's terminal character set, the same value Synchronet writes as `chars` in the node's `terminal.ini`, with `PETSCII` in place of its `CBM-ASCII`.
+  - `TERM_TERMINFO` from the terminal type the client sent, the same string Synchronet logs at logon from Telnet TERMINAL-TYPE, the SSH pty request or RLogin; left out when the client sent none. `TERM_NAME` needs a query Synchronet doesn't send yet (a to-do below).
   - `TERM_CTERM` from the CTerm revision Synchronet detected, including a fork's third field (`console.cterm_fork`, #1250).
-  - `TERM_TYPE` from the user's terminal type, the same value Synchronet writes as `type` in the node's `terminal.ini`, in lowercase and with `RIP` written as `ansi`; `TERM_RIP` when that type is `RIP`, with the version from the logon detection reply, or `unknown` when RIP was set manually; and `TERM_BRIGHT_BG` from `ICE_COLOR`, whether auto-detected or set manually, and `TERM_MONO=1` when the settings have `ANSI` without `COLOR` (XTRN.DAT's `Mono`).
+  - `TERM_TYPE` from the user's terminal type, the same value Synchronet writes as `type` in the node's `terminal.ini`, in lowercase and with `RIP` written as `ansi`; never `avatar`, which Synchronet doesn't detect or support; `TERM_RIP` when that type is `RIP`, with the version from the logon detection reply, or `unknown` when RIP was set manually; and `TERM_BRIGHT_BG` from `ICE_COLOR`, whether auto-detected or set manually, and `TERM_MONO=1` when the settings have `ANSI` without `COLOR` (XTRN.DAT's `Mono`).
   - `TERM_DOORWAY` when the terminal identified itself as CTerm.
   - `TERM_SIXEL` for CTerm from its device attribute 4, as Synchronet's JavaScript library `cterm_lib.js` already does. Synchronet sends `CSI c` at logon but parses only CTerm's reply, so other terminals get the key only after a to-do below.
   - `TERM_MOUSE` from the mouse capability detected for the session: `2` when the terminal answered the DECRQM request for mode 1016, or is a CTerm recent enough to report pixels; `1` when it answered for mode 1006 or set CTerm device attribute 7, or when detection was silent and the user's mouse setting is on; otherwise left out. `PREF_MOUSE=0` when the user's mouse setting (`MOUSE`) is off. Today that setting is Synchronet's only record of mouse support, answering "Does your terminal support mouse reporting"; the to-do below separates capability from consent.
@@ -563,7 +607,7 @@ DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for
   - `USER_HANDLE` from the user's chat handle.
   - `PREF_ALERTS=0` when activity alerts are off (`CHAT_NOACT`), and `PREF_QUIET=1` in quiet mode (`QUIET`).
   - `TERM_BACKSPACE=127` when the user's terminal settings swap Delete and Backspace (`SWAP_DELETE`); otherwise it's left out, meaning `8`.
-  - The optional personal keys are written when the user's record has them, as Synchronet already does for the same details in DOOR.SYS and other drop files.
+  - The optional personal keys are written when the user's record has them, as Synchronet already does for the same details in DOOR.SYS and other drop files, unless a new per-door option (a to-do below) withholds them.
 - **Text lengths:** Synchronet's limits, in bytes as stored. A CP437 string holds that many characters. A string stored as UTF-8 may hold fewer, and a CP437 string written with `FILE_UTF8=1` can take up to 3 bytes per character.
 
   | Key | Synchronet limit |
@@ -627,6 +671,8 @@ Work Synchronet needs beyond writing the file itself, before every key above can
 - [ ] **`TERM_MOUSE` and `PREF_MOUSE`:** detect mouse capability once per session (CTerm device attribute 7; DECRQM requests for modes 1006 and 1016 on other terminals) and keep it on the `Terminal` object, like the audio capabilities, never in `autoterm`: `Terminal::get_flags()` merges the user's manual flags into the detected ones with OR, so a detected `MOUSE` flag would override a user's "no". The user's `MOUSE` setting then means consent ("use the mouse"), not capability: reword the new-user and Terminal Settings question to match, default the answer from detection, and skip it when detection says the terminal can't. Hot-spots and mouse scrolling need both the setting and the capability.
 - [ ] **`TERM_RIP`:** keep the RIPscrip version from the logon detection reply (`RIPSCRIP015400`), which Synchronet logs today but doesn't store.
 - [ ] **`TERM_COLORS`:** detect the terminal's color depth, which Synchronet doesn't record today.
+- [ ] **`TERM_NAME`:** send `APC SyncTERM:VER` to a CTerm once per session and keep the program name from its reply (`SyncTERM 1.7rc1` gives `SyncTERM`); other terminals would need XTVERSION (`CSI > 0 q`).
+- [ ] **Personal details per door:** a door option in SCFG that leaves out `USER_REALNAME` and the other personal keys listed under Security and privacy.
 - [ ] **`TERM_KEYS_KITTY`:** add the kitty keyboard query (`CSI ? u`) to the once-per-session capability queries.
 - [ ] **`TERM_SIXEL_SCALE` (optional):** add the sixel scale probe to the once-per-session capability queries.
 - [ ] **`FILE_UTF8`:** add the "Support UTF-8 Encoding" option (`XTRN_UTF8`) for doors in SCFG; today it exists only for message editors.
@@ -634,7 +680,14 @@ Work Synchronet needs beyond writing the file itself, before every key above can
 
 ## Open questions
 
-- [ ] **Name:** keep `DROPFILE.INI` and `DROPFILE_INI`, or pick something less generic?
+- [ ] **Name:** keep `DROPFILE.INI` and `DROPFILE_INI`, or pick something less generic? (Case needs no decision: the door gets the full path, and a door that looks the file up by name anyway must ignore case.)
+- [ ] **ATASCII:** add `atascii` to the character sets and `TERM_TYPE` once a door or host author wants to consume it; no definition without a consumer and a tester. (`avatar` was added for converters from DORINFO1.DEF; see Coverage of older drop files.)
+- [ ] **Keys the older drop files have and this one doesn't:** the proposals under Coverage of older drop files (`USER_PHONE`, `USER_LOGONS`, `USER_LAST_ON`, the transfer totals, `TIME_USED`): add them, or leave them to vendor keys?
+- [ ] **Other file encodings:** a `FILE_CHARSET` key for CP866, CP850, CP865 or Amiga Latin-1 doors was declined as unneeded; revisit if a host or door that can't move to UTF-8 asks for it.
+- [ ] **`SESSION_ID`:** a value unique per launch, so a door can tell a fresh file from one it has already seen, and host and door logs can be matched?
+- [ ] **Connect-back doors:** a door, or an emulator's virtual COM port, that connects to a host TCP port has no `COMM_TYPE`. If one is added, it needs a loopback-only listener and a per-session token the door sends first, or whoever connects first gets the caller's session.
+- [ ] **Message editor keys:** this file is offered to message editors too, but has no keys for the message being written: the area, the recipient, the subject, the quote file and the result file. DTS-0001 defined them. Add a `[message]` section, or leave editors to their host's own files?
+- [ ] **Test files:** publish sample files with their expected key values, since the Win32 profile API, Python's `configparser` and plain line readers already disagree on quoted values and on a key in the wrong section.
 - [ ] **Door data directories (shelved):** add `USER_DATA_DIR` (a door's per-user data, such as Synchronet's `data/user/<####>/<door>/`) and `DATA_DIR` (a door's shared data, such as `data/<door>/`)? The termgfx doors take these on the command line today (`-home`, `--data-dir`).
 - [ ] **Reviewers:** ask these people to review this draft before Synchronet ships it:
   - BBS authors: ENiGMA½ (NuSkooler), Icy Board (mkrueger) and Deuce.
@@ -653,15 +706,19 @@ Work Synchronet needs beyond writing the file itself, before every key above can
 ## References
 
 - [BCP47] Phillips, A. and M. Davis, "Tags for Identifying Languages", BCP 47. <https://www.rfc-editor.org/info/bcp47>
+- [RFC1091] VanBokkelen, J., "Telnet Terminal-Type Option", RFC 1091, February 1989. <https://www.rfc-editor.org/info/rfc1091>
 - [RFC2119] Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", BCP 14, RFC 2119, March 1997. <https://www.rfc-editor.org/info/bcp14>
 - [RFC4647] Phillips, A. and M. Davis, "Matching of Language Tags", BCP 47, RFC 4647, September 2006. <https://www.rfc-editor.org/info/rfc4647>
+- [RFC4254] Ylonen, T. and C. Lonvick, "The Secure Shell (SSH) Connection Protocol", RFC 4254, January 2006. <https://www.rfc-editor.org/info/rfc4254>
 - [RFC8174] Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words", BCP 14, RFC 8174, May 2017. <https://www.rfc-editor.org/info/bcp14>
 - [RFC8259] Bray, T., "The JavaScript Object Notation (JSON) Data Interchange Format", RFC 8259, December 2017. <https://www.rfc-editor.org/info/rfc8259>
 - [DOOR32] "DOOR32 Revision 1 Specifications", February 23, 2001. <https://github.com/NuSkooler/ansi-bbs/blob/master/docs/dropfile_formats/door32_sys.txt>
-- [DTS-0001] Mecklenburg, D., "Doorware Technical Standard 0001" (DOOR.SYS), version 0.07 beta, January 14, 1992. <https://github.com/NuSkooler/ansi-bbs/blob/master/docs/dropfile_formats/dts_0001_0_07.txt>
+- [DOOR.SYS] "DOOR.SYS", Synchronet wiki, documenting the 31-line and 52-line forms of the file Ricky Greer introduced in 1988. <https://wiki.synchro.net/ref:door.sys>
+- [DTS-0001] Mecklenburg, D., "Doorware Technical Standard 0001", a proposed named-value `DROPFILE.###`, version 0.07 beta, January 14, 1992. <https://github.com/NuSkooler/ansi-bbs/blob/master/docs/dropfile_formats/dts_0001_0_07.txt>
 - [BBSDEV.DRP] "BBSDEV.DRP 1.0". <https://realdeuce.github.io/bbsdev.drp/>
 - [PHENOM] Smooth <PHENOM>, "Phenom Dropfile" v1.2 (JSON and line-based drop files for Mystic BBS), Phenom Productions, May 11, 2022. <https://web.archive.org/web/20250725102445/http://phenomprod.com/releases/mystic/pn-dropfile12.zip>
 - [FSC-0015] "FOSSIL" specification, FidoNet Technical Standards Committee. <http://ftsc.org/docs/fsc-0015.001>
+- [FSC-0025] Stanislav, G., "AVATAR video terminal specification" (AVATAR/0+), FidoNet Technical Standards Committee. <http://ftsc.org/docs/fsc-0025.001>
 - [CTERM] "CTerm terminal emulation" (SyncTERM), in the Synchronet source tree. <https://gitlab.synchro.net/main/sbbs/-/blob/master/src/conio/cterm.adoc>
 - [XTERM] Dickey, T., "XTerm Control Sequences". <https://invisible-island.net/xterm/ctlseqs/ctlseqs.html>
 - [KITTY-KEYS] Goyal, K., "Comprehensive keyboard handling in terminals" (kitty keyboard protocol). <https://sw.kovidgoyal.net/kitty/keyboard-protocol/>
