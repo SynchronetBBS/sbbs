@@ -505,7 +505,7 @@ bool sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , (misc & XTRN_NODISPLAY) ? 'N': 'Y' /* 06: Screen display */
 		              , 'Y'                     /* 07: Printer toggle */
 		              , 'Y'                     /* 08: Page bell */
-		              , 'Y');                   /* 09: Caller alarm */
+		              , (startup->sound.answer[0] && !sound_muted(&cfg)) ? 'Y' : 'N'); /* 09: Caller alarm, as PCBOARD.SYS (#1251) */
 		lfexpand(str, misc);
 		fwrite(str, strlen(str), 1, fp);
 

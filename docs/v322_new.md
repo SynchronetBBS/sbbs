@@ -133,6 +133,9 @@
   SyncTERM's file-store command, which could plant a file in every
   reader's SyncTERM cache) are stripped when a message is displayed;
   display files are unaffected (issue #1254)
+- Fix: the `DOOR.SYS` drop file's "caller alarm" field now honors
+  `ctrl/sound.mute` (and whether an answer sound is configured), as
+  `PCBOARD.SYS` already did, instead of always saying Y (issue #1251)
 - Fix: after a failed QWK packet download, reading a sub-board on-line
   resumed at the last packed message instead of where the user left
   off (issue #1261)
