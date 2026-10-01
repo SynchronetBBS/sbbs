@@ -1,10 +1,10 @@
 # DROPFILE.INI: a named-value door drop file (draft)
 
-Draft 0.3 · 2026-09-26 · Rob Swindell
+Draft 0.4 · 2026-09-30 · Rob Swindell
 
 ## Status and goals
 
-DROPFILE.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.3; the file name is a working name. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
+DROPFILE.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.4; the file name is a working name. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
 
 Goals:
 
@@ -12,7 +12,7 @@ Goals:
 - **Readable by standard INI APIs** such as Win32 `GetPrivateProfileString()` and Python's `configparser`, which require section headers, within the limits given under Examples and minimal readers.
 - **Order-independent and forward-compatible:** readers ignore keys they don't know, and every optional key has a stated default.
 - **Extensible without asking anyone:** vendor-prefixed keys can't collide with standard keys or with each other.
-- **Carries user preferences** that doors otherwise store separately per door, such as sound muted, screen pause and mouse hot-spots.
+- **Carries user preferences** that doors otherwise store separately per door, such as sound muted, screen pause and mouse use.
 - **Carries detected terminal capabilities,** so a door doesn't have to query the terminal again.
 - **Replaces the older drop files:** it carries the session details doors commonly read from DOOR.SYS, DOOR32.SYS and DORINFO1.DEF, so a door written for it needs no other drop file. Their security level field is left out on purpose (see User).
 
@@ -103,11 +103,13 @@ Every key has one of eight types, each parseable with a standard library call or
 | int | Unsigned decimal, 0 through 2147483647 (fits Pascal `LongInt` and C `long`), with no sign and no leading zeros (other than `0` itself) | `80` |
 | uint64 | Unsigned, 0 through 18446744073709551615, in decimal as for `int`, for counts too large for `int` | `5368709120` |
 | handle | Unsigned decimal native socket, descriptor or handle value, up to 64 bits | `1234` |
-| bool | `1` (true) or `0` (false) | `1` |
+| bool | `0` (false) or any other unsigned decimal (true), in the form of an `int`; `1` is the only true value unless the key's definition names others | `1` |
 | token | Lowercase ASCII word from a list defined by this spec | `socket` |
 | date | `YYYY-MM-DD` | `1970-01-01` |
 
-Producers write exactly `1` or `0`, so a consumer can read a bool with the same decimal parser it uses for ints, or with Win32's `GetPrivateProfileInt()`. A consumer MAY treat any value other than `1` as `0`.
+A consumer reads a bool with the same decimal parser it uses for ints, or with Win32's `GetPrivateProfileInt()`, and tests the result: `0` is false and any other value is true, as in `atol(value) != 0` in C or `VAL(s$) <> 0` in QBasic. It MUST NOT compare the value against `1`. A producer writes `0` or `1` unless the key's definition names another value.
+
+A key's definition MAY name values above `1` that mean true and carry more detail, as `TERM_MOUSE` does with `2`. Such a value MUST be a refinement of true: a consumer that knows only `0` and `1` and treats it as `1` still behaves correctly, if less capably. A consumer treats a value it doesn't know as `1`. The values are a list the key defines, not a bitmask, and there is only one false value: a refinement of false needs its own key.
 
 Text values have no length limit of their own beyond the line limit (at most 222 bytes for any value, and 255 minus the key length and `=` for a given key), and the limits BBS packages put on user and system names differ. A door that shows a value in a fixed-width field truncates it itself, counting characters, not bytes, when the text is UTF-8. The Synchronet implementation notes list Synchronet's limits as an example.
 
@@ -265,7 +267,7 @@ Capabilities the host detected. The source column names the query each comes fro
 | `TERM_FONT_SELECT` | bool | The current font can be selected | CTerm device attributes, 5 |
 | `TERM_PALETTE_EXT` | bool | Extended palette | CTerm device attributes, 6 |
 | `TERM_COLORS` | int | Number of colors the terminal can show: `16`, `256` or `16777216` (24-bit). Missing means `16`, the CGA palette every ANSI terminal has. It applies only to an `ansi` terminal without `TERM_MONO=1`; otherwise the door sends no color, whatever this key says | Terminal probe, such as a DECRQSS request for the SGR state after setting a 256-color or 24-bit color, or the user's terminal settings |
-| `TERM_MOUSE` | bool | Mouse reporting is available | CTerm device attributes, 7 |
+| `TERM_MOUSE` | bool | Mouse reporting: `1` = the terminal reports mouse events in character cells, `2` = it can also report them in pixels (SGR-Pixels, mode 1016). This is what the terminal can do, not what the user wants; see `PREF_MOUSE` | CTerm device attributes, 7; on other terminals, DECRQM requests for modes 1006 and 1016 (`CSI ? 1006 $ p`, `CSI ? 1016 $ p`), which report whether a mode is recognized without changing it; or the user's terminal settings |
 | `TERM_SIXEL` | bool | Sixel graphics | Device attributes, 4; for CTerm, whose device attributes reply carries its revision instead, CTerm device attributes, 4 |
 | `TERM_SIXEL_SCALE` | token | How the terminal applies the pixel aspect in a sixel's raster attributes (`"pan;pad`): `none` = draws at the encoded size, `vertical` = honors `pan` only (the DEC pixel aspect), `both` = honors `pan` and `pad` as integer scales (a CTerm extension) | Measured (see below) |
 | `TERM_PPM` | bool | PPM images through SyncTERM's APC commands | CTerm device attributes, 4, with CTerm revision 1.316 or later |
@@ -305,7 +307,7 @@ All keys in this section are optional.
 | Key | Type | Meaning | Default |
 | --- | --- | --- | --- |
 | `PREF_SOUND` | bool | `0` = the user has muted sound: the door MUST NOT send audio, such as ANSI music, CTerm audio or BEL (Ctrl-G) characters | `1` |
-| `PREF_MOUSE` | bool | `1` = the user wants mouse hot-spots, where the terminal supports them | `0` |
+| `PREF_MOUSE` | bool | `0` = the user has turned mouse use off: the door MUST NOT enable mouse reporting for hot-spots, clickable menus, scrolling or other uses that stand in for keys. A door whose play is pointer-driven, such as steering or aiming, MAY still enable it, and then gives the user its own way to turn it off | `1` |
 | `PREF_PAUSE` | bool | `0` = the user has turned off screen pausing | `1` |
 | `PREF_EXPERT` | bool | `1` = the user prefers short prompts without menus | `0` |
 | `PREF_PAGEABLE` | bool | `0` = the user doesn't want pages, chat requests or messages from other nodes | `1` |
@@ -322,6 +324,7 @@ Anyone can add keys without a spec change by using a vendor prefix, and standard
 - **Key names are unique across all sections.** A new standard key never reuses a name from another section, and a vendor key is kept unique by its `X_<VENDOR>_` prefix.
 - **New standard keys** are added to this spec with a stated section, type and default. Because readers ignore unknown keys and treat missing ones as their default, adding a key doesn't break existing doors.
 - **A key's meaning never changes.** A change of meaning or type needs a new key name. A producer MAY write both the old and new keys during a transition.
+- **A bool key can gain values above `1`** without a new name, under the rule in Value types: `0` and `1` keep their meanings, and each new value means true plus something more.
 - **A vendor key can become standard** under a new unprefixed name. Producers MAY write both names until doors move to the standard one.
 - **An incompatible change to the file format itself,** such as adding quoting, would use a new environment variable and a new customary file name, so an existing door never reads a file it can't parse.
 
@@ -381,7 +384,7 @@ TERM_PALETTE=1
 TERM_SIXEL=1
 TERM_SIXEL_SCALE=both
 TERM_PPM=1
-TERM_MOUSE=1
+TERM_MOUSE=2
 TERM_KEYS_EVDEV=1
 TERM_DOORWAY=1
 TERM_SNDFILE=1
@@ -395,7 +398,6 @@ TIME_LEFT=2700
 
 [preferences]
 PREF_SOUND=0
-PREF_MOUSE=1
 
 [x-sbbs]
 X_SBBS_LEVEL=50
@@ -548,7 +550,7 @@ DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for
   - `TERM_TYPE` from the user's terminal type, the same value Synchronet writes as `type` in the node's `terminal.ini`, in lowercase and with `RIP` written as `ansi`; `TERM_RIP` when that type is `RIP`, with the version from the logon detection reply, or `unknown` when RIP was set manually; and `TERM_BRIGHT_BG` from `ICE_COLOR`, whether auto-detected or set manually, and `TERM_MONO=1` when the settings have `ANSI` without `COLOR` (XTRN.DAT's `Mono`).
   - `TERM_DOORWAY` when the terminal identified itself as CTerm.
   - `TERM_SIXEL` for CTerm from its device attribute 4, as Synchronet's JavaScript library `cterm_lib.js` already does. Synchronet sends `CSI c` at logon but parses only CTerm's reply, so other terminals get the key only after a to-do below.
-  - `PREF_MOUSE` from the user's `MOUSE` setting (mouse hot-spots); `TERM_MOUSE` only from the CTerm device attributes.
+  - `TERM_MOUSE` from the mouse capability detected for the session: `2` when the terminal answered the DECRQM request for mode 1016, or is a CTerm recent enough to report pixels; `1` when it answered for mode 1006 or set CTerm device attribute 7, or when detection was silent and the user's mouse setting is on; otherwise left out. `PREF_MOUSE=0` when the user's mouse setting (`MOUSE`) is off. Today that setting is Synchronet's only record of mouse support, answering "Does your terminal support mouse reporting"; the to-do below separates capability from consent.
   - `TIME_LEFT` from the user's remaining time in this session, which Synchronet already shortens for an upcoming timed event; omitted for the sysop, who has no time limit.
   - `USER_IP` and `USER_HOSTNAME` from the client's address and host name, and `USER_CALLER_ID` from the Caller ID number SEXPOTS passes for a dial-up call. For a dial-up call Synchronet stores that number in the client's address field in place of an IP address, so the writer puts it in `USER_CALLER_ID` and leaves `USER_IP` out. A host name Synchronet couldn't resolve is left out too.
   - `USER_LANG` from the user's language code, which names the `ctrl/text.<code>.ini` file the user's text comes from. The stock codes (`de`, `es`, `fr`) are already valid tags. The writer changes any `_` to `-`, so a code such as `pt_BR` becomes `pt-BR`, then checks the result against BCP 47 syntax, and leaves the key out when the code is blank (the default language, which Synchronet doesn't record) or still isn't a valid tag. Sysops SHOULD name language files with ISO 639-1 codes, since a well-formed code that isn't a real language, such as `sp`, can't be detected.
@@ -575,7 +577,7 @@ DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for
   | `USER_HANDLE` | 8 |
 
 - **Handles:** a `socket` door gets one end of a loopback TCP connection that Synchronet bridges to the caller, whatever the caller's protocol. After the door exits, Synchronet already sets the socket back to blocking mode and re-applies its socket options (`main.cpp`), which covers the host side of the handle rules.
-- **Terminal capability queries** need a round trip each, and an unanswered one can stall for up to 3 seconds. Synchronet would run them once per session, before the first door launch, and cache the results, as `exec/load/cterm_lib.js` already does for the CTerm device attributes. This adds the kitty keyboard query (`CSI ? u`) and, optionally, the `TERM_SIXEL_SCALE` probe, which paints two small slivers on screen that the door's first screen covers. Capabilities that weren't detected are left out.
+- **Terminal capability queries** need a round trip each, and an unanswered one can stall for up to 3 seconds. Synchronet would run them once per session, before the first door launch, and cache the results, as `exec/load/cterm_lib.js` already does for the CTerm device attributes. This adds the kitty keyboard query (`CSI ? u`), the DECRQM mouse requests for `TERM_MOUSE` and, optionally, the `TERM_SIXEL_SCALE` probe, which paints two small slivers on screen that the door's first screen covers. Capabilities that weren't detected are left out.
 
 ### Vendor keys and MODUSER.DAT
 
@@ -621,7 +623,8 @@ Doors have no UTF-8 setting yet. The "Support UTF-8 Encoding" toggle (`XTRN_UTF8
 Work Synchronet needs beyond writing the file itself, before every key above can be filled in:
 
 - [ ] **`TERM_SIXEL` for terminals other than CTerm:** parse the standard device attributes reply (`CSI ? <params> c`) in `answer.cpp`, which today drops it, and store whether it lists 4 on `Terminal`.
-- [ ] **`TERM_CTERM` for forked CTerms:** store a fork's third revision field (#1250).
+- [x] **`TERM_CTERM` for forked CTerms:** store a fork's third revision field (#1250).
+- [ ] **`TERM_MOUSE` and `PREF_MOUSE`:** detect mouse capability once per session (CTerm device attribute 7; DECRQM requests for modes 1006 and 1016 on other terminals) and keep it on the `Terminal` object, like the audio capabilities, never in `autoterm`: `Terminal::get_flags()` merges the user's manual flags into the detected ones with OR, so a detected `MOUSE` flag would override a user's "no". The user's `MOUSE` setting then means consent ("use the mouse"), not capability: reword the new-user and Terminal Settings question to match, default the answer from detection, and skip it when detection says the terminal can't. Hot-spots and mouse scrolling need both the setting and the capability.
 - [ ] **`TERM_RIP`:** keep the RIPscrip version from the logon detection reply (`RIPSCRIP015400`), which Synchronet logs today but doesn't store.
 - [ ] **`TERM_COLORS`:** detect the terminal's color depth, which Synchronet doesn't record today.
 - [ ] **`TERM_KEYS_KITTY`:** add the kitty keyboard query (`CSI ? u`) to the once-per-session capability queries.
