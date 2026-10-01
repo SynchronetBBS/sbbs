@@ -1,10 +1,12 @@
-# DROPFILE.INI: a named-value door drop file (draft)
+# DOORDROP.INI: a named-value door drop file (draft)
 
-Draft 0.6 · 2026-09-30 · Rob Swindell
+Draft 0.7 · 2026-10-01 · Rob Swindell
+
+**This is a draft under community review. Don't implement it, in a host or a door, except to experiment, until it reaches 1.0.** Keys, names and rules are still changing between drafts, and an implementation of a draft will need rework; the draft 0.3 implementation already does, after the file and variable were renamed. Review comments are welcome (see Open questions for where the draft is headed).
 
 ## Status and goals
 
-DROPFILE.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.6; the file name is a working name. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
+DOORDROP.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.7. Through draft 0.6 the file was called DROPFILE.INI and the variable `DROPFILE_INI`; the name changed to avoid confusion with the `DROPFILE.###` of DTS-0001 (see Why INI), and an implementation written against an earlier draft uses the old names. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
 
 Goals:
 
@@ -39,17 +41,17 @@ A named-value drop file was proposed once before. DTS-0001 [DTS-0001], a 1992 dr
 
 ## File name and discovery
 
-The host points the door to the file with the environment variable `DROPFILE_INI` or on the door's command line, so the file can have any name. Its customary name is `DROPFILE.INI`, which a host SHOULD use unless the door expects another; it may be in lowercase (`dropfile.ini`) on a file system that keeps case. A file with any other name MUST keep the `.INI` extension, which no older drop file uses, so a door that chooses its parser by file name can recognize the format. Because the door always receives the path, it SHOULD open exactly that path rather than look for the file by name. Some doors are configured with a drop file directory and look for a known file name in it; a door that does so with this file MUST match the name without regard to case, since the name and its case are the host's choice, and still accepts a full path, since the host may have used another name.
+The host points the door to the file with the environment variable `DOORDROP_INI` or on the door's command line, so the file can have any name. Its customary name is `DOORDROP.INI`, which a host SHOULD use unless the door expects another; it may be in lowercase (`doordrop.ini`) on a file system that keeps case. A file with any other name MUST keep the `.INI` extension, which no older drop file uses, so a door that chooses its parser by file name can recognize the format. Because the door always receives the path, it SHOULD open exactly that path rather than look for the file by name. Some doors are configured with a drop file directory and look for a known file name in it; a door that does so with this file MUST match the name without regard to case, since the name and its case are the host's choice, and still accepts a full path, since the host may have used another name.
 
-- When more than one node can run the door at the same time, no two nodes' files may share a path, or they would overwrite each other. A host that gives every node the same file name, such as `DROPFILE.INI`, MUST therefore write each node's file in a directory specific to that node, such as a per-node directory; one that gives each node its own file name, such as `NODE1.INI`, MAY use a shared directory. A single-node host, or a host that lets only one node at a time run the door, MAY write the file in a shared directory, such as the door's own directory, under any name.
+- When more than one node can run the door at the same time, no two nodes' files may share a path, or they would overwrite each other. A host that gives every node the same file name, such as `DOORDROP.INI`, MUST therefore write each node's file in a directory specific to that node, such as a per-node directory; one that gives each node its own file name, such as `NODE1.INI`, MAY use a shared directory. A single-node host, or a host that lets only one node at a time run the door, MAY write the file in a shared directory, such as the door's own directory, under any name.
 - The host MUST finish writing the file and close it before starting the door. A DOS emulator that is already running may not see a new file, because DOSBox caches directory listings, so the host starts the emulator after writing the file or mounts the directory with caching turned off.
-- The host MUST give the door the file's absolute path, including the file name, in the `DROPFILE_INI` environment variable, on the door's command line, or both. It SHOULD set `DROPFILE_INI` wherever it can. Some DOS doors can't receive it: an emulator such as DOSBox doesn't pass the host's environment through, and a DOS environment of a few hundred bytes may have no room left. For those, the command line is the only way.
-- In `DROPFILE_INI` the path has no quotes and no shell escaping, even when it contains spaces.
-- The path uses the syntax of the environment the door runs in. For a DOS door run under an emulator, it is the DOS path the door sees, such as `C:\NODE1\DROPFILE.INI`, not the host path.
-- A path given to a DOS door, in `DROPFILE_INI`, on its command line or in `TEMP_DIR`, MUST fit DOS's limits: every directory and file name 8.3, at most 64 characters for the directory part and 80 for the whole path. A DOS command line holds at most 126 characters, including the door's other arguments, so the host SHOULD keep the path short, such as `C:\NODE1\DROPFILE.INI`.
-- A host MUST be able to pass the path on the door's command line, as many DOS doors expect. The sysop places the path on the door's configured command line where the door expects it. A door SHOULD accept the path on its command line, as a bare argument unless it documents a switch of its own, so it still works where the environment variable can't reach it, and uses `DROPFILE_INI` when it isn't given one. Given neither, it reports that and exits. A door MAY instead accept a directory and look for `DROPFILE.INI` in it, as doors configured with a drop file directory do today, but this is discouraged: the door must then match the name case-insensitively and can't be given a file with another name.
+- The host MUST give the door the file's absolute path, including the file name, in the `DOORDROP_INI` environment variable, on the door's command line, or both. It SHOULD set `DOORDROP_INI` wherever it can. Some DOS doors can't receive it: an emulator such as DOSBox doesn't pass the host's environment through, and a DOS environment of a few hundred bytes may have no room left. For those, the host can still set the variable inside the emulated DOS session, with a `SET DOORDROP_INI=C:\NODE1\DOORDROP.INI` line in the batch file it generates to start the door; otherwise the command line is the only way.
+- In `DOORDROP_INI` the path has no quotes and no shell escaping, even when it contains spaces.
+- The path uses the syntax of the environment the door runs in. For a DOS door run under an emulator, it is the DOS path the door sees, such as `C:\NODE1\DOORDROP.INI`, not the host path.
+- A path given to a DOS door, in `DOORDROP_INI`, on its command line or in `TEMP_DIR`, MUST fit DOS's limits: every directory and file name 8.3, at most 64 characters for the directory part and 80 for the whole path. A DOS command line holds at most 126 characters, including the door's other arguments, so the host SHOULD keep the path short, such as `C:\NODE1\DOORDROP.INI`.
+- A host MUST be able to pass the path on the door's command line, as many DOS doors expect. The sysop places the path on the door's configured command line where the door expects it. A door SHOULD accept the path on its command line, as a bare argument unless it documents a switch of its own, so it still works where the environment variable can't reach it, and uses `DOORDROP_INI` when it isn't given one. Given neither, it reports that and exits. A door MAY instead accept a directory and look for `DOORDROP.INI` in it, as doors configured with a drop file directory do today, but this is discouraged: the door must then match the name case-insensitively and can't be given a file with another name.
 - The file SHOULD be readable only by the host and the door, and the host SHOULD remove it after the door exits.
-- A file for a DOS door has an 8.3 name, which `DROPFILE.INI` is.
+- A file for a DOS door has an 8.3 name, which `DOORDROP.INI` is.
 
 ## File representation
 
@@ -173,7 +175,7 @@ Keys that describe the file itself. All are optional, so the section may be empt
 | Token | Meaning |
 | --- | --- |
 | `local` | The door uses its local console. No caller is connected; a host doesn't use this type for a caller's session. |
-| `stdio` | Caller input on standard input (`stdin`, descriptor 0; Win32 `STD_INPUT_HANDLE`) and output on standard output (`stdout`, descriptor 1; Win32 `STD_OUTPUT_HANDLE`), carrying only terminal bytes: the host has done any Telnet, SSH or WebSocket processing, passes each input byte on as it arrives, and does no echo or line editing. Standard error (`stderr`, descriptor 2; Win32 `STD_ERROR_HANDLE`) doesn't reach the caller. |
+| `stdio` | Caller input on standard input (`stdin`, descriptor 0; Win32 `STD_INPUT_HANDLE`) and output on standard output (`stdout`, descriptor 1; Win32 `STD_OUTPUT_HANDLE`), carrying only terminal bytes: the host has done any Telnet, SSH or WebSocket processing, passes each input byte on as it arrives, and does no echo or line editing. Standard error (`stderr`, descriptor 2; Win32 `STD_ERROR_HANDLE`) doesn't reach the caller. A DOS door that talks to the caller through DOS's standard handles, as WWIV chains do, is `stdio` too: under an emulator whose standard handles the host connects to the session, the door can't tell it from a native standard-I/O program. |
 | `socket` | A connected socket carrying only terminal bytes; the host has already done any Telnet, SSH or WebSocket processing. |
 | `telnet` | A connected socket carrying the caller's Telnet stream. The door handles the Telnet protocol itself: it answers option negotiations, sends a `0xFF` data byte as `IAC IAC`, and handles CR NUL. The host uses this type only for a caller that is actually on Telnet. The host has usually negotiated ECHO, SUPPRESS-GO-AHEAD and BINARY already; the door MAY negotiate them again. |
 | `serial` | An open, configured serial port, as a handle native to the door's platform: a POSIX file descriptor, a Win32 COM handle or an OS/2 handle. |
@@ -453,7 +455,7 @@ TERM_TYPE=ansi
 TIME_LEFT=1800
 ```
 
-Each reader below returns one key's value. It opens the file named by `DROPFILE_INI` (`getenv()`, `GetEnv()` or `ENVIRON$()`). A real door would read the file once into a table.
+Each reader below returns one key's value. It opens the file named by `DOORDROP_INI` (`getenv()`, `GetEnv()` or `ENVIRON$()`). A real door would read the file once into a table.
 
 C (C89, builds with Turbo C through current compilers):
 
@@ -462,7 +464,7 @@ C (C89, builds with Turbo C through current compilers):
 #include <string.h>
 
 /* Copy the value of key into val; return 1 if found, 0 if not */
-int dropfile_get(const char* path, const char* key, char* val, size_t size)
+int doordrop_get(const char* path, const char* key, char* val, size_t size)
 {
 	char line[260];
 	FILE* fp;
@@ -588,12 +590,12 @@ DTS-0001 [DTS-0001], the 1992 named-value proposal, overlaps this spec closely: 
 
 This section isn't part of the specification. It records how Synchronet would write the file, as one worked example; authors of other BBS software can skip it. It uses Synchronet's own terms: SCFG is Synchronet's configuration program, the `XTRN_*` names are per-door option flags set there, and file names such as `xtrn_sec.cpp` are Synchronet source files.
 
-DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for each door that reads it, like DOOR.SYS or DOOR32.SYS. Synchronet writes it only for those doors.
+DOORDROP.INI would be one more drop file type that the sysop selects in SCFG for each door that reads it, like DOOR.SYS or DOOR32.SYS. Synchronet writes it only for those doors.
 
-- **Type:** a new `XTRN_INI` value appended to the drop file type enum in `sbbsdefs.h`, offered in SCFG alongside DOOR.SYS, DOOR32.SYS and the others, and given its own case in the drop file name switch in `xtrn_sec.cpp` so the file is named `DROPFILE.INI`, not the `XTRN.DAT` default or anything like `ctrl/xtrn.ini`, so existing `xtrn.ini` values keep their meaning and no migration is needed. It is offered for message editors too, since `writemsg.cpp` also calls `xtrndat()`.
-- **Where:** a new block in `sbbs_t::xtrndat()` (`src/sbbs3/xtrn_sec.cpp`), written to the directory the door's drop file location option names: the node directory, the node's temp directory (`XTRN_TEMP_DIR`) or the door's start-up directory (`XTRN_STARTUPDIR`). The node and temp directories are both per-node, so they're always safe. The start-up directory is shared by every node running the door, so Synchronet uses it only when one node at a time can run the door: the door's "Supports Multiple Users" option (`XTRN_MULTIUSER`) is off, or the system has one node. For a multiuser door on a multinode system, the start-up directory option is ignored and the file goes in the node directory. In every case, the door finds the file through `DROPFILE_INI` or `%F`. The name is `DROPFILE.INI`, or `dropfile.ini` when the door's lowercase file name option is set, and the path must be absolute.
-- **Environment:** `xtrn.cpp`, which launches doors, sets `DROPFILE_INI` on every door launch path: native programs, DOS programs run under DOSEMU on Linux, and DOS programs run under emulation on Windows.
-- **Command line:** a door's command line in SCFG can contain `%` placeholders that Synchronet replaces at launch. `%F` becomes the full path of the door's drop file, and `%f` the same path in quotes. For a DOS door run under emulation, it is the DOS path the door sees. Both already exist, so they give the DROPFILE.INI path with no change.
+- **Type:** a new `XTRN_INI` value appended to the drop file type enum in `sbbsdefs.h`, offered in SCFG alongside DOOR.SYS, DOOR32.SYS and the others, and given its own case in the drop file name switch in `xtrn_sec.cpp` so the file is named `DOORDROP.INI`, not the `XTRN.DAT` default or anything like `ctrl/xtrn.ini`, so existing `xtrn.ini` values keep their meaning and no migration is needed. It is offered for message editors too, since `writemsg.cpp` also calls `xtrndat()`.
+- **Where:** a new block in `sbbs_t::xtrndat()` (`src/sbbs3/xtrn_sec.cpp`), written to the directory the door's drop file location option names: the node directory, the node's temp directory (`XTRN_TEMP_DIR`) or the door's start-up directory (`XTRN_STARTUPDIR`). The node and temp directories are both per-node, so they're always safe. The start-up directory is shared by every node running the door, so Synchronet uses it only when one node at a time can run the door: the door's "Supports Multiple Users" option (`XTRN_MULTIUSER`) is off, or the system has one node. For a multiuser door on a multinode system, the start-up directory option is ignored and the file goes in the node directory. In every case, the door finds the file through `DOORDROP_INI` or `%F`. The name is `DOORDROP.INI`, or `doordrop.ini` when the door's lowercase file name option is set, and the path must be absolute.
+- **Environment:** `xtrn.cpp`, which launches doors, sets `DOORDROP_INI` on every door launch path: native programs, DOS programs run under DOSEMU on Linux, and DOS programs run under emulation on Windows.
+- **Command line:** a door's command line in SCFG can contain `%` placeholders that Synchronet replaces at launch. `%F` becomes the full path of the door's drop file, and `%f` the same path in quotes. For a DOS door run under emulation, it is the DOS path the door sees. Both already exist, so they give the DOORDROP.INI path with no change.
 - **Doors that use Windows console interception** (`XTRN_CONIO`), where Synchronet relays a door's Windows console to the caller, can't use this type: the door would see its local console while a caller is connected, which `local` doesn't allow. Standard-I/O doors use `stdio`.
 - **Standard-I/O echo:** `stdio` requires that the host echo nothing, but Synchronet echoes a standard-I/O door's input back to the caller unless the door's no-echo option (`XTRN_NOECHO`) is set. For a door of this drop file type, Synchronet treats that option as set.
 - **Doors written in JavaScript** that Synchronet runs inside its own process can't use this type; they already have the `user`, `console` and `system` objects.
@@ -645,7 +647,7 @@ DROPFILE.INI would be one more drop file type that the sysop selects in SCFG for
 
 ### Vendor keys and MODUSER.DAT
 
-Synchronet can apply changes a door makes to the user's account: when a door's "Modify User Data" option (`XTRN_MODUSERDAT`) is set, Synchronet reads a MODUSER.DAT file the door leaves in the drop file directory, whatever the drop file type. The door can't change DROPFILE.INI itself, so these `[x-sbbs]` keys give it the current values MODUSER.DAT adjusts:
+Synchronet can apply changes a door makes to the user's account: when a door's "Modify User Data" option (`XTRN_MODUSERDAT`) is set, Synchronet reads a MODUSER.DAT file the door leaves in the drop file directory, whatever the drop file type. The door can't change DOORDROP.INI itself, so these `[x-sbbs]` keys give it the current values MODUSER.DAT adjusts:
 
 | Key | Type | Meaning |
 | --- | --- | --- |
@@ -711,7 +713,7 @@ Work Synchronet needs beyond writing the file itself, before every key above can
 
 ## Open questions
 
-- [ ] **Name:** keep `DROPFILE.INI` and `DROPFILE_INI`, or pick something less generic? (Case needs no decision: the door gets the full path, and a door that looks the file up by name anyway must ignore case.)
+- [x] **Name:** `DOORDROP.INI` and `DOORDROP_INI`, from draft 0.7; `DROPFILE.INI` was too close to DTS-0001's `DROPFILE.###`. (Case needs no decision: the door gets the full path, and a door that looks the file up by name anyway must ignore case.)
 - [ ] **ATASCII:** add `atascii` to the character sets and `TERM_TYPE` once a door or host author wants to consume it; no definition without a consumer and a tester. (`avatar` was added for converters from DORINFO1.DEF; see Coverage of older drop files.)
 - [ ] **Keys the older drop files have and this one doesn't:** the proposals under Coverage of older drop files (`USER_PHONE`, `USER_LOGONS`, `USER_LAST_ON`, the transfer totals, `TIME_USED`): add them, or leave them to vendor keys?
 - [ ] **Other file encodings:** a `FILE_CHARSET` key for CP866, CP850, CP865 or Amiga Latin-1 doors was declined as unneeded; revisit if a host or door that can't move to UTF-8 asks for it.
