@@ -386,6 +386,20 @@ function save_mutes() {
 function is_muted(nick) {
     return !!load_mutes()[String(nick).toLowerCase()];
 }
+/* Nicks that look like other bots (e.g. another BBS's "XXXX_Guru").
+ * Replying to them invites a bot-to-bot loop, so the bot never speaks
+ * to them; their lines still feed the channel context.  "bot"/"guru"
+ * must stand as its own part of the nick -- delimited ("VERT_Guru",
+ * "bot-x"), CamelCase ("SomeBot", "GuruBob"), or a trailing suffix
+ * ("chatbot") -- so ordinary nicks like "Abbott" or "Robotron" don't
+ * match. */
+function is_bot_nick(nick) {
+    var s = String(nick);
+    return /(^|[^a-z])(bot|guru)s?\d*([^a-z]|$)/i.test(s)
+        || /[a-z0-9](Bot|Guru)s?\d*([^a-z]|$)/.test(s)
+        || /(Bot|Guru)[A-Z]/.test(s)
+        || /(bot|guru)\d*$/i.test(s);
+}
 function set_mute(nick, on) {
     load_mutes();
     var k = String(nick).toLowerCase();
@@ -1098,6 +1112,8 @@ function handle_privmsg(from_nick, target, text) {
      * Fires BEFORE address detection so the delivery isn't held
      * back waiting for the recipient to address the bot. */
     deliver_pending(target, from_nick);
+
+    if (is_bot_nick(from_nick)) return;
 
     if (bot_addressed_in(text)) {
         st.open_question = null;
