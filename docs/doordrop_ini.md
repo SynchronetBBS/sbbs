@@ -216,12 +216,12 @@ The door:
 | `CP437` | IBM PC code page 437 (IANA `IBM437`, alias `cp437`) |
 | `UTF-8` | UTF-8 |
 | `US-ASCII` | 7-bit ASCII |
-| `PETSCII` | Commodore PETSCII |
-| `ATASCII` | Atari 8-bit ATASCII [ATASCII] |
+| `PETSCII` | Commodore PETSCII, the C64 set, with the control codes that switch between its upper-case-and-graphics and upper-and-lower-case modes; other members of the family are named below |
+| `ATASCII` | Atari 8-bit ATASCII [ATASCII], the standard set; the XL/XE international set is `ATASCII-INTL` |
 
 These are this spec's own names, used by both `COMM_CHARSET` and `TERM_CHARSET`: three match IANA names or aliases, and `PETSCII` and `ATASCII` have no IANA registration. Producers write them exactly as listed, so a consumer compares them exactly, as it does a token. For a character set not listed, a producer MAY use its IANA name; a consumer compares such a name without regard to ASCII case, as IANA names are.
 
-`PETSCII` and `ATASCII` each name a family of character sets rather than one mapping. PETSCII has several common members (the C64's and the C128's, each with an upper-case-and-graphics set and an upper-and-lower-case set) and more besides; ATASCII has two. The name says which family the connection uses; a door confines itself to what the family's members share unless it learns the member from the terminal itself, and a later draft may add a way to name one.
+`PETSCII` and `ATASCII` are families of character sets rather than single mappings, so the bare name means the member everyone implements, and a producer that knows the connection uses another member names it with a hyphen after the family: `PETSCII-C128` (the C128's set, the same glyphs with a different 80-column palette), `PETSCII-VIC20` (22 columns, 8 colors, its own glyph differences), `PETSCII-PET` (the PET 2001's) and `ATASCII-INTL`. Within a PETSCII member, upper-case-and-graphics versus upper-and-lower-case is a mode the terminal switches at runtime, not a separate set, so it is never named. A consumer that doesn't know a member takes the text before the hyphen as the family and confines itself to what the family's members share, as the rule for unknown tokens says; `TERM_TYPE` carries only the family (`petscii`, `atascii`), since the control codes are the family's.
 
 ### User: `[user]`
 
