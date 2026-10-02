@@ -299,8 +299,9 @@ function expand_macros(template, mctx)
 
 /* Build the macro context (the @TOKEN@ substitution map) from the chat
  * context. Pulls speaker attributes, persona name, and a language
- * directive derived from the speaker's lang attribute. */
-function build_macro_ctx(ctx)
+ * directive derived from the speaker's lang attribute.  cfg (optional)
+ * supplies the configured model name for @llm_model@. */
+function build_macro_ctx(ctx, cfg)
 {
     var attrs     = (ctx.speaker && ctx.speaker.attrs) || {};
     var lang_code = attrs.lang ? String(attrs.lang) : '';
@@ -332,7 +333,10 @@ function build_macro_ctx(ctx)
         system_name:        system.name,
         system_op:          system.operator,
         sync_version:       sync_version,
-        bot_name:           (ctx.persona && ctx.persona.name) || 'The Guru',
+        /* Lets the persona answer "what model/LLM are you?" with the
+         * real configured model instead of a generic deflection. */
+        llm_model:          (cfg && cfg.model) || '',
+        bot_name:          (ctx.persona && ctx.persona.name) || 'The Guru',
         alias:              (ctx.speaker && ctx.speaker.alias) || 'tester',
         real_name:          attrs.real_name || '',
         level:              attrs.level || 0,
@@ -398,7 +402,7 @@ function transcript_to_messages(ctx)
 
 function build_messages(cfg, user_input, ctx, sys_override)
 {
-    var mctx = build_macro_ctx(ctx);
+    var mctx = build_macro_ctx(ctx, cfg);
     var sys_template = sys_override
         || cfg.system_prompt
         || 'You are a regular caller on a BBS.';
@@ -1727,7 +1731,7 @@ function llm_open(ctx, opts)
 {
     var cfg = load_config(ctx.persona && ctx.persona.code);
     if (!cfg.opening_prompt) return null;
-    var mctx = build_macro_ctx(ctx);
+    var mctx = build_macro_ctx(ctx, cfg);
     var prompt = expand_macros(cfg.opening_prompt, mctx);
     /* Use the smaller opening-specific system prompt if configured
      * (~1KB persona+style vs the full ~7KB system prompt with
@@ -2459,7 +2463,7 @@ function open_session(ctx)
      * will actually use, so the logged byte-count reflects what
      * the LLM sees, not the full chat-turn system prompt. */
     var dbg_msgs = build_messages(cfg, expand_macros(cfg.opening_prompt || '',
-                                                     build_macro_ctx(ctx)),
+                                                     build_macro_ctx(ctx, cfg)),
                                   ctx, cfg.opening_system_prompt);
     var prompt_bytes = JSON.stringify(dbg_msgs).length;
 
@@ -3260,6 +3264,12 @@ function _is_conversational_query(input)
     if (/\byour\s+(name|identity|role|job|purpose|gender|age)\b/.test(s)) return true;
     if (/\bare\s+you\s+(a|an|the)?\s*(real\s+)?(bot|ai|a\.i\.|human|person|robot|chat\s?bot|assistant|sysop|co.?sysop|guru|alive|sentient|conscious|there)\b/.test(s)) return true;
     if (/\b(introduce|tell\s+me\s+about)\s+yourself\b/.test(s)) return true;
+    /* which model/LLM powers the bot: retrieval pulls the generic
+     * howto:llm-guru wiki text ("whatever model is configured"), which
+     * the model then parrots instead of the @llm_model@ fact. */
+    if (/\b(which|what)\s+(large\s+language\s+|ai\s+|llm\s+)?(model|llm|ai)\b.*\b(you|u|ya|your|guru|bot)\b/.test(s)) return true;
+    if (/\b(you|u|ya|guru|bot)\b.*\b(using|use|running|run|powered|based|built|backed)\b.*\b(model|llm|ai)\b/.test(s)) return true;
+    if (/\byour\s+(model|llm|ai\s+model|language\s+model)\b/.test(s)) return true;
     if (/\bwhat\s+(can|do)\s+you\s+do\b/.test(s)) return true;
     /* social pleasantries */
     if (/\b(how\s+are\s+(you|u|ya)|how'?s\s+it\s+going|how\s+do\s+you\s+do)\b/.test(s)) return true;
