@@ -1,12 +1,12 @@
 # DOORDROP.INI: a named-value door drop file (draft)
 
-Draft 0.7 · 2026-10-01 · Rob Swindell
+Draft 0.8 · 2026-10-02 · Rob Swindell
 
 **This is a draft under community review. Don't implement it, in a host or a door, except to experiment, until it reaches 1.0.** Keys, names and rules are still changing between drafts, and an implementation of a draft will need rework; the draft 0.3 implementation already does, after the file and variable were renamed. Review comments are welcome (see Open questions for where the draft is headed).
 
 ## Status and goals
 
-DOORDROP.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.7. Through draft 0.6 the file was called DROPFILE.INI and the variable `DROPFILE_INI`; the name changed to avoid confusion with the `DROPFILE.###` of DTS-0001 (see Why INI), and an implementation written against an earlier draft uses the old names. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
+DOORDROP.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.8. Through draft 0.6 the file was called DROPFILE.INI and the variable `DROPFILE_INI`; the name changed to avoid confusion with the `DROPFILE.###` of DTS-0001 (see Why INI), and an implementation written against an earlier draft uses the old names. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
 
 Goals:
 
@@ -41,7 +41,7 @@ A named-value drop file was proposed once before. DTS-0001 [DTS-0001], a 1992 dr
 
 ## File name and discovery
 
-The host points the door to the file with the environment variable `DOORDROP_INI` or on the door's command line, so the file can have any name. Its customary name is `DOORDROP.INI`, which a host SHOULD use unless the door expects another; it may be in lowercase (`doordrop.ini`) on a file system that keeps case. A file with any other name MUST keep the `.INI` extension, which no older drop file uses, so a door that chooses its parser by file name can recognize the format. Because the door always receives the path, it SHOULD open exactly that path rather than look for the file by name. Some doors are configured with a drop file directory and look for a known file name in it; a door that does so with this file MUST match the name without regard to case, since the name and its case are the host's choice, and still accepts a full path, since the host may have used another name.
+The host points the door to the file with the environment variable `DOORDROP_INI` or on the door's command line, so the file can have any name. Its customary name is `DOORDROP.INI`, which a host SHOULD use unless the door expects another; it may be in lowercase (`doordrop.ini`) on a file system that keeps case. A file with any other name MUST keep the `.INI` extension, which no older drop file uses, so a door that chooses its parser by file name can recognize the format. Because the door always receives the path, it SHOULD open exactly that path rather than look for the file by name. A door that looks for the file by name anyway, because it is configured with a directory as many doors are today, looks for `DOORDROP.INI` in that spelling and case, and a host that wants such a door to find the file writes that name; the lowercase option is for doors given a path.
 
 - When more than one node can run the door at the same time, no two nodes' files may share a path, or they would overwrite each other. A host that gives every node the same file name, such as `DOORDROP.INI`, MUST therefore write each node's file in a directory specific to that node, such as a per-node directory; one that gives each node its own file name, such as `NODE1.INI`, MAY use a shared directory. A single-node host, or a host that lets only one node at a time run the door, MAY write the file in a shared directory, such as the door's own directory, under any name.
 - The host MUST finish writing the file and close it before starting the door. A DOS emulator that is already running may not see a new file, because DOSBox caches directory listings, so the host starts the emulator after writing the file or mounts the directory with caching turned off.
@@ -49,7 +49,7 @@ The host points the door to the file with the environment variable `DOORDROP_INI
 - In `DOORDROP_INI` the path has no quotes and no shell escaping, even when it contains spaces.
 - The path uses the syntax of the environment the door runs in. For a DOS door run under an emulator, it is the DOS path the door sees, such as `C:\NODE1\DOORDROP.INI`, not the host path.
 - A path given to a DOS door, in `DOORDROP_INI`, on its command line or in `TEMP_DIR`, MUST fit DOS's limits: every directory and file name 8.3, at most 64 characters for the directory part and 80 for the whole path. A DOS command line holds at most 126 characters, including the door's other arguments, so the host SHOULD keep the path short, such as `C:\NODE1\DOORDROP.INI`.
-- A host MUST be able to pass the path on the door's command line, as many DOS doors expect. The sysop places the path on the door's configured command line where the door expects it. A door SHOULD accept the path on its command line, as a bare argument unless it documents a switch of its own, so it still works where the environment variable can't reach it, and uses `DOORDROP_INI` when it isn't given one. Given neither, it reports that and exits. A door MAY instead accept a directory and look for `DOORDROP.INI` in it, as doors configured with a drop file directory do today, but this is discouraged: the door must then match the name case-insensitively and can't be given a file with another name.
+- A host MUST be able to pass the path on the door's command line, as many DOS doors expect. The sysop places the path on the door's configured command line where the door expects it. A door SHOULD accept the path on its command line, as a bare argument unless it documents a switch of its own, so it still works where the environment variable can't reach it, and uses `DOORDROP_INI` when it isn't given one. Given neither, it reports that and exits. A door MAY instead accept a directory and look for `DOORDROP.INI`, in exactly that spelling, in it; this is discouraged, since such a door can't be given a file with another name or case.
 - The file SHOULD be readable only by the host and the door, and the host SHOULD remove it after the door exits.
 - A file for a DOS door has an 8.3 name, which `DOORDROP.INI` is.
 
@@ -57,7 +57,7 @@ The host points the door to the file with the environment variable `DOORDROP_INI
 
 Each line is blank, a comment, a section header (`[name]`), or `KEY=value`. A value runs from the character after the first `=` to the end of the line, exactly as written.
 
-Section headers are there for readers that require them, such as Win32 `GetPrivateProfileString()` and Python's `configparser`. Key names don't depend on them: every key name is unique across the whole file, which is why most keys repeat their section in a prefix (`USER_ALIAS` in `[user]`, `TERM_COLS` in `[terminal]`). A reader can look keys up by section, or ignore section headers entirely and match key names alone, and gets the same value either way.
+Section headers are there for readers that require them, such as Win32 `GetPrivateProfileString()` and Python's `configparser`. Key names don't depend on them: every key name is unique across the whole file, which is why most keys repeat their section in a prefix (`USER_ALIAS` in `[user]`, `TERM_COLS` in `[terminal]`). The prefixes make keys longer than they would be if sections were the namespace; that is the price of letting a reader ignore sections, and it is paid once, by the producer. A reader can look keys up by section, or ignore section headers entirely and match key names alone, and gets the same value either way.
 
 In this spec, **whitespace** means ASCII space (`0x20`) and tab (`0x09`). A **control character** is any byte `0x00` through `0x1F` or `0x7F`, and in UTF-8 text also any code point U+0080 through U+009F, the line and paragraph separators U+2028 and U+2029, and the bidirectional format characters U+202A through U+202E and U+2066 through U+2069. The last two groups are invisible, and the separators split a line in readers such as Python's `str.splitlines()` and a JavaScript multiline regular expression: an alias of `A`, U+2028, `USER_ROLE=sysop` is 19 bytes, fits a short name field, and would make such a reader see a second key. The definition applies to CP437 text too, where those bytes would otherwise display as symbols such as `☺` and `⌂`: a DOS reader can't tell such a symbol from a control code, CR and LF split the line, and many DOS text-mode readers stop at `0x1A` (Ctrl-Z) as end of file. Text also MUST NOT contain a non-breaking space, which nobody can see: byte `0xFF` in CP437, which on a Telnet connection is also the IAC command byte, or U+00A0 in UTF-8.
 
@@ -65,7 +65,7 @@ Producers MUST:
 
 - write keys, section headers and all values other than text and path in ASCII, text values in UTF-8 if `FILE_UTF8` is `1` and in CP437 otherwise, and path values as the file system gives them, with no byte-order mark;
 - end every line, including the last, with CRLF, and write nothing after the final CRLF, including no Ctrl-Z end-of-file marker;
-- write a section header before the first key, with `[file]`, when written, as the first section (comment lines may come before it);
+- write a section header before the first key, with `[file]` as the first section (comment lines may come before it);
 - write each key in its assigned section, and each section at most once; a section MAY be empty, with no keys between its header and the next, and a producer MAY leave out a section that has no keys;
 - write section names in lowercase ASCII letters, digits and `-`;
 - write keys in uppercase ASCII letters, digits and `_`, starting with a letter, at most 32 characters;
@@ -83,7 +83,7 @@ Consumers:
 - MUST accept CRLF as a line terminator and SHOULD also accept LF alone as one. A reader that splits on LF alone, as many POSIX readers do, removes the CR left at the end of each line; otherwise every value ends in a CR, and a comparison such as `COMM_TYPE` against `socket` fails;
 - SHOULD treat a Ctrl-Z (`0x1A`) as the end of the file, as DOS text-mode reads already do;
 - MAY remove whitespace around a key or a value, which changes nothing in a conforming file;
-- MAY compare keys case-sensitively, because producers write them in uppercase;
+- compare keys, section names, tokens and this spec's character set names exactly, since producers write each in one fixed case; a consumer that folds case anyway folds ASCII letters only. An IANA character set name not in this spec's list is the one value compared without regard to case;
 - MAY ignore section headers;
 - MUST ignore keys they don't recognize, and other lines that contain no `=`;
 - SHOULD use the first occurrence if a key appears twice;
@@ -95,7 +95,7 @@ There is no quoting or escaping. A value can contain `=`, `:`, `[`, `"` and `\` 
 
 A simple reader can skip comment and section handling: comment lines and section headers can't match any key, because no key starts with `;` or `[`, and headers contain no `=`.
 
-Text values are in CP437, or in UTF-8 when `FILE_UTF8` is `1`. The choice is independent of `COMM_CHARSET`: a host that stores only CP437 text MAY write CP437 text for a door on a UTF-8 connection, and the door converts text values before sending them. A producer MUST NOT write `FILE_UTF8=1` unless it knows the door supports UTF-8, for example because the sysop configured the door that way, so a door that can't decode UTF-8 never receives it. A producer writing CP437 replaces characters that have no CP437 equivalent with `?`. ASCII text is valid either way. Keys and non-text values are always ASCII, so a reader can find `FILE_UTF8` before decoding any text.
+Text values are in CP437, or in UTF-8 when `FILE_UTF8` is `1`. The choice is independent of `COMM_CHARSET`: a host that stores only CP437 text MAY write CP437 text for a door on a UTF-8 connection, and the door converts text values before sending them. A producer MUST NOT write `FILE_UTF8=1` unless it knows the door supports UTF-8, for example because the sysop configured the door that way, so a door that can't decode UTF-8 never receives it. A producer writing CP437 replaces characters that have no CP437 equivalent with `?`. ASCII text is valid either way. Keys and non-text values are always ASCII, so a reader can find `FILE_UTF8` before decoding any text. Stated as a rule: the file's text values are UTF-8 if and only if it contains a line that is exactly `FILE_UTF8=1`, which `[file]` being the first section puts before any text value; every other content is CP437.
 
 ## Value types
 
@@ -112,7 +112,7 @@ Every key has one of ten types, each parseable with a standard library call or a
 | token | Lowercase ASCII word from a list defined by this spec | `socket` |
 | date | `YYYY-MM-DD` | `1970-01-01` |
 | datetime | `YYYY-MM-DDThh:mm:ss`, local time, followed by the UTC offset as `+hh:mm` or `-hh:mm` when the host knows it, in the form of RFC 3339 [RFC3339] without `Z` or fractional seconds; a host that doesn't know its offset writes none. A reader that wants only the date takes the text before the `T` | `2026-10-02T10:00:00-05:00` |
-| path | A file system path in the syntax of the environment the door runs in, written byte for byte as the host's file system gives it, never converted to the file's text encoding and never cut: a path that contains a control character or doesn't fit is left out | `C:\NODE1` |
+| path | A file system path in the syntax and encoding the door's runtime expects for file names: on POSIX the bytes the file system holds, on Windows the system ANSI code page that the narrow file APIs take, and for a DOS door the DOS path under emulation. It is never converted to the file's text encoding and never cut: a path that contains a control character, doesn't fit, or can't be represented in that encoding (a Windows name outside the ANSI code page) is left out | `C:\NODE1` |
 
 A consumer reads a bool with the same decimal parser it uses for ints, or with Win32's `GetPrivateProfileInt()`, and tests the result: `0` is false and any other value is true, as in `atol(value) != 0` in C or `VAL(s$) <> 0` in QBasic. It MUST NOT compare the value against `1`. A producer writes `0` or `1` unless the key's definition names another value.
 
@@ -120,7 +120,7 @@ A key's definition MAY name values above `1` that mean true and carry more detai
 
 Text values have no length limit of their own beyond the line limit (at most 222 bytes for any value, and 255 minus the key length and `=` for a given key), and the limits BBS packages put on user and system names differ. A door that shows a value in a fixed-width field truncates it itself, counting characters, not bytes, when the text is UTF-8. The Synchronet implementation notes list Synchronet's limits as an example.
 
-Producers write tokens in lowercase, exactly as this spec lists them, so a consumer MAY compare a token case-sensitively, as it may a key.
+Producers write tokens in lowercase, exactly as this spec lists them, so a consumer compares a token exactly, as it does a key.
 
 Every numeric value is decimal; the file has no hexadecimal. C's `strtol()` (or `strtoull()` for a uint64 or handle) and Python's `int()` read them directly. `strtoull()` is C99, which Turbo C lacks; a DOS door never receives a handle, and one that can't hold a 64-bit value skips any uint64 key it can't use.
 
@@ -130,16 +130,16 @@ Time limits are given as seconds remaining (`TIME_LEFT`), not as a clock time. A
 
 ## Defined keys
 
-Five keys are always required: `SYS_SOFTWARE`, `SYS_NAME`, `SYS_OP`, `SYS_NODE_NUM` and `COMM_TYPE`. `COMM_CHARSET`, `USER_ALIAS` and `USER_NUMBER` are also required unless `COMM_TYPE` is `local`, where no caller is connected; then the user keys, if present, describe the account the door runs under. The connection keys marked "for" a type are required with that type. Every other key is optional, and the Default column says what a missing key means.
+Six keys are always required: `FILE_TIME`, `SYS_SOFTWARE`, `SYS_NAME`, `SYS_OP`, `SYS_NODE_NUM` and `COMM_TYPE`. `COMM_CHARSET`, `USER_ALIAS`, `USER_NUMBER` and `USER_KEY` are also required unless `COMM_TYPE` is `local`, where no caller is connected; then the user keys, if present, describe the account the door runs under. The connection keys marked "for" a type are required with that type. Every other key is optional, and the Default column says what a missing key means.
 
 ### File: `[file]`
 
-Keys that describe the file itself. All are optional, so the section may be empty or left out. A producer SHOULD always write `FILE_TIME`, leaving out the UTC offset if it doesn't know it. A door MAY log it or show it to the sysop, but SHOULD NOT refuse to run because of it, since a DOS door's clock often doesn't match the host's.
+Keys that describe the file itself. `FILE_TIME` is required, so the section is always present; a producer leaves out the UTC offset if it doesn't know it. A door MAY log it or show it to the sysop, and a door whose clock agrees with the host's MAY use it to see how long ago `TIME_LEFT` was measured, but it SHOULD NOT refuse to run because of it, since a DOS door's clock often doesn't match the host's.
 
 | Key | Type | Meaning | Default |
 | --- | --- | --- | --- |
 | `FILE_UTF8` | bool | `1` = every text value in the file is UTF-8 | `0` (CP437) |
-| `FILE_TIME` | datetime | Local date and time the host wrote the file, such as `2026-09-25T14:30:00-07:00`, or `2026-09-25T14:30:00` when the host doesn't know its UTC offset. It is for people and logs, to spot a stale file left by a misconfigured host or door, not for measuring time: a door uses `TIME_LEFT` for that | none |
+| `FILE_TIME` | datetime | Local date and time the host wrote the file, such as `2026-09-25T14:30:00-07:00`, or `2026-09-25T14:30:00` when the host doesn't know its UTC offset. It is the moment `TIME_LEFT` was measured, and it lets people and logs spot a stale file left by a misconfigured host or door | required |
 
 ### System: `[system]`
 
@@ -219,7 +219,9 @@ The door:
 | `PETSCII` | Commodore PETSCII |
 | `ATASCII` | Atari 8-bit ATASCII [ATASCII] |
 
-These are this spec's own names, used by both `COMM_CHARSET` and `TERM_CHARSET`: three match IANA names or aliases, and `PETSCII` and `ATASCII` have no IANA registration. Producers write them exactly as listed, so a consumer MAY compare them case-sensitively, as it may a token. For a character set not listed, a producer MAY use its IANA name; a consumer compares such a name case-insensitively, as IANA names are.
+These are this spec's own names, used by both `COMM_CHARSET` and `TERM_CHARSET`: three match IANA names or aliases, and `PETSCII` and `ATASCII` have no IANA registration. Producers write them exactly as listed, so a consumer compares them exactly, as it does a token. For a character set not listed, a producer MAY use its IANA name; a consumer compares such a name without regard to ASCII case, as IANA names are.
+
+`PETSCII` and `ATASCII` each name a family of character sets rather than one mapping. PETSCII has several common members (the C64's and the C128's, each with an upper-case-and-graphics set and an upper-and-lower-case set) and more besides; ATASCII has two. The name says which family the connection uses; a door confines itself to what the family's members share unless it learns the member from the terminal itself, and a later draft may add a way to name one.
 
 ### User: `[user]`
 
@@ -227,7 +229,7 @@ These are this spec's own names, used by both `COMM_CHARSET` and `TERM_CHARSET`:
 | --- | --- | --- | --- | --- |
 | `USER_ALIAS` | text | unless `local` | The user's alias | |
 | `USER_NUMBER` | int | unless `local` | The user's number on this host; may be reused after the account is deleted | |
-| `USER_KEY` | ascii | no | Opaque key that never changes for the account and is never reused on this host; ASCII letters, digits, `-`, `_` and `.` only, starting with a letter or digit, at most 64 characters | none |
+| `USER_KEY` | ascii | unless `local` | Opaque key that never changes for the account and is never reused on this host; ASCII letters, digits, `-`, `_` and `.` only, starting with a letter or digit, at most 64 characters | |
 | `USER_ROLE` | token | no | `user`, `cosysop`, `sysop` or `guest`. `guest` is an account shared by callers who haven't registered, so a door SHOULD NOT save progress or rankings for it as one person's | `user` |
 | `USER_LANG` | ascii | no | BCP 47 [BCP47] language tag, such as `en-US` | unknown |
 | `USER_REALNAME` | text | no | Real name (see Security and privacy) | none |
@@ -242,7 +244,7 @@ These are this spec's own names, used by both `COMM_CHARSET` and `TERM_CHARSET`:
 | `USER_EMAIL` | ascii | no | The user's e-mail address on this host, such as `Joe.Bob@bbs.example.com`, where the host accepts mail for its users | none |
 | `USER_NETMAIL` | ascii | no | The address the user's mail is forwarded to: an Internet e-mail address, or a FidoNet address such as `1:103/705` (see Security and privacy) | none |
 
-A host that can't guarantee a key that is never reused, for example because it reuses deleted users' numbers internally, leaves `USER_KEY` out. A door that keeps per-user data SHOULD key it on `USER_KEY`, not on the alias or number, and falls back to `USER_NUMBER` when `USER_KEY` is missing. Its characters are safe in file names on DOS, Windows and POSIX, but the value as a whole may not be: it could be a Windows device name such as `CON` or `COM1`, with or without an extension. A door that uses it in a path puts a constant in front of it, such as `u-`, which rules those out, or hashes it; a DOS door that needs an 8.3 name hashes it in any case.
+A door that keeps per-user data keys it on `USER_KEY`, not on the alias or number. The host, which knows whether its numbers are reused, derives the key: a host that reuses deleted users' numbers joins the number to something that distinguishes accounts, such as the account's creation time, and a host with nothing better writes the number alone and accepts that a door may then confuse a new account with a deleted one. Its characters are safe in file names on DOS, Windows and POSIX, but the value as a whole may not be: it could be a Windows device name such as `CON` or `COM1`, with or without an extension. A door that uses it in a path puts a constant in front of it, such as `u-`, which rules those out, or hashes it; a DOS door that needs an 8.3 name hashes it in any case.
 
 A door with translations matches `USER_LANG` against the tags it has by BCP 47 lookup [RFC4647]: it compares tags case-insensitively, and when there is no exact match it drops subtags from the end and tries again, so `de-DE` or `de-AT` finds a `de` translation. If nothing matches, it uses its default language.
 
@@ -271,7 +273,7 @@ There is no standard security level key. A level's range, its ordering (whether 
 
 A forked CTerm adds its own revision as a third field and leaves the first two as the CTerm revision it was forked from. A door checking for a CTerm feature compares only `<major>.<minor>`; the third field means something only to a door that knows that fork. Each field is a decimal number, so compare them numerically, not as text: `1.40` is older than `1.332`.
 
-Capabilities the host detected. The source column names the query each comes from; several are CTerm-only (SyncTERM and its forks). The device attributes are the reply to `CSI c`, and the CTerm device attributes [CTERM] the reply to `CSI < c`; the source column refers to the numbered values in those replies. All are optional: a missing bool reads as `0`, a missing `TERM_COLORS` as `16`, and any other missing int or token as unknown, and either way it means the host didn't detect the capability.
+Capabilities the host detected. The source column names the query each comes from; several are CTerm-only (SyncTERM and its forks). The device attributes are the reply to `CSI c`, and the CTerm device attributes [CTERM] the reply to `CSI < c`; the source column refers to the numbered values in those replies. All are optional: a missing bool reads as `0`, a missing `TERM_COLORS` as `16` (assumed, not detected), and any other missing int or token as unknown, and either way it means the host didn't detect the capability.
 
 | Key | Type | Meaning | Source |
 | --- | --- | --- | --- |
@@ -280,7 +282,7 @@ Capabilities the host detected. The source column names the query each comes fro
 | `TERM_PALETTE` | bool | Palette entries can be changed | CTerm device attributes, 3 |
 | `TERM_FONT_SELECT` | bool | The current font can be selected | CTerm device attributes, 5 |
 | `TERM_PALETTE_EXT` | bool | Extended palette | CTerm device attributes, 6 |
-| `TERM_COLORS` | int | Number of colors the terminal can show: `16`, `256` or `16777216` (24-bit). Missing means `16`, the CGA palette every ANSI terminal has. It applies only to an `ansi` terminal without `TERM_MONO=1`; otherwise the door sends no color, whatever this key says | Terminal probe, such as a DECRQSS request for the SGR state after setting a 256-color or 24-bit color, or the user's terminal settings |
+| `TERM_COLORS` | int | Which color sequences the terminal honors, named by the number of colors they reach: `8` = SGR 30 to 37 and 40 to 47, with SGR 1 rendered as bold rather than bright, as many DEC-style terminals do; `16` = the same with SGR 1 as a bright foreground, the PC palette; `256` = `16` plus `38;5` and `48;5`; `16777216` = `256` plus `38;2` and `48;2` (24-bit). Missing means `16`, an assumption rather than something detected. It applies only to an `ansi` terminal without `TERM_MONO=1`; otherwise the door sends no color, whatever this key says | Terminal probe, such as a DECRQSS request for the SGR state after setting a 256-color or 24-bit color, or the user's terminal settings |
 | `TERM_MOUSE` | bool | Mouse reporting: `1` = the terminal reports mouse events in character cells, `2` = it can also report them in pixels (SGR-Pixels, mode 1016). This is what the terminal can do, not what the user wants; see `PREF_MOUSE` | CTerm device attributes, 7; on other terminals, DECRQM requests for modes 1006 and 1016 (`CSI ? 1006 $ p`, `CSI ? 1016 $ p`), which report whether a mode is recognized without changing it; or the user's terminal settings |
 | `TERM_SIXEL` | bool | Sixel graphics | Device attributes, 4; for CTerm, whose device attributes reply carries its revision instead, CTerm device attributes, 4 |
 | `TERM_SIXEL_SCALE` | token | How the terminal applies the pixel aspect in a sixel's raster attributes (`"pan;pad`): `none` = draws at the encoded size, `vertical` = honors `pan` only (the DEC pixel aspect), `both` = honors `pan` and `pad` as integer scales (a CTerm extension) | Measured (see below) |
@@ -313,7 +315,7 @@ All keys in this section are optional.
 | `LOCAL_DISPLAY` | bool | `0` = don't show the session on the host's own screen: the door doesn't mirror its output to a local console or window. Doesn't apply when `COMM_TYPE` is `local`, where the local console is the session itself | `1` |
 | `IDLE_LIMIT` | int | Seconds without input from the caller after which the host ends the session. A door uses it to warn the user before that happens, or to run its own idle timer when it exchanges terminal queries that the host may count as input | no limit |
 
-A door MUST exit before `TIME_LEFT` seconds have passed since it started. The time between the host writing the file and the door starting, such as an emulator booting, isn't counted, so the host SHOULD enforce the limit independently. A door that counts time in minutes rounds up, so a positive `TIME_LEFT` never becomes zero minutes, which some door kits treat as no time left or as no limit.
+A door MUST exit before `TIME_LEFT` seconds have passed since it started. The time between the host writing the file and the door starting, such as an emulator booting, isn't counted, so the host SHOULD enforce the limit independently; a door whose clock agrees with the host's MAY subtract the time since `FILE_TIME` instead. A door that counts time in minutes rounds up, so a positive `TIME_LEFT` never becomes zero minutes, which some door kits treat as no time left or as no limit.
 
 ### Door: `[door]`
 
@@ -437,6 +439,9 @@ X_SBBS_SECTION=GAMES
 A DOS door on a FOSSIL driver, with only the required keys plus two optional ones; the screen size is the default 80 by 24:
 
 ```ini
+[file]
+FILE_TIME=2026-09-23T15:15:00
+
 [system]
 SYS_SOFTWARE=Example BBS 2.1
 SYS_NAME=Retro Board
@@ -451,6 +456,7 @@ COMM_CHARSET=CP437
 [user]
 USER_ALIAS=Guest
 USER_NUMBER=7
+USER_KEY=7
 
 [terminal]
 TERM_TYPE=ansi
@@ -717,7 +723,7 @@ Work Synchronet needs beyond writing the file itself, before every key above can
 
 ## Open questions
 
-- [x] **Name:** `DOORDROP.INI` and `DOORDROP_INI`, from draft 0.7; `DROPFILE.INI` was too close to DTS-0001's `DROPFILE.###`. (Case needs no decision: the door gets the full path, and a door that looks the file up by name anyway must ignore case.)
+- [x] **Name:** `DOORDROP.INI` and `DOORDROP_INI`, from draft 0.7; `DROPFILE.INI` was too close to DTS-0001's `DROPFILE.###`. (A door that looks the file up by name looks for `DOORDROP.INI` exactly; no case folding.)
 - [x] **ATASCII and AVATAR:** both added. `atascii` is a character set and a `TERM_TYPE`, as `petscii` is, since ATASCII is a glyph set and a control-code set at once; `avatar` was added for converters from DORINFO1.DEF (see Coverage of older drop files). No host writes either yet.
 - [ ] **Keys the older drop files have and this one doesn't:** the proposals under Coverage of older drop files (`USER_PHONE`, `USER_LOGONS`, `USER_LAST_ON`, the transfer totals, `TIME_USED`): add them, or leave them to vendor keys?
 - [x] **Other file encodings:** a `FILE_CHARSET` key for CP866, CP850, CP865 or Amiga Latin-1 doors was declined. `FILE_UTF8` puts the burden on the host, which must not write UTF-8 to a door that didn't declare support for it and can transcode anything it stores into CP437 or UTF-8; an open-ended `FILE_CHARSET` would instead oblige every door to handle, or at least detect and refuse, any encoding a host might name. A door with its own code path for another encoding converts from UTF-8, as the Encodings table already describes.
