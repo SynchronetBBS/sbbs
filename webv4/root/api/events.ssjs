@@ -10,7 +10,7 @@ http_reply.header['Cache-Control'] = 'no-cache';
 http_reply.header['Content-Type'] = 'text/event-stream';
 http_reply.header['X-Accel-Buffering'] = 'no'; // probably not needed by everyone (nginx)
 
-const keepalive = 15;
+var keepalive = 15;
 var last_send = 0;
 
 /* Bound the stream's lifetime.  A client that goes away without closing the
@@ -38,9 +38,9 @@ function emit(obj) {
     last_send = time();
 }
 
-const callbacks = {};
-const failures = {};
-const max_failures = 5;
+var callbacks = {};
+var failures = {};
+var max_failures = 5;
 if (file_isdir(settings.web_lib + 'events')) {
     if (Array.isArray(http_request.query.subscribe)) {
         http_request.query.subscribe.forEach(function (e) {
