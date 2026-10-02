@@ -99,7 +99,7 @@ Text values are in CP437, or in UTF-8 when `FILE_UTF8` is `1`. The choice is ind
 
 ## Value types
 
-Every key has one of nine types, each parseable with a standard library call or a short loop.
+Every key has one of ten types, each parseable with a standard library call or a short loop.
 
 | Type | Form | Example |
 | --- | --- | --- |
@@ -111,6 +111,7 @@ Every key has one of nine types, each parseable with a standard library call or 
 | bool | `0` (false) or any other unsigned decimal (true), in the form of an `int`; `1` is the only true value unless the key's definition names others | `1` |
 | token | Lowercase ASCII word from a list defined by this spec | `socket` |
 | date | `YYYY-MM-DD` | `1970-01-01` |
+| datetime | `YYYY-MM-DDThh:mm:ss`, local time, followed by the UTC offset as `+hh:mm` or `-hh:mm` when the host knows it, in the form of RFC 3339 [RFC3339] without `Z` or fractional seconds; a host that doesn't know its offset writes none. A reader that wants only the date takes the text before the `T` | `2026-10-02T10:00:00-05:00` |
 | path | A file system path in the syntax of the environment the door runs in, written byte for byte as the host's file system gives it, never converted to the file's text encoding and never cut: a path that contains a control character or doesn't fit is left out | `C:\NODE1` |
 
 A consumer reads a bool with the same decimal parser it uses for ints, or with Win32's `GetPrivateProfileInt()`, and tests the result: `0` is false and any other value is true, as in `atol(value) != 0` in C or `VAL(s$) <> 0` in QBasic. It MUST NOT compare the value against `1`. A producer writes `0` or `1` unless the key's definition names another value.
@@ -138,7 +139,7 @@ Keys that describe the file itself. All are optional, so the section may be empt
 | Key | Type | Meaning | Default |
 | --- | --- | --- | --- |
 | `FILE_UTF8` | bool | `1` = every text value in the file is UTF-8 | `0` (CP437) |
-| `FILE_TIME` | ascii | Local date and time the host wrote the file, in ISO 8601 form with its UTC offset, such as `2026-09-25T14:30:00-07:00`, or without the offset (`2026-09-25T14:30:00`) when the host doesn't know it. It is for people and logs, to spot a stale file left by a misconfigured host or door, not for measuring time: a door uses `TIME_LEFT` for that | none |
+| `FILE_TIME` | datetime | Local date and time the host wrote the file, such as `2026-09-25T14:30:00-07:00`, or `2026-09-25T14:30:00` when the host doesn't know its UTC offset. It is for people and logs, to spot a stale file left by a misconfigured host or door, not for measuring time: a door uses `TIME_LEFT` for that | none |
 
 ### System: `[system]`
 
@@ -743,6 +744,7 @@ Work Synchronet needs beyond writing the file itself, before every key above can
 - [RFC1091] VanBokkelen, J., "Telnet Terminal-Type Option", RFC 1091, February 1989. <https://www.rfc-editor.org/info/rfc1091>
 - [RFC2119] Bradner, S., "Key words for use in RFCs to Indicate Requirement Levels", BCP 14, RFC 2119, March 1997. <https://www.rfc-editor.org/info/bcp14>
 - [RFC4647] Phillips, A. and M. Davis, "Matching of Language Tags", BCP 47, RFC 4647, September 2006. <https://www.rfc-editor.org/info/rfc4647>
+- [RFC3339] Klyne, G. and C. Newman, "Date and Time on the Internet: Timestamps", RFC 3339, July 2002. <https://www.rfc-editor.org/info/rfc3339>
 - [RFC4254] Ylonen, T. and C. Lonvick, "The Secure Shell (SSH) Connection Protocol", RFC 4254, January 2006. <https://www.rfc-editor.org/info/rfc4254>
 - [RFC8174] Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words", BCP 14, RFC 8174, May 2017. <https://www.rfc-editor.org/info/bcp14>
 - [RFC8259] Bray, T., "The JavaScript Object Notation (JSON) Data Interchange Format", RFC 8259, December 2017. <https://www.rfc-editor.org/info/rfc8259>
