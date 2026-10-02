@@ -1434,6 +1434,21 @@ function sanitize_reply(s)
     s = s.replace(/[\u2600-\u27BF]/g, '');
     s = s.replace(/[\uFE00-\uFE0F]/g, '');
     s = s.replace(/\u200D/g, '');
+    /* Typographic punctuation -> ASCII.  The prompt forbids em-dashes
+     * but the model emits them (and curly quotes) anyway; they
+     * mojibake on CP437 terminals and in IRC relays.  UTF-8 bytes
+     * first, as above, then the UTF-16 forms:
+     *   U+2014 em dash      E2 80 94  -> " -- "
+     *   U+2013 en dash      E2 80 93  -> " -- " when spaced, else "-"
+     *   U+2018/9 '' quotes  E2 80 98/99 -> '
+     *   U+201C/D "" quotes  E2 80 9C/9D -> "
+     *   U+2026 ellipsis     E2 80 A6  -> ... */
+    s = s.replace(/ *(?:\xE2\x80\x94|\u2014) */g, ' -- ');
+    s = s.replace(/ +(?:\xE2\x80\x93|\u2013) +/g, ' -- ');
+    s = s.replace(/\xE2\x80\x93|\u2013/g, '-');
+    s = s.replace(/\xE2\x80[\x98\x99]|[\u2018\u2019]/g, "'");
+    s = s.replace(/\xE2\x80[\x9C\x9D]|[\u201C\u201D]/g, '"');
+    s = s.replace(/\xE2\x80\xA6|\u2026/g, '...');
     return s;
 }
 
