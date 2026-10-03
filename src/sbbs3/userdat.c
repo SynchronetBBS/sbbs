@@ -1165,6 +1165,12 @@ bool birthdate_is_valid(scfg_t* cfg, const char* birth)
 	int day = parse_birthdate_field(cfg, birth, BIRTH_DAY);
 	if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31)
 		return false;
+	time_t     now = time(NULL);
+	struct  tm tm;
+	if (localtime_r(&now, &tm) == NULL)
+		return false;
+	if (isoDate_create(year, month, day) > isoDate_create(1900 + tm.tm_year, tm.tm_mon + 1, tm.tm_mday))
+		return false; // #1277
 	static const int days_in_month[] = {
 		31, 28, 31, 30, 31, 30,
 		31, 31, 30, 31, 30, 31
