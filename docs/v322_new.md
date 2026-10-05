@@ -360,6 +360,10 @@
 
 ## SBBSecho
 
+- New `TRACE` netmail robot: netmail addressed to `TRACE` is answered with
+  a reply listing the route it took (its FTS-4009 `Via` lines), like the
+  existing `PING` reply (issue #278)
+
 - FSP-1030 `UCSFROM`/`UCSTO`/`UCSSUBJ` control lines: exported UTF-8
   messages carry the full To, From, or Subject when it does not fit the
   packet header, and imported ones restore it; twit/subject filtering and

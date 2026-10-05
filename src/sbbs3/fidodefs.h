@@ -28,6 +28,7 @@
 #define FIDO_ORIGIN_PREFIX  "\r * Origin: "
 #define FIDO_FILELIST_SEP   " ,"        /* FTS-1 */
 #define FIDO_PING_NAME      "PING"      /* 'To' username for PING netmail (FTS-5001) */
+#define FIDO_TRACE_NAME     "TRACE"     /* 'To' username for TRACE netmail (reply lists the route taken) */
 #define FIDO_AREAMGR_NAME   "AreaFix"   /* De-facto pseudo-standard */
 #define FIDO_CONFMGR_NAME   "ConfMgr"   /* FSC-0057 */
 #define FIDO_CHARSET_ASCII  "ASCII 1"   /* FTS-5003 */

@@ -5020,7 +5020,8 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 	if (robot == NULL) {
 		if (stricmp(to, FIDO_AREAMGR_NAME) == 0
 		    || stricmp(to, "SBBSecho") == 0
-		    || stricmp(to, FIDO_PING_NAME) == 0) {
+		    || stricmp(to, FIDO_PING_NAME) == 0
+		    || stricmp(to, FIDO_TRACE_NAME) == 0) {
 			fmsgbuf = getfmsg(*fp, NULL);
 			if (fmsgbuf == NULL)
 				return IMPORT_FAILURE;
@@ -5043,7 +5044,38 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 			if (stricmp(hdr.from, hdr.to) == 0)
 				lprintf(LOG_NOTICE, "Refusing to auto-reply to NetMail from %s", hdr.from);
 			else {
-				if (stricmp(to, FIDO_PING_NAME) == 0) {
+				if (stricmp(to, FIDO_TRACE_NAME) == 0) {
+					lprintf(LOG_INFO, "TRACE (for %s) Request received from %s", faddrtoa(&addr), hdr.from);
+
+					char  subj[FIDO_SUBJ_LEN];
+
+					REPLACE_CHARS(fmsgbuf, '\1', '@', tp);
+
+					char* body = malloc(strlen(fmsgbuf) + 4000);
+					if (body != NULL) {
+						int bodylen = sprintf(body, "Your TRACE request was received at: %s %s\r"
+						                      , timestr(&scfg, time32(NULL), tmp), smb_zonestr(sys_timezone(&scfg), NULL));
+						bodylen += sprintf(body + bodylen, "by: %s (sysop: %s) @ %s\r"
+						                   , scfg.sys_name, scfg.sys_op, smb_faddrtoa(&scfg.faddr[match], NULL));
+						bodylen += sprintf(body + bodylen, "\rRoute taken from %s (%s):\r\r"
+						                   , hdr.from, faddrtoa(&addr));
+						int hops = 0;
+						for (char* line = fmsgbuf; *line != '\0';) {
+							char* eol = line + strcspn(line, "\r\n");
+							if (strncmp(line, "@Via ", 5) == 0) {
+								bodylen += sprintf(body + bodylen, "%2d: %.*s\r", ++hops, (int)(eol - (line + 5)), line + 5);
+							}
+							line = eol;
+							while (*line == '\r' || *line == '\n')
+								line++;
+						}
+						if (hops == 0)
+							bodylen += sprintf(body + bodylen, "(no Via lines found in the received message)\r");
+						SAFEPRINTF(subj, "Trace: %s", hdr.subj);
+						create_netmail(/* to: */ hdr.from, /* msg: */ NULL, subj, body, /* dest: */ addr, /* src: */ &dest);
+						free(body);
+					}
+				} else if (stricmp(to, FIDO_PING_NAME) == 0) {
 
 					lprintf(LOG_INFO, "PING (for %s) Request received from %s", faddrtoa(&addr), hdr.from);
 
