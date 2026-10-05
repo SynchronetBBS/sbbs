@@ -1680,14 +1680,14 @@ static bool pop3_client_thread(pop3_t* pop3)
 					if ((i = smb_getmsgidx(&smb, &msg)) != SMB_SUCCESS) {
 						errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) getting message index"
 						          , socket, client.protocol, user.alias, i, smb.last_error);
-						break;
+						continue;
 					}
 					if (msg.idx.attr & MSG_DELETE)
 						continue;
 					if ((i = smb_lockmsghdr(&smb, &msg)) != SMB_SUCCESS) {
 						lprintf(LOG_WARNING, "%04d %-5s <%s> !ERROR %d (%s) locking message header #%u"
 						        , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
-						break;
+						continue;
 					}
 					i = smb_getmsghdr(&smb, &msg);
 					smb_unlockmsghdr(&smb, &msg);
@@ -1695,7 +1695,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 						smb_freemsgmem(&msg);
 						errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) line %u, msg #%u"
 						          , socket, client.protocol, user.alias, i, smb.last_error, __LINE__, msg.idx.number);
-						break;
+						continue;
 					}
 					if (!strnicmp(buf, "LIST", 4)) {
 						i = sockprintf(socket, client.protocol, session, "%u %u", l + 1, msg.hdr.length + smb_getmsgtxtlen(&msg));
