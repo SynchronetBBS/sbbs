@@ -969,8 +969,10 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		while (tlen && *(np + (tlen - 1)) <= ' ') /* Takes care of '\r' or spaces */
 			tlen--;
 
+		/* session is dead: don't send attachments or the terminator, which
+		 * would also finalize a DKIM verify capture over a truncated body */
 		if (!sockprintf(socket, prot, sess, "%s%.*s", *np == '.' ? ".":"", tlen, np))
-			break;
+			return lines;
 		bytes += tlen;
 		lines++;
 		if (*(np + len) == '\r')
