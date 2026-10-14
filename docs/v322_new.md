@@ -569,6 +569,8 @@
 - New: `qwk_sec.js`: the QWK message packet menu is now a loadable
   module (SCFG->System->Loadable Modules->QWK Section), replacing the
   built-in menu
+- `tdfiglet.js` gains 167 more TheDraw fonts (`ctrl/tdfonts/`),
+  from the roysac.com collection
 - DD File Lister gains a full RIP user interface for RIP-
   capable terminals
 - DD Message Reader gains per-subboard message-attribute toggles
