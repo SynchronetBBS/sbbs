@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 char* wordwrap(char* inbuf, int len, int oldlen, bool handle_quotes, int mode);
+bool  ansi_is_wrappable(const char* text);
 
 #ifdef __cplusplus
 }

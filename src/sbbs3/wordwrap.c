@@ -24,6 +24,47 @@
 #include "utf8.h"
 #include "sbbsdefs.h"
 
+/*
+ * Returns the length (in bytes) of the complete ANSI CSI sequence
+ * (e.g. "ESC[0;36m") at the beginning of buf, or 0 if there isn't one.
+ * Such sequences occupy no columns in the output.
+ */
+static size_t ansi_csi_len(const char* buf)
+{
+	size_t len = 2;
+
+	if (buf[0] != ESC || buf[1] != '[')
+		return 0;
+	while (buf[len] >= 0x20 && buf[len] <= 0x3f) // parameter and intermediate bytes
+		len++;
+	if (buf[len] < 0x40 || buf[len] > 0x7e) // final byte
+		return 0;
+	return len + 1;
+}
+
+/*
+ * Returns true if the text contains no ANSI CSI sequences other than
+ * SGR (color/attribute) sequences: text that only changes colors can be
+ * word-wrapped, but text that moves the cursor (e.g. ANSI art) can't.
+ */
+bool ansi_is_wrappable(const char* text)
+{
+	const char* p = text;
+	size_t      len;
+
+	while ((p = strchr(p, ESC)) != NULL) {
+		if (p[1] == '[') {
+			len = ansi_csi_len(p);
+			if (len == 0 || p[len - 1] != 'm')
+				return false;
+			p += len;
+		}
+		else
+			p++;
+	}
+	return true;
+}
+
 struct prefix {
 	size_t cols;
 	char *bytes;
@@ -236,6 +277,7 @@ static struct section_len get_word_len(char *buf, int maxlen, int mode)
 	struct section_len ret = {0, 0};
 
 	int                len;
+	size_t             csi_len;
 	for (ret.bytes = 0; ; ret.bytes += len) {
 		len = 1;
 		if (!buf[ret.bytes])
@@ -248,6 +290,10 @@ static struct section_len get_word_len(char *buf, int maxlen, int mode)
 			ret.bytes++;
 			if (buf[ret.bytes] == '\\')
 				break;
+			continue;
+		}
+		else if ((csi_len = ansi_csi_len(buf + ret.bytes)) > 0) {
+			len = csi_len;
 			continue;
 		}
 		else if ((mode & P_RENEGADE) && buf[ret.bytes] == '|' && IS_DIGIT(buf[ret.bytes + 1]) && IS_DIGIT(buf[ret.bytes + 2])) {
@@ -343,6 +389,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, bool handle_quotes
 	int               next_word_len;
 	size_t            new_prefix_len;
 	size_t            alloc_len = oldlen + 1;
+	size_t            len;
 
 	if (alloc_len > 4096)
 		alloc_len = 4096;
@@ -462,7 +509,15 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, bool handle_quotes
 						inpos += 2;
 						break;
 					}
-					// Fall-through
+				// Fall-through
+				case ESC:       // ANSI CSI sequences (e.g. color codes) occupy no columns
+					if ((len = ansi_csi_len(inbuf + inpos)) > 0) {
+						if (!paragraph_append(&ret[paragraph], inbuf + inpos, len))
+							goto fail_return;
+						inpos += len - 1;
+						break;
+					}
+				// Fall-through
 				default:
 					if (!paragraph_append(&ret[paragraph], inbuf + inpos, 1))
 						goto fail_return;

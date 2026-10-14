@@ -25,6 +25,7 @@
 
 #include "sbbs.h"
 #include "utf8.h"
+#include "wordwrap.h"
 
 /****************************************************************************/
 /* Returns true if the message indexed by 'idx' (in the open msg base) has  */
@@ -386,7 +387,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 		return false;
 	char* p = txt;
 	if (!(console & CON_RAW_IN)) {
-		if (strstr(txt, "\x1b[") == NULL)    // Don't word-wrap raw ANSI text
+		if (ansi_is_wrappable(txt))    // Don't word-wrap ANSI art (cursor movement), color codes are okay
 			p_mode |= P_WORDWRAP;
 		p = smb_getplaintext(msg, txt);
 		if (p == NULL)
