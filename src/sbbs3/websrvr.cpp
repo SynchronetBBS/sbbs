@@ -2847,8 +2847,23 @@ static bool parse_headers(http_session_t * session)
 			i = get_header_type(head_line);
 			while (*value && *value <= ' ') value++;
 			if (startup->proxy_ip_header[0] && stricmp(startup->proxy_ip_header, head_line) == 0) {
-				lprintf(LOG_INFO, "%04d %-5s [%s] New IP Address from %s header: %s", session->socket, session->client.protocol, session->host_ip, startup->proxy_ip_header, value);
-				SAFECOPY(session->host_ip, value);
+				uint8_t     ip_addr[16];
+				const char* log_host = value;
+				truncsp(value);
+				if (inet_pton(AF_INET, value, ip_addr) != 1 && inet_pton(AF_INET6, value, ip_addr) != 1) {
+					SAFECOPY(session->host_ip, session->client.addr);
+					lprintf(LOG_NOTICE, "%04d %-5s [%s] !Ignoring invalid IP address in %s header: %s", session->socket, session->client.protocol, session->host_ip, startup->proxy_ip_header, value);
+					log_host = session->host_name;
+				}
+				else {
+					lprintf(LOG_INFO, "%04d %-5s [%s] New IP Address from %s header: %s", session->socket, session->client.protocol, session->host_ip, startup->proxy_ip_header, value);
+					SAFECOPY(session->host_ip, value);
+				}
+				if (session->req.ld != NULL) {
+					FREE_AND_NULL(session->req.ld->hostname);
+					/* FREE()d in http_logging_thread() */
+					session->req.ld->hostname = strdup(log_host);
+				}
 			}
 			switch (i) {
 				case HEAD_AUTH:
