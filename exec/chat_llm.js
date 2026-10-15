@@ -76,6 +76,21 @@ function lang_name(code)
     return LANG_NAMES[key] || code;
 }
 
+/* A boolean chat_llm.ini key.  iniGetObject() already turns "true" /
+ * "false" into booleans (so comparing against the STRING 'false' never
+ * matched, and "= false" was silently ignored); accept the other usual
+ * spellings too.  Unset or empty => dflt. */
+function cfg_bool(v, dflt)
+{
+    if (v === undefined || v === null || v === '')
+        return dflt;
+    if (typeof v == 'boolean')
+        return v;
+    if (typeof v == 'number')
+        return v != 0;
+    return !/^(false|no|off|0)$/i.test(String(v).replace(/^\s+|\s+$/g, ''));
+}
+
 /* The endpoint URL's path tells which API it speaks: Ollama's native
  * /api/chat, or an OpenAI-compatible .../chat/completions.  Returns an
  * error string when it contradicts the configured provider, else ''.
@@ -144,8 +159,7 @@ function load_config(persona_code)
     cfg.keep_alive  = cfg.keep_alive  || '';
 
     /* Persistent-memory knobs (step 1 of the roadmap). */
-    cfg.memory_persist      = (cfg.memory_persist === undefined)
-                              || (cfg.memory_persist != 'false');
+    cfg.memory_persist      = cfg_bool(cfg.memory_persist, true);
     cfg.history_window      = parseInt(cfg.history_window, 10)      || 8;
     cfg.summarize_threshold = parseInt(cfg.summarize_threshold, 10) || 30;
     cfg.summarize_batch     = parseInt(cfg.summarize_batch, 10)     || 10;
@@ -162,8 +176,7 @@ function load_config(persona_code)
      * window: how many of the speaker's recent bot turns to compare
      * against.  min_tokens: replies shorter than this are exempt
      * ("ok", "yep, that works") -- they're legitimately repeatable. */
-    cfg.reply_dedup            = (cfg.reply_dedup === undefined)
-                                 || (cfg.reply_dedup != 'false');
+    cfg.reply_dedup            = cfg_bool(cfg.reply_dedup, true);
     cfg.reply_dedup_similarity = parseFloat(cfg.reply_dedup_similarity) || 0.75;
     cfg.reply_dedup_window     = parseInt(cfg.reply_dedup_window, 10)   || 4;
     cfg.reply_dedup_min_tokens = parseInt(cfg.reply_dedup_min_tokens, 10) || 12;
@@ -211,7 +224,9 @@ function load_config(persona_code)
     /* Streaming toggle. When true (default) chat_openai uses SSE to
      * stream tokens; consumer is responsible for emitting them. Sysops
      * can disable for backends that don't support SSE. */
-    if (cfg.stream === undefined) cfg.stream = 'true';
+    cfg.stream = cfg_bool(cfg.stream, true);
+    cfg.memory_summary_in_prompt = cfg_bool(cfg.memory_summary_in_prompt, true);
+    cfg.simulate_typos = cfg_bool(cfg.simulate_typos, true);
 
     /* Resolve long-form prompts: a *_file= value overrides the inline
      * value. Prompt files live in ctrl/ (sysop-editable plain text,
@@ -1925,8 +1940,7 @@ function ctx_from_user(useron, persona_code, persona_name, supports_utf8)
         var c = load_config(persona_code || 'default');
         if (c.typing_speed_factor !== undefined)
             typing_speed_factor = parseFloat(c.typing_speed_factor);
-        if (c.simulate_typos !== undefined)
-            simulate_typos = (c.simulate_typos != 'false');
+        simulate_typos = c.simulate_typos;
     } catch (e) { /* fall back to defaults */ }
 
     return {
@@ -2257,7 +2271,7 @@ function chat_session(input, ctx)
      * An earlier "PRIVATE NOTES" prose wrapper leaked verbatim into
      * replies on 7B and even 14B models; the XML-ish marker mirrors the
      * <board_archive> pattern that proved leakage-resistant. */
-    if (cfg.memory_summary_in_prompt == 'false')
+    if (!cfg.memory_summary_in_prompt)
         memory.summary = '';
 
     /* For SHORT casual-chat inputs (<= 3 content tokens like "yo",
@@ -2297,7 +2311,7 @@ function chat_session(input, ctx)
      * watches the bot "type" character-by-character.  In multinode
      * and IRC modes the bot's reply is emitted as a single line --
      * stream-to-terminal would break the channel chat format. */
-    var streaming = stream_supported && (cfg.stream !== 'false')
+    var streaming = stream_supported && cfg.stream
                  && (ctx.mode == 'private' || ctx.mode === undefined);
     var opts = {
         streaming:           streaming,
@@ -2469,7 +2483,7 @@ function open_session(ctx)
 
     /* memory_summary_in_prompt enabled by default (XML-ish marker form);
      * sysop opts OUT with = false if a smaller model still leaks. */
-    if (cfg.memory_summary_in_prompt == 'false')
+    if (!cfg.memory_summary_in_prompt)
         memory.summary = '';
 
     ctx.summary    = memory.summary;
@@ -2498,7 +2512,7 @@ function open_session(ctx)
      * watches the bot "type" character-by-character.  In multinode
      * and IRC modes the bot's reply is emitted as a single line --
      * stream-to-terminal would break the channel chat format. */
-    var streaming = stream_supported && (cfg.stream !== 'false')
+    var streaming = stream_supported && cfg.stream
                  && (ctx.mode == 'private' || ctx.mode === undefined);
     var opts = {
         streaming:           streaming,
