@@ -76,6 +76,24 @@ function lang_name(code)
     return LANG_NAMES[key] || code;
 }
 
+/* The endpoint URL's path tells which API it speaks: Ollama's native
+ * /api/chat, or an OpenAI-compatible .../chat/completions.  Returns an
+ * error string when it contradicts the configured provider, else ''.
+ * Ollama answers either API on the same port, so a mismatch doesn't fail
+ * at the HTTP level: it shows up as a confusing "no choices" error, or a
+ * thinking model returning an empty reply after a long wait. */
+function endpoint_provider_mismatch(provider, url, key)
+{
+    var path = String(url || '').replace(/[?#].*$/, '').replace(/\/+$/, '');
+    if (provider == 'openai' && /\/api\/chat$/.test(path))
+        return key + '=' + url + " is Ollama's native API, but provider = openai;"
+            + ' set provider = ollama (or use .../v1/chat/completions)';
+    if (provider == 'ollama' && /\/chat\/completions$/.test(path))
+        return key + '=' + url + ' is an OpenAI-compatible API, but provider = ollama;'
+            + ' use http://<host>:11434/api/chat (or set provider = openai)';
+    return '';
+}
+
 function load_config(persona_code)
 {
     var f = new File(CHAT_LLM_CONFIG_FILE);
@@ -107,6 +125,11 @@ function load_config(persona_code)
     /* Optional secondary endpoint.  When set and the primary endpoint
      * fails (transport error / non-200), dispatch() retries once here. */
     cfg.endpoint_fallback = cfg.endpoint_fallback || '';
+    var mismatch = endpoint_provider_mismatch(cfg.provider, cfg.endpoint, 'endpoint')
+        || endpoint_provider_mismatch(cfg.provider, cfg.endpoint_fallback,
+                                      'endpoint_fallback');
+    if (mismatch)
+        throw new Error(CHAT_LLM_CONFIG_FILE + ': ' + mismatch);
     cfg.max_tokens  = parseInt(cfg.max_tokens, 10)  || DEFAULT_TOKENS;
     cfg.temperature = parseFloat(cfg.temperature)   || DEFAULT_TEMP;
     cfg.timeout     = parseInt(cfg.timeout, 10)     || DEFAULT_TIMEOUT;
@@ -645,8 +668,12 @@ function chat_openai(cfg, messages, opts)
     if (http.response_code != 200)
         throw new Error('HTTP ' + http.response_code + ': ' + raw);
     var resp = JSON.parse(raw);
-    if (!resp.choices || !resp.choices.length)
+    if (!resp.choices || !resp.choices.length) {
+        if (resp.message)   /* Ollama-native response shape */
+            throw new Error('provider = openai, but ' + cfg.endpoint
+                + " answered in Ollama's native format; set provider = ollama");
         throw new Error('no choices in response: ' + raw);
+    }
     return resp.choices[0].message.content;
 }
 
@@ -1233,8 +1260,13 @@ function chat_ollama(cfg, messages, opts)
         if (http.response_code != 200)
             throw new Error('HTTP ' + http.response_code + ': ' + raw);
         var resp = JSON.parse(raw);
-        if (!resp.message)
+        if (!resp.message) {
+            if (resp.choices)   /* OpenAI-compatible response shape */
+                throw new Error('provider = ollama, but ' + cfg.endpoint
+                    + ' answered in OpenAI-compatible format; use'
+                    + ' http://<host>:11434/api/chat or set provider = openai');
             throw new Error('no message in response: ' + raw);
+        }
 
         var tool_calls = resp.message.tool_calls;
         if (!tool_calls || !tool_calls.length) {
