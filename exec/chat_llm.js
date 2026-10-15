@@ -1965,13 +1965,14 @@ function persona_parts(persona_code)
 }
 
 /* Directory holding a persona's files (RAG index, IRC state, memory):
- * data/chat/<name>/.  Created on demand (mkdir is fire-and-forget --
- * false when it already exists, which is fine). */
+ * data/chat/<name>/.  Created on demand, parents included: a fresh
+ * install has no data/chat/ yet, and a plain mkdir() creates only the
+ * last level. */
 function persona_dir(persona_code)
 {
     var dir = system.data_dir + MEMORY_SUBDIR + '/'
             + persona_parts(persona_code).name + '/';
-    mkdir(dir);
+    mkpath(dir);
     return dir;
 }
 

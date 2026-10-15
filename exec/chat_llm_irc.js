@@ -277,7 +277,7 @@ var BOT_FILE_BASE = (function () {
 var PERSONA_NAME  = safe_id(String(PERSONA).split(":")[0] || "guru");
 var PERSONA_PROTO = safe_id(String(PERSONA).split(":")[1] || "irc");
 var PERSONA_DIR   = system.data_dir + "chat/" + PERSONA_NAME + "/";
-mkdir(PERSONA_DIR);   /* fire-and-forget; false if it already exists */
+mkpath(PERSONA_DIR);  /* parents too: data/chat/ may not exist yet */
 
 /* Stop semfile -- the bot's main loop checks for this file's existence
  * every iteration.  When present, the bot sends a graceful QUIT to IRC

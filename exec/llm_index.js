@@ -220,9 +220,9 @@ function build_index(chunks)
 
 function write_index(idx, output_path)
 {
-    /* mkdir parent. */
+    /* Create the parent dir, and ITS parents (e.g. data/chat/). */
     var dir = output_path.replace(/\/[^\/]*$/, '/');
-    mkdir(dir);
+    mkpath(dir);
 
     var tmp = output_path + '.tmp';
     var f = new File(tmp);
