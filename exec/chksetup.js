@@ -2,7 +2,7 @@
 // @format.tab-size 4
 
 "use strict";
-var REVISION = '1.21';
+var REVISION = '1.22';
 require("http.js", 'HTTPRequest');
 require("sbbsdefs.js", 'USER_DELETED');
 require("smbdefs.js", 'SMB_HYPERALLOC');
@@ -325,6 +325,35 @@ var tests = {
 		return output;
 	},
 	
+	check_dove_net_hub: function(options)
+	{
+		var QHUB_RETCTLA   = (1<<1);	// See sbbsdefs.h
+		var QHUB_CTRL_A    = (1<<0) | QHUB_RETCTLA;
+		var QHUB_NOKLUDGES = (1<<14);
+		var QHUB_NOHEADERS = (1<<16);
+		var QHUB_NOVOTING  = (1<<17);
+		var output = [];
+		var section = "qhub:VERT";
+		var file = new File(file_cfgname(system.ctrl_dir, "msgs.ini"));
+		if(!file.open("r"))
+			return;
+		var configured = file.iniGetSections("qhub:").indexOf(section) >= 0;
+		var enabled = file.iniGetValue(section, "enabled", true);
+		var settings = file.iniGetValue(section, "settings", 0);
+		file.close();
+		if(!configured || !enabled)
+			return;
+		if(settings & QHUB_NOHEADERS)
+			output.push("DOVE-Net: VERT QWK hub is NOT configured to include HEADERS.DAT file");
+		else if(!(settings & QHUB_NOKLUDGES))
+			output.push("DOVE-Net: VERT QWK hub is configured to include redundant kludge lines");
+		if(settings & QHUB_NOVOTING)
+			output.push("DOVE-Net: VERT QWK hub is NOT configured to include VOTING.DAT file");
+		if((settings & QHUB_CTRL_A) != QHUB_RETCTLA)
+			output.push("DOVE-Net: VERT QWK hub is NOT configured to leave in Ctrl-A codes");
+		return output;
+	},
+
 	check_sub_cfgs: function(options)
 	{
 		var output = [];
