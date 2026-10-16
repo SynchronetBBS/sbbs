@@ -659,6 +659,9 @@
   `ctrl/text.ini` `[JS]`-section customization
 - Good Time Trivia gains a `useDoveNetSyncData` option that
   auto-finds the Dove-Net data sub-board (issue #1101)
+- `chksetup.js` checks the DOVE-Net (VERT) QWK hub settings, reporting
+  when HEADERS.DAT or VOTING.DAT isn't included, kludge lines are
+  redundantly included, or Ctrl-A codes aren't left in
 - `delfiles.js` locks the file base during deletion to prevent
   FTP-upload contention
 - Stock JS modules updated for SpiderMonkey 128 compatibility
