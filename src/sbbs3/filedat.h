@@ -82,6 +82,10 @@ DLLEXPORT long			create_archive(const char* archive, const char* format
 DLLEXPORT char*			cmdstr(scfg_t*, user_t*, const char* instr, const char* fpath, const char* fspec, char* cmd, size_t);
 DLLEXPORT long			extract_files_from_archive(const char* archive, const char* outdir, const char* allowed_filename_chars
 						                           ,bool with_path, bool overwrite, long max_files, str_list_t file_list, bool recurse, char* error, size_t);
+struct archive;
+struct archive_entry;
+DLLEXPORT struct archive* new_archive_reader(void);
+DLLEXPORT int			check_archive_entry(struct archive*, struct archive_entry*, const char* archive);
 DLLEXPORT int			archive_type(const char* archive, char* str, size_t size);
 extern const char*		supported_archive_formats[];
 DLLEXPORT bool			file_type_match(const char* filename, const char* type);

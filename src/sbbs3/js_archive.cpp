@@ -246,12 +246,10 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 
-	if ((ar = archive_read_new()) == NULL) {
+	if ((ar = new_archive_reader()) == NULL) {
 		JS_ReportError(cx, "archive_read_new() returned NULL");
 		return JS_FALSE;
 	}
-	archive_read_support_filter_all(ar);
-	archive_read_support_format_all(ar);
 	if ((result = archive_read_open_filename(ar, filename, 10240)) != ARCHIVE_OK) {
 		JS_ReportError(cx, "archive_read_open_filename() returned %d: %s"
 		               , result, archive_error_string(ar));
@@ -270,6 +268,8 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 	jsint  len = 0;
 	while (1) {
 		result = archive_read_next_header(ar, &entry);
+		if (result == ARCHIVE_OK)
+			result = check_archive_entry(ar, entry, filename);
 		if (result != ARCHIVE_OK) {
 			if (result != ARCHIVE_EOF) {
 				JS_ReportError(cx, "archive_read_next_header() returned %d: %s"
@@ -344,9 +344,6 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 			JS_SetProperty(cx, obj, "hardlink", &val);
 		}
 
-		val = DOUBLE_TO_JSVAL((jsdouble)archive_entry_size(entry));
-		JS_SetProperty(cx, obj, "size", &val);
-
 		val = DOUBLE_TO_JSVAL((jsdouble)archive_entry_mtime(entry));
 		JS_SetProperty(cx, obj, "time", &val);
 
@@ -393,13 +390,17 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 			JS_SetProperty(cx, obj, "fflags", &val);
 		}
 
-		if (hash && archive_entry_filetype(entry) == AE_IFREG) {
+		int64_t fsize = archive_entry_size(entry);
+		// A "raw" (bare compressed file) entry's size is unknown until decompressed
+		bool    sized = archive_entry_size_is_set(entry);
+		if ((hash || !sized) && archive_entry_filetype(entry) == AE_IFREG) {
 			MD5      md5_ctx;
 			SHA1_CTX sha1_ctx;
 			uint8_t  md5[MD5_DIGEST_SIZE];
 			uint8_t  sha1[SHA1_DIGEST_SIZE];
 			uint16_t crc16 = 0;
 			uint32_t crc32 = 0;
+			int64_t  total = 0;
 
 			MD5_open(&md5_ctx);
 			SHA1Init(&sha1_ctx);
@@ -412,6 +413,9 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 				result = archive_read_data_block(ar, &buff, &size, &offset);
 				if (result != ARCHIVE_OK)
 					break;
+				total += size;
+				if (!hash)
+					continue;
 				crc32 = crc32i(~crc32, static_cast<const char*>(buff), size);
 				crc16 = icrc16(crc16, static_cast<const char*>(buff), size);
 				MD5_digest(&md5_ctx, buff, size);
@@ -419,24 +423,31 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 			}
 			MD5_close(&md5_ctx, md5);
 			SHA1Final(&sha1_ctx, sha1);
-			val = UINT_TO_JSVAL(crc16);
-			if (!JS_SetProperty(cx, obj, "crc16", &val))
-				break;
-			val = UINT_TO_JSVAL(crc32);
-			if (!JS_SetProperty(cx, obj, "crc32", &val))
-				break;
-			char hex[128];
-			if ((js_str = JS_NewStringCopyZ(cx, MD5_hex(hex, md5))) == NULL)
-				break;
-			val = STRING_TO_JSVAL(js_str);
-			if (!JS_SetProperty(cx, obj, "md5", &val))
-				break;
-			if ((js_str = JS_NewStringCopyZ(cx, SHA1_hex(hex, sha1))) == NULL)
-				break;
-			val = STRING_TO_JSVAL(js_str);
-			if (!JS_SetProperty(cx, obj, "sha1", &val))
-				break;
+			if (!sized && result == ARCHIVE_EOF)
+				fsize = total;
+			if (hash) {
+				val = UINT_TO_JSVAL(crc16);
+				if (!JS_SetProperty(cx, obj, "crc16", &val))
+					break;
+				val = UINT_TO_JSVAL(crc32);
+				if (!JS_SetProperty(cx, obj, "crc32", &val))
+					break;
+				char hex[128];
+				if ((js_str = JS_NewStringCopyZ(cx, MD5_hex(hex, md5))) == NULL)
+					break;
+				val = STRING_TO_JSVAL(js_str);
+				if (!JS_SetProperty(cx, obj, "md5", &val))
+					break;
+				if ((js_str = JS_NewStringCopyZ(cx, SHA1_hex(hex, sha1))) == NULL)
+					break;
+				val = STRING_TO_JSVAL(js_str);
+				if (!JS_SetProperty(cx, obj, "sha1", &val))
+					break;
+			}
 		}
+		val = DOUBLE_TO_JSVAL((jsdouble)fsize);
+		if (!JS_SetProperty(cx, obj, "size", &val))
+			break;
 
 		val = OBJECT_TO_JSVAL(obj);
 		if (!JS_SetElement(cx, array, len++, &val))
@@ -480,12 +491,10 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 
-	if ((ar = archive_read_new()) == NULL) {
+	if ((ar = new_archive_reader()) == NULL) {
 		JS_ReportError(cx, "archive_read_new() returned NULL");
 		return JS_FALSE;
 	}
-	archive_read_support_filter_all(ar);
-	archive_read_support_format_all(ar);
 	if ((result = archive_read_open_filename(ar, filename, 10240)) != ARCHIVE_OK) {
 		JS_ReportError(cx, "archive_read_open_filename() returned %d: %s"
 		               , result, archive_error_string(ar));
@@ -497,6 +506,8 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	rc = JS_SUSPENDREQUEST(cx);
 	while (1) {
 		result = archive_read_next_header(ar, &entry);
+		if (result == ARCHIVE_OK)
+			result = check_archive_entry(ar, entry, filename);
 		if (result != ARCHIVE_OK) {
 			if (result != ARCHIVE_EOF) {
 				JS_ReportError(cx, "archive_read_next_header() returned %d: %s"

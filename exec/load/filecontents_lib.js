@@ -22,7 +22,7 @@ var VERSION = 1;
 // negative record stored because nothing could read the file has to be
 // re-examined when the extractor set changes, and nothing else would trigger
 // that, since the file itself never changed.
-var EXTRACTORS = 1;
+var EXTRACTORS = 2;
 
 // ILLEGAL_FILENAME_CHARS already excludes " and \, so double-quoting a path for
 // the shell cannot be broken out of that way.  $ and a backtick are still

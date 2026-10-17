@@ -154,10 +154,10 @@ if (got !== null) {
 
 /* ---- staleness ---- */
 
-var stale = { v: 1, sz: rec.sz + 1, mt: rec.mt, xv: 1, l: [] };
+var stale = { v: 1, sz: rec.sz + 1, mt: rec.mt, xv: contents.EXTRACTORS, l: [] };
 check(contents.current(stale, zip) === false,
       "a size mismatch invalidates a record");
-stale = { v: 1, sz: rec.sz, mt: rec.mt + 1, xv: 1, l: [] };
+stale = { v: 1, sz: rec.sz, mt: rec.mt + 1, xv: contents.EXTRACTORS, l: [] };
 check(contents.current(stale, zip) === false,
       "an mtime mismatch invalidates a record");
 stale = { v: 1, sz: rec.sz, mt: rec.mt, xv: 0, err: "nope" };
@@ -173,17 +173,17 @@ var tool = contents.external();
 check(tool.indexOf("lsar/") === 0,
       "contents.external() finds lsar and its version (got '" + tool + "')");
 
-var noext = { v: 1, sz: rec.sz, mt: rec.mt, xv: 1,
+var noext = { v: 1, sz: rec.sz, mt: rec.mt, xv: contents.EXTRACTORS,
               err: "Unrecognized archive format", ext: "" };
 check(contents.current(noext, zip) === false,
       "a failure recorded by a host with no external tool is not trusted here");
 
-var sameext = { v: 1, sz: rec.sz, mt: rec.mt, xv: 1,
+var sameext = { v: 1, sz: rec.sz, mt: rec.mt, xv: contents.EXTRACTORS,
                 err: "Unrecognized archive format", ext: tool };
 check(contents.current(sameext, zip) === true,
       "a failure recorded with the same tool this host has is trusted");
 
-var otherext = { v: 1, sz: rec.sz, mt: rec.mt, xv: 1,
+var otherext = { v: 1, sz: rec.sz, mt: rec.mt, xv: contents.EXTRACTORS,
                  err: "Unrecognized archive format", ext: "someothertool" };
 check(contents.current(otherext, zip) === false,
       "a failure recorded with a different tool is re-examined");

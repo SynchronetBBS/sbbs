@@ -975,18 +975,55 @@ char* format_filename(const char* fname, char* buf, size_t size, bool pad)
 	return buf;
 }
 
+// Returns a libarchive reader with every filter and format enabled, including
+// the "raw" format (which archive_read_support_format_all() excludes), so a
+// bare compressed file (e.g. .gz, .bz2, .xz) reads as a single-entry archive.
+// Pass each header read through check_archive_entry() (#1278).
+struct archive* new_archive_reader(void)
+{
+	struct archive* ar = archive_read_new();
+
+	if (ar != NULL) {
+		archive_read_support_filter_all(ar);
+		archive_read_support_format_all(ar);
+		archive_read_support_format_raw(ar);
+	}
+	return ar;
+}
+
+// The "raw" format matches any input, so accept it only when a decompression
+// filter was applied: otherwise every non-archive file would "open" as one.
+// A raw entry is named after the archive file minus its compression extension
+// (a gzip header's stored name is optional, and may contain a path).
+int check_archive_entry(struct archive* ar, struct archive_entry* entry, const char* archive)
+{
+	char  name[MAX_PATH + 1];
+	char* ext;
+
+	if (archive_format(ar) != ARCHIVE_FORMAT_RAW)
+		return ARCHIVE_OK;
+	if (archive_filter_code(ar, 0) == ARCHIVE_FILTER_NONE) {
+		archive_set_error(ar, EINVAL, "Unrecognized archive format");
+		return ARCHIVE_FATAL;
+	}
+	SAFECOPY(name, getfname(archive));
+	ext = getfext(name);
+	if (ext != NULL && ext != name)
+		*ext = '\0';
+	archive_entry_copy_pathname(entry, name);
+	return ARCHIVE_OK;
+}
+
 int archive_type(const char* archive, char* str, size_t size)
 {
 	int                   result;
 	struct archive *      ar;
 	struct archive_entry *entry;
 
-	if ((ar = archive_read_new()) == NULL) {
+	if ((ar = new_archive_reader()) == NULL) {
 		safe_snprintf(str, size, "archive_read_new returned NULL");
 		return -1;
 	}
-	archive_read_support_filter_all(ar);
-	archive_read_support_format_all(ar);
 	if ((result = archive_read_open_filename(ar, archive, 10240)) != ARCHIVE_OK) {
 		safe_snprintf(str, size, "archive_read_open_filename returned %d: %s"
 		              , result, archive_error_string(ar));
@@ -997,6 +1034,8 @@ int archive_type(const char* archive, char* str, size_t size)
 	if (result >= 0) {
 		int comp = result;
 		result = archive_read_next_header(ar, &entry);
+		if (result == ARCHIVE_OK)
+			result = check_archive_entry(ar, entry, archive);
 		if (result != ARCHIVE_OK)
 			safe_snprintf(str, size, "archive_read_next_header returned %d: %s"
 			              , result, archive_error_string(ar));
@@ -1139,12 +1178,10 @@ long extract_files_from_archive(const char* archive, const char* outdir, const c
 		maxerrlen = 0;
 	if (maxerrlen >= 1)
 		*error = '\0';
-	if ((ar = archive_read_new()) == NULL) {
+	if ((ar = new_archive_reader()) == NULL) {
 		safe_snprintf(error, maxerrlen, "archive_read_new returned NULL");
 		return -1;
 	}
-	archive_read_support_filter_all(ar);
-	archive_read_support_format_all(ar);
 	if ((result = archive_read_open_filename(ar, archive, 10240)) != ARCHIVE_OK) {
 		safe_snprintf(error, maxerrlen, "archive_read_open_filename returned %d: %s"
 		              , result, archive_error_string(ar));
@@ -1153,6 +1190,8 @@ long extract_files_from_archive(const char* archive, const char* outdir, const c
 	}
 	while (1) {
 		result = archive_read_next_header(ar, &entry);
+		if (result == ARCHIVE_OK)
+			result = check_archive_entry(ar, entry, archive);
 		if (result != ARCHIVE_OK) {
 			if (result != ARCHIVE_EOF)
 				safe_snprintf(error, maxerrlen, "archive_read_next_header returned %d: %s"
