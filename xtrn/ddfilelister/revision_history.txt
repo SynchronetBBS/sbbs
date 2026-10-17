@@ -5,6 +5,16 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.36     2026-10-16   Some small fixes based on Cursor AI code review:
+                      - Possible next-page/file-delete conflict with
+                        traditional UI mode: Those actions shared the same
+                        value in the code (10); NEXT_PAGE & higher were
+                        incremented by 1.
+                      - TraditionalUsesSyncStock setting wouldn't be used due
+                        to missing "if" in a conditional statement.
+                      - Legacy .cfg filename fallback tried .ini instead of
+                        .cfg (oops).
+                      - Code typo: dispayUserAvatars -> displayUserAvatars
 2.35     2026-03-24   If the configuration or theme configuration filename
                       can't be opened, output an error only if the user is the
                       sysop (don't bug users about that).
