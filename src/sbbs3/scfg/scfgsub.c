@@ -52,6 +52,24 @@ bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc)
 				break;
 		}
 	}
+	/* Static QWK conference numbers must be unique: use the group's next */
+	if (new_subboard->qwkconf != 0) {
+		uint16_t confnum = 0;
+		for (int u = 0; u < cfg.total_subs; u++) {
+			if (cfg.sub[u]->grp == group_num && cfg.sub[u]->qwkconf > confnum)
+				confnum = cfg.sub[u]->qwkconf;
+		}
+		new_subboard->qwkconf = 0;
+		while (new_subboard->qwkconf == 0 && confnum < UINT16_MAX) {
+			confnum++;
+			int n;
+			for (n = 0; n < cfg.total_subs; n++)
+				if (cfg.sub[n]->qwkconf == confnum)
+					break;
+			if (n == cfg.total_subs)
+				new_subboard->qwkconf = confnum;
+		}
+	}
 	new_subboard->cfg_modified = true;
 	if (pasted_sub != NULL) {
 		*new_subboard = *pasted_sub;
