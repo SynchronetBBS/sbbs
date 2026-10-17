@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 project(deucessh VERSION 0.1 LANGUAGES C)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/DeuceSSHCStandard.cmake")
 
 # Default to Release for single-config generators when the user hasn't
 # picked a build type.  Multi-config generators (Visual Studio, Xcode)
@@ -94,17 +95,8 @@ endif()
 
 include(CheckCSourceCompiles)
 
-# Probes below must match the -std= flag the real targets build with
-# (C_STANDARD 17).  Probing at -std=c11 would silently pass on SDKs
-# that guard declarations on __STDC_VERSION__ >= 201710L and still
-# fail the real compile.
-set(CMAKE_REQUIRED_FLAGS "-std=c17")
-
-# C11 runtime library sanity check.  CMake's C_STANDARD 17 +
-# C_STANDARD_REQUIRED ON verifies that the compiler is on its known-
-# C17-capable list (AppleClang 6+ is, regardless of SDK vintage); it
-# does NOT compile anything to check that the libc / SDK actually
-# ships the C11 functions <time.h> promises.  Without this probe an
+# Compiler language-mode support does not establish that the SDK/libc
+# ships the C11 functions <time.h> promises. Without this probe an
 # older macOS SDK (pre-10.15 lacks timespec_get / TIME_UTC) gets all
 # the way to "implicit declaration of function 'timespec_get'" at
 # real-target compile time while configure thinks everything's fine.
@@ -311,10 +303,11 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 	# gets none of the actual mitigation.  Gate the probe on the
 	# unused-arg warning so silently-discarded flags are correctly
 	# rejected.  In Debug builds we additionally inherit -Werror so
-	# the probe matches the real compile discipline.  -std=c17 matches
-	# the real targets.
-	set(CMAKE_REQUIRED_FLAGS
-	    "-std=c17 -Werror=unused-command-line-argument ${DEUCESSH_PROBE_WERROR}")
+	# the probe matches the real compile discipline. CMake selects the
+	# same C dialect for these probes and the real targets.
+	set(_dssh_saved_required_flags "${CMAKE_REQUIRED_FLAGS}")
+	string(APPEND CMAKE_REQUIRED_FLAGS
+	    " -Werror=unused-command-line-argument ${DEUCESSH_PROBE_WERROR}")
 
 	check_c_compiler_flag(-Wconversion HAVE_WCONVERSION)
 	if(HAVE_WCONVERSION)
@@ -396,6 +389,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
 				-mbranch-protection=standard)
 		endif()
 	endif()
+	set(CMAKE_REQUIRED_FLAGS "${_dssh_saved_required_flags}")
 elseif(MSVC)
 	list(APPEND DEUCESSH_COMPILE_OPTIONS /W4)
 	list(APPEND DEUCESSH_COMPILE_OPTIONS /experimental:c11atomics)
@@ -423,7 +417,7 @@ set(DEUCESSH_INSTALL_TARGETS "")
 if(DEUCESSH_BUILD_STATIC)
 	add_library(deucessh_static STATIC ${DEUCESSH_SOURCES})
 	add_library(deucessh::static ALIAS deucessh_static)
-	set_property(TARGET deucessh_static PROPERTY C_STANDARD 17)
+	set_property(TARGET deucessh_static PROPERTY C_STANDARD ${DEUCESSH_C_STANDARD})
 	set_property(TARGET deucessh_static PROPERTY C_STANDARD_REQUIRED ON)
 	if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 		set_property(TARGET deucessh_static PROPERTY CXX_STANDARD 20)
@@ -458,7 +452,7 @@ endif()
 if(DEUCESSH_BUILD_SHARED)
 	add_library(deucessh_shared SHARED ${DEUCESSH_SOURCES})
 	add_library(deucessh::shared ALIAS deucessh_shared)
-	set_property(TARGET deucessh_shared PROPERTY C_STANDARD 17)
+	set_property(TARGET deucessh_shared PROPERTY C_STANDARD ${DEUCESSH_C_STANDARD})
 	set_property(TARGET deucessh_shared PROPERTY C_STANDARD_REQUIRED ON)
 	if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 		set_property(TARGET deucessh_shared PROPERTY CXX_STANDARD 20)

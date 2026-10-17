@@ -28,6 +28,11 @@ No proprietary extensions (no `@` algorithm names).
 
 ## Building
 
+CMake selects C17 when supported. On macOS x86 only, a compiler without
+C17 mode may use C11 instead. Library targets, tests, and capability probes
+use the same dialect. Runtime requirements, including `timespec_get()` and
+atomics, are unchanged; selecting C11 does not supply missing SDK functions.
+
 ```sh
 cmake -S . -B build
 cmake --build build -j8

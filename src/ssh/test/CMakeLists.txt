@@ -1,3 +1,7 @@
+add_test(NAME dssh_c_standard COMMAND "${CMAKE_COMMAND}"
+	"-DTEST_ROOT=${CMAKE_CURRENT_BINARY_DIR}/c-standard-tests"
+	-P "${CMAKE_CURRENT_SOURCE_DIR}/c_standard.cmake")
+
 # Cached key files for test runs — avoids repeated RSA keygen.
 # These are stored in the build directory and reused across runs.
 set(DSSH_TEST_KEY_ENV
@@ -12,7 +16,7 @@ endforeach()
 
 # Test-instrumented static library (exposes DSSH_TESTABLE functions)
 add_library(deucessh_test_lib STATIC ${DSSH_TEST_LIB_SOURCES})
-set_property(TARGET deucessh_test_lib PROPERTY C_STANDARD 17)
+set_property(TARGET deucessh_test_lib PROPERTY C_STANDARD ${DEUCESSH_C_STANDARD})
 set_property(TARGET deucessh_test_lib PROPERTY C_STANDARD_REQUIRED ON)
 if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 	set_property(TARGET deucessh_test_lib PROPERTY CXX_STANDARD 20)
@@ -40,7 +44,7 @@ target_compile_options(deucessh_test_lib PRIVATE
 
 # Mock I/O library
 add_library(dssh_mock_io STATIC mock_io.c)
-set_property(TARGET dssh_mock_io PROPERTY C_STANDARD 17)
+set_property(TARGET dssh_mock_io PROPERTY C_STANDARD ${DEUCESSH_C_STANDARD})
 set_property(TARGET dssh_mock_io PROPERTY C_STANDARD_REQUIRED ON)
 target_include_directories(dssh_mock_io PUBLIC
 	${PROJECT_SOURCE_DIR}
@@ -49,13 +53,13 @@ target_link_libraries(dssh_mock_io PRIVATE deucessh_test_lib)
 
 # Library-only test allocator (macro-based, doesn't affect OpenSSL)
 add_library(dssh_test_allocator STATIC dssh_test_alloc.c)
-set_property(TARGET dssh_test_allocator PROPERTY C_STANDARD 17)
+set_property(TARGET dssh_test_allocator PROPERTY C_STANDARD ${DEUCESSH_C_STANDARD})
 set_property(TARGET dssh_test_allocator PROPERTY C_STANDARD_REQUIRED ON)
 target_include_directories(dssh_test_allocator PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR})
 # Crypto + C11 threads failure injection library
 add_library(dssh_test_ossl STATIC dssh_test_ossl.c)
-set_property(TARGET dssh_test_ossl PROPERTY C_STANDARD 17)
+set_property(TARGET dssh_test_ossl PROPERTY C_STANDARD ${DEUCESSH_C_STANDARD})
 set_property(TARGET dssh_test_ossl PROPERTY C_STANDARD_REQUIRED ON)
 target_include_directories(dssh_test_ossl PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR})
@@ -79,7 +83,7 @@ target_link_libraries(deucessh_test_lib INTERFACE
 # Apple's Mach-O linker does not support the GNU --wrap option.
 if(NOT APPLE)
 	add_library(dssh_mock_alloc STATIC mock_alloc.c)
-	set_property(TARGET dssh_mock_alloc PROPERTY C_STANDARD 17)
+	set_property(TARGET dssh_mock_alloc PROPERTY C_STANDARD ${DEUCESSH_C_STANDARD})
 	set_property(TARGET dssh_mock_alloc PROPERTY C_STANDARD_REQUIRED ON)
 	target_include_directories(dssh_mock_alloc PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR})
@@ -91,7 +95,7 @@ endif()
 # Helper function for adding test executables
 function(dssh_add_test test_name source_file)
 	add_executable(dssh_test_${test_name} ${source_file})
-	set_property(TARGET dssh_test_${test_name} PROPERTY C_STANDARD 17)
+	set_property(TARGET dssh_test_${test_name} PROPERTY C_STANDARD ${DEUCESSH_C_STANDARD})
 	set_property(TARGET dssh_test_${test_name} PROPERTY C_STANDARD_REQUIRED ON)
 	target_include_directories(dssh_test_${test_name} PRIVATE
 		${PROJECT_SOURCE_DIR}
@@ -591,7 +595,7 @@ endif()
 # ================================================================
 
 add_library(dssh_test_algos STATIC test_enc.c test_mac.c)
-set_property(TARGET dssh_test_algos PROPERTY C_STANDARD 17)
+set_property(TARGET dssh_test_algos PROPERTY C_STANDARD ${DEUCESSH_C_STANDARD})
 set_property(TARGET dssh_test_algos PROPERTY C_STANDARD_REQUIRED ON)
 target_include_directories(dssh_test_algos PUBLIC
 	${PROJECT_SOURCE_DIR}
