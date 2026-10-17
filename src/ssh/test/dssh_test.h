@@ -44,10 +44,15 @@ struct dssh_test_entry {
 	dssh_test_fn fn;
 };
 
+/* Called before an assertion returns, while stack-owned contexts and thread
+ * arguments are still alive.  Cleanup after the test returns is too late. */
+void dssh_test_failure_cleanup(void);
+
 #define ASSERT_TRUE(cond) do { \
 	if (!(cond)) { \
 		fprintf(stderr, "  ASSERT_TRUE failed: %s\n    at %s:%d\n", \
 		    #cond, __FILE__, __LINE__); \
+		dssh_test_failure_cleanup(); \
 		return TEST_FAIL; \
 	} \
 } while (0)
@@ -56,6 +61,7 @@ struct dssh_test_entry {
 	if ((cond)) { \
 		fprintf(stderr, "  ASSERT_FALSE failed: %s\n    at %s:%d\n", \
 		    #cond, __FILE__, __LINE__); \
+		dssh_test_failure_cleanup(); \
 		return TEST_FAIL; \
 	} \
 } while (0)
@@ -66,6 +72,7 @@ struct dssh_test_entry {
 	if (_a != _b) { \
 		fprintf(stderr, "  ASSERT_EQ failed: %s == %lld, expected %s == %lld\n    at %s:%d\n", \
 		    #a, _a, #b, _b, __FILE__, __LINE__); \
+		dssh_test_failure_cleanup(); \
 		return TEST_FAIL; \
 	} \
 } while (0)
@@ -76,6 +83,7 @@ struct dssh_test_entry {
 	if (_a == _b) { \
 		fprintf(stderr, "  ASSERT_NE failed: %s == %s == %lld\n    at %s:%d\n", \
 		    #a, #b, _a, __FILE__, __LINE__); \
+		dssh_test_failure_cleanup(); \
 		return TEST_FAIL; \
 	} \
 } while (0)
@@ -87,6 +95,7 @@ struct dssh_test_entry {
 	if (_a != _b) { \
 		fprintf(stderr, "  ASSERT_EQ_U failed: %s == %llu, expected %s == %llu\n    at %s:%d\n", \
 		    #a, _a, #b, _b, __FILE__, __LINE__); \
+		dssh_test_failure_cleanup(); \
 		return TEST_FAIL; \
 	} \
 } while (0)
@@ -96,6 +105,7 @@ struct dssh_test_entry {
 	if (_r < 0) { \
 		fprintf(stderr, "  ASSERT_OK failed: %s returned %" PRId64 "\n    at %s:%d\n", \
 		    #expr, _r, __FILE__, __LINE__); \
+		dssh_test_failure_cleanup(); \
 		return TEST_FAIL; \
 	} \
 } while (0)
@@ -105,6 +115,7 @@ struct dssh_test_entry {
 	if (_r != (int64_t)(code)) { \
 		fprintf(stderr, "  ASSERT_ERR failed: %s returned %" PRId64 ", expected %d (%s)\n    at %s:%d\n", \
 		    #expr, _r, (int)(code), #code, __FILE__, __LINE__); \
+		dssh_test_failure_cleanup(); \
 		return TEST_FAIL; \
 	} \
 } while (0)
@@ -113,6 +124,7 @@ struct dssh_test_entry {
 	if ((ptr) != NULL) { \
 		fprintf(stderr, "  ASSERT_NULL failed: %s is not NULL\n    at %s:%d\n", \
 		    #ptr, __FILE__, __LINE__); \
+		dssh_test_failure_cleanup(); \
 		return TEST_FAIL; \
 	} \
 } while (0)
@@ -121,6 +133,7 @@ struct dssh_test_entry {
 	if ((ptr) == NULL) { \
 		fprintf(stderr, "  ASSERT_NOT_NULL failed: %s is NULL\n    at %s:%d\n", \
 		    #ptr, __FILE__, __LINE__); \
+		dssh_test_failure_cleanup(); \
 		return TEST_FAIL; \
 	} \
 } while (0)
@@ -129,6 +142,7 @@ struct dssh_test_entry {
 	if (memcmp((a), (b), (n)) != 0) { \
 		fprintf(stderr, "  ASSERT_MEM_EQ failed: %s != %s (len %zu)\n    at %s:%d\n", \
 		    #a, #b, (size_t)(n), __FILE__, __LINE__); \
+		dssh_test_failure_cleanup(); \
 		return TEST_FAIL; \
 	} \
 } while (0)
@@ -137,6 +151,7 @@ struct dssh_test_entry {
 	if (strcmp((a), (b)) != 0) { \
 		fprintf(stderr, "  ASSERT_STR_EQ failed: \"%s\" != \"%s\"\n    at %s:%d\n", \
 		    (a), (b), __FILE__, __LINE__); \
+		dssh_test_failure_cleanup(); \
 		return TEST_FAIL; \
 	} \
 } while (0)
@@ -146,6 +161,7 @@ struct dssh_test_entry {
 	if (thrd_create((thr), (func), (arg)) != thrd_success) { \
 		fprintf(stderr, "  thrd_create failed: %s\n    at %s:%d\n", \
 		    #func, __FILE__, __LINE__); \
+		dssh_test_failure_cleanup(); \
 		return TEST_FAIL; \
 	} \
 } while (0)
@@ -160,16 +176,9 @@ struct dssh_test_entry {
  *   };
  *   DSSH_TEST_MAIN(tests)
  */
-/*
- * Optional per-test cleanup hook.  If the test file defines
- * dssh_test_after_each(int result) before DSSH_TEST_MAIN, it is
- * called after every test — passing the result (PASS/FAIL/SKIP).
- * Use it to clean up leaked threads/sessions when an ASSERT bails
- * out of a test without running the normal cleanup path.
- * Files that don't need it define a no-op via DSSH_TEST_NO_CLEANUP.
- */
+/* Files without stack-owned resources use the no-op failure hook. */
 #define DSSH_TEST_NO_CLEANUP \
-	static void dssh_test_after_each(int r) { (void)r; }
+	void dssh_test_failure_cleanup(void) { }
 
 #include <signal.h>
 #include <time.h>
@@ -192,7 +201,6 @@ int main(int argc, char *argv[]) \
 		clock_gettime(CLOCK_MONOTONIC, &_t0); \
 		int result = test_table[i].fn(); \
 		clock_gettime(CLOCK_MONOTONIC, &_t1); \
-		dssh_test_after_each(result); \
 		long _ms = (_t1.tv_sec - _t0.tv_sec) * 1000L \
 		    + (_t1.tv_nsec - _t0.tv_nsec) / 1000000L; \
 		const char *_label = result > 0 ? "PASS" \

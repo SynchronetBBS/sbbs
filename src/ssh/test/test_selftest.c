@@ -16,6 +16,7 @@
 #include <threads.h>
 
 #include "dssh_test.h"
+#include "dssh_test_wait.h"
 #include "deucessh.h"
 #include "deucessh-auth.h"
 #include "deucessh-conn.h"
@@ -235,41 +236,34 @@ static struct selftest_ctx *g_active_ctx;
 static void
 selftest_cleanup(struct selftest_ctx *ctx)
 {
-	/* Snapshot all fields before any function calls.  When called
-	 * from dssh_test_after_each, ctx may point to a test function's
-	 * stack frame that has already been popped.  The memory is
-	 * intact at this point, but deeper function calls (terminate,
-	 * join, cleanup) will grow the stack and overwrite it. */
-	struct selftest_ctx snap = *ctx;
-
 	if (g_active_ctx == ctx)
 		g_active_ctx = NULL;
 	/* Shutdown sockets first to unblock threads blocked in recv/send. */
-	if (snap.client_fd >= 0)
-		shutdown(snap.client_fd, SHUT_RDWR);
-	if (snap.server_fd >= 0)
-		shutdown(snap.server_fd, SHUT_RDWR);
+	if (ctx->client_fd >= 0)
+		shutdown(ctx->client_fd, SHUT_RDWR);
+	if (ctx->server_fd >= 0)
+		shutdown(ctx->server_fd, SHUT_RDWR);
 	/* Terminate sessions to unblock the server thread from any
 	 * dssh_* blocking call (sets terminate flag, broadcasts condvars).
 	 * dssh_session_terminate is idempotent; dssh_session_cleanup
 	 * calling it again is a no-op. */
-	if (snap.server)
-		dssh_session_terminate(snap.server);
-	if (snap.client)
-		dssh_session_terminate(snap.client);
+	if (ctx->server)
+		dssh_session_terminate(ctx->server);
+	if (ctx->client)
+		dssh_session_terminate(ctx->client);
 	/* Join server thread BEFORE freeing sessions.  After shutdown +
 	 * terminate, the thread's I/O and blocking calls return errors,
 	 * so the join completes promptly. */
-	if (snap.server_thread_active)
-		thrd_join(snap.server_thread, NULL);
-	if (snap.server)
-		dssh_session_cleanup(snap.server);
-	if (snap.client)
-		dssh_session_cleanup(snap.client);
-	if (snap.client_fd >= 0)
-		close(snap.client_fd);
-	if (snap.server_fd >= 0)
-		close(snap.server_fd);
+	if (ctx->server_thread_active)
+		thrd_join(ctx->server_thread, NULL);
+	if (ctx->server)
+		dssh_session_cleanup(ctx->server);
+	if (ctx->client)
+		dssh_session_cleanup(ctx->client);
+	if (ctx->client_fd >= 0)
+		close(ctx->client_fd);
+	if (ctx->server_fd >= 0)
+		close(ctx->server_fd);
 	delayed_tx_sess = NULL;
 	atomic_store(&delayed_tx_countdown, 0);
 	atomic_store(&delayed_tx_seen, false);
@@ -520,6 +514,31 @@ done:
 	dssh_chan_close(ch, 0);
 	a->result = 0;
 	return 0;
+}
+
+static int
+fail_with_active_server(void)
+{
+	struct selftest_ctx ctx;
+
+	if (selftest_setup(&ctx) < 0)
+		return TEST_SKIP;
+	ASSERT_OK(dssh_session_start(ctx.client));
+	ASSERT_OK(dssh_session_start(ctx.server));
+	struct server_echo_arg sarg = { .ctx = &ctx };
+
+	ASSERT_OK(selftest_start_thread(&ctx, server_echo_thread, &sarg));
+	/* The failure hook must join the server before sarg leaves scope. */
+	ASSERT_TRUE(false);
+	return TEST_PASS;
+}
+
+static int
+test_assertion_cleanup(void)
+{
+	ASSERT_EQ(fail_with_active_server(), TEST_FAIL);
+	ASSERT_NULL(g_active_ctx);
+	return TEST_PASS;
 }
 
 /* Server: accept channel, close immediately with specific exit code */
@@ -960,7 +979,7 @@ test_self_window_adjust_race(void)
 
 	ASSERT_EQ_U(recvd, sizeof(data) - 1);
 	ASSERT_MEM_EQ(buf, data, sizeof(data) - 1);
-	ASSERT_TRUE(atomic_load(&delayed_tx_seen));
+	ASSERT_TRUE(dssh_test_wait_bool(&delayed_tx_seen, true));
 
 	dssh_chan_close(ch, 0);
 	thrd_join(ctx.server_thread, NULL);
@@ -1791,9 +1810,9 @@ test_self_connection_drop(void)
 	shutdown(ctx.client_fd, SHUT_RDWR);
 	shutdown(ctx.server_fd, SHUT_RDWR);
 
-	/* Give the demux threads time to see the error */
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 20000000 };
-	thrd_sleep(&ts, NULL);
+	/* Wait for both demux threads to observe the transport failure. */
+	ASSERT_TRUE(dssh_test_wait_bool(&ctx.client->terminate, true));
+	ASSERT_TRUE(dssh_test_wait_bool(&ctx.server->terminate, true));
 
 	/* Both sessions should be terminated */
 	ASSERT_TRUE(dssh_session_is_terminated(ctx.client));
@@ -2879,7 +2898,7 @@ test_self_chan_send_break(void)
 
 	/* Send break -- should not error */
 	ASSERT_OK(dssh_chan_send_break(ch, 500));
-	ASSERT_TRUE(atomic_load(&delayed_tx_seen));
+	ASSERT_TRUE(dssh_test_wait_bool(&delayed_tx_seen, true));
 
 	dssh_chan_close(ch, -1);
 	thrd_join(ctx.server_thread, NULL);
@@ -3066,9 +3085,7 @@ test_self_io_callback_contract(void)
 	atomic_store(&callback_probe_terminate_result, true);
 	atomic_store(&callback_probe_kind, CALLBACK_PROBE_RX);
 	ASSERT_OK(dssh_session_start(ctx.client));
-	for (size_t i = 0; i < 100000
-	    && atomic_load(&callback_probe_kind) != CALLBACK_PROBE_NONE; i++)
-		thrd_yield();
+	ASSERT_TRUE(dssh_test_wait_int(&callback_probe_kind, CALLBACK_PROBE_NONE));
 	ASSERT_EQ(atomic_load(&callback_probe_kind), CALLBACK_PROBE_NONE);
 	ASSERT_ERR(atomic_load(&callback_probe_api_result), DSSH_ERROR_INVALID);
 	ASSERT_ERR(atomic_load(&callback_probe_other_api_result), DSSH_ERROR_INVALID);
@@ -3081,15 +3098,13 @@ test_self_io_callback_contract(void)
 }
 
 /* ================================================================
- * After-each cleanup: if a test FAILs mid-way (ASSERT bails out),
- * clean up the active selftest context so leaked demux/accept
- * threads don't interfere with subsequent tests in the same process.
+ * Assertion cleanup runs before returning from the test, including joining
+ * threads whose arguments are owned by that test's stack frame.
  * ================================================================ */
 
-static void
-dssh_test_after_each(int result)
+void
+dssh_test_failure_cleanup(void)
 {
-	(void)result;
 	if (g_active_ctx != NULL) {
 		selftest_cleanup(g_active_ctx);
 		g_active_ctx = NULL;
@@ -3101,6 +3116,7 @@ dssh_test_after_each(int result)
  * ================================================================ */
 
 static struct dssh_test_entry tests[] = {
+	{ "test_assertion_cleanup", test_assertion_cleanup },
 	{ "test_self_handshake_curve25519",     test_self_handshake_curve25519 },
 	{ "test_self_auth_password",            test_self_auth_password },
 	{ "test_self_exec_echo",               test_self_exec_echo },

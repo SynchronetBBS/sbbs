@@ -1704,6 +1704,10 @@ ctest -R dssh_transport      # transport layer tests
 ctest -R dssh_self           # integration selftests
 ```
 
+CTest prepares the shared Ed25519/RSA key cache before parallel consumers
+start, including filtered runs. Assertion cleanup runs before returning from
+the failed test so stack-owned sessions and worker arguments remain valid.
+
 ## Debugging
 
 Build with `-DDSSH_TRACE_WIRE` (e.g.

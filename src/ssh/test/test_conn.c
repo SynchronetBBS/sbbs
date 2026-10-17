@@ -15,6 +15,7 @@
 #include <threads.h>
 
 #include "dssh_test.h"
+#include "dssh_test_wait.h"
 #include "deucessh.h"
 #include "deucessh-algorithms.h"
 #include "deucessh-auth.h"
@@ -213,8 +214,7 @@ struct conn_ctx {
 	dssh_session server;
 };
 
-/* ASSERT_* returns directly, so retain the current resource-owning
- * context for the runner's after-each cleanup hook. */
+/* The assertion hook cleans up before the owning stack frame returns. */
 static struct conn_ctx *g_active_ctx;
 
 struct handshake_auth_ctx {
@@ -358,10 +358,6 @@ conn_setup(struct conn_ctx *ctx)
 static void
 conn_cleanup(struct conn_ctx *ctx)
 {
-	/* The after-each hook runs just after the test function's stack frame
-	 * has been popped.  Snapshot it before cleanup calls reuse that stack. */
-	struct conn_ctx snap = *ctx;
-
 	if (g_active_ctx == ctx)
 		g_active_ctx = NULL;
 
@@ -371,19 +367,38 @@ conn_cleanup(struct conn_ctx *ctx)
 	 * socketpair-based mock I/O, condvar broadcasts alone cannot
 	 * unblock a blocking read() -- only closing the peer fd does.
 	 */
-	mock_io_close_c2s(&snap.io);
-	mock_io_close_s2c(&snap.io);
-	dssh_session_stop(snap.server);
-	dssh_session_stop(snap.client);
-	dssh_session_cleanup(snap.server);
-	dssh_session_cleanup(snap.client);
-	mock_io_free(&snap.io);
+	mock_io_close_c2s(&ctx->io);
+	mock_io_close_s2c(&ctx->io);
+	dssh_session_stop(ctx->server);
+	dssh_session_stop(ctx->client);
+	dssh_session_cleanup(ctx->server);
+	dssh_session_cleanup(ctx->client);
+	mock_io_free(&ctx->io);
 	dssh_test_reset_global_config();
 }
 
 /* ================================================================
  * Helper: open an exec channel concurrently (client+server threads)
  * ================================================================ */
+
+static int
+fail_with_active_connection(void)
+{
+	struct conn_ctx ctx;
+
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+	ASSERT_TRUE(false);
+	return TEST_PASS;
+}
+
+static int
+test_assertion_cleanup(void)
+{
+	ASSERT_EQ(fail_with_active_connection(), TEST_FAIL);
+	ASSERT_NULL(g_active_ctx);
+	return TEST_PASS;
+}
 
 /* Channel setup starts with a zero receive window on both sides.  Each side
  * opens its window asynchronously after setup, so a completed open/accept
@@ -3183,10 +3198,7 @@ test_truncated_channel_open(void)
 		msg[1] = 0;
 		ASSERT_OK(send_packet(ctx.client, msg, 2, NULL));
 
-		struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
-		thrd_sleep(&ts, NULL);
-
-		ASSERT_TRUE(!ctx.server->demux_running);
+		ASSERT_TRUE(dssh_test_wait_bool(&ctx.server->demux_running, false));
 		conn_cleanup(&ctx);
 	}
 
@@ -3202,10 +3214,7 @@ test_truncated_channel_open(void)
 		dssh_serialize_uint32(100, msg, sizeof(msg), &pos);
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 
-		struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
-		thrd_sleep(&ts, NULL);
-
-		ASSERT_TRUE(!ctx.server->demux_running);
+		ASSERT_TRUE(dssh_test_wait_bool(&ctx.server->demux_running, false));
 		conn_cleanup(&ctx);
 	}
 
@@ -3226,10 +3235,7 @@ test_truncated_channel_open(void)
 		dssh_serialize_uint32(42, msg, sizeof(msg), &pos);
 		ASSERT_OK(send_packet(ctx.client, msg, pos, NULL));
 
-		struct timespec ts = { .tv_sec = 0, .tv_nsec = 50000000 };
-		thrd_sleep(&ts, NULL);
-
-		ASSERT_TRUE(!ctx.server->demux_running);
+		ASSERT_TRUE(dssh_test_wait_bool(&ctx.server->demux_running, false));
 		conn_cleanup(&ctx);
 	}
 
@@ -5124,6 +5130,26 @@ test_poll_terminate_no_event_bit(void)
  * Data/ext after CLOSE
  * ================================================================ */
 
+/* The marker follows the injected data in the same packet stream.  Observing
+ * it proves the demux has dispatched the data, not merely the preceding CLOSE. */
+static int
+wait_after_close_packets(struct open_exec_ctx *oc)
+{
+	if (dssh_chan_send_signal(oc->server_ch, "after-stale") < 0)
+		return -1;
+	for (;;) {
+		int events = dssh_chan_poll(oc->client_ch, DSSH_POLL_EVENT, 5000);
+		struct dssh_chan_event event;
+
+		if ((events & DSSH_POLL_EVENT) == 0
+		    || dssh_chan_read_event(oc->client_ch, &event) < 0)
+			return -1;
+		if (event.type == DSSH_EVENT_SIGNAL
+		    && strcmp(event.signal.name, "after-stale") == 0)
+			return 0;
+	}
+}
+
 static int
 test_data_after_close(void)
 {
@@ -5162,8 +5188,9 @@ test_data_after_close(void)
 		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 20000000 };
-	thrd_sleep(&ts, NULL);
+	ASSERT_OK(wait_after_close_packets(&oc));
+	int events = dssh_chan_poll(oc.client_ch, DSSH_POLL_READ, 5000);
+	ASSERT_TRUE(events & DSSH_POLL_READ);
 
 	uint8_t buf[32];
 	int64_t got = dssh_chan_read(oc.client_ch, 0, buf, sizeof(buf));
@@ -5212,8 +5239,9 @@ test_ext_data_after_close(void)
 		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
 
-	struct timespec ts = { .tv_sec = 0, .tv_nsec = 20000000 };
-	thrd_sleep(&ts, NULL);
+	ASSERT_OK(wait_after_close_packets(&oc));
+	int events = dssh_chan_poll(oc.client_ch, DSSH_POLL_READEXT, 5000);
+	ASSERT_TRUE(events & DSSH_POLL_READEXT);
 
 	uint8_t buf[32];
 	int64_t got = dssh_chan_read(oc.client_ch, 1, buf, sizeof(buf));
@@ -6715,6 +6743,7 @@ test_env_roundtrip(void)
  * ================================================================ */
 
 static struct dssh_test_entry tests[] = {
+	{ "test_assertion_cleanup", test_assertion_cleanup },
 	/* Parse helpers */
 
 	/* Session start/stop */
@@ -6905,10 +6934,9 @@ static struct dssh_test_entry tests[] = {
 	{ "env/roundtrip",                     test_env_roundtrip },
 };
 
-static void
-dssh_test_after_each(int result)
+void
+dssh_test_failure_cleanup(void)
 {
-	(void)result;
 	if (g_active_ctx != NULL)
 		conn_cleanup(g_active_ctx);
 }

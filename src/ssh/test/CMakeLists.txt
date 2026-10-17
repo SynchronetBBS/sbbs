@@ -23,6 +23,7 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 	set_property(TARGET deucessh_test_lib PROPERTY CXX_STANDARD_REQUIRED ON)
 endif()
 target_compile_definitions(deucessh_test_lib PRIVATE DSSH_TESTING
+	$<$<COMPILE_LANGUAGE:C>:_POSIX_C_SOURCE=200809L>
 	$<$<STREQUAL:${DEUCESSH_CRYPTO_BACKEND},OpenSSL>:DSSH_CRYPTO_OPENSSL>
 	$<$<STREQUAL:${DEUCESSH_CRYPTO_BACKEND},Botan>:DSSH_CRYPTO_BOTAN>)
 target_include_directories(deucessh_test_lib
@@ -95,6 +96,10 @@ endif()
 # Helper function for adding test executables
 function(dssh_add_test test_name source_file)
 	add_executable(dssh_test_${test_name} ${source_file})
+	# Test clocks, mkstemp(), and strdup() need the POSIX namespace in
+	# strict C modes. Leave C++'s native library namespace unchanged.
+	target_compile_definitions(dssh_test_${test_name} PRIVATE
+		$<$<COMPILE_LANGUAGE:C>:_POSIX_C_SOURCE=200809L>)
 	set_property(TARGET dssh_test_${test_name} PROPERTY C_STANDARD ${DEUCESSH_C_STANDARD})
 	set_property(TARGET dssh_test_${test_name} PROPERTY C_STANDARD_REQUIRED ON)
 	target_include_directories(dssh_test_${test_name} PRIVATE
@@ -111,6 +116,17 @@ function(dssh_add_test test_name source_file)
 		target_compile_definitions(dssh_test_${test_name} PRIVATE DSSH_CRYPTO_BOTAN)
 	endif()
 endfunction()
+
+# The assertion hook must run before stack-owned contexts go out of scope.
+dssh_add_test(framework test_framework.c)
+add_test(NAME dssh_test_framework COMMAND dssh_test_framework)
+
+# A shared cache needs a single writer before parallel tests start.  Unit key
+# tests also load these files without going through test_generate_host_key().
+dssh_add_test(key_setup test_key_setup.c)
+add_test(NAME dssh_test_keys COMMAND dssh_test_key_setup)
+set_tests_properties(dssh_test_keys PROPERTIES
+	FIXTURES_SETUP dssh_cached_keys ENVIRONMENT "${DSSH_TEST_KEY_ENV}")
 
 # Helper: register one executable × 16 KEX/key/MAC variants as CTest entries.
 # Each entry runs the full executable (all tests in one process).
@@ -460,6 +476,7 @@ dssh_add_individual_tests(dssh_test_auth dssh_auth AUTH_TESTS)
 dssh_add_test(conn test_conn.c)
 target_link_libraries(dssh_test_conn PRIVATE dssh_mock_io)
 set(CONN_TESTS
+	test_assertion_cleanup
 	test_session_start test_session_stop test_session_start_stop
 	test_open_exec test_open_exec_command test_open_exec_rejected
 	test_open_shell test_open_subsystem
@@ -644,6 +661,7 @@ dssh_add_variant_tests(dssh_thrd dssh_test_thread_errors)
 
 dssh_add_test(selftest test_selftest.c)
 set(SELFTEST_TESTS
+	test_assertion_cleanup
 	test_self_handshake_curve25519
 	test_self_auth_password
 	test_self_exec_echo
@@ -708,3 +726,14 @@ if(DEUCESSH_TEST_SYNCHRONET)
 	dssh_add_test(synchronet test_synchronet.c)
 	add_test(NAME dssh_integration_synchronet COMMAND dssh_test_synchronet)
 endif()
+
+# Include consumers registered by either helper and the standalone unit tests.
+get_property(dssh_registered_tests DIRECTORY PROPERTY TESTS)
+foreach(test_name IN LISTS dssh_registered_tests)
+	get_test_property("${test_name}" ENVIRONMENT test_environment)
+	if(NOT test_name STREQUAL "dssh_test_keys"
+			AND "${test_environment}" MATCHES "DSSH_TEST_RSA_KEY=")
+		set_tests_properties("${test_name}" PROPERTIES
+			FIXTURES_REQUIRED dssh_cached_keys)
+	endif()
+endforeach()
