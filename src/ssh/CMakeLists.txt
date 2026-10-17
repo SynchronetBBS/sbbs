@@ -168,6 +168,11 @@ if(WIN32)
 	set(DSSH_PC_LIBS_PRIVATE "-ladvapi32")
 else()
 	set(DSSH_PRIVATE_KEY_FILE_SOURCE key_algo/private-key-file-posix.c)
+	# Strict C modes do not implicitly expose strdup() or the POSIX APIs used
+	# by the file writer and the pthread-backed C11 threads shim.
+	set_source_files_properties(ssh-auth.c ssh-conn.c
+		key_algo/private-key-file-posix.c posix/threads.c
+		PROPERTIES COMPILE_DEFINITIONS _POSIX_C_SOURCE=200809L)
 	set(DSSH_PRIVATE_KEY_FILE_LIB "")
 	set(DSSH_PC_LIBS_PRIVATE "")
 endif()
