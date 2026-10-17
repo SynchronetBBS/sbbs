@@ -38,7 +38,7 @@ var UNSAFE = /[$`]/;
 // libarchive finds the Zip or 7-Zip data inside the stub rather than
 // insisting it start at offset 0.  A plain program simply fails to extract,
 // which is stored like any other negative verdict and not retried.
-var ARCHIVE_TYPES = ['zip', '7z', 'tgz', 'tar', 'gz', 'bz2',
+var ARCHIVE_TYPES = ['zip', '7z', 'tgz', 'tar', 'gz', 'bz2', 'xz', 'zst',
                      'rar', 'lha', 'lzh', 'iso', 'cab',
                      'arc', 'arj', 'zoo', 'exe'];
 
