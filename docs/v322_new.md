@@ -75,6 +75,9 @@
   a command shell would interpret, not just a space. On Unix-like
   systems those quotes are now honored when the program is run without
   a shell, so such a filename reaches the program intact
+- New DOVE-Net conferences in the stock message area configuration:
+  AI Discussion, AI Playground, and Health (diet, fitness, medications,
+  illness)
 
 ## Servers
 
