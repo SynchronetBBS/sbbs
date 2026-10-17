@@ -1518,6 +1518,8 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 		this.bcast_to_servers(format("QUIT :%s", str));
 
 	if (this.local) {
+		this.recvq.purge();
+		this.sendq.purge();
 		if (this.socket.is_connected) {
 			this.socket.send(format("ERROR :Closing Link: [%s@%s] (%s)\r\n",
 				this.uprefix,

@@ -662,6 +662,13 @@ function Queue_Send(sock) {
 	var sent;
 	var yline, limit;
 
+	/* Nothing queued for a closed connection can be delivered, and send()
+	   on a closed socket fails without throwing, so re-arming below would
+	   retry it every 100 ms for the life of the process. */
+	if (!sock.is_connected) {
+		this.purge();
+		return;
+	}
 	if (this.queue.length) {
 		this.irc.sent_msgs += this.queue.length;
 		this._send_bytes += this.queue.join('\r\n')+'\r\n';
