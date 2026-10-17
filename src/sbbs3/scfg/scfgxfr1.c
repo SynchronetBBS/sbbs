@@ -18,6 +18,7 @@
  ****************************************************************************/
 
 #include "scfg.h"
+#include "filedat.h"   // CREATABLE_ARCHIVE_FORMATS
 #include "ciolib.h" // CIO_KEY_*
 
 char* testable_files_help =
@@ -227,9 +228,8 @@ void xfer_opts()
 			"filenames -- `Safest Subset`, or `Most ASCII/CP437` with optional\n"
 			"spaces.  Tighter = fewer compatibility headaches across clients.\n"
 			"\n"
-			"`Supported Archive Formats`: comma-separated list of archive\n"
-			"extensions Synchronet recognizes for QWK/REP, mail attachments, and\n"
-			"the testable/extractable file dispatchers.\n"
+			"`Supported Archive Formats`: archive types Synchronet creates itself\n"
+			"(using libarchive) for QWK/REP packets and temporary download archives.\n"
 			"\n"
 			"`Viewable Files...`: per-file-type dispatchers that list the contents\n"
 			"of an archive without extracting it (e.g. `zip -l`).\n"
@@ -459,34 +459,52 @@ void xfer_opts()
 						break;
 				}
 				break;
-			case __COUNTER__:   /* Supported Arhive types */
+			case __COUNTER__:   /* Supported Archive types */
 				uifc.helpbuf =
 					"`Supported Archive Formats:`\n"
 					"\n"
 					"This is a list of archive file types (extensions/suffixes, without the\n"
-					"'.') that are supported by libarchive for the creation of QWK/REP\n"
-					"packets and temporary archives of files for users to download.\n"
+					"'.') that Synchronet creates itself, using libarchive, for QWK/REP\n"
+					"packets and temporary archives of files for users to download.  Users\n"
+					"may choose any of these as their QWK packet type.\n"
+					"\n"
+					"Only these formats can be created: `" CREATABLE_ARCHIVE_FORMATS "`.  Any other\n"
+					"type entered is removed from this list.\n"
 					"\n"
 					"By default, the supported archive formats are: `zip, 7z, tgz`.\n"
 					"\n"
-					"Synchronet uses `libarchive` for internal archive file support\n"
-					"(see `http://libarchive.org/` for details).  Depending on the version of\n"
-					"libarchive, build options, and OS/system configuration, more archive\n"
-					"formats than the default list may be supported.\n"
-					"\n"
-					"If you want additional formats to be available for your users and you've\n"
-					"confirmed system compatibility (e.g. created and extracted archives\n"
-					"of the desired types using `archive.js`), you can add the standard file\n"
-					"extensions for those additional archive formats to this list.\n"
+					"Additional QWK packet types can be offered to users by configuring\n"
+					"external programs for them under `Compressible Files`.\n"
 					"\n"
 					"This list has no impact on the types of files allowed to be uploaded\n"
 					"into file areas or the ability to view, test, or extract archives of\n"
 					"any type.\n"
-					;
-		        strListCombine(cfg.supported_archive_formats, str, sizeof str, ", ");
-				uifc.input(WIN_MID | WIN_SAV, 0 , 0, "Supported Archive Formats", str, sizeof str - 1, K_EDIT);
+				;
+				strListCombine(cfg.supported_archive_formats, str, sizeof str, ", ");
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Supported Archive Formats", str, sizeof str - 1, K_EDIT);
 				strListFree(&cfg.supported_archive_formats);
 				cfg.supported_archive_formats = strListSplit(NULL, str, ", ");
+				{
+					char       creatable[] = CREATABLE_ARCHIVE_FORMATS;
+					str_list_t valid = strListSplit(NULL, creatable, ", ");
+					char       rejected[128] = "";
+
+					for (i = 0; cfg.supported_archive_formats != NULL && cfg.supported_archive_formats[i] != NULL;) {
+						if (strListFind(valid, cfg.supported_archive_formats[i], /* case-sensitive: */ false) >= 0) {
+							i++;
+							continue;
+						}
+						if (*rejected != '\0')
+							SAFECAT(rejected, ", ");
+						SAFECAT(rejected, cfg.supported_archive_formats[i]);
+						strListDelete(&cfg.supported_archive_formats, i);
+					}
+					strListFree(&valid);
+					if (*rejected != '\0') {
+						uifc.changes = TRUE;
+						uifc.msgf("Removed (cannot be created): %s", rejected);
+					}
+				}
 				break;
 			case __COUNTER__:   /* Viewable file types */
 				while (1) {

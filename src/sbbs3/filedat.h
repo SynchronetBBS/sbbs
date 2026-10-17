@@ -77,6 +77,8 @@ DLLEXPORT int			file_sauce_hfields(file_t*, struct sauce_charinfo*);
 DLLEXPORT char*			liberal_filepattern(const char* filespec, char* buf, size_t size);
 
 DLLEXPORT str_list_t	directory(const char* path);
+// The formats create_archive() can write, and so may be configured as supported
+#define CREATABLE_ARCHIVE_FORMATS "zip, 7z, tgz, tbz"
 DLLEXPORT long			create_archive(const char* archive, const char* format
 						               ,bool with_path, str_list_t file_list, char* error, size_t maxerrlen);
 DLLEXPORT char*			cmdstr(scfg_t*, user_t*, const char* instr, const char* fpath, const char* fspec, char* cmd, size_t);
