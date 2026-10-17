@@ -69,8 +69,8 @@ if (gUsingRIP)
 
 
 // Version information
-var LISTER_VERSION = "2.35";
-var LISTER_DATE = "2026-03-24";
+var LISTER_VERSION = "2.36";
+var LISTER_DATE = "2026-10-16";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,10 +99,10 @@ var TOGGLE_EXTD_DESCS = 8; // Toggle extended descriptions
 var FILE_MOVE = 9;   // Sysop action
 var FILE_DELETE = 10; // Sysop action
 
-var NEXT_PAGE = 10;
-var PREV_PAGE = 11;
-var FIRST_PAGE = 12;
-var LAST_PAGE = 13;
+var NEXT_PAGE = 11;
+var PREV_PAGE = 12;
+var FIRST_PAGE = 13;
+var LAST_PAGE = 14;
 
 // Search/list modes
 var MODE_LIST_DIR = 1;
@@ -622,7 +622,7 @@ function showFileInfo_RIP(pFileList, pFileIdx)
 	// dialog.  Avatars are 10 chars wide x 6 lines tall in CP437 with
 	// Synchronet Ctrl-A color codes.
 	var avatarLines = [];
-	if (gSettings.dispayUserAvatars && typeof fileMetadata.from === "string" && fileMetadata.from.length > 0)
+	if (gSettings.displayUserAvatars && typeof fileMetadata.from === "string" && fileMetadata.from.length > 0)
 		avatarLines = getAvatarArray(fileMetadata.from);
 
 	// Display in a RIP text dialog (centered, nearly full-screen).
@@ -1849,7 +1849,7 @@ function showFileInfo_ANSI(pFileMetadata)
 	// alongside the next file information lines. Otherwise, just
 	// display the file information lines without the avatar.
 	var userAvatarArray = []
-	if (gSettings.dispayUserAvatars)
+	if (gSettings.displayUserAvatars)
 		userAvatarArray = getAvatarArray(fileMetadata.from);
 	if (userAvatarArray.length > 0)
 	{
@@ -2045,7 +2045,7 @@ function showFileInfo_noANSI(pFileMetadata)
 		uploadedByStr += " via " + fileMetadata.from_protocol;
 	printf(generalFormatStr, "Uploaded by", uploadedByStr.substring(0, valueLen));
 	// If enabled, and if possible, show the avatar of the user who uploaded the file
-	if (gSettings.dispayUserAvatars && gAvatar != null && fileMetadata.from != "")
+	if (gSettings.displayUserAvatars && gAvatar != null && fileMetadata.from != "")
 	{
 		var userNum = system.matchuser(fileMetadata.from);
 		if (userNum > 0)
@@ -5559,7 +5559,7 @@ function readConfigFile()
 		fileSortOrder: SORT_PER_DIR_CFG, /// Use the file directory's configured sort order option
 		pauseAfterViewingFile: true,
 		blankNFilesListedStrIfLoadableModule: true,
-		dispayUserAvatars: true,
+		displayUserAvatars: true,
 		// For short descriptions (extended descriptions disabled): If a file's description is
 		// unavailable, whether or not to use the filename instead
 		useFilenameIfNoDescription_ShortDescs: true,
@@ -5629,7 +5629,7 @@ function readConfigFile()
 	// If the .ini doesn't exist, see if the .cfg exists
 	if (!file_exists(cfgFilenameFullPath))
 	{
-		cfgFilename = "ddfilelister.ini";
+		cfgFilename = "ddfilelister.cfg";
 		var cfgFilenameFullPath = file_cfgname(system.mods_dir, cfgFilename);
 		if (!file_exists(cfgFilenameFullPath))
 			cfgFilenameFullPath = file_cfgname(system.ctrl_dir, cfgFilename);
@@ -5661,7 +5661,7 @@ function readConfigFile()
 			}
 			else if (propUpper == "TRADITIONALUSESYNCSTOCK")
 			{
-				typeof(settingsFromFile[prop]) === "boolean"
+				if (typeof(settingsFromFile[prop]) === "boolean")
 					settingsObj.traditionalUseSyncStock = settingsFromFile[prop];
 			}
 			else if (propUpper == "SORTORDER")
@@ -5706,7 +5706,7 @@ function readConfigFile()
 			else if (propUpper == "DISPLAYUSERAVATARS")
 			{
 				if (typeof(settingsFromFile[prop]) === "boolean")
-					settingsObj.dispayUserAvatars = settingsFromFile[prop];
+					settingsObj.displayUserAvatars = settingsFromFile[prop];
 			}
 			else if (propUpper == "USEFILENAMEIFSHORTDESCRIPTIONEMPTY")
 			{
