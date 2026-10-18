@@ -11794,10 +11794,18 @@ test_kbi_server_trunc_submethods(void)
  * A helper thread sends the KBI INFO_RESPONSE after the server
  * sends INFO_REQUEST.
  * ================================================================ */
+struct kbi_alloc_responder {
+	struct handshake_ctx *ctx;
+	int stage;
+	uint8_t first_type;
+	uint8_t second_type;
+};
+
 static int
 kbi_alloc_responder_thread(void *arg)
 {
-	struct handshake_ctx *ctx = arg;
+	struct kbi_alloc_responder *responder = arg;
+	struct handshake_ctx *ctx = responder->ctx;
 
 	/* Exclude this thread from alloc injection */
 	dssh_test_alloc_exclude_thread();
@@ -11806,16 +11814,20 @@ kbi_alloc_responder_thread(void *arg)
 	uint8_t msg_type;
 	uint8_t *payload;
 	size_t payload_len;
+	responder->stage = 1;
 	int res = recv_packet(ctx->client, &msg_type,
 	    &payload, &payload_len);
 	if (res < 0)
-		return 0;
+		return res;
+	responder->first_type = msg_type;
 
 	/* Read the INFO_REQUEST (or FAILURE if alloc hit early) */
+	responder->stage = 2;
 	res = recv_packet(ctx->client, &msg_type,
 	    &payload, &payload_len);
 	if (res < 0)
-		return 0;
+		return res;
+	responder->second_type = msg_type;
 
 	if (msg_type == 60) {
 		/* Send INFO_RESPONSE with one response "testcode" */
@@ -11826,11 +11838,15 @@ kbi_alloc_responder_thread(void *arg)
 		dssh_serialize_uint32(8, resp, sizeof(resp), &rp);
 		memcpy(&resp[rp], "testcode", 8);
 		rp += 8;
-		send_packet(ctx->client, resp, rp, NULL);
+		responder->stage = 3;
+		res = send_packet(ctx->client, resp, rp, NULL);
+		if (res < 0)
+			return res;
 	}
 
 	/* Close write end so server sees EOF if it loops for more */
 	mock_io_close_c2s_write(&ctx->io);
+	responder->stage = 4;
 
 	return 0;
 }
@@ -11846,7 +11862,9 @@ test_kbi_server_resp_alloc_fail(void)
 
 	for (int n = 0; n < 30; n++) {
 		struct handshake_ctx ctx;
-		if (handshake_setup(&ctx) < 0) {
+		int setup = handshake_setup(&ctx);
+		if (setup < 0) {
+			fprintf(stderr, "KBI alloc n=%d handshake=%d\n", n, setup);
 			handshake_cleanup(&ctx);
 			dssh_test_alloc_reset();
 			continue;
@@ -11890,8 +11908,10 @@ test_kbi_server_resp_alloc_fail(void)
 
 		/* Responder thread reads INFO_REQUEST and sends response */
 		thrd_t rt;
+		struct kbi_alloc_responder responder = {.ctx = &ctx};
 		if (thrd_create(&rt, kbi_alloc_responder_thread,
-		    &ctx) != thrd_success) {
+		    &responder) != thrd_success) {
+			fprintf(stderr, "KBI alloc n=%d responder thread creation failed\n", n);
 			handshake_cleanup(&ctx);
 			dssh_test_alloc_reset();
 			continue;
@@ -11916,7 +11936,17 @@ test_kbi_server_resp_alloc_fail(void)
 		/* Close pipes to unblock responder if it's still waiting */
 		mock_io_close_c2s(&ctx.io);
 		mock_io_close_s2c(&ctx.io);
-		thrd_join(rt, NULL);
+		int responder_result = 0;
+		int joined = thrd_join(rt, &responder_result);
+		if (joined != thrd_success) {
+			fprintf(stderr, "KBI alloc n=%d join=%d\n", n, joined);
+			abort(); /* A running thread still owns stack arguments. */
+		}
+		if (res != DSSH_ERROR_ALLOC && !saw_alloc_error)
+			fprintf(stderr, "KBI alloc n=%d auth=%d allocations=%d"
+			    " responder-stage=%d responder-result=%d types=%u,%u\n", n, res,
+			    count, responder.stage, responder_result,
+			    (unsigned)responder.first_type, (unsigned)responder.second_type);
 
 		if (res == 0) {
 			handshake_cleanup(&ctx);
