@@ -1119,6 +1119,8 @@ init_channel_sync(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 	int ret = alloc_channel_slots(sess, ch);
 
 	if (ret < 0) {
+		free_tx_slot(&ch->wa_slot);
+		free_tx_slot(&ch->chan_fail_slot);
 		cnd_destroy(&ch->poll_cnd);
 		mtx_destroy(&ch->cb_mtx);
 		mtx_destroy(&ch->buf_mtx);
@@ -2580,6 +2582,8 @@ accept_channel_init(struct dssh_session_s *sess, struct dssh_incoming_open *inc)
 		return NULL;
 	}
 	if (alloc_channel_slots(sess, ch) < 0) {
+		free_tx_slot(&ch->wa_slot);
+		free_tx_slot(&ch->chan_fail_slot);
 		cnd_destroy(&ch->poll_cnd);
 		mtx_destroy(&ch->cb_mtx);
 		mtx_destroy(&ch->buf_mtx);
@@ -2591,6 +2595,8 @@ accept_channel_init(struct dssh_session_s *sess, struct dssh_incoming_open *inc)
 	int res = register_channel(sess, ch);
 
 	if (res < 0) {
+		free_tx_slot(&ch->wa_slot);
+		free_tx_slot(&ch->chan_fail_slot);
 		cnd_destroy(&ch->poll_cnd);
 		mtx_destroy(&ch->cb_mtx);
 		mtx_destroy(&ch->buf_mtx);
@@ -2602,6 +2608,8 @@ accept_channel_init(struct dssh_session_s *sess, struct dssh_incoming_open *inc)
 	if (res < 0) {
 		if (detach_channel(sess, ch) < 0)
 			return NULL;
+		free_tx_slot(&ch->wa_slot);
+		free_tx_slot(&ch->chan_fail_slot);
 		cnd_destroy(&ch->poll_cnd);
 		mtx_destroy(&ch->cb_mtx);
 		mtx_destroy(&ch->buf_mtx);
@@ -3067,6 +3075,8 @@ fail_buffers:
 fail_events:
 	event_queue_free(&ch->events);
 fail_sync:
+	free_tx_slot(&ch->wa_slot);
+	free_tx_slot(&ch->chan_fail_slot);
 	cnd_destroy(&ch->poll_cnd);
 	mtx_destroy(&ch->cb_mtx);
 	mtx_destroy(&ch->buf_mtx);
@@ -3583,6 +3593,8 @@ fail_close:
 fail_events:
 	event_queue_free(&ch->events);
 fail_sync:
+	free_tx_slot(&ch->wa_slot);
+	free_tx_slot(&ch->chan_fail_slot);
 	cnd_destroy(&ch->poll_cnd);
 	mtx_destroy(&ch->cb_mtx);
 	mtx_destroy(&ch->buf_mtx);
@@ -3959,6 +3971,8 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 			if (detach_channel(sess, ch) < 0)
 				return NULL;
 			free(ch->setup_payload);
+			free_tx_slot(&ch->wa_slot);
+			free_tx_slot(&ch->chan_fail_slot);
 			cnd_destroy(&ch->poll_cnd);
 			mtx_destroy(&ch->cb_mtx);
 			mtx_destroy(&ch->buf_mtx);
@@ -3992,6 +4006,8 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 				return NULL;
 			event_queue_free(&ch->events);
 			free(ch->setup_payload);
+			free_tx_slot(&ch->wa_slot);
+			free_tx_slot(&ch->chan_fail_slot);
 			cnd_destroy(&ch->poll_cnd);
 			mtx_destroy(&ch->cb_mtx);
 			mtx_destroy(&ch->buf_mtx);
@@ -4021,6 +4037,8 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 			dssh_chan_params_free(&p);
 			event_queue_free(&ch->events);
 			free(ch->setup_payload);
+			free_tx_slot(&ch->wa_slot);
+			free_tx_slot(&ch->chan_fail_slot);
 			cnd_destroy(&ch->poll_cnd);
 			mtx_destroy(&ch->cb_mtx);
 			mtx_destroy(&ch->buf_mtx);
@@ -4043,6 +4061,8 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 				dssh_chan_params_free(&p);
 				event_queue_free(&ch->events);
 				free(ch->setup_payload);
+				free_tx_slot(&ch->wa_slot);
+				free_tx_slot(&ch->chan_fail_slot);
 				cnd_destroy(&ch->poll_cnd);
 				mtx_destroy(&ch->cb_mtx);
 				mtx_destroy(&ch->buf_mtx);
@@ -4061,6 +4081,8 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 				dssh_chan_params_free(&p);
 				event_queue_free(&ch->events);
 				free(ch->setup_payload);
+				free_tx_slot(&ch->wa_slot);
+				free_tx_slot(&ch->chan_fail_slot);
 				cnd_destroy(&ch->poll_cnd);
 				mtx_destroy(&ch->cb_mtx);
 				mtx_destroy(&ch->buf_mtx);
