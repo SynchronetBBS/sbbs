@@ -402,6 +402,28 @@ var tests = {
 		return check_codes("external program (door)", xtrn_area.sec_list, 'prog_list');
 	},
 	
+	check_editors: function(options)
+	{
+		// Stock editors that support terminal widths other than 80 columns
+		var width_aware = [
+			{ name: "FSEditor", cmd: /\bfseditor\b/i },
+			{ name: "SlyEdit",  cmd: /\bslyedit\b/i }
+		];
+		var output = [];
+		for(var e in xtrn_area.editor) {
+			var editor = xtrn_area.editor[e];
+			for(var i = 0; i < width_aware.length; i++) {
+				if(!width_aware[i].cmd.test(editor.cmd))
+					continue;
+				if(!(editor.settings & XTRN_SAVECOLUMNS))
+					output.push(format("Editor: %-16s (%s) is NOT configured to Record Terminal Width"
+						, e, width_aware[i].name));
+				break;
+			}
+		}
+		return output;
+	},
+
 	check_sockopts_ini: function(options)
 	{
 		var output = [];
