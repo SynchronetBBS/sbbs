@@ -608,6 +608,38 @@ test_session_start_stop(void)
 	return TEST_PASS;
 }
 
+static int
+test_session_stop_open_channel(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_SKIP;
+	struct open_exec_ctx oc = {
+		.client = ctx.client, .server = ctx.server,
+		.command = "stop-with-owned-parameters", .cbs = &accept_cbs_all,
+		.accept_timeout = 30000,
+	};
+	ASSERT_OK(open_exec_channel(&oc));
+	ASSERT_NOT_NULL(oc.client_ch);
+	ASSERT_NOT_NULL(oc.server_ch);
+	ASSERT_STR_EQ(oc.client_ch->params.command, oc.command);
+	ASSERT_STR_EQ(oc.server_ch->params.command, oc.command);
+	ASSERT_NOT_NULL(oc.client_ch->events.entries);
+	ASSERT_NOT_NULL(oc.server_ch->events.entries);
+	/* Leave both handles registered. Stop must release the same owned
+	 * queues and strings as chan_close(), also under LeakSanitizer. */
+	mock_io_close_c2s(&ctx.io);
+	mock_io_close_s2c(&ctx.io);
+	dssh_session_stop(ctx.client);
+	dssh_session_stop(ctx.server);
+	ASSERT_NULL(ctx.client->channels);
+	ASSERT_NULL(ctx.server->channels);
+	ASSERT_EQ_U(ctx.client->channel_count, 0);
+	ASSERT_EQ_U(ctx.server->channel_count, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
 /* ================================================================
  * Channel open -- exec (~5 tests)
  * ================================================================ */
@@ -6750,6 +6782,7 @@ static struct dssh_test_entry tests[] = {
 	{ "test_session_start",              test_session_start },
 	{ "test_session_stop",               test_session_stop },
 	{ "test_session_start_stop",         test_session_start_stop },
+	{ "test_session_stop_open_channel",  test_session_stop_open_channel },
 
 	/* Channel open */
 	{ "test_open_exec",                  test_open_exec },

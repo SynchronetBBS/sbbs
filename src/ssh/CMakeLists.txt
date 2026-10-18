@@ -173,6 +173,9 @@ else()
 	set_source_files_properties(ssh-auth.c ssh-conn.c
 		key_algo/private-key-file-posix.c posix/threads.c
 		PROPERTIES COMPILE_DEFINITIONS _POSIX_C_SOURCE=200809L)
+	# NetBSD declares fchmod() in its XSI namespace, not its POSIX namespace.
+	set_property(SOURCE key_algo/private-key-file-posix.c APPEND PROPERTY
+		COMPILE_DEFINITIONS _XOPEN_SOURCE=700)
 	set(DSSH_PRIVATE_KEY_FILE_LIB "")
 	set(DSSH_PC_LIBS_PRIVATE "")
 endif()

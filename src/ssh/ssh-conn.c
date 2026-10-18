@@ -2152,6 +2152,8 @@ dssh_session_stop(struct dssh_session_s *sess)
 				if (atomic_load_explicit(&ch->dispatch_state, memory_order_acquire)
 				    == DSSH_CHANNEL_DISPATCH_LOCK_FAILED)
 					continue;
+				dssh_chan_params_free(&ch->params);
+				event_queue_free(&ch->events);
 				cleanup_channel_buffers(ch);
 				free(ch);
 			}

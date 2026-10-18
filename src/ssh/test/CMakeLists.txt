@@ -478,6 +478,7 @@ target_link_libraries(dssh_test_conn PRIVATE dssh_mock_io)
 set(CONN_TESTS
 	test_assertion_cleanup
 	test_session_start test_session_stop test_session_start_stop
+	test_session_stop_open_channel
 	test_open_exec test_open_exec_command test_open_exec_rejected
 	test_open_shell test_open_subsystem
 	test_session_write_read test_session_read_write_reverse
