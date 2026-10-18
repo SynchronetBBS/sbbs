@@ -1,0 +1,149 @@
+This file lists all of the changes made for each release of SlyVote.
+Note that " B" in the versions means beta.
+
+Revision History (change log)
+=============================
+Version  Date         Description
+-------  ----         -----------
+1.17     2026-10-18   A few small fixes based on Cursor AI code review
+1.16     2024-11-27   When showing a poll result message, for the user who
+                      posted the poll, show the answers from the people who
+                      voted on it. This is to basically mimic the fact that
+                      Synchronet shows who voted on your poll and what they
+                      answered, but in the poll message itself.
+1.15     2023-12-10   Code refactor; no difference in functionality. Now uses
+                      js.exec_dir instead of the hack to find out what directory
+                      the script is running in. Now uses user.is_sysop rather
+                      than storing a global variable with an ARS check for
+                      "SYSOP".
+1.14     2023-09-20   Fixed poll voting for single-answer polls
+1.13     2023-05-13   Fix for error when quitting/aborting out of choosing a
+                      different sub-board. Refactored ReadConfigFile().
+1.12     2022-06-21   Made an update to get vote stats to be displayed again.
+                      Also, no longer has hard-coded CP437 characters, and now
+                      uses "use strict" for better runtime checks of proper
+                      code.
+1.11     2021-04-02   When configured to use all available sub-boards, still
+                      don't allow choosing a sub-board that has polls disabled.
+                      This fixes an issue where SlyVote was showing all
+                      available message groups but some could be empty due to
+                      having no sub-boards that allow polls.
+1.10     2020-05-22   Fixed a bug introduced in 1.07 where the
+                      useAllAvailableSubBoards 'false' setting was being ignored
+                      when it was set to false when changing to another sub-
+                      board.
+1.09     2020-05-19   Now saves the user's last sub-board to the user config
+                      file for SlyVote so SlyVote will start in that sub-board
+                      the next time the user runs SlyVote.
+1.08     2020-05-18   Fixed a typo when calling GetKeyWithESCChars()
+1.07     2020-04-04   Made use of the updated DDLightbarMenu, which allows
+                      replacing the NumItems() and GetItem() functions to let
+                      the menu use a differnet list of items, to avoid
+                      adding/copying a bunch of items via DDLightbarMenu's Add()
+                      function.
+1.06     2020-03-31   Enabled scrollbars in some menus where it would be useful.
+                      Requires the latest dd_scrollbar_menu.js.
+1.05     2020-03-29   Added a null check for the value returned by
+                      msgbase.get_index() before using the value wherever
+                      get_index() is called.
+1.04     2020-02-09   Updated calls to AddAdditionalQuitKeys() in the
+                      DDLightbarMenu class per the updated version (requires the
+                      dd_lightbar_menu.js update).
+1.03     2019-08-14   Made use of require() (if available) to load the .js
+                      scripts.
+1.02     2019-04-08   Updated to use the new get_index() messagebase function,
+                      if available, for getting the message index objects in
+                      subBoardHasPolls().  get_index() is faster than iterating
+                      through all messages and calling get_msg_index() for each
+                      message. Further optimization: When checking a sub-board
+                      if it has polls, check in reverse rather than forward.
+                      Since polls & voting is a relatively recent feature in
+                      Synchronet, hopefully it should finish faster going in
+                      reverse.  Also, updated CountPollsInSubBoard() to use
+                      get_msg_index() if available so that it runs faster.
+1.01     2019-03-22   Changed "voting area" verbage to "sub-board".  Updated the
+                      main screen to show the number of polls the user has voted
+                      on & the number remaining. Started working on updating to
+                      do sub-board selection with group selection first.
+1.00     2019-01-02   Changed the version to 1.00 after the official release of
+                      Synchronet 3.17b
+0.39 B   2018-12-29   Made use of file_cfgname() when looking for and loading
+                      the configuration file.
+0.38 B   2018-12-23   Renamed DDLightbarMenu to dd_lightbar_menu.js
+0.37 B   2018-04-23   When submitting a vote, the thread_id field is now set to
+                      the message/poll's message ID, not message number.
+0.36 B   2018-03-25   For non-lightbar voting, updated to use BallotHdr (791)
+                      instead of SelectHdr (501).
+0.35 B   2018-03-19   Made a fix for non-lightbar voting input - It wasn't
+                      accepting Q to quit out of voting (a blank input worked
+                      though).
+0.34 B   2018-01-28   Updated to display avatars for the person who posted a
+                      poll.
+0.33 B   2017-12-18   Updated the definitions of the KEY_PAGE_UP and
+                      KEY_PAGE_DOWN veriables to match what they are in
+                      sbbsdefs.js (if defined) from December 18, 2017 so that
+                      the PageUp and PageDown keys continue to work properly.
+                      This script should still also work with older 3.17 builds
+                      of Synchronet.
+0.32 B   2017-09-24   Bug fix: After deleting the last poll in a sub-board, it
+                      now correctly goes to the main menu rather than reporting
+                      an error. Also, after creating or deleting a poll, the
+                      number of polls in the sub-board displayed on the main
+                      menu is now updated.
+0.31 B   2017-09-09   Optimization: Updated to only build the area selection
+                      menu once, the first time it's used. Also refactored a
+                      section of code there to go along with a bug fix in
+                      DDLIghtbarMenu.
+0.30 B   2017-09-08   Implemented a user configuration file to store last-read
+                      message numbers separately from Synchronet's messagebase
+                      so that SlyVote won't mess with users' actual last-read
+                      message numbers. Also, updated so that when changing to
+                      another area, if the top item index is on the last page of
+                      the menu, then set the top item index to the first item on
+                      the last page.
+0.29 B   2017-08-27   Checked for the user's UFLAG_V restriction (not allowed to
+                      vote) in more places.  If the user is not allowed to vote,
+                      they can still view poll results. Also, updated the poll
+                      viewing & stats view to say if a poll is closed.
+0.28 B   2017-08-20   Updated the vote option input for traditional mode (when
+                      voting from the 'view results' screen) so that it only
+                      accepts numbers and a comma for input.  Also, updated the
+                      close-poll behavior so that only the user who created the
+                      poll can close it (removed the sysop). Added a
+                      configuration file option, startupSubBoardCode, which
+                      specifies which sub-board to automatically start in if
+                      there are multiple sub-board codes configured.
+0.27 B   2017-08-19   Used the new Msgbase.close_poll() method in the August 19,
+                      2017 build of Synchronet 3.17
+0.26 B   2017-08-18   Made some minor changes, such as the hotkey text for
+                      submitting a vote in a poll
+0.25 B   2017-08-17   Finished the code for closing a poll
+0.24 B   2017-08-16   Updated to show the number of choices a user can submit
+                      for a poll, and restricted the user to choosing only that
+                      many. Also, started working on adding an option to let the
+                      user close a poll they created (while viewing poll
+                      results).
+0.23 B   2017-08-15   Started working on support for multi-answer polls.  Also,
+                      changed the "topic" verbage to "poll".
+0.22 B   2017-08-07   Updated to display "Loading areas..." when loading the
+                      message areas & looking to see which ones have polls.
+                      Also, changed "topic area" verbage to "voting area".
+0.21 B   2017-08-06   Updated the area chooser list to include a check mark next
+                      to areas that have polls in them.
+0.20 B   2017-08-05   Fixed a bug in the stats display where it was assigning
+                      the total_votes in the headers instead of comparing, using
+                      an = instead of ==.  Also, updated the stats view to
+                      display the stats in a scrollable frame rather than simply
+                      dumping out the stats to the screen.
+0.19 B   2017-08-03   Added a configuration option, useAllAvailableSubBoards,
+                      which tells SlyVote to use all available sub-boards where
+                      voting is enabled.  Defaults to true.  Also, fixed an off-
+                      by-1 bug when displaying the list of sub-boards to choose
+                      from.  Also, set the (new) ampersandHotkeysInItems
+                      property in most of the DDLightbarMenu objects to false so
+                      that it won't interpret ampersands before a character in
+                      menu items as hotkeys.
+0.18 B   2017-04-26   Fixed a coloring issue when outputting who voted on a poll
+                      when more than 1 person voted on it.
+0.17 B   2017-02-26   Mostly complete; continuing to make tweaks
+0.01 B   2016-12-29   Started working on SlyVote
