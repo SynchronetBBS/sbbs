@@ -665,6 +665,9 @@
 - `chksetup.js` checks the DOVE-Net (VERT) QWK hub settings, reporting
   when HEADERS.DAT or VOTING.DAT isn't included, kludge lines are
   redundantly included, or Ctrl-A codes aren't left in
+- `chksetup.js` warns when an FSEditor or SlyEdit message editor isn't
+  configured to Record Terminal Width, so its messages lack the Columns
+  header field used to re-word-wrap text for other terminal widths
 - `delfiles.js` locks the file base during deletion to prevent
   FTP-upload contention
 - Stock JS modules updated for SpiderMonkey 128 compatibility
