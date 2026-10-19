@@ -39,6 +39,13 @@
 var CHAT_LLM_CONFIG_FILE = system.ctrl_dir + 'chat_llm.ini';
 var BM25_K1              = 1.5;
 var BM25_B               = 0.75;
+/* SpiderMonkey 1.8.5 caps any one string at 2^28-1 chars
+ * (JSString::MAX_LENGTH).  The index is written with a single
+ * JSON.stringify() and read back by chat_llm.js with a single
+ * File.read() + JSON.parse(), so its serialized size must stay under
+ * that or either side dies with "allocation size overflow".  Leave
+ * headroom for the estimate's slop and the top-level fields. */
+var INDEX_MAX_CHARS      = 240 * 1024 * 1024;
 
 function load_config(persona)
 {
@@ -147,6 +154,12 @@ function build_index(chunks)
      * toString, hasOwnProperty, valueOf, etc.) don't trip our
      * `if (!terms[tok])` check on inherited properties. */
     var terms  = Object.create(null);      /* token -> {df, postings:[[doc_idx, tf], ...]} */
+    /* Running estimate of JSON.stringify(index).length; see
+     * INDEX_MAX_CHARS.  Chunks arrive in source priority order (and
+     * newest-first within msgs), so dropping the tail keeps the
+     * most valuable ones. */
+    var est_chars = 0;
+    var dropped   = 0;
 
     for (var i = 0; i < chunks.length; i++) {
         var c = chunks[i];
@@ -181,7 +194,7 @@ function build_index(chunks)
         }
 
         var doc_idx = docs.length;
-        docs.push({
+        var doc = {
             id:   c.id   || ('chunk-' + doc_idx),
             text: c.text,
             prov: c.provenance || '',
@@ -193,7 +206,24 @@ function build_index(chunks)
              * as ageless (no decay). */
             ts:   c.ts || 0,
             tt:   title_tokens   /* null when crawler doesn't supply */
-        });
+        };
+
+        /* Cost of this doc: its own serialization, plus one posting
+         * "[doc_idx,tf]," per distinct token, plus the key and
+         * {"df":N,"postings":[]} wrapper of each token new to terms. */
+        var cost = JSON.stringify(doc).length + 1;
+        var idx_digits = String(doc_idx).length;
+        for (var tok in tf) {
+            cost += idx_digits + String(tf[tok]).length + 4;
+            if (!terms[tok])
+                cost += tok.length + 32;
+        }
+        if (est_chars + cost > INDEX_MAX_CHARS) {
+            dropped = chunks.length - i;
+            break;
+        }
+        est_chars += cost;
+        docs.push(doc);
 
         for (var tok in tf) {
             if (!terms[tok]) terms[tok] = { df: 0, postings: [] };
@@ -205,6 +235,11 @@ function build_index(chunks)
     var total = 0;
     for (var i = 0; i < docs.length; i++) total += docs[i].len;
     var avgdl = docs.length ? total / docs.length : 0;
+
+    if (dropped)
+        print('llm_index: WARNING: index size limit (' + INDEX_MAX_CHARS
+            + ' chars) reached, dropped the last ' + dropped
+            + ' chunks; lower index_max_chunks or narrow index_sources');
 
     return {
         version: 1,
@@ -229,7 +264,17 @@ function write_index(idx, output_path)
     if (!f.open('w'))
         throw new Error('cannot write ' + tmp);
     /* No indent -- compact JSON. */
-    f.write(JSON.stringify(idx));
+    var json;
+    try {
+        json = JSON.stringify(idx);
+    } catch (e) {
+        f.close();
+        file_remove(tmp);
+        throw new Error('index too large to serialize (' + idx.N
+            + ' docs): ' + e
+            + '; lower index_max_chunks or narrow index_sources');
+    }
+    f.write(json);
     f.close();
 
     if (file_exists(output_path)) file_remove(output_path);
