@@ -2667,7 +2667,7 @@ int bitmap_set_modepalette(uint32_t p[16])
 
 uint32_t bitmap_map_rgb(uint16_t r, uint16_t g, uint16_t b)
 {
-	return (0xff << 24) | ((r & 0xff00) << 8) | ((g & 0xff00)) | (b >> 8);
+	return CIOLIB_COLOR_RGB | ((r & 0xff00) << 8) | ((g & 0xff00)) | (b >> 8);
 }
 
 void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size)
