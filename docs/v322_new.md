@@ -658,6 +658,10 @@
 - `shell_lib.send_email()` / `send_netmail()` accept a `to` /
   `address` argument; the email-menu **A**ttachment command
   works again (regression from a v3.21 refactor)
+- New `ctrl/modopts.ini` hooks run a JavaScript expression upon entering
+  a BBS section, e.g. to play a sound with `bbs.atcode("SOUND:file.ogg")`:
+  `[shell]` `main_enter` and `file_enter` (shells built on `shell_lib.js`)
+  and `[xtrn_sec]` `eval_first`
 - More strings in stock modules route through `gettext()` for
   `ctrl/text.ini` `[JS]`-section customization
 - Good Time Trivia gains a `useDoveNetSyncData` option that
