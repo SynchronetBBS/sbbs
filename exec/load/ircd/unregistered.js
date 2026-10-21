@@ -599,10 +599,9 @@ function Register_Unregistered_Local_Server(unreg, p, nline) {
 				"WARNING: %s linked without TSJOIN; it may be running outdated code",
 				p[0]
 			));
-			if (CapabEnforce) {
-				unreg.quit("Missing required TSJOIN capability; upgrade to a current build.");
-				return false;
-			}
+			/* Keep both hubs and leaves linkable throughout this rollout,
+			   even with an existing Enforce setting. Requiring the new
+			   dialect must wait until the network has been upgraded. */
 		}
 	}
 

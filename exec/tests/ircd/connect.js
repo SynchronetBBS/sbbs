@@ -178,6 +178,8 @@ try {
 
 		"STATS l returns 211 (link info)": function() {
 			var c = srv.client("statsbot");
+			c.send("OPER testop testpass");
+			c.expect(" 381 ", 3);
 			c.send("STATS l");
 			c.expect(" 211 ", 3);
 			c.expect(" 219 ", 3);

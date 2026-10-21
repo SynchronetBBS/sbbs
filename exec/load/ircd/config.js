@@ -50,6 +50,8 @@ var NLINE_CHECK_QWKPASSWD             =(1<<0);        // q
 var NLINE_IS_QWKMASTER                =(1<<1);        // w
 var NLINE_CHECK_WITH_QWKMASTER        =(1<<2);        // k
 
+var Clock_MaxSkew = 30;
+
 function Epoch() {
 	return parseInt(new Date().getTime()/1000);
 }
@@ -249,6 +251,7 @@ function parse_oline_flags(flags) {
 }
 
 function Clear_Config_Globals() {
+	Clock_MaxSkew = 30;
 	Admin1 = "";
 	Admin2 = "";
 	Admin3 = "";
@@ -668,6 +671,9 @@ function Write_Config_File(fn) {
 	f.writeln("[Capab]");
 	f.writeln(format("Enforce=%s", CapabEnforce ? "true" : "false"));
 	f.writeln("");
+	f.writeln("[Clock]");
+	f.writeln(format("MaxSkew=%u", Clock_MaxSkew));
+	f.writeln("");
 
 	f.close();
 
@@ -718,6 +724,17 @@ function ini_sections() {
 	this.Server = ini_Server;
 	this.Hub = ini_Hub;
 	this.Capab = ini_Capab;
+	this.Clock = ini_Clock;
+}
+
+function ini_Clock(arg, ini) {
+	if (ini.MaxSkew !== undefined) {
+		var value = Number(ini.MaxSkew);
+		if (isFinite(value) && value > 0 && Math.floor(value) == value)
+			Clock_MaxSkew = value;
+		else
+			log(LOG_WARNING, "Invalid [Clock] MaxSkew; keeping " + Clock_MaxSkew);
+	}
 }
 
 function ini_Capab(arg, ini) {
