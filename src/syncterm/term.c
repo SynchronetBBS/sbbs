@@ -5022,6 +5022,8 @@ doterm(struct bbslist *bbs)
 	        get_emulation(bbs));
 	if (!cterm)
 		return false;
+	/* DECRQSS must report the entry's effective emulated speed, too. */
+	cterm->decscs_speed = speed;
 	if (bbs->lf_expand)
 		cterm->lf_expand = true;
 	if (bbs->palette_size > 0 && (cio_api.options & CONIO_OPT_EXTENDED_PALETTE)) {
