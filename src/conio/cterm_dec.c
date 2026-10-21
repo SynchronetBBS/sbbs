@@ -1353,54 +1353,65 @@ cterm_handle_decstbm(struct cterminal *cterm, int *speed)	/* CSI Pt ; Pb r */
 void
 cterm_handle_decssdt(struct cterminal *cterm, int *speed)
 {
-	int old, ps;
+	struct cterminal *owner = cterm->parent ? cterm->parent : cterm;
+	int old, ps, x, y;
 
-	if (cterm->parent) {
-		cterm->parent->seq_param_count = cterm->seq_param_count;
-		cterm->parent->seq_param_int[0] = cterm->seq_param_int[0];
-		cterm_handle_decssdt(cterm->parent, speed);
-		return;
-	}
 	(void)speed;
 	cterm_seq_default(cterm, 0, 1);
 	ps = (int)cterm->seq_param_int[0];
 	if (ps < 0 || ps > 2)
 		return;
-	if (ps == cterm->status_display_type)
+	if (ps == owner->status_display_type)
 		return;
-	old = cterm->status_display_type;
-	if (cterm->status_display_active == 1)
-		cterm->status_display_active = 0;
-	cterm->status_display_type = ps;
-	if (cterm->status_display_cb)
-		cterm->status_display_cb(cterm, old, ps, cterm->status_display_cbdata);
+	/* The application may resize the main display or start/end the sub.
+	 * Save this parser's cursor, then give it the main drawing window. */
+	cterm_coord_get_xy(cterm, CTERM_COORD_ABSTERM,
+	    &cterm->xpos, &cterm->ypos);
+	setwindow(owner);
+	x = owner->xpos;
+	y = owner->ypos;
+	cterm_coord_conv_xy(owner, CTERM_COORD_ABSTERM, CTERM_COORD_CURR, &x, &y);
+	gotoxy(x, y);
+
+	old = owner->status_display_type;
+	owner->status_display_active = 0;
+	owner->status_display_type = ps;
+	if (owner->status_display_cb)
+		owner->status_display_cb(owner, old, ps, owner->status_display_cbdata);
+
+	/* Starting a status sub changes ciolib's window and cursor.  Keep the
+	 * main parser's final cursor save in the main display's coordinates. */
+	setwindow(owner);
+	x = owner->xpos;
+	y = owner->ypos;
+	cterm_coord_conv_xy(owner, CTERM_COORD_ABSTERM, CTERM_COORD_CURR, &x, &y);
+	gotoxy(x, y);
 }
 
 /* DECSASD — Select Active Status Display (VT320+): CSI Ps $ }
  *   Ps=0  main display receives writes (default)
  *   Ps=1  status display receives writes (valid only when DECSSDT=2)
- * Phase 1 tracks the flag but routing to a sub-cterm happens in Phase 2;
- * Ps=1 is silently ignored until DECSSDT=2 is available.  Bubbles to
- * parent on sub-cterm dispatch. */
+ * cterm_write switches parsers after this sequence, including when more
+ * input follows in the same buffer.  Update the parent on sub-cterm
+ * dispatch while preserving this parser's cursor. */
 void
 cterm_handle_decsasd(struct cterminal *cterm, int *speed)
 {
+	struct cterminal *owner = cterm->parent ? cterm->parent : cterm;
 	int ps;
 
-	if (cterm->parent) {
-		cterm->parent->seq_param_count = cterm->seq_param_count;
-		cterm->parent->seq_param_int[0] = cterm->seq_param_int[0];
-		cterm_handle_decsasd(cterm->parent, speed);
-		return;
-	}
 	(void)speed;
 	cterm_seq_default(cterm, 0, 0);
 	ps = (int)cterm->seq_param_int[0];
 	if (ps < 0 || ps > 1)
 		return;
-	if (ps == 1 && cterm->status_display_type != 2)
+	if (ps == 1 && owner->status_display_type != 2)
 		return;
-	cterm->status_display_active = ps;
+	if (ps == owner->status_display_active)
+		return;
+	cterm_coord_get_xy(cterm, CTERM_COORD_ABSTERM,
+	    &cterm->xpos, &cterm->ypos);
+	owner->status_display_active = ps;
 }
 
 /* ========================================================================

@@ -414,6 +414,11 @@ struct cterminal {
 	/* PETSCII / ATASCII byte-table dispatch */
 	const uint8_t		*ctrl_bitmap;		/* 256-bit table, 32 bytes */
 	void				(*const *byte_handlers)(struct cterminal *);
+	/* A DECSSDT callback may retire a sub-cterm from inside its parser.
+	 * Keep it alive until all writes (including nested macros) unwind. */
+	unsigned int        write_depth;
+	bool                end_pending;
+	bool                end_free_fonts;
 };
 
 #ifdef __cplusplus
