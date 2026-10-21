@@ -29,6 +29,7 @@ function IRC_Server() {
 	this.quitting = false;	// are we already inside quit()?
 	this.server = true;	// yep, we're a server.
 	this.uline = false;	// are we services?
+	this.admitted = false;	// clock-checked and announced to the network?
 	// Variables containing user/server information as we receive it.
 	this.flags = 0;
 	this.hops = 0;
@@ -96,6 +97,11 @@ function Server_Work(cmdline) {
 		cmd.source.name = this.nick;
 		cmd.source.is_server = true;
 	}
+	if (!this.admitted && !this.uline
+		&& ["CLOCK", "PING", "PONG", "ERROR", "SVINFO"].indexOf(cmd.verb) < 0) {
+		this.quit("State received before server clock verification");
+		return 0;
+	}
 
 	if (cmd.source.is_server)
 		origin = Servers[cmd.source.name.toLowerCase()];
@@ -126,6 +132,23 @@ function Server_Work(cmdline) {
 		return 0;
 	}
 
+	/* A server prefix is an assertion by the authenticated peer, not a
+	   channel user's MODE request.  Before accepting either kind of MODE
+	   (or a KICK), make sure the claimed origin is actually on this link. */
+	if ((cmd.verb == "MODE" || cmd.verb == "KICK"
+		|| cmd.verb == "JOIN" || cmd.verb == "SJOIN" || cmd.verb == "TOPIC" || cmd.verb == "TSMAP"
+		|| cmd.verb == "PART")
+		&& origin !== this
+		&& (origin.local || !origin.parent
+			|| origin.parent.toLowerCase() != this.nick.toLowerCase())
+	) {
+		umode_notice(USERMODE_OPER, "Notice", format(
+			"Ignoring %s from %s: origin %s is on another link",
+			cmd.verb, this.nick, origin.nick
+		));
+		return 0;
+	}
+
 	this.idletime = system.timer;
 	this.recv_msgs++;
 	this.recv_bytes += cmdline.length;
@@ -143,6 +166,24 @@ function Server_Work(cmdline) {
 	}
 
 	switch(cmd.verb) {
+	case "TSMAP":
+		IRC_receive_tsmap(this, origin, p);
+		return 0;
+	case "CLOCK":
+		if (origin === this && !this.uline)
+			IRC_receive_clock(this, p);
+		return 0;
+	case "SVINFO":
+		/* Legacy services may send standard TS negotiation. They are not
+		   required to implement our freshness-checked CLOCK extension. */
+		return 0;
+	case "CSYNC":
+		/* Only our directly connected, configured hub can replace leaf
+		   state. Ordinary SJOIN timestamp ordering never grants this power. */
+		if (origin !== this || !this.hub)
+			break;
+		IRC_receive_channel_sync(this, p);
+		break;
 	case "PING": /* RFC1459 says to respond to these first */
 		if (!p[0])
 			break;
@@ -335,20 +376,18 @@ function Server_Work(cmdline) {
 		join_ts = 0;
 		join_chans_str = p[0];
 		if (p[1] && p[0].match(/^[0-9]+$/)) {
-			join_ts = parseInt(p[0]);
-			now = Epoch();
-			/* Untrusted leaves never provide a trustworthy timestamp; always
-			   replace with the local clock.  Hubs are trusted but still
-			   clamped for extreme clock skew (same rationale as SJOIN). */
-			if (!this.hub || !join_ts || join_ts > now + 60 || join_ts < 100000000)
-				join_ts = now;
+			join_ts = IRC_parse_channel_timestamp(p[0]);
+			if (join_ts === null || (join_ts === 0 && !this.uline && !origin.uline)) {
+				this.quit("Invalid JOIN channel timestamp");
+				return 0;
+			}
 			join_chans_str = p[1];
 		}
 		k = join_chans_str.split(",");
 		for (i in k) {
 			if (k[i][0] != "#")
 				continue;
-			origin.do_join(k[i].slice(0,MAX_CHANLEN),"",join_ts);
+			IRC_server_join(this, origin, k[i].slice(0,MAX_CHANLEN), join_ts);
 		}
 		break;
 	case "KICK":
@@ -383,6 +422,7 @@ function Server_Work(cmdline) {
 				"%s attempted KICK of %s from %s without ops (via %s)",
 				origin.nick, j.nick, tmp.nam, this.nick
 			));
+			IRC_resync_leaf(this, tmp);
 			break;
 		}
 		log(LOG_DEBUG, format("KICK: %s kicked %s from %s (origin=%s local=%s, target local=%s, from server=%s)",
@@ -404,6 +444,8 @@ function Server_Work(cmdline) {
 			j.nick,
 			p[2] ? p[2] : j.nick
 		));
+		if (!this.hub && !origin.uline)
+			this.ircout(format("KICK %s %s :%s", tmp.nam, j.nick, p[2] || j.nick));
 		j.recvq.filter_channel(tmp.nam);
 		j.flush_channel_sendqs(tmp);
 		j.rmchan(tmp);
@@ -483,8 +525,12 @@ function Server_Work(cmdline) {
 		   the "0" in place, where it gets misparsed as the mode string and the
 		   real modes silently vanish. */
 		mode_ts = 0;
-		if (parseInt(p[1]) == p[1]) {
-			mode_ts = parseInt(p[1]);
+		if (/^[0-9]+$/.test(p[1])) {
+			mode_ts = IRC_parse_channel_timestamp(p[1]);
+			if (mode_ts === null) {
+				this.quit("Invalid MODE channel timestamp");
+				return 0;
+			}
 			p.splice(1,1);
 		}
 		if (p[0][0] == "#") {
@@ -498,24 +544,31 @@ function Server_Work(cmdline) {
 				));
 				break;
 			}
-			/* Authenticity check for untrusted leaves: origin must be opped
-			   in the channel.  U:lined services are exempt (they set modes
-			   on behalf of NickServ/ChanServ).  On mismatch, bounce the
-			   correct channel modes back to the leaf so it re-syncs. */
-			if (!this.hub && !origin.uline && !tmp.modelist[CHANMODE_OP][origin.id]) {
+			/* Legacy bursts use separate server MODEs after JOIN. Accept
+			   those only for a channel first introduced by this leaf, while
+			   every member still belongs to it. Established channels never
+			   gain this exemption. */
+			var founder = p[1] == "+o" && p.length == 3 ? Users[p[2].toUpperCase()] : null;
+			var founder_grant = origin === this && founder
+				&& tmp.pending_founder == founder.id && tmp.users[founder.id]
+				&& founder.parent == this.nick && (!mode_ts || mode_ts == tmp.created);
+			if (!this.hub && !origin.uline
+				&& (origin.server ? !(founder_grant || IRC_leaf_burst_channel(this, origin, tmp))
+					: !tmp.modelist[CHANMODE_OP][origin.id])) {
 				umode_notice(USERMODE_OPER,"Notice",format(
 					"Leaf %s: %s attempted MODE %s without ops - bouncing",
 					this.nick, origin.nick, tmp.nam
 				));
-				this.rawout(format(":%s MODE %s %s",
-					ServerName,
-					tmp.nam,
-					tmp.chanmode(true /* pass args */)
-				));
+				IRC_resync_leaf(this, tmp, p.slice(1));
 				break;
 			}
+			/* Having channel ops authorizes a MODE change, never a change
+			   to the hub's canonical channel age. */
+			if (!this.hub && !this.uline && !origin.uline)
+				mode_ts = tmp.created;
 			p.shift();
-			origin.set_chanmode(tmp, p, mode_ts);
+			origin.set_chanmode(tmp, p, mode_ts,
+				{merge: this.bursting && !origin.uline});
 			break;
 		}
 		/* Setting a user mode */
@@ -768,6 +821,8 @@ function Server_Work(cmdline) {
 		tmp = p[0].split(",");
 		for (i in tmp) {
 			origin.do_part(tmp[i]);
+			if (!this.hub && !this.uline && IRC_has_tsmap(this) && /^[0-9]+[.][0-9]+$/.test(p[1]))
+				this.ircout("TSMAP PARTACK " + tmp[i] + " " + p[1]);
 		}
 		break;
 	case "PASS":
@@ -976,187 +1031,111 @@ function Server_Work(cmdline) {
 	case "SJOIN":
 		if (!p[1] || p[1][0] != "#")
 			break;
-		if (!origin) {
-			log(LOG_ERR, format("SJOIN: origin is null for %s from %s", p[1], this.nick));
+		sjoin_ts = IRC_parse_channel_timestamp(p[0]);
+		if (sjoin_ts === null || (sjoin_ts === 0 && !this.uline && !origin.uline)) {
+			this.quit("Invalid SJOIN channel timestamp");
+			return 0;
+		}
+		/* Preserve the legacy services TS-zero dialect without introducing
+		   an epoch-zero channel or resetting the established network age. */
+		if (sjoin_ts === 0) {
+			var service_channel = Channels[p[1].toUpperCase()];
+			sjoin_ts = service_channel ? service_channel.created : Epoch();
+		}
+		if (!p[2]) {
+			/* Preserve the joining user and original TS through every hop. */
+			if (!origin.server)
+				IRC_server_join(this, origin, p[1], sjoin_ts);
 			break;
 		}
-		log(LOG_DEBUG, format("SJOIN: %s joining %s (origin local=%s, from server=%s)",
-			origin.nick, p[1],
-			origin.local ? "yes" : "no",
-			this.nick));
+		if (!origin.server || p.length < 4)
+			break;
 
-		/* Timestamp handling for SJOIN:
-		   Untrusted (non-hub) leaves cannot be relied on for channel creation
-		   times.  A leaf operator who backdates their clock can win every TS
-		   race and silently de-op the entire network.  Replace any leaf-sourced
-		   TS with the local hub clock unconditionally.
-		   Hubs are trusted; clamp only for extreme clock skew.
-		   CONFLICT WITH MR !711 REVIEW: reviewer requested a symmetric clamp
-		   for all servers to avoid "desync" (leaf keeps its ops, hub strips
-		   them).  Per project spec: leaf timestamps are always ignored; the
-		   resulting desync is intentional - the leaf loses ops and must
-		   re-earn them via legitimate means. */
-		sjoin_ts = parseInt(p[0]);
-		now = Epoch();
-		if (!this.hub) {
-			sjoin_ts = now;
-		} else if (!sjoin_ts || sjoin_ts > now + 60 || sjoin_ts < 100000000) {
-			log(LOG_DEBUG, format(
-				"[SJOIN] %s: clamping out-of-range TS %d for %s to local TS %d",
-				this.nick, sjoin_ts, p[1], now
-			));
-			sjoin_ts = now;
+		/* Validate members before changing the channel's timestamp or modes.
+		   A snapshot can introduce only users routed through its sender. */
+		var members = [], seen_members = {}, member_modes = p.slice(2, -1);
+		j = p[p.length - 1].split(/ +/);
+		for (i = 0; i < j.length; i++) {
+			if (!j[i]) continue;
+			k = new SJOIN_Nick(j[i]);
+			n = Users[k.nick.toUpperCase()];
+			if (!n || n.local || !n.parent
+				|| n.parent.toLowerCase() != this.nick.toLowerCase()) {
+				umode_notice(USERMODE_OPER, "Notice", format(
+					"Ignoring SJOIN member %s from wrong or unknown route %s",
+					k.nick, this.nick));
+				continue;
+			}
+			if (seen_members[n.id]) continue;
+			seen_members[n.id] = true;
+			members.push({user: n, isop: k.isop, isvoice: k.isvoice});
 		}
-
+		if (!members.length)
+			break;
 		tmp = Channels[p[1].toUpperCase()];
+		var leaf_assertion = !this.hub && !origin.uline;
+		var existing_channel = !!tmp;
+		var leaf_ts = leaf_assertion ? IRC_leaf_timestamp(this, p[1]) : sjoin_ts;
+		if (leaf_ts === null) return 0;
 		if (!tmp) {
-			Channels[p[1].toUpperCase()] = new Channel(p[1].toUpperCase());
-			tmp = Channels[p[1].toUpperCase()];
-			tmp.nam = p[1];
-			tmp.created = sjoin_ts;
+			tmp = Channels[p[1].toUpperCase()] = new Channel(p[1]);
+			/* A leaf cannot backdate a channel it first introduces to the
+			   hub. The hub assigns its network timestamp once, then sends
+			   that same canonical value back to the leaf. */
+			tmp.created = leaf_ts;
+			if (leaf_assertion && this.bursting) tmp.pending_burst = this;
 		}
-
-		if (p[2]) {
-			/* ts_rejected == true means the incoming side is newer (higher ts)
-			   and lost the TS race.  Channel modes were already rejected inside
-			   set_chanmode (returns 2 for TS-rejected, 0 for no net change);
-			   we must also suppress op/voice for those members. */
-			ts_rejected = (this.set_chanmode(
-				tmp, /* channel */
-				p.splice(2,p.length-3), /* modeline and arguments */
-				sjoin_ts
-			) === 2);
-
-			j = p[p.length-1].split(" "); /* Channel members */
-
-			if (!j[0]) {
-				umode_notice(USERMODE_OPER,"Notice",format(
-					"Server %s trying to SJOIN empty channel %s before processing.",
-					this.nick,
-					p[1]
-				));
-				break;
+		if (leaf_assertion && existing_channel)
+			ts_rejected = true;
+		else
+			ts_rejected = this.set_chanmode(tmp, member_modes, leaf_assertion ? 0 : sjoin_ts,
+				{merge: !origin.uline, local_only: true}) === 2;
+		valid_nicks = [];
+		if (tmp.pending_burst && tmp.pending_burst !== this)
+			delete tmp.pending_burst;
+		for (i = 0; i < members.length; i++) {
+			k = members[i];
+			n = k.user;
+			if (!n.channels[tmp.nam.toUpperCase()]) {
+				tmp.users[n.id] = n;
+				n.channels[tmp.nam.toUpperCase()] = tmp;
+				n.bcast_to_channel(tmp, "JOIN :" + tmp.nam, false);
 			}
-
-			valid_nicks = "";
-			for (i in j) {
-				k = new SJOIN_Nick(j[i]);
-				n = Users[k.nick.toUpperCase()];
-				if (!n) {
-					umode_notice(USERMODE_OPER,"Notice",format(
-						"Server %s trying to SJOIN non-existent nick %s before processing.",
-						this.nick,
-						k.nick
-					));
-					continue;
-				}
-
-				/* Origin/membership validation: verify the named user belongs to
-				   the server that sent this SJOIN (or a server behind it).
-				   A non-hub server can only SJOIN users directly connected to it.
-				   Hubs may relay SJOINs on behalf of downstream servers and are
-				   trusted to relay only their own users. */
-				if (!this.hub && (k.isop || k.isvoice) && n.parent !== this.nick) {
-					log(LOG_WARNING, format(
-						"[SJOIN] %s tried to grant op/voice to %s in %s but %s's parent is %s - rejecting",
-						this.nick, n.nick, tmp.nam, n.nick, n.parent
-					));
-					umode_notice(USERMODE_OPER,"Notice",format(
-						"WARNING: %s tried to grant op/voice to %s (parent=%s) in %s via SJOIN - rejected (forged op attempt?)",
-						this.nick, n.nick, n.parent, tmp.nam
-					));
-					/* Still allow the join, just strip the status */
-					k.isop = false;
-					k.isvoice = false;
-				}
-
-				/* TS race: incoming side is newer - strip member ops/voices too */
-				if (ts_rejected) {
-					k.isop = false;
-					k.isvoice = false;
-				}
-
-				if (!n.channels[tmp.nam.toUpperCase()]) {
-					tmp.users[n.id] = n;
-					n.channels[tmp.nam.toUpperCase()] = tmp;
-					n.bcast_to_channel(tmp, format(
-						"JOIN %s",
-						tmp.nam
-					), false /*bcast*/);
-				}
-
-				if (k.isop)
-					tmp.modelist[CHANMODE_OP][n.id] = n;
-				if (k.isvoice)
-					tmp.modelist[CHANMODE_VOICE][n.id] = n;
-				if (k.isop || k.isvoice) {
-					origin.bcast_to_channel(tmp, format(
-						"MODE %s +%s%s %s",
-						tmp.nam,
-						k.isop ? "o" : "",
-						k.isvoice ? "v" : "",
-						n.nick
-					), false /*bcast*/);
-				}
-
-				if (valid_nicks != "")
-					valid_nicks += " ";
-
-				valid_nicks += format("%s%s%s",
-					k.isop ? "@" : "",
-					k.isvoice ? "+" : "",
-					k.nick
-				);
+			var status_modes = "", status_args = "";
+			if (!ts_rejected && k.isop && !tmp.modelist[CHANMODE_OP][n.id]) {
+				tmp.modelist[CHANMODE_OP][n.id] = n;
+				status_modes += "o";
+				status_args += " " + n.nick;
 			}
-
-			if (!true_array_len(tmp.users)) {
-				umode_notice(USERMODE_OPER,"Notice",format(
-					"Server %s trying to SJOIN zero-member channel %s post-processing.",
-						this.nick,
-						tmp.nam
-				));
-				delete Channels[p[1].toUpperCase()];
-				break;
+			if (!ts_rejected && k.isvoice && !tmp.modelist[CHANMODE_VOICE][n.id]) {
+				tmp.modelist[CHANMODE_VOICE][n.id] = n;
+				status_modes += "v";
+				status_args += " " + n.nick;
 			}
-
-			/* Use sjoin_ts (not p[0]) so a leaf's backdated clock cannot
-			   corrupt our channel TS through this path. */
-			if (tmp.created > sjoin_ts)
-				tmp.created = sjoin_ts;
-
-			this.bcast_to_servers_raw(
-				format(":%s SJOIN %lu %s %s :%s",
-					origin.nick,
-					tmp.created,
-					tmp.nam,
-					tmp.chanmode(true /* pass args */),
-					valid_nicks
-				)
-			);
-		} else { /* User single SJOIN */
-			if (origin.server) {
-				umode_notice(USERMODE_OPER,"Notice",format(
-					"Server %s trying to SJOIN itself to a channel?!",
-					origin.nick
-				));
-				break;
-			}
-			if (origin.channels[tmp.nam.toUpperCase()])
-				break;
-			origin.channels[tmp.nam.toUpperCase()] = tmp;
-			tmp.users[origin.id] = origin;
-			origin.bcast_to_channel(tmp, format(
-				"JOIN %s",
-				tmp.nam
-			), false /*bcast*/);
-			this.bcast_to_servers_raw(
-				format(":%s SJOIN %lu %s",
-					this.nick,
-					tmp.created,
-					tmp.nam
-				)
-			);
+			if (status_modes)
+				origin.bcast_to_channel(tmp, "MODE " + tmp.nam + " +"
+					+ status_modes + status_args, false);
+			valid_nicks.push(leaf_assertion
+				? (tmp.modelist[CHANMODE_OP][n.id] ? "@" : "")
+					+ (tmp.modelist[CHANMODE_VOICE][n.id] ? "+" : "") + n.nick
+				: (k.isop ? "@" : "") + (k.isvoice ? "+" : "") + n.nick);
 		}
+		/* Forward the original claim, not a mixture of the winning local TS
+		   and losing remote members. Each receiver resolves the same event. */
+		var relay = format(":%s SJOIN %lu %s %s :%s",
+			leaf_assertion ? ServerName : origin.nick,
+			leaf_assertion ? tmp.created : sjoin_ts, tmp.nam,
+			leaf_assertion ? tmp.chanmode(true) : member_modes.join(" "), valid_nicks.join(" "));
+		for (var link in Local_Servers) {
+			var recipient = Local_Servers[link];
+			if (recipient === this || !recipient.admitted) continue;
+			if (IRC_legacy_leaf(recipient)) {
+				if (IRC_leaf_has_member(recipient, tmp)) IRC_resync_leaf(recipient, tmp);
+				else recipient.server_chan_info(tmp);
+			} else recipient.rawout(relay);
+		}
+		if (leaf_assertion)
+			IRC_resync_leaf(this, tmp, member_modes);
 		break;
 	case "SQUIT":
 		if (!p[0] || !this.hub)
@@ -1259,27 +1238,45 @@ function Server_Work(cmdline) {
 		));
 		break;
 	case "TOPIC":
-		if (!p[3])
+		if (p[3] === undefined)
 			break;
 		tmp = Channels[p[0].toUpperCase()];
 		if (!tmp) {
 			log(LOG_DEBUG, format("TOPIC: channel %s not found", p[0]));
 			break;
 		}
-		if (p[3] == tmp.topic)
-			break;
 		if (!origin) {
 			log(LOG_ERR, format("TOPIC: origin is null for %s from %s", p[0], this.nick));
 			break;
 		}
-		/* Reject stale topics: incoming topictime must be newer than stored */
-		if (this.hub && tmp.topictime && parseInt(p[2]) <= tmp.topictime)
+		var leaf_topic = !this.hub && !origin.uline && !this.uline;
+		if (IRC_legacy_leaf(this)) IRC_note_legacy_topic(this, tmp, p[2]);
+		var topic_ts = leaf_topic ? Math.max(Epoch(), tmp.topictime + 1)
+			: IRC_parse_channel_timestamp(p[2]);
+		if (topic_ts === null || !topic_ts)
+			break;
+		if (leaf_topic) {
+			if (!IRC_leaf_burst_channel(this, origin, tmp)
+				&& (origin.server || !origin.channels[tmp.nam.toUpperCase()]
+					|| ((tmp.mode & CHANMODE_TOPIC) && !tmp.modelist[CHANMODE_OP][origin.id]))) {
+				IRC_resync_leaf(this, tmp);
+				break;
+			}
+			/* As with channel creation, an untrusted leaf cannot choose an
+			   authoritative timestamp. Preserve the hub's decision downstream. */
+			topic_ts = Math.max(Epoch(), tmp.topictime + 1);
+		}
+		/* Preserve the source timestamp on every route. Concurrent changes
+		   with equal timestamps choose the same record independent of order. */
+		if (topic_ts < tmp.topictime
+			|| (topic_ts == tmp.topictime
+				&& (p[1] + "\x00" + p[3]) <= (tmp.topicchangedby + "\x00" + tmp.topic)))
 			break;
 		log(LOG_DEBUG, format("TOPIC: %s set topic on %s (origin local=%s, from server=%s)",
 			origin.nick, tmp.nam,
 			origin.local ? "yes" : "no",
 			this.nick));
-		tmp.topictime = this.hub ? parseInt(p[2]) : Epoch();
+		tmp.topictime = topic_ts;
 		tmp.topic = p[3];
 		tmp.topicchangedby = p[1];
 		origin.bcast_to_channel(tmp, format(
@@ -1287,14 +1284,9 @@ function Server_Work(cmdline) {
 			tmp.nam,
 			tmp.topic
 		),false /*bcast*/);
-		this.bcast_to_servers_raw(format(
-			":%s TOPIC %s %s %lu :%s",
-			origin.nick,
-			tmp.nam,
-			p[1],
-			tmp.topictime,
-			tmp.topic
-		));
+		IRC_bcast_topic(origin, tmp, this);
+		if (leaf_topic)
+			IRC_send_topic_sync(this, tmp);
 		break;
 	case "TRACE":
 		if (!p[0] || origin.server)
@@ -1380,21 +1372,15 @@ function Server_Work(cmdline) {
 	case "SVSMODE":
 		return 0; /* Silently ignore these commands */
 	case "BURST":
-		/* BURST 0 marks the end of the peer's user/channel burst.  Now that
-		   we know which users belong to this server, catch-up-burst any +p/+s
-		   channels that have members on this leaf — those were suppressed in
-		   our outbound burst because we hadn't received the leaf's NICKs yet. */
-		if (p[0] !== "0" || this.hub)
-			return 0;
-		for (i in Channels) {
-			if (i[0] !== "#") continue;
-			if (!(Channels[i].mode & (CHANMODE_PRIVATE|CHANMODE_SECRET))) continue;
-			for (j in Channels[i].users) {
-				if (Channels[i].users[j].parent === this.nick) {
-					this.server_chan_info(Channels[i]);
-					break;
-				}
-			}
+		this.bursting = p[0] !== "0";
+		if (!this.bursting) {
+			for (i in Channels)
+				if (Channels[i].pending_burst === this) delete Channels[i].pending_burst;
+		}
+		if (!this.bursting && this.hub) IRC_admit_waiting_leaves();
+		if (!this.bursting && !this.hub && !this.uline) {
+			for (i in Channels)
+				IRC_resync_leaf(this, Channels[i]);
 		}
 		return 0;
 	default:
@@ -1417,11 +1403,265 @@ function Server_Work(cmdline) {
 
 ////////// Functions //////////
 
+function IRC_leaf_has_member(peer, chan) {
+	for (var i in chan.users)
+		if (chan.users[i].parent == peer.nick)
+			return true;
+	return false;
+}
+
+function IRC_channel_visible_to_server(peer, chan) {
+	return peer.hub || peer.uline || !(chan.mode & (CHANMODE_PRIVATE | CHANMODE_SECRET))
+		|| IRC_leaf_has_member(peer, chan);
+}
+
+function IRC_legacy_leaf(peer) {
+	return !peer.hub && !peer.uline
+		&& (!peer.their_capab || peer.their_capab.indexOf("CSYNC") < 0);
+}
+
+function IRC_mode_timestamp(peer, ts) {
+	return peer.their_capab && (peer.their_capab.indexOf("TSMODE") >= 0
+		|| peer.their_capab.indexOf("TSJOIN") >= 0) ? " " + ts + " " : " ";
+}
+
+function IRC_leaf_burst_channel(peer, origin, chan) {
+	if (origin !== peer || !peer.bursting || chan.pending_burst !== peer) return false;
+	for (var i in chan.users)
+		if (chan.users[i].parent != peer.nick) {
+			delete chan.pending_burst;
+			return false;
+		}
+	return true;
+}
+
+/* Old leaves reject non-newer topics, even when their clock is ahead of the
+   hub. Keep a presentation counter on this channel for that leaf only. It
+   never becomes a network timestamp or travels over a hub link. */
+function IRC_note_legacy_topic(peer, chan, ts) {
+	if (!chan.legacy_topics) chan.legacy_topics = {};
+	var entry = chan.legacy_topics[peer.nick];
+	if (!entry || entry.peer !== peer)
+		entry = chan.legacy_topics[peer.nick] = {peer: peer, time: 0};
+	var parsed = IRC_parse_channel_timestamp(ts);
+	if (parsed !== null) entry.time = Math.max(entry.time, parsed);
+	return entry;
+}
+
+function IRC_send_topic(peer, chan, origin) {
+	var ts = chan.topictime;
+	if (IRC_legacy_leaf(peer)) {
+		var entry = IRC_note_legacy_topic(peer, chan, ts);
+		ts = entry.time = Math.max(ts, entry.time + 1);
+	}
+	var line = "TOPIC " + chan.nam + " " + (chan.topicchangedby || ServerName)
+		+ " " + ts + " :" + chan.topic;
+	/* Server prefixes are implicit on direct links. Omitting them also
+	   keeps maximum-length topics and channel names inside the wire limit. */
+	if (!origin || origin.server) peer.rawout(line);
+	else peer.originatorout(line, origin);
+}
+
+function IRC_bcast_topic(origin, chan, except) {
+	for (var i in Local_Servers) {
+		var peer = Local_Servers[i];
+		if (peer !== except && peer.admitted && peer.nick != origin.parent)
+			IRC_send_topic(peer, chan, origin);
+	}
+}
+
+function IRC_send_topic_sync(peer, chan) {
+	if (!peer.their_capab || peer.their_capab.indexOf("CSYNC") < 0) {
+		IRC_send_topic(peer, chan);
+		return;
+	}
+	/* CSYNC is accepted only from the directly configured hub. Its implicit
+	   prefix saves enough wire space for maximum-length topics/channels. */
+	peer.rawout("CSYNC " + chan.created + " " + chan.nam + " TOPIC "
+		+ (chan.topicchangedby || ServerName) + " " + chan.topictime + " :" + chan.topic);
+}
+
+function IRC_server_join(peer, user, name, ts) {
+	var chan = Channels[name.toUpperCase()];
+	var fresh = !chan;
+	var leaf = !peer.hub && !user.uline && !peer.uline;
+	if (user.channels[name.toUpperCase()]) {
+		delete peer.timestamp_claim;
+		return;
+	}
+	/* A hub is the authority at the untrusted-leaf boundary. Existing
+	   channel incarnations cannot be replaced by a leaf's claimed age. */
+	if (leaf)
+		ts = IRC_leaf_timestamp(peer, name);
+	if (ts === null) return;
+	if (user.do_join(name, "", ts) && leaf) {
+		chan = Channels[name.toUpperCase()];
+		if (fresh && peer.bursting) chan.pending_burst = peer;
+		IRC_resync_leaf(peer, chan);
+	}
+}
+
+function IRC_resync_leaf(peer, chan, rejected_modes) {
+	if (peer.hub || peer.uline || !IRC_leaf_has_member(peer, chan))
+		return;
+	if (!peer.their_capab || peer.their_capab.indexOf("CSYNC") < 0) {
+		IRC_resync_legacy_leaf(peer, chan, rejected_modes);
+		return;
+	}
+	var header = ":" + ServerName + " CSYNC " + chan.created + " " + chan.nam + " ";
+	peer.rawout(header + "BEGIN " + chan.chanmode(true));
+	var names = "", i, u, token;
+	for (i in chan.users) {
+		u = chan.users[i];
+		token = (chan.modelist[CHANMODE_OP][u.id] ? "@" : "")
+			+ (chan.modelist[CHANMODE_VOICE][u.id] ? "+" : "") + u.nick;
+		if (names && (header + "MORE :" + names + " " + token).length > 510) {
+			peer.rawout(header + "MORE :" + names); names = "";
+		}
+		names += (names ? " " : "") + token;
+	}
+	if (names) peer.rawout(header + "MORE :" + names);
+	names = "";
+	for (i in chan.modelist[CHANMODE_BAN]) {
+		token = chan.modelist[CHANMODE_BAN][i];
+		if (names && (header + "BANS :" + names + " " + token).length > 510) {
+			peer.rawout(header + "BANS :" + names); names = "";
+		}
+		names += (names ? " " : "") + token;
+	}
+	if (names) peer.rawout(header + "BANS :" + names);
+	IRC_send_topic_sync(peer, chan);
+	peer.rawout(header + "END");
+}
+
+function IRC_send_legacy_flags(peer, chan) {
+	for (var bit in MODE) {
+		if (!MODE[bit].state || !(chan.mode & bit)) continue;
+		peer.ircout("MODE " + chan.nam + IRC_mode_timestamp(peer, 0)
+			+ "+" + MODE[bit].modechar + (MODE[bit].args ? " " + chan.arg[bit] : ""));
+	}
+}
+
+function IRC_resync_legacy_leaf(peer, chan, rejected_modes) {
+	var header = "MODE " + chan.nam + IRC_mode_timestamp(peer, 0), i, u;
+	/* A rejected +b has already changed the old leaf's local list. Remove
+	   just those noncanonical masks, including during its initial burst. */
+	if (rejected_modes && rejected_modes.length) {
+		var arg = 1, add = true, modes = rejected_modes[0];
+		for (i = 0; i < modes.length; i++) {
+			var m = modes[i];
+			if (m == "+" || m == "-") { add = m == "+"; continue; }
+			if ("bkov".indexOf(m) < 0 && !(m == "l" && add)) continue;
+			var value = rejected_modes[arg++];
+			if (m != "b" || !add || !value) continue;
+			var mask = create_ban_mask(value);
+			if (mask && !chan.is_str_member_of_chanmode_list(CHANMODE_BAN, mask))
+				peer.ircout(header + "-b " + mask);
+		}
+	}
+	/* Do not erase the state of a new channel between its JOINs and the
+	   separate MODE/TOPIC lines in an old daemon's initial burst. */
+	if (peer.bursting) return;
+	for (i in chan.users) {
+		u = chan.users[i];
+		/* Its own members can have a PART in flight. Reintroduce only
+		   remote users here; legacy peers have no PART acknowledgment. */
+		if (u.parent != peer.nick) peer.rawout(":" + u.nick + " JOIN " + chan.nam);
+	}
+	peer.ircout(header + "-imnpst");
+	peer.ircout(header + "-k *");
+	peer.ircout(header + "-l");
+	IRC_send_legacy_flags(peer, chan);
+	for (i in chan.users) {
+		u = chan.users[i];
+		peer.ircout(header + "-ov " + u.nick + " " + u.nick);
+		if (chan.modelist[CHANMODE_OP][u.id]) peer.ircout(header + "+o " + u.nick);
+		if (chan.modelist[CHANMODE_VOICE][u.id]) peer.ircout(header + "+v " + u.nick);
+	}
+	for (i in chan.modelist[CHANMODE_BAN])
+		peer.ircout(header + "+b " + chan.modelist[CHANMODE_BAN][i]);
+	if (chan.topictime) IRC_send_topic(peer, chan);
+}
+
+function IRC_receive_channel_sync(peer, p) {
+	var ts = IRC_parse_channel_timestamp(p[0]), name = p[1];
+	if (!ts || !name || name[0] != "#" || name.length > MAX_CHANLEN)
+		return;
+	if (p[2] == "BEGIN") {
+		peer.channel_sync = {ts: ts, name: name, modes: p.slice(3), members: {}, bans: []};
+		return;
+	}
+	var sync = peer.channel_sync, i, k, u, chan;
+	if (p[2] == "TOPIC" && p[5] !== undefined) {
+		var topic_time = IRC_parse_channel_timestamp(p[4]);
+		if (topic_time === null) return;
+		var topic = {setter: p[3], time: topic_time, text: p[5]};
+		if (sync && sync.ts == ts && sync.name == name)
+			sync.topic = topic;
+		else {
+			chan = Channels[name.toUpperCase()];
+			if (chan && chan.created == ts) IRC_apply_topic_sync(peer, chan, topic);
+		}
+		return;
+	}
+	if (!sync || sync.ts != ts || sync.name != name)
+		return;
+	if (p[2] == "MORE" && p[3]) {
+		var names = p[3].split(" ");
+		for (i = 0; i < names.length; i++) {
+			k = new SJOIN_Nick(names[i]);
+			u = Users[k.nick.toUpperCase()] || search_nickbuf(k.nick);
+			if (u) sync.members[u.id] = {user: u, isop: k.isop, isvoice: k.isvoice};
+		}
+		return;
+	}
+	if (p[2] == "BANS" && p[3]) {
+		sync.bans = sync.bans.concat(p[3].split(" "));
+		return;
+	}
+	if (p[2] != "END")
+		return;
+	delete peer.channel_sync;
+	chan = Channels[name.toUpperCase()];
+	if (!chan) chan = Channels[name.toUpperCase()] = new Channel(name);
+	Channel_reset_timestamp(chan, ts);
+	var old_bans = chan.modelist[CHANMODE_BAN].filter(function(b) { return !!b; });
+	if (old_bans.length)
+		peer.set_chanmode(chan, ["-" + new Array(old_bans.length + 1).join("b")].concat(old_bans),
+			0, {local_only: true});
+	peer.set_chanmode(chan, sync.modes, 0, {local_only: true});
+	for (i in sync.members) {
+		k = sync.members[i]; u = k.user;
+		if (Users[u.nick.toUpperCase()] !== u) continue;
+		var pending = u.local && u.pending_channel_parts[name.toUpperCase()];
+		if (pending && pending.peer === peer && !u.channels[name.toUpperCase()]) continue;
+		if (!u.channels[name.toUpperCase()]) {
+			chan.users[u.id] = u; u.channels[name.toUpperCase()] = chan;
+			u.bcast_to_channel(chan, "JOIN :" + name, true);
+		}
+		if (k.isop) peer.set_chanmode(chan, ["+o", u.nick], 0, {local_only: true});
+		if (k.isvoice) peer.set_chanmode(chan, ["+v", u.nick], 0, {local_only: true});
+	}
+	if (sync.bans.length)
+		peer.set_chanmode(chan, ["+" + new Array(sync.bans.length + 1).join("b")].concat(sync.bans),
+			0, {local_only: true});
+	if (sync.topic) IRC_apply_topic_sync(peer, chan, sync.topic);
+	if (!true_array_len(chan.users)) delete Channels[name.toUpperCase()];
+}
+
+function IRC_apply_topic_sync(peer, chan, topic) {
+	if (chan.topic != topic.text)
+		peer.bcast_to_channel(chan, "TOPIC " + chan.nam + " :" + topic.text, false);
+	chan.topic = topic.text;
+	chan.topicchangedby = topic.setter;
+	chan.topictime = topic.time;
+}
+
 function server_bcast_to_servers(str,type) {
 	var i;
 
 	for (i in Local_Servers) {
-		if (!type || (Local_Servers[i].type == type))
+		if (Local_Servers[i].admitted && (!type || (Local_Servers[i].type == type)))
 			Local_Servers[i].rawout(str);
 	}
 }
@@ -1430,7 +1670,7 @@ function IRCClient_bcast_to_servers(str) {
 	var i;
 
 	for (i in Local_Servers) {
-		if (Local_Servers[i].nick != this.parent)
+		if (Local_Servers[i].admitted && Local_Servers[i].nick != this.parent)
 			Local_Servers[i].originatorout(str,this);
 	}
 }
@@ -1439,7 +1679,7 @@ function IRCClient_bcast_to_servers_raw(str) {
 	var i;
 
 	for (i in Local_Servers) {
-		if (Local_Servers[i].nick != this.parent)
+		if (Local_Servers[i].admitted && Local_Servers[i].nick != this.parent)
 			Local_Servers[i].rawout(str);
 	}
 }
@@ -1484,6 +1724,8 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 	if (this.quitting)
 		return;
 	this.quitting = true;
+	if (this.local && !this.admitted)
+		suppress_bcast = true;
 
 	if (!str)
 		str = this.nick;
@@ -1536,7 +1778,7 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 		if (this.socket !== undefined) {
 			if (this.socket.is_connected) {
 				this.socket.send(format(
-					"ERROR :Closing Link: [%s@%s] (%s)",
+					"ERROR :Closing Link: [%s@%s] (%s)\r\n",
 					this.uprefix,
 					this.hostname,
 					str
@@ -1556,10 +1798,18 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 		}
 
 		js.clearInterval(this.pinginterval);
+		if (this.clockinterval !== undefined)
+			js.clearInterval(this.clockinterval);
+		for (var uid in Local_Users) {
+			var parts = Local_Users[uid].pending_channel_parts;
+			for (var channel in parts)
+				if (parts[channel].peer === this) delete parts[channel];
+		}
 	}
 
 	delete Local_Servers[this.nick.toLowerCase()];
 	delete Servers[this.nick.toLowerCase()];
+	IRC_admit_waiting_leaves();
 
 	if (cline)
 		Reset_Autoconnect(cline, YLines[this.ircclass].connfreq * 1000);
@@ -1575,9 +1825,10 @@ function IRCClient_synchronize() {
 
 	this.rawout("BURST");
 	for (i in Servers) {
-		if (Servers[i].id != this.id)
+		if (Servers[i].id != this.id && (!Servers[i].local || Servers[i].admitted))
 			this.server_info(Servers[i]);
 	}
+	IRC_tsmap_burst(this);
 	for (i in Users) {
 		this.server_nick_info(Users[i]);
 	}
@@ -1592,16 +1843,11 @@ function IRCClient_synchronize() {
 	));
 
 	for (i in Channels) {
-		if ((i[0] == "#") && Channels[i].topic) {
-			this.rawout(format(
-				"TOPIC %s %s %lu :%s",
-				Channels[i].nam,
-				Channels[i].topicchangedby,
-				Channels[i].topictime,
-				Channels[i].topic
-			));
+		if ((i[0] == "#") && Channels[i].topictime && IRC_channel_visible_to_server(this, Channels[i])) {
+			IRC_send_topic(this, Channels[i]);
 		}
 	}
+	if (IRC_is_leaf_uplink(this)) this.ircout("TSMAP END " + Leaf_Process);
 	this.rawout("BURST 0");
 
 	gnotice(format(
@@ -1644,93 +1890,65 @@ function IRCClient_server_nick_info(sni_client) {
 }
 
 function IRCClient_server_chan_info(sni_chan) {
-	var i, u, has_leaf_user;
+	var i, u, token, names = "", capable = !this.uline && this.their_capab
+		&& this.their_capab.indexOf("TSJOIN") >= 0 && !IRC_legacy_leaf(this);
+	var timestamped_modes = this.their_capab
+		&& (this.their_capab.indexOf("TSJOIN") >= 0 || this.their_capab.indexOf("TSMODE") >= 0);
+	var mode_ts = IRC_legacy_leaf(this) ? 0 : sni_chan.created;
+	var header = format(":%s SJOIN %lu %s %s :",
+		ServerName, IRC_is_leaf_uplink(this) ? sni_chan.leaf_timestamp : sni_chan.created,
+		sni_chan.nam, sni_chan.chanmode(true));
 
-	/* Private (+p) and secret (+s) channels are not revealed to untrusted
-	   leaf servers unless at least one user in the channel is directly
-	   connected to that leaf.  Hubs receive the full channel state. */
-	if (!this.hub && (sni_chan.mode & CHANMODE_PRIVATE || sni_chan.mode & CHANMODE_SECRET)) {
-		has_leaf_user = false;
-		for (i in sni_chan.users) {
-			if (sni_chan.users[i].parent === this.nick) {
-				has_leaf_user = true;
-				break;
-			}
-		}
-		if (!has_leaf_user)
-			return;
-	}
-
+	/* Preserve the untrusted-leaf visibility boundary. A leaf first joining
+	   a hidden channel receives an explicit, authoritative correction. */
+	if (!IRC_channel_visible_to_server(this, sni_chan))
+		return;
+	IRC_tsmap_claim(this, sni_chan);
 	for (i in sni_chan.users) {
 		u = sni_chan.users[i];
-		/* Include the channel creation timestamp only for TSJOIN-capable
-		   receivers.  Old servers treat a numeric first token as the channel
-		   name and silently drop the entire JOIN. */
-		if (this.their_capab && this.their_capab.indexOf("TSJOIN") >= 0) {
-			this.rawout(format(":%s JOIN %lu %s",
-				u.nick,
-				sni_chan.created,
-				sni_chan.nam
-			));
+		if (u.parent == this.nick) continue;
+		if (capable) {
+			token = (sni_chan.modelist[CHANMODE_OP][u.id] ? "@" : "")
+				+ (sni_chan.modelist[CHANMODE_VOICE][u.id] ? "+" : "") + u.nick;
+			if (names && (header + names + " " + token).length > 510) {
+				this.rawout(header + names);
+				IRC_tsmap_claim(this, sni_chan);
+				names = "";
+			}
+			names += (names ? " " : "") + token;
 		} else {
-			this.rawout(format(":%s JOIN %s",
-				u.nick,
-				sni_chan.nam
-			));
-		}
-		if (sni_chan.modelist[CHANMODE_OP][u.id]) {
-			if (this.their_capab && this.their_capab.indexOf("TSJOIN") >= 0) {
-				this.rawout(format(":%s MODE %s %lu +o %s",
-					ServerName, sni_chan.nam, sni_chan.created, u.nick));
-			} else {
-				this.rawout(format(":%s MODE %s +o %s",
-					ServerName, sni_chan.nam, u.nick));
-			}
-		}
-		if (sni_chan.modelist[CHANMODE_VOICE][u.id]) {
-			if (this.their_capab && this.their_capab.indexOf("TSJOIN") >= 0) {
-				this.rawout(format(":%s MODE %s %lu +v %s",
-					ServerName, sni_chan.nam, sni_chan.created, u.nick));
-			} else {
-				this.rawout(format(":%s MODE %s +v %s",
-					ServerName, sni_chan.nam, u.nick));
-			}
+			/* Keep the established JOIN/MODE dialect for legacy services. */
+			this.rawout(format(":%s JOIN %s", u.nick, sni_chan.nam));
+			if (sni_chan.modelist[CHANMODE_OP][u.id])
+				this.ircout(format("MODE %s %s+o %s", sni_chan.nam,
+					timestamped_modes ? mode_ts + " " : "", u.nick));
+			if (sni_chan.modelist[CHANMODE_VOICE][u.id])
+				this.ircout(format("MODE %s %s+v %s", sni_chan.nam,
+					timestamped_modes ? mode_ts + " " : "", u.nick));
 		}
 	}
-	var modecounter=0;
-	var modeargs="";
-	var modestr = sni_chan.chanmode(true /* show args */);
-	if (modestr != "+") {
-		this.ircout(format("MODE %s %s",
-			sni_chan.nam,
-			modestr
-		));
-	}
-	modestr = "+";
+	if (names)
+		this.rawout(header + names);
+	if (IRC_legacy_leaf(this))
+		IRC_send_legacy_flags(this, sni_chan);
+	else if (!capable && sni_chan.chanmode(true) != "+")
+		this.ircout(format("MODE %s %s%s", sni_chan.nam,
+			timestamped_modes ? sni_chan.created + " " : "", sni_chan.chanmode(true)));
+
+	/* Ban lists survive TS resets and are merged from both sides. Explicit
+	   TS zero avoids making a ban burst reset the winning channel state. */
+	header = ":" + ServerName + " MODE " + sni_chan.nam + (timestamped_modes ? " 0 " : " ");
+	var modes = "+", args = "", count = 0;
 	for (i in sni_chan.modelist[CHANMODE_BAN]) {
-		modecounter++;
-		modestr += "b";
-		if (modeargs)
-			modeargs += " ";
-		modeargs += sni_chan.modelist[CHANMODE_BAN][i];
-		if (modecounter >= MAX_MODES) {
-			this.ircout(format("MODE %s %s %s",
-				sni_chan.nam,
-				modestr,
-				modeargs
-			));
-			modecounter=0;
-			modestr="+";
-			modeargs="";
+		token = sni_chan.modelist[CHANMODE_BAN][i];
+		if (count && (count == MAX_MODES || (header + modes + "b" + args + " " + token).length > 510)) {
+			this.rawout(header + modes + args);
+			modes = "+"; args = ""; count = 0;
 		}
+		modes += "b"; args += " " + token; count++;
 	}
-	if (modeargs) {
-		this.ircout(format("MODE %s %s %s",
-			sni_chan.nam,
-			modestr,
-			modeargs
-		));
-	}
+	if (count)
+		this.rawout(header + modes + args);
 }
 
 function gnotice(str) {

@@ -35,18 +35,23 @@ load("ircd/user.js");
 load("ircd/channel.js");
 load("ircd/server.js");
 load("ircd/config.js");
+load("ircd/timestamps.js");
 
 /*** Global Constants - Always in ALL_UPPERCASE ***/
-var VERSION = "SynchronetIRCd-2.3";
+var VERSION = "SynchronetIRCd-2.4";
 var VERSION_STR = format(
 	"Synchronet %s%s-%s%s (IRCd by Randy Sommerfeld)",
 	system.version, system.revision,
 	system.platform, system.beta_version
 );
 /* This will be replaced with a dynamic CAPAB system */
-/* TSJOIN signals support for the TS-bearing JOIN burst wire format.
-   Replace this token (not append) when the next network-breaking change lands. */
-var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE TSJOIN";
+/* Upgraded leaves use CLOCK role negotiation, CSYNC and TSMAP. Legacy
+   leaves use JOIN/MODE corrections; hubs choose their network timestamps.
+   Clock agreement is enforced between mutually configured upgraded hubs.
+   Legacy hubs and leaves remain linkable during this rollout. Mandatory
+   capability enforcement belongs to the next protocol version.
+   U:lined services retain their legacy protocol. */
+var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE TSJOIN CLOCK CSYNC TSMAP";
 /* This will be in the configuration for 2.0 */
 var SUMMON = true;
 
@@ -117,7 +122,7 @@ var Outbound_Connect_in_Progress = false;
 /* Setting to "true" results in bouncing bad modes, KILLing bogus NICKs, etc. */
 var Enforcement = true;
 
-/* Reject server links missing required CAPAB tokens when true; warn-only when false */
+/* Saved for a later protocol version; this rollout warns for legacy peers. */
 var CapabEnforce = false;
 
 /* Highest Connection Count ("HCC") tracking */

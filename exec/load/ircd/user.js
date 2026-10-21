@@ -102,6 +102,7 @@ function IRC_User(id) {
 	this.uline = false;	/* Are we services? */
 	this.away = "";
 	this.channels = {};
+	this.pending_channel_parts = {};
 	this.connecttime = Epoch();
 	this.sent_msgs = 0;
 	this.sent_bytes = 0;
@@ -437,26 +438,22 @@ function User_Work(cmdline) {
 			this.numeric442(tmp.nam);
 			break;
 		}
-		if (p[1]) { /* Setting a topic */
+		if (p[1] !== undefined) { /* Setting (or clearing) a topic */
 			if (!(tmp.mode&CHANMODE_TOPIC) || tmp.modelist[CHANMODE_OP][this.id]) {
 				j = p[1].slice(0, MAX_TOPICLEN);
 				if (j == tmp.topic)
 					break;
 				tmp.topic = j;
-				tmp.topictime = Epoch();
+				/* A logical increment distinguishes sequential changes made
+				   within one wall-clock second (or after a clock step). */
+				tmp.topictime = Math.max(Epoch(), tmp.topictime + 1);
 				tmp.topicchangedby = this.nick;
 				this.bcast_to_channel(
 					tmp,
 					format("TOPIC %s :%s", tmp.nam, tmp.topic),
 					true /* bounceback */
 				);
-				this.bcast_to_servers(format(
-					"TOPIC %s %s %s :%s",
-					tmp.nam,
-					this.nick,
-					tmp.topictime,
-					tmp.topic
-				));
+				IRC_bcast_topic(this, tmp);
 			} else {
 				this.numeric482(tmp.nam);
 			}
@@ -935,23 +932,19 @@ function User_Work(cmdline) {
 				}
 			}
 			tmp = "";
-			j = 0;
+			var names_prefix = ":" + ServerName + " 353 " + this.nick + " * * :";
 			for (i in Users) {
 				if (   !true_array_len(Users[i].channels)
 				    && !(Users[i].mode&USERMODE_INVISIBLE)
 				) {
-					if (tmp)
-						tmp += " ";
-					tmp += Users[i].nick;
-					j++;
-					if (j >= 59) {
+					if (tmp && (names_prefix + tmp + " " + Users[i].nick).length > 510) {
 						this.numeric(353,"* * :"+tmp);
-						j = 0;
 						tmp = "";
 					}
+					tmp += (tmp ? " " : "") + Users[i].nick;
 				}
 			}
-			if (j)
+			if (tmp)
 				this.numeric(353,"* * :"+tmp);
 			this.numeric(366, "* :End of /NAMES list.");
 		} else {
@@ -1484,6 +1477,10 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 	var ww_serverdesc = ServerDesc;
 
 	this.bcast_to_uchans_unique(format("QUIT :%s", str));
+	/* Departure must precede any mapping DROP caused by the last member's
+	   removal. The hub rejects retirement while that member still exists. */
+	if (!suppress_bcast)
+		this.bcast_to_servers(format("QUIT :%s", str));
 	for (i in this.channels) {
 		this.rmchan(this.channels[i]);
 	}
@@ -1513,9 +1510,6 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 		if (!ww_obj.length)
 			delete WhoWas[ww_pop.nick.toUpperCase()];
 	}
-
-	if (!suppress_bcast)
-		this.bcast_to_servers(format("QUIT :%s", str));
 
 	if (this.local) {
 		this.recvq.purge();

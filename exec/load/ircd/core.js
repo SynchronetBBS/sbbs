@@ -455,8 +455,12 @@ function IRCClient_RMChan(rmchan_obj) {
 		delete this.channels[rmchan_obj.nam.toUpperCase()];
 	delete rmchan_obj.modelist[CHANMODE_OP][this.id];
 	delete rmchan_obj.modelist[CHANMODE_VOICE][this.id];
-	if (!true_array_len(rmchan_obj.users))
+	if (rmchan_obj.pending_founder == this.id)
+		delete rmchan_obj.pending_founder;
+	if (!true_array_len(rmchan_obj.users)) {
+		IRC_tsmap_drop(rmchan_obj);
 		delete Channels[rmchan_obj.nam.toUpperCase()];
+	}
 }
 
 function IRCClient_flush_channel_sendqs(chan) {
@@ -1012,30 +1016,28 @@ function IRCClient_motd() {
 
 function IRCClient_names(chan) {
 	var Channel_user;
-	var numnicks=0;
 	var tmp="";
-	var i;
+	var i, token;
+	var prefix = ":" + ServerName + " 353 " + this.nick + " "
+		+ ((chan.mode & CHANMODE_SECRET) ? "@" : "=") + " " + chan.nam + " :";
 	for (i in chan.users) {
 		Channel_user=chan.users[i];
 		if (!(Channel_user.mode&USERMODE_INVISIBLE) ||
 		     (this.channels[chan.nam.toUpperCase()]) ) {
-			if (numnicks)
-				tmp += " ";
+			token = "";
 			if (chan.modelist[CHANMODE_OP][Channel_user.id])
-				tmp += "@";
+				token += "@";
 			else if (chan.modelist[CHANMODE_VOICE][Channel_user.id])
-				tmp += "+";
-			tmp += Channel_user.nick;
-			numnicks++;
-			if (numnicks >= 59) {
-				// dump what we've got, it's too much.
+				token += "+";
+			token += Channel_user.nick;
+			if (tmp && (prefix + tmp + " " + token).length > 510) {
 				this.numeric353(chan, tmp);
-				numnicks=0;
 				tmp="";
 			}
+			tmp += (tmp ? " " : "") + token;
 		}
 	}
-	if(numnicks)
+	if(tmp)
 		this.numeric353(chan, tmp);
 }
 
@@ -2908,13 +2910,186 @@ function IRCClient_finalize_server_connect(states) {
 		this.rawout("CAPAB " + SERVER_CAPAB);
 		this.rawout("SERVER " + ServerName + " 1 :" + ServerDesc);
 	}
-	this.bcast_to_servers_raw(format(
+	if (this.uline) {
+		IRC_admit_server(this);
+		return;
+	}
+	var has_clock = this.their_capab && this.their_capab.indexOf("CLOCK") >= 0;
+	if (this.hub && !IRC_has_tsmap(this))
+		log(LOG_WARNING, "Legacy hub " + this.nick
+			+ " linked without TSMAP; leaf timestamp handoff through this hub is unavailable until upgrade");
+	if (!has_clock) {
+		log(LOG_WARNING, "Legacy server " + this.nick
+			+ " linked without CLOCK; clock verification unavailable during upgrade rollout");
+		IRC_admit_server(this);
+		return;
+	}
+	/* Hub is a per-peer trust setting. Exchange the role assigned to the
+	   receiving peer so clock agreement is required only on mutual hub links.
+	   A drifting leaf still accepts its hub's canonical channel corrections. */
+	this.clock_role_received = false;
+	this.rawout("CLOCK ROLE " + (this.hub ? "HUB" : "LEAF"));
+	this.clockinterval = js.setInterval(IRC_clock_tick, 1000, this);
+	IRC_clock_tick.call(this);
+}
+
+var Clock_Probe_Sequence = 0;
+var Clock_Check_Interval = 15;
+var Clock_Probe_Timeout = 15;
+
+function IRC_clock_now() {
+	return Date.now() / 1000;
+}
+
+function IRC_clock_tick() {
+	if (this.quitting || this.uline)
+		return;
+	if (this.awaiting_hub_maps)
+		return;
+	var now = system.timer;
+	if (this.clock_stall_generation !== Stall_Generation) {
+		this.clock_stall_generation = Stall_Generation;
+		this.clock_unverified_since = now;
+		if (!this.admitted) this.clock_admission_started = now;
+		delete this.clock_probe;
+		delete this.last_clock_check;
+	}
+	if (this.clock_unverified_since === undefined)
+		this.clock_unverified_since = now;
+	if (!this.admitted) {
+		if (this.clock_admission_started === undefined)
+			this.clock_admission_started = now;
+		if (now - this.clock_admission_started >= Clock_Probe_Timeout) {
+			this.quit("Reciprocal clock verification timed out");
+			return;
+		}
+	}
+	if (!this.clock_role_received || this.clock_enforce === false)
+		return;
+	if (now - this.clock_unverified_since > Clock_Check_Interval + Clock_Probe_Timeout) {
+		this.quit("Unable to obtain a fresh clock verification");
+		return;
+	}
+	if (this.clock_probe) {
+		if (this.clock_probe.stall != Stall_Generation) {
+			delete this.clock_probe;
+			this.clock_unverified_since = now;
+		} else if (now - this.clock_probe.started >= Clock_Probe_Timeout) {
+			this.quit("Clock verification timed out");
+			return;
+		} else
+			return;
+	}
+	if (this.last_clock_check !== undefined && now - this.last_clock_check < Clock_Check_Interval)
+		return;
+	this.clock_probe = {nonce: String(++Clock_Probe_Sequence), started: now,
+		wall: IRC_clock_now(), stall: Stall_Generation};
+	this.rawout("CLOCK " + this.clock_probe.nonce);
+}
+
+function IRC_receive_clock(peer, p) {
+	if (p[0] == "ROLE" && p.length == 2 && (p[1] == "HUB" || p[1] == "LEAF")) {
+		/* A role assertion never grants hub trust: that comes only from
+		   our configuration. Freeze the role for this connection. */
+		if (peer.clock_role_received) return;
+		peer.clock_role_received = true;
+		peer.clock_enforce = peer.hub && p[1] == "HUB";
+		if (!peer.clock_enforce) {
+			peer.clock_verified = true;
+			IRC_finish_clock_handshake(peer);
+		} else
+			IRC_clock_tick.call(peer);
+		return;
+	}
+	if (p[0] == "READY") {
+		peer.clock_ready_received = true;
+		if (peer.clock_verified && !peer.admitted) IRC_finish_clock_handshake(peer);
+		return;
+	}
+	if (p.length == 1 && /^[0-9]+$/.test(p[0])) {
+		peer.rawout("CLOCK " + p[0] + " " + format("%.3f", IRC_clock_now()));
+		return;
+	}
+	var probe = peer.clock_probe;
+	if (!probe || p[0] != probe.nonce || p.length != 2)
+		return;
+	if (!/^[0-9]+(?:[.][0-9]{1,3})?$/.test(p[1]) || !isFinite(Number(p[1]))) {
+		peer.quit("Malformed CLOCK response");
+		return;
+	}
+	delete peer.clock_probe;
+	var elapsed = system.timer - probe.started, now = IRC_clock_now();
+	/* A delayed response, a local wall-clock step, or a suspended callback
+	   engine cannot be used to measure skew. Ask for a fresh sample. */
+	if (elapsed < 0 || elapsed > 2 || probe.stall != Stall_Generation
+		|| Math.abs(now - probe.wall - elapsed) > 0.5) {
+		if (probe.stall != Stall_Generation)
+			peer.clock_unverified_since = system.timer;
+		IRC_clock_tick.call(peer);
+		return;
+	}
+	var skew = Number(p[1]) - (probe.wall + elapsed / 2);
+	if (Math.abs(skew) - elapsed / 2 > Clock_MaxSkew) {
+		var reason = format("Clock skew %.3f seconds exceeds %u-second limit (local %.3f, peer %.3f)",
+			skew, Clock_MaxSkew, now, Number(p[1]));
+		log(LOG_WARNING, peer.nick + ": " + reason);
+		peer.quit(reason);
+		return;
+	}
+	peer.last_clock_check = system.timer;
+	peer.clock_unverified_since = system.timer;
+	peer.clock_skew = skew;
+	if (!peer.clock_verified) {
+		peer.clock_verified = true;
+		/* Both directions finish before either starts its state burst. */
+		IRC_finish_clock_handshake(peer);
+	}
+}
+
+function IRC_hub_maps_pending() {
+	for (var i in Local_Servers) {
+		var hub = Local_Servers[i];
+		if (hub.hub && !hub.quitting && IRC_has_tsmap(hub) && (!hub.admitted || hub.bursting))
+			return true;
+	}
+	return false;
+}
+
+function IRC_finish_clock_handshake(peer) {
+	if (!peer.clock_verified || peer.admitted || peer.quitting) return;
+	if (!peer.hub && IRC_hub_maps_pending()) {
+		/* Withhold READY as well as our burst: the leaf must not send its
+		   own state until our replicated timestamp cache is ready. */
+		peer.awaiting_hub_maps = true;
+		return;
+	}
+	delete peer.awaiting_hub_maps;
+	if (!peer.clock_ready_sent) {
+		peer.clock_ready_sent = true;
+		peer.rawout("CLOCK READY");
+	}
+	if (peer.clock_ready_received) IRC_admit_server(peer);
+}
+
+function IRC_admit_server(peer) {
+	if (peer.admitted || peer.quitting)
+		return;
+	/* A newly joined hub may still be sending mappings for offline leaves.
+	   Finish those snapshots before assigning timestamps to a returning leaf. */
+	if (!peer.hub && !peer.uline && IRC_has_tsmap(peer) && IRC_hub_maps_pending()) {
+		peer.awaiting_hub_maps = true;
+		return;
+	}
+	delete peer.awaiting_hub_maps;
+	peer.admitted = true;
+	peer.bursting = true;
+	peer.bcast_to_servers_raw(format(
 		":%s SERVER %s 2 :%s",
 		ServerName,
-		this.nick,
-		this.info
+		peer.nick,
+		peer.info
 	));
-	this.synchronize();
+	peer.synchronize();
 }
 
 function RBL_Listed_According_to_Config(rbl_object, dns_reply) {
