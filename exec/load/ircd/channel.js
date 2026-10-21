@@ -65,6 +65,10 @@ function Channel(name) {
 	this.bantime = {};
 	this.bancreator = {};
 	this.created = Epoch();
+	/* The raw identity value stays wire-valid even with a clock outside the
+	   protocol epoch range. Object identity distinguishes repeated values. */
+	this.leaf_timestamp = Math.max(1, Math.min(4294967295, this.created));
+	this.leaf_timestamp_id = String(++Leaf_Channel_Sequence);
 	/* Functions */
 	this.chanmode = Channel_chanmode;
 	this.isbanned = Channel_isbanned;
@@ -126,10 +130,13 @@ function ChanMode_affect_mode_list(list_bit) {
 			tmp_nick = Users[this.list[list_bit][add][z].toUpperCase()];
 			if (!tmp_nick)
 				tmp_nick = search_nickbuf(this.list[list_bit][add][z]);
-			if (tmp_nick && (add=="true") && !this.chan.modelist[list_bit][tmp_nick.id]) {
+			if (tmp_nick && this.chan.users[tmp_nick.id]
+				&& (add=="true") && !this.chan.modelist[list_bit][tmp_nick.id]) {
 				this.addmodes += MODE[list_bit].modechar;
 				this.addmodeargs += " " + tmp_nick.nick;
 				this.chan.modelist[list_bit][tmp_nick.id] = tmp_nick;
+				if (list_bit == CHANMODE_OP)
+					delete this.chan.pending_founder;
 			} else if (tmp_nick
 						&& (add=="false")
 						&& this.chan.modelist[list_bit][tmp_nick.id]
@@ -181,8 +188,6 @@ function Channel_chanmode(show_args) {
 		tmp_mode += "s";
 	if (this.mode&CHANMODE_TOPIC)
 		tmp_mode += "t";
-	if (!tmp_extras)
-		tmp_extras = " ";
 	return tmp_mode + tmp_extras;
 }
 
@@ -245,10 +250,141 @@ function ChanMode(chan,user) {
 	this.affect_mode_list = ChanMode_affect_mode_list;
 }
 
-function IRCClient_set_chanmode(chan,cm_args,ts) {
+/* Channel timestamps are protocol values, not samples of the peer's current
+   clock. Preserve them through relays; clock health is checked separately. */
+function IRC_parse_channel_timestamp(str) {
+	if (!/^[0-9]+$/.test(str))
+		return null;
+	var ts = Number(str);
+	return ts <= 4294967295 ? ts : null;
+}
+
+function IRC_bcast_join(user, chan, ts, founder) {
+	var i, peer;
+	for (i in Local_Servers) {
+		peer = Local_Servers[i];
+		if (!peer.admitted || peer.nick == user.parent)
+			continue;
+		if (user.local) IRC_tsmap_claim(peer, chan);
+		var wire_ts = IRC_is_leaf_uplink(peer) ? chan.leaf_timestamp : ts;
+		/* Older hubs reject a leaf's server-prefixed founder MODE. Their
+		   existing SJOIN dialect carries membership and founder status together. */
+		if (founder && peer.hub && !peer.uline && peer.their_capab
+			&& peer.their_capab.indexOf("TSJOIN") >= 0
+			&& peer.their_capab.indexOf("CSYNC") < 0) {
+			peer.rawout(format(":%s SJOIN %lu %s + :@%s",
+				ServerName, wire_ts, chan.nam, user.nick));
+			continue;
+		}
+		peer.rawout(format(":%s JOIN %s%s", user.nick,
+			!IRC_legacy_leaf(peer) && peer.their_capab && peer.their_capab.indexOf("TSJOIN") >= 0
+				? wire_ts + " " : "", chan.nam));
+		if (founder)
+			peer.ircout("MODE " + chan.nam + " +o " + user.nick);
+	}
+}
+
+function IRC_bcast_chanmode(origin, chan, modes, ts) {
+	var i, peer;
+	for (i in Local_Servers) {
+		peer = Local_Servers[i];
+		if (!peer.admitted || peer.nick == origin.parent)
+			continue;
+		IRC_send_chanmode(peer, origin, chan, modes, ts);
+	}
+	/* A hub acknowledges accepted leaf changes. This orders them after any
+	   corrective snapshot already queued to that leaf. */
+	peer = origin.parent && Servers[String(origin.parent).toLowerCase()];
+	if (peer && peer.local && !peer.hub && !peer.uline)
+		peer.ircout("MODE " + chan.nam + IRC_mode_timestamp(peer,
+			IRC_legacy_leaf(peer) ? 0 : chan.created) + modes);
+}
+
+function IRC_send_chanmode(peer, origin, chan, modes, ts) {
+	var stamp = ts !== undefined ? IRC_mode_timestamp(peer, IRC_legacy_leaf(peer) ? 0 : ts) : " ";
+	var prefix = "MODE " + chan.nam + stamp;
+	/* Old parsers incorrectly consume an argument for -l. Send its removal
+	   separately, before the remaining changes (which may remove our ops). */
+	if (!peer.uline && (!peer.their_capab || peer.their_capab.indexOf("CSYNC") < 0)) {
+		var fields = modes.split(" "), add = true, filtered = "", remove_limit = false;
+		for (var i = 0; i < fields[0].length; i++) {
+			var m = fields[0][i];
+			if (m == "+" || m == "-") add = m == "+";
+			if (m == "l" && !add) remove_limit = true;
+			else filtered += m;
+		}
+		if (remove_limit) {
+			peer.originatorout(prefix + "-l", origin);
+			fields[0] = filtered;
+			if (!/[a-z]/.test(filtered)) return;
+			modes = fields.join(" ");
+		}
+	}
+	peer.originatorout(prefix + modes, origin);
+}
+
+function IRC_bcast_part(user, chan) {
+	for (var i in Local_Servers) {
+		var peer = Local_Servers[i];
+		if (!peer.admitted || peer.quitting || peer.nick == user.parent) continue;
+		var line = "PART " + chan.nam;
+		if (user.local && IRC_is_leaf_uplink(peer)) {
+			var token = user.id + "." + (++Leaf_Part_Sequence);
+			user.pending_channel_parts[chan.nam.toUpperCase()] = {peer: peer, token: token};
+			line += " :" + token;
+		}
+		peer.originatorout(line, user);
+	}
+}
+
+/* The original timestamp-bearing event propagates the reset to servers.
+   Local clients need explicit removals before the winning state is applied. */
+function Channel_reset_timestamp(chan, ts) {
+	var changes = [], i, bit, u, line, modes = "", args = "", count = 0;
+	for (bit in MODE) {
+		if (MODE[bit].state && (chan.mode & bit))
+			changes.push({mode: MODE[bit].modechar,
+				arg: bit == CHANMODE_KEY ? chan.arg[bit] : ""});
+	}
+	for (i in chan.modelist[CHANMODE_OP])
+		changes.push({mode: "o", arg: chan.modelist[CHANMODE_OP][i].nick});
+	for (i in chan.modelist[CHANMODE_VOICE])
+		changes.push({mode: "v", arg: chan.modelist[CHANMODE_VOICE][i].nick});
+	chan.created = ts;
+	chan.mode = CHANMODE_NONE;
+	chan.arg[CHANMODE_KEY] = "";
+	chan.arg[CHANMODE_LIMIT] = 0;
+	chan.modelist[CHANMODE_OP] = {};
+	chan.modelist[CHANMODE_VOICE] = {};
+	delete chan.pending_founder;
+	delete chan.pending_burst;
+	for (i = 0; i < changes.length; i++) {
+		var nextarg = changes[i].arg ? " " + changes[i].arg : "";
+		if (count && (count == MAX_MODES
+			|| (":" + ServerName + " MODE " + chan.nam + " -"
+				+ modes + changes[i].mode + args + nextarg).length > 510)) {
+			line = "MODE " + chan.nam + " -" + modes + args;
+			for (u in chan.users)
+				if (chan.users[u].local) chan.users[u].ircout(line);
+			modes = args = "";
+			count = 0;
+		}
+		modes += changes[i].mode;
+		args += nextarg;
+		count++;
+	}
+	if (count) {
+		line = "MODE " + chan.nam + " -" + modes + args;
+		for (u in chan.users)
+			if (chan.users[u].local) chan.users[u].ircout(line);
+	}
+}
+
+function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 	var c, i, j;
 	var add;
 	var final_modestr = "";
+	options = options || {};
 
 	if (!chan || !cm_args) {
 		throw "set_chanmode() called without chan or cm_args";
@@ -277,12 +413,7 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 				"[TS] set_chanmode: wiping local ops/modes for %s: remote ts %d < local ts %d",
 				chan.nam, ts, chan.created
 			));
-			chan.created = ts;
-			chan.mode = CHANMODE_NONE;
-			chan.arg[CHANMODE_KEY] = "";
-			chan.arg[CHANMODE_LIMIT] = 0;
-			chan.modelist[CHANMODE_OP] = {};
-			chan.modelist[CHANMODE_VOICE] = {};
+			Channel_reset_timestamp(chan, ts);
 			/* Bans are kept - standard TS protocol keeps ban lists from both sides */
 		}
 		/* ts == chan.created: no conflict, fall through to apply normally */
@@ -312,6 +443,8 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 					c.addbits|=CHANMODE_BAN; /* list bans */
 					break;
 				}
+				if (cm_args.length <= mode_args_counter)
+					break;
 				c.tweaktmpmodelist(CHANMODE_BAN,add,cm_args[mode_args_counter]);
 				mode_args_counter++;
 				break;
@@ -335,8 +468,6 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 					c.tweaktmpmode(CHANMODE_LIMIT,true);
 				} else if (!add) {
 					c.tweaktmpmode(CHANMODE_LIMIT,false);
-					if (cm_args.length > mode_args_counter)
-						mode_args_counter++;
 				}
 				break;
 			case "m":
@@ -358,7 +489,7 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 					c.tweaktmpmode(CHANMODE_PRIVATE,add);
 				break;
 			case "s":
-				if( (add && !(chan.mode&CHANMODE_PRIVATE) ||
+				if( (add && (!(chan.mode&CHANMODE_PRIVATE) || options.merge) ||
 				     (c.delbits&CHANMODE_PRIVATE) ) ||
 				    (!add) )
 					c.tweaktmpmode(CHANMODE_SECRET,add);
@@ -378,8 +509,23 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 				mode_counter--;
 				break;
 		}
-		if (mode_counter == MAX_MODES)
+		if (this.local && !this.server && mode_counter == MAX_MODES)
 			break;
+	}
+	if (options.merge) {
+		/* Equal-TS snapshots merge by a commutative rule. Ordinary live
+		   MODE commands continue to set the requested value. */
+		if ((c.addbits & CHANMODE_KEY) && (chan.mode & CHANMODE_KEY)
+			&& chan.arg[CHANMODE_KEY] > c.state_arg[CHANMODE_KEY])
+			c.state_arg[CHANMODE_KEY] = chan.arg[CHANMODE_KEY];
+		if ((c.addbits & CHANMODE_LIMIT) && (chan.mode & CHANMODE_LIMIT))
+			c.state_arg[CHANMODE_LIMIT] = String(Math.max(
+				Number(chan.arg[CHANMODE_LIMIT]), Number(c.state_arg[CHANMODE_LIMIT])));
+		if ((chan.mode | c.addbits) & CHANMODE_SECRET) {
+			c.addbits &= ~CHANMODE_PRIVATE;
+			if (c.addbits & CHANMODE_SECRET)
+				c.delbits |= CHANMODE_PRIVATE;
+		}
 	}
 
 	/* Now we run through all the mode toggles and construct our lists for
@@ -398,8 +544,8 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 						&& (
 							   !(chan.mode&i)
 							|| (
-								  (i==CHANMODE_LIMIT)
-								&&(chan.arg[CHANMODE_LIMIT]!=c.state_arg[CHANMODE_LIMIT])
+								  (i==CHANMODE_LIMIT || i==CHANMODE_KEY)
+								&&(chan.arg[i]!=c.state_arg[i])
 							   )
 						   )
 			) {
@@ -414,9 +560,9 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 				c.delmodes += MODE[i].modechar;
 				chan.mode &= ~i;
 				if (MODE[i].args && MODE[i].state) {
-					c.delmodeargs += " " +
-						c.state_arg[i];
-					chan.arg[i] = "";
+					if (i == CHANMODE_KEY)
+						c.delmodeargs += " " + chan.arg[i];
+					chan.arg[i] = i == CHANMODE_LIMIT ? 0 : "";
 				}
 			}
 		}
@@ -449,7 +595,7 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 				chan.nam,
 				set_ban
 			));
-		} else if (set_ban && !chan.isbanned(set_ban)) {
+		} else if (set_ban && !chan.is_str_member_of_chanmode_list(CHANMODE_BAN, set_ban)) {
 			c.addmodes += "b";
 			c.addmodeargs += " " + set_ban;
 			var banid = chan.modelist[CHANMODE_BAN].push(set_ban) - 1;
@@ -528,14 +674,15 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 				this.bcast_to_channel(chan, str, true);
 			else
 				this.bcast_to_channel(chan, str, false);
-			if (chan.nam[0] != "&")
-				this.bcast_to_servers(str);
+			if (chan.nam[0] != "&" && !options.local_only)
+				IRC_bcast_chanmode(this, chan, mode_output + f_mode_args, ts);
 
 			if (add)
 				mode_output = "+";
 			else
 				mode_output = "-";
 			f_mode_args = "";
+			mode_counter = 0;
 		}
 	}
 
@@ -545,8 +692,8 @@ function IRCClient_set_chanmode(chan,cm_args,ts) {
 			this.bcast_to_channel(chan, str, true);
 		else
 			this.bcast_to_channel(chan, str, false);
-		if (chan.nam[0] != "&")
-			this.bcast_to_servers(str);
+		if (chan.nam[0] != "&" && !options.local_only)
+			IRC_bcast_chanmode(this, chan, mode_output + f_mode_args, ts);
 	}
 
 	return 1;
@@ -639,13 +786,10 @@ function IRCClient_do_join(chan_name,join_key,join_ts) {
 				"[TS] do_join: remote ts %d older than local %d for %s - wiping local ops/modes",
 				join_ts, chan.created, chan.nam
 			));
-			chan.created = join_ts;
-			chan.mode = CHANMODE_NONE;
-			chan.arg[CHANMODE_KEY] = "";
-			chan.arg[CHANMODE_LIMIT] = 0;
-			chan.modelist[CHANMODE_OP] = {};
-			chan.modelist[CHANMODE_VOICE] = {};
+			Channel_reset_timestamp(chan, join_ts);
 		}
+		if (chan.pending_burst && this.parent != chan.pending_burst.nick)
+			delete chan.pending_burst;
 		chan.users[this.id] = this;
 		var str="JOIN :" + chan.nam;
 		if (!this.local) {
@@ -660,12 +804,7 @@ function IRCClient_do_join(chan_name,join_key,join_ts) {
 			}
 		}
 		if (chan_name[0] != "&") {
-			this.bcast_to_servers_raw(
-				format(":%s JOIN %s",
-					this.nick,
-					chan.nam
-				)
-			);
+			IRC_bcast_join(this, chan, join_ts || chan.created);
 		}
 	} else {
 		// create a new channel
@@ -675,27 +814,18 @@ function IRCClient_do_join(chan_name,join_key,join_ts) {
 		   otherwise the Channel constructor already stamped Epoch(). */
 		if (join_ts > 0)
 			chan.created = join_ts;
+		if (!this.local)
+			chan.pending_founder = this.id;
 		chan.users[this.id] = this;
 		var str="JOIN :" + chan.nam;
 		var create_op = "";
 		if (chan_name[0] != "&") {
-			this.bcast_to_servers_raw(
-				format(":%s JOIN %s",
-					this.nick,
-					chan.nam
-				)
-			);
+			IRC_bcast_join(this, chan, join_ts || chan.created, this.local);
 		}
 		if (this.local) {
 			this.originatorout(str,this);
 			create_op = "@";
 			chan.modelist[CHANMODE_OP][this.id] = this;
-			this.bcast_to_servers_raw(format(
-					":%s MODE %s +o %s",
-					ServerName,
-					chan.nam,
-					this.nick
-			));
 		}
 	}
 	if (this.invited.toUpperCase() == chan.nam.toUpperCase())
@@ -724,9 +854,9 @@ function IRCClient_do_part(chan_name) {
 				this.bcast_to_channel(chan, str, false);
 			else
 				this.bcast_to_channel(chan, str, true);
-			this.rmchan(chan);
 			if (chan_name[0] != "&")
-				this.bcast_to_servers(str);
+				IRC_bcast_part(this, chan);
+			this.rmchan(chan);
 		} else if (this.local) {
 			this.numeric442(chan_name);
 		}

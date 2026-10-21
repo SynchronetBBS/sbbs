@@ -24,6 +24,65 @@ try {
 	net.start();
 
 	run_tests({
+		"rapid leaf JOIN/PART cannot be undone by delayed channel corrections": function() {
+			var anchor = net.client(NET_HUB1, "partAnchor"), actor, observers = [];
+			try {
+				anchor.join("#partrace");
+				actor = net.client(NET_LEAF2B, "partActor");
+				for (var n = 0; n < 10; n++) {
+					actor.send("JOIN #partrace"); actor.send("PART #partrace");
+				}
+				actor.drain(1000); anchor.drain(500);
+				for (var i = 0; i < NET_ALL.length; i++) {
+					var c = net.client(NET_ALL[i], "partWatch" + i); observers.push(c);
+					c.send("NAMES #partrace"); var names = c.expect(" 353 ", 3).split(" :")[1];
+					if (names.indexOf("partActor") >= 0 || names.indexOf("partAnchor") < 0)
+						throw new Error("PART membership desync on " + NET_ALL[i].name + ": " + names);
+				}
+			} finally {
+				if (actor) actor.quit(); anchor.quit();
+				observers.forEach(function(c) { c.quit(); });
+			}
+		},
+		"leaf founder modes, nick changes and KICK converge across all six nodes": function() {
+			var clients = [], founder, i, names;
+			try {
+				founder = net.client(NET_LEAF1A, "leafFounder"); founder.join("#leafauthority");
+				founder.send("MODE #leafauthority +mt");
+				founder.expect("MODE #leafauthority +mt", 3);
+				for (i = 0; i < NET_ALL.length; i++) {
+					var c = net.client(NET_ALL[i], "presence" + i); clients.push(c);
+					c.join("#leafauthority"); c.drain(100);
+					c.send("MODE #leafauthority");
+					var mode = c.expect(" 324 ", 3);
+					if (mode.indexOf("m") < 0 || mode.indexOf("t") < 0)
+						throw new Error("missing leaf modes on " + NET_ALL[i].name + ": " + mode);
+					c.send("NAMES #leafauthority"); names = c.expect(" 353 ", 3);
+					if (names.indexOf("@leafFounder") < 0)
+						throw new Error("missing founder ops on " + NET_ALL[i].name + ": " + names);
+				}
+				founder.send("MODE #leafauthority +v presence5");
+				clients[5].expect("+v presence5", 5);
+				clients[5].send("NICK newPresence");
+				founder.expect(/ NICK :?newPresence$/, 5);
+				founder.send("TOPIC #leafauthority :first");
+				founder.send("TOPIC #leafauthority :second");
+				clients[5].expect("TOPIC #leafauthority :second", 5);
+				founder.send("TOPIC #leafauthority :");
+				clients[5].expect(/TOPIC #leafauthority :$/, 5);
+				founder.send("KICK #leafauthority newPresence :leaf founder kick");
+				clients[5].expect("KICK #leafauthority newPresence", 5);
+				for (i = 0; i < clients.length; i++) {
+					clients[i].send("NAMES #leafauthority");
+					names = clients[i].expect(" 353 ", 3);
+					if (/newPresence|presence5/.test(names.split(" :")[1]))
+						throw new Error("KICK presence desync on " + NET_ALL[i].name + ": " + names);
+				}
+			} finally {
+				if (founder) founder.quit();
+				clients.forEach(function(c) { c.quit(); });
+			}
+		},
 
 		/* --- Topology visibility --- */
 
@@ -353,13 +412,8 @@ try {
 		/*
 		 * A malicious leaf backdates its clock and sends SJOIN with TS=1,
 		 * hoping to "win" the TS race and gain ops in a channel that already
-		 * exists on the hub.  ircd-fixes (MR !711) ignores untrusted-leaf
-		 * timestamps, so the attacker's SJOIN TS is replaced with the hub's
-		 * clock and the attack fails.
-		 *
-		 * When ircd-fixes is not yet merged this test detects the vulnerability
-		 * and returns early rather than failing CI — a clean failure will appear
-		 * once the fix regresses (i.e. the assertion below is the guard).
+		 * exists on the hub. The hub retains its authoritative state and
+		 * explicitly corrects the leaf's timestamp, modes and member status.
 		 */
 		"leaf TS attack: backdated SJOIN cannot grant ops to attacker": function() {
 			var hubop, leaf, names_line;
@@ -391,10 +445,8 @@ try {
 
 			if (names_line.indexOf("@tsop1") < 0)
 				throw new Error("hub op lost ops after TS attack: " + names_line);
-			/* If attacker got ops the fix from ircd-fixes is not yet present;
-			   skip the assertion rather than breaking CI while MRs are pending. */
 			if (names_line.indexOf("@tsatk1") >= 0)
-				return;
+				throw new Error("backdated leaf gained ops: " + names_line);
 			if (names_line.indexOf("tsatk1") < 0)
 				throw new Error("attacker did not appear in channel at all: " + names_line);
 		},
@@ -414,8 +466,12 @@ try {
 			observer = net.client(NET_HUB1, "sobsrvr1");
 			observer.send("JOIN #secret-test");
 			observer.expect(" 366 ", 3);
-			observer.send("MODE #secret-test +s");
+			observer.send("MODE #secret-test +smnt");
 			observer.expect(" MODE ", 3);
+			observer.send("MODE #secret-test +b *!*@blocked.invalid");
+			observer.expect("+b *!*@blocked.invalid", 3);
+			observer.send("TOPIC #secret-test :split topic");
+			observer.expect("TOPIC #secret-test :split topic", 3);
 			observer.drain(300);
 
 			/* Join from leaf1a — smember1 stays alive on leaf1a throughout the
@@ -449,6 +505,15 @@ try {
 			/* Ask for the NAMES list — sobsrvr1 (on hub1) must appear. */
 			member.send("NAMES #secret-test");
 			names_line = member.expect(" 353 ", 5);
+			if (names_line.indexOf("@sobsrvr1") < 0)
+				throw new Error("catch-up lost hub authority: " + names_line);
+			member.send("MODE #secret-test");
+			var modes = member.expect(" 324 ", 3);
+			if (!/\+mnst/.test(modes)) throw new Error("catch-up modes: " + modes);
+			member.send("MODE #secret-test +b");
+			member.expect("*!*@blocked.invalid", 3);
+			member.send("TOPIC #secret-test");
+			member.expect("#secret-test :split topic", 3);
 
 			observer.quit();
 			member.quit();

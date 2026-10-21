@@ -9,6 +9,18 @@
 "use strict";
 
 var IRCD_TEST_HOST = "127.0.0.1";
+var IRCD_TEST_TEMP_DIR = system.temp_dir;
+var IRCD_TEST_JSEXEC = js.exec_dir + "../../jsexec";
+argv.forEach(function(arg) {
+	if (arg.indexOf("--temp-dir=") == 0) IRCD_TEST_TEMP_DIR = backslash(arg.substr(11));
+	if (arg.indexOf("--jsexec=") == 0) IRCD_TEST_JSEXEC = arg.substr(9);
+});
+if (!file_exists(IRCD_TEST_JSEXEC))
+	IRCD_TEST_JSEXEC = system.exec_dir + "jsexec";
+
+function ircd_shell_quote(str) {
+	return "'" + str.replace(/'/g, "'\"'\"'") + "'";
+}
 
 /* ---- Server lifecycle ---- */
 
@@ -16,7 +28,7 @@ function IrcdTestServer(port) {
 	this.port = port || 19667;
 	this.pid  = 0;
 	this.config_path = "";
-	this.log_path = system.temp_dir + "ircd_test_" + this.port + ".log";
+	this.log_path = IRCD_TEST_TEMP_DIR + "ircd_test_" + this.port + ".log";
 }
 
 IrcdTestServer.prototype._write_config = function() {
@@ -66,12 +78,12 @@ IrcdTestServer.prototype._write_config = function() {
 
 IrcdTestServer.prototype.start = function() {
 	write("  [ircd] starting on port " + this.port + "... ");
-	this.config_path = system.temp_dir
+	this.config_path = IRCD_TEST_TEMP_DIR
 		+ "ircd_test_" + this.port + "_" + Date.now() + ".ini";
 	this._write_config();
 
 	var ircd   = js.exec_dir + "../../ircd.js";
-	var jsexec = js.exec_dir + "../../jsexec";
+	var jsexec = IRCD_TEST_JSEXEC;
 	var ctrl   = system.ctrl_dir;
 
 	/*
@@ -85,12 +97,13 @@ IrcdTestServer.prototype.start = function() {
 	 * collide (EADDRINUSE) wherever net.ipv6.bindv6only is 0 -- the default
 	 * on Linux.  Tests only ever talk to IRCD_TEST_HOST anyway.
 	 */
-	var cmd = jsexec
-		+ " -c " + ctrl
-		+ " " + ircd
-		+ " -f " + this.config_path
+	var cmd = ircd_shell_quote(jsexec)
+		+ " -c " + ircd_shell_quote(ctrl)
+		+ " -i " + ircd_shell_quote(js.exec_dir + "../../load")
+		+ " " + ircd_shell_quote(ircd)
+		+ " -f " + ircd_shell_quote(this.config_path)
 		+ " -a " + IRCD_TEST_HOST
-		+ " </dev/null >>" + this.log_path + " 2>&1"
+		+ " </dev/null >>" + ircd_shell_quote(this.log_path) + " 2>&1"
 		+ " & echo $!";
 
 	var lines = system.popen(cmd);
@@ -101,8 +114,8 @@ IrcdTestServer.prototype.start = function() {
 	if (!this.pid || isNaN(this.pid))
 		throw new Error("IRCd start failed: bad PID '" + lines[0] + "'");
 
-	/* Wait up to 5 seconds for the listening port to appear */
-	var deadline = Date.now() + 5000;
+	/* Source/config files may be on a slow filesystem. */
+	var deadline = Date.now() + 30000;
 	var ready    = false;
 	while (Date.now() < deadline) {
 		var s = new Socket();
@@ -116,7 +129,7 @@ IrcdTestServer.prototype.start = function() {
 	}
 	if (!ready)
 		throw new Error("IRCd port " + this.port
-			+ " not ready after 5s — check " + this.log_path);
+			+ " not ready after 30s — check " + this.log_path);
 	writeln("PID " + this.pid + " ready");
 };
 
@@ -336,9 +349,16 @@ IrcdTestNetwork.prototype._write_config = function(srv, server_sections) {
 		lines.push("Class=30");
 		lines.push("Hub=" + (s.is_hub ? "true" : "false"));
 		lines.push("");
+		if (s.is_services) {
+			lines.push("[Services:" + s.sname + "]");
+			lines.push("Servername=" + s.sname);
+			lines.push("");
+		}
 	}
+	if (srv.capab_enforce)
+		lines.push("[Capab]", "Enforce=true", "");
 
-	var path = system.temp_dir + "ircd_net_" + srv.name + "_" + Date.now() + ".ini";
+	var path = IRCD_TEST_TEMP_DIR + "ircd_net_" + srv.name + "_" + Date.now() + ".ini";
 	var f = new File(path);
 	if (!f.open("w"))
 		throw new Error("Cannot write network config for " + srv.name + ": " + path);
@@ -352,17 +372,19 @@ IrcdTestNetwork.prototype._start_one = function(srv, server_sections) {
 	write("  [net] " + srv.name + " (:" + srv.port + ")... ");
 
 	var cfg  = this._write_config(srv, server_sections);
-	var log  = system.temp_dir + "ircd_net_" + srv.name + ".log";
+	var log  = IRCD_TEST_TEMP_DIR + "ircd_net_" + srv.name + ".log";
 	this.cfgpaths[srv.name] = cfg;
 	this.logpaths[srv.name] = log;
 
-	var ircd   = js.exec_dir + "../../ircd.js";
-	var jsexec = js.exec_dir + "../../jsexec";
+	var source = srv.source_dir || js.exec_dir + "../../";
+	var ircd   = source + "ircd.js";
+	var jsexec = IRCD_TEST_JSEXEC;
 	var ctrl   = system.ctrl_dir;
-	cmd = jsexec + " -c " + ctrl + " " + ircd
-		+ " -f " + cfg
+	cmd = ircd_shell_quote(jsexec) + " -c " + ircd_shell_quote(ctrl)
+		+ " -i " + ircd_shell_quote(source + "load") + " " + ircd_shell_quote(ircd)
+		+ " -f " + ircd_shell_quote(cfg)
 		+ " -a " + IRCD_TEST_HOST	/* see IrcdTestServer.start() */
-		+ " </dev/null >>" + log + " 2>&1"
+		+ " </dev/null >>" + ircd_shell_quote(log) + " 2>&1"
 		+ " & echo $!";
 
 	out = system.popen(cmd);
@@ -373,7 +395,7 @@ IrcdTestNetwork.prototype._start_one = function(srv, server_sections) {
 		throw new Error("start failed for " + srv.name + " (bad PID: '" + out[0] + "')");
 	this.pids[srv.name] = pid;
 
-	deadline = Date.now() + 8000;
+	deadline = Date.now() + 30000;
 	ready    = false;
 	while (Date.now() < deadline) {
 		s = new Socket();
@@ -387,7 +409,7 @@ IrcdTestNetwork.prototype._start_one = function(srv, server_sections) {
 	}
 	if (!ready)
 		throw new Error(srv.name + " port " + srv.port
-			+ " not ready after 8s — check " + log);
+			+ " not ready after 30s — check " + log);
 	writeln("PID " + pid + " ready");
 };
 
@@ -423,7 +445,7 @@ IrcdTestNetwork.prototype.start = function() {
 	write("  [net] waiting for all 6 servers to link (up to 20s)... ");
 	if (!this._wait_links(NET_HUB1.port, 6, 20))
 		throw new Error("Network did not fully link within 20s"
-			+ " — check logs in " + system.temp_dir);
+			+ " — check logs in " + IRCD_TEST_TEMP_DIR);
 	writeln("linked");
 };
 
@@ -519,6 +541,9 @@ function FakeLeafServer(hub_port, sname, pass) {
 	this.sname    = sname || "fakeleaf.ircd.local";
 	this.pass     = pass  || IRCD_NET_LINK_PASS;
 	this.sock     = null;
+	this.instance = format("%08x%08x%08x%08x", random(2147483647),
+		random(2147483647), random(2147483647), random(2147483647));
+	this.channel_claims = {}; this.channel_sequence = 0;
 }
 
 /*
@@ -535,7 +560,11 @@ FakeLeafServer.prototype.connect = function(timeout_sec) {
 
 	/* Present ourselves as a leaf with the shared link password */
 	this.sock.send("PASS " + this.pass + " :TS\r\n");
+	if (this.capabilities || !this.legacy)
+		this.sock.send("CAPAB " + (this.capabilities || "TSJOIN TSMODE CLOCK CSYNC TSMAP") + "\r\n");
 	this.sock.send("SERVER " + this.sname + " 1 :Fake Leaf\r\n");
+	if (!this.legacy) this.sock.send("CLOCK ROLE HUB\r\nCLOCK 0\r\n");
+	this.received = [];
 
 	/* Drain hub's burst; BURST 0 signals end of burst */
 	deadline = Date.now() + timeout_sec * 1000;
@@ -544,8 +573,16 @@ FakeLeafServer.prototype.connect = function(timeout_sec) {
 		raw = this.sock.recvline(512, 1);
 		if (!raw || raw === "") continue;
 		line = raw.replace(/\r?\n?$/, "");
+		this.received.push(line);
 		if (line.indexOf("PING") === 0)
 			this.sock.send("PONG " + line.substr(5) + "\r\n");
+		if (line.indexOf("CLOCK ") === 0) {
+			var cp = line.split(" ");
+			if (cp.length == 2 && cp[1] != "READY")
+				this.sock.send("CLOCK " + cp[1] + " " + ((Date.now() / 1000) + (this.clock_skew || 0)).toFixed(3) + "\r\n");
+			else if (cp[1] == "0")
+				this.sock.send("CLOCK READY\r\n");
+		}
 		if (line.indexOf("ERROR") === 0)
 			throw new Error("FakeLeafServer: hub rejected: " + line);
 		if (line.indexOf("BURST 0") >= 0) {
@@ -556,10 +593,36 @@ FakeLeafServer.prototype.connect = function(timeout_sec) {
 	if (!bursted)
 		throw new Error("FakeLeafServer: hub burst did not complete within "
 			+ timeout_sec + "s");
+	if (!this.legacy) {
+		this.send("BURST");
+		this.send("TSMAP BEGIN " + this.instance);
+		if (!this.defer_map_end) this.end_burst();
+	}
 };
 
 FakeLeafServer.prototype.send = function(line) {
+	if (!this.legacy) {
+		var fields = line.split(" ");
+		if (fields[0][0] == ":") fields.shift();
+		var name, ts;
+		if (fields[0] == "SJOIN") { name = fields[2]; ts = Number(fields[1]); }
+		else if (fields[0] == "JOIN") {
+			name = /^[0-9]+$/.test(fields[1]) ? fields[2] : fields[1];
+			ts = Date.now() / 1000;
+		}
+		if (name && name[0] == "#") {
+			var claim = this.channel_claims[name.toUpperCase()];
+			if (!claim) claim = this.channel_claims[name.toUpperCase()] = {
+				id: String(++this.channel_sequence), raw: Math.floor(ts || Date.now() / 1000)};
+			this.sock.send("TSMAP CLAIM " + this.instance + " " + claim.id + " " + claim.raw + " " + name + "\r\n");
+		}
+	}
 	this.sock.send(line + "\r\n");
+};
+
+FakeLeafServer.prototype.end_burst = function() {
+	this.send("TSMAP END " + this.instance);
+	this.send("BURST 0");
 };
 
 FakeLeafServer.prototype.close = function() {
