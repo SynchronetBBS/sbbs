@@ -2341,7 +2341,11 @@ cterm_accumulate_trailing(struct cterminal *cterm, unsigned char byte, int *spee
 	return true;
 }
 
-CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int buflen, int *speed)
+/* Write through the next status-display transition.  The caller resumes the
+ * remaining bytes on the newly selected display after this parser unwinds. */
+static size_t
+cterm_write_display(struct cterminal *cterm, const void *vbuf, int buflen,
+    int *speed, bool *changed)
 {
 	const unsigned char *buf = (unsigned char *)vbuf;
 	unsigned char ch[2];
@@ -2361,12 +2365,12 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 	/* lastch is now cterm->lastch (persists across cterm_write calls) */
  	int palette_offset = 0;
 
-	/* DECSASD routing: when active display is the status line, forward
-	 * writes to the sub-cterm.  The sub's parser handles its own sequences;
-	 * status-display and terminal-global handlers bubble back via its
-	 * parent pointer. */
-	if (cterm->status_sub && cterm->status_display_active == 1)
-		return cterm_write(cterm->status_sub, vbuf, buflen, speed);
+	struct cterminal *owner = cterm->parent ? cterm->parent : cterm;
+	int old_type = owner->status_display_type;
+	int old_active = owner->status_display_active;
+	int consumed = 0;
+
+	*changed = false;
 
 	if(!cterm->started)
 		cterm_start(cterm);
@@ -2405,14 +2409,10 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 	setcolour(cterm->fg_color, cterm->bg_color);
 	ciolib_setcursortype(cterm->cursor);
 	ch[1]=0;
-	if(buflen==-1)
-		buflen=ustrlen(buf);
 	switch(buflen) {
 		case 0:
 			break;
 		default:
-			if(cterm->log==CTERM_LOG_RAW && cterm->logfile != NULL)
-				fwrite(buf, buflen, 1, cterm->logfile);
 			prn[0]=0;
 			prnpos = prn;
 			if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB)
@@ -2430,21 +2430,27 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 				 * font load, music terminator, etc.) and cleared at mode
 				 * exit. */
 				cterm->print_pos = prnpos;
-				if (cterm->accumulator != NULL) {
-					if (cterm->accumulator(cterm, buf[j], speed)) {
-						prnpos = cterm->print_pos;
-						continue;
-					}
-				}
-				cterm->dispatch(cterm, buf[j], speed);
+				if (cterm->accumulator == NULL
+				    || !cterm->accumulator(cterm, buf[j], speed))
+					cterm->dispatch(cterm, buf[j], speed);
 				prnpos = cterm->print_pos;
+				consumed = j + 1;
+				if (owner->status_display_type != old_type
+				    || owner->status_display_active != old_active
+				    || cterm->end_pending) {
+					*changed = true;
+					break;
+				}
 			}
 			cterm_uctputs(cterm, prn);
 			prn[0] = 0;
 			prnpos = prn;
 			break;
 	}
-	ABS_XY(&cterm->xpos, &cterm->ypos);
+	/* Switching handlers save the outgoing cursor.  A nested macro may
+	 * already have activated a different drawing window before returning. */
+	if (!*changed)
+		ABS_XY(&cterm->xpos, &cterm->ypos);
 
 	hold_update=olddmc;
 	puttext_can_move=oldptnm;
@@ -2465,7 +2471,48 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 	setfont(orig_fonts[2], FALSE, 3);
 	setfont(orig_fonts[3], FALSE, 4);
 
-	return buflen > 0 ? (size_t)buflen : 0;
+	return consumed;
+}
+
+static void
+cterm_write_release(struct cterminal *cterm)
+{
+	if (--cterm->write_depth == 0 && cterm->end_pending)
+		cterm_end(cterm, cterm->end_free_fonts);
+}
+
+CIOLIBEXPORT size_t
+cterm_write(struct cterminal *cterm, const void *vbuf, int buflen, int *speed)
+{
+	const unsigned char *buf = vbuf;
+	struct cterminal *owner = cterm->parent ? cterm->parent : cterm;
+	struct cterminal *display = cterm;
+	size_t consumed = 0;
+	bool changed;
+
+	if (buflen == -1)
+		buflen = ustrlen(buf);
+	if (buflen < 0)
+		buflen = 0;
+	if (cterm->log == CTERM_LOG_RAW && cterm->logfile != NULL && buflen > 0)
+		fwrite(buf, buflen, 1, cterm->logfile);
+
+	cterm->write_depth++;
+	if (!cterm->parent && owner->status_sub
+	    && owner->status_display_active == 1)
+		display = owner->status_sub;
+	do {
+		display->write_depth++;
+		consumed += cterm_write_display(display, buf + consumed,
+		    buflen - (int)consumed, speed, &changed);
+		cterm_write_release(display);
+		if (changed)
+			display = owner->status_sub && owner->status_display_active == 1
+			    ? owner->status_sub : owner;
+		/* Even at end of input, activate the new window and cursor. */
+	} while (changed);
+	cterm_write_release(cterm);
+	return consumed;
 }
 
 int cterm_openlog(struct cterminal *cterm, char *logfile, int logtype)
@@ -2497,6 +2544,13 @@ void cterm_end(struct cterminal *cterm, int free_fonts)
 	int i;
 
 	if(cterm) {
+		if (cterm->write_depth) {
+			cterm->end_pending = true;
+			cterm->end_free_fonts |= free_fonts != 0;
+			return;
+		}
+		cterm_end(cterm->status_sub, 0);
+		cterm->status_sub = NULL;
 		cterm_closelog(cterm);
 		if (free_fonts) {
 			for(i=CONIO_FIRST_FREE_FONT; i < 256; i++) {

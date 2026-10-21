@@ -949,6 +949,140 @@ static int test_ansi_status_sub_routing(void)
 	return ok;
 }
 
+/* Exercise the same ownership changes as SyncTERM's DECSSDT callback. */
+static void
+status_lifecycle_cb(struct cterminal *c, int old_type, int new_type, void *data)
+{
+	int total = c->height + (old_type != 0);
+	(void)data;
+	cterm_resize_rows(c, total - (new_type != 0));
+	if (c->status_sub) {
+		cterm_end(c->status_sub, 0);
+		c->status_sub = NULL;
+	}
+	if (new_type == 2) {
+		c->status_sub = cterm_init(1, c->width, c->x,
+		    c->y + c->height, 0, 0, NULL, c->emulation);
+		if (c->status_sub) {
+			c->status_sub->parent = c;
+			c->status_sub->response_cb = response_cb;
+			cterm_start(c->status_sub);
+		}
+	}
+}
+
+static int test_ansi_status_sub_in_buffer(void)
+{
+	int ok;
+
+	setup_ansi();
+	if (!sub_attach()) return 0;
+	ct_puts("\033[3;5HMAIN\033[1$}STATUS\033[0$}END");
+	ok = expect_text(5, 3, "MAINEND")
+	    && expect_text(1, term_rows, "STATUS")
+	    && cterm->xpos == 12 && cterm->ypos == 3
+	    && cterm->status_sub->xpos == 7;
+	sub_detach();
+	return ok;
+}
+
+static int test_ansi_status_sub_packet_splits(void)
+{
+	const char *s = "\033[3;5HMAIN\033[2$~TAIL\033[1$}STATUS\033[0$}END";
+	int len = strlen(s);
+
+	for (int split = 0; split <= len; split++) {
+		int ok;
+		setup_ansi();
+		cterm_resize_rows(cterm, term_rows - 1);
+		cterm->status_display_type = 1;
+		cterm->status_display_cb = status_lifecycle_cb;
+		ct_write(s, split);
+		ct_write(s + split, len - split);
+		ok = expect_text(5, 3, "MAINTAILEND")
+		    && expect_text(1, term_rows, "STATUS")
+		    && cterm->xpos == 16 && cterm->ypos == 3
+		    && cterm->status_sub && cterm->status_sub->xpos == 7;
+		sub_detach();
+		if (!ok) {
+			fprintf(result_fp, "  status display split=%d\n", split);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+static int test_ansi_status_sub_disable_active(void)
+{
+	int ok;
+
+	setup_ansi();
+	if (!sub_attach()) return 0;
+	cterm->status_display_cb = status_lifecycle_cb;
+	ct_puts("\033[4;8H\033[1$}");
+	ct_puts("STATUS\033[0$~MAIN");
+	ok = cterm->status_sub == NULL && cterm->status_display_type == 0
+	    && cterm->height == term_rows
+	    && expect_text(8, 4, "MAIN")
+	    && cterm->xpos == 12 && cterm->ypos == 4;
+	sub_detach();
+	return ok;
+}
+
+static int test_ansi_status_sub_indicator_active(void)
+{
+	int ok;
+
+	setup_ansi();
+	if (!sub_attach()) return 0;
+	cterm->status_display_cb = status_lifecycle_cb;
+	ct_puts("\033[4;8H\033[1$}");
+	ct_puts("STATUS\033[1$~MAIN");
+	ok = cterm->status_sub == NULL && cterm->status_display_type == 1
+	    && cterm->height == term_rows - 1
+	    && expect_text(8, 4, "MAIN")
+	    && cterm->xpos == 12 && cterm->ypos == 4;
+	sub_detach();
+	return ok;
+}
+
+static int test_ansi_status_sub_macro_disable(void)
+{
+	int ok;
+
+	setup_ansi();
+	if (!sub_attach()) return 0;
+	cterm->status_display_cb = status_lifecycle_cb;
+	ct_puts("\033[4;8H\033[1$}");
+	/* Status macro 0: DECSSDT 1 followed by MAIN.  Its parser and macro
+	 * storage must survive until both nested writes have returned. */
+	ct_puts("\033P0;0;1!z1b5b31247e4d41494e\033\\");
+	ct_puts("\033[0*z");
+	ok = cterm->status_sub == NULL && cterm->status_display_type == 1
+	    && expect_text(8, 4, "MAIN")
+	    && cterm->xpos == 12 && cterm->ypos == 4;
+	sub_detach();
+	return ok;
+}
+
+static int test_ansi_status_sub_macro_activate(void)
+{
+	int ok;
+
+	setup_ansi();
+	if (!sub_attach()) return 0;
+	/* Main macro 0: DECSASD 1 followed by STATUS. */
+	ct_puts("\033P0;0;1!z1b5b31247d535441545553\033\\");
+	ct_puts("\033[4;8H");
+	ct_puts("\033[0*z");
+	ct_puts("\033[0$}MAIN");
+	ok = expect_text(8, 4, "MAIN")
+	    && expect_text(1, term_rows, "STATUS")
+	    && cterm->xpos == 12 && cterm->ypos == 4;
+	sub_detach();
+	return ok;
+}
+
 static int test_ansi_status_sub_bubble_ssdt(void)
 {
 	int speed = 0;
@@ -958,11 +1092,13 @@ static int test_ansi_status_sub_bubble_ssdt(void)
 	if (!sub_attach()) return 0;
 	ssdt_cb_calls = 0;
 	cterm->status_display_cb = ssdt_test_cb;
+	ct_puts("\033[4;8H");
 
 	/* DECSSDT routed directly to sub must bubble to main. */
 	cterm_write(cterm->status_sub, "\033[1$~", 5, &speed);
 	if (cterm->status_display_type != 1) ok = 0;
 	if (ssdt_cb_calls != 1 || ssdt_cb_new != 1) ok = 0;
+	if (cterm->xpos != 8 || cterm->ypos != 4) ok = 0;
 
 	sub_detach();
 	return ok;
@@ -5893,6 +6029,12 @@ static struct test_entry tests[] = {
 	{"ANSI_resize_grow",  test_ansi_resize_grow_blanks_new_row},
 	{"ANSI_resize_stbm",  test_ansi_resize_preserves_user_decstbm},
 	{"ANSI_sub_route",    test_ansi_status_sub_routing},
+	{"ANSI_sub_buffer",   test_ansi_status_sub_in_buffer},
+	{"ANSI_sub_macro_off", test_ansi_status_sub_macro_disable},
+	{"ANSI_sub_macro_on", test_ansi_status_sub_macro_activate},
+	{"ANSI_sub_splits",   test_ansi_status_sub_packet_splits},
+	{"ANSI_sub_disable",  test_ansi_status_sub_disable_active},
+	{"ANSI_sub_indicator", test_ansi_status_sub_indicator_active},
 	{"ANSI_sub_SSDT",     test_ansi_status_sub_bubble_ssdt},
 	{"ANSI_sub_SASD",     test_ansi_status_sub_bubble_sasd},
 	{"ANSI_SASD_gated",   test_ansi_status_sub_decsasd_gated},
