@@ -1,4 +1,4 @@
-# SynchronetIRCd 2.4 synchronization
+# SynchronetIRCd 2.5 synchronization
 
 Configured hubs remain authoritative over untrusted leaves. Clock agreement
 is required only between peers that both configure the other as a hub.
@@ -34,9 +34,18 @@ An old leaf can retain a different local channel age; its assertions cannot
 replace an established hub channel. Its initial server MODE/TOPIC burst is
 accepted only for channels it first introduces, while all members are routed
 through that leaf. That exemption ends at BURST 0 or when another route joins.
-Established channels receive hub state after the leaf's burst completes.
+Established channels receive immediate member/status introductions and a
+complete correction after the leaf's burst completes.
 Legacy topic delivery uses a per-channel, per-leaf presentation counter to
 outpace timestamps received from that leaf, without changing network time.
+
+The legacy path also covers 2.0 and 1.3a leaves, which advertise TSMODE
+without TSJOIN. NICK introductions use numeric IPv4 addresses for peers
+without NICKIPSTR and IP strings for peers advertising it, in both live
+relays and reconnect bursts. Numeric incoming IPs are decoded even through
+a newer hub that forwarded the old representation. IPv6 addresses have no
+representation in old NICKIP and become its unknown-address value, zero;
+this does not affect routing users by nickname.
 
 Mixed networks retain limitations in the old implementation. In particular,
 old daemons discard empty TOPIC commands, so a topic clear cannot reliably
@@ -82,8 +91,23 @@ A standalone TOPIC correction acknowledges the hub's canonical
 topic timestamp. TOPIC corrections use the implicit direct-server prefix to
 fit maximum-length topics and channel names within the protocol line limit.
 
-Hidden channel snapshots and topics are withheld from untrusted leaves
-without members. A later JOIN and burst completion trigger catch-up snapshots.
+Hubs, services and leaves advertising `FULLCHAN` receive complete channel
+snapshots, including secret and private channels with no local members.
+`FULLCHAN` identifies the 2.5 client reply filtering; released 2.4 peers do not
+advertise it. Hub authority over leaf assertions remains unchanged. Client
+replies enforce channel privacy: outsiders do not receive secret/private NAMES, WHO, WHOIS
+channel lists, modes or topics. LIST omits secret channels and anonymizes
+private ones. Members and IRC operators retain the corresponding visibility.
+
+For older untrusted leaves, hubs withhold hidden channels without local
+members from both bursts and runtime JOIN/MODE/TOPIC/message traffic. The
+first local JOIN triggers a complete authoritative snapshot. When the last
+local member leaves, synthetic PARTs remove the cached remote members from
+that leaf only. Public/hidden mode transitions use the same policy. This
+prevents partial channel records and spurious operator errors without exposing
+hidden state through old client reply handlers. An old leaf sends its initial
+JOIN/NAMES replies before receiving hub correction; the full list follows
+through the snapshot. Hubs serving older leaves must run the updated code.
 
 ## Replicated leaf timestamp mappings
 

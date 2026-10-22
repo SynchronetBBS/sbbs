@@ -1080,10 +1080,12 @@ static int close_socket(SOCKET *sock)
 
 	/* required to ensure all data is sent */
 	shutdown(*sock, SHUT_WR);
-	while (socket_readable(*sock, startup->max_inactivity * 1000))  {
+	// Poll in short slices so a peer that never closes its side can't hold
+	// up server termination for the full max_inactivity.
+	while (!terminate_server && time(NULL) < end) {
+		if (!socket_readable(*sock, 1000))
+			continue;
 		if (recv(*sock, &ch, 1, 0) <= 0)
-			break;
-		if (time(NULL) >= end)
 			break;
 	}
 	result = closesocket(*sock);
@@ -3241,6 +3243,7 @@ static int is_dynamic_req(http_session_t* session)
 
 	check_extra_path(session);
 	_splitpath(session->req.physical_path, drive, dir, fname, ext);
+	session->req.xjs_handler[0] = '\0'; /* this may be a re-check of a changed path */
 
 	if (!(startup->options & WEB_OPT_NO_CGI)) {
 		if (session->req.fastcgi_socket) {
@@ -6775,6 +6778,7 @@ int read_post_data(http_session_t * session)
 				fp = open_post_file(session);
 				if (fp == NULL)
 					return false;
+				session->req.post_len = 0;
 				bool success = post_to_file(session, fp, s);
 				fclose(fp);
 				if (!success)
@@ -8128,14 +8132,15 @@ void web_server(void* arg)
 			start = time(NULL);
 			while (protected_uint32_value(active_clients)) {
 				if (time(NULL) - start > startup->max_inactivity) { // crash here Nov-14-2025, startup is invalid non-NULL pointer
-					lprintf(LOG_WARNING, "!TIMEOUT waiting for %d active clients"
+					lprintf(LOG_WARNING, "!TIMEOUT waiting for %d active clients to disconnect"
 					        , protected_uint32_value(active_clients));
 					shutdown_sessions();
 					break;
 				}
 				mswait(100);
 			}
-			lprintf(LOG_INFO, "Done waiting for active clients to disconnect");
+			if (protected_uint32_value(active_clients) == 0)
+				lprintf(LOG_INFO, "Done waiting for active clients to disconnect");
 		}
 
 		if (http_logging_thread_running) {

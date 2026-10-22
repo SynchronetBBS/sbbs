@@ -704,7 +704,10 @@ function Server_Work(cmdline) {
 			j.servername = p[6];
 			j.realname = p[9];
 			j.parent = this.nick;
-			j.ip = p[8];
+			/* 1.3 sends NICKIP as an integer; newer hubs may relay that
+			   unchanged despite advertising NICKIPSTR themselves. */
+			j.ip = /^[0-9]+$/.test(p[8]) && Number(p[8]) <= 4294967295
+				? int_to_ip(Number(p[8])) : p[8];
 			j.setusermode(p[3]);
 			for (i in ULines) {
 				if (ULines[i] == p[6]) {
@@ -712,19 +715,7 @@ function Server_Work(cmdline) {
 					break;
 				}
 			}
-			this.bcast_to_servers_raw(
-				format("NICK %s %d %lu %s %s %s %s 0 %s :%s",
-					j.nick,
-					j.hops + 1,
-					j.created,
-					j.get_usermode(true),
-					j.uprefix,
-					j.hostname,
-					j.servername,
-					j.ip,
-					j.realname
-				)
-			);
+			IRC_bcast_nick(j, this);
 			umode_notice(USERMODE_DEBUG,"RemoteClient",format(
 				"NICK %s %s@%s %s %s :%s",
 				j.nick,
@@ -1130,8 +1121,7 @@ function Server_Work(cmdline) {
 			var recipient = Local_Servers[link];
 			if (recipient === this || !recipient.admitted) continue;
 			if (IRC_legacy_leaf(recipient)) {
-				if (IRC_leaf_has_member(recipient, tmp)) IRC_resync_leaf(recipient, tmp);
-				else recipient.server_chan_info(tmp);
+				IRC_resync_leaf(recipient, tmp);
 			} else recipient.rawout(relay);
 		}
 		if (leaf_assertion)
@@ -1410,14 +1400,116 @@ function IRC_leaf_has_member(peer, chan) {
 	return false;
 }
 
-function IRC_channel_visible_to_server(peer, chan) {
-	return peer.hub || peer.uline || !(chan.mode & (CHANMODE_PRIVATE | CHANMODE_SECRET))
-		|| IRC_leaf_has_member(peer, chan);
-}
-
 function IRC_legacy_leaf(peer) {
 	return !peer.hub && !peer.uline
 		&& (!peer.their_capab || peer.their_capab.indexOf("CSYNC") < 0);
+}
+
+/* Older daemons do not consistently hide explicit client queries. Give
+   these leaves a partial view, but keep hubs/services and FULLCHAN peers
+   fully informed. CSYNC alone is insufficient: released 2.4 lacks the
+   client reply fixes too. Entries live on the channel and expire with it. */
+function IRC_filtered_leaf(peer) {
+	return !peer.hub && !peer.uline
+		&& (!peer.their_capab || peer.their_capab.indexOf("FULLCHAN") < 0);
+}
+
+function IRC_leaf_view(peer, chan) {
+	if (!chan.leaf_views) chan.leaf_views = {};
+	var view = chan.leaf_views[peer.nick];
+	if (!view || view.peer !== peer)
+		view = chan.leaf_views[peer.nick] = {peer: peer, visible: false, users: {}};
+	return view;
+}
+
+function IRC_hide_leaf_channel(peer, chan, view) {
+	if (!view.visible) return;
+	view.visible = false;
+	/* Synthetic PARTs withdraw only the leaf's cached remote memberships.
+	   They never change hub state or propagate to other links. */
+	peer.withdrawing_channel = true;
+	try {
+		for (var id in view.users) {
+			var user = view.users[id];
+			if (chan.users[id] === user && user.parent != peer.nick)
+				peer.rawout(":" + user.nick + " PART " + chan.nam);
+		}
+	} finally { delete peer.withdrawing_channel; }
+	view.users = {};
+}
+
+function IRC_prepare_leaf_channel(peer, chan) {
+	if (!IRC_filtered_leaf(peer)) return true;
+	var view = IRC_leaf_view(peer, chan);
+	if ((chan.mode & (CHANMODE_SECRET | CHANMODE_PRIVATE)) && !IRC_leaf_has_member(peer, chan)) {
+		IRC_hide_leaf_channel(peer, chan, view);
+		return false;
+	}
+	view.visible = true;
+	return true;
+}
+
+function IRC_refresh_leaf_views(chan, departed) {
+	if (!chan.leaf_views) return;
+	for (var name in chan.leaf_views) {
+		var view = chan.leaf_views[name], peer = view.peer;
+		delete view.users[departed.id];
+		if (peer.admitted && !peer.quitting && IRC_filtered_leaf(peer)
+			&& (chan.mode & (CHANMODE_SECRET | CHANMODE_PRIVATE)) && !IRC_leaf_has_member(peer, chan))
+			IRC_hide_leaf_channel(peer, chan, view);
+	}
+}
+
+function IRC_filter_leaf_output(peer, line) {
+	if (!IRC_filtered_leaf(peer) || peer.withdrawing_channel) return true;
+	var cmd = IRC_parse(line), p = cmd.params, name;
+	switch (cmd.verb) {
+	case "SJOIN": case "CSYNC": name = p[1]; break;
+	case "JOIN": name = p.length > 1 ? p[1] : p[0]; break;
+	case "MODE": case "TOPIC": case "PART": case "KICK":
+	case "PRIVMSG": case "NOTICE": name = p[0]; break;
+	default: return true;
+	}
+	if (!name) return true;
+	name = name.replace(/^[@+]/, "");
+	var chan = Channels[name.toUpperCase()];
+	if (!chan) return true;
+	var known = chan.leaf_views && chan.leaf_views[peer.nick]
+		&& chan.leaf_views[peer.nick].peer === peer;
+	var view = IRC_leaf_view(peer, chan);
+	if ((chan.mode & (CHANMODE_SECRET | CHANMODE_PRIVATE)) && !IRC_leaf_has_member(peer, chan)) {
+		IRC_hide_leaf_channel(peer, chan, view);
+		return false;
+	}
+	if (!view.visible) {
+		view.visible = true;
+		/* A normal public founder JOIN starts an incremental view. Every
+		   hidden-to-visible transition needs all old members and their ops
+		   before any further user-prefixed MODE can be accepted. */
+		if (known || cmd.verb != "JOIN") {
+			peer.server_chan_info(chan);
+			if (chan.topictime) IRC_send_topic(peer, chan);
+			if (["JOIN", "SJOIN", "MODE", "TOPIC", "CSYNC"].indexOf(cmd.verb) >= 0)
+				return false;
+		}
+	}
+	var user, members, i;
+	if (cmd.verb == "JOIN") {
+		user = Users[cmd.source.name.toUpperCase()];
+		if (user && user.parent != peer.nick) view.users[user.id] = user;
+	} else if (cmd.verb == "SJOIN" || (cmd.verb == "CSYNC" && p[2] == "MORE")) {
+		members = p[p.length - 1].split(" ");
+		for (i = 0; i < members.length; i++) {
+			user = Users[members[i].replace(/^[@+]*/, "").toUpperCase()];
+			if (user && user.parent != peer.nick) view.users[user.id] = user;
+		}
+	} else if (cmd.verb == "CSYNC" && p[2] == "BEGIN") {
+		view.users = {};
+	} else if (cmd.verb == "PART" || cmd.verb == "KICK") {
+		user = Users[(cmd.verb == "PART" ? cmd.source.name : p[1]).toUpperCase()];
+		if (user) delete view.users[user.id];
+	}
+	return true;
 }
 
 function IRC_mode_timestamp(peer, ts) {
@@ -1502,8 +1594,9 @@ function IRC_server_join(peer, user, name, ts) {
 }
 
 function IRC_resync_leaf(peer, chan, rejected_modes) {
-	if (peer.hub || peer.uline || !IRC_leaf_has_member(peer, chan))
+	if (peer.hub || peer.uline)
 		return;
+	if (!IRC_prepare_leaf_channel(peer, chan)) return;
 	if (!peer.their_capab || peer.their_capab.indexOf("CSYNC") < 0) {
 		IRC_resync_legacy_leaf(peer, chan, rejected_modes);
 		return;
@@ -1560,8 +1653,16 @@ function IRC_resync_legacy_leaf(peer, chan, rejected_modes) {
 		}
 	}
 	/* Do not erase the state of a new channel between its JOINs and the
-	   separate MODE/TOPIC lines in an old daemon's initial burst. */
-	if (peer.bursting) return;
+	   separate MODE/TOPIC lines in an old daemon's initial burst. Existing
+	   hub channels still need their members/ops introduced immediately: a
+	   runtime MODE can arrive before the old leaf finishes its own burst. */
+	if (peer.bursting) {
+		if (chan.pending_burst !== peer) {
+			peer.server_chan_info(chan);
+			if (chan.topictime) IRC_send_topic(peer, chan);
+		}
+		return;
+	}
 	for (i in chan.users) {
 		u = chan.users[i];
 		/* Its own members can have a PART in flight. Reintroduce only
@@ -1809,6 +1910,11 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 
 	delete Local_Servers[this.nick.toLowerCase()];
 	delete Servers[this.nick.toLowerCase()];
+	for (var cname in Channels) {
+		var views = Channels[cname].leaf_views;
+		if (views && views[this.nick] && views[this.nick].peer === this)
+			delete views[this.nick];
+	}
 	IRC_admit_waiting_leaves();
 
 	if (cline)
@@ -1843,7 +1949,7 @@ function IRCClient_synchronize() {
 	));
 
 	for (i in Channels) {
-		if ((i[0] == "#") && Channels[i].topictime && IRC_channel_visible_to_server(this, Channels[i])) {
+		if ((i[0] == "#") && Channels[i].topictime) {
 			IRC_send_topic(this, Channels[i]);
 		}
 	}
@@ -1866,6 +1972,20 @@ function IRCClient_server_info(sni_server) {
 	));
 }
 
+function IRC_bcast_nick(user, except) {
+	for (var i in Local_Servers) {
+		var peer = Local_Servers[i];
+		if (peer.admitted && peer !== except) peer.server_nick_info(user);
+	}
+}
+
+function IRC_nick_ip(peer, ip) {
+	if (peer.their_capab && peer.their_capab.indexOf("NICKIPSTR") >= 0)
+		return ip;
+	/* Old NICKIP has no IPv6 representation. Zero is its unknown address. */
+	return /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(ip) ? String(ip_to_int(ip)) : "0";
+}
+
 function IRCClient_server_nick_info(sni_client) {
 	this.rawout(
 		format("NICK %s %d %lu %s %s %s %s 0 %s :%s",
@@ -1876,7 +1996,7 @@ function IRCClient_server_nick_info(sni_client) {
 			sni_client.uprefix,
 			sni_client.hostname,
 			sni_client.servername,
-			sni_client.ip,
+			IRC_nick_ip(this, sni_client.ip),
 			sni_client.realname
 		)
 	);
@@ -1890,6 +2010,7 @@ function IRCClient_server_nick_info(sni_client) {
 }
 
 function IRCClient_server_chan_info(sni_chan) {
+	if (!IRC_prepare_leaf_channel(this, sni_chan)) return;
 	var i, u, token, names = "", capable = !this.uline && this.their_capab
 		&& this.their_capab.indexOf("TSJOIN") >= 0 && !IRC_legacy_leaf(this);
 	var timestamped_modes = this.their_capab
@@ -1899,10 +2020,8 @@ function IRCClient_server_chan_info(sni_chan) {
 		ServerName, IRC_is_leaf_uplink(this) ? sni_chan.leaf_timestamp : sni_chan.created,
 		sni_chan.nam, sni_chan.chanmode(true));
 
-	/* Preserve the untrusted-leaf visibility boundary. A leaf first joining
-	   a hidden channel receives an explicit, authoritative correction. */
-	if (!IRC_channel_visible_to_server(this, sni_chan))
-		return;
+	/* FULLCHAN servers receive complete state; older leaves receive it only
+	   while visible, with runtime output filtered by the same policy. */
 	IRC_tsmap_claim(this, sni_chan);
 	for (i in sni_chan.users) {
 		u = sni_chan.users[i];

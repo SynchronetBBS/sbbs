@@ -517,6 +517,7 @@ set(CONN_TESTS
 	test_demux_chan_type_zero test_send_eof_already_sent
 	test_send_close_already_sent test_replenish_after_eof
 	test_replenish_low_window test_replenish_queued_accounting
+	test_replenish_reserves_outstanding
 	test_zc_consumption_clamped test_window_underflow_to_zero
 	test_window_add_overflow
 	test_chan_write_not_open test_chan_write_close_recv

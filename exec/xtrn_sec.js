@@ -372,6 +372,9 @@ function external_section_menu()
 }
 
 /* main: */
+if(options.eval_first)
+	eval(options.eval_first);
+
 if(xsec >= 0)
     external_program_menu(xsec);
 else {

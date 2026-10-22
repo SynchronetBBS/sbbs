@@ -298,8 +298,8 @@ function User_Work(cmdline) {
 		if (typeof p[1] === 'undefined') { /* User requesting info only */
 			if ((p[0][0] == "#") || (p[0][0] == "&")) {
 				tmp = Channels[p[0].toUpperCase()];
-				if (!tmp) {
-					this.numeric401(p[0]);
+				if (!tmp || !IRC_channel_visible_to_user(this, tmp)) {
+					this.numeric403(p[0]);
 					break;
 				}
 				this.numeric(324, format("%s %s",
@@ -321,7 +321,7 @@ function User_Work(cmdline) {
 				p.splice(1,1);
 			if ((p[0][0] == "#") || (p[0][0] == "&")) {
 				tmp = Channels[p[0].toUpperCase()];
-				if (!tmp) {
+				if (!tmp || !IRC_channel_visible_to_user(this, tmp)) {
 					this.numeric403(p[0]);
 					break;
 				}
@@ -430,7 +430,7 @@ function User_Work(cmdline) {
 			break;
 		}
 		var tmp = Channels[p[0].toUpperCase()];
-		if (!tmp) {
+		if (!tmp || !IRC_channel_visible_to_user(this, tmp)) {
 			this.numeric403(p[0]);
 			break;
 		}
@@ -923,13 +923,7 @@ function User_Work(cmdline) {
 	case "NAMES":
 		if (!p[0]) {
 			for (i in Channels) {
-				if (this.channels[Channels[i].nam.toUpperCase()]
-					|| (   !(Channels[i].mode&CHANMODE_SECRET)
-						&& !(Channels[i].mode&CHANMODE_PRIVATE)
-						)
-				) {
-					this.names(Channels[i]);
-				}
+				this.names(Channels[i]);
 			}
 			tmp = "";
 			var names_prefix = ":" + ServerName + " 353 " + this.nick + " * * :";

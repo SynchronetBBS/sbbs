@@ -32,7 +32,10 @@ try {
 				for (var n = 0; n < 10; n++) {
 					actor.send("JOIN #partrace"); actor.send("PART #partrace");
 				}
-				actor.drain(1000); anchor.drain(500);
+				/* The user's receive queue throttles this burst. A drain can
+				   return while later JOIN/PARTs are still waiting to execute. */
+				actor.send("PING :partrace-complete"); actor.expect(" :partrace-complete", 30);
+				anchor.drain(500);
 				for (var i = 0; i < NET_ALL.length; i++) {
 					var c = net.client(NET_ALL[i], "partWatch" + i); observers.push(c);
 					c.send("NAMES #partrace"); var names = c.expect(" 353 ", 3).split(" :")[1];
@@ -451,13 +454,12 @@ try {
 				throw new Error("attacker did not appear in channel at all: " + names_line);
 		},
 
-		/* --- +s channel burst catch-up --- */
+		/* --- +s channel reconnect --- */
 
 		/*
 		 * A user on leaf1a is in a +s channel.  When leaf1a disconnects and
-		 * reconnects, the hub must deliver the +s channel member list to the
-		 * leaf after the burst completes (the hub's initial burst fires before
-		 * it knows the leaf's users, so catch-up happens on BURST 0).
+		 * reconnects, the complete burst and final correction must preserve
+		 * the hub's channel state and the leaf's surviving local membership.
 		 */
 		"+s channel user list is burst to a leaf that has a member in it": function() {
 			var member, observer, names_line;
@@ -483,9 +485,9 @@ try {
 
 			/* Oper up on hub1 and SQUIT leaf1a.  SQUIT severs the hub-leaf
 			   link; leaf1a auto-reconnects after ConnectFrequency=3 seconds.
-			   The hub's initial outbound burst fires before it has seen leaf1a's
-			   NICKs, so without the BURST 0 catch-up the leaf never learns about
-			   sobsrvr1.  member's socket to leaf1a stays alive. */
+			   The hub bursts its state before it sees leaf1a's surviving users,
+			   then corrects the leaf when its burst completes. The member's
+			   socket to leaf1a stays alive throughout. */
 			observer.send("OPER testop testpass");
 			observer.expect(" 381 ", 3);
 			observer.send("SQUIT " + NET_LEAF1A.sname + " :test reconnect");

@@ -537,15 +537,7 @@ function Unregistered_Welcome() {
 	));
 	if (server.client_update != undefined)
 		server.client_update(this.socket, this.nick, this.hostname);
-	server_bcast_to_servers(format("NICK %s 1 %lu + %s %s %s 0 %s :%s",
-			this.nick,
-			new_user.created,
-			this.uprefix,
-			this.hostname,
-			ServerName,
-			new_user.ip,
-			this.realname
-	));
+	IRC_bcast_nick(new_user);
 	log(LOG_NOTICE, format(
 		"New IRC user: %s (%s@%s)",
 		this.nick,
