@@ -3243,6 +3243,7 @@ static int is_dynamic_req(http_session_t* session)
 
 	check_extra_path(session);
 	_splitpath(session->req.physical_path, drive, dir, fname, ext);
+	session->req.xjs_handler[0] = '\0'; /* this may be a re-check of a changed path */
 
 	if (!(startup->options & WEB_OPT_NO_CGI)) {
 		if (session->req.fastcgi_socket) {
