@@ -19,7 +19,7 @@ else
 }
 
 // Read the color configuration file
-readColorConfig(gConfigSettings.iceColors.ThemeFilename);
+readColorConfig_IceStyle(gConfigSettings.iceColors.ThemeFilename);
 
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -29,7 +29,7 @@ readColorConfig(gConfigSettings.iceColors.ThemeFilename);
 //
 // Parameters:
 //  pFilename: The name of the color configuration file
-function readColorConfig(pFilename)
+function readColorConfig_IceStyle(pFilename)
 {
 	var themeFile = new File(pFilename);
 	if (themeFile.open("r"))
