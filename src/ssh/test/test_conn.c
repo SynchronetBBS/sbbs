@@ -4911,6 +4911,72 @@ build_channel_data(uint8_t *buf, size_t bufsz, uint32_t local_id, uint32_t dlen)
 	return pos;
 }
 
+/* Unused receive credit still needs buffer space even before it arrives.
+ * Replenishing after a small read must not let the peer overrun either stream. */
+static int
+test_replenish_reserves_outstanding_space(void)
+{
+	struct conn_ctx ctx;
+	if (conn_setup(&ctx) < 0)
+		return TEST_FAIL;
+
+	struct open_exec_ctx oc = { 0 };
+	if (rx_window_setup(&ctx, &oc, 32) < 0) {
+		conn_cleanup(&ctx);
+		return TEST_FAIL;
+	}
+	bytebuf_free(&oc.server_ch->buf.stderr_buf);
+	ASSERT_OK(bytebuf_init(&oc.server_ch->buf.stderr_buf, 32));
+
+	for (int stream = 0; stream < 2; stream++) {
+		uint8_t fill[24];
+		uint8_t result[32];
+		uint8_t payload[32];
+		size_t pos = 0;
+		struct dssh_bytebuf *bb = stream == 0
+		    ? &oc.server_ch->buf.stdout_buf : &oc.server_ch->buf.stderr_buf;
+
+		memset(fill, 'A', sizeof(fill));
+		mtx_lock(&oc.server_ch->buf_mtx);
+		size_t filled = bytebuf_write(bb, fill, sizeof(fill));
+		oc.server_ch->local_window = 8;
+		mtx_unlock(&oc.server_ch->buf_mtx);
+		ASSERT_EQ_U(filled, sizeof(fill));
+
+		/* All eight free bytes are already promised to the peer. */
+		ASSERT_OK(maybe_replenish_window(ctx.server, oc.server_ch));
+		mtx_lock(&oc.server_ch->buf_mtx);
+		uint32_t credit = oc.server_ch->local_window;
+		mtx_unlock(&oc.server_ch->buf_mtx);
+		ASSERT_EQ_U(credit, 8);
+		ASSERT_EQ(dssh_chan_read(oc.server_ch, stream, result, 1), 1);
+		mtx_lock(&oc.server_ch->buf_mtx);
+		credit = oc.server_ch->local_window;
+		mtx_unlock(&oc.server_ch->buf_mtx);
+		ASSERT_EQ_U(credit, 9);
+
+		payload[pos++] = stream == 0 ? SSH_MSG_CHANNEL_DATA
+		    : SSH_MSG_CHANNEL_EXTENDED_DATA;
+		DSSH_PUT_U32(oc.server_ch->local_id, payload, &pos);
+		if (stream != 0) {
+			DSSH_PUT_U32(1, payload, &pos);
+		}
+		DSSH_PUT_U32(9, payload, &pos);
+		memset(&payload[pos], 'B', 9);
+		pos += 9;
+		ASSERT_OK(dssh_test_demux_dispatch(ctx.server, payload[0], payload, pos));
+		ASSERT_EQ(dssh_chan_read(oc.server_ch, stream, result, sizeof(result)), 32);
+		for (size_t i = 0; i < sizeof(result); i++) {
+			ASSERT_EQ(result[i], i < 23 ? 'A' : 'B');
+		}
+	}
+
+	dssh_chan_close(oc.server_ch, 0);
+	dssh_chan_close(oc.client_ch, 0);
+	conn_cleanup(&ctx);
+	return TEST_PASS;
+}
+
 /* Without the flag and with a closed window, all early bytes are
  * clipped to len=0 -- the bytebuf stays empty and local_window stays 0. */
 static int
@@ -6905,6 +6971,7 @@ static struct dssh_test_entry tests[] = {
 	/* Item 74: bytebuf truncation + window accounting */
 	{ "test_demux_data_truncation",        test_demux_data_truncation_window },
 	{ "test_replenish_caps_buf_space",     test_replenish_caps_to_buffer_space },
+	{ "test_replenish_reserves_outstanding", test_replenish_reserves_outstanding_space },
 
 	/* Universal rx-window truncation + ACCEPT_EARLY_DATA bypass */
 	{ "rx_truncation/default",             test_rx_truncation_default },
