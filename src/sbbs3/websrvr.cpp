@@ -6778,6 +6778,7 @@ int read_post_data(http_session_t * session)
 				fp = open_post_file(session);
 				if (fp == NULL)
 					return false;
+				session->req.post_len = 0;
 				bool success = post_to_file(session, fp, s);
 				fclose(fp);
 				if (!success)
