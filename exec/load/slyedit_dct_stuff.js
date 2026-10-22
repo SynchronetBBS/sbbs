@@ -36,7 +36,7 @@ var DCTMENU_CROSS_POST = 13;
 var DCTMENU_LIST_TXT_REPLACEMENTS = 14;
 
 // Read the color configuration file
-readColorConfig(gConfigSettings.DCTColors.ThemeFilename);
+readColorConfig_DCTStyle(gConfigSettings.DCTColors.ThemeFilename);
 
 ///////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -45,7 +45,7 @@ readColorConfig(gConfigSettings.DCTColors.ThemeFilename);
 //
 // Parameters:
 //  pFilename: The name of the color configuration file
-function readColorConfig(pFilename)
+function readColorConfig_DCTStyle(pFilename)
 {
 	var themeFile = new File(pFilename);
 	if (themeFile.open("r"))

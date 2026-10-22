@@ -102,8 +102,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "2.03";
-var EDITOR_VER_DATE = "2026-06-30";
+var EDITOR_VERSION = "2.04";
+var EDITOR_VER_DATE = "2026-10-18";
 
 
 // Program variables
@@ -1125,7 +1125,7 @@ console.crlf();
 
 // If the user's setting to pause after every screenful is disabled, then
 // pause here so that they can see the exit information.
-if (user.settings & USER_PAUSE == 0)
+if ((user.settings & USER_PAUSE) == 0)
 	mswait(1000);
 
 // Load any specified 3rd-party exit scripts and execute any provided exit
