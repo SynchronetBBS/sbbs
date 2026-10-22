@@ -38,7 +38,7 @@ load("ircd/config.js");
 load("ircd/timestamps.js");
 
 /*** Global Constants - Always in ALL_UPPERCASE ***/
-var VERSION = "SynchronetIRCd-2.4";
+var VERSION = "SynchronetIRCd-2.5";
 var VERSION_STR = format(
 	"Synchronet %s%s-%s%s (IRCd by Randy Sommerfeld)",
 	system.version, system.revision,
@@ -51,7 +51,7 @@ var VERSION_STR = format(
    Legacy hubs and leaves remain linkable during this rollout. Mandatory
    capability enforcement belongs to the next protocol version.
    U:lined services retain their legacy protocol. */
-var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE TSJOIN CLOCK CSYNC TSMAP";
+var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE TSJOIN CLOCK CSYNC TSMAP FULLCHAN";
 /* This will be in the configuration for 2.0 */
 var SUMMON = true;
 

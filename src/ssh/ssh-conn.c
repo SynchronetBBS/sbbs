@@ -1201,8 +1201,11 @@ maybe_replenish_window(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 			if (err_free < buf_free)
 				buf_free = err_free;
 			uint32_t buf_cap = buf_free > UINT32_MAX ? UINT32_MAX : (uint32_t)buf_free;
-			if (add > buf_cap)
-				add = buf_cap;
+			/* Advertised and queued credit can still arrive.  Reserve
+			 * its space before promising any additional bytes. */
+			uint32_t available = buf_cap > outstanding ? buf_cap - outstanding : 0;
+			if (add > available)
+				add = available;
 		}
 		add = queue_window_adjust_locked(ch, add);
 	}

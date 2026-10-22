@@ -6,7 +6,17 @@
 "use strict";
 
 require("sbbsdefs.js", "USER_EXPERT");
+require("nodedefs.js", "NODE_MAIN");
 require("gettext.js", "gettext");
+
+var options = load("modopts.js", "shell");
+if(!options)
+	options = {};
+
+// modopts.ini [shell] keys evaluated upon entering a section of the BBS
+var section_enter_key = {};
+section_enter_key[NODE_MAIN] = "main_enter";
+section_enter_key[NODE_XFER] = "file_enter";
 
 var usrsubs = [];
 var usrdirs = [];
@@ -656,9 +666,16 @@ function page_sysop()
 function menu_loop()
 {
 	var last_str_cmd = "";
+	var last_action = menu.node_action;	// No "enter" event for the initial menu
 
 	// The menu-display/command-prompt loop
 	while(bbs.online && !js.terminated) {
+		if(menu.node_action !== last_action) {
+			last_action = menu.node_action;
+			var enter_expr = options[section_enter_key[menu.node_action]];
+			if(enter_expr)
+				eval(enter_expr);
+		}
 		if(!(user.settings & USER_EXPERT)) {
 			if (menu.cls)
 				console.clear();

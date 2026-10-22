@@ -358,7 +358,23 @@ IrcdTestNetwork.prototype._write_config = function(srv, server_sections) {
 	if (srv.capab_enforce)
 		lines.push("[Capab]", "Enforce=true", "");
 
-	var path = IRCD_TEST_TEMP_DIR + "ircd_net_" + srv.name + "_" + Date.now() + ".ini";
+	/* The 1.3 generation predates the INI parser. Exercise its original
+	   daemon with its native configuration format rather than porting it. */
+	var old_config = srv.source_dir && file_exists(srv.source_dir + "load/ircd_server.js")
+		&& !file_exists(srv.source_dir + "load/ircd/server.js");
+	if (old_config) {
+		lines = ["M:" + srv.sname + ":127.0.0.1:IRCd Network Test:" + srv.port,
+			"A:Test Admin:localhost:testop@" + srv.sname,
+			"Y:1:3600:0:100:1000000", "Y:10:3600:0:10:2000000", "Y:30:60:3:10:15000000",
+			"I:*::*::1", "O:*@*:testpass:testop:OwkKcC:10"];
+		server_sections.forEach(function(s) {
+			lines.push("C:127.0.0.1:" + IRCD_NET_LINK_PASS + ":" + s.sname + ":" + (s.port || 0) + ":30");
+			lines.push("N:127.0.0.1:" + IRCD_NET_LINK_PASS + ":" + s.sname + "::30");
+			if (s.is_hub) lines.push("H:*::" + s.sname);
+			if (s.is_services) lines.push("U:" + s.sname);
+		});
+	}
+	var path = IRCD_TEST_TEMP_DIR + "ircd_net_" + srv.name + "_" + Date.now() + (old_config ? ".conf" : ".ini");
 	var f = new File(path);
 	if (!f.open("w"))
 		throw new Error("Cannot write network config for " + srv.name + ": " + path);
