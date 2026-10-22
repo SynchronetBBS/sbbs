@@ -4,199 +4,7 @@
  *
  * Author: Eric Oulashin (AKA Nightfox)
  * BBS: Digital Distortion
- * BBS address: digitaldistortionbbs.com (or digdist.bbsindex.com)
- *
- * Date       Author            Description
- * 2016-12-29 Eric Oulashin     Version 0.01 Beta
- *                              Started
- * 2017-02-26 Eric Oulashin     Version 0.17 Beta
- *                              Mostly complete; continuing to make tweaks
- * 2017-04-26 Eric Oulashin     Version 0.18 Beta
- *                              Fixed a coloring issue when outputting who voted
- *                              on a poll when more than 1 person voted on it.
- * 2017-08-03 Eric Oulashin     Version 0.19 Beta
- *                              Added a configuration option, useAllAvailableSubBoards,
- *                              which tells SlyVote to use all available sub-boards
- *                              where voting is enabled.  Defaults to true.  Also,
- *                              fixed an off-by-1 bug when displaying the list of
- *                              sub-boards to choose from.  Also, set the (new)
- *                              ampersandHotkeysInItems property in most of the
- *                              DDLightbarMenu objects to false so that it won't
- *                              interpret ampersands before a character in menu
- *                              items as hotkeys.
- * 2017-08-05 Eric Oulashin     Version 0.20 Beta
- *                              Fixed a bug in the stats display where it was assigning
- *                              the total_votes in the headers instead of comparing,
- *                              using an = instead of ==.  Also, updated the stats view
- *                              to display the stats in a scrollable frame rather than
- *                              simply dumping out the stats to the screen.
- * 2017-08-06 Eric Oulashin     Version 0.21 Beta
- *                              Updated the area chooser list to include a check mark
- *                              next to areas that have polls in them.
- * 2017-08-07 Eric Oulashin     Version 0.22 Beta
- *                              Updated to display "Loading areas..." when loading the
- *                              message areas & looking to see which ones have polls.
- *                              Also, changed "topic area" verbage to "voting area".
- * 2017-08-15 Eric Oulashin     Version 0.23 Beta
- *                              Started working on support for multi-answer polls.  Also,
- *                              changed the "topic" verbage to "poll".
- * 2017-08-16 Eric Oulashin     Version 0.24 Beta
- *                              Updated to show the number of choices a user can submit for
- *                              a poll, and restricted the user to choosing only that many.
- *                              Also, started working on adding an option to let the user
- *                              close a poll they created (while viewing poll results).
- * 2017-08-17 Eric Oulashin     Version 0.25 Beta
- *                              Finished the code for closing a poll
- * 2017-08-18 Eric Oulashin     Verison 0.26 Beta
- *                              Made some minor changes, such as the hotkey text for
- *                              submitting a vote in a poll
- * 2017-08-19 Eric Oulashin     Version 0.27 Beta
- *                              Used the new Msgbase.close_poll() method in the August
- *                              19, 2017 build of Synchronet 3.17
- * 2017-08-20 Eric Oulashin     Version 0.28 Beta
- *                              Updated the vote option input for traditional mode
- *                              (when voting from the 'view results' screen) so that
- *                              it only accepts numbers and a comma for input.  Also,
- *                              updated the close-poll behavior so that only the user
- *                              who created the poll can close it (removed the sysop).
- *                              Added a configuration file option, startupSubBoardCode,
- *                              which specifies which sub-board to automatically start
- *                              in if there are multiple sub-board codes configured.
- * 2017-08-27 Eric Oulashin     Version 0.29 beta
- *                              Checked for the user's UFLAG_V restriction (not
- *                              allowed to vote) in more places.  If the user is not
- *                              allowed to vote, they can still view poll results.
- *                              Also, updated the poll viewing & stats view to
- *                              say if a poll is closed.
- * 2017-09-08 Eric Oulashin     Version 0.30 beta
- *                              Implemented a user configuration file to store
- *                              last-read message numbers separately from
- *                              Synchronet's messagebase so that SlyVote won't
- *                              mess with users' actual last-read message numbers.
- *                              Also, updated so that when changing to another
- *                              area, if the top item index is on the last page
- *                              of the menu, then set the top item index to the
- *                              first item on the last page.
- * 2017-09-09 Eric Oulashin     Version 0.31 beta
- *                              Optimization: Updated to only build the area
- *                              selection menu once, the first time it's used.
- *                              Also refactored a section of code there to go
- *                              along with a bug fix in DDLIghtbarMenu.
- * 2017-09-24 Eric Oulashin     Version 0.32 beta
- *                              Bug fix: After deleting the last poll in a sub-board,
- *                              it now correctly goes to the main menu rather than
- *                              reporting an error.
- *                              Also, after creating or deleting a poll, the number
- *                              of polls in the sub-board displayed on the main menu
- *                              is now updated.
- * 2017-12-18 Eric Oulashin     Version 0.33 beta
- *                              Updated the definitions of the KEY_PAGE_UP and
- *                              KEY_PAGE_DOWN veriables to match what they are in
- *                              sbbsdefs.js (if defined) from December 18, 2017 so
- *                              that the PageUp and PageDown keys continue to work
- *                              properly.  This script should still also work with
- *                              older 3.17 builds of Synchronet.
- * 2018-01-28 Eric Oulashin     Version 0.34 beta
- *                              Updated to display avatars for the person who posted
- *                              a poll.
- * 2018-03-19 Eric Oulashin     Version 0.35 beta
- *                              Made a fix for non-lightbar voting input - It wasn't
- *                              accepting Q to quit out of voting (a blank input worked
- *                              though).
- * 2018-03-25 Eric Oulashin     Version 0.36 Beta
- *                              For non-lightbar voting, updated to use BallotHdr (791)
- *                              instead of SelectHdr (501).
- * 2018-04-23 Eric Oulashin     Version 0.37 Beta
- *                              When submitting a vote, the thread_id field is now
- *                              set to the message/poll's message ID, not message number.
- * 2018-12-23 Eric Oulashin     Version 0.38 Beta
- *                              Renamed DDLightbarMenu to dd_lightbar_menu.js
- * 2018-12-29 Eric Oulashin     Version 0.39 Beta
- *                              Made use of file_cfgname() when looking for and
- *                              loading the configuration file.
- * 2019-01-02 Eric Oulashin     Version 1.00
- *                              Changed the version to 1.00 after the official release
- *                              of Synchronet 3.17b
- * 2019-03-21 Eric Oulashin     Version 1.01 Beta
- *                              Changed "voting area" verbage to "sub-board".  Updated
- *                              the main screen to show the number of polls the user
- *                              has voted on & the number remaining.
- *                              Started working on updating to do sub-board selection
- *                              with group selection first.
- * 2019-03-22 Eric Oulashin     Version 1.01
- *                              Releasing this version
- * 2019-04-07 Eric Oulashin     
- *                              Updated to use the new get_index() messagebase function,
- *                              if available, for getting the message index objects
- *                              in subBoardHasPolls().  get_index() is faster than
- *                              iterating through all messages and calling
- *                              get_msg_index() for each message.
- * 2019-04-08 Eric Oulashin     Version 1.02
- *                              Further optimization: When checking a sub-board if it
- *                              has polls, check in reverse rather than forward.  Since
- *                              polls & voting is a relatively recent feature in
- *                              Synchronet, hopefully it should finish faster going
- *                              in reverse.  Also, updated CountPollsInSubBoard() to
- *                              use get_msg_index() if available so that it runs faster.
- * 2019-08-14 Eric Oulashin     Version 1.03
- *                              Made use of require() (if available) to load the .js
- *                              scripts.
- * 2020-02-09 Eric Oulashin     Version 1.04
- *                              Updated calls to AddAdditionalQuitKeys() in the
- *                              DDLightbarMenu class per the updated version
- *                              (requires the dd_lightbar_menu.js update).
- * 2020-03-29 Eric Oulashin     Version 1.05
- *                              Added a null check for the value returned by
- *                              msgbase.get_index() before using the value
- *                              wherever get_index() is called.
- * 2020-03-31 Eric Oulashin     Version 1.06
- *                              Enabled scrollbars in some menus where it would be
- *                              useful.  Requires the latest dd_scrollbar_menu.js.
- * 2020-04-04 Eric Oulashin     Version 1.07
- *                              Made use of the updated DDLightbarMenu, which allows
- *                              replacing the NumItems() and GetItem() functions to
- *                              let the menu use a differnet list of items, to avoid
- *                              adding/copying a bunch of items via DDLightbarMenu's Add()
- *                              function.
- * 2020-05-18 Eric Oulashin     Version 1.08
- *                              Fixed a typo when calling GetKeyWithESCChars()
- * 2020-05-19 Eric Oulashin     Verison 1.09
- *                              Now saves the user's last sub-board to the user config
- *                              file for SlyVote so SlyVote will start in that sub-board
- *                              the next time the user runs SlyVote.
- * 2020-05-22 Eric Oulashin     Version 1.10
- *                              Fixed a bug introduced in 1.07 where the
- *                              useAllAvailableSubBoards 'false' setting was being
- *                              ignored when it was set to false when changing
- *                              to another sub-board.
- * 2021-04-02 Eric Oulashin     Version 1.11
- *                              When configured to use all available sub-boards,
- *                              still don't allow choosing a sub-board that has
- *                              polls disabled.  This fixes an issue where SlyVote
- *                              was showing all available message groups but
- *                              some could be empty due to having no sub-boards
- *                              that allow polls.
- * 2022-06-21 Eric Oulashin     Version 1.12
- *                              Made an update to get vote stats to be displayed again.
- *                              Also, no longer has hard-coded CP437 characters, and
- *                              now uses "use strict" for better runtime checks of proper
- *                              code.
- * 2023-05-13 Eric Oulashin     Version 1.13
- *                              Fix for error when quitting/aborting out of choosing a
- *                              different sub-board. Refactored ReadConfigFile().
- * 2023-09-20 Eric Oulashin     Version 1.14
- *                              Fixed poll voting for single-answer polls
- * 2023-12-10 Eric Oulashin     Version 1.15
- *                              Code refactor; no difference in functionality.
- *                              Now uses js.exec_dir instead of the hack to find out
- *                              what directory the script is running in.
- *                              Now uses user.is_sysop rather than storing a global
- *                              variable with an ARS check for "SYSOP".
- * 2024-11-27 Eric Oulashin     Version 1.16
- *                              When showing a poll result message, for the user who posted the poll,
- *                              show the answers from the people who voted on it. This is to
- *                              basically mimic the fact that Synchronet shows who voted on your
- *                              poll and what they answered, but in the poll message itself.
+ * BBS address: digitaldistortionbbs.com (or digdist.synchro.net)
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -274,8 +82,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.16";
-var SLYVOTE_DATE = "2024-11-27";
+var SLYVOTE_VERSION = "1.17";
+var SLYVOTE_DATE = "2026-10-16";
 
 // Strings for the various message attributes (used by makeAllAttrStr(),
 // makeMainMsgAttrStr(), makeAuxMsgAttrStr(), and makeNetMsgAttrStr())
@@ -358,7 +166,7 @@ if (gSlyVoteCfg.cfgReadError.length > 0)
 	console.print("\x01h\x01y* Error reading slyvote.cfg\x01n");
 	console.crlf();
 	console.pause();
-	exit();
+	exit(1);
 }
 // Ensure there are sub-boards configured
 var subBoardsConfigured = false;
@@ -380,7 +188,7 @@ if (!subBoardsConfigured)
 	console.print("\x01cThere are no sub-boards configured.\x01n");
 	console.crlf();
 	console.pause();
-	exit();
+	exit(2);
 }
 
 
@@ -425,6 +233,13 @@ else
 		else
 			exit(0);
 	}
+}
+// Make sure the sub-board code is valid. "mail" is checked here, though SlyVote
+// wasn't really designed to use the mail area.
+if (gSubBoardCode != "mail" && !msg_area.sub.hasOwnProperty(gSubBoardCode))
+{
+	log(LOG_ERR, "SlyVote: Invalid sub-board code: " + gSubBoardCode);
+	exit(3);
 }
 // Output a "loading..." text, in case it takes a while to count the polls in
 // the current sub-board
@@ -1608,7 +1423,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 							continue;
 						// If this header's thread_back or reply_id matches the poll message
 						// number, then append the 'user voted' string to the message body.
-						if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
+						if (tmpHdrs[tmpProp].thread_back == pMsgHdr.number || tmpHdrs[tmpProp].reply_id == pMsgHdr.id)
 						{
 							var msgWrittenLocalTime = MsgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
 							var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
@@ -1861,7 +1676,7 @@ function VoteOnPoll(pSubBoardCode, pMsgbase, pMsgHdr, pUser, pUserVoteBitfield, 
 		reply_id: pMsgHdr.id,
 		from: (pMsgbase.cfg.settings & SUB_NAME) == SUB_NAME ? user.name : user.alias
 	};
-	if (pMsgHdr.from.hasOwnProperty("from_net_type"))
+	if (pMsgHdr.hasOwnProperty("from_net_type"))
 	{
 		voteMsgHdr.from_net_type = pMsgHdr.from_net_type;
 		if (pMsgHdr.from_net_type != NET_NONE)
@@ -3537,11 +3352,11 @@ function DeleteVoteMsgs(pMsgbase, pMsgNum, pMsgID, pIsEmailSub)
 				continue;
 			// If this header is a vote header and its thread_back or reply_id matches the given message,
 			// then we can delete this message.
-			var isVoteMsg = (((msgHdrs[msgHdrsProp].attr & MSG_VOTE) == MSG_VOTE) || ((msgHdrs[msgHdrsProp].attr & MSG_UPVOTE) == MSG_UPVOTE) || ((msgHdrs[msgHdrsProp].attr & MSG_DOWNVOTE) == MSG_DOWNVOTE));
-			if (isVoteMsg && (msgHdrs[msgHdrsProp].thread_back == pMsgNum) || (msgHdrs[msgHdrsProp].reply_id == pMsgID))
+			var isVoteMsg = (Boolean(msgHdrs[msgHdrsProp].attr & MSG_VOTE) || Boolean(msgHdrs[msgHdrsProp].attr & MSG_UPVOTE) || Boolean(msgHdrs[msgHdrsProp].attr & MSG_DOWNVOTE));
+			if (isVoteMsg && (msgHdrs[msgHdrsProp].thread_back == pMsgNum || msgHdrs[msgHdrsProp].reply_id == pMsgID))
 			{
 				++retObj.numVoteMsgs;
-				msgWasDeleted = pMsgbase.remove_msg(false, msgHdrs[msgHdrsProp].number);
+				var msgWasDeleted = pMsgbase.remove_msg(false, msgHdrs[msgHdrsProp].number);
 				retObj.allVoteMsgsDeleted = (retObj.allVoteMsgsDeleted && msgWasDeleted);
 				if (msgWasDeleted)
 					++retObj.numVoteMsgsDeleted;
@@ -3632,18 +3447,18 @@ function IsReadableMsgHdr(pMsgHdr, pSubBoardCode)
 //               user's handle, alias, or name
 function UserHandleAliasNameMatch(pName)
 {
-   if (typeof(pName) != "string")
-      return false;
+	if (typeof(pName) != "string")
+		return false;
 
-   var userMatch = false;
-   var nameUpper = pName.toUpperCase();
-   if (user.handle.length > 0)
-      userMatch = (nameUpper.indexOf(user.handle.toUpperCase()) > -1);
-   if (!userMatch && (user.alias.length > 0))
-      userMatch = (nameUpper.indexOf(user.alias.toUpperCase()) > -1);
-   if (!userMatch && (user.name.length > 0))
-      userMatch = (nameUpper.indexOf(user.name.toUpperCase()) > -1);
-   return userMatch;
+	var userMatch = false;
+	var nameUpper = pName.toUpperCase();
+	if (user.handle.length > 0)
+		userMatch = (nameUpper == user.handle.toUpperCase());
+	if (!userMatch && (user.alias.length > 0))
+		userMatch = (nameUpper == user.alias.toUpperCase());
+	if (!userMatch && (user.name.length > 0))
+		userMatch = (nameUpper == user.name.toUpperCase());
+	return userMatch;
 }
 
 // Draws the colums that will be on either side of the voting polls
