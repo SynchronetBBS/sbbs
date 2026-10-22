@@ -1080,10 +1080,12 @@ static int close_socket(SOCKET *sock)
 
 	/* required to ensure all data is sent */
 	shutdown(*sock, SHUT_WR);
-	while (socket_readable(*sock, startup->max_inactivity * 1000))  {
+	// Poll in short slices so a peer that never closes its side can't hold
+	// up server termination for the full max_inactivity.
+	while (!terminate_server && time(NULL) < end) {
+		if (!socket_readable(*sock, 1000))
+			continue;
 		if (recv(*sock, &ch, 1, 0) <= 0)
-			break;
-		if (time(NULL) >= end)
 			break;
 	}
 	result = closesocket(*sock);
@@ -8128,14 +8130,15 @@ void web_server(void* arg)
 			start = time(NULL);
 			while (protected_uint32_value(active_clients)) {
 				if (time(NULL) - start > startup->max_inactivity) { // crash here Nov-14-2025, startup is invalid non-NULL pointer
-					lprintf(LOG_WARNING, "!TIMEOUT waiting for %d active clients"
+					lprintf(LOG_WARNING, "!TIMEOUT waiting for %d active clients to disconnect"
 					        , protected_uint32_value(active_clients));
 					shutdown_sessions();
 					break;
 				}
 				mswait(100);
 			}
-			lprintf(LOG_INFO, "Done waiting for active clients to disconnect");
+			if (protected_uint32_value(active_clients) == 0)
+				lprintf(LOG_INFO, "Done waiting for active clients to disconnect");
 		}
 
 		if (http_logging_thread_running) {
