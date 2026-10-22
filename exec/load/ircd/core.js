@@ -457,6 +457,7 @@ function IRCClient_RMChan(rmchan_obj) {
 	delete rmchan_obj.modelist[CHANMODE_VOICE][this.id];
 	if (rmchan_obj.pending_founder == this.id)
 		delete rmchan_obj.pending_founder;
+	IRC_refresh_leaf_views(rmchan_obj, this);
 	if (!true_array_len(rmchan_obj.users)) {
 		IRC_tsmap_drop(rmchan_obj);
 		delete Channels[rmchan_obj.nam.toUpperCase()];
@@ -705,6 +706,11 @@ function Queue_Prepend(str) {
 }
 
 function Queue_Add(str) {
+	/* Filter every server output path, including originatorout/ircout and
+	   messages routed through a remote user's connection. Never filter input. */
+	if (this === this.irc.sendq && this.irc.server
+		&& !IRC_filter_leaf_output(this.irc, str))
+		return;
 	this.queue.push(str);
 }
 
@@ -1015,6 +1021,8 @@ function IRCClient_motd() {
 }
 
 function IRCClient_names(chan) {
+	if (!IRC_channel_visible_to_user(this, chan))
+		return;
 	var Channel_user;
 	var tmp="";
 	var i, token;
@@ -2085,6 +2093,14 @@ function IRCClient_do_complex_who(cmd) {
 		}
 		if (sf_done)
 			break;
+	}
+
+	/* A named channel in an extended WHO query must obey the same privacy
+	   rule as ordinary WHO, including queries with a status prefix. */
+	if (who.Channel && Channels[who.Channel.toUpperCase()]
+		&& !IRC_channel_visible_to_user(this, Channels[who.Channel.toUpperCase()])) {
+		this.numeric(315, who.Channel + " :End of /WHO list. (Complex)");
+		return;
 	}
 
 	/* Now we traverse everything and apply the criteria the user passed. */

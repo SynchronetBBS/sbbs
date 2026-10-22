@@ -94,8 +94,9 @@ try {
 			for (var i = 0; i < 10; i++) {
 				users[2].send("JOIN #oldpartrace"); users[2].send("PART #oldpartrace");
 			}
-			/* Client flood control processes only four commands per window. */
-			users[2].send("PING :oldpartbarrier"); users[2].expect("oldpartbarrier", 15);
+			/* Older generations throttle this burst more slowly than 2.3.
+			   Wait for its final command before inspecting channel state. */
+			users[2].send("PING :oldpartbarrier"); users[2].expect("oldpartbarrier", 45);
 			settle();
 			users.forEach(function(c, index) {
 				var list = names(c, "#oldpartrace");

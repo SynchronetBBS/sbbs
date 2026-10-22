@@ -14,7 +14,7 @@ function new_state() {
 		WhoWas: {}, WhoWasMap: [], NickHistory: [],
 		MAX_CHANLEN: 100, MAX_USER_CHANS: 100, MAX_MODES: 6, MAX_BANS: 25,
 		MAX_NICKLEN: 30, MAX_NICKHISTORY: 1000, MAX_WHOWAS: 1000,
-		MAX_TOPICLEN: 307, Enforcement: true, YLines: [{pingfreq: 90}],
+		MAX_TOPICLEN: 307, MAX_WHO: 100, Enforcement: true, YLines: [{pingfreq: 90}],
 		log: function() {},
 		js: {setImmediate: function() {}, setTimeout: function() {}, clearInterval: function() {}},
 		Generate_ID: function() { return ++next_id; }
@@ -32,9 +32,9 @@ function new_peer(s, name, hub) {
 	p.hub = hub;
 	p.admitted = true;
 	p.clock_role_received = true; p.clock_enforce = true;
-	p.their_capab = ["TSJOIN", "TSMODE", "CSYNC"];
+	p.their_capab = ["TSJOIN", "TSMODE", "CSYNC", "FULLCHAN"];
 	p.sent = [];
-	p.rawout = function(line) { this.sent.push(line); };
+	p.rawout = function(line) { if (s.IRC_filter_leaf_output(this, line)) this.sent.push(line); };
 	p.ircout = function(line) { this.rawout(":" + s.ServerName + " " + line); };
 	p.originatorout = function(line, origin) { this.rawout(":" + origin.nick + " " + line); };
 	p.quit = function(reason) { this.quitting = true; this.quit_reason = reason; };
@@ -93,6 +93,21 @@ function merge_sides(ts_a, ts_b) {
 }
 
 run_tests({
+	"NICK introductions negotiate numeric legacy IPs for bursts and live relays": function() {
+		var s = new_state(), old = new_peer(s, "old.test", false), modern = new_peer(s, "modern.test", true);
+		old.their_capab = ["NICKIP", "TSMODE"]; modern.their_capab.push("NICKIPSTR");
+		var local = new_user(s, "Local"); local.ip = "203.0.113.9"; local.realname = "Local user";
+		s.IRC_bcast_nick(local);
+		check(/ 3405803785 :Local user$/.test(old.sent[0]) && / 203\.0\.113\.9 :Local user$/.test(modern.sent[0]), "live introductions ignored peer IP dialect: " + old.sent.join(" | ") + " / " + modern.sent.join(" | "));
+		old.sent = []; old.synchronize();
+		check(old.sent.some(function(l) { return /NICK Local .* 3405803785 :Local user$/.test(l); }), "burst IP was not converted");
+		modern.sent = []; old.work("NICK Remote 1 " + s.now + " + user host.test old.test 0 3221225987 :Remote user");
+		check(s.Users.REMOTE.ip == "192.0.2.3" && modern.sent.some(function(l) { return /NICK Remote .* 192\.0\.2\.3 :Remote user$/.test(l); }), "numeric ingress or modern relay was corrupted");
+		old.sent = []; modern.work("NICK FromNew 1 " + s.now + " + user host.test modern.test 0 198.51.100.7 :New user");
+		check(old.sent.some(function(l) { return /NICK FromNew .* 3325256711 :New user$/.test(l); }), "modern-to-old relay was not encoded");
+		local.ip = "2001:db8::1"; old.sent = []; modern.sent = []; s.IRC_bcast_nick(local);
+		check(/ 0 :Local user$/.test(old.sent[0]) && / 2001:db8::1 :Local user$/.test(modern.sent[0]), "IPv6 dialect fallback was invalid");
+	},
 	"legacy services TS-zero JOIN and SJOIN retain authority without resetting channel age": function() {
 		var s = new_state(), p = new_peer(s, "services.test", false); p.uline = true;
 		var local = new_user(s, "Local"), service = new_user(s, "ChanServ", p.nick); service.uline = true;
@@ -510,19 +525,116 @@ run_tests({
 		check(!(c.mode & s.CHANMODE_MODERATED) && !c.modelist[s.CHANMODE_OP][remote.id], "newer state applied");
 		check(q.sent.indexOf(":leaf.test SJOIN 1799999900 #test +m :@Alice") >= 0, "original burst rewritten");
 	},
-	"secret state stays hidden until a leaf joins, then is synchronized": function() {
+	"secret channel state and topics are burst to leaves without local members": function() {
 		var s = new_state(), p = new_peer(s, "leaf.test", false), u = new_user(s, "Alice");
 		var c = join_user(s, u, "#hidden"); c.mode |= s.CHANMODE_SECRET;
 		c.topic = "private topic"; c.topictime = s.now;
 		p.server_chan_info(c);
-		check(p.sent.length == 0, "secret channel disclosed before a member joined");
+		check(p.sent.join("\n").indexOf("#hidden") >= 0, "secret channel omitted from leaf burst");
+		p.sent = [];
 		p.synchronize();
-		check(p.sent.join("\n").indexOf("#hidden") < 0, "topic burst disclosed a hidden channel");
+		check(p.sent.some(function(l) { return l.indexOf("TOPIC #hidden ") >= 0; }), "secret topic omitted from leaf burst");
 		p.sent = [];
 		var remote = new_user(s, "Bob", p.nick);
 		p.work(":Bob JOIN #hidden");
 		check(p.sent.some(function(l) { return l.indexOf(" CSYNC ") >= 0; }), "missing authoritative catch-up");
 		check(p.sent.some(function(l) { return l.indexOf("MORE :Alice Bob") >= 0; }), "catch-up missing members");
+	},
+	"uninvolved updated leaves retain remote ops for secret channel MODEs": function() {
+		var hub = new_state(), leaf = new_state(); leaf.ServerName = "leaf.test";
+		var down = new_peer(hub, "leaf.test", false), up = new_peer(leaf, "hub.test", true);
+		var actor = new_user(hub, "Deuce"), remote = new_user(leaf, "Deuce", up.nick);
+		var guest = new_user(hub, "Guest"); new_user(leaf, "Guest", up.nick);
+		var c = join_user(hub, actor, "#secret"); c.mode |= hub.CHANMODE_SECRET | hub.CHANMODE_TOPIC;
+		c.modelist[hub.CHANMODE_OP][actor.id] = actor;
+		down.server_chan_info(c);
+		check(down.sent.length > 0, "missing initial operator state");
+		down.sent.forEach(function(line) { up.work(line); }); down.sent = [];
+		guest.do_join(c.nam);
+		down.sent.forEach(function(line) { up.work(line); }); down.sent = [];
+		actor.work("MODE #secret +n"); actor.work("MODE #secret -n");
+		down.sent.forEach(function(line) { up.work(line); });
+		var remote_chan = leaf.Channels["#SECRET"];
+		check(remote_chan.modelist[leaf.CHANMODE_OP][remote.id], "uninvolved leaf lost remote ops");
+		check(!/ 482 /.test(remote.received.join("\n")), "remote MODE rejected as non-op");
+		check(!(remote_chan.mode & leaf.CHANMODE_NOOUTSIDE), "remote -n not applied");
+	},
+	"2.3 and 2.4 leaves hide uninvolved channels and catch up on their first JOIN": function() {
+		[false, true].forEach(function(csync) {
+			["s", "p"].forEach(function(mode) {
+				var s = new_state(), p = new_peer(s, "old.test", false);
+				p.their_capab = csync ? ["TSJOIN", "TSMODE", "CSYNC"] : ["TSJOIN", "TSMODE"];
+				var owner = new_user(s, "Owner"), guest = new_user(s, "Guest");
+				var c = join_user(s, owner, "#hidden"); c.mode |= mode == "s" ? s.CHANMODE_SECRET : s.CHANMODE_PRIVATE;
+				c.modelist[s.CHANMODE_OP][owner.id] = owner;
+				c.topic = "hidden topic"; c.topictime = s.now;
+				p.synchronize();
+				check(!p.sent.some(function(l) { return l.indexOf("#hidden") >= 0; }), "hidden initial burst reached old leaf");
+				p.sent = [];
+				guest.do_join(c.nam); owner.work("MODE #hidden +n"); owner.work("MODE #hidden -n");
+				s.IRC_bcast_topic(owner, c);
+				check(!p.sent.some(function(l) { return l.indexOf("#hidden") >= 0; }), "hidden runtime traffic reached old leaf");
+				var member = new_user(s, "OldMember", p.nick);
+				p.work(":OldMember JOIN #hidden");
+				var burst = p.sent.join("\n");
+				check(burst.indexOf("Owner") >= 0 && burst.indexOf("Guest") >= 0
+					&& burst.indexOf("hidden topic") >= 0, "first JOIN did not receive full state");
+				check(csync ? burst.indexOf("@Owner") >= 0 : /MODE #hidden 0 \+o Owner/.test(burst), "first JOIN lost operator state");
+				p.sent = []; member.do_part(c.nam);
+				check(/:Owner PART #hidden/.test(p.sent.join("\n")) && /:Guest PART #hidden/.test(p.sent.join("\n")), "last PART retained cached channel");
+				p.sent = []; owner.work("MODE #hidden +n");
+				check(!p.sent.length, "MODE recreated hidden channel after last PART");
+				owner.work("MODE #hidden -" + mode);
+				check(p.sent.join("\n").indexOf("Owner") >= 0, "becoming public did not introduce full state");
+				p.sent = []; owner.work("MODE #hidden +" + mode);
+				check(/:Owner PART #hidden/.test(p.sent.join("\n")) && !/ MODE /.test(p.sent.join("\n")), "becoming hidden leaked state");
+			});
+		});
+	},
+	"legacy first JOIN gets remote ops before its initial burst finishes": function() {
+		var s = new_state(), p = new_peer(s, "old.test", false);
+		p.their_capab = ["TSJOIN", "TSMODE"]; p.bursting = true;
+		var owner = new_user(s, "Owner"), c = join_user(s, owner, "#hidden");
+		c.mode |= s.CHANMODE_SECRET; c.modelist[s.CHANMODE_OP][owner.id] = owner;
+		new_user(s, "OldMember", p.nick); p.work(":OldMember JOIN #hidden");
+		owner.work("MODE #hidden +n");
+		var state = p.sent.join("\n");
+		var op = state.indexOf("MODE #hidden 0 +o Owner"), mode = state.search(/:Owner MODE #hidden (?:0 )?\+n/);
+		check(state.indexOf(":Owner JOIN #hidden") >= 0
+			&& op >= 0 && mode > op,
+			"runtime MODE reached a bursting legacy leaf before actor ops: " + state);
+	},
+	"send queue filters every output path to older leaves but never their input": function() {
+		var s = new_state(), p = new_peer(s, "old.test", false); p.their_capab = [];
+		var owner = new_user(s, "Owner"), c = join_user(s, owner, "#hidden"); c.mode |= s.CHANMODE_SECRET;
+		p.rawout = s.rawout; p.ircout = s.ircout; p.originatorout = s.originatorout;
+		p.rawout(":Owner JOIN #hidden"); p.ircout("MODE #hidden +n");
+		p.originatorout("TOPIC #hidden :hidden topic", owner);
+		var remote = new_user(s, "Remote", p.nick);
+		s.rawout.call(remote, ":Owner NOTICE #hidden :hidden message");
+		check(p.sendq.queue.length == 0, "a server output path bypassed filtering");
+		p.recvq.add(":Owner JOIN #hidden");
+		check(p.recvq.queue.length == 1, "leaf input was filtered");
+	},
+	"hidden channels are filtered from explicit and wildcard client replies": function() {
+		["s", "p"].forEach(function(mode) {
+			var s = new_state(), owner = new_user(s, "Owner"), outsider = new_user(s, "Outsider");
+			var c = join_user(s, owner, "#hidden");
+			c.mode |= mode == "s" ? s.CHANMODE_SECRET : s.CHANMODE_PRIVATE;
+			c.topic = "hidden topic"; c.modelist[s.CHANMODE_OP][owner.id] = owner;
+			var public_chan = join_user(s, owner, "#public");
+			["NAMES #hidden", "NAMES", "WHO #hidden", "WHO +c #hidden", "WHO -c #hidden", "WHO +c @#hidden", "WHO +C #hidden",
+			 "WHOIS Owner", "MODE #hidden", "MODE #hidden +b", "TOPIC #hidden", "LIST", "LIST +s"].forEach(function(cmd) {
+				outsider.received = []; outsider.work(cmd);
+				var exposed = outsider.received.filter(function(l) { return / (?:319|322|324|332|333|352|353|367) /.test(l); }).join("\n");
+				check(exposed.indexOf("#hidden") < 0 && exposed.indexOf("hidden topic") < 0, "outsider leak through " + cmd + ": " + exposed);
+			});
+			join_user(s, outsider, "#hidden"); outsider.received = [];
+			outsider.work("NAMES #hidden"); outsider.work("WHO +c #hidden"); outsider.work("MODE #hidden");
+			check(/ 353 .*#hidden/.test(outsider.received.join("\n"))
+				&& / 352 .*#hidden/.test(outsider.received.join("\n"))
+				&& / 324 .*#hidden/.test(outsider.received.join("\n")), "member lost channel visibility");
+		});
 	},
 	"single-user SJOIN relays the user with its original timestamp": function() {
 		var s = new_state(), p = new_peer(s, "leaf.test", true), q = new_peer(s, "other.test", true);

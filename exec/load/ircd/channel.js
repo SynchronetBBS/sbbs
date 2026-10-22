@@ -48,6 +48,11 @@ MODE[CHANMODE_VOICE]    = new IRC_Channel_Mode("v",true,false,true,true);
 
 /* Object Prototypes */
 
+function IRC_channel_visible_to_user(user, chan) {
+	return !!((user.mode & USERMODE_OPER) || user.channels[chan.nam.toUpperCase()]
+		|| !(chan.mode & (CHANMODE_SECRET | CHANMODE_PRIVATE)));
+}
+
 function Channel(name) {
 	this.nam = name;
 	this.mode = CHANMODE_NONE;
