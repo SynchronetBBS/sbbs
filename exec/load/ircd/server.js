@@ -89,7 +89,7 @@ function Server_Work(cmdline) {
 	var join_ts, join_chans_str;
 	var sjoin_ts, ts_rejected, valid_nicks, now, mode_ts;
 
-	log(LOG_DEBUG,format("[%s<-%s]: %s",ServerName,this.nick,cmdline));
+	log(LOG_DEBUG,format("[%s<-%s]: %s",ServerName,this.nick,IRC_log_command(cmdline)));
 
 	cmd = IRC_parse(cmdline);
 
@@ -137,7 +137,8 @@ function Server_Work(cmdline) {
 	   (or a KICK), make sure the claimed origin is actually on this link. */
 	if ((cmd.verb == "MODE" || cmd.verb == "KICK"
 		|| cmd.verb == "JOIN" || cmd.verb == "SJOIN" || cmd.verb == "TOPIC" || cmd.verb == "TSMAP"
-		|| cmd.verb == "PART")
+		|| cmd.verb == "PART" || cmd.verb == "PRIVMSG" || cmd.verb == "NOTICE"
+		|| cmd.verb == "NICK" || cmd.verb == "QUIT" || cmd.verb == "SERVER")
 		&& origin !== this
 		&& (origin.local || !origin.parent
 			|| origin.parent.toLowerCase() != this.nick.toLowerCase())
@@ -377,7 +378,7 @@ function Server_Work(cmdline) {
 		join_chans_str = p[0];
 		if (p[1] && p[0].match(/^[0-9]+$/)) {
 			join_ts = IRC_parse_channel_timestamp(p[0]);
-			if (join_ts === null || (join_ts === 0 && !this.uline && !origin.uline)) {
+			if (join_ts === null || (join_ts === 0 && !this.uline && !origin.uline && !IRC_legacy_zero_timestamp(this))) {
 				this.quit("Invalid JOIN channel timestamp");
 				return 0;
 			}
@@ -955,6 +956,7 @@ function Server_Work(cmdline) {
 			this.parent = this.nick;
 		} else if (p[1] > 1) {
 			if (this.hub) {
+				if (IRC_Services && IRC_Services.owns_server(p[0])) IRC_Services.stop_central(this);
 				if (searchbyserver(p[0])) {
 					umode_notice(USERMODE_OPER,"Notice",format(
 						"Server %s trying to introduce %s but it already exists.",
@@ -1023,12 +1025,14 @@ function Server_Work(cmdline) {
 		if (!p[1] || p[1][0] != "#")
 			break;
 		sjoin_ts = IRC_parse_channel_timestamp(p[0]);
-		if (sjoin_ts === null || (sjoin_ts === 0 && !this.uline && !origin.uline)) {
+		if (sjoin_ts === null || (sjoin_ts === 0 && !this.uline && !origin.uline && !IRC_legacy_zero_timestamp(this))) {
 			this.quit("Invalid SJOIN channel timestamp");
 			return 0;
 		}
-		/* Preserve the legacy services TS-zero dialect without introducing
-		   an epoch-zero channel or resetting the established network age. */
+		/* Services use zero as an unspecified timestamp. Old daemons also
+		   echo zero after receiving authoritative MODE 0 corrections. Keep
+		   a real network age; the normal route and leaf authority checks
+		   below still apply to every member, flag, and status claim. */
 		if (sjoin_ts === 0) {
 			var service_channel = Channels[p[1].toUpperCase()];
 			sjoin_ts = service_channel ? service_channel.created : Epoch();
@@ -1403,6 +1407,10 @@ function IRC_leaf_has_member(peer, chan) {
 function IRC_legacy_leaf(peer) {
 	return !peer.hub && !peer.uline
 		&& (!peer.their_capab || peer.their_capab.indexOf("CSYNC") < 0);
+}
+
+function IRC_legacy_zero_timestamp(peer) {
+	return !peer.their_capab || peer.their_capab.indexOf("CSYNC") < 0;
 }
 
 /* Older daemons do not consistently hide explicit client queries. Give
@@ -1981,7 +1989,9 @@ function IRC_bcast_nick(user, except) {
 
 function IRC_nick_ip(peer, ip) {
 	if (peer.their_capab && peer.their_capab.indexOf("NICKIPSTR") >= 0)
-		return ip;
+		/* A middle IRC parameter cannot start with ':'. Keep compressed
+		   IPv6 such as ::1 from swallowing the following realname field. */
+		return String(ip)[0] == ":" ? "0" + ip : ip;
 	/* Old NICKIP has no IPv6 representation. Zero is its unknown address. */
 	return /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(ip) ? String(ip_to_int(ip)) : "0";
 }

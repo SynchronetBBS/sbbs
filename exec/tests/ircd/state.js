@@ -107,6 +107,9 @@ run_tests({
 		check(old.sent.some(function(l) { return /NICK FromNew .* 3325256711 :New user$/.test(l); }), "modern-to-old relay was not encoded");
 		local.ip = "2001:db8::1"; old.sent = []; modern.sent = []; s.IRC_bcast_nick(local);
 		check(/ 0 :Local user$/.test(old.sent[0]) && / 2001:db8::1 :Local user$/.test(modern.sent[0]), "IPv6 dialect fallback was invalid");
+		local.ip = "::1"; modern.sent = []; s.IRC_bcast_nick(local);
+		var intro = s.IRC_parse(modern.sent[0]);
+		check(intro.params[8] == "0::1" && intro.params[9] == "Local user", "compressed IPv6 swallowed the NICK realname");
 	},
 	"legacy services TS-zero JOIN and SJOIN retain authority without resetting channel age": function() {
 		var s = new_state(), p = new_peer(s, "services.test", false); p.uline = true;
@@ -118,6 +121,22 @@ run_tests({
 			&& c.modelist[s.CHANMODE_OP][service.id] && (c.mode & s.CHANMODE_TOPIC), "services TS-zero state lost");
 		p.work(":services.test SJOIN 0 #newservice + :@ChanServ");
 		check(s.Channels["#NEWSERVICE"].created == s.now, "services introduced epoch-zero channel");
+	},
+	"services MODE zero preserves channel age on legacy hubs": function() {
+		var s = new_state(), old = new_peer(s,"old.test",true), service = new s.IRC_Server();
+		old.their_capab = ["TSMODE"]; service.nick = "services.test"; service.uline = true;
+		var user = new_user(s,"Alice"), c = join_user(s,user,"#service");
+		s.IRC_send_chanmode(old,service,c,"+o Alice",0);
+		check(old.sent[0].indexOf("MODE #service " + c.created + " +o Alice") >= 0, "legacy hub would adopt epoch zero");
+	},
+	"legacy leaf zero timestamps preserve hub age and cannot claim modes or ops": function() {
+		var s = new_state(), old = new_peer(s,"old.test",false);
+		old.their_capab = ["TSMODE"];
+		var owner = new_user(s,"Owner"), remote = new_user(s,"Remote",old.nick);
+		var c = join_user(s,owner,"#zero"); c.mode |= s.CHANMODE_TOPIC; c.modelist[s.CHANMODE_OP][owner.id] = owner;
+		old.work(":old.test SJOIN 0 #zero +m :@Remote");
+		check(!old.quitting && c.created == s.now && (c.mode & s.CHANMODE_TOPIC) && !(c.mode & s.CHANMODE_MODERATED)
+			&& c.users[remote.id] && !c.modelist[s.CHANMODE_OP][remote.id] && c.modelist[s.CHANMODE_OP][owner.id], "zero bypassed hub authority");
 	},
 	"unqualified NAMES also bounds the list of users outside channels by wire length": function() {
 		var s = new_state(), observer = new_user(s, "Observer"), expected = [];

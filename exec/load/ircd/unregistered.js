@@ -157,7 +157,7 @@ function Unregistered_Client(id,socket) {
 function Unregistered_Commands(cmdline) {
 	cmdline = cmdline.slice(0,512); /* 512 bytes per RFC1459 */
 
-	log(LOG_DEBUG,"[UNREG]: " + cmdline);
+	log(LOG_DEBUG,"[UNREG]: " + IRC_log_command(cmdline));
 
 	var clockticks = system.timer;
 	var i, cmd, p, err_peer, err_str;
@@ -291,7 +291,7 @@ function Unregistered_Commands(cmdline) {
 				this.quit("Server name matches my own.");
 				return 0;
 			}
-			if (Servers[p[0].toLowerCase()]) {
+			if (Servers[p[0].toLowerCase()] && !(IRC_Services && IRC_Services.owns_server(p[0]))) {
 				this.quit("Server already exists.");
 				return 0;
 			}
@@ -356,6 +356,7 @@ function Unregistered_Commands(cmdline) {
 				break;
 			}
 			this.realname = p[3].slice(0,MAX_REALNAME);
+			this.login_id = p[0];
 			this.uprefix = parse_username(p[0]);
 			this.Unregistered_Check_User_Registration();
 			break;
@@ -380,22 +381,20 @@ function Unregistered_Check_User_Registration() {
 	var usernum, bbsuser;
 
 	if (!this.dns_pending && !this.socket.outbound && this.uprefix && this.nick != "*") {
-		if (this.password && (system.matchuser !== undefined)) {
-			usernum = system.matchuser(this.uprefix);
-			if (!usernum)
-				usernum = system.matchuser(this.nick);
-			if (usernum) {
-				bbsuser = new User(usernum);
-				if (this.password.toUpperCase() == bbsuser.security.password) {
-					this.uprefix = parse_username(bbsuser.handle);
-					bbsuser.connection = "IRC";
-					bbsuser.logontime = Epoch();
-					this.bbs_usernum = usernum;
-				}
+		var identity = null;
+		if (this.password && system.matchuser !== undefined) {
+			identity = IRC_services_authenticate(this.login_id || this.uprefix, this.password, String(system.qwk_id), ServerName);
+			if (!identity) identity = IRC_services_authenticate(this.nick, this.password, String(system.qwk_id), ServerName);
+			if (identity) {
+				this.bbs_usernum = identity.number;
+				var authenticated_user = new User(identity.number);
+				authenticated_user.connection = "IRC"; authenticated_user.logontime = Epoch();
+				if (EmbeddedServices_Config.nickserv) {
+					this.services_identity = identity; this.uprefix = identity.username;
+				} else this.uprefix = parse_username(authenticated_user.handle);
 			}
 		}
-		if (!usernum)
-			this.uprefix = "~" + this.uprefix;
+		if (!identity) this.uprefix = "~" + this.uprefix;
 		if (this.hostname)
 			this.welcome();
 	}
@@ -472,6 +471,7 @@ function Unregistered_Welcome() {
 	var new_user = Users[this.nick.toUpperCase()];
 	if (this.bbs_usernum)
 		new_user.bbs_usernum = this.bbs_usernum;
+	if (this.services_identity) new_user.services_identity = this.services_identity;
 	Local_Users[this.id] = new_user;
 	new_user.socket = this.socket;
 	new_user.socket.irc = new_user;
@@ -573,6 +573,9 @@ function QWK_Master_Authentication(qwkid) {
 function Register_Unregistered_Local_Server(unreg, p, nline) {
 	var i, s;
 	var is_uline = false;
+	/* Only relinquish the embedded namespace after the normal server
+	   password/QWK authentication has succeeded. */
+	if (IRC_Services && IRC_Services.owns_server(p[0])) IRC_Services.stop_central();
 
 	for (i in ULines) {
 		if (ULines[i] == p[0]) {

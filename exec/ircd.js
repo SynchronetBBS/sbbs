@@ -26,6 +26,7 @@ load("sbbsdefs.js");
 load("sockdefs.js");
 load("nodedefs.js");
 load("irclib.js");
+load("ircd/services-common.js");
 load("dns.js");
 
 /* Libraries specific to the IRCd */
@@ -36,9 +37,10 @@ load("ircd/channel.js");
 load("ircd/server.js");
 load("ircd/config.js");
 load("ircd/timestamps.js");
+load("ircd/services.js");
 
 /*** Global Constants - Always in ALL_UPPERCASE ***/
-var VERSION = "SynchronetIRCd-2.5";
+var VERSION = "SynchronetIRCd-2.6";
 var VERSION_STR = format(
 	"Synchronet %s%s-%s%s (IRCd by Randy Sommerfeld)",
 	system.version, system.revision,
@@ -167,6 +169,7 @@ if (server === undefined) {
 }
 
 Startup();
+IRC_services_start();
 
 js.do_callbacks = true;
 js.branch_limit = 0; /* Disable infinite loop detection */
@@ -265,7 +268,7 @@ js.setInterval(shutdown_semaphore_check, 1000 /* milliseconds */);
    by the services subsystem, the sysop, or a JSexec exit -- on every
    platform, even if the terminated poll above never ran.  Notify is
    idempotent, so the DIE/RESTART path and this backstop never double-send. */
-js.on_exit("Notify_Servers_Of_Shutdown('Server shutting down');");
+js.on_exit("if (IRC_Services) IRC_Services.stop(); Notify_Servers_Of_Shutdown('Server shutting down');");
 
 Open_PLines();
 

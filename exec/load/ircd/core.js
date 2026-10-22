@@ -24,6 +24,11 @@
    socket.  Called on DIE/RESTART before we stop the callback engine or drop
    the sockets, so peers (services included) process explicit QUITs and any
    still-queued PART/MODE state instead of inferring a netsplit and losing it. */
+var IRC_Services = null;
+function IRC_log_command(line) {
+	return typeof IRC_services_redact == "function" ? IRC_services_redact(line) : line;
+}
+
 var Shutdown_Notified = false;
 
 function Notify_Servers_Of_Shutdown(reason) {
@@ -288,7 +293,7 @@ function handle_outbound_server_connect() {
 			this.remote_port,
 			this.cline.ircclass
 		));
-		log(LOG_DEBUG,format("->[UNREG]: PASS %s :TS", this.cline.password));
+		log(LOG_DEBUG,format("->[UNREG]: PASS %s :TS", "[redacted]"));
 		this.send(format("PASS %s :TS\r\n", this.cline.password));
 		log(LOG_DEBUG,format("->[UNREG]: CAPAB %s", SERVER_CAPAB));
 		this.send("CAPAB " + SERVER_CAPAB + "\r\n");
@@ -493,7 +498,7 @@ function rawout(str) {
 	var str_end;
 	var str_beg;
 
-	log(LOG_DEBUG, format("[RAW->%s]: %s",this.nick,str));
+	log(LOG_DEBUG, format("[RAW->%s]: %s",this.nick,IRC_log_command(str)));
 
 	if (this.local) {
 		sendconn = this;
@@ -519,7 +524,7 @@ function originatorout(str,origin) {
 	var send_data;
 	var sendconn;
 
-	log(LOG_DEBUG,format("[%s->%s]: %s",origin.nick,this.nick,str));
+	log(LOG_DEBUG,format("[%s->%s]: %s",origin.nick,this.nick,IRC_log_command(str)));
 
 	sendconn = this;
 	if(this.local && !this.server) {
@@ -547,7 +552,7 @@ function ircout(str) {
 	var send_data;
 	var sendconn;
 
-	log(LOG_DEBUG,format("[%s->%s]: %s",ServerName,this.nick,str));
+	log(LOG_DEBUG,format("[%s->%s]: %s",ServerName,this.nick,IRC_log_command(str)));
 
 	if(this.local) {
 		sendconn = this;
@@ -1238,6 +1243,7 @@ function IRCClient_do_whois(wi) {
 
 function IRCClient_services_msg(svcnick,send_str) {
 	var service_server;
+	if (IRC_Services && send_str && IRC_Services.intercept(this, svcnick, send_str)) return 1;
 
 	if (!send_str) {
 		this.numeric412();
@@ -1311,6 +1317,7 @@ function IRCClient_globops(str) {
 }
 
 function IRCClient_do_msg(target,type_str,send_str) {
+	if (IRC_Services && type_str == "PRIVMSG" && IRC_Services.intercept(this, target, send_str)) return 1;
 	if (   (target[0] == "$")
 		&& (this.mode&USERMODE_OPER)
 		&& ((this.flags&OLINE_CAN_LGNOTICE) || !this.local)

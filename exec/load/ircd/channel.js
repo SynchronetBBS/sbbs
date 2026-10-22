@@ -306,7 +306,13 @@ function IRC_bcast_chanmode(origin, chan, modes, ts) {
 }
 
 function IRC_send_chanmode(peer, origin, chan, modes, ts) {
-	var stamp = ts !== undefined ? IRC_mode_timestamp(peer, IRC_legacy_leaf(peer) ? 0 : ts) : " ";
+	/* Old hubs replace channel age on server-prefixed MODE 0, then
+	   propagate invalid SJOIN 0 from ordinary users. Preserve the real
+	   channel age when relaying authoritative services modes to them. */
+	var wire_ts = ts;
+	if (wire_ts === 0 && origin.server && peer.hub && !peer.uline
+		&& (!peer.their_capab || peer.their_capab.indexOf("CSYNC") < 0)) wire_ts = chan.created;
+	var stamp = ts !== undefined ? IRC_mode_timestamp(peer, IRC_legacy_leaf(peer) ? 0 : wire_ts) : " ";
 	var prefix = "MODE " + chan.nam + stamp;
 	/* Old parsers incorrectly consume an argument for -l. Send its removal
 	   separately, before the remaining changes (which may remove our ops). */

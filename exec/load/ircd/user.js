@@ -234,7 +234,7 @@ function User_Work(cmdline) {
 
 	cmdline = cmdline.slice(0,512); /* 512 bytes per RFC1459 */
 
-	log(LOG_DEBUG,format("[%s<-%s]: %s",ServerName,this.nick,cmdline));
+	log(LOG_DEBUG,format("[%s<-%s]: %s",ServerName,this.nick,IRC_log_command(cmdline)));
 
 	cmd = IRC_parse(cmdline);
 

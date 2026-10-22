@@ -51,6 +51,7 @@ var NLINE_IS_QWKMASTER                =(1<<1);        // w
 var NLINE_CHECK_WITH_QWKMASTER        =(1<<2);        // k
 
 var Clock_MaxSkew = 30;
+var EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:""};
 
 function Epoch() {
 	return parseInt(new Date().getTime()/1000);
@@ -252,6 +253,7 @@ function parse_oline_flags(flags) {
 
 function Clear_Config_Globals() {
 	Clock_MaxSkew = 30;
+	EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:""};
 	Admin1 = "";
 	Admin2 = "";
 	Admin3 = "";
@@ -368,6 +370,7 @@ function Read_Config_File() {
 		if ((YLines[c.ircclass].connfreq > 0) && c.port && !Servers[c.servername.toLowerCase()])
 			Reset_Autoconnect(c, 1 /* connect immediately */);
 	}
+	if (typeof IRC_Services !== "undefined" && IRC_Services) IRC_services_start();
 }
 
 function NLine_Flags_String(bits) {
@@ -675,6 +678,15 @@ function Write_Config_File(fn) {
 	f.writeln(format("MaxSkew=%u", Clock_MaxSkew));
 	f.writeln("");
 
+	f.writeln("[BBSServices]");
+	f.writeln("NickServ=" + EmbeddedServices_Config.nickserv);
+	f.writeln("MemoServ=" + EmbeddedServices_Config.memoserv);
+	f.writeln("");
+	f.writeln("[EmbeddedServices]");
+	f.writeln("Enabled=" + EmbeddedServices_Config.enabled);
+	f.writeln("Host=" + EmbeddedServices_Config.host);
+	if (EmbeddedServices_Config.database) f.writeln("Database=" + EmbeddedServices_Config.database);
+	f.writeln("");
 	f.close();
 
 	return true;
@@ -725,6 +737,18 @@ function ini_sections() {
 	this.Hub = ini_Hub;
 	this.Capab = ini_Capab;
 	this.Clock = ini_Clock;
+	this.BBSServices = ini_BBSServices;
+	this.EmbeddedServices = ini_EmbeddedServices;
+}
+
+function ini_BBSServices(arg, ini) {
+	if (ini.NickServ !== undefined) EmbeddedServices_Config.nickserv = ini_false_true(ini.NickServ);
+	if (ini.MemoServ !== undefined) EmbeddedServices_Config.memoserv = ini_false_true(ini.MemoServ);
+}
+function ini_EmbeddedServices(arg, ini) {
+	if (ini.Enabled !== undefined) EmbeddedServices_Config.enabled = ini_false_true(ini.Enabled);
+	if (ini.Host !== undefined) EmbeddedServices_Config.host = String(ini.Host).toLowerCase();
+	if (ini.Database !== undefined) EmbeddedServices_Config.database = ini.Database;
 }
 
 function ini_Clock(arg, ini) {
