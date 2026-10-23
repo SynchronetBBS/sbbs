@@ -157,6 +157,10 @@
 - Fixed double-counting of terminal columns for Unicode output on
   UTF-8 terminals, which made word-wrap, right-margin truncation
   and centering wrap early (regression from v3.21, issue #1200)
+- UTF-8 terminal detection now probes with U+2060 (Word Joiner)
+  instead of the obsolete U+FEFF, which a terminal may draw as a
+  wide "unsupported character" glyph and so go undetected
+  (issue #1284)
 - Goodbye messages and pre-login banners no longer log noisy
   "send failed" warnings when the client disconnects mid-message
 - Fix line-wrap divide-by-zero crash when an SFTP-only client

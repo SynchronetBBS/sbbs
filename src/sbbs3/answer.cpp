@@ -609,7 +609,7 @@ bool sbbs_t::answer()
 			        "\x1b[u"    /* restore cursor position */
 			        "\x1b[!_"   /* RIP? */
 			        "\r"        /* Move cursor left */
-			        "\xef\xbb\xbf"  // UTF-8 Zero-width non-breaking space
+			        "\xe2\x81\xa0"  // UTF-8 Word Joiner (U+2060), not obsolete ZWNBSP (#1284)
 			        "\x1b[6n"   /* Get cursor position (again) */
 			        "\x1b[0m"   /* "Normal" colors */
 			        "\x1b[2J"   /* clear screen */
@@ -673,7 +673,7 @@ bool sbbs_t::answer()
 							if (y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX)
 								term->rows = y;
 						} else {    // second report
-							if (x < 3) { // ZWNBSP didn't move cursor (more than one column)
+							if (x < 3) { // Word Joiner didn't move cursor (more than one column)
 								autoterm |= UTF8;
 								unicode_zerowidth = x - 1;
 							}
