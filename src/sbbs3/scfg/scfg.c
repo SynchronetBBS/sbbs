@@ -1981,6 +1981,8 @@ void getar(const char *desc, char *inar, const char* helpbuf)
 				snprintf(opt[i++], MAX_OPLN, "ASCII");
 				snprintf(opt[i++], MAX_OPLN, "CP437");
 				snprintf(opt[i++], MAX_OPLN, "UTF8");
+				snprintf(opt[i++], MAX_OPLN, "SOUND");
+				snprintf(opt[i++], MAX_OPLN, "MOUSE");
 				opt[i][0] = 0;
 				i = 0;
 				uifc.helpbuf =
@@ -1988,6 +1990,23 @@ void getar(const char *desc, char *inar, const char* helpbuf)
 					"\n"
 					"You are being prompted to select a terminal type or capability flag\n"
 					"to be included in this requirement evaluation.\n"
+					"\n"
+					"`ANSI`: Terminal supports ANSI escape sequences (cursor and color).\n"
+					"\n"
+					"`RIP`: Terminal supports RIPscrip graphics.\n"
+					"\n"
+					"`PETSCII`: Commodore terminal using the PETSCII character set.\n"
+					"\n"
+					"`ASCII`: Terminal supports only the US-ASCII character set.\n"
+					"\n"
+					"`CP437`: Terminal supports the IBM PC (CP437) character set.\n"
+					"\n"
+					"`UTF8`: Terminal supports Unicode with UTF-8 encoding.\n"
+					"\n"
+					"`SOUND`: Terminal can play sound files and the user has not turned off\n"
+					"BBS-initiated sound.\n"
+					"\n"
+					"`MOUSE`: Terminal supports mouse hot-spots.\n"
 				;
 				static int term_cur;
 				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &term_cur, 0, "Select Terminal Flag", opt);
