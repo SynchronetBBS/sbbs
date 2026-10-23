@@ -5,6 +5,7 @@
 // i.e. in SCFG->System->Loadable Modules->QWK Section
 
 require("sbbsdefs.js", "SCAN_CFG_NEW");
+require("gettext.js", "gettext");
 
 // The menu's command keys, from the (translatable) command-word text strings.
 // Keys that collide are logged for the sysop; the first command in this order
@@ -103,10 +104,10 @@ function qwk_settings()
 		console.clear();
 		print_text(bbs.text.QWKSettingsHdr, user.alias, user.number);
 		print_setting('A', bbs.text.QWKSettingsCtrlA
-			, (qwk & QWK_EXPCTLA) ? "Expand to ANSI" : (qwk & QWK_RETCTLA) ? "Leave in" : "Strip");
+			, (qwk & QWK_EXPCTLA) ? gettext("Expand to ANSI") : (qwk & QWK_RETCTLA) ? gettext("Leave in") : gettext("Strip"));
 		print_setting('T', bbs.text.QWKSettingsArchive, user.temp_file_ext);
 		print_setting('E', bbs.text.QWKSettingsEmail
-			, (qwk & QWK_EMAIL) ? "Un-read Only" : yes_no(qwk & QWK_ALLMAIL));
+			, (qwk & QWK_EMAIL) ? gettext("Un-read Only") : yes_no(qwk & QWK_ALLMAIL));
 		if(qwk & (QWK_ALLMAIL | QWK_EMAIL)) {
 			print_setting('I', bbs.text.QWKSettingsAttach, yes_no(qwk & QWK_ATTACH));
 			print_setting('D', bbs.text.QWKSettingsDeleteEmail, yes_no(qwk & QWK_DELMAIL));
