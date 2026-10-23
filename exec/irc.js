@@ -137,6 +137,7 @@ if(!sock.connect(irc_server,irc_port)) {
 	clean_exit();
 }
 
+send_webirc();
 if(user_password)
 	send_cmd("PASS", user_password);
 if (nick=="")
@@ -206,6 +207,39 @@ while(!quit)  {
 }
 sock.close();
 clean_exit();
+
+/* Pass the user's real IP address/hostname to the IRC server, as a web
+ * gateway does, so its bans and per-IP limits apply to the user rather than
+ * to the BBS.  Configured in ctrl/modopts.ini:
+ *
+ * [irc]
+ * webirc_password = <must match the server's [WebIRC] Password>
+ * webirc_servers = <comma-separated IP addresses of the servers to send it to>
+ *
+ * Matched against the IP address actually connected to, not the server name,
+ * since a round-robin name (e.g. irc.synchro.net) can resolve to servers run
+ * by others, which must not be sent the password.
+ */
+function send_webirc()
+{
+	if(!options || !options.webirc_password || !options.webirc_servers)
+		return;
+	var peer = String(sock.remote_ip_address).replace(/^::ffff:/i, "");
+	var servers = String(options.webirc_servers).split(/\s*,\s*/);
+	if(servers.indexOf(peer) < 0)
+		return;
+	var ip = client.ip_address;
+	var host = client.host_name;
+	if(!host || host == "<no name>" || /\s/.test(host))
+		host = ip;
+	/* An IPv6 address beginning with ':' would be parsed as a trailing parameter */
+	if(ip.charAt(0) == ':')
+		ip = "0" + ip;
+	if(host.charAt(0) == ':')
+		host = "0" + host;
+	sock.send("WEBIRC " + options.webirc_password + " " + system.qwk_id
+		+ " " + host + " " + ip + "\r\n");
+}
 
 function send_cmd(command, params)
 {
