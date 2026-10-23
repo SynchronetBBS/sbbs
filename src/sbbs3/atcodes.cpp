@@ -884,38 +884,21 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strncmp(sp, "SOUND:", 6) == 0 || strncmp(sp, "MUSIC:", 6) == 0) {
 		bool  music = (*sp == 'M');
 		char  arg[128];
-		char  path[MAX_PATH + 1];
-		char  cachename[TERMAUDIO_MAX_CACHE_NAME];
 		float db = TERMAUDIO_DB_UNITY;
 		char* vol;
 
-		if (!term->audio_files || (useron.misc & NO_SOUND))
-			return nulstr;
 		SAFECOPY(arg, sp + 6);
 		if ((vol = strchr(arg, ':')) != NULL) {
 			*vol = '\0';
 			if (!termaudio_parse_volume(vol + 1, &db))
 				db = TERMAUDIO_DB_UNITY;
 		}
-		if (!termaudio_resolve_sound(cfg.text_dir, arg, path, sizeof(path)))
-			return nulstr;
-		if (!audio_cache_file(path, cachename, sizeof(cachename)
-		                      , cfg.max_sound_file_size))
-			return nulstr;
-		audio_play(cachename, music, db);
+		(void)play_sound(arg, music, db);
 		return nulstr;
 	}
 
 	if (strncmp(sp, "CACHE_AUDIO:", 12) == 0) {
-		char path[MAX_PATH + 1];
-		char cachename[TERMAUDIO_MAX_CACHE_NAME];
-
-		if (!term->audio_files || (useron.misc & NO_SOUND))
-			return nulstr;
-		if (!termaudio_resolve_sound(cfg.text_dir, sp + 12, path, sizeof(path)))
-			return nulstr;
-		(void)audio_cache_file(path, cachename, sizeof(cachename)
-		                       , cfg.max_cache_file_size);
+		(void)cache_sound(sp + 12);
 		return nulstr;
 	}
 

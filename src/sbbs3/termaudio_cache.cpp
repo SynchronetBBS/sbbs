@@ -266,6 +266,50 @@ bool sbbs_t::audio_cache_file(const char* path, char* cachename, size_t cnsz
 }
 
 /****************************************************************************/
+/* Plays fname, a bare filename in text/sound/, as a sound effect or as		*/
+/* looping background music, uploading it first if the client lacks it.		*/
+/* Music already looping on the music channel is not restarted; only its	*/
+/* volume is set. Returns false if nothing was played: the terminal cannot	*/
+/* decode audio files, the user has set NO_SOUND, or the file is unusable.	*/
+/****************************************************************************/
+bool sbbs_t::play_sound(const char* fname, bool music, float db)
+{
+	char path[MAX_PATH + 1];
+	char cachename[TERMAUDIO_MAX_CACHE_NAME];
+
+	if (!term->audio_files || (useron.misc & NO_SOUND))
+		return false;
+	if (!termaudio_resolve_sound(cfg.text_dir, fname, path, sizeof(path)))
+		return false;
+	if (!audio_cache_file(path, cachename, sizeof(cachename)
+	                      , cfg.max_sound_file_size))
+		return false;
+	if (music && strcmp(cachename, audio_music_name) == 0) {
+		audio_music_volume(db);
+		return true;
+	}
+	audio_play(cachename, music, db);
+	return true;
+}
+
+/****************************************************************************/
+/* Uploads fname, a bare filename in text/sound/, to the client's cache		*/
+/* without playing it, subject to the larger max_cache_file_size limit.		*/
+/****************************************************************************/
+bool sbbs_t::cache_sound(const char* fname)
+{
+	char path[MAX_PATH + 1];
+	char cachename[TERMAUDIO_MAX_CACHE_NAME];
+
+	if (!term->audio_files || (useron.misc & NO_SOUND))
+		return false;
+	if (!termaudio_resolve_sound(cfg.text_dir, fname, path, sizeof(path)))
+		return false;
+	return audio_cache_file(path, cachename, sizeof(cachename)
+	                        , cfg.max_cache_file_size);
+}
+
+/****************************************************************************/
 /* Loads a cached file into a patch slot and queues it on a channel.			*/
 /****************************************************************************/
 void sbbs_t::audio_play(const char* cachename, bool music, float db)
@@ -278,8 +322,10 @@ void sbbs_t::audio_play(const char* cachename, bool music, float db)
 		return;
 	slot = audio_next_slot;
 	audio_next_slot = (audio_next_slot + 1) % (TERMAUDIO_SLOT_LAST + 1);
-	if (music)
+	if (music) {
 		chan = TERMAUDIO_CHAN_MUSIC;
+		SAFECOPY(audio_music_name, cachename);
+	}
 	else {
 		if (audio_next_chan < TERMAUDIO_CHAN_FIRST
 		    || audio_next_chan > TERMAUDIO_CHAN_LAST)
@@ -299,6 +345,7 @@ void sbbs_t::audio_flush_all(void)
 	char     buf[64];
 	unsigned chan;
 
+	audio_music_name[0] = '\0';
 	for (chan = TERMAUDIO_CHAN_MUSIC; chan <= TERMAUDIO_CHAN_LAST; chan++) {
 		safe_snprintf(buf, sizeof(buf), "\x1b_SyncTERM:A;Flush;C=%u\x1b\\", chan);
 		term_out(buf);
@@ -309,6 +356,7 @@ void sbbs_t::audio_flush_music(unsigned fade_ms)
 {
 	char buf[64];
 
+	audio_music_name[0] = '\0';
 	if (fade_ms)
 		safe_snprintf(buf, sizeof(buf), "\x1b_SyncTERM:A;Flush;C=%u;O=%u\x1b\\"
 		              , TERMAUDIO_CHAN_MUSIC, fade_ms);

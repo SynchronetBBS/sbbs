@@ -1730,6 +1730,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	         , cfg.xtrn[xtrnnum]->path
 	         , cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV ? drop_file : NULL);
 	end = time(NULL);
+	audio_music_name[0] = '\0'; /* The program may have changed or stopped the music */
 
 	if (cfg.xtrn[xtrnnum]->misc & XTRN_FREETIME)
 		starttime += end - start;

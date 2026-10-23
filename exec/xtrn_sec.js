@@ -372,6 +372,10 @@ function external_section_menu()
 }
 
 /* main: */
+if(options.enter_sound)
+	console.play_sound(options.enter_sound);
+if(options.enter_music)
+	console.play_music(options.enter_music);
 if(options.eval_first)
 	eval(options.eval_first);
 

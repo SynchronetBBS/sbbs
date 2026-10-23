@@ -13,10 +13,11 @@ var options = load("modopts.js", "shell");
 if(!options)
 	options = {};
 
-// modopts.ini [shell] keys evaluated upon entering a section of the BBS
-var section_enter_key = {};
-section_enter_key[NODE_MAIN] = "main_enter";
-section_enter_key[NODE_XFER] = "file_enter";
+// modopts.ini [shell] key prefixes for the <prefix>_sound, <prefix>_music and
+// <prefix>_enter options acted upon when entering a section of the BBS
+var section_key = {};
+section_key[NODE_MAIN] = "main";
+section_key[NODE_XFER] = "file";
 
 var usrsubs = [];
 var usrdirs = [];
@@ -672,9 +673,15 @@ function menu_loop()
 	while(bbs.online && !js.terminated) {
 		if(menu.node_action !== last_action) {
 			last_action = menu.node_action;
-			var enter_expr = options[section_enter_key[menu.node_action]];
-			if(enter_expr)
-				eval(enter_expr);
+			var key = section_key[menu.node_action];
+			if(key) {
+				if(options[key + "_sound"])
+					console.play_sound(options[key + "_sound"]);
+				if(options[key + "_music"])
+					console.play_music(options[key + "_music"]);
+				if(options[key + "_enter"])
+					eval(options[key + "_enter"]);
+			}
 		}
 		if(!(user.settings & USER_EXPERT)) {
 			if (menu.cls)

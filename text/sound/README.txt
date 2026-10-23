@@ -15,7 +15,14 @@ file or text string, e.g.:
 
 All of these take a bare filename in this directory, so @CACHE_AUDIO:
 sends exactly the file that a later @SOUND: or @MUSIC: of the same name
-will play.
+will play. @MUSIC: of the file already looping does not restart it; only
+its volume is set.
+
+Scripts can do the same with console.play_sound(), play_music(),
+cache_sound(), music_volume(), stop_music() and stop_sound(), and the
+command shells and external programs section can play a sound or music
+upon entering a section (see the *_sound and *_music keys in
+ctrl/modopts.ini).
 
 Formats
 -------

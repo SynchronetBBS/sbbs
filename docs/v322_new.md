@@ -665,10 +665,12 @@
 - `shell_lib.send_email()` / `send_netmail()` accept a `to` /
   `address` argument; the email-menu **A**ttachment command
   works again (regression from a v3.21 refactor)
-- New `ctrl/modopts.ini` hooks run a JavaScript expression upon entering
-  a BBS section, e.g. to play a sound with `bbs.atcode("SOUND:file.ogg")`:
-  `[shell]` `main_enter` and `file_enter` (shells built on `shell_lib.js`)
-  and `[xtrn_sec]` `eval_first`
+- New `ctrl/modopts.ini` options act upon entering a BBS section:
+  `[shell]` `main_sound`/`file_sound` play a sound file,
+  `main_music`/`file_music` play looping background music and
+  `main_enter`/`file_enter` run a JavaScript expression (shells built on
+  `shell_lib.js`); `[xtrn_sec]` `enter_sound`, `enter_music` and
+  `eval_first` do the same for the external programs section
 - More strings in stock modules route through `gettext()` for
   `ctrl/text.ini` `[JS]`-section customization
 - Good Time Trivia gains a `useDoveNetSyncData` option that
@@ -809,6 +811,9 @@
   behind (issue #1260)
 - Fix: `bbs.get_archive_formats()` throws on an allocation failure
   instead of returning a partial list (issue #1262)
+- New `console.play_sound()`, `play_music()`, `cache_sound()`,
+  `music_volume()`, `stop_music()` and `stop_sound()` methods: the
+  terminal audio @-codes' features, for scripts
 - New `console.cterm_fork` property: the third component of a
   forked CTerm's (e.g. TERMinator's) version report, also written to the
   `BBSDEV.DRP` drop file; `console.cterm_version` still holds the

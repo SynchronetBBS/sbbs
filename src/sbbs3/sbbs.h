@@ -289,6 +289,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "userdat.h"
 #include "riodefs.h"
 #include "cmdshell.h"
+#include "termaudio.h"
 #include "ringbuf.h"    /* RingBuf definition */
 #include "client.h"		/* client_t definition */
 #include "crc16.h"
@@ -794,6 +795,9 @@ public:
 	bool       audio_cache_listed{false};
 	unsigned   audio_next_slot{0};
 	unsigned   audio_next_chan{0};
+	/* Cache name of the music looping on the music channel, empty if none
+	   (or unknown, e.g. after a door that may have changed it) */
+	char       audio_music_name[TERMAUDIO_MAX_CACHE_NAME]{};
 
 	bool recv_apc_reply(char* buf, size_t bufsz, size_t* len, unsigned timeout_ms);
 	void audio_warn_once(const char* path, const char* reason);
@@ -804,6 +808,8 @@ public:
 	void audio_flush_all(void);
 	void audio_flush_music(unsigned fade_ms);
 	void audio_music_volume(float db);
+	bool play_sound(const char* fname, bool music, float db);
+	bool cache_sound(const char* fname);
 	void	clearvars(csi_t *bin);
 	void	freevars(csi_t *bin);
 	char**	getstrvar(csi_t *bin, uint32_t name);

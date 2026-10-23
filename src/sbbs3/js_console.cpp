@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "js_request.h"
+#include "termaudio.h"
 #include "str_util.h"  /* utf8_to_cp437_inplace, for js_simulate_type */
 
 #ifdef JAVASCRIPT
@@ -1499,6 +1500,155 @@ js_beep(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+/* Volume argument: a percentage (number or string), or a string with a dB suffix */
+static JSBool
+js_audio_volume_arg(JSContext *cx, jsval val, float* db)
+{
+	char str[32];
+
+	JSVALUE_TO_STRBUF(cx, val, str, sizeof(str), NULL);
+	if (!termaudio_parse_volume(str, db)) {
+		JS_ReportError(cx, "Invalid volume: %s", str);
+		return JS_FALSE;
+	}
+	return JS_TRUE;
+}
+
+static JSBool
+js_play_audio(JSContext *cx, uintN argc, jsval *arglist, bool music)
+{
+	jsval *    argv = JS_ARGV(cx, arglist);
+	sbbs_t*    sbbs;
+	char       fname[MAX_PATH + 1];
+	float      db = TERMAUDIO_DB_UNITY;
+	bool       result;
+	jsrefcount rc;
+
+	if ((sbbs = (sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if (argc < 1 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+	JSVALUE_TO_STRBUF(cx, argv[0], fname, sizeof(fname), NULL);
+	if (argc > 1 && !JSVAL_NULL_OR_VOID(argv[1])
+	    && !js_audio_volume_arg(cx, argv[1], &db))
+		return JS_FALSE;
+	rc = JS_SUSPENDREQUEST(cx);
+	result = sbbs->play_sound(fname, music, db);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
+js_play_sound(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_play_audio(cx, argc, arglist, /* music: */ false);
+}
+
+static JSBool
+js_play_music(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_play_audio(cx, argc, arglist, /* music: */ true);
+}
+
+static JSBool
+js_cache_sound(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *    argv = JS_ARGV(cx, arglist);
+	sbbs_t*    sbbs;
+	char       fname[MAX_PATH + 1];
+	bool       result;
+	jsrefcount rc;
+
+	if ((sbbs = (sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if (argc < 1 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+	JSVALUE_TO_STRBUF(cx, argv[0], fname, sizeof(fname), NULL);
+	rc = JS_SUSPENDREQUEST(cx);
+	result = sbbs->cache_sound(fname);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
+js_music_volume(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *    argv = JS_ARGV(cx, arglist);
+	sbbs_t*    sbbs;
+	float      db;
+	jsrefcount rc;
+
+	if ((sbbs = (sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if (argc < 1)
+		return JS_TRUE;
+	if (!js_audio_volume_arg(cx, argv[0], &db))
+		return JS_FALSE;
+	if (!sbbs->term->audio_files || (sbbs->useron.misc & NO_SOUND))
+		return JS_TRUE;
+	rc = JS_SUSPENDREQUEST(cx);
+	sbbs->audio_music_volume(db);
+	JS_RESUMEREQUEST(cx, rc);
+	return JS_TRUE;
+}
+
+/* Stopping sound is deliberately not gated on NO_SOUND: the flag can be
+   set while a loop is already playing. */
+static JSBool
+js_stop_music(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *    argv = JS_ARGV(cx, arglist);
+	sbbs_t*    sbbs;
+	int32      fade = 0;
+	jsrefcount rc;
+
+	if ((sbbs = (sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if (argc > 0 && !JSVAL_NULL_OR_VOID(argv[0])) {
+		if (!JS_ValueToInt32(cx, argv[0], &fade))
+			return JS_FALSE;
+	}
+	if (!sbbs->term->audio_files)
+		return JS_TRUE;
+	rc = JS_SUSPENDREQUEST(cx);
+	sbbs->audio_flush_music(fade > 0 ? (unsigned)fade : 0);
+	JS_RESUMEREQUEST(cx, rc);
+	return JS_TRUE;
+}
+
+static JSBool
+js_stop_sound(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*    sbbs;
+	jsrefcount rc;
+
+	if ((sbbs = (sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if (!sbbs->term->audio_files)
+		return JS_TRUE;
+	rc = JS_SUSPENDREQUEST(cx);
+	sbbs->audio_flush_all();
+	JS_RESUMEREQUEST(cx, rc);
+	return JS_TRUE;
+}
+
 static JSBool
 js_print(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -2889,6 +3039,37 @@ static jsSyncMethodSpec js_console_functions[] = {
 	{"beep",            js_beep,            1, JSTYPE_VOID,     JSDOCSTR("[count=1]")
 	 , JSDOCSTR("Beep for <i>count</i> number of times (default count is 1)")
 	 , 311
+	},
+	{"play_sound",      js_play_sound,      1, JSTYPE_BOOLEAN,  JSDOCSTR("filename [,volume=100]")
+	 , JSDOCSTR("Play a sound effect file (a bare filename in the <tt>text/sound</tt> directory) on the user's terminal, "
+		        "uploading it to the terminal's audio file cache first, if necessary. "
+		        "<i>volume</i> is a percentage or a string with a <tt>dB</tt> suffix (e.g. <tt>\"-6dB\"</tt>).<br>"
+		        "Returns <tt>false</tt> if the terminal cannot play audio files, the user has disabled sound, or the file is unusable.")
+	 , 322
+	},
+	{"play_music",      js_play_music,      1, JSTYPE_BOOLEAN,  JSDOCSTR("filename [,volume=100]")
+	 , JSDOCSTR("Play a music file (a bare filename in the <tt>text/sound</tt> directory) as looping background music "
+		        "on the user's terminal, replacing any other music playing (music already playing the same file is not restarted; only its volume is set). "
+		        "Arguments and return value as for <tt>play_sound()</tt>")
+	 , 322
+	},
+	{"cache_sound",     js_cache_sound,     1, JSTYPE_BOOLEAN,  JSDOCSTR("filename")
+	 , JSDOCSTR("Upload a sound or music file (a bare filename in the <tt>text/sound</tt> directory) to the user's terminal "
+		        "audio file cache without playing it, so a later <tt>play_sound()</tt> or <tt>play_music()</tt> of a large file starts without delay")
+	 , 322
+	},
+	{"music_volume",    js_music_volume,    1, JSTYPE_VOID,     JSDOCSTR("volume")
+	 , JSDOCSTR("Change the volume of the background music currently playing "
+		        "(a percentage or a string with a <tt>dB</tt> suffix)")
+	 , 322
+	},
+	{"stop_music",      js_stop_music,      0, JSTYPE_VOID,     JSDOCSTR("[fade_ms=0]")
+	 , JSDOCSTR("Stop the background music, optionally fading it out over <i>fade_ms</i> milliseconds")
+	 , 322
+	},
+	{"stop_sound",      js_stop_sound,      0, JSTYPE_VOID,     JSDOCSTR("")
+	 , JSDOCSTR("Stop all sound effects and background music")
+	 , 322
 	},
 	{"print",           js_print,           1, JSTYPE_VOID,     JSDOCSTR("[value [,value][...]] or [<i>string</i> text [,<i>number</i> p_mode=P_NONE]]")
 	 , JSDOCSTR("Display one or more values as strings (supports Ctrl-A codes, Telnet-escaping, auto-screen pausing, etc.).<br>"
