@@ -80,6 +80,16 @@ bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc)
 	}
 	new_subboard->grp = group_num;
 
+	/* Only one sub per group may be the template */
+	if (new_subboard->misc & SUB_TEMPLATE) {
+		for (int u = 0; u < cfg.total_subs; u++) {
+			if (cfg.sub[u]->grp == group_num && (cfg.sub[u]->misc & SUB_TEMPLATE)) {
+				new_subboard->misc &= ~SUB_TEMPLATE;
+				break;
+			}
+		}
+	}
+
 	/* Allocate a new (unused) pointer index (deprecated!) */
 	for (; new_subboard->ptridx < USHRT_MAX; new_subboard->ptridx++) {
 		int n;
@@ -1345,8 +1355,8 @@ void sub_cfg(int grpnum)
 									"template for newly-created or cloned sub-boards in this message group,\n"
 									"set this option to `Yes`.\n"
 									"\n"
-									"If multiple sub-boards have this option enabled, only the first will be\n"
-									"used as the template."
+									"Only one sub-board per message group may be the template: enabling\n"
+									"this option disables it for any other sub-board in the same group."
 								;
 								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
 								              , "Use this Sub-board as a Template for New Subs", uifcYesNoOpts);
@@ -1354,6 +1364,10 @@ void sub_cfg(int grpnum)
 									break;
 								if (!n && !(cfg.sub[i]->misc & SUB_TEMPLATE)) {
 									uifc.changes = TRUE;
+									for (int u = 0; u < cfg.total_subs; u++) {
+										if (cfg.sub[u]->grp == cfg.sub[i]->grp)
+											cfg.sub[u]->misc &= ~SUB_TEMPLATE;
+									}
 									cfg.sub[i]->misc |= SUB_TEMPLATE;
 									break;
 								}
