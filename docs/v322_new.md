@@ -512,6 +512,9 @@
   - `SeekPrompt` restyled to `<filename> (?=Help)` form (the key
     list moved into `SeekHelp`)
   - `SearchStringPrompt` now hints at the `?=help` binding
+  - No space before `@ELLIPSIS@` in the 16 strings that use it (e.g.
+    `LoggingOn`, `Saving`), which looked wrong as a UTF-8 `…`
+    (issue #1288)
 - New display file: `text/menu/textsrch.msg` — boolean-search
   quick reference, displayed when `?` is entered at a search
   prompt
