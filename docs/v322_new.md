@@ -160,7 +160,8 @@
 - UTF-8 terminal detection now probes with U+2060 (Word Joiner)
   instead of the obsolete U+FEFF, which a terminal may draw as a
   wide "unsupported character" glyph and so go undetected
-  (issue #1284)
+  (issue #1284); U+2060 in text is now also measured as zero-width
+  and dropped, not shown as `¿`, on CP437 terminals
 - Goodbye messages and pre-login banners no longer log noisy
   "send failed" warnings when the client disconnects mid-message
 - Fix line-wrap divide-by-zero crash when an SFTP-only client
