@@ -168,6 +168,26 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 					noaccess_val = RIP;
 				}
 				break;
+			case AR_SOUND:
+				if (!term->audio_files || (user->misc & NO_SOUND))
+					result = _not;
+				else
+					result = !_not;
+				if (!result) {
+					noaccess_str = text[NoAccessTerminal];
+					noaccess_val = 0;
+				}
+				break;
+			case AR_MOUSE:
+				if (!term->supports(MOUSE))
+					result = _not;
+				else
+					result = !_not;
+				if (!result) {
+					noaccess_str = text[NoAccessTerminal];
+					noaccess_val = MOUSE;
+				}
+				break;
 			case AR_WIP:
 				result = _not;
 				if (!result) {

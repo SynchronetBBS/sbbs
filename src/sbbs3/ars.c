@@ -499,6 +499,14 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				artype = AR_PROP;
 				i += 3;
 			}
+			else if (!strnicmp(str + i, "SOUND", 5)) {
+				artype = AR_SOUND;
+				i += 4;
+			}
+			else if (!strnicmp(str + i, "MOUSE", 5)) {
+				artype = AR_MOUSE;
+				i += 4;
+			}
 
 			if (n != i)        /* one of the above */
 			{

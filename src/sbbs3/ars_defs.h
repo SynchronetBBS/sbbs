@@ -119,6 +119,8 @@ enum {                              /* Access requirement binaries */
 	, AR_LANG
 	, AR_DLT    // Downloads today
 	, AR_PROP   // User (Boolean) Property
+	, AR_SOUND  // Terminal can play audio files and user allows BBS-initiated sound
+	, AR_MOUSE  // Mouse supported terminal
 };
 
 enum ar_type { // Access requirement argument types
@@ -133,6 +135,8 @@ static inline enum ar_type ar_type(int artype)
 		case AR_RIP:
 		case AR_WIP:
 		case AR_ANSI:
+		case AR_SOUND:
+		case AR_MOUSE:
 		case AR_PETSCII:
 		case AR_ASCII:
 		case AR_UTF8:

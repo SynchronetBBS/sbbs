@@ -2341,6 +2341,18 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				else
 					result = !not;
 				break;
+			case AR_SOUND:
+				if (user == NULL || (user->misc & NO_SOUND))
+					result = not;
+				else
+					result = !not;
+				break;
+			case AR_MOUSE:
+				if (user == NULL || !(user->misc & MOUSE))
+					result = not;
+				else
+					result = !not;
+				break;
 			case AR_WIP:
 				result = not;
 				break;

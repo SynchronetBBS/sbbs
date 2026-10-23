@@ -16,6 +16,9 @@
 - New user setting (Terminal settings in the user defaults menu) to
   suppress BBS-initiated sound, covering both the terminal bell and the
   new audio @-codes
+- New `SOUND` and `MOUSE` ARS keywords: `SOUND` is true when the user's
+  terminal can play the audio @-codes and the user has not turned sound
+  off, `MOUSE` when the terminal supports mouse hot-spots (issue #1292)
 
 - Optional **internal MQTT 5.0 broker** built into Synchronet (no
   external libmosquitto dependency)
@@ -418,6 +421,10 @@
   available) (issue #1128)
 - Creating a new sub-board no longer copies the FidoNet area tag
   or Usenet newsgroup name from the previous sub (issue #1105)
+- Only one sub-board per message group can be the template for new
+  subs: enabling the option on one sub-board disables it on the others,
+  and a pasted copy of the template sub-board no longer adds a second
+  template (issue #1280)
 - Help-text updates for the sub-board Semaphore File and Pointer
   Index options, and the Parent Directory import prompt
 - Expanded inline help for the Servers → \* → JavaScript Settings
