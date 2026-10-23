@@ -212,9 +212,13 @@ function Unregistered_Commands(cmdline) {
 				));
 				break;
 			}
+			/* A gateway's WEBIRC that is malformed or not accepted closes
+			   the connection: continuing would register the client under
+			   the gateway's IP, out of reach of bans on its own IP. */
 			if (!p[3]) {
 				this.numeric461("WEBIRC");
-				break;
+				this.quit("WEBIRC rejected");
+				return 0;
 			}
 			var w, allowed = false;
 			for (w in WLines) {
@@ -230,7 +234,8 @@ function Unregistered_Commands(cmdline) {
 					this.socket.descriptor,
 					this.ip
 				));
-				break;
+				this.quit("WEBIRC rejected");
+				return 0;
 			}
 			log(LOG_NOTICE, format(
 				"[UNREG] %04u WEBIRC accepted: %s -> %s (host=%s gw=%s)",
@@ -246,6 +251,17 @@ function Unregistered_Commands(cmdline) {
 				this.ip = this.ip.slice(7);
 			}
 			this.hostname = p[2];
+			/* Z:Lines and RBLs were checked against the gateway's IP on
+			   accept */
+			if (IP_Banned(this.ip)) {
+				this.numeric(465, ":You've been banned from this server.");
+				this.quit("You've been banned from this server.");
+				return 0;
+			}
+			if (RBL_Blocked(this.socket, this.ip)) {
+				this.quit("Your IP address is on an RBL.");
+				return 0;
+			}
 			/* Cancel any in-flight RDNS; any pending callback will see
 			   dns_pending=false and discard its reply. */
 			this.dns_pending = false;
@@ -430,7 +446,9 @@ function Unregistered_Quit(msg) {
 function Unregistered_Welcome() {
 	var i, my_iline;
 
-	if (isklined(this.uprefix + "@" + this.hostname)) {
+	if (   isklined(this.uprefix + "@" + this.hostname)
+		|| isklined(this.uprefix + "@" + this.ip)
+	) {
 		this.numeric(465, ":You've been K:Lined from this server.");
 		this.quit("You've been K:Lined from this server.");
 		return 0;

@@ -187,6 +187,7 @@ function Scan_For_Banned_Clients() {
 	for (i in Local_Users) {
 		user = Local_Users[i];
 		if (   isklined(user.uprefix + "@" + user.hostname)
+			|| isklined(user.uprefix + "@" + user.ip)
 			|| IP_Banned(user.ip)
 		) {
 			user.quit("User has been banned");
@@ -3140,7 +3141,7 @@ function RBL_Listed_According_to_Config(rbl_object, dns_reply) {
 }
 
 function accept_new_socket() {
-	var unreg_obj, id, sock, num_rbls, count, i, dnsbl_result;
+	var unreg_obj, id, sock;
 
 	sock = this.accept();
 
@@ -3186,32 +3187,9 @@ function accept_new_socket() {
 		return false;
 	}
 
-	num_rbls = true_array_len(RBL);
-	if(!dnsbl_exempt(sock.remote_ip_address)) {
-		count = 0;
-		for (i in RBL) {
-			count++;
-			sock.send(format(":%s NOTICE * :Performing RBL check %u of %u.  Please stand by.\r\n",
-				ServerName,
-				count,
-				num_rbls
-			));
-			dnsbl_result = check_dnsbl(sock.remote_ip_address, RBL[i].hostname);
-			if (RBL_Listed_According_to_Config(RBL[i], dnsbl_result)) {
-				sock.send(format(
-					":%s 463 * :Your IP address is on an RBL.  Connection denied.\r\n",
-					ServerName
-				));
-				log(LOG_NOTICE, format(
-					"DNS-Blocked IP address %s resolves to %s from RBL %s",
-					sock.remote_ip_address,
-					dnsbl_result,
-					RBL[i].hostname
-				));
-				sock.close();
-				return false;
-			}
-		}
+	if (RBL_Blocked(sock, sock.remote_ip_address)) {
+		sock.close();
+		return false;
 	}
 
 	if (server.client_add !== undefined) {
@@ -3444,6 +3422,40 @@ function StatsM() {
 	this.executions = 0;
 }
 
+/* Check ip against the configured RBLs, reporting progress and any listing
+   to sock.  Returns true if the connection is to be denied. */
+function RBL_Blocked(sock, ip) {
+	var i, count, num_rbls, dnsbl_result;
+
+	if (dnsbl_exempt(ip))
+		return false;
+	num_rbls = true_array_len(RBL);
+	count = 0;
+	for (i in RBL) {
+		count++;
+		sock.send(format(":%s NOTICE * :Performing RBL check %u of %u.  Please stand by.\r\n",
+			ServerName,
+			count,
+			num_rbls
+		));
+		dnsbl_result = check_dnsbl(ip, RBL[i].hostname);
+		if (RBL_Listed_According_to_Config(RBL[i], dnsbl_result)) {
+			sock.send(format(
+				":%s 463 * :Your IP address is on an RBL.  Connection denied.\r\n",
+				ServerName
+			));
+			log(LOG_NOTICE, format(
+				"DNS-Blocked IP address %s resolves to %s from RBL %s",
+				ip,
+				dnsbl_result,
+				RBL[i].hostname
+			));
+			return true;
+		}
+	}
+	return false;
+}
+
 function dnsbl_exempt(ip) {
 	if(ip.indexOf("192.168.") == 0)
 		return true;
@@ -3491,8 +3503,9 @@ function check_dnsbl(ip, rbl) {
 		a.reverse();
 		qstr = '';
 		a.forEach(function(piece) {
-			qstr += piece[3] + '.' + piece[2] + '.' + piece[1] + '.' + piece[0] + '.' + rbl;
+			qstr += piece[3] + '.' + piece[2] + '.' + piece[1] + '.' + piece[0] + '.';
 		});
+		qstr += rbl;
 
 	}
 	return resolve_ip(qstr);

@@ -24,8 +24,10 @@ function ircd_shell_quote(str) {
 
 /* ---- Server lifecycle ---- */
 
-function IrcdTestServer(port) {
+/* extra_config: optional array of additional ircd.ini lines */
+function IrcdTestServer(port, extra_config) {
 	this.port = port || 19667;
+	this.extra_config = extra_config || [];
 	this.pid  = 0;
 	this.config_path = "";
 	this.log_path = IRCD_TEST_TEMP_DIR + "ircd_test_" + this.port + ".log";
@@ -68,7 +70,7 @@ IrcdTestServer.prototype._write_config = function() {
 		"Flags=OwkK",
 		"Class=10",
 		""
-	];
+	].concat(this.extra_config);
 	var f = new File(this.config_path);
 	if (!f.open("w"))
 		throw new Error("Cannot write IRCd test config: " + this.config_path);
