@@ -24,6 +24,30 @@ try {
 	net.start();
 
 	run_tests({
+		"another local JOIN does not flap existing ops, voice or bans during hub correction": function() {
+			var owner = net.client(NET_HUB1,"quietOwner"), anchor = net.client(NET_LEAF1A,"quietAnchor"), arrival;
+			try {
+				owner.join("#quietsync"); anchor.join("#quietsync");
+				owner.send("MODE #quietsync +ov quietAnchor quietAnchor"); anchor.expect("+ov quietAnchor quietAnchor",5);
+				owner.send("MODE #quietsync +b *!*@quiet.invalid"); anchor.expect("+b *!*@quiet.invalid",5);
+				mswait(500); anchor.drain(200); owner.drain(200);
+				arrival = net.client(NET_LEAF1A,"quietArrival"); arrival.join("#quietsync");
+				owner.expect("quietArrival!",5); mswait(1000);
+				anchor.send("PING :quietsync-complete");
+				var until = Date.now() + 5000, done = false;
+				while (Date.now() < until) {
+					var line = anchor.readln(2);
+					if (/ MODE #quietsync /.test(line)) throw new Error("Unchanged state flapped: " + line);
+					if (line.indexOf("PONG ") >= 0 && line.indexOf("quietsync-complete") >= 0) { done = true; break; }
+				}
+				if (!done) throw new Error("No channel synchronization barrier");
+				anchor.send("NAMES #quietsync");
+				if (anchor.expect(" 353 ",5).indexOf("@quietAnchor") < 0) throw new Error("Retained channel ops lost");
+				anchor.send("MODE #quietsync +b"); anchor.expect("*!*@quiet.invalid",5);
+			} finally {
+				if (arrival) arrival.quit(); anchor.quit(); owner.quit();
+			}
+		},
 		"rapid leaf JOIN/PART cannot be undone by delayed channel corrections": function() {
 			var anchor = net.client(NET_HUB1, "partAnchor"), actor, observers = [];
 			try {

@@ -72,6 +72,29 @@ function check(cond, message) {
 		throw new Error(message);
 }
 
+function channel_sync(peer, ts, name, modes, members, bans) {
+	var header = "CSYNC " + ts + " " + name + " ";
+	peer.work(header + "BEGIN " + modes);
+	if (members) peer.work(header + "MORE :" + members);
+	if (bans) peer.work(header + "BANS :" + bans);
+	peer.work(header + "END");
+}
+
+function mode_changes(s, user) {
+	var changes = [];
+	user.received.forEach(function(line) {
+		var cmd = s.IRC_parse(line), add = true, arg = 2;
+		if (cmd.verb != "MODE") return;
+		for (var i = 0; i < cmd.params[1].length; i++) {
+			var mode = cmd.params[1][i];
+			if (mode == "+" || mode == "-") { add = mode == "+"; continue; }
+			changes.push((add ? "+" : "-") + mode
+				+ ("bkov".indexOf(mode) >= 0 || (mode == "l" && add) ? ":" + cmd.params[arg++] : ""));
+		}
+	});
+	return changes.sort().join(" ");
+}
+
 function merge_sides(ts_a, ts_b) {
 	var a = new_state(), b = new_state();
 	a.ServerName = "a.test"; b.ServerName = "b.test";
@@ -93,6 +116,43 @@ function merge_sides(ts_a, ts_b) {
 }
 
 run_tests({
+	"identical hub snapshots preserve modes, statuses and ban metadata without MODE churn": function() {
+		var s = new_state(), p = new_peer(s,"upstream.test",true), local = new_user(s,"Local"), remote = new_user(s,"Remote",p.nick);
+		var c = join_user(s,local,"#quiet"); join_user(s,remote,"#quiet");
+		p.set_chanmode(c,["+klntovovb","keepkey","10","Local","Local","Remote","Remote","*!*@Keep.invalid"],0,{local_only:true});
+		var banid = c.modelist[s.CHANMODE_BAN].indexOf("*!*@Keep.invalid");
+		c.bantime[banid] = 123; c.bancreator[banid] = "original-setter";
+		var raw = c.leaf_timestamp, object = c.leaf_timestamp_id;
+		for (var n = 0; n < 2; n++) {
+			local.received = []; remote.received = []; p.sent = [];
+			channel_sync(p,s.now + n,"#quiet","+klnt keepkey 10","@+Local @+Remote","*!*@keep.invalid");
+			check(!local.received.length && !remote.received.length && !p.sent.length, "identical state emitted traffic: " + local.received.join(" | "));
+			check(c.created == s.now + n && c.leaf_timestamp == raw && c.leaf_timestamp_id == object, "snapshot changed local object identity");
+			check(c.bantime[banid] == 123 && c.bancreator[banid] == "original-setter" && c.modelist[s.CHANMODE_BAN][banid] == "*!*@Keep.invalid", "retained ban was replaced");
+		}
+	},
+	"hub snapshots correct only differing modes, statuses and bans": function() {
+		var s = new_state(), p = new_peer(s,"upstream.test",true), local = new_user(s,"Local"), remote = new_user(s,"Remote",p.nick), extra = new_user(s,"Extra");
+		var c = join_user(s,local,"#diff"); join_user(s,remote,"#diff"); join_user(s,extra,"#diff");
+		p.set_chanmode(c,["+klpntovovovbb","oldkey","20","Local","Local","Remote","Remote","Extra","Extra","*!*@keep.invalid","*!*@stale.invalid"],0,{local_only:true});
+		c.bantime[0] = 123; c.bancreator[0] = "original-setter"; local.received = []; p.sent = [];
+		channel_sync(p,s.now - 10,"#diff","+kst newkey","@Local +Remote","*!*@KEEP.invalid *!*@new.invalid");
+		var expected = ["-l","-p","-n","+k:newkey","+s","-v:Local","-o:Remote","-o:Extra","-v:Extra","-b:*!*@stale.invalid","+b:*!*@new.invalid"].sort().join(" ");
+		check(mode_changes(s,local) == expected, "incorrect delta: " + mode_changes(s,local));
+		check(c.created == s.now - 10 && c.chanmode(true) == "+kst newkey", "hub modes or timestamp not applied");
+		check(c.modelist[s.CHANMODE_OP][local.id] && !c.modelist[s.CHANMODE_VOICE][local.id]
+			&& !c.modelist[s.CHANMODE_OP][remote.id] && c.modelist[s.CHANMODE_VOICE][remote.id]
+			&& !c.modelist[s.CHANMODE_OP][extra.id] && !c.modelist[s.CHANMODE_VOICE][extra.id], "statuses differ from hub");
+		check(c.bantime[0] == 123 && c.bancreator[0] == "original-setter" && c.count_modelist(s.CHANMODE_BAN) == 2, "ban delta replaced retained metadata");
+		check(!p.sent.length && local.received.every(function(line) { return line.indexOf(":upstream.test MODE ") == 0; }), "correction echoed or used local reset attribution");
+	},
+	"a hub snapshot can initialize a missing channel and add all status": function() {
+		var s = new_state(), p = new_peer(s,"upstream.test",true), local = new_user(s,"Local"), remote = new_user(s,"Remote",p.nick);
+		channel_sync(p,s.now - 20,"#fresh","+nt","@+Local +Remote","*!*@blocked.invalid");
+		var c = s.Channels["#FRESH"];
+		check(c && c.created == s.now - 20 && c.chanmode(true) == "+nt" && local.channels["#FRESH"] === c && remote.channels["#FRESH"] === c, "missing channel not initialized");
+		check(c.modelist[s.CHANMODE_OP][local.id] && c.modelist[s.CHANMODE_VOICE][local.id] && c.modelist[s.CHANMODE_VOICE][remote.id] && c.count_modelist(s.CHANMODE_BAN) == 1, "new channel lost status or bans");
+	},
 	"NICK introductions negotiate numeric legacy IPs for bursts and live relays": function() {
 		var s = new_state(), old = new_peer(s, "old.test", false), modern = new_peer(s, "modern.test", true);
 		old.their_capab = ["NICKIP", "TSMODE"]; modern.their_capab.push("NICKIPSTR");

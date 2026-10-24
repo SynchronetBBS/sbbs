@@ -1733,12 +1733,30 @@ function IRC_receive_channel_sync(peer, p) {
 	delete peer.channel_sync;
 	chan = Channels[name.toUpperCase()];
 	if (!chan) chan = Channels[name.toUpperCase()] = new Channel(name);
-	Channel_reset_timestamp(chan, ts);
-	var old_bans = chan.modelist[CHANMODE_BAN].filter(function(b) { return !!b; });
-	if (old_bans.length)
-		peer.set_chanmode(chan, ["-" + new Array(old_bans.length + 1).join("b")].concat(old_bans),
-			0, {local_only: true});
+	/* This is an authoritative snapshot, not a timestamp conflict. Keep
+	   matching state intact so reconnects do not flap modes or replace ban
+	   metadata. Only differences should generate MODEs for local clients. */
+	chan.created = ts;
+	delete chan.pending_founder;
+	delete chan.pending_burst;
+	var flags = sync.modes[0] || "", bit, remove;
+	for (bit in MODE) {
+		if (!MODE[bit].state || !(chan.mode & bit) || flags.indexOf(MODE[bit].modechar) >= 0) continue;
+		remove = ["-" + MODE[bit].modechar];
+		if (bit == CHANMODE_KEY) remove.push(chan.arg[bit]);
+		peer.set_chanmode(chan, remove, 0, {local_only: true});
+	}
+	var bans = {}, mask;
+	for (i = 0; i < sync.bans.length; i++) {
+		mask = create_ban_mask(sync.bans[i]);
+		if (mask) bans["$" + mask.toUpperCase()] = true;
+	}
+	for (i in chan.modelist[CHANMODE_BAN]) {
+		mask = chan.modelist[CHANMODE_BAN][i];
+		if (!bans["$" + mask.toUpperCase()]) peer.set_chanmode(chan, ["-b", mask], 0, {local_only: true});
+	}
 	peer.set_chanmode(chan, sync.modes, 0, {local_only: true});
+	var members = {};
 	for (i in sync.members) {
 		k = sync.members[i]; u = k.user;
 		if (Users[u.nick.toUpperCase()] !== u) continue;
@@ -1748,12 +1766,24 @@ function IRC_receive_channel_sync(peer, p) {
 			chan.users[u.id] = u; u.channels[name.toUpperCase()] = chan;
 			u.bcast_to_channel(chan, "JOIN :" + name, true);
 		}
+		members[u.id] = k;
+	}
+	var statuses = [{bit: CHANMODE_OP, mode: "o", field: "isop"},
+		{bit: CHANMODE_VOICE, mode: "v", field: "isvoice"}];
+	for (var status = 0; status < statuses.length; status++) {
+		var list = statuses[status];
+		for (i in chan.modelist[list.bit]) {
+			u = chan.modelist[list.bit][i]; k = members[i];
+			if (!k || k.user !== u || !k[list.field]) peer.set_chanmode(chan, ["-" + list.mode, u.nick], 0, {local_only: true});
+		}
+	}
+	for (i in members) {
+		k = members[i]; u = k.user;
 		if (k.isop) peer.set_chanmode(chan, ["+o", u.nick], 0, {local_only: true});
 		if (k.isvoice) peer.set_chanmode(chan, ["+v", u.nick], 0, {local_only: true});
 	}
-	if (sync.bans.length)
-		peer.set_chanmode(chan, ["+" + new Array(sync.bans.length + 1).join("b")].concat(sync.bans),
-			0, {local_only: true});
+	for (i = 0; i < sync.bans.length; i++)
+		peer.set_chanmode(chan, ["+b", sync.bans[i]], 0, {local_only: true});
 	if (sync.topic) IRC_apply_topic_sync(peer, chan, sync.topic);
 	if (!true_array_len(chan.users)) delete Channels[name.toUpperCase()];
 }
