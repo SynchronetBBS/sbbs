@@ -5,6 +5,13 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97p    2026-10-24   New: Thread view when reading messages (using the * key).
+                      With help from Cursor AI.
+                      Change: The help screen for reader mode & the message list
+					  is displayed in a scrolling mode if the user's terminal is
+					  capable and the scrolling setting is enabled
+                      Fix: Lightbar message list alignment change suggested by
+                      Claude, from Nelgin.
 1.97o    2026-07-18   Bug fix: Improved filtering for personal email to ensure
                       exact user matching for reading personal email, including
                       usernames with similar beginnings. Reported by Nelgin.
