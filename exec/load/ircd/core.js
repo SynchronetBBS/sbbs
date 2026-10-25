@@ -316,17 +316,19 @@ function handle_outbound_server_connect() {
 
 	if (YLines[this.cline.ircclass].connfreq > 0 && parseInt(this.cline.port) > 0) {
 		umode_notice(USERMODE_ROUTING,"Routing",format(
-			"Failed to connect to %s (%s). Trying again in %u seconds.",
+			"Failed to connect to %s (%s): %s. Trying again in %u seconds.",
 			this.cline.servername,
 			this.cline.host,
+			this.error_str,
 			YLines[this.cline.ircclass].connfreq
 		));
 		Reset_Autoconnect(this.cline, YLines[this.cline.ircclass].connfreq * 1000);
 	} else {
 		umode_notice(USERMODE_ROUTING,"Routing",format(
-			"Failed to connect to %s (%s).",
+			"Failed to connect to %s (%s): %s.",
 			this.cline.servername,
-			this.cline.host
+			this.cline.host,
+			this.error_str
 		));
 	}
 

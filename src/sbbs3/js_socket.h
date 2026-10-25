@@ -36,6 +36,12 @@ typedef struct
 	bool tls_enhanced_certcheck;
 } js_socket_private_t;
 
+/* Written to js_event_connect.sv[1] by the asynchronous connect thread */
+struct js_connect_result {
+	int error;		/* 0 on success */
+	BOOL gai;		/* error is a getaddrinfo() result, not a socket error */
+};
+
 bool js_socket_tls_readable(js_socket_private_t* p);
 
 #ifdef __cplusplus

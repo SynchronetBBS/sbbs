@@ -2808,6 +2808,8 @@ js_install_event(JSContext *cx, uintN argc, jsval *arglist, BOOL once)
 	ev->cx = obj;
 	JS_AddObjectRoot(cx, &ev->cx);
 	ev->cb = ecb;
+	ev->cbobj = JSVAL_TO_OBJECT(argv[1]);
+	JS_AddObjectRoot(cx, &ev->cbobj);
 	ev->id = cb->next_eid++;
 	ev->data.sock = sbbs->client_socket;
 	cb->events = ev;

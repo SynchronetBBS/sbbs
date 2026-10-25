@@ -755,6 +755,17 @@
 - Windows: `Socket.error_str` now reports the actual error for
   errors with a long description (e.g. a connection timeout),
   rather than "Error 122 getting error description"
+- `Socket.connect()` with a callback: a failed resolve or connect
+  now reaches the callback with `is_connected` false and `error` /
+  `error_str` set, instead of appearing connected (the IRC daemon
+  sent its server handshake into dead links to unreachable hubs)
+- Callbacks passed to `js.setTimeout()` / `setInterval()` /
+  `setImmediate()` / `addEventListener()`, `Socket.on()` / `once()` /
+  `connect()` and `console.on()` / `once()` are now GC-rooted and
+  keep their closure scope; a closure capturing a variable crashed
+  when invoked
+- Windows: a script whose only pending events are timers (no
+  sockets) no longer exits with "poll() returned with error 22"
 - New methods: `FileBase.lock()` and `FileBase.unlock()` for
   maintenance scripts that want to keep external writers (e.g.
   the FTP server) out during a lengthy operation

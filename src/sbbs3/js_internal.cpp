@@ -789,6 +789,8 @@ js_setTimeout(JSContext *cx, uintN argc, jsval *arglist)
 	ev->cx = obj;
 	JS_AddObjectRoot(cx, &ev->cx);
 	ev->cb = ecb;
+	ev->cbobj = JSVAL_TO_OBJECT(argv[0]);
+	JS_AddObjectRoot(cx, &ev->cbobj);
 	ev->data.timeout.end = (uint64_t)(now + timeout);
 	ev->id = cb->next_eid++;
 	cb->events = ev;
@@ -823,6 +825,7 @@ js_clear_event(JSContext *cx, jsval *arglist, js_callback_t *cb, enum js_event_t
 			else
 				cb->events = ev->next;
 			JS_RemoveObjectRoot(cx, &ev->cx);
+			JS_RemoveObjectRoot(cx, &ev->cbobj);
 			free(ev);
 		}
 	}
@@ -907,6 +910,8 @@ js_setInterval(JSContext *cx, uintN argc, jsval *arglist)
 	ev->cx = obj;
 	JS_AddObjectRoot(cx, &ev->cx);
 	ev->cb = ecb;
+	ev->cbobj = JSVAL_TO_OBJECT(argv[0]);
+	JS_AddObjectRoot(cx, &ev->cbobj);
 	ev->data.interval.last = now;
 	ev->data.interval.period = (uint64_t)period;
 	ev->id = cb->next_eid++;
@@ -949,6 +954,8 @@ js_setImmediate(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	rqe->func = cbf;
+	rqe->funcobj = JSVAL_TO_OBJECT(argv[0]);
+	JS_AddObjectRoot(cx, &rqe->funcobj);
 	rqe->cx = obj;
 	JS_AddObjectRoot(cx, &rqe->cx);
 	rqe->next = NULL;
@@ -996,6 +1003,8 @@ js_addEventListener(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	listener->func = cbf;
+	listener->funcobj = JSVAL_TO_OBJECT(argv[1]);
+	JS_AddObjectRoot(cx, &listener->funcobj);
 	listener->id = cb->next_eid++;
 	listener->next = cb->listeners;
 	listener->name = name;
@@ -1031,6 +1040,7 @@ js_removeEventListener(JSContext *cx, uintN argc, jsval *arglist)
 		for (listener = cb->listeners, pnext = &cb->listeners; listener; listener = (*pnext)) {
 			if (listener->id == id) {
 				(*pnext) = listener->next;
+				JS_RemoveObjectRoot(cx, &listener->funcobj);
 				free(listener);
 			}
 			else
@@ -1044,6 +1054,7 @@ js_removeEventListener(JSContext *cx, uintN argc, jsval *arglist)
 		for (listener = cb->listeners, pnext = &cb->listeners; listener; listener = (*pnext)) {
 			if (strcmp(listener->name, name) == 0) {
 				(*pnext) = listener->next;
+				JS_RemoveObjectRoot(cx, &listener->funcobj);
 				free(listener);
 			}
 			else
@@ -1094,6 +1105,8 @@ js_dispatchEvent(JSContext *cx, uintN argc, jsval *arglist)
 				return JS_FALSE;
 			}
 			rqe->func = listener->func;
+			rqe->funcobj = listener->funcobj;
+			JS_AddObjectRoot(cx, &rqe->funcobj);
 			rqe->cx = obj;
 			JS_AddObjectRoot(cx, &rqe->cx);
 			rqe->next = NULL;
@@ -1123,6 +1136,7 @@ js_clear_events(JSContext *cx, js_callback_t *cb)
 	for (ev = cb->events, nev = NULL; ev; ev = nev) {
 		nev = ev->next;
 		JS_RemoveObjectRoot(cx, &ev->cx);
+		JS_RemoveObjectRoot(cx, &ev->cbobj);
 		free(ev);
 	}
 	cb->next_eid = 0;
@@ -1131,6 +1145,7 @@ js_clear_events(JSContext *cx, js_callback_t *cb)
 	for (rq = cb->rq_head; rq; rq = nrq) {
 		nrq = rq->next;
 		JS_RemoveObjectRoot(cx, &rq->cx);
+		JS_RemoveObjectRoot(cx, &rq->funcobj);
 		free(rq);
 	}
 	cb->rq_head = NULL;
@@ -1138,6 +1153,7 @@ js_clear_events(JSContext *cx, js_callback_t *cb)
 
 	for (le = cb->listeners; le; le = nle) {
 		nle = le->next;
+		JS_RemoveObjectRoot(cx, &le->funcobj);
 		free(le);
 	}
 	cb->listeners = NULL;
@@ -1160,8 +1176,8 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 	BOOL                   input_locked = FALSE;
 	js_socket_private_t*   jssp;
 	socklen_t              slen;
-	JSFunction*            evf;
 	JSObject*              evo;
+	JSObject*              evfo;
 #ifdef PREFER_POLL
 	struct pollfd *        fds;
 	nfds_t                 sc;
@@ -1171,6 +1187,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 	fd_set                 wfds;
 	struct timeval         tv;
 	SOCKET                 hsock;
+	int                    sret;
 #endif
 
 	if (!cb->events_supported)
@@ -1334,9 +1351,18 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 #ifdef PREFER_POLL
 		switch (poll(fds, cfd, timeout)) {
 #else
-		tv.tv_sec = timeout / 1000;
-		tv.tv_usec = (timeout % 1000) * 1000;
-		switch (select(hsock + 1, &rfds, &wfds, NULL, &tv)) {
+		if (hsock == 0) {
+			// No descriptors: select() would fail with EINVAL on Windows
+			if (timeout > 0)
+				SLEEP(timeout);
+			sret = 0;
+		}
+		else {
+			tv.tv_sec = timeout / 1000;
+			tv.tv_usec = (timeout % 1000) * 1000;
+			sret = select(hsock + 1, &rfds, &wfds, NULL, timeout < 0 ? NULL : &tv);
+		}
+		switch (sret) {
 #endif
 			case 0:     // Timeout
 				JS_RESUMEREQUEST(cx, rc);
@@ -1398,7 +1424,6 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 #else
 						if (FD_ISSET(ev->data.connect.sv[0], &rfds)) {
 #endif
-							closesocket(ev->data.connect.sv[0]);
 							break;
 						}
 #ifdef PREFER_POLL
@@ -1431,16 +1456,18 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				cb->rq_head = rqe->next;
 				if (cb->rq_head == NULL)
 					cb->rq_tail = NULL;
-				ret = JS_CallFunction(cx, rqe->cx, rqe->func, 0, NULL, &rval);
+				ret = JS_CallFunctionValue(cx, rqe->cx, OBJECT_TO_JSVAL(rqe->funcobj), 0, NULL, &rval);
 				JS_RemoveObjectRoot(cx, &rqe->cx);
+				JS_RemoveObjectRoot(cx, &rqe->funcobj);
 				free(rqe);
 			}
 		}
 		else {
-			// Store a copy of object and function pointers
-			evf = ev->cb;
+			// Store rooted copies of the object and function
 			evo = ev->cx;
 			JS_AddObjectRoot(cx, &evo);
+			evfo = ev->cbobj;
+			JS_AddObjectRoot(cx, &evfo);
 
 			// Deal with things before running the callback
 			if (ev->type == JS_EVENT_CONSOLE_INPUT) {
@@ -1448,21 +1475,34 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 					js_do_lock_input(cx, FALSE);
 			}
 			if (ev->type == JS_EVENT_SOCKET_CONNECT) {
+				struct js_connect_result cr;
+				int                      rd = recv(ev->data.connect.sv[0], (char *)&cr, sizeof cr, MSG_WAITALL);
+
+				if (rd != (int)sizeof cr) {
+					// The connect thread exited without reporting
+					cr.error = ECONNABORTED;
+					cr.gai = FALSE;
+				}
 				if ((jssp = (js_socket_private_t*)JS_GetPrivate(cx, ev->cx)) != NULL) {
-					slen = sizeof(jssp->remote_addr.addr);
-					if (getpeername(ev->data.connect.sock, &jssp->remote_addr.addr, &slen) == -1) {
+					jssp->is_connected = (cr.error == 0);
+					if (jssp->is_connected) {
+						slen = sizeof(jssp->remote_addr.addr);
+						if (getpeername(ev->data.connect.sock, &jssp->remote_addr.addr, &slen) == -1) {
+							jssp->is_connected = false;
+							cr.error = SOCKET_ERRNO;
+						}
+					}
+					if (!jssp->is_connected) {
 						memset(&jssp->remote_addr, 0, sizeof(jssp->remote_addr));
 						// This should be zero, but be paranoid
 						jssp->remote_addr.addr.sa_family = AF_UNSPEC;
-						jssp->last_error = errno;
-						socket_strerror(jssp->last_error, jssp->last_error_str, sizeof(jssp->last_error_str));
+						jssp->last_error = cr.error;
+						if (cr.gai)
+							strlcpy(jssp->last_error_str, gai_strerror(cr.error), sizeof(jssp->last_error_str));
+						else
+							socket_strerror(cr.error, jssp->last_error_str, sizeof(jssp->last_error_str));
 					}
 				}
-			}
-
-			// Clean up one-shots before call
-			if (ev->type == JS_EVENT_SOCKET_CONNECT) {
-				// TODO: call recv() and pass result to callback?
 				closesocket(ev->data.connect.sv[0]);
 			}
 
@@ -1477,12 +1517,14 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				else
 					*head = ev->next;
 				JS_RemoveObjectRoot(cx, &ev->cx);
+				JS_RemoveObjectRoot(cx, &ev->cbobj);
 				free(ev);
 				ev = NULL;
 			}
 
-			ret = JS_CallFunction(cx, evo, evf, 0, NULL, &rval);
+			ret = JS_CallFunctionValue(cx, evo, OBJECT_TO_JSVAL(evfo), 0, NULL, &rval);
 			JS_RemoveObjectRoot(cx, &evo);
+			JS_RemoveObjectRoot(cx, &evfo);
 
 			if (ev) {
 				if (ev->type == JS_EVENT_INTERVAL)

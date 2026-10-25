@@ -201,6 +201,7 @@ remove_js_socket_event(JSContext *cx, js_callback_t *cb, SOCKET sock)
 				else
 					cb->events = ev->next;
 				JS_RemoveObjectRoot(cx, &ev->cx);
+				JS_RemoveObjectRoot(cx, &ev->cbobj);
 				free(ev);
 			}
 		}
@@ -214,6 +215,7 @@ remove_js_socket_event(JSContext *cx, js_callback_t *cb, SOCKET sock)
 					cb->events = ev->next;
 				closesocket(ev->data.connect.sv[0]);
 				JS_RemoveObjectRoot(cx, &ev->cx);
+				JS_RemoveObjectRoot(cx, &ev->cbobj);
 				free(ev);
 			}
 		}
@@ -944,15 +946,18 @@ js_connect_event_thread(void *args)
 	struct addrinfo               hints, *res = NULL, *cur;
 	int                           result;
 	ulong                         val;
-	char                          sresult;
+	struct js_connect_result      cr = {0, FALSE};
 
 	SetThreadName("sbbs/jsConnect");
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_socktype = a->socktype;
 	hints.ai_flags = AI_ADDRCONFIG;
 	result = getaddrinfo(a->host, NULL, &hints, &res);
-	if (result != 0)
+	if (result != 0) {
+		cr.error = result;
+		cr.gai = TRUE;
 		goto done;
+	}
 	/* always set to blocking here */
 	val = 0;
 	ioctlsocket(a->sock, FIONBIO, &val);
@@ -963,13 +968,15 @@ js_connect_event_thread(void *args)
 		result = connect(a->sock, cur->ai_addr, cur->ai_addrlen);
 		if (result == 0)
 			break;
+		cr.error = SOCKET_ERRNO;
 	}
-	sresult = result;
+	if (result == 0)
+		cr.error = 0;
 	/* Restore original setting here */
 	ioctlsocket(a->sock, FIONBIO, (ulong*)&(a->nonblocking));
-	send(a->sv[1], &sresult, 1, 0);
 
 done:
+	send(a->sv[1], (char *)&cr, sizeof cr, 0);
 	closesocket(a->sv[1]);
 	freeaddrinfo(res);
 	free(a);
@@ -1030,6 +1037,8 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 	ev->cx = obj;
 	JS_AddObjectRoot(cx, &ev->cx);
 	ev->cb = ecb;
+	ev->cbobj = JSVAL_TO_OBJECT(argv[2]);
+	JS_AddObjectRoot(cx, &ev->cbobj);
 	ev->data.connect.sv[0] = sv[0];
 	ev->data.connect.sv[1] = sv[1];
 	ev->data.connect.sock = p->sock;
@@ -1061,8 +1070,8 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 	}
 	_beginthread(js_connect_event_thread, 0 /* Can be smaller... */, args);
 
-	// Success!
-	p->is_connected = true;
+	// Connect in progress; is_connected is settled when the callback fires
+	p->is_connected = false;
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	return JS_TRUE;
 }
@@ -2122,7 +2131,7 @@ js_get_callback(JSContext *cx)
 }
 
 static void
-js_install_one_socket_event(JSContext *cx, JSObject *obj, JSFunction *ecb, js_callback_t *cb, js_socket_private_t *p, SOCKET sock, enum js_event_type et)
+js_install_one_socket_event(JSContext *cx, JSObject *obj, JSFunction *ecb, JSObject *ecbobj, js_callback_t *cb, js_socket_private_t *p, SOCKET sock, enum js_event_type et)
 {
 	struct js_event_list *ev;
 
@@ -2139,6 +2148,8 @@ js_install_one_socket_event(JSContext *cx, JSObject *obj, JSFunction *ecb, js_ca
 	ev->cx = obj;
 	JS_AddObjectRoot(cx, &ev->cx);
 	ev->cb = ecb;
+	ev->cbobj = ecbobj;
+	JS_AddObjectRoot(cx, &ev->cbobj);
 	ev->data.sock = sock;
 	ev->id = cb->next_eid;
 	p->js_cb = cb;
@@ -2206,12 +2217,12 @@ js_install_event(JSContext *cx, uintN argc, jsval *arglist, bool once)
 	if (p->set) {
 		for (i = 0; i < p->set->sock_count; i++) {
 			if (p->set->socks[i].sock != INVALID_SOCKET)
-				js_install_one_socket_event(cx, obj, ecb, cb, p, p->set->socks[i].sock, et);
+				js_install_one_socket_event(cx, obj, ecb, JSVAL_TO_OBJECT(argv[1]), cb, p, p->set->socks[i].sock, et);
 		}
 	}
 	else {
 		if (p->sock != INVALID_SOCKET)
-			js_install_one_socket_event(cx, obj, ecb, cb, p, p->sock, et);
+			js_install_one_socket_event(cx, obj, ecb, JSVAL_TO_OBJECT(argv[1]), cb, p, p->sock, et);
 	}
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(cb->next_eid));
 	cb->next_eid++;

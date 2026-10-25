@@ -356,6 +356,7 @@ struct js_event_list {
 	struct js_event_list *prev;
 	struct js_event_list *next;
 	JSFunction *cb;
+	JSObject *cbobj;	// GC root for cb
 	JSObject *cx;
 	union {
 		SOCKET	sock;
@@ -369,6 +370,7 @@ struct js_event_list {
 
 struct js_runq_entry {
 	JSFunction *func;
+	JSObject *funcobj;	// GC root for func
 	JSObject *cx;
 	struct js_runq_entry *next;
 };
@@ -376,6 +378,7 @@ struct js_runq_entry {
 struct js_listener_entry {
 	char *name;
 	JSFunction *func;
+	JSObject *funcobj;	// GC root for func
 	int32 id;
 	struct js_listener_entry *next;
 };
