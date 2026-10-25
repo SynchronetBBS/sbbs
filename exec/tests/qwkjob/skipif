@@ -1,0 +1,1 @@
+typeof system.qwk_pack != "function" || !system.matchuser("QWKA")

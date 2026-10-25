@@ -34,6 +34,7 @@ typedef struct {
 	int nodefile;
 	int nodegets;
 	stats_t stats;
+	const qwkjob_host_t* qwkjob_host;
 } js_system_private_t;
 
 extern JSClass js_system_class;
@@ -1856,6 +1857,125 @@ js_notify(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+static js_system_private_t* js_qwkjob_private(JSContext* cx, JSObject* obj)
+{
+	js_system_private_t* sys;
+	if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
+		return NULL;
+	if (sys->qwkjob_host == NULL) {
+		JS_ReportError(cx, "QWK packing not available in this context");
+		return NULL;
+	}
+	return sys;
+}
+
+static JSBool js_qwkjob_target(JSContext* cx, jsval val, uint* usernum)
+{
+	int32 i = 0;
+
+	*usernum = 0;
+	if (JSVAL_IS_NUMBER(val)) {
+		if (!JS_ValueToInt32(cx, val, &i))
+			return JS_FALSE;
+		if (i > 0)
+			*usernum = i;
+		return JS_TRUE;
+	}
+	if (JSVAL_IS_STRING(val))
+		return JS_TRUE;
+	JS_ReportError(cx, "Invalid argument: user number or QWK hub ID expected");
+	return JS_FALSE;
+}
+
+static JSBool js_qwkjob_result(JSContext* cx, jsval* arglist, enum qwkjob_result result
+                               , const uint* msgs, const char* path)
+{
+	JSObject* robj;
+	JSString* js_str;
+
+	if ((robj = JS_NewObject(cx, NULL, NULL, NULL)) == NULL)
+		return JS_FALSE;
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(robj));
+	if ((js_str = JS_NewStringCopyZ(cx, qwkjob_result_str(result))) == NULL)
+		return JS_FALSE;
+	if (!JS_DefineProperty(cx, robj, "result", STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE))
+		return JS_FALSE;
+	if (msgs != NULL
+	    && !JS_DefineProperty(cx, robj, "msgs", UINT_TO_JSVAL(*msgs), NULL, NULL, JSPROP_ENUMERATE))
+		return JS_FALSE;
+	if (path != NULL && result == QWKJOB_OK) {
+		if ((js_str = JS_NewStringCopyZ(cx, path)) == NULL)
+			return JS_FALSE;
+		if (!JS_DefineProperty(cx, robj, "path", STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE))
+			return JS_FALSE;
+	}
+	return JS_TRUE;
+}
+
+static JSBool
+js_qwk_pack(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject*            obj = JS_THIS_OBJECT(cx, arglist);
+	jsval*               argv = JS_ARGV(cx, arglist);
+	js_system_private_t* sys;
+	enum qwkjob_result   result;
+	uint                 usernum;
+	uint                 msgs = 0;
+	char                 path[MAX_PATH + 1] = "";
+	jsrefcount           rc;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if ((sys = js_qwkjob_private(cx, obj)) == NULL)
+		return JS_FALSE;
+	if (!js_qwkjob_target(cx, argv[0], &usernum))
+		return JS_FALSE;
+	if (JSVAL_IS_STRING(argv[0]))
+		result = QWKJOB_BAD_HUB;
+	else {
+		rc = JS_SUSPENDREQUEST(cx);
+		result = qwkjob_pack(sys->cfg, sys->qwkjob_host, usernum, &msgs, path, sizeof path);
+		JS_RESUMEREQUEST(cx, rc);
+	}
+	return js_qwkjob_result(cx, arglist, result, &msgs, path);
+}
+
+static JSBool
+js_qwk_unpack(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject*            obj = JS_THIS_OBJECT(cx, arglist);
+	jsval*               argv = JS_ARGV(cx, arglist);
+	js_system_private_t* sys;
+	enum qwkjob_result   result;
+	uint                 usernum;
+	char*                path = NULL;
+	jsrefcount           rc;
+
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 1))
+		return JS_FALSE;
+	if ((sys = js_qwkjob_private(cx, obj)) == NULL)
+		return JS_FALSE;
+	if (!js_qwkjob_target(cx, argv[0], &usernum))
+		return JS_FALSE;
+	JSVALUE_TO_MSTRING(cx, argv[1], path, NULL);
+	HANDLE_PENDING(cx, path);
+	if (path == NULL) {
+		JS_ReportError(cx, "Invalid packet path");
+		return JS_FALSE;
+	}
+	if (JSVAL_IS_STRING(argv[0]))
+		result = QWKJOB_BAD_HUB;
+	else {
+		rc = JS_SUSPENDREQUEST(cx);
+		result = qwkjob_unpack_rep(sys->cfg, sys->qwkjob_host, usernum, path);
+		JS_RESUMEREQUEST(cx, rc);
+	}
+	free(path);
+	return js_qwkjob_result(cx, arglist, result, NULL, NULL);
+}
+
 static JSBool
 js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -2522,6 +2642,18 @@ static jsSyncMethodSpec js_system_functions[] = {
 	{"notify",          js_notify,          2,  JSTYPE_BOOLEAN, JSDOCSTR("user_number, subject [,message_text] [,reply_to_address]")
 	 , JSDOCSTR("Notify a user or operator via both email and a short text message about an important event")
 	 , 31801},
+	{"qwk_pack",        js_qwk_pack,        1,  JSTYPE_OBJECT,  JSDOCSTR("user_number")
+	 , JSDOCSTR("Create a QWK packet of new messages for the specified (off-line) user in <tt>data/file/</tt>, "
+		        "returns an object with <tt>result</tt> (<tt>\"ok\"</tt>, <tt>\"empty\"</tt>, <tt>\"busy\"</tt>, "
+		        "<tt>\"throttled\"</tt>, <tt>\"user_online\"</tt>, <tt>\"bad_user\"</tt>, <tt>\"bad_hub\"</tt> or "
+		        "<tt>\"failed\"</tt>), <tt>msgs</tt> (number of messages packed) and, upon success, "
+		        "<tt>path</tt> (the packet file created)")
+	 , 322},
+	{"qwk_unpack",      js_qwk_unpack,      2,  JSTYPE_OBJECT,  JSDOCSTR("user_number, path")
+	 , JSDOCSTR("Import a QWK reply (REP) packet from the specified user, returns an object with <tt>result</tt> "
+		        "(see <tt>qwk_pack()</tt>); the packet file is removed upon success or kept as a <tt>.bad</tt> "
+		        "file in <tt>data/file/</tt> upon failure")
+	 , 322},
 	{"newuser",         js_new_user,        1,  JSTYPE_ALIAS },
 	{"new_user",        js_new_user,        1,  JSTYPE_OBJECT,  JSDOCSTR("name/alias [,client object]")
 	 , JSDOCSTR("Create a new user record, returns a new <a href=#User_class>User object</a> representing the new user account, on success.<br>"
@@ -3121,6 +3253,21 @@ JSClass js_system_class = {
 	, JS_ConvertStub         /* convert		*/
 	, js_system_finalize     /* finalize		*/
 };
+
+#ifndef JSDOOR
+bool js_SetSystemQwkjobHost(JSContext* cx, JSObject* glob, const qwkjob_host_t* host)
+{
+	jsval                val;
+	js_system_private_t* sys;
+
+	if (!JS_GetProperty(cx, glob, "system", &val) || !JSVAL_IS_OBJECT(val) || JSVAL_IS_NULL(val))
+		return false;
+	if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, JSVAL_TO_OBJECT(val), &js_system_class)) == NULL)
+		return false;
+	sys->qwkjob_host = host;
+	return true;
+}
+#endif
 
 JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
                                 , scfg_t* cfg, time_t uptime, const char* host_name, const char* socklib_desc, struct mqtt* mqtt)

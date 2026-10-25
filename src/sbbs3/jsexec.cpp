@@ -896,6 +896,15 @@ static bool js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 	return true;
 }
 
+#ifndef JSDOOR
+static int qwkjob_lputs(void* cbdata, int level, const char* str)
+{
+	return lprintf(level, "%s", str);
+}
+
+static qwkjob_host_t qwkjob_host;
+#endif
+
 static bool js_init(char** env)
 {
 	memset(&startup, 0, sizeof(startup));
@@ -921,6 +930,19 @@ static bool js_init(char** env)
 		JS_ENDREQUEST(js_cx);
 		return false;
 	}
+
+#ifndef JSDOOR
+	qwkjob_host.name = "jsexec";
+	qwkjob_host.host_name = host_name;
+	qwkjob_host.lputs = qwkjob_lputs;
+	qwkjob_host.temp_root = scfg.temp_dir;
+	qwkjob_host.terminated = &terminated;
+	qwkjob_host.text = text;
+	if (!js_SetSystemQwkjobHost(js_cx, js_glob, &qwkjob_host)) {
+		JS_ENDREQUEST(js_cx);
+		return false;
+	}
+#endif
 
 	/* Environment Object (associative array) */
 	if (!js_CreateEnvObject(js_cx, js_glob, env)) {

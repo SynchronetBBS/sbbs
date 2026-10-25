@@ -1626,6 +1626,7 @@ extern "C" {
 													,const char* socklib_desc
 													,struct mqtt*);
 	DLLEXPORT JSBool	js_CreateTextProperties(JSContext* cx, JSObject* parent);
+	DLLEXPORT bool		js_SetSystemQwkjobHost(JSContext*, JSObject* glob, const qwkjob_host_t*);
 
 	/* js_client.c */
 #ifdef USE_CRYPTLIB
