@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.97o
-                           Release date: 2026-07-18
+                                 Version 1.97p
+                           Release date: 2026-10-24
 
                                      by
 
@@ -856,6 +856,10 @@ showUserResponsesInTallyInfo          For poll messages or messages with upvotes
                                       show each users' responses. If false, it
                                       will just show the names of who voted on
                                       the message (and when).
+
+displayMsgSAUCE                       Whether or not to display SAUCE
+                                      information if a message has it. Defaults
+                                      to false.
 
 DDMsgAreaChooser                      The full path & filename of
                                       DDMsgAreaChooser.js, if it's not in

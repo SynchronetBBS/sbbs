@@ -5,6 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97p    2026-10-24   New: Thread view when reading messages (using the * key).
+                      With help from Cursor AI.
+                      Added the (optional) ability to display SAUCE info. With
+					  help from Cursor AI.
+                      Fix: Lightbar message list alignment change suggested by
+                      Claude, from Nelgin.
 1.97o    2026-07-18   Bug fix: Improved filtering for personal email to ensure
                       exact user matching for reading personal email, including
                       usernames with similar beginnings. Reported by Nelgin.
