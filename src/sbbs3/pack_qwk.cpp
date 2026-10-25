@@ -35,7 +35,7 @@ static bool fclose_checked(FILE* fp)
 /****************************************************************************/
 /* Creates QWK packet, returning 1 if successful, 0 if not. 				*/
 /****************************************************************************/
-bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
+bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack, enum qwkjob_result* reason)
 {
 	char        str[MAX_PATH + 1], ch;
 	char        tmp[MAX_PATH + 1];
@@ -68,11 +68,15 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	const char* p;
 	const char* fmode;
 
+	if (reason != NULL)
+		*reason = QWKJOB_FAILED;
 	ex = EX_STDOUT;
 	if (prepack) {
 		ex |= EX_OFFLINE;
 		if (user_is_online(&cfg, useron.number)) { /* Don't pre-pack with user online */
 			lprintf(LOG_NOTICE, "User #%u is concurrently logged-in, QWK packet creation aborted", useron.number);
+			if (reason != NULL)
+				*reason = QWKJOB_USER_ONLINE;
 			return false;
 		}
 	}
@@ -728,6 +732,8 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	    && (prepack || !preqwk)) {
 		if (online == ON_REMOTE)
 			bputs(text[QWKNoNewMessages]);
+		if (reason != NULL)
+			*reason = QWKJOB_EMPTY;
 		return false;
 	}
 
@@ -767,6 +773,8 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	if (prepack) {
 		if (user_is_online(&cfg, useron.number)) { /* Don't pre-pack with user online */
 			lprintf(LOG_NOTICE, "User #%u is concurrently logged-in, QWK packet creation aborted", useron.number);
+			if (reason != NULL)
+				*reason = QWKJOB_USER_ONLINE;
 			return false;
 		}
 	}
@@ -809,5 +817,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			closedir(dir);
 	}
 
+	if (reason != NULL)
+		*reason = QWKJOB_OK;
 	return true;
 }

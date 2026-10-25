@@ -308,6 +308,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "getmail.h"
 #include "msg_id.h"
 #include "mqtt.h"
+#include "qwkjob.h"
 #if defined(__cplusplus)
 extern "C" {
 /*
@@ -476,6 +477,8 @@ public:
 	}
 };
 
+#define TIMEOUT_MUTEX_FILE      (12 * 60 * 60)
+
 class sbbs_t
 {
 
@@ -483,11 +486,16 @@ public:
 
 	sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const char* host_name, SOCKET
 		,scfg_t*, char* text[], client_t* client_info, bool is_event_thread = false);
+	sbbs_t(const qwkjob_host_t*, scfg_t*, const char* temp_dir);
 	~sbbs_t();
 
 	bbs_startup_t*	startup;
+	const qwkjob_host_t* job_host = nullptr;
+	bbs_startup_t	job_startup{};
 
 	bool	init(void);
+	bool	init_job(uint usernum);
+	bool	alloc_area_arrays(void);
 	bool	terminated = false;
 
 	client_t client{};
@@ -1356,7 +1364,7 @@ public:
 	void	qwk_handle_remaining_votes(str_list_t* ini, smb_net_type_t, const char* qnet_id, int hubnum = -1);
 
 	/* pack_qwk.cpp */
-	bool	pack_qwk(char *packet, uint *msgcnt, bool prepack);
+	bool	pack_qwk(char *packet, uint *msgcnt, bool prepack, enum qwkjob_result* reason = NULL);
 
 	/* un_qwk.cpp */
 	bool	unpack_qwk(char *packet,uint hubnum);

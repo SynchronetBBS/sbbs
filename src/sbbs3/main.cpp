@@ -56,7 +56,6 @@ static const char* qhubIniSection = "QWK_NetworkHubs";
 
 #define TIMEOUT_THREAD_WAIT     60          // Seconds (was 15)
 #define IO_THREAD_BUF_SIZE      20000       // Bytes
-#define TIMEOUT_MUTEX_FILE      12 * 60 * 60
 
 #ifdef USE_CRYPTLIB
 
@@ -378,6 +377,11 @@ int sbbs_t::lputs(int level, const char* str)
 				fprintlog(&cfg, &logfile_fp, msg);
 		}
 		return ::eputs(level, msg);
+	}
+	if (job_host != nullptr) {
+		if (job_host->lputs == nullptr)
+			return 0;
+		return job_host->lputs(job_host->cbdata, level, msg);
 	}
 	return ::lputs(level, msg);
 }
@@ -3691,11 +3695,140 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 }
 
 //****************************************************************************
+// A headless instance for a QWK job (see qwkjob.cpp), hosted by any server
+//****************************************************************************
+sbbs_t::sbbs_t(const qwkjob_host_t* host, scfg_t* global_cfg, const char* temp_dir)
+{
+	job_host = host;
+	is_event_thread = host->is_event_thread;
+	if (host->event_code != nullptr)
+		event_code = host->event_code;
+	if (host->name != nullptr)
+		SAFECOPY(client_name, host->name);
+	if (host->startup != nullptr)
+		startup = const_cast<bbs_startup_t*>(host->startup);
+	else
+		startup = &job_startup;
+	mqtt = host->mqtt;
+
+	memcpy(&cfg, global_cfg, sizeof(cfg));
+	cfg.node_num = 0;
+	SAFECOPY(cfg.temp_dir, temp_dir);
+
+	client_socket = INVALID_SOCKET;
+	client_socket_dup = INVALID_SOCKET;
+	telnet_ack_event = nullptr;
+
+	listInit(&smb_list, /* flags: */ 0);
+	pthread_mutex_init(&nodefile_mutex, NULL);
+
+	for (uint i = 0; i < TOTAL_TEXT; i++)
+		text[i] = text_sav[i] = host->text[i];
+	cfg.text = text;
+
+	memcpy(rainbow, cfg.rainbow, sizeof rainbow);
+}
+
+//****************************************************************************
+bool sbbs_t::alloc_area_arrays()
+{
+	int i, j, k, l;
+
+	if (cfg.total_grps) {
+
+		usrgrp_total = cfg.total_grps;
+
+		if ((cursub = (int *)malloc(sizeof(int) * usrgrp_total)) == NULL) {
+			errormsg(WHERE, ERR_ALLOC, "cursub", sizeof(int) * usrgrp_total);
+			return false;
+		}
+
+		if ((usrgrp = (int *)malloc(sizeof(int) * usrgrp_total)) == NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrgrp", sizeof(int) * usrgrp_total);
+			return false;
+		}
+
+		if ((usrsubs = (int *)malloc(sizeof(int) * usrgrp_total)) == NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrsubs", sizeof(int) * usrgrp_total);
+			return false;
+		}
+
+		if ((usrsub = (int **)calloc(usrgrp_total, sizeof(int *))) == NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrsub", sizeof(int) * usrgrp_total);
+			return false;
+		}
+	}
+	if (cfg.total_subs) {
+		if ((subscan = (subscan_t *)calloc(cfg.total_subs, sizeof(subscan_t))) == NULL) {
+			errormsg(WHERE, ERR_ALLOC, "subscan", sizeof(subscan_t) * cfg.total_subs);
+			return false;
+		}
+	}
+
+	for (i = l = 0; i < cfg.total_grps; i++) {
+		for (j = k = 0; j < cfg.total_subs; j++)
+			if (cfg.sub[j]->grp == i)
+				k++;    /* k = number of subs per grp[i] */
+		if (k > l)
+			l = k;        /* l = the largest number of subs per grp */
+	}
+	if (l)
+		for (i = 0; i < cfg.total_grps; i++)
+			if ((usrsub[i] = (int *)malloc(sizeof(int) * l)) == NULL) {
+				errormsg(WHERE, ERR_ALLOC, "usrsub[x]", sizeof(int) * l);
+				return false;
+			}
+
+	if (cfg.total_libs) {
+
+		usrlib_total = cfg.total_libs;
+
+		if ((curdir = (int *)malloc(sizeof(int) * usrlib_total)) == NULL) {
+			errormsg(WHERE, ERR_ALLOC, "curdir", sizeof(int) * usrlib_total);
+			return false;
+		}
+
+		if ((usrlib = (int *)malloc(sizeof(int) * usrlib_total)) == NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrlib", sizeof(int) * usrlib_total);
+			return false;
+		}
+
+		if ((usrdirs = (int *)malloc(sizeof(uint) * usrlib_total)) == NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrdirs", sizeof(int) * usrlib_total);
+			return false;
+		}
+
+		if ((usrdir = (int **)calloc(usrlib_total, sizeof(int *))) == NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrdir", sizeof(int) * usrlib_total);
+			return false;
+		}
+	}
+
+	for (i = l = 0; i < cfg.total_libs; i++) {
+		for (j = k = 0; j < cfg.total_dirs; j++)
+			if (cfg.dir[j]->lib == i)
+				k++;
+		if (k > l)
+			l = k;        /* l = largest number of dirs in a lib */
+	}
+	if (l) {
+		l++;    /* for temp dir */
+		for (i = 0; i < cfg.total_libs; i++)
+			if ((usrdir[i] = (int *)malloc(sizeof(int) * l)) == NULL) {
+				errormsg(WHERE, ERR_ALLOC, "usrdir[x]", sizeof(int) * l);
+				return false;
+			}
+	}
+
+	return true;
+}
+
+//****************************************************************************
 bool sbbs_t::init()
 {
 	char str[MAX_PATH + 1];
 	int result;
-	int i, j, k, l;
+	int i;
 	node_t node;
 	socklen_t addr_len;
 	union xp_sockaddr addr;
@@ -3836,91 +3969,8 @@ bool sbbs_t::init()
 	memset(main_csi.str, 0, 1024);
 /***/
 
-	if (cfg.total_grps) {
-
-		usrgrp_total = cfg.total_grps;
-
-		if ((cursub = (int *)malloc(sizeof(int) * usrgrp_total)) == NULL) {
-			errormsg(WHERE, ERR_ALLOC, "cursub", sizeof(int) * usrgrp_total);
-			return false;
-		}
-
-		if ((usrgrp = (int *)malloc(sizeof(int) * usrgrp_total)) == NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrgrp", sizeof(int) * usrgrp_total);
-			return false;
-		}
-
-		if ((usrsubs = (int *)malloc(sizeof(int) * usrgrp_total)) == NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrsubs", sizeof(int) * usrgrp_total);
-			return false;
-		}
-
-		if ((usrsub = (int **)calloc(usrgrp_total, sizeof(int *))) == NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrsub", sizeof(int) * usrgrp_total);
-			return false;
-		}
-	}
-	if (cfg.total_subs) {
-		if ((subscan = (subscan_t *)calloc(cfg.total_subs, sizeof(subscan_t))) == NULL) {
-			errormsg(WHERE, ERR_ALLOC, "subscan", sizeof(subscan_t) * cfg.total_subs);
-			return false;
-		}
-	}
-
-	for (i = l = 0; i < cfg.total_grps; i++) {
-		for (j = k = 0; j < cfg.total_subs; j++)
-			if (cfg.sub[j]->grp == i)
-				k++;    /* k = number of subs per grp[i] */
-		if (k > l)
-			l = k;        /* l = the largest number of subs per grp */
-	}
-	if (l)
-		for (i = 0; i < cfg.total_grps; i++)
-			if ((usrsub[i] = (int *)malloc(sizeof(int) * l)) == NULL) {
-				errormsg(WHERE, ERR_ALLOC, "usrsub[x]", sizeof(int) * l);
-				return false;
-			}
-
-	if (cfg.total_libs) {
-
-		usrlib_total = cfg.total_libs;
-
-		if ((curdir = (int *)malloc(sizeof(int) * usrlib_total)) == NULL) {
-			errormsg(WHERE, ERR_ALLOC, "curdir", sizeof(int) * usrlib_total);
-			return false;
-		}
-
-		if ((usrlib = (int *)malloc(sizeof(int) * usrlib_total)) == NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrlib", sizeof(int) * usrlib_total);
-			return false;
-		}
-
-		if ((usrdirs = (int *)malloc(sizeof(uint) * usrlib_total)) == NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrdirs", sizeof(int) * usrlib_total);
-			return false;
-		}
-
-		if ((usrdir = (int **)calloc(usrlib_total, sizeof(int *))) == NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrdir", sizeof(int) * usrlib_total);
-			return false;
-		}
-	}
-
-	for (i = l = 0; i < cfg.total_libs; i++) {
-		for (j = k = 0; j < cfg.total_dirs; j++)
-			if (cfg.dir[j]->lib == i)
-				k++;
-		if (k > l)
-			l = k;        /* l = largest number of dirs in a lib */
-	}
-	if (l) {
-		l++;    /* for temp dir */
-		for (i = 0; i < cfg.total_libs; i++)
-			if ((usrdir[i] = (int *)malloc(sizeof(int) * l)) == NULL) {
-				errormsg(WHERE, ERR_ALLOC, "usrdir[x]", sizeof(int) * l);
-				return false;
-			}
-	}
+	if (!alloc_area_arrays())
+		return false;
 
 #ifdef USE_CRYPTLIB
 	pthread_mutex_init(&ssh_mutex, NULL);
@@ -3935,6 +3985,62 @@ bool sbbs_t::init()
 
 	online = ON_REMOTE;
 
+	return true;
+}
+
+// Swallows terminal output: a QWK job has no client to send it to
+class qwkjob_terminal : public Terminal {
+public:
+	qwkjob_terminal(sbbs_t* sbbsptr) : Terminal(sbbsptr) {}
+	void carriage_return() override {}
+	void line_feed(unsigned count = 1) override {}
+	void backspace(unsigned int count = 1) override {}
+	void newline(unsigned count = 1, bool no_bg_attr = false) override {}
+	void clearscreen() override {}
+	void cleartoeol() override {}
+	void clearline() override {}
+	void cursor_down(unsigned count = 1) override {}
+	void cursor_right(unsigned count = 1) override {}
+	void cursor_left(unsigned count = 1) override {}
+};
+
+//****************************************************************************
+// The subset of init() a QWK job needs (user number 0 = no user)
+//****************************************************************************
+bool sbbs_t::init_job(uint usernum)
+{
+	int i;
+
+	online = ON_LOCAL;
+	term_output_disabled = true;
+	RingBufInit(&inbuf, IO_THREAD_BUF_SIZE);
+	RingBufInit(&outbuf, IO_THREAD_BUF_SIZE);
+
+	if ((comspec = os_cmdshell()) == NULL) {
+		errormsg(WHERE, ERR_CHK, OS_CMD_SHELL_ENV_VAR " environment variable", 0);
+		return false;
+	}
+
+	if ((i = md(cfg.temp_dir)) != 0) {
+		errprintf(LOG_CRIT, WHERE, "!ERROR %d (%s) creating directory: %s", i, strerror(i), cfg.temp_dir);
+		return false;
+	}
+
+	if (!alloc_area_arrays())
+		return false;
+	// Before creating term: it would take its dimensions from the (zeroed) job startup
+	reset_logon_vars();
+	if (term == nullptr)
+		term = new qwkjob_terminal(this);
+
+	if (usernum == 0)
+		return true;
+	if (!getuseron(WHERE, usernum))
+		return false;
+	getmsgptrs();
+	getusrsubs();
+	getusrdirs();
+	last_ns_time = ns_time = useron.ns_time;
 	return true;
 }
 

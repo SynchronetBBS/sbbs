@@ -90,6 +90,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/putmsg$(OFILE)\
 			$(MTOBJODIR)/putnode$(OFILE)\
 			$(MTOBJODIR)/qwk$(OFILE)\
+			$(MTOBJODIR)/qwkjob$(OFILE)\
 			$(MTOBJODIR)/qwktomsg$(OFILE)\
 			$(MTOBJODIR)/readmail$(OFILE)\
 			$(MTOBJODIR)/readmsgs$(OFILE)\
