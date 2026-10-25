@@ -94,7 +94,7 @@ static bool qwkjob_terminated(const qwkjob_host_t* host)
 
 static bool qwkjob_lock_user(scfg_t* cfg, const qwkjob_host_t* host, uint usernum, fmutex_t* lock)
 {
-	SAFEPRINTF2(lock->name, "%spack%04u.lock", cfg->data_dir, usernum);
+	qwkjob_user_lock_name(cfg, usernum, lock->name, sizeof lock->name);
 	if (fmutex_open(lock, qwkjob_host_name(host), TIMEOUT_MUTEX_FILE))
 		return true;
 	qwkjob_lprintf(host, LOG_DEBUG, "%s exists (job in progress?)", lock->name);
@@ -301,6 +301,12 @@ static bool qwkjob_path_in_dir(const char* path, const char* dir)
 }
 
 extern "C" {
+
+char* qwkjob_user_lock_name(const scfg_t* cfg, uint usernum, char* buf, size_t size)
+{
+	snprintf(buf, size, "%spack%04u.lock", cfg->data_dir, usernum);
+	return buf;
+}
 
 const char* qwkjob_result_str(enum qwkjob_result result)
 {

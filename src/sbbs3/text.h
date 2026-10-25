@@ -1003,6 +1003,7 @@ enum text {
 	,UserNoun
 	,UsersNoun
 	,ProcessingUploadedFile
+	,QWKTransferInProgress
 
 	,TOTAL_TEXT
 };

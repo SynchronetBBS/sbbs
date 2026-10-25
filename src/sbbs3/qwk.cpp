@@ -422,6 +422,13 @@ bool sbbs_t::qwk_download()
 		saved[i].ptr = subscan[i].ptr;
 		saved[i].last = subscan[i].last;
 	}
+	fmutex_t lock = fmutex_init();
+	qwkjob_user_lock_name(&cfg, useron.number, lock.name, sizeof lock.name);
+	if (!fmutex_open(&lock, startup->host_name, TIMEOUT_MUTEX_FILE)) {
+		bputs(text[QWKTransferInProgress]);
+		free(saved);
+		return false;
+	}
 	snprintf(path, sizeof path, "%s%s.qwk", cfg.temp_dir, cfg.sys_id);
 	snprintf(fname, sizeof fname, "%s.qwk", cfg.sys_id);
 	remove(path);
@@ -465,6 +472,8 @@ bool sbbs_t::qwk_download()
 		}
 		last_ns_time = ns_time;
 	}
+	if (!fmutex_close(&lock))
+		errormsg(WHERE, ERR_REMOVE, lock.name, 0);
 	delfiles(cfg.temp_dir, ALLFILES); /* the packet and the files pack_qwk() built it from (#1260) */
 	free(saved);
 	return sent;
@@ -496,7 +505,16 @@ bool sbbs_t::qwk_upload()
 	getusrdirs();
 	if (useron.rest & UREST_QWK_NODE)
 		getusrsubs();
+	fmutex_t lock = fmutex_init();
+	qwkjob_user_lock_name(&cfg, useron.number, lock.name, sizeof lock.name);
+	if (!fmutex_open(&lock, startup->host_name, TIMEOUT_MUTEX_FILE)) {
+		bputs(text[QWKTransferInProgress]);
+		delfiles(cfg.temp_dir, ALLFILES);
+		return false;
+	}
 	bool result = unpack_rep();
+	if (!fmutex_close(&lock))
+		errormsg(WHERE, ERR_REMOVE, lock.name, 0);
 	delfiles(cfg.temp_dir, ALLFILES);
 	return result;
 }

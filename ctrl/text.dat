@@ -1181,3 +1181,4 @@
 "User"                                                       984 UserNoun
 "Users"                                                      985 UsersNoun
 "\r\n\1n\1hProcessing uploaded file \1c@FILE_NAME@\1n@ELLIPSIS@\r\n" 986 ProcessingUploadedFile
+"\1_\1w\1hQWK packet transfer already in progress elsewhere\r\n"  987 QWKTransferInProgress

@@ -72,6 +72,9 @@ DLLEXPORT enum qwkjob_result qwkjob_unpack_rep(scfg_t*, const qwkjob_host_t*
 
 DLLEXPORT const char* qwkjob_result_str(enum qwkjob_result);
 
+/* Path of the fmutex lock file that serializes QWK jobs for one user */
+DLLEXPORT char* qwkjob_user_lock_name(const scfg_t*, uint usernum, char* buf, size_t size);
+
 #ifdef __cplusplus
 }
 #endif
