@@ -504,6 +504,7 @@ VOID uart_rdport(WORD port, PBYTE data)
 __declspec(dllexport) void __cdecl VDDDispatch(void)
 {
 	char                    str[512];
+	char                    instance[32];
 	DWORD                   count;
 	DWORD                   msgs;
 	int                     retval;
@@ -539,7 +540,19 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			fp = fopen(str, "wb");
 #endif
 
-			sprintf(str, "\\\\.\\mailslot\\sbbsexec\\wr%d", node_num);
+			/* The host sets this when it had to use instance-specific object names */
+			instance[0] = '.';
+			count = GetEnvironmentVariable(SBBSEXEC_INSTANCE_ENVVAR, instance + 1, sizeof(instance) - 1);
+			if (count == 0)
+				instance[0] = '\0';
+			else if (count >= sizeof(instance) - 1) {
+				lprintf(LOG_ERR, "!VDD_OPEN: %s value too long (%u chars)", SBBSEXEC_INSTANCE_ENVVAR, count);
+				retval = 5;
+				break;
+			} else
+				lprintf(LOG_INFO, "Instance: %s", instance + 1);
+
+			sprintf(str, SBBSEXEC_WR_MAILSLOT_FMT, node_num, instance);
 			rdslot = CreateMailslot(str
 			                        , 0 //LINEAR_RX_BUFLEN		/* Max message size (0=any) */
 			                        , MAILSLOT_WAIT_FOREVER /* Read timeout */
@@ -551,7 +564,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				break;
 			}
 
-			sprintf(str, "\\\\.\\mailslot\\sbbsexec\\rd%d", node_num);
+			sprintf(str, SBBSEXEC_RD_MAILSLOT_FMT, node_num, instance);
 			wrslot = CreateFile(str
 			                    , GENERIC_WRITE
 			                    , FILE_SHARE_READ
@@ -571,7 +584,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				break;
 			}
 
-			sprintf(str, "sbbsexec_hungup%d", node_num);
+			sprintf(str, SBBSEXEC_HUNGUP_EVENT_FMT, node_num, instance);
 			hungup_event = OpenEvent(
 				EVENT_ALL_ACCESS,   /* access flag  */
 				FALSE,              /* inherit flag  */
@@ -583,7 +596,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				break;
 			}
 
-			sprintf(str, "sbbsexec_hangup%d", node_num);
+			sprintf(str, SBBSEXEC_HANGUP_EVENT_FMT, node_num, instance);
 			hangup_event = OpenEvent(
 				EVENT_ALL_ACCESS,   /* access flag  */
 				FALSE,              /* inherit flag  */
@@ -593,7 +606,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				        , GetLastError(), str);
 			}
 
-			sprintf(str, "sbbsexec_carrier%d", node_num);
+			sprintf(str, SBBSEXEC_CARRIER_EVENT_FMT, node_num, instance);
 			carrier_event = OpenEvent(
 				EVENT_ALL_ACCESS,   /* access flag  */
 				FALSE,              /* inherit flag  */

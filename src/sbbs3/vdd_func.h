@@ -56,3 +56,15 @@ typedef struct {
 #define SBBSEXEC_MODE_UART          (1 << 2)
 #define SBBSEXEC_MODE_FOSSIL        (1 << 3)
 #define SBBSEXEC_MODE_DEFAULT       (SBBSEXEC_MODE_UART | SBBSEXEC_MODE_FOSSIL)
+
+/* Objects shared between the BBS host (e.g. xtrn.cpp) and the VDD (sbbsexec.c) */
+/* Each is formatted with the node number followed by an instance suffix: */
+/* "" normally, or ".<value>" when the host set SBBSEXEC_INSTANCE_ENVVAR in */
+/* the VDM's environment (so multiple BBS hosts on one system can run */
+/* DOS programs for the same node number concurrently). */
+#define SBBSEXEC_INSTANCE_ENVVAR    "SBBSEXEC_INSTANCE"
+#define SBBSEXEC_RD_MAILSLOT_FMT    "\\\\.\\mailslot\\sbbsexec\\rd%d%s"
+#define SBBSEXEC_WR_MAILSLOT_FMT    "\\\\.\\mailslot\\sbbsexec\\wr%d%s"
+#define SBBSEXEC_HUNGUP_EVENT_FMT   "sbbsexec_hungup%d%s"
+#define SBBSEXEC_HANGUP_EVENT_FMT   "sbbsexec_hangup%d%s"
+#define SBBSEXEC_CARRIER_EVENT_FMT  "sbbsexec_carrier%d%s"

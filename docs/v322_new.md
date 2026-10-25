@@ -181,6 +181,12 @@
   Logon/New User fixed event, pausing first if the user may not
   have seen text still on the screen (e.g. for a logon program
   that clears the screen itself, issue #1243)
+- Windows: DOS doors (via `sbbsexec.dll`) can now run concurrently on
+  the same node number from two BBS instances on one system (e.g.
+  two Synchronet installs, or another BBS package that uses the
+  Synchronet FOSSIL/UART driver), without requiring distinct node
+  number ranges; an updated `sbbsexec.dll` is needed on the second
+  instance
 - WWIV `CHAIN.TXT` drop file: the time-of-call and time-used fields
   (lines 24 and 25) are now populated rather than always zero
 - `PCBOARD.SYS` drop file: the download-allowance, conference and

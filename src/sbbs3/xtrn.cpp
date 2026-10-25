@@ -364,6 +364,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 	HANDLE              start_event = NULL;
 	HANDLE              hungup_event = NULL;
 	HANDLE              hangup_event = NULL;
+	char                vdd_instance[32] = ""; // suffix for VDD object names
 	HANDLE              rdoutpipe;
 	HANDLE              wrinpipe;
 	PROCESS_INFORMATION process_info;
@@ -565,40 +566,95 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 			        , x64 ? "x64" : "NT", cfg.node_num, i);
 			strcat(fullcmdline, str);
 
-			sprintf(str, "sbbsexec_hungup%d", cfg.node_num);
-			if ((hungup_event = CreateEvent(
-					 NULL // pointer to security attributes
-					 , TRUE // flag for manual-reset event
-					 , FALSE // flag for initial state
-					 , str // pointer to event-object name
-					 )) == NULL) {
+			// Another BBS host on this system may hold these names for the same
+			// node number: try the legacy names first, then process-unique ones.
+			// The mailslot goes first since its name is machine-global and
+			// CreateMailslot() fails atomically when it exists (events are
+			// session-local, so can't arbitrate across sessions).
+			for (int attempt = 0;; attempt++) {
+				bool collision = false;
+				sprintf(str, SBBSEXEC_RD_MAILSLOT_FMT, cfg.node_num, vdd_instance);
+				rdslot = CreateMailslot(str
+				                        , sizeof(buf) / 2 // Maximum message size (0=unlimited)
+				                        , 0 // Read time-out
+				                        , NULL); // Security
+				if (rdslot == INVALID_HANDLE_VALUE) {
+					if (GetLastError() != ERROR_ALREADY_EXISTS || attempt > 0) {
+						XTRN_CLEANUP;
+						errormsg(WHERE, ERR_CREATE, str, 0);
+						return GetLastError();
+					}
+					collision = true;
+				}
+
+				if (!collision) {
+					sprintf(str, SBBSEXEC_HUNGUP_EVENT_FMT, cfg.node_num, vdd_instance);
+					if ((hungup_event = CreateEvent(
+							 NULL // pointer to security attributes
+							 , TRUE // flag for manual-reset event
+							 , FALSE // flag for initial state
+							 , str // pointer to event-object name
+							 )) == NULL) {
+						XTRN_CLEANUP;
+						errormsg(WHERE, ERR_CREATE, str, 0);
+						return GetLastError();
+					}
+					if (GetLastError() == ERROR_ALREADY_EXISTS)
+						collision = true;
+				}
+
+				if (!collision) {
+					sprintf(str, SBBSEXEC_HANGUP_EVENT_FMT, cfg.node_num, vdd_instance);
+					if ((hangup_event = CreateEvent(
+							 NULL // pointer to security attributes
+							 , TRUE // flag for manual-reset event
+							 , FALSE // flag for initial state
+							 , str // pointer to event-object name
+							 )) == NULL) {
+						XTRN_CLEANUP;
+						errormsg(WHERE, ERR_CREATE, str, 0);
+						return GetLastError();
+					}
+					if (GetLastError() == ERROR_ALREADY_EXISTS)
+						collision = true;
+				}
+
+				if (!collision)
+					break;
+
+				if (attempt > 0) {
+					XTRN_CLEANUP;
+					errormsg(WHERE, ERR_CREATE, str, 0);
+					return GetLastError();
+				}
+				lprintf(LOG_NOTICE, "Node %d VDD object (%s) already exists, using instance-specific names"
+				        , cfg.node_num, str);
 				XTRN_CLEANUP;
-				errormsg(WHERE, ERR_CREATE, str, 0);
-				return GetLastError();
+				rdslot = INVALID_HANDLE_VALUE;
+				hungup_event = NULL;
+				hangup_event = NULL;
+				SAFEPRINTF(vdd_instance, ".%u", (unsigned)GetCurrentProcessId());
 			}
 
-			sprintf(str, "sbbsexec_hangup%d", cfg.node_num);
-			if ((hangup_event = CreateEvent(
-					 NULL // pointer to security attributes
-					 , TRUE // flag for manual-reset event
-					 , FALSE // flag for initial state
-					 , str // pointer to event-object name
-					 )) == NULL) {
-				XTRN_CLEANUP;
-				errormsg(WHERE, ERR_CREATE, str, 0);
-				return GetLastError();
-			}
-
-			sprintf(str, "\\\\.\\mailslot\\sbbsexec\\rd%d"
-			        , cfg.node_num);
-			rdslot = CreateMailslot(str
-			                        , sizeof(buf) / 2 // Maximum message size (0=unlimited)
-			                        , 0 // Read time-out
-			                        , NULL); // Security
-			if (rdslot == INVALID_HANDLE_VALUE) {
-				XTRN_CLEANUP;
-				errormsg(WHERE, ERR_CREATE, str, 0);
-				return GetLastError();
+			if (vdd_instance[0] != '\0') {
+				// Tell the VDD (loaded by the VDM we're about to create) which suffix to use
+				if ((env_list = strListInit()) == NULL) {
+					XTRN_CLEANUP;
+					errormsg(WHERE, ERR_CREATE, "env_list", 0);
+					return errno;
+				}
+				add_env_var(&env_list, SBBSEXEC_INSTANCE_ENVVAR, vdd_instance + 1);
+				env_strings = GetEnvironmentStrings();
+				env_block = strListCopyBlock(env_strings);
+				if (env_strings != NULL)
+					FreeEnvironmentStrings(env_strings);
+				env_block = strListAppendBlock(env_block, env_list);
+				strListFree(&env_list);
+				if (env_block == NULL) {
+					XTRN_CLEANUP;
+					errormsg(WHERE, ERR_CREATE, "env_block", 0);
+					return errno;
+				}
 			}
 		}
 	}
@@ -753,8 +809,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 			wr = RingBufPeek(&inbuf, buf, sizeof(buf));
 			if (wr) {
 				if (!use_pipes && wrslot == INVALID_HANDLE_VALUE) {
-					sprintf(str, "\\\\.\\mailslot\\sbbsexec\\wr%d"
-					        , cfg.node_num);
+					sprintf(str, SBBSEXEC_WR_MAILSLOT_FMT, cfg.node_num, vdd_instance);
 					wrslot = CreateFile(str
 					                    , GENERIC_WRITE
 					                    , FILE_SHARE_READ
