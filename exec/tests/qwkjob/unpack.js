@@ -66,13 +66,15 @@ if (total_msgs("qwkt-b") != before + 1)
 if (file_exists(rep))
 	throw new Error("good REP left behind: " + rep);
 
-// Garbage REPs: "failed", kept as a .bad file
+// Garbage REPs: "failed"; an empty one is removed, any other kept as a .bad file
 var bad_start = time();
 var f = new File(temp + "empty.rep");
 f.open("w"); f.close();
 r = system.qwk_unpack(u, f.name);
 if (r.result != "failed")
 	throw new Error("0-byte REP: " + JSON.stringify(r));
+if (file_exists(f.name))
+	throw new Error("0-byte REP left behind: " + f.name);
 f = new File(temp + "text.rep");
 f.open("w"); f.writeln("This is not a QWK reply packet."); f.close();
 r = system.qwk_unpack(u, f.name);
@@ -83,7 +85,6 @@ if (file_exists(f.name))
 var kept = bad_files().filter(function (path) { return file_date(path) >= bad_start; });
 if (!kept.length)
 	throw new Error("no .bad file kept: " + JSON.stringify(bad_files()));
-file_remove(temp + "empty.rep");
 
 // A QWK control message (DROP) takes effect in the user's saved scan config
 set_scan_cfg("qwkt-b", SUB_CFG_NSCAN);

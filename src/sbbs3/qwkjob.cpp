@@ -122,8 +122,17 @@ static void qwkjob_prune_temp(const char* root, const qwkjob_host_t* host)
 		size_t      len = strlen(dir);
 		if (len < 1 || !IS_PATH_DELIM(dir[len - 1]))
 			continue;
-		time_t      t = fdate(dir);
-		if (t == -1 || difftime(now, t) < QWKJOB_TEMP_MAX_AGE)
+		char        stat_path[MAX_PATH + 1];
+		SAFECOPY(stat_path, dir);
+		char*       last = lastchar(stat_path);
+		if (IS_PATH_DELIM(*last))
+			*last = '\0';           // MSVC's stat() fails on a trailing path delimiter
+		time_t      t = fdate(stat_path);
+		if (t == -1) {
+			qwkjob_lprintf(host, LOG_DEBUG, "Unable to get date of temp directory: %s", dir);
+			continue;
+		}
+		if (difftime(now, t) < QWKJOB_TEMP_MAX_AGE)
 			continue;
 		if (delfiles(dir, ALLFILES, 0) < 0 || rmdir(dir) != 0)
 			qwkjob_lprintf(host, LOG_DEBUG, "Unable to remove stale temp directory: %s", dir);
@@ -167,14 +176,20 @@ static bool qwkjob_replace_file(const char* src, const char* dest)
 #endif
 }
 
-// Keeps a packet that failed to import for the sysop, as <dir><prefix>.<hex-time>.bad
+// Keeps a packet that failed to import for the sysop, as <dir><prefix>.<hex-time>.bad (an empty one is removed)
 static void qwkjob_keep_bad(sbbs_t* sbbs, const char* path, const char* dir, const char* prefix)
 {
-	char badpkt[MAX_PATH + 1];
-	char spec[MAX_PATH + 1];
+	char  badpkt[MAX_PATH + 1];
+	char  spec[MAX_PATH + 1];
+	off_t len = flength(path);
 
-	if (flength(path) < 1)
+	if (len < 0)
 		return;
+	if (len == 0) {
+		sbbs->lprintf(LOG_NOTICE, "Removing empty packet: %s", path);
+		sbbs->fremove(WHERE, path, /* log-all-errors: */ true);
+		return;
+	}
 	snprintf(badpkt, sizeof badpkt, "%s%s.%" PRIx64 ".bad", dir, prefix, (uint64_t)time(NULL));
 	sbbs->fremove(WHERE, badpkt);
 	if (sbbs->mv(path, badpkt, /* copy: */ false) == 0)
@@ -223,7 +238,11 @@ static enum qwkjob_result qwkjob_pack_locked(sbbs_t* sbbs, const qwkjob_host_t* 
 		return QWKJOB_FAILED;
 	}
 	if (!qwkjob_replace_file(tmppath, qwkpath)) {
+#ifdef _WIN32
+		sbbs->lprintf(LOG_ERR, "!ERROR (WinError %u) renaming %s to %s", (uint)GetLastError(), tmppath, qwkpath);
+#else
 		sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s", errno, strerror(errno), tmppath, qwkpath);
+#endif
 		remove(tmppath);
 		return QWKJOB_FAILED;
 	}
@@ -272,7 +291,11 @@ static bool qwkjob_path_in_dir(const char* path, const char* dir)
 		return false;
 	backslash(full_dir);
 	size_t len = strlen(full_dir);
+#ifdef _WIN32
+	if (strnicmp(full_path, full_dir, len) != 0)
+#else
 	if (strncmp(full_path, full_dir, len) != 0)
+#endif
 		return false;
 	return getfname(full_path) == full_path + len;
 }
