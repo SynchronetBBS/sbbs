@@ -940,12 +940,23 @@ struct js_connect_event_args {
 };
 
 static void
+set_socket_nonblocking(SOCKET sock, bool nonblocking)
+{
+#if defined(_WIN32)
+	u_long val = nonblocking;
+#else
+	int    val = nonblocking;
+#endif
+
+	ioctlsocket(sock, FIONBIO, &val);
+}
+
+static void
 js_connect_event_thread(void *args)
 {
 	struct js_connect_event_args *a = static_cast<js_connect_event_args *>(args);
 	struct addrinfo               hints, *res = NULL, *cur;
 	int                           result;
-	ulong                         val;
 	struct js_connect_result      cr = {0, FALSE};
 
 	SetThreadName("sbbs/jsConnect");
@@ -959,8 +970,7 @@ js_connect_event_thread(void *args)
 		goto done;
 	}
 	/* always set to blocking here */
-	val = 0;
-	ioctlsocket(a->sock, FIONBIO, &val);
+	set_socket_nonblocking(a->sock, false);
 	result = SOCKET_ERROR;
 	for (cur = res; cur != NULL; cur = cur->ai_next) {
 		inet_setaddrport((xp_sockaddr *)cur->ai_addr, a->port);
@@ -973,8 +983,7 @@ js_connect_event_thread(void *args)
 	if (result == 0)
 		cr.error = 0;
 	/* Restore original setting here */
-	val = a->nonblocking;
-	ioctlsocket(a->sock, FIONBIO, &val);
+	set_socket_nonblocking(a->sock, a->nonblocking);
 
 done:
 	send(a->sv[1], (char *)&cr, sizeof cr, 0);
@@ -1086,7 +1095,6 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *           obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *              argv = JS_ARGV(cx, arglist);
 	int                  result;
-	ulong                val;
 	ushort               port;
 	JSString*            str;
 	js_socket_private_t* p;
@@ -1125,8 +1133,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 	/* always set to nonblocking here */
-	val = 1;
-	ioctlsocket(p->sock, FIONBIO, &val);
+	set_socket_nonblocking(p->sock, true);
 	result = SOCKET_ERROR;
 	for (cur = res; cur != NULL; cur = cur->ai_next) {
 		if (argc > 2)  /* time-out value specified */
@@ -1156,7 +1163,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 			break;
 	}
 	/* Restore original setting here */
-	ioctlsocket(p->sock, FIONBIO, (ulong*)&(p->nonblocking));
+	set_socket_nonblocking(p->sock, p->nonblocking);
 
 	if (result != 0) {
 		freeaddrinfo(res);
@@ -2412,7 +2419,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 		case SOCK_PROP_NONBLOCKING:
 			JS_ValueToBoolean(cx, *vp, &(p->nonblocking));
 			rc = JS_SUSPENDREQUEST(cx);
-			ioctlsocket(p->sock, FIONBIO, (ulong*)&(p->nonblocking));
+			set_socket_nonblocking(p->sock, p->nonblocking);
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case SOCK_PROP_NETWORK_ORDER:
@@ -2434,10 +2441,9 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 
 					if (ssl_sync(scfg, lprintf)) {
 						if ((ret = cryptCreateSession(&p->session, CRYPT_UNUSED, tiny == SOCK_PROP_SSL_SESSION ? CRYPT_SESSION_TLS: CRYPT_SESSION_TLS_SERVER)) == CRYPT_OK) {
-							ulong nb = 0;
-							ioctlsocket(p->sock, FIONBIO, &nb);
-							nb = 1;
-							(void)setsockopt(p->sock, IPPROTO_TCP, TCP_NODELAY, (char*)&nb, sizeof(nb));
+							int nodelay = 1;
+							set_socket_nonblocking(p->sock, false);
+							(void)setsockopt(p->sock, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay));
 							if ((ret = do_cryptAttribute(p->session, CRYPT_SESSINFO_NETWORKSOCKET, p->sock)) == CRYPT_OK) {
 								int minver = CRYPT_TLSOPTION_MINVER_TLS12;
 								if (p->tls_minver == 100)
@@ -2549,7 +2555,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 						if (p->session != -1)
 							cryptDestroySession(p->session);
 						p->session = -1;
-						ioctlsocket(p->sock, FIONBIO, (ulong*)&(p->nonblocking));
+						set_socket_nonblocking(p->sock, p->nonblocking);
 						do_js_close(cx, p, false);
 					}
 				}
@@ -2561,7 +2567,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 					else
 						cryptDestroySession(p->session);
 					p->session = -1;
-					ioctlsocket(p->sock, FIONBIO, (ulong*)&(p->nonblocking));
+					set_socket_nonblocking(p->sock, p->nonblocking);
 					do_js_close(cx, p, false);
 				}
 			}
@@ -3182,7 +3188,6 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	uint16_t             port;
 	char                 pstr[6];
 	jsrefcount           rc;
-	int                  nonblock;
 	scfg_t *             scfg;
 	char                 error[256];
 	uint16_t             bindport = 0;
@@ -3375,8 +3380,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 				}
 			}
 			/* Set to non-blocking for the connect */
-			nonblock = -1;
-			ioctlsocket(p->sock, FIONBIO, (u_long *)&nonblock);
+			set_socket_nonblocking(p->sock, true);
 		}
 
 		if (connect(p->sock, cur->ai_addr, cur->ai_addrlen)) {
@@ -3420,7 +3424,7 @@ connected:
 		JS_ReportError(cx, "Unable to connect to %s:%u", host, port);
 		goto fail;
 	}
-	ioctlsocket(p->sock, FIONBIO, (ulong*)&(p->nonblocking));
+	set_socket_nonblocking(p->sock, p->nonblocking);
 	call_socket_open_callback(true);
 	free(protocol);
 	p->hostname = host;
