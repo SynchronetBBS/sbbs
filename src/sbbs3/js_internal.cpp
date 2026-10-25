@@ -1135,6 +1135,8 @@ js_clear_events(JSContext *cx, js_callback_t *cb)
 
 	for (ev = cb->events, nev = NULL; ev; ev = nev) {
 		nev = ev->next;
+		if (ev->type == JS_EVENT_SOCKET_CONNECT)
+			closesocket(ev->data.connect.sv[0]);
 		JS_RemoveObjectRoot(cx, &ev->cx);
 		JS_RemoveObjectRoot(cx, &ev->cbobj);
 		free(ev);

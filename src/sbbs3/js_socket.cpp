@@ -1022,32 +1022,7 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 		return JS_FALSE;
 	}
 
-	// Create event
-	ev = static_cast<js_event_list *>(malloc(sizeof(*ev)));
-	if (ev == NULL) {
-		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
-		closesocket(sv[0]);
-		closesocket(sv[1]);
-		return JS_FALSE;
-	}
-	ev->prev = NULL;
-	ev->next = cb->events;
-	if (ev->next)
-		ev->next->prev = ev;
-	ev->type = JS_EVENT_SOCKET_CONNECT;
-	ev->cx = obj;
-	JS_AddObjectRoot(cx, &ev->cx);
-	ev->cb = ecb;
-	ev->cbobj = JSVAL_TO_OBJECT(argv[2]);
-	JS_AddObjectRoot(cx, &ev->cbobj);
-	ev->data.connect.sv[0] = sv[0];
-	ev->data.connect.sv[1] = sv[1];
-	ev->data.connect.sock = p->sock;
-	ev->id = cb->next_eid++;
-	p->js_cb = cb;
-	cb->events = ev;
-
-	// Start thread
+	// Thread arguments
 	args = static_cast<js_connect_event_args *>(malloc(sizeof(*args)));
 	if (args == NULL) {
 		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*args));
@@ -1069,6 +1044,34 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 		free(args);
 		return JS_FALSE;
 	}
+
+	// Create event
+	ev = static_cast<js_event_list *>(malloc(sizeof(*ev)));
+	if (ev == NULL) {
+		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
+		closesocket(sv[0]);
+		closesocket(sv[1]);
+		free(args->host);
+		free(args);
+		return JS_FALSE;
+	}
+	ev->prev = NULL;
+	ev->next = cb->events;
+	if (ev->next)
+		ev->next->prev = ev;
+	ev->type = JS_EVENT_SOCKET_CONNECT;
+	ev->cx = obj;
+	JS_AddObjectRoot(cx, &ev->cx);
+	ev->cb = ecb;
+	ev->cbobj = JSVAL_TO_OBJECT(argv[2]);
+	JS_AddObjectRoot(cx, &ev->cbobj);
+	ev->data.connect.sv[0] = sv[0];
+	ev->data.connect.sv[1] = sv[1];
+	ev->data.connect.sock = p->sock;
+	ev->id = cb->next_eid++;
+	p->js_cb = cb;
+	cb->events = ev;
+
 	_beginthread(js_connect_event_thread, 0 /* Can be smaller... */, args);
 
 	// Connect in progress; is_connected is settled when the callback fires
