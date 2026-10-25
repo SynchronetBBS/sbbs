@@ -1029,9 +1029,6 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// extended read mode
 	this.numTabSpaces = 3;
 
-	// Whether or not to display SAUCE info in messages
-	this.displayMsgSAUCE = false;
-
 	// this.text is an object containing text used for various prompts & functions.
 	this.text = {
 		scrollbarBGChar: CP437_LIGHT_SHADE,
@@ -11229,8 +11226,6 @@ function DigDistMsgReader_ReadConfigFile()
 			this.saveAllHdrsWhenSavingMsgToBBSPC = settingsObj.saveAllHdrsWhenSavingMsgToBBSPC;
 		if (typeof(settingsObj.msgSaveDir) === "string" && settingsObj.msgSaveDir.length > 0 && file_isdir(settingsObj.msgSaveDir))
 			this.msgSaveDir = settingsObj.msgSaveDir;
-		if (typeof(settingsObj.displayMsgSAUCE) === "boolean")
-			this.displayMsgSAUCE = settingsObj.displayMsgSAUCE;
 		// User setting defaults
 		if (typeof(settingsObj.reverseListOrder === "boolean"))
 			this.userSettings.listMessagesInReverse = settingsObj.reverseListOrder;
@@ -15203,21 +15198,6 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 			return retObj;
 		}
 	}
-
-	// New: For SAUCE stuff
-	if (this.displayMsgSAUCE)
-	{
-		var sauceInfo = ddMsgParseSauceTrailer(msgBody);
-		if (sauceInfo != null)
-		{
-			msgBody = msgBody.substr(0, sauceInfo.artEnd);
-			if (gSettings.displaySauceInfo !== false) // ini toggle
-				msgBody += "\r\n\r\n" + ddMsgFormatSauceForDisplay(sauceInfo.sauce);
-			if (typeof(sauceInfo.suffix) === "string" && sauceInfo.suffix.length > 0)
-				msgBody += sauceInfo.suffix;
-		}
-	}
-	// End new
 
 	// Do some text translations to make the message body look good
 	// for the user's terminal (the next 9 lines of code copied/based

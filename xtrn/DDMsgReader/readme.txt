@@ -857,10 +857,6 @@ showUserResponsesInTallyInfo          For poll messages or messages with upvotes
                                       will just show the names of who voted on
                                       the message (and when).
 
-displayMsgSAUCE                       Whether or not to display SAUCE
-                                      information if a message has it. Defaults
-                                      to false.
-
 DDMsgAreaChooser                      The full path & filename of
                                       DDMsgAreaChooser.js, if it's not in
                                       sbbs/xtrn/DDAreaChoosers. If
