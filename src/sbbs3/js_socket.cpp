@@ -973,7 +973,8 @@ js_connect_event_thread(void *args)
 	if (result == 0)
 		cr.error = 0;
 	/* Restore original setting here */
-	ioctlsocket(a->sock, FIONBIO, (ulong*)&(a->nonblocking));
+	val = a->nonblocking;
+	ioctlsocket(a->sock, FIONBIO, &val);
 
 done:
 	send(a->sv[1], (char *)&cr, sizeof cr, 0);
