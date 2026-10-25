@@ -129,6 +129,8 @@ static int16_t  g_joypad[SR_PADS][SR_PAD_IDS];
 static uint32_t g_expire_ms[SR_PADS][SR_PAD_IDS]; /* byte path only: 0 = no timer */
 static int      g_swap;   /* Tab: 1 swaps which core port each player drives */
 static int      g_quit;
+static unsigned g_evdev_mods;  /* held modifiers, TERMGFX_MOD_* (evdev path) */
+static unsigned g_kitty_shift; /* kitty: bit 0 LEFT_SHIFT, bit 1 RIGHT_SHIFT */
 /* The terminal's status-line type BEFORE the door hid it (DECSSDT), captured
  * from the DECRQSS reply; -1 = not answered yet, or the terminal has no status
  * line at all. sr_io_leave() restores it. */
@@ -144,6 +146,15 @@ static int      g_sdm_done;
 
 void sr_input_sdm_arm(void)  { g_sdm_n = 0; g_sdm_done = 0; }
 int  sr_input_sdm_done(void) { return g_sdm_done; }
+
+/* One keyboard, so one Shift for both controllers. On the evdev path the
+ * modifier keys are their own edges; under kitty (flag 8) they arrive as the
+ * functional codepoints LEFT_SHIFT / RIGHT_SHIFT, tracked one bit each so
+ * releasing one Shift while the other is down does not drop it. */
+static int sr_shift_held(void)
+{
+	return (g_evdev_mods & TERMGFX_MOD_SHIFT) != 0 || g_kitty_shift != 0;
+}
 
 #define sr_in_now_ms()   sr_plat_now_ms()
 
@@ -228,15 +239,85 @@ static void sr_pad_expire(void)
  * fold them back into the disc and fight the sweep. */
 #define SR_DISC_TOGGLE_FRAMES 4
 
-/* cos/sin * 32000 (just inside INT16_MAX) at 0, 22.5, 180 and 202.5 degrees.
- * Integer literals so the door pulls in no libm for four constants. */
-static const int16_t g_disc_vec[2][2][2] = {   /* [left?][phase][x,y] */
-	{ {  32000,      0 }, {  29565,  12246 } },   /* right: 0 deg, 22.5 deg */
-	{ { -32000,      0 }, { -29565, -12246 } }    /* left: 180 deg, 202.5 deg */
+/* The 16 disc detents as left-stick vectors, 0 = North, clockwise. FreeIntv
+ * divides each axis by 8192 and takes atan2 of the two small integers, so the
+ * angle the core sees is that of the quantized pair, not of the int16 -- these
+ * are chosen on the quantized grid (a unit of 8192, placed mid-bucket) so that
+ * each decodes to its own detent under the core's arithmetic. test_disc.c pins
+ * every one of them against a copy of that arithmetic. */
+#define SR_DETENT_N 0
+#define SR_DETENT_E 4
+#define SR_DETENT_S 8
+#define SR_DETENT_W 12
+#define SR_DETENTS  16
+
+#define SR_Q1 12288   /* 1.5 * 8192: quantizes to 1 */
+#define SR_Q2 20480   /* 2.5 * 8192: quantizes to 2 */
+#define SR_Q3 28672   /* 3.5 * 8192: quantizes to 3 */
+
+static const int16_t     g_detent[SR_DETENTS][2] = {
+	{      0, -SR_Q3 },   /* N   */
+	{  SR_Q1, -SR_Q3 },   /* NNE */
+	{  SR_Q3, -SR_Q3 },   /* NE  */
+	{  SR_Q2, -SR_Q1 },   /* ENE */
+	{  SR_Q1,      0 },   /* E   */
+	{  SR_Q2,  SR_Q1 },   /* ESE */
+	{  SR_Q1,  SR_Q1 },   /* SE  */
+	{  SR_Q1,  SR_Q2 },   /* SSE */
+	{      0,  SR_Q1 },   /* S   */
+	{ -SR_Q1,  SR_Q3 },   /* SSW */
+	{ -SR_Q1,  SR_Q1 },   /* SW  */
+	{ -SR_Q3,  SR_Q1 },   /* WSW */
+	{ -SR_Q3,      0 },   /* W   */
+	{ -SR_Q3, -SR_Q1 },   /* WNW */
+	{ -SR_Q3, -SR_Q3 },   /* NW  */
+	{ -SR_Q1, -SR_Q3 }    /* NNW */
 };
 
-static int           g_disc_phase[SR_PADS]; /* which of the two detents is asserted */
-static int           g_disc_dir[SR_PADS];   /* -1 left, +1 right, 0 not sweeping */
+static int               g_disc_phase[SR_PADS]; /* which of the two detents is asserted */
+static int               g_disc_dir[SR_PADS]; /* -1 left, +1 right, 0 not sweeping */
+
+/* The detent the held d-pad bits point at (0 = N, clockwise, even numbers
+ * only), or -1 when none or when opposites cancel. [v + 1][h + 1], v/h in -1..1. */
+static const signed char g_dpad_detent[3][3] = {
+	{ 14,  0,  2 },   /* up:   NW  N  NE */
+	{ 12, -1,  4 },   /* --:   W   .  E  */
+	{ 10,  8,  6 }    /* down: SW  S  SE */
+};
+
+static int sr_dpad_detent(int port)
+{
+	int h, v;
+
+	h = (g_joypad[port][RETRO_DEVICE_ID_JOYPAD_RIGHT] != 0)
+	    - (g_joypad[port][RETRO_DEVICE_ID_JOYPAD_LEFT] != 0);
+	v = (g_joypad[port][RETRO_DEVICE_ID_JOYPAD_DOWN] != 0)
+	    - (g_joypad[port][RETRO_DEVICE_ID_JOYPAD_UP] != 0);
+	return g_dpad_detent[v + 1][h + 1];
+}
+
+/* --- the fine disc (Shift) ----------------------------------------------------
+ *
+ * Four arrow keys reach eight of the disc's sixteen positions through the d-pad.
+ * Shift turns the held direction ONE DETENT CLOCKWISE, on the left stick: Up
+ * becomes NNE, Up+Left becomes NNW, and so on round the ring, so every one of
+ * the sixteen is a key or two plus Shift. While the stick speaks for a
+ * controller its d-pad bits are withheld -- the core ORs both into the same
+ * controller word and would read N and NNE together as neither.
+ *
+ * Native paths only: a byte terminal reports neither Shift nor a key-up.
+ * Returns the detent to assert, or -1 when the stick should rest. */
+static int sr_disc_fine(int port)
+{
+	int d;
+
+	if (!sr_shift_held())
+		return -1;
+	d = sr_dpad_detent(port);
+	if (d < 0)
+		return -1;
+	return (d + 1) % SR_DETENTS;
+}
 
 /* Once per frame, per controller, from sr_input_pump() (the core's input_poll). */
 static void sr_disc_tick_port(int port)
@@ -348,12 +429,20 @@ int16_t sr_pad_get(unsigned port, unsigned device, unsigned index, unsigned id)
 		if (!sr_profile_analog())
 			return 0;
 		if (index == RETRO_DEVICE_INDEX_ANALOG_LEFT) {
-			if (g_disc_dir[p] == 0)
-				return 0;         /* not sweeping: leave the disc alone */
+			int d;
+
+			/* The sweep alternates between a cardinal and the detent clockwise
+			 * of it (E / ESE, W / WNW) -- see sr_disc_tick_port(). */
+			if (g_disc_dir[p] != 0)
+				d = (g_disc_dir[p] > 0 ? SR_DETENT_E : SR_DETENT_W) + g_disc_phase[p];
+			else
+				d = sr_disc_fine(p);
+			if (d < 0)
+				return 0;         /* at rest: leave the disc alone */
 			if (id == RETRO_DEVICE_ID_ANALOG_X)
-				return g_disc_vec[g_disc_dir[p] < 0][g_disc_phase[p]][0];
+				return g_detent[d][0];
 			if (id == RETRO_DEVICE_ID_ANALOG_Y)
-				return g_disc_vec[g_disc_dir[p] < 0][g_disc_phase[p]][1];
+				return g_detent[d][1];
 			return 0;
 		}
 		return sr_keypad_analog((int)p, index, id);   /* right stick = keypad digits */
@@ -367,6 +456,12 @@ int16_t sr_pad_get(unsigned port, unsigned device, unsigned index, unsigned id)
 	if (sr_profile_analog() && g_disc_dir[p] != 0
 	    && (id == RETRO_DEVICE_ID_JOYPAD_LEFT || id == RETRO_DEVICE_ID_JOYPAD_RIGHT))
 		return 0;
+	/* Likewise while Shift has the stick speaking for the d-pad: all four bits. */
+	if (sr_profile_analog() && g_disc_dir[p] == 0
+	    && (id == RETRO_DEVICE_ID_JOYPAD_UP || id == RETRO_DEVICE_ID_JOYPAD_DOWN
+	        || id == RETRO_DEVICE_ID_JOYPAD_LEFT || id == RETRO_DEVICE_ID_JOYPAD_RIGHT)
+	    && sr_disc_fine(p) >= 0)
+		return 0;
 	return g_joypad[p][id];
 }
 
@@ -376,8 +471,9 @@ int16_t sr_pad_get(unsigned port, unsigned device, unsigned index, unsigned id)
  * turns a resolved action into pad / keypad / door state.
  *
  * RetroPad is an abstract SNES-shaped joypad and the core decides what its
- * buttons mean. FreeIntv puts the three action buttons on A/B/Y, drives the
- * 16-way disc from the d-pad, and reaches all twelve keypad keys through the
+ * buttons mean. FreeIntv puts the three action buttons on A/B/Y, reads the
+ * 16-way disc from the d-pad (eight positions) and the left analog stick (all
+ * sixteen -- see sr_disc_fine()), and reaches all twelve keypad keys through the
  * right analog stick plus R3/L3/L2/R2 -- so a bare keyboard plays the whole
  * console. See M2_INPUT.md. */
 
@@ -565,7 +661,6 @@ static int               g_is_syncterm;
 static int               g_have_sixel;
 
 static termgfx_keymode_t g_km;     /* which key mode is in force (termgfx) */
-static unsigned          g_evdev_mods; /* held modifiers, TERMGFX_MOD_* */
 
 int sr_input_is_syncterm(void) { return g_is_syncterm; }
 int sr_input_has_sixel(void)   { return g_have_sixel; }
@@ -656,6 +751,21 @@ static void sr_numpad_pad(int key, int down)
 	}
 }
 
+/* The numeric keypad is the Intellivision keypad BY POSITION. The two are
+ * upside down relative to each other -- a PC numpad has 7 8 9 across the top,
+ * the Intellivision has 1 2 3 there -- and a cartridge that reads the keypad
+ * as a direction (Tron Deadly Discs aims its throw by key position) wants the
+ * top-left key to be top-left. The middle row, 0, Clear and Enter are where
+ * they are on both. The number row has no shape and stays by digit. */
+static int sr_numpad_position(int key)
+{
+	switch (key) {
+		case 7: return 1;   case 8: return 2;   case 9: return 3;
+		case 1: return 7;   case 2: return 8;   case 3: return 9;
+		default: return key;
+	}
+}
+
 static void sr_p2_keypad(int key, int down)
 {
 	int id = -1;
@@ -671,6 +781,7 @@ static void sr_p2_keypad(int key, int down)
 		sr_numpad_pad(key, down);
 		return;
 	}
+	key = sr_numpad_position(key);
 	switch (key) {
 		case 5:           id = RETRO_DEVICE_ID_JOYPAD_R3; break;
 		case 0:           id = RETRO_DEVICE_ID_JOYPAD_L3; break;
@@ -1061,6 +1172,15 @@ static void sr_csi_final(char fin)
 
 				if (cp <= 0)
 					return;
+				if (cp == 57441 || cp == 57442) {   /* LEFT_SHIFT / RIGHT_SHIFT */
+					unsigned bit = 1u << (cp - 57441);
+
+					if (ev != 3)
+						g_kitty_shift |= bit;
+					else
+						g_kitty_shift &= ~bit;
+					return;
+				}
 				kp = sr_kitty_numpad(cp);
 				if (kp != INT_MIN) {
 					sr_p2_keypad(kp, ev != 3);   /* numpad -> player 2's keypad */

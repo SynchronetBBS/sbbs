@@ -111,9 +111,9 @@ controllers get two key groups:
 
 | Player 1 (controller 0) | Player 2 (controller 1) | Action |
 |---|---|---|
-| `W` `A` `S` `D` | arrow keys | disc (16-way) |
+| `W` `A` `S` `D` | arrow keys | disc: 8 positions, 16 with `Shift` (below) |
 | `Z` `X` `C` | `,` `.` `/` | action buttons |
-| `1`-`9`, `0` | numeric keypad | keypad digits |
+| `1`-`9`, `0` | numeric keypad | keypad digits (numpad **by position**, below) |
 | `Backspace` (`0x08` **and** `0x7F`) | numpad `Del` | keypad Clear |
 | `Enter` (`\r` and `\n`) | numpad `Enter` | keypad Enter |
 
@@ -186,6 +186,37 @@ indistinguishable from the number row, so there player 2's *keypad* falls back
 to player 1's -- player 2's disc (arrows) and action buttons still work on every
 terminal. `Tab`'s swap lets a solo player put their preferred key group on the
 controller the cart actually reads.
+
+**The numpad is the keypad by position, not by printed digit.** A PC numpad has
+7 8 9 across the top; the Intellivision keypad has 1 2 3 there. A cartridge
+that reads the keypad as a direction -- Tron Deadly Discs aims its throw by key
+position, and every printed overlay is spatial -- wants the top-left numpad key
+to be the top-left keypad key, so numpad 7/8/9 are keypad 1/2/3 and numpad 1/2/3
+are keypad 7/8/9. The middle row, 0, Clear and Enter sit where they sit on both.
+The number row has no shape and stays by digit, so a typed variant number is
+still that number. Mapping by digit was the original design and read as
+"upside-down diagonals" the first time a player aimed with it.
+
+**`Shift` is the rest of the disc.** The disc is a 16-position ring and four
+arrow keys reach eight of them through the d-pad (the core composes a diagonal
+from two bits). Holding `Shift` turns the held direction one detent clockwise
+on the left analog stick, which FreeIntv reads as the disc: `Up` becomes NNE,
+`Up`+`Left` becomes NNW, `Left` becomes WNW, and so round the ring -- every one
+of the sixteen is a key or two plus `Shift`. While the stick speaks for a
+controller its d-pad bits are withheld (the core ORs both into one controller
+word, and N plus NNE is neither). One keyboard, so one `Shift` for both
+controllers, either Shift key. Native paths only: a byte terminal reports
+neither `Shift` nor a key-up, and on it a held diagonal already decays to a
+cardinal when the second key's auto-repeat stops refreshing its dwell.
+
+The sixteen stick vectors live on the core's own quantized grid. FreeIntv
+divides each axis by 8192 and takes `atan2` of the two small integers, then
+buckets the angle into *fifteen* 24-degree slots (not sixteen), so the detent a
+vector lands in is a property of the quantized pair, not of the nominal angle --
+and West is reachable only as an exact `(-n, 0)`. The table in
+`syncretro_input.c` was chosen by enumerating that arithmetic, and
+`test_disc.c` pins every detent (and the paddle sweep, which rides the same
+table: E/ESE and W/WNW) against a copy of it.
 
 **Not `Ctrl-H`.** An earlier draft offered it; `Ctrl-H` *is* `0x08`, which is
 Backspace, which is keypad Clear. Help is `?`.

@@ -46,13 +46,17 @@ static const sr_bind_row_t g_binds[] = {
 	{ "a",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_LEFT,   0, NULL,               NULL },
 	{ "s",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_DOWN,   0, NULL,               NULL },
 	{ "d",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_RIGHT,  0, NULL,               NULL },
+	/* Shift is a modifier, not a key byte: syncretro_input.c reads it off the
+	 * native paths' modifier state. The empty `chars` makes this row unmatchable;
+	 * it exists so the help screen lists it (same device as the F4 row below). */
+	{ "",         SR_ACT_NONE,  0,                             0, "Shift + disc",     "turn it one notch clockwise (all 16)" },
 
 	{ "z",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_A,      0, "Z X C \1 , . /",    "action buttons" },
 	{ "x",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_B,      0, NULL,               NULL },
 	{ "c",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_Y,      0, NULL,               NULL },
 
 	/* 5 and 0 are absent here on purpose: they are button bits, two rows down. */
-	{ "12346789", SR_ACT_DIGIT, 0,                             0, "1-9,0 \1 num pad",  "keypad digits" },
+	{ "12346789", SR_ACT_DIGIT, 0,                             0, "1-9,0 \1 num pad",  "keypad digits (num pad: by position)" },
 	{ "5",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_R3,     0, NULL,               NULL },
 	{ "0",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_L3,     0, NULL,               NULL },
 

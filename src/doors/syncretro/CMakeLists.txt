@@ -230,6 +230,20 @@ if(SYNCRETRO_TESTS)
     endif()
     add_test(NAME axis COMMAND test_axis)
 
+    # test_disc -- the Intellivision's disc and keypad from a keyboard, through
+    # the same real input module as test_axis: numpad digits by POSITION, and the
+    # 16-way disc Shift reaches on the left stick. libm for the core's atan2.
+    add_executable(test_disc test_disc.c syncretro_input.c syncretro_binds.c
+                   syncretro_profile.c syncretro_keypad.c syncretro_games.c)
+    target_include_directories(test_disc PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../termgfx
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
+    target_link_libraries(test_disc termgfx xpdev)
+    if(NOT WIN32)
+        target_link_libraries(test_disc m pthread)
+    endif()
+    add_test(NAME disc COMMAND test_disc)
+
     # test_title -- the ROM-filename title parser. Pure: no xpdev, no termgfx,
     # no core. It is the gate on the door's who's-online line now that the
     # lobby leaves -title off the command line for most cartridges.
