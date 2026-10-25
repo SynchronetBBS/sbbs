@@ -14,8 +14,12 @@ function peer(name, legacy, skew) {
 }
 
 function pump(p, seconds) {
-	var until = Date.now() + seconds * 1000, lines = [];
+	var until = Date.now() + seconds * 1000, lines = [], next_clock = 0;
 	while (Date.now() < until && p.sock.is_connected) {
+		if (p.periodic_clock && Date.now() >= next_clock) {
+			p.send("CLOCK -1 " + (Date.now() / 1000 + p.clock_skew).toFixed(3));
+			next_clock = Date.now() + 15000;
+		}
 		var raw = p.sock.recvline(512, 0.2);
 		if (!raw) continue;
 		var line = raw.replace(/\r?\n?$/, ""); lines.push(line);
@@ -113,6 +117,43 @@ try {
 				var lines = pump(p, 20).join("\n");
 				check(/ERROR .*Clock skew/.test(lines), "missing drift rejection: " + lines);
 				check(!p.sock.is_connected, "drifted peer still connected");
+			} finally { p.close(); }
+		},
+		"upgraded hubs announce time without periodic request-response probes": function() {
+			var p = peer("fakehub.ircd.local", false);
+			p.capabilities = "TSJOIN TSMODE CLOCK CLOCKPUSH CSYNC TSMAP";
+			p.periodic_clock = true;
+			try {
+				p.connect();
+				check(/^CLOCK [0-9]+$/m.test(p.received.join("\n")), "admission did not request a clock sample");
+				var lines = pump(p, 34).join("\n");
+				check(p.sock.is_connected && !/^ERROR /m.test(lines), "periodic hub disconnected: " + lines);
+				check((lines.match(/^CLOCK -1 [0-9]+[.][0-9]{3}$/gm) || []).length >= 2,
+					"missing periodic announcements: " + lines);
+				check(!/^CLOCK [0-9]+$/m.test(lines), "periodic mode requested another sample: " + lines);
+			} finally { p.close(); }
+		},
+		"periodic announcements disconnect a hub that drifts in either direction": function() {
+			[-31, 31].forEach(function(skew) {
+				var p = peer("fakehub.ircd.local", false);
+				p.capabilities = "TSJOIN TSMODE CLOCK CLOCKPUSH CSYNC TSMAP";
+				p.periodic_clock = true;
+				try {
+					p.connect(); p.clock_skew = skew;
+					var lines = pump(p, 3).join("\n");
+					check(/ERROR .*Clock skew/.test(lines), "missing periodic drift rejection: " + lines);
+					check(!p.sock.is_connected, "drifted periodic peer still connected");
+				} finally { p.close(); }
+			});
+		},
+		"a hub cannot remain linked while omitting negotiated announcements": function() {
+			var p = peer("fakehub.ircd.local", false);
+			p.capabilities = "TSJOIN TSMODE CLOCK CLOCKPUSH CSYNC TSMAP";
+			try {
+				p.connect();
+				var lines = pump(p, 34).join("\n");
+				check(/ERROR .*Periodic clock announcement timed out/.test(lines), "missing periodic timeout: " + lines);
+				check(!p.sock.is_connected, "silent periodic hub still connected");
 			} finally { p.close(); }
 		}
 	});

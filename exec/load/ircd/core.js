@@ -638,6 +638,10 @@ function Recvq_Unthrottle() {
 
 /* this = IRC_Queue object */
 function Process_Recvq() {
+	/* Registration reuses the queue. A callback queued before SERVER
+	   authentication must switch handlers, including throttle wakeups. */
+	if (this.irc.server)
+		return Unthrottled_Recvq.call(this);
 	if (this.queue.length == 0)
 		return 1;
 	var timediff = system.timer - this.time_marker;
@@ -2965,6 +2969,10 @@ function IRC_clock_now() {
 	return Date.now() / 1000;
 }
 
+function IRC_has_clock_push(peer) {
+	return peer.their_capab && peer.their_capab.indexOf("CLOCKPUSH") >= 0;
+}
+
 function IRC_clock_tick() {
 	if (this.quitting || this.uline)
 		return;
@@ -2977,6 +2985,7 @@ function IRC_clock_tick() {
 		if (!this.admitted) this.clock_admission_started = now;
 		delete this.clock_probe;
 		delete this.last_clock_check;
+		delete this.last_clock_announcement;
 	}
 	if (this.clock_unverified_since === undefined)
 		this.clock_unverified_since = now;
@@ -2990,8 +2999,20 @@ function IRC_clock_tick() {
 	}
 	if (!this.clock_role_received || this.clock_enforce === false)
 		return;
+	var periodic = this.admitted && IRC_has_clock_push(this);
 	if (now - this.clock_unverified_since > Clock_Check_Interval + Clock_Probe_Timeout) {
-		this.quit("Unable to obtain a fresh clock verification");
+		this.quit(periodic ? "Periodic clock announcement timed out"
+			: "Unable to obtain a fresh clock verification");
+		return;
+	}
+	if (periodic) {
+		/* Each direction publishes independently. Receiving a sample must
+		   not postpone our own announcement. Admission still uses probes. */
+		if (this.last_clock_announcement === undefined
+			|| now - this.last_clock_announcement >= Clock_Check_Interval) {
+			this.last_clock_announcement = now;
+			this.rawout("CLOCK -1 " + format("%.3f", IRC_clock_now()));
+		}
 		return;
 	}
 	if (this.clock_probe) {
@@ -3034,28 +3055,41 @@ function IRC_receive_clock(peer, p) {
 		peer.rawout("CLOCK " + p[0] + " " + format("%.3f", IRC_clock_now()));
 		return;
 	}
-	var probe = peer.clock_probe;
-	if (!probe || p[0] != probe.nonce || p.length != 2)
+	var periodic = p[0] == "-1", probe = peer.clock_probe;
+	if (periodic) {
+		/* Unsolicited samples cannot establish readiness or enable clock
+		   enforcement on a leaf link, and must be explicitly negotiated. */
+		if (!IRC_has_clock_push(peer) || !peer.admitted || !peer.clock_enforce || p.length != 2)
+			return;
+	} else if (!probe || p[0] != probe.nonce || p.length != 2)
 		return;
 	if (!/^[0-9]+(?:[.][0-9]{1,3})?$/.test(p[1]) || !isFinite(Number(p[1]))) {
 		peer.quit("Malformed CLOCK response");
 		return;
 	}
-	delete peer.clock_probe;
-	var elapsed = system.timer - probe.started, now = IRC_clock_now();
-	/* A delayed response, a local wall-clock step, or a suspended callback
-	   engine cannot be used to measure skew. Ask for a fresh sample. */
-	if (elapsed < 0 || elapsed > 2 || probe.stall != Stall_Generation
-		|| Math.abs(now - probe.wall - elapsed) > 0.5) {
-		if (probe.stall != Stall_Generation)
-			peer.clock_unverified_since = system.timer;
-		IRC_clock_tick.call(peer);
-		return;
+	var now = IRC_clock_now(), local = now, uncertainty = 0;
+	if (!periodic) {
+		delete peer.clock_probe;
+		var elapsed = system.timer - probe.started;
+		/* Delay widens the skew bounds; it does not invalidate a reply.
+		   A local clock step or callback suspension invalidates our bounds. */
+		if (elapsed < 0 || probe.stall != Stall_Generation
+			|| Math.abs(now - probe.wall - elapsed) > 0.5) {
+			if (probe.stall != Stall_Generation)
+				peer.clock_unverified_since = system.timer;
+			IRC_clock_tick.call(peer);
+			return;
+		}
+		local = probe.wall + elapsed / 2;
+		uncertainty = elapsed / 2;
 	}
-	var skew = Number(p[1]) - (probe.wall + elapsed / 2);
-	if (Math.abs(skew) - elapsed / 2 > Clock_MaxSkew) {
-		var reason = format("Clock skew %.3f seconds exceeds %u-second limit (local %.3f, peer %.3f)",
-			skew, Clock_MaxSkew, now, Number(p[1]));
+	/* A pushed sample includes one-way queue delay. Both hubs publish:
+	   delay may hide an ahead clock in one direction, but increases the
+	   discrepancy in the reverse direction. Each end checks independently. */
+	var skew = Number(p[1]) - local, worst_skew = Math.abs(skew) + uncertainty;
+	if (worst_skew > Clock_MaxSkew) {
+		var reason = format("Clock skew %.3f seconds exceeds %u-second limit (estimate %.3f +/- %.3f, local %.3f, peer %.3f)",
+			worst_skew, Clock_MaxSkew, skew, uncertainty, now, Number(p[1]));
 		log(LOG_WARNING, peer.nick + ": " + reason);
 		peer.quit(reason);
 		return;

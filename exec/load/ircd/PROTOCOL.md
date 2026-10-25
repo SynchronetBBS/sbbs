@@ -67,6 +67,22 @@ after its check. Neither direction sends its state burst before reciprocal
 readiness. A hub withholds readiness from a returning leaf until incoming
 hub mapping bursts have completed.
 
+After admission, mutual hubs advertising `CLOCKPUSH` both send
+`CLOCK -1 <seconds.milliseconds>` every 15 seconds, without requesting or
+answering periodic probes. Each receiver compares the announcement with its
+current wall clock; a difference beyond `[Clock] MaxSkew` (30 seconds by
+default), including queue delay, closes the link. Announcements in both
+directions are required: delay can conceal an ahead clock in one direction,
+but increases its discrepancy in the reverse direction. Missing valid
+announcements for more than 30 seconds also closes the link. Local callback
+stalls restart the announcement timeout, as they do for probes.
+
+Admission and links to peers without `CLOCKPUSH` retain numbered
+request/response probes. Their skew bounds include the full round-trip
+uncertainty; a reply is accepted only when the entire range fits within the
+configured skew limit. Replies are not discarded merely for exceeding two
+seconds. Services and leaf links remain exempt from skew enforcement.
+
 ## Corrective channel snapshots
 
 Only a directly connected configured hub can send an authoritative

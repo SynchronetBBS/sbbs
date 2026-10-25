@@ -116,6 +116,39 @@ function merge_sides(ts_a, ts_b) {
 }
 
 run_tests({
+	"server registration switches pending client receive callbacks to unthrottled processing": function() {
+		var s = new_state(), pending = [], pauses = [], handled = [];
+		s.js.setImmediate = function(fn, obj) { pending.push([fn,obj]); };
+		s.js.setTimeout = function(fn, ms, obj) { pauses.push(ms); };
+		var peer = {server:false, work:function(line) {
+			handled.push(line);
+			if (line == "SERVER") this.server = true;
+		}};
+		var q = new s.IRC_Queue(peer);
+		q.queue = ["SERVER", "CLOCK ROLE HUB", "CLOCK 1", "CLOCK READY"];
+		q.time_marker = s.system.timer; q.num_sent = 3;
+		s.Process_Recvq.call(q);
+		while (pending.length) { var cb = pending.shift(); cb[0].call(cb[1]); }
+		check(handled.length == 4 && !q.queue.length && !pauses.length,
+			"authenticated server retained client command throttling");
+	},
+	"a pending client throttle callback cannot throttle a registered server": function() {
+		var s = new_state(), p = new_peer(s, "peer.test", true), handled = [];
+		p.work = function(line) { handled.push(line); };
+		p.recvq.queue = ["CLOCK 1"];
+		p.recvq.time_marker = s.system.timer; p.recvq.num_sent = 4; p.recvq.throttled = true;
+		s.Process_Recvq.call(p.recvq);
+		check(handled.length == 1 && !p.recvq.queue.length, "server queue remained client-throttled");
+	},
+	"ordinary clients retain the four-command receive limit": function() {
+		var s = new_state(), pauses = [], handled = [];
+		s.js.setTimeout = function(fn, ms, obj) { pauses.push(ms); };
+		var q = new s.IRC_Queue({server:false, work:function(line) { handled.push(line); }});
+		q.queue = ["MODE #test +n"]; q.time_marker = s.system.timer; q.num_sent = 4;
+		s.Process_Recvq.call(q);
+		check(!handled.length && q.queue.length == 1 && q.throttled && pauses[0] == 2000,
+			"client flooding bypassed the receive limit");
+	},
 	"identical hub snapshots preserve modes, statuses and ban metadata without MODE churn": function() {
 		var s = new_state(), p = new_peer(s,"upstream.test",true), local = new_user(s,"Local"), remote = new_user(s,"Remote",p.nick);
 		var c = join_user(s,local,"#quiet"); join_user(s,remote,"#quiet");
@@ -511,14 +544,124 @@ run_tests({
 		p.work("CLOCK " + old_nonce + " " + (s.now - 120));
 		check(!p.quitting && !!p.clock_probe, "stale reply used");
 	},
-	"long RTT is retried and an unanswered clock probe times out": function() {
+	"a delayed clock reply is accepted without another outstanding request": function() {
 		var s = new_state(), p = new_peer(s, "peer.test", true);
 		s.IRC_clock_tick.call(p); var old_nonce = p.clock_probe.nonce;
+		s.IRC_clock_tick.call(p);
+		check(p.sent.length == 1 && p.clock_probe.nonce == old_nonce, "pending request duplicated");
 		s.system.timer += 3; s.now += 3;
 		p.work("CLOCK " + old_nonce + " " + (s.now - 3));
-		check(!p.quitting && p.clock_probe.nonce != old_nonce, "lag mistaken for clock skew");
+		check(!p.quitting && !p.clock_probe && p.clock_verified && p.sent.length == 1,
+			"delayed reply discarded or immediately retried");
+	},
+	"an unanswered clock probe times out": function() {
+		var s = new_state(), p = new_peer(s, "peer.test", true);
+		s.IRC_clock_tick.call(p);
 		s.system.timer += 15; s.now += 15; s.IRC_clock_tick.call(p);
 		check(p.quitting && /timed out/.test(p.quit_reason), "unanswered probe kept link alive");
+	},
+	"clock replies must fit the limit at both ends of their uncertainty range": function() {
+		[-1, 1].forEach(function(sign) {
+			var s = new_state(), p = new_peer(s, "peer.test", true);
+			s.IRC_clock_tick.call(p);
+			s.system.timer += 10; s.now += 10;
+			p.work("CLOCK " + p.clock_probe.nonce + " " + (s.now - 5 + sign * 26));
+			check(p.quitting && /Clock skew 31[.]000/.test(p.quit_reason), "uncertain skew accepted");
+		});
+	},
+	"periodic clocks retain reciprocal probes for admission": function() {
+		var s = new_state(), p = new_peer(s, "peer.test", true);
+		p.their_capab.push("CLOCKPUSH"); p.admitted = false;
+		p.synchronize = function() { this.bursts = 1; };
+		s.IRC_clock_tick.call(p);
+		check(p.clock_probe && /^CLOCK [0-9]+$/.test(p.sent[0]), "initial probe skipped");
+		p.work("CLOCK -1 " + s.now);
+		check(!p.admitted && !p.clock_verified && p.clock_probe, "announcement bypassed admission");
+		p.work("CLOCK " + p.clock_probe.nonce + " " + s.now);
+		check(!p.admitted && p.clock_verified, "reciprocal READY bypassed");
+		p.work("CLOCK READY");
+		check(p.admitted && p.bursts && !p.clock_probe, "reciprocal admission failed");
+	},
+	"periodic clocks publish every 15 seconds independently of received samples": function() {
+		var s = new_state(), p = new_peer(s, "peer.test", true);
+		p.their_capab.push("CLOCKPUSH"); p.clock_verified = true;
+		for (var i = 0; i <= 30; i++) {
+			if (i) { s.system.timer++; s.now++; }
+			p.work("CLOCK -1 " + s.now);
+			s.IRC_clock_tick.call(p);
+		}
+		check(!p.quitting && !p.clock_probe && p.sent.length == 3, "wrong announcement cadence");
+		check(p.sent[0] == "CLOCK -1 1800000000.000"
+			&& p.sent[1] == "CLOCK -1 1800000015.000"
+			&& p.sent[2] == "CLOCK -1 1800000030.000", "requests sent or cadence reset by replies");
+	},
+	"periodic clocks enforce either skew boundary and include queue delay": function() {
+		[-31, -30, -3, 0, 3, 30, 31].forEach(function(skew) {
+			var s = new_state(), p = new_peer(s, "peer.test", true);
+			p.their_capab.push("CLOCKPUSH"); p.clock_verified = true;
+			p.work("CLOCK -1 " + (s.now + skew));
+			check(!!p.quitting == (Math.abs(skew) > 30), "wrong skew decision for " + skew);
+			check(!p.sent.length, "unsolicited announcement answered");
+			if (!p.quitting) check(p.clock_unverified_since == s.system.timer, "sample did not refresh deadline");
+		});
+	},
+	"opposite announcement detects an ahead clock concealed by one-way delay": function() {
+		var a = new_state(), b = new_state();
+		var ab = new_peer(a, "b.test", true), ba = new_peer(b, "a.test", true);
+		ab.their_capab.push("CLOCKPUSH"); ba.their_capab.push("CLOCKPUSH");
+		a.now += 31;
+		var from_a = a.now;
+		b.now += 31; b.system.timer += 31;
+		ba.work("CLOCK -1 " + from_a);
+		check(!ba.quitting, "delay did not conceal ahead clock in the expected direction");
+		a.now += 31; a.system.timer += 31;
+		ab.work("CLOCK -1 " + b.now);
+		check(ab.quitting && /Clock skew/.test(ab.quit_reason), "reverse announcement missed actual skew");
+	},
+	"missing periodic clocks time out without sending a new probe": function() {
+		var s = new_state(), p = new_peer(s, "peer.test", true);
+		p.their_capab.push("CLOCKPUSH"); p.clock_verified = true;
+		s.IRC_clock_tick.call(p);
+		s.system.timer += 30; s.now += 30; s.IRC_clock_tick.call(p);
+		check(!p.quitting, "timeout fired before allowance expired");
+		s.system.timer++; s.now++; s.IRC_clock_tick.call(p);
+		check(p.quitting && /Periodic clock announcement timed out/.test(p.quit_reason), "missing announcement ignored");
+		check(!p.clock_probe && !p.sent.some(function(line) { return /^CLOCK [0-9]+$/.test(line); }), "periodic mode requested a sample");
+	},
+	"periodic clocks recover after a local callback stall": function() {
+		var s = new_state(), p = new_peer(s, "peer.test", true);
+		p.their_capab.push("CLOCKPUSH"); p.clock_verified = true;
+		s.IRC_clock_tick.call(p);
+		s.system.timer += 120; s.now += 120; s.Stall_Generation++;
+		s.IRC_clock_tick.call(p);
+		check(!p.quitting && !p.clock_probe && p.sent.length == 2, "stall did not restart announcements");
+		p.work("CLOCK -1 " + s.now);
+		check(!p.quitting && p.clock_unverified_since == s.system.timer, "fresh sample not accepted after stall");
+	},
+	"periodic clocks reject malformed timestamps": function() {
+		["NaN", "Infinity", "-1", "1.1234"].forEach(function(value) {
+			var s = new_state(), p = new_peer(s, "peer.test", true);
+			p.their_capab.push("CLOCKPUSH"); p.clock_verified = true;
+			p.work("CLOCK -1 " + value);
+			check(p.quitting && /Malformed CLOCK/.test(p.quit_reason), "malformed timestamp accepted: " + value);
+		});
+	},
+	"periodic clocks require capability and do not impose leaf or service clock checks": function() {
+		["legacy", "leaf", "services"].forEach(function(kind) {
+			var s = new_state(), p = new_peer(s, "peer.test", kind != "leaf");
+			if (kind != "legacy") p.their_capab.push("CLOCKPUSH");
+			if (kind == "leaf") p.clock_enforce = false;
+			if (kind == "services") p.uline = true;
+			p.work("CLOCK -1 " + (s.now - 86400));
+			check(!p.quitting && p.clock_unverified_since === undefined, "unexpected sample accepted for " + kind);
+			if (kind == "legacy") {
+				s.IRC_clock_tick.call(p);
+				check(p.clock_probe && /^CLOCK [0-9]+$/.test(p.sent[0]), "legacy peer lost request protocol");
+			} else {
+				s.IRC_clock_tick.call(p);
+				check(!p.sent.length, "exempt peer received an announcement");
+			}
+		});
 	},
 	"legacy services bypass new clock capabilities and admission gating": function() {
 		var s = new_state(), p = new_peer(s, "services.test", false);
