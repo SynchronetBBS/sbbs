@@ -759,6 +759,10 @@
   now reaches the callback with `is_connected` false and `error` /
   `error_str` set, instead of appearing connected (the IRC daemon
   sent its server handshake into dead links to unreachable hubs)
+- `Socket.connect()` with a callback no longer leaves the socket in
+  nonblocking mode regardless of its `nonblocking` setting
+- `Socket.connect()` with a callback no longer leaks a descriptor when
+  the script ends with the connect still in progress
 - Callbacks passed to `js.setTimeout()` / `setInterval()` /
   `setImmediate()` / `addEventListener()`, `Socket.on()` / `once()` /
   `connect()` and `console.on()` / `once()` are now GC-rooted and
