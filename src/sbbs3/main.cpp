@@ -3232,10 +3232,8 @@ void event_thread(void* arg)
 			if (is_time_to_run(now, sbbs->cfg.qhub[i])) {
 				// Held through the call-out, which sends and removes the REP packet
 				fmutex_t hub_lock;
-				if (!qwkjob_lock_hub(&sbbs->cfg, &qnet_qwkjob_host, i, &hub_lock)) {
-					sbbs->lprintf(LOG_DEBUG, "QWK Network Hub %s busy, will retry", sbbs->cfg.qhub[i]->id);
-					continue;
-				}
+				if (!qwkjob_lock_hub(&sbbs->cfg, &qnet_qwkjob_host, i, &hub_lock))
+					continue;   // retried next pass: last is unchanged
 				SAFEPRINTF2(str, "%sqnet/%s.now"
 				            , sbbs->cfg.data_dir, sbbs->cfg.qhub[i]->id);
 				if (fexistcase(str))

@@ -200,12 +200,57 @@ expect(system.qwk_unpack("NOSUCH", temp + "none.qwk"), "bad_hub", "unknown hub i
 expect(system.qwk_pack("QWKPEER"), "bad_hub", "disabled hub pack");
 expect(system.qwk_unpack("QWKPEER", temp + "none.qwk"), "bad_hub", "disabled hub import");
 
-// Bad packets: an empty one is removed, any other is kept as data/<HUBID>.qwk.<hex-time>.bad
+// Bad packets: an empty one is left in place unless it sits in data/ for over a minute (it may
+// still be being written), any other is kept as data/<HUBID>.qwk.<hex-time>.bad
 qwk = temp + "empty.qwk";
 write_file(qwk, "");
+file_utime(qwk, time() - 120, time() - 120);
 expect(system.qwk_unpack(HUB, qwk), "failed", "empty packet import");
+if (!file_exists(qwk))
+	throw new Error("empty packet outside data/ removed: " + qwk);
+file_remove(qwk);
+qwk = system.data_dir + HUB + ".qwk";
+write_file(qwk, "");
+expect(system.qwk_unpack(HUB, qwk), "failed", "new empty packet in data/");
+if (!file_exists(qwk))
+	throw new Error("new empty packet in data/ removed: " + qwk);
+file_utime(qwk, time() - 120, time() - 120);
+expect(system.qwk_unpack(HUB, qwk), "failed", "old empty packet in data/");
 if (file_exists(qwk))
-	throw new Error("empty packet left behind: " + qwk);
+	throw new Error("old empty packet in data/ left behind: " + qwk);
+
+// Not a regular file: "failed" at once, the path untouched
+function expect_refused(path, what)
+{
+	var t = time();
+	expect(system.qwk_unpack(HUB, path), "failed", what);
+	if (time() - t > 5)
+		throw new Error(what + ": took " + (time() - t) + " seconds");
+}
+var dir = temp + "dir.qwk";
+mkdir(dir);
+expect_refused(dir, "directory");
+if (!file_isdir(dir))
+	throw new Error("directory moved: " + dir);
+rmdir(dir);
+var wild = temp + "wild1.qwk";
+copy_fixture(wild);
+expect_refused(temp + "wild?.qwk", "wildcard ?");
+expect_refused(temp + "*.qwk", "wildcard *");
+if (!file_exists(wild) || file_size(wild) != file_size(js.exec_dir + "fixture.qwk"))
+	throw new Error("wildcard match touched: " + wild);
+file_remove(wild);
+if (system.platform != "Win32") {
+	var fifo = temp + "fifo.qwk";
+	if (system.exec("mkfifo " + fifo) != 0)
+		throw new Error("mkfifo " + fifo);
+	expect_refused(fifo, "FIFO");
+	if (!file_exists(fifo))
+		throw new Error("FIFO removed: " + fifo);
+	file_remove(fifo);
+	expect_refused("/dev/null", "device");
+}
+
 qwk = temp + "text.qwk";
 var junk = "not a QWK packet " + start + "\r\n";
 write_file(qwk, junk);

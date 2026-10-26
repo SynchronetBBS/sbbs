@@ -138,6 +138,9 @@ function post(query)
 		case "failed":
 			// The packet was received (a bad one is kept as .bad); re-sending won't help
 			log(LOG_WARNING, "REP packet import failed: " + path);
+			// An empty packet is left in place by the job outside the sweep directory
+			if(file_exists(path))
+				file_remove(path);
 			return "200 bitchen";
 		default:
 			log(LOG_ERR, "REP packet import: " + r.result);

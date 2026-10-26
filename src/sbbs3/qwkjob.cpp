@@ -27,6 +27,11 @@
 
 #define QWKJOB_TEMP_MAX_AGE     (60 * 60)   // Seconds before an orphaned job temp dir is removed
 #define QWKJOB_BAD_KEEP         10          // .bad packets retained per user or hub
+#define QWKJOB_EMPTY_MIN_AGE    60          // Seconds before an empty packet in a sweep directory is removed
+
+#if !defined(S_ISREG)   // MSVC
+	#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
+#endif
 
 static std::atomic<int>      qwkjob_running{0};
 static std::atomic<unsigned> qwkjob_serial{0};
@@ -176,7 +181,63 @@ static bool qwkjob_replace_file(const char* src, const char* dest)
 #endif
 }
 
-// Keeps a packet that failed to import for the sysop, as <dir><prefix>.<hex-time>.bad (an empty one is removed),
+// Whether path names a file directly in dir (both are resolved to full paths)
+static bool qwkjob_path_in_dir(const char* path, const char* dir)
+{
+	char full_path[MAX_PATH + 1];
+	char full_dir[MAX_PATH + 1];
+
+	if (FULLPATH(full_path, path, sizeof full_path) == NULL
+	    || FULLPATH(full_dir, dir, sizeof full_dir) == NULL)
+		return false;
+	backslash(full_dir);
+	size_t len = strlen(full_dir);
+#ifdef _WIN32
+	if (strnicmp(full_path, full_dir, len) != 0)
+#else
+	if (strncmp(full_path, full_dir, len) != 0)
+#endif
+		return false;
+	return getfname(full_path) == full_path + len;
+}
+
+// A packet to import must be one regular file: not a directory, a device or a FIFO (whose open() blocks),
+// nor a wildcard pattern (which fexist() would match)
+static bool qwkjob_regular_file(const qwkjob_host_t* host, const char* path)
+{
+	struct stat st;
+
+	if (strpbrk(path, "*?") == NULL) {
+		if (stat(path, &st) == 0) {
+			if (S_ISREG(st.st_mode))
+				return true;
+		} else if (errno == ENOENT) {
+			qwkjob_lprintf(host, LOG_DEBUG, "%s already gone", path);
+			return false;
+		}
+	}
+	qwkjob_lprintf(host, LOG_ERR, "not a regular file: %s", path);
+	return false;
+}
+
+// Whether path is an empty packet, which is removed only from the sweep directory (dir) and only once old
+// enough not to be a file another process just created and is still writing
+static bool qwkjob_empty_packet(const qwkjob_host_t* host, const char* path, const char* dir)
+{
+	if (flength(path) != 0)
+		return false;
+	time_t t = fdate(path);
+	if (t != -1 && difftime(time(NULL), t) > QWKJOB_EMPTY_MIN_AGE && qwkjob_path_in_dir(path, dir)) {
+		if (remove(path) == 0)
+			qwkjob_lprintf(host, LOG_NOTICE, "Removed empty packet: %s", path);
+		else
+			qwkjob_lprintf(host, LOG_ERR, "!ERROR %d (%s) removing empty packet: %s", errno, strerror(errno), path);
+	} else
+		qwkjob_lprintf(host, LOG_DEBUG, "Empty packet left in place: %s", path);
+	return true;
+}
+
+// Keeps a packet that failed to import for the sysop, as <dir><prefix>.<hex-time>.bad,
 // retaining the newest QWKJOB_BAD_KEEP files matching <prune>.*.bad
 static void qwkjob_keep_bad(sbbs_t* sbbs, const char* path, const char* dir, const char* prefix, const char* prune)
 {
@@ -184,13 +245,8 @@ static void qwkjob_keep_bad(sbbs_t* sbbs, const char* path, const char* dir, con
 	char  spec[MAX_PATH + 1];
 	off_t len = flength(path);
 
-	if (len < 0)
+	if (len < 0 || qwkjob_empty_packet(sbbs->job_host, path, dir))
 		return;
-	if (len == 0) {
-		sbbs->lprintf(LOG_NOTICE, "Removing empty packet: %s", path);
-		sbbs->fremove(WHERE, path, /* log-all-errors: */ true);
-		return;
-	}
 	snprintf(badpkt, sizeof badpkt, "%s%s.%" PRIx64 ".bad", dir, prefix, (uint64_t)time(NULL));
 	sbbs->fremove(WHERE, badpkt);
 	if (sbbs->mv(path, badpkt, /* copy: */ false) == 0)
@@ -387,7 +443,7 @@ static enum qwkjob_result qwkjob_unpack_qwk_job(sbbs_t* sbbs, const qwkjob_host_
 	if (qwkjob_terminated(host))
 		return QWKJOB_FAILED;
 	SAFECOPY(path, qwkpath);
-	// An empty packet is discarded without the error unpack_qwk() would log for it
+	// An empty packet skips unpack_qwk(), which would log an error for it
 	if (flength(path) != 0 && sbbs->unpack_qwk(path, hubnum)) {
 		sbbs->fremove(WHERE, path, /* log-all-errors: */ true);
 		return QWKJOB_OK;
@@ -397,26 +453,6 @@ static enum qwkjob_result qwkjob_unpack_qwk_job(sbbs_t* sbbs, const qwkjob_host_
 	SAFEPRINTF(prune, "%s.q??", hub_id);
 	qwkjob_keep_bad(sbbs, path, sbbs->cfg.data_dir, prefix, prune);
 	return QWKJOB_FAILED;
-}
-
-// Whether path names a file directly in dir (both are resolved to full paths)
-static bool qwkjob_path_in_dir(const char* path, const char* dir)
-{
-	char full_path[MAX_PATH + 1];
-	char full_dir[MAX_PATH + 1];
-
-	if (FULLPATH(full_path, path, sizeof full_path) == NULL
-	    || FULLPATH(full_dir, dir, sizeof full_dir) == NULL)
-		return false;
-	backslash(full_dir);
-	size_t len = strlen(full_dir);
-#ifdef _WIN32
-	if (strnicmp(full_path, full_dir, len) != 0)
-#else
-	if (strncmp(full_path, full_dir, len) != 0)
-#endif
-		return false;
-	return getfname(full_path) == full_path + len;
 }
 
 extern "C" {
@@ -484,6 +520,9 @@ enum qwkjob_result qwkjob_unpack_rep(scfg_t* cfg, const qwkjob_host_t* host
 
 	if (qwkjob_check_user(cfg, usernum) != QWKJOB_OK)
 		return QWKJOB_BAD_USER;
+	SAFEPRINTF(dir, "%sfile/", cfg->data_dir);
+	if (!qwkjob_regular_file(host, reppath) || qwkjob_empty_packet(host, reppath, dir))
+		return QWKJOB_FAILED;
 	qwkjob_slot slot(host);
 	if (!slot.acquired())
 		return QWKJOB_THROTTLED;
@@ -491,7 +530,6 @@ enum qwkjob_result qwkjob_unpack_rep(scfg_t* cfg, const qwkjob_host_t* host
 	if (!qwkjob_lock_user(cfg, host, usernum, &lock))
 		return QWKJOB_BUSY;
 	fmutex_t rep_lock = fmutex_init();
-	SAFEPRINTF(dir, "%sfile/", cfg->data_dir);
 	if (qwkjob_path_in_dir(reppath, dir)) {
 		SAFEPRINTF(rep_lock.name, "%s.lock", reppath);
 		if (!fmutex_open(&rep_lock, qwkjob_host_name(host), TIMEOUT_MUTEX_FILE)) {
@@ -598,6 +636,8 @@ enum qwkjob_result qwkjob_unpack_qwk(scfg_t* cfg, const qwkjob_host_t* host
 
 	if (!qwkjob_hub_enabled(cfg, hubnum))
 		return QWKJOB_BAD_HUB;
+	if (!qwkjob_regular_file(host, qwkpath) || qwkjob_empty_packet(host, qwkpath, cfg->data_dir))
+		return QWKJOB_FAILED;
 	qwkjob_slot slot(host);
 	if (!slot.acquired())
 		return QWKJOB_THROTTLED;

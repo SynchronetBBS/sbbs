@@ -949,8 +949,14 @@ static void import_rep(const xfer_t* xfer)
 	char               errstr[256];
 	enum qwkjob_result result = qwkjob_unpack_rep(&scfg, &ftp_qwkjob_host, xfer->user->number, xfer->filename);
 
-	if (!fexist(xfer->filename))    // imported, or kept as .bad (or an empty one removed) by the job
+	if (!fexist(xfer->filename))    // imported, or kept as .bad by the job
 		return;
+	if (result == QWKJOB_FAILED) {  // e.g. an empty packet, which the job leaves in place outside data/file/
+		if (remove(xfer->filename) != 0)
+			errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) removing %s", xfer->ctrl_sock, xfer->user->alias
+			          , errno, safe_strerror(errno, errstr, sizeof errstr), xfer->filename);
+		return;
+	}
 	if (queue_rep(xfer, dest, sizeof dest))
 		lprintf(LOG_INFO, "%04d <%s> QWK reply packet import %s, queued: %s"
 		        , xfer->ctrl_sock, xfer->user->alias, qwkjob_result_str(result), dest);

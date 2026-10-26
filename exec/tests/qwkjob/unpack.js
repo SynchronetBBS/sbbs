@@ -66,15 +66,31 @@ if (total_msgs("qwkt-b") != before + 1)
 if (file_exists(rep))
 	throw new Error("good REP left behind: " + rep);
 
-// Garbage REPs: "failed"; an empty one is removed, any other kept as a .bad file
+// Garbage REPs: "failed"; an empty one is left in place unless it sits in data/file/ for over
+// a minute (it may still be being written), any other is kept as a .bad file
 var bad_start = time();
 var f = new File(temp + "empty.rep");
 f.open("w"); f.close();
 r = system.qwk_unpack(u, f.name);
 if (r.result != "failed")
 	throw new Error("0-byte REP: " + JSON.stringify(r));
-if (file_exists(f.name))
-	throw new Error("0-byte REP left behind: " + f.name);
+if (!file_exists(f.name))
+	throw new Error("0-byte REP outside data/file/ removed: " + f.name);
+file_utime(f.name, time() - 120, time() - 120);
+r = system.qwk_unpack(u, f.name);
+if (r.result != "failed" || !file_exists(f.name))
+	throw new Error("old 0-byte REP outside data/file/: " + JSON.stringify(r) + " exists=" + file_exists(f.name));
+file_remove(f.name);
+var swept = system.data_dir + format("file/%04u.rep", u);
+f = new File(swept);
+f.open("w"); f.close();
+r = system.qwk_unpack(u, swept);
+if (r.result != "failed" || !file_exists(swept))
+	throw new Error("new 0-byte REP in data/file/: " + JSON.stringify(r) + " exists=" + file_exists(swept));
+file_utime(swept, time() - 120, time() - 120);
+r = system.qwk_unpack(u, swept);
+if (r.result != "failed" || file_exists(swept))
+	throw new Error("old 0-byte REP in data/file/: " + JSON.stringify(r) + " exists=" + file_exists(swept));
 f = new File(temp + "text.rep");
 f.open("w"); f.writeln("This is not a QWK reply packet."); f.close();
 r = system.qwk_unpack(u, f.name);
@@ -104,6 +120,39 @@ for (var i = 0; i < SUBS.length; i++) {
 		throw new Error(code + " pointer changed: " + subs_before[code].ptr + " -> " + subs_after[code].ptr);
 }
 set_scan_cfg("qwkt-b", SUB_CFG_NSCAN);
+
+// Not a regular file: "failed" at once, the path untouched
+function expect_refused(path, what)
+{
+	var t = time();
+	var r = system.qwk_unpack(u, path);
+	if (r.result != "failed")
+		throw new Error(what + ": " + JSON.stringify(r));
+	if (time() - t > 5)
+		throw new Error(what + ": took " + (time() - t) + " seconds");
+}
+var dir = temp + "dir.rep";
+mkdir(dir);
+expect_refused(dir, "directory");
+if (!file_isdir(dir))
+	throw new Error("directory moved: " + dir);
+rmdir(dir);
+var wild = temp + "wild1.rep";
+copy_fixture("fixture.rep", wild);
+expect_refused(temp + "wild?.rep", "wildcard ?");
+expect_refused(temp + "*.rep", "wildcard *");
+if (!file_exists(wild) || file_size(wild) != file_size(fixture_dir + "fixture.rep"))
+	throw new Error("wildcard match touched: " + wild);
+file_remove(wild);
+if (system.platform != "Win32") {
+	var fifo = temp + "fifo.rep";
+	if (system.exec("mkfifo " + fifo) != 0)
+		throw new Error("mkfifo " + fifo);
+	expect_refused(fifo, "FIFO");
+	if (!file_exists(fifo))
+		throw new Error("FIFO removed: " + fifo);
+	file_remove(fifo);
+}
 
 rmdir(temp);
 if (directory(system.temp_dir + "qwk/*").length)
