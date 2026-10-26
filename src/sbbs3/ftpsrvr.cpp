@@ -4527,6 +4527,11 @@ static void ctrl_thread(void* arg)
 						    || time(NULL) - start > startup->qwk_timeout)
 							break;
 						mswait(1000);
+						if (fexistcase(qwkfile)) {  // packed by another session meanwhile: send that one
+							lprintf(LOG_INFO, "%04d <%s> QWK packet created by another session", sock, user.alias);
+							qwkresult = QWKJOB_OK;
+							break;
+						}
 					}
 					lastactive = time(NULL);
 					if (!socket_check(sock, NULL, NULL, 0)) {

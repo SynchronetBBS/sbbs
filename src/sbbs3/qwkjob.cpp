@@ -24,8 +24,10 @@
 #include "filedat.h"
 
 #include <atomic>
+#include <mutex>
+#include <set>
 
-#define QWKJOB_TEMP_MAX_AGE     (60 * 60)   // Seconds before an orphaned job temp dir is removed
+#define QWKJOB_TEMP_MAX_AGE     (6 * 60 * 60)   // Seconds before an orphaned job temp dir is removed
 #define QWKJOB_BAD_KEEP         10          // .bad packets retained per user or hub
 #define QWKJOB_EMPTY_MIN_AGE    60          // Seconds before an empty packet in a sweep directory is removed
 
@@ -35,6 +37,8 @@
 
 static std::atomic<int>      qwkjob_running{0};
 static std::atomic<unsigned> qwkjob_serial{0};
+static std::mutex            qwkjob_temp_mutex;
+static std::set<unsigned>    qwkjob_temp_serials;   // of this process's job temp dirs in use
 
 // Counts a running on-demand job against QWKJOB_MAX_CONCURRENT; event-thread jobs are exempt
 class qwkjob_slot {
@@ -121,6 +125,61 @@ static void qwkjob_unlock(const qwkjob_host_t* host, fmutex_t* lock)
 		qwkjob_lprintf(host, LOG_ERR, "!ERROR %d (%s) removing %s", errno, strerror(errno), lock->name);
 }
 
+static bool qwkjob_process_running(int pid)
+{
+#ifdef _WIN32
+	HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)pid);
+	if (h == NULL)
+		return GetLastError() == ERROR_ACCESS_DENIED;
+	DWORD  code = 0;
+	bool   running = GetExitCodeProcess(h, &code) && code == STILL_ACTIVE;
+	CloseHandle(h);
+	return running;
+#else
+	return kill(pid, 0) == 0 || errno == EPERM;
+#endif
+}
+
+static void qwkjob_temp_dir_active(unsigned serial, bool active)
+{
+	std::lock_guard<std::mutex> guard(qwkjob_temp_mutex);
+	if (active)
+		qwkjob_temp_serials.insert(serial);
+	else
+		qwkjob_temp_serials.erase(serial);
+}
+
+// Whether a job temp dir (<tag>.<host>.<pid>.<serial>/) belongs to a job still running on this host
+static bool qwkjob_temp_dir_live(const qwkjob_host_t* host, const char* dir)
+{
+	char  name[MAX_PATH + 1];
+	char* p;
+
+	SAFECOPY(name, dir);
+	p = lastchar(name);
+	if (IS_PATH_DELIM(*p))
+		*p = '\0';
+	char* fname = getfname(name);
+	char* serial = strrchr(fname, '.');
+	if (serial == NULL || serial == fname)
+		return false;
+	*serial++ = '\0';
+	char* pid = strrchr(fname, '.');
+	if (pid == NULL)
+		return false;
+	*pid++ = '\0';
+	char* host_name = strchr(fname, '.');
+	if (host_name == NULL || strcmp(host_name + 1, qwkjob_host_name(host)) != 0)
+		return false;
+	int   pidnum = atoi(pid);
+	if (pidnum <= 0)
+		return false;
+	if (pidnum != (int)getpid())
+		return qwkjob_process_running(pidnum);
+	std::lock_guard<std::mutex> guard(qwkjob_temp_mutex);
+	return qwkjob_temp_serials.count((unsigned)strtoul(serial, NULL, 10)) != 0;
+}
+
 // Removes job temp dirs that outlived their job (e.g. an archiver kept a file open)
 static void qwkjob_prune_temp(const char* root, const qwkjob_host_t* host)
 {
@@ -148,6 +207,10 @@ static void qwkjob_prune_temp(const char* root, const qwkjob_host_t* host)
 		}
 		if (difftime(now, t) < QWKJOB_TEMP_MAX_AGE)
 			continue;
+		if (qwkjob_temp_dir_live(host, dir)) {
+			qwkjob_lprintf(host, LOG_DEBUG, "Temp directory of a running job left in place: %s", dir);
+			continue;
+		}
 		if (delfiles(dir, ALLFILES, 0) < 0 || rmdir(dir) != 0)
 			qwkjob_lprintf(host, LOG_DEBUG, "Unable to remove stale temp directory: %s", dir);
 		else
@@ -167,9 +230,12 @@ static bool qwkjob_make_temp_dir(const qwkjob_host_t* host, const char* tag, cha
 		return false;
 	}
 	qwkjob_prune_temp(root, host);
-	snprintf(path, size, "%s%s.%s.%d.%u/", root, tag, qwkjob_host_name(host), (int)getpid(), ++qwkjob_serial);
+	unsigned serial = ++qwkjob_serial;
+	qwkjob_temp_dir_active(serial, true);
+	snprintf(path, size, "%s%s.%s.%d.%u/", root, tag, qwkjob_host_name(host), (int)getpid(), serial);
 	if ((err = md(path)) != 0) {
 		qwkjob_lprintf(host, LOG_ERR, "!ERROR %d (%s) creating directory: %s", err, strerror(err), path);
+		qwkjob_temp_dir_active(serial, false);
 		return false;
 	}
 	return true;
@@ -177,8 +243,17 @@ static bool qwkjob_make_temp_dir(const qwkjob_host_t* host, const char* tag, cha
 
 static void qwkjob_remove_temp_dir(const qwkjob_host_t* host, const char* path)
 {
+	char name[MAX_PATH + 1];
+
 	if (delfiles(path, ALLFILES, 0) < 0 || rmdir(path) != 0)
 		qwkjob_lprintf(host, LOG_DEBUG, "Unable to remove temp directory: %s", path);
+	SAFECOPY(name, path);
+	char*       p = lastchar(name);
+	if (IS_PATH_DELIM(*p))
+		*p = '\0';
+	const char* serial = strrchr(name, '.');
+	if (serial != NULL)
+		qwkjob_temp_dir_active((unsigned)strtoul(serial + 1, NULL, 10), false);
 }
 
 static bool qwkjob_replace_file(const char* src, const char* dest)

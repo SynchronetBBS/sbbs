@@ -555,6 +555,11 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	struct js_listener_entry *listeners;
 	cmd_keys_scope keys_scope(this, nullptr);
 
+	// A job's startup and server hosts are not set up for a JS context (e.g. an EX_SH ?script archiver)
+	if (job_host != nullptr) {
+		errormsg(WHERE, ERR_EXEC, cmd, 0, "JavaScript not available in QWK jobs");
+		return -1;
+	}
 
 	if (js_cx == NULL)
 		js_cx = this->js_cx;
@@ -764,6 +769,11 @@ int sbbs_t::js_execxtrn(const char *cmd, const char* startup_dir)
 	int        result = -1;
 	JSRuntime* js_runtime;
 	JSObject*  js_glob;
+
+	if (job_host != nullptr) {  // see js_execfile()
+		errormsg(WHERE, ERR_EXEC, cmd, 0, "JavaScript not available in QWK jobs");
+		return -1;
+	}
 	JSContext* js_cx = js_init(&js_runtime, &js_glob, "XtrnModule");
 	if (js_cx != NULL) {
 		js_create_user_objects(js_cx, js_glob);

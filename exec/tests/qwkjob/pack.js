@@ -20,25 +20,42 @@ var qwk = system.data_dir + format("file/%04u.qwk", u);
 file_remove(qwk);
 post_new_message("qwkt-a");
 
-// A job temp dir orphaned over an hour ago is removed by the next job; a recent one is kept
+// A job temp dir orphaned over 6 hours ago is removed by the next job; a recent one is kept,
+// as is an old one named for a process still running on this host (its job may just be idle)
 var stale = system.temp_dir + "qwk/0000.stalehost.0.0/";
 var recent = system.temp_dir + "qwk/0000.recenthost.0.0/";
+var dead = system.temp_dir + "qwk/0000." + system.host_name + ".999999999.0/";
+var live = system.temp_dir + "qwk/0000." + system.host_name + ".1.0/";   // init
+var old = time() - (7 * 60 * 60);
+var hours_old = time() - (2 * 60 * 60);
+var check_live = system.platform != "Win32";
 mkpath(stale);
 mkpath(recent);
+mkpath(dead);
+if (check_live)
+	mkpath(live);
 var sf = new File(stale + "leftover");
 sf.open("w"); sf.writeln("x"); sf.close();
-var old = time() - (2 * 60 * 60);
-if (!file_utime(stale, old, old))
-	throw new Error("file_utime " + stale);
+if (!file_utime(stale, old, old) || !file_utime(dead, old, old)
+	|| !file_utime(recent, hours_old, hours_old) || (check_live && !file_utime(live, old, old)))
+	throw new Error("file_utime");
 
 var r = system.qwk_pack(u);
 if (r.result != "ok" || r.msgs < 1 || r.path != qwk || !file_exists(qwk))
 	throw new Error("first pack: " + JSON.stringify(r));
 if (file_isdir(stale))
 	throw new Error("stale job temp dir not removed: " + stale);
+if (file_isdir(dead))
+	throw new Error("stale temp dir of an ended process not removed: " + dead);
 if (!file_isdir(recent))
 	throw new Error("recent temp dir removed: " + recent);
 rmdir(recent);
+if (check_live) {
+	var live_kept = file_isdir(live);
+	rmdir(live);
+	if (!live_kept)
+		throw new Error("temp dir of a running process removed: " + live);
+}
 var r2 = system.qwk_pack(u);	/* pointers advanced: nothing new */
 if (r2.result != "empty")
 	throw new Error("second pack: " + JSON.stringify(r2));

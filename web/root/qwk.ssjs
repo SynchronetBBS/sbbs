@@ -35,9 +35,10 @@ function get(query)
 				http_reply.header["Retry-After"] = "60";
 				return "503 QWK packet creation already in progress";
 			}
-			if(r.result == "empty")
+			// Another session may have created the packet since the check above
+			if(r.result == "empty" && !file_exists(qwkfile))
 				return "204 No QWK packet created (no new messages?)";
-			if(r.result != "ok")
+			if(r.result != "ok" && r.result != "empty")
 				return "503 QWK packet creation failed: " + r.result;
 		} else {
 			// Older binary: ask the Terminal Server's event thread via semaphore file
