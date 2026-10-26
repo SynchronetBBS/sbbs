@@ -432,6 +432,7 @@ if(DEUCESSH_BUILD_STATIC)
 		set_property(TARGET deucessh_static PROPERTY CXX_STANDARD_REQUIRED ON)
 	endif()
 	set_property(TARGET deucessh_static PROPERTY OUTPUT_NAME deucessh)
+	set_property(TARGET deucessh_static PROPERTY POSITION_INDEPENDENT_CODE ON)
 	target_include_directories(deucessh_static
 		PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
