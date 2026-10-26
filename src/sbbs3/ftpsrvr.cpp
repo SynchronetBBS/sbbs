@@ -915,14 +915,17 @@ static bool queue_rep(const xfer_t* xfer, char* dest, size_t size)
 
 	snprintf(dest, size, "%sfile/%04u.rep", scfg.data_dir, usernum);
 	for (int i = 0; fexist(dest); i++) {
-		if (i >= 10)
+		if (i >= 10) {
+			errno = EEXIST;
 			return false;
+		}
 		snprintf(dest, size, "%sfile/%04u.%" PRIx64 ".rep", scfg.data_dir, usernum, t + i);
 	}
 	if (rename(xfer->filename, dest) == 0)
 		return true;
-	// temp_dir may be on another volume: copy beside dest (a name the sweep ignores), then rename
-	snprintf(staged, sizeof staged, "%sfile/%04u.%d.reptmp", scfg.data_dir, usernum, (int)xfer->ctrl_sock);
+	// temp_dir may be on another volume: copy beside dest (a name the sweep ignores), then rename.
+	// Not ".rep*": Windows matches "*.rep" against 8.3 short names too.
+	snprintf(staged, sizeof staged, "%sfile/%04u.%d.tmp", scfg.data_dir, usernum, (int)xfer->ctrl_sock);
 	if (!CopyFile(xfer->filename, staged, /* failIfExists: */ FALSE))
 		return false;
 	if (rename(staged, dest) != 0) {
@@ -1341,7 +1344,8 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
                      , bool receiving
                      , bool credits
                      , bool append
-                     , char* desc, bool protect)
+                     , char* desc, bool protect
+                     , bool qwk_rep = false)
 {
 	int               result;
 	ulong             l;
@@ -1526,7 +1530,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 		xfer->client = client;
 		xfer->dir = dir;
 		xfer->desc = desc;
-		xfer->qwk_rep = receiving && dir < 0;
+		xfer->qwk_rep = qwk_rep;
 		SAFECOPY(xfer->filename, filename);
 		(void)protected_uint32_adjust(&thread_count, 1);
 		if (receiving)
@@ -4496,6 +4500,7 @@ static void ctrl_thread(void* arg)
 							break;
 						mswait(1000);
 					}
+					lastactive = time(NULL);
 					if (!socket_check(sock, NULL, NULL, 0)) {
 						lprintf(LOG_NOTICE, "%04d <%s> disconnected while creating QWK packet (%s)"
 						        , sock, user.alias, qwkjob_result_str(qwkresult));
@@ -4918,6 +4923,7 @@ static void ctrl_thread(void* arg)
 			int64_t freespace;
 			const char* destdir;
 			char        repdir[MAX_PATH + 1];
+			bool        qwk_rep = false;
 			if (dir < 0) {
 				sprintf(str, "%s.rep", scfg.sys_id);
 				if (!(startup->options & FTP_OPT_ALLOW_QWK)
@@ -4932,6 +4938,7 @@ static void ctrl_thread(void* arg)
 					errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) creating directory: %s"
 					          , sock, user.alias, i, safe_strerror(i, error, sizeof error), repdir);
 				snprintf(fname, sizeof fname, "%s%04u.%d.rep", repdir, user.number, (int)sock);
+				qwk_rep = true;
 				lprintf(LOG_INFO, "%04d <%s> uploading: %s in %s mode"
 				        , sock, user.alias, fname
 				        , mode);
@@ -5055,6 +5062,7 @@ static void ctrl_thread(void* arg)
 			         , append
 			         , desc
 			         , protection
+			         , qwk_rep
 			         );
 			filepos = 0;
 			continue;
