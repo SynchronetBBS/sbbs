@@ -1596,6 +1596,15 @@ implementation makes them equal
 | 
 |√
 
+|90
+|Bright Black foreground (dark grey)
+| 
+|√
+|√
+| 
+|√
+| 
+
 |91
 |Bright Red foreground
 | 
