@@ -296,8 +296,13 @@ static int event_qwkjob_lputs(void* cbdata, int level, const char* str)
 	return eputs(level, str);
 }
 
+static char          qwkjob_temp_root[MAX_PATH + 1];
 static qwkjob_host_t node_qwkjob_host;
 static qwkjob_host_t event_qwkjob_host;
+// The event thread's QWK sweeps, one per events.log prefix
+static qwkjob_host_t unpack_rep_qwkjob_host;
+static qwkjob_host_t pack_qwk_qwkjob_host;
+static qwkjob_host_t qnet_qwkjob_host;
 
 int lprintf(int level, const char *fmt, ...)
 {
@@ -2982,10 +2987,6 @@ void event_thread(void* arg)
 	int file;
 	int offset;
 	bool check_semaphores;
-	bool packed_rep;
-	uint l;
-	/* TODO: This is a silly hack... */
-	uint32_t l32;
 	time_t now;
 	time_t start;
 	time_t lastsemchk = 0;
@@ -3101,57 +3102,13 @@ void event_thread(void* arg)
 				char* fname = g.gl_pathv[i];
 				if (flength(fname) < 1)
 					continue;
-				sbbs->useron.number = 0;
 				sbbs->lprintf(LOG_DEBUG, "Inbound QWK Reply Packet detected: %s", fname);
-				if (sbbs->getuseron(WHERE, atoi(fname + offset)) && !(sbbs->useron.misc & (DELETED | INACTIVE))) {
-					fmutex_t lockfile;
-					SAFEPRINTF(lockfile.name, "%s.lock", fname);
-					if (!fmutex_open(&lockfile, startup->host_name, TIMEOUT_MUTEX_FILE)) {
-						if (difftime(time(NULL), lockfile.time) > 60)
-							sbbs->lprintf(LOG_INFO, " %s exists (unpack in progress?) since %s", lockfile.name, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
-						continue;
-					}
-					sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfile.name);
-					if (!fexist(fname)) {
-						sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
-						if (!fmutex_close(&lockfile))
-							sbbs->errormsg(WHERE, ERR_CLOSE, lockfile.name);
-						continue;
-					}
-					sbbs->online = ON_LOCAL;
-					sbbs->getusrsubs();
-					bool success = sbbs->unpack_rep(fname);
-					sbbs->delfiles(sbbs->cfg.temp_dir, ALLFILES);        /* clean-up temp_dir after unpacking */
-					sbbs->online = false;
-
-					/* putuserdat? */
-					if (success) {
-						sbbs->fremove(WHERE, fname, /* log-all-errors: */ true);
-					} else if (flength(fname) > 0) {
-						char badpkt[MAX_PATH + 1];
-						SAFEPRINTF2(badpkt, "%s.%" PRIx64 ".bad", fname, (uint64_t)time(NULL));
-						sbbs->fremove(WHERE, badpkt);
-						if (flength(fname) > 0) {
-							if (rename(fname, badpkt) == 0)
-								sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", fname, badpkt);
-							else
-								sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s (%ld bytes) to %s"
-								              , errno, strerror(errno), fname, (long)flength(fname), badpkt);
-							SAFEPRINTF(badpkt, "%u.rep.*.bad", sbbs->useron.number);
-							SAFEPRINTF(str, "%sfile/", sbbs->cfg.data_dir);
-							sbbs->delfiles(str, badpkt, /* keep: */ 10);
-						}
-					}
-					if (!fmutex_close(&lockfile))
-						sbbs->errormsg(WHERE, ERR_CLOSE, lockfile.name);
-				}
-				else {
+				if (qwkjob_unpack_rep(&sbbs->cfg, &unpack_rep_qwkjob_host, atoi(fname + offset), fname) == QWKJOB_BAD_USER) {
 					sbbs->lprintf(LOG_INFO, "Removing: %s", fname);
 					sbbs->fremove(WHERE, fname, /* log-all-errors: */ true);
 				}
 			}
 			globfree(&g);
-			sbbs->useron.number = 0;
 
 			/* Create any QWK files that have magically appeared (via FTP perhaps) */
 			sbbs->event_code = "packQWK";
@@ -3162,52 +3119,11 @@ void event_thread(void* arg)
 				char* fname = g.gl_pathv[i];
 				if (!fexist(fname))
 					continue;
-				sbbs->useron.number = 0;
 				sbbs->lprintf(LOG_INFO, "QWK pack semaphore signaled: %s", fname);
-				if (!sbbs->getuseron(WHERE, atoi(fname + offset))) {
-					sbbs->fremove(WHERE, fname, /* log-all-errors: */ true);
-					continue;
-				}
-				fmutex_t lockfile;
-				SAFEPRINTF2(lockfile.name, "%spack%04u.lock", sbbs->cfg.data_dir, sbbs->useron.number);
-				if (!fmutex_open(&lockfile, startup->host_name, TIMEOUT_MUTEX_FILE)) {
-					if (difftime(time(NULL), lockfile.time) > 60)
-						sbbs->lprintf(LOG_INFO, "%s exists (pack in progress?) since %s", lockfile.name, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
-					continue;
-				}
-				sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfile.name);
-				if (!fexist(fname)) {
-					sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
-					if (!fmutex_close(&lockfile))
-						sbbs->errormsg(WHERE, ERR_CLOSE, lockfile.name);
-					continue;
-				}
-				if (!(sbbs->useron.misc & (DELETED | INACTIVE))) {
-					sbbs->lprintf(LOG_INFO, "Packing QWK Message Packet");
-					sbbs->online = ON_LOCAL;
-					sbbs->getmsgptrs();
-					sbbs->getusrsubs();
-
-					sbbs->last_ns_time = sbbs->ns_time = sbbs->useron.ns_time;
-
-					SAFEPRINTF3(str, "%sfile%c%04u.qwk"
-					            , sbbs->cfg.data_dir, PATH_DELIM, sbbs->useron.number);
-					if (sbbs->pack_qwk(str, &l, true /* pre-pack/off-line */)) {
-						sbbs->lprintf(LOG_INFO, "Packing completed: %s", str);
-						sbbs->qwk_success(l, 0, 1);
-						sbbs->putmsgptrs();
-						batch_list_clear(&sbbs->cfg, sbbs->useron.number, XFER_BATCH_DOWNLOAD);
-					} else
-						sbbs->lputs(LOG_INFO, "No packet created (no new messages)");
-					sbbs->delfiles(sbbs->cfg.temp_dir, ALLFILES);
-					sbbs->online = false;
-				}
-				sbbs->fremove(WHERE, fname);
-				if (!fmutex_close(&lockfile))
-					sbbs->errormsg(WHERE, ERR_CLOSE, lockfile.name);
+				if (qwkjob_pack(&sbbs->cfg, &pack_qwk_qwkjob_host, atoi(fname + offset), NULL, NULL, 0) != QWKJOB_BUSY)
+					sbbs->fremove(WHERE, fname);
 			}
 			globfree(&g);
-			sbbs->useron.number = 0;
 		}
 
 		if (check_semaphores) {
@@ -3306,79 +3222,32 @@ void event_thread(void* arg)
 				SAFEPRINTF2(str, "%s%s.q??", sbbs->cfg.data_dir, sbbs->cfg.qhub[i]->id);
 				glob(str, GLOB_NOSORT, NULL, &g);
 				for (j = 0; j < (int)g.gl_pathc; j++) {
-					SAFECOPY(str, g.gl_pathv[j]);
-					if (flength(str) > 0) {    /* silently ignore 0-byte QWK packets */
-						sbbs->lprintf(LOG_DEBUG, "Inbound QWK Packet detected: %s", str);
-						sbbs->online = ON_LOCAL;
-						if (sbbs->unpack_qwk(str, i) == false) {
-							char newname[MAX_PATH + 1];
-							SAFEPRINTF2(newname, "%s.%x.bad", str, (int)now);
-							sbbs->fremove(WHERE, newname);
-							if (rename(str, newname) == 0)
-								sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", str, newname);
-							else
-								sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
-								              , errno, strerror(errno), str, newname);
-							SAFEPRINTF(newname, "%s.q??.*.bad", sbbs->cfg.qhub[i]->id);
-							sbbs->delfiles(sbbs->cfg.data_dir, newname, /* keep: */ 10);
-						}
-						sbbs->delfiles(sbbs->cfg.temp_dir, ALLFILES);
-						sbbs->online = false;
-						if (fexist(str))
-							sbbs->fremove(WHERE, str, /* log-all-errors: */ true);
-					}
+					sbbs->lprintf(LOG_DEBUG, "Inbound QWK Packet detected: %s", g.gl_pathv[j]);
+					qwkjob_unpack_qwk(&sbbs->cfg, &qnet_qwkjob_host, i, g.gl_pathv[j]);
 				}
 				globfree(&g);
 			}
 
 			/* Qnet call out based on time */
 			if (is_time_to_run(now, sbbs->cfg.qhub[i])) {
+				// Held through the call-out, which sends and removes the REP packet
+				fmutex_t hub_lock;
+				if (!qwkjob_lock_hub(&sbbs->cfg, &qnet_qwkjob_host, i, &hub_lock)) {
+					sbbs->lprintf(LOG_DEBUG, "QWK Network Hub %s busy, will retry", sbbs->cfg.qhub[i]->id);
+					continue;
+				}
 				SAFEPRINTF2(str, "%sqnet/%s.now"
 				            , sbbs->cfg.data_dir, sbbs->cfg.qhub[i]->id);
 				if (fexistcase(str))
 					sbbs->fremove(WHERE, str);                  /* Remove semaphore file */
-				SAFEPRINTF2(str, "%sqnet/%s.ptr"
-				            , sbbs->cfg.data_dir, sbbs->cfg.qhub[i]->id);
-				file = sbbs->nopen(str, O_RDONLY);
-				for (j = 0; j < sbbs->cfg.qhub[i]->subs; j++) {
-					sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr = 0;
-					if (file != -1) {
-						lseek(file, sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]->subnum]->ptridx * sizeof(int32_t), SEEK_SET);
-						if (read(file, &sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr
-						         , sizeof(sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr)) != sizeof(uint32_t))
-							sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr = 0;
-					}
-				}
-				if (file != -1)
-					close(file);
-				packed_rep = sbbs->pack_rep(i);
-				if (packed_rep) {
-					if ((file = sbbs->nopen(str, O_WRONLY | O_CREAT)) == -1)
-						sbbs->errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT);
-					else {
-						for (j = l = 0; j < sbbs->cfg.qhub[i]->subs; j++) {
-							while (filelength(file) <
-							       sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]->subnum]->ptridx * 4L) {
-								l32 = l;
-								if (write(file, &l32, 4) != 4)     /* initialize ptrs to null */
-									sbbs->errormsg(WHERE, ERR_WRITE, str, 4);
-							}
-							lseek(file
-							      , sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]->subnum]->ptridx * sizeof(int32_t)
-							      , SEEK_SET);
-							if (write(file, &sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr, sizeof(sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr)) != sizeof sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]->subnum].ptr)
-								sbbs->errormsg(WHERE, ERR_WRITE, str, 4);
-						}
-						close(file);
-					}
-				}
-				sbbs->delfiles(sbbs->cfg.temp_dir, ALLFILES);
+				qwkjob_pack_rep_locked(&sbbs->cfg, &qnet_qwkjob_host, i, NULL, NULL, 0);
 
 				sbbs->cfg.qhub[i]->last = time32(NULL);
 				SAFEPRINTF(str, "%stime.ini", sbbs->cfg.ctrl_dir);
 				FILE* fp = iniOpenFile(str, /* for_modify: */ true);
 				if (fp == NULL) {
 					sbbs->errormsg(WHERE, ERR_OPEN, str, O_WRONLY);
+					qwkjob_unlock_hub(&qnet_qwkjob_host, &hub_lock);
 					break;
 				}
 				str_list_t ini = iniReadFile(fp);
@@ -3407,6 +3276,7 @@ void event_thread(void* arg)
 					sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Call-out to: %s (%s) returned %d", sbbs->cfg.qhub[i]->id, cmd, result);
 					sbbs->online = false;
 				}
+				qwkjob_unlock_hub(&qnet_qwkjob_host, &hub_lock);
 			}
 		}
 
@@ -5486,12 +5356,18 @@ void bbs_thread(void* arg)
 
 		mqtt_startup(&mqtt, &scfg, (struct startup*)startup, bbs_ver(), lputs);
 
+		// scfg.temp_dir is node-relative here, so jobs use the parent of the event thread's temp dir
+		if (startup->temp_dir[0])
+			SAFECOPY(qwkjob_temp_root, startup->temp_dir);
+		else
+			SAFECOPY(qwkjob_temp_root, "../temp");
+		prep_dir(scfg.ctrl_dir, qwkjob_temp_root, sizeof qwkjob_temp_root);
 		node_qwkjob_host = {};
 		node_qwkjob_host.name = "term";
 		node_qwkjob_host.host_name = startup->host_name;
 		node_qwkjob_host.lputs = node_qwkjob_lputs;
 		node_qwkjob_host.mqtt = &mqtt;
-		node_qwkjob_host.temp_root = scfg.temp_dir;
+		node_qwkjob_host.temp_root = qwkjob_temp_root;
 		node_qwkjob_host.terminated = &terminate_server;
 		node_qwkjob_host.text = text;
 		node_qwkjob_host.startup = startup;
@@ -5499,6 +5375,15 @@ void bbs_thread(void* arg)
 		event_qwkjob_host.name = "evnt";
 		event_qwkjob_host.lputs = event_qwkjob_lputs;
 		event_qwkjob_host.is_event_thread = true;
+		unpack_rep_qwkjob_host = event_qwkjob_host;
+		unpack_rep_qwkjob_host.name = "unpackREP";
+		unpack_rep_qwkjob_host.event_code = "unpackREP";
+		pack_qwk_qwkjob_host = event_qwkjob_host;
+		pack_qwk_qwkjob_host.name = "packQWK";
+		pack_qwk_qwkjob_host.event_code = "packQWK";
+		qnet_qwkjob_host = event_qwkjob_host;
+		qnet_qwkjob_host.name = "QNET";
+		qnet_qwkjob_host.event_code = "QNET";
 
 		// Validate the userbase file sizes
 		char userdat[MAX_PATH + 1];

@@ -176,8 +176,9 @@ static bool qwkjob_replace_file(const char* src, const char* dest)
 #endif
 }
 
-// Keeps a packet that failed to import for the sysop, as <dir><prefix>.<hex-time>.bad (an empty one is removed)
-static void qwkjob_keep_bad(sbbs_t* sbbs, const char* path, const char* dir, const char* prefix)
+// Keeps a packet that failed to import for the sysop, as <dir><prefix>.<hex-time>.bad (an empty one is removed),
+// retaining the newest QWKJOB_BAD_KEEP files matching <prune>.*.bad
+static void qwkjob_keep_bad(sbbs_t* sbbs, const char* path, const char* dir, const char* prefix, const char* prune)
 {
 	char  badpkt[MAX_PATH + 1];
 	char  spec[MAX_PATH + 1];
@@ -197,7 +198,7 @@ static void qwkjob_keep_bad(sbbs_t* sbbs, const char* path, const char* dir, con
 	else
 		sbbs->lprintf(LOG_ERR, "!ERROR moving %s (%ld bytes) to %s"
 		              , path, (long)flength(path), badpkt);
-	SAFEPRINTF(spec, "%s.*.bad", prefix);
+	SAFEPRINTF(spec, "%s.*.bad", prune);
 	delfiles(dir, spec, QWKJOB_BAD_KEEP);
 }
 
@@ -276,7 +277,7 @@ static enum qwkjob_result qwkjob_unpack_rep_locked(sbbs_t* sbbs, const qwkjob_ho
 	}
 	SAFEPRINTF(dir, "%sfile/", sbbs->cfg.data_dir);
 	SAFEPRINTF(prefix, "%04u.rep", usernum);
-	qwkjob_keep_bad(sbbs, path, dir, prefix);
+	qwkjob_keep_bad(sbbs, path, dir, prefix, prefix);
 	return QWKJOB_FAILED;
 }
 
@@ -361,11 +362,25 @@ static enum qwkjob_result qwkjob_pack_rep_job(sbbs_t* sbbs, const qwkjob_host_t*
 	return QWKJOB_OK;
 }
 
+// A swept packet (<HUBID>.q??, e.g. a .qw1 from qnet-ftp.js) keeps its own name in the .bad name, others use <HUBID>.qwk
+static void qwkjob_hub_bad_prefix(const char* hub_id, const char* path, char* prefix, size_t size)
+{
+	const char* fname = getfname(path);
+	size_t      len = strlen(hub_id);
+
+	if (strlen(fname) == len + 4 && strnicmp(fname, hub_id, len) == 0
+	    && fname[len] == '.' && toupper((uchar)fname[len + 1]) == 'Q')
+		snprintf(prefix, size, "%s", fname);
+	else
+		snprintf(prefix, size, "%s.qwk", hub_id);
+}
+
 static enum qwkjob_result qwkjob_unpack_qwk_job(sbbs_t* sbbs, const qwkjob_host_t* host
                                                 , uint hubnum, const char* qwkpath)
 {
 	char path[MAX_PATH + 1];
 	char prefix[LEN_QWKID + 16];
+	char prune[LEN_QWKID + 16];
 
 	if (!sbbs->init_job(/* usernum: */ 0))
 		return QWKJOB_FAILED;
@@ -377,8 +392,10 @@ static enum qwkjob_result qwkjob_unpack_qwk_job(sbbs_t* sbbs, const qwkjob_host_
 		sbbs->fremove(WHERE, path, /* log-all-errors: */ true);
 		return QWKJOB_OK;
 	}
-	SAFEPRINTF(prefix, "%s.qwk", sbbs->cfg.qhub[hubnum]->id);
-	qwkjob_keep_bad(sbbs, path, sbbs->cfg.data_dir, prefix);
+	const char* hub_id = sbbs->cfg.qhub[hubnum]->id;
+	qwkjob_hub_bad_prefix(hub_id, path, prefix, sizeof prefix);
+	SAFEPRINTF(prune, "%s.q??", hub_id);
+	qwkjob_keep_bad(sbbs, path, sbbs->cfg.data_dir, prefix, prune);
 	return QWKJOB_FAILED;
 }
 
@@ -485,7 +502,9 @@ enum qwkjob_result qwkjob_unpack_rep(scfg_t* cfg, const qwkjob_host_t* host
 	}
 	enum qwkjob_result result = QWKJOB_FAILED;
 	SAFEPRINTF(tag, "%04u", usernum);
-	if (qwkjob_make_temp_dir(host, tag, tmp, sizeof tmp)) {
+	if (!fexist(reppath))   // another host's sweep imported it after our caller found it
+		qwkjob_lprintf(host, LOG_DEBUG, "%s already gone", reppath);
+	else if (qwkjob_make_temp_dir(host, tag, tmp, sizeof tmp)) {
 		sbbs_t* sbbs = new sbbs_t(host, cfg, tmp);
 		result = qwkjob_unpack_rep_locked(sbbs, host, usernum, reppath);
 		delete sbbs;
@@ -586,7 +605,9 @@ enum qwkjob_result qwkjob_unpack_qwk(scfg_t* cfg, const qwkjob_host_t* host
 	if (!qwkjob_lock_hub(cfg, host, hubnum, &lock))
 		return QWKJOB_BUSY;
 	enum qwkjob_result result = QWKJOB_FAILED;
-	if (qwkjob_make_temp_dir(host, cfg->qhub[hubnum]->id, tmp, sizeof tmp)) {
+	if (!fexist(qwkpath))   // another host's sweep imported it after our caller found it
+		qwkjob_lprintf(host, LOG_DEBUG, "%s already gone", qwkpath);
+	else if (qwkjob_make_temp_dir(host, cfg->qhub[hubnum]->id, tmp, sizeof tmp)) {
 		sbbs_t* sbbs = new sbbs_t(host, cfg, tmp);
 		result = qwkjob_unpack_qwk_job(sbbs, host, hubnum, qwkpath);
 		delete sbbs;
