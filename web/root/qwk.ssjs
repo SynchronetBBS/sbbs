@@ -114,7 +114,11 @@ function post(query)
 
 	var repdir = system.temp_dir + "rep/";
 	mkdir(repdir);
-	var path = repdir + format("%04u.%u.rep", user.number, client.socket);
+	// temp/rep/ may be shared with other hosts and server processes (e.g. the FTP Server):
+	// no process ID is available here, so a time and random token stands in for it
+	var path = repdir + format("%04u.%s.web%x%04x%04x.%u.rep", user.number
+		,system.host_name.replace(/[^\w.-]/g, "_"), time(), random(0x10000), random(0x10000)
+		,client.socket);
 	var file = new File(path);
 	if(!file.open("wb")) {
 		log(LOG_ERR, "error " + file.error + " opening REP packet: " + file.name);
@@ -124,7 +128,7 @@ function post(query)
 	file.close();
 
 	var r = system.qwk_unpack(user.number, path);
-	log(LOG_INFO, "qwk_unpack: " + r.result);
+	log(LOG_INFO, "qwk_unpack " + path + ": " + r.result);
 	switch(r.result) {
 		case "ok":
 			return "200 bitchen";

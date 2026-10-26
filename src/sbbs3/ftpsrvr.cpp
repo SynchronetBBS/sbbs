@@ -909,10 +909,22 @@ static void send_thread(void* arg)
 	thread_down();
 }
 
+// This host's name, made safe for a file name
+static char* qwk_host_tag(char* buf, size_t size)
+{
+	snprintf(buf, size, "%s", ftp_qwkjob_host.host_name == NULL ? "" : ftp_qwkjob_host.host_name);
+	for (char* p = buf; *p != '\0'; p++) {
+		if (!isalnum((uchar)*p) && *p != '.' && *p != '-' && *p != '_')
+			*p = '_';
+	}
+	return buf;
+}
+
 // Leaves a REP for the event thread's sweep: data/file/<user#>.rep, or <user#>.<hex-time>.rep if taken
 static bool queue_rep(const xfer_t* xfer, char* dest, size_t size)
 {
 	char     staged[MAX_PATH + 1];
+	char     host[128];
 	uint     usernum = xfer->usernum;
 	uint64_t t = time(NULL);
 
@@ -929,13 +941,8 @@ static bool queue_rep(const xfer_t* xfer, char* dest, size_t size)
 	// temp_dir may be on another volume: copy beside dest (a name the sweep ignores), then rename.
 	// Not ".rep*": Windows matches "*.rep" against 8.3 short names too.
 	// data/file/ is shared by every host, so the name carries host and server.
-	char host[128];
-	SAFECOPY(host, ftp_qwkjob_host.host_name == NULL ? "" : ftp_qwkjob_host.host_name);
-	for (char* p = host; *p != '\0'; p++) {
-		if (!isalnum((uchar)*p) && *p != '.' && *p != '-' && *p != '_')
-			*p = '_';
-	}
-	snprintf(staged, sizeof staged, "%sfile/%04u.%s.ftp%d.tmp", scfg.data_dir, usernum, host, (int)xfer->ctrl_sock);
+	snprintf(staged, sizeof staged, "%sfile/%04u.%s.ftp%d.tmp", scfg.data_dir, usernum
+	         , qwk_host_tag(host, sizeof host), (int)xfer->ctrl_sock);
 	if (!CopyFile(xfer->filename, staged, /* failIfExists: */ FALSE))
 		return false;
 	if (rename(staged, dest) != 0) {
@@ -4958,7 +4965,10 @@ static void ctrl_thread(void* arg)
 				if ((i = md(repdir)) != 0)
 					errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) creating directory: %s"
 					          , sock, user.alias, i, safe_strerror(i, error, sizeof error), repdir);
-				snprintf(fname, sizeof fname, "%s%04u.%d.rep", repdir, user.number, (int)sock);
+				// temp/rep/ may be shared with other hosts and server processes (e.g. a separate Web Server)
+				char host[128];
+				snprintf(fname, sizeof fname, "%s%04u.%s.ftp%d.%d.rep", repdir, user.number
+				         , qwk_host_tag(host, sizeof host), (int)getpid(), (int)sock);
 				qwk_rep = true;
 				lprintf(LOG_INFO, "%04d <%s> uploading: %s in %s mode"
 				        , sock, user.alias, fname
