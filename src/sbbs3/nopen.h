@@ -31,6 +31,7 @@
 #define FCOPY_BUF_SIZE      (256 * 1024)
 #define LOOP_NOPEN    100   /* Retries before file access denied			*/
 #define LOCK_RETRY_DELAY 100 // Milliseconds between retries on locked resource
+#define FMUTEX_UNLINK_RETRIES 10 // Retries of a mutex file removal another host is blocking
 
 typedef struct {
 	int fd;

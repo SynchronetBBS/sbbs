@@ -578,14 +578,27 @@ int qwkjob_lock_busy(const fmutex_t* lock, char* buf, size_t size)
 	char      since[32] = "?";
 	struct tm tm;
 	time_t    t = lock->time;
-	// The holder's text may be unreadable (e.g. Windows denies all sharing of a held lock)
-	FILE*     fp = fopen(lock->name, "rb");
 
+	// The holder's text may be unreadable (e.g. Windows denies all sharing of a held lock)
+#ifdef _WIN32
+	// Permit the holder to remove the file while we read it, which fopen() would not
+	HANDLE h = CreateFileA(lock->name, GENERIC_READ
+	                       , FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE
+	                       , NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (h != INVALID_HANDLE_VALUE) {
+		DWORD len = 0;
+		if (ReadFile(h, holder, sizeof holder - 1, &len, NULL))
+			holder[len] = '\0';
+		CloseHandle(h);
+	}
+#else
+	FILE* fp = fopen(lock->name, "rb");
 	if (fp != NULL) {
 		size_t len = fread(holder, 1, sizeof holder - 1, fp);
 		holder[len] = '\0';
 		fclose(fp);
 	}
+#endif
 	if (holder[0] == '\0')
 		SAFECOPY(holder, "unknown");
 	if (t == -1) {

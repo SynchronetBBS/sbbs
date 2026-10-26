@@ -220,9 +220,17 @@ bool fmutex_close(fmutex_t* fm)
 			result = false;
 		}
 	} else if (fd_st.st_dev == name_st.st_dev && fd_st.st_ino == name_st.st_ino) {
-		if (unlink(fm->name) != 0) {
-			error = errno;
-			result = false;
+		// Another host merely opening the file (e.g. to read our text) fails an SMB/CIFS
+		// unlink with EBUSY: retry, rather than leave a lock file that nobody holds
+		for (int retry = 0; unlink(fm->name) != 0; retry++) {
+			if (errno == ENOENT)
+				break;
+			if (errno != EBUSY || retry >= FMUTEX_UNLINK_RETRIES) {
+				error = errno;
+				result = false;
+				break;
+			}
+			SLEEP(LOCK_RETRY_DELAY);
 		}
 	}
 #endif
