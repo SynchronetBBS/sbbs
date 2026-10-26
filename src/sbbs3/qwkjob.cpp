@@ -128,7 +128,11 @@ static void qwkjob_unlock(const qwkjob_host_t* host, fmutex_t* lock)
 static bool qwkjob_process_running(int pid)
 {
 #ifdef _WIN32
+#if _WIN32_WINNT >= 0x0600 // _WIN32_WINNT_VISTA
 	HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)pid);
+#else
+	HANDLE h = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, (DWORD)pid);
+#endif
 	if (h == NULL)
 		return GetLastError() == ERROR_ACCESS_DENIED;
 	DWORD  code = 0;

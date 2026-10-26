@@ -961,9 +961,9 @@ static void import_rep(const xfer_t* xfer)
 
 	if (!fexist(xfer->filename))    // imported, or kept as .bad by the job
 		return;
-	// An empty packet is left in place by the job outside data/file/; a non-empty one left after a
+	// An empty packet is dropped, whatever the result (e.g. busy); a non-empty one left after a
 	// failure (e.g. a temp dir error or a shutdown mid-import) is queued for the sweep to retry
-	if (result == QWKJOB_FAILED && flength(xfer->filename) == 0) {
+	if (flength(xfer->filename) == 0) {
 		if (remove(xfer->filename) != 0)
 			errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) removing %s", xfer->ctrl_sock, xfer->alias
 			          , errno, safe_strerror(errno, errstr, sizeof errstr), xfer->filename);
