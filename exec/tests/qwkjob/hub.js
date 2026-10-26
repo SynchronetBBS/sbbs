@@ -194,6 +194,20 @@ if (!file_exists(qwk))
 	throw new Error("locked import removed " + qwk);
 file_remove(qwk);
 
+// An old empty packet in data/ is left alone while the hub lock is held: a call-out holding it
+// may have just created the file it is downloading into
+qwk = system.data_dir + HUB + ".qwk";
+write_file(qwk, "");
+file_utime(qwk, time() - 120, time() - 120);
+write_file(hub_lock, "otherhost");
+ru = system.qwk_unpack(HUB, qwk);
+file_remove(hub_lock);
+var empty_kept = file_exists(qwk);
+file_remove(qwk);
+expect(ru, "busy", "locked import of an empty packet");
+if (!empty_kept)
+	throw new Error("empty packet removed under a held hub lock");
+
 // A hub lock over an hour old is a crashed holder's: taken over, and removed after the job
 write_file(hub_lock, "crashedhost");
 file_utime(hub_lock, time() - 2 * 60 * 60, time() - 2 * 60 * 60);

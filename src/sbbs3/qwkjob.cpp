@@ -559,7 +559,7 @@ enum qwkjob_result qwkjob_unpack_rep(scfg_t* cfg, const qwkjob_host_t* host
 	if (qwkjob_check_user(cfg, usernum) != QWKJOB_OK)
 		return QWKJOB_BAD_USER;
 	SAFEPRINTF(dir, "%sfile/", cfg->data_dir);
-	if (!qwkjob_regular_file(host, reppath) || qwkjob_empty_packet(host, reppath, dir))
+	if (!qwkjob_regular_file(host, reppath))
 		return QWKJOB_FAILED;
 	qwkjob_slot slot(host);
 	if (!slot.acquired())
@@ -579,7 +579,8 @@ enum qwkjob_result qwkjob_unpack_rep(scfg_t* cfg, const qwkjob_host_t* host
 	SAFEPRINTF(tag, "%04u", usernum);
 	if (!fexist(reppath))   // another host's sweep imported it after our caller found it
 		qwkjob_lprintf(host, LOG_DEBUG, "%s already gone", reppath);
-	else if (qwkjob_make_temp_dir(host, tag, tmp, sizeof tmp)) {
+	// Emptiness is judged only under the locks, which a process still writing the packet may hold
+	else if (!qwkjob_empty_packet(host, reppath, dir) && qwkjob_make_temp_dir(host, tag, tmp, sizeof tmp)) {
 		sbbs_t* sbbs = new sbbs_t(host, cfg, tmp);
 		result = qwkjob_unpack_rep_locked(sbbs, host, usernum, reppath);
 		delete sbbs;
@@ -670,7 +671,7 @@ enum qwkjob_result qwkjob_unpack_qwk(scfg_t* cfg, const qwkjob_host_t* host
 
 	if (!qwkjob_hub_enabled(cfg, hubnum))
 		return QWKJOB_BAD_HUB;
-	if (!qwkjob_regular_file(host, qwkpath) || qwkjob_empty_packet(host, qwkpath, cfg->data_dir))
+	if (!qwkjob_regular_file(host, qwkpath))
 		return QWKJOB_FAILED;
 	qwkjob_slot slot(host);
 	if (!slot.acquired())
@@ -681,7 +682,9 @@ enum qwkjob_result qwkjob_unpack_qwk(scfg_t* cfg, const qwkjob_host_t* host
 	enum qwkjob_result result = QWKJOB_FAILED;
 	if (!fexist(qwkpath))   // another host's sweep imported it after our caller found it
 		qwkjob_lprintf(host, LOG_DEBUG, "%s already gone", qwkpath);
-	else if (qwkjob_make_temp_dir(host, cfg->qhub[hubnum]->id, tmp, sizeof tmp)) {
+	// Emptiness is judged only under the hub lock, which a call-out still downloading the packet holds
+	else if (!qwkjob_empty_packet(host, qwkpath, cfg->data_dir)
+	         && qwkjob_make_temp_dir(host, cfg->qhub[hubnum]->id, tmp, sizeof tmp)) {
 		sbbs_t* sbbs = new sbbs_t(host, cfg, tmp);
 		result = qwkjob_unpack_qwk_job(sbbs, host, hubnum, qwkpath);
 		delete sbbs;

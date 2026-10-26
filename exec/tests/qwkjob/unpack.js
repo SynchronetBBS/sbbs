@@ -91,6 +91,19 @@ file_utime(swept, time() - 120, time() - 120);
 r = system.qwk_unpack(u, swept);
 if (r.result != "failed" || file_exists(swept))
 	throw new Error("old 0-byte REP in data/file/: " + JSON.stringify(r) + " exists=" + file_exists(swept));
+// An old empty REP in data/file/ is left alone while the user's lock is held (its writer may hold it)
+var user_lock = system.data_dir + format("pack%04u.lock", u);
+f = new File(swept);
+f.open("w"); f.close();
+file_utime(swept, time() - 120, time() - 120);
+f = new File(user_lock);
+f.open("w"); f.write("otherhost"); f.close();
+r = system.qwk_unpack(u, swept);
+file_remove(user_lock);
+var swept_kept = file_exists(swept);
+file_remove(swept);
+if (r.result != "busy" || !swept_kept)
+	throw new Error("old 0-byte REP under a held lock: " + JSON.stringify(r) + " exists=" + swept_kept);
 f = new File(temp + "text.rep");
 f.open("w"); f.writeln("This is not a QWK reply packet."); f.close();
 r = system.qwk_unpack(u, f.name);
