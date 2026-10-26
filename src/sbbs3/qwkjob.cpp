@@ -280,6 +280,108 @@ static enum qwkjob_result qwkjob_unpack_rep_locked(sbbs_t* sbbs, const qwkjob_ho
 	return QWKJOB_FAILED;
 }
 
+static bool qwkjob_hub_enabled(const scfg_t* cfg, uint hubnum)
+{
+	return hubnum < (uint)cfg->total_qhubs && cfg->qhub[hubnum]->enabled;
+}
+
+// A hub's export pointers: data/qnet/<HUBID>.ptr holds an int32 per sub-board, indexed by ptridx
+static void qwkjob_hub_ptr_file(const sbbs_t* sbbs, uint hubnum, char* path, size_t size)
+{
+	snprintf(path, size, "%sqnet/%s.ptr", sbbs->cfg.data_dir, sbbs->cfg.qhub[hubnum]->id);
+}
+
+static void qwkjob_get_hub_ptrs(sbbs_t* sbbs, uint hubnum)
+{
+	char          path[MAX_PATH + 1];
+	const qhub_t* hub = sbbs->cfg.qhub[hubnum];
+
+	qwkjob_hub_ptr_file(sbbs, hubnum, path, sizeof path);
+	int           file = sbbs->nopen(path, O_RDONLY);
+	for (int i = 0; i < hub->subs; i++) {
+		int      subnum = hub->sub[i]->subnum;
+		off_t    offset = (off_t)sbbs->cfg.sub[subnum]->ptridx * sizeof(int32_t);
+		uint32_t ptr = 0;
+		if (file != -1
+		    && (lseek(file, offset, SEEK_SET) != offset || read(file, &ptr, sizeof ptr) != sizeof ptr))
+			ptr = 0;
+		sbbs->subscan[subnum].ptr = ptr;
+	}
+	if (file != -1)
+		close(file);
+}
+
+static void qwkjob_put_hub_ptrs(sbbs_t* sbbs, uint hubnum)
+{
+	char          path[MAX_PATH + 1];
+	const qhub_t* hub = sbbs->cfg.qhub[hubnum];
+
+	qwkjob_hub_ptr_file(sbbs, hubnum, path, sizeof path);
+	int           file = sbbs->nopen(path, O_WRONLY | O_CREAT);
+	if (file == -1) {
+		sbbs->errormsg(WHERE, ERR_OPEN, path, O_WRONLY | O_CREAT);
+		return;
+	}
+	for (int i = 0; i < hub->subs; i++) {
+		int      subnum = hub->sub[i]->subnum;
+		off_t    offset = (off_t)sbbs->cfg.sub[subnum]->ptridx * sizeof(int32_t);
+		uint32_t ptr = sbbs->subscan[subnum].ptr;
+		// A seek past the end leaves a zero-filled gap (the pointers of sub-boards not exported to this hub)
+		if (lseek(file, offset, SEEK_SET) != offset || write(file, &ptr, sizeof ptr) != sizeof ptr)
+			sbbs->errormsg(WHERE, ERR_WRITE, path, sizeof ptr);
+	}
+	close(file);
+}
+
+static enum qwkjob_result qwkjob_pack_rep_job(sbbs_t* sbbs, const qwkjob_host_t* host
+                                              , uint hubnum, uint* msgcnt
+                                              , char* outpath, size_t outpath_size)
+{
+	char hubid[LEN_QWKID + 1];
+	uint packed = 0;
+
+	if (!sbbs->init_job(/* usernum: */ 0))
+		return QWKJOB_FAILED;
+	if (qwkjob_terminated(host))
+		return QWKJOB_FAILED;
+	qwkjob_get_hub_ptrs(sbbs, hubnum);
+	if (!sbbs->pack_rep(hubnum, &packed))
+		return QWKJOB_FAILED;
+	// Saved even when nothing was packed: pack_rep() may have lowered a pointer past a sub-board's last message
+	qwkjob_put_hub_ptrs(sbbs, hubnum);
+	if (packed == 0)
+		return QWKJOB_EMPTY;
+	if (msgcnt != NULL)
+		*msgcnt = packed;
+	if (outpath != NULL && outpath_size > 0) {
+		SAFECOPY(hubid, sbbs->cfg.qhub[hubnum]->id);
+		strupr(hubid);
+		snprintf(outpath, outpath_size, "%s%s.REP", sbbs->cfg.data_dir, hubid);
+	}
+	return QWKJOB_OK;
+}
+
+static enum qwkjob_result qwkjob_unpack_qwk_job(sbbs_t* sbbs, const qwkjob_host_t* host
+                                                , uint hubnum, const char* qwkpath)
+{
+	char path[MAX_PATH + 1];
+	char prefix[LEN_QWKID + 16];
+
+	if (!sbbs->init_job(/* usernum: */ 0))
+		return QWKJOB_FAILED;
+	if (qwkjob_terminated(host))
+		return QWKJOB_FAILED;
+	SAFECOPY(path, qwkpath);
+	// An empty packet is discarded without the error unpack_qwk() would log for it
+	if (flength(path) != 0 && sbbs->unpack_qwk(path, hubnum)) {
+		sbbs->fremove(WHERE, path, /* log-all-errors: */ true);
+		return QWKJOB_OK;
+	}
+	SAFEPRINTF(prefix, "%s.qwk", sbbs->cfg.qhub[hubnum]->id);
+	qwkjob_keep_bad(sbbs, path, sbbs->cfg.data_dir, prefix);
+	return QWKJOB_FAILED;
+}
+
 // Whether path names a file directly in dir (both are resolved to full paths)
 static bool qwkjob_path_in_dir(const char* path, const char* dir)
 {
@@ -391,6 +493,106 @@ enum qwkjob_result qwkjob_unpack_rep(scfg_t* cfg, const qwkjob_host_t* host
 	}
 	qwkjob_unlock(host, &rep_lock);
 	qwkjob_unlock(host, &lock);
+	return result;
+}
+
+int qwkjob_find_hub(scfg_t* cfg, const char* hub_id)
+{
+	if (hub_id == NULL)
+		return -1;
+	for (int i = 0; i < cfg->total_qhubs; i++) {
+		if (stricmp(cfg->qhub[i]->id, hub_id) == 0)
+			return i;
+	}
+	return -1;
+}
+
+bool qwkjob_lock_hub(scfg_t* cfg, const qwkjob_host_t* host, uint hubnum, fmutex_t* lock)
+{
+	char dir[MAX_PATH + 1];
+
+	*lock = fmutex_init();
+	if (hubnum >= (uint)cfg->total_qhubs)
+		return false;
+	SAFEPRINTF(dir, "%sqnet", cfg->data_dir);
+	md(dir);
+	snprintf(lock->name, sizeof lock->name, "%sqnet/%s.lock", cfg->data_dir, cfg->qhub[hubnum]->id);
+	if (fmutex_open(lock, qwkjob_host_name(host), TIMEOUT_MUTEX_FILE))
+		return true;
+	qwkjob_lprintf(host, LOG_DEBUG, "%s exists (job in progress?)", lock->name);
+	return false;
+}
+
+void qwkjob_unlock_hub(const qwkjob_host_t* host, fmutex_t* lock)
+{
+	qwkjob_unlock(host, lock);
+}
+
+enum qwkjob_result qwkjob_pack_rep_locked(scfg_t* cfg, const qwkjob_host_t* host
+                                          , uint hubnum, uint* msgcnt
+                                          , char* outpath, size_t outpath_size)
+{
+	char tmp[MAX_PATH + 1];
+
+	if (msgcnt != NULL)
+		*msgcnt = 0;
+	if (outpath != NULL && outpath_size > 0)
+		*outpath = '\0';
+	if (!qwkjob_hub_enabled(cfg, hubnum))
+		return QWKJOB_BAD_HUB;
+	if (!qwkjob_make_temp_dir(host, cfg->qhub[hubnum]->id, tmp, sizeof tmp))
+		return QWKJOB_FAILED;
+	sbbs_t*            sbbs = new sbbs_t(host, cfg, tmp);
+	enum qwkjob_result result = qwkjob_pack_rep_job(sbbs, host, hubnum, msgcnt
+	                                                , outpath, outpath_size);
+	delete sbbs;
+	qwkjob_remove_temp_dir(host, tmp);
+	return result;
+}
+
+enum qwkjob_result qwkjob_pack_rep(scfg_t* cfg, const qwkjob_host_t* host
+                                   , uint hubnum, uint* msgcnt
+                                   , char* outpath, size_t outpath_size)
+{
+	if (msgcnt != NULL)
+		*msgcnt = 0;
+	if (outpath != NULL && outpath_size > 0)
+		*outpath = '\0';
+	if (!qwkjob_hub_enabled(cfg, hubnum))
+		return QWKJOB_BAD_HUB;
+	qwkjob_slot slot(host);
+	if (!slot.acquired())
+		return QWKJOB_THROTTLED;
+	fmutex_t lock;
+	if (!qwkjob_lock_hub(cfg, host, hubnum, &lock))
+		return QWKJOB_BUSY;
+	enum qwkjob_result result = qwkjob_pack_rep_locked(cfg, host, hubnum, msgcnt
+	                                                   , outpath, outpath_size);
+	qwkjob_unlock_hub(host, &lock);
+	return result;
+}
+
+enum qwkjob_result qwkjob_unpack_qwk(scfg_t* cfg, const qwkjob_host_t* host
+                                     , uint hubnum, const char* qwkpath)
+{
+	char tmp[MAX_PATH + 1];
+
+	if (!qwkjob_hub_enabled(cfg, hubnum))
+		return QWKJOB_BAD_HUB;
+	qwkjob_slot slot(host);
+	if (!slot.acquired())
+		return QWKJOB_THROTTLED;
+	fmutex_t lock;
+	if (!qwkjob_lock_hub(cfg, host, hubnum, &lock))
+		return QWKJOB_BUSY;
+	enum qwkjob_result result = QWKJOB_FAILED;
+	if (qwkjob_make_temp_dir(host, cfg->qhub[hubnum]->id, tmp, sizeof tmp)) {
+		sbbs_t* sbbs = new sbbs_t(host, cfg, tmp);
+		result = qwkjob_unpack_qwk_job(sbbs, host, hubnum, qwkpath);
+		delete sbbs;
+		qwkjob_remove_temp_dir(host, tmp);
+	}
+	qwkjob_unlock_hub(host, &lock);
 	return result;
 }
 

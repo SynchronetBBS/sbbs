@@ -26,8 +26,10 @@
 /****************************************************************************/
 /* Creates an REP packet for upload to QWK hub 'hubnum'.                    */
 /* Returns 1 if successful, 0 if not.										*/
+/* 'packed' (optional) receives the number of items added to the packet:	*/
+/* 0 when there was nothing new (still a success, so pointers get saved).	*/
 /****************************************************************************/
-bool sbbs_t::pack_rep(uint hubnum)
+bool sbbs_t::pack_rep(uint hubnum, uint* packed)
 {
 	char        str[MAX_PATH + 1];
 	char        tmp[MAX_PATH + 1], tmp2[MAX_PATH + 1];
@@ -53,6 +55,8 @@ bool sbbs_t::pack_rep(uint hubnum)
 	smbmsg_t    msg;
 
 	msgcnt = 0L;
+	if (packed != NULL)
+		*packed = 0;
 	delfiles(cfg.temp_dir, ALLFILES);
 
 	SAFECOPY(hubid_upper, cfg.qhub[hubnum]->id);
@@ -309,6 +313,8 @@ bool sbbs_t::pack_rep(uint hubnum)
 	}
 	SAFEPRINTF2(str, "%sqnet/%s.out/", cfg.data_dir, hubid_lower);
 	delfiles(str, ALLFILES);
+	if (packed != NULL)
+		*packed = (uint)(msgcnt + packedmail + netfiles) + (voting_data ? 1 : 0);
 
 	if (packedmail) {                        /* Delete NetMail */
 		SAFEPRINTF(smb.file, "%smail", cfg.data_dir);

@@ -1370,7 +1370,7 @@ public:
 	bool	unpack_qwk(char *packet,uint hubnum);
 
 	/* pack_rep.cpp */
-	bool	pack_rep(uint hubnum);
+	bool	pack_rep(uint hubnum, uint* packed = NULL);
 
 	/* un_rep.cpp */
 	bool	unpack_rep(char* repfile=NULL);

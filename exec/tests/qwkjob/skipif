@@ -1,1 +1,11 @@
-typeof system.qwk_pack != "function" || !system.matchuser("QWKA")
+(function () {
+	if (typeof system.qwk_pack != "function" || !system.matchuser("QWKA"))
+		return true;
+	// hub.js needs the test install's QWKnet hub
+	var f = new File(system.ctrl_dir + "msgs.ini");
+	if (!f.open("r"))
+		return true;
+	var hub = f.iniGetObject("qhub:TESTHUB");
+	f.close();
+	return !hub;
+})();

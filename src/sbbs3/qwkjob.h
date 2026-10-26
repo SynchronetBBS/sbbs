@@ -69,8 +69,21 @@ DLLEXPORT enum qwkjob_result qwkjob_pack(scfg_t*, const qwkjob_host_t*
                                          , char* outpath, size_t outpath_size);
 DLLEXPORT enum qwkjob_result qwkjob_unpack_rep(scfg_t*, const qwkjob_host_t*
                                                , uint usernum, const char* reppath);
+/* Hub direction */
+DLLEXPORT enum qwkjob_result qwkjob_pack_rep(scfg_t*, const qwkjob_host_t*
+                                             , uint hubnum, uint* msgcnt
+                                             , char* outpath, size_t outpath_size);
+DLLEXPORT enum qwkjob_result qwkjob_unpack_qwk(scfg_t*, const qwkjob_host_t*
+                                               , uint hubnum, const char* qwkpath);
+/* Event thread only: hold the hub lock across pack + call-out */
+DLLEXPORT bool qwkjob_lock_hub(scfg_t*, const qwkjob_host_t*, uint hubnum, fmutex_t*);
+DLLEXPORT void qwkjob_unlock_hub(const qwkjob_host_t*, fmutex_t*);
+DLLEXPORT enum qwkjob_result qwkjob_pack_rep_locked(scfg_t*, const qwkjob_host_t*
+                                                    , uint hubnum, uint* msgcnt
+                                                    , char* outpath, size_t outpath_size);
 
 DLLEXPORT const char* qwkjob_result_str(enum qwkjob_result);
+DLLEXPORT int qwkjob_find_hub(scfg_t*, const char* hub_id);  /* -1 if none */
 
 /* Path of the fmutex lock file that serializes QWK jobs for one user */
 DLLEXPORT char* qwkjob_user_lock_name(const scfg_t*, uint usernum, char* buf, size_t size);
