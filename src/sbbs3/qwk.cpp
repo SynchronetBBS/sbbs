@@ -487,30 +487,30 @@ bool sbbs_t::qwk_upload()
 	char keys[128];
 
 	delfiles(cfg.temp_dir, ALLFILES);
+	// Refused before the transfer, so a busy lock never discards a packet the user already sent
+	fmutex_t       lock = fmutex_init();
+	qwkjob_user_lock_name(&cfg, useron.number, lock.name, sizeof lock.name);
+	if (!qwk_lock(&lock))
+		return false;
+	bool           result = false;
 	bprintf(text[UploadingREP], cfg.sys_id);
 	cmd_keys_scope keys_scope(this, nullptr);
 	xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
 	add_quit_key(keys, sizeof keys);
 	mnemonics(text[ProtocolOrQuit]);
-	char ch = (char)getkeys(keys, 0);
-	if (is_quit_key(ch) || (sys_status & SS_ABORT) || !online)
-		return false;
-	int prot = protnum(ch, XFER_UPLOAD);
-	if (prot >= cfg.total_prots)
-		return false;
-	snprintf(path, sizeof path, "%s%s.rep", cfg.temp_dir, cfg.sys_id);
-	protocol(cfg.prot[prot], XFER_UPLOAD, path, nulstr, true);
-	/* The setup the QWK section does before running its module, for callers outside it (#1260) */
-	getusrdirs();
-	if (useron.rest & UREST_QWK_NODE)
-		getusrsubs();
-	fmutex_t lock = fmutex_init();
-	qwkjob_user_lock_name(&cfg, useron.number, lock.name, sizeof lock.name);
-	if (!qwk_lock(&lock)) {
-		delfiles(cfg.temp_dir, ALLFILES);
-		return false;
+	char           ch = (char)getkeys(keys, 0);
+	int            prot = cfg.total_prots;
+	if (!is_quit_key(ch) && !(sys_status & SS_ABORT) && online)
+		prot = protnum(ch, XFER_UPLOAD);
+	if (prot < cfg.total_prots) {
+		snprintf(path, sizeof path, "%s%s.rep", cfg.temp_dir, cfg.sys_id);
+		protocol(cfg.prot[prot], XFER_UPLOAD, path, nulstr, true);
+		/* The setup the QWK section does before running its module, for callers outside it (#1260) */
+		getusrdirs();
+		if (useron.rest & UREST_QWK_NODE)
+			getusrsubs();
+		result = unpack_rep();
 	}
-	bool result = unpack_rep();
 	if (!fmutex_close(&lock))
 		errormsg(WHERE, ERR_REMOVE, lock.name, 0);
 	delfiles(cfg.temp_dir, ALLFILES);

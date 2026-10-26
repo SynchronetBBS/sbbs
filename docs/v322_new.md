@@ -223,7 +223,8 @@
   them directly, and the event thread's sweeps use the same code
 - A QWK download or REP upload at a node while another session (FTP, Web,
   a script or another host) is packing or importing for the same user is
-  refused with a message instead of running concurrently
+  refused with a message, before any transfer, instead of running
+  concurrently
 - A QWK packing or import lock left behind by a crashed process is taken
   over after an hour; a job refused by a lock held over 5 minutes is
   logged as a notice, naming the holder
