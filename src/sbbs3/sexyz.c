@@ -111,7 +111,7 @@ FILE*       errfp;
 FILE*       statfp;
 FILE*       logfp = NULL;
 
-const char* revision = "3.6";
+const char* revision = "3.7";
 
 SOCKET      sock = INVALID_SOCKET;
 
@@ -136,6 +136,7 @@ RingBuf     outbuf;
 #else
 xpevent_t outbuf_empty;
 #endif
+xpevent_t output_idle;  /* output_thread has sent everything it read from the ring */
 unsigned outbuf_drain_timeout;
 long     outbuf_size;
 
@@ -847,11 +848,13 @@ static void output_thread(void* arg)
 			avail = buftop - bufbot;
 
 		if (!avail) {
+			SetEvent(output_idle);
 			WaitForEvent(outbuf.data_event, INFINITE);
 			if (outbuf.highwater_mark)
 				WaitForEvent(outbuf.highwater_event, outbuf_drain_timeout);
 			continue;
 		}
+		ResetEvent(output_idle);
 
 		if (bufbot == buftop) { /* linear buf empty, read from ring buf */
 			if (avail > sizeof(buf)) {
@@ -888,6 +891,7 @@ static void output_thread(void* arg)
 		total_sent += i;
 		total_pkts++;
 	}
+	SetEvent(output_idle);
 
 	if (total_sent)
 		sprintf(stats, "(sent %" PRIu64 " bytes in %" PRIu64 " blocks, %" PRIu64 " average, %lu short, %u errors)"
@@ -1253,8 +1257,10 @@ static int receive_files(char** fname_list, int fnames)
 				for (errors = 0; errors <= xm.max_errors && !xm.cancelled; errors++) {
 					xmodem_put_nak(&xm, /* expected_block: */ 0);
 					if (xmodem_get_block(&xm, block, /* expected_block: */ 0) == SUCCESS) {
-						if (!(mode & GMODE))
-							send_byte(NULL, ACK, 10);
+						if (!(mode & GMODE) && send_byte(NULL, ACK, 10) != 0) {
+							lprintf(LOG_ERR, "Error sending ACK for YMODEM header block");
+							return 1;
+						}
 						break;
 					}
 					if (errors + 1 > xm.max_errors / 3 && mode & CRC && !(mode & GMODE)) {
@@ -1269,6 +1275,12 @@ static int receive_files(char** fname_list, int fnames)
 				}
 				if (!block[0]) {
 					lprintf(LOG_INFO, "Received YMODEM termination block");
+#if !SINGLE_THREADED
+					if (tx_flush(10) != 0) {
+						lprintf(LOG_ERR, "Error sending ACK for YMODEM termination block");
+						return 1;
+					}
+#endif
 					return 0;
 				}
 				ftime = total_files = 0;
@@ -1778,6 +1790,7 @@ int main(int argc, char **argv)
 #if !defined(RINGBUF_EVENT)
 	outbuf_empty = CreateEvent(NULL, /* ManualReset */ TRUE, /*InitialState */ TRUE, NULL);
 #endif
+	output_idle = CreateEvent(NULL, /* ManualReset */ TRUE, /* InitialState */ TRUE, NULL);
 
 #if 0
 	if (argc > 1) {
@@ -1999,10 +2012,11 @@ int main(int argc, char **argv)
 	}
 
 #if !SINGLE_THREADED
-	/* Buffer the producer only for full ZMODEM streaming.  A transmit window or
-	   segmented mode depends on acks flowing back as data is sent (GitLab
-	   #1195). */
-	send_buffered = (zm.max_window_size == 0) && !zm.no_streaming;
+	/* Buffer the producer only for a streaming ZMODEM send.  A transmit window
+	   or segmented mode depends on acks flowing back as data is sent (#1195),
+	   and X/YMODEM and every receiver send only short, ack-paced responses
+	   (#1300). */
+	send_buffered = (mode & SEND) && (mode & ZMODEM) && zm.max_window_size == 0 && !zm.no_streaming;
 #endif
 
 	if (max_file_size)
@@ -2153,13 +2167,17 @@ int main(int argc, char **argv)
 
 #if !SINGLE_THREADED
 	lprintf(LOG_DEBUG, "Waiting for output buffer to empty... ");
+	if (tx_flush(10) != 0)
+		lprintf(LOG_DEBUG, "FAILURE (producer buffer)");
 	if (RingBufFull(&outbuf)) {
 #if !defined(RINGBUF_EVENT)
 		ResetEvent(outbuf_empty);
 #endif
 		if (WaitForEvent(outbuf_empty, 5000) != WAIT_OBJECT_0)
-			lprintf(LOG_DEBUG, "FAILURE");
+			lprintf(LOG_DEBUG, "FAILURE (ring buffer)");
 	}
+	if (WaitForEvent(output_idle, 5000) != WAIT_OBJECT_0)
+		lprintf(LOG_DEBUG, "FAILURE (output thread)");
 #endif
 
 	terminate = TRUE; /* stop output thread */

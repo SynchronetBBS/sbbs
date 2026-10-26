@@ -1,0 +1,2 @@
+system.platform.substr(0, 3) == "Win"
+|| (!file_exists(js.exec_dir + "../../sexyz") && !file_exists(system.exec_dir + "sexyz"))
