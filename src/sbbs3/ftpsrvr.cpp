@@ -155,6 +155,14 @@ static int lputs(int level, const char* str)
 	return startup->lputs(startup->cbdata, level, str);
 }
 
+static int qwkjob_lputs(void* cbdata, int level, const char* str)
+{
+	(void)cbdata;
+	return lputs(level, str);
+}
+
+static qwkjob_host_t ftp_qwkjob_host;
+
 #if defined(__GNUC__)   // Catch printf-format errors with lprintf
 static int lprintf(int level, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 #endif
@@ -598,6 +606,7 @@ typedef struct {
 	client_t* client;
 	int dir;
 	char* desc;
+	bool qwk_rep;   // receiving a QWK reply packet for user->number
 } xfer_t;
 
 static void send_thread(void* arg)
@@ -895,6 +904,50 @@ static void send_thread(void* arg)
 #endif
 
 	thread_down();
+}
+
+// Leaves a REP for the event thread's sweep: data/file/<user#>.rep, or <user#>.<hex-time>.rep if taken
+static bool queue_rep(const xfer_t* xfer, char* dest, size_t size)
+{
+	char     staged[MAX_PATH + 1];
+	uint     usernum = xfer->user->number;
+	uint64_t t = time(NULL);
+
+	snprintf(dest, size, "%sfile/%04u.rep", scfg.data_dir, usernum);
+	for (int i = 0; fexist(dest); i++) {
+		if (i >= 10)
+			return false;
+		snprintf(dest, size, "%sfile/%04u.%" PRIx64 ".rep", scfg.data_dir, usernum, t + i);
+	}
+	if (rename(xfer->filename, dest) == 0)
+		return true;
+	// temp_dir may be on another volume: copy beside dest (a name the sweep ignores), then rename
+	snprintf(staged, sizeof staged, "%sfile/%04u.%d.reptmp", scfg.data_dir, usernum, (int)xfer->ctrl_sock);
+	if (!CopyFile(xfer->filename, staged, /* failIfExists: */ FALSE))
+		return false;
+	if (rename(staged, dest) != 0) {
+		ftp_remove(xfer->ctrl_sock, __LINE__, staged, xfer->user->alias, LOG_ERR);
+		return false;
+	}
+	ftp_remove(xfer->ctrl_sock, __LINE__, xfer->filename, xfer->user->alias, LOG_ERR);
+	return true;
+}
+
+static void import_rep(const xfer_t* xfer)
+{
+	char               dest[MAX_PATH + 1];
+	char               errstr[256];
+	enum qwkjob_result result = qwkjob_unpack_rep(&scfg, &ftp_qwkjob_host, xfer->user->number, xfer->filename);
+
+	if (!fexist(xfer->filename))    // imported, or kept as .bad (or an empty one removed) by the job
+		return;
+	if (queue_rep(xfer, dest, sizeof dest))
+		lprintf(LOG_INFO, "%04d <%s> QWK reply packet import %s, queued: %s"
+		        , xfer->ctrl_sock, xfer->user->alias, qwkjob_result_str(result), dest);
+	else
+		errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) queuing QWK reply packet (import %s): %s"
+		          , xfer->ctrl_sock, xfer->user->alias, errno, safe_strerror(errno, errstr, sizeof errstr)
+		          , qwkjob_result_str(result), xfer->filename);
 }
 
 static void receive_thread(void* arg)
@@ -1201,6 +1254,10 @@ static void receive_thread(void* arg)
 			mqtt_file_upload(&mqtt, xfer.user, f.dir, f.name, total, xfer.client);
 			smb_freefilemem(&f);
 		}
+		if (xfer.qwk_rep) {
+			import_rep(&xfer);
+			*xfer.lastactive = time(NULL);
+		}
 		/* Send ACK */
 		sockprintf(xfer.ctrl_sock, xfer.ctrl_sess, "226 Upload complete (%lu cps).", cps);
 	}
@@ -1469,6 +1526,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 		xfer->client = client;
 		xfer->dir = dir;
 		xfer->desc = desc;
+		xfer->qwk_rep = receiving && dir < 0;
 		SAFECOPY(xfer->filename, filename);
 		(void)protected_uint32_adjust(&thread_count, 1);
 		if (receiving)
@@ -4422,39 +4480,54 @@ static void ctrl_thread(void* arg)
 			    && !stricmp(p, str) && !delecmd) {
 				if (!fexistcase(qwkfile)) {
 					lprintf(LOG_INFO, "%04d <%s> creating QWK packet...", sock, user.alias);
-					char hostname[128];
-					if (gethostname(hostname, sizeof hostname) != 0)
-						SAFECOPY(hostname, server_host_name());
-					snprintf(str, sizeof str, "%spack%04u.%s.now", scfg.data_dir, user.number, hostname);
-					if (!fmutex(str, startup->host_name, /* max_age: */ 60 * 60, /* time: */ NULL)) {
-						lprintf(LOG_WARNING, "%04d <%s> !ERROR %d (%s) creating mutex-semaphore file: %s"
-						        , sock, user.alias, errno, safe_strerror(errno, error, sizeof error), str);
-						sockprintf(sock, sess, "451 Packet creation already in progress (are you logged-in concurrently?)");
-						filepos = 0;
-						continue;
-					}
-
-					t = time(NULL);
-					while (fexist(str) && !terminate_server) {
-						if (!socket_check(sock, NULL, NULL, 0))
+					enum qwkjob_result qwkresult;
+					time_t             start = time(NULL);
+					bool               waiting = false;
+					for (;;) {
+						qwkresult = qwkjob_pack(&scfg, &ftp_qwkjob_host, user.number, NULL, NULL, 0);
+						if (qwkresult != QWKJOB_THROTTLED)
 							break;
-						if (time(NULL) - t > startup->qwk_timeout)
+						if (!waiting) {
+							lprintf(LOG_INFO, "%04d <%s> waiting for a QWK packing slot", sock, user.alias);
+							waiting = true;
+						}
+						if (terminate_server || !socket_check(sock, NULL, NULL, 0)
+						    || time(NULL) - start > startup->qwk_timeout)
 							break;
 						mswait(1000);
 					}
 					if (!socket_check(sock, NULL, NULL, 0)) {
-						lprintf(LOG_NOTICE, "%04d <%s> disconnected while waiting for QWK packet creation"
-						        , sock, user.alias);
-						ftp_remove(sock, __LINE__, str, user.alias, LOG_ERR);
-						continue;
-					}
-					if (fexist(str)) {
-						lprintf(LOG_WARNING, "%04d <%s> !TIMEOUT waiting for QWK packet creation", sock, user.alias);
-						sockprintf(sock, sess, "451 Time-out waiting for packet creation.");
-						ftp_remove(sock, __LINE__, str, user.alias, LOG_ERR);
+						lprintf(LOG_NOTICE, "%04d <%s> disconnected while creating QWK packet (%s)"
+						        , sock, user.alias, qwkjob_result_str(qwkresult));
 						filepos = 0;
 						continue;
 					}
+					if (qwkresult == QWKJOB_THROTTLED) {
+						lprintf(LOG_WARNING, "%04d <%s> !TIMEOUT waiting for QWK packet creation", sock, user.alias);
+						sockprintf(sock, sess, "451 Time-out waiting for packet creation.");
+						filepos = 0;
+						continue;
+					}
+					if (qwkresult == QWKJOB_BUSY) {
+						lprintf(LOG_NOTICE, "%04d <%s> QWK packet creation already in progress", sock, user.alias);
+						sockprintf(sock, sess, "451 Packet creation already in progress (are you logged-in concurrently?)");
+						filepos = 0;
+						continue;
+					}
+					if (qwkresult == QWKJOB_USER_ONLINE) {
+						lprintf(LOG_NOTICE, "%04d <%s> QWK packet not created: logged-in elsewhere", sock, user.alias);
+						sockprintf(sock, sess, "550 Logged-in elsewhere");
+						filepos = 0;
+						continue;
+					}
+					if (qwkresult != QWKJOB_OK && qwkresult != QWKJOB_EMPTY) {
+						lprintf(LOG_WARNING, "%04d <%s> QWK packet creation %s", sock, user.alias
+						        , qwkjob_result_str(qwkresult));
+						sockprintf(sock, sess, "451 QWK packet creation failed");
+						filepos = 0;
+						continue;
+					}
+					// EMPTY: another session may have created the packet since the check above
 					if (!fexistcase(qwkfile)) {
 						lprintf(LOG_INFO, "%04d <%s> No QWK Packet created (no new messages)", sock, user.alias);
 						sockprintf(sock, sess, "550 No QWK packet created (no new messages)");
@@ -4844,6 +4917,7 @@ static void ctrl_thread(void* arg)
 			}
 			int64_t freespace;
 			const char* destdir;
+			char        repdir[MAX_PATH + 1];
 			if (dir < 0) {
 				sprintf(str, "%s.rep", scfg.sys_id);
 				if (!(startup->options & FTP_OPT_ALLOW_QWK)
@@ -4853,11 +4927,15 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock, sess, "553 Invalid path or filename.");
 					continue;
 				}
-				sprintf(fname, "%sfile/%04d.rep", scfg.data_dir, user.number);
+				SAFEPRINTF(repdir, "%srep/", scfg.temp_dir);
+				if ((i = md(repdir)) != 0)
+					errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) creating directory: %s"
+					          , sock, user.alias, i, safe_strerror(i, error, sizeof error), repdir);
+				snprintf(fname, sizeof fname, "%s%04u.%d.rep", repdir, user.number, (int)sock);
 				lprintf(LOG_INFO, "%04d <%s> uploading: %s in %s mode"
 				        , sock, user.alias, fname
 				        , mode);
-				freespace = getfreediskspace(destdir = scfg.data_dir, 1);
+				freespace = getfreediskspace(destdir = repdir, 1);
 			} else {
 
 				append = (strnicmp(cmd, "APPE", 4) == 0);
@@ -5431,6 +5509,15 @@ void ftp_server(void* arg)
 			break;
 		}
 		lprintf(LOG_DEBUG, "Temporary file directory: %s", scfg.temp_dir);
+
+		ftp_qwkjob_host = {};
+		ftp_qwkjob_host.name = "ftp";
+		ftp_qwkjob_host.host_name = server_host_name();
+		ftp_qwkjob_host.lputs = qwkjob_lputs;
+		ftp_qwkjob_host.mqtt = &mqtt;
+		ftp_qwkjob_host.temp_root = scfg.temp_dir;
+		ftp_qwkjob_host.terminated = &terminate_server;
+		ftp_qwkjob_host.text = text;
 
 		if (!startup->max_clients) {
 			startup->max_clients = scfg.sys_nodes;
