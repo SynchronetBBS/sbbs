@@ -2457,6 +2457,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
             , JSRuntime**    js_runtime
             , JSContext**    js_cx
             , JSObject**     js_glob
+            , js_callback_t* js_callback
             , const char*    log_prefix
             )
 {
@@ -2469,13 +2470,12 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 	JSObject*     argv;
 	jsuint        argc;
 	JSObject*     js_script;
-	js_callback_t js_callback;
 	jsval         val;
 	jsval         rval = JSVAL_VOID;
 	private_t     priv;
 
-	ZERO_VAR(js_callback);
-	js_callback.lprintf = lprintf;
+	ZERO_VAR(*js_callback);
+	js_callback->lprintf = lprintf;
 
 	SAFECOPY(fname, cmdline);
 	truncstr(fname, " \t");
@@ -2517,7 +2517,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 			/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
 			if (!js_CreateCommonObjects(*js_cx, &scfg, &scfg, NULL
 			                            , uptime, server_host_name(), SOCKLIB_DESC /* system */
-			                            , &js_callback              /* js */
+			                            , js_callback               /* js */
 			                            , &startup->js
 				                        , NULL                      /* user */
 			                            , client, sock, -1          /* client */
@@ -2620,7 +2620,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		    && rval != JSVAL_VOID && JSVAL_IS_NUMBER(rval))
 			JS_ValueToInt32(*js_cx, rval, result);
 
-		js_EvalOnExit(*js_cx, js_scope, &js_callback);
+		js_EvalOnExit(*js_cx, js_scope, js_callback);
 
 		JS_ReportPendingException(*js_cx);
 
@@ -3213,6 +3213,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	JSRuntime*        js_runtime = NULL;
 	JSContext*        js_cx = NULL;
 	JSObject*         js_glob = NULL;
+	js_callback_t     js_callback = {};
 	int32             js_result;
 	struct mailproc*  mailproc;
 	login_attempt_t   attempted;
@@ -3627,7 +3628,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 							                 , rcpt_addr
 							                 , rcptlst_fname, proc_err_fname
 							                 , sender, sender_addr, reverse_path, hello_name, &js_result
-							                 , &js_runtime, &js_cx, &js_glob
+							                 , &js_runtime, &js_cx, &js_glob, &js_callback
 							                 , client.protocol) || js_result != 0) {
 #if 0 /* calling exit() in a script causes js_mailproc to return false */
 								lprintf(LOG_NOTICE, "%04d !SMTP JavaScript mailproc command (%s) failed (returned: %d)"
