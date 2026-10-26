@@ -232,8 +232,9 @@ static bool qwkjob_empty_packet(const qwkjob_host_t* host, const char* path, con
 			qwkjob_lprintf(host, LOG_NOTICE, "Removed empty packet: %s", path);
 		else
 			qwkjob_lprintf(host, LOG_ERR, "!ERROR %d (%s) removing empty packet: %s", errno, strerror(errno), path);
-	} else
+	} else {
 		qwkjob_lprintf(host, LOG_DEBUG, "Empty packet left in place: %s", path);
+	}
 	return true;
 }
 

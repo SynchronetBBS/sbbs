@@ -138,10 +138,17 @@ function post(query)
 		case "failed":
 			// The packet was received (a bad one is kept as .bad); re-sending won't help
 			log(LOG_WARNING, "REP packet import failed: " + path);
+			if(!file_exists(path))	// imported or kept as .bad
+				return "200 bitchen";
 			// An empty packet is left in place by the job outside the sweep directory
-			if(file_exists(path))
+			if(file_size(path) == 0) {
 				file_remove(path);
-			return "200 bitchen";
+				return "200 bitchen";
+			}
+			// Left after a failure unrelated to its content (e.g. a shutdown mid-import): the sweep retries it
+			if(queue_rep(path))
+				return "200 bitchen";
+			return "503 error queueing REP packet";
 		default:
 			log(LOG_ERR, "REP packet import: " + r.result);
 			file_remove(path);
