@@ -97,13 +97,22 @@ static bool qwkjob_terminated(const qwkjob_host_t* host)
 	return host->terminated != NULL && *host->terminated;
 }
 
+// Takes over a lock file older than QWKJOB_LOCK_MAX_AGE: a crashed holder's lock remains on POSIX
+static bool qwkjob_lock(const qwkjob_host_t* host, fmutex_t* lock)
+{
+	char desc[MAX_PATH + 256];
+
+	if (fmutex_open(lock, qwkjob_host_name(host), QWKJOB_LOCK_MAX_AGE))
+		return true;
+	int  level = qwkjob_lock_busy(lock, desc, sizeof desc);
+	qwkjob_lprintf(host, level, "%s", desc);
+	return false;
+}
+
 static bool qwkjob_lock_user(scfg_t* cfg, const qwkjob_host_t* host, uint usernum, fmutex_t* lock)
 {
 	qwkjob_user_lock_name(cfg, usernum, lock->name, sizeof lock->name);
-	if (fmutex_open(lock, qwkjob_host_name(host), TIMEOUT_MUTEX_FILE))
-		return true;
-	qwkjob_lprintf(host, LOG_DEBUG, "%s exists (job in progress?)", lock->name);
-	return false;
+	return qwkjob_lock(host, lock);
 }
 
 static void qwkjob_unlock(const qwkjob_host_t* host, fmutex_t* lock)
@@ -464,6 +473,34 @@ char* qwkjob_user_lock_name(const scfg_t* cfg, uint usernum, char* buf, size_t s
 	return buf;
 }
 
+int qwkjob_lock_busy(const fmutex_t* lock, char* buf, size_t size)
+{
+	char      holder[128] = "";
+	char      since[32] = "?";
+	struct tm tm;
+	time_t    t = lock->time;
+	// The holder's text may be unreadable (e.g. Windows denies all sharing of a held lock)
+	FILE*     fp = fopen(lock->name, "rb");
+
+	if (fp != NULL) {
+		size_t len = fread(holder, 1, sizeof holder - 1, fp);
+		holder[len] = '\0';
+		fclose(fp);
+	}
+	if (holder[0] == '\0')
+		SAFECOPY(holder, "unknown");
+	if (t == -1) {
+		snprintf(buf, size, "%s exists (job in progress?), held by %s", lock->name, holder);
+		return LOG_DEBUG;
+	}
+	if (localtime_r(&t, &tm) != NULL)
+		strftime(since, sizeof since, "%Y-%m-%d %H:%M:%S", &tm);
+	double age = difftime(time(NULL), t);
+	snprintf(buf, size, "%s exists (job in progress?), held by %s since %s (%.0f seconds)"
+	         , lock->name, holder, since, age);
+	return age > QWKJOB_LOCK_NOTICE_AGE ? LOG_NOTICE : LOG_DEBUG;
+}
+
 const char* qwkjob_result_str(enum qwkjob_result result)
 {
 	switch (result) {
@@ -533,8 +570,7 @@ enum qwkjob_result qwkjob_unpack_rep(scfg_t* cfg, const qwkjob_host_t* host
 	fmutex_t rep_lock = fmutex_init();
 	if (qwkjob_path_in_dir(reppath, dir)) {
 		SAFEPRINTF(rep_lock.name, "%s.lock", reppath);
-		if (!fmutex_open(&rep_lock, qwkjob_host_name(host), TIMEOUT_MUTEX_FILE)) {
-			qwkjob_lprintf(host, LOG_DEBUG, "%s exists (unpack in progress?)", rep_lock.name);
+		if (!qwkjob_lock(host, &rep_lock)) {
 			qwkjob_unlock(host, &lock);
 			return QWKJOB_BUSY;
 		}
@@ -575,10 +611,7 @@ bool qwkjob_lock_hub(scfg_t* cfg, const qwkjob_host_t* host, uint hubnum, fmutex
 	SAFEPRINTF(dir, "%sqnet", cfg->data_dir);
 	md(dir);
 	snprintf(lock->name, sizeof lock->name, "%sqnet/%s.lock", cfg->data_dir, cfg->qhub[hubnum]->id);
-	if (fmutex_open(lock, qwkjob_host_name(host), TIMEOUT_MUTEX_FILE))
-		return true;
-	qwkjob_lprintf(host, LOG_DEBUG, "%s exists (job in progress?)", lock->name);
-	return false;
+	return qwkjob_lock(host, lock);
 }
 
 void qwkjob_unlock_hub(const qwkjob_host_t* host, fmutex_t* lock)

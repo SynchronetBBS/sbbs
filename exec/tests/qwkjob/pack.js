@@ -48,6 +48,16 @@ var r3 = system.qwk_pack(u);
 file_remove(lock.name);
 if (r3.result != "busy")
 	throw new Error("locked pack: " + JSON.stringify(r3));
+// A lock over an hour old is a crashed holder's: taken over, and removed after the job
+lock.open("w"); lock.writeln("crashedhost"); lock.close();
+file_utime(lock.name, old, old);
+var r4 = system.qwk_pack(u);
+var lock_left = file_exists(lock.name);
+file_remove(lock.name);
+if (r4.result != "empty")
+	throw new Error("pack under a stale lock: " + JSON.stringify(r4));
+if (lock_left)
+	throw new Error("stale lock left behind");
 if (directory(system.temp_dir + "qwk/*").length)
 	throw new Error("job temp dir left behind");
 if (system.qwk_pack(99999).result != "bad_user")

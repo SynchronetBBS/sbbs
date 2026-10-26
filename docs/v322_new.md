@@ -224,6 +224,9 @@
 - A QWK download or REP upload at a node while another session (FTP, Web,
   a script or another host) is packing or importing for the same user is
   refused with a message instead of running concurrently
+- A QWK packing or import lock left behind by a crashed process is taken
+  over after an hour; a job refused by a lock held over 5 minutes is
+  logged as a notice, naming the holder
 - `NO_QWK_EVENTS` no longer keeps QWK packing off an instance: the FTP and
   Web servers there now pack and import QWK/REP packets themselves
 - QWKnet: the event thread now holds a per-hub lock across the REP pack and

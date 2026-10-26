@@ -32,6 +32,11 @@
 /* Maximum on-demand jobs running at once in one process */
 #define QWKJOB_MAX_CONCURRENT   4
 
+/* Seconds before a user or hub lock file is presumed left by a crashed holder and taken over */
+#define QWKJOB_LOCK_MAX_AGE     (60 * 60)
+/* Seconds a lock file may be held before a refused job is logged at LOG_NOTICE (else LOG_DEBUG) */
+#define QWKJOB_LOCK_NOTICE_AGE  (5 * 60)
+
 struct mqtt;
 
 typedef struct qwkjob_host {
@@ -87,6 +92,9 @@ DLLEXPORT int qwkjob_find_hub(scfg_t*, const char* hub_id);  /* -1 if none */
 
 /* Path of the fmutex lock file that serializes QWK jobs for one user */
 DLLEXPORT char* qwkjob_user_lock_name(const scfg_t*, uint usernum, char* buf, size_t size);
+
+/* After a failed fmutex_open(): describes the held lock (holder, age) in buf, returns the log level */
+DLLEXPORT int qwkjob_lock_busy(const fmutex_t*, char* buf, size_t size);
 
 #ifdef __cplusplus
 }

@@ -1339,6 +1339,7 @@ public:
 	void	qwk_sec(void);
 	bool	qwk_download(void);
 	bool	qwk_upload(void);
+	bool	qwk_lock(fmutex_t*);
 	str_list_t user_archive_formats(void);
 	uint	total_qwknodes = 0;
 	struct qwknode {

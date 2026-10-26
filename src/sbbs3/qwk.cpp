@@ -424,8 +424,7 @@ bool sbbs_t::qwk_download()
 	}
 	fmutex_t lock = fmutex_init();
 	qwkjob_user_lock_name(&cfg, useron.number, lock.name, sizeof lock.name);
-	if (!fmutex_open(&lock, startup->host_name, TIMEOUT_MUTEX_FILE)) {
-		bputs(text[QWKTransferInProgress]);
+	if (!qwk_lock(&lock)) {
 		free(saved);
 		return false;
 	}
@@ -507,8 +506,7 @@ bool sbbs_t::qwk_upload()
 		getusrsubs();
 	fmutex_t lock = fmutex_init();
 	qwkjob_user_lock_name(&cfg, useron.number, lock.name, sizeof lock.name);
-	if (!fmutex_open(&lock, startup->host_name, TIMEOUT_MUTEX_FILE)) {
-		bputs(text[QWKTransferInProgress]);
+	if (!qwk_lock(&lock)) {
 		delfiles(cfg.temp_dir, ALLFILES);
 		return false;
 	}
@@ -517,6 +515,21 @@ bool sbbs_t::qwk_upload()
 		errormsg(WHERE, ERR_REMOVE, lock.name, 0);
 	delfiles(cfg.temp_dir, ALLFILES);
 	return result;
+}
+
+/****************************************************************************/
+/* Takes the user's QWK job lock (see qwkjob.cpp), else tells the user why	*/
+/****************************************************************************/
+bool sbbs_t::qwk_lock(fmutex_t* lock)
+{
+	char desc[MAX_PATH + 256];
+
+	if (fmutex_open(lock, startup->host_name, QWKJOB_LOCK_MAX_AGE))
+		return true;
+	int  level = qwkjob_lock_busy(lock, desc, sizeof desc);
+	lprintf(level, "%s", desc);
+	bputs(text[QWKTransferInProgress]);
+	return false;
 }
 
 /****************************************************************************/

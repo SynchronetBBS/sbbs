@@ -194,6 +194,13 @@ if (!file_exists(qwk))
 	throw new Error("locked import removed " + qwk);
 file_remove(qwk);
 
+// A hub lock over an hour old is a crashed holder's: taken over, and removed after the job
+write_file(hub_lock, "crashedhost");
+file_utime(hub_lock, time() - 2 * 60 * 60, time() - 2 * 60 * 60);
+expect(system.qwk_pack(HUB), "empty", "pack under a stale hub lock");
+if (file_exists(hub_lock))
+	throw new Error("stale hub lock left behind");
+
 // Unknown and disabled hubs
 expect(system.qwk_pack("NOSUCH"), "bad_hub", "unknown hub pack");
 expect(system.qwk_unpack("NOSUCH", temp + "none.qwk"), "bad_hub", "unknown hub import");
