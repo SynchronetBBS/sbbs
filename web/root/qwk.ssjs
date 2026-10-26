@@ -150,7 +150,9 @@ function post(query)
 function queue_rep(path)
 {
 	var base = system.data_dir + format("file/%04u", user.number);
-	var tmp = base + format(".%u.reptmp", client.socket);
+	// data/file/ is shared by every host: name the staging file by host and server.
+	// Not ".rep*": Windows matches the sweep's "*.rep" against 8.3 short names too.
+	var tmp = base + format(".%s.web%u.tmp", system.host_name.replace(/[^\w.-]/g, "_"), client.socket);
 	var dest = base + ".rep";
 	for(var i = 0; i < 10 && file_exists(dest); i++)
 		dest = base + format(".%x.rep", time() + i);
@@ -158,7 +160,7 @@ function queue_rep(path)
 		log(LOG_ERR, "no free queue name for REP packet: " + dest);
 		return false;
 	}
-	// Write under a name the sweep doesn't glob, then rename into place
+	// Write under a name the sweep ignores, then rename into place
 	var file = new File(tmp);
 	if(!file.open("wb")) {
 		log(LOG_ERR, "error " + file.error + " opening " + file.name);

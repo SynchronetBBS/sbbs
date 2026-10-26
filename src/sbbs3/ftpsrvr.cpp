@@ -925,7 +925,14 @@ static bool queue_rep(const xfer_t* xfer, char* dest, size_t size)
 		return true;
 	// temp_dir may be on another volume: copy beside dest (a name the sweep ignores), then rename.
 	// Not ".rep*": Windows matches "*.rep" against 8.3 short names too.
-	snprintf(staged, sizeof staged, "%sfile/%04u.%d.tmp", scfg.data_dir, usernum, (int)xfer->ctrl_sock);
+	// data/file/ is shared by every host, so the name carries host and server.
+	char host[128];
+	SAFECOPY(host, ftp_qwkjob_host.host_name == NULL ? "" : ftp_qwkjob_host.host_name);
+	for (char* p = host; *p != '\0'; p++) {
+		if (!isalnum((uchar)*p) && *p != '.' && *p != '-' && *p != '_')
+			*p = '_';
+	}
+	snprintf(staged, sizeof staged, "%sfile/%04u.%s.ftp%d.tmp", scfg.data_dir, usernum, host, (int)xfer->ctrl_sock);
 	if (!CopyFile(xfer->filename, staged, /* failIfExists: */ FALSE))
 		return false;
 	if (rename(staged, dest) != 0) {
