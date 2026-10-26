@@ -524,7 +524,7 @@ bool sbbs_t::qwk_lock(fmutex_t* lock)
 {
 	char desc[MAX_PATH + 256];
 
-	if (fmutex_open(lock, startup->host_name, QWKJOB_LOCK_MAX_AGE))
+	if (fmutex_open(lock, startup->host_name, QWKJOB_USER_LOCK_MAX_AGE))
 		return true;
 	int  level = qwkjob_lock_busy(lock, desc, sizeof desc);
 	lprintf(level, "%s", desc);

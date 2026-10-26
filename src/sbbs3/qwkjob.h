@@ -32,10 +32,13 @@
 /* Maximum on-demand jobs running at once in one process */
 #define QWKJOB_MAX_CONCURRENT   4
 
-/* Seconds before a user or hub lock file is presumed left by a crashed holder and taken over */
-#define QWKJOB_LOCK_MAX_AGE     (60 * 60)
+/* Seconds before a lock file is presumed left by a crashed holder and taken over */
+/* User and <rep>.lock: held only for one pack or import */
+#define QWKJOB_USER_LOCK_MAX_AGE    (60 * 60)
+/* Hub: also held across the event thread's call-out, which may run for hours */
+#define QWKJOB_HUB_LOCK_MAX_AGE     (12 * 60 * 60)
 /* Seconds a lock file may be held before a refused job is logged at LOG_NOTICE (else LOG_DEBUG) */
-#define QWKJOB_LOCK_NOTICE_AGE  (5 * 60)
+#define QWKJOB_LOCK_NOTICE_AGE      (5 * 60)
 
 struct mqtt;
 

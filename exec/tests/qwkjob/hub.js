@@ -208,9 +208,19 @@ expect(ru, "busy", "locked import of an empty packet");
 if (!empty_kept)
 	throw new Error("empty packet removed under a held hub lock");
 
-// A hub lock over an hour old is a crashed holder's: taken over, and removed after the job
-write_file(hub_lock, "crashedhost");
+// A hub lock is held across the call-out, which may run for hours: not taken over at 2 hours
+write_file(hub_lock, "callouthost");
 file_utime(hub_lock, time() - 2 * 60 * 60, time() - 2 * 60 * 60);
+rp = system.qwk_pack(HUB);
+var lock_kept = file_exists(hub_lock);
+file_remove(hub_lock);
+expect(rp, "busy", "pack under a 2-hour-old hub lock");
+if (!lock_kept)
+	throw new Error("2-hour-old hub lock removed");
+
+// A hub lock over 12 hours old is a crashed holder's: taken over, and removed after the job
+write_file(hub_lock, "crashedhost");
+file_utime(hub_lock, time() - 13 * 60 * 60, time() - 13 * 60 * 60);
 expect(system.qwk_pack(HUB), "empty", "pack under a stale hub lock");
 if (file_exists(hub_lock))
 	throw new Error("stale hub lock left behind");

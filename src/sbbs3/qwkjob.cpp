@@ -101,12 +101,12 @@ static bool qwkjob_terminated(const qwkjob_host_t* host)
 	return host->terminated != NULL && *host->terminated;
 }
 
-// Takes over a lock file older than QWKJOB_LOCK_MAX_AGE: a crashed holder's lock remains on POSIX
-static bool qwkjob_lock(const qwkjob_host_t* host, fmutex_t* lock)
+// Takes over a lock file older than max_age: a crashed holder's lock remains on POSIX
+static bool qwkjob_lock(const qwkjob_host_t* host, fmutex_t* lock, long max_age)
 {
 	char desc[MAX_PATH + 256];
 
-	if (fmutex_open(lock, qwkjob_host_name(host), QWKJOB_LOCK_MAX_AGE))
+	if (fmutex_open(lock, qwkjob_host_name(host), max_age))
 		return true;
 	int  level = qwkjob_lock_busy(lock, desc, sizeof desc);
 	qwkjob_lprintf(host, level, "%s", desc);
@@ -116,7 +116,7 @@ static bool qwkjob_lock(const qwkjob_host_t* host, fmutex_t* lock)
 static bool qwkjob_lock_user(scfg_t* cfg, const qwkjob_host_t* host, uint usernum, fmutex_t* lock)
 {
 	qwkjob_user_lock_name(cfg, usernum, lock->name, sizeof lock->name);
-	return qwkjob_lock(host, lock);
+	return qwkjob_lock(host, lock, QWKJOB_USER_LOCK_MAX_AGE);
 }
 
 static void qwkjob_unlock(const qwkjob_host_t* host, fmutex_t* lock)
@@ -645,7 +645,7 @@ enum qwkjob_result qwkjob_unpack_rep(scfg_t* cfg, const qwkjob_host_t* host
 	fmutex_t rep_lock = fmutex_init();
 	if (qwkjob_path_in_dir(reppath, dir)) {
 		SAFEPRINTF(rep_lock.name, "%s.lock", reppath);
-		if (!qwkjob_lock(host, &rep_lock)) {
+		if (!qwkjob_lock(host, &rep_lock, QWKJOB_USER_LOCK_MAX_AGE)) {
 			qwkjob_unlock(host, &lock);
 			return QWKJOB_BUSY;
 		}
@@ -687,7 +687,7 @@ bool qwkjob_lock_hub(scfg_t* cfg, const qwkjob_host_t* host, uint hubnum, fmutex
 	SAFEPRINTF(dir, "%sqnet", cfg->data_dir);
 	md(dir);
 	snprintf(lock->name, sizeof lock->name, "%sqnet/%s.lock", cfg->data_dir, cfg->qhub[hubnum]->id);
-	return qwkjob_lock(host, lock);
+	return qwkjob_lock(host, lock, QWKJOB_HUB_LOCK_MAX_AGE);
 }
 
 void qwkjob_unlock_hub(const qwkjob_host_t* host, fmutex_t* lock)

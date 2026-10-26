@@ -197,19 +197,44 @@ bool fmutex_open(fmutex_t* fm, const char* text, long max_age)
 
 bool fmutex_close(fmutex_t* fm)
 {
+	bool        result = true;
+	int         error = 0;
+#if !defined _WIN32
+	struct stat fd_st;
+	struct stat name_st;
+#endif
+
 	if (fm == NULL)
 		return false;
 	if (fm->fd < 0) // already closed (or never opened)
 		return true;
 #if !defined _WIN32 // should only be necessary (and possible) on *nix
-	// We remove before close to insure the file we remove is the file we opened
-	if (unlink(fm->name) != 0)
-		return false;
+	// Remove before close, and only the file we opened: once our lock aged out and
+	// was taken over, the file by this name is the new holder's
+	if (fstat(fm->fd, &fd_st) != 0) {
+		error = errno;
+		result = false;
+	} else if (stat(fm->name, &name_st) != 0) {
+		if (errno != ENOENT) {
+			error = errno;
+			result = false;
+		}
+	} else if (fd_st.st_dev == name_st.st_dev && fd_st.st_ino == name_st.st_ino) {
+		if (unlink(fm->name) != 0) {
+			error = errno;
+			result = false;
+		}
+	}
 #endif
-	if (close(fm->fd) != 0)
-		return false;
+	if (close(fm->fd) != 0) {
+		if (result)
+			error = errno;
+		result = false;
+	}
 	fm->fd = -1;
-	return true;
+	if (!result)
+		errno = error;
+	return result;
 }
 
 // Opens and immediately closes a mutex file

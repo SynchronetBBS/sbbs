@@ -226,8 +226,8 @@
   refused with a message, before any transfer, instead of running
   concurrently
 - A QWK packing or import lock left behind by a crashed process is taken
-  over after an hour; a job refused by a lock held over 5 minutes is
-  logged as a notice, naming the holder
+  over after an hour (a QWKnet hub's lock after 12 hours); a job refused by
+  a lock held over 5 minutes is logged as a notice, naming the holder
 - `NO_QWK_EVENTS` no longer keeps QWK packing off an instance: the FTP and
   Web servers there now pack and import QWK/REP packets themselves
 - QWKnet: the event thread now holds a per-hub lock across the REP pack and
