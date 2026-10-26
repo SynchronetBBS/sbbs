@@ -146,6 +146,14 @@ static int lputs(int level, const char* str)
 	return startup->lputs(startup->cbdata, level, str);
 }
 
+static int qwkjob_lputs(void* cbdata, int level, const char* str)
+{
+	(void)cbdata;
+	return lputs(level, str);
+}
+
+static qwkjob_host_t services_qwkjob_host;
+
 #if defined(__GNUC__)   // Catch printf-format errors with lprintf
 static int lprintf(int level, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 #endif
@@ -959,6 +967,9 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 			break;
 
 		if (js_CreateSystemObject(js_cx, *glob, &scfg, uptime, server_host_name(), SOCKLIB_DESC, &mqtt) == NULL)
+			break;
+
+		if (!js_SetSystemQwkjobHost(js_cx, *glob, &services_qwkjob_host))
 			break;
 
 		if (service_client->service->js_server_props.version[0] == 0) {
@@ -2104,6 +2115,15 @@ void services_thread(void* arg)
 			return;
 		}
 		lprintf(LOG_DEBUG, "Temporary file directory: %s", scfg.temp_dir);
+
+		services_qwkjob_host = {};
+		services_qwkjob_host.name = "srvc";
+		services_qwkjob_host.host_name = startup->host_name;
+		services_qwkjob_host.lputs = qwkjob_lputs;
+		services_qwkjob_host.mqtt = &mqtt;
+		services_qwkjob_host.temp_root = scfg.temp_dir;
+		services_qwkjob_host.terminated = &terminated;
+		services_qwkjob_host.text = text;
 
 		if ((t = checktime()) != 0) {   /* Check binary time */
 			lprintf(LOG_ERR, "!TIME PROBLEM (%" PRId64 ")", (int64_t)t);

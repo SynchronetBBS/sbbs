@@ -284,6 +284,21 @@ int eputs(int level, const char *str)
 	return startup->event_lputs(startup->event_cbdata, level, str);
 }
 
+static int node_qwkjob_lputs(void* cbdata, int level, const char* str)
+{
+	(void)cbdata;
+	return lputs(level, str);
+}
+
+static int event_qwkjob_lputs(void* cbdata, int level, const char* str)
+{
+	(void)cbdata;
+	return eputs(level, str);
+}
+
+static qwkjob_host_t node_qwkjob_host;
+static qwkjob_host_t event_qwkjob_host;
+
 int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
@@ -1470,6 +1485,9 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 		                            ))
 			break;
 		rooted = true;
+
+		if (!js_SetSystemQwkjobHost(js_cx, *glob, is_event_thread ? &event_qwkjob_host : &node_qwkjob_host))
+			break;
 
 #ifdef BUILD_JSDOCS
 		js_CreateUifcObject(js_cx, *glob);
@@ -5467,6 +5485,20 @@ void bbs_thread(void* arg)
 			lprintf(LOG_WARNING, "!WARNING loading configuration files: %s", logstr);
 
 		mqtt_startup(&mqtt, &scfg, (struct startup*)startup, bbs_ver(), lputs);
+
+		node_qwkjob_host = {};
+		node_qwkjob_host.name = "term";
+		node_qwkjob_host.host_name = startup->host_name;
+		node_qwkjob_host.lputs = node_qwkjob_lputs;
+		node_qwkjob_host.mqtt = &mqtt;
+		node_qwkjob_host.temp_root = scfg.temp_dir;
+		node_qwkjob_host.terminated = &terminate_server;
+		node_qwkjob_host.text = text;
+		node_qwkjob_host.startup = startup;
+		event_qwkjob_host = node_qwkjob_host;
+		event_qwkjob_host.name = "evnt";
+		event_qwkjob_host.lputs = event_qwkjob_lputs;
+		event_qwkjob_host.is_event_thread = true;
 
 		// Validate the userbase file sizes
 		char userdat[MAX_PATH + 1];
