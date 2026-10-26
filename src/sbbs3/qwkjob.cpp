@@ -26,6 +26,9 @@
 #include <atomic>
 #include <mutex>
 #include <set>
+#ifndef _WIN32
+	#include <signal.h>
+#endif
 
 #define QWKJOB_TEMP_MAX_AGE     (6 * 60 * 60)   // Seconds before an orphaned job temp dir is removed
 #define QWKJOB_BAD_KEEP         10          // .bad packets retained per user or hub
