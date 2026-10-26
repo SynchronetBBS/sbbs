@@ -218,6 +218,31 @@
   "1 pm") and accepts "1 am", "1 pm", or a 24-hour hour of 0 or 13-23,
   re-prompting for an ambiguous hour of 1-12 without am/pm, instead of
   asking a separate "pm?"/"am?" question (issue #1265)
+- QWK packet creation and REP import no longer run only on the event
+  thread: the FTP and Web servers, Services, `jsexec` and scripts can run
+  them directly, and the event thread's sweeps use the same code
+- A QWK download or REP upload at a node while another session (FTP, Web,
+  a script or another host) is packing or importing for the same user is
+  refused with a message instead of running concurrently
+- `NO_QWK_EVENTS` no longer keeps QWK packing off an instance: the FTP and
+  Web servers there now pack and import QWK/REP packets themselves
+- QWKnet: the event thread now holds a per-hub lock across the REP pack and
+  the call-out, so a script packing that hub meanwhile cannot lose
+  messages. Use `system.qwk_pack()`/`system.qwk_unpack()` with a hub ID
+  only after every instance that processes that hub runs this version
+  (older versions do not lock the hub)
+- Fix: QWK control messages (ADD, DROP, RESET) in REP packets imported
+  off-line (FTP, Web or the event thread) are now applied; they were
+  discarded
+- Fix: QWK packets packed off-line now include `NEWFILES.DAT` for users
+  with that option
+- Fix: failed user REP imports (`.bad` files) are pruned to the newest 10;
+  the old pattern never matched, so they accumulated
+- Fix: empty inbound QWKnet packets in `data/` are removed after a minute
+  instead of being re-checked on every pass
+- `?script` archiver commands are not supported for packets created
+  outside a terminal session (FTP, Web, scripts and the event thread's
+  sweeps); use a native archiver or a built-in format
 
 ## Web Server
 
@@ -255,6 +280,10 @@
 - Fix: the web interface's System Info sidebar evaluated each
   statistic twice — once to decide whether the row was worth showing
   and again to render it — doubling the work behind the front page
+- `qwk.ssjs` now packs QWK packets and imports REP packets itself instead
+  of waiting on the Terminal Server's event thread; a pending REP no longer
+  blocks a new upload (the 409 reply is gone). It still works unchanged on
+  older binaries
 
 ## FTP Server
 
@@ -272,6 +301,13 @@
   client writes to it — avoids `!DATA ERROR -202 adding file`
   races
 - Fix silent setsockopt failures on some platforms (issue #1137)
+- QWK packets are now created and REP packets imported directly by the FTP
+  server, with no wait on the Terminal Server's event thread; different
+  users are handled in parallel (up to 4 per process)
+- `QwkTimeout` now bounds how long a QWK download waits for a free packing
+  slot on a busy server
+- Fix: a failed QWK packet creation is now answered with `451` instead of
+  possibly reading as "no new messages"
 
 ## Mail Server
 
@@ -851,6 +887,8 @@
   forked CTerm's (e.g. TERMinator's) version report, also written to the
   `BBSDEV.DRP` drop file; `console.cterm_version` still holds the
   CTerm version the fork was based on
+- New `system.qwk_pack()` and `system.qwk_unpack()` methods create or
+  import a QWK/REP packet for a user (by number) or a QWKnet hub (by ID)
 
 ## JSexec
 
