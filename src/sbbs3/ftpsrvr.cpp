@@ -606,7 +606,10 @@ typedef struct {
 	client_t* client;
 	int dir;
 	char* desc;
-	bool qwk_rep;   // receiving a QWK reply packet for user->number
+	bool qwk_rep;   // receiving a QWK reply packet for usernum
+	// By value: the ctrl_thread that user points into may have returned before a REP import ends
+	uint usernum;
+	char alias[LEN_ALIAS + 1];
 } xfer_t;
 
 static void send_thread(void* arg)
@@ -910,7 +913,7 @@ static void send_thread(void* arg)
 static bool queue_rep(const xfer_t* xfer, char* dest, size_t size)
 {
 	char     staged[MAX_PATH + 1];
-	uint     usernum = xfer->user->number;
+	uint     usernum = xfer->usernum;
 	uint64_t t = time(NULL);
 
 	snprintf(dest, size, "%sfile/%04u.rep", scfg.data_dir, usernum);
@@ -936,10 +939,10 @@ static bool queue_rep(const xfer_t* xfer, char* dest, size_t size)
 	if (!CopyFile(xfer->filename, staged, /* failIfExists: */ FALSE))
 		return false;
 	if (rename(staged, dest) != 0) {
-		ftp_remove(xfer->ctrl_sock, __LINE__, staged, xfer->user->alias, LOG_ERR);
+		ftp_remove(xfer->ctrl_sock, __LINE__, staged, xfer->alias, LOG_ERR);
 		return false;
 	}
-	ftp_remove(xfer->ctrl_sock, __LINE__, xfer->filename, xfer->user->alias, LOG_ERR);
+	ftp_remove(xfer->ctrl_sock, __LINE__, xfer->filename, xfer->alias, LOG_ERR);
 	return true;
 }
 
@@ -947,7 +950,7 @@ static void import_rep(const xfer_t* xfer)
 {
 	char               dest[MAX_PATH + 1];
 	char               errstr[256];
-	enum qwkjob_result result = qwkjob_unpack_rep(&scfg, &ftp_qwkjob_host, xfer->user->number, xfer->filename);
+	enum qwkjob_result result = qwkjob_unpack_rep(&scfg, &ftp_qwkjob_host, xfer->usernum, xfer->filename);
 
 	if (!fexist(xfer->filename))    // imported, or kept as .bad by the job
 		return;
@@ -955,16 +958,16 @@ static void import_rep(const xfer_t* xfer)
 	// failure (e.g. a temp dir error or a shutdown mid-import) is queued for the sweep to retry
 	if (result == QWKJOB_FAILED && flength(xfer->filename) == 0) {
 		if (remove(xfer->filename) != 0)
-			errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) removing %s", xfer->ctrl_sock, xfer->user->alias
+			errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) removing %s", xfer->ctrl_sock, xfer->alias
 			          , errno, safe_strerror(errno, errstr, sizeof errstr), xfer->filename);
 		return;
 	}
 	if (queue_rep(xfer, dest, sizeof dest))
 		lprintf(LOG_INFO, "%04d <%s> QWK reply packet import %s, queued: %s"
-		        , xfer->ctrl_sock, xfer->user->alias, qwkjob_result_str(result), dest);
+		        , xfer->ctrl_sock, xfer->alias, qwkjob_result_str(result), dest);
 	else
 		errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) queuing QWK reply packet (import %s): %s"
-		          , xfer->ctrl_sock, xfer->user->alias, errno, safe_strerror(errno, errstr, sizeof errstr)
+		          , xfer->ctrl_sock, xfer->alias, errno, safe_strerror(errno, errstr, sizeof errstr)
 		          , qwkjob_result_str(result), xfer->filename);
 }
 
@@ -1274,7 +1277,8 @@ static void receive_thread(void* arg)
 		}
 		if (xfer.qwk_rep) {
 			import_rep(&xfer);
-			*xfer.lastactive = time(NULL);
+			if (ftp_set != NULL)
+				*xfer.lastactive = time(NULL);
 		}
 		/* Send ACK */
 		sockprintf(xfer.ctrl_sock, xfer.ctrl_sess, "226 Upload complete (%lu cps).", cps);
@@ -1546,6 +1550,8 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 		xfer->dir = dir;
 		xfer->desc = desc;
 		xfer->qwk_rep = qwk_rep;
+		xfer->usernum = user->number;
+		SAFECOPY(xfer->alias, user->alias);
 		SAFECOPY(xfer->filename, filename);
 		(void)protected_uint32_adjust(&thread_count, 1);
 		if (receiving)
@@ -5239,9 +5245,12 @@ static void ctrl_thread(void* arg)
 		lprintf(LOG_DEBUG, "%04d Waiting for transfer to complete...", sock);
 		count = 0;
 		while (transfer_inprogress == true) {
-			if (ftp_set == NULL) {
-				mswait(2000);   /* allow xfer threads to terminate */
-				break;
+			if (ftp_set == NULL) {  /* allow xfer threads (e.g. a REP import) to terminate */
+				if (count >= 60)
+					break;
+				count++;
+				mswait(1000);
+				continue;
 			}
 			if (!transfer_aborted) {
 				if (gettimeleft(&scfg, &user, logintime) < 1) {
