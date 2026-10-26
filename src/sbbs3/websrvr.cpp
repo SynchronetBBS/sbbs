@@ -560,6 +560,16 @@ time_gm(struct tm *tm)
 	return t < 0 ? (time_t) -1 : t;
 }
 
+static int lputs(int level, const char* str);
+
+static int qwkjob_lputs(void* cbdata, int level, const char* str)
+{
+	(void)cbdata;
+	return lputs(level, str);
+}
+
+static qwkjob_host_t web_qwkjob_host;
+
 static int lputs(int level, const char* str)
 {
 	mqtt_lputs(&mqtt, TOPIC_SERVER, level, str);
@@ -6289,6 +6299,15 @@ js_initcx(http_session_t *session)
 		return NULL;
 	}
 
+	if (!js_SetSystemQwkjobHost(js_cx, session->js_glob, &web_qwkjob_host)) {
+		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] JavaScript: Failed to set the QWK job host"
+			, session->socket, session->client.protocol, session->host_ip);
+		JS_RemoveObjectRoot(js_cx, &session->js_glob);
+		JS_ENDREQUEST(js_cx);
+		JS_DestroyContext(js_cx);
+		return NULL;
+	}
+
 	return js_cx;
 }
 
@@ -7776,6 +7795,16 @@ void web_server(void* arg)
 			return;
 		}
 		lprintf(LOG_DEBUG, "Temporary file directory: %s", scfg.temp_dir);
+
+		web_qwkjob_host = {};
+		web_qwkjob_host.name = "web";
+		web_qwkjob_host.host_name = server_host_name();
+		web_qwkjob_host.lputs = qwkjob_lputs;
+		web_qwkjob_host.mqtt = &mqtt;
+		web_qwkjob_host.temp_root = scfg.temp_dir;
+		web_qwkjob_host.terminated = &terminate_server;
+		web_qwkjob_host.text = text;
+
 		lprintf(LOG_DEBUG, "Root directory: %s", root_dir);
 		lprintf(LOG_DEBUG, "Error directory: %s", error_dir);
 		lprintf(LOG_DEBUG, "CGI directory: %s", cgi_dir);

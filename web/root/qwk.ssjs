@@ -1,4 +1,3 @@
-// $Id: qwk.ssjs,v 1.2 2019/06/02 04:55:14 rswindell Exp $
 // vi: tabstop=4
 
 // Handle QWK packet transfers (uploads of REP packets and downloads of QWK packets)
@@ -20,7 +19,7 @@
 // $ wget --auth-no-challenge --http-user=<username> --http-password=<password>
 //        --post-data= <hub-hostname>/qwk.ssjs?received=<QWK-file-length>
 
-const REVISION = "$Revision: 1.2 $".split(' ')[1];
+const REVISION = "1.3";
 log(LOG_INFO, "QWK Packet Handler (qwk.ssjs) " + REVISION);
 
 const pack_timeout = 60;	// seconds
@@ -28,27 +27,41 @@ var qwkfile = system.data_dir + format("file/%04u.qwk", user.number);
 
 function get(query)
 {
-	var semfile = system.data_dir + format("pack%04u.now", user.number);
-
 	if(!file_exists(qwkfile)) {
-        log("Requesting creation of QWK packet: " + qwkfile);
-		file_touch(semfile);
-		var start = time();
-		while(file_exists(semfile)) {
-			if(js.terminated)
-				return "503 server terminated";
-			if(time() - start >= pack_timeout)
-				break;
-		}
-		if(file_exists(semfile)) {
-			log(LOG_WARNING, "timeout generating QWK packet: " + qwkfile);
-			return "503 timeout generating QWK packet";
-		}
-		if(!file_exists(qwkfile)) {
-			mswait(500);
-			if(!file_exists(qwkfile)) {
-				log(LOG_INFO, "No QWK packet created: " + qwkfile);
+		if(typeof system.qwk_pack == "function") {
+			var r = system.qwk_pack(user.number);
+			log(LOG_INFO, "qwk_pack: " + r.result + " (" + r.msgs + " msgs)");
+			if(r.result == "busy" || r.result == "throttled") {
+				http_reply.header["Retry-After"] = "60";
+				return "503 QWK packet creation already in progress";
+			}
+			if(r.result == "empty")
 				return "204 No QWK packet created (no new messages?)";
+			if(r.result != "ok")
+				return "503 QWK packet creation failed: " + r.result;
+		} else {
+			// Older binary: ask the Terminal Server's event thread via semaphore file
+			var semfile = system.data_dir + format("pack%04u.now", user.number);
+			log("Requesting creation of QWK packet: " + qwkfile);
+			file_touch(semfile);
+			var start = time();
+			while(file_exists(semfile)) {
+				if(js.terminated)
+					return "503 server terminated";
+				if(time() - start >= pack_timeout)
+					break;
+				mswait(500);
+			}
+			if(file_exists(semfile)) {
+				log(LOG_WARNING, "timeout generating QWK packet: " + qwkfile);
+				return "503 timeout generating QWK packet";
+			}
+			if(!file_exists(qwkfile)) {
+				mswait(500);
+				if(!file_exists(qwkfile)) {
+					log(LOG_INFO, "No QWK packet created: " + qwkfile);
+					return "204 No QWK packet created (no new messages?)";
+				}
 			}
 		}
 	}
@@ -96,6 +109,76 @@ function post(query)
 	}
 	log(LOG_INFO, "received REP packet: " + http_request.post_data.length + " bytes");
 
+	if(typeof system.qwk_unpack != "function")
+		return post_legacy();
+
+	var repdir = system.temp_dir + "rep/";
+	mkdir(repdir);
+	var path = repdir + format("%04u.%u.rep", user.number, client.socket);
+	var file = new File(path);
+	if(!file.open("wb")) {
+		log(LOG_ERR, "error " + file.error + " opening REP packet: " + file.name);
+		return "503 error creating REP packet";
+	}
+	file.write(http_request.post_data);
+	file.close();
+
+	var r = system.qwk_unpack(user.number, path);
+	log(LOG_INFO, "qwk_unpack: " + r.result);
+	switch(r.result) {
+		case "ok":
+			return "200 bitchen";
+		case "busy":
+		case "throttled":
+			// 200, not 202: qnet-http.js re-sends the REP on any non-200,
+			// which would post every reply twice once the sweep imports this copy
+			if(queue_rep(path))
+				return "200 bitchen";
+			return "503 error queueing REP packet";
+		case "failed":
+			// The packet was received (a bad one is kept as .bad); re-sending won't help
+			log(LOG_WARNING, "REP packet import failed: " + path);
+			return "200 bitchen";
+		default:
+			log(LOG_ERR, "REP packet import: " + r.result);
+			file_remove(path);
+			return "503 REP packet import failed: " + r.result;
+	}
+}
+
+// Hand a REP packet to the Terminal Server event thread's sweep
+function queue_rep(path)
+{
+	var base = system.data_dir + format("file/%04u", user.number);
+	var tmp = base + format(".%u.reptmp", client.socket);
+	var dest = base + ".rep";
+	for(var i = 0; i < 10 && file_exists(dest); i++)
+		dest = base + format(".%x.rep", time() + i);
+	if(file_exists(dest)) {
+		log(LOG_ERR, "no free queue name for REP packet: " + dest);
+		return false;
+	}
+	// Write under a name the sweep doesn't glob, then rename into place
+	var file = new File(tmp);
+	if(!file.open("wb")) {
+		log(LOG_ERR, "error " + file.error + " opening " + file.name);
+		return false;
+	}
+	file.write(http_request.post_data);
+	file.close();
+	if(!file_rename(tmp, dest)) {
+		log(LOG_ERR, "error renaming " + tmp + " to " + dest);
+		file_remove(tmp);
+		return false;
+	}
+	file_remove(path);
+	log(LOG_INFO, "queued REP packet: " + dest);
+	return true;
+}
+
+// Older binary: leave the REP for the Terminal Server event thread
+function post_legacy()
+{
 	var repfile = system.data_dir + format("file/%04u.rep", user.number);
 
 	if(file_exists(repfile)) {
