@@ -66,10 +66,19 @@ void sbbs_t::reinit_msg_ptrs()
 	}
 }
 
+struct user_search_progress {
+	sbbs_t* sbbs;
+	double  start;
+	bool    drawn;
+};
+
 static void ProgressSearchingUsers(void* cbdata, int count, int total)
 {
-	sbbs_t* sbbs = ((sbbs_t*)cbdata);
-	sbbs->progress(sbbs->text[SearchingForDupes], count, total);
+	user_search_progress* p = (user_search_progress*)cbdata;
+	if (!p->drawn && (xp_timer() - p->start) * 1000 < PROGRESS_INTERVAL)
+		return;
+	p->sbbs->progress(p->sbbs->text[SearchingForDupes], count, total);
+	p->drawn = true;
 }
 
 /****************************************************************************/
@@ -83,8 +92,9 @@ static void ProgressSearchingUsers(void* cbdata, int count, int total)
 uint sbbs_t::finduserstr(uint usernumber, enum user_field fnum, const char* str
                          , bool del, bool next)
 {
-	uint i = ::finduserstr(&cfg, usernumber, fnum, str, del, next, online == ON_REMOTE ? ProgressSearchingUsers : NULL, this);
-	if (online == ON_REMOTE)
+	user_search_progress prog = { this, (double)xp_timer(), false };
+	uint i = ::finduserstr(&cfg, usernumber, fnum, str, del, next, online == ON_REMOTE ? ProgressSearchingUsers : NULL, &prog);
+	if (prog.drawn)
 		bputs(text[SearchedForDupes]);
 	return i;
 }

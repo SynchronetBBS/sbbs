@@ -479,6 +479,8 @@ public:
 
 #define TIMEOUT_MUTEX_FILE      (12 * 60 * 60)
 
+#define PROGRESS_INTERVAL 500 // milliseconds between progress meter updates
+
 class sbbs_t
 {
 
@@ -1043,7 +1045,7 @@ public:
 	const char* term_charset(int term_supports = -1);
 	bool	update_nodeterm(void);
 	int		backfill(const char* str, float pct, int full_attr, int empty_attr);
-	void	progress(const char* str, int count, int total, int interval = 500);
+	void	progress(const char* str, int count, int total, int interval = PROGRESS_INTERVAL);
 	double	last_progress = 0;
 	int		petscii_to_ansibbs(unsigned char);
 	size_t	print_utf8_as_cp437(const char*, size_t);

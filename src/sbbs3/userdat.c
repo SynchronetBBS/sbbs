@@ -1943,30 +1943,58 @@ void printnodedat(scfg_t* cfg, uint number, node_t* node)
 int finduserstr(scfg_t* cfg, int usernumber, enum user_field fnum
                  , const char* str, bool del, bool next, void (*progress)(void*, int, int), void* cbdata)
 {
-	int  file;
-	int  unum;
-	int found = 0;
+	int       file;
+	int       unum;
+	int       found = 0;
+	char*     buf;
+	const int recs_per_read = 64;
 
 	if (!VALID_CFG(cfg) || str == NULL)
 		return 0;
 
-	if ((file = openuserdat(cfg, /* for_modify: */ false)) < 0)
+	if ((buf = malloc(recs_per_read * USER_RECORD_LINE_LEN)) == NULL)
 		return 0;
-	int last = (int)filelength(file) / USER_RECORD_LINE_LEN;
+	if ((file = openuserdat(cfg, /* for_modify: */ false)) < 0) {
+		free(buf);
+		return 0;
+	}
+	int last = (int)(filelength(file) / USER_RECORD_LINE_LEN);
 	if (usernumber && next)
 		unum = usernumber;
 	else
 		unum = 1;
 	if (progress != NULL)
 		progress(cbdata, unum, last);
-	for (; unum <= last && found == 0; unum++) {
+	while (unum <= last && found == 0) {
 		if (progress != NULL)
 			progress(cbdata, unum, last);
-		if (usernumber && unum == usernumber)
-			continue;
-		char userdat[USER_RECORD_LEN + 1];
-		if (readuserdat(cfg, unum, userdat, sizeof(userdat), file, /* leave_locked: */ false) == 0) {
+		int count = last - unum + 1;
+		if (count > recs_per_read)
+			count = recs_per_read;
+		/* Bulk read without the per-record lock readuserdat() takes (as in
+		   total_users()). Byte-range locks are mandatory on Windows, so a read
+		   overlapping a record another process holds locked fails; any record
+		   not read in bulk is then read singly, taking the lock. */
+		size_t want = (size_t)count * USER_RECORD_LINE_LEN;
+		size_t got = 0;
+		if (seekuserdat(file, unum)) {
+			while (got < want) {
+				ssize_t rd = read(file, buf + got, want - got);
+				if (rd <= 0)
+					break;
+				got += (size_t)rd;
+			}
+		}
+		for (int i = (int)(got / USER_RECORD_LINE_LEN); i < count; i++)
+			readuserdat(cfg, unum + i, buf + (i * USER_RECORD_LINE_LEN), USER_RECORD_LINE_LEN, file, /* leave_locked: */ false);
+		for (int i = 0; i < count && found == 0; i++, unum++) {
+			if (usernumber && unum == usernumber)
+				continue;
+			char* userdat = buf + (i * USER_RECORD_LINE_LEN);
+			if (*userdat == '\0')  /* readuserdat() zero-fills a record it couldn't read */
+				continue;
 			char* field[USER_FIELD_COUNT];
+			userdat[USER_RECORD_LEN] = '\0';    /* overwrite the LF terminator */
 			split_userdat(userdat, field);
 			if (stricmp(field[fnum], str) == 0) {
 				if (del || !(ahtou32(field[USER_MISC]) & (DELETED | INACTIVE)))
@@ -1975,8 +2003,9 @@ int finduserstr(scfg_t* cfg, int usernumber, enum user_field fnum
 		}
 	}
 	close(file);
+	free(buf);
 	if (progress != NULL)
-		progress(cbdata, unum, last);
+		progress(cbdata, last, last);
 	return found;
 }
 
