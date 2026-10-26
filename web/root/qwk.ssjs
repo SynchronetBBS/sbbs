@@ -117,9 +117,9 @@ function post(query)
 	mkdir(repdir);
 	// temp/rep/ may be shared with other hosts and server processes (e.g. the FTP Server):
 	// no process ID is available here, so a time and random token stands in for it
-	var path = repdir + format("%04u.%s.web%x%04x%04x.%u.rep", user.number
-		,system.host_name.replace(/[^\w.-]/g, "_"), time(), random(0x10000), random(0x10000)
-		,client.socket);
+	var token = format("%x%04x%04x", time(), random(0x10000), random(0x10000));
+	var path = repdir + format("%04u.%s.web%s.%u.rep", user.number
+		,system.host_name.replace(/[^\w.-]/g, "_"), token, client.socket);
 	var file = new File(path);
 	if(!file.open("wb")) {
 		log(LOG_ERR, "error " + file.error + " opening REP packet: " + file.name);
@@ -137,7 +137,7 @@ function post(query)
 		case "throttled":
 			// 200, not 202: qnet-http.js re-sends the REP on any non-200,
 			// which would post every reply twice once the sweep imports this copy
-			if(queue_rep(path))
+			if(queue_rep(path, token))
 				return "200 bitchen";
 			return "503 error queueing REP packet";
 		case "failed":
@@ -151,7 +151,7 @@ function post(query)
 				return "200 bitchen";
 			}
 			// Left after a failure unrelated to its content (e.g. a shutdown mid-import): the sweep retries it
-			if(queue_rep(path))
+			if(queue_rep(path, token))
 				return "200 bitchen";
 			return "503 error queueing REP packet";
 		default:
@@ -162,17 +162,16 @@ function post(query)
 }
 
 // Hand a REP packet to the Terminal Server event thread's sweep
-function queue_rep(path)
+function queue_rep(path, token)
 {
 	var base = system.data_dir + format("file/%04u", user.number);
-	// data/file/ is shared by every host: name the staging file by host and server.
+	// data/file/ is shared by every host and by concurrent uploads for one user, and
+	// file_rename() replaces an existing file on POSIX: both names carry the upload's token.
 	// Not ".rep*": Windows matches the sweep's "*.rep" against 8.3 short names too.
-	var tmp = base + format(".%s.web%u.tmp", system.host_name.replace(/[^\w.-]/g, "_"), client.socket);
-	var dest = base + ".rep";
-	for(var i = 0; i < 10 && file_exists(dest); i++)
-		dest = base + format(".%x.rep", time() + i);
+	var tmp = base + format(".%s.web%s.tmp", system.host_name.replace(/[^\w.-]/g, "_"), token);
+	var dest = base + "." + token + ".rep";
 	if(file_exists(dest)) {
-		log(LOG_ERR, "no free queue name for REP packet: " + dest);
+		log(LOG_ERR, "queue name for REP packet in use: " + dest);
 		return false;
 	}
 	// Write under a name the sweep ignores, then rename into place
