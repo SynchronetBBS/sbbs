@@ -405,6 +405,7 @@ typedef struct js_callback {
 	JSBool			keepGoing;
 	bool			bg;
 	bool			events_supported;
+	int				(*lprintf)(int level, const char* fmt, ...);  // the embedding host's logger; NULL: the terminal server's
 } js_callback_t;
 #endif
 

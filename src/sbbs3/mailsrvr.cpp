@@ -2475,6 +2475,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 	private_t     priv;
 
 	ZERO_VAR(js_callback);
+	js_callback.lprintf = lprintf;
 
 	SAFECOPY(fname, cmdline);
 	truncstr(fname, " \t");

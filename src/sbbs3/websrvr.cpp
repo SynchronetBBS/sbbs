@@ -8107,6 +8107,7 @@ void web_server(void* arg)
 			session->addr_len = client_addr_len;
 			session->socket = client_socket;
 			session->js_callback.auto_terminate = true;
+			session->js_callback.lprintf = lprintf;
 			session->js_callback.terminate_on_disconnect = true;  // HTTP: abort script when client disconnects (ead5ccf16)
 			session->js_callback.terminated = &terminate_js;
 			session->js_callback.limit = startup->js.time_limit;

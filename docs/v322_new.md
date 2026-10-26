@@ -751,6 +751,10 @@
 - Windows: scripts using socket callbacks (`Socket.on()`,
   e.g. the IRC daemon) no longer stop accepting new connections
   once the process reaches 64 open sockets
+- `Socket` log output (`debug` traces, TLS errors, listening-socket
+  bind failures) now goes to the log of the server or program running
+  the script (Mail, Web, Services, `jsexec`) instead of always the
+  Terminal Server's
 - `system.popen()` now works on Windows too (it previously
   required the calling process to have a console of its own)
 - `File.popen()` now works on Windows too, and its bidirectional

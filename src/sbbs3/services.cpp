@@ -1399,6 +1399,7 @@ static void js_static_service_thread(void* arg)
 	service_client.callback.yield_interval = service->js.yield_interval;
 	service_client.callback.terminated = &service->terminated;
 	service_client.callback.auto_terminate = true;
+	service_client.callback.lprintf = lprintf;
 	service_client.callback.terminate_on_disconnect = true;  // static services are exempt via the guard in js_OperationCallback
 
 	if ((js_runtime = jsrt_GetNew(service->js.max_bytes, 5000, __FILE__, __LINE__)) == NULL) {
@@ -2608,6 +2609,7 @@ void services_thread(void* arg)
 					client->callback.yield_interval = service[i].js.yield_interval;
 					client->callback.terminated     = &client->service->terminated;
 					client->callback.auto_terminate = true;
+					client->callback.lprintf        = lprintf;
 					client->callback.terminate_on_disconnect = true;  // ead5ccf16: abort on client disconnect; scripts opt out via js.terminate_on_disconnect=false (e.g. binkit)
 
 					udp_buf = NULL;

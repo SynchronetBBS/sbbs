@@ -330,6 +330,8 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 				if (bg->cb.parent_cb == NULL) {
 					lprintf(LOG_ERR, "!ERROR parent CB is NULL");
 				}
+				else
+					bg->cb.lprintf = bg->cb.parent_cb->lprintf;
 			}
 		}
 		else {

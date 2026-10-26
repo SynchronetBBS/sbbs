@@ -30,13 +30,11 @@
 
 #define TLS_ERROR_LEVEL LOG_WARNING // It'd be nice if this was configurable
 
-// TODO: All log output (lprintf calls) go to the terminal server's lprintf (!)
-
 #ifdef JAVASCRIPT
 
 static bool do_CryptFlush(js_socket_private_t *p);
-static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val);
-static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len);
+static int do_cryptAttribute(js_socket_private_t *p, CRYPT_ATTRIBUTE_TYPE attr, int val);
+static int do_cryptAttributeString(js_socket_private_t *p, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len);
 static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize);
 static bool js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type);
 static JSBool js_accept(JSContext *cx, uintN argc, jsval *arglist);
@@ -85,7 +83,22 @@ static void store_socket_error(js_socket_private_t* p, int error_num, const char
 		socket_strerror(error_num, p->last_error_str, sizeof p->last_error_str);
 }
 
-static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val)
+typedef int (*lprintf_fn)(int level, const char* fmt, ...);
+
+// The script host's logger (e.g. the mail server's), or the terminal server's if the host set none
+static lprintf_fn cb_lprintf(js_callback_t *cb)
+{
+	if (cb != NULL && cb->lprintf != NULL)
+		return cb->lprintf;
+	return lprintf;
+}
+
+static lprintf_fn sock_lprintf(js_socket_private_t *p)
+{
+	return cb_lprintf(p == NULL ? NULL : p->js_cb);
+}
+
+static int do_cryptAttribute(js_socket_private_t *p, CRYPT_ATTRIBUTE_TYPE attr, int val)
 {
 	int   ret;
 	int   level;
@@ -104,34 +117,34 @@ static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE a
 			break;
 	}
 
-	ret = cryptSetAttribute(session, attr, val);
+	ret = cryptSetAttribute(p->session, attr, val);
 	if (ret != CRYPT_OK) {
 		sprintf(action, "setting attribute %d", attr);
-		get_crypt_error_string(ret, session, &estr, action, &level);
+		get_crypt_error_string(ret, p->session, &estr, action, &level);
 		if (estr) {
 			if (level < TLS_ERROR_LEVEL)
 				level = TLS_ERROR_LEVEL;
-			lprintf(level, "TLS %s", estr);
+			sock_lprintf(p)(level, "%04d TLS %s", p->sock, estr);
 			free_crypt_attrstr(estr);
 		}
 	}
 	return ret;
 }
 
-static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len)
+static int do_cryptAttributeString(js_socket_private_t *p, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len)
 {
 	int   level;
 	char *estr;
 	char  action[48];
 
-	int   ret = cryptSetAttributeString(session, attr, val, len);
+	int   ret = cryptSetAttributeString(p->session, attr, val, len);
 	if (ret != CRYPT_OK) {
 		sprintf(action, "setting attribute string %d", attr);
-		get_crypt_error_string(ret, session, &estr, "setting attribute string", &level);
+		get_crypt_error_string(ret, p->session, &estr, "setting attribute string", &level);
 		if (estr) {
 			if (level < TLS_ERROR_LEVEL)
 				level = TLS_ERROR_LEVEL;
-			lprintf(level, "TLS %s", estr);
+			sock_lprintf(p)(level, "%04d TLS %s", p->sock, estr);
 			free_crypt_attrstr(estr);
 		}
 	}
@@ -144,18 +157,18 @@ static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_
 			if (estr) {                                                                          \
 				if (GCES_level < TLS_ERROR_LEVEL)                                                \
 				GCES_level = TLS_ERROR_LEVEL;                                                \
-				lprintf(GCES_level, "%04d TLS %s", p->sock, estr);                               \
+				sock_lprintf(pdata)(GCES_level, "%04d TLS %s", pdata->sock, estr);               \
 				free_crypt_attrstr(estr);                                                                  \
 			}                                                                                    \
 } while (0)
 
-#define GCESH(status, socket, handle, estr, action) do {                                     \
+#define GCESH(status, pdata, handle, estr, action) do {                                      \
 			int GCESH_level;                                                                     \
 			get_crypt_error_string(status, handle, &estr, action, &GCESH_level);                 \
 			if (estr) {                                                                          \
 				if (GCESH_level < TLS_ERROR_LEVEL)                                               \
 				GCESH_level = TLS_ERROR_LEVEL;                                               \
-				lprintf(GCESH_level, "%04d TLS %s", socket, estr);                               \
+				sock_lprintf(pdata)(GCESH_level, "%04d TLS %s", pdata->sock, estr);              \
 				free_crypt_attrstr(estr);                                                                  \
 			}                                                                                    \
 } while (0)
@@ -228,7 +241,7 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 
 	if (p->session != -1) {
 		if (p->tls_server || p->tls_clientauth)
-			destroy_session(lprintf, p->session);
+			destroy_session(sock_lprintf(p), p->session);
 		else
 			cryptDestroySession(p->session);
 		p->session = -1;
@@ -268,7 +281,7 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 
 static bool js_socket_peek_byte(JSContext *cx, js_socket_private_t *p)
 {
-	if (do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, 0) != CRYPT_OK)
+	if (do_cryptAttribute(p, CRYPT_OPTION_NET_READTIMEOUT, 0) != CRYPT_OK)
 		return false;
 	if (p->peeked)
 		return true;
@@ -288,7 +301,7 @@ bool js_socket_tls_readable(js_socket_private_t* p)
 		return false;
 	if (p->peeked)
 		return true;
-	if (do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, 0) != CRYPT_OK)
+	if (do_cryptAttribute(p, CRYPT_OPTION_NET_READTIMEOUT, 0) != CRYPT_OK)
 		return true;
 	status = cryptPopData(p->session, &p->peeked_byte, 1, &copied);
 	if (status == CRYPT_OK) {
@@ -350,7 +363,7 @@ static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf
 		}
 		if (flags & MSG_PEEK)
 			return total;
-		if (do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, p->nonblocking?0:timeout) != CRYPT_OK)
+		if (do_cryptAttribute(p, CRYPT_OPTION_NET_READTIMEOUT, p->nonblocking?0:timeout) != CRYPT_OK)
 			return -1;
 	}
 	do {
@@ -494,7 +507,7 @@ static void dbprintf(bool error, js_socket_private_t* p, const char* fmt, ...)
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0;
 	va_end(argptr);
-	lprintf(LOG_DEBUG, "%04d Socket %s%s", p->sock, error ? "ERROR: ":"", sbuf);
+	sock_lprintf(p)(LOG_DEBUG, "%04d Socket %s%s", p->sock, error ? "ERROR: ":"", sbuf);
 }
 
 /* Socket Destructor */
@@ -2403,7 +2416,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 		case SOCK_PROP_DESCRIPTOR:
 			if (p->session != -1) {
 				if (p->tls_server)
-					destroy_session(lprintf, p->session);
+					destroy_session(sock_lprintf(p), p->session);
 				else
 					cryptDestroySession(p->session);
 				p->session = -1;
@@ -2439,21 +2452,21 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 					int ret = CRYPT_ERROR_NOTINITED;
 					scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-					if (ssl_sync(scfg, lprintf)) {
+					if (ssl_sync(scfg, sock_lprintf(p))) {
 						if ((ret = cryptCreateSession(&p->session, CRYPT_UNUSED, tiny == SOCK_PROP_SSL_SESSION ? CRYPT_SESSION_TLS: CRYPT_SESSION_TLS_SERVER)) == CRYPT_OK) {
 							int nodelay = 1;
 							set_socket_nonblocking(p->sock, false);
 							(void)setsockopt(p->sock, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay));
-							if ((ret = do_cryptAttribute(p->session, CRYPT_SESSINFO_NETWORKSOCKET, p->sock)) == CRYPT_OK) {
+							if ((ret = do_cryptAttribute(p, CRYPT_SESSINFO_NETWORKSOCKET, p->sock)) == CRYPT_OK) {
 								int minver = CRYPT_TLSOPTION_MINVER_TLS12;
 								if (p->tls_minver == 100)
 									minver = CRYPT_TLSOPTION_MINVER_TLS10;
 								else if (p->tls_minver == 101)
 									minver = CRYPT_TLSOPTION_MINVER_TLS11;
-								do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, minver);
+								do_cryptAttribute(p, CRYPT_SESSINFO_TLS_OPTIONS, minver);
 								// Reduced compliance checking... required for acme-staging-v02.api.letsencrypt.org
 								if (!p->tls_enhanced_certcheck)
-									do_cryptAttribute(p->session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_REDUCED);
+									do_cryptAttribute(p, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_REDUCED);
 								// Add TLS PSK pairs
 								// Iterate object...
 								if (p->tls_psk) {
@@ -2475,8 +2488,8 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 													JSVALUE_TO_MSTRING(cx, js_key, key, &key_sz);
 													if (key != NULL) {
 														if (!JS_IsExceptionPending(cx)) {
-															if (do_cryptAttributeString(p->session, CRYPT_SESSINFO_USERNAME, id, id_sz) == CRYPT_OK)
-																do_cryptAttributeString(p->session, CRYPT_SESSINFO_PASSWORD, key, key_sz);
+															if (do_cryptAttributeString(p, CRYPT_SESSINFO_USERNAME, id, id_sz) == CRYPT_OK)
+																do_cryptAttributeString(p, CRYPT_SESSINFO_PASSWORD, key, key_sz);
 														}
 														free(key);
 													}
@@ -2488,15 +2501,15 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 									}
 								}
 								if (p->tls_disable_certverify)
-									do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY);
+									do_cryptAttribute(p, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY);
 								// Ensure key and value are both strings...
 								// Set the strings.
 								if (tiny == SOCK_PROP_SSL_SESSION) {
 									// TODO: Make this configurable
 									if (!p->tls_nameverify)
-										do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_NAMEVERIFY);
+										do_cryptAttribute(p, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_NAMEVERIFY);
 									if (p->hostname)
-										ret = do_cryptAttributeString(p->session, CRYPT_SESSINFO_SERVER_NAME, p->hostname, strlen(p->hostname));
+										ret = do_cryptAttributeString(p, CRYPT_SESSINFO_SERVER_NAME, p->hostname, strlen(p->hostname));
 									p->tls_server = false;
 								}
 								if (tiny == SOCK_PROP_SSL_SERVER || p->tls_clientauth) {
@@ -2504,17 +2517,17 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 										ret = CRYPT_ERROR_NOTAVAIL;
 									}
 									else {
-										ret = add_private_key(scfg, lprintf, p->session);
+										ret = add_private_key(scfg, sock_lprintf(p), p->session);
 										if (ret != CRYPT_OK) {
 											GCES(ret, p, estr, "setting private key");
 										}
 									}
 								}
 								if (tiny == SOCK_PROP_SSL_SERVER && p->tls_clientauth) {
-									do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_MANUAL_CERTCHECK);
+									do_cryptAttribute(p, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_MANUAL_CERTCHECK);
 								}
 								if (ret == CRYPT_OK) {
-									if ((ret = do_cryptAttribute(p->session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
+									if ((ret = do_cryptAttribute(p, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
 										if (ret == CRYPT_ENVELOPE_RESOURCE) {
 											// Get the client cert/cert chain
 											CRYPT_CERTIFICATE client_cert;
@@ -2526,7 +2539,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 												cryptSetAttribute(p->session, CRYPT_SESSINFO_AUTHRESPONSE, 1);
 												// Create tls_client_cert object...
 												JS_DefineProperty(cx, obj, "tls_remote_cert", OBJECT_TO_JSVAL(js_CreateCryptCertObject(cx, client_cert)), NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-												if ((ret = do_cryptAttribute(p->session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
+												if ((ret = do_cryptAttribute(p, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
 													GCES(ret, p, estr, "getting remote certificate");
 												}
 											}
@@ -2549,7 +2562,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 							}
 						}
 						else
-							GCESH(ret, p->sock, CRYPT_UNUSED, estr, "creating session");
+							GCESH(ret, p, CRYPT_UNUSED, estr, "creating session");
 					}
 					if (ret != CRYPT_OK) {
 						if (p->session != -1)
@@ -2563,7 +2576,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			else {
 				if (p->session != -1) {
 					if (p->tls_server)
-						destroy_session(lprintf, p->session);
+						destroy_session(sock_lprintf(p), p->session);
 					else
 						cryptDestroySession(p->session);
 					p->session = -1;
@@ -3373,7 +3386,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 				if (*addrlen == 0)
 					continue;
 				if (bind(p->sock, addr, *addrlen) != 0) {
-					lprintf(LOG_WARNING, "Unable to bind to local address");
+					sock_lprintf(p)(LOG_WARNING, "Unable to bind to local address");
 					closesocket(p->sock);
 					p->sock = INVALID_SOCKET;
 					continue;
@@ -3481,6 +3494,7 @@ fail:
 struct ls_cb_data {
 	char *protocol;
 	scfg_t *scfg;
+	lprintf_fn lprintf;
 };
 
 static void
@@ -3491,7 +3505,7 @@ ls_cb(SOCKET sock, void *cbptr)
 
 	call_socket_open_callback(true);
 	if (set_socket_options(cb->scfg, sock, cb->protocol, error, sizeof(error)))
-		lprintf(LOG_ERR, "%04d !ERROR %s", sock, error);
+		cb->lprintf(LOG_ERR, "%04d !ERROR %s", sock, error);
 }
 
 void sock_close_cb(SOCKET sock, void *cb_data)
@@ -3527,6 +3541,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		goto fail;
 	}
 	cb.scfg = scfg;
+	cb.lprintf = cb_lprintf(js_find_callback(cx));
 	if (argc < 3) {
 		JS_ReportError(cx, "At least three arguments required (interfaces, port, and protocol)");
 		goto fail;
@@ -3579,7 +3594,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 			goto fail;
 		}
 	}
-	set = xpms_create(retry_count, retry_delay, lprintf);
+	set = xpms_create(retry_count, retry_delay, cb.lprintf);
 	if (set == NULL) {
 		JS_ReportError(cx, "Unable to create socket set");
 		goto fail;
@@ -3602,7 +3617,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		for (i = 0; (jsuint)i < count; i++) {
 			if (!JS_GetElement(cx, obj, i, &v)) {
-				lprintf(LOG_WARNING, "Unable to get element %d from interface array", i);
+				cb.lprintf(LOG_WARNING, "Unable to get element %d from interface array", i);
 				continue;
 			}
 			JSVALUE_TO_MSTRING(cx, v, interface, NULL);

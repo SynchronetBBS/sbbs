@@ -1298,6 +1298,7 @@ extern "C" int main(int argc, char **argv
 	cb.yield_interval = JAVASCRIPT_YIELD_INTERVAL;
 	cb.gc_interval = JAVASCRIPT_GC_INTERVAL;
 	cb.auto_terminate = true;
+	cb.lprintf = lprintf;
 	cb.events = NULL;
 
 	DESCRIBE_COMPILER(compiler);
