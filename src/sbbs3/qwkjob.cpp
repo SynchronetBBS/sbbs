@@ -85,7 +85,7 @@ static int qwkjob_lprintf(const qwkjob_host_t* host, int level, const char* fmt,
 	vsnprintf(sbuf, sizeof sbuf, fmt, argptr);
 	sbuf[sizeof sbuf - 1] = 0;
 	va_end(argptr);
-	if (host->name != NULL && *host->name != '\0')
+	if (host->name[0] != '\0')
 		snprintf(msg, sizeof msg, "%s %s", host->name, sbuf);
 	else
 		SAFECOPY(msg, sbuf);
@@ -97,6 +97,23 @@ static const char* qwkjob_host_name(const qwkjob_host_t* host)
 	if (host->host_name != NULL && *host->host_name != '\0')
 		return host->host_name;
 	return "localhost";
+}
+
+const char* qwkjob_local_host_name(void)
+{
+	static char           name[128];
+	static std::once_flag once;
+
+	std::call_once(once, [] {
+		if (gethostname(name, sizeof name) != 0 || name[0] == '\0')
+			SAFECOPY(name, "localhost");
+		name[sizeof name - 1] = '\0';
+		for (char* p = name; *p != '\0'; p++) {
+			if (!IS_ALPHANUMERIC(*p) && *p != '.' && *p != '-' && *p != '_')
+				*p = '_';
+		}
+	});
+	return name;
 }
 
 static bool qwkjob_terminated(const qwkjob_host_t* host)
@@ -176,7 +193,7 @@ static bool qwkjob_temp_dir_live(const qwkjob_host_t* host, const char* dir)
 		return false;
 	*pid++ = '\0';
 	char* host_name = strchr(fname, '.');
-	if (host_name == NULL || strcmp(host_name + 1, qwkjob_host_name(host)) != 0)
+	if (host_name == NULL || strcmp(host_name + 1, qwkjob_local_host_name()) != 0)
 		return false;
 	int   pidnum = atoi(pid);
 	if (pidnum <= 0)
@@ -239,7 +256,7 @@ static bool qwkjob_make_temp_dir(const qwkjob_host_t* host, const char* tag, cha
 	qwkjob_prune_temp(root, host);
 	unsigned serial = ++qwkjob_serial;
 	qwkjob_temp_dir_active(serial, true);
-	snprintf(path, size, "%s%s.%s.%d.%u/", root, tag, qwkjob_host_name(host), (int)getpid(), serial);
+	snprintf(path, size, "%s%s.%s.%d.%u/", root, tag, qwkjob_local_host_name(), (int)getpid(), serial);
 	if ((err = md(path)) != 0) {
 		qwkjob_lprintf(host, LOG_ERR, "!ERROR %d (%s) creating directory: %s", err, strerror(err), path);
 		qwkjob_temp_dir_active(serial, false);
@@ -374,7 +391,7 @@ static enum qwkjob_result qwkjob_pack_locked(sbbs_t* sbbs, const qwkjob_host_t* 
 	if (qwkjob_terminated(host))
 		return QWKJOB_FAILED;
 	sbbs->lprintf(LOG_INFO, "Packing QWK Message Packet");
-	SAFEPRINTF4(tmppath, "%sfile/%04u.%s.%d.tmp", sbbs->cfg.data_dir, usernum, qwkjob_host_name(host), (int)getpid());
+	SAFEPRINTF4(tmppath, "%sfile/%04u.%s.%d.qwk.tmp", sbbs->cfg.data_dir, usernum, qwkjob_local_host_name(), (int)getpid());
 	SAFEPRINTF2(qwkpath, "%sfile/%04u.qwk", sbbs->cfg.data_dir, usernum);
 	if (!sbbs->pack_qwk(tmppath, &count, /* prepack: */ true, &reason)) {
 		remove(tmppath);

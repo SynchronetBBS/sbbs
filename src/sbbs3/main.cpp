@@ -1491,7 +1491,10 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 			break;
 		rooted = true;
 
-		if (!js_SetSystemQwkjobHost(js_cx, *glob, is_event_thread ? &event_qwkjob_host : &node_qwkjob_host))
+		js_qwkjob_host = is_event_thread ? event_qwkjob_host : node_qwkjob_host;
+		if (!is_event_thread)
+			snprintf(js_qwkjob_host.name, sizeof js_qwkjob_host.name, "Node %d", cfg.node_num);
+		if (!js_SetSystemQwkjobHost(js_cx, *glob, &js_qwkjob_host))
 			break;
 
 #ifdef BUILD_JSDOCS
@@ -3589,8 +3592,7 @@ sbbs_t::sbbs_t(const qwkjob_host_t* host, scfg_t* global_cfg, const char* temp_d
 	is_event_thread = host->is_event_thread;
 	if (host->event_code != nullptr)
 		event_code = host->event_code;
-	if (host->name != nullptr)
-		SAFECOPY(client_name, host->name);
+	SAFECOPY(client_name, host->name);
 	if (host->startup != nullptr)
 		startup = const_cast<bbs_startup_t*>(host->startup);
 	else
@@ -5361,7 +5363,6 @@ void bbs_thread(void* arg)
 			SAFECOPY(qwkjob_temp_root, "../temp");
 		prep_dir(scfg.ctrl_dir, qwkjob_temp_root, sizeof qwkjob_temp_root);
 		node_qwkjob_host = {};
-		node_qwkjob_host.name = "term";
 		node_qwkjob_host.host_name = startup->host_name;
 		node_qwkjob_host.lputs = node_qwkjob_lputs;
 		node_qwkjob_host.mqtt = &mqtt;
@@ -5370,17 +5371,17 @@ void bbs_thread(void* arg)
 		node_qwkjob_host.text = text;
 		node_qwkjob_host.startup = startup;
 		event_qwkjob_host = node_qwkjob_host;
-		event_qwkjob_host.name = "evnt";
+		event_qwkjob_host.name[0] = '\0';
 		event_qwkjob_host.lputs = event_qwkjob_lputs;
 		event_qwkjob_host.is_event_thread = true;
 		unpack_rep_qwkjob_host = event_qwkjob_host;
-		unpack_rep_qwkjob_host.name = "unpackREP";
+		SAFECOPY(unpack_rep_qwkjob_host.name, "unpackREP");
 		unpack_rep_qwkjob_host.event_code = "unpackREP";
 		pack_qwk_qwkjob_host = event_qwkjob_host;
-		pack_qwk_qwkjob_host.name = "packQWK";
+		SAFECOPY(pack_qwk_qwkjob_host.name, "packQWK");
 		pack_qwk_qwkjob_host.event_code = "packQWK";
 		qnet_qwkjob_host = event_qwkjob_host;
-		qnet_qwkjob_host.name = "QNET";
+		SAFECOPY(qnet_qwkjob_host.name, "QNET");
 		qnet_qwkjob_host.event_code = "QNET";
 
 		// Validate the userbase file sizes

@@ -163,6 +163,14 @@ static int qwkjob_lputs(void* cbdata, int level, const char* str)
 
 static qwkjob_host_t ftp_qwkjob_host;
 
+static qwkjob_host_t session_qwkjob_host(SOCKET sock)
+{
+	qwkjob_host_t host = ftp_qwkjob_host;
+
+	snprintf(host.name, sizeof host.name, "%04d", sock);
+	return host;
+}
+
 #if defined(__GNUC__)   // Catch printf-format errors with lprintf
 static int lprintf(int level, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 #endif
@@ -909,22 +917,10 @@ static void send_thread(void* arg)
 	thread_down();
 }
 
-// This host's name, made safe for a file name
-static char* qwk_host_tag(char* buf, size_t size)
-{
-	snprintf(buf, size, "%s", ftp_qwkjob_host.host_name == NULL ? "" : ftp_qwkjob_host.host_name);
-	for (char* p = buf; *p != '\0'; p++) {
-		if (!isalnum((uchar)*p) && *p != '.' && *p != '-' && *p != '_')
-			*p = '_';
-	}
-	return buf;
-}
-
 // Leaves a REP for the event thread's sweep: data/file/<user#>.rep, or <user#>.<hex-time>.rep if taken
 static bool queue_rep(const xfer_t* xfer, char* dest, size_t size)
 {
 	char     staged[MAX_PATH + 1];
-	char     host[128];
 	uint     usernum = xfer->usernum;
 	uint64_t t = time(NULL);
 
@@ -941,8 +937,8 @@ static bool queue_rep(const xfer_t* xfer, char* dest, size_t size)
 	// temp_dir may be on another volume: copy beside dest (a name the sweep ignores), then rename.
 	// Not ".rep*": Windows matches "*.rep" against 8.3 short names too.
 	// data/file/ is shared by every host, so the name carries host and server.
-	snprintf(staged, sizeof staged, "%sfile/%04u.%s.ftp%d.tmp", scfg.data_dir, usernum
-	         , qwk_host_tag(host, sizeof host), (int)xfer->ctrl_sock);
+	snprintf(staged, sizeof staged, "%sfile/%04u.%s.ftp%d.rep.tmp", scfg.data_dir, usernum
+	         , qwkjob_local_host_name(), (int)xfer->ctrl_sock);
 	if (!CopyFile(xfer->filename, staged, /* failIfExists: */ FALSE))
 		return false;
 	if (rename(staged, dest) != 0) {
@@ -957,7 +953,8 @@ static void import_rep(const xfer_t* xfer)
 {
 	char               dest[MAX_PATH + 1];
 	char               errstr[256];
-	enum qwkjob_result result = qwkjob_unpack_rep(&scfg, &ftp_qwkjob_host, xfer->usernum, xfer->filename);
+	qwkjob_host_t      host = session_qwkjob_host(xfer->ctrl_sock);
+	enum qwkjob_result result = qwkjob_unpack_rep(&scfg, &host, xfer->usernum, xfer->filename);
 
 	if (!fexist(xfer->filename))    // imported, or kept as .bad by the job
 		return;
@@ -4513,10 +4510,11 @@ static void ctrl_thread(void* arg)
 				if (!fexistcase(qwkfile)) {
 					lprintf(LOG_INFO, "%04d <%s> creating QWK packet...", sock, user.alias);
 					enum qwkjob_result qwkresult;
+					qwkjob_host_t      qwkhost = session_qwkjob_host(sock);
 					time_t             start = time(NULL);
 					bool               waiting = false;
 					for (;;) {
-						qwkresult = qwkjob_pack(&scfg, &ftp_qwkjob_host, user.number, NULL, NULL, 0);
+						qwkresult = qwkjob_pack(&scfg, &qwkhost, user.number, NULL, NULL, 0);
 						if (qwkresult != QWKJOB_THROTTLED)
 							break;
 						if (!waiting) {
@@ -4971,9 +4969,8 @@ static void ctrl_thread(void* arg)
 					errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) creating directory: %s"
 					          , sock, user.alias, i, safe_strerror(i, error, sizeof error), repdir);
 				// temp/rep/ may be shared with other hosts and server processes (e.g. a separate Web Server)
-				char host[128];
 				snprintf(fname, sizeof fname, "%s%04u.%s.ftp%d.%d.rep", repdir, user.number
-				         , qwk_host_tag(host, sizeof host), (int)getpid(), (int)sock);
+				         , qwkjob_local_host_name(), (int)getpid(), (int)sock);
 				qwk_rep = true;
 				lprintf(LOG_INFO, "%04d <%s> uploading: %s in %s mode"
 				        , sock, user.alias, fname
@@ -5558,7 +5555,6 @@ void ftp_server(void* arg)
 		lprintf(LOG_DEBUG, "Temporary file directory: %s", scfg.temp_dir);
 
 		ftp_qwkjob_host = {};
-		ftp_qwkjob_host.name = "ftp";
 		ftp_qwkjob_host.host_name = server_host_name();
 		ftp_qwkjob_host.lputs = qwkjob_lputs;
 		ftp_qwkjob_host.mqtt = &mqtt;

@@ -43,7 +43,7 @@
 struct mqtt;
 
 typedef struct qwkjob_host {
-	const char* name;               /* log prefix, e.g. "ftp", "web", "srvc" */
+	char name[32];                  /* log prefix (e.g. the client socket number or "Node 1"), may be empty */
 	const char* host_name;          /* for fmutex ownership text */
 	int (*lputs)(void* cbdata, int level, const char* str);
 	void* cbdata;
@@ -92,6 +92,8 @@ DLLEXPORT enum qwkjob_result qwkjob_pack_rep_locked(scfg_t*, const qwkjob_host_t
 
 DLLEXPORT const char* qwkjob_result_str(enum qwkjob_result);
 DLLEXPORT int qwkjob_find_hub(scfg_t*, const char* hub_id);  /* -1 if none */
+/* This machine's name (gethostname), made safe for use in a file name */
+DLLEXPORT const char* qwkjob_local_host_name(void);
 
 /* Path of the fmutex lock file that serializes QWK jobs for one user */
 DLLEXPORT char* qwkjob_user_lock_name(const scfg_t*, uint usernum, char* buf, size_t size);

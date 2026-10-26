@@ -114,6 +114,7 @@ struct service_client_t {
 	client_t* client;
 	service_t* service;
 	js_callback_t callback;
+	qwkjob_host_t qwkjob_host;
 	/* Initial UDP datagram */
 	char* udp_buf;
 	int udp_len;
@@ -969,7 +970,10 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if (js_CreateSystemObject(js_cx, *glob, &scfg, uptime, server_host_name(), SOCKLIB_DESC, &mqtt) == NULL)
 			break;
 
-		if (!js_SetSystemQwkjobHost(js_cx, *glob, &services_qwkjob_host))
+		service_client->qwkjob_host = services_qwkjob_host;
+		if (sock != INVALID_SOCKET)
+			snprintf(service_client->qwkjob_host.name, sizeof service_client->qwkjob_host.name, "%04d", sock);
+		if (!js_SetSystemQwkjobHost(js_cx, *glob, &service_client->qwkjob_host))
 			break;
 
 		if (service_client->service->js_server_props.version[0] == 0) {
@@ -2117,7 +2121,6 @@ void services_thread(void* arg)
 		lprintf(LOG_DEBUG, "Temporary file directory: %s", scfg.temp_dir);
 
 		services_qwkjob_host = {};
-		services_qwkjob_host.name = "srvc";
 		services_qwkjob_host.host_name = startup->host_name;
 		services_qwkjob_host.lputs = qwkjob_lputs;
 		services_qwkjob_host.mqtt = &mqtt;

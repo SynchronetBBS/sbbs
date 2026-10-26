@@ -932,7 +932,6 @@ static bool js_init(char** env)
 	}
 
 #ifndef JSDOOR
-	qwkjob_host.name = "jsexec";
 	qwkjob_host.host_name = host_name;
 	qwkjob_host.lputs = qwkjob_lputs;
 	qwkjob_host.temp_root = scfg.temp_dir;

@@ -296,6 +296,7 @@ struct http_session_t {
 	JSObject* js_cookie;
 	JSObject* js_request;
 	js_callback_t js_callback;
+	qwkjob_host_t qwkjob_host;
 	bool js_error;  /* a JavaScript error (not a warning) was reported while running the script */
 	subscan_t *subscan;
 
@@ -6299,7 +6300,9 @@ js_initcx(http_session_t *session)
 		return NULL;
 	}
 
-	if (!js_SetSystemQwkjobHost(js_cx, session->js_glob, &web_qwkjob_host)) {
+	session->qwkjob_host = web_qwkjob_host;
+	snprintf(session->qwkjob_host.name, sizeof session->qwkjob_host.name, "%04d", session->socket);
+	if (!js_SetSystemQwkjobHost(js_cx, session->js_glob, &session->qwkjob_host)) {
 		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] JavaScript: Failed to set the QWK job host"
 			, session->socket, session->client.protocol, session->host_ip);
 		JS_RemoveObjectRoot(js_cx, &session->js_glob);
@@ -7797,7 +7800,6 @@ void web_server(void* arg)
 		lprintf(LOG_DEBUG, "Temporary file directory: %s", scfg.temp_dir);
 
 		web_qwkjob_host = {};
-		web_qwkjob_host.name = "web";
 		web_qwkjob_host.host_name = server_host_name();
 		web_qwkjob_host.lputs = qwkjob_lputs;
 		web_qwkjob_host.mqtt = &mqtt;

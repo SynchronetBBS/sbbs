@@ -24,8 +24,8 @@ post_new_message("qwkt-a");
 // as is an old one named for a process still running on this host (its job may just be idle)
 var stale = system.temp_dir + "qwk/0000.stalehost.0.0/";
 var recent = system.temp_dir + "qwk/0000.recenthost.0.0/";
-var dead = system.temp_dir + "qwk/0000." + system.host_name + ".999999999.0/";
-var live = system.temp_dir + "qwk/0000." + system.host_name + ".1.0/";   // init
+var dead = system.temp_dir + "qwk/0000." + system.local_host_name.replace(/[^\w.-]/g, "_") + ".999999999.0/";
+var live = system.temp_dir + "qwk/0000." + system.local_host_name.replace(/[^\w.-]/g, "_") + ".1.0/";   // init
 var old = time() - (7 * 60 * 60);
 var hours_old = time() - (2 * 60 * 60);
 var check_live = system.platform != "Win32";

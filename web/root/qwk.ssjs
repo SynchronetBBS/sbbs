@@ -119,7 +119,7 @@ function post(query)
 	// no process ID is available here, so a time and random token stands in for it
 	var token = format("%x%04x%04x", time(), random(0x10000), random(0x10000));
 	var path = repdir + format("%04u.%s.web%s.%u.rep", user.number
-		,system.host_name.replace(/[^\w.-]/g, "_"), token, client.socket);
+		,system.local_host_name.replace(/[^\w.-]/g, "_"), token, client.socket);
 	var file = new File(path);
 	if(!file.open("wb")) {
 		log(LOG_ERR, "error " + file.error + " opening REP packet: " + file.name);
@@ -168,7 +168,7 @@ function queue_rep(path, token)
 	// data/file/ is shared by every host and by concurrent uploads for one user, and
 	// file_rename() replaces an existing file on POSIX: both names carry the upload's token.
 	// Not ".rep*": Windows matches the sweep's "*.rep" against 8.3 short names too.
-	var tmp = base + format(".%s.web%s.tmp", system.host_name.replace(/[^\w.-]/g, "_"), token);
+	var tmp = base + format(".%s.web%s.rep.tmp", system.local_host_name.replace(/[^\w.-]/g, "_"), token);
 	var dest = base + "." + token + ".rep";
 	if(file_exists(dest)) {
 		log(LOG_ERR, "queue name for REP packet in use: " + dest);

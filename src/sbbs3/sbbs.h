@@ -491,6 +491,7 @@ public:
 
 	bbs_startup_t*	startup;
 	const qwkjob_host_t* job_host = nullptr;
+	qwkjob_host_t	js_qwkjob_host{};	// for this instance's scripts
 	bbs_startup_t	job_startup{};
 
 	bool	init(void);
