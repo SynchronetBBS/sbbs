@@ -81,6 +81,13 @@ class Server:
         self.config_path = config
         self.log_path = run / (self.name + '.log')
         self.log = self.log_path.open('a')
+        if self.name in ['home', 'edge'] and not getattr(self, 'mailboxes_reset', False):
+            reset = ('if (system.data_dir.indexOf("/tmp/ircd-services-bbs-fixture/") !== 0) '
+                     'throw new Error("Unsafe fixture directory"); '
+                     'var n = system.matchuser("Some User", false); if (n) system.get_telegram(n);')
+            subprocess.run([str(args.jsexec), '-n', '-c', str(self.ctrl), '-r', reset],
+                           stdin=subprocess.DEVNULL, stdout=self.log, stderr=subprocess.STDOUT, preexec_fn=no_core, check=True)
+            self.mailboxes_reset = True
         self.process = subprocess.Popen([str(args.jsexec), '-A', '-L7', '-c', str(self.ctrl), '-i', str(code / 'load'),
                                          str(code / 'ircd.js'), '-a', self.bind, '-f', str(config)],
                                         stdin=subprocess.DEVNULL, stdout=self.log, stderr=subprocess.STDOUT,
@@ -145,6 +152,11 @@ class Client:
         time.sleep(1.05)
         self.send('PRIVMSG ' + name + ' :' + command)
         return self.expect(expected)
+
+def group_memo(client, service, command, expected):
+    line = client.service(service, command, expected)
+    client.expect('Checked ')
+    return line
 
 hub = Server('hub', 19870)
 relay = Server('relay', 19871, legacy=True)
@@ -294,17 +306,47 @@ try:
         owner.service('NickServ', 'SET Alice MEMOACCOUNT Some.User+EDGE', 'Telegram destination updated')
         outsider.service('MemoServ', 'SEND Alice Linked-destination-telegram', 'Telegram delivered')
         owner.service('MemoServ@home.test', 'STATUS', 'No telegrams waiting')
-        owner.service('MemoServ@edge.test', 'READ', 'Linked-destination-telegram')
+        group_memo(owner, 'MemoServ@edge.test', 'READ', 'Linked-destination-telegram')
+        owner.service('NickServ', 'SET RenamedOwner MEMOACCOUNT Some.User+HOME', 'Telegram destination updated')
+        outsider.service('MemoServ', 'SEND RenamedOwner Default-home-mailbox', 'Telegram delivered')
+        owner.service('MemoServ', 'STATUS', 'Telegram mailbox Some.User+HOME@home.test:')
+        owner.expect('You have telegrams waiting')
+        owner.expect('Checked ')
+        group_memo(owner, 'MemoServ', 'READ', 'Default-home-mailbox')
+        outsider.service('MemoServ', 'SEND RenamedOwner Automatic-default-notification', 'Telegram delivered')
+        owner.service('NickServ@edge.test', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+EDGE')
+        owner.expect('Telegram mailbox Some.User+HOME@home.test:')
+        owner.expect('You have telegrams waiting')
+        owner.expect('Checked ')
+        group_memo(owner, 'MemoServ', 'READ', 'Automatic-default-notification')
+        outsider.service('MemoServ@home.test', 'SEND Alice Explicit-home-destination', 'Telegram delivered')
+        group_memo(owner, 'MemoServ@home.test', 'READ', 'Explicit-home-destination')
+        outsider.service('MemoServ@edge.test', 'SEND Alice Explicit-edge-destination', 'Telegram delivered')
+        group_memo(owner, 'MemoServ@edge.test', 'READ', 'Explicit-edge-destination')
+        outsider.service('MemoServ@hub.test', 'SEND Alice Unlinked-destination', 'no linked account on hub.test')
+        outsider.service('MemoServ@edge.test', 'SEND Some.User+HOME Conflicting-destination', 'destination account belongs to home.test')
+        outsider.service('MemoServ', 'SEND RenamedOwner Shared-home-mailbox', 'Telegram delivered')
+        outsider.service('MemoServ@edge.test', 'SEND RenamedOwner Shared-edge-mailbox', 'Telegram delivered')
+        owner.service('NickServ@home.test', 'LOGOUT', 'Logged out of home.test')
+        accounts = owner.service('NickServ', 'ACCOUNTS', 'Verified BBS logins:')
+        assert 'Some.User+EDGE@edge.test' in accounts and 'Some.User+HOME@home.test' not in accounts
+        owner.service('MemoServ', 'READ', 'Shared-home-mailbox')
+        owner.expect('Shared-edge-mailbox')
+        owner.expect('Checked 2 telegram mailboxes')
+        group_memo(owner, 'MemoServ@home.test', 'STATUS', 'No telegrams waiting')
+        owner.service('NickServ@home.test', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+HOME')
+        print('PASS: one group login reads all associated BBS mailboxes; configured and explicit delivery destinations remain distinct', flush=True)
         owner.service('NickServ@edge.test', 'LOGOUT', 'Logged out of edge.test')
         owner.send('WHOIS RenamedOwner')
         assert ' Some.User+HOME ' in owner.expect(' 311 RenamedOwner RenamedOwner ')
-        owner.service('MemoServ@edge.test', 'READ', 'You may read only your authenticated')
+        group_memo(owner, 'MemoServ@edge.test', 'READ', 'No telegrams waiting')
         owner.service('ChanServ', 'SET #services-test KEEPTOPIC OFF', 'Channel settings updated')
-        print('PASS: authority restart restores both logins; telegram routing and qualified reads remain BBS-specific', flush=True)
+        print('PASS: authority restart restores both logins; telegram routing and qualified reads retain their BBS selection', flush=True)
         owner.service('NickServ', 'UNLINK Some.User+EDGE', 'Retarget MEMOACCOUNT before unlinking:')
         owner.service('NickServ', 'SET Alice MEMOACCOUNT Some.User+HOME', 'Telegram destination updated')
         owner.service('NickServ', 'SET RenamedOwner MEMOACCOUNT Some.User+HOME', 'Telegram destination updated')
         owner.service('NickServ', 'UNLINK Some.User+EDGE', 'BBS account unlinked into an empty identity')
+        owner.service('MemoServ@edge.test', 'READ', 'No account in your authenticated network identities')
         wrong.service('ChanServ', 'SET #services-test KEEPTOPIC ON', 'Identify to an account with access')
         owner.service('NickServ', 'LOGOUT ALL', 'All BBS logins removed')
         owner.send('WHOIS RenamedOwner')

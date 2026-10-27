@@ -59,8 +59,12 @@ IRC_Services_Backend.prototype.process_one = function() {
 				this.output({type:"result", id:job.id, identity:IRC_services_identity(checked, this.config.qwk, this.config.server)});
 			}
 			else if (job.type == "resolve") {
-				var found = this.engine && this.engine.resolve_memo(job.target);
+				var found = this.engine && this.engine.resolve_memo(job.target, job.home);
 				this.output({type:"result", id:job.id, identity:found ? this.store.data.accounts[found] : null});
+			}
+			else if (job.type == "memo-read") {
+				var mailboxes = this.engine && this.engine.memo_read(job.actor, job.home), data = this.store && this.store.data;
+				this.output({type:"result", id:job.id, identities:mailboxes ? mailboxes.map(function(id) { return data.accounts[id]; }) : null});
 			}
 			else if (job.type == "local-resolve") {
 				var number = system.matchuser(IRC_services_unescape(job.account), false);
@@ -86,8 +90,8 @@ IRC_Services_Backend.prototype.process_one = function() {
 				}
 			}
 	} catch (error) {
-		log(LOG_ERR, "Embedded IRC services " + job.type + " failed: " + error);
-		this.output({type:"failure", id:job.id, operation:job.type, error:"Service operation failed; please try again later."});
+		if (!error.services_user) log(LOG_ERR, "Embedded IRC services " + job.type + " failed: " + error);
+		this.output({type:"failure", id:job.id, operation:job.type, home:error.services_home, error:error.services_user ? error.message : "Service operation failed; please try again later."});
 	}
 };
 

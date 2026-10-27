@@ -37,6 +37,14 @@ function validation() {
 	s.verify = function(list,rev,id) { m.verify_logins("connection",u,{actor:{auth_revision:rev},logins:list,id:id || "request"}); };
 	return s;
 }
+function mailbox_reader(s) {
+	var m = manager(), r = {m:m,pending:[],sent:[],replies:[]};
+	s.user.services_auth_revision = 1; m.queue = {engine:s.e}; m.find = function() { return s.user; }; m.peer = function() { return {}; };
+	m.send = function(peer,message) { r.sent.push(message); }; m.reply = function(peer,id,result) { r.replies.push(result); };
+	m.request = function(peer,request,callback) { r.pending.push({request:request,callback:callback}); };
+	r.actor = {ref:s.user.ref,nick:s.user.nick,rev:s.user.rev,auth_revision:1};
+	return r;
+}
 try { run_tests({
 	"two verified BBS logins retain independent groups until explicit confirmation": function() {
 		var s = scenario(); login(s,[A,B]); var before = JSON.stringify(s.db.data); preview(s);
@@ -115,6 +123,74 @@ try { run_tests({
 		confirm(s,preview(s)); s.e.command("NickServ",s.user,"SET Alice MEMOACCOUNT "+B.username);
 		check(s.e.resolve_memo("Alice") == B.id && s.e.resolve_memo(A.username) == A.id && s.e.resolve_group("Alice") == s.db.data.memberships[A.id]);
 	},
+	"server-qualified nick delivery selects its linked BBS account instead of its default": function() {
+		var s = linked(); s.e.command("NickServ",s.user,"SET Alice MEMOACCOUNT "+B.username);
+		check(s.e.resolve_memo("Alice") == B.id && s.e.resolve_memo("Alice",A.home) == A.id && s.e.resolve_memo("Alice",B.home) == B.id);
+		rejects(function() { s.e.resolve_memo("Alice",C.home); },"no linked account");
+		rejects(function() { s.e.resolve_memo(A.username,B.home); },"destination account belongs");
+		check(s.e.resolve_memo(A.username,A.home) == A.id);
+	},
+	"server-qualified nick delivery refuses to guess between multiple accounts on one BBS": function() {
+		var s = linked(), other = identity("HOME",2), group = s.db.data.memberships[A.id];
+		other.name = "Second Home User"; other.username = "Second.Home.User+HOME";
+		s.e.commit(function(d) { d.accounts[other.id] = other; d.memberships[other.id] = group; });
+		rejects(function() { s.e.resolve_memo("Alice",A.home); },"multiple linked accounts");
+		check(s.e.resolve_memo("Alice") == A.id && s.e.resolve_memo(other.username,A.home) == other.id);
+	},
+
+	"group reads include all linked BBS accounts with the configured destination first": function() {
+		var s = linked(); s.user.nick = s.user.rev = "Alice";
+		var actor = {ref:"owner",nick:"Alice",rev:"Alice",auth_revision:1};
+		check(s.e.sessions.owner.active == B.id && JSON.stringify(s.e.memo_read(actor)) == JSON.stringify([A.id,B.id]));
+		s.e.command("NickServ",s.user,"SET Alice MEMOACCOUNT "+B.username); login(s,[A]);
+		check(JSON.stringify(s.e.memo_read(actor)) == JSON.stringify([B.id,A.id]));
+		check(s.e.memo_read(actor,B.home)[0] == B.id);
+	},
+	"one verified group member grants access to all of its BBS mailboxes": function() {
+		var s = linked(); s.user.nick = s.user.rev = "Alice"; login(s,[B]);
+		var actor = {ref:"owner",nick:"Alice",rev:"Alice",auth_revision:1};
+		check(s.e.memo_read(actor).length == 2 && s.e.can_read_memo(actor,A.id) && s.e.can_read_memo(actor,B.id));
+		rejects(function() { s.e.memo_read(actor,C.home); },"No account");
+		actor.auth_revision = 2; check(!s.e.can_read_memo(actor,A.id)); rejects(function() { s.e.memo_read(actor); },"Authentication changed");
+	},
+	"unlinked authenticated groups do not become part of a nickname's default mailbox set": function() {
+		var s = linked(); s.user.nick = s.user.rev = "Alice"; login(s,[A,C]);
+		var actor = {ref:"owner",nick:"Alice",rev:"Alice",auth_revision:1};
+		check(s.e.memo_read(actor).length == 2 && s.e.memo_read(actor).indexOf(C.id) < 0);
+		check(s.e.memo_read(actor,C.home)[0] == C.id);
+	},
+	"unlink immediately revokes mailbox access even when the login revision stays unchanged": function() {
+		var s = linked(); s.user.nick = s.user.rev = "Alice"; login(s,[A]);
+		var actor = {ref:"owner",nick:"Alice",rev:"Alice",auth_revision:1}; check(s.e.can_read_memo(actor,B.id));
+		s.e.command("NickServ",s.user,"SET Bob MEMOACCOUNT "+A.username); s.e.command("NickServ",s.user,"UNLINK "+B.username);
+		check(!s.e.can_read_memo(actor,B.id) && s.e.memo_read(actor).length == 1);
+	},
+	"an impostor using a registered nickname cannot read or probe its owner's mailboxes": function() {
+		var s = scenario(); login(s,[B]); var actor = {ref:"owner",nick:"Alice",rev:"Alice",auth_revision:1};
+		check(!s.e.owns(s.user,s.db.data.nicks.$ALICE)); check(s.e.memo_read(actor)[0] == B.id && !s.e.can_read_memo(actor,A.id));
+	},
+
+	"group mailbox reads preserve useful results when another BBS fails": function() {
+		var s = linked(), r = mailbox_reader(s); login(s,[A]);
+		r.m.read_memos("connection","query",r.actor,[A,B],"READ"); check(r.pending[0].request.identity.id == A.id);
+		r.pending[0].callback({error:"BBS unavailable"}); check(r.pending[1].request.identity.id == B.id);
+		r.pending[1].callback({text:"Shared BBS telegram"});
+		check(r.sent.some(function(m) { return m.text == "Shared BBS telegram"; }) && r.replies[0].text.indexOf("1 failed") >= 0);
+		check(r.sent.every(function(m) { return m.request_id == "query" && m.home; }));
+	},
+	"unlinking suppresses an in-flight mailbox reply from the detached account": function() {
+		var s = linked(); login(s,[A]); s.e.command("NickServ",s.user,"SET Bob MEMOACCOUNT "+A.username);
+		var r = mailbox_reader(s); r.m.read_memos("connection","query",r.actor,[A,B],"READ");
+		r.pending[0].callback({text:"Authorized telegram"}); check(r.pending.length == 2);
+		s.e.command("NickServ",s.user,"UNLINK "+B.username); r.pending[1].callback({text:"Detached private telegram"});
+		check(!r.sent.some(function(m) { return m.text.indexOf("Detached private") >= 0; }) && r.replies[0].error.indexOf("account group changed") >= 0);
+	},
+	"logout suppresses in-flight group mailbox text and stops subsequent reads": function() {
+		var s = linked(), r = mailbox_reader(s); r.m.read_memos("connection","query",r.actor,[A,B],"READ");
+		s.user.services_auth_revision = 2; r.pending[0].callback({text:"Secret after logout"});
+		check(r.pending.length == 1 && !r.sent.some(function(m) { return m.text.indexOf("Secret") >= 0; }) && r.replies[0].error);
+	},
+
 	"membership, nickname destinations, and rights survive reopening SQLite": function() {
 		var s = linked(); channel(s,"#test"); s.db.close();
 		var reopened = new IRC_Services_Store(s.path); stores.push(reopened);
@@ -140,7 +216,7 @@ try { run_tests({
 		check(m.logins(u).length == 1 && u.services_identity === B);
 		m.add_login(u,A,true); m.remove_login(u,"",true); check(!u.services_identity && !m.logins(u).length);
 	},
-	"qualified MemoServ reads select only that BBS's verified login": function() {
+	"older authorities retain per-BBS verified-login reads": function() {
 		var m = manager(), u = {}, jobs = [], requests = []; m.add_login(u,A,true); m.add_login(u,B,true);
 		m.describe = function() { return {}; }; m.job = function(job) { jobs.push(job); }; m.notice = function() {};
 		m.sync_session = function(user,cb) { cb({}); }; m.central_peer = function() { return "central"; }; m.request = function(peer,req) { requests.push(req); };

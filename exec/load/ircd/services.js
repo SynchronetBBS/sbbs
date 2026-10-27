@@ -256,11 +256,11 @@ IRC_Services_Manager.prototype.tick = function() {
 					this.refresh_local_identity(sessionuser, now);
 					if (sessionuser.services_central !== authority) {
 						sessionuser.services_central = authority;
-						sessionuser.services_multi = false;
+						sessionuser.services_multi = false; sessionuser.services_memo_routing = false;
 						(function(u) {
 							self.request(cp, {type:"session", actor:self.describe(u), multi_login:1}, function(r) {
 								if (!self.find(self.describe(u)) || u.services_central !== authority) return;
-								u.services_multi = r.multi_login == 1;
+								u.services_multi = r.multi_login == 1; u.services_memo_routing = r.memo_routing == 1;
 								if (!u.services_multi && self.logins(u).length > 1) self.set_logins(u, u.services_identity ? [u.services_identity] : [], (u.services_auth_revision || 0) + 1);
 								self.sync_session(u);
 							});
@@ -430,7 +430,7 @@ IRC_Services_Manager.prototype.intercept_command = function(user, target, text) 
 			self.notice(service, current, "Identified as " + result.identity.username + ".", home);
 			var cp = self.central_peer();
 			if (cp) self.sync_session(current);
-			if (self.config.memoserv) self.memo(current, "STATUS", [], home);
+			if (self.config.memoserv) self.memo(current, "STATUS", []);
 		};
 		if (home == this.config.server) this.job({type:"authenticate", account:account, password:a[1]}, done);
 		else this.request(this.central_peer(), {type:"authenticate", actor:actor, home:home, account:account, password:a[1]}, done);
@@ -454,19 +454,20 @@ IRC_Services_Manager.prototype.command = function(user, service, text) {
 		this.notice(service, user, "Services are busy; please try again.");
 };
 IRC_Services_Manager.prototype.memo = function(user, verb, args, home) {
-	var self = this, actor = this.describe(user);
+	var self = this, actor = this.describe(user), destination_home = home || "";
 	home = home || (user.services_identity && user.services_identity.home) || this.config.server;
-	var identity = this.logins(user).filter(function(a) { return a.home == home; })[0];
-	if (verb == "HELP") { this.notice("MemoServ", user, "SEND <registered-nick|escaped-account+QWKID> <text> | READ | STATUS. READ consumes BBS telegrams; automatic checks do not. Use /msg MemoServ@" + home + " <command> for this BBS.", home); return; }
+	var identity = this.logins(user).filter(function(a) { return a.home == home; })[0], group_mailboxes = verb != "SEND" && user.services_memo_routing;
+	if (verb == "HELP") { this.notice("MemoServ", user, "SEND <registered-nick|escaped-account+QWKID> <text> | READ | STATUS. READ/STATUS check your linked identity's mailboxes; MemoServ@server selects that BBS. SEND to a nick uses its configured destination. READ consumes telegrams; automatic checks do not. Use /msg MemoServ@" + home + " <command> for this BBS.", home); return; }
 	if (!user.services_identity) { this.notice("MemoServ", user, "Identify to your BBS account first with /msg NickServ@" + home + " IDENTIFY <escaped-account> <password>.", home); return; }
 	if (["SEND","READ","STATUS"].indexOf(verb) < 0 || (verb == "SEND" && args.length < 2)) { this.notice("MemoServ", user, "Invalid command. Use HELP.", home); return; }
-	if (verb != "SEND" && !identity) { this.notice("MemoServ", user, "You may read only your authenticated account's telegrams. Use /msg MemoServ@" + user.services_identity.home + " " + verb + ".", user.services_identity.home); return; }
-	var finish = function(r) { if (self.find(actor) && (user.services_auth_revision || 0) == actor.auth_revision) self.notice("MemoServ", user, r.error || r.text || "Telegram operation completed.", r.home || home); };
-	if (verb != "SEND" && identity.home == this.config.server)
+	if (verb == "SEND" && destination_home && !user.services_memo_routing) { this.notice("MemoServ", user, "Server-specific delivery requires updated central services; use unqualified MemoServ SEND <account+QWKID> <text> instead.", home); return; }
+	if (verb != "SEND" && !group_mailboxes && !identity) { this.notice("MemoServ", user, "You may read only your authenticated account's telegrams. Use /msg MemoServ@" + user.services_identity.home + " " + verb + ".", user.services_identity.home); return; }
+	var finish = function(r) { if (self.find(actor) && (user.services_auth_revision || 0) == actor.auth_revision) self.notice("MemoServ", user, r.error || r.text || "Telegram operation completed.", r.group_mailboxes ? undefined : (r.home || home)); };
+	if (verb != "SEND" && !group_mailboxes && identity.home == this.config.server)
 		this.job({type:"memo", operation:verb, identity:identity}, finish);
 	else this.sync_session(user, function(r) {
 		if (r.error) { finish(r); return; }
-		self.request(self.central_peer(), {type:"memo", actor:self.describe(user), operation:verb, home:home, target:args.shift(), text:args.join(" ")}, finish);
+		self.request(self.central_peer(), {type:"memo", actor:self.describe(user), operation:verb, home:home, destination_home:destination_home, group_mailboxes:!!group_mailboxes, read_home:destination_home, target:args.shift(), text:args.join(" ")}, finish);
 	});
 };
 IRC_Services_Manager.prototype.receive = function(peer, m) {
@@ -500,7 +501,12 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 			var checked = this.find(m.actor);
 			this.reply(peer, m.id, {valid:!!(checked && checked.local)});
 		} else if (m.type == "memo-text") {
-			var recipient = this.find(m.actor); if (recipient && recipient.local && (m.actor.auth_revision === undefined || m.actor.auth_revision == (recipient.services_auth_revision || 0))) this.notice("MemoServ", recipient, m.text, m.home || (recipient.services_identity && recipient.services_identity.home));
+			var recipient = this.find(m.actor);
+			if (recipient && recipient.local && (m.actor.auth_revision === undefined || m.actor.auth_revision == (recipient.services_auth_revision || 0))) {
+				var pending_memo = this.requests[m.request_id];
+				if (pending_memo && pending_memo.peer == peer.toUpperCase()) pending_memo.until = system.timer + 30;
+				this.notice("MemoServ", recipient, m.text, m.home || (recipient.services_identity && recipient.services_identity.home));
+			}
 		} else if (m.type == "local-resolve" && this.config.memoserv) {
 			this.job({type:"local-resolve", account:m.account}, function(r) { self.reply(peer, m.id, r); });
 		} else if (m.type == "local-auth" && this.config.nickserv) {
@@ -560,7 +566,7 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 	this.snapshot();
 	if (m.type == "session") {
 		user.services_peer_multi = m.multi_login == 1;
-		if (m.id) this.reply(peer, m.id, {multi_login:1}); return;
+		if (m.id) this.reply(peer, m.id, {multi_login:1, memo_routing:1}); return;
 	}
 	if (m.type == "sync-logins") { this.verify_logins(peer, user, m); return; }
 	if (m.type == "claim") {
@@ -593,7 +599,7 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 			} else self.reply(peer, m.id, {error:r.error || "Authentication failed."});
 		});
 	} else if (m.type == "memo") {
-		var identity = m.operation == "SEND" ? this.identities[this.ref(user)] : user.services_verified_logins ? user.services_verified_logins.filter(function(a) { return a.home == (m.home || (user.services_identity && user.services_identity.home)); })[0] : this.identities[this.ref(user)], actor = this.describe(user);
+		var identity = m.operation == "SEND" || m.group_mailboxes ? this.identities[this.ref(user)] : user.services_verified_logins ? user.services_verified_logins.filter(function(a) { return a.home == (m.home || (user.services_identity && user.services_identity.home)); })[0] : this.identities[this.ref(user)], actor = this.describe(user);
 		if (!identity) { this.reply(peer, m.id, {error:"Identify to your BBS account first."}); return; }
 		if (user.services_peer_multi && m.actor.auth_revision != user.services_auth_revision) { this.reply(peer, m.id, {error:"Authentication changed; please retry."}); return; }
 		if (m.operation == "SEND") {
@@ -601,8 +607,15 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 				if (!self.find(actor) || (user.services_auth_revision || 0) != actor.auth_revision) return;
 				if (!r.identity) { self.reply(peer, m.id, {error:r.error || "Unknown destination account."}); return; }
 				self.deliver_memo(peer, m.id, actor, r.identity, "SEND", identity.username + " (IRC " + actor.nick + "):\r\n" + String(m.text).replace(/[\x00-\x1f\x7f]/g, " ") + "\r\n");
+			}, m.destination_home);
+		} else if (m.operation == "READ" || m.operation == "STATUS") {
+			if (!m.group_mailboxes) this.deliver_memo(peer, m.id, actor, identity, m.operation);
+			else this.job({type:"memo-read", actor:actor, home:m.read_home}, function(r) {
+				if (!self.find(actor) || (user.services_auth_revision || 0) != actor.auth_revision) return;
+				if (!r.identities) { self.reply(peer, m.id, {error:r.error || "No authenticated mailbox is available.", home:r.home}); return; }
+				self.read_memos(peer, m.id, actor, r.identities, m.operation);
 			});
-		} else if (m.operation == "READ" || m.operation == "STATUS") this.deliver_memo(peer, m.id, actor, identity, m.operation);
+		}
 	}
 };
 /* The connection server chooses retained logins; each BBS independently
@@ -642,19 +655,50 @@ IRC_Services_Manager.prototype.verify_logins = function(peer, user, m) {
 	});
 	complete();
 };
-IRC_Services_Manager.prototype.resolve_memo = function(target, callback) {
+IRC_Services_Manager.prototype.resolve_memo = function(target, callback, home) {
 	var self = this;
-	this.job({type:"resolve", target:target}, function(r) {
+	this.job({type:"resolve", target:target, home:home}, function(r) {
 		if (r.identity || r.error) { callback(r); return; }
 		var qualified = /^(.+)\+([a-z0-9_-]{1,8})$/i.exec(String(target)), candidates = [];
 		if (!qualified) { callback({error:"Unknown destination account."}); return; }
+		if (home && home.split(".")[0].toUpperCase() != qualified[2].toUpperCase()) { callback({error:"The destination account does not belong to " + home + "."}); return; }
 		for (var key in Users) {
 			var agent = self.peer(Users[key].nick);
-			if (agent && agent.servername.split(".")[0].toUpperCase() == qualified[2].toUpperCase()) candidates.push(agent);
+			if (agent && (!home || agent.servername.toLowerCase() == home) && agent.servername.split(".")[0].toUpperCase() == qualified[2].toUpperCase()) candidates.push(agent);
 		}
 		if (candidates.length != 1) { callback({error:"Destination BBS is unavailable or ambiguous."}); return; }
 		self.request(candidates[0].nick, {type:"local-resolve", account:qualified[1]}, callback);
 	});
+};
+/* Stream one mailbox at a time, retaining useful results if another BBS is
+   unavailable. Recheck membership before dispatch and before exposing text. */
+IRC_Services_Manager.prototype.read_memos = function(peer, id, actor, identities, operation) {
+	var self = this, index = 0, failed = 0;
+	function authorized(identity) {
+		var user = self.find(actor);
+		return user && (user.services_auth_revision || 0) == actor.auth_revision && self.queue.engine && self.queue.engine.can_read_memo(actor, identity.id);
+	}
+	function output(identity, text) {
+		for (var i = 0; i < text.length; i += 8000) self.send(peer, {type:"memo-text", request_id:id, actor:actor, text:text.substr(i,8000), home:identity.home});
+	}
+	function next() {
+		while (index < identities.length) {
+			var identity = identities[index++];
+			if (!authorized(identity)) { self.reply(peer, id, {error:"Authentication or account group changed; please retry.", group_mailboxes:true}); return; }
+			output(identity, "Telegram mailbox " + identity.username + "@" + identity.home + ":");
+			var agent = IRC_services_agent(identity.home);
+			if (!self.peer(agent)) { failed++; output(identity, "Destination BBS services are unavailable."); continue; }
+			self.request(agent, {type:"local-memo", identity:identity, operation:operation}, function(r) {
+				if (!authorized(identity)) { self.reply(peer, id, {error:"Authentication or account group changed; please retry.", group_mailboxes:true}); return; }
+				if (r.error) failed++;
+				output(identity, String(r.error || r.text || "Telegram operation completed."));
+				next();
+			});
+			return;
+		}
+		self.reply(peer, id, {text:"Checked " + index + " telegram mailbox" + (index == 1 ? "" : "es") + (failed ? " (" + failed + " failed)" : "") + ".", group_mailboxes:true});
+	}
+	next();
 };
 IRC_Services_Manager.prototype.deliver_memo = function(peer, id, actor, identity, operation, text) {
 	var self = this, name = IRC_services_agent(identity.home);

@@ -98,10 +98,12 @@ User-facing replies use `NOTICE`. When a BBS reply comes from a different BBS
 than the user's connection server, it names the service and BBS (for example,
 `[NickServ@home.synchro.net]`) and includes `/msg NickServ@home.synchro.net
 <command>` or `/msg MemoServ@home.synchro.net <command>` reply instructions.
-This also applies to errors and telegram text. Unqualified MemoServ reads and
-status checks follow the most recently identified account's home BBS. Qualified
-reads select the retained login for that BBS; without that login, the reply
-explains how to target an authenticated BBS instead.
+This also applies to errors and telegram text. Unqualified MemoServ READ/STATUS
+check all accounts associated with the current owned nickname's network identity,
+starting with its configured MEMOACCOUNT. Without an owned nickname, they use the
+active account's group. Qualified reads select accounts on the named BBS from
+your authenticated identities. Identifying to any group member authorizes access
+to every mailbox in that group; separate BBS passwords are not required.
 Both services' HELP replies include a concrete server-qualified address.
 Central nickname/channel registration replies remain network-wide notices.
 
@@ -119,7 +121,8 @@ Central nickname/channel registration replies remain network-wide notices.
 You may retain one verified account per BBS in the same IRC connection.
 Identifying to a different BBS retains previous BBS logins; identifying again
 at the same BBS replaces that BBS login. The most recent successful login sets
-the visible username and default MemoServ BBS. Permissions from all retained
+the visible username and the fallback network identity for unqualified MemoServ
+commands when you are not using an owned nickname. Permissions from all retained
 logins apply. Registration uses the active account's network identity.
 
 To share registrations between independently authenticated accounts:
@@ -135,8 +138,8 @@ To share registrations between independently authenticated accounts:
 telegram destinations, and channel permissions. Confirmation merges the whole
 identities, not just the two named accounts. **Every member has equal control**
 over all combined nicknames and channel rights, including linking or removing
-other members. There is no primary account or BBS. Authenticate both exact
-accounts on this IRC connection; knowing an alias is insufficient.
+other members, and may read telegrams for every BBS account in the group.
+There is no primary account or BBS. Authenticate both exact accounts on this IRC connection; knowing an alias is insufficient.
 
 The random confirmation is single-use, expires after five minutes, and is
 bound to the IRC session, authentication revision, and previewed ownership,
@@ -159,7 +162,9 @@ existing registrations but prevents additions above the new limit.
   exposing the member BBS accounts.
 - `SET <nickname> MEMOACCOUNT <escaped-account+QWKID>` selects a telegram
   destination within that nickname's identity. New registrations initially use
-  the account performing REGISTER. A merge preserves each destination.
+  the account performing REGISTER. A merge preserves each destination. This
+  setting also selects the first mailbox checked by unqualified READ/STATUS
+  and automatic notifications; other linked accounts are checked as well.
 - `UNLINK <escaped-account+QWKID>` detaches that account into an empty identity.
   Registrations stay with the other members; the final member cannot unlink.
   If the account is a configured telegram destination, UNLINK lists the affected
@@ -167,8 +172,9 @@ existing registrations but prevents additions above the new limit.
 
 Membership changes immediately affect services authorization in every session.
 Existing channel op/voice modes follow the existing logout behavior and are not
-automatically removed by logout or unlinking. Fresh logins are still required
-for each BBS mailbox, even when its account belongs to your linked identity.
+automatically removed by logout or unlinking. MemoServ access follows current
+group membership: unlinking immediately removes that mailbox from the remaining
+group's authority, unless the session separately authenticated its new identity.
 
 Someone using another account's registered nickname gets a 60-second grace
 period to identify or change nicknames. On updated connection servers, services
@@ -196,11 +202,24 @@ MemoServ is an interface to BBS telegrams, not a separate mailbox:
   recipient BBS's native `system.put_telegram()` API. Qualified recipients need
   not have identified to IRC services before. The recipient BBS must be online
   with MemoServ enabled. Delivery is acknowledged only after storage succeeds.
+  Sending to a registered nickname uses its configured MEMOACCOUNT. To override
+  that destination, use `/msg MemoServ@server SEND <nickname> <text>`; this selects
+  the nickname's linked account on that server. If none exists, or multiple
+  linked accounts on that BBS make the selection ambiguous, delivery fails.
+  An explicit `escaped-account+QWKID` always names that account; a conflicting
+  service server is rejected.
 - `STATUS` and automatic checks after identification report waiting telegrams
-  without consuming them. File snapshots use native-compatible read locking.
-- `READ` explicitly consumes the telegram spool using `system.get_telegram()`.
-  Only an independently authenticated account may read its telegrams. Linking
-  accounts never grants access to another BBS account's mailbox.
+  across the nickname's group without consuming them. The configured MEMOACCOUNT
+  is checked first. File snapshots use native-compatible read locking.
+- `READ` explicitly consumes telegram spools using `system.get_telegram()`.
+  It reads all mailboxes in the current owned nickname's group, or the active
+  account's group when no owned nickname is in use. `MemoServ@server READ` limits
+  the read to accounts on that BBS within your authenticated identities.
+  Identifying to any group member grants access to all the group's telegrams.
+  Native BBS eligibility and first-on dates are still checked for every mailbox.
+- Replies identify each mailbox. If one BBS is unavailable, MemoServ reports the
+  error and continues checking the others. Logout, replacement authentication,
+  and unlinking revoke access before further requests or replies are processed.
 
 ## Compatibility and runtime details
 
@@ -221,6 +240,10 @@ helpers. Older services helpers keep single-login behavior and cannot authorize
 LINK. Reconnecting the authority restores retained logins after their BBSes
 revalidate them. Failed validation revokes that BBS login; other verified logins
 remain usable. This does not require updates to intermediate IRC relays.
+Group mailbox access and server-qualified nickname delivery are
+negotiated with the authority. Older authorities retain their active-login
+read behavior. Explicit server overrides are refused when unsupported, so a
+message cannot silently be delivered to a different BBS.
 
 Older relays and leaves continue to use standard IRC messages for channel
 operations and ghost kills. They do not gain local BBS services or live username

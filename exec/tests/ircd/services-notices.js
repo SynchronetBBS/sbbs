@@ -8,6 +8,7 @@ function scenario() {
 	var s = {scope:scope,wire:[],requests:[],parts:[],replies:[]};
 	s.user = {local:true,nick:"Visitor",servername:"edge.test",rawout:function(line) { s.wire.push(line); }};
 	s.manager = Object.create(scope.IRC_Services_Manager.prototype);
+	s.manager.requests = {};
 	s.manager.config = {server:"edge.test",nickserv:true,memoserv:true};
 	s.manager.ensure_agent = function() { return true; };
 	s.manager.describe = function(user) { return {ref:"session",nick:user.nick,server:user.servername,auth_revision:user.services_auth_revision || 0}; };
@@ -103,6 +104,39 @@ run_tests({
 		s.requests[0].callback({text:"Telegram delivered.",home:"dest.test"});
 		check_hint(s,"MemoServ","dest.test");
 	},
+	"SEND uses a configured destination unless the service address explicitly selects a BBS": function() {
+		var s = scenario(); s.user.services_identity = identity(); s.user.services_memo_routing = true;
+		s.manager.intercept(s.user,"MemoServ","SEND Alice Default delivery"); check(!s.requests[0].request.destination_home);
+		s.scope.system.timer += 2; s.manager.intercept(s.user,"MemoServ@other.test","SEND Alice Direct delivery");
+		check(s.requests[1].request.destination_home == "other.test");
+	},
+	"older authorities cannot silently ignore an explicitly targeted delivery server": function() {
+		var s = scenario(); s.user.services_identity = identity();
+		s.manager.intercept(s.user,"MemoServ@other.test","SEND Alice Direct delivery");
+		check(!s.requests.length && text(s).indexOf("Server-specific delivery requires updated central services") >= 0);
+	},
+
+	"READ and STATUS ask the authority for group mailboxes and preserve explicit server selection": function() {
+		["READ","STATUS"].forEach(function(verb) {
+			var s = scenario(); s.user.services_identity = identity(); s.user.services_memo_routing = true;
+			s.manager.intercept(s.user,"MemoServ",verb); check(s.requests[0].request.group_mailboxes === true && !s.requests[0].request.read_home);
+			s.scope.system.timer += 2; s.manager.intercept(s.user,"MemoServ@home.test",verb); check(s.requests[1].request.group_mailboxes === true && s.requests[1].request.read_home == "home.test");
+		});
+	},
+	"older authorities keep their original default mailbox selection": function() {
+		var s = scenario(); s.user.services_identity = identity(); s.manager.intercept(s.user,"MemoServ","STATUS");
+		check(s.requests[0].request.group_mailboxes === false && s.requests[0].request.home == "home.test");
+	},
+
+	"group mailbox progress refreshes only the matching authenticated RPC": function() {
+		var s = scenario(); s.user.services_identity = identity();
+		s.manager.requests.query = {peer:"CENTRAL",until:0}; s.manager.requests.other = {peer:"OTHER",until:0};
+		s.manager.receive("central",{type:"memo-text",request_id:"query",actor:{auth_revision:0},home:"home.test",text:"Mailbox progress"});
+		check(s.manager.requests.query.until == 130);
+		s.manager.receive("central",{type:"memo-text",request_id:"other",actor:{auth_revision:0},home:"home.test",text:"Mailbox progress"});
+		check(s.manager.requests.other.until === 0);
+	},
+
 	"invalid BBS labels cannot inject reply commands or wire messages": function() {
 		var s = scenario(); s.manager.notice("MemoServ",s.user,"Safe reply","home.test\r\nPRIVMSG Visitor :Injected");
 		check(s.wire.length == 1 && /:Safe reply$/.test(s.wire[0]));

@@ -313,7 +313,7 @@ IRC_Services_Engine.prototype.link = function(user, args, reply) {
 			});
 			delete next.groups[remove];
 		});
-		this.authorization_changed(); reply("Network identities linked. Every linked BBS account has equal control of the combined registrations."); return;
+		this.authorization_changed(); reply("Network identities linked. Every linked BBS account has equal control of the combined registrations and shared telegram access."); return;
 	}
 	var first = args.length == 2 && this.resolve_bbs_account(args[0]), second = args.length == 2 && this.resolve_bbs_account(args[1]);
 	if (!first || !second || session.accounts.indexOf(first) < 0 || session.accounts.indexOf(second) < 0) throw IRC_services_error("LINK requires both exact account+QWKID logins verified in this IRC session.");
@@ -323,10 +323,10 @@ IRC_Services_Engine.prototype.link = function(user, args, reply) {
 	groups.forEach(function(g) { self.describe_group(g, reply); });
 	var code = IRC_services_random().substr(0, 24);
 	this.links[user.ref] = {code:code, until:system.timer + 300, revision:session.revision, accounts:[first,second], groups:groups, state:this.link_state(groups)};
-	reply("Linking gives every listed account equal control of ALL listed registrations. Confirm within 5 minutes: LINK CONFIRM " + code);
+	reply("Linking gives every listed account control of ALL listed registrations and access to ALL linked BBS telegram mailboxes. Confirm within 5 minutes: LINK CONFIRM " + code);
 };
 
-function IRC_services_error(message) { var e = new Error(message); e.services_user = true; return e; }
+function IRC_services_error(message, home) { var e = new Error(message); e.services_user = true; e.services_home = home; return e; }
 
 function IRC_services_mlock(args) {
 	var modes = args.shift(), lock = {on: "", off: ""}, add = true;
@@ -431,4 +431,37 @@ IRC_Services_Engine.prototype.resolve_bbs_account = function(name) {
 	return null;
 };
 IRC_Services_Engine.prototype.resolve_group = function(name) { return this.account(name) || this.store.data.memberships[this.resolve_bbs_account(name)] || null; };
-IRC_Services_Engine.prototype.resolve_memo = function(name) { return this.store.data.memo_accounts[IRC_services_key(name)] || this.resolve_bbs_account(name); };
+IRC_Services_Engine.prototype.resolve_memo = function(name, home) {
+	var data = this.store.data, key = IRC_services_key(name), group = data.nicks[key];
+	if (group) {
+		if (!home) return data.memo_accounts[key];
+		var members = Object.keys(data.memberships).filter(function(id) { return data.memberships[id] == group && data.accounts[id].home == home; });
+		if (!members.length) throw IRC_services_error("That nickname has no linked account on " + home + ".");
+		if (members.length > 1) throw IRC_services_error("That nickname has multiple linked accounts on " + home + "; address an explicit account+QWKID.");
+		return members[0];
+	}
+	var id = this.resolve_bbs_account(name);
+	if (id && home && data.accounts[id].home != home) throw IRC_services_error("The destination account belongs to " + data.accounts[id].home + ", not " + home + ".");
+	return id;
+};
+/* A verified member grants mailbox access to its whole network identity.
+   Resolve membership for every read so unlinking also revokes this authority. */
+IRC_Services_Engine.prototype.can_read_memo = function(actor, id) {
+	var user = this.users[actor.ref], session = this.sessions[actor.ref];
+	return !!(user && session && user.nick == actor.nick && user.rev == actor.rev && session.revision == (actor.auth_revision || 0)
+		&& this.owns(user, this.store.data.memberships[id]));
+};
+IRC_Services_Engine.prototype.memo_read = function(actor, home) {
+	var user = this.users[actor.ref], session = this.sessions[actor.ref], data = this.store.data;
+	if (!user || !session || user.nick != actor.nick || user.rev != actor.rev || session.revision != (actor.auth_revision || 0))
+		throw IRC_services_error("Authentication changed; please retry.");
+	var key = IRC_services_key(user.nick), owner = this.owns(user, data.nicks[key]) && data.nicks[key];
+	var groups = home ? this.groups(user) : [owner || this.active_group(user)];
+	var ids = Object.keys(data.memberships).filter(function(id) { return groups.indexOf(data.memberships[id]) >= 0 && (!home || data.accounts[id].home == home); }).sort();
+	if (!ids.length) throw IRC_services_error("No account in your authenticated network identities belongs to " + home + ".", home);
+	/* The configured notification mailbox is checked first; direct telegrams
+	   on other member BBSes remain accessible through the same service. */
+	var preferred = owner && data.memo_accounts[key], index = ids.indexOf(preferred);
+	if (index > 0) { ids.splice(index,1); ids.unshift(preferred); }
+	return ids;
+};
