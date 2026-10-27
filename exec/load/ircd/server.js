@@ -138,7 +138,7 @@ function Server_Work(cmdline) {
 	if ((cmd.verb == "MODE" || cmd.verb == "KICK"
 		|| cmd.verb == "JOIN" || cmd.verb == "SJOIN" || cmd.verb == "TOPIC" || cmd.verb == "TSMAP" || cmd.verb == "LINKSEC"
 		|| cmd.verb == "PART" || cmd.verb == "PRIVMSG" || cmd.verb == "NOTICE"
-		|| cmd.verb == "NICK" || cmd.verb == "QUIT" || cmd.verb == "SERVER")
+		|| cmd.verb == "NICK" || cmd.verb == "QUIT" || cmd.verb == "SERVER" || cmd.verb == "CLIENTTLS")
 		&& origin !== this
 		&& (origin.local || !origin.parent
 			|| origin.parent.toLowerCase() != this.nick.toLowerCase())
@@ -162,11 +162,18 @@ function Server_Work(cmdline) {
 		var tmp = Users[p[0].toUpperCase()];
 		if (!tmp)
 			return 0;
-		tmp.rawout(cmdline); /* We don't process numerics directly, pass on */
+		/* Derive WHOIS path security at the requesting client's own server.
+		   A legacy 671 describes only the target's client socket. */
+		if (tmp.local && (cmd.verb == "671" || (cmd.verb == "320" && String(p[2]).indexOf("TLS path:") == 0))) return 0;
+		tmp.rawout(cmdline);
+		if (tmp.local && cmd.verb == "311" && p[1] && Users[p[1].toUpperCase()]) IRC_whois_tls(tmp, Users[p[1].toUpperCase()]);
 		return 1;
 	}
 
 	switch(cmd.verb) {
+	case "CLIENTTLS":
+		IRC_receive_clienttls(this, origin, p);
+		return 0;
 	case "LINKSEC":
 		IRC_receive_linksec(this, origin, p);
 		return 0;
@@ -2045,6 +2052,7 @@ function IRCClient_server_nick_info(sni_client) {
 		)
 	);
 
+	IRC_client_tls_burst(this, sni_client);
 	if (sni_client.away) {
 		this.rawout(format(":%s AWAY :%s",
 			sni_client.nick,

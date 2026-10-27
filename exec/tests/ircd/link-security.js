@@ -10,7 +10,7 @@ function state() {
 		MAX_NICKLEN:30, Enforcement:true, YLines:[{pingfreq:90, connfreq:0, active:0}],
 		log:function() {}, js:{setImmediate:function() {}, clearInterval:function() {}},
 		Generate_ID:function() { return 1; }};
-	["irclib.js", "ircd/link-security.js", "ircd/core.js", "ircd/user.js", "ircd/channel.js",
+	["irclib.js", "ircd/link-security.js", "ircd/client-security.js", "ircd/core.js", "ircd/user.js", "ircd/channel.js",
 	 "ircd/server.js", "ircd/config.js", "ircd/timestamps.js"].forEach(function(f) { load(s, f); });
 	s.Epoch = function() { return 1800000000; };
 	return s;
@@ -48,8 +48,94 @@ function tls(s, p, outbound, verified) {
 	p.socket = {ssl_session:true, outbound:outbound, irc_tls_verified:verified, close:function() {}};
 	s.IRC_linksec_admit(p);
 }
+function remote_user(s, nick, p) {
+	var u = new s.IRC_User(2);
+	u.nick = nick; u.local = false; u.parent = p.nick; u.servername = p.nick;
+	s.Users[nick.toUpperCase()] = u;
+	return u;
+}
+function whois(s, viewer, target) {
+	viewer.lines = []; viewer.work("WHOIS " + target.nick);
+	return viewer.lines.join("\n");
+}
 
 run_tests({
+	"WHOIS 671 requires TLS on both local client sockets": function() {
+		var s = state(), a = client(s), b = client(s); b.nick = "Other";
+		s.Users[b.nick.toUpperCase()] = b;
+		a.socket = {ssl_session:true}; b.socket = {ssl_session:true};
+		check(whois(s, a, b).indexOf(" 671 Viewer Other :TLS path:") >= 0);
+		a.socket.ssl_session = false;
+		var output = whois(s, a, b);
+		check(output.indexOf(" 671 ") < 0 && output.indexOf("unencrypted connection") >= 0, output);
+		a.socket.ssl_session = true; b.socket.ssl_session = false;
+		check(whois(s, a, b).indexOf(" 671 ") < 0);
+	},
+	"WHOIS combines endpoint reports with every server hop and keeps legacy gaps unknown": function() {
+		var s = state(), p = peer(s, "hub.test", true, ["LINKSEC", "CLIENTTLS"]), viewer = client(s);
+		var target = remote_user(s, "Remote", p); viewer.socket = {ssl_session:true};
+		tls(s, p, true, true);
+		check(whois(s, viewer, target).indexOf("full-path encryption between you and this user is unknown") >= 0);
+		p.work(":hub.test CLIENTTLS Remote TLS");
+		check(whois(s, viewer, target).indexOf(" 671 Viewer Remote :TLS path:") >= 0);
+		p.work(":hub.test CLIENTTLS Remote PLAIN");
+		check(whois(s, viewer, target).indexOf("unencrypted connection") >= 0);
+	},
+	"a leaf can report only the transport of its own clients": function() {
+		var s = state(), leaf = peer(s, "leaf.test", false, ["CLIENTTLS"]), other = peer(s, "other.test", true, ["CLIENTTLS"]);
+		var own = remote_user(s, "Own", leaf), foreign = remote_user(s, "Foreign", other), local = client(s); s.Users.VIEWER = local;
+		leaf.work(":leaf.test CLIENTTLS Own TLS");
+		check(s.IRC_client_tls_status(own) == "TLS");
+		leaf.work(":leaf.test CLIENTTLS Foreign TLS");
+		leaf.work(":other.test CLIENTTLS Foreign TLS");
+		leaf.work(":leaf.test CLIENTTLS Viewer TLS");
+		check(!foreign.client_tls && !local.client_tls);
+		check(other.sent.join("\n").indexOf(":leaf.test CLIENTTLS Own TLS") >= 0);
+	},
+	"client transport bursts follow NICK and avoid incapable peers and the source branch": function() {
+		var s = state(), p = peer(s, "hub.test", true, ["CLIENTTLS"]), old = peer(s, "old.test", true, ["TSJOIN"]);
+		var viewer = client(s); viewer.socket = {ssl_session:true};
+		p.server_nick_info(viewer); old.server_nick_info(viewer);
+		var wire = p.sent.join("\n");
+		check(wire.indexOf("NICK Viewer ") < wire.indexOf("CLIENTTLS Viewer TLS"), wire);
+		check(old.sent.join("\n").indexOf("CLIENTTLS") < 0);
+		var remote = remote_user(s, "Remote", p); p.work(":hub.test CLIENTTLS Remote TLS");
+		p.sent = []; s.IRC_client_tls_burst(p, remote); check(!p.sent.length);
+	},
+	"internal transport cannot be asserted for an ordinary client": function() {
+		var s = state(), p = peer(s, "hub.test", true, ["CLIENTTLS"]), u = remote_user(s, "Remote", p);
+		p.work(":hub.test CLIENTTLS Remote INTERNAL"); check(!u.client_tls);
+		p.work(":hub.test CLIENTTLS Remote BOGUS"); check(!u.client_tls);
+		u.uline = true; p.work(":hub.test CLIENTTLS Remote INTERNAL");
+		check(s.IRC_client_tls_status(u) == "INTERNAL");
+	},
+	"client transport conflicts remain conservative and do not survive nickname reuse": function() {
+		var s = state(), p = peer(s, "hub.test", true, ["CLIENTTLS"]), u = remote_user(s, "Remote", p);
+		p.work(":hub.test CLIENTTLS Remote TLS");
+		u.uline = true; p.work(":hub.test CLIENTTLS Remote INTERNAL");
+		check(s.IRC_client_tls_status(u) == "UNKNOWN");
+		p.work(":hub.test CLIENTTLS Remote PLAIN"); check(s.IRC_client_tls_status(u) == "PLAIN");
+		delete s.Users.REMOTE; u = remote_user(s, "Remote", p);
+		check(s.IRC_client_tls_status(u) == "UNKNOWN");
+	},
+	"server paths exclude links above the lowest common ancestor": function() {
+		var s = state(), p = peer(s, "hub.test", true), a = remote(s, "a.test", p.nick, p.nick), b = remote(s, "b.test", p.nick, p.nick);
+		p.socket = {ssl_session:false}; s.IRC_linksec_admit(p);
+		receive(s, p, p.nick, a.nick, "TLS", "OUT", "VERIFIED");
+		receive(s, p, p.nick, b.nick, "TLS", "OUT", "VERIFIED");
+		var path = s.IRC_tls_server_path(a.nick, b.nick);
+		check(path.transport == "TLS" && path.edges.length == 2);
+		check(s.IRC_tls_server_path(s.ServerName, a.nick).transport == "PLAIN");
+		check(s.IRC_tls_server_path("missing.test", a.nick).transport == "UNKNOWN");
+	},
+	"forwarded WHOIS uses the requesting server's full-path assessment": function() {
+		var s = state(), p = peer(s, "hub.test", true), viewer = client(s), u = remote_user(s, "Remote", p);
+		viewer.socket = {ssl_session:true}; s.Users.VIEWER = viewer; tls(s, p, true, true);
+		p.work(":hub.test 311 Viewer Remote ident host * :Name");
+		p.work(":hub.test 671 Viewer Remote :is using a secure connection.");
+		check(viewer.lines.join("\n").indexOf("full-path encryption between you and this user is unknown") >= 0);
+		check(viewer.lines.join("\n").indexOf(" 671 ") < 0);
+	},
 	"outbound socket validation is visible to ordinary registered clients": function() {
 		var s = state(), p = peer(s, "hub.test", true);
 		tls(s, p, true, true);

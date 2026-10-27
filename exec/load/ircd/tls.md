@@ -129,6 +129,30 @@ report its direct link to an older peer, but remote hops hidden behind legacy
 intermediaries remain unknown. No TLS policy or required capability changes
 when route reporting is enabled.
 
+## WHOIS security
+
+Version 2.8 reports the complete path between the requesting client and the
+target client in WHOIS. Numeric **671** means both client connections and every
+intervening server connection are known to use TLS. Numeric 320 instead
+explains a known unencrypted connection or an unknown path. The server tree
+path excludes unrelated uplinks above the two clients' common ancestor.
+Server-qualified WHOIS queries are assessed at the requesting client's server,
+which suppresses older servers' endpoint-only 671 replies.
+
+The optional `CLIENTTLS` capability carries
+`:<owning-server> CLIENTTLS <nickname> <TLS|PLAIN|INTERNAL>` immediately after
+each NICK introduction, including bursts. Only the user's owning server may
+report that user's connection, over its established route. Leaves may report
+their own clients; this does not grant them authority over server links or
+other servers' clients. INTERNAL is restricted to services and daemon helpers.
+Conflicting reports cannot establish TLS, and observations disappear with the
+user object on quit or split. Nick changes retain the same connection state.
+
+Older peers receive no CLIENTTLS commands. A legacy reporting gap remains
+unknown, even if a previous WHOIS 671 described the target's socket as secure.
+This reporting is also used by the optional embedded-services TLS requirement;
+see [services.md](services.md#requiring-tls).
+
 ## Tests
 
 Run the configuration and handshake regressions with Synchronet `jsexec`:

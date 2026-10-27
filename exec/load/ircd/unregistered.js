@@ -406,7 +406,9 @@ function Unregistered_Check_User_Registration() {
 
 	if (!this.dns_pending && !this.socket.outbound && this.uprefix && this.nick != "*") {
 		var identity = null;
-		if (this.password && system.matchuser !== undefined) {
+		if (this.password && EmbeddedServices_Config.bbs_require_tls && !this.socket.ssl_session)
+			this.ircout("NOTICE " + this.nick + " :BBS authentication requires TLS. Reconnect using a TLS port.");
+		else if (this.password && system.matchuser !== undefined) {
 			identity = IRC_services_authenticate(this.login_id || this.uprefix, this.password, String(system.qwk_id), ServerName);
 			if (!identity) identity = IRC_services_authenticate(this.nick, this.password, String(system.qwk_id), ServerName);
 			if (identity) {

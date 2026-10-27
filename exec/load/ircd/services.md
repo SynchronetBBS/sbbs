@@ -7,6 +7,7 @@ is needed. Local BBS services are disabled by default. Enable them in `ircd.ini`
 [BBSServices]
 NickServ=true
 MemoServ=true
+RequireTLS=false
 ```
 
 NickServ uses the BBS login lookup and password, including the normal
@@ -36,6 +37,7 @@ Database=/path/to/ircd-services.sqlite
 NickExpireDays=0
 ChannelExpireDays=0
 MaxNicks=10
+RequireTLS=false
 ```
 
 Among enabled instances, the one whose listening addresses include an address
@@ -86,6 +88,38 @@ Each participating BBS server's first hostname label must equal its QWK ID
 (for example `home.synchro.net` for QWK ID `HOME`), and those IDs must be unique.
 The existing authenticated server links establish which BBS owns an identity.
 An account with the same alias on another BBS is a different account.
+
+## Requiring TLS
+
+Version 2.8 adds independent, optional `RequireTLS` settings in `[BBSServices]`
+and `[EmbeddedServices]`. Both default to `false`; existing configurations and
+external services keep working. Rehashing applies changes.
+
+Set `[BBSServices] RequireTLS=true` on each participating BBS to protect its
+NickServ authentication and private MemoServ operations. This also requires a
+TLS client socket for BBS `PASS` authentication. A plaintext client may still
+connect anonymously, retaining its `~` username prefix, but its password is
+not checked.
+
+Set `[EmbeddedServices] RequireTLS=true` on the authority to protect nickname
+and channel registration, account linking, GHOST, access lists, configuration
+changes, remote authentication, and private account/mailbox commands. Enable
+both settings to protect both the local BBS services and the central authority.
+Public HELP and INFO, and NickServ LOGOUT, remain available without TLS.
+
+The requirement covers the client's actual socket and every server link to
+the service handling the request. Remote BBS requests also check the authority's
+path to that BBS before forwarding passwords or accessing telegrams. An unknown
+hop fails the requirement, as does a known plaintext hop. Server links must
+therefore support security reporting, and the client's owning IRCd must support
+the version 2.8 `CLIENTTLS` capability. Legacy servers can remain connected;
+users on unreportable paths cannot use protected commands while this option is
+enabled. An authenticated session cannot grant central services permissions
+while its path is unencrypted or unknown.
+
+These checks use observed TLS transport. They do not imply that every client
+validated its server's certificate. Configure validated server links as
+described in [tls.md](tls.md); WHOIS and TLSROUTE help diagnose missing protection.
 
 ## Commands
 

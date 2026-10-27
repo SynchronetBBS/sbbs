@@ -131,6 +131,49 @@ function IRC_linksec_status(edge) {
 	return result;
 }
 
+function IRC_tls_combine(a, b) {
+	if (a == "PLAIN" || b == "PLAIN") return "PLAIN";
+	if (a == "UNKNOWN" || b == "UNKNOWN") return "UNKNOWN";
+	return "TLS";
+}
+
+/* Return the tree path between two servers, including when neither is us.
+ * Do not include the common ancestry above their lowest common ancestor. */
+function IRC_tls_server_path(from, to) {
+	var local = ServerName.toLowerCase();
+	function ancestry(name) {
+		var names = [], edges = [], seen = {};
+		name = String(name).toLowerCase();
+		while (true) {
+			if (seen["=" + name]) return null;
+			seen["=" + name] = true; names.push(name);
+			if (name == local) return {names:names, edges:edges};
+			var edge = Servers[name];
+			if (!edge || !edge.server || !edge.linkparent || (edge.local && !edge.admitted)) return null;
+			edges.push(edge); name = edge.linkparent.toLowerCase();
+		}
+	}
+	var a = ancestry(from), b = ancestry(to), edges = [], transport = "TLS";
+	if (!a || !b) return {transport:"UNKNOWN", edges:edges};
+	var ai = a.names.length - 1, bi = b.names.length - 1;
+	while (ai >= 0 && bi >= 0 && a.names[ai] == b.names[bi]) { ai--; bi--; }
+	edges = a.edges.slice(0, ai + 1).concat(b.edges.slice(0, bi + 1).reverse());
+	for (var i = 0; i < edges.length; i++) transport = IRC_tls_combine(transport, IRC_linksec_status(edges[i]).transport);
+	return {transport:transport, edges:edges};
+}
+
+function IRC_tls_user_to_server(user, servername) {
+	return IRC_tls_combine(IRC_client_tls_status(user), IRC_tls_server_path(user.servername, servername).transport);
+}
+
+function IRC_whois_tls(viewer, target) {
+	var status = IRC_tls_combine(IRC_tls_user_to_server(viewer, target.servername), IRC_client_tls_status(target));
+	var text = status == "TLS" ? "TLS path: every client and server connection between you and this user is encrypted."
+		: status == "PLAIN" ? "TLS path: an unencrypted connection exists between you and this user."
+		: "TLS path: full-path encryption between you and this user is unknown.";
+	viewer.numeric(status == "TLS" ? 671 : 320, target.nick + " :" + text);
+}
+
 function IRC_do_tlsroute(user, target) {
 	if (!target) { user.numeric461("TLSROUTE"); return; }
 	var name = target.toLowerCase(), local = ServerName.toLowerCase();

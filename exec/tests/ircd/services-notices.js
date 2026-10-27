@@ -24,12 +24,98 @@ function scenario() {
 }
 function identity() { return {id:"HOME:1:100",qwk:"HOME",home:"home.test",number:1,created:100,name:"Some User",username:"Some.User+HOME"}; }
 function text(s) { return s.wire.join("\n"); }
+function secure(s) {
+	load(s.scope,"ircd/link-security.js"); load(s.scope,"ircd/client-security.js");
+	s.scope.Local_Servers = {};
+	s.user.socket = {ssl_session:true}; s.scope.Users.VISITOR = s.user;
+	["central.test","home.test"].forEach(function(name) {
+		var p = s.scope.Servers[name] = {nick:name,server:true,local:true,admitted:true,linkparent:"edge.test",socket:{ssl_session:true}};
+		s.scope.IRC_linksec_admit(p);
+	});
+	s.manager.config.bbs_require_tls = true;
+}
 function check_hint(s, service, home) {
 	check(text(s).indexOf("[" + service + "@" + home + "]") >= 0, "reply did not identify its BBS: " + text(s));
 	check(text(s).indexOf("/msg " + service + "@" + home + " <command>") >= 0, "missing qualified reply instructions: " + text(s));
 	check(s.wire.every(function(line) { return line.indexOf(" NOTICE Visitor :") >= 0 && line.indexOf(" PRIVMSG ") < 0; }), "reply was not a NOTICE");
 }
 run_tests({
+	"queued private replies check the live path while public replies remain available": function() {
+		var s = scenario(); secure(s); s.manager.central = true; s.manager.config.require_tls = true; s.manager.queue = {};
+		var actor = s.manager.describe(s.user);
+		s.user.socket.ssl_session = false;
+		s.manager.action({type:"notice",actor:actor,service:"NickServ",text:"PRIVATE",require_tls:true});
+		check(!s.wire.length);
+		s.manager.action({type:"notice",actor:actor,service:"NickServ",text:"Public HELP"});
+		check(text(s).indexOf("Public HELP") >= 0);
+		s.user.socket.ssl_session = true;
+		s.manager.action({type:"notice",actor:actor,service:"NickServ",text:"PRIVATE",require_tls:true});
+		check(text(s).indexOf("PRIVATE") >= 0);
+	},
+	"local NickServ refuses plaintext passwords before starting any authentication": function() {
+		var s = scenario(); secure(s); s.user.socket.ssl_session = false;
+		s.manager.intercept_command(s.user,"NickServ","IDENTIFY Some.User PRIVATE");
+		check(!s.requests.length && text(s).indexOf("requires TLS") >= 0 && text(s).indexOf("PRIVATE") < 0);
+	},
+	"remote identification checks both the authority and destination BBS paths": function() {
+		["central.test","home.test"].forEach(function(name) {
+			var s = scenario(); secure(s); delete s.scope.Servers[name].link_security;
+			s.manager.intercept_command(s.user,"NickServ@home.test","IDENTIFY Some.User PRIVATE");
+			check(!s.requests.length && text(s).indexOf("unknown") >= 0);
+		});
+		var s = scenario(); secure(s);
+		s.manager.intercept_command(s.user,"NickServ@home.test","IDENTIFY Some.User PRIVATE");
+		check(s.requests.length == 1 && s.requests[0].request.type == "authenticate");
+	},
+	"public INFO and HELP bypass login verification on a plaintext connection": function() {
+		var s = scenario(); secure(s); s.user.socket.ssl_session = false; s.user.services_multi = true;
+		s.manager.sync_session = function() { throw new Error("Public command tried to authenticate"); };
+		s.manager.intercept_command(s.user,"NickServ","INFO Visitor");
+		check(s.requests.length == 1 && s.requests[0].request.type == "command");
+		s.scope.system.timer += 2; s.manager.intercept_command(s.user,"NickServ","HELP");
+		check(text(s).indexOf("IDENTIFY") >= 0);
+		check(!s.scope.IRC_services_requires_tls("NickServ","LOGOUT ALL"));
+	},
+	"private mailbox operations are blocked before reads and rechecked before replies": function() {
+		var s = scenario(); secure(s); s.user.services_identity = identity();
+		s.user.socket.ssl_session = false;
+		s.manager.intercept_command(s.user,"MemoServ@home.test","READ");
+		check(!s.requests.length && text(s).indexOf("requires TLS") >= 0);
+		s.user.socket.ssl_session = true; s.scope.system.timer += 2; s.wire = [];
+		s.manager.intercept_command(s.user,"MemoServ@home.test","READ"); check(s.requests.length == 1);
+		s.user.socket.ssl_session = false; s.requests[0].callback({text:"PRIVATE MAILBOX"});
+		check(text(s).indexOf("requires TLS") >= 0 && text(s).indexOf("PRIVATE MAILBOX") < 0);
+	},
+	"a destination BBS independently refuses unprotected authenticated RPCs": function() {
+		["local-auth","local-memo","local-resolve","local-validate"].forEach(function(type) {
+			var s = scenario(); secure(s); s.user.socket.ssl_session = false;
+			s.manager.receive_message("central",{type:type,id:"test",actor:{nick:"Visitor",server:"edge.test",secure_path:true},operation:"READ",password:"PRIVATE"});
+			check(!s.requests.length && s.replies.length == 1 && s.replies[0].error.indexOf("requires TLS") >= 0);
+		});
+	},
+	"BBS replies do not release private results after the path is lost": function() {
+		var s = scenario(); secure(s); s.manager.attestations = {};
+		s.manager.receive_message("central",{type:"local-auth",id:"test",actor:{nick:"Visitor",server:"edge.test",ref:"test"},account:"Some User",password:"PRIVATE"});
+		check(s.requests.length == 1); s.user.socket.ssl_session = false;
+		s.requests[0].callback({identity:identity(),text:"PRIVATE"});
+		check(s.replies.length == 1 && s.replies[0].error.indexOf("requires TLS") >= 0 && !s.replies[0].identity && !s.replies[0].text);
+	},
+	"central policy ignores a caller-supplied secure flag before authentication or memo RPCs": function() {
+		["authenticate","memo","sync-logins","claim"].forEach(function(type) {
+			var s = scenario(); secure(s); s.manager.central = true; s.manager.config.require_tls = true;
+			s.user.socket.ssl_session = false; s.manager.bind_actor = function() { return s.user; };
+			s.manager.snapshot = function() { throw new Error("Unprotected request reached services"); };
+			s.manager.receive_message("central",{type:type,id:"test",actor:{nick:"Visitor",secure_path:true},logins:[identity()],identity:identity()});
+			check(s.replies.length == 1 && s.replies[0].error.indexOf("requires TLS") >= 0);
+		});
+	},
+	"central outbound requests check the destination before forwarding credentials": function() {
+		var s = scenario(); secure(s); s.manager.central = true; s.manager.config.require_tls = true;
+		delete s.scope.Servers["central.test"].link_security;
+		var result;
+		s.scope.IRC_Services_Manager.prototype.request.call(s.manager,"central",{type:"local-auth",actor:{nick:"Visitor"},password:"PRIVATE"},function(r) { result = r; });
+		check(result && result.error.indexOf("requires TLS") >= 0 && !s.parts.length);
+	},
 	"local BBS notices remain ordinary NOTICE replies": function() {
 		["NickServ","MemoServ"].forEach(function(service) {
 			var s = scenario(); s.manager.notice(service,s.user,"Local reply","EDGE.TEST");

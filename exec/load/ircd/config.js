@@ -53,7 +53,7 @@ var NLINE_CHECK_WITH_QWKMASTER        =(1<<2);        // k
 var TLS_Config = {ca_file:""};
 var TLS_Ports = {};
 var Clock_MaxSkew = 30;
-var EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
+var EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, bbs_require_tls:false, require_tls:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
 
 function Epoch() {
 	return parseInt(new Date().getTime()/1000);
@@ -257,7 +257,7 @@ function Clear_Config_Globals() {
 	if (typeof IRC_tls_clear_cache == "function") IRC_tls_clear_cache();
 	TLS_Config = {ca_file:""}; TLS_Ports = {};
 	Clock_MaxSkew = 30;
-	EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
+	EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, bbs_require_tls:false, require_tls:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
 	Admin1 = "";
 	Admin2 = "";
 	Admin3 = "";
@@ -693,9 +693,11 @@ function Write_Config_File(fn) {
 	f.writeln("[BBSServices]");
 	f.writeln("NickServ=" + EmbeddedServices_Config.nickserv);
 	f.writeln("MemoServ=" + EmbeddedServices_Config.memoserv);
+	f.writeln("RequireTLS=" + EmbeddedServices_Config.bbs_require_tls);
 	f.writeln("");
 	f.writeln("[EmbeddedServices]");
 	f.writeln("Enabled=" + EmbeddedServices_Config.enabled);
+	f.writeln("RequireTLS=" + EmbeddedServices_Config.require_tls);
 	f.writeln("Host=" + EmbeddedServices_Config.host);
 	if (EmbeddedServices_Config.database) f.writeln("Database=" + EmbeddedServices_Config.database);
 	f.writeln("MaxNicks=" + EmbeddedServices_Config.max_nicks);
@@ -771,8 +773,10 @@ function ini_tls(value, fallback) {
 function ini_BBSServices(arg, ini) {
 	if (ini.NickServ !== undefined) EmbeddedServices_Config.nickserv = ini_false_true(ini.NickServ);
 	if (ini.MemoServ !== undefined) EmbeddedServices_Config.memoserv = ini_false_true(ini.MemoServ);
+	if (ini.RequireTLS !== undefined) EmbeddedServices_Config.bbs_require_tls = ini_tls(ini.RequireTLS, false);
 }
 function ini_EmbeddedServices(arg, ini) {
+	if (ini.RequireTLS !== undefined) EmbeddedServices_Config.require_tls = ini_tls(ini.RequireTLS, false);
 	if (ini.MaxNicks !== undefined) {
 		var max = Number(ini.MaxNicks);
 		if (isFinite(max) && max > 0 && max % 1 == 0) EmbeddedServices_Config.max_nicks = max;

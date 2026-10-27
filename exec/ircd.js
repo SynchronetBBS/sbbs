@@ -32,6 +32,7 @@ load("dns.js");
 /* Libraries specific to the IRCd */
 load("ircd/tls.js");
 load("ircd/link-security.js");
+load("ircd/client-security.js");
 load("ircd/core.js");
 load("ircd/unregistered.js");
 load("ircd/user.js");
@@ -42,7 +43,7 @@ load("ircd/timestamps.js");
 load("ircd/services.js");
 
 /*** Global Constants - Always in ALL_UPPERCASE ***/
-var VERSION = "SynchronetIRCd-2.7";
+var VERSION = "SynchronetIRCd-2.8";
 var VERSION_STR = format(
 	"Synchronet %s%s-%s%s (IRCd by Randy Sommerfeld)",
 	system.version, system.revision,
@@ -55,7 +56,7 @@ var VERSION_STR = format(
    Legacy hubs and leaves remain linkable during this rollout. Mandatory
    capability enforcement belongs to the next protocol version.
    U:lined services retain their legacy protocol. */
-var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE TSJOIN CLOCK CLOCKPUSH CSYNC TSMAP FULLCHAN LINKSEC";
+var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE TSJOIN CLOCK CLOCKPUSH CSYNC TSMAP FULLCHAN LINKSEC CLIENTTLS";
 /* This will be in the configuration for 2.0 */
 var SUMMON = true;
 

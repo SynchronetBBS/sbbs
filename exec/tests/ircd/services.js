@@ -19,6 +19,31 @@ function scenario() {
 }
 try {
 run_tests({
+	"TLS policy protects private commands and mutations while HELP and INFO remain public": function() {
+		var s = scenario(); s.engine.command("NickServ",s.user,"REGISTER");
+		s.engine.config.require_tls = true;
+		["REGISTER", "DROP", "GHOST Alice", "ACCOUNTS", "LINK A B", "UNLINK A", "SET Alice MEMOACCOUNT A"].forEach(function(text) {
+			throws(function() { s.engine.command("NickServ",s.user,text); });
+		});
+		["REGISTER #test Test", "ACCESS #test LIST", "SET #test TOPIC private", "DROP #test"].forEach(function(text) {
+			throws(function() { s.engine.command("ChanServ",s.user,text); });
+		});
+		s.engine.command("NickServ",s.user,"HELP"); s.engine.command("NickServ",s.user,"INFO Alice");
+		s.engine.command("ChanServ",s.user,"HELP");
+		check(s.db.data.nicks.$ALICE);
+	},
+	"TLS sessions lose authorization and pending links when their path becomes insecure": function() {
+		var s = scenario(); s.engine.config.require_tls = true;
+		s.user.secure_path = true; s.engine.event({type:"user",user:s.user});
+		s.engine.event({type:"identify",ref:s.user.ref,identity:identity(1,"Some User")});
+		s.engine.command("NickServ",s.user,"REGISTER"); check(s.engine.active_group(s.user));
+		check(s.output.some(function(a) { return a.type == "notice" && a.require_tls; }), "private reply was not marked for a live path check");
+		s.engine.links[s.user.ref] = {code:"pending"};
+		s.user.secure_path = false; s.engine.event({type:"user",user:s.user});
+		check(!s.engine.active_group(s.user) && !s.engine.sessions[s.user.ref] && !s.engine.links[s.user.ref]);
+		s.engine.event({type:"identify",ref:s.user.ref,identity:identity(1,"Some User")});
+		check(!s.engine.sessions[s.user.ref], "plaintext refresh restored authorization");
+	},
 	"aliases use dots for spaces and escape delimiters": function() {
 		check(IRC_services_escape("Some User+%@!") == "Some.User%2B%25%40%21");
 		check(IRC_services_unescape("Some%20User") == "Some User");

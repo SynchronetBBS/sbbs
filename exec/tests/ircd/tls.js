@@ -34,6 +34,61 @@ function incoming(s, tls, name) {
 }
 
 run_tests({
+	"services TLS requirements default off and survive save, reload, and rehash": function() {
+		var s = state(), path = "/tmp/ircd-services-tls-" + random(0x7fffffff) + ".ini";
+		try {
+			check(!s.EmbeddedServices_Config.require_tls && !s.EmbeddedServices_Config.bbs_require_tls);
+			s.load_config_defaults();
+			s.ini_BBSServices("", {NickServ:true, RequireTLS:true});
+			s.ini_EmbeddedServices("", {Enabled:true, RequireTLS:true});
+			check(s.Write_Config_File(path)); s.Config_Filename = path; s.Read_Config_File();
+			check(s.EmbeddedServices_Config.require_tls && s.EmbeddedServices_Config.bbs_require_tls);
+			s.Clear_Config_Globals();
+			check(!s.EmbeddedServices_Config.require_tls && !s.EmbeddedServices_Config.bbs_require_tls);
+			s.ini_BBSServices("", {RequireTLS:"typo"}); s.ini_EmbeddedServices("", {RequireTLS:"typo"});
+			check(s.EmbeddedServices_Config.require_tls && s.EmbeddedServices_Config.bbs_require_tls);
+		} finally { file_remove(path); }
+	},
+	"BBS PASS authentication requires a TLS client socket only when configured": function() {
+		[false,true].forEach(function(required) { [false,true].forEach(function(tls) {
+			var s = state(), calls = 0;
+			s.EmbeddedServices_Config.bbs_require_tls = required; s.EmbeddedServices_Config.nickserv = true;
+			s.system = {matchuser:function() {}, qwk_id:"TEST"};
+			s.IRC_services_authenticate = function() { calls++; return {number:1, username:"User+TEST"}; };
+			s.User = function() { return {}; };
+			var u = {socket:{ssl_session:tls}, uprefix:"user", nick:"User", hostname:"test", password:"example", ircout:function() {}, welcome:function() { this.welcomed = true; }};
+			s.Unregistered_Check_User_Registration.call(u);
+			check(u.welcomed && (required && !tls ? !calls && u.uprefix == "~user" : calls == 1 && u.uprefix == "User+TEST"));
+		}); });
+	},
+	"missing optional certificate attributes accept both native error spellings": function() {
+		var s = state();
+		["CryptLib error -43", "Cryptlib error -43 (attribute absent)"].forEach(function(message) {
+			var cert = {get_attribute:function() { throw new Error(message); }};
+			check(s.IRC_tls_optional_attribute(cert, 1) === undefined, message);
+		});
+		["CryptLib error -20", "CryptLib error -430"].forEach(function(message) {
+			var error = new Error(message), caught;
+			try { s.IRC_tls_optional_attribute({get_attribute:function() { throw error; }}, 1); }
+			catch (e) { caught = e; }
+			check(caught === error, "unrelated certificate failure was ignored");
+		});
+	},
+	"certificate chain exhaustion accepts both native error spellings and resets its cursor": function() {
+		var s = state();
+		s.CryptCert = {TYPE:{CERTCHAIN:2}, CURSOR:{FIRST:-1, NEXT:-2}};
+		s.IRC_tls_check_certificate = function() {};
+		["CryptLib error -43", "Cryptlib error -43 (end of chain)", "CryptLib error -20"].forEach(function(message) {
+			var cert = {certtype:2}, cursor, error = new Error(message), caught;
+			cert.__defineSetter__("current_certificate", function(value) {
+				if (value == s.CryptCert.CURSOR.NEXT) throw error;
+				cursor = value;
+			});
+			try { s.IRC_tls_check_chain_usage(cert); } catch (e) { caught = e; }
+			check(cursor == s.CryptCert.CURSOR.FIRST, "chain cursor was not restored");
+			check(message.indexOf("-20") >= 0 ? caught === error : !caught, message);
+		});
+	},
 	"server TLS requirements include standard TLS ports and preserve legacy plaintext": function() {
 		var s = state();
 		s.ini_Server("peer", {Hostname:"peer.test", Servername:"peer.test", Password:"test", Class:"1", Port:"6667"});

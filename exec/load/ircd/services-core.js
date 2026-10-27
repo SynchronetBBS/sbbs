@@ -7,6 +7,7 @@ function IRC_Services_Engine(store, config, emit) {
 	this.store = store; this.config = config;
 	var self = this;
 	this.emit = function(action) {
+		if (self.command_tls && action.actor) action.require_tls = true;
 		if (action.actor) action.actor_groups = self.group_signature(action.actor);
 		if (action.target) action.target_groups = self.group_signature(action.target);
 		emit(action);
@@ -81,12 +82,14 @@ IRC_Services_Engine.prototype.notice = function(service, user, text) {
 IRC_Services_Engine.prototype.account = function(name) { return this.store.data.nicks[IRC_services_key(name)]; };
 /* Session account IDs are proofs; persistent group IDs are ownership. */
 IRC_Services_Engine.prototype.groups = function(user) {
+	if (this.config.require_tls && !user.secure_path) return [];
 	var session = this.sessions[user.ref], data = this.store.data;
 	return session ? session.accounts.map(function(id) { return data.memberships[id]; }) : [];
 };
 IRC_Services_Engine.prototype.group_signature = function(user) { return JSON.stringify(this.groups(user).sort()); };
 IRC_Services_Engine.prototype.owns = function(user, group) { return !!group && this.groups(user).indexOf(group) >= 0; };
 IRC_Services_Engine.prototype.active_group = function(user) {
+	if (this.config.require_tls && !user.secure_path) return null;
 	var session = this.sessions[user.ref]; return session && this.store.data.memberships[session.active];
 };
 IRC_Services_Engine.prototype.group_name = function(group) {
@@ -150,6 +153,7 @@ IRC_Services_Engine.prototype.event = function(event) {
 	if (event.type == "user") {
 		this.note_user(event.user.ref, this.now());
 		old = this.users[event.user.ref]; this.users[event.user.ref] = event.user;
+		if (this.config.require_tls && !event.user.secure_path) { delete this.sessions[event.user.ref]; delete this.links[event.user.ref]; }
 		this.note_user(event.user.ref, this.now());
 		var owner = this.account(event.user.nick);
 		if ((!old || old.nick != event.user.nick) && owner && !this.owns(event.user, owner))
@@ -165,6 +169,7 @@ IRC_Services_Engine.prototype.event = function(event) {
 		if (!identified) return;
 		this.note_user(event.ref, this.now());
 		var identities = event.logins || (identity ? [identity] : []), changed = false;
+		if (this.config.require_tls && !identified.secure_path) identities = [];
 		identities.forEach(function(a) { if (JSON.stringify(self.store.data.accounts[a.id]) != JSON.stringify(a) || !self.store.data.memberships[a.id]) changed = true; });
 		if (changed) this.commit(function(next) {
 			identities.forEach(function(a) {
@@ -218,10 +223,15 @@ IRC_Services_Engine.prototype.event = function(event) {
 };
 
 IRC_Services_Engine.prototype.command = function(service, user, text) {
+	if (this.config.require_tls && !user.secure_path && IRC_services_requires_tls(service, text))
+		throw IRC_services_error("This command requires TLS on your client connection and every server link to services.");
 	var args = text.trim().split(/\s+/), verb = (args.shift() || "HELP").toUpperCase();
 	if (args.some(function(a) { return /[\x00-\x1f\x7f]/.test(a); })) throw IRC_services_error("Control characters are not allowed.");
-	if (service == "NickServ") this.nick_command(user, verb, args);
-	else this.channel_command(user, verb, args);
+	this.command_tls = this.config.require_tls && IRC_services_requires_tls(service, text);
+	try {
+		if (service == "NickServ") this.nick_command(user, verb, args);
+		else this.channel_command(user, verb, args);
+	} finally { this.command_tls = false; }
 };
 
 IRC_Services_Engine.prototype.nick_command = function(user, verb, args) {

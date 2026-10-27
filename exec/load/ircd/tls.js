@@ -17,8 +17,9 @@ function IRC_tls_required(cline, port) {
 function IRC_tls_optional_attribute(cert, attribute) {
 	try { return cert.get_attribute(attribute); }
 	catch (error) {
-		/* CryptCert exposes cryptlib's NOTFOUND status only in its error text. */
-		if (!/Cryptlib error -43\b/.test(String(error))) throw error;
+		/* CryptCert exposes NOTFOUND only in error text, spelling the library
+		   name CryptLib or Cryptlib depending on whether details exist. */
+		if (!/Cryptlib error -43\b/i.test(String(error))) throw error;
 		return undefined;
 	}
 }
@@ -46,7 +47,7 @@ function IRC_tls_check_chain_usage(peer) {
 			IRC_tls_check_certificate(peer);
 			try { peer.current_certificate = CryptCert.CURSOR.NEXT; }
 			catch (error) {
-				if (/Cryptlib error -43\b/.test(String(error))) return;
+				if (/Cryptlib error -43\b/i.test(String(error))) return;
 				throw error;
 			}
 		}

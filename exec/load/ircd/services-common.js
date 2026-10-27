@@ -16,6 +16,13 @@ function IRC_services_unescape(value) {
 	if (/%(?![0-9a-f]{2})/i.test(value)) throw new Error("Invalid escaped account name");
 	return value.replace(/%([0-9a-f]{2})/ig, function(_, hex) { return String.fromCharCode(parseInt(hex, 16)); });
 }
+/* All operations except public help/info and logout carry authentication,
+ * private account/mailbox data, or authorization changes. */
+function IRC_services_requires_tls(service, text) {
+	var verb = (String(text || "").trim().split(/\s+/)[0] || "HELP").toUpperCase();
+	return verb != "HELP" && verb != "INFO" && !(service == "NickServ" && verb == "LOGOUT");
+}
+
 function IRC_services_identity(user, qwk, home) {
 	var alias = user.alias || user.name;
 	if (!alias || !/^[a-z0-9_-]{1,8}$/i.test(qwk) || !user.number || !user.stats.firston_date)

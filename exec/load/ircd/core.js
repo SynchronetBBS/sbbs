@@ -1189,6 +1189,7 @@ function IRCClient_do_whois(wi) {
 		"%s %s %s * :%s",
 		wi.nick, wi.uprefix, wi.hostname, wi.realname
 	));
+	if (this.local) IRC_whois_tls(this, wi);
 
 	for (i in wi.channels) {
 		var chan = wi.channels[i];
@@ -1241,7 +1242,7 @@ function IRCClient_do_whois(wi) {
 		));
 	}
 	if (wi.local) {
-		if (wi.socket.ssl_session) {
+		if (!this.local && wi.socket.ssl_session) {
 			this.numeric(671, format(
 				"%s :is using a secure connection.",
 				wi.nick
