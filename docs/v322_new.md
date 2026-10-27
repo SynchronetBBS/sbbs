@@ -128,6 +128,10 @@
   auto-detection (issue #1106)
 - Progress percentages no longer exceed "100%" during long
   operations like `finduserstr`
+- New-user duplicate searches read the user base in bulk instead of
+  locking every record (no more sign-up stalls when the data directory
+  is on a network share); the "Searching for duplicates" and "Loading
+  message pointers" meters now appear only when the operation is slow
 - Sysop user editor: the `~`, `+`, `*`, `$` and `/` prompts no
   longer run on the same line as the "User edit" command prompt
 - More than 255 QWK network hubs are now supported

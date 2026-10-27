@@ -21,10 +21,22 @@
 
 #include "sbbs.h"
 
-static void ProgressLoadingMsgPtrs(void* cbdata, int count, int total)
+// Progress meter drawn only once the operation has outlasted the progress
+// interval, so a fast one leaves nothing on screen
+struct deferred_progress {
+	sbbs_t*     sbbs;
+	const char* text;
+	double      start;
+	bool        drawn;
+};
+
+static void ProgressDeferred(void* cbdata, int count, int total)
 {
-	sbbs_t* sbbs = ((sbbs_t*)cbdata);
-	sbbs->progress(sbbs->text[LoadingMsgPtrs], count, total);
+	deferred_progress* p = (deferred_progress*)cbdata;
+	if (!p->drawn && (xp_timer() - p->start) * 1000 < PROGRESS_INTERVAL)
+		return;
+	p->sbbs->progress(p->text, count, total);
+	p->drawn = true;
 }
 
 /****************************************************************************/
@@ -36,8 +48,9 @@ void sbbs_t::getmsgptrs()
 {
 	if (!useron.number)
 		return;
-	::getmsgptrs(&cfg, &useron, subscan, online == ON_REMOTE ? ProgressLoadingMsgPtrs : NULL, this);
-	if (online == ON_REMOTE)
+	deferred_progress prog = { this, text[LoadingMsgPtrs], (double)xp_timer(), false };
+	::getmsgptrs(&cfg, &useron, subscan, online == ON_REMOTE ? ProgressDeferred : NULL, &prog);
+	if (prog.drawn)
 		bputs(text[LoadedMsgPtrs]);
 }
 
@@ -66,21 +79,6 @@ void sbbs_t::reinit_msg_ptrs()
 	}
 }
 
-struct user_search_progress {
-	sbbs_t* sbbs;
-	double  start;
-	bool    drawn;
-};
-
-static void ProgressSearchingUsers(void* cbdata, int count, int total)
-{
-	user_search_progress* p = (user_search_progress*)cbdata;
-	if (!p->drawn && (xp_timer() - p->start) * 1000 < PROGRESS_INTERVAL)
-		return;
-	p->sbbs->progress(p->sbbs->text[SearchingForDupes], count, total);
-	p->drawn = true;
-}
-
 /****************************************************************************/
 /* Checks for a duplicate user field starting at user record offset         */
 /* 'offset', reading in 'datlen' chars, comparing to 'str' for each user    */
@@ -92,8 +90,8 @@ static void ProgressSearchingUsers(void* cbdata, int count, int total)
 uint sbbs_t::finduserstr(uint usernumber, enum user_field fnum, const char* str
                          , bool del, bool next)
 {
-	user_search_progress prog = { this, (double)xp_timer(), false };
-	uint i = ::finduserstr(&cfg, usernumber, fnum, str, del, next, online == ON_REMOTE ? ProgressSearchingUsers : NULL, &prog);
+	deferred_progress prog = { this, text[SearchingForDupes], (double)xp_timer(), false };
+	uint i = ::finduserstr(&cfg, usernumber, fnum, str, del, next, online == ON_REMOTE ? ProgressDeferred : NULL, &prog);
 	if (prog.drawn)
 		bputs(text[SearchedForDupes]);
 	return i;
