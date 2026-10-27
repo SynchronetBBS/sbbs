@@ -333,7 +333,9 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack, enum qwkjob_resu
 	}
 	SAFEPRINTF(str, "%sNEWFILES.DAT", cfg.temp_dir);
 	remove(str);
-	if (!(useron.rest & UREST_TRANSFER) && useron.qwk & QWK_FILES)
+	// Not in a pre-packed (off-line) packet: none has ever included one, and nothing
+	// saves the user's advanced new-file scan time afterward, so each repeats the list
+	if (!prepack && !(useron.rest & UREST_TRANSFER) && useron.qwk & QWK_FILES)
 		files = create_filelist("NEWFILES.DAT", FL_ULTIME);
 	else
 		files = 0;
