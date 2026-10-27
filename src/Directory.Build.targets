@@ -4,32 +4,37 @@
   src/ that don't have a nearer Directory.Build.targets (e.g. doors/syncscumm/*
   shadow this with their own).
 
-  For Release|Win32 across all of these projects:
-    - Disable PDB generation (DebugInformationFormat=None, GenerateDebugInformation=false).
-      Eliminates mspdbsrv.exe as a shared toolchain dependency.
+  On the GitLab runner only (CI=true in the environment), for Release|Win32:
+    - Disable PDB generation (DebugInformationFormat=None, GenerateDebugInformation=false),
+      which removes mspdbsrv.exe from the toolchain.
     - Disable whole-program optimization / link-time code generation
-      (WholeProgramOptimization=false -> drops /GL; LinkTimeCodeGeneration=Default ->
-      drops /LTCG:incremental). Eliminates the LTCG backend (c2.dll UTC) as a
-      shared toolchain dependency.
+      (WholeProgramOptimization=false drops /GL; LinkTimeCodeGeneration=Default
+      drops /LTCG:incremental), which removes the LTCG backend (c2.dll).
 
-  Both subsystems have been observed to produce sporadic, non-deterministic
-  "internal compiler error" failures on the Windows GitLab runner (random source
-  file / line each run): first the compile-time mspdbsrv path (fixed in 266083317),
-  then the link-time LTCG path. Release artifacts shipped from CI never included
-  .pdb files, and WPO inlining is not load-bearing for these I/O-bound binaries.
+  Both subsystems produced sporadic internal-compiler-error failures on the
+  runner. Local Release builds are unaffected and keep their .pdb files, so a
+  Release build deployed from a developer machine can be symbolized.
+
+  Everywhere, for Release|Win32: link with /OPT:REF and /OPT:ICF. Most projects
+  leave these unset, and /DEBUG switches the linker's default to /OPT:NOREF,
+  which keeps unreferenced code in the binaries.
 
   This file lives at src/ rather than src/sbbs3/ because the shared library
   projects (notably xpdev_mt.vcxproj, in src/xpdev/) are built by multiple
   solutions (sbbs3.sln, sexpots.sln, vdmodem.sln, SyncTERM.sln), and a
-  src/sbbs3/ file only covers projects physically under src/sbbs3/. The svdm
-  (vdmodem) CI job crashed in exactly this gap: CL.exe 0xC0000005 while
-  compiling xpdev_mt.
+  src/sbbs3/ file only covers projects physically under src/sbbs3/.
 -->
 <Project>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Link>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+  </ItemDefinitionGroup>
+  <PropertyGroup Condition="'$(CI)'=='true' And '$(Configuration)|$(Platform)'=='Release|Win32'">
     <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <ItemDefinitionGroup Condition="'$(CI)'=='true' And '$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <DebugInformationFormat>None</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
