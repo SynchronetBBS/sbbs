@@ -407,7 +407,7 @@ bool sbbs_t::unpack_qwk(char *packet, uint hubnum)
 
 		// Create directory if necessary
 		SAFEPRINTF2(inbox, "%sqnet/%s.in", cfg.data_dir, cfg.qhub[hubnum]->id);
-		if (!isdir(inbox) && MKDIR(inbox) != 0)
+		if (mkpath(inbox) != 0)
 			errormsg(WHERE, ERR_CREATE, inbox, 0);
 
 		// Copy files

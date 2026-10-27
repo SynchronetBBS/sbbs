@@ -617,7 +617,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 			// Create directory if necessary
 			SAFEPRINTF2(inbox, "%sqnet/%s.in", cfg.data_dir, useron.alias);
-			(void)MKDIR(inbox);
+			if (mkpath(inbox) != 0)
+				errormsg(WHERE, ERR_CREATE, inbox, 0);
 
 			SAFEPRINTF2(fname, "%s/%s", inbox, dirent->d_name);
 			mv(str, fname, 1);
