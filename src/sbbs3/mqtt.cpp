@@ -866,6 +866,8 @@ static int lprintf(int (*lputs)(int level, const char* str), int level, const ch
 	return lputs(level, sbuf);
 }
 
+static int mqtt_pub_client_list(struct mqtt*);
+
 static void mqtt_connect_callback_common(struct mqtt* mqtt)
 {
 	char str[128];
@@ -894,6 +896,7 @@ static void mqtt_connect_callback_common(struct mqtt* mqtt)
 	} else {
 		mqtt_server_state(mqtt, mqtt->server_state);
 	}
+	mqtt_pub_client_list(mqtt);
 }
 
 #ifdef USE_MOSQUITTO
@@ -1250,15 +1253,51 @@ static void format_client_info(char* str, size_t size, int sock, client_t* clien
 	         );
 }
 
+#define MAX_CLIENT_STRLEN 512
+
+static int mqtt_pub_client_list(struct mqtt* mqtt)
+{
+	char str[MAX_CLIENT_STRLEN + 1];
+
+	if (!mqtt->connected)
+		return MQTT_SUCCESS;
+
+	str_list_t list = strListInit();
+	size_t     client_count = 0;
+	// Hold the lock through publishing so a stale snapshot can't be published last
+	listLock(&mqtt->client_list);
+	for (list_node_t* node = mqtt->client_list.first; node != NULL; node = node->next) {
+		client_t* client = (client_t *)node->data;
+		format_client_info(str, sizeof(str), node->tag, client, client->time);
+		strListPush(&list, str);
+		client_count++;
+	}
+	char* buf = NULL;
+	if (client_count > 0) {
+		size_t buflen = client_count * MAX_CLIENT_STRLEN * 2;
+		buf = (char *)malloc(buflen);
+		strListJoin(list, buf, buflen, "\n");
+	}
+	strListFree(&list);
+
+	mqtt_client_count(mqtt);
+	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "served", mqtt->served);
+	int result = mqtt_pub_strval(mqtt, TOPIC_SERVER, "client/list", buf);
+	listUnlock(&mqtt->client_list);
+	free(buf);
+	return result;
+}
+
+// The client list is maintained even while disconnected from the broker (#1306)
 int mqtt_client_on(struct mqtt* mqtt, bool on, int sock, client_t* client, bool update)
 {
-	#define MAX_CLIENT_STRLEN 512
 	char str[MAX_CLIENT_STRLEN + 1];
 
 	if (mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
 
-	if (!mqtt->connected)
+	// client_list is valid only while there's a client handle (freed in mqtt_close)
+	if (mqtt->handle == NULL && mqtt->local == nullptr)
 		return MQTT_SUCCESS;
 
 	listLock(&mqtt->client_list);
@@ -1285,29 +1324,9 @@ int mqtt_client_on(struct mqtt* mqtt, bool on, int sock, client_t* client, bool 
 		}
 		mqtt->served++;
 	}
-
-	str_list_t list = strListInit();
-	size_t     client_count = 0;
-	for (list_node_t* node = mqtt->client_list.first; node != NULL; node = node->next) {
-		client_t* client = (client_t *)node->data;
-		format_client_info(str, sizeof(str), node->tag, client, client->time);
-		strListPush(&list, str);
-		client_count++;
-	}
 	listUnlock(&mqtt->client_list);
-	char* buf = NULL;
-	if (client_count > 0) {
-		size_t buflen = client_count * MAX_CLIENT_STRLEN * 2;
-		buf = (char *)malloc(buflen);
-		strListJoin(list, buf, buflen, "\n");
-	}
-	strListFree(&list);
 
-	mqtt_client_count(mqtt);
-	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "served", mqtt->served);
-	int result = mqtt_pub_strval(mqtt, TOPIC_SERVER, "client/list", buf);
-	free(buf);
-	return result;
+	return mqtt_pub_client_list(mqtt);
 }
 
 int mqtt_user_login_fail(struct mqtt* mqtt, client_t* client, const char* username)
