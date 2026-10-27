@@ -3054,13 +3054,21 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 ******************************************************************************/
 char *pktname(const char* outbound)
 {
-	static char path[MAX_PATH + 1];
-	time_t      t;
+	static char   path[MAX_PATH + 1];
+	static time_t last;
+	time_t        t;
 
-	for (t = time(NULL); t != 0; t++) {
+	/* Never reuse a name in this run: a packet that's already been moved into
+	   a bundle no longer exists, but a same-named one would replace it there */
+	t = time(NULL);
+	if (t <= last)
+		t = last + 1;
+	for (; t != 0; t++) {
 		SAFEPRINTF2(path, "%s%llx.pkt", outbound, (unsigned long long)t);
-		if (!fexist(path))               /* Add 1 second if name exists */
+		if (!fexist(path)) {             /* Add 1 second if name exists */
+			last = t;
 			return path;
+		}
 	}
 	return NULL;    /* This should never happen */
 }
@@ -4654,22 +4662,63 @@ void finalize_outpkt(outpkt_t* pkt)
 	pkt->fp = NULL;
 }
 
+/* Finalize (if necessary), bundle, and free an outbound packet that has
+   already been removed from outpkt_list */
+void send_outpkt(outpkt_t* pkt)
+{
+	if (pkt->fp != NULL)
+		finalize_outpkt(pkt);
+
+	if (pack_bundle(pkt->filename, pkt->orig, pkt->dest))
+		packets_sent++;
+
+	free(pkt->filename);
+	free(pkt);
+}
+
 void move_echomail_packets(void)
 {
 	outpkt_t* pkt;
 
 	while ((pkt = listPopNode(&outpkt_list)) != NULL) {
 		printf("%21s: %s ", "Outbound Packet", pkt->filename);
-
-		if (pkt->fp != NULL)
-			finalize_outpkt(pkt);
-
-		if (pack_bundle(pkt->filename, pkt->orig, pkt->dest))
-			packets_sent++;
-
-		free(pkt->filename);
-		free(pkt);
+		send_outpkt(pkt);
 	}
+}
+
+/* Keep our mutex files from going stale during a long run (#1301) */
+void refresh_mutexes(void)
+{
+	static time_t last;
+	time_t        now = time(NULL);
+	char          path[MAX_PATH + 1];
+
+	if (now - last < 60)
+		return;
+	last = now;
+	if (mtxfile_locked) {
+		SAFEPRINTF(path, "%ssbbsecho.bsy", scfg.ctrl_dir);
+		if (utime(path, NULL) != 0)
+			lprintf(LOG_WARNING, "Error %d (%s) touching mutex file: %s", errno, strerror(errno), path);
+	}
+	for (size_t i = 0; locked_bso_nodes != NULL && locked_bso_nodes[i] != NULL; ++i) {
+		if (utime(locked_bso_nodes[i], NULL) != 0)
+			lprintf(LOG_WARNING, "Error %d (%s) touching mutex file: %s", errno, strerror(errno), locked_bso_nodes[i]);
+	}
+}
+
+bool free_diskspace_ok(const char* path)
+{
+	if (cfg.min_free_diskspace && isdir(path)) {
+		uint64_t freek = getfreediskspace(path, 1024);
+
+		if (freek < (uint64_t)cfg.min_free_diskspace / 1024) {
+			lprintf(LOG_ERR, "!Insufficient free disk space (%" PRIu64 "K < %" PRId64 "K bytes) in %s"
+			        , freek, cfg.min_free_diskspace / 1024, path);
+			return false;
+		}
+	}
+	return true;
 }
 
 outpkt_t* get_outpkt(fidoaddr_t orig, fidoaddr_t dest, nodecfg_t* nodecfg)
@@ -4677,8 +4726,11 @@ outpkt_t* get_outpkt(fidoaddr_t orig, fidoaddr_t dest, nodecfg_t* nodecfg)
 	char         str[128];
 	outpkt_t*    pkt = NULL;
 	list_node_t* node;
+	list_node_t* next;
 
-	for (node = listFirstNode(&outpkt_list); node != NULL; node = listNextNode(node)) {
+	refresh_mutexes();
+	for (node = listFirstNode(&outpkt_list); node != NULL; node = next) {
+		next = listNextNode(node);
 		pkt = node->data;
 		if (memcmp(&pkt->orig, &orig, sizeof(orig)) != 0)
 			continue;
@@ -4687,12 +4739,18 @@ outpkt_t* get_outpkt(fidoaddr_t orig, fidoaddr_t dest, nodecfg_t* nodecfg)
 		if (pkt->fp == NULL)
 			continue;
 		if (ftell(pkt->fp) >= (long)cfg.maxpktsize) {
-			finalize_outpkt(pkt);
+			listRemoveNode(&outpkt_list, node, /* free_data: */ false);
+			send_outpkt(pkt);
 			continue;
 		}
 		lprintf(LOG_DEBUG, "Appending outbound packet from %s to %s: %s"
 		        , smb_faddrtoa(&orig, str), smb_faddrtoa(&dest, NULL), pkt->filename);
 		return pkt;
+	}
+
+	if (!terminated && (!free_diskspace_ok(cfg.temp_dir) || !free_diskspace_ok(cfg.outbound))) {
+		lprintf(LOG_ERR, "!Stopping early due to insufficient free disk space");
+		terminated = true;
 	}
 
 	if ((pkt = calloc(1, sizeof(outpkt_t))) == NULL) {
@@ -5356,6 +5414,7 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, uint32_t r
 		stat->known = true;
 
 		for (m = exp = 0; m < posts && !terminated; m++) {
+			refresh_mutexes();
 			printf("\r%*s %5lu of %-5" PRIu32 "  "
 			       , LEN_EXTCODE, scfg.sub[subnum]->code, m + 1, posts);
 			memset(&msg, 0, sizeof(msg));
@@ -5645,6 +5704,8 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, uint32_t r
 			smb_freemsgmem(&msg);
 		}
 
+		if (m < posts) /* Terminated early: resume after the last message processed */
+			lastmsg = (m > 0) ? post[m - 1].idx.number : ptr;
 		smb_close(&smb);
 		FREE_AND_NULL(post);
 
@@ -6755,15 +6816,8 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 
 void check_free_diskspace(const char* path)
 {
-	if (cfg.min_free_diskspace && isdir(path)) {
-		uint64_t freek = getfreediskspace(path, 1024);
-
-		if (freek < (uint64_t)cfg.min_free_diskspace / 1024) {
-			lprintf(LOG_ERR, "!Insufficient free disk space (%" PRIu64 "K < %" PRId64 "K bytes) in %s\n"
-			        , freek, cfg.min_free_diskspace / 1024, path);
-			bail(1);
-		}
-	}
+	if (!free_diskspace_ok(path))
+		bail(1);
 }
 
 void read_areafile_ini(FILE* stream)
