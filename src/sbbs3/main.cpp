@@ -3967,7 +3967,6 @@ sbbs_t::~sbbs_t()
 	pthread_mutex_unlock(&nodefile_mutex);
 	pthread_mutex_destroy(&nodefile_mutex);
 	CLOSE_OPEN_FILE(node_ext);
-	FCLOSE_OPEN_FILE(logfile_fp);
 
 	if (syspage_semfile[0])
 		fremove(WHERE, syspage_semfile);
@@ -4061,6 +4060,8 @@ sbbs_t::~sbbs_t()
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG, "destructor end");
 #endif
+	// Last: an event thread instance's lputs() reopens it
+	FCLOSE_OPEN_FILE(logfile_fp);
 }
 
 int sbbs_t::smb_stack(smb_t* smb, bool push)
