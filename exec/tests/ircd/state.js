@@ -19,7 +19,7 @@ function new_state() {
 		js: {setImmediate: function() {}, setTimeout: function() {}, clearInterval: function() {}},
 		Generate_ID: function() { return ++next_id; }
 	};
-	["irclib.js", "ircd/core.js", "ircd/user.js", "ircd/channel.js",
+	["irclib.js", "ircd/link-security.js", "ircd/core.js", "ircd/user.js", "ircd/channel.js",
 	 "ircd/server.js", "ircd/config.js", "ircd/timestamps.js"].forEach(function(f) { load(s, f); });
 	s.Epoch = function() { return s.now; };
 	s.IRC_clock_now = function() { return s.now; };

@@ -277,11 +277,19 @@ function Automatic_Server_Connect() {
 
 /* socket object with .cline attached */
 function handle_outbound_server_connect() {
-	var id;
+	var id, failure;
 
 	if (!Outbound_Connect_in_Progress)
 		log(LOG_DEBUG,"WARNING: Outbound connection while !Outbound_Connect_in_Progress");
 
+	if (this.is_connected && IRC_tls_required(this.cline, this.remote_port || this.cline.port)) {
+		try { IRC_tls_connect(this); }
+		catch (error) {
+			failure = "TLS validation failed: " + error;
+			log(LOG_WARNING, "Server link to " + this.cline.servername + ": " + failure);
+			this.close();
+		}
+	}
 	Outbound_Connect_in_Progress = false;
 
 	if (this.is_connected) {
@@ -319,7 +327,7 @@ function handle_outbound_server_connect() {
 			"Failed to connect to %s (%s): %s. Trying again in %u seconds.",
 			this.cline.servername,
 			this.cline.host,
-			this.error_str,
+			failure || this.error_str,
 			YLines[this.cline.ircclass].connfreq
 		));
 		Reset_Autoconnect(this.cline, YLines[this.cline.ircclass].connfreq * 1000);
@@ -328,7 +336,7 @@ function handle_outbound_server_connect() {
 			"Failed to connect to %s (%s): %s.",
 			this.cline.servername,
 			this.cline.host,
-			this.error_str
+			failure || this.error_str
 		));
 	}
 
@@ -1823,7 +1831,7 @@ function IRCClient_do_connect(con_server,con_port) {
 	if (!con_port && con_cline.port)
 		con_port = con_cline.port;
 	if (!con_port && !con_cline.port)
-		con_port = String(Default_Port);
+		con_port = String(con_cline.tls ? 6697 : Default_Port);
 	if (con_port != parseInt(con_port)) {
 		this.server_notice("Invalid port: " + con_port);
 		return false;
@@ -3149,6 +3157,7 @@ function IRC_admit_server(peer) {
 		peer.nick,
 		peer.info
 	));
+	IRC_linksec_admit(peer);
 	peer.synchronize();
 }
 
@@ -3196,16 +3205,16 @@ function accept_new_socket() {
 
 	log(LOG_DEBUG,"Accepting new connection on port " + sock.local_port);
 
-	switch (sock.local_port) {
-		case 994:
-		case 6697:
-			try {
-				sock.ssl_server = 1;
-			} catch(e) {
-				log(LOG_INFO,"!ERROR Couldn't enable SSL on new connection. Closing.");
-				sock.close();
-				return 1;
-			}
+	if (IRC_tls_port(sock.local_port) && !sock.ssl_session) {
+		try {
+			sock.tls_minver = 102;
+			sock.ssl_server = true;
+			if (!sock.ssl_session) throw new Error("TLS was not enabled");
+		} catch (error) {
+			log(LOG_WARNING, "Could not enable TLS on new connection: " + error);
+			sock.close();
+			return false;
+		}
 	}
 
 	if (!sock.remote_ip_address) {

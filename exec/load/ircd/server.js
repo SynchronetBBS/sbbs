@@ -136,7 +136,7 @@ function Server_Work(cmdline) {
 	   channel user's MODE request.  Before accepting either kind of MODE
 	   (or a KICK), make sure the claimed origin is actually on this link. */
 	if ((cmd.verb == "MODE" || cmd.verb == "KICK"
-		|| cmd.verb == "JOIN" || cmd.verb == "SJOIN" || cmd.verb == "TOPIC" || cmd.verb == "TSMAP"
+		|| cmd.verb == "JOIN" || cmd.verb == "SJOIN" || cmd.verb == "TOPIC" || cmd.verb == "TSMAP" || cmd.verb == "LINKSEC"
 		|| cmd.verb == "PART" || cmd.verb == "PRIVMSG" || cmd.verb == "NOTICE"
 		|| cmd.verb == "NICK" || cmd.verb == "QUIT" || cmd.verb == "SERVER")
 		&& origin !== this
@@ -167,6 +167,9 @@ function Server_Work(cmdline) {
 	}
 
 	switch(cmd.verb) {
+	case "LINKSEC":
+		IRC_receive_linksec(this, origin, p);
+		return 0;
 	case "TSMAP":
 		IRC_receive_tsmap(this, origin, p);
 		return 0;
@@ -1973,6 +1976,7 @@ function IRCClient_synchronize() {
 			this.server_info(Servers[i]);
 	}
 	IRC_tsmap_burst(this);
+	IRC_linksec_burst(this);
 	for (i in Users) {
 		this.server_nick_info(Users[i]);
 	}

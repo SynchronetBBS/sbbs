@@ -172,14 +172,16 @@ function Info_Menu() {
 function Port_Menu() {
     var ctx = new uifc.list.CTX;
     var exit = false;
-    var result, str, ports, i;
+    var result, str, ports, i, old_port;
 
     while (!exit) {
         ports = [ Default_Port ].concat(PLines);
         result = uifc.list(
             WIN_ORG | WIN_MID | WIN_ACT | WIN_INS | WIN_DEL,
             "TCP/IP Ports",
-            ports,
+            ports.map(function(port) {
+                return String(port) + ((TLS_Ports[port] || port == 6697 || port == 994) ? " (TLS)" : "");
+            }),
             ctx
         );
         if (result == -1) {
@@ -195,12 +197,15 @@ function Port_Menu() {
                 continue;
             }
             ports.push(str);
+            if (str != 6697 && str != 994)
+                TLS_Ports[str] = Yes_No("Use TLS on this port?");
         } else if (result & MSK_DEL) {
             result &= MSK_OFF;
             if (result == 0) {
                 uifc.msg("Can't delete the default port.");
                 continue;
             }
+            delete TLS_Ports[ports[result]];
             ports.splice(result, 1);
         } else if (result == 0) {
             Help_Window([
@@ -209,20 +214,40 @@ function Port_Menu() {
             str = parseInt(uifc.input(WIN_MID, "Default Port", Default_Port, 5, K_EDIT));
             if (str === undefined || !str)
                 continue;
+            old_port = Default_Port;
+            if (str != old_port && Var_Exists_in_Array(ports, str)) {
+                uifc.msg(format("Port %lu already in the list.", str));
+                continue;
+            }
+            TLS_Ports[str] = str == 6697 || str == 994 || Yes_No("Use TLS on this port?");
+            if (str != old_port) delete TLS_Ports[old_port];
             Default_Port = str;
         } else {
             str = parseInt(uifc.input(WIN_MID, "Change Port", ports[result], 5, K_EDIT));
             if (str === undefined || !str)
                 continue;
-            if (Var_Exists_in_Array(ports, str)) {
+            if (str != ports[result] && Var_Exists_in_Array(ports, str)) {
                 uifc.msg(format("Port %lu already in the list.", str));
                 continue;
             }
+            old_port = ports[result];
+            TLS_Ports[str] = str == 6697 || str == 994 || Yes_No("Use TLS on this port?");
+            if (str != old_port) delete TLS_Ports[old_port];
             ports[result] = str;
         }
         ports.shift();
         PLines = ports;
     }
+}
+
+function TLS_Menu() {
+    Help_Window([
+        "PEM bundle of trusted CA certificates for outbound TLS server links.",
+        "Relative paths use the Synchronet control directory.",
+        "Listening ports use Synchronet's existing ssl.cert certificate and key."
+    ]);
+    var path = uifc.input(WIN_MID, "TLS CA bundle (PEM)", TLS_Config.ca_file, 255, K_EDIT);
+    if (path !== undefined) TLS_Config.ca_file = path;
 }
 
 function Edit_IRC_Class(ircclass) {
@@ -618,7 +643,8 @@ function Edit_Server(cl) {
                 format("%20s: %-40s", "ServerName", cline.servername),
                 format("%20s: %-40lu", "IRC Class", cline.ircclass),
                 format("%20s: %-40s", "Flags", NLine_Flags_String(nline.flags)),
-                format("%20s: %-40s", "Hub", hub)
+                format("%20s: %-40s", "Hub", hub),
+                format("%20s: %-40s", "Require TLS", !!cline.tls || cline.port == 6697 || cline.port == 994)
             ],
             ctx
         );
@@ -645,14 +671,14 @@ function Edit_Server(cl) {
             case 2:
                 Help_Window([
                     "The password sent TO the server when it connects.",
-                    "*NOTE* This password is not encrypted."
+                    "Enable Require TLS to encrypt and validate this connection."
                 ]);
                 cline.password = Edit_Existing("Outbound Password", cline.password);
                 break;
             case 3:
                 Help_Window([
                     "The password expected to be received FROM the server when it connects.",
-                    "*NOTE* This password is not encrypted."
+                    "Enable Require TLS to reject plaintext connections from this server."
                 ]);
                 nline.password = Edit_Existing("Inbound Password", nline.password);
                 break;
@@ -695,6 +721,17 @@ function Edit_Server(cl) {
                 } else if (hub && !Find_Hub(cline.servername)) {
                     HLines.push(new HLine("*", cline.servername));
                 }
+                break;
+            case 8:
+                Help_Window([
+                    "Use the peer's dedicated TLS port and a hostname in its certificate.",
+                    "The certificate chain must validate against the configured TLS CA bundle.",
+                    "Plaintext connections claiming this server name will be refused."
+                ]);
+                cline.tls = Yes_No("Require TLS for this server?") || cline.port == 6697 || cline.port == 994;
+                nline.tls = cline.tls;
+                if (cline.tls && !TLS_Config.ca_file)
+                    TLS_Menu();
         }
     }
 }
@@ -1081,7 +1118,7 @@ while (!Main_Menu_Exit && !js.terminated) {
             "IRC Services/Super Servers",
             "Nickname Restrictions",
             "RBL",
-            " ",
+            "TLS Settings",
             "Touch Semaphore (Rehash)",
             " ",
             "Save As",
@@ -1126,7 +1163,8 @@ while (!Main_Menu_Exit && !js.terminated) {
         case 9:
             RBL_Menu();
             break;
-        case 10: /* Blank */
+        case 10:
+            TLS_Menu();
             break;
         case 11:
             Attempt_Live_Rehash();

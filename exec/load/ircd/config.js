@@ -50,6 +50,8 @@ var NLINE_CHECK_QWKPASSWD             =(1<<0);        // q
 var NLINE_IS_QWKMASTER                =(1<<1);        // w
 var NLINE_CHECK_WITH_QWKMASTER        =(1<<2);        // k
 
+var TLS_Config = {ca_file:""};
+var TLS_Ports = {};
 var Clock_MaxSkew = 30;
 var EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
 
@@ -252,6 +254,8 @@ function parse_oline_flags(flags) {
 }
 
 function Clear_Config_Globals() {
+	if (typeof IRC_tls_clear_cache == "function") IRC_tls_clear_cache();
+	TLS_Config = {ca_file:""}; TLS_Ports = {};
 	Clock_MaxSkew = 30;
 	EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
 	Admin1 = "";
@@ -487,12 +491,18 @@ function Write_Config_File(fn) {
 	f.writeln(format("Admin3=%s", Admin3));
 	f.writeln("");
 
+	f.writeln("[TLS]");
+	if (TLS_Config.ca_file) f.writeln("CAFile=" + TLS_Config.ca_file);
+	f.writeln("");
+
 	/* [Port] */
 	f.writeln(format("[Port:%lu]", Default_Port));
 	f.writeln("Default=true");
+	if (TLS_Ports[Number(Default_Port)]) f.writeln("TLS=true");
 	f.writeln("");
 	for (i in PLines) {
 		f.writeln(format("[Port:%lu]", PLines[i]));
+		if (TLS_Ports[Number(PLines[i])]) f.writeln("TLS=true");
 		f.writeln("");
 	}
 
@@ -589,6 +599,7 @@ function Write_Config_File(fn) {
 		f.writeln(format("Servername=%s", CLines[i].servername));
 		f.writeln(format("Hostname=%s", CLines[i].host));
 		f.writeln(format("Port=%lu", CLines[i].port));
+		f.writeln("TLS=" + !!(CLines[i].tls || (n && n.tls)));
 		if (n)
 			f.writeln(format("InboundPassword=%s", n.password));
 		f.writeln(format("OutboundPassword=%s", CLines[i].password));
@@ -612,7 +623,8 @@ function Write_Config_File(fn) {
 		f.writeln(format("Servername=%s", NLines[i].servername));
 		f.writeln(format("Hostname=%s", NLines[i].host));
 		f.writeln("Port=0");
-		f.writeln(format("InboundPassword=%s", NLines[i].password));
+		f.writeln("TLS=" + !!NLines[i].tls);
+		f.writeln(format("Password=%s", NLines[i].password));
 		f.writeln(format("Class=%lu", NLines[i].ircclass));
 		if (NLines[i].flags)
 			f.writeln(format("Flags=%s", NLine_Flags_String(NLines[i].flags)));
@@ -740,8 +752,20 @@ function ini_sections() {
 	this.Hub = ini_Hub;
 	this.Capab = ini_Capab;
 	this.Clock = ini_Clock;
+	this.TLS = ini_TLS;
 	this.BBSServices = ini_BBSServices;
 	this.EmbeddedServices = ini_EmbeddedServices;
+}
+
+function ini_TLS(arg, ini) { if (ini.CAFile !== undefined) TLS_Config.ca_file = String(ini.CAFile); }
+
+/* Invalid TLS values fail closed rather than silently enabling plaintext. */
+function ini_tls(value, fallback) {
+	if (value === undefined) return !!fallback;
+	if (typeof value == "boolean") return value;
+	if (/^(true|yes|1)$/i.test(String(value))) return true;
+	if (/^(false|no|0)$/i.test(String(value))) return false;
+	log(LOG_WARNING, "Invalid TLS setting; requiring TLS"); return true;
 }
 
 function ini_BBSServices(arg, ini) {
@@ -805,6 +829,7 @@ function ini_Port(arg, ini) {
 		));
 		return;
 	}
+	if (ini_tls(ini.TLS !== undefined ? ini.TLS : ini.SSL, port == 6697 || port == 994)) TLS_Ports[port] = true;
 	if (ini_false_true(ini.Default)) {
 		Default_Port = arg;
 		return;
@@ -1015,7 +1040,7 @@ function ini_Hub(arg, ini) {
 
 /* Former C:Line and N:Line */
 function ini_Server(arg, ini) {
-	var ircclass, port;
+	var ircclass, port, tls;
 
 	if (!ini.Servername || !ini.Hostname || !ini.Class) {
 		log(LOG_WARNING,format(
@@ -1036,6 +1061,7 @@ function ini_Server(arg, ini) {
 	port = parseInt(ini.Port);
 	if (port != ini.Port)
 		port = 0;
+	tls = ini_tls(ini.TLS, false) || port == 6697 || port == 994;
 
 	ircclass = parseInt(ini.Class);
 	if (ircclass != ini.Class) {
@@ -1054,14 +1080,16 @@ function ini_Server(arg, ini) {
 		ini.OutboundPassword ? ini.OutboundPassword : ini.Password,
 		ini.Servername,
 		port,
-		ircclass
+		ircclass,
+		tls
 	));
 	NLines.push(new NLine(
 		ini.Hostname,
 		ini.InboundPassword ? ini.InboundPassword : ini.Password,
 		ini.Servername,
 		parse_nline_flags(ini.Flags),
-		ircclass
+		ircclass,
+		tls
 	));
 }
 
@@ -1389,9 +1417,10 @@ function read_conf_config(conf) {
 	}
 }
 
-function CLine(host,password,servername,port,ircclass) {
+function CLine(host,password,servername,port,ircclass,tls) {
 	this.host = host;
 	this.password = password;
+	this.tls = !!tls;
 	this.servername = servername;
 	this.port = port;
 	this.ircclass = ircclass;
@@ -1416,9 +1445,10 @@ function KLine(hostmask,reason,type) {
 	this.type = type;
 }
 
-function NLine(host,password,servername,flags,ircclass) {
+function NLine(host,password,servername,flags,ircclass,tls) {
 	this.host = host;
 	this.password = password;
+	this.tls = !!tls;
 	this.servername = servername;
 	this.flags = flags;
 	this.ircclass = ircclass;

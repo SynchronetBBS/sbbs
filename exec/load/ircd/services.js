@@ -112,6 +112,7 @@ IRC_Services_Manager.prototype.introduce = function() {
 	Servers[s.nick] = s; this.service_server = s;
 	server_bcast_to_servers(":" + ServerName + " SERVER " + s.nick + " 2 :" + s.info);
 	this.central = true; this.usercache = {}; this.chancache = {};
+	IRC_linksec_internal(s);
 	this.nickserv = this.fake_user("NickServ", s.nick, true, function(user, text) { self.command(user, "NickServ", text); });
 	this.chanserv = this.fake_user("ChanServ", s.nick, true, function(user, text) { self.command(user, "ChanServ", text); });
 	log(LOG_NOTICE, "Embedded IRC services active as " + s.nick);

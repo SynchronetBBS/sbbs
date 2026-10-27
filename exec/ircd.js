@@ -30,6 +30,8 @@ load("ircd/services-common.js");
 load("dns.js");
 
 /* Libraries specific to the IRCd */
+load("ircd/tls.js");
+load("ircd/link-security.js");
 load("ircd/core.js");
 load("ircd/unregistered.js");
 load("ircd/user.js");
@@ -53,7 +55,7 @@ var VERSION_STR = format(
    Legacy hubs and leaves remain linkable during this rollout. Mandatory
    capability enforcement belongs to the next protocol version.
    U:lined services retain their legacy protocol. */
-var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE TSJOIN CLOCK CLOCKPUSH CSYNC TSMAP FULLCHAN";
+var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE TSJOIN CLOCK CLOCKPUSH CSYNC TSMAP FULLCHAN LINKSEC";
 /* This will be in the configuration for 2.0 */
 var SUMMON = true;
 

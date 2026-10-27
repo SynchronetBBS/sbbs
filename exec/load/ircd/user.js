@@ -791,6 +791,9 @@ function User_Work(cmdline) {
 			k
 		));
 		break;
+	case "TLSROUTE":
+		IRC_do_tlsroute(this, p[0]);
+		break;
 	case "LINKS":
 		if (!p[0]) {
 			this.do_links();

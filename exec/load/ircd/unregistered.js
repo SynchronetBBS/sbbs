@@ -312,6 +312,14 @@ function Unregistered_Commands(cmdline) {
 				return 0;
 			}
 			if (parseInt(p[1]) < 2) {
+				if (this.cline && this.socket.irc_tls_verified && this.cline.servername.toLowerCase() != p[0].toLowerCase()) {
+					this.quit("TLS link introduced an unexpected server name."); return false;
+				}
+				for (i in NLines) {
+					if (NLines[i].tls && wildmatch(p[0], NLines[i].servername) && !this.socket.ssl_session) {
+						this.quit("TLS is required for this server link."); return false;
+					}
+				}
 				for (i in NLines) {
 					if (   (NLines[i].flags&NLINE_CHECK_QWKPASSWD)
 						&& wildmatch(p[0],NLines[i].servername)
