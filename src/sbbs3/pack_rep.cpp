@@ -105,13 +105,13 @@ bool sbbs_t::pack_rep(uint hubnum, uint* packed)
 	}
 	if (!(cfg.qhub[hubnum]->misc & QHUB_NOHEADERS)) {
 		SAFEPRINTF(str, "%sHEADERS.DAT", cfg.temp_dir);
-		fexistcase(str);
+		(void)fexistcase(str);
 		if ((hdrs = fopen(str, "a")) == NULL)
 			errormsg(WHERE, ERR_CREATE, str, 0);
 	}
 	if (!(cfg.qhub[hubnum]->misc & QHUB_NOVOTING)) {
 		SAFEPRINTF(str, "%sVOTING.DAT", cfg.temp_dir);
-		fexistcase(str);
+		(void)fexistcase(str);
 		if ((voting = fopen(str, "a")) == NULL)
 			errormsg(WHERE, ERR_CREATE, str, 0);
 	}

@@ -797,7 +797,8 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack, enum qwkjob_resu
 	}
 	if (flength(packet) < 1) {
 		remove(packet);
-		cmdstr(temp_cmd(ex), packet, path, NULL, ex);
+		const char* cmd = temp_cmd(ex);
+		cmdstr(cmd, packet, path, NULL, ex);
 		if ((i = external(cmdstr_output, ex | EX_WILDCARD)) != 0)
 			errormsg(WHERE, ERR_EXEC, cmdstr_output, i);
 		if (flength(packet) < 1) {

@@ -214,7 +214,9 @@ bool fmutex_close(fmutex_t* fm)
 	if (fstat(fm->fd, &fd_st) != 0) {
 		error = errno;
 		result = false;
-	} else if (stat(fm->name, &name_st) != 0) {
+	}
+	// coverity[TOCTOU:SUPPRESS] POSIX has no unlink by descriptor; re-checked before each retry
+	else if (stat(fm->name, &name_st) != 0) {
 		if (errno != ENOENT) {
 			error = errno;
 			result = false;
@@ -231,6 +233,16 @@ bool fmutex_close(fmutex_t* fm)
 				break;
 			}
 			SLEEP(LOCK_RETRY_DELAY);
+			// coverity[TOCTOU:SUPPRESS] as above
+			if (stat(fm->name, &name_st) != 0) {
+				if (errno != ENOENT) {
+					error = errno;
+					result = false;
+				}
+				break;
+			}
+			if (fd_st.st_dev != name_st.st_dev || fd_st.st_ino != name_st.st_ino)
+				break;
 		}
 	}
 #endif

@@ -399,13 +399,13 @@ static enum qwkjob_result qwkjob_pack_locked(sbbs_t* sbbs, const qwkjob_host_t* 
 	SAFEPRINTF4(tmppath, "%sfile/%04u.%s.%d.qwk.tmp", sbbs->cfg.data_dir, usernum, qwkjob_local_host_name(), (int)getpid());
 	SAFEPRINTF2(qwkpath, "%sfile/%04u.qwk", sbbs->cfg.data_dir, usernum);
 	if (!sbbs->pack_qwk(tmppath, &count, /* prepack: */ true, &reason)) {
-		remove(tmppath);
+		sbbs->fremove(WHERE, tmppath);
 		if (reason == QWKJOB_EMPTY)
 			sbbs->lputs(LOG_INFO, "No packet created (no new messages)");
 		return reason;
 	}
 	if (qwkjob_terminated(host)) {
-		remove(tmppath);
+		sbbs->fremove(WHERE, tmppath);
 		return QWKJOB_FAILED;
 	}
 	if (!qwkjob_replace_file(tmppath, qwkpath)) {
@@ -414,7 +414,7 @@ static enum qwkjob_result qwkjob_pack_locked(sbbs_t* sbbs, const qwkjob_host_t* 
 #else
 		sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s", errno, strerror(errno), tmppath, qwkpath);
 #endif
-		remove(tmppath);
+		sbbs->fremove(WHERE, tmppath, /* log-all-errors: */ true);
 		return QWKJOB_FAILED;
 	}
 	sbbs->lprintf(LOG_INFO, "Packing completed: %s", qwkpath);
