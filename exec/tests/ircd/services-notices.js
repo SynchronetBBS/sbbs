@@ -10,7 +10,7 @@ function scenario() {
 	s.manager = Object.create(scope.IRC_Services_Manager.prototype);
 	s.manager.config = {server:"edge.test",nickserv:true,memoserv:true};
 	s.manager.ensure_agent = function() { return true; };
-	s.manager.describe = function(user) { return {ref:"session",nick:user.nick,server:user.servername}; };
+	s.manager.describe = function(user) { return {ref:"session",nick:user.nick,server:user.servername,auth_revision:user.services_auth_revision || 0}; };
 	s.manager.find = function(actor) { return s.user; };
 	s.manager.central_peer = function() { return "central"; };
 	s.manager.peer = function(name) { return {servername:"central.test"}; };

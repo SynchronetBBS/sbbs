@@ -42,14 +42,14 @@ run_tests({
 	},
 	"native SQLite stores accounts without passwords and persists ownership": function() {
 		var s = scenario(); s.engine.command("NickServ", s.user, "REGISTER");
-		check(s.db.data.nicks.$ALICE == "TEST:1:100");
+		check(s.db.data.nicks.$ALICE == s.db.data.memberships["TEST:1:100"]);
 		check(s.db.db.columns("accounts").every(function(c) { return c.name != "password"; }));
 		var path = paths[paths.length - 1]; s.db.close(); stores.pop();
-		var reopened = new IRC_Services_Store(path); stores.push(reopened); check(reopened.data.nicks.$ALICE == "TEST:1:100");
+		var reopened = new IRC_Services_Store(path); stores.push(reopened); check(reopened.data.nicks.$ALICE == reopened.data.memberships["TEST:1:100"]);
 	},
 	"SQLite rejects a competing owner and rolls back failed changes": function() {
 		var s = scenario(), path = paths[paths.length - 1]; throws(function() { new IRC_Services_Store(path); });
-		var invalid = IRC_services_copy(s.db.data); invalid.nicks.$BAD = "missing"; invalid.nick_last_used.$BAD = Date.now();
+		var invalid = IRC_services_copy(s.db.data); invalid.nicks.$BAD = "missing"; invalid.nick_last_used.$BAD = Date.now(); invalid.memo_accounts.$BAD = "TEST:1:100";
 		throws(function() { s.db.save(invalid); }); check(!s.db.data.nicks.$BAD); check(s.db.db.query("SELECT * FROM nicks").length == 0);
 	},
 	"identifying does not register nicknames; REGISTER requires identification": function() {
@@ -82,15 +82,16 @@ run_tests({
 		s.engine.event({type:"channel",channel:c}); s.engine.command("ChanServ",s.user,"REGISTER #test Description");
 		s.user.nick = "NewNick"; s.user.rev = "NewNick"; check(s.engine.level(s.user,c) == 100);
 		s.engine.command("ChanServ",s.user,"SET #test MLOCK +nt-k");
-		check(s.db.data.channels["$#TEST"].founder == "TEST:1:100");
+		check(s.db.data.channels["$#TEST"].founder == s.db.data.memberships["TEST:1:100"]);
 		s.engine.event({type:"identify",ref:s.user.ref,identity:identity(2,"Different")}); check(s.engine.level(s.user,c) == 0);
 	},
 	"ChanServ access entries accept qualified BBS aliases": function() {
 		var s = scenario(), c = {ref:"chan",name:"#test",flags:"+nt",key:"",limit:0,topic:"",users:[{ref:s.user.ref,op:true,voice:false}]};
 		s.engine.event({type:"channel",channel:c}); s.engine.command("ChanServ",s.user,"REGISTER #test Description");
-		s.engine.commit(function(next) { next.accounts["TEST:2:100"] = identity(2,"Another User"); });
+		s.engine.event({type:"user",user:{ref:"other",nick:"Other",rev:"Other"}});
+		s.engine.event({type:"identify",ref:"other",identity:identity(2,"Another User")});
 		s.engine.command("ChanServ",s.user,"ACCESS #test ADD Another.User+TEST OP");
-		check(s.db.data.channels["$#TEST"].access["TEST:2:100"] == 50);
+		check(s.db.data.channels["$#TEST"].access[s.db.data.memberships["TEST:2:100"]] == 50);
 	},
 	"mode locks reject conflicting modes and invalid arguments": function() {
 		throws(function() { IRC_services_mlock(["+sp"]); }); throws(function() { IRC_services_mlock(["+l","NaN"]); });
@@ -136,12 +137,12 @@ run_tests({
 		var user = {services_identity:identity(1,"Original")};
 		manager.config = {server:"test.example"}; manager.jobs = {};
 		manager.describe = function() { return {ref:"session"}; }; manager.find = function() { return user; };
-		manager.central_peer = function() { return null; };
+		manager.central_peer = function() { return null; }; manager.sync_session = function() {};
 		manager.apply_identity = function(u,account) { u.services_identity = account; };
 		manager.job = function(job,callback) { pending = callback; };
 		manager.refresh_local_identity(user,100); pending({error:"Account no longer exists"}); check(!user.services_identity);
-		user.services_identity = identity(1,"Original"); manager.refresh_local_identity(user,131);
-		var newer = identity(2,"New login"); user.services_identity = newer;
+		manager.add_login(user,identity(1,"Original"),true); manager.refresh_local_identity(user,131);
+		var newer = identity(2,"New login"); manager.add_login(user,newer,true);
 		pending({error:"Obsolete failure"}); check(user.services_identity === newer);
 	},
 	"ordinary users cannot become agents by taking an old server's helper nick": function() {

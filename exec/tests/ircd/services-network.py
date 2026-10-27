@@ -19,6 +19,8 @@ from types import SimpleNamespace
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--jsexec', required=True, type=Path)
 parser.add_argument('--legacy-source', required=True, type=Path)
+parser.add_argument('--single-login-source', type=Path, help='Run edge with the earlier single-login services implementation')
+parser.add_argument('--skip-grace', action='store_true', help='Skip the 60-second nickname enforcement test')
 args = parser.parse_args()
 source = Path(__file__).resolve().parents[2]
 fixture = Path('/tmp/ircd-services-bbs-fixture')
@@ -37,7 +39,7 @@ class Server:
         self.process = None
 
     def start(self, peers, central_enabled=True):
-        code = args.legacy_source if self.legacy else source
+        code = args.legacy_source if self.legacy else (args.single_login_source if self.name == 'edge' and args.single_login_source else source)
         lines = ['[Info]', 'Servername=' + self.sname, 'Description=Embedded services isolated test',
                  '[Port:' + str(self.port) + ']', 'Default=true',
                  '[Class:1]', 'PingFrequency=120', 'ConnectFrequency=0', 'Maximum=100', 'SendQ=2000000',
@@ -180,7 +182,7 @@ try:
     time.sleep(2)
     owner.service('NickServ', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+HOME')
     print('PASS: native BBS identification through local NickServ', flush=True)
-    owner.service('NickServ', 'REGISTER', 'Nickname registered to your BBS account')
+    owner.service('NickServ', 'REGISTER', 'Nickname registered to your network identity')
     print('PASS: central registration through legacy relay', flush=True)
     owner.send('JOIN #services-test')
     owner.expect(' 366 ')
@@ -245,11 +247,32 @@ try:
         if 'Connection closed' not in str(error):
             raise
     print('PASS: GHOST reclaims a nickname through a legacy relay', flush=True)
-    trespasser = Client(edge, 'Alice')
-    trespasser.service('NickServ', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+EDGE')
-    line = trespasser.expect(' NICK Guest', timeout=70)
-    trespasser.nick = line.split(' NICK ', 1)[1].lstrip(':')
-    print('PASS: wrong-account nickname renamed after grace despite periodic claims', flush=True)
+    if not args.skip_grace:
+        trespasser = Client(edge, 'Alice')
+        trespasser.service('NickServ', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+EDGE')
+        line = trespasser.expect(' NICK Guest', timeout=70)
+        trespasser.nick = line.split(' NICK ', 1)[1].lstrip(':')
+        print('PASS: wrong-account nickname renamed after grace despite periodic claims', flush=True)
+    if args.single_login_source:
+        owner.service('NickServ@edge.test', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+EDGE')
+        accounts = owner.service('NickServ', 'ACCOUNTS', 'Verified BBS logins:')
+        assert 'Some.User+EDGE@edge.test (active)' in accounts and 'Some.User+HOME@home.test' not in accounts
+        owner.service('NickServ', 'LINK Some.User+HOME Some.User+EDGE', 'LINK requires updated services')
+        owner.service('NickServ@home.test', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+HOME')
+        time.sleep(2)
+        accounts = owner.service('NickServ', 'ACCOUNTS', 'Verified BBS logins:')
+        assert 'Some.User+HOME@home.test (active)' in accounts and 'Some.User+EDGE@edge.test' not in accounts
+        print('PASS: old BBS helper safely retains single-login behavior and refuses LINK', flush=True)
+    else:
+        owner.service('NickServ@edge.test', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+EDGE')
+        accounts = owner.service('NickServ', 'ACCOUNTS', 'Verified BBS logins:')
+        assert 'Some.User+HOME@home.test' in accounts and 'Some.User+EDGE@edge.test (active)' in accounts
+        owner.service('NickServ', 'REGISTER', 'Nickname registered to your network identity')
+        preview = owner.service('NickServ', 'LINK Some.User+HOME Some.User+EDGE', 'Confirm within 5 minutes: LINK CONFIRM ')
+        code = preview.split('LINK CONFIRM ', 1)[1]
+        owner.service('NickServ', 'LINK CONFIRM ' + code, 'Network identities linked')
+        wrong.service('ChanServ', 'SET #services-test KEEPTOPIC ON', 'Channel settings updated')
+        print('PASS: dual BBS login and confirmed identity merge grant equal founder rights through legacy relay', flush=True)
     hub.process.terminate()
     assert hub.process.wait(timeout=10) == 0, 'Central IRCd failed during restart'
     hub.log.close()
@@ -259,12 +282,35 @@ try:
     hub.start([(relay, True, True)])
     observer = Client(hub, 'Watcher')
     time.sleep(8)
-    owner.service('NickServ', 'INFO Alice', 'Registered to Some.User+HOME')
+    owner.service('NickServ', 'INFO Alice', 'Registered network identity: ALICE')
     owner.service('NickServ', 'INFO Alice', 'Last used: ')
     outsider.service('ChanServ', 'INFO #services-test', 'Last used: ')
     outsider.service('ChanServ', 'TOPIC #services-test After central restart', 'Topic change requested')
     wrong.expect('TOPIC #services-test :After central restart')
     print('PASS: SQLite ownership and foreign-BBS sessions recover after authority restart', flush=True)
+    if not args.single_login_source:
+        accounts = owner.service('NickServ', 'ACCOUNTS', 'Verified BBS logins:')
+        assert 'Some.User+HOME@home.test' in accounts and 'Some.User+EDGE@edge.test (active)' in accounts
+        owner.service('NickServ', 'SET Alice MEMOACCOUNT Some.User+EDGE', 'Telegram destination updated')
+        outsider.service('MemoServ', 'SEND Alice Linked-destination-telegram', 'Telegram delivered')
+        owner.service('MemoServ@home.test', 'STATUS', 'No telegrams waiting')
+        owner.service('MemoServ@edge.test', 'READ', 'Linked-destination-telegram')
+        owner.service('NickServ@edge.test', 'LOGOUT', 'Logged out of edge.test')
+        owner.send('WHOIS RenamedOwner')
+        assert ' Some.User+HOME ' in owner.expect(' 311 RenamedOwner RenamedOwner ')
+        owner.service('MemoServ@edge.test', 'READ', 'You may read only your authenticated')
+        owner.service('ChanServ', 'SET #services-test KEEPTOPIC OFF', 'Channel settings updated')
+        print('PASS: authority restart restores both logins; telegram routing and qualified reads remain BBS-specific', flush=True)
+        owner.service('NickServ', 'UNLINK Some.User+EDGE', 'Retarget MEMOACCOUNT before unlinking:')
+        owner.service('NickServ', 'SET Alice MEMOACCOUNT Some.User+HOME', 'Telegram destination updated')
+        owner.service('NickServ', 'SET RenamedOwner MEMOACCOUNT Some.User+HOME', 'Telegram destination updated')
+        owner.service('NickServ', 'UNLINK Some.User+EDGE', 'BBS account unlinked into an empty identity')
+        wrong.service('ChanServ', 'SET #services-test KEEPTOPIC ON', 'Identify to an account with access')
+        owner.service('NickServ', 'LOGOUT ALL', 'All BBS logins removed')
+        owner.send('WHOIS RenamedOwner')
+        assert ' ~' in owner.expect(' 311 RenamedOwner RenamedOwner ')
+        owner.service('ChanServ', 'SET #services-test KEEPTOPIC ON', 'Identify to an account with access')
+        print('PASS: unlink retains registrations, revokes detached founder rights, and LOGOUT ALL restores anonymous identity', flush=True)
     # A failed server password must not shut down embedded services. An
     # authenticated external services server takes ownership of its namespace.
     for password in ['wrong', 'servicetest']:

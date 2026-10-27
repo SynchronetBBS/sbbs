@@ -59,7 +59,7 @@ IRC_Services_Backend.prototype.process_one = function() {
 				this.output({type:"result", id:job.id, identity:IRC_services_identity(checked, this.config.qwk, this.config.server)});
 			}
 			else if (job.type == "resolve") {
-				var found = this.engine && this.engine.resolve_account(job.target);
+				var found = this.engine && this.engine.resolve_memo(job.target);
 				this.output({type:"result", id:job.id, identity:found ? this.store.data.accounts[found] : null});
 			}
 			else if (job.type == "local-resolve") {

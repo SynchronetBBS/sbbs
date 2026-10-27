@@ -152,7 +152,7 @@ IRC_Services_Manager.prototype.ref = function(user) {
 };
 IRC_Services_Manager.prototype.describe = function(user) {
 	return {ref:this.ref(user), nick:user.nick, server:user.servername.toLowerCase(), created:user.services_created || user.created,
-		rev:user.nick, username:user.uprefix, account:user.services_identity ? user.services_identity.id : null};
+		rev:user.nick, username:user.uprefix, account:user.services_identity ? user.services_identity.id : null, auth_revision:user.services_auth_revision || 0};
 };
 IRC_Services_Manager.prototype.find = function(actor) {
 	if (!actor) return null;
@@ -256,7 +256,15 @@ IRC_Services_Manager.prototype.tick = function() {
 					this.refresh_local_identity(sessionuser, now);
 					if (sessionuser.services_central !== authority) {
 						sessionuser.services_central = authority;
-						this.send(cp, {type:"session", actor:this.describe(sessionuser)});
+						sessionuser.services_multi = false;
+						(function(u) {
+							self.request(cp, {type:"session", actor:self.describe(u), multi_login:1}, function(r) {
+								if (!self.find(self.describe(u)) || u.services_central !== authority) return;
+								u.services_multi = r.multi_login == 1;
+								if (!u.services_multi && self.logins(u).length > 1) self.set_logins(u, u.services_identity ? [u.services_identity] : [], (u.services_auth_revision || 0) + 1);
+								self.sync_session(u);
+							});
+						})(sessionuser);
 					}
 				}
 			}
@@ -264,28 +272,76 @@ IRC_Services_Manager.prototype.tick = function() {
 				this.nextclaim = now + 30; this.lastauthority = this.peer(cp);
 				for (var id in Local_Users) {
 					var u = Local_Users[id];
-					if (u.services_identity)
-						this.send(cp, {type:"claim", actor:this.describe(u), identity:u.services_identity});
+					if (u.services_identity) this.sync_session(u);
 				}
 			} else if (!cp) this.lastauthority = null;
 		}
 	} catch (e) { log(LOG_ERR, "Embedded IRC services callback failed: " + e); }
 };
-IRC_Services_Manager.prototype.refresh_local_identity = function(user, now) {
-	var identity = user.services_identity;
-	if (!identity || identity.home != this.config.server || now < (user.services_validate_at || 0)
-		|| Object.keys(this.jobs).length >= 64) return;
-	var self = this, actor = this.describe(user);
-	user.services_validate_at = now + 30;
-	this.job({type:"validate", identity:identity}, function(r) {
+/* Login collections exist only on the connection server and central authority.
+   An identity broadcast changes presentation, never grants another BBS login. */
+IRC_Services_Manager.prototype.logins = function(user) {
+	if (!user.services_logins) {
+		user.services_logins = {}; user.services_login_order = [];
+		if (user.services_identity) { user.services_logins[user.services_identity.home] = user.services_identity; user.services_login_order.push(user.services_identity.home); }
+	}
+	return user.services_login_order.map(function(home) { return user.services_logins[home]; });
+};
+IRC_Services_Manager.prototype.set_logins = function(user, identities, revision) {
+	user.services_logins = {}; user.services_login_order = [];
+	identities.forEach(function(a) { user.services_logins[a.home] = a; user.services_login_order.push(a.home); });
+	user.services_auth_revision = revision;
+	this.apply_identity(user, identities.length ? identities[identities.length - 1] : null);
+};
+IRC_Services_Manager.prototype.add_login = function(user, identity, multi) {
+	var logins = multi ? this.logins(user).filter(function(a) { return a.home != identity.home; }) : [];
+	if (logins.length >= 64) throw new Error("Too many retained BBS logins");
+	logins.push(identity); this.set_logins(user, logins, (user.services_auth_revision || 0) + 1);
+};
+IRC_Services_Manager.prototype.remove_login = function(user, home, all) {
+	this.set_logins(user, all ? [] : this.logins(user).filter(function(a) { return a.home != home; }), (user.services_auth_revision || 0) + 1);
+};
+IRC_Services_Manager.prototype.sync_session = function(user, callback) {
+	var self = this, cp = this.central_peer(), actor = this.describe(user);
+	callback = callback || function() {};
+	if (!cp) { callback({error:"Services are unavailable."}); return; }
+	if (!user.services_multi) {
+		this.send(cp, user.services_identity ? {type:"claim", actor:actor, identity:user.services_identity} : {type:"logout", actor:actor}); callback({}); return;
+	}
+	/* Periodic refresh, automatic memo checks and user commands can overlap.
+	   Share one proof round for the same session revision instead of having
+	   equally valid checks supersede one another at the authority. */
+	var pending = user.services_sync;
+	if (pending && pending.actor.auth_revision == actor.auth_revision && pending.actor.nick == actor.nick) { pending.callbacks.push(callback); return; }
+	pending = user.services_sync = {actor:actor, callbacks:[callback]};
+	function finish(result) { pending.callbacks.forEach(function(cb) { cb(result); }); }
+	this.request(cp, {type:"sync-logins", actor:actor, logins:this.logins(user)}, function(r) {
+		if (user.services_sync === pending) delete user.services_sync;
 		var current = self.find(actor);
-		if (!current || current.services_identity !== identity) return;
-		/* A transient I/O failure may revoke a session, but cannot grant
-		   access to a replacement or disabled BBS account. */
-		var checked = r.identity || null;
-		self.apply_identity(current, checked);
-		var cp = self.central_peer();
-		if (cp) self.send(cp, checked ? {type:"claim", actor:self.describe(current), identity:checked} : {type:"logout", actor:self.describe(current)});
+		if (!current || ((current.services_auth_revision || 0) != actor.auth_revision && !(self.central && r.revision == current.services_auth_revision))) { finish({error:"Authentication changed; please retry."}); return; }
+		if (Array.isArray(r.logins) && r.revision >= actor.auth_revision) self.set_logins(current, r.logins, r.revision);
+		if (!r.error && r.multi_login !== 1 && self.logins(current).length > 1) {
+			self.set_logins(current, current.services_identity ? [current.services_identity] : [], (current.services_auth_revision || 0) + 1);
+			self.notice("NickServ", current, "A BBS helper lacks multi-login support; retaining only the active BBS login.");
+			self.sync_session(current, finish); return;
+		}
+		finish(r);
+	});
+};
+IRC_Services_Manager.prototype.refresh_local_identity = function(user, now) {
+	if (now < (user.services_validate_at || 0) || Object.keys(this.jobs).length >= 64) return;
+	var self = this, actor = this.describe(user), local = this.logins(user).filter(function(a) { return a.home == self.config.server; })[0];
+	if (!local) return;
+	user.services_validate_at = now + 30;
+	this.job({type:"validate", identity:local}, function(r) {
+		var current = self.find(actor);
+		if (!current || current.services_logins[local.home] !== local) return;
+		if (!r.identity) self.remove_login(current, local.home);
+		else {
+			current.services_logins[local.home] = r.identity;
+			if (current.services_identity === local) self.apply_identity(current, r.identity);
+		}
+		self.sync_session(current);
 	});
 };
 IRC_Services_Manager.prototype.request = function(peer, message, callback) {
@@ -337,7 +393,7 @@ IRC_Services_Manager.prototype.apply_identity = function(user, identity) {
 };
 IRC_Services_Manager.prototype.claim = function(user, identity) {
 	this.snapshot();
-	if (!this.event({type:"user", user:this.describe(user)}) || !this.event({type:"identify", ref:this.ref(user), identity:identity})) throw new Error("Services are busy");
+	if (!this.event({type:"user", user:this.describe(user)}) || !this.event({type:"identify", ref:this.ref(user), identity:identity, logins:user.services_verified_logins, revision:user.services_auth_revision || 0, multi:!!user.services_verified_multi})) throw new Error("Services are busy");
 	this.identities[this.ref(user)] = identity;
 };
 IRC_Services_Manager.prototype.intercept = function(user, target, text) {
@@ -365,26 +421,30 @@ IRC_Services_Manager.prototype.intercept_command = function(user, target, text) 
 		if (a.length != 2) { this.notice(service, user, "Syntax: IDENTIFY <escaped-account> <password>", home); return true; }
 		var account;
 		try { account = IRC_services_unescape(a[0]); } catch (_) { this.notice(service, user, "Invalid escaped account name.", home); return true; }
+		var attempt = user.services_auth_attempt = (user.services_auth_attempt || 0) + 1;
 		var done = function(result) {
-			var current = self.find(actor); if (!current) return;
+			var current = self.find(actor); if (!current || current.services_auth_attempt != attempt || (current.services_auth_revision || 0) != actor.auth_revision) return;
 			if (!result.identity || result.error) { self.notice(service, current, result.error || "Authentication failed.", home); return; }
 			if (!self.identity_valid(result.identity, home)) { self.notice(service, current, "Invalid authentication response.", home); return; }
-			self.apply_identity(current, result.identity);
+			self.add_login(current, result.identity, current.services_multi && (home == self.config.server || result.multi_login == 1));
 			self.notice(service, current, "Identified as " + result.identity.username + ".", home);
 			var cp = self.central_peer();
-			if (home == self.config.server && cp) self.send(cp, {type:"claim", actor:self.describe(current), identity:result.identity});
+			if (cp) self.sync_session(current);
 			if (self.config.memoserv) self.memo(current, "STATUS", [], home);
 		};
 		if (home == this.config.server) this.job({type:"authenticate", account:account, password:a[1]}, done);
 		else this.request(this.central_peer(), {type:"authenticate", actor:actor, home:home, account:account, password:a[1]}, done);
 	} else if (service == "NickServ" && verb == "LOGOUT") {
-		if (user.services_identity) home = user.services_identity.home;
-		this.apply_identity(user, null);
-		var cp = this.central_peer(); if (cp) this.send(cp, {type:"logout", actor:this.describe(user)});
-		this.notice(service, user, "You are logged out.", home);
+		if (a.length > 1 || (a.length && a[0].toUpperCase() != "ALL")) { this.notice(service, user, "Syntax: LOGOUT [ALL]", home); return true; }
+		this.remove_login(user, home, a.length == 1);
+		this.sync_session(user);
+		this.notice(service, user, a.length ? "All BBS logins removed." : "Logged out of " + home + ".", home);
 	} else if (service == "MemoServ") this.memo(user, verb, a, match[2] && home);
-	else if (verb == "HELP") this.notice(service, user, "IDENTIFY <escaped-account> <password> | LOGOUT | REGISTER | DROP [nickname] | INFO [nickname] | GHOST <nickname>. Use /msg NickServ@" + home + " <command> for this BBS.", home);
-	else this.request(this.central_peer(), {type:"command", actor:actor, service:"NickServ", text:text}, function(r) { if (r.error && self.find(actor)) self.notice(service, user, r.error, home); });
+	else if (verb == "HELP") this.notice(service, user, "IDENTIFY <escaped-account> <password> | LOGOUT [ALL] | REGISTER | DROP [nickname] | INFO [nickname] | GHOST <nickname> | ACCOUNTS | LINK <account+QWKID> <account+QWKID> | LINK CONFIRM <code> | UNLINK <account+QWKID> | SET <nick> MEMOACCOUNT <account+QWKID>. Use /msg NickServ@" + home + " <command> for this BBS.", home);
+	else this.sync_session(user, function(verified) {
+		if (verified.error) { if (self.find(actor)) self.notice(service, user, verified.error, home); return; }
+		self.request(self.central_peer(), {type:"command", actor:self.describe(user), service:"NickServ", text:text}, function(r) { if (r.error && self.find(actor)) self.notice(service, user, r.error, home); });
+	});
 	return true;
 };
 IRC_Services_Manager.prototype.command = function(user, service, text) {
@@ -396,14 +456,18 @@ IRC_Services_Manager.prototype.command = function(user, service, text) {
 IRC_Services_Manager.prototype.memo = function(user, verb, args, home) {
 	var self = this, actor = this.describe(user);
 	home = home || (user.services_identity && user.services_identity.home) || this.config.server;
+	var identity = this.logins(user).filter(function(a) { return a.home == home; })[0];
 	if (verb == "HELP") { this.notice("MemoServ", user, "SEND <registered-nick|escaped-account+QWKID> <text> | READ | STATUS. READ consumes BBS telegrams; automatic checks do not. Use /msg MemoServ@" + home + " <command> for this BBS.", home); return; }
 	if (!user.services_identity) { this.notice("MemoServ", user, "Identify to your BBS account first with /msg NickServ@" + home + " IDENTIFY <escaped-account> <password>.", home); return; }
 	if (["SEND","READ","STATUS"].indexOf(verb) < 0 || (verb == "SEND" && args.length < 2)) { this.notice("MemoServ", user, "Invalid command. Use HELP.", home); return; }
-	if (verb != "SEND" && home != user.services_identity.home) { this.notice("MemoServ", user, "You may read only your authenticated account's telegrams. Use /msg MemoServ@" + user.services_identity.home + " " + verb + ".", user.services_identity.home); return; }
-	var finish = function(r) { if (self.find(actor)) self.notice("MemoServ", user, r.error || r.text || "Telegram operation completed.", r.home || home); };
-	if (verb != "SEND" && user.services_identity.home == this.config.server)
-		this.job({type:"memo", operation:verb, identity:user.services_identity}, finish);
-	else this.request(this.central_peer(), {type:"memo", actor:actor, operation:verb, target:args.shift(), text:args.join(" ")}, finish);
+	if (verb != "SEND" && !identity) { this.notice("MemoServ", user, "You may read only your authenticated account's telegrams. Use /msg MemoServ@" + user.services_identity.home + " " + verb + ".", user.services_identity.home); return; }
+	var finish = function(r) { if (self.find(actor) && (user.services_auth_revision || 0) == actor.auth_revision) self.notice("MemoServ", user, r.error || r.text || "Telegram operation completed.", r.home || home); };
+	if (verb != "SEND" && identity.home == this.config.server)
+		this.job({type:"memo", operation:verb, identity:identity}, finish);
+	else this.sync_session(user, function(r) {
+		if (r.error) { finish(r); return; }
+		self.request(self.central_peer(), {type:"memo", actor:self.describe(user), operation:verb, home:home, target:args.shift(), text:args.join(" ")}, finish);
+	});
 };
 IRC_Services_Manager.prototype.receive = function(peer, m) {
 	try { this.receive_message(peer, m); }
@@ -436,7 +500,7 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 			var checked = this.find(m.actor);
 			this.reply(peer, m.id, {valid:!!(checked && checked.local)});
 		} else if (m.type == "memo-text") {
-			var recipient = this.find(m.actor); if (recipient && recipient.local) this.notice("MemoServ", recipient, m.text, m.home || (recipient.services_identity && recipient.services_identity.home));
+			var recipient = this.find(m.actor); if (recipient && recipient.local && (m.actor.auth_revision === undefined || m.actor.auth_revision == (recipient.services_auth_revision || 0))) this.notice("MemoServ", recipient, m.text, m.home || (recipient.services_identity && recipient.services_identity.home));
 		} else if (m.type == "local-resolve" && this.config.memoserv) {
 			this.job({type:"local-resolve", account:m.account}, function(r) { self.reply(peer, m.id, r); });
 		} else if (m.type == "local-auth" && this.config.nickserv) {
@@ -444,16 +508,18 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 			if (!session || session.servername.toLowerCase() != m.actor.server) { this.reply(peer, m.id, {error:"Session is no longer available."}); return; }
 			this.job({type:"authenticate", account:m.account, password:m.password}, function(r) {
 				if (r.identity && Users[session.nick.toUpperCase()] === session) self.attestations[m.actor.ref] = {actor:m.actor, identity:r.identity, user:session};
-				self.reply(peer, m.id, r);
+				r.multi_login = 1; self.reply(peer, m.id, r);
 			});
 		} else if (m.type == "local-validate") {
 			var attestation = m.actor && this.attestations[m.actor.ref];
-			var online = m.actor && Users[String(m.actor.nick).toUpperCase()];
-			if (!attestation || !online || online !== attestation.user || online.servername.toLowerCase() != m.actor.server
-				|| attestation.actor.server != m.actor.server || attestation.actor.created != m.actor.created) {
-				this.reply(peer, m.id, {error:"Please identify to your home BBS again."}); return;
-			}
-			this.job({type:"validate", identity:attestation.identity}, function(r) { self.reply(peer, m.id, r); });
+			var online = m.actor && Users[String(m.actor.nick).toUpperCase()], proven;
+			if (online && online.local && this.find(m.actor) === online) {
+				proven = this.logins(online).filter(function(a) { return a.home == self.config.server && (!m.identity || a.id == m.identity.id); })[0];
+			} else if (attestation && online && online === attestation.user && online.servername.toLowerCase() == m.actor.server
+				&& attestation.actor.server == m.actor.server && attestation.actor.created == m.actor.created
+				&& (!m.identity || attestation.identity.id == m.identity.id)) proven = attestation.identity;
+			if (!proven) { this.reply(peer, m.id, {error:"Please identify to your home BBS again."}); return; }
+			this.job({type:"validate", identity:proven}, function(r) { r.multi_login = 1; self.reply(peer, m.id, r); });
 		} else if (m.type == "local-memo" && this.config.memoserv) {
 			this.job({type:"memo", operation:m.operation, identity:m.identity, text:m.text}, function(r) { self.reply(peer, m.id, r); });
 		} else if (m.type == "identity") {
@@ -464,7 +530,8 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 					remote.services_ref = m.actor.ref; changed = remote;
 				}
 			}
-			if (changed && (!m.identity || this.identity_valid(m.identity, m.identity.home))) this.apply_identity(changed, m.identity);
+			if (changed && (!changed.local || m.actor.auth_revision === undefined || m.actor.auth_revision == (changed.services_auth_revision || 0))
+				&& (!m.identity || this.identity_valid(m.identity, m.identity.home))) this.apply_identity(changed, m.identity);
 		} else if (m.type == "rename") {
 			var target = this.find(m.actor);
 			if (target && target.local) target.work("NICK " + this.guest());
@@ -491,8 +558,14 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 		}); return;
 	}
 	this.snapshot();
-	if (m.type == "session") return;
+	if (m.type == "session") {
+		user.services_peer_multi = m.multi_login == 1;
+		if (m.id) this.reply(peer, m.id, {multi_login:1}); return;
+	}
+	if (m.type == "sync-logins") { this.verify_logins(peer, user, m); return; }
 	if (m.type == "claim") {
+		if (user.services_peer_multi) return;
+		user.services_verified_logins = undefined; user.services_verified_multi = false;
 		if (this.identity_valid(m.identity, source.servername)) {
 			this.claim(user, m.identity); this.publish_identity(user, m.identity);
 		} else if (m.identity && m.identity.home) {
@@ -504,31 +577,70 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 				} else { self.claim(current, null); self.publish_identity(current, null, true); }
 			});
 		}
-	} else if (m.type == "logout") { this.claim(user, null); this.publish_identity(user, null); }
+	} else if (m.type == "logout") { if (user.services_peer_multi) return; user.services_verified_logins = undefined; user.services_verified_multi = false; this.claim(user, null); this.publish_identity(user, null); }
 	else if (m.type == "command") {
 		if (m.service != "NickServ" && m.service != "ChanServ") return;
+		if (user.services_peer_multi && (m.actor.auth_revision != user.services_auth_revision || !user.services_verified_logins)) { this.reply(peer, m.id, {error:"Authentication changed; please retry."}); return; }
 		this.command(user, m.service, m.text); if (m.id) this.reply(peer, m.id, {});
 	} else if (m.type == "authenticate") {
 		var homeagent = IRC_services_agent(String(m.home).toLowerCase()), actor = this.describe(user);
 		this.request(this.peer(homeagent) && homeagent, {type:"local-auth", actor:actor, account:m.account, password:m.password}, function(r) {
 			var current = self.find(actor);
-			if (!current) return;
+			if (!current || (current.services_auth_revision || 0) != actor.auth_revision) return;
 			if (r.identity && !r.error && self.identity_valid(r.identity, m.home)) {
-				self.claim(current, r.identity); self.publish_identity(current, r.identity);
-				self.reply(peer, m.id, {identity:r.identity});
+				if (!user.services_peer_multi) { self.claim(current, r.identity); self.publish_identity(current, r.identity); }
+				self.reply(peer, m.id, {identity:r.identity, multi_login:r.multi_login});
 			} else self.reply(peer, m.id, {error:r.error || "Authentication failed."});
 		});
 	} else if (m.type == "memo") {
-		var identity = this.identities[this.ref(user)], actor = this.describe(user);
+		var identity = m.operation == "SEND" ? this.identities[this.ref(user)] : user.services_verified_logins ? user.services_verified_logins.filter(function(a) { return a.home == (m.home || (user.services_identity && user.services_identity.home)); })[0] : this.identities[this.ref(user)], actor = this.describe(user);
 		if (!identity) { this.reply(peer, m.id, {error:"Identify to your BBS account first."}); return; }
+		if (user.services_peer_multi && m.actor.auth_revision != user.services_auth_revision) { this.reply(peer, m.id, {error:"Authentication changed; please retry."}); return; }
 		if (m.operation == "SEND") {
 			this.resolve_memo(m.target, function(r) {
-				if (!self.find(actor)) return;
+				if (!self.find(actor) || (user.services_auth_revision || 0) != actor.auth_revision) return;
 				if (!r.identity) { self.reply(peer, m.id, {error:r.error || "Unknown destination account."}); return; }
 				self.deliver_memo(peer, m.id, actor, r.identity, "SEND", identity.username + " (IRC " + actor.nick + "):\r\n" + String(m.text).replace(/[\x00-\x1f\x7f]/g, " ") + "\r\n");
 			});
 		} else if (m.operation == "READ" || m.operation == "STATUS") this.deliver_memo(peer, m.id, actor, identity, m.operation);
 	}
+};
+/* The connection server chooses retained logins; each BBS independently
+   proves its exact account. Delayed validations cannot overwrite newer auth. */
+IRC_Services_Manager.prototype.verify_logins = function(peer, user, m) {
+	var self = this, actor = m.actor, revision = actor.auth_revision, list = m.logins, seen = {}, multi = true;
+	if (!user.services_peer_multi || !Array.isArray(list) || list.length > 64 || typeof revision != "number" || !isFinite(revision) || revision < 0 || revision % 1
+		|| revision < (user.services_auth_revision || 0) || revision < (user.services_pending_revision || 0)) { this.reply(peer, m.id, {error:"Invalid or obsolete login set."}); return; }
+	for (var i = 0; i < list.length; i++) {
+		var a = list[i];
+		if (!a || !this.identity_valid(a, a.home) || seen[a.home]) { this.reply(peer, m.id, {error:"Invalid BBS login set."}); return; }
+		seen[a.home] = true;
+	}
+	user.services_pending_revision = revision;
+	var nonce = user.services_sync_nonce = {}, remaining = list.length, checked = [], finished = false, errors = [];
+	function complete() {
+		if (finished || remaining) return;
+		finished = true;
+		if (self.find(actor) !== user || user.services_sync_nonce !== nonce || (user.local && (user.services_auth_revision || 0) != revision)) { self.reply(peer, m.id, {error:"Authentication changed; please retry."}); return; }
+		checked = checked.filter(function(a) { return !!a; });
+		user.services_auth_revision = revision + (errors.length ? 1 : 0);
+		user.services_verified_logins = checked;
+		user.services_verified_multi = multi;
+		if (user.local) self.set_logins(user, checked, user.services_auth_revision);
+		else self.apply_identity(user, checked.length ? checked[checked.length - 1] : null);
+		self.claim(user, user.services_identity); self.publish_identity(user, user.services_identity, true);
+		self.reply(peer, m.id, {error:errors.length ? "A BBS login was revoked: " + errors.join("; ") : undefined, logins:checked, revision:user.services_auth_revision, multi_login:multi ? 1 : 0});
+	}
+	list.forEach(function(a, index) {
+		var name = IRC_services_agent(a.home);
+		self.request(self.peer(name) && name, {type:"local-validate", actor:actor, identity:a}, function(r) {
+			if (finished) return;
+			if (!r.identity || r.identity.id != a.id || !self.identity_valid(r.identity,a.home)) { errors.push(a.home + ": " + (r.error || "Identify again.")); remaining--; complete(); return; }
+			if (r.multi_login != 1) multi = false;
+			checked[index] = r.identity; remaining--; complete();
+		});
+	});
+	complete();
 };
 IRC_Services_Manager.prototype.resolve_memo = function(target, callback) {
 	var self = this;
@@ -547,7 +659,8 @@ IRC_Services_Manager.prototype.resolve_memo = function(target, callback) {
 IRC_Services_Manager.prototype.deliver_memo = function(peer, id, actor, identity, operation, text) {
 	var self = this, name = IRC_services_agent(identity.home);
 	this.request(this.peer(name) && name, {type:"local-memo", identity:identity, operation:operation, text:text}, function(r) {
-		if (!self.find(actor)) return;
+		var current = self.find(actor);
+		if (!current || (actor.auth_revision !== undefined && (current.services_auth_revision || 0) != actor.auth_revision)) return;
 		/* Keep each RPC below the framing limit, including a large native
 		   telegram spool. Partial replies are notices; the final reply ACKs. */
 		var all = String(r.text || "");
@@ -570,9 +683,14 @@ IRC_Services_Manager.prototype.guest = function() {
 };
 IRC_Services_Manager.prototype.action = function(a) {
 	if (!this.central) return;
+	/* A membership change need not change the active BBS login. Check the
+	   ownership behind queued actions as well as their authentication revision. */
+	var engine = this.queue.engine;
+	if (a.type != "notice" && engine && ((a.actor && a.actor_groups !== undefined && a.actor_groups != engine.group_signature(a.actor))
+		|| (a.target && a.target_groups !== undefined && a.target_groups != engine.group_signature(a.target)))) return;
 	var user = a.actor && this.find(a.actor), target = a.target && this.find(a.target);
-	if (a.actor && (!user || a.actor.account != (user.services_identity ? user.services_identity.id : null))) return;
-	if (a.target && (!target || a.target.account != (target.services_identity ? target.services_identity.id : null))) return;
+	if (a.actor && (!user || (a.actor.auth_revision !== undefined && a.actor.auth_revision != (user.services_auth_revision || 0)) || a.actor.account != (user.services_identity ? user.services_identity.id : null))) return;
+	if (a.target && (!target || (a.target.auth_revision !== undefined && a.target.auth_revision != (target.services_auth_revision || 0)) || a.target.account != (target.services_identity ? target.services_identity.id : null))) return;
 	if (a.type == "notice") { this.notice(a.service, user, a.text); return; }
 	if (a.type == "join") {
 		this.chanserv.do_join(a.channel);

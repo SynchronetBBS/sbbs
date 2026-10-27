@@ -51,7 +51,7 @@ var NLINE_IS_QWKMASTER                =(1<<1);        // w
 var NLINE_CHECK_WITH_QWKMASTER        =(1<<2);        // k
 
 var Clock_MaxSkew = 30;
-var EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0};
+var EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
 
 function Epoch() {
 	return parseInt(new Date().getTime()/1000);
@@ -253,7 +253,7 @@ function parse_oline_flags(flags) {
 
 function Clear_Config_Globals() {
 	Clock_MaxSkew = 30;
-	EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0};
+	EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
 	Admin1 = "";
 	Admin2 = "";
 	Admin3 = "";
@@ -686,6 +686,7 @@ function Write_Config_File(fn) {
 	f.writeln("Enabled=" + EmbeddedServices_Config.enabled);
 	f.writeln("Host=" + EmbeddedServices_Config.host);
 	if (EmbeddedServices_Config.database) f.writeln("Database=" + EmbeddedServices_Config.database);
+	f.writeln("MaxNicks=" + EmbeddedServices_Config.max_nicks);
 	f.writeln("NickExpireDays=" + EmbeddedServices_Config.nick_expire_days);
 	f.writeln("ChannelExpireDays=" + EmbeddedServices_Config.channel_expire_days);
 	f.writeln("");
@@ -748,6 +749,11 @@ function ini_BBSServices(arg, ini) {
 	if (ini.MemoServ !== undefined) EmbeddedServices_Config.memoserv = ini_false_true(ini.MemoServ);
 }
 function ini_EmbeddedServices(arg, ini) {
+	if (ini.MaxNicks !== undefined) {
+		var max = Number(ini.MaxNicks);
+		if (isFinite(max) && max > 0 && max % 1 == 0) EmbeddedServices_Config.max_nicks = max;
+		else log(LOG_WARNING, "Invalid [EmbeddedServices] MaxNicks; keeping " + EmbeddedServices_Config.max_nicks);
+	}
 	if (ini.Enabled !== undefined) EmbeddedServices_Config.enabled = ini_false_true(ini.Enabled);
 	if (ini.Host !== undefined) EmbeddedServices_Config.host = String(ini.Host).toLowerCase();
 	if (ini.Database !== undefined) EmbeddedServices_Config.database = ini.Database;

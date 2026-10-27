@@ -1,4 +1,4 @@
-# Embedded IRC services (IRCd 2.6)
+# Embedded IRC services
 
 `ircd.js` loads these services itself. No additional process or listening port
 is needed. Local BBS services are disabled by default. Enable them in `ircd.ini`:
@@ -35,6 +35,7 @@ Host=services.synchro.net
 Database=/path/to/ircd-services.sqlite
 NickExpireDays=0
 ChannelExpireDays=0
+MaxNicks=10
 ```
 
 Among enabled instances, the one whose listening addresses include an address
@@ -65,7 +66,7 @@ stop cleanly; an abrupt shutdown can lose activity since the last checkpoint. La
 times survive restarts, and downtime counts toward expiry. Expiry drops the
 registration; channel expiry also removes its access entries and parts ChanServ.
 Nickname expiry leaves the BBS account and its channel permissions intact.
-The registration database uses schema version 2; no migration is provided.
+The registration database uses schema version 3; no migration is provided.
 
 The default database is `system.data_dir + "ircd-services.sqlite"`. It requires
 a Synchronet build providing the native `SQLite` API, native `CryptContext`
@@ -98,27 +99,88 @@ than the user's connection server, it names the service and BBS (for example,
 `[NickServ@home.synchro.net]`) and includes `/msg NickServ@home.synchro.net
 <command>` or `/msg MemoServ@home.synchro.net <command>` reply instructions.
 This also applies to errors and telegram text. Unqualified MemoServ reads and
-status checks follow the authenticated account's home BBS; a request to read
-from another BBS explains how to target the authenticated account instead.
+status checks follow the most recently identified account's home BBS. Qualified
+reads select the retained login for that BBS; without that login, the reply
+explains how to target an authenticated BBS instead.
 Both services' HELP replies include a concrete server-qualified address.
 Central nickname/channel registration replies remain network-wide notices.
 
 - `IDENTIFY <escaped-account> <password>` authenticates a BBS account.
-- `LOGOUT` removes the authenticated identity.
+- `LOGOUT` removes the connection server's BBS login; `NickServ@server LOGOUT`
+  removes that BBS login. `LOGOUT ALL` removes every retained BBS login.
+  Logging out of the active BBS selects the most recently identified remaining
+  account, or restores the anonymous `~` prefix when none remain.
 - `REGISTER` (or `GROUP`) registers the current nickname explicitly.
 - `DROP [nickname]`, `INFO [nickname]`, and `GHOST <nickname>` manage ownership.
-  GHOST disconnects another session using a nickname owned by your BBS account.
+  GHOST disconnects another session using a nickname owned by any of your authenticated network identities.
+
+### Linking BBS accounts
+
+You may retain one verified account per BBS in the same IRC connection.
+Identifying to a different BBS retains previous BBS logins; identifying again
+at the same BBS replaces that BBS login. The most recent successful login sets
+the visible username and default MemoServ BBS. Permissions from all retained
+logins apply. Registration uses the active account's network identity.
+
+To share registrations between independently authenticated accounts:
+
+```text
+/msg NickServ@vert.synchro.net IDENTIFY Deuce <password>
+/msg NickServ@eotl.synchro.net IDENTIFY RealDeuce <password>
+/msg NickServ LINK Deuce+VERT RealDeuce+EOTL
+/msg NickServ LINK CONFIRM <code-from-preview>
+```
+
+`LINK` previews both complete identities: BBS accounts, nickname registrations,
+telegram destinations, and channel permissions. Confirmation merges the whole
+identities, not just the two named accounts. **Every member has equal control**
+over all combined nicknames and channel rights, including linking or removing
+other members. There is no primary account or BBS. Authenticate both exact
+accounts on this IRC connection; knowing an alias is insufficient.
+
+The random confirmation is single-use, expires after five minutes, and is
+bound to the IRC session, authentication revision, and previewed ownership,
+access, and destination state. Confirmation revalidates BBS logins and checks
+that the preview still applies. Changed state requires another preview.
+The SQLite merge is atomic. It preserves last-used times, nickname telegram
+destinations, and channel settings; duplicate access takes the higher level,
+with founder rights taking precedence. Any authenticated linked member using a
+registered nickname or present with channel access counts toward last use.
+
+`[EmbeddedServices] MaxNicks=10` limits nickname registrations per network
+identity. Set a positive integer on the central host. The limit applies to
+REGISTER/GROUP and to the combined identities in LINK. An over-limit merge
+changes nothing; drop excess registrations first. Lowering the setting retains
+existing registrations but prevents additions above the new limit.
+
+- `ACCOUNTS` lists your verified BBS logins and your linked identities, members,
+  nicknames, destinations, and channel rights. Membership details are private
+  to authenticated members. Public INFO describes nickname ownership without
+  exposing the member BBS accounts.
+- `SET <nickname> MEMOACCOUNT <escaped-account+QWKID>` selects a telegram
+  destination within that nickname's identity. New registrations initially use
+  the account performing REGISTER. A merge preserves each destination.
+- `UNLINK <escaped-account+QWKID>` detaches that account into an empty identity.
+  Registrations stay with the other members; the final member cannot unlink.
+  If the account is a configured telegram destination, UNLINK lists the affected
+  nicknames and refuses until their destinations have been explicitly changed.
+
+Membership changes immediately affect services authorization in every session.
+Existing channel op/voice modes follow the existing logout behavior and are not
+automatically removed by logout or unlinking. Fresh logins are still required
+for each BBS mailbox, even when its account belongs to your linked identity.
 
 Someone using another account's registered nickname gets a 60-second grace
 period to identify or change nicknames. On updated connection servers, services
 rename that session to an unused Guest nickname. Legacy connection servers
 lack a safe forced-rename command; services reclaim the nickname with KILL.
 
-ChanServ permissions follow authenticated BBS accounts across nickname changes:
+ChanServ permissions belong to network identities and follow every linked BBS
+account across nickname changes:
 
 - `REGISTER #channel <description>` requires identification and channel ops.
 - `ACCESS #channel ADD <registered-nick|escaped-account+QWKID> VOICE|OP|SOP`
-  grants account access. `DEL <account>` removes it; `LIST` lists entries.
+  grants network identity access. `DEL <account>` removes it; `LIST` lists entries.
   Qualified accounts must previously have identified to central services.
 - `OP`, `DEOP`, `VOICE`, `DEVOICE`, `INVITE`, and `UNBAN` take
   `#channel [nickname]`. Access grants automatic ops or voice on joining.
@@ -137,7 +199,8 @@ MemoServ is an interface to BBS telegrams, not a separate mailbox:
 - `STATUS` and automatic checks after identification report waiting telegrams
   without consuming them. File snapshots use native-compatible read locking.
 - `READ` explicitly consumes the telegram spool using `system.get_telegram()`.
-  Only the authenticated account may read its telegrams.
+  Only an independently authenticated account may read its telegrams. Linking
+  accounts never grants access to another BBS account's mailbox.
 
 ## Compatibility and runtime details
 
@@ -151,6 +214,13 @@ protect delayed requests and tolerate old hubs replacing nickname timestamps.
 Trusted hubs retain their existing authority: this transport is not encrypted
 end to end, and older debug logs can contain its payloads. Updated daemons
 redact services commands and RPC payloads from protocol logs.
+
+Multi-login support is negotiated over the authenticated helper transport.
+LINK requires updated central services, the connection server, and both BBS
+helpers. Older services helpers keep single-login behavior and cannot authorize
+LINK. Reconnecting the authority restores retained logins after their BBSes
+revalidate them. Failed validation revokes that BBS login; other verified logins
+remain usable. This does not require updates to intermediate IRC relays.
 
 Older relays and leaves continue to use standard IRC messages for channel
 operations and ghost kills. They do not gain local BBS services or live username
@@ -178,6 +248,7 @@ its account and telegram files there; it does not modify live BBS accounts.
 ```sh
 python3 tests/ircd/services-fixture.py --template-ctrl /path/to/ctrl --jsexec /path/to/current/jsexec
 /path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services.js
+/path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services-link.js
 /path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services-expiry.js
 /path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services-notices.js
 /path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services-bbs.js --bbs-fixture

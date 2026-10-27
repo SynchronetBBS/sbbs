@@ -34,7 +34,7 @@ run_tests({
 	"registration records initial usage and persists it across reopen": function() {
 		var s = scenario();
 		check(s.db.data.nick_last_used.$ALICE == START && s.db.data.channels["$#TEST"].last_used == START);
-		check(s.db.db.query("PRAGMA user_version")[0].user_version == 2);
+		check(s.db.db.query("PRAGMA user_version")[0].user_version == 3);
 		s.db.close(); s.db = reopen(s.path);
 		check(s.db.data.nick_last_used.$ALICE == START && s.db.data.channels["$#TEST"].last_used == START);
 	},
@@ -111,7 +111,9 @@ run_tests({
 	},
 	"activity updates are batched and do not rewrite channel access lists": function() {
 		var s = scenario(), writes = 0, update = s.db.update_usage;
-		s.engine.commit(function(next) { next.accounts["TEST:2:100"] = identity(2,"Another User"); next.channels["$#TEST"].access["TEST:2:100"] = 50; });
+		s.engine.event({type:"user",user:{ref:"other",nick:"Other",rev:"Other"}});
+		s.engine.event({type:"identify",ref:"other",identity:identity(2,"Another User")});
+		s.engine.commit(function(next) { next.channels["$#TEST"].access[next.memberships["TEST:2:100"]] = 50; });
 		s.db.update_usage = function(n,c) { writes++; update.call(this,n,c); };
 		s.db.db.exec("CREATE TRIGGER no_access_rewrite BEFORE DELETE ON access BEGIN SELECT RAISE(ABORT,'Access rewrite'); END;");
 		for (var i = 0; i < 10; i++) {
