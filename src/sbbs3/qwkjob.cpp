@@ -121,13 +121,18 @@ static bool qwkjob_terminated(const qwkjob_host_t* host)
 	return host->terminated != NULL && *host->terminated;
 }
 
-// Takes over a lock file older than max_age: a crashed holder's lock remains on POSIX
+// Takes over a lock file older than max_age, or left by a process of this host that has ended:
+// a crashed holder's lock remains on POSIX
 static bool qwkjob_lock(const qwkjob_host_t* host, fmutex_t* lock, long max_age)
 {
 	char desc[MAX_PATH + 256];
+	char orphan[QWKJOB_LOCK_TEXT_MAX];
 
-	if (fmutex_open(lock, qwkjob_host_name(host), max_age))
+	if (qwkjob_open_lock(qwkjob_host_name(host), lock, max_age, orphan, sizeof orphan)) {
+		if (orphan[0] != '\0')
+			qwkjob_lprintf(host, LOG_NOTICE, "Took over %s, left by an ended process: %s", lock->name, orphan);
 		return true;
+	}
 	int  level = qwkjob_lock_busy(lock, desc, sizeof desc);
 	qwkjob_lprintf(host, level, "%s", desc);
 	return false;
@@ -572,33 +577,72 @@ char* qwkjob_user_lock_name(const scfg_t* cfg, uint usernum, char* buf, size_t s
 	return buf;
 }
 
-int qwkjob_lock_busy(const fmutex_t* lock, char* buf, size_t size)
+// Reads a lock file's holder text, empty if unreadable (e.g. Windows denies all sharing of a held lock)
+static void qwkjob_lock_holder(const char* path, char* buf, size_t size)
 {
-	char      holder[128] = "";
-	char      since[32] = "?";
-	struct tm tm;
-	time_t    t = lock->time;
-
-	// The holder's text may be unreadable (e.g. Windows denies all sharing of a held lock)
+	*buf = '\0';
 #ifdef _WIN32
 	// Permit the holder to remove the file while we read it, which fopen() would not
-	HANDLE h = CreateFileA(lock->name, GENERIC_READ
+	HANDLE h = CreateFileA(path, GENERIC_READ
 	                       , FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE
 	                       , NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (h != INVALID_HANDLE_VALUE) {
 		DWORD len = 0;
-		if (ReadFile(h, holder, sizeof holder - 1, &len, NULL))
-			holder[len] = '\0';
+		if (ReadFile(h, buf, (DWORD)size - 1, &len, NULL))
+			buf[len] = '\0';
 		CloseHandle(h);
 	}
 #else
-	FILE* fp = fopen(lock->name, "rb");
+	FILE* fp = fopen(path, "rb");
 	if (fp != NULL) {
-		size_t len = fread(holder, 1, sizeof holder - 1, fp);
-		holder[len] = '\0';
+		size_t len = fread(buf, 1, size - 1, fp);
+		buf[len] = '\0';
 		fclose(fp);
 	}
 #endif
+}
+
+// Whether a lock file's holder (text "<host name> (<machine> pid <pid>)") is a process of this
+// machine that is no longer running. Locks written by older versions name no process.
+static bool qwkjob_lock_orphaned(const char* holder)
+{
+	char        machine[128];
+	int         pid = 0;
+	const char* p = strrchr(holder, '(');
+
+	if (p == NULL || sscanf(p, "(%127s pid %d)", machine, &pid) != 2 || pid <= 0)
+		return false;
+	return strcmp(machine, qwkjob_local_host_name()) == 0 && !qwkjob_process_running(pid);
+}
+
+bool qwkjob_open_lock(const char* host_name, fmutex_t* lock, long max_age, char* orphan, size_t size)
+{
+	char text[QWKJOB_LOCK_TEXT_MAX];
+	char holder[QWKJOB_LOCK_TEXT_MAX];
+
+	if (orphan != NULL && size > 0)
+		*orphan = '\0';
+	snprintf(text, sizeof text, "%s (%s pid %d)", host_name, qwkjob_local_host_name(), (int)getpid());
+	if (fmutex_open(lock, text, max_age))
+		return true;
+	qwkjob_lock_holder(lock->name, holder, sizeof holder);
+	if (!qwkjob_lock_orphaned(holder) || remove(lock->name) != 0)
+		return false;
+	if (!fmutex_open(lock, text, max_age))
+		return false;
+	if (orphan != NULL && size > 0)
+		snprintf(orphan, size, "%s", holder);
+	return true;
+}
+
+int qwkjob_lock_busy(const fmutex_t* lock, char* buf, size_t size)
+{
+	char      holder[QWKJOB_LOCK_TEXT_MAX];
+	char      since[32] = "?";
+	struct tm tm;
+	time_t    t = lock->time;
+
+	qwkjob_lock_holder(lock->name, holder, sizeof holder);
 	if (holder[0] == '\0')
 		SAFECOPY(holder, "unknown");
 	if (t == -1) {

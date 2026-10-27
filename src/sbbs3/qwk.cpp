@@ -523,9 +523,13 @@ bool sbbs_t::qwk_upload()
 bool sbbs_t::qwk_lock(fmutex_t* lock)
 {
 	char desc[MAX_PATH + 256];
+	char orphan[QWKJOB_LOCK_TEXT_MAX];
 
-	if (fmutex_open(lock, startup->host_name, QWKJOB_USER_LOCK_MAX_AGE))
+	if (qwkjob_open_lock(startup->host_name, lock, QWKJOB_USER_LOCK_MAX_AGE, orphan, sizeof orphan)) {
+		if (orphan[0] != '\0')
+			lprintf(LOG_NOTICE, "Took over %s, left by an ended process: %s", lock->name, orphan);
 		return true;
+	}
 	int  level = qwkjob_lock_busy(lock, desc, sizeof desc);
 	lprintf(level, "%s", desc);
 	bputs(text[QWKTransferInProgress]);

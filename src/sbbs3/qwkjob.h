@@ -37,6 +37,8 @@
 #define QWKJOB_USER_LOCK_MAX_AGE    (60 * 60)
 /* Hub: also held across the event thread's call-out, which may run for hours */
 #define QWKJOB_HUB_LOCK_MAX_AGE     (12 * 60 * 60)
+/* Size of a lock file's holder text: "<host name> (<machine> pid <pid>)" */
+#define QWKJOB_LOCK_TEXT_MAX        256
 /* Seconds a lock file may be held before a refused job is logged at LOG_NOTICE (else LOG_DEBUG) */
 #define QWKJOB_LOCK_NOTICE_AGE      (5 * 60)
 
@@ -100,6 +102,9 @@ DLLEXPORT char* qwkjob_user_lock_name(const scfg_t*, uint usernum, char* buf, si
 
 /* After a failed fmutex_open(): describes the held lock (holder, age) in buf, returns the log level */
 DLLEXPORT int qwkjob_lock_busy(const fmutex_t*, char* buf, size_t size);
+/* Opens a QWK job lock file, naming this process as holder. Also takes over a lock left by an
+ * ended process of this machine, then copying its holder text to orphan (else orphan is empty). */
+DLLEXPORT bool qwkjob_open_lock(const char* host_name, fmutex_t*, long max_age, char* orphan, size_t size);
 
 #ifdef __cplusplus
 }
