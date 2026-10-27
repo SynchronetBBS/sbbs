@@ -15,10 +15,18 @@ function IRC_Services_Backend(config, resolver) {
 }
 IRC_Services_Backend.prototype.output = function(event) { if (!this.closed) this.outputs.push(event); };
 IRC_Services_Backend.prototype.read = function() { return this.outputs.shift(); };
+IRC_Services_Backend.prototype.close_store = function() {
+	try { if (this.engine) this.engine.checkpoint(); }
+	catch (error) { log(LOG_ERR, "Embedded services could not save usage before shutdown: " + error); }
+	finally {
+		if (this.store) this.store.close();
+		this.store = this.engine = null;
+	}
+};
 IRC_Services_Backend.prototype.write = function(job) {
 	if (job.type == "stop") {
 		this.closed = true; this.inputs = []; this.outputs = [];
-		if (this.store) this.store.close(); this.store = this.engine = null; return true;
+		this.close_store(); return true;
 	}
 	if (this.closed || this.inputs.length >= 512) return false;
 	if (job.type == "dns") { this.resolve_host(); return true; }
@@ -44,7 +52,7 @@ IRC_Services_Backend.prototype.process_one = function() {
 					this.output({type:"ready"}); this.engine.event({type:"boot"});
 				}
 			} else if (job.type == "deactivate") {
-				this.engine = null; if (this.store) this.store.close(); this.store = null;
+				this.close_store();
 			} else if (job.type == "event") { if (this.engine) this.engine.event(job.event); }
 			else if (job.type == "validate") {
 				var checked = this.memo_account(job.identity);

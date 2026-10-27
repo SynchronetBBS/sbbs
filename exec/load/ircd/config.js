@@ -51,7 +51,7 @@ var NLINE_IS_QWKMASTER                =(1<<1);        // w
 var NLINE_CHECK_WITH_QWKMASTER        =(1<<2);        // k
 
 var Clock_MaxSkew = 30;
-var EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:""};
+var EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0};
 
 function Epoch() {
 	return parseInt(new Date().getTime()/1000);
@@ -253,7 +253,7 @@ function parse_oline_flags(flags) {
 
 function Clear_Config_Globals() {
 	Clock_MaxSkew = 30;
-	EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:""};
+	EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0};
 	Admin1 = "";
 	Admin2 = "";
 	Admin3 = "";
@@ -686,6 +686,8 @@ function Write_Config_File(fn) {
 	f.writeln("Enabled=" + EmbeddedServices_Config.enabled);
 	f.writeln("Host=" + EmbeddedServices_Config.host);
 	if (EmbeddedServices_Config.database) f.writeln("Database=" + EmbeddedServices_Config.database);
+	f.writeln("NickExpireDays=" + EmbeddedServices_Config.nick_expire_days);
+	f.writeln("ChannelExpireDays=" + EmbeddedServices_Config.channel_expire_days);
 	f.writeln("");
 	f.close();
 
@@ -749,6 +751,13 @@ function ini_EmbeddedServices(arg, ini) {
 	if (ini.Enabled !== undefined) EmbeddedServices_Config.enabled = ini_false_true(ini.Enabled);
 	if (ini.Host !== undefined) EmbeddedServices_Config.host = String(ini.Host).toLowerCase();
 	if (ini.Database !== undefined) EmbeddedServices_Config.database = ini.Database;
+	[["NickExpireDays", "nick_expire_days"], ["ChannelExpireDays", "channel_expire_days"]].forEach(function(setting) {
+		if (ini[setting[0]] === undefined) return;
+		var days = Number(ini[setting[0]]);
+		if (isFinite(days) && days >= 0 && Math.floor(days) == days && isFinite(days * 86400000))
+			EmbeddedServices_Config[setting[1]] = days;
+		else log(LOG_WARNING, "Invalid [EmbeddedServices] " + setting[0] + "; keeping " + EmbeddedServices_Config[setting[1]]);
+	});
 }
 
 function ini_Clock(arg, ini) {

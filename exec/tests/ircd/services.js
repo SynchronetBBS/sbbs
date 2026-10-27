@@ -49,7 +49,7 @@ run_tests({
 	},
 	"SQLite rejects a competing owner and rolls back failed changes": function() {
 		var s = scenario(), path = paths[paths.length - 1]; throws(function() { new IRC_Services_Store(path); });
-		var invalid = IRC_services_copy(s.db.data); invalid.nicks.$BAD = "missing";
+		var invalid = IRC_services_copy(s.db.data); invalid.nicks.$BAD = "missing"; invalid.nick_last_used.$BAD = Date.now();
 		throws(function() { s.db.save(invalid); }); check(!s.db.data.nicks.$BAD); check(s.db.db.query("SELECT * FROM nicks").length == 0);
 	},
 	"identifying does not register nicknames; REGISTER requires identification": function() {

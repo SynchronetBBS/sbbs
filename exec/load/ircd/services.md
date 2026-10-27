@@ -33,6 +33,8 @@ including while external services are disconnected. To enable the authority:
 Enabled=true
 Host=services.synchro.net
 Database=/path/to/ircd-services.sqlite
+NickExpireDays=0
+ChannelExpireDays=0
 ```
 
 Among enabled instances, the one whose listening addresses include an address
@@ -41,6 +43,29 @@ hostname through its ordinary services U-line configuration. `Host` defaults
 to `services.synchro.net`; `Host` and `Database` are optional. Omitting `Enabled`
 or setting it to `false` keeps central services inactive. A rehash applies
 changes to these settings.
+
+`NickExpireDays` and `ChannelExpireDays` independently expire registrations
+after the specified number of unused days. Both default to `0`, which disables
+expiry. For example, `NickExpireDays=30` and `ChannelExpireDays=90` expire
+nicknames after 30 days and channels after 90 days. Set these on the central
+services host; leaf settings do not control the master registration list.
+
+Last-used timestamps are tracked even with expiry disabled and appear in
+NickServ/ChanServ `INFO`. A nickname is used while its authenticated owner is
+using that specific nickname; identifying on another nickname does not renew
+all of the account's registrations. A channel is used while an authenticated
+founder or access-list member is present, including voice-level access. Idle
+connections count. Services presence, unrelated visitors, failed identification,
+and outsider `INFO` queries do not renew registrations.
+
+Usage writes and expiry checks run once per minute, with a one-minute startup
+allowance for network snapshots and account identification. Brief visits and
+departures are recorded between checks. Pending usage is flushed when services
+stop cleanly; an abrupt shutdown can lose activity since the last checkpoint. Last-used
+times survive restarts, and downtime counts toward expiry. Expiry drops the
+registration; channel expiry also removes its access entries and parts ChanServ.
+Nickname expiry leaves the BBS account and its channel permissions intact.
+The registration database uses schema version 2; no migration is provided.
 
 The default database is `system.data_dir + "ircd-services.sqlite"`. It requires
 a Synchronet build providing the native `SQLite` API, native `CryptContext`
@@ -67,6 +92,16 @@ With local NickServ enabled, `/NS` and `/msg NickServ` address the local BBS.
 `/msg NickServ@home.synchro.net IDENTIFY Some.User password` selects another
 participating BBS through the central authority. Use a protected client link;
 remote identification carries the BBS password through trusted server links.
+
+User-facing replies use `NOTICE`. When a BBS reply comes from a different BBS
+than the user's connection server, it names the service and BBS (for example,
+`[NickServ@home.synchro.net]`) and includes `/msg NickServ@home.synchro.net
+<command>` or `/msg MemoServ@home.synchro.net <command>` reply instructions.
+This also applies to errors and telegram text. Unqualified MemoServ reads and
+status checks follow the authenticated account's home BBS; a request to read
+from another BBS explains how to target the authenticated account instead.
+Both services' HELP replies include a concrete server-qualified address.
+Central nickname/channel registration replies remain network-wide notices.
 
 - `IDENTIFY <escaped-account> <password>` authenticates a BBS account.
 - `LOGOUT` removes the authenticated identity.
@@ -143,6 +178,8 @@ its account and telegram files there; it does not modify live BBS accounts.
 ```sh
 python3 tests/ircd/services-fixture.py --template-ctrl /path/to/ctrl --jsexec /path/to/current/jsexec
 /path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services.js
+/path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services-expiry.js
+/path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services-notices.js
 /path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services-bbs.js --bbs-fixture
 python3 tests/ircd/services-network.py --jsexec /path/to/current/jsexec --legacy-source /path/to/old/exec
 ```

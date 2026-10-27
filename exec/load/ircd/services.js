@@ -169,7 +169,14 @@ IRC_Services_Manager.prototype.bind_actor = function(peer, actor) {
 		|| (u.services_created || u.created) != actor.created || !/^[0-9a-f]{64}$/.test(actor.ref)) return null;
 	return u;
 };
-IRC_Services_Manager.prototype.notice = function(service, user, text) {
+IRC_Services_Manager.prototype.notice = function(service, user, text, home) {
+	/* Proxied replies are delivered by the connection server, where the
+	   recipient is still local. Compare BBS names, not user.local. Central
+	   registration notices omit home and keep their network-wide meaning. */
+	home = String(home || "").toLowerCase();
+	if (home && /^[a-z0-9_.:-]+$/.test(home) && home != String(user.servername || ServerName).toLowerCase())
+		text = "[" + service + "@" + home + "] " + text
+			+ "\nTo reply to this BBS, use /msg " + service + "@" + home + " <command>.";
 	text = String(text).replace(/\x01./g, "").replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
 	var bot = service == "ChanServ" ? this.chanserv : this.nickserv;
 	text.split(/\r?\n/).forEach(function(line) {
@@ -337,7 +344,9 @@ IRC_Services_Manager.prototype.intercept = function(user, target, text) {
 	try { return this.intercept_command(user, target, text); }
 	catch (error) {
 		log(LOG_WARNING, "Embedded IRC services command failed: " + error);
-		this.notice(/^MemoServ/i.test(target) ? "MemoServ" : "NickServ", user, "Services are busy or unavailable; please try again later.");
+		var service = /^MemoServ/i.test(target) ? "MemoServ" : "NickServ";
+		var home = String(target).split("@")[1] || (service == "MemoServ" && user.services_identity && user.services_identity.home);
+		this.notice(service, user, "Services are busy or unavailable; please try again later.", home);
 		return true;
 	}
 };
@@ -347,21 +356,21 @@ IRC_Services_Manager.prototype.intercept_command = function(user, target, text) 
 	if (!match) return false;
 	var service = match[1].toLowerCase() == "nickserv" ? "NickServ" : "MemoServ";
 	if (!(service == "NickServ" ? this.config.nickserv : this.config.memoserv)) return false;
-	if (!this.ensure_agent()) { this.notice(service, user, "Local services are unavailable."); return true; }
+	var home = (match[2] || (service == "MemoServ" && user.services_identity && user.services_identity.home) || ServerName).toLowerCase();
+	if (!this.ensure_agent()) { this.notice(service, user, "Local services are unavailable.", home); return true; }
 	var self = this, actor = this.describe(user), a = text.trim().split(/\s+/), verb = (a.shift() || "HELP").toUpperCase();
-	if (user.services_last_request && system.timer - user.services_last_request < 1) { this.notice(service, user, "Please wait before sending another services command."); return true; }
+	if (user.services_last_request && system.timer - user.services_last_request < 1) { this.notice(service, user, "Please wait before sending another services command.", home); return true; }
 	user.services_last_request = system.timer;
-	var home = (match[2] || ServerName).toLowerCase();
 	if (service == "NickServ" && verb == "IDENTIFY") {
-		if (a.length != 2) { this.notice(service, user, "Syntax: IDENTIFY <escaped-account> <password>"); return true; }
+		if (a.length != 2) { this.notice(service, user, "Syntax: IDENTIFY <escaped-account> <password>", home); return true; }
 		var account;
-		try { account = IRC_services_unescape(a[0]); } catch (_) { this.notice(service, user, "Invalid escaped account name."); return true; }
+		try { account = IRC_services_unescape(a[0]); } catch (_) { this.notice(service, user, "Invalid escaped account name.", home); return true; }
 		var done = function(result) {
 			var current = self.find(actor); if (!current) return;
-			if (!result.identity || result.error) { self.notice(service, current, result.error || "Authentication failed."); return; }
-			if (!self.identity_valid(result.identity, home)) { self.notice(service, current, "Invalid authentication response."); return; }
+			if (!result.identity || result.error) { self.notice(service, current, result.error || "Authentication failed.", home); return; }
+			if (!self.identity_valid(result.identity, home)) { self.notice(service, current, "Invalid authentication response.", home); return; }
 			self.apply_identity(current, result.identity);
-			self.notice(service, current, "Identified as " + result.identity.username + ".");
+			self.notice(service, current, "Identified as " + result.identity.username + ".", home);
 			var cp = self.central_peer();
 			if (home == self.config.server && cp) self.send(cp, {type:"claim", actor:self.describe(current), identity:result.identity});
 			if (self.config.memoserv) self.memo(current, "STATUS", [], home);
@@ -369,12 +378,13 @@ IRC_Services_Manager.prototype.intercept_command = function(user, target, text) 
 		if (home == this.config.server) this.job({type:"authenticate", account:account, password:a[1]}, done);
 		else this.request(this.central_peer(), {type:"authenticate", actor:actor, home:home, account:account, password:a[1]}, done);
 	} else if (service == "NickServ" && verb == "LOGOUT") {
+		if (user.services_identity) home = user.services_identity.home;
 		this.apply_identity(user, null);
 		var cp = this.central_peer(); if (cp) this.send(cp, {type:"logout", actor:this.describe(user)});
-		this.notice(service, user, "You are logged out.");
+		this.notice(service, user, "You are logged out.", home);
 	} else if (service == "MemoServ") this.memo(user, verb, a, match[2] && home);
-	else if (verb == "HELP") this.notice(service, user, "IDENTIFY <escaped-account> <password> | LOGOUT | REGISTER | DROP [nickname] | INFO [nickname] | GHOST <nickname>. Use NickServ@server to choose the BBS.");
-	else this.request(this.central_peer(), {type:"command", actor:actor, service:"NickServ", text:text}, function(r) { if (r.error && self.find(actor)) self.notice(service, user, r.error); });
+	else if (verb == "HELP") this.notice(service, user, "IDENTIFY <escaped-account> <password> | LOGOUT | REGISTER | DROP [nickname] | INFO [nickname] | GHOST <nickname>. Use /msg NickServ@" + home + " <command> for this BBS.", home);
+	else this.request(this.central_peer(), {type:"command", actor:actor, service:"NickServ", text:text}, function(r) { if (r.error && self.find(actor)) self.notice(service, user, r.error, home); });
 	return true;
 };
 IRC_Services_Manager.prototype.command = function(user, service, text) {
@@ -385,11 +395,12 @@ IRC_Services_Manager.prototype.command = function(user, service, text) {
 };
 IRC_Services_Manager.prototype.memo = function(user, verb, args, home) {
 	var self = this, actor = this.describe(user);
-	if (verb == "HELP") { this.notice("MemoServ", user, "SEND <registered-nick|escaped-account+QWKID> <text> | READ | STATUS. READ consumes BBS telegrams; automatic checks do not."); return; }
-	if (!user.services_identity) { this.notice("MemoServ", user, "Identify to your BBS account first."); return; }
-	if (["SEND","READ","STATUS"].indexOf(verb) < 0 || (verb == "SEND" && args.length < 2)) { this.notice("MemoServ", user, "Invalid command. Use HELP."); return; }
-	if (home && verb != "SEND" && home != user.services_identity.home) { this.notice("MemoServ", user, "You may read only your authenticated account's telegrams."); return; }
-	var finish = function(r) { if (self.find(actor)) self.notice("MemoServ", user, r.error || r.text || "Telegram operation completed."); };
+	home = home || (user.services_identity && user.services_identity.home) || this.config.server;
+	if (verb == "HELP") { this.notice("MemoServ", user, "SEND <registered-nick|escaped-account+QWKID> <text> | READ | STATUS. READ consumes BBS telegrams; automatic checks do not. Use /msg MemoServ@" + home + " <command> for this BBS.", home); return; }
+	if (!user.services_identity) { this.notice("MemoServ", user, "Identify to your BBS account first with /msg NickServ@" + home + " IDENTIFY <escaped-account> <password>.", home); return; }
+	if (["SEND","READ","STATUS"].indexOf(verb) < 0 || (verb == "SEND" && args.length < 2)) { this.notice("MemoServ", user, "Invalid command. Use HELP.", home); return; }
+	if (verb != "SEND" && home != user.services_identity.home) { this.notice("MemoServ", user, "You may read only your authenticated account's telegrams. Use /msg MemoServ@" + user.services_identity.home + " " + verb + ".", user.services_identity.home); return; }
+	var finish = function(r) { if (self.find(actor)) self.notice("MemoServ", user, r.error || r.text || "Telegram operation completed.", r.home || home); };
 	if (verb != "SEND" && user.services_identity.home == this.config.server)
 		this.job({type:"memo", operation:verb, identity:user.services_identity}, finish);
 	else this.request(this.central_peer(), {type:"memo", actor:actor, operation:verb, target:args.shift(), text:args.join(" ")}, finish);
@@ -425,7 +436,7 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 			var checked = this.find(m.actor);
 			this.reply(peer, m.id, {valid:!!(checked && checked.local)});
 		} else if (m.type == "memo-text") {
-			var recipient = this.find(m.actor); if (recipient && recipient.local) this.notice("MemoServ", recipient, m.text);
+			var recipient = this.find(m.actor); if (recipient && recipient.local) this.notice("MemoServ", recipient, m.text, m.home || (recipient.services_identity && recipient.services_identity.home));
 		} else if (m.type == "local-resolve" && this.config.memoserv) {
 			this.job({type:"local-resolve", account:m.account}, function(r) { self.reply(peer, m.id, r); });
 		} else if (m.type == "local-auth" && this.config.nickserv) {
@@ -540,8 +551,8 @@ IRC_Services_Manager.prototype.deliver_memo = function(peer, id, actor, identity
 		/* Keep each RPC below the framing limit, including a large native
 		   telegram spool. Partial replies are notices; the final reply ACKs. */
 		var all = String(r.text || "");
-		for (var i = 0; i < all.length; i += 8000) self.send(peer, {type:"memo-text", actor:actor, text:all.substr(i,8000)});
-		self.reply(peer, id, {error:r.error, text:all ? "End of telegram response." : "Telegram operation completed."});
+		for (var i = 0; i < all.length; i += 8000) self.send(peer, {type:"memo-text", actor:actor, text:all.substr(i,8000), home:identity.home});
+		self.reply(peer, id, {error:r.error, text:all ? "End of telegram response." : "Telegram operation completed.", home:identity.home});
 	});
 };
 IRC_Services_Manager.prototype.publish_identity = function(user, identity, include_connection) {

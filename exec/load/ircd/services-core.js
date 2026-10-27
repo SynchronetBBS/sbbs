@@ -6,8 +6,69 @@
 function IRC_Services_Engine(store, config, emit) {
 	this.store = store; this.config = config; this.emit = emit;
 	this.users = {}; this.channels = {}; this.sessions = {}; this.deadlines = {};
+	this.nick_usage = {}; this.channel_usage = {};
+	/* Allow the initial network snapshot and account attestations to arrive
+	   before expiring anything. Maintenance and writes run once per minute. */
+	this.next_maintenance = system.timer + 60;
 }
 
+IRC_Services_Engine.prototype.now = function() { return Date.now(); };
+IRC_Services_Engine.prototype.note_nick = function(user, now) {
+	var key = IRC_services_key(user.nick), owner = this.store.data.nicks[key];
+	if (owner && this.sessions[user.ref] == owner)
+		this.nick_usage[key] = Math.max(now, this.nick_usage[key] || 0, this.store.data.nick_last_used[key]);
+};
+IRC_Services_Engine.prototype.note_channel = function(channel, now) {
+	if (!channel) return;
+	var key = IRC_services_key(channel.name), record = this.store.data.channels[key], self = this;
+	if (record && channel.users.some(function(member) {
+		var user = self.users[member.ref];
+		return user && self.level(user, channel) > 0;
+	})) this.channel_usage[key] = Math.max(now, this.channel_usage[key] || 0, record.last_used);
+};
+IRC_Services_Engine.prototype.note_user = function(ref, now) {
+	var user = this.users[ref];
+	if (!user || !this.sessions[ref]) return;
+	this.note_nick(user, now);
+	for (var k in this.channels) {
+		var channel = this.channels[k];
+		if (this.member(channel, ref) && this.level(user, channel) > 0) this.note_channel(channel, now);
+	}
+};
+IRC_Services_Engine.prototype.flush_usage = function() {
+	var nicks = {}, channels = {}, data = this.store.data, self = this;
+	Object.keys(this.nick_usage).forEach(function(k) {
+		if (data.nicks[k] && self.nick_usage[k] > data.nick_last_used[k]) nicks[k] = self.nick_usage[k];
+	});
+	Object.keys(this.channel_usage).forEach(function(k) {
+		if (data.channels[k] && self.channel_usage[k] > data.channels[k].last_used) channels[k] = self.channel_usage[k];
+	});
+	this.store.update_usage(nicks, channels);
+	this.nick_usage = {}; this.channel_usage = {};
+};
+IRC_Services_Engine.prototype.checkpoint = function() {
+	var now = this.now();
+	for (var ref in this.users) this.note_nick(this.users[ref], now);
+	for (var k in this.channels) this.note_channel(this.channels[k], now);
+	this.flush_usage();
+};
+IRC_Services_Engine.prototype.expire = function(now) {
+	var data = this.store.data, self = this;
+	var nicks = Object.keys(data.nicks).filter(function(k) {
+		return self.config.nick_expire_days > 0 && now - data.nick_last_used[k] >= self.config.nick_expire_days * 86400000;
+	});
+	var channels = Object.keys(data.channels).filter(function(k) {
+		return self.config.channel_expire_days > 0 && now - data.channels[k].last_used >= self.config.channel_expire_days * 86400000;
+	});
+	if (!nicks.length && !channels.length) return;
+	var parted = channels.map(function(k) { return data.channels[k].name; });
+	this.commit(function(next) {
+		nicks.forEach(function(k) { delete next.nicks[k]; delete next.nick_last_used[k]; });
+		channels.forEach(function(k) { delete next.channels[k]; });
+	});
+	parted.forEach(function(name) { self.emit({type:"part", channel:name}); });
+	log(LOG_INFO, format("Embedded services expired %u nickname and %u channel registrations", nicks.length, channels.length));
+};
 IRC_Services_Engine.prototype.notice = function(service, user, text) {
 	this.emit({type: "notice", service: service, actor: user, text: text});
 };
@@ -50,11 +111,14 @@ IRC_Services_Engine.prototype.enforce = function(channel) {
 IRC_Services_Engine.prototype.event = function(event) {
 	var self = this, ref, old, record;
 	if (event.type == "reset") {
+		this.checkpoint();
 		this.users = {}; this.channels = {}; this.sessions = {}; this.deadlines = {};
 		return;
 	}
 	if (event.type == "user") {
+		this.note_user(event.user.ref, this.now());
 		old = this.users[event.user.ref]; this.users[event.user.ref] = event.user;
+		this.note_user(event.user.ref, this.now());
 		var owner = this.account(event.user.nick);
 		if ((!old || old.nick != event.user.nick) && owner && this.sessions[event.user.ref] != owner)
 			{
@@ -63,15 +127,17 @@ IRC_Services_Engine.prototype.event = function(event) {
 		}
 		return;
 	}
-	if (event.type == "quit") { delete this.users[event.ref]; delete this.sessions[event.ref]; delete this.deadlines[event.ref]; return; }
+	if (event.type == "quit") { this.note_user(event.ref, this.now()); delete this.users[event.ref]; delete this.sessions[event.ref]; delete this.deadlines[event.ref]; return; }
 	if (event.type == "identify") {
 		var identified = this.users[event.ref], identity = event.identity;
 		if (!identified) return;
+		this.note_user(event.ref, this.now());
 		if (identity) {
 			if (JSON.stringify(this.store.data.accounts[identity.id]) != JSON.stringify(identity))
 				this.commit(function(next) { next.accounts[identity.id] = identity; });
 			this.sessions[event.ref] = identity.id;
 		} else delete this.sessions[event.ref];
+		this.note_user(event.ref, this.now());
 		if (this.account(identified.nick) && this.account(identified.nick) != this.sessions[event.ref]) {
 			/* Periodic session revalidation must not renew an impostor's
 			   grace period indefinitely. */
@@ -82,15 +148,21 @@ IRC_Services_Engine.prototype.event = function(event) {
 		return;
 	}
 	if (event.type == "tick") {
+		if (system.timer >= this.next_maintenance) {
+			this.checkpoint(); this.expire(this.now());
+			this.next_maintenance = system.timer + 60;
+		}
 		Object.keys(this.deadlines).forEach(function(ref) {
-			var d = self.deadlines[ref], u = self.users[ref];
-			if (!u || u.nick != d.nick || self.account(u.nick) == self.sessions[ref]) { delete self.deadlines[ref]; return; }
+			var d = self.deadlines[ref], u = self.users[ref], owner = u && self.account(u.nick);
+			if (!u || u.nick != d.nick || !owner || owner == self.sessions[ref]) { delete self.deadlines[ref]; return; }
 			if (system.timer >= d.at) { delete self.deadlines[ref]; self.emit({type:"rename", target:u}); }
 		}); return;
 	}
-	if (event.type == "channel_gone") { delete this.channels[event.ref]; return; }
+	if (event.type == "channel_gone") { this.note_channel(this.channels[event.ref], this.now()); delete this.channels[event.ref]; return; }
 	if (event.type == "channel") {
+		this.note_channel(this.channels[event.channel.ref], this.now());
 		old = this.channels[event.channel.ref]; this.channels[event.channel.ref] = event.channel;
+		this.note_channel(event.channel, this.now());
 		record = this.store.data.channels[IRC_services_key(event.channel.name)];
 		if (record && record.keeptopic && old && old.topic != event.channel.topic) {
 			this.commit(function(data) { data.channels[IRC_services_key(event.channel.name)].topic = event.channel.topic; });
@@ -124,9 +196,10 @@ IRC_Services_Engine.prototype.nick_command = function(user, verb, args) {
 	function reply(text) { self.notice("NickServ", user, text); }
 	if (verb == "HELP") { reply("REGISTER | DROP [nickname] | INFO [nickname] | GHOST <nickname>. Identify using NickServ@your-bbs-server IDENTIFY <escaped-account> <password>."); return; }
 	if (verb == "INFO") {
-		var owner = this.account(args[0] || user.nick);
+		var info_key = IRC_services_key(args[0] || user.nick), owner = data.nicks[info_key];
 		if (!owner) throw IRC_services_error("That nickname is not registered.");
-		var a = data.accounts[owner]; reply("Registered to " + IRC_services_escape(a.name) + "+" + a.qwk + "."); return;
+		var a = data.accounts[owner]; reply("Registered to " + IRC_services_escape(a.name) + "+" + a.qwk
+			+ ". Last used: " + new Date(Math.max(data.nick_last_used[info_key], this.nick_usage[info_key] || 0)).toISOString() + "."); return;
 	}
 	if (!account) throw IRC_services_error("Identify to your BBS account first.");
 	if (verb == "REGISTER" || verb == "GROUP") {
@@ -134,11 +207,14 @@ IRC_Services_Engine.prototype.nick_command = function(user, verb, args) {
 		if (data.nicks[key]) throw IRC_services_error("That nickname is already registered.");
 		var count = Object.keys(data.nicks).filter(function(k) { return data.nicks[k] == account; }).length;
 		if (count >= 20) throw IRC_services_error("An account may register at most 20 nicknames.");
-		this.commit(function(next) { next.nicks[key] = account; }); reply("Nickname registered to your BBS account.");
+		var now = this.now();
+		this.commit(function(next) { next.nicks[key] = account; next.nick_last_used[key] = now; });
+		delete this.nick_usage[key]; reply("Nickname registered to your BBS account.");
 	} else if (verb == "DROP") {
 		key = IRC_services_key(args[0] || user.nick);
 		if (data.nicks[key] != account) throw IRC_services_error("That nickname belongs to another account.");
-		this.commit(function(next) { delete next.nicks[key]; }); reply("Nickname registration dropped.");
+		this.commit(function(next) { delete next.nicks[key]; delete next.nick_last_used[key]; });
+		delete this.nick_usage[key]; reply("Nickname registration dropped.");
 	} else if (verb == "GHOST") {
 		if (args.length != 1 || this.account(args[0]) != account) throw IRC_services_error("Syntax: GHOST <nickname> (must belong to your account)");
 		var target = this.by_nick(args[0]);
@@ -182,20 +258,24 @@ IRC_Services_Engine.prototype.channel_command = function(user, verb, args) {
 		if (!account || !member || !member.op) throw IRC_services_error("Identify to NickServ and obtain channel ops before registering it.");
 		if (!args.length) throw IRC_services_error("Syntax: REGISTER #channel <description>");
 		if (Object.keys(data.channels).length >= 50000) throw IRC_services_error("Registration limit reached.");
+		var now = this.now();
 		this.commit(function(next) { next.channels[key] = {name: channel.name, founder: account, description: args.join(" ").substr(0, 200),
-			registered: Date.now(), access: {}, mlock: {on: "", off: ""}, keeptopic: false, topic: channel.topic}; });
+			registered: now, last_used: now, access: {}, mlock: {on: "", off: ""}, keeptopic: false, topic: channel.topic}; });
+		delete this.channel_usage[key];
 		this.enforce(channel); reply("Channel registered to your account."); return;
 	}
 	if (!record) throw IRC_services_error("That channel is not registered.");
 	/* INFO must not reveal a hidden channel to outsiders. */
 	if (!member && (!account || (record.founder != account && !record.access[account]))
 		&& (!channel || /[sp]/.test(channel.flags))) throw IRC_services_error("That channel is unavailable.");
-	if (verb == "INFO") { reply(record.name + ": " + record.description + " Founder: " + data.accounts[record.founder].name + "."); return; }
+	if (verb == "INFO") { reply(record.name + ": " + record.description + " Founder: " + data.accounts[record.founder].name
+		+ ". Last used: " + new Date(Math.max(record.last_used, this.channel_usage[key] || 0)).toISOString() + "."); return; }
 	if (!account || (record.founder != account && !record.access[account])) throw IRC_services_error("Identify to an account with access to that channel.");
 	if (!channel) level = record.founder == account ? 100 : record.access[account];
 	if (verb == "DROP") {
 		if (level < 100) throw IRC_services_error("Only the founder can drop the channel.");
 		this.commit(function(next) { delete next.channels[key]; });
+		delete this.channel_usage[key];
 		this.emit({type: "part", channel: record.name, actor: user}); reply("Channel registration dropped."); return;
 	}
 	if (verb == "ACCESS") {
