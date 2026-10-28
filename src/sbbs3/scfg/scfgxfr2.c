@@ -770,6 +770,10 @@ void xfer_cfg()
 					               "by a virtual path.  This setting determines the source of the\n"
 					               "sub-directory portion of the virtual paths used to represent directories\n"
 					               "within this file library.\n"
+					               "\n"
+					               "Directories with a `Virtual Sub-directory` name set explicitly (in the\n"
+					               "directory's `Virtual File Path` option) are not affected by this setting;\n"
+					               "the explicitly set name is always used as-is.\n"
 					;
 					j = cfg.lib[libnum]->vdir_name;
 					j = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &j, 0, "Source of Virtual Sub-directory Names", vdir_name_desc);
