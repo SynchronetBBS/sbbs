@@ -258,9 +258,9 @@ try:
         import struct
         # A service has an ordinary nick so CTCP offers/resume work through
         # old relays without a protocol extension or a central public listing.
-        outsider.service('FileServ@home.test', 'LIST fs_private', 'fs_private/fixture.txt')
+        outsider.service('FileServ@home.test', 'LIST fs_private', 'Files/private/fixture.txt')
         anon = Client(edge,'FileAnonymous')
-        anon.service('FileServ@home.test','LIST fs_public','fs_public/fixture.txt')
+        anon.service('FileServ@home.test','LIST Files/public','Files/public/fixture.txt')
         anon.service('FileServ@home.test','LIST fs_private','access denied')
         outsider.service('FileServ@home.test','ADDRESS 127.0.0.1','Expected DCC peer address: 127.0.0.1')
         text=outsider.service('FileServ@home.test','GET fs_private fixture.txt PLAIN','DCC SEND fixture.txt ')
@@ -392,7 +392,7 @@ try:
     wrong.expect('TOPIC #services-test :After central restart')
     print('PASS: SQLite ownership and foreign-BBS sessions recover after authority restart', flush=True)
     if args.fileserv:
-        outsider.service('FileServ@home.test','LIST fs_private','fs_private/fixture.txt')
+        outsider.service('FileServ@home.test','LIST Files/private','Files/private/fixture.txt')
     if not args.single_login_source:
         accounts = owner.service('NickServ', 'ACCOUNTS', 'Verified BBS logins:')
         assert 'Some.User+HOME@home.test' in accounts and 'Some.User+EDGE@edge.test (active)' in accounts

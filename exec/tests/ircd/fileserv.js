@@ -7,9 +7,9 @@ load("ircd/config.js");load("ircd/services.js");load("ircd/fileserv.js");
 function check(ok,msg) { if (!ok) throw new Error(msg || "Assertion failed"); }
 function rejects(fn,text) { var caught;try { fn(); } catch(e) { caught=e; }check(caught && (!text || String(caught).indexOf(text)>=0),"Expected refusal: "+text); }
 function policy() {
-	var scope={file_area:{lib:{Files:{code_prefix:"id_",description:"Pretty Library"}},dir:{},user_dir:{code:"user"}}};
+	var scope={file_area:{lib:{Files:{name:"Files",code_prefix:"id_",description:"Pretty Library"}},dir:{},user_dir:{code:"user"}}};
 	load(scope,"ircd/fileserv-catalog.js");
-	var c=IRC_files_defaults(),d={code:"id_public",lib_name:"Files",description:"Pretty Area"},calls=[];
+	var c=IRC_files_defaults(),d={code:"id_public",name:"Public Area",lib_name:"Files",description:"Pretty Area"},calls=[];
 	var u={can_access_dir:function(code,type) { calls.push(type || "access");return type=="download" ? true : true; }};
 	scope.file_area.dir.id_public=d;
 	return {scope:scope,c:c,d:d,u:u,calls:calls};
@@ -47,6 +47,62 @@ run_tests({
 	"special upload, sysop, user-transfer and offline directories never export":function() {
 		var t=policy();["is_upload","is_sysop","is_offline"].forEach(function(flag) { t.d[flag]=true;check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,false,true));delete t.d[flag]; });
 		t.scope.file_area.user_dir=t.d;check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,false,true));
+	},
+	"LIBS uses library names without collapsing shared empty prefixes":function() {
+		var t=policy();t.scope.IRC_files_user=function() { return t.u; };
+		t.d.lib_name="Main Files";t.scope.file_area.lib["Main Files"]={name:"Main Files",code_prefix:"",description:"First library"};
+		t.scope.file_area.lib.Other={name:"Other",code_prefix:"",description:"Second library"};
+		t.scope.file_area.dir.other_public={code:"other_public",name:"Public Area",lib_name:"Other",description:"Other area"};
+		var lines=t.scope.IRC_files_catalog(t.c,{id:"test"},"LIBS",[]).lines;
+		check(lines[0]=='"Main Files" : First library' && lines[1]=="Other : Second library" && lines[2].indexOf("2 result(s)")>=0);
+		lines=t.scope.IRC_files_catalog(t.c,{id:"test"},"DIRS",["Main Files"]).lines;
+		check(lines[0]=='"Main Files/Public Area" : Pretty Area');
+		lines=t.scope.IRC_files_catalog(t.c,{id:"test"},"DIRS",[],{library:"Main Files",browse:true}).lines;
+		check(lines[0]=='"Public Area" : Pretty Area');
+	},
+	"virtual paths and contextual directory names resolve to native codes without bypassing exports":function() {
+		var t=policy();t.scope.file_area.lib.Other={name:"Other",code_prefix:"other_",description:"Other"};
+		t.scope.file_area.dir.other_public={code:"other_public",name:"Public Area",lib_name:"Other"};
+		rejects(function() { t.scope.IRC_files_directory("Public Area",t.u,t.c,false,false); },"ambiguous");
+		check(t.scope.IRC_files_directory("/files/public area",t.u,t.c,false,false)===t.d);
+		check(t.scope.IRC_files_directory("Public Area",t.u,t.c,false,false,"Files")===t.d);
+		t.scope.IRC_files_user=function() { return t.u; };
+		t.scope.FileBase=function(code) { check(code=="id_public");this.open=function() { return true; };this.close=function() {};this.get_list=function() { return [{name:"test.zip",size:1,desc:"Test"}]; }; };
+		check(t.scope.IRC_files_catalog(t.c,{id:"test"},"LIST",["Public Area"],{library:"Files"}).lines[0].indexOf("Files/Public Area/test.zip")>=0);
+		check(t.scope.IRC_files_directory("ID_PUBLIC",t.u,t.c,false,false)===t.d);
+		var location=t.scope.IRC_files_cd("Files",t.u,t.c,false);check(location.library=="Files" && !location.dir);
+		location=t.scope.IRC_files_cd("Public Area",t.u,t.c,false,"Files");check(location.library=="Files" && location.dir=="id_public");
+		t.c.exclude_dirs="id_*";
+		rejects(function() { t.scope.IRC_files_cd("Files",t.u,t.c,false); },"access denied");
+		rejects(function() { t.scope.IRC_files_directory("Files/Public Area",t.u,t.c,false,false); },"access denied");
+		check(t.scope.IRC_files_directory("Public Area",t.u,t.c,false,false).code=="other_public");
+	},
+	"virtual components round-trip separator and quote characters while masks preserve spaces":function() {
+		var t=policy();delete t.scope.file_area.lib.Files;t.d.lib_name='Main/"Files%';t.d.name='Public\\Area';
+		t.scope.file_area.lib[t.d.lib_name]={name:t.d.lib_name,code_prefix:"id_"};
+		var label=t.scope.IRC_files_label(t.d);check(label=='Main%2F%22Files%25/Public%5CArea');
+		check(t.scope.IRC_files_directory(label,t.u,t.c,false,false)===t.d);
+		check(t.scope.IRC_files_match("Main F*","Main Files") && !t.scope.IRC_files_masks("Main Files","Main Files"));
+	},
+	"DCC navigation enters library then directory and lists each current level":function() {
+		var t=adapter(),p=policy(),s=t.a.session(t.u),chat={},requests=[],replies=[];
+		t.a.config.public_dirs="id_*";
+		t.scope.file_area=p.scope.file_area;t.scope.IRC_files_user=function() { return p.u; };
+		t.a.notice=function(session,text,where) { check(where===chat);replies.push(text); };
+		t.a.spawn=function(session,kind,extra) { requests.push(extra); };
+		t.a.command(t.u,"DIR",chat);check(requests[0].command=="LIBS");
+		t.a.command(t.u,"CD Files",chat);check(chat.library=="Files" && !chat.cwd && replies.pop()=="/Files");
+		t.a.command(t.u,"DIR Pub*",chat);check(requests[1].command=="DIRS" && requests[1].context.library=="Files" && requests[1].args[0]=="Pub*");
+		t.a.command(t.u,'CD "Public Area"',chat);check(chat.cwd=="id_public" && replies.pop()=="/Files/Public Area");
+		t.a.command(t.u,"PWD",chat);check(replies.pop()=="/Files/Public Area");
+		t.a.command(t.u,"DIR *.zip",chat);check(requests[2].command=="LIST" && requests[2].args.join("|")=="id_public|*.zip");
+		t.a.command(t.u,"GET test.zip PLAIN",chat);check(requests[3].command=="GET" && requests[3].args.join("|")=="id_public|test.zip");
+		t.a.command(t.u,'INFO "Files/Public Area" test.zip',chat);check(requests[4].args.length==2);
+		t.a.command(t.u,"CD ..",chat);check(chat.library=="Files" && !chat.cwd && replies.pop()=="/Files");
+		t.a.command(t.u,"CD ..",chat);check(!chat.library && !chat.cwd && replies.pop()=="/");
+		t.a.command(t.u,"CD id_public",chat);check(chat.cwd=="id_public" && chat.library=="Files");
+		t.a.command(t.u,"CD /",chat);check(!chat.library && !chat.cwd);
+		t.a.command(t.u,"CD ../",chat);check(replies.pop().indexOf("access denied")>=0 && !chat.cwd);
 	},
 	"DCC accepts numeric addresses without DNS and rejects invalid IPv4 octets":function() {
 		check(IRC_files_ip("::ffff:127.0.0.1")=="127.0.0.1");check(!IRC_files_ip("256.1.2.3") && !IRC_files_ip("example.com"));

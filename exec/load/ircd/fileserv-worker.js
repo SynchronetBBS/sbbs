@@ -52,7 +52,7 @@ try {
 	files_emit({type:"hello",id:files_job.id,proof:IRC_files_mac(files_job.token,"worker:"+files_job.id)});
 	while (!files_authenticated) { files_controls();mswait(10); }
 	if (files_job.kind == "catalog") {
-		files_emit({type:"result",result:IRC_files_catalog(files_job.config,files_job.identity,files_job.command,files_job.args)});
+		files_emit({type:"result",result:IRC_files_catalog(files_job.config,files_job.identity,files_job.command,files_job.args,files_job.context)});
 	} else {
 		files_check();
 		var cfg=files_job.config, first=Number(cfg.port_first), last=Number(cfg.port_last);

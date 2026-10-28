@@ -91,6 +91,20 @@ def offer(c,command,kind='SEND'):
     m=re.search(r'\x01DCC (\S+) (\S+) (\S+) (\d+)(?: (\d+))?\x01',line);assert m,line
     c.offer_host=str(ipaddress.IPv6Address(m[3])) if ':' in m[3] else str(ipaddress.IPv4Address(int(m[3])))
     return int(m[4]),int(m[5] or 0)
+class Browser:
+    def __init__(self,sock):self.sock=sock;self.buf=b''
+    def expect(self,marker):
+        self.sock.settimeout(15)
+        while True:
+            while b'\n' in self.buf:
+                line,self.buf=self.buf.split(b'\n',1);line=line.decode('latin1').rstrip('\r')
+                if marker in line:return line
+            data=self.sock.recv(8192);assert data,'DCC browser closed waiting for '+marker
+            self.buf+=data
+    def command(self,text,marker,listing=False):
+        self.sock.sendall((text+'\r\n').encode('latin1'));line=self.expect(marker)
+        if listing:self.expect('Page ')
+        return line
 def download(c,command,secure=False,resume=0,partial=None):
     n,size=offer(c,command,'SSEND' if secure else 'SEND')
     if resume:
@@ -169,16 +183,18 @@ DNS_Resolver.sockets=[test_dns_socket];
             assert time.monotonic()<end,'Listener not ready';time.sleep(.1)
     public=Client('Visitor');owner=Client('Owner',True)
     assert ' NOTICE ' in public.cmd('HELP GET','DCC SEND')
-    public.cmd('LIST fs_public','fs_public/fixture.txt')
+    public.cmd('LIST fs_public','Files/public/fixture.txt')
     public.cmd('LIST fs_private','access denied')
-    owner.cmd('LIST fs_private','fs_private/fixture.txt')
+    owner.cmd('LIST Files/private','Files/private/fixture.txt')
+    public.cmd('LIBS','Files : FileServ fixture library')
+    public.cmd('DIRS Files','Files/public : Fixture public')
     owner.cmd('LIST fs_excluded','access denied')
     owner.cmd('GET fs_restricted fixture.txt PLAIN','access denied')
     owner.cmd('GET fs_public ../fixture.txt PLAIN','without paths or control characters')
     owner.cmd('GET fs_public escape.txt PLAIN','unavailable')
     for _ in range(8):public.cmd('LIST fs_private','access denied')
     print('PASS public selection, local PASS authentication, native ARS, filters, traversal/symlink rejection and repeated terminal worker replies',flush=True)
-    before=guest_metrics();payload=download(public,'GET fs_public fixture.txt PLAIN');after=guest_metrics()
+    before=guest_metrics();payload=download(public,'GET Files/public fixture.txt PLAIN');after=guest_metrics()
     assert payload==(root/'files/public/fixture.txt').read_bytes()
     assert after['bytes']-before['bytes']==len(payload),(before,after)
     assert after['files']==before['files']+1
@@ -224,15 +240,28 @@ DNS_Resolver.sockets=[test_dns_socket];
     print('PASS missing certificate fails at accept without plaintext fallback or stalled IRC',flush=True)
     before=metrics();download(owner,'GET fs_public fixture.txt PLAIN',partial=16384);after=metrics()
     assert after['bytes']-before['bytes']==16384,(before,after)
-    n,_=offer(public,'CHAT PLAIN','CHAT');chat=socket.create_connection(('127.0.0.1',n),timeout=5);chat.settimeout(10)
-    assert b'virtual browser' in chat.recv(4096)
-    chat.sendall(b'CD fs_public\r\n');assert b'fs_public' in chat.recv(4096)
-    chat.sendall(b'DIR\r\n');assert b'fixture.txt' in chat.recv(8192)
-    chat.sendall(b'CD ../\r\n');assert b'access denied' in chat.recv(4096)
+    n,_=offer(public,'CHAT PLAIN','CHAT');chat=socket.create_connection(('127.0.0.1',n),timeout=5);browser=Browser(chat)
+    browser.expect('virtual browser')
+    browser.command('PWD','/')
+    browser.command('DIR','Files : FileServ fixture library',listing=True)
+    browser.command('CD Files','/Files')
+    browser.command('DIR','public : Fixture public',listing=True)
+    browser.command('LIST public','Files/public/fixture.txt',listing=True)
+    browser.command('CD public','/Files/public')
+    line=browser.command('DIR','fixture.txt',listing=True);assert 'fs_public' not in line and 'Files/' not in line,line
+    browser.command('INFO fixture.txt','Files/public/fixture.txt')
+    browser.command('CD ..','/Files')
+    browser.command('DIR pub*','public : Fixture public',listing=True)
+    browser.command('CD /Files/public','/Files/public')
+    browser.command('CD /Exempt','access denied')
+    browser.command('PWD','/Files/public')
+    browser.command('CD fs_public','/Files/public')
+    browser.command('CD /','/')
+    browser.command('CD ../','access denied')
     chat.sendall(b'QUIT\r\n');chat.close()
-    print('PASS partial-download accounting and DCC CHAT virtual browser',flush=True)
+    print('PASS partial-download accounting and hierarchical DCC CHAT library/directory browsing',flush=True)
     owner.send('JOIN #files');owner.expect(' JOIN :#files');time.sleep(.6)
-    owner.send('PRIVMSG #files :!files '+bbs_qwk+' LIBS');owner.expect('fs_ : FileServ fixture library')
+    owner.send('PRIVMSG #files :!files '+bbs_qwk+' LIBS');owner.expect('Files : FileServ fixture library')
     for option,kind in [('plain','CHAT'),('TLS','SCHAT')]:
         time.sleep(.6);owner.send('PRIVMSG #files :!fserve '+bbs_qwk+' '+option)
         line=owner.expect('\x01DCC '+kind+' ')

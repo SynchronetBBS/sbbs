@@ -42,11 +42,12 @@ queue. Defaults export all otherwise-accessible libraries/directories to
 identified accounts, and **nothing anonymously**. Include/exclude/public
 values are comma- or space-separated, case-insensitive `*`/`?` masks of
 **library code prefixes** and **full directory internal codes**. Display
-names never participate. Exclusions win; public selections must also satisfy
-both global include filters. Upload, sysop, user-to-user and offline directories
+names do not participate in these configuration filters. Browsing uses the
+library and directory short names instead. Exclusions win; public selections
+must also satisfy both global include filters. Upload, sysop, user-to-user and offline directories
 are never exported. Only registered catalog files are served. Paths and
 symlinks escaping the configured native directory are refused. Quote filenames
-containing spaces, for example `GET main_docs "read me.txt"`.
+containing spaces, for example `GET "Main Library/Documents" "read me.txt"`.
 
 For anonymous requests, `Guest=0` selects the lowest-numbered active,
 nondeleted BBS account with the **G restriction**, regardless of its alias.
@@ -74,12 +75,12 @@ actual `FileServ_<QWKID>` nickname. Every command has detailed `HELP <command>`.
 | Command | Purpose |
 | --- | --- |
 | `HELP [command]` | Commands, syntax, permissions and behavior |
-| `LIBS [page]` | Accessible exported library codes |
-| `DIRS [library-code-mask] [page]` | Accessible directory codes |
-| `LIST <directory-code> [filename-mask] [page]` | Paginated file catalog |
+| `LIBS [page]` | Accessible exported library names |
+| `DIRS [library-name-mask] [page]` | Accessible directories as `LIBRARY/DIRECTORY` |
+| `LIST <library/directory> [filename-mask] [page]` | Paginated file catalog |
 | `SEARCH <text> [page]` | Search filenames and descriptions |
-| `INFO <directory-code> <filename>` | Size, description and account credit cost |
-| `GET <directory-code> <filename> [TLS\|PLAIN]` | Queue an active DCC download |
+| `INFO <library/directory> <filename>` | Size, description and account credit cost |
+| `GET <library/directory> <filename> [TLS\|PLAIN]` | Queue an active DCC download |
 | `CHAT [TLS\|PLAIN]` | Open the interactive DCC file browser |
 | `ADDRESS [numeric-IP\|RESET]` | Privately override/reset the expected DCC peer IP |
 | `QUEUE` | Your pending downloads and active sessions |
@@ -97,10 +98,37 @@ help and errors use NOTICE to the requesting user. The sole PRIVMSG exception
 is CTCP DCC protocol negotiation, which clients require to recognize offers
 and `RESUME`/`ACCEPT` replies.
 
-The chat browser supports `LIBS`, `DIRS`, `CD <directory-code|/>`, `PWD`,
-`DIR [mask] [page]`, `SEARCH`, `INFO <filename>`, `GET <filename> [TLS|PLAIN]`,
-`QUEUE`, `CANCEL`, `HELP` and `QUIT`. Its namespace consists of directory
-codes; it does not expose OS paths, execute commands or accept uploads.
+The chat browser has a three-level virtual hierarchy: `/`, libraries, and
+directories within each library. `DIR` (or `LS`) lists libraries at the root,
+directory short names inside a library, and filenames inside a directory.
+For example:
+
+```text
+DIR
+CD "Main Library"
+DIR
+CD Documents
+DIR
+INFO "read me.txt"
+GET "read me.txt" PLAIN
+CD ..
+CD /
+```
+
+`CD ..` moves up one level; `CD /` returns to the root. `PWD` shows the current
+virtual path. `CD /LIBRARY/DIRECTORY` also jumps directly to a directory.
+Names match without regard to case. Quote names containing spaces. Separators,
+quotes, percent signs and control characters within a native name are displayed
+with percent escapes, so the displayed component can be used in commands.
+
+`LIBS`, `DIRS`, `LIST`, `SEARCH`, `QUEUE`, `CANCEL`, `HELP` and `QUIT` also work
+in chat. `DIR [mask] [page]` filters names at the current level. From outside
+a directory, `LIST`, `INFO`, `GET` and `CD` accept `LIBRARY/DIRECTORY`; an
+unqualified directory name is accepted when unique in the applicable library
+or across exported directories. Full internal directory codes remain accepted
+for existing commands and exact disambiguation. Export masks continue to use
+the library code prefix and full directory internal code, not the browsing
+names. No OS paths are exposed, commands executed or uploads accepted.
 
 ## DCC transport and resource limits
 

@@ -47,13 +47,16 @@ function IRC_files_dns_reply(response) {
 }
 var IRC_files_help = {
 	HELP:"HELP [command] — Describe the command, or list commands. FileServ replies with NOTICE. Use FileServ@<server> to select a BBS; authentication is specific to that BBS.",
-	LIBS:"LIBS [page] — List exported libraries you can access, identified by their internal code prefixes.",
-	DIRS:"DIRS [library-code-mask] [page] — List accessible exported directory codes. Use these codes in LIST, INFO and GET.",
-	LIST:"LIST <directory-code> [filename-mask] [page] — List catalog files, descriptions and sizes. Only registered BBS files are available; filesystem paths are never accepted.",
+	LIBS:"LIBS [page] — List exported libraries you can access by their short names. In DCC chat, CD <library> enters a library. Quote names containing spaces.",
+	DIRS:"DIRS [library-name-mask] [page] — List accessible directories as LIBRARY/DIRECTORY, using short names. In DCC chat, CD <directory> enters a directory in the current library. Full internal directory codes remain accepted.",
+	LIST:"LIST <library/directory> [filename-mask] [page] — List catalog files, descriptions and sizes. Quote names containing spaces. Full internal directory codes remain accepted. Only registered BBS files are available; filesystem paths are never accepted.",
 	SEARCH:"SEARCH <text> [page] — Search accessible exported catalogs by filename or description. Use one search token; wildcards apply to LIST instead.",
-	INFO:"INFO <directory-code> <filename> — Show size, description and the download credit cost for your BBS account.",
-	GET:"GET <directory-code> <filename> [TLS|PLAIN] — Queue active DCC SEND (PLAIN) or SSEND (TLS). TLS is the default unless disabled by the sysop. Credits and native BBS download limits apply. No silent plaintext fallback. DCC RESUME is supported before connecting; only newly acknowledged bytes are accounted.",
-	CHAT:"CHAT [TLS|PLAIN] — Open an active DCC CHAT/SCHAT virtual file browser. TLS is the default unless disabled. In chat: LIBS, DIRS, CD <directory-code|/>, PWD, DIR [mask] [page], SEARCH, INFO <file>, GET <file>, QUEUE, CANCEL [id|ALL], HELP and QUIT. No OS paths or uploads.",
+	INFO:"INFO <library/directory> <filename> — Show size, description and the download credit cost for your BBS account. Full internal directory codes remain accepted.",
+	GET:"GET <library/directory> <filename> [TLS|PLAIN] — Queue active DCC SEND (PLAIN) or SSEND (TLS). Quote names containing spaces; full internal directory codes remain accepted. TLS is the default unless disabled by the sysop. Credits and native BBS download limits apply. No silent plaintext fallback. DCC RESUME is supported before connecting; only newly acknowledged bytes are accounted.",
+	CHAT:"CHAT [TLS|PLAIN] — Open an active DCC CHAT/SCHAT virtual file browser. TLS is the default unless disabled. Browse with DIR, CD <library>, CD <directory>, CD .., CD / and PWD. LIST, LIBS, DIRS, SEARCH, INFO <file>, GET <file> [TLS|PLAIN], QUEUE, CANCEL, HELP and QUIT also work. Quote names containing spaces. No OS paths or uploads.",
+	CD:"CD <library|directory|library/directory|..|/> — DCC chat only. Enter a library or one of its directories by short name, move up one level with .., or return to the root with /. Full internal directory codes remain accepted. Quote names containing spaces.",
+	PWD:"PWD — DCC chat only. Show the current virtual location: /, /LIBRARY or /LIBRARY/DIRECTORY.",
+	DIR:"DIR [mask] [page] — DCC chat only; LS is an alias. At /, list libraries. In a library, list directory short names. In a directory, list files. Masks match names in the current location.",
 	ADDRESS:"ADDRESS [numeric-IP|RESET] — Privately set the expected incoming DCC peer address for new GET/CHAT requests (useful behind a bouncer). Its address family selects the BBS's IPv4 or IPv6 endpoint. RESET restores your IRC connection address. Connections from other IPs are rejected. Queued and active requests keep their original addresses. Does not change your BBS record.",
 	QUEUE:"QUEUE — List your pending downloads and active DCC sessions. FileServ limits transfers to one per BBS account, with bounded per-session and server queues.",
 	CANCEL:"CANCEL [id|ALL] — Cancel your matching queued or active DCC work. With no argument cancels all your downloads. Acknowledged partial downloads receive native BBS accounting; cancellation does not undo credits already used."
@@ -157,11 +160,12 @@ IRC_FileServ.prototype.command = function(user,text,chat,from_channel) {
 	if (!chat) s.last=system.timer;
 	var args;try { args=IRC_files_args(text); } catch(e) { this.notice(s,e.message,chat);return; }
 	var command=(args.shift() || "HELP").toUpperCase();
+	var browse=chat && (command=="DIR" || command=="LS");
 	if (chat) {
-		if (command=="PWD") { this.notice(s,chat.cwd || "/",chat);return; }
+		if (command=="PWD") { this.notice(s,"/"+(chat.cwd && file_area.dir[chat.cwd] ? IRC_files_label(file_area.dir[chat.cwd]) : chat.library ? IRC_files_component(chat.library) : ""),chat);return; }
 		if (command=="QUIT" || command=="EXIT") { this.write(chat,{type:"exit"});return; }
-		if (command=="DIR" || command=="LS") { command=chat.cwd ? "LIST" : "DIRS";if (chat.cwd) args.unshift(chat.cwd); }
-		if ((command=="GET" || command=="INFO") && chat.cwd) args.unshift(chat.cwd);
+		if (browse) { command=chat.cwd ? "LIST" : chat.library ? "DIRS" : "LIBS";if (chat.cwd) args.unshift(chat.cwd); }
+		if ((command=="GET" || command=="INFO") && chat.cwd && (args.length==1 || (command=="GET" && args.length==2 && /^(TLS|PLAIN)$/i.test(args[1])))) args.unshift(chat.cwd);
 	}
 	if (command=="HELP") { this.notice(s,args.length ? (IRC_files_help[args[0].toUpperCase()] || "Unknown command. HELP lists commands.") : "Commands: "+Object.keys(IRC_files_help).join(", ")+". Use HELP <command> for syntax and details."+(chat ? " Chat also supports CD, PWD, DIR and QUIT." : ""),chat);return; }
 	if (command=="ADDRESS") {
@@ -171,12 +175,15 @@ IRC_FileServ.prototype.command = function(user,text,chat,from_channel) {
 		this.notice(s,"Expected DCC peer address: "+(s.address || IRC_files_ip(user.ip) || "unknown; use ADDRESS <numeric-IP>"));return;
 	}
 	if (command=="QUEUE") {
-		var rows=this.pending.filter(function(p) { return p.session===s; }).map(function(p) { return p.id+" queued "+p.file.dir+"/"+p.file.name; });
+		var rows=this.pending.filter(function(p) { return p.session===s; }).map(function(p) { return p.id+" queued "+(p.file.label || p.file.dir)+"/"+p.file.name; });
 		Object.keys(this.workers).forEach(function(id) { var w=self.workers[id];if (w.session===s && w.kind!="catalog") rows.push(id+" "+w.kind+" "+(w.connected ? "connected" : "waiting")); });
 		this.notice(s,rows.join("\n") || "Your queue is empty.",chat);return;
 	}
 	if (command=="CANCEL") { this.cancel(s,args[0] || "ALL",false);this.notice(s,"Matching FileServ work cancelled.",chat);return; }
-	if (command=="CD" && chat && args[0]=="/") { chat.cwd="";this.notice(s,"/",chat);return; }
+	if (command=="CD" && chat && args.length==1 && (args[0]=="/" || args[0]=="..")) {
+		if (args[0]=="/" || !chat.cwd) chat.library="";
+		chat.cwd="";this.notice(s,chat.library ? "/"+IRC_files_component(chat.library) : "/",chat);return;
+	}
 	if (["LIBS","DIRS","LIST","SEARCH","INFO","GET","CHAT","CD"].indexOf(command)<0) { this.notice(s,"Unknown command. Use HELP.",chat);return; }
 	if (s.checking || s.catalog>=2) { this.notice(s,"A FileServ request is already pending.",chat);return; }
 	var tls=this.config.tls!="off";
@@ -196,11 +203,12 @@ IRC_FileServ.prototype.command = function(user,text,chat,from_channel) {
 			try {
 				if (command=="CHAT") { self.start_chat(s,tls,endpoint);return; }
 				if (command=="CD") {
-					if (args.length!=1) throw new Error("Syntax: CD <directory-code|/>");
-					IRC_files_directory(args[0],IRC_files_user(identity,self.config),self.config,!identity,false);
-					chat.cwd=args[0].toLowerCase();self.notice(s,chat.cwd,chat);return;
+					if (!chat || args.length!=1) throw new Error("Syntax in DCC chat: CD <library|directory|library/directory|..|/>");
+					var location=IRC_files_cd(args[0],IRC_files_user(identity,self.config),self.config,!identity,chat.library);
+					chat.library=location.library;chat.cwd=location.dir;
+					self.notice(s,"/"+(chat.cwd ? IRC_files_label(file_area.dir[chat.cwd]) : IRC_files_component(chat.library)),chat);return;
 				}
-				self.spawn(s,"catalog",{command:command,args:args},function(result) {
+				self.spawn(s,"catalog",{command:command,args:args,context:chat ? {library:chat.library,directory:chat.cwd,browse:!!browse} : {}},function(result) {
 					if (result.error) self.notice(s,result.error,chat);
 					else if (result.file) self.enqueue(s,result.file,tls,chat,endpoint);
 					else self.notice(s,(result.lines || []).join("\n"),chat);
@@ -242,7 +250,7 @@ IRC_FileServ.prototype.spawn = function(s,kind,extra,callback,existing_id) {
 IRC_FileServ.prototype.enqueue = function(s,file,tls,chat,endpoint) {
 	if (this.pending.length>=this.config.max_queue || this.pending.filter(function(p) { return p.identity ? s.identity && p.identity.id==s.identity.id : !s.identity; }).length>=this.config.user_queue) { this.notice(s,"Download queue is full.",chat);return; }
 	var p={id:"q"+(++this.serial),session:s,identity:s.identity,file:file,tls:tls,endpoint:endpoint};this.pending.push(p);
-	this.notice(s,"Queued "+p.id+": "+file.dir+"/"+file.name+" ("+file.size+" bytes, "+file.cost+" credits).",chat);
+	this.notice(s,"Queued "+p.id+": "+(file.label || file.dir)+"/"+file.name+" ("+file.size+" bytes, "+file.cost+" credits).",chat);
 };
 IRC_FileServ.prototype.start_chat = function(s,tls,endpoint) {
 	var self=this,chats=Object.keys(this.workers).filter(function(id) { return self.workers[id].kind=="chat"; });
