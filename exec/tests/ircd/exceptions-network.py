@@ -8,6 +8,7 @@ from pathlib import Path
 import select
 import signal
 import socket
+import sqlite3
 import subprocess
 import tempfile
 import time
@@ -137,6 +138,8 @@ class Client:
         while True:
             line = self.read(15)
             assert line, 'No exception list completion'
+            if ' 403 ' in line:
+                return None
             if ' 348 ' in line:
                 result.append(line.split(' ' + channel + ' ', 1)[1].split(' ')[0])
             if ' 349 ' in line:
@@ -146,10 +149,16 @@ class Client:
         end = time.monotonic() + 20
         while True:
             actual = self.exceptions(channel)
-            if {s.upper() for s in actual} == {s.upper() for s in expected}:
+            if actual is not None and {s.upper() for s in actual} == {s.upper() for s in expected}:
                 return
             assert time.monotonic() < end, (expected, actual)
             time.sleep(.2)
+
+    def names(self, channel):
+        self.send('NAMES ' + channel)
+        names = self.expect(' 353 ')
+        self.expect(' 366 ' + self.nick + ' ' + channel + ' ')
+        return names
 
     def service(self, text, expected):
         time.sleep(1.1)
@@ -182,6 +191,10 @@ try:
                 break
         if any(' edge.test ' in line for line in links):
             try:
+                owner.service('REGISTER #test Test', 'Register your current nickname')
+                time.sleep(1.1)
+                owner.send('PRIVMSG NickServ :REGISTER')
+                owner.expect('Nickname registered')
                 owner.service('REGISTER #test Test', 'Channel registered')
                 break
             except AssertionError:
@@ -271,6 +284,10 @@ try:
     nodes['hub']['process'].send_signal(signal.SIGTERM)
     assert nodes['hub']['process'].wait(timeout=15) in (0, -signal.SIGTERM)
     nodes['hub']['running'] = False
+    # Exercise an authority restart from the deployed schema-3 layout. This
+    # fixture already has its early exception table and live registrations.
+    with sqlite3.connect(run / 'hub.sqlite') as database:
+        database.execute('PRAGMA user_version=3')
     listener.mode('-e ' + ext)
     outsider.wait_exceptions([mod, 'Outside!*@*'])
     start('hub')
@@ -315,9 +332,19 @@ try:
         assert not line or 'legacy stricter path' not in line, line
     print('PASS: actual legacy leaf remains usable, mixed MODE arguments survive, and unknown exceptions do not weaken restrictions', flush=True)
 
-    for creator in [listener, old]:
+    local_creator = Client('hub', 'LocalCreator')
+    invitee = Client('edge', 'Invitee')
+    # An ordinary, unregistered channel still follows normal creator-op rules.
+    local_creator.send('JOIN #ordinary')
+    local_creator.expect(' 366 ')
+    time.sleep(2.2)
+    assert '@LocalCreator' in local_creator.names('#ordinary')
+    local_creator.send('PART #ordinary')
+    local_creator.expect(' PART #ordinary')
+
+    for creator in [local_creator, listener, outsider, old]:
         creator.send('JOIN #restore')
-        creator.expect(' 366 ')
+        creator.expect(' 366 ' + creator.nick + ' #restore ')
         owner.wait_exceptions([ext], '#restore')
         creator.send('MODE #restore')
         restored = creator.expect(' 324 ')
@@ -334,8 +361,8 @@ try:
             if ' 368 ' in line:
                 break
         assert not bans, bans
-        creator.send('NAMES #restore')
-        assert 'ChanServ' not in creator.expect(' 353 ')
+        names = creator.names('#restore')
+        assert 'ChanServ' not in names and '@' + creator.nick not in names, names
         # Test an outside ChanServ invite to an updated, local client. Old
         # relays retain their own INVITE parser and privilege limitations.
         owner.service('INVITE #restore Owner', 'Channel action requested')
@@ -343,18 +370,23 @@ try:
         owner.expect(' 366 ')
         end = time.monotonic() + 20
         while True:
-            owner.send('NAMES #restore')
-            names = owner.expect(' 353 ')
+            names = owner.names('#restore')
             if '@Owner' in names:
                 break
             assert time.monotonic() < end, names
             time.sleep(.3)
-        owner.service('INVITE #restore Outside', 'Channel action requested')
-        outsider.expect('INVITE Outside :#restore')
-        outsider.send('JOIN #restore secret')
-        outsider.expect(' 366 ')
-        outsider.send('PART #restore')
-        outsider.expect(' PART #restore')
+        # Explicit grants remain valid after the automatic creator grant has
+        # been corrected. Observe another services snapshot after the grant.
+        owner.send('MODE #restore +o ' + creator.nick)
+        creator.expect('+o ' + creator.nick)
+        time.sleep(2.2)
+        assert '@' + creator.nick in creator.names('#restore')
+        owner.service('INVITE #restore Invitee', 'Channel action requested')
+        invitee.expect('INVITE Invitee :#restore')
+        invitee.send('JOIN #restore secret')
+        invitee.expect(' 366 ')
+        invitee.send('PART #restore')
+        invitee.expect(' PART #restore')
         owner.send('PART #restore')
         owner.expect(' PART #restore')
         creator.send('PART #restore')
@@ -362,7 +394,14 @@ try:
         time.sleep(1.2)
         owner.send('MODE #restore')
         owner.expect(' 403 Owner #restore ')
-    print('PASS: ChanServ stays outside; empty channels vanish; updated and legacy creators receive saved policy, topic and grants', flush=True)
+    # The identified founder keeps the initial grant when recreating it.
+    owner.send('JOIN #restore')
+    owner.expect(' 366 ')
+    time.sleep(2.2)
+    assert '@Owner' in owner.names('#restore')
+    owner.send('PART #restore')
+    owner.expect(' PART #restore')
+    print('PASS: ChanServ stays outside; empty channels vanish; updated and legacy creators receive saved policy, lose unauthorized creator ops and retain later manual grants', flush=True)
 finally:
     for client in clients:
         try:
@@ -386,3 +425,5 @@ finally:
             failures.append(name + ' crashed: ' + str(status))
         print(name + ': exit=' + str(status) + ', log=' + str(node['log']), flush=True)
     assert not failures, '; '.join(failures)
+    with sqlite3.connect(run / 'hub.sqlite') as database:
+        assert database.execute('PRAGMA user_version').fetchone()[0] == 4

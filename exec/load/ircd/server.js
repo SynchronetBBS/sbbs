@@ -563,6 +563,10 @@ function Server_Work(cmdline) {
 			var founder_grant = origin === this && founder
 				&& tmp.pending_founder == founder.id && tmp.users[founder.id]
 				&& founder.parent == this.nick && (!mode_ts || mode_ts == tmp.created);
+			/* Relayed server grants retain their original server prefix.
+			   Track live creation separately from burst and manual ops. */
+			var creator_grant = origin.server && !origin.uline && !this.bursting
+				&& founder && tmp.pending_founder == founder.id;
 			if (!this.hub && !origin.uline
 				&& (origin.server ? !(founder_grant || IRC_leaf_burst_channel(this, origin, tmp))
 					: !tmp.modelist[CHANMODE_OP][origin.id])) {
@@ -580,8 +584,10 @@ function Server_Work(cmdline) {
 			p.shift();
 			p = IRC_exception_filter_modes(p, IRC_has_chanexcept(this));
 			if (!p) break;
-			origin.set_chanmode(tmp, p, mode_ts,
+			var creator_result = origin.set_chanmode(tmp, p, mode_ts,
 				{merge: this.bursting && !origin.uline});
+			if (creator_grant && creator_result !== 2 && tmp.modelist[CHANMODE_OP][founder.id])
+				tmp.services_creator_op = founder.id;
 			break;
 		}
 		/* Setting a user mode */
@@ -1123,6 +1129,9 @@ function Server_Work(cmdline) {
 			if (status_modes)
 				origin.bcast_to_channel(tmp, "MODE " + tmp.nam + " +"
 					+ status_modes + status_args, false);
+			if (!existing_channel && !this.bursting && !origin.uline
+				&& members.length == 1 && !ts_rejected && k.isop)
+				tmp.services_creator_op = n.id;
 			valid_nicks.push(leaf_assertion
 				? (tmp.modelist[CHANMODE_OP][n.id] ? "@" : "")
 					+ (tmp.modelist[CHANMODE_VOICE][n.id] ? "+" : "") + n.nick

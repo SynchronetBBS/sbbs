@@ -104,6 +104,7 @@ run_tests({
 	},
 	"ChanServ founder access follows accounts across nickname changes": function() {
 		var s = scenario(), c = {ref:"chan",name:"#test",flags:"+nt",key:"",limit:0,topic:"",users:[{ref:s.user.ref,op:true,voice:false}]};
+		s.engine.command("NickServ",s.user,"REGISTER");
 		s.engine.event({type:"channel",channel:c}); s.engine.command("ChanServ",s.user,"REGISTER #test Description");
 		s.user.nick = "NewNick"; s.user.rev = "NewNick"; check(s.engine.level(s.user,c) == 100);
 		s.engine.command("ChanServ",s.user,"SET #test MLOCK +nt-k");
@@ -112,6 +113,7 @@ run_tests({
 	},
 	"ChanServ access entries accept qualified BBS aliases": function() {
 		var s = scenario(), c = {ref:"chan",name:"#test",flags:"+nt",key:"",limit:0,topic:"",users:[{ref:s.user.ref,op:true,voice:false}]};
+		s.engine.command("NickServ",s.user,"REGISTER");
 		s.engine.event({type:"channel",channel:c}); s.engine.command("ChanServ",s.user,"REGISTER #test Description");
 		s.engine.event({type:"user",user:{ref:"other",nick:"Other",rev:"Other"}});
 		s.engine.event({type:"identify",ref:"other",identity:identity(2,"Another User")});

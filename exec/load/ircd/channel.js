@@ -141,6 +141,13 @@ function ChanMode_affect_mode_list(list_bit) {
 			tmp_nick = Users[this.list[list_bit][add][z].toUpperCase()];
 			if (!tmp_nick)
 				tmp_nick = search_nickbuf(this.list[list_bit][add][z]);
+			/* A later explicit grant supersedes automatic creator ops. A
+			   creator's redundant self +o must not bypass ChanServ's check.
+			   Matching status in a snapshot is not a new explicit grant. */
+			if (tmp_nick && list_bit == CHANMODE_OP
+				&& this.chan.services_creator_op == tmp_nick.id
+				&& (add == "false" || (!this.snapshot && this.user.id != tmp_nick.id)))
+				delete this.chan.services_creator_op;
 			if (tmp_nick && this.chan.users[tmp_nick.id]
 				&& (add=="true") && !this.chan.modelist[list_bit][tmp_nick.id]) {
 				this.addmodes += MODE[list_bit].modechar;
@@ -389,6 +396,7 @@ function Channel_reset_timestamp(chan, ts) {
 	chan.modelist[CHANMODE_VOICE] = {};
 	delete chan.pending_founder;
 	delete chan.pending_burst;
+	delete chan.services_creator_op;
 	for (i = 0; i < changes.length; i++) {
 		var nextarg = changes[i].arg ? " " + changes[i].arg : "";
 		if (count && (count == MAX_MODES
@@ -451,6 +459,7 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 	}
 
 	c = new ChanMode(chan,this);
+	c.snapshot = options.local_only || options.merge;
 
 	var mode_counter = 0;
 	var mode_args_counter = 1; // start counting at args, not the modestring
@@ -843,6 +852,8 @@ function IRCClient_do_join(chan_name,join_key,join_ts) {
 			this.originatorout(str,this);
 			create_op = "@";
 			chan.modelist[CHANMODE_OP][this.id] = this;
+			/* Keep provenance only until ChanServ checks the initial grant. */
+			chan.services_creator_op = this.id;
 		}
 	}
 	if (this.invited.toUpperCase() == chan.nam.toUpperCase())

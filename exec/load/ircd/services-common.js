@@ -3,6 +3,7 @@
  */
 "use strict";
 load("ircd/exceptions.js");
+load("ircd/services-help.js");
 
 function IRC_services_key(name) { return "$" + String(name).toUpperCase(); }
 function IRC_services_copy(value) { return JSON.parse(JSON.stringify(value)); }

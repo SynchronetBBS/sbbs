@@ -191,9 +191,11 @@ IRC_Services_Manager.prototype.notice = function(service, user, text, home) {
 			+ "\nTo reply to this BBS, use /msg " + service + "@" + home + " <command>.";
 	text = String(text).replace(/\x01./g, "").replace(/[\x00-\x08\x0b-\x1f\x7f]/g, "");
 	var bot = service == "ChanServ" ? this.chanserv : this.nickserv;
+	var source = user.local ? service + "!services@" + ServerName : bot && bot.nuh || service + "!services@" + ServerName;
+	var width = Math.max(1, Math.min(300, 510 - (":" + source + " NOTICE " + user.nick + " :").length));
 	text.split(/\r?\n/).forEach(function(line) {
-		for (var i = 0; i < Math.max(1, line.length); i += 300) {
-			var body = line.substr(i, 300);
+		for (var i = 0; i < Math.max(1, line.length); i += width) {
+			var body = line.substr(i, width);
 			if (user.local) user.rawout(":" + service + "!services@" + ServerName + " NOTICE " + user.nick + " :" + body);
 			else if (bot) user.originatorout("NOTICE " + user.nick + " :" + body, bot);
 		}
@@ -213,7 +215,8 @@ IRC_Services_Manager.prototype.snapshot = function() {
 		if (c.nam[0] != "#" || c.pending_burst) continue;
 		if (!c.services_ref) c.services_ref = String(++this.sequence);
 		var members = [];
-		for (var id in c.users) members.push({ref:this.ref(c.users[id]), op:!!c.modelist[CHANMODE_OP][id], voice:!!c.modelist[CHANMODE_VOICE][id]});
+		for (var id in c.users) members.push({ref:this.ref(c.users[id]), op:!!c.modelist[CHANMODE_OP][id], voice:!!c.modelist[CHANMODE_VOICE][id],
+			creator_op:c.services_creator_op == id});
 		var channel = {ref:c.services_ref, name:c.nam, flags:c.chanmode(false).split(" ")[0],
 			key:c.arg[CHANMODE_KEY], limit:c.arg[CHANMODE_LIMIT], topic:c.topic, users:members,
 			exceptions:Object.keys(c.modelist[CHANMODE_EXCEPT]).map(function(i) { return c.modelist[CHANMODE_EXCEPT][i]; })};
@@ -470,7 +473,7 @@ IRC_Services_Manager.prototype.intercept_command = function(user, target, text) 
 		this.sync_session(user);
 		this.notice(service, user, a.length ? "All BBS logins removed." : "Logged out of " + home + ".", home);
 	} else if (service == "MemoServ") this.memo(user, verb, a, match[2] && home);
-	else if (verb == "HELP") this.notice(service, user, "IDENTIFY <escaped-account> <password> | LOGOUT [ALL] | REGISTER | DROP [nickname] | INFO [nickname] | GHOST <nickname> | ACCOUNTS | LINK <account+QWKID> <account+QWKID> | LINK CONFIRM <code> | UNLINK <account+QWKID> | SET <nick> MEMOACCOUNT <account+QWKID>. Use /msg NickServ@" + home + " <command> for this BBS.", home);
+	else if (verb == "HELP") this.notice(service, user, IRC_services_help(service, a, {home:home}), home);
 	else {
 		var forward = function(verified) {
 			if (verified.error) { if (self.find(actor)) self.notice(service, user, verified.error, home); return; }
@@ -493,7 +496,7 @@ IRC_Services_Manager.prototype.memo = function(user, verb, args, home) {
 	var self = this, actor = this.describe(user), destination_home = home || "";
 	home = home || (user.services_identity && user.services_identity.home) || this.config.server;
 	var identity = this.logins(user).filter(function(a) { return a.home == home; })[0], group_mailboxes = verb != "SEND" && user.services_memo_routing;
-	if (verb == "HELP") { this.notice("MemoServ", user, "SEND <registered-nick|escaped-account+QWKID> <text> | READ | STATUS. READ/STATUS check your linked identity's mailboxes; MemoServ@server selects that BBS. SEND to a nick uses its configured destination. READ consumes telegrams; automatic checks do not. Use /msg MemoServ@" + home + " <command> for this BBS.", home); return; }
+	if (verb == "HELP") { this.notice("MemoServ", user, IRC_services_help("MemoServ", args, {home:home}), home); return; }
 	var central = this.config.bbs_require_tls && this.peer(this.central_peer()), via = home == this.config.server && !group_mailboxes && verb != "SEND" ? [] : [central && central.servername, home];
 	var error = this.tls_error(user, this.config.bbs_require_tls, via);
 	if (error) { this.notice("MemoServ", user, error, home); return; }
@@ -811,7 +814,20 @@ IRC_Services_Manager.prototype.action = function(a) {
 	}
 	var c = a.channel && Channels[a.channel.name.toUpperCase()];
 	if (!c || c.services_ref != a.channel.ref) return;
-	if (a.type == "exception") {
+	if (a.type == "creator_op") {
+		/* Queued corrections must not undo a subsequent explicit grant,
+		   authentication or access change, or affect another incarnation. */
+		if (!engine || !target || c.services_creator_op != target.id || c.users[target.id] !== target) return;
+		var current = engine.users[a.target.ref];
+		if (!current) return;
+		delete c.services_creator_op;
+		if (!engine.store.data.channels[IRC_services_key(c.nam)]) return;
+		var level = engine.level(current, a.channel);
+		if (level < 50) {
+			this.service_server.set_chanmode(c, ["-o", target.nick], 0);
+			if (level >= 10) this.service_server.set_chanmode(c, ["+v", target.nick], 0);
+		}
+	} else if (a.type == "exception") {
 		var entry = IRC_exception_parse(a.mask);
 		if (!entry) return;
 		var policy = engine && engine.store.data.channels[IRC_services_key(c.nam)];

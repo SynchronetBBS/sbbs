@@ -1,25 +1,43 @@
 /* SQLite persistence for embedded IRC services. GPL-2.0-or-later. */
 "use strict";
 
+var IRC_SERVICES_SCHEMA = 4;
+
 function IRC_Services_Store(path) {
 	if (typeof SQLite != "function") throw new Error("Embedded services require Synchronet's SQLite API");
 	this.db = new SQLite(path);
+	var upgrading = false;
 	try {
 		this.db.busy_timeout = 25;
 		this.db.exec("PRAGMA foreign_keys=ON; PRAGMA locking_mode=EXCLUSIVE;");
-		var version = this.db.query("PRAGMA user_version")[0].user_version;
-		if (version != 0 && version != 3) throw new Error("Unsupported services schema");
+		var version = this.db.query("PRAGMA user_version")[0].user_version, initial_version = version;
+		/* Schema 3 is the first deployed baseline. Future changes must add
+		   ordered migrations here rather than rebuilding existing tables. */
+		if (version != 0 && (version < 3 || version > IRC_SERVICES_SCHEMA)) throw new Error("Unsupported services schema: " + version);
 		/* The exclusive connection owns the in-memory policy cache until
 		   close. A second daemon must not act on a stale copy of this DB. */
-		this.db.exec("BEGIN EXCLUSIVE;" +
-			"CREATE TABLE IF NOT EXISTS accounts(id TEXT PRIMARY KEY, name TEXT NOT NULL, home TEXT NOT NULL, qwk TEXT NOT NULL, number INTEGER NOT NULL, created INTEGER NOT NULL);" +
-			"CREATE TABLE IF NOT EXISTS identities(id TEXT PRIMARY KEY);" +
-			"CREATE TABLE IF NOT EXISTS memberships(account TEXT PRIMARY KEY REFERENCES accounts(id), identity TEXT NOT NULL REFERENCES identities(id));" +
-			"CREATE TABLE IF NOT EXISTS nicks(name TEXT PRIMARY KEY, account TEXT NOT NULL REFERENCES identities(id), memo_account TEXT NOT NULL REFERENCES accounts(id), last_used INTEGER NOT NULL);" +
-			"CREATE TABLE IF NOT EXISTS channels(name TEXT PRIMARY KEY, display TEXT NOT NULL, founder TEXT NOT NULL REFERENCES identities(id), description TEXT NOT NULL, registered INTEGER NOT NULL, last_used INTEGER NOT NULL, mlock TEXT NOT NULL, keeptopic INTEGER NOT NULL, topic TEXT NOT NULL);" +
-			"CREATE TABLE IF NOT EXISTS access(channel TEXT NOT NULL REFERENCES channels(name) ON DELETE CASCADE, account TEXT NOT NULL REFERENCES identities(id), level INTEGER NOT NULL CHECK(level IN (10,50,80)), PRIMARY KEY(channel,account));" +
-			"CREATE TABLE IF NOT EXISTS channel_exceptions(channel TEXT NOT NULL REFERENCES channels(name) ON DELETE CASCADE, mask TEXT NOT NULL, display TEXT NOT NULL, setter TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY(channel,mask));" +
-			"PRAGMA user_version=3; COMMIT;");
+		this.db.exec("BEGIN EXCLUSIVE;");
+		upgrading = true;
+		if (version == 0) {
+			if (this.db.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").length)
+				throw new Error("Unversioned services database contains existing tables");
+			this.db.exec(
+				"CREATE TABLE accounts(id TEXT PRIMARY KEY, name TEXT NOT NULL, home TEXT NOT NULL, qwk TEXT NOT NULL, number INTEGER NOT NULL, created INTEGER NOT NULL);" +
+				"CREATE TABLE identities(id TEXT PRIMARY KEY);" +
+				"CREATE TABLE memberships(account TEXT PRIMARY KEY REFERENCES accounts(id), identity TEXT NOT NULL REFERENCES identities(id));" +
+				"CREATE TABLE nicks(name TEXT PRIMARY KEY, account TEXT NOT NULL REFERENCES identities(id), memo_account TEXT NOT NULL REFERENCES accounts(id), last_used INTEGER NOT NULL);" +
+				"CREATE TABLE channels(name TEXT PRIMARY KEY, display TEXT NOT NULL, founder TEXT NOT NULL REFERENCES identities(id), description TEXT NOT NULL, registered INTEGER NOT NULL, last_used INTEGER NOT NULL, mlock TEXT NOT NULL, keeptopic INTEGER NOT NULL, topic TEXT NOT NULL);" +
+				"CREATE TABLE access(channel TEXT NOT NULL REFERENCES channels(name) ON DELETE CASCADE, account TEXT NOT NULL REFERENCES identities(id), level INTEGER NOT NULL CHECK(level IN (10,50,80)), PRIMARY KEY(channel,account));");
+			version = 3;
+		}
+		if (version == 3) {
+			/* Early schema-3 builds already added this table. Preserve their
+			   grants, and also accept schema-3 databases predating exceptions. */
+			this.db.exec("CREATE TABLE IF NOT EXISTS channel_exceptions(channel TEXT NOT NULL REFERENCES channels(name) ON DELETE CASCADE, mask TEXT NOT NULL, display TEXT NOT NULL, setter TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY(channel,mask));");
+			version = 4;
+		}
+		if (version != IRC_SERVICES_SCHEMA) throw new Error("No services migration path to schema " + IRC_SERVICES_SCHEMA);
+		if (version != initial_version) this.db.exec("PRAGMA user_version=" + version);
 		var data = this.data = {accounts: {}, groups: {}, memberships: {}, nicks: {}, memo_accounts: {}, nick_last_used: {}, channels: {}};
 		this.db.query("SELECT * FROM accounts").forEach(function(a) { a.username = IRC_services_escape(a.name) + "+" + a.qwk; data.accounts[a.id] = a; });
 		this.db.query("SELECT * FROM identities").forEach(function(g) { data.groups[g.id] = true; });
@@ -35,7 +53,16 @@ function IRC_Services_Store(path) {
 			if (!entry || entry.value != e.display || e.mask != IRC_services_key(entry.value)) throw new Error("Invalid stored channel exception");
 			data.channels[e.channel].exceptions[e.mask] = {mask:e.display, setter:e.setter, created:e.created};
 		});
-	} catch (e) { this.db.close(); throw e; }
+		if (this.db.query("PRAGMA foreign_key_check").length) throw new Error("Services database foreign key check failed");
+		/* Validate and load before committing, so failed upgrades leave the
+		   deployed schema and registrations intact for a later retry. */
+		this.db.exec("COMMIT;");
+		upgrading = false;
+		if (initial_version && initial_version != version) log(LOG_INFO, "Migrated embedded IRC services database from schema " + initial_version + " to " + version);
+	} catch (e) {
+		if (upgrading) try { this.db.exec("ROLLBACK;"); } catch (_) {}
+		this.db.close(); throw e;
+	}
 }
 IRC_Services_Store.prototype.save = function(next) {
 	var db = this.db, old = this.data;

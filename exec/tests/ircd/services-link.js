@@ -81,7 +81,7 @@ try { run_tests({
 		var s = scenario(), c = channel(s,"#founder"), ga = s.db.data.memberships[A.id];
 		login(s,[B]); var gb = s.db.data.memberships[B.id];
 		s.e.commit(function(d) { d.channels["$#FOUNDER"].access[gb] = 50; });
-		login(s,[C]); var gc = s.db.data.memberships[C.id]; channel(s,"#third");
+		login(s,[C]); register(s,"Carol"); var gc = s.db.data.memberships[C.id]; channel(s,"#third");
 		s.e.commit(function(d) { d.channels["$#THIRD"].access[ga] = 10; d.channels["$#THIRD"].access[gb] = 80; });
 		login(s,[A,B]); confirm(s,preview(s));
 		check(s.db.data.channels["$#THIRD"].access[ga] == 80 && !s.db.data.channels["$#THIRD"].access[gb]);

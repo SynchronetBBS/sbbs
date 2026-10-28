@@ -68,9 +68,17 @@ stop cleanly; an abrupt shutdown can lose activity since the last checkpoint. La
 times survive restarts, and downtime counts toward expiry. Expiry drops the
 registration; channel expiry also removes its access entries and managed exceptions.
 Nickname expiry leaves the BBS account and its channel permissions intact.
-The registration database uses schema version 3; earlier schemas are unsupported.
-Version 2.9 adds its managed-exception table automatically when opening an existing
-schema-3 database, preserving its registrations.
+The registration database uses schema version 4. Schema 3 is the deployed
+compatibility baseline and upgrades automatically when services next open the
+database. The upgrade accepts schema-3 databases with or without the early
+managed-exception table and preserves accounts, linked identities, nickname and
+channel registrations, memo destinations, usage timestamps, access lists,
+settings, and existing exception grants. Schema changes, data validation, and
+the version update commit together; a failure rolls back the upgrade. Future
+schema changes require ordered migrations from this baseline. Newer unsupported
+schemas and unversioned populated databases are refused without being rebuilt.
+Older builds that accept only schema 3 cannot reopen an upgraded database;
+retain a pre-upgrade database backup if a software rollback is needed.
 
 The default database is `system.data_dir + "ircd-services.sqlite"`. It requires
 a Synchronet build providing the native `SQLite` API, native `CryptContext`
@@ -124,6 +132,26 @@ validated its server's certificate. Configure validated server links as
 described in [tls.md](tls.md); WHOIS and TLSROUTE help diagnose missing protection.
 
 ## Commands
+
+Each service provides a command index with `/cs HELP`, `/ns HELP`, or `/ms HELP`.
+Use `HELP <command>` for syntax, permissions, behavior, limitations, and examples:
+
+```text
+/cs HELP REGISTER
+/cs HELP ACCESS
+/cs HELP EXCEPT ADD
+/cs HELP SET MLOCK
+/ns HELP IDENTIFY
+/ns HELP LINK CONFIRM
+/ns HELP SET MEMOACCOUNT
+/ms HELP READ
+/msg MemoServ@home.synchro.net HELP SEND
+```
+
+Help topics and command words are case-insensitive. HELP is public and does not
+require a login or TLS, including when private services commands require TLS.
+Server-qualified help includes the selected BBS in its examples and reply
+instructions. All help replies use NOTICE and fit the IRC message limit.
 
 With local NickServ enabled, `/NS` and `/msg NickServ` address the local BBS.
 `/msg NickServ@home.synchro.net IDENTIFY Some.User password` selects another
@@ -220,7 +248,12 @@ lack a safe forced-rename command; services reclaim the nickname with KILL.
 ChanServ permissions belong to network identities and follow every linked BBS
 account across nickname changes:
 
-- `REGISTER #channel <description>` requires identification and channel ops.
+- `REGISTER #channel <description>` requires channel ops and a current nickname
+  registered to one of your authenticated network identities. Authenticate with
+  NickServ IDENTIFY or BBS USER/PASS, then use NickServ REGISTER if your current
+  nickname is not registered yet. Channel ownership is assigned to that
+  nickname's identity, even if another retained BBS login is currently active.
+  Existing channel founders and access rights remain unchanged by this rule.
 - `ACCESS #channel ADD <registered-nick|escaped-account+QWKID> VOICE|OP|SOP`
   grants network identity access. `DEL <account>` removes it; `LIST` lists entries.
   Qualified accounts must previously have identified to central services.
@@ -240,8 +273,11 @@ mode lock, topic (when KEEPTOPIC is enabled), managed exceptions, and automatic
 ops/voice for authenticated access-list members. Restoration runs through the
 normal services snapshot and action queue, so MODE and TOPIC updates may follow
 the initial JOIN replies. Manual bans, exceptions, and other unsaved state do
-not survive an empty channel. First-join creator ops follow the IRCd's ordinary
-channel creation rules; registration ownership remains with the saved founder.
+not survive an empty channel. ChanServ removes automatic creator ops on a
+registered channel unless the creator is authenticated as its founder or has
+OP/SOP access. A creator with only VOICE access receives voice instead. This
+correction also follows the services queue; later explicit operator grants
+remain intact. Registration ownership remains with the saved founder.
 Services startup does not create empty registered channels.
 Invites from an outside services user require updated IRC relays and the
 destination IRCd; older INVITE parsers can still require services to have ops.

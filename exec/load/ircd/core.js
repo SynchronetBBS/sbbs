@@ -473,6 +473,8 @@ function IRCClient_RMChan(rmchan_obj) {
 	delete rmchan_obj.modelist[CHANMODE_VOICE][this.id];
 	if (rmchan_obj.pending_founder == this.id)
 		delete rmchan_obj.pending_founder;
+	if (rmchan_obj.services_creator_op == this.id)
+		delete rmchan_obj.services_creator_op;
 	IRC_refresh_leaf_views(rmchan_obj, this);
 	if (!true_array_len(rmchan_obj.users)) {
 		IRC_tsmap_drop(rmchan_obj);

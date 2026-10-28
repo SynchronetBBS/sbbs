@@ -15,6 +15,7 @@ function scenario() {
 	t.e=new IRC_Services_Engine(t.db,{},function(a) { t.out.push(a); });
 	t.u={ref:"owner",nick:"Owner",rev:"Owner",server:"test.example",username:"User.1+TEST",created:100};
 	t.e.event({type:"user",user:t.u}); t.e.event({type:"identify",ref:"owner",identity:account(1)});
+	t.e.command("NickServ",t.u,"REGISTER");
 	t.c={ref:"channel",name:"#test",flags:"+nt",key:"",limit:0,topic:"",exceptions:[],users:[{ref:"owner",op:true,voice:false}]};
 	t.e.event({type:"channel",channel:t.c}); t.e.command("ChanServ",t.u,"REGISTER #test Test"); t.out=[];
 	return t;
@@ -135,9 +136,9 @@ try { run_tests({
 		check(!t.db.db.query("SELECT * FROM channel_exceptions").length);
 	},
 	"opening an existing schema-3 database adds an empty grant table without losing registrations":function() {
-		var t=scenario(); t.db.db.exec("DROP TABLE channel_exceptions;"); t.db.close(); t.db=open(t.path);
+		var t=scenario(); t.db.db.exec("DROP TABLE channel_exceptions; PRAGMA user_version=3;"); t.db.close(); t.db=open(t.path);
 		check(record(t) && !Object.keys(record(t).exceptions).length && t.db.data.accounts[account(1).id]);
-		check(t.db.db.query("PRAGMA user_version")[0].user_version==3);
+		check(t.db.db.query("PRAGMA user_version")[0].user_version==IRC_SERVICES_SCHEMA);
 	},
 	"registration deletion and expiry cascade to managed exception rows":function() {
 		var t=scenario(); command(t,"ADD Bot"); t.e.exception_warnings["$#TEST"]=true;

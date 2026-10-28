@@ -34,7 +34,7 @@ run_tests({
 	"registration records initial usage and persists it across reopen": function() {
 		var s = scenario();
 		check(s.db.data.nick_last_used.$ALICE == START && s.db.data.channels["$#TEST"].last_used == START);
-		check(s.db.db.query("PRAGMA user_version")[0].user_version == 3);
+		check(s.db.db.query("PRAGMA user_version")[0].user_version == IRC_SERVICES_SCHEMA);
 		s.db.close(); s.db = reopen(s.path);
 		check(s.db.data.nick_last_used.$ALICE == START && s.db.data.channels["$#TEST"].last_used == START);
 	},

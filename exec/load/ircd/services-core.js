@@ -129,6 +129,8 @@ IRC_Services_Engine.prototype.enforce = function(channel) {
 	if (!record) return;
 	channel.users.forEach(function(member) {
 		var user = self.users[member.ref], level = user && self.level(user, channel);
+		if (user && member.op && member.creator_op)
+			self.emit({type: "creator_op", channel: channel, target: user});
 		if (level >= 50 && !member.op) self.emit({type: "mode", channel: channel, target: user, mode: "+o"});
 		else if (level >= 10 && !member.voice && !member.op) self.emit({type: "mode", channel: channel, target: user, mode: "+v"});
 	});
@@ -246,7 +248,7 @@ IRC_Services_Engine.prototype.command = function(service, user, text) {
 IRC_Services_Engine.prototype.nick_command = function(user, verb, args) {
 	var self = this, data = this.store.data, key = IRC_services_key(user.nick), session = this.sessions[user.ref], account = this.active_group(user);
 	function reply(text) { self.notice("NickServ", user, text); }
-	if (verb == "HELP") { reply("REGISTER | DROP [nickname] | INFO [nickname] | GHOST <nickname> | ACCOUNTS | LINK <account+QWKID> <account+QWKID> | LINK CONFIRM <code> | UNLINK <account+QWKID> | SET <nick> MEMOACCOUNT <account+QWKID>. IDENTIFY using NickServ@bbs-server; LOGOUT [ALL]."); return; }
+	if (verb == "HELP") { reply(IRC_services_help("NickServ", args, {home:user.server || this.config.server})); return; }
 	if (verb == "INFO") {
 		var info_key = IRC_services_key(args[0] || user.nick), owner = data.nicks[info_key];
 		if (!owner) throw IRC_services_error("That nickname is not registered.");
@@ -369,19 +371,21 @@ function IRC_services_mlock(args) {
 }
 
 IRC_Services_Engine.prototype.channel_command = function(user, verb, args) {
+	if (verb == "HELP") { this.notice("ChanServ", user, IRC_services_help("ChanServ", args)); return; }
 	var self = this, data = this.store.data, name = args.shift(), key = IRC_services_key(name), record = data.channels[key], channel;
 	function reply(text) { self.notice("ChanServ", user, text); }
-	if (verb == "HELP") { reply("REGISTER #channel <description> | INFO #channel | DROP #channel | ACCESS #channel ADD|DEL|LIST ... | EXCEPT #channel ADD|DEL <mask> | EXCEPT #channel LIST | OP|DEOP|VOICE|DEVOICE|INVITE|UNBAN #channel [nickname] | TOPIC #channel <text> | SET #channel MLOCK|KEEPTOPIC ..."); return; }
 	if (!name || !/^#[^\s,\x00-\x1f]{1,99}$/.test(name)) throw IRC_services_error("Specify a valid #channel. Use HELP for command syntax.");
 	for (var ref in this.channels) if (IRC_services_key(this.channels[ref].name) == key) channel = this.channels[ref];
-	var account = this.active_group(user), member = channel && this.member(channel, user.ref), level = channel ? this.level(user, channel) : 0;
+	var member = channel && this.member(channel, user.ref), level = channel ? this.level(user, channel) : 0;
 	if (verb == "REGISTER") {
 		if (record) throw IRC_services_error("That channel is already registered.");
-		if (!account || !member || !member.op) throw IRC_services_error("Identify to NickServ and obtain channel ops before registering it.");
+		var founder = this.account(user.nick);
+		if (!this.owns(user, founder)) throw IRC_services_error("Register your current nickname with NickServ and identify to its owner before registering a channel.");
+		if (!member || !member.op) throw IRC_services_error("Obtain channel ops before registering it.");
 		if (!args.length) throw IRC_services_error("Syntax: REGISTER #channel <description>");
 		if (Object.keys(data.channels).length >= 50000) throw IRC_services_error("Registration limit reached.");
 		var now = this.now();
-		this.commit(function(next) { next.channels[key] = {name: channel.name, founder: account, description: args.join(" ").substr(0, 200),
+		this.commit(function(next) { next.channels[key] = {name: channel.name, founder: founder, description: args.join(" ").substr(0, 200),
 			registered: now, last_used: now, access: {}, exceptions:{}, mlock: {on: "", off: ""}, keeptopic: false, topic: channel.topic}; });
 		delete this.channel_usage[key];
 		delete this.exception_warnings[key];
