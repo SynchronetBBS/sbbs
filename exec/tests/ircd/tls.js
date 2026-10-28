@@ -33,7 +33,87 @@ function incoming(s, tls, name) {
 	return client;
 }
 
+function accepted_socket() {
+	return {local_port:6697, remote_port:45000, remote_ip_address:"192.0.2.1",
+		ssl_session:false, is_connected:true,
+		close:function() { this.is_connected = false; }};
+}
+function accept_state() {
+	var s = state();
+	s.warnings = [];
+	s.log = function(level, message) { if (level == LOG_WARNING) s.warnings.push(message); };
+	s.IP_Banned = function() { return false; };
+	s.register_accepted_socket = function(sock) { sock.registered = true; return true; };
+	return s;
+}
+function accept_socket(s, sock) {
+	return s.accept_new_socket.call({accept:function() { return sock; }});
+}
+
 run_tests({
+	"inbound TLS detects old hosts and warns once while retaining TLS": function() {
+		var s = accept_state();
+		[undefined, true].forEach(function(method) {
+			var sock = accepted_socket();
+			sock.acceptTLS = method;
+			sock.__defineSetter__("ssl_server", function(value) {
+				check(value && this.tls_minver == 102, "legacy TLS minimum was not set first");
+				check(!this.registered, "IRC registration preceded TLS");
+				this.ssl_session = true;
+			});
+			check(accept_socket(s, sock) && sock.registered && sock.ssl_session);
+		});
+		check(s.warnings.length == 1 && /synchronous TLS handshakes/.test(s.warnings[0]));
+		check(s.Pending_TLS_Accepts == 0, "legacy handshakes changed the asynchronous count");
+	},
+	"legacy TLS failures close before IRC registration": function() {
+		["throw", "disabled", "disconnected"].forEach(function(mode) {
+			var s = accept_state(), sock = accepted_socket();
+			sock.__defineSetter__("ssl_server", function() {
+				if (mode == "throw") throw new Error("Handshake rejected");
+				if (mode == "disconnected") { this.ssl_session = true; this.is_connected = false; }
+			});
+			check(!accept_socket(s, sock) && !sock.registered && !sock.is_connected, mode);
+			check(s.Pending_TLS_Accepts == 0);
+		});
+	},
+	"capable hosts use asynchronous TLS and defer registration until completion": function() {
+		var s = accept_state(), sock = accepted_socket(), complete;
+		sock.__defineSetter__("ssl_server", function() { throw new Error("Unexpected synchronous fallback"); });
+		sock.acceptTLS = function(callback, timeout) {
+			check(this.tls_minver == 102 && timeout == 10);
+			complete = callback;
+			return true;
+		};
+		check(accept_socket(s, sock) && !sock.registered && s.Pending_TLS_Accepts == 1);
+		sock.ssl_session = true;
+		complete.call(sock);
+		check(sock.registered && s.Pending_TLS_Accepts == 0 && !s.warnings.length);
+	},
+	"asynchronous TLS failures never retry through the legacy fallback": function() {
+		["throw", "rejected", "callback"].forEach(function(mode) {
+			var s = accept_state(), sock = accepted_socket(), sync = 0, complete;
+			sock.__defineSetter__("ssl_server", function() { sync++; });
+			sock.acceptTLS = function(callback) {
+				if (mode == "throw") throw new Error("Cannot start handshake");
+				complete = callback;
+				return mode == "callback";
+			};
+			var started = accept_socket(s, sock);
+			if (mode == "callback") { check(started); complete.call(sock); }
+			else check(!started);
+			check(!sync && !sock.registered && !sock.is_connected && s.Pending_TLS_Accepts == 0, mode);
+		});
+	},
+	"plaintext and established TLS sockets do not need the new host method": function() {
+		[false, true].forEach(function(encrypted) {
+			var s = accept_state(), sock = accepted_socket();
+			if (encrypted) sock.ssl_session = true;
+			else sock.local_port = 6667;
+			check(accept_socket(s, sock) && sock.registered && !s.warnings.length);
+			check(s.Pending_TLS_Accepts == 0);
+		});
+	},
 	"services TLS requirements default off and survive save, reload, and rehash": function() {
 		var s = state(), path = "/tmp/ircd-services-tls-" + random(0x7fffffff) + ".ini";
 		try {

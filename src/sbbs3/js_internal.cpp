@@ -1135,7 +1135,9 @@ js_clear_events(JSContext *cx, js_callback_t *cb)
 
 	for (ev = cb->events, nev = NULL; ev; ev = nev) {
 		nev = ev->next;
-		if (ev->type == JS_EVENT_SOCKET_CONNECT)
+		if (ev->type == JS_EVENT_SOCKET_TLS)
+			js_socket_cancel_tls(cx, ev->cx);
+		if (ev->type == JS_EVENT_SOCKET_CONNECT || ev->type == JS_EVENT_SOCKET_TLS)
 			closesocket(ev->data.connect.sv[0]);
 		JS_RemoveObjectRoot(cx, &ev->cx);
 		JS_RemoveObjectRoot(cx, &ev->cbobj);
@@ -1166,6 +1168,8 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 {
 	struct js_event_list **head = &cb->events;
 	int                    timeout;
+	unsigned               next_class = 0;
+	uint64_t               deadline;
 	int                    i;
 	uint64_t               now;
 	struct js_event_list * ev;
@@ -1197,6 +1201,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 
 	while (cb->keepGoing && !JS_IsExceptionPending(cx) && (cb->events || cb->rq_head) && !*terminated) {
 		timeout = -1;   // Infinity by default...
+		deadline = UINT64_MAX;
 		now = (uint64_t)(xp_timer() * 1000);
 		ev = NULL;
 		tev = NULL;
@@ -1214,7 +1219,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 		for (ev = *head; ev; ev = ev->next) {
 			if (ev->type == JS_EVENT_SOCKET_READABLE || ev->type == JS_EVENT_SOCKET_READABLE_ONCE
 			    || ev->type == JS_EVENT_SOCKET_WRITABLE || ev->type == JS_EVENT_SOCKET_WRITABLE_ONCE
-			    || ev->type == JS_EVENT_SOCKET_CONNECT || ev->type == JS_EVENT_CONSOLE_INPUT
+			    || ev->type == JS_EVENT_SOCKET_CONNECT || ev->type == JS_EVENT_SOCKET_TLS || ev->type == JS_EVENT_CONSOLE_INPUT
 			    || ev->type == JS_EVENT_CONSOLE_INPUT_ONCE)
 				sc++;
 		}
@@ -1278,6 +1283,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 #endif
 					break;
 				case JS_EVENT_SOCKET_CONNECT:
+				case JS_EVENT_SOCKET_TLS:
 #ifdef PREFER_POLL
 					if (fds && cfd < sc) {
 						fds[cfd].fd = ev->data.connect.sv[0];
@@ -1293,33 +1299,18 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 #endif
 					break;
 				case JS_EVENT_INTERVAL:
-					// TODO: Handle clock wrapping
-					if (ev->data.interval.last + ev->data.interval.period <= now) {
-						timeout = 0;
+				case JS_EVENT_TIMEOUT: {
+					uint64_t end = ev->type == JS_EVENT_INTERVAL
+					    ? ev->data.interval.last + ev->data.interval.period : ev->data.timeout.end;
+					if (end < deadline) {
+						deadline = end;
 						tev = ev;
 					}
-					else {
-						i = (int)(ev->data.interval.last + ev->data.interval.period - now);
-						if (timeout == -1 || i < timeout) {
-							timeout = i;
-							tev = ev;
-						}
-					}
+					i = end <= now ? 0 : (int)MIN(end - now, INT_MAX);
+					if (timeout == -1 || i < timeout)
+						timeout = i;
 					break;
-				case JS_EVENT_TIMEOUT:
-					// TODO: Handle clock wrapping
-					if (now >= ev->data.timeout.end) {
-						timeout = 0;
-						tev = ev;
-					}
-					else {
-						i = (int)(ev->data.timeout.end - now);
-						if (timeout == -1 || i < timeout) {
-							timeout = i;
-							tev = ev;
-						}
-					}
-					break;
+				}
 				case JS_EVENT_CONSOLE_INPUT_ONCE:
 				case JS_EVENT_CONSOLE_INPUT:
 					if (!input_locked)
@@ -1368,19 +1359,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 #endif
 			case 0:     // Timeout
 				JS_RESUMEREQUEST(cx, rc);
-				if (rev && rev->cx && rev->cb)
-					ev = rev;
-				else if (tev && tev->cx && tev->cb)
-					ev = tev;
-				else if (cev && cev->cx && cev->cb)
-					ev = cev;
-				else {
-					if (cb->rq_head == NULL) {
-						JS_ReportError(cx, "Timeout with no event!");
-						ret = JS_FALSE;
-						goto done;
-					}
-				}
+				ev = NULL; // Select fairly among ready classes below.
 				break;
 			case -1:    // Error...
 				JS_RESUMEREQUEST(cx, rc);
@@ -1389,13 +1368,15 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 					ret = JS_FALSE;
 					goto done;
 				}
-				break;
+				goto done; // EINTR: rebuild readiness without dispatching a stale event.
 			default:    // Zero or more sockets ready
 				JS_RESUMEREQUEST(cx, rc);
 #ifdef PREFER_POLL
 				cfd = 0;
 #endif
 				for (ev = *head; ev; ev = ev->next) {
+					if (ev == rev || ev == cev)
+						break;
 					if (ev->type == JS_EVENT_SOCKET_READABLE || ev->type == JS_EVENT_SOCKET_READABLE_ONCE) {
 #ifdef PREFER_POLL
 						if (sc && cfd < sc && fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
@@ -1420,7 +1401,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 						cfd++;
 #endif
 					}
-					else if (ev->type == JS_EVENT_SOCKET_CONNECT) {
+					else if (ev->type == JS_EVENT_SOCKET_CONNECT || ev->type == JS_EVENT_SOCKET_TLS) {
 #ifdef PREFER_POLL
 						if (sc && cfd < sc && fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
 #else
@@ -1447,6 +1428,29 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				}
 				break;
 		}
+		/* A ready descriptor must not suppress expired timers or the run queue.
+		 * Rotate between the three classes, and between persistent events.
+		 * Refresh the clock after poll/select, which may have waited. */
+		now = (uint64_t)(xp_timer() * 1000);
+		if (tev && deadline > now)
+			tev = NULL;
+		if (!ev)
+			ev = rev ? rev : cev;
+		for (unsigned attempt = 0; attempt < 3; attempt++) {
+			unsigned event_class = next_class;
+			next_class = (next_class + 1) % 3;
+			if (event_class == 0 && tev) {
+				ev = tev;
+				break;
+			}
+			if (event_class == 1 && cb->rq_head) {
+				ev = NULL;
+				break;
+			}
+			if (event_class == 2 && ev)
+				break;
+		}
+
 		if (ev == NULL) {
 			if (cb->rq_head == NULL) {
 				JS_ReportError(cx, "poll() returned ready, but didn't find anything");
@@ -1508,9 +1512,14 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				closesocket(ev->data.connect.sv[0]);
 			}
 
+			if (ev->type == JS_EVENT_SOCKET_TLS) {
+				ret = js_socket_finish_tls(cx, ev->cx);
+				closesocket(ev->data.connect.sv[0]);
+			}
+
 			// Remove one-shot events before call
 			if (ev->type == JS_EVENT_SOCKET_READABLE_ONCE || ev->type == JS_EVENT_SOCKET_WRITABLE_ONCE
-			    || ev->type == JS_EVENT_SOCKET_CONNECT || ev->type == JS_EVENT_TIMEOUT
+			    || ev->type == JS_EVENT_SOCKET_CONNECT || ev->type == JS_EVENT_SOCKET_TLS || ev->type == JS_EVENT_TIMEOUT
 			    || ev->type == JS_EVENT_CONSOLE_INPUT_ONCE) {
 				if (ev->next)
 					ev->next->prev = ev->prev;
@@ -1524,14 +1533,28 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				ev = NULL;
 			}
 
-			ret = JS_CallFunctionValue(cx, evo, OBJECT_TO_JSVAL(evfo), 0, NULL, &rval);
-			JS_RemoveObjectRoot(cx, &evo);
-			JS_RemoveObjectRoot(cx, &evfo);
-
 			if (ev) {
 				if (ev->type == JS_EVENT_INTERVAL)
 					ev->data.interval.last += ev->data.interval.period;
+				/* Move before invoking JS: a callback may remove its own event. */
+				if (ev->next) {
+					if (ev->prev)
+						ev->prev->next = ev->next;
+					else
+						*head = ev->next;
+					ev->next->prev = ev->prev;
+					struct js_event_list *tail = *head;
+					while (tail->next)
+						tail = tail->next;
+					tail->next = ev;
+					ev->prev = tail;
+					ev->next = NULL;
+				}
 			}
+			if (ret)
+				ret = JS_CallFunctionValue(cx, evo, OBJECT_TO_JSVAL(evfo), 0, NULL, &rval);
+			JS_RemoveObjectRoot(cx, &evo);
+			JS_RemoveObjectRoot(cx, &evfo);
 		}
 
 done:
@@ -1600,7 +1623,7 @@ static jsSyncMethodSpec js_functions[] = {
 	 , JSDOCSTR("Add all listeners of eventName to the end of the run queue.  If <tt>thisObj</tt> is passed, specifies <tt>this</tt> in the callback (the <tt>js</tt> object is used otherwise).")
 	 , 31900},
 	{"setImmediate",    js_setImmediate,    1,  JSTYPE_VOID,    JSDOCSTR("callback [,thisObj]")
-	 , JSDOCSTR("Add <tt>callback</tt> to the end of the run queue, where it will be called after all pending events are processed")
+	 , JSDOCSTR("Add <tt>callback</tt> to the end of the run queue. Queued callbacks, ready sockets and due timers take turns")
 	 , 31900},
 	{0}
 };

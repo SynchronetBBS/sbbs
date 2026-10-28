@@ -3262,8 +3262,12 @@ function RBL_Listed_According_to_Config(rbl_object, dns_reply) {
 	return false;
 }
 
+var MAX_PENDING_TLS_ACCEPTS = 16;
+var Pending_TLS_Accepts = 0;
+var Legacy_TLS_Accept_Warned = false;
+
 function accept_new_socket() {
-	var unreg_obj, id, sock;
+	var sock;
 
 	sock = this.accept();
 
@@ -3282,18 +3286,6 @@ function accept_new_socket() {
 
 	log(LOG_DEBUG,"Accepting new connection on port " + sock.local_port);
 
-	if (IRC_tls_port(sock.local_port) && !sock.ssl_session) {
-		try {
-			sock.tls_minver = 102;
-			sock.ssl_server = true;
-			if (!sock.ssl_session) throw new Error("TLS was not enabled");
-		} catch (error) {
-			log(LOG_WARNING, "Could not enable TLS on new connection: " + error);
-			sock.close();
-			return false;
-		}
-	}
-
 	if (!sock.remote_ip_address) {
 		log(LOG_DEBUG,"!ERROR Socket has no IP address.  Closing.");
 		sock.close();
@@ -3301,13 +3293,65 @@ function accept_new_socket() {
 	}
 
 	if (IP_Banned(sock.remote_ip_address)) {
-		sock.send(format(
-			":%s 465 * :You've been banned from this server.\r\n",
-			ServerName
-		));
+		if (!IRC_tls_port(sock.local_port) || sock.ssl_session) {
+			sock.send(format(
+				":%s 465 * :You've been banned from this server.\r\n",
+				ServerName
+			));
+		}
 		sock.close();
 		return false;
 	}
+
+	if (IRC_tls_port(sock.local_port) && !sock.ssl_session) {
+		if (typeof sock.acceptTLS != "function") {
+			if (!Legacy_TLS_Accept_Warned) {
+				Legacy_TLS_Accept_Warned = true;
+				log(LOG_WARNING, "Native asynchronous TLS accept is unavailable; using synchronous TLS handshakes. Upgrade the Synchronet host to prevent handshake stalls.");
+			}
+			try {
+				sock.tls_minver = 102;
+				sock.ssl_server = true;
+				if (!sock.ssl_session || !sock.is_connected)
+					throw new Error("TLS was not enabled or connection closed");
+			} catch (error) {
+				log(LOG_WARNING, "Could not enable TLS on new connection: " + error);
+				sock.close();
+				return false;
+			}
+			return register_accepted_socket(sock);
+		}
+		/* Bound handshake workers independently of registered IRC clients.
+		 * No IRC reads, banners or registration are allowed before TLS succeeds. */
+		if (Pending_TLS_Accepts >= MAX_PENDING_TLS_ACCEPTS) {
+			log(LOG_DEBUG, "TLS handshake limit reached (" + Pending_TLS_Accepts + " pending)");
+			sock.close();
+			return false;
+		}
+		Pending_TLS_Accepts++;
+		try {
+			sock.tls_minver = 102;
+			if (sock.acceptTLS(function() {
+				Pending_TLS_Accepts--;
+				if (this.ssl_session && this.is_connected)
+					register_accepted_socket(this);
+				else
+					this.close();
+			}, 10))
+				return true;
+			Pending_TLS_Accepts--;
+		} catch (error) {
+			Pending_TLS_Accepts--;
+			log(LOG_WARNING, "Could not start TLS on new connection: " + error);
+		}
+		sock.close();
+		return false;
+	}
+	return register_accepted_socket(sock);
+}
+
+function register_accepted_socket(sock) {
+	var id, unreg_obj;
 
 	if (server.client_add !== undefined) {
 		server.client_add(sock);

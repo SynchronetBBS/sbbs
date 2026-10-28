@@ -35,6 +35,7 @@
 static bool do_CryptFlush(js_socket_private_t *p);
 static int do_cryptAttribute(js_socket_private_t *p, CRYPT_ATTRIBUTE_TYPE attr, int val);
 static int do_cryptAttributeString(js_socket_private_t *p, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len);
+static void js_socket_tls_release(struct js_socket_tls_pending *pending);
 static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize);
 static bool js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type);
 static JSBool js_accept(JSContext *cx, uintN argc, jsval *arglist);
@@ -173,6 +174,136 @@ static int do_cryptAttributeString(js_socket_private_t *p, CRYPT_ATTRIBUTE_TYPE 
 			}                                                                                    \
 } while (0)
 
+/* The worker owns the descriptor and session until completion. close() only
+ * shuts down its descriptor; it cannot close/reuse it under cryptlib. The two
+ * references also keep shutdown/GC independent of the worker's lifetime. */
+struct js_socket_tls_pending {
+	pthread_mutex_t mutex;
+	unsigned refs;
+	SOCKET sock;
+	SOCKET notify;
+	CRYPT_SESSION session;
+	CRYPT_CERTIFICATE cert;
+	int status;
+	bool cancelled;
+	lprintf_fn logger;
+	scfg_t *cfg; // Owned snapshot of the fields used by ssl.c.
+	bool key_added;
+	js_socket_tls_pending *next;
+};
+
+static void js_socket_tls_release(js_socket_tls_pending *pending)
+{
+	pthread_mutex_lock(&pending->mutex);
+	bool last = --pending->refs == 0;
+	pthread_mutex_unlock(&pending->mutex);
+	if (!last)
+		return;
+	if (pending->session != -1) {
+		if (pending->key_added)
+			destroy_session(pending->logger, pending->session);
+		else
+			cryptDestroySession(pending->session);
+	}
+	memset(pending->cfg, 0, sizeof *pending->cfg);
+	free(pending->cfg);
+	if (pending->cert != -1)
+		cryptDestroyCert(pending->cert);
+	if (pending->sock != INVALID_SOCKET)
+		close_socket(pending->sock);
+	closesocket(pending->notify);
+	pthread_mutex_destroy(&pending->mutex);
+	free(pending);
+}
+
+/* Drain native TLS workers before cryptlib's atexit handler. A cancelled
+ * socket has no JS event left to keep its worker alive at process shutdown. */
+static pthread_once_t tls_workers_once = PTHREAD_ONCE_INIT;
+static pthread_mutex_t tls_workers_mutex;
+static js_socket_tls_pending *tls_workers;
+static unsigned tls_worker_count;
+static bool tls_workers_ready;
+static bool tls_workers_stopping;
+
+static void js_socket_stop_tls_workers(void)
+{
+	pthread_mutex_lock(&tls_workers_mutex);
+	tls_workers_stopping = true;
+	for (js_socket_tls_pending *worker = tls_workers; worker; worker = worker->next) {
+		pthread_mutex_lock(&worker->mutex);
+		worker->cancelled = true;
+		shutdown(worker->sock, SHUT_RDWR);
+		pthread_mutex_unlock(&worker->mutex);
+	}
+	while (tls_worker_count) {
+		pthread_mutex_unlock(&tls_workers_mutex);
+		SLEEP(1);
+		pthread_mutex_lock(&tls_workers_mutex);
+	}
+	pthread_mutex_unlock(&tls_workers_mutex);
+}
+
+static void js_socket_init_tls_workers(void)
+{
+	if (pthread_mutex_init(&tls_workers_mutex, NULL) != 0)
+		return;
+	if (atexit(js_socket_stop_tls_workers) != 0) {
+		pthread_mutex_destroy(&tls_workers_mutex);
+		return;
+	}
+	tls_workers_ready = true;
+}
+
+static bool js_socket_register_tls_worker(js_socket_tls_pending *pending)
+{
+	// Called after do_cryptInit(), so our atexit handler precedes cryptEnd().
+	if (pthread_once(&tls_workers_once, js_socket_init_tls_workers) != 0 || !tls_workers_ready)
+		return false;
+	pthread_mutex_lock(&tls_workers_mutex);
+	bool allowed = !tls_workers_stopping;
+	if (allowed) {
+		pending->next = tls_workers;
+		tls_workers = pending;
+		tls_worker_count++;
+	}
+	pthread_mutex_unlock(&tls_workers_mutex);
+	return allowed;
+}
+
+static void js_socket_complete_tls_worker(js_socket_tls_pending *pending)
+{
+	pthread_mutex_lock(&tls_workers_mutex);
+	js_socket_tls_pending **entry = &tls_workers;
+	while (*entry && *entry != pending)
+		entry = &(*entry)->next;
+	if (*entry)
+		*entry = pending->next;
+	pthread_mutex_unlock(&tls_workers_mutex);
+	js_socket_tls_release(pending);
+	pthread_mutex_lock(&tls_workers_mutex);
+	// Session destruction must finish before cryptEnd() can proceed.
+	tls_worker_count--;
+	pthread_mutex_unlock(&tls_workers_mutex);
+}
+
+static void js_socket_cancel_tls_private(js_socket_private_t *p)
+{
+	if (!p || !p->tls_pending)
+		return;
+	js_socket_tls_pending *pending = p->tls_pending;
+	p->tls_pending = NULL;
+	pthread_mutex_lock(&pending->mutex);
+	pending->cancelled = true;
+	shutdown(pending->sock, SHUT_RDWR);
+	pthread_mutex_unlock(&pending->mutex);
+	js_socket_tls_release(pending);
+}
+
+void js_socket_cancel_tls(JSContext *cx, JSObject *obj)
+{
+	js_socket_cancel_tls_private((js_socket_private_t *)JS_GetPrivate(cx, obj));
+}
+
 static bool do_CryptFlush(js_socket_private_t *p)
 {
 	int   ret;
@@ -218,7 +349,7 @@ remove_js_socket_event(JSContext *cx, js_callback_t *cb, SOCKET sock)
 				free(ev);
 			}
 		}
-		else if (ev->type == JS_EVENT_SOCKET_CONNECT) {
+		else if (ev->type == JS_EVENT_SOCKET_CONNECT || ev->type == JS_EVENT_SOCKET_TLS) {
 			if (ev->data.connect.sock == sock) {
 				if (ev->next)
 					ev->next->prev = ev->prev;
@@ -239,6 +370,13 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 {
 	size_t i;
 
+	if (p->tls_pending) {
+		SOCKET sock = p->tls_pending->sock;
+		// Cancellation precedes closing the notification endpoint.
+		js_socket_cancel_tls_private(p);
+		if (p->js_cb)
+			remove_js_socket_event(cx, p->js_cb, sock);
+	}
 	if (p->session != -1) {
 		if (p->tls_server || p->tls_clientauth)
 			destroy_session(sock_lprintf(p), p->session);
@@ -2385,6 +2523,288 @@ static const char* socket_prop_desc[] = {
 };
 #endif
 
+/* Session configuration touches JS options and the host's certificate cache.
+ * Network negotiation is separate so async handshakes never access JS data. */
+static int js_socket_prepare_tls(JSContext *cx, js_socket_private_t *p, bool server_mode, bool defer_key = false)
+{
+	scfg_t *cfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
+	if (defer_key ? !do_cryptInit(sock_lprintf(p)) : !ssl_sync(cfg, sock_lprintf(p)))
+		return CRYPT_ERROR_NOTINITED;
+	int ret = cryptCreateSession(&p->session, CRYPT_UNUSED,
+	    server_mode ? CRYPT_SESSION_TLS_SERVER : CRYPT_SESSION_TLS);
+	if (ret != CRYPT_OK)
+		return ret;
+	p->tls_server = server_mode && !defer_key;
+	set_socket_nonblocking(p->sock, false);
+	int nodelay = 1;
+	(void)setsockopt(p->sock, IPPROTO_TCP, TCP_NODELAY, (char *)&nodelay, sizeof nodelay);
+	ret = do_cryptAttribute(p, CRYPT_SESSINFO_NETWORKSOCKET, p->sock);
+	if (ret != CRYPT_OK)
+		return ret;
+	int minver = p->tls_minver == 100 ? CRYPT_TLSOPTION_MINVER_TLS10
+	    : p->tls_minver == 101 ? CRYPT_TLSOPTION_MINVER_TLS11 : CRYPT_TLSOPTION_MINVER_TLS12;
+	if ((ret = do_cryptAttribute(p, CRYPT_SESSINFO_TLS_OPTIONS, minver)) != CRYPT_OK)
+		return ret;
+	if (!p->tls_enhanced_certcheck)
+		do_cryptAttribute(p, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_REDUCED);
+	if (p->tls_psk) {
+		JSIdArray *ids = JS_Enumerate(cx, p->tls_psk);
+		if (!ids)
+			return CRYPT_ERROR_MEMORY;
+		for (jsint k = 0; k < ids->length && ret == CRYPT_OK; k++) {
+			jsval id, keyval;
+			char *name = NULL, *key = NULL;
+			size_t name_len, key_len;
+			JS_IdToValue(cx, ids->vector[k], &id);
+			JSVALUE_TO_MSTRING(cx, id, name, &name_len);
+			if (name && !JS_IsExceptionPending(cx)
+			    && JS_GetProperty(cx, p->tls_psk, name, &keyval)) {
+				JSVALUE_TO_MSTRING(cx, keyval, key, &key_len);
+				if (key && !JS_IsExceptionPending(cx)) {
+					ret = do_cryptAttributeString(p, CRYPT_SESSINFO_USERNAME, name, name_len);
+					if (ret == CRYPT_OK)
+						ret = do_cryptAttributeString(p, CRYPT_SESSINFO_PASSWORD, key, key_len);
+				}
+			}
+			free(key);
+			free(name);
+			if (JS_IsExceptionPending(cx))
+				ret = CRYPT_ERROR_FAILED;
+		}
+		JS_DestroyIdArray(cx, ids);
+		if (ret != CRYPT_OK)
+			return ret;
+	}
+	if (p->tls_disable_certverify)
+		do_cryptAttribute(p, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY);
+	if (!server_mode) {
+		if (!p->tls_nameverify)
+			do_cryptAttribute(p, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_NAMEVERIFY);
+		if (p->hostname) {
+			ret = do_cryptAttributeString(p, CRYPT_SESSINFO_SERVER_NAME, p->hostname, strlen(p->hostname));
+			if (ret != CRYPT_OK)
+				return ret;
+		}
+	}
+	if (!defer_key && (server_mode || p->tls_clientauth)) {
+		if (!cfg)
+			return CRYPT_ERROR_NOTAVAIL;
+		ret = add_private_key(cfg, sock_lprintf(p), p->session);
+		if (ret != CRYPT_OK)
+			return ret;
+	}
+	if (server_mode && p->tls_clientauth)
+		ret = do_cryptAttribute(p, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_MANUAL_CERTCHECK);
+	return ret;
+}
+
+static int js_socket_activate_tls(CRYPT_SESSION session, bool server_mode, CRYPT_CERTIFICATE *cert)
+{
+	int ret = cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1);
+	if (ret == CRYPT_ENVELOPE_RESOURCE) {
+		ret = cryptGetAttribute(session, CRYPT_SESSINFO_RESPONSE, cert);
+		if (ret == CRYPT_OK)
+			ret = cryptSetAttribute(session, CRYPT_SESSINFO_AUTHRESPONSE, 1);
+		if (ret == CRYPT_OK)
+			ret = cryptSetAttribute(session, CRYPT_SESSINFO_ACTIVE, 1);
+	}
+	if (ret == CRYPT_OK && !server_mode && *cert == -1)
+		ret = cryptGetAttribute(session, CRYPT_SESSINFO_RESPONSE, cert);
+	return ret;
+}
+
+static JSBool js_socket_tls_certificate(JSContext *cx, JSObject *obj, CRYPT_CERTIFICATE cert)
+{
+	if (cert == -1)
+		return JS_TRUE;
+	JSObject *certificate = js_CreateCryptCertObject(cx, cert);
+	if (!certificate)
+		return JS_FALSE;
+	JS_AddObjectRoot(cx, &certificate);
+	JSBool result = JS_DefineProperty(cx, obj, "tls_remote_cert", OBJECT_TO_JSVAL(certificate),
+	    NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
+	JS_RemoveObjectRoot(cx, &certificate);
+	return result;
+}
+
+static void js_socket_tls_thread(void *arg)
+{
+	js_socket_tls_pending *pending = static_cast<js_socket_tls_pending *>(arg);
+	SetThreadName("sbbs/jsTLS");
+	int status = CRYPT_ERROR_NOTINITED;
+	if (ssl_sync(pending->cfg, pending->logger)) {
+		status = add_private_key(pending->cfg, pending->logger, pending->session);
+		pending->key_added = status == CRYPT_OK;
+	}
+	pthread_mutex_lock(&pending->mutex);
+	bool cancelled = pending->cancelled;
+	pthread_mutex_unlock(&pending->mutex);
+	if (status == CRYPT_OK && !cancelled)
+		status = js_socket_activate_tls(pending->session, true, &pending->cert);
+	pthread_mutex_lock(&pending->mutex);
+	pending->status = status;
+	/* The event endpoint remains open until cancellation has set this flag. */
+	if (!pending->cancelled)
+		send(pending->notify, "x", 1, 0);
+	pthread_mutex_unlock(&pending->mutex);
+	js_socket_complete_tls_worker(pending);
+}
+
+JSBool js_socket_finish_tls(JSContext *cx, JSObject *obj)
+{
+	js_socket_private_t *p = (js_socket_private_t *)JS_GetPrivate(cx, obj);
+	if (!p || !p->tls_pending)
+		return JS_FALSE;
+	js_socket_tls_pending *pending = p->tls_pending;
+	p->tls_pending = NULL;
+	pthread_mutex_lock(&pending->mutex);
+	int status = pending->status;
+	CRYPT_CERTIFICATE cert = -1;
+	if (status == CRYPT_OK) {
+		p->sock = pending->sock;
+		pending->sock = INVALID_SOCKET;
+		p->session = pending->session;
+		pending->session = -1;
+		cert = pending->cert;
+		pending->cert = -1;
+		p->is_connected = true;
+		p->tls_server = true;
+	}
+	else {
+		char *estr;
+		GCESH(status, p, pending->session, estr, "accepting TLS session");
+		store_socket_error(p, status, "TLS handshake failed");
+	}
+	pthread_mutex_unlock(&pending->mutex);
+	js_socket_tls_release(pending);
+	return js_socket_tls_certificate(cx, obj, cert);
+}
+
+static JSBool js_accept_tls(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *argv = JS_ARGV(cx, arglist);
+	js_socket_private_t *p = (js_socket_private_t *)js_GetClassPrivate(cx, obj, &js_socket_class);
+	js_callback_t *cb = js_get_callback(cx);
+	if (!p || !cb)
+		return JS_FALSE;
+	if (!cb->events_supported || p->sock == INVALID_SOCKET || !p->is_connected
+	    || p->external || p->set || p->type != SOCK_STREAM || p->session != -1 || p->tls_pending) {
+		JS_ReportError(cx, "acceptTLS requires an owned, connected plaintext socket and callback support");
+		return JS_FALSE;
+	}
+	for (js_event_list *event = cb->events; event; event = event->next) {
+		if ((event->type == JS_EVENT_SOCKET_READABLE || event->type == JS_EVENT_SOCKET_READABLE_ONCE
+		    || event->type == JS_EVENT_SOCKET_WRITABLE || event->type == JS_EVENT_SOCKET_WRITABLE_ONCE)
+		    && event->data.sock == p->sock) {
+			JS_ReportError(cx, "Remove socket event handlers before acceptTLS");
+			return JS_FALSE;
+		}
+	}
+	JSFunction *callback = JS_ValueToFunction(cx, argv[0]);
+	if (!callback)
+		return JS_FALSE;
+	int32 timeout = 10;
+	if (argc > 1 && !JS_ValueToInt32(cx, argv[1], &timeout))
+		return JS_FALSE;
+	if (timeout < 5 || timeout > 300) {
+		JS_ReportError(cx, "TLS handshake timeout must be between 5 and 300 seconds");
+		return JS_FALSE;
+	}
+	SOCKET sv[2];
+#ifdef _WIN32
+	if (socketpair(AF_INET, SOCK_STREAM, 0, sv) == -1) {
+#else
+	if (socketpair(PF_UNIX, SOCK_STREAM, 0, sv) == -1) {
+#endif
+		JS_ReportError(cx, "Error %d creating TLS notification socket pair", SOCKET_ERRNO);
+		return JS_FALSE;
+	}
+	js_socket_tls_pending *pending = (js_socket_tls_pending *)calloc(1, sizeof *pending);
+	js_event_list *ev = (js_event_list *)calloc(1, sizeof *ev);
+	if (!pending || !ev || pthread_mutex_init(&pending->mutex, NULL)) {
+		free(pending);
+		free(ev);
+		closesocket(sv[0]);
+		closesocket(sv[1]);
+		JS_ReportOutOfMemory(cx);
+		return JS_FALSE;
+	}
+	scfg_t *cfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
+	pending->cfg = (scfg_t *)calloc(1, sizeof *pending->cfg);
+	if (!cfg || !pending->cfg) {
+		free(pending->cfg);
+		pthread_mutex_destroy(&pending->mutex);
+		free(pending);
+		free(ev);
+		closesocket(sv[0]);
+		closesocket(sv[1]);
+		JS_ReportError(cx, "Cannot snapshot TLS server configuration");
+		return JS_FALSE;
+	}
+	/* ssl.c only reads these fixed-size strings and this flag. Do not copy
+	 * pointers into host configuration which may be freed during shutdown. */
+	SAFECOPY(pending->cfg->ctrl_dir, cfg->ctrl_dir);
+	SAFECOPY(pending->cfg->sys_pass, cfg->sys_pass);
+	SAFECOPY(pending->cfg->sys_name, cfg->sys_name);
+	SAFECOPY(pending->cfg->sys_inetaddr, cfg->sys_inetaddr);
+	pending->cfg->create_self_signed_cert = cfg->create_self_signed_cert;
+	p->js_cb = cb;
+	int status = js_socket_prepare_tls(cx, p, true, true);
+	if (status == CRYPT_OK)
+		status = do_cryptAttribute(p, CRYPT_OPTION_NET_CONNECTTIMEOUT, timeout);
+	if (status != CRYPT_OK) {
+		memset(pending->cfg, 0, sizeof *pending->cfg);
+		free(pending->cfg);
+		pthread_mutex_destroy(&pending->mutex);
+		free(pending);
+		free(ev);
+		closesocket(sv[0]);
+		closesocket(sv[1]);
+		do_js_close(cx, p, false);
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+		return !JS_IsExceptionPending(cx);
+	}
+	pending->refs = 2;
+	pending->sock = p->sock;
+	pending->session = p->session;
+	pending->cert = -1;
+	pending->notify = sv[1];
+	pending->logger = sock_lprintf(p);
+	p->tls_pending = pending;
+	p->sock = INVALID_SOCKET;
+	p->session = -1;
+	p->is_connected = false;
+	ev->next = cb->events;
+	if (ev->next)
+		ev->next->prev = ev;
+	ev->type = JS_EVENT_SOCKET_TLS;
+	ev->cx = obj;
+	ev->cb = callback;
+	ev->cbobj = JSVAL_TO_OBJECT(argv[0]);
+	JS_AddObjectRoot(cx, &ev->cx);
+	JS_AddObjectRoot(cx, &ev->cbobj);
+	ev->data.connect.sv[0] = sv[0];
+	ev->data.connect.sv[1] = sv[1];
+	ev->data.connect.sock = pending->sock;
+	ev->id = cb->next_eid++;
+	cb->events = ev;
+	if (!js_socket_register_tls_worker(pending)) {
+		js_socket_tls_release(pending); // No worker reference.
+		do_js_close(cx, p, false);
+		JS_ReportError(cx, "Unable to register TLS handshake worker");
+		return JS_FALSE;
+	}
+	if (_beginthread(js_socket_tls_thread, 0, pending) == static_cast<uintptr_t>(-1)) {
+		js_socket_complete_tls_worker(pending); // No worker was started.
+		do_js_close(cx, p, false);
+		JS_ReportError(cx, "Unable to start TLS handshake thread");
+		return JS_FALSE;
+	}
+	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+	return JS_TRUE;
+}
+
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
 	jsval                idval;
@@ -2393,7 +2813,6 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 	jsrefcount           rc;
 	JSBool               b;
 	int32                i;
-	scfg_t *             scfg;
 	char*                estr;
 	JSObject*            pskobj;
 
@@ -2402,6 +2821,10 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 		return JS_TRUE;
 	}
 
+	if (p->tls_pending) {
+		JS_ReportError(cx, "TLS handshake in progress");
+		return JS_FALSE;
+	}
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
 
@@ -2446,145 +2869,26 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 		case SOCK_PROP_SSL_SERVER:
 		case SOCK_PROP_SSL_SESSION:
 			JS_ValueToBoolean(cx, *vp, &b);
-			rc = JS_SUSPENDREQUEST(cx);
-			if (b) {
-				if (p->session == -1) {
-					int ret = CRYPT_ERROR_NOTINITED;
-					scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
-
-					if (ssl_sync(scfg, sock_lprintf(p))) {
-						if ((ret = cryptCreateSession(&p->session, CRYPT_UNUSED, tiny == SOCK_PROP_SSL_SESSION ? CRYPT_SESSION_TLS: CRYPT_SESSION_TLS_SERVER)) == CRYPT_OK) {
-							int nodelay = 1;
-							set_socket_nonblocking(p->sock, false);
-							(void)setsockopt(p->sock, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay));
-							if ((ret = do_cryptAttribute(p, CRYPT_SESSINFO_NETWORKSOCKET, p->sock)) == CRYPT_OK) {
-								int minver = CRYPT_TLSOPTION_MINVER_TLS12;
-								if (p->tls_minver == 100)
-									minver = CRYPT_TLSOPTION_MINVER_TLS10;
-								else if (p->tls_minver == 101)
-									minver = CRYPT_TLSOPTION_MINVER_TLS11;
-								do_cryptAttribute(p, CRYPT_SESSINFO_TLS_OPTIONS, minver);
-								// Reduced compliance checking... required for acme-staging-v02.api.letsencrypt.org
-								if (!p->tls_enhanced_certcheck)
-									do_cryptAttribute(p, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_REDUCED);
-								// Add TLS PSK pairs
-								// Iterate object...
-								if (p->tls_psk) {
-									JSIdArray *ids = JS_Enumerate(cx, p->tls_psk);
-									if (ids) {
-										for (jsint k = 0; k < ids->length; k++) {
-											jsval js_id;
-											char *id;
-											size_t id_sz;
-											jsval js_key;
-											char *key;
-											size_t key_sz;
-											JS_IdToValue(cx, ids->vector[k], &js_id);
-											id = NULL;
-											JSVALUE_TO_MSTRING(cx, js_id, id, &id_sz);
-											if (id != NULL) {
-												if (!JS_IsExceptionPending(cx)) {
-													JS_GetProperty(cx, p->tls_psk, id, &js_key);
-													JSVALUE_TO_MSTRING(cx, js_key, key, &key_sz);
-													if (key != NULL) {
-														if (!JS_IsExceptionPending(cx)) {
-															if (do_cryptAttributeString(p, CRYPT_SESSINFO_USERNAME, id, id_sz) == CRYPT_OK)
-																do_cryptAttributeString(p, CRYPT_SESSINFO_PASSWORD, key, key_sz);
-														}
-														free(key);
-													}
-												}
-												free(id);
-											}
-										}
-										JS_DestroyIdArray(cx, ids);
-									}
-								}
-								if (p->tls_disable_certverify)
-									do_cryptAttribute(p, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY);
-								// Ensure key and value are both strings...
-								// Set the strings.
-								if (tiny == SOCK_PROP_SSL_SESSION) {
-									// TODO: Make this configurable
-									if (!p->tls_nameverify)
-										do_cryptAttribute(p, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_NAMEVERIFY);
-									if (p->hostname)
-										ret = do_cryptAttributeString(p, CRYPT_SESSINFO_SERVER_NAME, p->hostname, strlen(p->hostname));
-									p->tls_server = false;
-								}
-								if (tiny == SOCK_PROP_SSL_SERVER || p->tls_clientauth) {
-									if (scfg == NULL) {
-										ret = CRYPT_ERROR_NOTAVAIL;
-									}
-									else {
-										ret = add_private_key(scfg, sock_lprintf(p), p->session);
-										if (ret != CRYPT_OK) {
-											GCES(ret, p, estr, "setting private key");
-										}
-									}
-								}
-								if (tiny == SOCK_PROP_SSL_SERVER && p->tls_clientauth) {
-									do_cryptAttribute(p, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_MANUAL_CERTCHECK);
-								}
-								if (ret == CRYPT_OK) {
-									if ((ret = do_cryptAttribute(p, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
-										if (ret == CRYPT_ENVELOPE_RESOURCE) {
-											// Get the client cert/cert chain
-											CRYPT_CERTIFICATE client_cert;
-											ret = cryptGetAttribute(p->session, CRYPT_SESSINFO_RESPONSE, &client_cert);
-											if (ret != CRYPT_OK)
-												GCES(ret, p, estr, "getting remote certificate");
-											else {
-												// TODO: Do we need to do everything here?
-												cryptSetAttribute(p->session, CRYPT_SESSINFO_AUTHRESPONSE, 1);
-												// Create tls_client_cert object...
-												JS_DefineProperty(cx, obj, "tls_remote_cert", OBJECT_TO_JSVAL(js_CreateCryptCertObject(cx, client_cert)), NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-												if ((ret = do_cryptAttribute(p, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
-													GCES(ret, p, estr, "getting remote certificate");
-												}
-											}
-										}
-										else
-											GCES(ret, p, estr, "setting session active");
-									}
-									if (ret == CRYPT_OK && tiny == SOCK_PROP_SSL_SESSION) {
-										// Get the client cert/cert chain
-										CRYPT_CERTIFICATE client_cert;
-										ret = cryptGetAttribute(p->session, CRYPT_SESSINFO_RESPONSE, &client_cert);
-										if (ret != CRYPT_OK)
-											GCES(ret, p, estr, "getting remote certificate");
-										else {
-											// TODO: CRLs?
-											JS_DefineProperty(cx, obj, "tls_remote_cert", OBJECT_TO_JSVAL(js_CreateCryptCertObject(cx, client_cert)), NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-										}
-									}
-								}
-							}
-						}
-						else
-							GCESH(ret, p, CRYPT_UNUSED, estr, "creating session");
-					}
-					if (ret != CRYPT_OK) {
-						if (p->session != -1)
-							cryptDestroySession(p->session);
-						p->session = -1;
-						set_socket_nonblocking(p->sock, p->nonblocking);
-						do_js_close(cx, p, false);
-					}
+			if (b && p->session == -1) {
+				bool server_mode = tiny == SOCK_PROP_SSL_SERVER;
+				CRYPT_CERTIFICATE cert = -1;
+				int ret = js_socket_prepare_tls(cx, p, server_mode);
+				if (ret == CRYPT_OK) {
+					rc = JS_SUSPENDREQUEST(cx);
+					ret = js_socket_activate_tls(p->session, server_mode, &cert);
+					JS_RESUMEREQUEST(cx, rc);
 				}
-			}
-			else {
-				if (p->session != -1) {
-					if (p->tls_server)
-						destroy_session(sock_lprintf(p), p->session);
-					else
-						cryptDestroySession(p->session);
-					p->session = -1;
-					set_socket_nonblocking(p->sock, p->nonblocking);
+				if (ret == CRYPT_OK)
+					js_socket_tls_certificate(cx, obj, cert);
+				else {
+					GCES(ret, p, estr, "setting session active");
+					if (cert != -1)
+						cryptDestroyCert(cert);
 					do_js_close(cx, p, false);
 				}
 			}
-			JS_RESUMEREQUEST(cx, rc);
+			else if (!b && p->session != -1)
+				do_js_close(cx, p, false);
 			break;
 		case SOCK_PROP_TLS_MINVER:
 			if (JS_ValueToInt32(cx, *vp, &i)) {
@@ -2879,6 +3183,12 @@ static jsSyncPropertySpec js_socket_properties[] = {
 };
 
 static jsSyncMethodSpec js_socket_functions[] = {
+	{"acceptTLS", js_accept_tls, 1, JSTYPE_BOOLEAN, JSDOCSTR("callback [,timeout=10]")
+	 , JSDOCSTR("Negotiate inbound TLS asynchronously on an owned connected socket. "
+	     "Calls callback with this set to the socket; ssl_session indicates success. "
+	     "The socket is unavailable until completion. close() cancels the handshake. "
+	     "Timeout is in seconds (5-300).")
+	 , 32101},
 	{"close",       js_close,       0,  JSTYPE_VOID,    ""
 	 , JSDOCSTR("Close (shutdown) the socket immediately")
 	 , 310},

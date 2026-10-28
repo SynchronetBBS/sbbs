@@ -34,6 +34,16 @@ the appropriate hostname and intermediate certificates using Synchronet's
 existing certificate-management tools. A newly generated self-signed server
 certificate will not pass validation against a CA bundle.
 
+Inbound handshakes use the native `Socket.acceptTLS()` API when available.
+Private-key loading and TLS negotiation run in native workers; JavaScript
+callbacks run on the IRCd's existing callback thread. The daemon allows up to
+16 pending handshakes with a 10-second network timeout and closes excess
+connections. Older hosts use synchronous TLS handshakes and log a warning once
+per daemon run when the fallback is first needed. Those hosts remain vulnerable
+to handshake stalls until the native executables and libraries are upgraded.
+Both paths require successful TLS before IRC registration; a failed asynchronous
+handshake is closed without retrying through the synchronous fallback.
+
 Configure each hub's peer entry to require TLS:
 
 ```ini

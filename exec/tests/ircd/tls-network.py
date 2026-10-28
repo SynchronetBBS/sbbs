@@ -4,6 +4,7 @@ fixture (services-fixture.py); never use a production control directory.
 Certificates, configurations and logs are kept in the printed /tmp directory.
 """
 import argparse
+from contextlib import ExitStack
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import select
@@ -25,6 +26,7 @@ from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--jsexec', type=Path, required=True)
 parser.add_argument('--ctrl', type=Path, default=Path('/tmp/ircd-services-bbs-fixture/ctrl'))
+parser.add_argument('--accept-only', action='store_true', help='Run native asynchronous accept API regressions only')
 parser.add_argument('--routes-only', action='store_true', help='Run the three-server route and services scenarios only')
 args = parser.parse_args()
 source = Path(__file__).resolve().parents[2]
@@ -178,7 +180,7 @@ cases = [
     ('empty CA bundle', 'valid.pem', 'valid.key', 'empty.pem', False),
     ('non-CA in bundle', 'valid.pem', 'valid.key', 'not-ca.pem', False),
 ]
-for name, cert, key, ca, accept in ([] if args.routes_only else cases):
+for name, cert, key, ca, accept in ([] if args.routes_only or args.accept_only else cases):
     peer = Peer(cert, key)
     result = subprocess.run(native(source / 'tests/ircd/tls-worker.sjs', run / ca, 'localhost', peer.port,
                                    'accept' if accept else 'reject'), capture_output=True, text=True, errors='replace', timeout=30)
@@ -206,6 +208,35 @@ def receive_until(stream, marker, timeout=8):
             data += part
     assert marker in data, repr(marker) + ' missing from ' + repr(data)
     return data
+
+
+def accept_tls_api_test():
+    for mode in ['success', 'invalid', 'timeout', 'arguments', 'cancel', 'exit']:
+        port = free_port()
+        ready = run / ('accept-' + mode + '.ready')
+        process = subprocess.Popen(native(source / 'tests/socket/accept-tls.sjs', port, mode, ready),
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        try:
+            deadline = time.monotonic() + 10
+            while not ready.exists():
+                assert process.poll() is None, process.communicate()[0]
+                assert time.monotonic() < deadline, 'acceptTLS fixture did not start'
+                time.sleep(.02)
+            with socket.create_connection(('127.0.0.1', port), timeout=5) as raw:
+                if mode == 'success':
+                    context = ssl.create_default_context(cafile=run / 'root.pem')
+                    with context.wrap_socket(raw, server_hostname='localhost') as secure:
+                        receive_until(secure, b'TLS ready', timeout=5)
+                elif mode == 'invalid':
+                    raw.sendall(b'not a TLS record\r\n')
+                    raw.shutdown(socket.SHUT_WR)
+                output, _ = process.communicate(timeout=10)
+            assert process.returncode == 0 and 'PASS: ' + mode in output, repr((mode, process.returncode, output))
+            print('PASS: native acceptTLS', mode, flush=True)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.communicate(timeout=5)
 
 
 def daemon_test(automatic):
@@ -294,6 +325,46 @@ Class=1
                 with socket.create_connection(('127.0.0.1', plain), timeout=5) as insecure:
                     insecure.sendall(b'PASS tls-test-password :TS\r\nSERVER secured.test 1 :Downgrade\r\n')
                     receive_until(insecure, b'TLS is required for this server link.')
+                # Slow TLS clients must not block existing IRC sockets or
+                # unrelated TLS handshakes on the shared callback thread.
+                with ExitStack() as pending:
+                    for _ in range(4):
+                        pending.enter_context(socket.create_connection(('127.0.0.1', tls), timeout=5))
+                    client.sendall(b'PING :tls-pending-regression\r\n')
+                    receive_until(client, b':tls-pending-regression', timeout=4)
+                    context = ssl.create_default_context(cafile=run / 'root.pem')
+                    with context.wrap_socket(socket.create_connection(('127.0.0.1', tls), timeout=2), server_hostname='localhost') as secure:
+                        secure.sendall(b'NICK concurrentTLS\r\nUSER concurrentTLS 0 * :Concurrent TLS\r\n')
+                        receive_until(secure, b' 001 ', timeout=2)
+                    # A failed handshake must release its slot too.
+                    with socket.create_connection(('127.0.0.1', tls), timeout=2) as invalid:
+                        invalid.sendall(b'not a TLS handshake\r\n')
+                    client.sendall(b'PING :tls-still-responsive\r\n')
+                    receive_until(client, b':tls-still-responsive', timeout=4)
+                print('PASS: pending and failed TLS handshakes preserve IRC responsiveness', flush=True)
+                # Saturating the handshake limit rejects excess sockets while
+                # the established client can still exchange IRC messages.
+                with ExitStack() as pending:
+                    probes = [pending.enter_context(socket.create_connection(('127.0.0.1', tls), timeout=5))
+                              for _ in range(20)]
+                    client.sendall(b'PING :tls-limit-regression\r\n')
+                    receive_until(client, b':tls-limit-regression', timeout=4)
+                    # At most 16 of these 20 silent handshakes can be retained.
+                    # Earlier cancelled handshakes may still be completing, so
+                    # count refusals in this batch rather than probing later.
+                    waiting, refused = list(probes), []
+                    deadline = time.monotonic() + 4
+                    while len(refused) < 4 and time.monotonic() < deadline:
+                        ready = select.select(waiting, [], [], max(0, deadline - time.monotonic()))[0]
+                        for excess in ready:
+                            waiting.remove(excess)
+                            refused.append(excess)
+                            try:
+                                assert excess.recv(1) == b'', 'Plaintext leaked from TLS listener'
+                            except ConnectionResetError:
+                                pass
+                    assert len(refused) >= 4, 'TLS handshake limit was not enforced'
+                print('PASS: TLS handshake limit preserves established clients', flush=True)
                 # TLS-only listener: no plaintext IRC banner or credentials.
                 with socket.create_connection(('127.0.0.1', tls), timeout=5) as raw:
                     raw.sendall(b'PASS tls-test-password :TS\r\nSERVER peer.test 1 :Plaintext\r\n')
@@ -329,8 +400,10 @@ Class=1
 
 
 if not args.routes_only:
-    daemon_test(True)
-    daemon_test(False)
+    accept_tls_api_test()
+    if not args.accept_only:
+        daemon_test(True)
+        daemon_test(False)
 
 
 def route_test():
@@ -553,5 +626,6 @@ Class=30
             assert process.returncode in (0, -signal.SIGTERM), 'Route IRCd crashed: ' + logfile.read_text()
 
 
-route_test()
+if not args.accept_only:
+    route_test()
 print('All native TLS tests passed.', flush=True)

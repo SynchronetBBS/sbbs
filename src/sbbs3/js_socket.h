@@ -34,6 +34,7 @@ typedef struct
 	bool tls_disable_certverify;
 	bool tls_clientauth;
 	bool tls_enhanced_certcheck;
+	struct js_socket_tls_pending *tls_pending;
 } js_socket_private_t;
 
 /* Written to js_event_connect.sv[1] by the asynchronous connect thread */
@@ -43,6 +44,8 @@ struct js_connect_result {
 };
 
 bool js_socket_tls_readable(js_socket_private_t* p);
+void js_socket_cancel_tls(JSContext *cx, JSObject *obj);
+JSBool js_socket_finish_tls(JSContext *cx, JSObject *obj);
 
 #ifdef __cplusplus
 extern "C" {
