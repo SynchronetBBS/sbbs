@@ -1401,6 +1401,7 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			var str = type_str +" "+ chan.nam +" :"+ send_str;
 			this.bcast_to_channel(chan, str, false);
 			this.bcast_to_channel_servers(chan, str);
+			if (type_str=="PRIVMSG" && typeof IRC_Services!="undefined" && IRC_Services && IRC_Services.fileserv) IRC_Services.fileserv.channel(this,chan,send_str);
 		} else {
 			var prefix_chr;
 			if (send_to_list == CHANMODE_OP)
@@ -1552,9 +1553,15 @@ function IRC_stats_config(user, section, fields) {
 
 function IRC_stats_services(user) {
 	var c = EmbeddedServices_Config;
-	IRC_stats_config(user, "BBSServices", {NickServ:c.nickserv, MemoServ:c.memoserv, RequireTLS:c.bbs_require_tls});
+	IRC_stats_config(user, "BBSServices", {NickServ:c.nickserv, MemoServ:c.memoserv, FileServ:c.fileserv, RequireTLS:c.bbs_require_tls});
 	IRC_stats_config(user, "EmbeddedServices", {Enabled:c.enabled, Host:c.host, RequireTLS:c.require_tls,
 		MaxNicks:c.max_nicks, NickExpireDays:c.nick_expire_days, ChannelExpireDays:c.channel_expire_days});
+
+	var fc=c.files || {};
+	IRC_stats_config(user,"FileServ",{TLS:fc.tls,IncludeLibs:fc.include_libs,ExcludeLibs:fc.exclude_libs,IncludeDirs:fc.include_dirs,ExcludeDirs:fc.exclude_dirs,
+		PublicLibs:fc.public_libs,PublicDirs:fc.public_dirs,Guest:fc.guest,Channels:fc.channels,Address:fc.address,Bind:fc.bind,PortFirst:fc.port_first,PortLast:fc.port_last,
+		MaxDownloads:fc.max_downloads,MaxChats:fc.max_chats,MaxQueue:fc.max_queue,UserQueue:fc.user_queue,PageSize:fc.page_size,Timeout:fc.timeout});
+	if (IRC_Services && IRC_Services.fileserv) IRC_stats_config(user,"FileServRuntime",{Running:true,Workers:Object.keys(IRC_Services.fileserv.workers).length,Queued:IRC_Services.fileserv.pending.length});
 	if (!IRC_Services) { IRC_stats_config(user, "ServicesRuntime", {Running:false}); return; }
 	var m = IRC_Services, authority = Servers[m.config.host], cp = m.central_peer();
 	var transport = cp && m.transport.peers[IRC_services_key(cp)];

@@ -411,7 +411,7 @@ function Unregistered_Check_User_Registration() {
 				this.bbs_usernum = identity.number;
 				var authenticated_user = new User(identity.number);
 				authenticated_user.connection = "IRC"; authenticated_user.logontime = Epoch();
-				if (EmbeddedServices_Config.nickserv) {
+				if (EmbeddedServices_Config.nickserv || EmbeddedServices_Config.fileserv) {
 					this.services_identity = identity; this.uprefix = identity.username;
 				} else this.uprefix = parse_username(authenticated_user.handle);
 			}

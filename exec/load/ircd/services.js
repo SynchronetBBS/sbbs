@@ -34,9 +34,14 @@ function IRC_Services_Manager(options) {
 		}, function(peer, message, framing) { self.receive(peer, message, framing); }, undefined,
 		function(peer, event, message) { self.rpc_log("transport " + event, peer, message); });
 	this.queue = new IRC_Services_Backend(this.config, DNS_Resolver);
-	if (options.enabled || options.nickserv || options.memoserv)
+	if (options.enabled || options.nickserv || options.memoserv || options.fileserv)
 		this.interval = js.setInterval(IRC_services_tick, 250, this);
-	if (options.nickserv || options.memoserv) this.ensure_agent();
+	if (options.nickserv || options.memoserv || options.fileserv) this.ensure_agent();
+	if (options.fileserv) {
+		load("ircd/fileserv.js");
+		try { this.fileserv = new IRC_FileServ(this); this.fileserv.join_channels(); }
+		catch (e) { log(LOG_ERR, "FileServ could not start: " + e); }
+	}
 }
 IRC_Services_Manager.prototype.peer = function(name) {
 	var u = Users[String(name).toUpperCase()];
@@ -81,11 +86,11 @@ IRC_Services_Manager.prototype.job = function(job, callback) {
 IRC_Services_Manager.prototype.event = function(event) {
 	return this.central && this.queue.write({type:"event", event:event});
 };
-IRC_Services_Manager.prototype.fake_user = function(nick, home, uline, handler) {
+IRC_Services_Manager.prototype.fake_user = function(nick, home, uline, handler, username) {
 	if (Users[nick.toUpperCase()]) throw new Error("Service nickname already exists");
 	var u = new IRC_User(Generate_ID());
 	u.nick = nick; u.local = false; u.uline = uline; u.servername = home;
-	u.parent = 0; u.uprefix = "services"; u.hostname = home; u.created = Epoch(); u.hops = 0; u.services_internal = true;
+	u.parent = 0; u.uprefix = username || "services"; u.hostname = home; u.created = Epoch(); u.hops = 0; u.services_internal = true;
 	if (nick == IRC_services_agent(home)) u.uprefix = "bbs+ircd+agent";
 	u.ip = "0.0.0.0"; u.realname = "Synchronet embedded services"; u.mode = USERMODE_INVISIBLE;
 	u.rawout = function() {}; u.ircout = function() {};
@@ -157,6 +162,7 @@ IRC_Services_Manager.prototype.stop = function() {
 	this.stopped = true;
 	if (this.interval !== undefined) js.clearInterval(this.interval);
 	this.stop_central();
+	if (this.fileserv) this.fileserv.stop();
 	if (this.agent && Users[this.agent.nick.toUpperCase()] === this.agent) this.agent.quit("Services stopped");
 	this.queue.write({type:"stop"});
 };
@@ -243,6 +249,7 @@ IRC_Services_Manager.prototype.tick = function() {
 	var self = this, now = system.timer;
 	try {
 		this.queue.drain();
+		if (this.fileserv) this.fileserv.tick();
 		if (this.config.enabled && this.config.host && now >= this.nextdns) { this.nextdns = now + 300; this.queue.write({type:"dns"}); }
 		for (var i = 0; i < 100 && this.queue.read_level; i++) {
 			var event = this.queue.read();
@@ -275,7 +282,7 @@ IRC_Services_Manager.prototype.tick = function() {
 			var a = self.attestations[ref];
 			if (Users[a.user.nick.toUpperCase()] !== a.user) delete self.attestations[ref];
 		});
-		if ((this.config.nickserv || this.config.memoserv || (this.config.enabled && this.localhost)) && !this.ensure_agent()) return;
+		if ((this.config.nickserv || this.config.memoserv || this.config.fileserv || (this.config.enabled && this.localhost)) && !this.ensure_agent()) return;
 		this.start_central();
 		if (now >= this.nextsnapshot) {
 			this.nextsnapshot = now + 1; this.snapshot(); this.event({type:"tick"});
@@ -448,7 +455,7 @@ IRC_Services_Manager.prototype.intercept = function(user, target, text) {
 	try { return this.intercept_command(user, target, text); }
 	catch (error) {
 		log(LOG_WARNING, "Embedded IRC services command failed: " + error);
-		var service = /^MemoServ/i.test(target) ? "MemoServ" : "NickServ";
+		var service = /^FileServ/i.test(target) ? "FileServ" : /^MemoServ/i.test(target) ? "MemoServ" : "NickServ";
 		var home = String(target).split("@")[1] || (service == "MemoServ" && user.services_identity && user.services_identity.home);
 		this.notice(service, user, "Services are busy or unavailable; please try again later.", home);
 		return true;
@@ -456,6 +463,24 @@ IRC_Services_Manager.prototype.intercept = function(user, target, text) {
 };
 IRC_Services_Manager.prototype.intercept_command = function(user, target, text) {
 	if (!user.local || user.server) return false;
+	var fm = /^FileServ(?:@([^,\s]+))?$/i.exec(target);
+	if (fm) {
+		var home=(fm[1] || ServerName).toLowerCase(), endpoint;
+		if (home==this.config.server) {
+			if (this.fileserv) this.fileserv.command(user,text);
+			else this.notice("FileServ",user,"FileServ is unavailable on this BBS.",home);
+			return true;
+		}
+		var sn=Servers[home];
+		if (sn) {
+			for (var fk in Users) { var candidate=Users[fk];
+				if (candidate.servername.toLowerCase()==home && candidate.uprefix=="bbs+ircd+files" && candidate.nick.toUpperCase().indexOf("FILESERV_")==0) { endpoint=candidate;break; }
+			}
+		}
+		if (endpoint) endpoint.originatorout("PRIVMSG "+endpoint.nick+" :"+text,user);
+		else this.notice("FileServ",user,"Destination FileServ is unavailable.",home);
+		return true;
+	}
 	var match = /^(NickServ|MemoServ)(?:@([^,\s]+))?$/i.exec(target);
 	if (!match) return false;
 	var service = match[1].toLowerCase() == "nickserv" ? "NickServ" : "MemoServ";
@@ -572,6 +597,29 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m, framing) {
 		} else this.rpc_log("ignored reply", peer, m, "reason=" + (request ? "reply from different peer" : "unknown or expired request"));
 		return;
 	}
+
+	if (m.type == "files-capabilities") { if (this.central && m.id) this.reply(peer,m.id,{files_access:1});return; }
+	if (m.type == "files-check") {
+		if (!cp || peer.toUpperCase()!=cp.toUpperCase()) return;
+		var owner=this.find(m.actor), login=owner && owner.local && this.logins(owner).filter(function(a) { return a.home==m.home; })[0];
+		this.reply(peer,m.id,{identity:login || null,files_access:1});return;
+	}
+	if (m.type == "files-access") {
+		if (!this.central || !m.subject || !m.id) return;
+		var subject=Users[String(m.subject.nick).toUpperCase()], destination=source.servername.toLowerCase();
+		if (!subject || subject.services_internal || subject.servername.toLowerCase()!=m.subject.server) { this.reply(peer,m.id,{error:"Session ended."});return; }
+		var file_tls=this.tls_error(subject,this.config.require_tls,[destination]);
+		if (file_tls) { this.reply(peer,m.id,{error:file_tls});return; }
+		var descriptor=this.describe(subject), requester=peer;
+		var connection=this.peer(IRC_services_agent(subject.servername));
+		if (!connection) { this.reply(peer,m.id,{error:"Your connection server does not support FileServ authentication."});return; }
+		this.request(connection.nick,{type:"files-check",actor:descriptor,home:destination},function(r) {
+			if (self.find(descriptor)!==subject) { self.reply(requester,m.id,{error:"Session changed."});return; }
+			var changed_tls=self.tls_error(subject,self.config.require_tls,[destination]);
+			if (changed_tls) { self.reply(requester,m.id,{error:changed_tls});return; }
+			self.reply(requester,m.id,{identity:r.identity || null,actor:descriptor,error:r.error || (r.files_access!=1 ? "Your connection server does not support FileServ authentication." : undefined)});
+		});return;
+	}
 	if (m.type == "local-auth" || m.type == "local-memo" || m.type == "identity" || m.type == "rename" || m.type == "memo-text" || m.type == "local-validate" || m.type == "check-session" || m.type == "local-resolve") {
 		if (!cp || peer.toUpperCase() != cp.toUpperCase()) {
 			this.rpc_log("ignored", peer, m, !cp ? this.authority_log_reason() : "reason=sender is not the configured authority"); return;
@@ -673,7 +721,7 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m, framing) {
 	if (m.type == "session") {
 		user.services_peer_multi = m.multi_login == 1;
 		this.rpc_log("session bound", peer, m, "multi_login=" + user.services_peer_multi);
-		if (m.id) this.reply(peer, m.id, {multi_login:1, memo_routing:1}); return;
+		if (m.id) this.reply(peer, m.id, {multi_login:1, memo_routing:1, files_access:1}); return;
 	}
 	if (m.type == "sync-logins") { this.verify_logins(peer, user, m); return; }
 	if (m.type == "claim") {

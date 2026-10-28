@@ -54,7 +54,13 @@ var TLS_Config = {ca_file:""};
 var TLS_Ports = {};
 var Clock_MaxSkew = 30;
 var NetworkName = "Synchronet";
-var EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, bbs_require_tls:false, require_tls:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
+function IRC_files_defaults() {
+	return {include_libs:"*", exclude_libs:"", include_dirs:"*", exclude_dirs:"", public_libs:"", public_dirs:"",
+		guest:0, channels:"", address:"", bind:"0.0.0.0", port_first:0, port_last:0, tls:"optional",
+		max_downloads:4, max_chats:4, max_queue:64, user_queue:8, page_size:25, timeout:60, jsexec:""};
+}
+
+var EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, fileserv:false, files:IRC_files_defaults(), bbs_require_tls:false, require_tls:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
 
 function Epoch() {
 	return parseInt(new Date().getTime()/1000);
@@ -258,7 +264,7 @@ function Clear_Config_Globals() {
 	if (typeof IRC_tls_clear_cache == "function") IRC_tls_clear_cache();
 	TLS_Config = {ca_file:""}; TLS_Ports = {};
 	Clock_MaxSkew = 30;
-	EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, bbs_require_tls:false, require_tls:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
+	EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, fileserv:false, files:IRC_files_defaults(), bbs_require_tls:false, require_tls:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
 	Admin1 = "";
 	Admin2 = "";
 	Admin3 = "";
@@ -695,7 +701,11 @@ function Write_Config_File(fn) {
 	f.writeln("[BBSServices]");
 	f.writeln("NickServ=" + EmbeddedServices_Config.nickserv);
 	f.writeln("MemoServ=" + EmbeddedServices_Config.memoserv);
+	f.writeln("FileServ=" + EmbeddedServices_Config.fileserv);
 	f.writeln("RequireTLS=" + EmbeddedServices_Config.bbs_require_tls);
+	f.writeln("");
+	f.writeln("[FileServ]");
+	Object.keys(IRC_files_ini).forEach(function(key) { f.writeln(key + "=" + EmbeddedServices_Config.files[IRC_files_ini[key]]); });
 	f.writeln("");
 	f.writeln("[EmbeddedServices]");
 	f.writeln("Enabled=" + EmbeddedServices_Config.enabled);
@@ -758,6 +768,7 @@ function ini_sections() {
 	this.Clock = ini_Clock;
 	this.TLS = ini_TLS;
 	this.BBSServices = ini_BBSServices;
+	this.FileServ = ini_FileServ;
 	this.EmbeddedServices = ini_EmbeddedServices;
 }
 
@@ -775,6 +786,7 @@ function ini_tls(value, fallback) {
 function ini_BBSServices(arg, ini) {
 	if (ini.NickServ !== undefined) EmbeddedServices_Config.nickserv = ini_false_true(ini.NickServ);
 	if (ini.MemoServ !== undefined) EmbeddedServices_Config.memoserv = ini_false_true(ini.MemoServ);
+	if (ini.FileServ !== undefined) EmbeddedServices_Config.fileserv = ini_false_true(ini.FileServ);
 	if (ini.RequireTLS !== undefined) EmbeddedServices_Config.bbs_require_tls = ini_tls(ini.RequireTLS, false);
 }
 function ini_EmbeddedServices(arg, ini) {
@@ -1516,4 +1528,26 @@ function RBL_Config_Object(hostname, good, bad) {
 	this.hostname = hostname;
 	this.good = good ? good.split(",") : "";
 	this.bad = bad ? bad.split(",") : "";
+}
+
+/* No private worker tokens or filesystem paths are exposed by STATS. */
+var IRC_files_ini = {IncludeLibs:"include_libs", ExcludeLibs:"exclude_libs", IncludeDirs:"include_dirs", ExcludeDirs:"exclude_dirs",
+	PublicLibs:"public_libs", PublicDirs:"public_dirs", Guest:"guest", Channels:"channels", Address:"address", Bind:"bind",
+	PortFirst:"port_first", PortLast:"port_last", TLS:"tls", MaxDownloads:"max_downloads", MaxChats:"max_chats",
+	MaxQueue:"max_queue", UserQueue:"user_queue", PageSize:"page_size", Timeout:"timeout", JSexec:"jsexec"};
+function ini_FileServ(arg, ini) {
+	var c=EmbeddedServices_Config.files;
+	Object.keys(IRC_files_ini).forEach(function(key) {
+		if (ini[key]===undefined) return;
+		var name=IRC_files_ini[key],value=ini[key];
+		if (typeof c[name]=="number") {
+			value=Number(value);
+			var zero=["guest","port_first","port_last"].indexOf(name)>=0;
+			var max=name=="port_first" || name=="port_last" ? 65535 : name=="timeout" ? 3600 : name=="guest" ? 1000000 : 256;
+			if (!isFinite(value) || value%1 || value<(zero ? 0 : 1) || value>max) throw new Error("Invalid [FileServ] "+key);
+		} else value=String(value);
+		if (name=="tls") { value=value.toLowerCase();if (["off","optional","required"].indexOf(value)<0) throw new Error("Invalid [FileServ] TLS policy"); }
+		c[name]=value;
+	});
+	if ((c.port_first==0)!=(c.port_last==0) || c.port_last<c.port_first || c.port_last-c.port_first>1024) throw new Error("Invalid [FileServ] DCC port range");
 }

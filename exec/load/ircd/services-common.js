@@ -67,7 +67,7 @@ function IRC_services_equal(a, b) {
 }
 function IRC_services_redact(line) {
 	return String(line).replace(/^((?::[^\s]+\s+)?(?:PASS|IDENTIFY|NS|NICKSERV|CS|CHANSERV|MS|MEMOSERV)\s+).*/i, "$1[redacted]")
-		.replace(/((?:PRIVMSG|NOTICE)\s+(?:NickServ|ChanServ|MemoServ|BBSsvc_[^\s@,]+)(?:@[^\s,]+)?\s+:?).*/i, "$1[redacted]");
+		.replace(/((?:PRIVMSG|NOTICE)\s+(?:NickServ|ChanServ|MemoServ|FileServ(?:_[a-z0-9_-]+)?|BBSsvc_[^\s@,]+)(?:@[^\s,]+)?\s+:?).*/i, "$1[redacted]");
 }
 
 /* Whitelist diagnostics rather than logging RPC objects or free-form errors.
@@ -94,14 +94,15 @@ function IRC_services_log_error(error) {
 	return "error";
 }
 function IRC_services_log_rpc(m) {
-	var types = ["authenticate","local-auth","local-memo","identity","rename","memo-text","local-validate","check-session","local-resolve",
+	var types = ["files-capabilities","files-check","files-access","authenticate","local-auth","local-memo","identity","rename","memo-text","local-validate","check-session","local-resolve",
 		"reply","reply-text","session","sync-logins","claim","logout","command","memo"];
 	var type = m && types.indexOf(m.type) >= 0 ? m.type : "unknown", parts = ["operation=" + type];
 	if (!m || typeof m != "object") return parts.join(" ");
 	if (m.id !== undefined) parts.push("request=" + IRC_services_log_id(m.id));
-	if (m.actor && typeof m.actor == "object") {
-		parts.push("nick=" + IRC_services_log_atom(m.actor.nick), "connection=" + IRC_services_log_atom(m.actor.server));
-		if (typeof m.actor.auth_revision == "number" && isFinite(m.actor.auth_revision)) parts.push("auth_revision=" + m.actor.auth_revision);
+	var actor = m.actor || (type == "files-access" ? m.subject : null);
+	if (actor && typeof actor == "object") {
+		parts.push("nick=" + IRC_services_log_atom(actor.nick), "connection=" + IRC_services_log_atom(actor.server));
+		if (typeof actor.auth_revision == "number" && isFinite(actor.auth_revision)) parts.push("auth_revision=" + actor.auth_revision);
 	}
 	if (m.home) parts.push("BBS=" + IRC_services_log_atom(m.home));
 	if (type == "command") {

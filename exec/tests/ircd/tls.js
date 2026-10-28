@@ -107,15 +107,19 @@ run_tests({
 		var s = state(), path = "/tmp/ircd-tls-config-" + random(0x7fffffff) + ".ini";
 		try {
 			s.load_config_defaults(); s.TLS_Config.ca_file = "test-ca.pem";
+			s.ini_BBSServices("", {FileServ:true});
+			s.ini_FileServ("", {TLS:"required",PublicDirs:"pub_*",ExcludeLibs:"staff_*",Channels:"#files",Address:"192.0.2.1",PortFirst:41000,PortLast:41007,JSexec:"/private/jsexec"});
 			s.ini_Port("17001", {TLS:true});
 			s.CLines.push(cline(s, true, 17002));
 			s.NLines.push(new s.NLine("peer.test", "private-password", "peer.test", 0, 1, true));
 			s.NLines.push(new s.NLine("incoming.test", "private-password", "incoming.test", 0, 1, true));
 			check(s.Write_Config_File(path)); s.Config_Filename = path; s.Read_Config_File();
 			check(s.TLS_Config.ca_file == "test-ca.pem" && s.TLS_Ports[17001]);
+			check(s.EmbeddedServices_Config.fileserv && s.EmbeddedServices_Config.files.tls=="required" && s.EmbeddedServices_Config.files.public_dirs=="pub_*" && s.EmbeddedServices_Config.files.port_last==41007 && s.EmbeddedServices_Config.files.jsexec=="/private/jsexec");
 			check(s.Find_CLine("peer.test").tls && s.Find_NLine("peer.test").tls);
 			check(s.Find_NLine("incoming.test").tls && !s.Find_CLine("incoming.test").port);
 			s.Clear_Config_Globals(); check(!s.TLS_Config.ca_file && !s.TLS_Ports[17001]);
+			check(!s.EmbeddedServices_Config.fileserv && !s.EmbeddedServices_Config.files.public_dirs && s.EmbeddedServices_Config.files.tls=="optional");
 		} finally { file_remove(path); }
 	},
 	"validated TLS precedes every outbound IRC credential": function() {

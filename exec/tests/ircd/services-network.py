@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--jsexec', required=True, type=Path)
 parser.add_argument('--legacy-source', required=True, type=Path)
 parser.add_argument('--single-login-source', type=Path, help='Run edge with the earlier single-login services implementation')
+parser.add_argument('--fileserv', action='store_true', help='Also test FileServ through the legacy relay (requires fileserv-fixture.py)')
 parser.add_argument('--skip-grace', action='store_true', help='Skip the 60-second nickname enforcement test')
 args = parser.parse_args()
 source = Path(__file__).resolve().parents[2]
@@ -54,6 +55,7 @@ class Server:
         if not self.legacy:
             lines += ['[BBSServices]', 'NickServ=' + str(self.name != 'hub').lower(),
                       'MemoServ=' + str(self.name != 'hub').lower(),
+                      'FileServ=' + str(args.fileserv and self.name == 'home').lower(),
                       '[EmbeddedServices]', 'Host=127.0.0.1',
                       'Database=' + str(run / (self.name + '.sqlite'))]
             if self.name == 'hub':
@@ -67,6 +69,9 @@ class Server:
                 # Explicitly disabling authority hosting must retain Host for
                 # the leaf's local services, RPCs and identity propagation.
                 lines.append('Enabled=false')
+        if args.fileserv and self.name == 'home':
+            lines += ['[FileServ]', 'PublicDirs=fs_public',
+                      'Address=127.0.0.1', 'Bind=127.0.0.1', 'TLS=optional', 'Timeout=8', 'JSexec=' + str(args.jsexec)]
         old_config = self.legacy and (code / 'load/ircd_server.js').exists() and not (code / 'load/ircd/server.js').exists()
         if old_config:
             lines = ['M:' + self.sname + ':127.0.0.1:Services test:' + str(self.port),
@@ -92,7 +97,7 @@ class Server:
             subprocess.run([str(args.jsexec), '-n', '-c', str(self.ctrl), '-r', reset],
                            stdin=subprocess.DEVNULL, stdout=self.log, stderr=subprocess.STDOUT, preexec_fn=no_core, check=True)
             self.mailboxes_reset = True
-        self.process = subprocess.Popen([str(args.jsexec), '-A', '-L7', '-c', str(self.ctrl), '-i', str(code / 'load'),
+        self.process = subprocess.Popen([str(args.jsexec), '-A', '-L7', '-m', '67108864', '-c', str(self.ctrl), '-i', str(code / 'load'),
                                          str(code / 'ircd.js'), '-a', self.bind, '-f', str(config)],
                                         stdin=subprocess.DEVNULL, stdout=self.log, stderr=subprocess.STDOUT,
                                         preexec_fn=no_core)
@@ -249,6 +254,42 @@ try:
     assert ' NOTICE Visitor :' in identified and '[NickServ@home.test]' in identified
     outsider.expect('/msg NickServ@home.test <command>')
     print('PASS: remote BBS identification through legacy relay', flush=True)
+    if args.fileserv:
+        import struct
+        # A service has an ordinary nick so CTCP offers/resume work through
+        # old relays without a protocol extension or a central public listing.
+        outsider.service('FileServ@home.test', 'LIST fs_private', 'fs_private/fixture.txt')
+        anon = Client(edge,'FileAnonymous')
+        anon.service('FileServ@home.test','LIST fs_public','fs_public/fixture.txt')
+        anon.service('FileServ@home.test','LIST fs_private','access denied')
+        outsider.service('FileServ@home.test','ADDRESS 127.0.0.1','Expected DCC peer address: 127.0.0.1')
+        text=outsider.service('FileServ@home.test','GET fs_private fixture.txt PLAIN','DCC SEND fixture.txt ')
+        import re
+        m=re.search(r'DCC SEND fixture.txt \S+ (\d+) (\d+)',text);assert m,text
+        data=socket.create_connection(('127.0.0.1',int(m[1])),timeout=10)
+        payload=b''
+        while len(payload)<int(m[2]):
+            block=data.recv(8192);assert block;payload+=block;data.sendall(struct.pack('!I',len(payload)))
+        data.close();outsider.expect('Download finished:')
+        assert payload==(fixture/'home/files/private/fixture.txt').read_bytes()
+        # Logging out on the connection server must revoke the serving BBS's
+        # attestation, including pending offers that have not accepted a peer.
+        text=outsider.service('FileServ@home.test','GET fs_private fixture.txt PLAIN','DCC SEND fixture.txt ')
+        m=re.search(r'DCC SEND fixture.txt \S+ (\d+) (\d+)',text);assert m,text
+        outsider.service('NickServ@home.test','LOGOUT','Logged out of home.test')
+        time.sleep(4)
+        try:
+            d=socket.create_connection(('127.0.0.1',int(m[1])),timeout=1)
+        except OSError:pass
+        else:
+            d.settimeout(2)
+            try:assert not d.recv(1),'Protected bytes sent after logout'
+            except (ConnectionError,socket.timeout):pass
+            finally:d.close()
+        outsider.service('FileServ@home.test','LIST fs_private','access denied')
+        outsider.service('NickServ@home.test','IDENTIFY Some.User TESTPASS','Identified as Some.User+HOME')
+        print('PASS: FileServ public/protected access, DCC delivery and logout revocation through legacy relay',flush=True)
+
     observer.send('STATS U home.*')
     observer.expect('[EmbeddedServices] Host=127.0.0.1')
     observer.expect('[ServicesRuntime] AuthorityTransport=authenticated')
@@ -332,6 +373,9 @@ try:
         owner.service('NickServ', 'LINK CONFIRM ' + code, 'Network identities linked')
         wrong.service('ChanServ', 'SET #services-test KEEPTOPIC ON', 'Channel settings updated')
         print('PASS: dual BBS login and confirmed identity merge grant equal founder rights through legacy relay', flush=True)
+        if args.fileserv:
+            wrong.service('FileServ@home.test','LIST fs_private','access denied')
+            print('PASS: linked nickname identity alone never grants another BBS file permissions',flush=True)
     hub.process.terminate()
     assert hub.process.wait(timeout=10) == 0, 'Central IRCd failed during restart'
     hub.log.close()
@@ -347,6 +391,8 @@ try:
     outsider.service('ChanServ', 'TOPIC #services-test After central restart', 'Topic change requested')
     wrong.expect('TOPIC #services-test :After central restart')
     print('PASS: SQLite ownership and foreign-BBS sessions recover after authority restart', flush=True)
+    if args.fileserv:
+        outsider.service('FileServ@home.test','LIST fs_private','fs_private/fixture.txt')
     if not args.single_login_source:
         accounts = owner.service('NickServ', 'ACCOUNTS', 'Verified BBS logins:')
         assert 'Some.User+HOME@home.test' in accounts and 'Some.User+EDGE@edge.test (active)' in accounts

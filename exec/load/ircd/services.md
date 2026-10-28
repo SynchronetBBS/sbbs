@@ -1,12 +1,14 @@
 # Embedded IRC services
 
-`ircd.js` loads these services itself. No additional process or listening port
-is needed. Local BBS services are disabled by default. Enable them in `ircd.ini`:
+`ircd.js` loads these services itself. NickServ, MemoServ and ChanServ need
+no additional process or listening port. The optional per-BBS
+[FileServ](fileserv.md) uses short-lived DCC workers and separate DCC ports. Local BBS services are disabled by default. Enable them in `ircd.ini`:
 
 ```ini
 [BBSServices]
 NickServ=true
 MemoServ=true
+FileServ=false
 RequireTLS=false
 ```
 

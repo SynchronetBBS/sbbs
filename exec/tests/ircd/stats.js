@@ -5,6 +5,7 @@ function scenario() {
 	var s=new_state(); s.system=system; s.Clear_Config_Globals(); s.load_config_defaults();
 	s.ServerName="leaf.test"; s.ServerDesc="Statistics test"; s.Admin1=s.Admin2=s.Admin3="Public administrator";
 	s.TLS_Config.ca_file="/private/ROOT_CA_SECRET.pem"; s.EmbeddedServices_Config.database="/private/DATABASE_SECRET.sqlite";
+	s.EmbeddedServices_Config.files.jsexec="/private/WORKER_SECRET";
 	s.Die_Password="DIE_SECRET"; s.Restart_Password="RESTART_SECRET";
 	s.Default_Port=6667; s.PLines=[6697]; s.TLS_Ports[6697]=true;
 	s.CLines=[new s.CLine("out.test","OUTBOUND_SECRET","out.test",6697,1,true)];
@@ -32,7 +33,7 @@ run_tests({
 	"STATS U retains trust entries and exposes effective service settings to nonoperators":function() {
 		var t=scenario(); t.s.EmbeddedServices_Config.nickserv=true; t.s.EmbeddedServices_Config.host="services.test";
 		var text=report(t,"U"); check(text.indexOf(" 246 Reader U services.synchro.net ")>=0);
-		["[BBSServices] NickServ=true","[BBSServices] MemoServ=false","[EmbeddedServices] Host=services.test","[EmbeddedServices] MaxNicks=10","[ServicesRuntime] Running=false"].forEach(function(v) { check(text.indexOf(v)>=0,v); });
+		["[BBSServices] NickServ=true","[BBSServices] MemoServ=false","[BBSServices] FileServ=false","[FileServ] TLS=optional","[EmbeddedServices] Host=services.test","[EmbeddedServices] MaxNicks=10","[ServicesRuntime] Running=false"].forEach(function(v) { check(text.indexOf(v)>=0,v); });
 		check(text.indexOf(" 481 ")<0 && text.indexOf(" 219 Reader U ")>=0);
 	},
 	"services runtime distinguishes discovered, trusted and authenticated authority state":function() {

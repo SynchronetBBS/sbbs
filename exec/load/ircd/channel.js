@@ -294,7 +294,7 @@ function IRC_bcast_join(user, chan, ts, founder) {
 		peer = Local_Servers[i];
 		if (!peer.admitted || peer.nick == user.parent)
 			continue;
-		if (user.local) IRC_tsmap_claim(peer, chan);
+		if (user.local || user.services_fileserv) IRC_tsmap_claim(peer, chan);
 		var wire_ts = IRC_is_leaf_uplink(peer) ? chan.leaf_timestamp : ts;
 		/* Older hubs reject a leaf's server-prefixed founder MODE. Their
 		   existing SJOIN dialect carries membership and founder status together. */

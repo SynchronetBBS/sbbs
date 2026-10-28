@@ -636,6 +636,13 @@ function Server_Work(cmdline) {
 			break;
 		if (origin.server && p[9]) { /* New nick being introduced */
 			tmp = Users[p[0].toUpperCase()];
+			/* An embedded FileServ yields its nickname when linking reveals an
+			   existing user. Do not apply the normal double KILL to that user,
+			   or send our bot's QUIT back down the incoming user's own route. */
+			if (tmp && tmp.services_fileserv && typeof IRC_Services!="undefined" && IRC_Services && IRC_Services.fileserv && IRC_Services.fileserv.bot===tmp) {
+				IRC_Services.fileserv.stop(this);IRC_Services.fileserv=null;
+				log(LOG_WARNING,"FileServ stopped: its nickname already exists on the network.");tmp=null;
+			}
 			if (tmp) { /* Nickname collision */
 				if (tmp.parent == this.nick) {
 					gnotice(format(
