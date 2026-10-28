@@ -626,6 +626,8 @@ function Queue_Recv(sock) {
 }
 
 function Unthrottled_Recvq() {
+	if (this.irc.rbl_pending)
+		return 1;
 	if (this.queue.length == 0)
 		return 1;
 	this.irc.work(this.queue.shift());
@@ -648,6 +650,10 @@ function Recvq_Unthrottle() {
 
 /* this = IRC_Queue object */
 function Process_Recvq() {
+	/* Keep this connection's commands queued while its RBL check runs.
+	   The DNS completion schedules a single resumption, without polling. */
+	if (this.irc.rbl_pending)
+		return 1;
 	/* Registration reuses the queue. A callback queued before SERVER
 	   authentication must switch handlers, including throttle wakeups. */
 	if (this.irc.server)
@@ -3235,11 +3241,6 @@ function accept_new_socket() {
 		return false;
 	}
 
-	if (RBL_Blocked(sock, sock.remote_ip_address)) {
-		sock.close();
-		return false;
-	}
-
 	if (server.client_add !== undefined) {
 		server.client_add(sock);
 	}
@@ -3254,6 +3255,7 @@ function accept_new_socket() {
 	unreg_obj = new Unregistered_Client(id, sock);
 
 	Unregistered[id] = unreg_obj;
+	IRC_start_rbl_check(unreg_obj, unreg_obj.ip);
 
 	return true;
 }
@@ -3470,38 +3472,62 @@ function StatsM() {
 	this.executions = 0;
 }
 
-/* Check ip against the configured RBLs, reporting progress and any listing
-   to sock.  Returns true if the connection is to be denied. */
-function RBL_Blocked(sock, ip) {
-	var i, count, num_rbls, dnsbl_result;
+/* Hold only this connection while DNS runs. Snapshot the configured list so
+   a rehash cannot change policy halfway through a check. */
+function IRC_start_rbl_check(client, ip) {
+	var job = {client:client, ip:ip, list:RBL.slice(), index:0, lookup:null};
+	client.rbl_pending = job;
+	if (!job.list.length || dnsbl_exempt(ip)) IRC_finish_rbl_check(job);
+	else IRC_next_rbl_check.call(job);
+}
 
-	if (dnsbl_exempt(ip))
-		return false;
-	num_rbls = true_array_len(RBL);
-	count = 0;
-	for (i in RBL) {
-		count++;
-		sock.send(format(":%s NOTICE * :Performing RBL check %u of %u.  Please stand by.\r\n",
-			ServerName,
-			count,
-			num_rbls
-		));
-		dnsbl_result = check_dnsbl(ip, RBL[i].hostname);
-		if (RBL_Listed_According_to_Config(RBL[i], dnsbl_result)) {
-			sock.send(format(
-				":%s 463 * :Your IP address is on an RBL.  Connection denied.\r\n",
-				ServerName
-			));
-			log(LOG_NOTICE, format(
-				"DNS-Blocked IP address %s resolves to %s from RBL %s",
-				ip,
-				dnsbl_result,
-				RBL[i].hostname
-			));
-			return true;
-		}
+function IRC_rbl_check_active(job) {
+	var client = job.client;
+	return client.rbl_pending === job && Unregistered[client.id] === client
+		&& client.socket.irc === client && client.socket.is_connected;
+}
+
+function IRC_finish_rbl_check(job) {
+	if (!IRC_rbl_check_active(job)) return;
+	var client = job.client;
+	client.rbl_pending = false;
+	client.Unregistered_Check_User_Registration();
+	if (client.socket.is_connected && client.recvq.queue.length)
+		js.setImmediate(Process_Recvq, client.recvq);
+}
+
+/* Timer callbacks carry their state in this: the embedding's timers do not
+   retain a nested function's closure. DNS replies use the same explicit state. */
+function IRC_next_rbl_check() {
+	var job = this, client = job.client;
+	if (!IRC_rbl_check_active(job)) return;
+	if (job.index >= job.list.length) { IRC_finish_rbl_check(job); return; }
+	var rbl = job.list[job.index++], query = IRC_dnsbl_query(job.ip, rbl.hostname);
+	if (!query) { js.setImmediate(IRC_next_rbl_check, job); return; }
+	client.socket.send(format(":%s NOTICE * :Performing RBL check %u of %u.  Please stand by.\r\n",
+		ServerName, job.index, job.list.length));
+	var lookup = job.lookup = {job:job, rbl:rbl};
+	try { DNS_Resolver.resolveTypeClass(query, "A", "IN", IRC_rbl_check_reply, lookup); }
+	catch (error) {
+		log(LOG_WARNING, "RBL lookup failed for " + rbl.hostname + ": " + error);
+		IRC_rbl_check_reply.call(lookup, null);
 	}
-	return false;
+}
+
+function IRC_rbl_check_reply(addresses) {
+	var job = this.job, client = job.client, rbl = this.rbl;
+	if (!IRC_rbl_check_active(job) || job.lookup !== this) return;
+	job.lookup = null;
+	/* Preserve the existing policy's single-address response semantics.
+	   DNSBL return codes are A records, including for IPv6 clients. */
+	var result = addresses && addresses[0];
+	if (RBL_Listed_According_to_Config(rbl, result)) {
+		client.socket.send(format(":%s 463 * :Your IP address is on an RBL.  Connection denied.\r\n", ServerName));
+		log(LOG_NOTICE, format("DNS-Blocked IP address %s resolves to %s from RBL %s", job.ip, result, rbl.hostname));
+		client.quit("Your IP address is on an RBL.");
+		return;
+	}
+	js.setImmediate(IRC_next_rbl_check, job);
 }
 
 function dnsbl_exempt(ip) {
@@ -3514,47 +3540,25 @@ function dnsbl_exempt(ip) {
 	return system.findstr(system.ctrl_dir + "dnsbl_exempt.cfg", ip);
 }
 
-function check_dnsbl(ip, rbl) {
-	m = ip.match(/^(?:::ffff:)?([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$/i);
-	if (m !== null) {
-		// IPv4 Address
-		if (parseInt(m[1], 10) > 255 || parseInt(m[2], 10) > 255 || parseInt(m[3], 10) > 255 || parseInt(m[4], 10) > 255)
-			return false;
-		qstr = m[4] + '.' + m[3] + '.' + m[2] + '.' + m[1] + '.' + rbl;
+/* Build a DNSBL A-query name without invoking the system resolver. */
+function IRC_dnsbl_query(ip, rbl) {
+	var m = ip.match(/^(?:::ffff:)?([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$/i);
+	if (m) {
+		for (var i = 1; i <= 4; i++) if (Number(m[i]) > 255) return null;
+		return m[4] + "." + m[3] + "." + m[2] + "." + m[1] + "." + rbl;
 	}
-	else {
-		a = ip.split(/:/);
-		if (a.length < 3 || a.length > 8)
-			return false;
-		if (ip.search(/^[a-fA-F0-9:]+$/) != 0)
-			return false;
-		a.forEach(function(piece, idx, arr) {
-			if (piece !== '') {
-				while (piece.length < 4)
-					piece = '0'+piece;
-			}
-			arr[idx] = piece;
-		});
-		if (a[0] == '')
-			a[0] = '0000';
-		if (a[a.length - 1] == '')
-			a[a.length] = '0000';
-		while (a.length < 8) {
-			fillpos = a.indexOf('');
-			if (fillpos === -1)
-				return false;
-			a.splice(fillpos, 0, '0000');
-		}
-		fillpos = a.indexOf('');
-		if (fillpos != -1)
-			a.splice(fillpos, 1, '0000');
-		a.reverse();
-		qstr = '';
-		a.forEach(function(piece) {
-			qstr += piece[3] + '.' + piece[2] + '.' + piece[1] + '.' + piece[0] + '.';
-		});
-		qstr += rbl;
-
+	var halves = ip.split("::"), left, right, parts;
+	if (halves.length > 2) return null;
+	left = halves[0] ? halves[0].split(":") : [];
+	right = halves.length == 2 && halves[1] ? halves[1].split(":") : [];
+	parts = left.concat(right);
+	if (parts.some(function(part) { return !/^[0-9a-f]{1,4}$/i.test(part); })) return null;
+	if (halves.length == 1) {
+		if (left.length != 8) return null;
+	} else {
+		if (parts.length >= 8) return null;
+		while (left.length + right.length < 8) left.push("0");
 	}
-	return resolve_ip(qstr);
+	var digits = left.concat(right).map(function(part) { return ("0000" + part).slice(-4); }).join("");
+	return digits.split("").reverse().join(".") + "." + rbl;
 }

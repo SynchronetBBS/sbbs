@@ -46,6 +46,7 @@ function Unregistered_Client(id,socket) {
 	this.hostname = this.ip;
 	this.pending_resolve = false;
 	this.dns_pending = Epoch();
+	this.rbl_pending = !socket.outbound;
 	this.webirc_done = false;
 	// Variables (consts, really) that point to various state information
 	this.socket = socket;
@@ -258,16 +259,11 @@ function Unregistered_Commands(cmdline) {
 				this.quit("You've been banned from this server.");
 				return 0;
 			}
-			if (RBL_Blocked(this.socket, this.ip)) {
-				this.quit("Your IP address is on an RBL.");
-				return 0;
-			}
 			/* Cancel any in-flight RDNS; any pending callback will see
 			   dns_pending=false and discard its reply. */
 			this.dns_pending = false;
 			this.webirc_done = true;
-			/* In case NICK/USER already arrived */
-			this.Unregistered_Check_User_Registration();
+			IRC_start_rbl_check(this, this.ip);
 			break;
 		case "PONG":
 			this.pinged = false;
@@ -404,7 +400,7 @@ function Unregistered_Commands(cmdline) {
 function Unregistered_Check_User_Registration() {
 	var usernum, bbsuser;
 
-	if (!this.dns_pending && !this.socket.outbound && this.uprefix && this.nick != "*") {
+	if (!this.rbl_pending && !this.dns_pending && !this.socket.outbound && this.uprefix && this.nick != "*") {
 		var identity = null;
 		if (this.password && EmbeddedServices_Config.bbs_require_tls && !this.socket.ssl_session)
 			this.ircout("NOTICE " + this.nick + " :BBS authentication requires TLS. Reconnect using a TLS port.");
@@ -427,6 +423,7 @@ function Unregistered_Check_User_Registration() {
 }
 
 function Unregistered_Quit(msg) {
+	this.rbl_pending = false;
 	this.recvq.purge();
 	this.sendq.purge();
 	if (msg && this.socket.is_connected)
