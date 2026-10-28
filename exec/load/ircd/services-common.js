@@ -2,6 +2,7 @@
  * GPL-2.0-or-later. No daemon globals are required by this module.
  */
 "use strict";
+load("ircd/exceptions.js");
 
 function IRC_services_key(name) { return "$" + String(name).toUpperCase(); }
 function IRC_services_copy(value) { return JSON.parse(JSON.stringify(value)); }

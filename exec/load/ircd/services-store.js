@@ -18,6 +18,7 @@ function IRC_Services_Store(path) {
 			"CREATE TABLE IF NOT EXISTS nicks(name TEXT PRIMARY KEY, account TEXT NOT NULL REFERENCES identities(id), memo_account TEXT NOT NULL REFERENCES accounts(id), last_used INTEGER NOT NULL);" +
 			"CREATE TABLE IF NOT EXISTS channels(name TEXT PRIMARY KEY, display TEXT NOT NULL, founder TEXT NOT NULL REFERENCES identities(id), description TEXT NOT NULL, registered INTEGER NOT NULL, last_used INTEGER NOT NULL, mlock TEXT NOT NULL, keeptopic INTEGER NOT NULL, topic TEXT NOT NULL);" +
 			"CREATE TABLE IF NOT EXISTS access(channel TEXT NOT NULL REFERENCES channels(name) ON DELETE CASCADE, account TEXT NOT NULL REFERENCES identities(id), level INTEGER NOT NULL CHECK(level IN (10,50,80)), PRIMARY KEY(channel,account));" +
+			"CREATE TABLE IF NOT EXISTS channel_exceptions(channel TEXT NOT NULL REFERENCES channels(name) ON DELETE CASCADE, mask TEXT NOT NULL, display TEXT NOT NULL, setter TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY(channel,mask));" +
 			"PRAGMA user_version=3; COMMIT;");
 		var data = this.data = {accounts: {}, groups: {}, memberships: {}, nicks: {}, memo_accounts: {}, nick_last_used: {}, channels: {}};
 		this.db.query("SELECT * FROM accounts").forEach(function(a) { a.username = IRC_services_escape(a.name) + "+" + a.qwk; data.accounts[a.id] = a; });
@@ -26,9 +27,14 @@ function IRC_Services_Store(path) {
 		this.db.query("SELECT * FROM nicks").forEach(function(n) { data.nicks[n.name] = n.account; data.memo_accounts[n.name] = n.memo_account; data.nick_last_used[n.name] = n.last_used; });
 		this.db.query("SELECT * FROM channels").forEach(function(c) {
 			data.channels[c.name] = {name: c.display, founder: c.founder, description: c.description,
-				registered: c.registered, last_used: c.last_used, mlock: JSON.parse(c.mlock), keeptopic: !!c.keeptopic, topic: c.topic, access: {}};
+				registered: c.registered, last_used: c.last_used, mlock: JSON.parse(c.mlock), keeptopic: !!c.keeptopic, topic: c.topic, access: {}, exceptions:{}};
 		});
 		this.db.query("SELECT * FROM access").forEach(function(a) { data.channels[a.channel].access[a.account] = a.level; });
+		this.db.query("SELECT * FROM channel_exceptions").forEach(function(e) {
+			var entry = IRC_exception_parse(e.display);
+			if (!entry || entry.value != e.display || e.mask != IRC_services_key(entry.value)) throw new Error("Invalid stored channel exception");
+			data.channels[e.channel].exceptions[e.mask] = {mask:e.display, setter:e.setter, created:e.created};
+		});
 	} catch (e) { this.db.close(); throw e; }
 }
 IRC_Services_Store.prototype.save = function(next) {
@@ -57,6 +63,13 @@ IRC_Services_Store.prototype.save = function(next) {
 				[k, c.name, c.founder, c.description, c.registered, c.last_used, JSON.stringify(c.mlock), c.keeptopic ? 1 : 0, c.topic]);
 			db.run("DELETE FROM access WHERE channel=?", [k]);
 			Object.keys(c.access).forEach(function(id) { db.run("INSERT INTO access(channel,account,level) VALUES(?,?,?)", [k, id, c.access[id]]); });
+			var exceptions = c.exceptions || {}, prior = old.channels[k] && old.channels[k].exceptions || {};
+			Object.keys(prior).forEach(function(mask) { if (!exceptions[mask]) db.run("DELETE FROM channel_exceptions WHERE channel=? AND mask=?", [k,mask]); });
+			Object.keys(exceptions).forEach(function(mask) {
+				var e = exceptions[mask], entry = IRC_exception_parse(e.mask);
+				if (!entry || entry.value != e.mask || mask != IRC_services_key(entry.value)) throw new Error("Invalid channel exception");
+				if (JSON.stringify(prior[mask]) != JSON.stringify(e)) db.run("INSERT INTO channel_exceptions(channel,mask,display,setter,created) VALUES(?,?,?,?,?) ON CONFLICT(channel,mask) DO UPDATE SET display=excluded.display,setter=excluded.setter,created=excluded.created", [k,mask,e.mask,e.setter,e.created]);
+			});
 		});
 		Object.keys(old.groups).forEach(function(id) { if (!next.groups[id]) db.run("DELETE FROM identities WHERE id=?", [id]); });
 	});

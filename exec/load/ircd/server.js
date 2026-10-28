@@ -578,6 +578,8 @@ function Server_Work(cmdline) {
 			if (!this.hub && !this.uline && !origin.uline)
 				mode_ts = tmp.created;
 			p.shift();
+			p = IRC_exception_filter_modes(p, IRC_has_chanexcept(this));
+			if (!p) break;
 			origin.set_chanmode(tmp, p, mode_ts,
 				{merge: this.bursting && !origin.uline});
 			break;
@@ -1059,6 +1061,7 @@ function Server_Work(cmdline) {
 		/* Validate members before changing the channel's timestamp or modes.
 		   A snapshot can introduce only users routed through its sender. */
 		var members = [], seen_members = {}, member_modes = p.slice(2, -1);
+		member_modes = IRC_exception_filter_modes(member_modes, IRC_has_chanexcept(this)) || ["+"];
 		j = p[p.length - 1].split(/ +/);
 		for (i = 0; i < j.length; i++) {
 			if (!j[i]) continue;
@@ -1641,6 +1644,17 @@ function IRC_resync_leaf(peer, chan, rejected_modes) {
 		names += (names ? " " : "") + token;
 	}
 	if (names) peer.rawout(header + "BANS :" + names);
+	if (IRC_has_chanexcept(peer)) {
+		names = "";
+		for (i in chan.modelist[CHANMODE_EXCEPT]) {
+			token = chan.modelist[CHANMODE_EXCEPT][i];
+			if (names && (header + "EXCEPTS :" + names + " " + token).length > 510) {
+				peer.rawout(header + "EXCEPTS :" + names); names = "";
+			}
+			names += (names ? " " : "") + token;
+		}
+		if (names) peer.rawout(header + "EXCEPTS :" + names);
+	}
 	IRC_send_topic_sync(peer, chan);
 	peer.rawout(header + "END");
 }
@@ -1708,6 +1722,7 @@ function IRC_receive_channel_sync(peer, p) {
 		return;
 	if (p[2] == "BEGIN") {
 		peer.channel_sync = {ts: ts, name: name, modes: p.slice(3), members: {}, bans: []};
+		if (IRC_has_chanexcept(peer)) peer.channel_sync.exceptions = [];
 		return;
 	}
 	var sync = peer.channel_sync, i, k, u, chan;
@@ -1738,6 +1753,10 @@ function IRC_receive_channel_sync(peer, p) {
 		sync.bans = sync.bans.concat(p[3].split(" "));
 		return;
 	}
+	if (p[2] == "EXCEPTS" && p[3]) {
+		if (sync.exceptions) sync.exceptions = sync.exceptions.concat(p[3].split(" "));
+		return;
+	}
 	if (p[2] != "END")
 		return;
 	delete peer.channel_sync;
@@ -1764,6 +1783,18 @@ function IRC_receive_channel_sync(peer, p) {
 	for (i in chan.modelist[CHANMODE_BAN]) {
 		mask = chan.modelist[CHANMODE_BAN][i];
 		if (!bans["$" + mask.toUpperCase()]) peer.set_chanmode(chan, ["-b", mask], 0, {local_only: true});
+	}
+	if (sync.exceptions) {
+		var exceptions = {}, entry;
+		for (i = 0; i < sync.exceptions.length; i++) {
+			entry = IRC_exception_parse(sync.exceptions[i]);
+			if (entry) exceptions["$" + entry.value.toUpperCase()] = entry.value;
+		}
+		for (i in chan.modelist[CHANMODE_EXCEPT]) {
+			mask = chan.modelist[CHANMODE_EXCEPT][i];
+			if (!exceptions["$" + mask.toUpperCase()]) peer.set_chanmode(chan, ["-e", mask], 0, {local_only:true});
+		}
+		for (i in exceptions) peer.set_chanmode(chan, ["+e", exceptions[i]], 0, {local_only:true});
 	}
 	peer.set_chanmode(chan, sync.modes, 0, {local_only: true});
 	var members = {};
@@ -2120,6 +2151,13 @@ function IRCClient_server_chan_info(sni_chan) {
 	}
 	if (count)
 		this.rawout(header + modes + args);
+	if (IRC_has_chanexcept(this)) {
+		var entries = [];
+		for (i in sni_chan.modelist[CHANMODE_EXCEPT]) entries.push(sni_chan.modelist[CHANMODE_EXCEPT][i]);
+		var exception_fields = ["+" + entries.map(function() { return "e"; }).join("")].concat(entries);
+		var exception_batches = IRC_chanmode_batches(exception_fields, header, MAX_MODES);
+		for (i = 0; i < exception_batches.length; i++) this.rawout(header + exception_batches[i]);
+	}
 }
 
 function gnotice(str) {

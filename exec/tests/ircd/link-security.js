@@ -10,7 +10,7 @@ function state() {
 		MAX_NICKLEN:30, Enforcement:true, YLines:[{pingfreq:90, connfreq:0, active:0}],
 		log:function() {}, js:{setImmediate:function() {}, clearInterval:function() {}},
 		Generate_ID:function() { return 1; }};
-	["irclib.js", "ircd/link-security.js", "ircd/client-security.js", "ircd/core.js", "ircd/user.js", "ircd/channel.js",
+	["irclib.js", "ircd/exceptions.js", "ircd/link-security.js", "ircd/client-security.js", "ircd/core.js", "ircd/user.js", "ircd/channel.js",
 	 "ircd/server.js", "ircd/config.js", "ircd/timestamps.js"].forEach(function(f) { load(s, f); });
 	s.Epoch = function() { return 1800000000; };
 	return s;

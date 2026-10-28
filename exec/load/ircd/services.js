@@ -215,7 +215,8 @@ IRC_Services_Manager.prototype.snapshot = function() {
 		var members = [];
 		for (var id in c.users) members.push({ref:this.ref(c.users[id]), op:!!c.modelist[CHANMODE_OP][id], voice:!!c.modelist[CHANMODE_VOICE][id]});
 		var channel = {ref:c.services_ref, name:c.nam, flags:c.chanmode(false).split(" ")[0],
-			key:c.arg[CHANMODE_KEY], limit:c.arg[CHANMODE_LIMIT], topic:c.topic, users:members};
+			key:c.arg[CHANMODE_KEY], limit:c.arg[CHANMODE_LIMIT], topic:c.topic, users:members,
+			exceptions:Object.keys(c.modelist[CHANMODE_EXCEPT]).map(function(i) { return c.modelist[CHANMODE_EXCEPT][i]; })};
 		sig = JSON.stringify(channel); chans[channel.ref] = true;
 		if (this.chancache[channel.ref] != sig && this.event({type:"channel", channel:channel})) this.chancache[channel.ref] = sig;
 	}
@@ -817,7 +818,22 @@ IRC_Services_Manager.prototype.action = function(a) {
 	if (a.type == "part") { this.chanserv.do_part(a.channel); return; }
 	var c = a.channel && Channels[a.channel.name.toUpperCase()];
 	if (!c || c.services_ref != a.channel.ref) return;
-	if (a.type == "mode") this.service_server.set_chanmode(c, [a.mode].concat(target ? [target.nick] : a.arg ? [a.arg] : []), 0);
+	if (a.type == "exception") {
+		var entry = IRC_exception_parse(a.mask);
+		if (!entry) return;
+		var policy = engine && engine.store.data.channels[IRC_services_key(c.nam)];
+		var saved = policy && policy.exceptions && policy.exceptions[IRC_services_key(entry.value)];
+		/* Delayed restoration must not revive a deleted grant, nor may a
+		   queued DEL erase a grant that has since been added again. */
+		if ((a.add && !saved) || (!a.add && saved)) return;
+		if (a.add && !c.is_str_member_of_chanmode_list(CHANMODE_EXCEPT, entry.value)
+			&& c.count_modelist(CHANMODE_EXCEPT) >= IRC_MAX_EXCEPTIONS) {
+			if (!c.services_exception_full) log(LOG_WARNING, "ChanServ cannot restore managed exceptions for " + c.nam + ": exception list is full");
+			c.services_exception_full = true; return;
+		}
+		delete c.services_exception_full;
+		this.service_server.set_chanmode(c, [a.add ? "+e" : "-e", entry.value], 0);
+	} else if (a.type == "mode") this.service_server.set_chanmode(c, [a.mode].concat(target ? [target.nick] : a.arg ? [a.arg] : []), 0);
 	else if (a.type == "topic") {
 		c.topic = a.text; c.topictime = Math.max(Epoch(), c.topictime + 1); c.topicchangedby = "ChanServ";
 		this.service_server.bcast_to_channel(c, "TOPIC " + c.nam + " :" + c.topic, false);

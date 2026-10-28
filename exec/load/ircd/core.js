@@ -1132,6 +1132,7 @@ function IRCClient_bcast_to_channel_servers(chan, str) {
 	for (i in chan.users) {
 		user = chan.users[i];
 		if (   !user.local
+			&& user.parent
 			&& (this.parent != user.parent)
 			&& !sent_to_servers[user.parent.toLowerCase()]
 		) {
@@ -1364,7 +1365,7 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			}
 		}
 		if ((chan.mode&CHANMODE_NOOUTSIDE)
-			&& !this.channels[chan.nam.toUpperCase()]) {
+			&& !this.channels[chan.nam.toUpperCase()] && !chan.isexcepted(this.nuh, "external")) {
 			this.numeric(404, chan.nam + " :Cannot send to channel "
 				+ "(+n: no outside messages)");
 			return 0;
@@ -1372,6 +1373,7 @@ function IRCClient_do_msg(target,type_str,send_str) {
 		if (   (chan.mode&CHANMODE_MODERATED)
 			&& !chan.modelist[CHANMODE_VOICE][this.id]
 			&& !chan.modelist[CHANMODE_OP][this.id]
+			&& !chan.isexcepted(this.nuh, "moderated")
 		) {
 			this.numeric(404,
 				format("%s :Can't send to channel (+m: moderated)", chan.nam)

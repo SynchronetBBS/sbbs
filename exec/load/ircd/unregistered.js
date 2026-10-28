@@ -529,7 +529,7 @@ function Unregistered_Welcome() {
 	this.numeric("001", ":Welcome to the Synchronet IRC Service, " + new_user.nuh);
 	this.numeric("002", ":Your host is " + ServerName + ", running version " + VERSION);
 	this.numeric("003", format(":This server was created %s", SERVER_UPTIME_STRF));
-	this.numeric("004", ServerName + " " + VERSION + " oiwbgscrkfydnhF biklmnopstv");
+	this.numeric("004", ServerName + " " + VERSION + " oiwbgscrkfydnhF beiklmnopstv");
 	/* This needs to be rewritten so the server capabilities are rendered dynamically */
 	this.numeric("005","NETWORK=Synchronet"
 		+ " MAXBANS=" + MAX_BANS
@@ -547,8 +547,9 @@ function Unregistered_Welcome() {
 	this.numeric("005","CASEMAPPING=ascii"
 		+ " SILENCE=" + MAX_SILENCE
 		+ " ELIST=cmnt"
-		+ " CHANMODES=b,k,l,imnpst"
-		+ " MAXLIST=b:" + MAX_BANS
+		+ " CHANMODES=be,k,l,imnpst"
+		+ " EXCEPTS=e EXTBAN=~,m"
+		+ " MAXLIST=b:" + MAX_BANS + ",e:" + IRC_MAX_EXCEPTIONS
 		+ " TARGMAX=JOIN:,KICK:,KILL:,NOTICE:,PART:,PRIVMSG:,WHOIS:,WHOWAS: " /* FIXME */
 		+ " :are available on this server.");
 	this.numeric("005","AWAYLEN=" + MAX_AWAYLEN

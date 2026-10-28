@@ -32,6 +32,7 @@ var CHANMODE_PRIVATE  =(1<<8); /* +p */
 var CHANMODE_SECRET   =(1<<9); /* +s */
 var CHANMODE_TOPIC    =(1<<10); /* +t */
 var CHANMODE_VOICE    =(1<<11); /* +v */
+var CHANMODE_EXCEPT   =(1<<12); /* +e */
 
 var MODE = {};
 MODE[CHANMODE_BAN]      = new IRC_Channel_Mode("b",true,false,true,false);
@@ -45,6 +46,7 @@ MODE[CHANMODE_PRIVATE]  = new IRC_Channel_Mode("p",false,true,false,false);
 MODE[CHANMODE_SECRET]   = new IRC_Channel_Mode("s",false,true,false,false);
 MODE[CHANMODE_TOPIC]    = new IRC_Channel_Mode("t",false,true,false,false);
 MODE[CHANMODE_VOICE]    = new IRC_Channel_Mode("v",true,false,true,true);
+MODE[CHANMODE_EXCEPT]   = new IRC_Channel_Mode("e",true,false,true,false);
 
 /* Object Prototypes */
 
@@ -67,8 +69,11 @@ function Channel(name) {
 	this.modelist[CHANMODE_OP] = {};
 	this.modelist[CHANMODE_VOICE] = {};
 	this.modelist[CHANMODE_BAN] = [];
+	this.modelist[CHANMODE_EXCEPT] = [];
 	this.bantime = {};
 	this.bancreator = {};
+	this.excepttime = {};
+	this.exceptcreator = {};
 	this.created = Epoch();
 	/* The raw identity value stays wire-valid even with a clock outside the
 	   protocol epoch range. Object identity distinguishes repeated values. */
@@ -77,6 +82,7 @@ function Channel(name) {
 	/* Functions */
 	this.chanmode = Channel_chanmode;
 	this.isbanned = Channel_isbanned;
+	this.isexcepted = Channel_isexcepted;
 	this.count_modelist = Channel_count_modelist;
 	this.occupants = Channel_Occupants;
 	this.match_list_mask = Channel_match_list_mask;
@@ -201,9 +207,17 @@ function Channel_isbanned(nuh) {
 
 	for (i in this.modelist[CHANMODE_BAN]) {
 		if(wildmatch(nuh,this.modelist[CHANMODE_BAN][i]))
-			return 1;
+			return !this.isexcepted(nuh, "ban");
 	}
 	return 0;
+}
+
+function Channel_isexcepted(nuh, type) {
+	for (var i in this.modelist[CHANMODE_EXCEPT]) {
+		var entry = IRC_exception_parse(this.modelist[CHANMODE_EXCEPT][i]);
+		if (entry && entry.type == type && wildmatch(nuh, entry.mask)) return true;
+	}
+	return false;
 }
 
 function Channel_Occupants() {
@@ -238,6 +252,9 @@ function ChanMode(chan,user) {
 	this.list[CHANMODE_BAN] = {};
 	this.list[CHANMODE_BAN][false] = [];
 	this.list[CHANMODE_BAN][true] = [];
+	this.list[CHANMODE_EXCEPT] = {};
+	this.list[CHANMODE_EXCEPT][false] = [];
+	this.list[CHANMODE_EXCEPT][true] = [];
 	this.state_arg = {};
 	this.state_arg[CHANMODE_KEY] = "";
 	this.state_arg[CHANMODE_LIMIT] = "";
@@ -301,11 +318,14 @@ function IRC_bcast_chanmode(origin, chan, modes, ts) {
 	   corrective snapshot already queued to that leaf. */
 	peer = origin.parent && Servers[String(origin.parent).toLowerCase()];
 	if (peer && peer.local && !peer.hub && !peer.uline)
-		peer.ircout("MODE " + chan.nam + IRC_mode_timestamp(peer,
-			IRC_legacy_leaf(peer) ? 0 : chan.created) + modes);
+		IRC_send_chanmode(peer, {server:true, nick:ServerName}, chan, modes,
+			IRC_legacy_leaf(peer) ? 0 : chan.created);
 }
 
 function IRC_send_chanmode(peer, origin, chan, modes, ts) {
+	var supported_modes = IRC_exception_filter_modes(modes.split(" "), IRC_has_chanexcept(peer));
+	if (!supported_modes) return;
+	modes = supported_modes.join(" ");
 	/* Old hubs replace channel age on server-prefixed MODE 0, then
 	   propagate invalid SJOIN 0 from ordinary users. Preserve the real
 	   channel age when relaying authoritative services modes to them. */
@@ -459,6 +479,18 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 				c.tweaktmpmodelist(CHANMODE_BAN,add,cm_args[mode_args_counter]);
 				mode_args_counter++;
 				break;
+			case "e":
+				if (add && cm_args.length <= mode_args_counter) { c.addbits |= CHANMODE_EXCEPT; break; }
+				if (cm_args.length <= mode_args_counter) break;
+				var raw_exception = cm_args[mode_args_counter++], exception = IRC_exception_parse(raw_exception);
+				var source_name = this.server ? this.nick : this.nuh;
+				if (!exception || (":" + source_name + " MODE " + chan.nam + " 4294967295 +e " + exception.value).length > 510
+					|| (":" + ServerName + " 348 " + this.nick + " " + chan.nam + " " + exception.value).length > 510) {
+					if (this.local && !this.server) this.numeric(696, chan.nam + " e " + String(raw_exception).replace(/[^\x21-\x7e]/g, "?").slice(0,160) + " :Invalid or unsupported channel exception");
+					break;
+				}
+				c.tweaktmpmodelist(CHANMODE_EXCEPT, add, exception.value);
+				break;
 			case "i":
 				c.tweaktmpmode(CHANMODE_INVITE,add);
 				break;
@@ -593,6 +625,33 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 		}
 		this.numeric(368, chan.nam + " :End of Channel Ban List.");
 	}
+	if (c.addbits & CHANMODE_EXCEPT) {
+		for (i in chan.modelist[CHANMODE_EXCEPT]) {
+			var reply = chan.nam + " " + chan.modelist[CHANMODE_EXCEPT][i];
+			var metadata = " " + chan.exceptcreator[i] + " " + chan.excepttime[i];
+			if ((":" + ServerName + " 348 " + this.nick + " " + reply + metadata).length <= 510) reply += metadata;
+			this.numeric(348, reply);
+		}
+		this.numeric(349, chan.nam + " :End of channel exception list");
+	}
+	for (i in c.list[CHANMODE_EXCEPT][true]) {
+		var value = c.list[CHANMODE_EXCEPT][true][i];
+		if (chan.is_str_member_of_chanmode_list(CHANMODE_EXCEPT, value)) continue;
+		if (chan.count_modelist(CHANMODE_EXCEPT) >= IRC_MAX_EXCEPTIONS && this.local && !this.server) {
+			this.numeric(478, chan.nam + " " + value + " :Channel exception list is full");
+			continue;
+		}
+		var exceptid = chan.modelist[CHANMODE_EXCEPT].push(value) - 1;
+		chan.excepttime[exceptid] = Epoch(); chan.exceptcreator[exceptid] = this.nuh || this.nick;
+		c.addmodes += "e"; c.addmodeargs += " " + value;
+	}
+	for (i in c.list[CHANMODE_EXCEPT][false]) {
+		for (j in chan.modelist[CHANMODE_EXCEPT]) {
+			if (chan.modelist[CHANMODE_EXCEPT][j].toUpperCase() != c.list[CHANMODE_EXCEPT][false][i].toUpperCase()) continue;
+			c.delmodes += "e"; c.delmodeargs += " " + chan.modelist[CHANMODE_EXCEPT][j];
+			delete chan.modelist[CHANMODE_EXCEPT][j]; delete chan.excepttime[j]; delete chan.exceptcreator[j];
+		}
+	}
 
 	/* Bans are a specialized case */
 	for (i in c.list[CHANMODE_BAN][true]) { // +b
@@ -646,65 +705,12 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 	if (c.delmodeargs)
 		final_modestr += c.delmodeargs;
 
-	var final_args = final_modestr.split(' ');
-	var arg_counter = 0;
-	var mode_counter = 0;
-	var mode_output = "";
-	var f_mode_args = "";
-	for (i in final_args[0]) {
-		switch (final_args[0][i]) {
-			case "+":
-				mode_output += "+";
-				add = true;
-				break;
-			case "-":
-				mode_output += "-";
-				add = false;
-				break;
-			case "l":
-				if (!add) {
-					mode_counter++;
-					mode_output += final_args[0][i];
-					break;
-				}
-			case "b": /* only modes with arguments */
-			case "k":
-			case "l":
-			case "o":
-			case "v":
-				arg_counter++;
-				f_mode_args += " " + final_args[arg_counter];
-			default:
-				mode_counter++;
-				mode_output += final_args[0][i];
-				break;
-		}
-		if (mode_counter >= MAX_MODES) {
-			var str = format("MODE %s %s%s", chan.nam, mode_output, f_mode_args);
-			if (!this.server)
-				this.bcast_to_channel(chan, str, true);
-			else
-				this.bcast_to_channel(chan, str, false);
-			if (chan.nam[0] != "&" && !options.local_only)
-				IRC_bcast_chanmode(this, chan, mode_output + f_mode_args, ts);
-
-			if (add)
-				mode_output = "+";
-			else
-				mode_output = "-";
-			f_mode_args = "";
-			mode_counter = 0;
-		}
-	}
-
-	if (mode_output.length > 1) {
-		var str = format("MODE %s %s%s", chan.nam, mode_output, f_mode_args);
-		if (!this.server)
-			this.bcast_to_channel(chan, str, true);
-		else
-			this.bcast_to_channel(chan, str, false);
-		if (chan.nam[0] != "&" && !options.local_only)
-			IRC_bcast_chanmode(this, chan, mode_output + f_mode_args, ts);
+	var source_name = this.server ? this.nick : this.nuh;
+	var batches = IRC_chanmode_batches(final_modestr.split(" "),
+		":" + source_name + " MODE " + chan.nam + " 4294967295 ", MAX_MODES);
+	for (i = 0; i < batches.length; i++) {
+		this.bcast_to_channel(chan, "MODE " + chan.nam + " " + batches[i], !this.server);
+		if (chan.nam[0] != "&" && !options.local_only) IRC_bcast_chanmode(this, chan, batches[i], ts);
 	}
 
 	return 1;

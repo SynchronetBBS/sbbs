@@ -68,7 +68,9 @@ stop cleanly; an abrupt shutdown can lose activity since the last checkpoint. La
 times survive restarts, and downtime counts toward expiry. Expiry drops the
 registration; channel expiry also removes its access entries and parts ChanServ.
 Nickname expiry leaves the BBS account and its channel permissions intact.
-The registration database uses schema version 3; no migration is provided.
+The registration database uses schema version 3; earlier schemas are unsupported.
+Version 2.9 adds its managed-exception table automatically when opening an existing
+schema-3 database, preserving its registrations.
 
 The default database is `system.data_dir + "ircd-services.sqlite"`. It requires
 a Synchronet build providing the native `SQLite` API, native `CryptContext`
@@ -229,6 +231,38 @@ account across nickname changes:
   `MLOCK NONE` clears the lock. `SET #channel KEEPTOPIC ON|OFF` controls
   topic restoration. Only the founder changes settings or drops registration.
 - `INFO #channel` and `DROP #channel` inspect or remove registration.
+
+### Managed channel exceptions (2.9)
+
+```text
+/msg ChanServ EXCEPT #channel ADD ~msgbypass:external:Bot!*@*
+/msg ChanServ EXCEPT #channel ADD ~msgbypass:moderated:Bot!*@*
+/msg ChanServ EXCEPT #channel DEL ~msgbypass:external:Bot!*@*
+/msg ChanServ EXCEPT #channel LIST
+```
+
+Authenticated SOPs and the founder may ADD or DEL; OP access is sufficient for
+LIST. The authority's `RequireTLS` policy protects all three commands. Entries
+use the same hostmask syntax as channel `+e`: plain ban exemptions, or the
+`external` and `moderated` message bypasses described in
+[exceptions.md](exceptions.md). Unsupported selectors are rejected without
+being stored. These are hostmask grants, even though the permission to manage
+them belongs to an authenticated network identity.
+
+ChanServ stores only entries explicitly added through EXCEPT. Adding an entry
+already present in the live list adopts it without emitting a redundant MODE.
+Direct MODE entries remain independent. DEL removes both the saved grant and
+the matching live entry. Removing a managed entry with MODE alone causes
+ChanServ to restore it; use EXCEPT DEL to revoke the saved policy.
+
+Managed entries survive authority restarts and are restored after channel
+recreation or removal from the live list. There may be at most 25 managed
+entries. ADD refuses a new entry when the live list is full, but can adopt an
+entry already present there. If a saved entry cannot later be restored because
+manual entries fill the list, ChanServ keeps it pending, logs the full-list
+condition once, and retries on subsequent channel changes. It never evicts a
+manual entry to make room. Dropping or expiring a channel registration also
+deletes its saved exception grants.
 
 MemoServ is an interface to BBS telegrams, not a separate mailbox:
 

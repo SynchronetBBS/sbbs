@@ -14,6 +14,7 @@ function IRC_Services_Engine(store, config, emit) {
 	};
 	this.users = {}; this.channels = {}; this.sessions = {}; this.deadlines = {};
 	this.nick_usage = {}; this.channel_usage = {}; this.links = {};
+	this.exception_warnings = {};
 	/* Allow the initial network snapshot and account attestations to arrive
 	   before expiring anything. Maintenance and writes run once per minute. */
 	this.next_maintenance = system.timer + 60;
@@ -73,6 +74,7 @@ IRC_Services_Engine.prototype.expire = function(now) {
 		nicks.forEach(function(k) { delete next.nicks[k]; delete next.nick_last_used[k]; delete next.memo_accounts[k]; });
 		channels.forEach(function(k) { delete next.channels[k]; });
 	});
+	channels.forEach(function(k) { delete self.exception_warnings[k]; });
 	parted.forEach(function(name) { self.emit({type:"part", channel:name}); });
 	log(LOG_INFO, format("Embedded services expired %u nickname and %u channel registrations", nicks.length, channels.length));
 };
@@ -142,12 +144,26 @@ IRC_Services_Engine.prototype.enforce = function(channel) {
 		this.emit({type: "mode", channel: channel, mode: lock.key ? "+k" : "-k", arg: lock.key || "*"});
 	if (lock.limit !== undefined && channel.limit != lock.limit)
 		this.emit({type: "mode", channel: channel, mode: lock.limit ? "+l" : "-l", arg: lock.limit ? String(lock.limit) : ""});
+	var live = {}, occupied = 0, blocked = false, grants = record.exceptions || {};
+	(channel.exceptions || []).forEach(function(mask) { live[IRC_services_key(mask)] = true; occupied++; });
+	Object.keys(grants).sort().forEach(function(key) {
+		if (live[key]) return;
+		if (occupied >= IRC_MAX_EXCEPTIONS) { blocked = true; return; }
+		occupied++; self.emit({type:"exception", channel:channel, mask:grants[key].mask, add:true, managed:true});
+	});
+	var warning = IRC_services_key(channel.name);
+	if (blocked && !this.exception_warnings[warning]) {
+		this.exception_warnings[warning] = true;
+		log(LOG_WARNING, "ChanServ cannot restore managed exceptions for " + channel.name + ": exception list is full");
+	}
+	if (!blocked) delete this.exception_warnings[warning];
 };
 IRC_Services_Engine.prototype.event = function(event) {
 	var self = this, ref, old, record;
 	if (event.type == "reset") {
 		this.checkpoint();
 		this.users = {}; this.channels = {}; this.sessions = {}; this.deadlines = {}; this.links = {};
+		this.exception_warnings = {};
 		return;
 	}
 	if (event.type == "user") {
@@ -362,7 +378,7 @@ function IRC_services_mlock(args) {
 IRC_Services_Engine.prototype.channel_command = function(user, verb, args) {
 	var self = this, data = this.store.data, name = args.shift(), key = IRC_services_key(name), record = data.channels[key], channel;
 	function reply(text) { self.notice("ChanServ", user, text); }
-	if (verb == "HELP") { reply("REGISTER #channel <description> | INFO #channel | DROP #channel | ACCESS #channel ADD|DEL|LIST ... | OP|DEOP|VOICE|DEVOICE|INVITE|UNBAN #channel [nickname] | TOPIC #channel <text> | SET #channel MLOCK|KEEPTOPIC ..."); return; }
+	if (verb == "HELP") { reply("REGISTER #channel <description> | INFO #channel | DROP #channel | ACCESS #channel ADD|DEL|LIST ... | EXCEPT #channel ADD|DEL <mask> | EXCEPT #channel LIST | OP|DEOP|VOICE|DEVOICE|INVITE|UNBAN #channel [nickname] | TOPIC #channel <text> | SET #channel MLOCK|KEEPTOPIC ..."); return; }
 	if (!name || !/^#[^\s,\x00-\x1f]{1,99}$/.test(name)) throw IRC_services_error("Specify a valid #channel. Use HELP for command syntax.");
 	for (var ref in this.channels) if (IRC_services_key(this.channels[ref].name) == key) channel = this.channels[ref];
 	var account = this.active_group(user), member = channel && this.member(channel, user.ref), level = channel ? this.level(user, channel) : 0;
@@ -373,8 +389,9 @@ IRC_Services_Engine.prototype.channel_command = function(user, verb, args) {
 		if (Object.keys(data.channels).length >= 50000) throw IRC_services_error("Registration limit reached.");
 		var now = this.now();
 		this.commit(function(next) { next.channels[key] = {name: channel.name, founder: account, description: args.join(" ").substr(0, 200),
-			registered: now, last_used: now, access: {}, mlock: {on: "", off: ""}, keeptopic: false, topic: channel.topic}; });
+			registered: now, last_used: now, access: {}, exceptions:{}, mlock: {on: "", off: ""}, keeptopic: false, topic: channel.topic}; });
 		delete this.channel_usage[key];
+		delete this.exception_warnings[key];
 		this.enforce(channel); reply("Channel registered to your account."); return;
 	}
 	if (!record) throw IRC_services_error("That channel is not registered.");
@@ -385,10 +402,39 @@ IRC_Services_Engine.prototype.channel_command = function(user, verb, args) {
 		+ ". Last used: " + new Date(Math.max(record.last_used, this.channel_usage[key] || 0)).toISOString() + "."); return; }
 	if (!this.record_level(user, record)) throw IRC_services_error("Identify to an account with access to that channel.");
 	if (!channel) level = this.record_level(user, record);
+	if (verb == "EXCEPT") {
+		var action = (args.shift() || "").toUpperCase(), saved = record.exceptions || {};
+		if (action == "LIST" && !args.length) {
+			if (level < 50) throw IRC_services_error("Channel operator access is required to list managed exceptions.");
+			Object.keys(saved).sort().forEach(function(k) { reply(saved[k].mask + " (set by " + saved[k].setter + ")"); });
+			reply("End of managed exception list."); return;
+		}
+		if (level < 80) throw IRC_services_error("SOP or founder access is required to edit managed exceptions.");
+		var entry = args.length == 1 && IRC_exception_parse(args[0]);
+		if ((action != "ADD" && action != "DEL") || !entry) throw IRC_services_error("Syntax: EXCEPT #channel ADD|DEL <hostmask|~msgbypass:external|moderated:hostmask>, or LIST. Unsupported exception selectors are not stored.");
+		var ek = IRC_services_key(entry.value), exists = !!saved[ek];
+		if (action == "ADD") {
+			if (exists) { reply("That exception is already managed."); return; }
+			if (Object.keys(saved).length >= IRC_MAX_EXCEPTIONS) throw IRC_services_error("Managed exception list is full.");
+			var current = channel && channel.exceptions || [];
+			if (channel && current.length >= IRC_MAX_EXCEPTIONS && !current.some(function(m) { return IRC_services_key(m) == ek; })) throw IRC_services_error("Channel exception list is full; remove an entry before adding a managed grant.");
+			var created = this.now(), setter = user.username || user.nick;
+			this.commit(function(next) { var r = next.channels[key]; if (!r.exceptions) r.exceptions = {}; r.exceptions[ek] = {mask:entry.value, setter:setter, created:created}; });
+			if (channel) this.enforce(channel);
+			reply("Managed exception saved.");
+		} else {
+			if (!exists) throw IRC_services_error("That exception is not managed by ChanServ.");
+			this.commit(function(next) { delete next.channels[key].exceptions[ek]; });
+			if (channel) this.emit({type:"exception",channel:channel,actor:user,mask:entry.value,add:false});
+			reply("Managed exception removed.");
+		}
+		return;
+	}
 	if (verb == "DROP") {
 		if (level < 100) throw IRC_services_error("Only the founder can drop the channel.");
 		this.commit(function(next) { delete next.channels[key]; });
 		delete this.channel_usage[key];
+		delete this.exception_warnings[key];
 		this.emit({type: "part", channel: record.name, actor: user}); reply("Channel registration dropped."); return;
 	}
 	if (verb == "ACCESS") {
