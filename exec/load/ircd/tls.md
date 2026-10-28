@@ -92,6 +92,10 @@ name (case-insensitive):
 /QUOTE TLSROUTE other-hub.example.net
 ```
 
+The server target also accepts wildcard masks, such as `other-hub.*`; the first
+matching server is selected using the usual server lookup. Replies name that
+server explicitly.
+
 Server NOTICEs list each hop and end with `TLSROUTE END`. The summary is
 `all network hops TLS`, `plaintext present`, or `unknown`. A local target has
 `no network hops`. The client's own connection is excluded. Embedded services

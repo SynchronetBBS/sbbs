@@ -216,6 +216,25 @@ run_tests({
 		]; }});
 		check(scope.ServerName != "disabled.test" && scope.EmbeddedServices_Config.host == "services.synchro.net" && !scope.EmbeddedServices_Config.enabled);
 	},
+	"INI Services sections select the entire trust list and rehash restores defaults only when absent": function() {
+		var scope = {IRCDCFG_Editor:false,ULines:[]}; load(scope,"ircd/config.js");
+		var defaults = ["services.synchro.net","stats.synchro.net"];
+		[
+			{sections:[],expected:defaults},
+			{sections:[{name:"Services:custom",Servername:"services.test"}],expected:["services.test"]},
+			{sections:[{name:"Services:first",Servername:"services.test"},{name:"Services:second",Servername:"stats.test"},
+				{name:"Services:duplicate",Servername:"services.test"}],expected:["services.test","stats.test"]},
+			{sections:[{name:"Services:standard",Servername:"services.synchro.net"}],expected:["services.synchro.net"]},
+			{sections:[{name:"Services:empty"}],expected:[]},
+			{sections:[{name:"Services:disabled",Disabled:true,Servername:"services.test"}],expected:[]},
+			{sections:[{name:"Services:disabled",Enabled:false,Servername:"services.test"}],expected:[]},
+			{sections:[{name:"Info",Description:"No services sections"}],expected:defaults}
+		].forEach(function(c) {
+			scope.Clear_Config_Globals();
+			scope.read_ini_config({iniGetAllObjects:function() { return c.sections; }});
+			check(JSON.stringify(scope.ULines) == JSON.stringify(c.expected), "Unexpected services trust list: " + JSON.stringify(scope.ULines));
+		});
+	},
 	"central activation and queued readiness both require explicit enablement": function() {
 		var scope = {Users:{}, Servers:{}, Unregistered:{}, Local_Servers:{}, ULine_Exists:function() { return true; }};
 		load(scope,"ircd/services.js");

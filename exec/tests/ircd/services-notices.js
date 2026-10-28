@@ -147,6 +147,44 @@ run_tests({
 			check_hint(s,"NickServ","home.test"); check(!s.requests.length);
 		});
 	},
+	"identification requests automatic memo notifications instead of an explicit STATUS report": function() {
+		var s = scenario(), automatic;
+		s.manager.memo = function(user, verb, args, home, notify_only) { automatic = verb == "STATUS" && notify_only === true; };
+		s.manager.intercept(s.user,"NickServ@home.test","IDENTIFY Some.User EXAMPLE");
+		s.requests[0].callback({identity:identity()});
+		check(automatic && text(s).indexOf("Identified as") >= 0);
+	},
+	"automatic local STATUS is silent only for empty mailboxes and explicit STATUS still replies": function() {
+		[{pending:false,text:"No telegrams waiting."},{text:"No telegrams waiting."},
+			{pending:true,text:"You have telegrams waiting. Use READ to receive them."},{error:"Mailbox unavailable."}].forEach(function(result) {
+			var s = scenario(), a = identity(); a.home = "edge.test"; s.user.services_identity = a;
+			s.manager.memo(s.user,"STATUS",[],undefined,true);
+			check(s.requests[0].request.type == "memo"); s.requests[0].callback(result);
+			if (result.error || result.pending) check(text(s).indexOf(result.error || result.text) >= 0);
+			else check(!s.wire.length, "Empty automatic status produced a NOTICE");
+			s.wire = []; s.manager.memo(s.user,"STATUS",[]); s.requests[1].callback(result);
+			check(s.wire.length && text(s).indexOf(result.error || result.text) >= 0, "Explicit status was suppressed");
+		});
+	},
+	"automatic remote checks request notification-only results and suppress completion acknowledgements": function() {
+		var s = scenario(); s.user.services_identity = identity(); s.user.services_memo_routing = true;
+		s.manager.memo(s.user,"STATUS",[],undefined,true);
+		check(s.requests[0].request.notify_only === true && s.requests[0].request.group_mailboxes === true);
+		s.requests[0].callback({group_mailboxes:true}); check(!s.wire.length);
+		s.manager.memo(s.user,"STATUS",[],undefined,true);
+		s.requests[1].callback({error:"Destination services are unavailable."});
+		check(text(s).indexOf("Destination services are unavailable") >= 0);
+	},
+	"automatic single-mailbox proxy checks suppress empty responses from old and new helpers": function() {
+		[{pending:false,text:"No telegrams waiting."},{text:"No telegrams waiting."},
+			{pending:true,text:"You have telegrams waiting."},{error:"Mailbox unavailable."}].forEach(function(result) {
+			var s = scenario();
+			s.manager.deliver_memo("connection-agent","request",{nick:"Visitor"},identity(),"STATUS",undefined,true);
+			s.requests[0].callback(result);
+			check(s.parts.length == (result.pending ? 1 : 0));
+			check(s.replies.length == 1 && !s.replies[0].text && s.replies[0].error == result.error);
+		});
+	},
 	"unqualified MemoServ replies follow the authenticated BBS rather than the connection server": function() {
 		var s = scenario(); s.user.services_identity = identity();
 		check(s.manager.intercept(s.user,"MemoServ","STATUS"));
@@ -221,6 +259,12 @@ run_tests({
 		check(s.manager.requests.query.until == 130);
 		s.manager.receive("central",{type:"memo-text",request_id:"other",actor:{auth_revision:0},home:"home.test",text:"Mailbox progress"});
 		check(s.manager.requests.other.until === 0);
+	},
+	"silent mailbox progress refreshes the request without producing a blank notice": function() {
+		var s = scenario(); s.user.services_identity = identity();
+		s.manager.requests.query = {peer:"CENTRAL",until:0};
+		s.manager.receive("central",{type:"memo-text",request_id:"query",actor:{auth_revision:0},home:"home.test",text:""});
+		check(s.manager.requests.query.until == 130 && !s.wire.length);
 	},
 
 	"invalid BBS labels cannot inject reply commands or wire messages": function() {

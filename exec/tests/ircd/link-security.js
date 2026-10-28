@@ -297,6 +297,25 @@ run_tests({
 		manager.introduce();
 		check(query(s, "services.test").indexOf("no network hops") >= 0);
 	},
+	"TLSROUTE resolves server masks and reports the selected canonical name": function() {
+		var s = state(), p = peer(s,"hub.test",true); tls(s,p,true,true);
+		var text = query(s,"H?B.*");
+		check(text.indexOf("TLSROUTE local.test -> hub.test") >= 0);
+		check(text.indexOf("TLSROUTE END hub.test: all network hops TLS; certificate validation verified") >= 0);
+		check(text.indexOf(" 402 ") < 0 && text.indexOf("H?B.*") < 0);
+	},
+	"TLSROUTE masks use the shared first-match selection and can select the local server": function() {
+		var s = state(); peer(s,"first.test",true); peer(s,"second.test",true);
+		var selected = s.search_server_only("*.test");
+		check(query(s,"*.test").indexOf("TLSROUTE END " + selected.nick + ":") >= 0);
+		check(query(s,"local.*").indexOf("TLSROUTE END local.test: no network hops") >= 0);
+		check(query(s,"missing.*").indexOf(" 402 Viewer missing.* ") >= 0);
+	},
+	"TLSROUTE masks preserve rejection of peers awaiting admission": function() {
+		var s = state(), p = peer(s,"pending.test",true); p.admitted = false;
+		var text = query(s,"pending.*");
+		check(text.indexOf(" 402 Viewer pending.* ") >= 0 && text.indexOf("TLSROUTE END") < 0);
+	},
 	"missing, unknown, self, and broken topology queries terminate clearly": function() {
 		var s = state();
 		check(query(s).indexOf(" 461 Viewer TLSROUTE ") >= 0);

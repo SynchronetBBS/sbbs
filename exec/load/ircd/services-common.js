@@ -18,6 +18,12 @@ function IRC_services_unescape(value) {
 	if (/%(?![0-9a-f]{2})/i.test(value)) throw new Error("Invalid escaped account name");
 	return value.replace(/%([0-9a-f]{2})/ig, function(_, hex) { return String.fromCharCode(parseInt(hex, 16)); });
 }
+function IRC_services_memo_empty(result) {
+	/* Older BBS helpers report only text; newer helpers also return a
+	   structured mailbox status. Never classify an error as an empty inbox. */
+	return !result.error && (result.pending === false
+		|| (result.pending === undefined && result.text == "No telegrams waiting."));
+}
 /* All operations except public help/info and logout carry authentication,
  * private account/mailbox data, or authorization changes. */
 function IRC_services_requires_tls(service, text) {

@@ -268,6 +268,7 @@ var IRC_SERVICES_HELP = {
 			],examples:["/ms SEND MyFriend Hello from IRC","/ms SEND Some.User+HOME Hello on your home BBS","/msg {MS} SEND MyFriend Deliver to this BBS explicitly"]},
 			STATUS:{syntax:["/ms STATUS","/msg {MS} STATUS"],secure:true,text:[
 				"Requires a verified BBS login. Check whether native BBS telegrams are waiting without consuming or deleting them. Automatic checks after identification are also nondestructive.",
+				"Automatic checks stay quiet for empty mailboxes and omit the completion summary. Explicit STATUS reports every checked mailbox, including empty ones. Waiting-mail notifications and errors remain visible.",
 				"Unqualified STATUS checks every BBS account in your current owned nickname's identity, starting with its MEMOACCOUNT destination. If your current nickname is not owned, it uses your active login's identity instead.",
 				"Identification to any linked member authorizes all mailboxes in that identity. Independent, unlinked identities retained in the session do not become one default mailbox group.",
 				"MemoServ@<server> STATUS limits checks to that BBS within your authenticated identities. Replies name each mailbox; a failure on one BBS is reported while checks continue for the others.",

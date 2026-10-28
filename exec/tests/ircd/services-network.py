@@ -140,6 +140,8 @@ class Client:
                 line, self.buffer = self.buffer.split(b'\n', 1)
                 line = line.rstrip(b'\r').decode('latin1')
                 seen.append(line)
+                if any(fragment in line for fragment in getattr(self, 'forbidden', ())):
+                    raise AssertionError('Unexpected automatic memo notice: ' + line)
                 if line.startswith('PING '):
                     self.send('PONG ' + line[5:])
                 if pattern in line:
@@ -226,6 +228,7 @@ try:
     owner.expect('Syntax: /msg MemoServ@edge.test SEND')
     owner.expect('End of MemoServ HELP SEND.')
     print('PASS: detailed alias and qualified help is public before identification, including ChanServ through a legacy relay', flush=True)
+    owner.forbidden = ('No telegrams waiting.', 'Telegram mailbox ', 'Checked ')
     owner.service('NickServ', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+HOME')
     wait_username(observer, 'Alice', 'Some.User+HOME')
     print('PASS: native BBS identification through local NickServ', flush=True)
@@ -239,6 +242,8 @@ try:
     owner.service('NickServ', 'INFO Alice', 'Last used: ')
     owner.service('ChanServ', 'INFO #services-test', 'Last used: ')
     print('PASS: last-used timestamps are available through a legacy relay', flush=True)
+    owner.forbidden = ()
+    print('PASS: automatic empty-mailbox checks after identification produce no notices', flush=True)
     identified = outsider.service('NickServ@home.test', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+HOME')
     wait_username(observer, 'Visitor', 'Some.User+HOME')
     assert ' NOTICE Visitor :' in identified and '[NickServ@home.test]' in identified
@@ -359,7 +364,6 @@ try:
         owner.service('NickServ@edge.test', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+EDGE')
         owner.expect('Telegram mailbox Some.User+HOME@home.test:')
         owner.expect('You have telegrams waiting')
-        owner.expect('Checked ')
         group_memo(owner, 'MemoServ', 'READ', 'Automatic-default-notification')
         outsider.service('MemoServ@home.test', 'SEND Alice Explicit-home-destination', 'Telegram delivered')
         group_memo(owner, 'MemoServ@home.test', 'READ', 'Explicit-home-destination')

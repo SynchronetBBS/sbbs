@@ -1153,7 +1153,7 @@ function ini_WebIRC(arg, ini) {
 	WLines.push(new WLine(ini.Hostname, ini.Password));
 }
 
-function load_config_defaults() {
+function load_config_defaults(services_configured) {
 	/*** M:Line ***/
 	ServerName = format("%s.synchro.net", system.qwk_id.toLowerCase());
 	NetworkName = "Synchronet";
@@ -1167,8 +1167,10 @@ function load_config_defaults() {
 	YLines[0] = new YLine(120,600,100,1000000);
 	/*** I:Line *** mask, password, hostmask, port, class */
 	/*** U:Line ***/
-	ULines.push("services.synchro.net");
-	ULines.push("stats.synchro.net");
+	if (!services_configured) {
+		ULines.push("services.synchro.net");
+		ULines.push("stats.synchro.net");
+	}
 	/*** K:Line *** deliberately empty by default */
 	/*** Z:Line *** deprecated and combined with above */
 	/*** Q:Line ***/
@@ -1188,9 +1190,17 @@ function load_config_defaults() {
 function read_ini_config(conf) {
 	var ini = conf.iniGetAllObjects();
 	var Sections = new ini_sections();
-	var i, k, s;
+	var i, k, s, services_configured = false;
 
-	load_config_defaults();
+	/* The presence of a Services section selects an explicit trust list,
+	   even if all such sections are empty or disabled. */
+	for (i in ini) {
+		if (ini[i].name.split(":")[0] == "Services") {
+			services_configured = true;
+			break;
+		}
+	}
+	load_config_defaults(services_configured);
 
 	for (i in ini) {
 		/* .ini files carry the same SYSTEM_* macros a .conf does, so a

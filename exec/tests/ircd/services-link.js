@@ -170,6 +170,33 @@ try { run_tests({
 		check(!s.e.owns(s.user,s.db.data.nicks.$ALICE)); check(s.e.memo_read(actor)[0] == B.id && !s.e.can_read_memo(actor,A.id));
 	},
 
+	"automatic group checks omit empty mailboxes and the completion summary": function() {
+		var s = linked(), r = mailbox_reader(s);
+		r.m.read_memos("connection","query",r.actor,[A,B],"STATUS",true);
+		check(r.sent.length == 1 && r.sent[0].text === "" && r.sent[0].request_id == "query");
+		r.pending[0].callback({pending:false,text:"No telegrams waiting."});
+		check(r.sent.every(function(m) { return m.text === ""; }) && r.pending.length == 2);
+		r.pending[1].callback({text:"No telegrams waiting."});
+		check(r.sent.every(function(m) { return m.text === ""; }) && r.replies.length == 1 && !r.replies[0].text && !r.replies[0].error);
+	},
+	"automatic group checks retain waiting notifications and per-BBS errors": function() {
+		var s = linked(), r = mailbox_reader(s);
+		r.m.read_memos("connection","query",r.actor,[A,B],"STATUS",true);
+		r.pending[0].callback({pending:true,text:"You have telegrams waiting."});
+		r.pending[1].callback({error:"Mailbox unavailable."});
+		var visible = r.sent.filter(function(m) { return !!m.text; });
+		check(visible.length == 4 && visible[0].home == A.home && visible[2].home == B.home);
+		check(visible[1].text == "You have telegrams waiting." && visible[3].text == "Mailbox unavailable.");
+		check(r.replies.length == 1 && !r.replies[0].text);
+	},
+	"explicit group STATUS continues to report empty mailboxes and a summary": function() {
+		var s = linked(), r = mailbox_reader(s);
+		r.m.read_memos("connection","query",r.actor,[A,B],"STATUS");
+		r.pending[0].callback({pending:false,text:"No telegrams waiting."});
+		r.pending[1].callback({pending:false,text:"No telegrams waiting."});
+		check(r.sent.length == 4 && r.sent[1].text == "No telegrams waiting." && r.sent[3].text == "No telegrams waiting.");
+		check(r.replies[0].text == "Checked 2 telegram mailboxes.");
+	},
 	"group mailbox reads preserve useful results when another BBS fails": function() {
 		var s = linked(), r = mailbox_reader(s); login(s,[A]);
 		r.m.read_memos("connection","query",r.actor,[A,B],"READ"); check(r.pending[0].request.identity.id == A.id);

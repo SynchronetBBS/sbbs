@@ -176,10 +176,12 @@ function IRC_whois_tls(viewer, target) {
 
 function IRC_do_tlsroute(user, target) {
 	if (!target) { user.numeric461("TLSROUTE"); return; }
-	var name = target.toLowerCase(), local = ServerName.toLowerCase();
-	if (name != local && (!Servers[name] || !Servers[name].server || (Servers[name].local && !Servers[name].admitted))) {
+	var selected = search_server_only(target);
+	if (!selected || (selected != -1 && (!selected.server || (selected.local && !selected.admitted)))) {
 		user.numeric402(target); return;
 	}
+	target = selected == -1 ? ServerName : selected.nick;
+	var name = target.toLowerCase(), local = ServerName.toLowerCase();
 	var path = [], seen = {}, broken = false;
 	while (name != local) {
 		var edge = Servers[name];

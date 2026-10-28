@@ -54,6 +54,11 @@ transport independently, then accepts authority requests only from its
 configured `Host`. A wrong host can therefore leave local identification
 working while remote IDENTIFY times out and identity updates are ignored.
 
+When the INI contains any `[Services:...]` sections, those sections define the
+entire services trust list. The default `services.synchro.net` and
+`stats.synchro.net` entries are added only when no services sections exist.
+Empty or disabled services sections also suppress the defaults.
+
 `NickExpireDays` and `ChannelExpireDays` independently expire registrations
 after the specified number of unused days. Both default to `0`, which disables
 expiry. For example, `NickExpireDays=30` and `ChannelExpireDays=90` expire
@@ -347,7 +352,9 @@ MemoServ is an interface to BBS telegrams, not a separate mailbox:
   service server is rejected.
 - `STATUS` and automatic checks after identification report waiting telegrams
   across the nickname's group without consuming them. The configured MEMOACCOUNT
-  is checked first. File snapshots use native-compatible read locking.
+  is checked first. Automatic checks omit empty mailboxes and the completion
+  summary; explicit `STATUS` still reports empty mailboxes. Waiting-mail notices
+  and errors remain visible. File snapshots use native-compatible read locking.
 - `READ` explicitly consumes telegram spools using `system.get_telegram()`.
   It reads all mailboxes in the current owned nickname's group, or the active
   account's group when no owned nickname is in use. `MemoServ@server READ` limits

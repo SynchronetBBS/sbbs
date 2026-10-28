@@ -83,7 +83,10 @@ IRC_Services_Backend.prototype.process_one = function() {
 			} else if (job.type == "memo") {
 				this.memo_account(job.identity);
 				if (job.operation == "READ") this.output({type:"result", id:job.id, text:system.get_telegram(job.identity.number) || "No telegrams waiting."});
-				else if (job.operation == "STATUS") this.output({type:"result", id:job.id, text:this.memo_pending(job.identity) ? "You have telegrams waiting. Use READ to receive them." : "No telegrams waiting."});
+				else if (job.operation == "STATUS") {
+					var pending = this.memo_pending(job.identity);
+					this.output({type:"result", id:job.id, pending:pending, text:pending ? "You have telegrams waiting. Use READ to receive them." : "No telegrams waiting."});
+				}
 				else if (job.operation == "SEND") {
 					if (!system.put_telegram(job.identity.number, job.text)) throw new Error("Cannot store telegram");
 					this.output({type:"result", id:job.id, text:"Telegram delivered."});
