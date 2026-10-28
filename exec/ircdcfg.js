@@ -119,6 +119,7 @@ function Info_Menu() {
                 format("%15s: %-40s", "/ADMIN Line 1", Admin1),
                 format("%15s: %-40s", "/ADMIN Line 2", Admin2),
                 format("%15s: %-40s", "/ADMIN Line 3", Admin3),
+                format("%15s: %-40s", "Networkname", NetworkName),
             ],
             ctx
         );
@@ -164,6 +165,16 @@ function Info_Menu() {
                     "Example: Proudly running Gentoo Linux."
                 ]);
                 Admin3 = Edit_Existing("/ADMIN Line 3", Admin3);
+                break;
+            case 5:
+                Help_Window([
+                    "The IRC network name in the welcome and ISUPPORT replies.",
+                    "Defaults to Synchronet. Use 1-64 printable ASCII characters",
+                    "without spaces or backslashes; use the same name on each server."
+                ]);
+                str = uifc.input(WIN_MID, "Networkname", NetworkName, 64, K_EDIT);
+                if (str !== undefined)
+                    ini_Info("", {Networkname:str});
                 break;
         }
     }

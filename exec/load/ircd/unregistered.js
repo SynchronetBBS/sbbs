@@ -523,12 +523,12 @@ function Unregistered_Welcome() {
 		HCC_Total = true_array_len(Local_Users) + true_array_len(Local_Servers);
 	if (true_array_len(Local_Users) > HCC_Users)
 		HCC_Users = true_array_len(Local_Users);
-	this.numeric("001", ":Welcome to the Synchronet IRC Service, " + new_user.nuh);
+	this.numeric("001", ":Welcome to the " + NetworkName + " IRC Service, " + new_user.nuh);
 	this.numeric("002", ":Your host is " + ServerName + ", running version " + VERSION);
 	this.numeric("003", format(":This server was created %s", SERVER_UPTIME_STRF));
 	this.numeric("004", ServerName + " " + VERSION + " oiwbgscrkfydnhF beiklmnopstv");
 	/* This needs to be rewritten so the server capabilities are rendered dynamically */
-	this.numeric("005","NETWORK=Synchronet"
+	this.numeric("005","NETWORK=" + NetworkName
 		+ " MAXBANS=" + MAX_BANS
 		+ " MAXCHANNELS=" + MAX_USER_CHANS
 		+ " CHANNELLEN=" + MAX_CHANLEN

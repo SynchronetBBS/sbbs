@@ -53,6 +53,7 @@ var NLINE_CHECK_WITH_QWKMASTER        =(1<<2);        // k
 var TLS_Config = {ca_file:""};
 var TLS_Ports = {};
 var Clock_MaxSkew = 30;
+var NetworkName = "Synchronet";
 var EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, bbs_require_tls:false, require_tls:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
 
 function Epoch() {
@@ -485,6 +486,7 @@ function Write_Config_File(fn) {
 	/* [Info] */
 	f.writeln("[Info]");
 	f.writeln(format("Servername=%s", ServerName));
+	f.writeln(format("Networkname=%s", NetworkName));
 	f.writeln(format("Description=%s", ServerDesc));
 	f.writeln(format("Admin1=%s", Admin1));
 	f.writeln(format("Admin2=%s", Admin2));
@@ -812,6 +814,14 @@ function ini_Capab(arg, ini) {
 function ini_Info(arg, ini) {
 	if (ini.Servername)
 		ServerName = ini.Servername;
+	/* One printable token keeps the 001 network name and 005 NETWORK
+	   value identical. Backslashes introduce ISUPPORT escape sequences. */
+	if (ini.Networkname !== undefined) {
+		var name = String(ini.Networkname);
+		if (!name) NetworkName = "Synchronet";
+		else if (/^[\x21-\x7e]{1,64}$/.test(name) && name.indexOf("\\") < 0) NetworkName = name;
+		else log(LOG_WARNING, "Invalid [Info] Networkname; use 1-64 printable ASCII characters without spaces or backslashes. Keeping " + NetworkName);
+	}
 	if (ini.Description)
 		ServerDesc = ini.Description;
 	if (ini.Admin1)
@@ -1146,6 +1156,7 @@ function ini_WebIRC(arg, ini) {
 function load_config_defaults() {
 	/*** M:Line ***/
 	ServerName = format("%s.synchro.net", system.qwk_id.toLowerCase());
+	NetworkName = "Synchronet";
 	ServerDesc = system.name;
 	Default_Port = 6667;
 	/*** A:Line ***/

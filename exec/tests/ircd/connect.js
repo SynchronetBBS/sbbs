@@ -23,7 +23,9 @@ try {
 			var c = new IrcdClient(IRCD_TEST_HOST, PORT);
 			c.send("NICK bot1");
 			c.send("USER bot1 0 * :Test Bot");
-			c.expect(" 001 ", 5);
+			var welcome = c.expect(" 001 ", 5);
+			if (welcome.indexOf(":Welcome to the Synchronet IRC Service, ") < 0)
+				throw new Error("Incorrect default network name: " + welcome);
 			c.quit();
 		},
 
@@ -41,8 +43,31 @@ try {
 			c.send("NICK bot3");
 			c.send("USER bot3 0 * :Test Bot");
 			c.expect(" 001 ", 5);
-			c.expect(" 005 ", 3);
+			var support = c.expect(" 005 ", 3);
+			if (support.indexOf(" NETWORK=Synchronet ") < 0)
+				throw new Error("Incorrect default NETWORK token: " + support);
 			c.quit();
+		},
+
+		"configured network name agrees in 001 and 005 after REHASH": function() {
+			var named = new IrcdTestServer(19665), c, op;
+			try {
+				named.start();
+				op = named.client("netop");
+				op.send("OPER testop testpass"); op.expect(" 381 ", 3);
+				var f = new File(named.config_path);
+				if (!f.open("r+")) throw new Error("Cannot edit test config");
+				try {
+					if (!f.iniSetValue("Info", "Networkname", "ExampleNet")) throw new Error("Cannot set network name");
+				} finally { f.close(); }
+				op.send("REHASH"); op.expect(" 382 ", 3);
+				c = new IrcdClient(IRCD_TEST_HOST, named.port);
+				c.send("NICK netname"); c.send("USER netname 0 * :Network name test");
+				var welcome = c.expect(" 001 ", 5), support = c.expect(" 005 ", 3);
+				if (welcome.indexOf(":Welcome to the ExampleNet IRC Service, ") < 0
+					|| support.indexOf(" NETWORK=ExampleNet ") < 0)
+					throw new Error("Configured network name disagrees: " + welcome + " / " + support);
+			} finally { if (c) c.quit(); if (op) op.quit(); named.stop(); }
 		},
 
 		/* --- PING/PONG --- */
