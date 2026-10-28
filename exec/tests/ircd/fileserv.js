@@ -141,6 +141,24 @@ run_tests({
 		var t=adapter();t.a.command(t.u,"ADDRESS 192.0.2.5",null,true);
 		check(t.a.session(t.u).address===null && t.a.output[0].indexOf("privately")>=0);
 	},
+	"channel browser commands honor PLAIN, TLS and the default transport":function() {
+		["!fserve","!files"].forEach(function(verb) {
+			["plain","TLS",""].forEach(function(option) {
+				var t=adapter(),chosen;
+				t.a.bot={id:"bot",channels:{"#FILES":true}};t.a.start_chat=function(s,tls) { chosen=tls; };
+				t.a.channel(t.u,{nam:"#files",users:{bot:true}},verb+" here "+(verb=="!files" ? "CHAT " : "")+option);
+				check(chosen===(option!="plain"),verb+" ignored "+option);
+			});
+		});
+	},
+	"channel browser options obey TLS policy and reject extra arguments":function() {
+		[ {policy:"required",args:"PLAIN",error:"TLS policy"}, {policy:"off",args:"TLS",error:"TLS policy"}, {policy:"optional",args:"extra PLAIN",error:"CHAT [TLS|PLAIN]"} ].forEach(function(test) {
+			var t=adapter(),started=false;t.a.config.tls=test.policy;t.a.bot={id:"bot",channels:{"#FILES":true}};
+			t.a.start_chat=function() { started=true; };
+			t.a.channel(t.u,{nam:"#files",users:{bot:true}},"!fserve HERE "+test.args);
+			check(!started && t.a.output[0].indexOf(test.error)>=0);
+		});
+	},
 	"DCC resume belongs to the same session, filename and listening port":function() {
 		var t=adapter(),s=t.a.session(t.u),sent=[];t.a.write=function(w,m) { sent.push(m); };
 		t.a.workers[1]={kind:"send",session:s,port:1234,file:{name:"a.txt",size:100}};

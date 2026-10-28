@@ -87,7 +87,10 @@ actual `FileServ_<QWKID>` nickname. Every command has detailed `HELP <command>`.
 
 In a configured channel, `!list` privately lists each participating BBS's
 FileServ contact information. `!files <QWKID> <command>` addresses one BBS;
-`!fserve <QWKID>` opens its DCC browser. There are no scheduled advertisements.
+`!fserve <QWKID> [TLS|PLAIN]` opens its DCC browser. For example,
+`!fserve BBSDEV PLAIN` requests ordinary unencrypted DCC CHAT when the BBS allows
+plaintext. Omitting the option uses the BBS's default TLS policy. There are no
+scheduled advertisements.
 Channel commands are processed only after normal channel messaging permissions
 pass. NOTICE input never invokes commands. Ordinary bot replies, listings,
 help and errors use NOTICE to the requesting user. The sole PRIVMSG exception

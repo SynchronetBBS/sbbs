@@ -233,6 +233,15 @@ DNS_Resolver.sockets=[test_dns_socket];
     print('PASS partial-download accounting and DCC CHAT virtual browser',flush=True)
     owner.send('JOIN #files');owner.expect(' JOIN :#files');time.sleep(.6)
     owner.send('PRIVMSG #files :!files '+bbs_qwk+' LIBS');owner.expect('fs_ : FileServ fixture library')
+    for option,kind in [('plain','CHAT'),('TLS','SCHAT')]:
+        time.sleep(.6);owner.send('PRIVMSG #files :!fserve '+bbs_qwk+' '+option)
+        line=owner.expect('\x01DCC '+kind+' ')
+        match=re.search(r'DCC '+kind+r' chat (\S+) (\d+)\x01',line);assert match,line
+        browser=socket.create_connection(('127.0.0.1',int(match[2])),timeout=8)
+        if kind=='SCHAT':browser=ssl._create_unverified_context().wrap_socket(browser,server_hostname='localhost')
+        assert b'virtual browser' in browser.recv(4096)
+        browser.sendall(b'QUIT\r\n');browser.close()
+    print('PASS channel !fserve honors explicit PLAIN and TLS with native CHAT/SCHAT connections',flush=True)
     time.sleep(.6);owner.send('PRIVMSG #files :!files '+bbs_qwk+' ADDRESS 127.0.0.2');owner.expect('Use ADDRESS privately on IRC.')
     owner.cmd('ADDRESS','Expected DCC peer address: 127.0.0.1')
     n,_=offer(owner,'GET fs_public fixture.txt PLAIN')

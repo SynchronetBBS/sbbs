@@ -389,12 +389,13 @@ IRC_FileServ.prototype.tick = function() {
 IRC_FileServ.prototype.channel = function(user,chan,text) {
 	if (!this.bot || !this.bot.channels[chan.nam.toUpperCase()] || !chan.users[this.bot.id]) return;
 	var a=text.trim().split(/\s+/),verb=a.shift().toLowerCase();
+	var browser=verb=="!fserve";
 	if (verb=="!list") {
 		var s=this.session(user);if (s.last && system.timer-s.last<0.5) return;s.last=system.timer;
-		this.notice(s,"Files from "+this.manager.config.qwk+": /msg FileServ@"+this.manager.config.server+" HELP; !fserve "+this.manager.config.qwk+" opens the DCC browser.");
+		this.notice(s,"Files from "+this.manager.config.qwk+": /msg FileServ@"+this.manager.config.server+" HELP; !fserve "+this.manager.config.qwk+" [TLS|PLAIN] opens the DCC browser.");
 	}
-	else if ((verb=="!files" || verb=="!fserve") && (a.shift() || "").toUpperCase()==this.manager.config.qwk)
-		this.command(user,verb=="!fserve" ? "CHAT" : a.join(" "),null,true);
+	else if ((verb=="!files" || browser) && (a.shift() || "").toUpperCase()==this.manager.config.qwk)
+		this.command(user,(browser ? "CHAT " : "")+a.join(" "),null,true);
 };
 IRC_FileServ.prototype.join_channels = function() {
 	var self=this;
