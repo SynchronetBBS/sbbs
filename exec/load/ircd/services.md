@@ -133,6 +133,18 @@ described in [tls.md](tls.md); WHOIS and TLSROUTE help diagnose missing protecti
 
 ## Commands
 
+`STATS U [server-mask]` reports services trust entries, the effective
+`BBSServices` and `EmbeddedServices` settings, and runtime authority discovery
+and RPC transport status. It is available without operator privileges. It
+does not expose database paths, account details or transport secrets.
+`STATS F` reports general server/network, clock, capability and TLS trust-store
+configuration; `C` reports server links and their TLS settings; `P` reports
+listeners and TLS; `O` includes operator flags/classes; `Y` includes class
+comments; `B` reports RBL settings; `W` reports WebIRC host masks. Existing
+`H`, `I`, `K` and `Q` reports cover hubs, client access, bans and nickname
+restrictions. Passwords are omitted. `STATS ?` lists the reports, and each
+accepts a remote server mask. Lowercase `u` remains the uptime report.
+
 Each service provides a command index with `/cs HELP`, `/ns HELP`, or `/ms HELP`.
 Use `HELP <command>` for syntax, permissions, behavior, limitations, and examples:
 

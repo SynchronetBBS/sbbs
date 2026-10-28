@@ -158,6 +158,18 @@ def group_memo(client, service, command, expected):
     client.expect('Checked ')
     return line
 
+
+def wait_username(client, nick, username):
+    end = time.monotonic() + 25
+    while True:
+        client.send('WHOIS ' + nick)
+        reply = client.expect(' 311 ' + client.nick + ' ' + nick + ' ')
+        client.expect(' 318 ' + client.nick + ' ' + nick + ' ')
+        if reply.split(' 311 ', 1)[1].split()[2] == username:
+            return
+        assert time.monotonic() < end, reply
+        time.sleep(.4)
+
 hub = Server('hub', 19870)
 relay = Server('relay', 19871, legacy=True)
 home = Server('home', 19872, '::1')
@@ -211,7 +223,9 @@ try:
     owner.expect('End of MemoServ HELP SEND.')
     print('PASS: detailed alias and qualified help is public before identification, including ChanServ through a legacy relay', flush=True)
     owner.service('NickServ', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+HOME')
+    wait_username(observer, 'Alice', 'Some.User+HOME')
     print('PASS: native BBS identification through local NickServ', flush=True)
+    print('PASS: identification updates the authority server\'s WHOIS copy through services RPC', flush=True)
     owner.service('NickServ', 'REGISTER', 'Nickname registered to your network identity')
     print('PASS: central registration through legacy relay', flush=True)
     owner.send('JOIN #services-test')
@@ -222,9 +236,15 @@ try:
     owner.service('ChanServ', 'INFO #services-test', 'Last used: ')
     print('PASS: last-used timestamps are available through a legacy relay', flush=True)
     identified = outsider.service('NickServ@home.test', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+HOME')
+    wait_username(observer, 'Visitor', 'Some.User+HOME')
     assert ' NOTICE Visitor :' in identified and '[NickServ@home.test]' in identified
     outsider.expect('/msg NickServ@home.test <command>')
     print('PASS: remote BBS identification through legacy relay', flush=True)
+    observer.send('STATS U home.*')
+    observer.expect('[EmbeddedServices] Host=127.0.0.1')
+    observer.expect('[ServicesRuntime] AuthorityTransport=authenticated')
+    observer.expect(' 219 Watcher U ')
+    print('PASS: public services configuration and runtime RPC state route through legacy relay', flush=True)
     status = outsider.service('MemoServ@home.test', 'STATUS', 'No telegrams waiting')
     assert ' NOTICE Visitor :' in status and '[MemoServ@home.test]' in status
     outsider.expect('/msg MemoServ@home.test <command>')

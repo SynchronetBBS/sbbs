@@ -1539,8 +1539,37 @@ function IRCClient_do_info() {
 	this.numeric(374, ":End of /INFO list.");
 }
 
+/* Report explicit public fields only, never whole configuration objects. */
+function IRC_stats_config(user, section, fields) {
+	var keys = Object.keys(fields);
+	for (var i = 0; i < keys.length; i++) {
+		var key = keys[i];
+		var body = ("[" + section + "] " + key + "=" + String(fields[key])).replace(/[\x00-\x1f\x7f]/g, " ");
+		var width = Math.max(0, 510 - (":" + ServerName + " 249 " + user.nick + " :").length);
+		user.numeric(249, ":" + body.substr(0, width));
+	}
+}
+
+function IRC_stats_services(user) {
+	var c = EmbeddedServices_Config;
+	IRC_stats_config(user, "BBSServices", {NickServ:c.nickserv, MemoServ:c.memoserv, RequireTLS:c.bbs_require_tls});
+	IRC_stats_config(user, "EmbeddedServices", {Enabled:c.enabled, Host:c.host, RequireTLS:c.require_tls,
+		MaxNicks:c.max_nicks, NickExpireDays:c.nick_expire_days, ChannelExpireDays:c.channel_expire_days});
+	if (!IRC_Services) { IRC_stats_config(user, "ServicesRuntime", {Running:false}); return; }
+	var m = IRC_Services, authority = Servers[m.config.host], cp = m.central_peer();
+	var transport = cp && m.transport.peers[IRC_services_key(cp)];
+	IRC_stats_config(user, "ServicesRuntime", {Running:m.interval !== undefined && !m.stopped, Central:m.central,
+		AuthorityHost:m.config.host, AuthorityPresent:!!authority, AuthorityTrusted:!!(authority && authority.uline),
+		AuthorityPeer:cp || "unavailable", AuthorityTransport:m.central ? "local" : transport && transport.key ? "authenticated" : cp ? "pending" : "unavailable",
+		PendingRequests:Object.keys(m.requests).length});
+	for (var key in m.transport.peers) {
+		var peer = m.peer(key.substr(1)), state = m.transport.peers[key];
+		IRC_stats_config(user, "ServicesPeer:" + key.substr(1), {Present:!!peer, Transport:state.key ? "authenticated" : "pending"});
+	}
+}
+
 function IRCClient_do_stats(statschar) {
-	var i;
+	var i, n;
 
 	switch(statschar[0]) {
 		case "C":
@@ -1553,17 +1582,36 @@ function IRCClient_do_stats(statschar) {
 					CLines[i].port ? CLines[i].port : 0,
 					CLines[i].ircclass
 				));
-				if (NLines[i]) {
-					this.numeric(214,format(
-						"N %s * %s %s %u",
-						NLines[i].host,
-						NLines[i].servername,
-						NLines[i].flags,
-						NLines[i].ircclass
-					));
-				}
+				IRC_stats_config(this, "Server:" + CLines[i].servername, {Hostname:CLines[i].host,
+					Port:CLines[i].port, Class:CLines[i].ircclass, OutboundTLS:!!CLines[i].tls,
+					Hub:HLine_Exists(CLines[i].servername)});
+			}
+			/* Incoming-only peers and differently ordered C/N lists also
+			   need their own rows; array indexes do not identify a peer. */
+			for (i in NLines) {
+				n = NLines[i];
+				this.numeric(214,format("N %s * %s %s %u", n.host, n.servername, n.flags, n.ircclass));
+				IRC_stats_config(this, "Server:" + n.servername, {InboundHostname:n.host,
+					InboundClass:n.ircclass, InboundTLS:!!n.tls, Flags:NLine_Flags_String(n.flags), Hub:HLine_Exists(n.servername)});
 			}
 			break;  
+		case "F":
+		case "f":
+			IRC_stats_config(this, "Info", {Servername:ServerName, Networkname:NetworkName, Description:ServerDesc,
+				Admin1:Admin1, Admin2:Admin2, Admin3:Admin3});
+			IRC_stats_config(this, "Clock", {MaxSkew:Clock_MaxSkew});
+			IRC_stats_config(this, "Capab", {Enforce:CapabEnforce});
+			IRC_stats_config(this, "TLS", {CAConfigured:!!TLS_Config.ca_file});
+			break;
+		case "B":
+		case "b":
+			for (i in RBL) IRC_stats_config(this, "RBL:" + i, {Hostname:RBL[i].hostname,
+				GoodResponses:(RBL[i].good || []).join(","), BadResponses:(RBL[i].bad || []).join(",")});
+			break;
+		case "W":
+		case "w":
+			for (i in WLines) IRC_stats_config(this, "WebIRC:" + i, {Hostname:WLines[i].hostname});
+			break;
 		case "H":
 		case "h":
 			for (i in HLines) {
@@ -1634,10 +1682,13 @@ function IRCClient_do_stats(statschar) {
 			break;
 		case "P":
 		case "p":
-			if (Default_Port)
+			if (Default_Port) {
 				this.numeric(249, format("Port %u: active (default)", Default_Port));
+				IRC_stats_config(this, "Port:" + Default_Port, {Default:true, TLS:!!TLS_Ports[Number(Default_Port)]});
+			}
 			for (i in PLines) {
 				this.numeric(249, format("Port %u: active", PLines[i]));
+				IRC_stats_config(this, "Port:" + PLines[i], {Default:false, TLS:!!TLS_Ports[Number(PLines[i])]});
 			}
 			break;
 		case "M":
@@ -1659,6 +1710,7 @@ function IRCClient_do_stats(statschar) {
 					OLines[i].hostmask,
 					OLines[i].nick
 				));
+				IRC_stats_config(this, "Operator:" + OLines[i].nick, {Flags:OLine_Flags_String(OLines[i].flags), Class:OLines[i].ircclass});
 			}
 			break;
 		case "Q":
@@ -1678,6 +1730,7 @@ function IRCClient_do_stats(statschar) {
 					ULines[i]
 				));
 			}
+			IRC_stats_services(this);
 			break;
 		case "u":
 			this.numeric(242,format(":%s", Uptime_String()));
@@ -1693,7 +1746,13 @@ function IRCClient_do_stats(statschar) {
 					YLines[i].maxlinks,
 					YLines[i].sendq
 				));
+				if (YLines[i].comment) IRC_stats_config(this, "Class:" + i, {Comment:YLines[i].comment});
 			}
+			break;
+		case "?":
+			this.numeric(249, ":STATS F: Info, Clock, Capab and TLS settings; C: server links; H: hubs; I: client access; K: bans");
+			this.numeric(249, ":STATS P: listeners; O: operators; Q: nick restrictions; U: services; Y: classes; B: RBL; W: WebIRC");
+			this.numeric(249, ":STATS L: connection counters (operators); M: command counters; u: uptime. Add a server mask for remote queries.");
 			break;
 		default:
 			break;
