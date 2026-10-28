@@ -792,12 +792,6 @@ IRC_Services_Manager.prototype.action = function(a) {
 	if (a.actor && a.require_tls && this.tls_error(user, this.config.require_tls)) return;
 	if (a.target && (!target || (a.target.auth_revision !== undefined && a.target.auth_revision != (target.services_auth_revision || 0)) || a.target.account != (target.services_identity ? target.services_identity.id : null))) return;
 	if (a.type == "notice") { this.notice(a.service, user, a.text); return; }
-	if (a.type == "join") {
-		this.chanserv.do_join(a.channel);
-		var joined = Channels[a.channel.toUpperCase()];
-		if (joined && !joined.modelist[CHANMODE_OP][this.chanserv.id]) this.service_server.set_chanmode(joined, ["+o", "ChanServ"], 0);
-		return;
-	}
 	if (a.type == "kill") {
 		server_bcast_to_servers(":" + this.config.host + " KILL " + target.nick + " :Nickname reclaimed by its BBS account owner");
 		target.quit("Nickname reclaimed by its BBS account owner", true); return;
@@ -815,7 +809,6 @@ IRC_Services_Manager.prototype.action = function(a) {
 			}
 		} return;
 	}
-	if (a.type == "part") { this.chanserv.do_part(a.channel); return; }
 	var c = a.channel && Channels[a.channel.name.toUpperCase()];
 	if (!c || c.services_ref != a.channel.ref) return;
 	if (a.type == "exception") {
@@ -839,7 +832,7 @@ IRC_Services_Manager.prototype.action = function(a) {
 		this.service_server.bcast_to_channel(c, "TOPIC " + c.nam + " :" + c.topic, false);
 		IRC_bcast_topic(this.service_server, c);
 	} else if (a.type == "invite") {
-		target.invited = c.nam; target.originatorout("INVITE " + target.nick + " :" + c.nam, this.chanserv);
+		target.invited = c.nam.toUpperCase(); target.originatorout("INVITE " + target.nick + " :" + c.nam, this.chanserv);
 	} else if (a.type == "unban") {
 		for (var i = c.modelist[CHANMODE_BAN].length - 1; i >= 0; i--)
 			if (wildmatch(target.nuh, c.modelist[CHANMODE_BAN][i])) this.service_server.set_chanmode(c, ["-b", c.modelist[CHANMODE_BAN][i]], 0);

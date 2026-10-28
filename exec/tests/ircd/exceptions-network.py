@@ -131,21 +131,21 @@ class Client:
         self.send('MODE #test ' + text)
         self.expect(' MODE #test ')
 
-    def exceptions(self):
-        self.send('MODE #test +e')
+    def exceptions(self, channel='#test'):
+        self.send('MODE ' + channel + ' +e')
         result = []
         while True:
             line = self.read(15)
             assert line, 'No exception list completion'
             if ' 348 ' in line:
-                result.append(line.split(' #test ', 1)[1].split(' ')[0])
+                result.append(line.split(' ' + channel + ' ', 1)[1].split(' ')[0])
             if ' 349 ' in line:
                 return result
 
-    def wait_exceptions(self, expected):
+    def wait_exceptions(self, expected, channel='#test'):
         end = time.monotonic() + 20
         while True:
-            actual = self.exceptions()
+            actual = self.exceptions(channel)
             if {s.upper() for s in actual} == {s.upper() for s in expected}:
                 return
             assert time.monotonic() < end, (expected, actual)
@@ -246,6 +246,27 @@ try:
 
     owner.mode('+o Listener')
     listener.expect('+o Listener')
+
+    # A registration must not keep an empty channel alive or recreate it at boot.
+    owner.send('JOIN #restore')
+    owner.expect(' 366 ')
+    owner.service('REGISTER #restore Persistent policy', 'Channel registered')
+    owner.service('SET #restore MLOCK +intkl secret 3', 'Channel settings updated')
+    owner.service('SET #restore KEEPTOPIC ON', 'Channel settings updated')
+    owner.service('TOPIC #restore Saved topic', 'Topic change requested')
+    owner.service('EXCEPT #restore ADD ' + ext, 'Managed exception saved')
+    owner.send('MODE #restore +eb Manual!*@* *!*@manual.invalid')
+    owner.expect(' MODE #restore ')
+    owner.wait_exceptions([ext, 'Manual!*@*'], '#restore')
+    owner.send('NAMES #restore')
+    assert 'ChanServ' not in owner.expect(' 353 ')
+    owner.send('PART #restore')
+    owner.expect(' PART #restore')
+    time.sleep(1.2)
+    for client in [owner, listener, outsider]:
+        client.send('MODE #restore')
+        client.expect(' 403 ' + client.nick + ' #restore ')
+
     owner.sock.close()
     nodes['hub']['process'].send_signal(signal.SIGTERM)
     assert nodes['hub']['process'].wait(timeout=15) in (0, -signal.SIGTERM)
@@ -266,6 +287,8 @@ try:
         assert time.monotonic() < end, names
         time.sleep(.3)
     owner.service('EXCEPT #test LIST', 'End of managed exception list')
+    owner.send('MODE #restore')
+    owner.expect(' 403 Owner #restore ')
     outsider.send('PRIVMSG #test :after authority restart')
     owner.expect('PRIVMSG #test :after authority restart')
     print('PASS: authority restart reloads saved grants and restores a grant removed during its absence', flush=True)
@@ -291,6 +314,55 @@ try:
         line = old.read(.2)
         assert not line or 'legacy stricter path' not in line, line
     print('PASS: actual legacy leaf remains usable, mixed MODE arguments survive, and unknown exceptions do not weaken restrictions', flush=True)
+
+    for creator in [listener, old]:
+        creator.send('JOIN #restore')
+        creator.expect(' 366 ')
+        owner.wait_exceptions([ext], '#restore')
+        creator.send('MODE #restore')
+        restored = creator.expect(' 324 ')
+        assert ' secret 3' in restored and all(m in restored.split(' #restore ')[1].split()[0] for m in 'intkl'), restored
+        creator.send('TOPIC #restore')
+        assert 'Saved topic' in creator.expect(' 332 ')
+        creator.send('MODE #restore +b')
+        bans = []
+        while True:
+            line = creator.read(15)
+            assert line
+            if ' 367 ' in line:
+                bans.append(line)
+            if ' 368 ' in line:
+                break
+        assert not bans, bans
+        creator.send('NAMES #restore')
+        assert 'ChanServ' not in creator.expect(' 353 ')
+        # Test an outside ChanServ invite to an updated, local client. Old
+        # relays retain their own INVITE parser and privilege limitations.
+        owner.service('INVITE #restore Owner', 'Channel action requested')
+        owner.send('JOIN #restore secret')
+        owner.expect(' 366 ')
+        end = time.monotonic() + 20
+        while True:
+            owner.send('NAMES #restore')
+            names = owner.expect(' 353 ')
+            if '@Owner' in names:
+                break
+            assert time.monotonic() < end, names
+            time.sleep(.3)
+        owner.service('INVITE #restore Outside', 'Channel action requested')
+        outsider.expect('INVITE Outside :#restore')
+        outsider.send('JOIN #restore secret')
+        outsider.expect(' 366 ')
+        outsider.send('PART #restore')
+        outsider.expect(' PART #restore')
+        owner.send('PART #restore')
+        owner.expect(' PART #restore')
+        creator.send('PART #restore')
+        creator.expect(' PART #restore')
+        time.sleep(1.2)
+        owner.send('MODE #restore')
+        owner.expect(' 403 Owner #restore ')
+    print('PASS: ChanServ stays outside; empty channels vanish; updated and legacy creators receive saved policy, topic and grants', flush=True)
 finally:
     for client in clients:
         try:

@@ -6,6 +6,15 @@ load(js.exec_dir + "lib.sjs");
 load(js.exec_dir + "state-fixture.sjs");
 
 run_tests({
+	"trusted services can invite without channel membership while ordinary outsiders cannot": function() {
+		var s=new_state(), peer=new_peer(s,"uplink.test",true), owner=new_user(s,"Owner"), guest=new_user(s,"Guest");
+		var c=join_user(s,owner,"#test"), bot=new_user(s,"ChanServ",peer.nick), outsider=new_user(s,"Outsider",peer.nick);
+		bot.uline=true; c.mode |= s.CHANMODE_INVITE;
+		peer.work(":Outsider INVITE Guest #test"); check(!guest.invited && !guest.received.length);
+		peer.work(":ChanServ INVITE Guest #test");
+		check(guest.invited=="#TEST" && guest.received.some(function(l) { return l.indexOf("INVITE Guest :#test")>=0; }));
+		check(!bot.channels["#TEST"] && !c.users[bot.id] && !c.modelist[s.CHANMODE_OP][bot.id]);
+	},
 	"server registration switches pending client receive callbacks to unthrottled processing": function() {
 		var s = new_state(), pending = [], pauses = [], handled = [];
 		s.js.setImmediate = function(fn, obj) { pending.push([fn,obj]); };

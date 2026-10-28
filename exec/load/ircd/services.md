@@ -66,7 +66,7 @@ allowance for network snapshots and account identification. Brief visits and
 departures are recorded between checks. Pending usage is flushed when services
 stop cleanly; an abrupt shutdown can lose activity since the last checkpoint. Last-used
 times survive restarts, and downtime counts toward expiry. Expiry drops the
-registration; channel expiry also removes its access entries and parts ChanServ.
+registration; channel expiry also removes its access entries and managed exceptions.
 Nickname expiry leaves the BBS account and its channel permissions intact.
 The registration database uses schema version 3; earlier schemas are unsupported.
 Version 2.9 adds its managed-exception table automatically when opening an existing
@@ -231,6 +231,20 @@ account across nickname changes:
   `MLOCK NONE` clears the lock. `SET #channel KEEPTOPIC ON|OFF` controls
   topic restoration. Only the founder changes settings or drops registration.
 - `INFO #channel` and `DROP #channel` inspect or remove registration.
+
+ChanServ stays outside channels and observes their state directly from the
+IRCd. Its trusted services server applies channel actions without membership
+or channel ops. Registered channels disappear when their last member leaves;
+the registration remains in SQLite. On recreation, ChanServ restores the saved
+mode lock, topic (when KEEPTOPIC is enabled), managed exceptions, and automatic
+ops/voice for authenticated access-list members. Restoration runs through the
+normal services snapshot and action queue, so MODE and TOPIC updates may follow
+the initial JOIN replies. Manual bans, exceptions, and other unsaved state do
+not survive an empty channel. First-join creator ops follow the IRCd's ordinary
+channel creation rules; registration ownership remains with the saved founder.
+Services startup does not create empty registered channels.
+Invites from an outside services user require updated IRC relays and the
+destination IRCd; older INVITE parsers can still require services to have ops.
 
 ### Managed channel exceptions (2.9)
 

@@ -69,13 +69,11 @@ IRC_Services_Engine.prototype.expire = function(now) {
 		return self.config.channel_expire_days > 0 && now - data.channels[k].last_used >= self.config.channel_expire_days * 86400000;
 	});
 	if (!nicks.length && !channels.length) return;
-	var parted = channels.map(function(k) { return data.channels[k].name; });
 	this.commit(function(next) {
 		nicks.forEach(function(k) { delete next.nicks[k]; delete next.nick_last_used[k]; delete next.memo_accounts[k]; });
 		channels.forEach(function(k) { delete next.channels[k]; });
 	});
 	channels.forEach(function(k) { delete self.exception_warnings[k]; });
-	parted.forEach(function(name) { self.emit({type:"part", channel:name}); });
 	log(LOG_INFO, format("Embedded services expired %u nickname and %u channel registrations", nicks.length, channels.length));
 };
 IRC_Services_Engine.prototype.notice = function(service, user, text) {
@@ -129,7 +127,6 @@ IRC_Services_Engine.prototype.by_nick = function(nick) {
 IRC_Services_Engine.prototype.enforce = function(channel) {
 	var record = this.store.data.channels[IRC_services_key(channel.name)], self = this;
 	if (!record) return;
-	this.emit({type: "join", channel: channel.name});
 	channel.users.forEach(function(member) {
 		var user = self.users[member.ref], level = user && self.level(user, channel);
 		if (level >= 50 && !member.op) self.emit({type: "mode", channel: channel, target: user, mode: "+o"});
@@ -224,10 +221,6 @@ IRC_Services_Engine.prototype.event = function(event) {
 			this.emit({type: "topic", channel: event.channel, text: record.topic});
 		}
 		this.enforce(event.channel);
-		return;
-	}
-	if (event.type == "boot") {
-		Object.keys(this.store.data.channels).forEach(function(key) { self.emit({type: "join", channel: self.store.data.channels[key].name}); });
 		return;
 	}
 	if (event.type == "command") {
@@ -435,7 +428,7 @@ IRC_Services_Engine.prototype.channel_command = function(user, verb, args) {
 		this.commit(function(next) { delete next.channels[key]; });
 		delete this.channel_usage[key];
 		delete this.exception_warnings[key];
-		this.emit({type: "part", channel: record.name, actor: user}); reply("Channel registration dropped."); return;
+		reply("Channel registration dropped."); return;
 	}
 	if (verb == "ACCESS") {
 		var action = (args.shift() || "").toUpperCase();

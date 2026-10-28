@@ -56,7 +56,7 @@ run_tests({
 		s.now++; maintain(s); check(!s.db.data.nicks.$ALICE && s.db.data.channels["$#TEST"]);
 		check(!s.db.data.nick_last_used.$ALICE && s.db.db.query("SELECT * FROM nicks").length == 0);
 		s.now = START + 2 * DAY; maintain(s); absent(s);
-		check(s.output.some(function(a) { return a.type == "part" && a.channel == "#test" && !a.actor; }), "expiry did not part ChanServ");
+		check(!s.output.some(function(a) { return a.type == "join" || a.type == "part"; }), "expiry changed services membership");
 		check(Object.keys(s.db.data.accounts).length == 1, "nickname expiry deleted the BBS account");
 	},
 	"services, visitors and another account using the nick do not renew ownership": function() {

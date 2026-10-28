@@ -362,7 +362,7 @@ function Server_Work(cmdline) {
 		tmp = Channels[p[1].toUpperCase()];
 		if (!tmp)
 			break;
-		if (!tmp.modelist[CHANMODE_OP][origin.id])
+		if (!origin.uline && !tmp.modelist[CHANMODE_OP][origin.id])
 			break;
 		j = Users[p[0].toUpperCase()];
 		if (!j)

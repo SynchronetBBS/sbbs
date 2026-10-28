@@ -23,6 +23,32 @@ function command(t,text,u) { t.e.command("ChanServ",u || t.u,"EXCEPT #test "+tex
 function record(t) { return t.db.data.channels["$#TEST"]; }
 function actions(t) { return t.out.filter(function(a) { return a.type=="exception"; }); }
 try { run_tests({
+	"registrations survive empty channels and policy is restored without services membership":function() {
+		var t=scenario(); command(t,"ADD Bot");
+		t.c.topic="Saved topic"; t.e.event({type:"channel",channel:t.c});
+		t.e.command("ChanServ",t.u,"SET #test KEEPTOPIC ON");
+		t.e.command("ChanServ",t.u,"SET #test MLOCK +ntkl secret 3");
+		check(!t.out.some(function(a) { return a.type=="join" || a.type=="part"; }));
+		t.out=[]; t.e.event({type:"channel_gone",ref:t.c.ref}); t.e.event({type:"boot"});
+		check(!t.out.length && record(t),"empty registration created channel state");
+		/* An authority restart must wait for a real channel snapshot. */
+		t.db.close(); t.db=open(t.path);
+		t.e=new IRC_Services_Engine(t.db,{},function(a) { t.out.push(a); });
+		t.e.event({type:"boot"}); check(!t.out.length);
+		t.e.event({type:"user",user:t.u}); t.e.event({type:"identify",ref:t.u.ref,identity:account(1)});
+		var recreated=IRC_services_copy(t.c); recreated.ref="recreated"; recreated.topic="";
+		recreated.flags="+"; recreated.users[0].op=false; recreated.exceptions=[];
+		t.e.event({type:"channel",channel:recreated});
+		check(t.out.some(function(a) { return a.type=="mode" && a.mode=="+o" && a.target.ref==t.u.ref; }));
+		check(t.out.some(function(a) { return a.type=="mode" && a.mode=="+nt"; }));
+		check(t.out.some(function(a) { return a.type=="mode" && a.mode=="+k" && a.arg=="secret"; }));
+		check(t.out.some(function(a) { return a.type=="mode" && a.mode=="+l" && a.arg=="3"; }));
+		check(t.out.some(function(a) { return a.type=="topic" && a.text=="Saved topic"; }));
+		check(actions(t).length==1 && actions(t)[0].mask=="Bot!*@*");
+		check(!t.out.some(function(a) { return a.type=="join" || a.type=="part"; }));
+		t.out=[]; t.e.command("ChanServ",t.u,"DROP #test");
+		check(!record(t) && !t.out.some(function(a) { return a.type=="join" || a.type=="part"; }));
+	},
 	"ADD persists canonical supported grants and restores missing live entries":function() {
 		var t=scenario(); command(t,"ADD ~m:external:Bot");
 		var e=record(t).exceptions["$~MSGBYPASS:EXTERNAL:BOT!*@*"];
