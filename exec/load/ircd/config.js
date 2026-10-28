@@ -56,7 +56,7 @@ var Clock_MaxSkew = 30;
 var NetworkName = "Synchronet";
 function IRC_files_defaults() {
 	return {include_libs:"*", exclude_libs:"", include_dirs:"*", exclude_dirs:"", public_libs:"", public_dirs:"",
-		guest:0, channels:"", address:"", bind:"0.0.0.0", port_first:0, port_last:0, tls:"optional",
+		guest:0, channels:"", address:"", bind:"0.0.0.0", address4:"", bind4:"", address6:"", bind6:"", port_first:0, port_last:0, tls:"optional",
 		max_downloads:4, max_chats:4, max_queue:64, user_queue:8, page_size:25, timeout:60, jsexec:""};
 }
 
@@ -1533,6 +1533,7 @@ function RBL_Config_Object(hostname, good, bad) {
 /* No private worker tokens or filesystem paths are exposed by STATS. */
 var IRC_files_ini = {IncludeLibs:"include_libs", ExcludeLibs:"exclude_libs", IncludeDirs:"include_dirs", ExcludeDirs:"exclude_dirs",
 	PublicLibs:"public_libs", PublicDirs:"public_dirs", Guest:"guest", Channels:"channels", Address:"address", Bind:"bind",
+	Address4:"address4", Bind4:"bind4", Address6:"address6", Bind6:"bind6",
 	PortFirst:"port_first", PortLast:"port_last", TLS:"tls", MaxDownloads:"max_downloads", MaxChats:"max_chats",
 	MaxQueue:"max_queue", UserQueue:"user_queue", PageSize:"page_size", Timeout:"timeout", JSexec:"jsexec"};
 function ini_FileServ(arg, ini) {

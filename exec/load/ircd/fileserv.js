@@ -11,6 +11,40 @@ function IRC_files_dcc_address(address) {
 	if (ip.indexOf(":")>=0) return ip;
 	return ip.split(".").reduce(function(n,p) { return n*256+Number(p); },0).toString();
 }
+function IRC_files_endpoint_settings(config,peer) {
+	peer=IRC_files_ip(peer);
+	if (!peer) throw new Error("Your DCC peer address is unknown. Use ADDRESS <numeric-IP> privately.");
+	var ipv6=peer.indexOf(":")>=0,family=ipv6 ? "6" : "4";
+	var legacy_address=IRC_files_ip(config.address),legacy_bind=IRC_files_ip(config.bind);
+	if (config.bind=="0.0.0.0" || config.bind=="::") legacy_bind=config.bind;
+	var bind=config["bind"+family] || (legacy_bind && (legacy_bind.indexOf(":")>=0)!=ipv6 ? "" : config.bind) || (ipv6 ? "::" : "0.0.0.0");
+	var address=config["address"+family] || (legacy_address && (legacy_address.indexOf(":")>=0)!=ipv6 ? "" : config.address) || bind;
+	return {address:address,bind:bind,family:family,peer:peer};
+}
+function IRC_files_checked_endpoint(spec,address,bind) {
+	var ipv6=spec.family=="6",label="IPv"+spec.family;
+	bind=bind==(ipv6 ? "::" : "0.0.0.0") ? bind : IRC_files_ip(bind);
+	if (!bind || (bind.indexOf(":")>=0)!=ipv6) throw new Error("No "+label+" FileServ bind address is available. Check [FileServ] Bind/Bind"+spec.family+".");
+	address=IRC_files_ip(address);
+	if (!address || (address.indexOf(":")>=0)!=ipv6) throw new Error("No "+label+" FileServ endpoint is available. Check [FileServ] Address/Address"+spec.family+".");
+	return {address:address,bind:bind,peer:spec.peer};
+}
+/* DNS callbacks use explicit context, including dns.js's timeout context. */
+function IRC_files_dns_reply(response) {
+	var entry=this.owner ? this : this.thisObj;
+	if (!entry || !entry.pending) return;
+	entry.pending=false;
+	var addresses=[],ttl=300;
+	if (response && response.rcode===0) (response.answers || []).forEach(function(answer) {
+		if (answer.class==1 && answer.type==5) ttl=Math.min(ttl,Math.max(0,Number(answer.ttl) || 0));
+		var ip=IRC_files_ip(answer.rdata);
+		if (answer.type!=entry.type || answer.class!=1 || !ip || (ip.indexOf(":")>=0)!=(entry.family=="6")) return;
+		addresses.push(ip);ttl=Math.min(ttl,Math.max(0,Number(answer.ttl) || 0));
+	});
+	entry.address=addresses[0] || null;entry.until=system.timer+(entry.address ? ttl : 5);
+	var waiters=entry.waiters;entry.waiters=[];
+	if (!entry.owner.stopped) waiters.forEach(function(done) { done(entry.address); });
+}
 var IRC_files_help = {
 	HELP:"HELP [command] — Describe the command, or list commands. FileServ replies with NOTICE. Use FileServ@<server> to select a BBS; authentication is specific to that BBS.",
 	LIBS:"LIBS [page] — List exported libraries you can access, identified by their internal code prefixes.",
@@ -20,14 +54,14 @@ var IRC_files_help = {
 	INFO:"INFO <directory-code> <filename> — Show size, description and the download credit cost for your BBS account.",
 	GET:"GET <directory-code> <filename> [TLS|PLAIN] — Queue active DCC SEND (PLAIN) or SSEND (TLS). TLS is the default unless disabled by the sysop. Credits and native BBS download limits apply. No silent plaintext fallback. DCC RESUME is supported before connecting; only newly acknowledged bytes are accounted.",
 	CHAT:"CHAT [TLS|PLAIN] — Open an active DCC CHAT/SCHAT virtual file browser. TLS is the default unless disabled. In chat: LIBS, DIRS, CD <directory-code|/>, PWD, DIR [mask] [page], SEARCH, INFO <file>, GET <file>, QUEUE, CANCEL [id|ALL], HELP and QUIT. No OS paths or uploads.",
-	ADDRESS:"ADDRESS [numeric-IP|RESET] — Privately set the expected incoming DCC peer address for this IRC session (useful behind a bouncer). RESET restores your IRC connection address. Connections from other IPs are rejected. Does not change your BBS record or FileServ's advertised address.",
+	ADDRESS:"ADDRESS [numeric-IP|RESET] — Privately set the expected incoming DCC peer address for new GET/CHAT requests (useful behind a bouncer). Its address family selects the BBS's IPv4 or IPv6 endpoint. RESET restores your IRC connection address. Connections from other IPs are rejected. Queued and active requests keep their original addresses. Does not change your BBS record.",
 	QUEUE:"QUEUE — List your pending downloads and active DCC sessions. FileServ limits transfers to one per BBS account, with bounded per-session and server queues.",
 	CANCEL:"CANCEL [id|ALL] — Cancel your matching queued or active DCC work. With no argument cancels all your downloads. Acknowledged partial downloads receive native BBS accounting; cancellation does not undo credits already used."
 };
 function IRC_FileServ(manager) {
 	if (/^win/i.test(system.platform)) throw new Error("FileServ workers currently require a POSIX host and realpath utility.");
 	this.manager=manager;this.config=IRC_services_copy(manager.config.files || IRC_files_defaults());
-	this.sessions={};this.workers={};this.reaping={};this.pending=[];this.connections=[];this.serial=0;this.stopped=false;
+	this.sessions={};this.workers={};this.reaping={};this.pending=[];this.connections=[];this.serial=0;this.stopped=false;this.dns={};
 	this.listener=new Socket(SOCK_STREAM,"FileServ worker control");
 	if (!this.listener.bind(0,"127.0.0.1") || !this.listener.listen(16)) { this.listener.close();throw new Error("FileServ control listener unavailable"); }
 	this.listener.nonblocking=true;
@@ -41,6 +75,36 @@ function IRC_FileServ(manager) {
 	} catch(e) { this.listener.close();rmdir(this.directory);throw e; }
 }
 IRC_FileServ.prototype.valid = function(s) { return !this.stopped && Users[s.user.nick.toUpperCase()]===s.user && !s.user.server && !s.user.services_internal; };
+IRC_FileServ.prototype.resolve_ip = function(host,family,done) {
+	var ip=IRC_files_ip(host);
+	if (ip || host=="::" || host=="0.0.0.0") { done(ip || host);return; }
+	/* Only configured endpoint names reach DNS; client ADDRESS stays numeric. */
+	if (/^[0-9.]+$/.test(host) || !/^(?=.{1,253}\.?$)[a-z0-9_-]+(?:\.[a-z0-9_-]+)*\.?$/i.test(host)) { done(null);return; }
+	var key=family+":"+host.toLowerCase(),entry=this.dns[key];
+	if (entry && entry.pending) { entry.waiters.push(done);return; }
+	if (entry && system.timer<entry.until) { done(entry.address);return; }
+	entry=this.dns[key]={owner:this,family:family,type:family=="6" ? 28 : 1,pending:true,waiters:[done]};
+	try { DNS_Resolver.query([{query:host,type:entry.type,class:1}],IRC_files_dns_reply,entry,true,5000,2); }
+	catch(e) { IRC_files_dns_reply.call(entry,null); }
+};
+IRC_FileServ.prototype.resolve_endpoint = function(s,done) {
+	var self=this,spec;
+	try { spec=IRC_files_endpoint_settings(this.config,s.address || s.user.ip); }
+	catch(e) { done(null,e.message);return; }
+	this.resolve_ip(spec.bind,spec.family,function(bind) {
+		if (!self.valid(s)) return;
+		function finish(address) {
+			if (!self.valid(s)) return;
+			var endpoint;
+			try { endpoint=IRC_files_checked_endpoint(spec,address,bind); }
+			catch(e) { done(null,e.message);return; }
+			done(endpoint);
+		}
+		if (!bind || (bind.indexOf(":")>=0)!=(spec.family=="6")) finish(null);
+		else if (spec.address==spec.bind) finish(bind);
+		else self.resolve_ip(spec.address,spec.family,finish);
+	});
+};
 IRC_FileServ.prototype.session = function(user) {
 	/* The services RPC cookie can be rebound after a legacy burst. DCC
 	   capabilities belong to this exact IRC object across that rebinding. */
@@ -121,27 +185,37 @@ IRC_FileServ.prototype.command = function(user,text,chat,from_channel) {
 		if (option=="TLS" || option=="PLAIN") { args.pop();tls=option=="TLS"; }
 		if ((this.config.tls=="required" && !tls) || (this.config.tls=="off" && tls)) { this.notice(s,"Requested DCC encryption is disabled by this BBS's TLS policy.",chat);return; }
 		if (command=="CHAT" && args.length) { this.notice(s,IRC_files_help.CHAT,chat);return; }
-		try { IRC_files_dcc_address(this.config.address || this.config.bind); } catch(e) { this.notice(s,e.message,chat);return; }
 	}
 	s.checking=true;
-	this.authorize(s,function(identity,error) {
-		s.checking=false;if (!self.valid(s)) return;
-		if (error) { self.notice(s,error,chat);return; }
-		if ((command=="GET" || command=="CHAT") && !IRC_files_ip(s.address || s.user.ip)) { self.notice(s,"Your DCC peer address is unknown. Use ADDRESS <numeric-IP> privately.",chat);return; }
-		try {
-			if (command=="CHAT") { self.start_chat(s,tls);return; }
-			if (command=="CD") {
-				if (args.length!=1) throw new Error("Syntax: CD <directory-code|/>");
-				IRC_files_directory(args[0],IRC_files_user(identity,self.config),self.config,!identity,false);
-				chat.cwd=args[0].toLowerCase();self.notice(s,chat.cwd,chat);return;
-			}
-			self.spawn(s,"catalog",{command:command,args:args},function(result) {
-				if (result.error) self.notice(s,result.error,chat);
-				else if (result.file) self.enqueue(s,result.file,tls,chat);
-				else self.notice(s,(result.lines || []).join("\n"),chat);
-			});
-		} catch(e) { self.notice(s,e.message || e,chat); }
-	});
+	function execute(endpoint,endpoint_error) {
+		if (!self.valid(s)) return;
+		if (endpoint_error) { s.checking=false;self.notice(s,endpoint_error,chat);return; }
+		self.authorize(s,function(identity,error) {
+			s.checking=false;if (!self.valid(s)) return;
+			if (error) { self.notice(s,error,chat);return; }
+			try {
+				if (command=="CHAT") { self.start_chat(s,tls,endpoint);return; }
+				if (command=="CD") {
+					if (args.length!=1) throw new Error("Syntax: CD <directory-code|/>");
+					IRC_files_directory(args[0],IRC_files_user(identity,self.config),self.config,!identity,false);
+					chat.cwd=args[0].toLowerCase();self.notice(s,chat.cwd,chat);return;
+				}
+				self.spawn(s,"catalog",{command:command,args:args},function(result) {
+					if (result.error) self.notice(s,result.error,chat);
+					else if (result.file) self.enqueue(s,result.file,tls,chat,endpoint);
+					else self.notice(s,(result.lines || []).join("\n"),chat);
+				});
+			} catch(e) { self.notice(s,e.message || e,chat); }
+		});
+	}
+	if (command=="GET" || command=="CHAT") {
+		var resolution=s.resolving={};
+		this.resolve_endpoint(s,function(endpoint,error) {
+			if (s.resolving!==resolution) return;
+			s.resolving=null;execute(endpoint,error);
+		});
+	}
+	else execute();
 };
 IRC_FileServ.prototype.write = function(w,message) {
 	if (w && w.connection) w.connection.output+=JSON.stringify(message)+"\n";
@@ -152,6 +226,7 @@ IRC_FileServ.prototype.spawn = function(s,kind,extra,callback,existing_id) {
 	if (!file_exists(exe)) throw new Error("Configure [FileServ] JSexec to the Synchronet jsexec executable.");
 	var job={id:id,token:token,kind:kind,config:IRC_services_copy(this.config),identity:s.identity,control:this.listener.local_port,address:s.address || IRC_files_ip(s.user.ip)};
 	Object.keys(extra || {}).forEach(function(k) { job[k]=extra[k]; });
+	if (kind!="catalog") job.address=job.endpoint.peer;
 	if (extra.file && !s.identity) job.config.guest=extra.file.account.number;
 	var f=new File(path);if (!f.open("w")) throw new Error("Cannot create FileServ worker job.");
 	try { f.write(JSON.stringify(job)); } finally { f.close(); }
@@ -160,21 +235,22 @@ IRC_FileServ.prototype.spawn = function(s,kind,extra,callback,existing_id) {
 	var command="( "+launch+" </dev/null >/dev/null 2>"+IRC_files_quote(logpath)+" & child=$!; printf '%s' \"$child\" >"+IRC_files_quote(pidpath)+"; wait \"$child\"; result=$?; printf '%s' \"$result\" >"+IRC_files_quote(status)+" ) </dev/null >/dev/null 2>&1 & echo $!";
 	var output=system.popen(command),pid=output && Number(output[0]);
 	if (!pid || !isFinite(pid) || pid%1) { file_remove(path);throw new Error("Cannot start FileServ worker."); }
-	var w=this.workers[id]={id:id,pid:pid,token:token,kind:kind,session:s,identity:s.identity,callback:callback,until:system.timer+this.config.timeout+15,path:path,bytes:0,file:extra.file,tls:extra.tls,lastlease:0,accounted:false,created:system.timer,status:status,pidpath:pidpath,logpath:logpath};
+	var w=this.workers[id]={id:id,pid:pid,token:token,kind:kind,session:s,identity:s.identity,callback:callback,until:system.timer+this.config.timeout+15,path:path,bytes:0,file:extra.file,tls:extra.tls,endpoint:job.endpoint,lastlease:0,accounted:false,created:system.timer,status:status,pidpath:pidpath,logpath:logpath};
 	if (kind=="catalog") s.catalog++;
 	return w;
 };
-IRC_FileServ.prototype.enqueue = function(s,file,tls,chat) {
+IRC_FileServ.prototype.enqueue = function(s,file,tls,chat,endpoint) {
 	if (this.pending.length>=this.config.max_queue || this.pending.filter(function(p) { return p.identity ? s.identity && p.identity.id==s.identity.id : !s.identity; }).length>=this.config.user_queue) { this.notice(s,"Download queue is full.",chat);return; }
-	var p={id:"q"+(++this.serial),session:s,identity:s.identity,file:file,tls:tls};this.pending.push(p);
+	var p={id:"q"+(++this.serial),session:s,identity:s.identity,file:file,tls:tls,endpoint:endpoint};this.pending.push(p);
 	this.notice(s,"Queued "+p.id+": "+file.dir+"/"+file.name+" ("+file.size+" bytes, "+file.cost+" credits).",chat);
 };
-IRC_FileServ.prototype.start_chat = function(s,tls) {
+IRC_FileServ.prototype.start_chat = function(s,tls,endpoint) {
 	var self=this,chats=Object.keys(this.workers).filter(function(id) { return self.workers[id].kind=="chat"; });
 	if (chats.length>=this.config.max_chats || chats.some(function(id) { return self.workers[id].session===s; })) throw new Error("DCC chat limit reached.");
-	this.spawn(s,"chat",{tls:tls});
+	this.spawn(s,"chat",{tls:tls,endpoint:endpoint});
 };
 IRC_FileServ.prototype.cancel = function(s,id,quiet) {
+	if (id=="ALL" && s.resolving) { s.resolving=null;s.checking=false; }
 	this.pending=this.pending.filter(function(p) { return p.session!==s || (id!="ALL" && id!=p.id); });
 	for (var key in this.workers) {
 		var w=this.workers[key];if (w.session===s && (id=="ALL" || id==w.id)) { this.write(w,{type:"cancel"});w.cancelled=true;w.until=Math.min(w.until,system.timer+3); }
@@ -232,7 +308,7 @@ IRC_FileServ.prototype.frame = function(c,m) {
 	if (m.type=="offer") {
 		w.until=system.timer+this.config.timeout;
 		w.port=Number(m.port);if (!w.port || w.port>65535 || w.port%1) throw new Error("Invalid DCC offer port");
-		var address=IRC_files_dcc_address(this.config.address || this.config.bind),payload;
+		var address=IRC_files_dcc_address(w.endpoint.address),payload;
 		var filename=w.file && (w.file.name.indexOf(" ")>=0 ? '"'+w.file.name+'"' : w.file.name);
 		if (w.kind=="send") payload="DCC "+(w.tls ? "SSEND" : "SEND")+" "+filename+" "+address+" "+w.port+" "+w.file.size;
 		else payload="DCC "+(w.tls ? "SCHAT" : "CHAT")+" chat "+address+" "+w.port;
@@ -306,7 +382,7 @@ IRC_FileServ.prototype.tick = function() {
 			if (!IRC_files_active(user) || (!s.identity && !(user.security.restrictions & UFLAG_G))) throw new Error("Guest access revoked.");
 			if (p.file.account && (user.number!=p.file.account.number || user.stats.firston_date!=p.file.account.created)) throw new Error("Download account changed; request the file again.");
 			if (!IRC_files_allowed(file_area.dir[p.file.dir],user,this.config,!s.identity,true)) throw new Error("Download access revoked.");
-			var w=this.spawn(s,"send",{file:p.file,tls:p.tls},undefined,p.id);w.account_user={number:user.number,created:user.stats.firston_date};accounts[key]=true;active.push(w);
+			var w=this.spawn(s,"send",{file:p.file,tls:p.tls,endpoint:p.endpoint},undefined,p.id);w.account_user={number:user.number,created:user.stats.firston_date};accounts[key]=true;active.push(w);
 		} catch(e) { this.notice(s,e.message || e); }
 	}
 };

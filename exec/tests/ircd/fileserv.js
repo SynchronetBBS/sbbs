@@ -17,7 +17,7 @@ function policy() {
 function adapter() {
 	var scope={Users:{},system:{timer:100},ServerName:"here.test"};load(scope,"ircd/services-common.js");load(scope,"ircd/fileserv.js");
 	var a=Object.create(scope.IRC_FileServ.prototype),u={nick:"Reader",local:true,servername:"here.test",ip:"127.0.0.1"};scope.Users.READER=u;
-	a.manager={ref:function() { return "session"; },config:{qwk:"HERE"}};a.config=IRC_files_defaults();a.config.address="127.0.0.1";a.sessions={};a.workers={};a.reaping={};a.pending=[];a.serial=0;a.output=[];
+	a.manager={ref:function() { return "session"; },config:{qwk:"HERE"}};a.config=IRC_files_defaults();a.config.address="127.0.0.1";a.sessions={};a.workers={};a.reaping={};a.pending=[];a.serial=0;a.output=[];a.dns={};
 	a.notice=function(s,text) { a.output.push(text); };a.authorize=function(s,callback) { s.authorized=200;callback(null); };
 	return {scope:scope,a:a,u:u};
 }
@@ -52,6 +52,57 @@ run_tests({
 		check(IRC_files_ip("::ffff:127.0.0.1")=="127.0.0.1");check(!IRC_files_ip("256.1.2.3") && !IRC_files_ip("example.com"));
 		check(IRC_files_ip("::1")==IRC_files_ip("0:0:0:0:0:0:0:1"));check(!IRC_files_ip(":::1") && !IRC_files_ip("1:2:3") && !IRC_files_ip("12345::1"));
 		check(IRC_files_dcc_address("127.0.0.1")=="2130706433");rejects(function() { IRC_files_dcc_address("0.0.0.0"); });
+	},
+	"separate endpoints follow the peer family and preserve legacy numeric configuration":function() {
+		var t=adapter(),s=t.a.session(t.u),result,error;
+		function resolve() { result=error=null;t.a.resolve_endpoint(s,function(e,err) { result=e;error=err; }); }
+		resolve();check(result.address=="127.0.0.1" && result.bind=="0.0.0.0");
+		t.u.ip="::1";resolve();check(!result && error.indexOf("IPv6")>=0);
+		t.a.config.address6="2001:db8::1";t.a.config.bind6="::1";resolve();check(result.address==IRC_files_ip("2001:db8::1") && result.bind==IRC_files_ip("::1"));
+		t.a.config.address4="192.0.2.1";t.a.config.bind4="127.0.0.1";s.address="::ffff:127.0.0.1";resolve();check(result.address=="192.0.2.1" && result.bind=="127.0.0.1");
+		t.a.config.address6="";t.a.config.bind6="";t.a.config.address="2001:db8::2";t.a.config.bind="::1";s.address=null;resolve();check(result.address==IRC_files_ip("2001:db8::2") && result.bind==IRC_files_ip("::1"));
+		t.a.config.address="";resolve();check(result.address==IRC_files_ip("::1"));
+	},
+	"dual-stack hostname lookups are asynchronous, shared, family-specific and TTL bounded":function() {
+		var t=adapter(),s=t.a.session(t.u),queries=[],results=[];
+		t.scope.DNS_Resolver={query:function(q,callback,ctx) { queries.push({q:q[0],reply:function(address) { callback.call(ctx,{rcode:0,answers:[{type:q[0].type,class:1,rdata:address,ttl:2}]}); }}); }};
+		t.a.config.address=t.a.config.bind="files.test";
+		t.a.resolve_endpoint(s,function(e) { results.push(e); });t.a.resolve_endpoint(s,function(e) { results.push(e); });
+		check(!results.length && queries.length==1 && queries[0].q.type==1);
+		queries[0].reply("127.0.0.1");check(results.length==2 && results[0].bind=="127.0.0.1");
+		t.a.resolve_endpoint(s,function(e) { results.push(e); });check(queries.length==1 && results.length==3);
+		t.u.ip="::1";t.a.resolve_endpoint(s,function(e) { results.push(e); });check(queries.length==2 && queries[1].q.type==28 && results.length==3);
+		queries[1].reply("::1");check(results[3].address==IRC_files_ip("::1"));
+		t.scope.system.timer+=3;t.a.resolve_endpoint(s,function(e) { results.push(e); });check(queries.length==3 && results.length==4);
+	},
+	"missing DNS families and timeout callbacks fail closed without starting DCC":function() {
+		[false,true].forEach(function(timeout) {
+			var t=adapter(),callback,ctx,started=false;t.u.ip="::1";t.a.config.address=t.a.config.bind="files.test";
+			t.scope.DNS_Resolver={query:function(q,fn,context) { callback=fn;ctx=context; }};
+			t.a.start_chat=function() { started=true; };t.a.command(t.u,"CHAT");check(!started && t.a.session(t.u).checking);
+			if (timeout) callback.call({thisObj:ctx});else callback.call(ctx,{rcode:0,answers:[]});
+			check(!started && !t.a.session(t.u).checking && t.a.output[0].indexOf("IPv6")>=0);
+		});
+	},
+	"wrong-family endpoints are rejected and unspecified advertised addresses cannot reach workers":function() {
+		var t=adapter(),started=false;t.a.start_chat=function() { started=true; };
+		t.a.config.bind4="::1";t.a.command(t.u,"CHAT");check(!started && t.a.output[0].indexOf("bind address")>=0);
+		t.scope.system.timer++;t.a.config.bind4="";t.a.config.address4="::1";t.a.command(t.u,"CHAT");check(!started && t.a.output[1].indexOf("endpoint")>=0);
+		t.scope.system.timer++;t.a.config.address4="";t.a.config.address="";t.a.command(t.u,"CHAT");check(!started && t.a.output[2].indexOf("endpoint")>=0);
+	},
+	"CANCEL during DNS resolution prevents late offers and permits the next command":function() {
+		var t=adapter(),callback,ctx,started=false;t.a.config.address=t.a.config.bind="files.test";
+		t.scope.DNS_Resolver={query:function(q,fn,context) { callback=fn;ctx=context; }};t.a.start_chat=function() { started=true; };
+		t.a.command(t.u,"CHAT");t.scope.system.timer++;t.a.command(t.u,"CANCEL ALL");check(!t.a.session(t.u).checking);
+		callback.call(ctx,{rcode:0,answers:[{type:1,class:1,rdata:"127.0.0.1",ttl:1}]});check(!started);
+		t.scope.system.timer++;t.a.config.address=t.a.config.bind="127.0.0.1";t.a.command(t.u,"CHAT");check(started);
+	},
+	"queued transfers and offers retain the selected endpoint after ADDRESS changes":function() {
+		var t=adapter(),s=t.a.session(t.u),endpoint={address:"2001:db8::1",bind:"::",peer:"::1"},lines=[];
+		t.a.enqueue(s,{dir:"id_files",name:"a.zip",size:1,cost:0},true,null,endpoint);check(t.a.pending[0].endpoint===endpoint);
+		t.u.originatorout=function(line) { lines.push(line); };t.a.config.address6="2001:db8::2";s.address="127.0.0.1";
+		t.a.frame({worker:{kind:"chat",session:s,endpoint:endpoint,tls:false}},{type:"offer",port:40000});
+		check(lines[0].indexOf("DCC CHAT chat "+IRC_files_ip("2001:db8::1")+" 40000")>=0);
 	},
 	"quoted filenames stay single arguments and cannot inject filesystem paths":function() {
 		var a=IRC_files_args('GET id_files "two words.zip" TLS');check(a.length==4 && a[2]=="two words.zip");

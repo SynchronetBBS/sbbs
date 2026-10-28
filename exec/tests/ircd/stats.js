@@ -32,9 +32,11 @@ function runtime(t) {
 run_tests({
 	"STATS U retains trust entries and exposes effective service settings to nonoperators":function() {
 		var t=scenario(); t.s.EmbeddedServices_Config.nickserv=true; t.s.EmbeddedServices_Config.host="services.test";
+		t.s.EmbeddedServices_Config.files.address4="192.0.2.1";t.s.EmbeddedServices_Config.files.address6="2001:db8::1";t.s.EmbeddedServices_Config.files.bind6="::";
 		var text=report(t,"U"); check(text.indexOf(" 246 Reader U services.synchro.net ")>=0);
 		["[BBSServices] NickServ=true","[BBSServices] MemoServ=false","[BBSServices] FileServ=false","[FileServ] TLS=optional","[EmbeddedServices] Host=services.test","[EmbeddedServices] MaxNicks=10","[ServicesRuntime] Running=false"].forEach(function(v) { check(text.indexOf(v)>=0,v); });
 		check(text.indexOf(" 481 ")<0 && text.indexOf(" 219 Reader U ")>=0);
+		["[FileServ] Address4=192.0.2.1","[FileServ] Address6=2001:db8::1","[FileServ] Bind6=::"].forEach(function(v) { check(text.indexOf(v)>=0,v); });
 	},
 	"services runtime distinguishes discovered, trusted and authenticated authority state":function() {
 		var t=scenario(), r=runtime(t), text=report(t,"U");

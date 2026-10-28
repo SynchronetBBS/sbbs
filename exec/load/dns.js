@@ -224,7 +224,7 @@ DNS.prototype.handle_response = function(sock) {
 	function string_to_int32(str) {
 		if (str.length < 4)
 			throw new Error('Not enough bytes for an int32');
-		return ((ascii(str[0])<<24) | (ascii(str[1]) << 16) | (ascii(str[1]) << 8) | (ascii(str[1])));
+		return ((ascii(str[0])<<24) | (ascii(str[1]) << 16) | (ascii(str[2]) << 8) | ascii(str[3])) >>> 0;
 	}
 
 	function get_string(resp, offset) {
@@ -343,17 +343,18 @@ DNS.prototype.handle_response = function(sock) {
 				} while (tmp2 < len);
 				return tmp;
 			case 28:  // AAAA
-				ensure(resp, offset + tmp2, 16);
-				return format("%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
-				               ascii(resp[offset + 0]),  ascii(resp[offset + 1]),
-				               ascii(resp[offset + 2]),  ascii(resp[offset + 3]),
-				               ascii(resp[offset + 4]),  ascii(resp[offset + 5]),
-				               ascii(resp[offset + 6]),  ascii(resp[offset + 7]), 
-				               ascii(resp[offset + 8]),  ascii(resp[offset + 9]),
-				               ascii(resp[offset + 10]), ascii(resp[offset + 11]),
-				               ascii(resp[offset + 12]), ascii(resp[offset + 13]),
-				               ascii(resp[offset + 14]), ascii(resp[offset + 15])
-				             ).replace(/(0000:)+/, ':').replace(/(^|:)0{1,3}/g, '$1');
+				if (len != 16) throw new Error("Corrupt DNS AAAA response");
+				ensure(resp, offset, 16);
+				var words = [], best = -1, count = 1;
+				for (tmp2 = 0; tmp2 < 16; tmp2 += 2)
+					words.push(((ascii(resp[offset + tmp2]) << 8) | ascii(resp[offset + tmp2 + 1])).toString(16));
+				for (tmp2 = 0; tmp2 < words.length; tmp2 = tmp3) {
+					tmp3 = tmp2 + 1;
+					if (words[tmp2] != '0') continue;
+					while (tmp3 < words.length && words[tmp3] == '0') tmp3++;
+					if (tmp3 - tmp2 > count) { best = tmp2; count = tmp3 - tmp2; }
+				}
+				return best < 0 ? words.join(':') : words.slice(0, best).join(':') + '::' + words.slice(best + count).join(':');
 			case 33:  // SRV
 				tmp = {};
 				tmp.priority = string_to_int16(resp.substr(offset, 2));

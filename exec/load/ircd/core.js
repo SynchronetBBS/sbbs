@@ -1560,6 +1560,7 @@ function IRC_stats_services(user) {
 	var fc=c.files || {};
 	IRC_stats_config(user,"FileServ",{TLS:fc.tls,IncludeLibs:fc.include_libs,ExcludeLibs:fc.exclude_libs,IncludeDirs:fc.include_dirs,ExcludeDirs:fc.exclude_dirs,
 		PublicLibs:fc.public_libs,PublicDirs:fc.public_dirs,Guest:fc.guest,Channels:fc.channels,Address:fc.address,Bind:fc.bind,PortFirst:fc.port_first,PortLast:fc.port_last,
+		Address4:fc.address4,Bind4:fc.bind4,Address6:fc.address6,Bind6:fc.bind6,
 		MaxDownloads:fc.max_downloads,MaxChats:fc.max_chats,MaxQueue:fc.max_queue,UserQueue:fc.user_queue,PageSize:fc.page_size,Timeout:fc.timeout});
 	if (IRC_Services && IRC_Services.fileserv) IRC_stats_config(user,"FileServRuntime",{Running:true,Workers:Object.keys(IRC_Services.fileserv.workers).length,Queued:IRC_Services.fileserv.pending.length});
 	if (!IRC_Services) { IRC_stats_config(user, "ServicesRuntime", {Running:false}); return; }

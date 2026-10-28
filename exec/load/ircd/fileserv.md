@@ -22,7 +22,7 @@ PublicLibs=
 PublicDirs=main_public,main_docs
 Guest=0
 Channels=#files
-Address=192.0.2.10
+Address=files.example.org
 Bind=0.0.0.0
 PortFirst=40000
 PortLast=40015
@@ -109,16 +109,57 @@ and refuses encrypted requests. Encrypted DCC uses the BBS's normal native
 The certificate is loaded when a peer connects, not checked when the listener
 is created. The client still needs a reachable FileServ address and port.
 
-`Address` is the advertised numeric IPv4/IPv6 address. If empty, the numeric
-`Bind` address is used; wildcard binds require an explicit advertised address.
+`Address` is the advertised numeric IPv4/IPv6 address **or hostname**. A hostname
+with both A and AAAA records lets IPv4 and IPv6 clients use the same configuration.
+`Bind` also accepts a hostname, provided its addresses are assigned to this BBS.
+For a directly reachable dual-stack host, both may name the same host:
+
+```ini
+[FileServ]
+Address=files.example.org
+Bind=files.example.org
+```
+
+Behind NAT, use a public hostname for `Address` and local addresses or wildcard
+bindings for `Bind`. With the default `Bind=0.0.0.0`, IPv4 uses that wildcard and
+IPv6 uses `::`. A numeric shared `Address` or `Bind` applies to its own family.
+If `Address` is empty, the selected bind address is advertised; a wildcard bind
+therefore requires an explicit advertised address.
+
+Separate settings override the shared settings for each family, and can also
+contain hostnames:
+
+```ini
+[FileServ]
+Address4=192.0.2.10
+Bind4=0.0.0.0
+Address6=2001:db8::10
+Bind6=::
+```
+
+FileServ selects the family from the requesting user's IRC address, or their
+private numeric `ADDRESS` override. It resolves the required A or AAAA records
+asynchronously through `dns.js`, keeping IRC responsive. Answers are cached
+for their DNS TTL, capped at five minutes; failed lookups are cached for five
+seconds. The first valid address in the selected family is used. All addresses
+used by a bind hostname must be suitable local interfaces. A missing or invalid
+endpoint for the selected family produces a NOTICE instead of an unusable DCC
+offer; FileServ does not switch the client's address family automatically.
+Client DCC support for IPv6 is required to receive IPv6 offers.
+
 `PortFirst=0` and `PortLast=0` use ephemeral ports; otherwise configure a range
-and allow/forward those ports through the firewall. Only active DCC SEND,
-SSEND, CHAT and SCHAT are supported; no reverse/passive DCC or uploads.
+and allow/forward those ports through the IPv4 and IPv6 firewalls as appropriate.
+Only active DCC SEND, SSEND, CHAT and SCHAT are supported; no reverse/passive
+DCC or uploads.
 
 The default expected peer address is the requesting IRC user's IP. Other
 addresses are refused before TLS or file data. Bouncer/proxy users can privately
 set `ADDRESS` to the address their DCC connection will actually use. The
 setting belongs only to that IRC session and never changes the BBS user record.
+Each request captures its selected bind, advertised address and expected peer
+address before queuing. Changing `ADDRESS` or DNS records affects later requests;
+queued and active transfers retain their captured addresses. Cancelling while
+DNS is pending prevents a late offer.
 
 Downloads are serialized per BBS account across IRC sessions. Defaults allow
 four simultaneous downloads, four chats (at most one chat per IRC session),
@@ -197,7 +238,9 @@ python3 tests/ircd/services-network.py --jsexec /path/to/jsexec \
 
 The FileServ network fixture generates only private test TLS keys and checks
 actual native worker exit statuses, including errors after protocol completion.
-EOF, partial downloads, resume, encryption, missing certificates, access rules,
-credit accounting, chat, cancellation, and IRC responsiveness are exercised.
+IPv4 and IPv6 endpoints, local A/AAAA DNS replies, missing address families,
+delayed DNS and cancellation, EOF, partial downloads, resume, encryption,
+missing certificates, access rules, credit accounting, chat, cancellation,
+and IRC responsiveness are exercised.
 The services network test additionally checks protected remote access and
 logout revocation through a real legacy relay, with no group-based file access.

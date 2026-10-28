@@ -56,10 +56,11 @@ try {
 	} else {
 		files_check();
 		var cfg=files_job.config, first=Number(cfg.port_first), last=Number(cfg.port_last);
-		files_listener=new Socket(SOCK_STREAM,"FileServ DCC",cfg.bind.indexOf(":") >= 0);
+		var bind=files_job.endpoint.bind;
+		files_listener=new Socket(SOCK_STREAM,"FileServ DCC",bind.indexOf(":") >= 0);
 		var bound=false;
-		if (!first) bound=files_listener.bind(0,cfg.bind);
-		else for (var port=first;port<=last;port++) if (files_listener.bind(port,cfg.bind)) { bound=true; break; }
+		if (!first) bound=files_listener.bind(0,bind);
+		else for (var port=first;port<=last;port++) if (files_listener.bind(port,bind)) { bound=true; break; }
 		if (!bound || !files_listener.listen(4)) throw new Error("No DCC listening port available.");
 		files_emit({type:"offer",port:files_listener.local_port});
 		var deadline=system.timer+cfg.timeout;
