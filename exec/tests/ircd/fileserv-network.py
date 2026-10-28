@@ -244,11 +244,17 @@ DNS_Resolver.sockets=[test_dns_socket];
     browser.expect('virtual browser')
     browser.command('PWD','/')
     browser.command('DIR','Files : FileServ fixture library',listing=True)
+    browser.command('LIST','Files : FileServ fixture library',listing=True)
+    browser.command('LIST .','Files : FileServ fixture library',listing=True)
     browser.command('CD Files','/Files')
     browser.command('DIR','public : Fixture public',listing=True)
+    browser.command('LIST','public : Fixture public',listing=True)
+    browser.command('LIST . pub*','public : Fixture public',listing=True)
     browser.command('LIST public','Files/public/fixture.txt',listing=True)
     browser.command('CD public','/Files/public')
     line=browser.command('DIR','fixture.txt',listing=True);assert 'fs_public' not in line and 'Files/' not in line,line
+    line=browser.command('LIST','fixture.txt',listing=True);assert 'Files/' not in line,line
+    browser.command('LIST . *.txt','fixture.txt',listing=True)
     browser.command('INFO fixture.txt','Files/public/fixture.txt')
     browser.command('CD ..','/Files')
     browser.command('DIR pub*','public : Fixture public',listing=True)

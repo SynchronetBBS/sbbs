@@ -49,7 +49,7 @@ var IRC_files_help = {
 	HELP:"HELP [command] — Describe the command, or list commands. FileServ replies with NOTICE. Use FileServ@<server> to select a BBS; authentication is specific to that BBS.",
 	LIBS:"LIBS [page] — List exported libraries you can access by their short names. In DCC chat, CD <library> enters a library. Quote names containing spaces.",
 	DIRS:"DIRS [library-name-mask] [page] — List accessible directories as LIBRARY/DIRECTORY, using short names. In DCC chat, CD <directory> enters a directory in the current library. Full internal directory codes remain accepted.",
-	LIST:"LIST <library/directory> [filename-mask] [page] — List catalog files, descriptions and sizes. Quote names containing spaces. Full internal directory codes remain accepted. Only registered BBS files are available; filesystem paths are never accepted.",
+	LIST:"LIST <library/directory> [filename-mask] [page] — List catalog files, descriptions and sizes. In DCC chat, LIST or LIST . [mask] [page] lists the current location, like DIR. Quote names containing spaces. Full internal directory codes remain accepted. Only registered BBS files are available; filesystem paths are never accepted.",
 	SEARCH:"SEARCH <text> [page] — Search accessible exported catalogs by filename or description. Use one search token; wildcards apply to LIST instead.",
 	INFO:"INFO <library/directory> <filename> — Show size, description and the download credit cost for your BBS account. Full internal directory codes remain accepted.",
 	GET:"GET <library/directory> <filename> [TLS|PLAIN] — Queue active DCC SEND (PLAIN) or SSEND (TLS). Quote names containing spaces; full internal directory codes remain accepted. TLS is the default unless disabled by the sysop. Credits and native BBS download limits apply. No silent plaintext fallback. DCC RESUME is supported before connecting; only newly acknowledged bytes are accounted.",
@@ -160,7 +160,8 @@ IRC_FileServ.prototype.command = function(user,text,chat,from_channel) {
 	if (!chat) s.last=system.timer;
 	var args;try { args=IRC_files_args(text); } catch(e) { this.notice(s,e.message,chat);return; }
 	var command=(args.shift() || "HELP").toUpperCase();
-	var browse=chat && (command=="DIR" || command=="LS");
+	var browse=chat && (command=="DIR" || command=="LS" || (command=="LIST" && (!args.length || args[0]==".")));
+	if (browse && command=="LIST" && args[0]==".") args.shift();
 	if (chat) {
 		if (command=="PWD") { this.notice(s,"/"+(chat.cwd && file_area.dir[chat.cwd] ? IRC_files_label(file_area.dir[chat.cwd]) : chat.library ? IRC_files_component(chat.library) : ""),chat);return; }
 		if (command=="QUIT" || command=="EXIT") { this.write(chat,{type:"exit"});return; }

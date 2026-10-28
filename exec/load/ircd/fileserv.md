@@ -101,6 +101,9 @@ and `RESUME`/`ACCEPT` replies.
 The chat browser has a three-level virtual hierarchy: `/`, libraries, and
 directories within each library. `DIR` (or `LS`) lists libraries at the root,
 directory short names inside a library, and filenames inside a directory.
+`LIST` or `LIST . [mask] [page]` also lists the current location in DCC chat.
+An explicit `LIST <library/directory> [filename-mask] [page]` lists that
+directory without changing the current location.
 For example:
 
 ```text

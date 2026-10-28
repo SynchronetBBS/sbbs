@@ -46,10 +46,17 @@ function IRC_files_user(identity, config) {
 		throw new Error("No eligible BBS account. Identify with NickServ on this BBS, or ask its sysop to configure guest access.");
 	return u;
 }
+var IRC_files_user_directory;
 function IRC_files_special(dir) {
-	return dir.is_upload || dir.is_sysop || dir.is_offline || [file_area.upload_dir, file_area.sysop_dir, file_area.user_dir].some(function(d) {
-		return d && (typeof d == "object" ? d.code : d) == dir.code;
-	});
+	if (dir.is_upload || dir.is_sysop || dir.is_offline) return true;
+	/* An absent special-directory property makes the native resolver rebuild
+	   file_area. Its configuration is fixed for this runtime: resolve once,
+	   including the absent case. The other special directories have flags. */
+	if (IRC_files_user_directory===undefined) {
+		var d=file_area.user_dir;
+		IRC_files_user_directory=d ? (typeof d=="object" ? d.code : d) : null;
+	}
+	return IRC_files_user_directory===dir.code;
 }
 function IRC_files_allowed(dir, user, config, anonymous, download) {
 	var lib = dir && file_area.lib[dir.lib_name];
@@ -57,7 +64,7 @@ function IRC_files_allowed(dir, user, config, anonymous, download) {
 		&& IRC_files_masks(config.include_libs, lib.code_prefix) && !IRC_files_masks(config.exclude_libs, lib.code_prefix)
 		&& IRC_files_masks(config.include_dirs, dir.code) && !IRC_files_masks(config.exclude_dirs, dir.code)
 		&& (!anonymous || IRC_files_masks(config.public_libs, lib.code_prefix) || IRC_files_masks(config.public_dirs, dir.code))
-		&& user.can_access_dir(dir.code) && (!download || user.can_access_dir(dir.code, "download")));
+		&& user.can_access_dir(dir.number) && (!download || user.can_access_dir(dir.number, "download")));
 }
 function IRC_files_directory(code, user, config, anonymous, download, library) {
 	var target=String(code).replace(/^\//,""),key=target.toLowerCase();
@@ -137,14 +144,17 @@ function IRC_files_catalog(config, identity, command, args, context) {
 		var seen=Object.create(null),entries=[];
 		Object.keys(dirs).forEach(function(code) {
 			var d = dirs[code], l = file_area.lib[d.lib_name];
-			if (!IRC_files_allowed(d,user,config,anon,false)) return;
-			if (command == "LIBS") {
+			if (command=="LIBS") {
 				if (seen[d.lib_name] || (args.length && !IRC_files_match(args[0],IRC_files_component(d.lib_name)))) return;
-				entries.push({name:IRC_files_component(d.lib_name),desc:l.description});seen[d.lib_name]=true;
 			} else if (context.browse && context.library) {
 				if (d.lib_name!=context.library || (args.length && !IRC_files_match(args[0],IRC_files_component(d.name || d.code)))) return;
+			} else if (args.length && !IRC_files_match(args[0],IRC_files_component(d.lib_name))) return;
+			if (!IRC_files_allowed(d,user,config,anon,false)) return;
+			if (command == "LIBS") {
+				entries.push({name:IRC_files_component(d.lib_name),desc:l.description});seen[d.lib_name]=true;
+			} else if (context.browse && context.library) {
 				entries.push({name:IRC_files_component(d.name || d.code),desc:d.description});
-			} else if (!args.length || IRC_files_match(args[0],IRC_files_component(d.lib_name))) entries.push({name:IRC_files_label(d),desc:d.description});
+			} else entries.push({name:IRC_files_label(d),desc:d.description});
 		});
 		entries.sort(function(a,b) { return a.name.toLowerCase().localeCompare(b.name.toLowerCase()); });
 		rows=entries.map(function(e) { return IRC_files_argument(e.name)+" : "+IRC_files_clean(e.desc); });return result();

@@ -9,8 +9,8 @@ function rejects(fn,text) { var caught;try { fn(); } catch(e) { caught=e; }check
 function policy() {
 	var scope={file_area:{lib:{Files:{name:"Files",code_prefix:"id_",description:"Pretty Library"}},dir:{},user_dir:{code:"user"}}};
 	load(scope,"ircd/fileserv-catalog.js");
-	var c=IRC_files_defaults(),d={code:"id_public",name:"Public Area",lib_name:"Files",description:"Pretty Area"},calls=[];
-	var u={can_access_dir:function(code,type) { calls.push(type || "access");return type=="download" ? true : true; }};
+	var c=IRC_files_defaults(),d={number:0,code:"id_public",name:"Public Area",lib_name:"Files",description:"Pretty Area"},calls=[];
+	var u={can_access_dir:function(number,type) { check(typeof number=="number");calls.push(type || "access");return true; }};
 	scope.file_area.dir.id_public=d;
 	return {scope:scope,c:c,d:d,u:u,calls:calls};
 }
@@ -48,11 +48,30 @@ run_tests({
 		var t=policy();["is_upload","is_sysop","is_offline"].forEach(function(flag) { t.d[flag]=true;check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,false,true));delete t.d[flag]; });
 		t.scope.file_area.user_dir=t.d;check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,false,true));
 	},
+	"absent special-directory configuration is resolved once without caching authorization":function() {
+		var t=policy(),reads=0;delete t.scope.file_area.user_dir;
+		Object.defineProperty(t.scope.file_area,"user_dir",{get:function() { reads++;return undefined; }});
+		check(t.scope.IRC_files_allowed(t.d,t.u,t.c,false,false));
+		check(t.scope.IRC_files_allowed(t.d,t.u,t.c,false,true));check(reads==1);
+		t.u.can_access_dir=function() { return false; };check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,false,false));
+	},
+	"library listings stop at an accessible directory and directory filters precede ARS":function() {
+		var t=policy(),checked=[];t.scope.IRC_files_user=function() { return t.u; };
+		t.scope.file_area.dir.id_second={number:1,code:"id_second",name:"Second",lib_name:"Files"};
+		t.scope.file_area.lib.Other={name:"Other",code_prefix:"other_"};
+		t.scope.file_area.dir.other={number:2,code:"other",name:"Other",lib_name:"Other"};
+		t.u.can_access_dir=function(number) { checked.push(number);return number!=0; };
+		check(t.scope.IRC_files_catalog(t.c,{},"LIBS",[]).lines.length==3);check(checked.join(",")=="0,1,2");
+		checked=[];t.u.can_access_dir=function(number) { checked.push(number);return true; };
+		t.scope.IRC_files_catalog(t.c,{},"LIBS",[]);check(checked.join(",")=="0,2");
+		checked=[];t.scope.IRC_files_catalog(t.c,{},"DIRS",["Files"]);check(checked.join(",")=="0,1");
+		checked=[];t.scope.IRC_files_catalog(t.c,{},"DIRS",["Second"],{library:"Files",browse:true});check(checked.join(",")=="1");
+	},
 	"LIBS uses library names without collapsing shared empty prefixes":function() {
 		var t=policy();t.scope.IRC_files_user=function() { return t.u; };
 		t.d.lib_name="Main Files";t.scope.file_area.lib["Main Files"]={name:"Main Files",code_prefix:"",description:"First library"};
 		t.scope.file_area.lib.Other={name:"Other",code_prefix:"",description:"Second library"};
-		t.scope.file_area.dir.other_public={code:"other_public",name:"Public Area",lib_name:"Other",description:"Other area"};
+		t.scope.file_area.dir.other_public={number:1,code:"other_public",name:"Public Area",lib_name:"Other",description:"Other area"};
 		var lines=t.scope.IRC_files_catalog(t.c,{id:"test"},"LIBS",[]).lines;
 		check(lines[0]=='"Main Files" : First library' && lines[1]=="Other : Second library" && lines[2].indexOf("2 result(s)")>=0);
 		lines=t.scope.IRC_files_catalog(t.c,{id:"test"},"DIRS",["Main Files"]).lines;
@@ -62,7 +81,7 @@ run_tests({
 	},
 	"virtual paths and contextual directory names resolve to native codes without bypassing exports":function() {
 		var t=policy();t.scope.file_area.lib.Other={name:"Other",code_prefix:"other_",description:"Other"};
-		t.scope.file_area.dir.other_public={code:"other_public",name:"Public Area",lib_name:"Other"};
+		t.scope.file_area.dir.other_public={number:1,code:"other_public",name:"Public Area",lib_name:"Other"};
 		rejects(function() { t.scope.IRC_files_directory("Public Area",t.u,t.c,false,false); },"ambiguous");
 		check(t.scope.IRC_files_directory("/files/public area",t.u,t.c,false,false)===t.d);
 		check(t.scope.IRC_files_directory("Public Area",t.u,t.c,false,false,"Files")===t.d);
@@ -103,6 +122,22 @@ run_tests({
 		t.a.command(t.u,"CD id_public",chat);check(chat.cwd=="id_public" && chat.library=="Files");
 		t.a.command(t.u,"CD /",chat);check(!chat.library && !chat.cwd);
 		t.a.command(t.u,"CD ../",chat);check(replies.pop().indexOf("access denied")>=0 && !chat.cwd);
+	},
+	"DCC LIST and LIST dot browse the current level while explicit listings keep their paths":function() {
+		var t=adapter(),chat={},requests=[];
+		t.a.spawn=function(session,kind,extra) { requests.push(extra); };
+		function listing(text,command,args) {
+			t.a.command(t.u,text,chat);var request=requests.pop();
+			check(request.command==command && request.args.join("|")==args && request.context.browse);
+		}
+		listing("LIST","LIBS","");listing("LIST .","LIBS","");
+		chat.library="Files";listing("LIST","DIRS","");listing("LIST . Pub* 2","DIRS","Pub*|2");
+		chat.cwd="id_public";listing("LIST","LIST","id_public");listing("LIST . *.zip 2","LIST","id_public|*.zip|2");
+		t.a.command(t.u,'LIST "Other/Downloads" *.txt',chat);var request=requests.pop();
+		check(request.command=="LIST" && request.args.join("|")=="Other/Downloads|*.txt" && !request.context.browse);
+		/* IRC queries never inherit the DCC browser's current directory. */
+		t.a.command(t.u,"LIST");request=requests.pop();check(request.command=="LIST" && !request.args.length && !request.context.browse);
+		t.scope.system.timer++;t.a.command(t.u,"PWD");check(t.a.output.pop().indexOf("Unknown command")>=0);
 	},
 	"DCC accepts numeric addresses without DNS and rejects invalid IPv4 octets":function() {
 		check(IRC_files_ip("::ffff:127.0.0.1")=="127.0.0.1");check(!IRC_files_ip("256.1.2.3") && !IRC_files_ip("example.com"));
@@ -302,6 +337,16 @@ if (argv.indexOf("--bbs-fixture")>=0) {
 	var c=IRC_files_defaults();c.public_dirs="fs_public";
 	var u=new User(system.matchuser("Some User",false)),identity=IRC_services_identity(u,system.qwk_id,"syncnix.test");
 	run_tests({
+		"native special-directory checks leave the materialized directory table intact":function() {
+			Object.keys(file_area.dir).forEach(function(code) { IRC_files_special(file_area.dir[code]); });
+			var dirs=file_area.dir;
+			Object.keys(dirs).forEach(function(code) {
+				var d=dirs[code];IRC_files_special(d);
+				check(u.can_access_dir(d.code)==u.can_access_dir(d.number));
+				check(u.can_access_dir(d.code,"download")==u.can_access_dir(d.number,"download"));
+			});
+			check(file_area.dir===dirs);
+		},
 		"guest selection uses the lowest active G-restricted account rather than its alias":function() { var g=IRC_files_guest(c);check(g.alias=="Public Reader" && (g.security.restrictions & UFLAG_G));c.guest=u.number;check(!IRC_files_guest(c));c.guest=0; },
 		"native catalog hides protected directories from guests and grants eligible owners":function() { rejects(function() { IRC_files_catalog(c,null,"LIST",["fs_private"]); },"denied");check(IRC_files_catalog(c,identity,"LIST",["fs_private"]).lines[0].indexOf("fixture.txt")>=0);check(IRC_files_catalog(c,identity,"SEARCH",["2026"]).lines.length>=1); },
 		"native downloads reject symlink escapes and stale account identities":function() { rejects(function() { IRC_files_catalog(c,identity,"GET",["fs_public","escape.txt"]); },"unavailable");var stale=IRC_services_copy(identity);stale.created--;rejects(function() { IRC_files_user(stale,c); }); },
