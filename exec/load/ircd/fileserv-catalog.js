@@ -1,9 +1,10 @@
 /* FileServ's virtual catalog and native BBS authorization. GPL-2.0-or-later. */
 "use strict";
-function IRC_files_masks(value, code) {
-	return String(value || "").split(/[ ,]+/).some(function(mask) {
+function IRC_files_masks(value, name) {
+	return String(value || "").split(",").some(function(mask) {
+		mask=mask.trim();
 		if (!mask) return false;
-		return IRC_files_match(mask,code);
+		return IRC_files_match(mask,name);
 	});
 }
 function IRC_files_match(mask,name) {
@@ -61,9 +62,9 @@ function IRC_files_special(dir) {
 function IRC_files_allowed(dir, user, config, anonymous, download) {
 	var lib = dir && file_area.lib[dir.lib_name];
 	return !!(lib && !IRC_files_special(dir)
-		&& IRC_files_masks(config.include_libs, lib.code_prefix) && !IRC_files_masks(config.exclude_libs, lib.code_prefix)
+		&& IRC_files_masks(config.include_libs, dir.lib_name) && !IRC_files_masks(config.exclude_libs, dir.lib_name)
 		&& IRC_files_masks(config.include_dirs, dir.code) && !IRC_files_masks(config.exclude_dirs, dir.code)
-		&& (!anonymous || IRC_files_masks(config.public_libs, lib.code_prefix) || IRC_files_masks(config.public_dirs, dir.code))
+		&& (!anonymous || IRC_files_masks(config.public_libs, dir.lib_name) || IRC_files_masks(config.public_dirs, dir.code))
 		&& user.can_access_dir(dir.number) && (!download || user.can_access_dir(dir.number, "download")));
 }
 function IRC_files_directory(code, user, config, anonymous, download, library) {

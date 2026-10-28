@@ -14,8 +14,8 @@ NickServ=true
 FileServ=true
 
 [FileServ]
-IncludeLibs=main_*,games_*
-ExcludeLibs=private_*
+IncludeLibs=Main,Games
+ExcludeLibs=Private*
 IncludeDirs=*
 ExcludeDirs=*_staff,*_incoming
 PublicLibs=
@@ -40,10 +40,12 @@ Timeout=60
 Rehash applies changes, closes existing FileServ sessions and cancels its
 queue. Defaults export all otherwise-accessible libraries/directories to
 identified accounts, and **nothing anonymously**. Include/exclude/public
-values are comma- or space-separated, case-insensitive `*`/`?` masks of
-**library code prefixes** and **full directory internal codes**. Display
-names do not participate in these configuration filters. Browsing uses the
-library and directory short names instead. Exclusions win; public selections
+values are comma-separated, case-insensitive `*`/`?` masks. Library filters
+match **library short names**, such as `Main` from `[lib:Main]`, regardless
+of its code prefix. Directory filters match **full directory internal codes**.
+Spaces within names are preserved; use `IncludeLibs=Main,BBS Software` without
+quoting individual names. Surrounding spaces around each mask are ignored.
+Exclusions win; public selections
 must also satisfy both global include filters. Upload, sysop, user-to-user and offline directories
 are never exported. Only registered catalog files are served. Paths and
 symlinks escaping the configured native directory are refused. Quote filenames
@@ -129,9 +131,9 @@ in chat. `DIR [mask] [page]` filters names at the current level. From outside
 a directory, `LIST`, `INFO`, `GET` and `CD` accept `LIBRARY/DIRECTORY`; an
 unqualified directory name is accepted when unique in the applicable library
 or across exported directories. Full internal directory codes remain accepted
-for existing commands and exact disambiguation. Export masks continue to use
-the library code prefix and full directory internal code, not the browsing
-names. No OS paths are exposed, commands executed or uploads accepted.
+for existing commands and exact disambiguation. Library export masks use the
+native library short names; directory export masks use full internal directory
+codes. No OS paths are exposed, commands executed or uploads accepted.
 
 ## DCC transport and resource limits
 

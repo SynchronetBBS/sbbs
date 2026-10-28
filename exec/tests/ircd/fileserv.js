@@ -26,14 +26,35 @@ run_tests({
 		check(!EmbeddedServices_Config.fileserv);var c=IRC_files_defaults();check(!c.public_libs && !c.public_dirs && c.tls=="optional");
 		var t=adapter(),secure;t.a.start_chat=function(s,tls) { secure=tls; };t.a.command(t.u,"CHAT");check(secure===true);
 	},
-	"wildcards match internal codes and do not treat regex metacharacters specially":function() {
+	"export masks match library names and internal directory codes with literal regex characters":function() {
 		check(IRC_files_masks("id_*, other?","ID_public"));check(!IRC_files_masks("id.+","idZZ"));check(IRC_files_masks("id.+","ID.+"));
 		var t=policy();t.c.include_libs="Pretty*";check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,false,false));
-		t.c.include_libs="id_*";t.c.include_dirs="Pretty*";check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,false,false));
+		t.c.include_libs="Files";t.c.include_dirs="Pretty*";check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,false,false));
+		t.c.include_dirs="ID_*";check(t.scope.IRC_files_allowed(t.d,t.u,t.c,false,false));
+		t.c.include_libs="id_*";check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,false,false));
+	},
+	"Main library with an empty prefix uses its ordinary name for include, public and exclude masks":function() {
+		var t=policy();delete t.scope.file_area.lib.Files;t.d.lib_name="Main";
+		t.scope.file_area.lib.Main={name:"Main",code_prefix:"",description:"Main File Library"};
+		t.c.include_libs="Main";t.c.public_libs="Main";t.c.public_dirs="";
+		check(t.scope.IRC_files_allowed(t.d,t.u,t.c,true,false));
+		t.c.public_libs="Other";check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,true,false));
+		t.c.public_libs="mAiN";t.c.exclude_libs="MAIN";check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,true,false));
+		t.c.exclude_libs="";t.c.include_libs="Other";check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,true,false));
+	},
+	"comma-separated export masks preserve spaces in names and ignore surrounding whitespace":function() {
+		check(IRC_files_masks("Main, BBS Software , Games*","bbs software"));
+		check(!IRC_files_masks("BBS Software","Software") && !IRC_files_masks("BBS Software","BBS"));
+		check(!IRC_files_masks(", ,","") && IRC_files_masks("Games?, Main","games1"));
+		var t=policy();delete t.scope.file_area.lib.Files;t.d.lib_name="BBS Software";
+		t.scope.file_area.lib[t.d.lib_name]={name:t.d.lib_name,code_prefix:"sw_"};
+		t.c.include_libs="Main, BBS Software";t.c.public_libs="BBS Software";
+		check(t.scope.IRC_files_allowed(t.d,t.u,t.c,true,false));
+		t.c.exclude_libs="Private, BBS Software";check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,true,false));
 	},
 	"exclusions win over includes and public selections":function() {
 		var t=policy();t.c.public_libs="*";t.c.exclude_dirs="ID_pub*";check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,true,false));
-		t.c.exclude_dirs="";t.c.exclude_libs="ID_*";check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,true,false));
+		t.c.exclude_dirs="";t.c.exclude_libs="Fi*";check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,true,false));
 	},
 	"anonymous public selection cannot bypass native account ARS":function() {
 		var t=policy();check(!t.scope.IRC_files_allowed(t.d,t.u,t.c,true,false));t.c.public_dirs="id_public";
@@ -101,7 +122,7 @@ run_tests({
 		t.scope.file_area.lib[t.d.lib_name]={name:t.d.lib_name,code_prefix:"id_"};
 		var label=t.scope.IRC_files_label(t.d);check(label=='Main%2F%22Files%25/Public%5CArea');
 		check(t.scope.IRC_files_directory(label,t.u,t.c,false,false)===t.d);
-		check(t.scope.IRC_files_match("Main F*","Main Files") && !t.scope.IRC_files_masks("Main Files","Main Files"));
+		check(t.scope.IRC_files_match("Main F*","Main Files") && t.scope.IRC_files_masks("Main Files","Main Files"));
 	},
 	"DCC navigation enters library then directory and lists each current level":function() {
 		var t=adapter(),p=policy(),s=t.a.session(t.u),chat={},requests=[],replies=[];
@@ -337,6 +358,14 @@ if (argv.indexOf("--bbs-fixture")>=0) {
 	var c=IRC_files_defaults();c.public_dirs="fs_public";
 	var u=new User(system.matchuser("Some User",false)),identity=IRC_services_identity(u,system.qwk_id,"syncnix.test");
 	run_tests({
+		"native library filters select short names independently of code prefixes and retain guest ARS":function() {
+			var config=IRC_files_defaults();config.include_libs="Files";config.public_libs="Files";
+			check(IRC_files_catalog(config,null,"LIBS",[]).lines[0]=="Files : FileServ fixture library");
+			check(IRC_files_catalog(config,null,"LIST",["fs_public"]).lines.some(function(line) { return line.indexOf("fixture.txt")>=0; }));
+			rejects(function() { IRC_files_catalog(config,null,"LIST",["fs_private"]); },"denied");
+			config.exclude_libs="Files";check(IRC_files_catalog(config,identity,"LIBS",[]).lines.length==1);
+			config.exclude_libs="";config.include_libs="fs_*";check(IRC_files_catalog(config,identity,"LIBS",[]).lines.length==1);
+		},
 		"native special-directory checks leave the materialized directory table intact":function() {
 			Object.keys(file_area.dir).forEach(function(code) { IRC_files_special(file_area.dir[code]); });
 			var dirs=file_area.dir;
