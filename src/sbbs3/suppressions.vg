@@ -79,6 +79,19 @@
    ...
    fun:*js*GCHelperThread*replenishAndFreeLater*
 }
+# Release builds can inline replenishAndFreeLater into JSObject::finish.
+# Keep the entry above for builds where its stack frame is present.
+{
+   JSreplenishAndFreeLaterInlined
+   Memcheck:Leak
+   match-leak-kinds: all
+   fun:malloc
+   fun:*JSObject*finish*
+   fun:*JSCompartment*finalizeObjectArenaLists*
+   fun:*js_GC*
+   fun:*js_DestroyContext*
+   fun:*background_thread*
+}
 {
    LinuxPthreadCreate
    Memcheck:Leak
