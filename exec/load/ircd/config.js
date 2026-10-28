@@ -1201,9 +1201,11 @@ function read_ini_config(conf) {
 		}
 		if (ini_false_true(ini[i].disabled) || ini_false_true(ini[i].Disabled))
 			continue;
-		if (!ini_true_false(ini[i].enabled) || !ini_true_false(ini[i].Enabled))
-			continue;
 		s = ini[i].name.split(":");
+		/* EmbeddedServices.Enabled controls hosting the authority. Leaves
+		   still need Host and policy settings when hosting is disabled. */
+		if (!ini_true_false(ini[i].enabled) || (s[0] != "EmbeddedServices" && !ini_true_false(ini[i].Enabled)))
+			continue;
 		if (typeof Sections[s[0]] === 'function')
 			Sections[s[0]](s[1], ini[i]);
 	}

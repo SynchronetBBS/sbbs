@@ -197,6 +197,25 @@ run_tests({
 		scope.ini_EmbeddedServices("",saved); check(scope.EmbeddedServices_Config.enabled === true);
 		scope.ini_EmbeddedServices("",{Enabled:"false"}); check(scope.EmbeddedServices_Config.enabled === false);
 	},
+	"a leaf's explicit Enabled=false preserves its authority host and policy through the INI parser": function() {
+		var scope = {IRCDCFG_Editor:false}; load(scope,"ircd/config.js"); scope.Clear_Config_Globals();
+		var path = "/tmp/ircd-leaf-config-" + IRC_services_random() + ".ini"; paths.push(path);
+		var file = new File(path); check(file.open("w"));
+		file.write("[EmbeddedServices]\nEnabled=false\nHost=services.test\nRequireTLS=true\nMaxNicks=7\nNickExpireDays=90\nChannelExpireDays=15\n"); file.close();
+		check(file.open("r")); try { scope.read_ini_config(file); } finally { file.close(); }
+		var c = scope.EmbeddedServices_Config;
+		check(c.enabled === false && c.host == "services.test", "Disabled authority discarded the leaf's configured Host");
+		check(c.require_tls === true && c.max_nicks == 7 && c.nick_expire_days == 90 && c.channel_expire_days == 15);
+	},
+	"generic disabled sections still skip their settings": function() {
+		var scope = {IRCDCFG_Editor:false}; load(scope,"ircd/config.js"); scope.Clear_Config_Globals();
+		scope.read_ini_config({iniGetAllObjects:function() { return [
+			{name:"Info",Enabled:false,Servername:"disabled.test"},
+			{name:"EmbeddedServices",Disabled:true,Enabled:true,Host:"disabled.test"},
+			{name:"EmbeddedServices",enabled:false,Host:"lowercase-disabled.test"}
+		]; }});
+		check(scope.ServerName != "disabled.test" && scope.EmbeddedServices_Config.host == "services.synchro.net" && !scope.EmbeddedServices_Config.enabled);
+	},
 	"central activation and queued readiness both require explicit enablement": function() {
 		var scope = {Users:{}, Servers:{}, Unregistered:{}, Local_Servers:{}, ULine_Exists:function() { return true; }};
 		load(scope,"ircd/services.js");

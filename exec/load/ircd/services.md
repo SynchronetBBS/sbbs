@@ -47,6 +47,13 @@ to `services.synchro.net`; `Host` and `Database` are optional. Omitting `Enabled
 or setting it to `false` keeps central services inactive. A rehash applies
 changes to these settings.
 
+Every BBS using the embedded authority must configure the same `Host`, even
+when its own `Enabled` is `false`. Trusting a server in `[Services:...]` alone
+does not select it as the embedded authority. A leaf authenticates the helper
+transport independently, then accepts authority requests only from its
+configured `Host`. A wrong host can therefore leave local identification
+working while remote IDENTIFY times out and identity updates are ignored.
+
 `NickExpireDays` and `ChannelExpireDays` independently expire registrations
 after the specified number of unused days. Both default to `0`, which disables
 expiry. For example, `NickExpireDays=30` and `ChannelExpireDays=90` expire
@@ -364,6 +371,22 @@ Trusted hubs retain their existing authority: this transport is not encrypted
 end to end, and older debug logs can contain its payloads. Updated daemons
 redact services commands and RPC payloads from protocol logs.
 
+Debug messages beginning `Services RPC` summarize each complete sent or received
+message, including its operation, peer BBS/helper, affected nickname and
+connection server, request ID when present, and frame count. They do not log
+individual data fragments. Reply matching reports the original operation,
+elapsed time and a bounded result category. Authentication setup, discarded
+frames, ignored authority requests, rejected identity updates, forced renames
+and request timeouts have explicit reasons. Passwords, account proofs, session
+cookies, command arguments, memo bodies and raw error text are excluded.
+
+An authenticated transport does not imply the selected authority is available;
+check `STATS U server.name` for the effective `Host`, authority presence/trust
+and transport status. Identity refreshes normally run every 30 seconds. A
+`rename` request instead enforces a registered nickname after its grace period;
+its diagnostic identifies the target and whether the connection server applied
+or ignored it.
+
 Multi-login support is negotiated over the authenticated helper transport.
 LINK requires updated central services, the connection server, and both BBS
 helpers. Older services helpers keep single-login behavior and cannot authorize
@@ -404,6 +427,7 @@ python3 tests/ircd/services-fixture.py --template-ctrl /path/to/ctrl --jsexec /p
 /path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services-link.js
 /path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services-expiry.js
 /path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services-notices.js
+/path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services-logging.js
 /path/to/current/jsexec -n -c /tmp/ircd-services-bbs-fixture/ctrl -i load tests/ircd/services-bbs.js --bbs-fixture
 python3 tests/ircd/services-network.py --jsexec /path/to/current/jsexec --legacy-source /path/to/old/exec
 ```

@@ -63,6 +63,10 @@ class Server:
                           'Password=servicetest', 'Class=30',
                           '[Operator:testop]', 'Nick=testop', 'Mask=*@*',
                           'Password=servicetest', 'Flags=Or', 'Class=1']
+            elif code == source:
+                # Explicitly disabling authority hosting must retain Host for
+                # the leaf's local services, RPCs and identity propagation.
+                lines.append('Enabled=false')
         old_config = self.legacy and (code / 'load/ircd_server.js').exists() and not (code / 'load/ircd/server.js').exists()
         if old_config:
             lines = ['M:' + self.sname + ':127.0.0.1:Services test:' + str(self.port),

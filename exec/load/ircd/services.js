@@ -31,7 +31,8 @@ function IRC_Services_Manager(options) {
 		function(peer, text) {
 			var target = self.peer(peer);
 			if (target && self.agent) target.originatorout("PRIVMSG " + target.nick + " :" + text, self.agent);
-		}, function(peer, message) { self.receive(peer, message); });
+		}, function(peer, message, framing) { self.receive(peer, message, framing); }, undefined,
+		function(peer, event, message) { self.rpc_log("transport " + event, peer, message); });
 	this.queue = new IRC_Services_Backend(this.config, DNS_Resolver);
 	if (options.enabled || options.nickserv || options.memoserv)
 		this.interval = js.setInterval(IRC_services_tick, 250, this);
@@ -53,9 +54,21 @@ IRC_Services_Manager.prototype.central_peer = function() {
 	var name = IRC_services_agent(s.linkparent);
 	return this.peer(name) ? name : null;
 };
+IRC_Services_Manager.prototype.rpc_log = function(event, peer, message, detail) {
+	var endpoint = peer && this.peer(peer), label = endpoint && endpoint.servername
+		? IRC_services_log_atom(endpoint.servername) + " (" + IRC_services_log_atom(peer) + ")"
+		: peer ? IRC_services_log_atom(peer) : "local";
+	log(LOG_DEBUG, "Services RPC " + event + " peer=" + label
+		+ (message ? " " + IRC_services_log_rpc(message) : "") + (detail ? " " + detail : ""));
+};
+IRC_Services_Manager.prototype.authority_log_reason = function() {
+	var host = this.config.host, s = Servers[host];
+	return "authority=" + IRC_services_log_atom(host) + " reason="
+		+ (!s ? "server absent" : !s.uline ? "server not trusted" : !s.linkparent ? "parent unknown" : "helper unavailable");
+};
 IRC_Services_Manager.prototype.send = function(peer, message) {
 	if (!this.agent || !this.peer(peer)) throw new Error("Destination services are unavailable");
-	if (peer.toUpperCase() == this.agent.nick.toUpperCase()) this.receive(this.agent.nick, message);
+	if (peer.toUpperCase() == this.agent.nick.toUpperCase()) { this.rpc_log("dispatch locally", peer, message); this.receive(this.agent.nick, message); }
 	else this.transport.write(peer, message);
 };
 IRC_Services_Manager.prototype.job = function(job, callback) {
@@ -88,7 +101,7 @@ IRC_Services_Manager.prototype.ensure_agent = function() {
 	var self = this, name = IRC_services_agent(ServerName);
 	if (Users[name.toUpperCase()]) return false;
 	this.agent = this.fake_user(name, ServerName, false, function(origin, text) {
-		if (self.peer(origin.nick)) { log(LOG_DEBUG, "Embedded services wire from " + origin.nick + " phase " + text.split(" ")[1]); self.transport.read(origin.nick, text); }
+		if (self.peer(origin.nick)) self.transport.read(origin.nick, text);
 	});
 	this.agent.services_agent = true;
 	return true;
@@ -247,7 +260,11 @@ IRC_Services_Manager.prototype.tick = function() {
 			if (self.jobs[id].until < now) { var j = self.jobs[id]; delete self.jobs[id]; j.callback({error:"Services request timed out."}); }
 		});
 		Object.keys(this.requests).forEach(function(id) {
-			if (self.requests[id].until < now) { var r = self.requests[id]; delete self.requests[id]; r.callback({error:"Destination services are unavailable."}); }
+			if (self.requests[id].until < now) {
+				var r = self.requests[id]; delete self.requests[id];
+				self.rpc_log("request timed out", r.peer, null, r.description || "request=" + IRC_services_log_id(id));
+				r.callback({error:"Destination services are unavailable."});
+			}
 		});
 		for (var name in this.transport.peers) {
 			var peer = this.peer(name.substr(1));
@@ -320,7 +337,10 @@ IRC_Services_Manager.prototype.remove_login = function(user, home, all) {
 IRC_Services_Manager.prototype.sync_session = function(user, callback) {
 	var self = this, cp = this.central_peer(), actor = this.describe(user);
 	callback = callback || function() {};
-	if (!cp) { callback({error:"Services are unavailable."}); return; }
+	if (!cp) {
+		this.rpc_log("cannot synchronize", null, {type:"sync-logins",actor:actor}, this.authority_log_reason());
+		callback({error:"Services are unavailable."}); return;
+	}
 	if (!user.services_multi) {
 		this.send(cp, user.services_identity ? {type:"claim", actor:actor, identity:user.services_identity} : {type:"logout", actor:actor}); callback({}); return;
 	}
@@ -361,10 +381,10 @@ IRC_Services_Manager.prototype.refresh_local_identity = function(user, now) {
 	});
 };
 IRC_Services_Manager.prototype.request = function(peer, message, callback) {
-	if (!peer) { callback({error:"Services are unavailable."}); return; }
+	if (!peer) { this.rpc_log("request rejected", null, message, "reason=destination unavailable"); callback({error:"Services are unavailable."}); return; }
 	if (this.central && this.config.require_tls && ["local-auth", "local-memo", "local-resolve", "local-validate"].indexOf(message.type) >= 0) {
 		var destination = this.peer(peer), error = this.tls_error(this.find(message.actor), true, [destination && destination.servername]);
-		if (error) { callback({error:error}); return; }
+		if (error) { this.rpc_log("request rejected", peer, message, "reason=TLS policy"); callback({error:error}); return; }
 		var self = this, finish = callback;
 		callback = function(result) {
 			var error = self.tls_error(self.find(message.actor), true, [destination && destination.servername]);
@@ -373,9 +393,10 @@ IRC_Services_Manager.prototype.request = function(peer, message, callback) {
 	}
 	if (Object.keys(this.requests).length >= 128) { callback({error:"Services are busy."}); return; }
 	var id = this.agent.nick + ":" + (++this.serial);
-	message.id = id; this.requests[id] = {peer:peer.toUpperCase(), callback:callback, until:system.timer + 25};
+	message.id = id; this.requests[id] = {peer:peer.toUpperCase(), callback:callback, until:system.timer + 25,
+		started:system.timer, description:IRC_services_log_rpc(message)};
 	try { this.send(peer, message); }
-	catch (_) { delete this.requests[id]; callback({error:"Destination services are unavailable."}); }
+	catch (_) { delete this.requests[id]; this.rpc_log("request failed", peer, message, "reason=destination unavailable"); callback({error:"Destination services are unavailable."}); }
 };
 IRC_Services_Manager.prototype.reply = function(peer, id, result) {
 	var text = result.text;
@@ -400,6 +421,8 @@ IRC_Services_Manager.prototype.apply_identity = function(user, identity) {
 	delete user.bbs_usernum;
 	if (identity && identity.home == this.config.server) user.bbs_usernum = identity.number;
 	if (old == user.nuh) return;
+	log(LOG_DEBUG, "Services identity changed nick=" + IRC_services_log_atom(user.nick)
+		+ " connection=" + IRC_services_log_atom(user.servername) + " username=" + IRC_services_log_atom(user.uprefix));
 	/* Existing clients cache user@host. Refresh only their presentation,
 	   never network membership or channel timestamps. */
 	for (var id in Local_Users) {
@@ -512,8 +535,8 @@ IRC_Services_Manager.prototype.memo = function(user, verb, args, home) {
 		self.request(self.central_peer(), {type:"memo", actor:self.describe(user), operation:verb, home:home, destination_home:destination_home, group_mailboxes:!!group_mailboxes, read_home:destination_home, target:args.shift(), text:args.join(" ")}, finish);
 	});
 };
-IRC_Services_Manager.prototype.receive = function(peer, m) {
-	try { this.receive_message(peer, m); }
+IRC_Services_Manager.prototype.receive = function(peer, m, framing) {
+	try { this.receive_message(peer, m, framing); }
 	catch (error) {
 		log(LOG_WARNING, "Embedded IRC services request failed: " + error);
 		if (m && typeof m.id == "string" && m.id.length <= 128 && this.peer(peer)) {
@@ -521,9 +544,9 @@ IRC_Services_Manager.prototype.receive = function(peer, m) {
 		}
 	}
 };
-IRC_Services_Manager.prototype.receive_message = function(peer, m) {
+IRC_Services_Manager.prototype.receive_message = function(peer, m, framing) {
 	if (!m || typeof m != "object" || !this.peer(peer)) return;
-	log(LOG_DEBUG, "Embedded services RPC from " + peer + " type " + m.type);
+	this.rpc_log("received", peer, m, framing ? "message=" + framing.id + " frames=" + framing.frames : "local dispatch");
 	var self = this, source = this.peer(peer), cp = this.central_peer();
 	if (m.type == "reply-text") {
 		var partial = this.requests[m.id];
@@ -534,16 +557,24 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 	}
 	if (m.type == "reply") {
 		var request = this.requests[m.id];
-		if (request && request.peer == peer.toUpperCase()) { delete this.requests[m.id]; if (request.parts) m.text = request.parts.join("") + (m.text || ""); request.callback(m); }
+		if (request && request.peer == peer.toUpperCase()) {
+			delete this.requests[m.id];
+			this.rpc_log("reply matched", peer, null, (request.description || "request=" + IRC_services_log_id(m.id))
+				+ (typeof request.started == "number" ? " elapsed=" + (system.timer - request.started).toFixed(3) + "s" : "")
+				+ " result=" + (m.error ? IRC_services_log_error(m.error) : "ok"));
+			if (request.parts) m.text = request.parts.join("") + (m.text || ""); request.callback(m);
+		} else this.rpc_log("ignored reply", peer, m, "reason=" + (request ? "reply from different peer" : "unknown or expired request"));
 		return;
 	}
 	if (m.type == "local-auth" || m.type == "local-memo" || m.type == "identity" || m.type == "rename" || m.type == "memo-text" || m.type == "local-validate" || m.type == "check-session" || m.type == "local-resolve") {
-		if (!cp || peer.toUpperCase() != cp.toUpperCase()) return;
+		if (!cp || peer.toUpperCase() != cp.toUpperCase()) {
+			this.rpc_log("ignored", peer, m, !cp ? this.authority_log_reason() : "reason=sender is not the configured authority"); return;
+		}
 		var local_reply = function(r) { self.reply(peer, m.id, r); };
 		if (this.config.bbs_require_tls && ["local-auth", "local-memo", "local-resolve", "local-validate"].indexOf(m.type) >= 0) {
 			var tls_user = m.actor && Users[String(m.actor.nick).toUpperCase()];
 			var error = this.tls_error(tls_user && tls_user.servername.toLowerCase() == m.actor.server ? tls_user : null, true, [source.servername]);
-			if (error) { this.reply(peer, m.id, {error:error}); return; }
+			if (error) { this.rpc_log("rejected", peer, m, "reason=TLS policy"); this.reply(peer, m.id, {error:error}); return; }
 			local_reply = function(r) {
 				var error = self.tls_error(Users[tls_user.nick.toUpperCase()] === tls_user ? tls_user : null, true, [source.servername]);
 				self.reply(peer, m.id, error ? {error:error} : r);
@@ -590,29 +621,40 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 					remote.services_ref = m.actor.ref; changed = remote;
 				}
 			}
-			if (changed && (!changed.local || m.actor.auth_revision === undefined || m.actor.auth_revision == (changed.services_auth_revision || 0))
-				&& (!m.identity || this.identity_valid(m.identity, m.identity.home))) this.apply_identity(changed, m.identity);
+			var identity_reason = !changed ? "user session not found"
+				: changed.local && m.actor.auth_revision !== undefined && m.actor.auth_revision != (changed.services_auth_revision || 0) ? "authentication revision changed"
+				: m.identity && !this.identity_valid(m.identity, m.identity.home) ? "invalid identity" : "";
+			if (identity_reason) this.rpc_log("identity ignored", peer, m, "reason=" + identity_reason);
+			else {
+				this.apply_identity(changed, m.identity);
+				this.rpc_log("identity applied", peer, m, "username=" + IRC_services_log_atom(changed.uprefix));
+			}
 		} else if (m.type == "rename") {
 			var target = this.find(m.actor);
-			if (target && target.local) target.work("NICK " + this.guest());
+			if (target && target.local) { this.rpc_log("rename applied", peer, m); target.work("NICK " + this.guest()); }
+			else this.rpc_log("rename ignored", peer, m, "reason=" + (!target ? "user session not found" : "user is not local"));
 		} else if (m.id) this.reply(peer, m.id, {error:"Requested BBS service is disabled."});
 		return;
 	}
-	if (!this.central) return;
+	if (!this.central) { this.rpc_log("ignored", peer, m, "reason=local server is not the active authority"); return; }
 	var user = this.bind_actor(peer, m.actor);
 	if (!user) {
 		var claimed = m.actor && Users[String(m.actor.nick).toUpperCase()];
 		if (!claimed || claimed.uline || claimed.servername.toLowerCase() != source.servername.toLowerCase()
-			|| m.actor.server != source.servername.toLowerCase() || !/^[0-9a-f]{64}$/.test(m.actor.ref)) return;
+			|| m.actor.server != source.servername.toLowerCase() || !/^[0-9a-f]{64}$/.test(m.actor.ref)) {
+			this.rpc_log("rejected", peer, m, "reason=actor does not belong to sender or has invalid session cookie"); return;
+		}
 		/* Legacy relays can replace NICK timestamps. Ask the actual
 		   connection server to confirm its random session cookie instead
 		   of trusting a wall-clock timestamp or a delayed nickname match. */
+		this.rpc_log("checking session", peer, m, "reason=session cookie not yet bound to this user");
 		this.request(peer, {type:"check-session", actor:m.actor}, function(r) {
-			if (!r.valid || Users[String(m.actor.nick).toUpperCase()] !== claimed) return;
+			if (!r.valid || Users[String(m.actor.nick).toUpperCase()] !== claimed) { self.rpc_log("rejected", peer, m, "reason=session check failed or user changed"); return; }
 			/* Actions already queued for this same object remain valid while
-			   its provisional central cookie is replaced by the proven one.
+			   its cookie or nickname timestamp is replaced by the proven one.
 			   Keep just that one predecessor on the object, never by nick. */
-			if (claimed.services_ref != m.actor.ref) claimed.services_previous_session = self.describe(claimed);
+			if (claimed.services_ref != m.actor.ref || (claimed.services_created || claimed.created) != m.actor.created)
+				claimed.services_previous_session = self.describe(claimed);
 			claimed.services_ref = m.actor.ref; claimed.services_created = m.actor.created;
 			self.receive(peer, m);
 		}); return;
@@ -620,15 +662,16 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 	var restricted = m.type == "authenticate" || m.type == "memo" || (m.type == "claim" && m.identity)
 		|| (m.type == "sync-logins" && m.logins && m.logins.length);
 	var error = restricted && this.tls_error(user, this.config.require_tls);
-	if (error) { if (m.id) this.reply(peer, m.id, {error:error}); return; }
+	if (error) { this.rpc_log("rejected", peer, m, "reason=TLS policy"); if (m.id) this.reply(peer, m.id, {error:error}); return; }
 	this.snapshot();
 	if (m.type == "session") {
 		user.services_peer_multi = m.multi_login == 1;
+		this.rpc_log("session bound", peer, m, "multi_login=" + user.services_peer_multi);
 		if (m.id) this.reply(peer, m.id, {multi_login:1, memo_routing:1}); return;
 	}
 	if (m.type == "sync-logins") { this.verify_logins(peer, user, m); return; }
 	if (m.type == "claim") {
-		if (user.services_peer_multi) return;
+		if (user.services_peer_multi) { this.rpc_log("ignored claim", peer, m, "reason=multi-login session requires sync-logins"); return; }
 		user.services_verified_logins = undefined; user.services_verified_multi = false;
 		if (this.identity_valid(m.identity, source.servername)) {
 			this.claim(user, m.identity); this.publish_identity(user, m.identity);
@@ -681,10 +724,16 @@ IRC_Services_Manager.prototype.receive_message = function(peer, m) {
 IRC_Services_Manager.prototype.verify_logins = function(peer, user, m) {
 	var self = this, actor = m.actor, revision = actor.auth_revision, list = m.logins, seen = {}, multi = true;
 	if (!user.services_peer_multi || !Array.isArray(list) || list.length > 64 || typeof revision != "number" || !isFinite(revision) || revision < 0 || revision % 1
-		|| revision < (user.services_auth_revision || 0) || revision < (user.services_pending_revision || 0)) { this.reply(peer, m.id, {error:"Invalid or obsolete login set."}); return; }
+		|| revision < (user.services_auth_revision || 0) || revision < (user.services_pending_revision || 0)) {
+		this.rpc_log("login verification rejected", peer, m, "reason=invalid or obsolete login set");
+		this.reply(peer, m.id, {error:"Invalid or obsolete login set."}); return;
+	}
 	for (var i = 0; i < list.length; i++) {
 		var a = list[i];
-		if (!a || !this.identity_valid(a, a.home) || seen[a.home]) { this.reply(peer, m.id, {error:"Invalid BBS login set."}); return; }
+		if (!a || !this.identity_valid(a, a.home) || seen[a.home]) {
+			this.rpc_log("login verification rejected", peer, m, "reason=invalid or duplicate BBS identity");
+			this.reply(peer, m.id, {error:"Invalid BBS login set."}); return;
+		}
 		seen[a.home] = true;
 	}
 	user.services_pending_revision = revision;
@@ -692,8 +741,12 @@ IRC_Services_Manager.prototype.verify_logins = function(peer, user, m) {
 	function complete() {
 		if (finished || remaining) return;
 		finished = true;
-		if (self.find(actor) !== user || user.services_sync_nonce !== nonce || (user.local && (user.services_auth_revision || 0) != revision)) { self.reply(peer, m.id, {error:"Authentication changed; please retry."}); return; }
+		if (self.find(actor) !== user || user.services_sync_nonce !== nonce || (user.local && (user.services_auth_revision || 0) != revision)) {
+			self.rpc_log("login verification superseded", peer, m, "reason=user or authentication changed");
+			self.reply(peer, m.id, {error:"Authentication changed; please retry."}); return;
+		}
 		checked = checked.filter(function(a) { return !!a; });
+		self.rpc_log("login verification completed", peer, m, "verified=" + checked.length + " revoked=" + errors.length);
 		user.services_auth_revision = revision + (errors.length ? 1 : 0);
 		user.services_verified_logins = checked;
 		user.services_verified_multi = multi;
