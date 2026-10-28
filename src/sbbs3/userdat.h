@@ -50,6 +50,7 @@
 #define USER_WRITE_ERROR        -107
 #define USER_TRUNC_ERROR        -108
 #define USER_SIZE_ERROR         -109
+#define USER_ALLOC_ERROR        -110
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,6 +76,7 @@ DLLEXPORT int   newuserdat(scfg_t*, user_t*);   // Create new user in user file
 DLLEXPORT void  newuserdefaults(scfg_t*, user_t*);
 DLLEXPORT void  newsysop(scfg_t*, user_t*);
 DLLEXPORT int   matchuser(scfg_t*, const char *str, bool sysop_alias); // Checks for a username match
+DLLEXPORT int   matchuser_ex(scfg_t*, const char *str, bool sysop_alias); // ... or a negative USER_* error if the index couldn't be read
 DLLEXPORT bool  matchusername(scfg_t*, const char* name, const char* compare);
 DLLEXPORT char* alias(scfg_t*, const char* name, char* buf);
 DLLEXPORT int   putusername(scfg_t*, int number, const char* name);
@@ -130,7 +132,11 @@ DLLEXPORT bool  user_can_access_xtrn(scfg_t*, int xtrn_num, user_t*, client_t* c
 
 DLLEXPORT int  finduserstr(scfg_t*, int usernumber, enum user_field, const char *str
                             , bool del, bool next, void (*progress)(void*, int, int), void* cbdata);
+// As finduserstr(), or a negative USER_* error if the user base couldn't be read
+DLLEXPORT int  finduserstr_ex(scfg_t*, int usernumber, enum user_field, const char *str
+                               , bool del, bool next, void (*progress)(void*, int, int), void* cbdata);
 
+// User number, 0 if none matches, or a negative USER_* error if the user base couldn't be read
 DLLEXPORT int  find_login_id(scfg_t*, const char* user_id);
 
 DLLEXPORT bool  chk_ar(scfg_t*, uchar* str, user_t*, client_t*); /* checks access requirements */

@@ -1417,7 +1417,13 @@ static bool pop3_client_thread(pop3_t* pop3)
 			SKIP_WHITESPACE(p);
 			SAFECOPY(password, p);
 		}
-		user.number = find_login_id(&scfg, username);
+		if ((i = find_login_id(&scfg, username)) < 0) {
+			errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR %d looking up user '%s'"
+			          , socket, client.protocol, host_ip, i, username);
+			sockprintf(socket, client.protocol, session, "-ERR [SYS/TEMP] User lookup failed");
+			break;
+		}
+		user.number = i;
 		if (!user.number) {
 			if (scfg.sys_misc & SM_ECHO_PW)
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] !UNKNOWN USER: '%s' (password: %s)"
@@ -2974,11 +2980,11 @@ static int smtp_matchuser(scfg_t *scfg, const char *str, bool aliases, bool datd
 		goto end;
 
 	if (datdupe)
-		usernum = finduserstr(scfg, 0, USER_NAME, name, /* del */ false, /* next */ false, NULL, NULL);
+		usernum = finduserstr_ex(scfg, 0, USER_NAME, name, /* del */ false, /* next */ false, NULL, NULL);
 	else
-		usernum = matchuser(scfg, name, aliases);
+		usernum = matchuser_ex(scfg, name, aliases);
 
-	if (!usernum)
+	if (usernum <= 0)
 		goto end;
 
 	if (checktag(scfg, tag, usernum))
@@ -4529,7 +4535,13 @@ static bool smtp_client_thread(smtp_t* smtp)
 				SAFECOPY(user_pass, p);
 			}
 
-			if ((relay_user.number = find_login_id(&scfg, user_name)) == 0) {
+			if ((i = find_login_id(&scfg, user_name)) < 0) {
+				errprintf(LOG_ERR, WHERE, "%04d %-5s %s !ERROR %d looking up user '%s'"
+				          , socket, client.protocol, client_id, i, user_name);
+				sockprintf(socket, client.protocol, session, "454 4.7.0 Temporary authentication failure");
+				break;
+			}
+			if ((relay_user.number = i) == 0) {
 				if (scfg.sys_misc & SM_ECHO_PW)
 					lprintf(LOG_NOTICE, "%04d %-5s %s !UNKNOWN USER: '%s' (password: %s)"
 					        , socket, client.protocol, client_id, user_name, user_pass);
@@ -4627,7 +4639,13 @@ static bool smtp_client_thread(smtp_t* smtp)
 			else
 				p = response;
 			SAFECOPY(user_name, response);
-			if ((relay_user.number = find_login_id(&scfg, user_name)) == 0) {
+			if ((i = find_login_id(&scfg, user_name)) < 0) {
+				errprintf(LOG_ERR, WHERE, "%04d %-5s %s !ERROR %d looking up user '%s'"
+				          , socket, client.protocol, client_id, i, user_name);
+				sockprintf(socket, client.protocol, session, "454 4.7.0 Temporary authentication failure");
+				break;
+			}
+			if ((relay_user.number = i) == 0) {
 				lprintf(LOG_NOTICE, "%04d %-5s %s !UNKNOWN USER: '%s'"
 				        , socket, client.protocol, client_id, user_name);
 				badlogin(socket, session, badauth_rsp, user_name, NULL, &client, &smtp->client_addr);
@@ -5186,6 +5204,12 @@ static bool smtp_client_thread(smtp_t* smtp)
 			                            , str, sizeof str);
 			if (str[0] != 0)
 				p = str;
+			if (usernum < 0) {
+				errprintf(LOG_ERR, WHERE, "%04d %-5s %s !ERROR %d looking up user-recipient '%s'"
+				          , socket, client.protocol, client_id, usernum, rcpt_to);
+				sockprintf(socket, client.protocol, session, "451 4.3.0 User lookup failed: %s", rcpt_to);
+				continue;
+			}
 			if (!usernum && startup->default_user[0]) {
 				usernum = matchuser(&scfg, startup->default_user, true /* sysop_alias */);
 				if (usernum)

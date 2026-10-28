@@ -1053,7 +1053,8 @@ js_find_login_id(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(find_login_id(sys->cfg, p)));
+	int usernum = find_login_id(sys->cfg, p);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(usernum < 0 ? 0 : usernum));
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }

@@ -48,7 +48,14 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 
 	username = parse_login(username);
 
-	useron.number = find_login_id(&cfg, username);
+	int usernum = find_login_id(&cfg, username);
+	if (usernum < 0) {
+		errormsg(WHERE, ERR_READ, "user base", usernum, username);
+		useron.number = 0;
+		useron.misc = useron_misc;
+		return LOGIC_FALSE;
+	}
+	useron.number = usernum;
 	if (useron.number) {
 		getuserdat(&cfg, &useron);
 		if (useron.number && useron.misc & (DELETED | INACTIVE))

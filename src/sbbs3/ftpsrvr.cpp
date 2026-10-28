@@ -2676,9 +2676,10 @@ static void ctrl_thread(void* arg)
 			SKIP_WHITESPACE(p);
 			truncsp(p);
 			SAFECOPY(user.alias, p);
-			user.number = find_login_id(&scfg, user.alias);
-			if (!user.number && (stricmp(user.alias, "anonymous") == 0 || stricmp(user.alias, "ftp") == 0))
-				user.number = matchuser(&scfg, "guest", false);
+			int usernum = find_login_id(&scfg, user.alias);
+			if (usernum == 0 && (stricmp(user.alias, "anonymous") == 0 || stricmp(user.alias, "ftp") == 0))
+				usernum = matchuser(&scfg, "guest", false);
+			user.number = usernum > 0 ? usernum : 0;
 			if (user.number && getuserdat(&scfg, &user) == 0 && user.pass[0] == 0)
 				sockprintf(sock, sess, "331 User name okay, give your full e-mail address as password.");
 			else
@@ -2693,7 +2694,13 @@ static void ctrl_thread(void* arg)
 			SKIP_WHITESPACE(p);
 
 			SAFECOPY(password, p);
-			uint usernum = find_login_id(&scfg, user.alias);
+			int usernum = find_login_id(&scfg, user.alias);
+			if (usernum < 0) {
+				errprintf(LOG_ERR, WHERE, "%04d !ERROR %d looking up user '%s'"
+				          , sock, usernum, user.alias);
+				sockprintf(sock, sess, "421 Service not available, user lookup failed");
+				break;
+			}
 			if (usernum == 0) {
 				if (scfg.sys_misc & SM_ECHO_PW)
 					lprintf(LOG_NOTICE, "%04d !UNKNOWN USER: '%s' (password: %s)", sock, user.alias, p);

@@ -2159,6 +2159,11 @@ static bool check_ars(http_session_t * session)
 	}
 	/* Require a password */
 	i = find_login_id(&scfg, session->req.auth.username);
+	if (i < 0) {
+		lprintf(LOG_ERR, "%04d !ERROR %d looking up user '%s'"
+		        , session->socket, i, session->req.auth.username);
+		return false;
+	}
 	if (i == 0) {
 		if (session->last_user_num != 0) {
 			if (session->last_user_num > 0)
@@ -5942,7 +5947,14 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	memset(&user, 0, sizeof(user));
 
-	user.number = find_login_id(&scfg, username);
+	int usernum = find_login_id(&scfg, username);
+	if (usernum < 0) {
+		lprintf(LOG_ERR, "%04d %-5s [%s] !ERROR %d looking up user '%s'"
+		        , session->socket, session->client.protocol, session->host_ip, usernum, username);
+		JS_RESUMEREQUEST(cx, rc);
+		return JS_TRUE;
+	}
+	user.number = usernum;
 
 	if (getuserdat(&scfg, &user) != 0) {
 		lprintf(LOG_NOTICE, "%04d %-5s [%s] !USER NOT FOUND: '%s'"

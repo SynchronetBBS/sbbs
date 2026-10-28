@@ -82,8 +82,9 @@ void split_userdat(char *userdat, char* field[])
 /* Looks for a perfect match among all usernames (not deleted users)		*/
 /* Makes dots and underscores synonymous with spaces for comparisons		*/
 /* Returns the number of the perfect matched username or 0 if no match		*/
+/* (matchuser) or a negative USER_* error if it couldn't be read (_ex)		*/
 /****************************************************************************/
-int matchuser(scfg_t* cfg, const char *name, bool sysop_alias)
+int matchuser_ex(scfg_t* cfg, const char *name, bool sysop_alias)
 {
 	int   file, c;
 	char  dat[LEN_ALIAS + 2];
@@ -100,15 +101,17 @@ int matchuser(scfg_t* cfg, const char *name, bool sysop_alias)
 
 	useridx_filename(cfg, str, sizeof str);
 	if ((stream = fnopen(&file, str, O_RDONLY)) == NULL)
-		return 0;
+		return USER_OPEN_ERROR;
 	length = filelength(file);
 	if (length < sizeof(dat)) {
 		fclose(stream);
 		return 0;
 	}
 	for (l = 0; l < length; l += sizeof(dat)) {
-		if (fread(dat, sizeof(dat), 1, stream) != 1)
-			break;
+		if (fread(dat, sizeof(dat), 1, stream) != 1) {
+			fclose(stream);
+			return USER_READ_ERROR;
+		}
 		for (c = 0; c < LEN_ALIAS; c++)
 			if (dat[c] == ETX)
 				break;
@@ -122,6 +125,13 @@ int matchuser(scfg_t* cfg, const char *name, bool sysop_alias)
 	if (l < length)
 		return (uint)((l / (LEN_ALIAS + 2)) + 1);
 	return 0;
+}
+
+int matchuser(scfg_t* cfg, const char *name, bool sysop_alias)
+{
+	int usernum = matchuser_ex(cfg, name, sysop_alias);
+
+	return usernum < 0 ? 0 : usernum;
 }
 
 /****************************************************************************/
@@ -161,24 +171,24 @@ bool matchusername(scfg_t* cfg, const char* name, const char* comp)
 /****************************************************************************/
 int find_login_id(scfg_t* cfg, const char* user_id)
 {
-	uint usernum;
+	int usernum;
 
 	if (cfg == NULL || user_id == NULL)
 		return 0;
 
 	if ((cfg->sys_login & LOGIN_USERNUM) && IS_DIGIT(user_id[0])) {
 		char* end = NULL;
-		usernum = (uint)strtoul(user_id, &end, 10);
-		if (end == NULL || *end != '\0' || usernum > (uint)lastuser(cfg))
+		usernum = (int)strtoul(user_id, &end, 10);
+		if (end == NULL || *end != '\0' || usernum < 0 || usernum > lastuser(cfg))
 			usernum = 0;
 		return usernum;
 	}
 
-	usernum = matchuser(cfg, user_id, /* sysop_alias: */ false);
-	if (usernum < 1 && check_realname(cfg, user_id) && (cfg->sys_login & LOGIN_REALNAME))
-		usernum = finduserstr(cfg, 0, USER_NAME, user_id
-		                      , /* del: */ false, /* next: */ false
-		                      , /* Progress_cb: */ NULL, /* cbdata: */ NULL);
+	usernum = matchuser_ex(cfg, user_id, /* sysop_alias: */ false);
+	if (usernum == 0 && check_realname(cfg, user_id) && (cfg->sys_login & LOGIN_REALNAME))
+		usernum = finduserstr_ex(cfg, 0, USER_NAME, user_id
+		                         , /* del: */ false, /* next: */ false
+		                         , /* Progress_cb: */ NULL, /* cbdata: */ NULL);
 	return usernum;
 }
 
@@ -1940,8 +1950,8 @@ void printnodedat(scfg_t* cfg, uint number, node_t* node)
 }
 
 /****************************************************************************/
-int finduserstr(scfg_t* cfg, int usernumber, enum user_field fnum
-                 , const char* str, bool del, bool next, void (*progress)(void*, int, int), void* cbdata)
+int finduserstr_ex(scfg_t* cfg, int usernumber, enum user_field fnum
+                    , const char* str, bool del, bool next, void (*progress)(void*, int, int), void* cbdata)
 {
 	int       file;
 	int       unum;
@@ -1953,10 +1963,10 @@ int finduserstr(scfg_t* cfg, int usernumber, enum user_field fnum
 		return 0;
 
 	if ((buf = malloc(recs_per_read * USER_RECORD_LINE_LEN)) == NULL)
-		return 0;
+		return USER_ALLOC_ERROR;
 	if ((file = openuserdat(cfg, /* for_modify: */ false)) < 0) {
 		free(buf);
-		return 0;
+		return USER_OPEN_ERROR;
 	}
 	int last = (int)(filelength(file) / USER_RECORD_LINE_LEN);
 	if (usernumber && next)
@@ -2007,6 +2017,14 @@ int finduserstr(scfg_t* cfg, int usernumber, enum user_field fnum
 	if (progress != NULL)
 		progress(cbdata, last, last);
 	return found;
+}
+
+int finduserstr(scfg_t* cfg, int usernumber, enum user_field fnum
+                 , const char* str, bool del, bool next, void (*progress)(void*, int, int), void* cbdata)
+{
+	int found = finduserstr_ex(cfg, usernumber, fnum, str, del, next, progress, cbdata);
+
+	return found < 0 ? 0 : found;
 }
 
 /****************************************************************************/
