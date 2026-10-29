@@ -1,7 +1,10 @@
 /* Offline DNS wire-format regressions; no resolver sockets or live queries. */
 "use strict";
-load(js.exec_dir+"../ircd/lib.sjs");
-load("dns.js");
+/* jsdoor resolves its exec directory from the working directory and loads
+ * libraries globally. Use source paths and avoid the IRC helper's run_tests(),
+ * which would replace the outer test suite's runner. */
+load(js.global,js.exec_dir+"../../load/sockdefs.js");
+load(js.global,js.exec_dir+"../../load/dns.js");
 function check(ok,message) { if (!ok) throw new Error(message || "Assertion failed"); }
 function int16(n) { return ascii((n>>>8)&255)+ascii(n&255); }
 function record(words,ttl,length) {
@@ -11,7 +14,7 @@ function record(words,ttl,length) {
 		+"\x00"+int16(28)+int16(1)+int16(ttl>>>16)+int16(ttl&65535)+int16(size)+data;
 	return dns.handle_response({recv:function() { return packet; }}).ret.answers[0];
 }
-run_tests({
+var dns_tests = {
 	"AAAA records preserve leading, trailing, middle and longest zero runs":function() {
 		[
 			[[0,0,0,0,0,0,0,1],"::1"],
@@ -33,4 +36,8 @@ run_tests({
 			check(caught,"Malformed AAAA accepted");
 		});
 	}
+};
+Object.keys(dns_tests).forEach(function(name) {
+	try { dns_tests[name](); }
+	catch(e) { throw new Error(name+": "+e); }
 });
