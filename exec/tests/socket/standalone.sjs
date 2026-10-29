@@ -5,9 +5,12 @@
 	var revision = program == "jsdoor" ? jsdoor_revision : jsexec_revision;
 	var filename = program + (windows ? ".exe" : "");
 	var dir = worker.substr(0, worker.length - file_getname(worker).length);
-	var root = dir + "../../../";
+	var root = backslash(fullpath(dir + "../../../"));
 	var candidates = [system.exec_dir + filename, dir + "../../" + filename];
-	var builds = directory(root + "src/sbbs3/*.exe*/" + filename);
+	/* Windows globbing cannot expand a wildcard in an intermediate directory. */
+	var builds = directory(root + "src/sbbs3/*.exe*").map(function(path) {
+		return backslash(path) + filename;
+	});
 	builds = builds.filter(function(path) {
 		return path.toLowerCase().indexOf("." + system.platform.toLowerCase() + ".") >= 0;
 	});
@@ -16,7 +19,9 @@
 		return /[.]exe[.]release[/\\]/i.test(path);
 	}), builds);
 	function quote(path) {
-		return windows ? '"' + path + '"' : "'" + path.replace(/'/g, "'\\''") + "'";
+		/* A trailing backslash must not escape the closing Windows quote. */
+		return windows ? '"' + path.replace(/\\+$/, "$&$&") + '"'
+			: "'" + path.replace(/'/g, "'\\''") + "'";
 	}
 	var runtime;
 	for (var i = 0; i < candidates.length; i++) {
@@ -31,8 +36,9 @@
 	if (!runtime)
 		throw new Error("Cannot locate " + filename + " " + revision + " for standalone socket test");
 	var command = quote(runtime) + " -A -S -f ";
+	/* Like the CI suite, these socket-only tests need no node config. */
 	if (program == "jsexec")
-		command += "-C " + quote("-c" + system.ctrl_dir) + " ";
+		command += "-U -C " + quote("-c" + system.ctrl_dir) + " ";
 	var status = system.exec(command + quote(worker));
 	if (status != 0)
 		throw new Error(file_getname(worker) + " failed with exit status " + status);
