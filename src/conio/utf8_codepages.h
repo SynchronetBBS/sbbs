@@ -56,6 +56,9 @@ extern "C" {
 #endif
 extern const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT];
 
+/* str must have room for four bytes; returns the byte count or -1. */
+int utf8_from_cpoint(uint8_t str[4], uint32_t cpoint);
+
 uint8_t *cp_to_utf8(enum ciolib_codepage cp, const char *cpstr, size_t buflen, size_t *outlen);
 char *utf8_to_cp(enum ciolib_codepage cp, const uint8_t *utf8str, char unmapped, size_t buflen, size_t *outlen);
 uint8_t cpchar_from_unicode_cpoint(enum ciolib_codepage cp, uint32_t cpoint, char unmapped);

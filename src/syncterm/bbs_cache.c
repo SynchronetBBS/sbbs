@@ -5,7 +5,7 @@
 
 #include <dirwrap.h>
 #include <sha256.h>
-#include <utf8.h>
+#include <utf8_codepages.h>
 
 #include <errno.h>
 #include <stdint.h>
@@ -77,19 +77,16 @@ bbs_cache_key(char *result, size_t size, const char *name)
 	struct scalar_list folded = {0};
 	SHA256_CTX context;
 	uint8_t digest[SHA256_DIGEST_SIZE];
-	size_t length;
 	bool success = false;
 
 	if (result == NULL || size <= BBS_CACHE_KEY_MAX || name == NULL || *name == 0)
 		return false;
-	length = strlen(name);
-	for (size_t offset = 0; offset < length;) {
-		enum unicode_codepoint cp;
-		int consumed = utf8_getc(name + offset, length - offset, &cp);
+	/* Directory names are CP437; only the canonical hash input is UTF-8. */
+	for (const unsigned char *p = (const unsigned char *)name; *p; ++p) {
+		uint32_t cp = cpoint_from_cpchar(CIOLIB_CP437, *p);
 
-		if (consumed <= 0 || !nfd_append(&first, (uint32_t)cp))
+		if (!nfd_append(&first, cp))
 			goto done;
-		offset += consumed;
 	}
 	for (size_t i = 0; i < first.count; ++i) {
 		uint32_t mapping[3];
@@ -101,8 +98,8 @@ bbs_cache_key(char *result, size_t size, const char *name)
 	}
 	SHA256Init(&context);
 	for (size_t i = 0; i < folded.count; ++i) {
-		char bytes[4];
-		int count = utf8_putc(bytes, sizeof(bytes), (enum unicode_codepoint)folded.items[i]);
+		uint8_t bytes[4];
+		int count = utf8_from_cpoint(bytes, folded.items[i]);
 
 		if (count <= 0)
 			goto done;

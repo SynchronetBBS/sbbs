@@ -2,6 +2,8 @@
 
 #include "bbs_cache.h"
 #include "bbslist.h"
+#include <sha256.h>
+#include <utf8_codepages.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,12 +31,22 @@ key_tests(void)
 		{"Test*BBS", "6a031d7f31d5e11a60906b2884ef583d784050b41a8927efdf140b9e63146f8a"},
 		{"..", "5ec1f7e700f37c3d0b2981d04855fc34b94aaa15457b05ca571817442d228f81"},
 		{"trail ", "59413e908f3b72e4ce859bf153fffc8054615bc3e445f7ac5e7b2adb9b8bbe70"},
-		{"Stra\xc3\x9f" "e", "16d96952087774fee069b7585d3991b24d90c181c09b2129b4908c35baa7f0c0"},
-		{"\xc3\x85", "56bb553c77d36738947bd6a15549ade795b2c49047509632d90af5ff889cf66e"},
-		{"A\xcc\x8a", "56bb553c77d36738947bd6a15549ade795b2c49047509632d90af5ff889cf66e"},
-		{"\xc4\xb0", "fbbdb347060082cf4e72cdc5f02679dd809ebf4e6c601933e858d954a65f5e73"},
-		{"\xea\xb0\x80", "a0d2271e0fe8929d025eb859cde49251ba70c86abb76123f03f8d8eda1c98939"},
-		{"A\xcc\x95\xcc\x80", "918c0a9dec292c2a45d18cd248c2dae41091a23146b3874af24d6ee81c9d7ed1"},
+		/* CP437 bytes and Unicode-derived expected keys. */
+		{"Stra\xe1" "e", "16d96952087774fee069b7585d3991b24d90c181c09b2129b4908c35baa7f0c0"},
+		{"\x8f", "56bb553c77d36738947bd6a15549ade795b2c49047509632d90af5ff889cf66e"},
+		{"\x86", "56bb553c77d36738947bd6a15549ade795b2c49047509632d90af5ff889cf66e"},
+		{"Caf\x82", "81ef060bcd98adc7824eb5c1ada83c32491b16018e11e79f00ab9d09e04b015a"},
+		{"CAF\x90", "81ef060bcd98adc7824eb5c1ada83c32491b16018e11e79f00ab9d09e04b015a"},
+		/* These bytes are CP437 box-drawing/accents, even if valid UTF-8. */
+		{"\xc3\x85", "d3979b7daf2e8d599e9daf2f97a37423bd0355ab5e64d6b3e119cd64e8c41480"},
+		{"\x82", "bf12767b0f2a56b2190075bae8169f656e3ce8d6357d4aff184bc6c7ea48f9f6"},
+		{"\x90", "bf12767b0f2a56b2190075bae8169f656e3ce8d6357d4aff184bc6c7ea48f9f6"},
+		{"\xe4", "ff59ed1e562b056aea9bfdf757bada8c1eb638b10b75bfc7835beca4c2db0360"},
+		{"\xe5", "ff59ed1e562b056aea9bfdf757bada8c1eb638b10b75bfc7835beca4c2db0360"},
+		{"\xdb\xb0", "1aaa0cb9ac7af1d6daf2dfd6b23da04b55fd34c364e00961eb8ecbdf6046cfcc"},
+		/* Conio maps the CP437 broken vertical bar to U+00A6. */
+		{"|", "4b2674afa63919b46468d64d3defedb632a935d85c5c0860215c4da9481e27b8"},
+		{"\xff", "abfbd10daf8965c8860b3582af942d7a7cac972b31d1c50f382b67d9b6c07365"},
 	};
 	char key[BBS_CACHE_KEY_MAX + 1];
 	char expected[BBS_CACHE_KEY_MAX + 1];
@@ -50,9 +62,8 @@ key_tests(void)
 	}
 	CHECK(!bbs_cache_key(key, sizeof(key) - 1, "Normal Name"));
 	CHECK(!bbs_cache_key(key, sizeof(key), ""));
-	CHECK(!bbs_cache_key(key, sizeof(key), "\xc0\x80"));
-	CHECK(!bbs_cache_key(key, sizeof(key), "\xed\xa0\x80"));
-	CHECK(!bbs_cache_key(key, sizeof(key), "\xf4\x90\x80\x80"));
+	CHECK(!bbs_cache_key(key, sizeof(key), NULL));
+	CHECK(!bbs_cache_key(NULL, sizeof(key), "Normal Name"));
 	CHECK(!bbs_cache_key_recognized("Normal Name"));
 	CHECK(!bbs_cache_key_recognized("[636f6e]"));
 	CHECK(!bbs_cache_key_recognized("syncterm-system-cache"));
@@ -66,6 +77,50 @@ key_tests(void)
 	strcpy(path, "cache");
 	CHECK(bbs_cache_path(path, sizeof(path), path, "Normal Name"));
 	CHECK(strlen(path) == 76);
+	return 0;
+}
+
+static int
+cp437_byte_tests(void)
+{
+	SHA256_CTX context;
+	uint8_t digest[SHA256_DIGEST_SIZE];
+	char hex[SHA256_DIGEST_SIZE * 2 + 1];
+	char key[BBS_CACHE_KEY_MAX + 1];
+
+	/* Independent expectation: Python's CP437 codec and Unicode NFD/full
+	 * casefold, with conio's broken-vertical-bar mapping for byte 0x7c. */
+	SHA256Init(&context);
+	for (unsigned byte = 1; byte <= 255; ++byte) {
+		char name[] = {(char)byte, 0};
+
+		CHECK(bbs_cache_key(key, sizeof(key), name));
+		SHA256Update(&context, key, BBS_CACHE_KEY_MAX);
+	}
+	SHA256Final(&context, digest);
+	SHA256_hex(hex, digest);
+	CHECK(strcmp(hex, "ae2a5e1e51065f760e5e69409f86a9784f315fd66386a3478e87adf51aca5ee5") == 0);
+	return 0;
+}
+
+static int
+utf8_encoder_tests(void)
+{
+	uint8_t bytes[4];
+
+	CHECK(utf8_from_cpoint(bytes, 'A') == 1 && bytes[0] == 'A');
+	CHECK(utf8_from_cpoint(bytes, 0x00e9) == 2);
+	CHECK(memcmp(bytes, "\xc3\xa9", 2) == 0);
+	CHECK(utf8_from_cpoint(bytes, 0x0308) == 2);
+	CHECK(memcmp(bytes, "\xcc\x88", 2) == 0);
+	CHECK(utf8_from_cpoint(bytes, 0x2500) == 3);
+	CHECK(memcmp(bytes, "\xe2\x94\x80", 3) == 0);
+	CHECK(utf8_from_cpoint(bytes, 0x1f600) == 4);
+	CHECK(memcmp(bytes, "\xf0\x9f\x98\x80", 4) == 0);
+	CHECK(utf8_from_cpoint(bytes, 0xd800) == -1);
+	CHECK(utf8_from_cpoint(bytes, 0xdfff) == -1);
+	CHECK(utf8_from_cpoint(bytes, 0x110000) == -1);
+	CHECK(utf8_from_cpoint(NULL, 'A') == -1);
 	return 0;
 }
 
@@ -98,6 +153,7 @@ lifecycle_tests(void)
 	static const char *const unusual_names[] = {
 		"Test*BBS", "..", ".", "../Outside", "/", "One/Two", "One\\Two",
 		"NUL", "CON", "AUX", "COM1", "trail.", "trail ", ":?*\"<>|",
+		"Caf\x82", "CAF\x90", "\xc3\x85", "\xdb\xb0",
 	};
 
 	CHECK(bbs_cache_remove(root));
@@ -178,6 +234,8 @@ int
 main(void)
 {
 	CHECK(key_tests() == 0);
+	CHECK(cp437_byte_tests() == 0);
+	CHECK(utf8_encoder_tests() == 0);
 	CHECK(lifecycle_tests() == 0);
 	return 0;
 }

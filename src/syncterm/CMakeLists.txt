@@ -474,8 +474,9 @@ if(NOT WITHOUT_RETRO)
 endif()
 
 enable_testing()
-add_executable(bbs_cache_test bbs_cache_test.c bbs_cache.c)
-require_libs(bbs_cache_test hash encode xpdev)
+add_executable(bbs_cache_test
+	bbs_cache_test.c bbs_cache.c ../conio/utf8_codepages.c)
+require_libs(bbs_cache_test hash xpdev)
 target_include_directories(bbs_cache_test PRIVATE ../conio)
 target_compile_definitions(bbs_cache_test PRIVATE
 	SDL_MAIN_HANDLED

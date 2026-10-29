@@ -2307,6 +2307,13 @@ const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
 		atarist_unicode_table, atarist_ext_table, false},
 };
 
+int utf8_from_cpoint(uint8_t str[4], uint32_t cpoint)
+{
+	if (str == NULL || (cpoint >= 0xd800 && cpoint <= 0xdfff))
+		return -1;
+	return write_cp(str, cpoint);
+}
+
 uint8_t *cp_to_utf8(enum ciolib_codepage cp, const char *cpstr, size_t buflen, size_t *outlen)
 {
 	if (cp < 0 || cp >= CIOLIB_CP_COUNT)

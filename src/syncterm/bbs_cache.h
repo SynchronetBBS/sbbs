@@ -7,7 +7,7 @@
 
 #define BBS_CACHE_KEY_MAX 70
 
-/* Same [u18-SHA256(NFD(toCasefold(NFD(name))))] keys as SyncTERM v2. */
+/* CP437 input; same Unicode 18/SHA-256 keys as equivalent names in v2. */
 bool bbs_cache_key(char *result, size_t size, const char *name);
 bool bbs_cache_key_recognized(const char *key);
 /* Produces a literal path without a trailing separator; root may be result. */
