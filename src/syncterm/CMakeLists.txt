@@ -102,6 +102,7 @@ endif()
 set(SOURCE
 	audio_apc.c
 	bbslist.c
+	bbs_cache.c
 	bbslist_model.c
 	menu_settings.c
 	host_ui.c
@@ -473,6 +474,13 @@ if(NOT WITHOUT_RETRO)
 endif()
 
 enable_testing()
+add_executable(bbs_cache_test bbs_cache_test.c bbs_cache.c)
+require_libs(bbs_cache_test hash encode xpdev)
+target_include_directories(bbs_cache_test PRIVATE ../conio)
+target_compile_definitions(bbs_cache_test PRIVATE
+	SDL_MAIN_HANDLED
+	BBS_CACHE_TEST_DIRECTORY="${CMAKE_CURRENT_BINARY_DIR}/bbs-cache-test")
+add_test(NAME bbs_cache_test COMMAND bbs_cache_test)
 add_executable(theme_test theme_test.c theme.c theme_cloud.c)
 require_libs(theme_test hash xpdev)
 target_include_directories(theme_test PRIVATE ../conio ../sbbs3)

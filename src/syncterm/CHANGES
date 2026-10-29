@@ -1,6 +1,7 @@
 Version 1.10
 ------------
 BBS cache directories are now deleted/renamed with the entry
+Use portable per-BBS cache keys compatible with v2.0 (ticket #297)
 ANSI parser overhaul
 Keystroke handling overhaul
 Add DECRQSS support to show/hide/customize the status line

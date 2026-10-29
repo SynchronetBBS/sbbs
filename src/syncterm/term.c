@@ -23,6 +23,7 @@
 #include "syncterm.h"
 #include "telnet_io.h"
 #include "term.h"
+#include "bbs_cache.h"
 #include "theme.h"
 #include "threadwrap.h"
 #include "audio_apc.h"
@@ -3066,18 +3067,16 @@ save_screen_binary(FILE *fp, bool with_sauce, struct bbslist *bbs)
 int
 get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz)
 {
-	get_syncterm_filename(fn, fnsz, SYNCTERM_PATH_CACHE, false);
-	backslash(fn);
-	if (strlen(fn) + strlen(bbs->name) >= fnsz)
+	/* Reserve room for the trailing separator and NUL. */
+	if (fnsz < 2 ||
+	    get_syncterm_filename(fn, fnsz, SYNCTERM_PATH_CACHE, false) == NULL ||
+	    !bbs_cache_path(fn, fnsz - 1, fn, bbs->name))
 		return 0;
-	strcat(fn, bbs->name);
-	backslash(fn);
-	if (!isdir(fn)) {
-		if (mkpath(fn))
-			return 0;
-	}
-	if (!isdir(fn))
+	if (!isdir(fn) && mkpath(fn))
 		return 0;
+	if (!bbs_cache_is_directory(fn))
+		return 0;
+	backslash(fn);
 	return 1;
 }
 
@@ -3889,6 +3888,8 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 #endif
 	else if (strncmp(strbuf, "SyncTERM:C;L", 12) == 0) {
                 // Cache list
+		char pattern[MAX_PATH * 2 + 1];
+
 		if ((strbuf[12] != 0) && (strbuf[12] != ';'))
 			return;
 		if (!clean_path(fn, sizeof(fn))) {
@@ -3903,9 +3904,12 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 			p = "*";
 		else
 			p = strbuf + 13;
-		strlcat(fn, p, sizeof(fn));
+		if (!bbs_cache_glob_pattern(pattern, sizeof(pattern), fn, p)) {
+			conn_send("\x1b_SyncTERM:C;L\n\x1b\\", 17, 0);
+			return;
+		}
 		conn_send("\x1b_SyncTERM:C;L\n", 15, 0);
-		rc = glob(fn, GLOB_MARK, NULL, &gl);
+		rc = glob(pattern, GLOB_MARK, NULL, &gl);
 		if (rc != 0) {
 			conn_send("\x1b\\", 2, 0);
 			return;

@@ -1,6 +1,7 @@
 OBJS = \
                         $(MTOBJODIR)$(DIRSEP)ansi_filter$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)bbslist$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)bbs_cache$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)wren_picker_host$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)wren_bind_picker$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)fonts$(OFILE) \

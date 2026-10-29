@@ -119,6 +119,8 @@
     <ClCompile Include="..\sbbs3\zmodem.c" />
     <ClCompile Include="..\xpdev\xpbeep.c" />
     <ClCompile Include="bbslist.c" />
+    <ClCompile Include="bbs_cache.c" />
+    <ClCompile Include="..\hash\sha256.c" />
     <ClCompile Include="conn.c" />
     <ClCompile Include="conn_buf.c" />
     <ClCompile Include="conn_conpty.c" />

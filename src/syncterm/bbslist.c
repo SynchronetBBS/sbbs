@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #include "bbslist.h"
+#include "bbs_cache.h"
 #include "host_ui.h"
 #include "ini_crypt.h"
 #include "comio.h"
@@ -1643,23 +1644,13 @@ rename_bbs(const char *listpath, const char *old_name, struct bbslist *bbs)
 	if (success) {
 		char old_cache[MAX_PATH + 1];
 		char new_cache[MAX_PATH + 1];
-		if (get_syncterm_filename(old_cache, sizeof(old_cache),
-		    SYNCTERM_PATH_CACHE, false) != NULL) {
-			backslash(old_cache);
-			strlcpy(new_cache, old_cache, sizeof(new_cache));
-		}
-		else {
-			old_cache[0] = 0;
-			new_cache[0] = 0;
-		}
-		if (old_cache[0] != 0 &&
-		    strlen(old_cache) + strlen(old_name) < sizeof(old_cache) &&
-		    strlen(new_cache) + strlen(bbs->name) < sizeof(new_cache)) {
-			strcat(old_cache, old_name);
-			strcat(new_cache, bbs->name);
-			if (isdir(old_cache))
-				rename(old_cache, new_cache);
-		}
+		char cache_root[MAX_PATH + 1];
+		if (get_syncterm_filename(cache_root, sizeof(cache_root),
+		    SYNCTERM_PATH_CACHE, false) != NULL &&
+		    bbs_cache_path(old_cache, sizeof(old_cache), cache_root, old_name) &&
+		    bbs_cache_path(new_cache, sizeof(new_cache), cache_root, bbs->name) &&
+		    strcmp(old_cache, new_cache) != 0 && bbs_cache_is_directory(old_cache))
+			rename(old_cache, new_cache);
 	}
 	return success;
 }
@@ -1679,15 +1670,10 @@ delete_bbs(const char *listpath, struct bbslist *bbs)
 	strListFree(&inifile);
 	if (!success)
 		return false;
-	get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_CACHE, false);
-	backslash(cache_path);
-	if (strlen(cache_path) + strlen(bbs->name) < sizeof(cache_path)) {
-		strcat(cache_path, bbs->name);
-		if (isdir(cache_path)) {
-			delfiles(cache_path, NULL, 0);
-			rmdir(cache_path);
-		}
-	}
+	if (get_syncterm_filename(cache_path, sizeof(cache_path),
+	    SYNCTERM_PATH_CACHE, false) != NULL &&
+	    bbs_cache_path(cache_path, sizeof(cache_path), cache_path, bbs->name))
+		bbs_cache_remove(cache_path);
 	return true;
 }
 
@@ -1728,42 +1714,10 @@ save_webgets(void)
 void
 bbslist_sweep_orphan_caches(struct bbslist **list, size_t listcount)
 {
-	char          cache_root[MAX_PATH + 1];
-	char          entry_path[MAX_PATH + 1];
-	DIR          *dir;
-	struct dirent *ent;
-	bool          found;
+	char cache_root[MAX_PATH + 1];
 
-	if (!get_syncterm_filename(cache_root, sizeof(cache_root), SYNCTERM_PATH_CACHE, false))
-		return;
-	backslash(cache_root);
-	dir = opendir(cache_root);
-	if (dir == NULL)
-		return;
-	while ((ent = readdir(dir)) != NULL) {
-		if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
-			continue;
-		if (is_reserved_bbs_name(ent->d_name))
-			continue;
-		if (strlen(cache_root) + strlen(ent->d_name) >= sizeof(entry_path))
-			continue;
-		strcpy(entry_path, cache_root);
-		strcat(entry_path, ent->d_name);
-		if (!isdir(entry_path))
-			continue;
-		found = false;
-		for (size_t i = 0; i < listcount; i++) {
-			if (list[i] != NULL && stricmp(list[i]->name, ent->d_name) == 0) {
-				found = true;
-				break;
-			}
-		}
-		if (!found) {
-			delfiles(entry_path, NULL, 0);
-			rmdir(entry_path);
-		}
-	}
-	closedir(dir);
+	if (get_syncterm_filename(cache_root, sizeof(cache_root), SYNCTERM_PATH_CACHE, false))
+		bbs_cache_sweep(cache_root, list, listcount);
 }
 
 cterm_emulation_t
