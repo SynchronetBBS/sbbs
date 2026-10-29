@@ -39,7 +39,11 @@
 	/* Like the CI suite, these socket-only tests need no node config. */
 	if (program == "jsexec")
 		command += "-U -C " + quote("-c" + system.ctrl_dir) + " ";
-	var status = system.exec(command + quote(worker));
+	command += quote(worker);
+	/* CRT system() and the no-console launcher must preserve the same quotes. */
+	if (windows)
+		command = 'cmd.exe /D /S /C "' + command + '"';
+	var status = system.exec(command);
 	if (status != 0)
 		throw new Error(file_getname(worker) + " failed with exit status " + status);
 });
