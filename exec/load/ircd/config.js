@@ -339,13 +339,15 @@ function Read_Config_File() {
 		log(LOG_INFO,"Trying to read configuration from: " + Config_Filename);
 	file_handle = new File(Config_Filename);
 	if (file_handle.open("r")) {
-		if (Config_Filename.substr(Config_Filename.length-3,3) == "ini")
+		if (/\.ini$/i.test(Config_Filename))
 			read_ini_config(file_handle);
 		else
 			read_conf_config(file_handle);
 		file_handle.close();
-	} else if (!IRCDCFG_Editor) {
-		log(LOG_NOTICE, "Couldn't open configuration file! Proceeding with defaults only.");
+	} else {
+		load_config_defaults();
+		if (!IRCDCFG_Editor)
+			log(LOG_NOTICE, "Couldn't open configuration file! Proceeding with defaults only.");
 	}
 
 	if ((true_array_len(ILines) < 1) && !IRCDCFG_Editor)
@@ -564,6 +566,12 @@ function Write_Config_File(fn) {
 		c++;
 		f.writeln(format("[Services:%lu]", c));
 		f.writeln(format("Servername=%s", ULines[i]));
+		f.writeln("");
+	}
+	/* An explicit empty trust list must not reload the compiled-in defaults. */
+	if (!seen.length) {
+		f.writeln("[Services]");
+		f.writeln("Disabled=true");
 		f.writeln("");
 	}
 
@@ -834,13 +842,13 @@ function ini_Info(arg, ini) {
 		else if (/^[\x21-\x7e]{1,64}$/.test(name) && name.indexOf("\\") < 0) NetworkName = name;
 		else log(LOG_WARNING, "Invalid [Info] Networkname; use 1-64 printable ASCII characters without spaces or backslashes. Keeping " + NetworkName);
 	}
-	if (ini.Description)
+	if (ini.Description !== undefined)
 		ServerDesc = ini.Description;
-	if (ini.Admin1)
+	if (ini.Admin1 !== undefined)
 		Admin1 = ini.Admin1;
-	if (ini.Admin2)
+	if (ini.Admin2 !== undefined)
 		Admin2 = ini.Admin2;
-	if (ini.Admin3)
+	if (ini.Admin3 !== undefined)
 		Admin3 = ini.Admin3;
 }
 
@@ -1200,9 +1208,20 @@ function load_config_defaults(services_configured) {
 }
 
 function read_ini_config(conf) {
-	var ini = conf.iniGetAllObjects();
+	var ini = conf.iniGetAllObjects("name", false, true);
 	var Sections = new ini_sections();
 	var i, k, s, services_configured = false;
+
+	/* Info text may be deliberately cleared in the editor. Other sections
+	   retain the existing policy of treating blank values as unspecified. */
+	for (i in ini) {
+		if (ini[i].name.split(":")[0] == "Info")
+			continue;
+		for (k in ini[i]) {
+			if (k != "name" && ini[i][k] === "")
+				delete ini[i][k];
+		}
+	}
 
 	/* The presence of a Services section selects an explicit trust list,
 	   even if all such sections are empty or disabled. */
