@@ -603,6 +603,9 @@ void ANSI_Terminal::set_mouse(unsigned flags) {
 void ANSI_Terminal::handle_control_code() {
 	if (ansiParser.ansi_ibs == "") {
 		switch (ansiParser.ansi_final_byte) {
+			case 'D':	// IND - Index
+				inc_row();
+				break;
 			case 'E':	// NEL - Next Line
 				set_column();
 				inc_row();
@@ -613,6 +616,7 @@ void ANSI_Terminal::handle_control_code() {
 			case 'c':	// RIS - Reset to Initial State.. homes
 				set_column();
 				set_row();
+				curatr = ANSI_NORMAL;
 				break;
 		}
 	}
@@ -760,6 +764,8 @@ void ANSI_Terminal::handle_control_sequence() {
 					if (pval > row)
 						pval = row;
 					dec_row(pval);
+					if (ansiParser.ansi_final_byte == 'F')
+						set_column();
 					break;
 				case 'B':	// Cursor Down
 				case 'E':	// Cursor Next Line
@@ -769,6 +775,8 @@ void ANSI_Terminal::handle_control_sequence() {
 					if (pval >= (rows - row))
 						pval = rows - row - 1;
 					inc_row(pval);
+					if (ansiParser.ansi_final_byte == 'E')
+						set_column();
 					break;
 				case 'C':	// Cursor Right
 				case 'a':	// Cursor Position Forward
@@ -813,10 +821,12 @@ void ANSI_Terminal::handle_control_sequence() {
 				case 'I':	// Cursor Forward Tabulation
 					// TODO
 					break;
-				case 'J':	// Clear screen
-					// TODO: ANSI does not move cursor, ANSI-BBS does.
-					set_row();
-					set_column();
+				case 'J':	// Erase in Display
+					// Only "clear screen" homes the cursor, and only on ANSI-BBS terminals
+					if (ansiParser.get_pval(0, 0) == 2) {
+						set_row();
+						set_column();
+					}
 					break;
 				case 'Y':	// Line tab
 					// TODO: Track tabs
@@ -838,9 +848,16 @@ void ANSI_Terminal::handle_control_sequence() {
 				case 'm':	// Set Graphic Rendidtion
 					handle_SGR_sequence();
 					break;
-				case 'r':	// Set Top and Bottom Margins
-					// TODO
+				case 'r':	// Set Top and Bottom Margins (homes the cursor, if valid)
+				{
+					unsigned top = ansiParser.get_pval(0, 1);
+					unsigned bottom = ansiParser.get_pval(1, rows);
+					if (top >= 1 && bottom > top && bottom <= rows) {
+						set_row();
+						set_column();
+					}
 					break;
+				}
 				case 's':	// Save Current Position (also set left/right margins)
 					saved_row = row;
 					saved_column = column;
