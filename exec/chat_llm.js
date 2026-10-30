@@ -181,6 +181,11 @@ function load_config(persona_code)
     cfg.reply_dedup_window     = parseInt(cfg.reply_dedup_window, 10)   || 4;
     cfg.reply_dedup_min_tokens = parseInt(cfg.reply_dedup_min_tokens, 10) || 12;
 
+    /* Fraction of opening greetings taken from guru_file's HELLO
+     * section instead of the model.  0 disables. */
+    cfg.guru_greeting_chance = parseFloat(cfg.guru_greeting_chance);
+    if (isNaN(cfg.guru_greeting_chance)) cfg.guru_greeting_chance = 0.25;
+
     /* BM25 retrieval knobs (step 3). The indexer (exec/chat_index.js)
      * writes the index file; we just need its path and top_k here. */
     cfg.index_top_k         = parseInt(cfg.index_top_k, 10)         || 5;
@@ -2529,11 +2534,23 @@ function open_session(ctx)
                                   ctx, cfg.opening_system_prompt);
     var prompt_bytes = JSON.stringify(dbg_msgs).length;
 
+    /* Now and then open the way the pre-LLM Guru did, with a line from
+     * guru_file's HELLO section.  Not streamed: the C++ side types it
+     * out instead. */
+    var greeting = null;
+    var from_guru = false;
+    if (cfg.opening_prompt && Math.random() < cfg.guru_greeting_chance) {
+        greeting = guru_greeting(ctx, cfg);
+        from_guru = (greeting !== null);
+    }
+
     var t_llm0 = system.timer;
-    var greeting = llm_open(ctx, opts);
+    if (!from_guru) {
+        greeting = llm_open(ctx, opts);
+        if (greeting !== null) greeting = final_reply_postprocess(greeting);
+    }
     var t_llm = system.timer - t_llm0;
-    if (greeting !== null) greeting = final_reply_postprocess(greeting);
-    ctx._streamed = streaming && greeting !== null;
+    ctx._streamed = streaming && greeting !== null && !from_guru;
 
     if (greeting && cfg.memory_persist) {
         var bot_who = (ctx.persona && ctx.persona.name) || 'bot';
@@ -2549,6 +2566,7 @@ function open_session(ctx)
     ctx._profile = 'persona=' + (ctx.persona && ctx.persona.code || '?')
                  + ' model=' + (cfg.model || '?')
                  + ' open turn=' + t_total.toFixed(2) + 's'
+                 + (from_guru ? ' greeting=guru_file' : '')
                  + ' llm=' + t_llm.toFixed(2) + 's'
                  + (t_sum > 0 ? ' deferred_sum=' + t_sum.toFixed(2) + 's' : '')
                  + ' mem=' + t_mem.toFixed(3) + 's'
@@ -3905,6 +3923,33 @@ function guru_response(input, ctx, cfg, text) {
         if (!guru_match(sections[i].expr, norm)) continue;
         var answers = sections[i].answers;
         var pick = answers[Math.floor(Math.random() * answers.length)];
+        var expanded = guru_expand(pick, ctx);
+        if (expanded.length) return expanded;
+    }
+    return null;
+}
+
+/* A backtick code guru_expand() can only drop: the caller's real name,
+ * phone, birthdate, age and the like, which a live terminal session
+ * fills in but this engine doesn't. */
+var _GURU_UNFILLABLE_CODE = /`[^AGOSIMWYJTQH_!]/i;
+
+/* An opening greeting from the guru file's HELLO section -- what the
+ * legacy guruchat() says when a session starts -- or null if none
+ * qualifies.  Lines needing an unfillable code are passed over rather
+ * than shown with a hole where the caller's phone number would go. */
+function guru_greeting(ctx, cfg) {
+    var sections = _guru_sections(cfg);
+    if (!sections) return null;
+    for (var i = 0; i < sections.length; i++) {
+        if (!guru_match(sections[i].expr, 'HELLO')) continue;
+        var usable = [];
+        for (var j = 0; j < sections[i].answers.length; j++) {
+            if (!_GURU_UNFILLABLE_CODE.test(sections[i].answers[j]))
+                usable.push(sections[i].answers[j]);
+        }
+        if (!usable.length) continue;
+        var pick = usable[Math.floor(Math.random() * usable.length)];
         var expanded = guru_expand(pick, ctx);
         if (expanded.length) return expanded;
     }
