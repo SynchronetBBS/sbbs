@@ -332,7 +332,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack, enum qwkjob_resu
 		fseek(qwk, 0, SEEK_END);
 	}
 	SAFEPRINTF(str, "%sNEWFILES.DAT", cfg.temp_dir);
-	remove(str);
+	fremove(WHERE, str);
 	// Not in a pre-packed (off-line) packet: none has ever included one, and nothing
 	// saves the user's advanced new-file scan time afterward, so each repeats the list
 	if (!prepack && !(useron.rest & UREST_TRANSFER) && useron.qwk & QWK_FILES)
@@ -597,7 +597,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack, enum qwkjob_resu
 						write_error = true;
 					}
 					if (!flength(str))
-						remove(str);
+						fremove(WHERE, str);
 				}
 				smb_close(&smb);
 				free(post);
@@ -657,7 +657,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack, enum qwkjob_resu
 			write_error = true;
 		}
 		if (!flength(str))
-			remove(str);
+			fremove(WHERE, str);
 	}
 	term->newline();
 

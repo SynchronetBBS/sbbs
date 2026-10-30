@@ -371,6 +371,7 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 	size_t i;
 
 	if (p->tls_pending) {
+		// coverity[MISSING_LOCK:SUPPRESS] only this (the JS) thread writes sock
 		SOCKET sock = p->tls_pending->sock;
 		// Cancellation precedes closing the notification endpoint.
 		js_socket_cancel_tls_private(p);
@@ -2633,6 +2634,7 @@ static void js_socket_tls_thread(void *arg)
 	SetThreadName("sbbs/jsTLS");
 	int status = CRYPT_ERROR_NOTINITED;
 	if (ssl_sync(pending->cfg, pending->logger)) {
+		// coverity[MISSING_LOCK:SUPPRESS] session is not written until after our notification
 		status = add_private_key(pending->cfg, pending->logger, pending->session);
 		pending->key_added = status == CRYPT_OK;
 	}
@@ -2644,8 +2646,18 @@ static void js_socket_tls_thread(void *arg)
 	pthread_mutex_lock(&pending->mutex);
 	pending->status = status;
 	/* The event endpoint remains open until cancellation has set this flag. */
-	if (!pending->cancelled)
-		send(pending->notify, "x", 1, 0);
+	if (!pending->cancelled) {
+		int sent;
+		do {
+			sent = send(pending->notify, "x", 1, 0);
+		} while (sent == SOCKET_ERROR && SOCKET_ERRNO == EINTR);
+		if (sent != 1) {
+			pending->logger(LOG_ERR, "%04d TLS !ERROR %d sending handshake notification"
+			                , pending->sock, SOCKET_ERRNO);
+			// EOF still wakes the JS thread to collect the status
+			shutdown(pending->notify, SHUT_WR);
+		}
+	}
 	pthread_mutex_unlock(&pending->mutex);
 	js_socket_complete_tls_worker(pending);
 }

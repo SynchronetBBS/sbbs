@@ -1990,7 +1990,7 @@ int finduserstr_ex(scfg_t* cfg, int usernumber, enum user_field fnum
 		if (seekuserdat(file, unum)) {
 			while (got < want) {
 				ssize_t rd = read(file, buf + got, want - got);
-				if (rd <= 0)
+				if (rd <= 0 || (size_t)rd > want - got)
 					break;
 				got += (size_t)rd;
 			}
