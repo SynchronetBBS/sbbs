@@ -283,7 +283,7 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 		}
 	}
 	if ((atr & BG_UNKNOWN) && !(curatr & BG_UNKNOWN)) {
-		lastret = strlcat(str, "39;", strsz);
+		lastret = strlcat(str, "49;", strsz);
 		curatr &= ~0x70;
 		curatr |= BG_UNKNOWN;
 	}
