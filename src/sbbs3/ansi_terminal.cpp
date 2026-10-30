@@ -854,6 +854,19 @@ void ANSI_Terminal::handle_control_sequence() {
 					break;
 			}
 		}
+		else if (ansiParser.ansi_ibs == "*" && ansiParser.ansi_final_byte == 'r') {
+			// DECSCS - Select Communication Speed (Ps1 0 or 1 = output speed)
+			static const enum output_rate rate[] = {
+				output_rate_unlimited, output_rate_300, output_rate_600, output_rate_1200,
+				output_rate_2400, output_rate_4800, output_rate_9600, output_rate_19200,
+				output_rate_38400, output_rate_57600, output_rate_76800, output_rate_115200
+			};
+			if (ansiParser.get_pval(0, 0) < 2) {
+				pval = ansiParser.get_pval(1, 0);
+				if (pval < sizeof rate / sizeof rate[0])
+					cur_output_rate = rate[pval];
+			}
+		}
 	}
 }
 

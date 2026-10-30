@@ -60,7 +60,7 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 		console = orgcon;
 		attr(tmpatr);
 	}
-	if (!(mode & P_NOATCODES) && term->cur_output_rate != output_rate)
+	if (term->cur_output_rate != output_rate)
 		term->set_output_rate(output_rate);
 
 	if (mode & P_PETSCII)

@@ -501,7 +501,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 			console = orgcon;
 			attr(tmpatr);
 		}
-		if (!(mode & P_NOATCODES) && term->cur_output_rate != output_rate)
+		if (term->cur_output_rate != output_rate)
 			term->set_output_rate(output_rate);
 		if (mode & P_PETSCII)
 			term_out(PETSCII_UPPERLOWER);
