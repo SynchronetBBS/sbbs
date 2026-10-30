@@ -759,28 +759,40 @@ function HLine_Exists(str) {
 	return false;
 }
 
-function ini_sections() {
-	this.Info = ini_Info;
-	this.Port = ini_Port;
-	this.Class = ini_Class;
-	this.Allow = ini_Allow;
-	this.Operator = ini_Operator;
-	this.Services = ini_Services;
-	this.Ban = ini_Ban;
-	this.Restrict = ini_Restrict;
-	this.RBL = ini_RBL;
-	this.WebIRC = ini_WebIRC;
-	this.Server = ini_Server;
-	this.Hub = ini_Hub;
-	this.Capab = ini_Capab;
-	this.Clock = ini_Clock;
-	this.TLS = ini_TLS;
-	this.BBSServices = ini_BBSServices;
-	this.FileServ = ini_FileServ;
-	this.EmbeddedServices = ini_EmbeddedServices;
+/* File.iniGetAllObjects() preserves spelling, unlike native INI lookups.
+   Fold keys only: section arguments, passwords, paths and other values are data.
+   Handlers also accept ordinary objects from the editor and other callers. */
+function ini_keys(ini) {
+	var result = Object.create(null);
+	Object.keys(ini).forEach(function(key) { result[key.toLowerCase()] = ini[key]; });
+	return result;
 }
 
-function ini_TLS(arg, ini) { if (ini.CAFile !== undefined) TLS_Config.ca_file = String(ini.CAFile); }
+function ini_sections() {
+	this.info = ini_Info;
+	this.port = ini_Port;
+	this.class = ini_Class;
+	this.allow = ini_Allow;
+	this.operator = ini_Operator;
+	this.services = ini_Services;
+	this.ban = ini_Ban;
+	this.restrict = ini_Restrict;
+	this.rbl = ini_RBL;
+	this.webirc = ini_WebIRC;
+	this.server = ini_Server;
+	this.hub = ini_Hub;
+	this.capab = ini_Capab;
+	this.clock = ini_Clock;
+	this.tls = ini_TLS;
+	this.bbsservices = ini_BBSServices;
+	this.fileserv = ini_FileServ;
+	this.embeddedservices = ini_EmbeddedServices;
+}
+
+function ini_TLS(arg, ini) {
+	ini = ini_keys(ini);
+	if (ini.cafile !== undefined) TLS_Config.ca_file = String(ini.cafile);
+}
 
 /* Invalid TLS values fail closed rather than silently enabling plaintext. */
 function ini_tls(value, fallback) {
@@ -792,24 +804,26 @@ function ini_tls(value, fallback) {
 }
 
 function ini_BBSServices(arg, ini) {
-	if (ini.NickServ !== undefined) EmbeddedServices_Config.nickserv = ini_false_true(ini.NickServ);
-	if (ini.MemoServ !== undefined) EmbeddedServices_Config.memoserv = ini_false_true(ini.MemoServ);
-	if (ini.FileServ !== undefined) EmbeddedServices_Config.fileserv = ini_false_true(ini.FileServ);
-	if (ini.RequireTLS !== undefined) EmbeddedServices_Config.bbs_require_tls = ini_tls(ini.RequireTLS, false);
+	ini = ini_keys(ini);
+	if (ini.nickserv !== undefined) EmbeddedServices_Config.nickserv = ini_false_true(ini.nickserv);
+	if (ini.memoserv !== undefined) EmbeddedServices_Config.memoserv = ini_false_true(ini.memoserv);
+	if (ini.fileserv !== undefined) EmbeddedServices_Config.fileserv = ini_false_true(ini.fileserv);
+	if (ini.requiretls !== undefined) EmbeddedServices_Config.bbs_require_tls = ini_tls(ini.requiretls, false);
 }
 function ini_EmbeddedServices(arg, ini) {
-	if (ini.RequireTLS !== undefined) EmbeddedServices_Config.require_tls = ini_tls(ini.RequireTLS, false);
-	if (ini.MaxNicks !== undefined) {
-		var max = Number(ini.MaxNicks);
+	ini = ini_keys(ini);
+	if (ini.requiretls !== undefined) EmbeddedServices_Config.require_tls = ini_tls(ini.requiretls, false);
+	if (ini.maxnicks !== undefined) {
+		var max = Number(ini.maxnicks);
 		if (isFinite(max) && max > 0 && max % 1 == 0) EmbeddedServices_Config.max_nicks = max;
 		else log(LOG_WARNING, "Invalid [EmbeddedServices] MaxNicks; keeping " + EmbeddedServices_Config.max_nicks);
 	}
-	if (ini.Enabled !== undefined) EmbeddedServices_Config.enabled = ini_false_true(ini.Enabled);
-	if (ini.Host !== undefined) EmbeddedServices_Config.host = String(ini.Host).toLowerCase();
-	if (ini.Database !== undefined) EmbeddedServices_Config.database = ini.Database;
+	if (ini.enabled !== undefined) EmbeddedServices_Config.enabled = ini_false_true(ini.enabled);
+	if (ini.host !== undefined) EmbeddedServices_Config.host = String(ini.host).toLowerCase();
+	if (ini.database !== undefined) EmbeddedServices_Config.database = ini.database;
 	[["NickExpireDays", "nick_expire_days"], ["ChannelExpireDays", "channel_expire_days"]].forEach(function(setting) {
-		if (ini[setting[0]] === undefined) return;
-		var days = Number(ini[setting[0]]);
+		if (ini[setting[0].toLowerCase()] === undefined) return;
+		var days = Number(ini[setting[0].toLowerCase()]);
 		if (isFinite(days) && days >= 0 && Math.floor(days) == days && isFinite(days * 86400000))
 			EmbeddedServices_Config[setting[1]] = days;
 		else log(LOG_WARNING, "Invalid [EmbeddedServices] " + setting[0] + "; keeping " + EmbeddedServices_Config[setting[1]]);
@@ -817,8 +831,9 @@ function ini_EmbeddedServices(arg, ini) {
 }
 
 function ini_Clock(arg, ini) {
-	if (ini.MaxSkew !== undefined) {
-		var value = Number(ini.MaxSkew);
+	ini = ini_keys(ini);
+	if (ini.maxskew !== undefined) {
+		var value = Number(ini.maxskew);
 		if (isFinite(value) && value > 0 && Math.floor(value) == value)
 			Clock_MaxSkew = value;
 		else
@@ -827,33 +842,36 @@ function ini_Clock(arg, ini) {
 }
 
 function ini_Capab(arg, ini) {
-	if (ini.Enforce !== undefined)
-		CapabEnforce = ini_false_true(ini.Enforce);
+	ini = ini_keys(ini);
+	if (ini.enforce !== undefined)
+		CapabEnforce = ini_false_true(ini.enforce);
 }
 
 function ini_Info(arg, ini) {
-	if (ini.Servername)
-		ServerName = ini.Servername;
+	ini = ini_keys(ini);
+	if (ini.servername)
+		ServerName = ini.servername;
 	/* One printable token keeps the 001 network name and 005 NETWORK
 	   value identical. Backslashes introduce ISUPPORT escape sequences. */
-	if (ini.Networkname !== undefined) {
-		var name = String(ini.Networkname);
+	if (ini.networkname !== undefined) {
+		var name = String(ini.networkname);
 		if (!name) NetworkName = "Synchronet";
 		else if (/^[\x21-\x7e]{1,64}$/.test(name) && name.indexOf("\\") < 0) NetworkName = name;
 		else log(LOG_WARNING, "Invalid [Info] Networkname; use 1-64 printable ASCII characters without spaces or backslashes. Keeping " + NetworkName);
 	}
-	if (ini.Description !== undefined)
-		ServerDesc = ini.Description;
-	if (ini.Admin1 !== undefined)
-		Admin1 = ini.Admin1;
-	if (ini.Admin2 !== undefined)
-		Admin2 = ini.Admin2;
-	if (ini.Admin3 !== undefined)
-		Admin3 = ini.Admin3;
+	if (ini.description !== undefined)
+		ServerDesc = ini.description;
+	if (ini.admin1 !== undefined)
+		Admin1 = ini.admin1;
+	if (ini.admin2 !== undefined)
+		Admin2 = ini.admin2;
+	if (ini.admin3 !== undefined)
+		Admin3 = ini.admin3;
 }
 
 /* Former M:Line and P:Line combined into one */
 function ini_Port(arg, ini) {
+	ini = ini_keys(ini);
 	var port = parseInt(arg);
 	if (port != arg) {
 		log(LOG_WARNING,format(
@@ -863,8 +881,8 @@ function ini_Port(arg, ini) {
 		));
 		return;
 	}
-	if (ini_tls(ini.TLS !== undefined ? ini.TLS : ini.SSL, port == 6697 || port == 994)) TLS_Ports[port] = true;
-	if (ini_false_true(ini.Default)) {
+	if (ini_tls(ini.tls !== undefined ? ini.tls : ini.ssl, port == 6697 || port == 994)) TLS_Ports[port] = true;
+	if (ini_false_true(ini.default)) {
 		Default_Port = arg;
 		return;
 	}
@@ -875,6 +893,7 @@ function ini_Port(arg, ini) {
 /* Former Y:Line */
 /* Eventually it'd be nice to move to named classes instead of numbers. */
 function ini_Class(arg, ini) {
+	ini = ini_keys(ini);
 	var ircclass = parseInt(arg);
 
 	if (ircclass != arg) {
@@ -887,21 +906,22 @@ function ini_Class(arg, ini) {
 	}
 
 	YLines[ircclass] = new YLine(
-		ini_int_min_max(ini.PingFrequency, 1, 999, 60, format("PingFrequency IRC class %u",ircclass)),
-		ini_int_min_max(ini.ConnectFrequency, 0, 9999, 60, format("ConnectFrequency IRC class %u",ircclass)),
+		ini_int_min_max(ini.pingfrequency, 1, 999, 60, format("PingFrequency IRC class %u",ircclass)),
+		ini_int_min_max(ini.connectfrequency, 0, 9999, 60, format("ConnectFrequency IRC class %u",ircclass)),
 		/* Maximum of 0 means unlimited */
-		ini_int_min_max(ini.Maximum, 0, 99999, 100, format("Maximum IRC class %u",ircclass)),
-		ini_int_min_max(ini.SendQ, 2048, 999999999, 1000000, format("SendQ IRC class %u",ircclass))
+		ini_int_min_max(ini.maximum, 0, 99999, 100, format("Maximum IRC class %u",ircclass)),
+		ini_int_min_max(ini.sendq, 2048, 999999999, 1000000, format("SendQ IRC class %u",ircclass))
 	);
-	if (ini.Comment)
-		YLines[ircclass].comment = ini.Comment;
+	if (ini.comment)
+		YLines[ircclass].comment = ini.comment;
 }
 
 /* Former I:Line */
 function ini_Allow(arg, ini) {
+	ini = ini_keys(ini);
 	var ircclass, masks, port, i;
 
-	if (!ini.Mask) {
+	if (!ini.mask) {
 		log(LOG_WARNING,format(
 			"!WARNING No mask found in [Allow:%s], ignoring this section.",
 			arg
@@ -909,8 +929,8 @@ function ini_Allow(arg, ini) {
 		return;
 	}
 
-	ircclass = parseInt(ini.Class);
-	if (ircclass != ini.Class) {
+	ircclass = parseInt(ini.class);
+	if (ircclass != ini.class) {
 		log(LOG_WARNING,format(
 			"!WARNING No IRC class or malformed IRC class in Allow:%s. Using class of 0.",
 			arg
@@ -920,13 +940,13 @@ function ini_Allow(arg, ini) {
 
 	/* Optional Port=N restricts this I:line to connections arriving on that port */
 	port = 0;
-	if (ini.Port) {
-		port = parseInt(ini.Port);
-		if (port != ini.Port || port <= 0)
+	if (ini.port) {
+		port = parseInt(ini.port);
+		if (port != ini.port || port <= 0)
 			port = 0;
 	}
 
-	masks = ini.Mask.split(",");
+	masks = ini.mask.split(",");
 
 	for (i in masks) {
 		if (!masks[i].match("[@]")) {
@@ -939,7 +959,7 @@ function ini_Allow(arg, ini) {
 		}
 		ILines.push(new ILine(
 			masks[i],
-			ini.Password ? ini.Password : null,
+			ini.password ? ini.password : null,
 			masks[i], /* hostmask */
 			port,     /* 0 = any port */
 			ircclass
@@ -949,9 +969,10 @@ function ini_Allow(arg, ini) {
 
 /* Former O:Line */
 function ini_Operator(arg, ini) {
+	ini = ini_keys(ini);
 	var ircclass, masks, i, oline_flags;
 
-	if (!ini.Nick || !ini.Mask || !ini.Flags || !ini.Class) {
+	if (!ini.nick || !ini.mask || !ini.flags || !ini.class) {
 		log(LOG_WARNING,format(
 			"!WARNING Missing information from Operator:%s. Section ignored.",
 			arg
@@ -959,11 +980,11 @@ function ini_Operator(arg, ini) {
 		return;
 	}
 
-	oline_flags = parse_oline_flags(ini.Flags);
+	oline_flags = parse_oline_flags(ini.flags);
 
 	/* The S flag authenticates against the BBS system password, so Password
 	   is unused and expected to be absent. */
-	if (!ini.Password && !(oline_flags&OLINE_CHECK_SYSPASSWD)) {
+	if (!ini.password && !(oline_flags&OLINE_CHECK_SYSPASSWD)) {
 		log(LOG_WARNING,format(
 			"!WARNING No Password in Operator:%s, and no S flag to check the "
 			+ "system password instead. Section ignored.",
@@ -972,7 +993,7 @@ function ini_Operator(arg, ini) {
 		return;
 	}
 
-	if (!ini.Mask.match("[@]")) {
+	if (!ini.mask.match("[@]")) {
 		log(LOG_WARNING,format(
 			"!WARNING Malformed mask in Operator:%s. Proper format is user@hostname with wildcards.",
 			arg
@@ -980,8 +1001,8 @@ function ini_Operator(arg, ini) {
 		return;
 	}
 
-	ircclass = parseInt(ini.Class);
-	if (ircclass != ini.Class) {
+	ircclass = parseInt(ini.class);
+	if (ircclass != ini.class) {
 		log(LOG_WARNING,format(
 			"!WARNING Malformed IRC Class in Operator:%s. Proceeding with Class 0.",
 			arg
@@ -989,7 +1010,7 @@ function ini_Operator(arg, ini) {
 		ircclass = 0;
 	}
 
-	masks = ini.Mask.split(",");
+	masks = ini.mask.split(",");
 
 	for (i in masks) {
 		if (!masks[i].match("[@]")) {
@@ -1002,8 +1023,8 @@ function ini_Operator(arg, ini) {
 		}
 		OLines.push(new OLine(
 			masks[i],
-			ini.Password ? ini.Password : "",
-			ini.Nick,
+			ini.password ? ini.password : "",
+			ini.nick,
 			oline_flags,
 			ircclass
 		));
@@ -1014,16 +1035,18 @@ function ini_Operator(arg, ini) {
 
 /* Former U:Line */
 function ini_Services(arg, ini) {
-	if (ini.Servername && !ULine_Exists(ini.Servername))
-		ULines.push(ini.Servername);
+	ini = ini_keys(ini);
+	if (ini.servername && !ULine_Exists(ini.servername))
+		ULines.push(ini.servername);
 	return;
 }
 
 /* Former K:Line & Z:Line */
 function ini_Ban(arg, ini) {
+	ini = ini_keys(ini);
 	var kline_mask, masks, i;
 
-	if (!ini.Mask) {
+	if (!ini.mask) {
 		log(LOG_WARNING,format(
 			"!WARNING No mask provided in Ban:%s. Ignoring.",
 			arg
@@ -1031,7 +1054,7 @@ function ini_Ban(arg, ini) {
 		return;
 	}
 
-	masks = ini.Mask.split(",");
+	masks = ini.mask.split(",");
 
 	for (i in masks) {
 		kline_mask = create_ban_mask(masks[i], true /* kline */);
@@ -1047,7 +1070,7 @@ function ini_Ban(arg, ini) {
 
 		KLines.push(new KLine(
 			kline_mask,
-			ini.Reason ? ini.Reason : "No reason provided.",
+			ini.reason ? ini.reason : "No reason provided.",
 			"K" /* ban type: K, A, or Z. */
 		));	
 	}
@@ -1056,27 +1079,29 @@ function ini_Ban(arg, ini) {
 /* Former H:Line */
 /* Servermasks are deprecated */
 function ini_Hub(arg, ini) {
-	if (!ini.Servername) {
+	ini = ini_keys(ini);
+	if (!ini.servername) {
 		log(LOG_WARNING,format(
 			"!WARNING No Servername in [Hub:%s]. Section ignored.",
 			arg
 		));
 		return;
 	}
-	if (HLine_Exists(ini.Servername))
+	if (HLine_Exists(ini.servername))
 		return;
 	HLines.push(new HLine(
 		"*", /* servermask permitted */
-		ini.Servername /* servername */
+		ini.servername /* servername */
 	));
 	return;
 }
 
 /* Former C:Line and N:Line */
 function ini_Server(arg, ini) {
+	ini = ini_keys(ini);
 	var ircclass, port, tls;
 
-	if (!ini.Servername || !ini.Hostname || !ini.Class) {
+	if (!ini.servername || !ini.hostname || !ini.class) {
 		log(LOG_WARNING,format(
 			"!WARNING Missing information from [Server:%s], Section ignored.",
 			arg
@@ -1084,7 +1109,7 @@ function ini_Server(arg, ini) {
 		return;
 	}
 
-	if ((!ini.InboundPassword || !ini.OutboundPassword) && !ini.Password) {
+	if ((!ini.inboundpassword || !ini.outboundpassword) && !ini.password) {
 		log(LOG_WARNING,format(
 			"!WARNING No password provided for [Server:%s], Section ignored.",
 			arg
@@ -1092,13 +1117,13 @@ function ini_Server(arg, ini) {
 		return;
 	}
 
-	port = parseInt(ini.Port);
-	if (port != ini.Port)
+	port = parseInt(ini.port);
+	if (port != ini.port)
 		port = 0;
-	tls = ini_tls(ini.TLS, false) || port == 6697 || port == 994;
+	tls = ini_tls(ini.tls, false) || port == 6697 || port == 994;
 
-	ircclass = parseInt(ini.Class);
-	if (ircclass != ini.Class) {
+	ircclass = parseInt(ini.class);
+	if (ircclass != ini.class) {
 		log(LOG_WARNING,format(
 			"!WARNING Malformed IRC Class in [Server:%s], Using default class of 0.",
 			arg
@@ -1106,22 +1131,22 @@ function ini_Server(arg, ini) {
 		ircclass = 0;
 	}
 
-	if (ini_false_true(ini.Hub) && !HLine_Exists(ini.Servername))
-		HLines.push(new HLine("*", ini.Servername));
+	if (ini_false_true(ini.hub) && !HLine_Exists(ini.servername))
+		HLines.push(new HLine("*", ini.servername));
 
 	CLines.push(new CLine(
-		ini.Hostname,
-		ini.OutboundPassword ? ini.OutboundPassword : ini.Password,
-		ini.Servername,
+		ini.hostname,
+		ini.outboundpassword ? ini.outboundpassword : ini.password,
+		ini.servername,
 		port,
 		ircclass,
 		tls
 	));
 	NLines.push(new NLine(
-		ini.Hostname,
-		ini.InboundPassword ? ini.InboundPassword : ini.Password,
-		ini.Servername,
-		parse_nline_flags(ini.Flags),
+		ini.hostname,
+		ini.inboundpassword ? ini.inboundpassword : ini.password,
+		ini.servername,
+		parse_nline_flags(ini.flags),
 		ircclass,
 		tls
 	));
@@ -1129,9 +1154,10 @@ function ini_Server(arg, ini) {
 
 /* Former Q:Lines */
 function ini_Restrict(arg, ini) {
+	ini = ini_keys(ini);
 	var masks, i;
 
-	if (!ini.Mask) {
+	if (!ini.mask) {
 		log(LOG_WARNING,format(
 			"!WARNING Missing Mask from Restrict:%s. Section ignored.",
 			arg
@@ -1139,38 +1165,40 @@ function ini_Restrict(arg, ini) {
 		return;
 	}
 
-	masks = ini.Mask.split(",");
+	masks = ini.mask.split(",");
 
 	for (i in masks) {
 		if (QLine_Exists(masks[i]))
 			continue;
 		QLines.push(new QLine(
 			masks[i],
-			ini.Reason ? ini.Reason : "No reason provided."
+			ini.reason ? ini.reason : "No reason provided."
 		));
 	}
 }
 
 function ini_RBL(arg, ini) {
-	if (!ini.Hostname) {
+	ini = ini_keys(ini);
+	if (!ini.hostname) {
 		log(LOG_WARNING,format(
 			"!WARNING No Hostname in RBL:%s. Ignoring.",
 			arg
 		));
 		return;
 	}
-	RBL.push(new RBL_Config_Object(ini.Hostname, ini.GoodResponses, ini.BadResponses));
+	RBL.push(new RBL_Config_Object(ini.hostname, ini.goodresponses, ini.badresponses));
 }
 
 function ini_WebIRC(arg, ini) {
-	if (!ini.Hostname || !ini.Password) {
+	ini = ini_keys(ini);
+	if (!ini.hostname || !ini.password) {
 		log(LOG_WARNING,format(
 			"!WARNING [WebIRC:%s] requires both Hostname and Password. Section ignored.",
 			arg
 		));
 		return;
 	}
-	WLines.push(new WLine(ini.Hostname, ini.Password));
+	WLines.push(new WLine(ini.hostname, ini.password));
 }
 
 function load_config_defaults(services_configured) {
@@ -1208,14 +1236,14 @@ function load_config_defaults(services_configured) {
 }
 
 function read_ini_config(conf) {
-	var ini = conf.iniGetAllObjects("name", false, true);
+	var ini = conf.iniGetAllObjects("name", false, true).map(ini_keys);
 	var Sections = new ini_sections();
 	var i, k, s, services_configured = false;
 
 	/* Info text may be deliberately cleared in the editor. Other sections
 	   retain the existing policy of treating blank values as unspecified. */
 	for (i in ini) {
-		if (ini[i].name.split(":")[0] == "Info")
+		if (ini[i].name.split(":")[0].toLowerCase() == "info")
 			continue;
 		for (k in ini[i]) {
 			if (k != "name" && ini[i][k] === "")
@@ -1226,7 +1254,7 @@ function read_ini_config(conf) {
 	/* The presence of a Services section selects an explicit trust list,
 	   even if all such sections are empty or disabled. */
 	for (i in ini) {
-		if (ini[i].name.split(":")[0] == "Services") {
+		if (ini[i].name.split(":")[0].toLowerCase() == "services") {
 			services_configured = true;
 			break;
 		}
@@ -1240,14 +1268,15 @@ function read_ini_config(conf) {
 			if (k != "name" && typeof ini[i][k] == "string")
 				ini[i][k] = expand_config_macros(ini[i][k]);
 		}
-		if (ini_false_true(ini[i].disabled) || ini_false_true(ini[i].Disabled))
+		if (ini_false_true(ini[i].disabled))
 			continue;
 		s = ini[i].name.split(":");
+		s[0] = s[0].toLowerCase();
 		/* EmbeddedServices.Enabled controls hosting the authority. Leaves
 		   still need Host and policy settings when hosting is disabled. */
-		if (!ini_true_false(ini[i].enabled) || (s[0] != "EmbeddedServices" && !ini_true_false(ini[i].Enabled)))
+		if (s[0] != "embeddedservices" && !ini_true_false(ini[i].enabled))
 			continue;
-		if (typeof Sections[s[0]] === 'function')
+		if (Object.prototype.hasOwnProperty.call(Sections, s[0]))
 			Sections[s[0]](s[1], ini[i]);
 	}
 }
@@ -1556,10 +1585,11 @@ var IRC_files_ini = {IncludeLibs:"include_libs", ExcludeLibs:"exclude_libs", Inc
 	PortFirst:"port_first", PortLast:"port_last", TLS:"tls", MaxDownloads:"max_downloads", MaxChats:"max_chats",
 	MaxQueue:"max_queue", UserQueue:"user_queue", PageSize:"page_size", Timeout:"timeout", JSexec:"jsexec"};
 function ini_FileServ(arg, ini) {
+	ini = ini_keys(ini);
 	var c=EmbeddedServices_Config.files;
 	Object.keys(IRC_files_ini).forEach(function(key) {
-		if (ini[key]===undefined) return;
-		var name=IRC_files_ini[key],value=ini[key];
+		if (ini[key.toLowerCase()]===undefined) return;
+		var name=IRC_files_ini[key],value=ini[key.toLowerCase()];
 		if (typeof c[name]=="number") {
 			value=Number(value);
 			var zero=["guest","port_first","port_last"].indexOf(name)>=0;

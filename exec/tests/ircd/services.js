@@ -212,7 +212,7 @@ run_tests({
 		scope.read_ini_config({iniGetAllObjects:function() { return [
 			{name:"Info",Enabled:false,Servername:"disabled.test"},
 			{name:"EmbeddedServices",Disabled:true,Enabled:true,Host:"disabled.test"},
-			{name:"EmbeddedServices",enabled:false,Host:"lowercase-disabled.test"}
+			{name:"embeddedservices",disabled:true,enabled:true,host:"lowercase-disabled.test"}
 		]; }});
 		check(scope.ServerName != "disabled.test" && scope.EmbeddedServices_Config.host == "services.synchro.net" && !scope.EmbeddedServices_Config.enabled);
 	},
