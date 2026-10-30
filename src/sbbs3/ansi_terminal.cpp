@@ -411,6 +411,10 @@ bool ANSI_Terminal::getxy(unsigned* x, unsigned* y)
 				sbbs->ungetkeys(str, /* insert */ false);
 				rsp = 0;
 				state = state_escape;
+				if (x != NULL)
+					*x = 0;
+				if (y != NULL)
+					*y = 0;
 			}
 		}
 		if (time(NULL) - start > TIMEOUT_ANSI_GETXY) {
