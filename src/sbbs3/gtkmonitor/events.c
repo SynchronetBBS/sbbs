@@ -89,7 +89,7 @@ G_MODULE_EXPORT void on_text_strings1_activate(GtkWidget *wiggy, gpointer data) 
 }
 
 G_MODULE_EXPORT void on_default_colours1_activate(GtkWidget *wiggy, gpointer data) {
-	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"attr.cfg");
+	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"attr.ini");
 }
 
 G_MODULE_EXPORT void on_nodes_full_message1_activate(GtkWidget *wiggy, gpointer data) {

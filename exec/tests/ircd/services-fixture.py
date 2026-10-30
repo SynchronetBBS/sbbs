@@ -18,7 +18,8 @@ for role in ['', 'hub', 'home', 'edge']:
     dest = root / role
     for directory in ['ctrl', 'data/user', 'data/msgs', 'node1', 'text', 'mods']:
         (dest / directory).mkdir(parents=True, exist_ok=True)
-    for filename in ['main.ini', 'msgs.ini', 'file.ini', 'xtrn.ini', 'chat.ini', 'attr.ini', 'text.dat']:
+    # Copy required runtime configuration only; colour settings use defaults.
+    for filename in ['main.ini', 'msgs.ini', 'file.ini', 'xtrn.ini', 'chat.ini', 'text.dat']:
         shutil.copyfile(args.template_ctrl / filename, dest / 'ctrl' / filename)
     shutil.copyfile(args.template_ctrl.parent / "node1/node.ini", dest / "node1/node.ini")
     main = dest / 'ctrl/main.ini'

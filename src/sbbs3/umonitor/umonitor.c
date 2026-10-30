@@ -742,7 +742,7 @@ int edit_cfg(scfg_t *cfg)
 	strcpy(opt[i++],"sbbs.ini");
 	strcpy(opt[i++],"modopts.ini");
 	strcpy(opt[i++],"alias.cfg");
-	strcpy(opt[i++],"attr.cfg");
+	strcpy(opt[i++],"attr.ini");
 	strcpy(opt[i++],"dns_blacklist.cfg");
 	strcpy(opt[i++],"dnsbl_exempt.cfg");
 	strcpy(opt[i++],"domains.cfg");

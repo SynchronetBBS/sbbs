@@ -94,7 +94,7 @@ A `~` before a character marks it as a command key. On ANSI terminals it gets hi
 "~Yes, ~No, or ~Quit: "
 ```
 
-becomes `Yes, No, or Quit: ` with `Y`/`N`/`Q` highlighted, or `(Y)es, (N)o, or (Q)uit: ` on non-ANSI. Colours come from `ctrl/attr.cfg`. See `custom:mnemonics`.
+becomes `Yes, No, or Quit: ` with `Y`/`N`/`Q` highlighted, or `(Y)es, (N)o, or (Q)uit: ` on non-ANSI. Colours come from `ctrl/attr.ini`. See `custom:mnemonics`.
 
 ### printf %-specifiers
 
