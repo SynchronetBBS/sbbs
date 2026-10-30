@@ -4141,12 +4141,16 @@ function append_wiki_url_if_missing(reply, ctx)
      * path.  BM25 can return a high-scoring hit that's topically
      * off (e.g. person:digital_man scoring well for "what was
      * PC-Pursuit?" because of shared "BBS" / "history" tokens in
-     * the chunk body).  Tokenize the URL's path (split on
+     * the chunk body).  Tokenize the URL's page name (split on
      * non-alphanumerics) and the query's tokens; require at least
-     * one >2-char overlap. */
+     * one >2-char overlap.  The #section anchor is left out: anchors
+     * are full of generic how-to words ("step", "adding", "your"),
+     * so "step on toes" matched dove-net#step_3_adding_... and an
+     * off-topic remark got a DOVE-Net link. */
     var query_tokens = ctx._rag_query_tokens;
     if (query_tokens && query_tokens.length) {
-        var path = url.replace(/^https?:\/\/[^\/]+\/?/, '').toLowerCase();
+        var path = url.replace(/^https?:\/\/[^\/]+\/?/, '')
+                      .replace(/#.*$/, '').toLowerCase();
         var url_tokens = {};
         var parts = path.split(/[^a-z0-9]+/);
         for (var pi = 0; pi < parts.length; pi++) {
