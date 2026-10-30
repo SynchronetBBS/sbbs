@@ -170,6 +170,15 @@
   "send failed" warnings when the client disconnects mid-message
 - Fix line-wrap divide-by-zero crash when an SFTP-only client
   connects (no terminal dimensions negotiated, issue #1120)
+- Fix: an emulated baud rate set by a message (or other output) is
+  now restored when the display ends or is aborted
+- Fix: aborting a pause prompt with the spinning cursor enabled left
+  the prompt's first character (`[`) on screen
+- Fix: resetting to the terminal's default background color sent
+  the wrong code (regression from v3.21)
+- Fix: clear-to-end-of-screen (Ctrl-A `J`, `@CLR2EOS@`) threw off
+  the tracked cursor position, delaying the next auto-pause
+  (issue #1314)
 - VT320 status-line control (`DECSSDT` / `DECSASD`) — the BBS can
   now write to the bottom status row of a terminal that supports
   it
