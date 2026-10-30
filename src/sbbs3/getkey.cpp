@@ -74,7 +74,7 @@ char sbbs_t::getkey(int mode)
 		}
 		ch = inkey(mode, mode & K_SPIN ? 200:1000);
 		if (sys_status & SS_ABORT)
-			return 0;
+			continue;   // erase the spinning cursor (above) before returning
 		now = time(NULL);
 		if (ch) {
 			if (mode & K_NUMBER && IS_PRINTABLE(ch) && !IS_DIGIT(ch))
