@@ -122,6 +122,15 @@ CD /
 
 `CD ..` moves up one level; `CD /` returns to the root. `PWD` shows the current
 virtual path. `CD /LIBRARY/DIRECTORY` also jumps directly to a directory.
+`CD`, `PWD`, `DIR`/`LS` and `QUIT`/`EXIT` require DCC chat. Sending them through
+IRC produces a private NOTICE explicitly identifying the received transport:
+"This command arrived via IRC PRIVMSG, not DCC chat." It explains how to
+open a new browser with `CHAT [TLS|PLAIN]`, including when a disconnected
+DCC window has reverted to an IRC dialog. Accept the DCC offer and enter
+commands in that chat window. IRC commands do not share the browser's current directory:
+use the full `LIST <library/directory>`, `INFO <library/directory> <filename>`
+or `GET <library/directory> <filename>` syntax there. Bare `LIST`, `LIST .`
+and filename-only `INFO`/`GET` are browser shortcuts.
 Names match without regard to case. Quote names containing spaces. Separators,
 quotes, percent signs and control characters within a native name are displayed
 with percent escapes, so the displayed component can be used in commands.

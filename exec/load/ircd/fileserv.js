@@ -57,6 +57,9 @@ var IRC_files_help = {
 	CD:"CD <library|directory|library/directory|..|/> — DCC chat only. Enter a library or one of its directories by short name, move up one level with .., or return to the root with /. Full internal directory codes remain accepted. Quote names containing spaces.",
 	PWD:"PWD — DCC chat only. Show the current virtual location: /, /LIBRARY or /LIBRARY/DIRECTORY.",
 	DIR:"DIR [mask] [page] — DCC chat only; LS is an alias. At /, list libraries. In a library, list directory short names. In a directory, list files. Masks match names in the current location.",
+	LS:"LS [mask] [page] — DCC chat only. Alias for DIR; list the current virtual location.",
+	QUIT:"QUIT — DCC chat only; EXIT is an alias. Close the FileServ browser and keep your IRC connection open.",
+	EXIT:"EXIT — DCC chat only. Alias for QUIT; close the FileServ browser.",
 	ADDRESS:"ADDRESS [numeric-IP|RESET] — Privately set the expected incoming DCC peer address for new GET/CHAT requests (useful behind a bouncer). Its address family selects the BBS's IPv4 or IPv6 endpoint. RESET restores your IRC connection address. Connections from other IPs are rejected. Queued and active requests keep their original addresses. Does not change your BBS record.",
 	QUEUE:"QUEUE — List your pending downloads and active DCC sessions. FileServ limits transfers to one per BBS account, with bounded per-session and server queues.",
 	CANCEL:"CANCEL [id|ALL] — Cancel your matching queued or active DCC work. With no argument cancels all your downloads. Acknowledged partial downloads receive native BBS accounting; cancellation does not undo credits already used."
@@ -160,6 +163,20 @@ IRC_FileServ.prototype.command = function(user,text,chat,from_channel) {
 	if (!chat) s.last=system.timer;
 	var args;try { args=IRC_files_args(text); } catch(e) { this.notice(s,e.message,chat);return; }
 	var command=(args.shift() || "HELP").toUpperCase();
+	if (!chat) {
+		var browser_required=function(message) {
+			self.notice(s,"This command arrived via IRC PRIVMSG, not DCC chat. "+message+" Open a new DCC browser with /msg "+self.bot.nick+" CHAT [TLS|PLAIN], accept the DCC offer, then enter commands in that chat.");
+		};
+		if (["CD","PWD","DIR","LS","QUIT","EXIT"].indexOf(command)>=0) {
+			browser_required(command+" requires DCC chat.");return;
+		}
+		if (command=="LIST" && (!args.length || args[0]==".")) {
+			browser_required("On IRC, use LIST <library/directory> [filename-mask] [page]. LIST without a directory or LIST . requires DCC chat.");return;
+		}
+		if ((command=="INFO" || command=="GET") && (args.length==1 || (command=="GET" && args.length==2 && /^(TLS|PLAIN)$/i.test(args[1])))) {
+			browser_required("On IRC, use "+command+" <library/directory> <filename>"+(command=="GET" ? " [TLS|PLAIN]" : "")+". Omitting the directory requires a current directory in DCC chat.");return;
+		}
+	}
 	var browse=chat && (command=="DIR" || command=="LS" || (command=="LIST" && (!args.length || args[0]==".")));
 	if (browse && command=="LIST" && args[0]==".") args.shift();
 	if (chat) {
@@ -168,7 +185,7 @@ IRC_FileServ.prototype.command = function(user,text,chat,from_channel) {
 		if (browse) { command=chat.cwd ? "LIST" : chat.library ? "DIRS" : "LIBS";if (chat.cwd) args.unshift(chat.cwd); }
 		if ((command=="GET" || command=="INFO") && chat.cwd && (args.length==1 || (command=="GET" && args.length==2 && /^(TLS|PLAIN)$/i.test(args[1])))) args.unshift(chat.cwd);
 	}
-	if (command=="HELP") { this.notice(s,args.length ? (IRC_files_help[args[0].toUpperCase()] || "Unknown command. HELP lists commands.") : "Commands: "+Object.keys(IRC_files_help).join(", ")+". Use HELP <command> for syntax and details."+(chat ? " Chat also supports CD, PWD, DIR and QUIT." : ""),chat);return; }
+	if (command=="HELP") { this.notice(s,args.length ? (IRC_files_help[args[0].toUpperCase()] || "Unknown command. HELP lists commands.") : "Commands: HELP, LIBS, DIRS, LIST, SEARCH, INFO, GET, CHAT, ADDRESS, QUEUE, CANCEL. DCC chat only: CD, PWD, DIR (LS), QUIT (EXIT). Use HELP <command> for syntax and details.",chat);return; }
 	if (command=="ADDRESS") {
 		if (chat || from_channel) { this.notice(s,"Use ADDRESS privately on IRC.",chat);return; }
 		if (args.length>1 || (args.length && args[0].toUpperCase()!="RESET" && !IRC_files_ip(args[0]))) { this.notice(s,IRC_files_help.ADDRESS);return; }
@@ -204,7 +221,7 @@ IRC_FileServ.prototype.command = function(user,text,chat,from_channel) {
 			try {
 				if (command=="CHAT") { self.start_chat(s,tls,endpoint);return; }
 				if (command=="CD") {
-					if (!chat || args.length!=1) throw new Error("Syntax in DCC chat: CD <library|directory|library/directory|..|/>");
+					if (args.length!=1) throw new Error("Syntax: CD <library|directory|library/directory|..|/>");
 					var location=IRC_files_cd(args[0],IRC_files_user(identity,self.config),self.config,!identity,chat.library);
 					chat.library=location.library;chat.cwd=location.dir;
 					self.notice(s,"/"+(chat.cwd ? IRC_files_label(file_area.dir[chat.cwd]) : IRC_files_component(chat.library)),chat);return;

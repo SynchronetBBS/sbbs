@@ -17,7 +17,7 @@ function policy() {
 function adapter() {
 	var scope={Users:{},system:{timer:100},ServerName:"here.test"};load(scope,"ircd/services-common.js");load(scope,"ircd/fileserv.js");
 	var a=Object.create(scope.IRC_FileServ.prototype),u={nick:"Reader",local:true,servername:"here.test",ip:"127.0.0.1"};scope.Users.READER=u;
-	a.manager={ref:function() { return "session"; },config:{qwk:"HERE"}};a.config=IRC_files_defaults();a.config.address="127.0.0.1";a.sessions={};a.workers={};a.reaping={};a.pending=[];a.serial=0;a.output=[];a.dns={};
+	a.manager={ref:function() { return "session"; },config:{qwk:"HERE"}};a.bot={nick:"FileServ_HERE"};a.config=IRC_files_defaults();a.config.address="127.0.0.1";a.sessions={};a.workers={};a.reaping={};a.pending=[];a.serial=0;a.output=[];a.dns={};
 	a.notice=function(s,text) { a.output.push(text); };a.authorize=function(s,callback) { s.authorized=200;callback(null); };
 	return {scope:scope,a:a,u:u};
 }
@@ -157,8 +157,61 @@ run_tests({
 		t.a.command(t.u,'LIST "Other/Downloads" *.txt',chat);var request=requests.pop();
 		check(request.command=="LIST" && request.args.join("|")=="Other/Downloads|*.txt" && !request.context.browse);
 		/* IRC queries never inherit the DCC browser's current directory. */
-		t.a.command(t.u,"LIST");request=requests.pop();check(request.command=="LIST" && !request.args.length && !request.context.browse);
-		t.scope.system.timer++;t.a.command(t.u,"PWD");check(t.a.output.pop().indexOf("Unknown command")>=0);
+		t.a.command(t.u,"LIST id_public");request=requests.pop();check(request.command=="LIST" && request.args[0]=="id_public" && !request.context.browse && !request.context.library);
+		t.scope.system.timer++;t.a.command(t.u,"PWD");check(t.a.output.pop().indexOf("requires DCC chat")>=0);
+	},
+	"DCC-only commands over IRC give private NOTICE instructions before authorization":function() {
+		["CD", "cd Files", "PWD", "DIR", "ls *.zip", "QUIT", "exit"].forEach(function(command) {
+			var t=adapter(),lines=[];
+			t.a.notice=t.scope.IRC_FileServ.prototype.notice;
+			t.u.originatorout=function(line,bot) { check(bot===t.a.bot);lines.push(line); };
+			t.a.authorize=function() { throw new Error("Transport rejection attempted authorization"); };
+			t.a.spawn=function() { throw new Error("Transport rejection started a worker"); };
+			var s=t.a.session(t.u);s.checking=true;s.catalog=2;
+			t.a.command(t.u,command);
+			check(lines.length && lines.every(function(line) { return line.indexOf("NOTICE Reader :")==0; }));
+			var reply=lines.join(" ");
+			check(reply.indexOf("This command arrived via IRC PRIVMSG, not DCC chat.")>=0);
+			check(reply.indexOf(command.split(" ")[0].toUpperCase()+" requires DCC chat")>=0);
+			check(reply.indexOf("/msg FileServ_HERE CHAT [TLS|PLAIN]")>=0 && reply.indexOf("accept the DCC offer")>=0);
+			check(!t.a.pending.length && !Object.keys(t.a.workers).length);
+		});
+	},
+	"current-directory shortcuts over IRC explain the full syntax and DCC alternative":function() {
+		["LIST", "LIST .", "list . *.zip 2", "INFO readme.txt", "GET archive.zip", "GET archive.zip plain"].forEach(function(command) {
+			var t=adapter();
+			t.a.authorize=function() { throw new Error("Shortcut rejection attempted authorization"); };
+			t.a.command(t.u,command);
+			var reply=t.a.output.join(" "),verb=command.split(" ")[0].toUpperCase();
+			check(reply.indexOf("This command arrived via IRC PRIVMSG, not DCC chat.")>=0);
+			check(reply.indexOf("On IRC, use "+verb+" <library/directory>")>=0);
+			check(reply.indexOf("DCC chat")>=0 && reply.indexOf("/msg FileServ_HERE CHAT")>=0);
+		});
+	},
+	"FileServ help separates DCC-only commands and documents their aliases":function() {
+		var t=adapter();t.a.command(t.u,"HELP");
+		check(t.a.output.pop().indexOf("DCC chat only: CD, PWD, DIR (LS), QUIT (EXIT)")>=0);
+		["CD", "PWD", "DIR", "LS", "QUIT", "EXIT"].forEach(function(command) {
+			t.scope.system.timer++;t.a.command(t.u,"HELP "+command);
+			check(t.a.output.pop().indexOf("DCC chat only")>=0);
+		});
+	},
+	"DCC-only commands retain their browser behavior and unrelated typos remain unknown":function() {
+		var t=adapter(),chat={},messages=[];
+		t.a.write=function(where,message) { check(where===chat);messages.push(message); };
+		t.a.command(t.u,"QUIT",chat);t.a.command(t.u,"EXIT",chat);
+		check(messages.length==2 && messages.every(function(m) { return m.type=="exit"; }));
+		t.a.command(t.u,"TYPO");check(t.a.output.pop()=="Unknown command. Use HELP.");
+	},
+	"commands falling back to IRC after DCC closes identify the received transport":function() {
+		var t=adapter(),chat={},closed=false;
+		t.a.write=function(where,message) { check(where===chat);closed=message.type=="exit"; };
+		t.a.command(t.u,"PWD",chat);check(t.a.output.pop()=="/");
+		t.a.command(t.u,"QUIT",chat);check(closed);
+		t.a.command(t.u,"PWD");
+		var reply=t.a.output.pop();
+		check(reply.indexOf("This command arrived via IRC PRIVMSG, not DCC chat.")==0);
+		check(reply.indexOf("Open a new DCC browser")>=0 && reply.indexOf("/msg FileServ_HERE CHAT")>=0);
 	},
 	"DCC accepts numeric addresses without DNS and rejects invalid IPv4 octets":function() {
 		check(IRC_files_ip("::ffff:127.0.0.1")=="127.0.0.1");check(!IRC_files_ip("256.1.2.3") && !IRC_files_ip("example.com"));
