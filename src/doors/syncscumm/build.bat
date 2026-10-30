@@ -98,9 +98,24 @@ if defined DOCLEAN (
 )
 
 rem --- 1. Junction backends\platform\termgfx -> door ----------------------
+rem A junction left in the tree is dangerous to the NEXT checkout: git replaces
+rem it with the tracked symlink file and deletes door\'s files through it on
+rem the way, leaving the door sources missing until a later checkout restores
+rem them. Every exit below drops the junction, and any door file a stale one
+rem cost us is restored here (only files git reports deleted -- local edits
+rem to the rest are kept).
+for /f "delims=" %%F in ('git -C "%SRCDIR%" ls-files --deleted -- door 2^>nul') do (
+    echo [build] Restoring deleted %%F
+    git -C "%SRCDIR%" checkout -- "%%F"
+)
 set "BACKLINK=%SVM%\backends\platform\termgfx"
 if not exist "%BACKLINK%\module.mk" (
-    if exist "%BACKLINK%" del /Q "%BACKLINK%" 2>nul
+    rem rmdir, never del, on a stale junction: del /Q empties its TARGET.
+    if exist "%BACKLINK%\" (
+        rmdir "%BACKLINK%" 2>nul
+    ) else if exist "%BACKLINK%" (
+        del /Q "%BACKLINK%" 2>nul
+    )
     echo [build] Creating junction to door backend
     mklink /J "%BACKLINK%" "%DOOR%" >nul
     if errorlevel 1 goto error
@@ -224,13 +239,17 @@ copy /Y "%OUTEXE%" "%BUILDDIR%\%CONFIG%\syncscumm.exe" >nul
 echo.
 echo [build] Built: %BUILDDIR%\%CONFIG%\syncscumm.exe
 echo [build] Run 'jsexec deploy.js' to install it into every SyncSCUMM package.
+call :drop_junction
 endlocal
 exit /b 0
 
 :drop_junction
 rem Remove the junction (rmdir, not del) and restore the tracked symlink file.
+rem Tested as a directory, not by module.mk: a junction to an emptied door\
+rem must still go. Re-run build.bat before opening build-msvc\scummvm.sln in
+rem the IDE, since the solution's backend sources live behind the junction.
 set "_BL=%SVM%\backends\platform\termgfx"
-if exist "%_BL%\module.mk" (
+if exist "%_BL%\" (
     git -C "%SRCDIR%" update-index --no-skip-worktree src/doors/syncscumm/scummvm/backends/platform/termgfx >nul 2>nul
     rmdir "%_BL%" 2>nul
     git -C "%SRCDIR%" checkout -- src/doors/syncscumm/scummvm/backends/platform/termgfx >nul 2>nul
@@ -246,5 +265,6 @@ exit /b 1
 :error
 echo.
 echo [build] FAILED (errorlevel %errorlevel%)
+call :drop_junction
 endlocal
 exit /b 1
