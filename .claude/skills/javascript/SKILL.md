@@ -921,6 +921,27 @@ door's `\x1b[?69h…s` DECSLRM + `\x1b[t;b r` DECSTBM scroll-region writes in
 `setRegion`/`resetRegion` — may keep adjacent controls raw to match; but for a
 new or one-off control, reach for `ansiterm_lib` rather than reinventing the code.
 
+### Colors: set them with Ctrl-A codes or `console.attributes`, not raw ANSI SGR
+
+**`console.attributes` returns the last attribute *requested*, not what the
+terminal is showing.** Ctrl-A codes and assignments to `console.attributes`
+update it. A raw SGR sequence written with `console.write()`/`print()` (e.g.
+`"\x1b[1;32m"`) changes the terminal's colors but **not** this value.
+
+Synchronet restores that requested attribute on its own after it displays
+something: `bbs.nodesync()` (which can show node messages and time warnings),
+the pause prompt, and the end of a message or file display all put it back. A
+script that sets colors with raw ANSI can see them overridden, or left in
+place, unexpectedly. This is by design: raw ANSI changes the terminal without
+telling Synchronet, and only Ctrl-A codes / `console.attributes` also work on
+non-ANSI terminals. (The output parser separately tracks the *actual* color for
+its own use, e.g. returning to ANSI art's colors after a mid-art pause, but
+that value isn't exposed to JS.)
+
+For tests: reading `console.attributes` after writing raw ANSI tells you
+nothing about the terminal's actual color. Assign the attribute value you need
+directly instead of trying to capture it.
+
 ### Timed / non-blocking key input, and the inactivity model
 
 There are two ways to read a key, and they differ in a way that bites: **only
