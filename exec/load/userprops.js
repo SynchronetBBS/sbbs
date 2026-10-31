@@ -1,5 +1,3 @@
-// $Id: userprops.js,v 1.7 2020/04/02 07:30:26 rswindell Exp $
-
 require("userdefs.js", 'UFLAG_G');
 
 function filename(usernum)
@@ -22,7 +20,7 @@ function get(section, key, deflt, usernum)
 		result = file.iniGetAllObjects();
 	else if(!key)
 		result = file.iniGetObject(section);
-	else 
+	else
 		result = file.iniGetValue(section, key, deflt);
 	file.close();
 	return result;

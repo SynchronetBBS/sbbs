@@ -59,7 +59,7 @@ function read_xtrn_ini(filename)
 	obj.prog = read_sections(f, "prog:");
 	obj.native = read_sections(f, "native:");
 	obj.hotkey = read_sections(f, "hotkey:");
-	
+
 	for(var i in obj.prog) {
 		var item = obj.prog[i];
 		var i = item.code.indexOf(':');
@@ -93,7 +93,7 @@ function write_xtrn_ini(filename, obj)
 	var f = new File(filename);
 	if(!f.open(f.exists ? 'r+' : 'w+'))
 		throw new Error("Error " + f.error + " opening/creating " + f.name);
-	
+
 	for(var i = 0; obj.prog && i < obj.prog.length; i++) {
 		var item = obj.prog[i];
 		if(obj.sec[item.sec] === undefined)

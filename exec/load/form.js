@@ -1,11 +1,11 @@
 /* Id: $ */
 
 /**
- *	Javascript Object Editor 
+ *	Javascript Object Editor
  *	for Synchronet v3.15a+
  *	by Matt Johnson
  *
- *	returns a copy of any passed object 
+ *	returns a copy of any passed object
  *	with modified properties
  *
  *	USAGE:
@@ -25,10 +25,10 @@ if(js.global.Layout == undefined)
 	load("layout.js");
 if(js.global.Scrollbar == undefined)
 	load("scrollbar.js");
-	
+
 function formEdit(obj,parent)
 {
-	function Form(obj,parent) 
+	function Form(obj,parent)
 	{
 		var full_redraw = false;
 		this.parent = parent;
@@ -39,15 +39,15 @@ function formEdit(obj,parent)
 		this.index = 0;
 		this.line = 1;
 		this.items = [];
-		
+
 		this.__defineGetter__("full_redraw", function() {
 			return full_redraw;
 		});
-		
+
 		this.__defineSetter__("full_redraw", function(bool) {
 			full_redraw = bool;
 		});
-		
+
 		this.init = function() {
 			/* determine object type */
 			if(typeof obj != "object")
@@ -56,7 +56,7 @@ function formEdit(obj,parent)
 				this.type = "array";
 			else
 				this.type = "object";
-			
+
 			/* load object values into form */
 			for(var k in obj) {
 				if(console.strlen(k) > this.keylen)
@@ -69,13 +69,13 @@ function formEdit(obj,parent)
 					type:typeof obj[k]
 				});
 			}
-			
+
 			/* initialize editing window */
 			var height = this.items.length + 3;
 			var width = this.typelen + this.keylen + this.max_value + 4;
 			var posx = (console.screen_columns / 2) - (width / 2);
 			var posy = (console.screen_rows / 2) - (height / 2);
-			
+
 			if(posx < 1)
 				posx = 1;
 			if(posy < 1)
@@ -86,26 +86,26 @@ function formEdit(obj,parent)
 				this.keylen -= (width-console.screen_columns-2);
 				width = console.screen_columns-2;
 			}
-		
+
 			this.box = new Layout_View(
-				printPadded("KEY",this.typelen+1) + 
-				printPadded("KEY",this.keylen+1) + 
+				printPadded("KEY",this.typelen+1) +
+				printPadded("KEY",this.keylen+1) +
 				splitPadded("VALUE","ESC",this.max_value),
 				posx,
 				posy,
 				width,
 				height
 			);
-			
+
 			this.max_lines = this.box.height - 3;
 			this.box.show_tabs = false;
 			this.scrollbar = new Scrollbar(posx + width -1, posy + 2, this.max_lines, "vertical");
 			this.box.drawView();
 		}
-		
+
 		this.edit = function() {
 			var item = this.items[this.index];
-			
+
 			if(item.type == "object") {
 				item.value = formEdit(item.value,this);
 				this.full_redraw = true;
@@ -117,7 +117,7 @@ function formEdit(obj,parent)
 				console.gotoxy(coords.x + this.typelen + this.keylen + 2, coords.y);
 				clearLine(this.max_value);
 				console.gotoxy(coords.x + this.typelen + this.keylen + 2, coords.y);
-				
+
 				var newvalue = console.getstr(item.value.toString().replace(/\r\n/g,'\\r\\n'),this.max_value,K_EDIT|K_AUTODEL);
 				switch(item.type) {
 					case "number":
@@ -132,20 +132,20 @@ function formEdit(obj,parent)
 				}
 			}
 		}
-		
+
 		this.draw = function(all) {
 			/* if a full redraw is requested, draw everything */
 			if(this.full_redraw) {
 				if(this.parent)
 					this.parent.draw(all);
-					
+
 				this.full_redraw = false;
 				this.box.drawView();
 			}
-			
+
 			/* declare starting index for scrollbar usage */
 			var first_line = 0;
-			
+
 			if(all) {
 				/* find starting point */
 				i = (this.index+1) - this.max_lines;
@@ -160,14 +160,14 @@ function formEdit(obj,parent)
 					c++;
 				}
 			}
-			
-			else 
+
+			else
 				this.drawItem(this.index,true);
-			
-			if(this.items.length > this.max_lines) 
+
+			if(this.items.length > this.max_lines)
 				this.scrollbar.draw(first_line,this.items.length);
 		}
-		
+
 		this.__defineGetter__("object", function() {
 			if(this.type == "array")
 				obj = [];
@@ -179,21 +179,21 @@ function formEdit(obj,parent)
 			}
 			return obj;
 		});
-		
+
 		this.coords = function(i) {
 			var posx = this.box.x + 1;
 			var posy = this.box.y + 2;
-			
-			if(this.index >= this.max_lines) 
+
+			if(this.index >= this.max_lines)
 				posy += this.max_lines - (this.index - i) - 1;
-			else 
+			else
 				posy += i;
 			return {
 				x:posx,
 				y:posy,
 			}
 		}
-		
+
 		this.drawItem = function(i,curr) {
 			var coords = this.coords(i);
 			var item = this.items[i];
@@ -201,7 +201,7 @@ function formEdit(obj,parent)
 			var type = item.type;
 			var bg = layout_settings.vbg;
 			var fg = layout_settings.vfg;
-			
+
 			if(curr) {
 				bg = layout_settings.lbg;
 				fg = layout_settings.lfg;
@@ -227,16 +227,16 @@ function formEdit(obj,parent)
 			else {
 				value = value.toString();
 			}
-			
+
 			console.gotoxy(coords);
 			console.attributes = bg + fg;
 			console.write(
-				printPadded(type,this.typelen + 1) + 
-				printPadded(item.key,this.keylen + 1) + 
+				printPadded(type,this.typelen + 1) +
+				printPadded(item.key,this.keylen + 1) +
 				printPadded(value,this.max_value)
 			);
 		}
-		
+
 		this.init();
 	}
 
@@ -244,12 +244,12 @@ function formEdit(obj,parent)
 	var update = false;
 	var redraw = false;
 	form.draw(true);
-	
+
 	while(!js.terminated) {
-		
-		if(update) 
+
+		if(update)
 			form.draw(redraw);
-			
+
 		redraw = false;
 		update = true;
 		var cmd = console.inkey(K_NOECHO,1);
@@ -311,6 +311,6 @@ function formEdit(obj,parent)
 			break;
 		}
 	}
-	
+
 }
 

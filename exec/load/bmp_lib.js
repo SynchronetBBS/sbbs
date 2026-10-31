@@ -1,5 +1,3 @@
-// $Id: bmp_lib.js,v 1.1 2018/02/02 12:46:44 rswindell Exp $
-
 // Library for dealing with Microsoft BMP/DIB files
 
 function read(file, invert)
@@ -49,7 +47,7 @@ function read(file, invert)
 				tmp[(target_y * width) + x] = ch;
 			}
 		}
-		bits = tmp.join('');			
+		bits = tmp.join('');
 	} else
 		infoheader.biHeight = -infoheader.biHeight;
 

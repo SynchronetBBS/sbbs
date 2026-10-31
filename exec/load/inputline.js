@@ -1,5 +1,3 @@
-// $Id: inputline.js,v 1.24 2020/03/26 07:37:27 rswindell Exp $
-
 if(js.global.getColor == undefined)
 	js.global.load(js.global,"funclib.js");
 if(js.global.Frame == undefined)
@@ -25,7 +23,7 @@ function InputLine(frame) {
 		timeout:10,
 		max_buffer:200
 	};
-	
+
 	/* protected properties */
 	this.__defineGetter__("frame",function() {
 		return properties.frame;
@@ -75,7 +73,7 @@ function InputLine(frame) {
 		if(typeof bool == "boolean")
 			settings.mask_input = bool;
 		printBuffer();
-	});	
+	});
 	this.__defineGetter__("attr",function() {
 		return properties.attr;
 	});
@@ -111,7 +109,7 @@ function InputLine(frame) {
 			return;
 		if(ch && ch.length == 1) {
 			settings.mask_char = ch;
-			if(settings.mask_input) 
+			if(settings.mask_input)
 				printBuffer();
 		}
 	});
@@ -128,7 +126,7 @@ function InputLine(frame) {
 	this.__defineGetter__("overrun",function() {
 		return properties.buffer.length-properties.frame.width;
 	});
-	
+
 	/* public methods */
 	this.open = function() {
 		properties.frame.open();
@@ -146,9 +144,9 @@ function InputLine(frame) {
 	}
 	this.getkey = function(use_hotkeys) {
 		var key=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,settings.timeout);
-		if(key == "") 
+		if(key == "")
 			return undefined;
-		if(use_hotkeys) 
+		if(use_hotkeys)
 			return key;
 		switch(key) {
 		case '\x0c':	/* CTRL-L */
@@ -201,26 +199,26 @@ function InputLine(frame) {
 		properties.frame.h_scroll = true;
 		properties.frame.open();
 	}
-	
+
 	/* private functions */
 	function bufferKey(key) {
-		if(properties.buffer.length >= settings.max_buffer) 
+		if(properties.buffer.length >= settings.max_buffer)
 			return undefined;
 		properties.buffer+=key;
-	
-		if(properties.buffer.length>properties.frame.width) 
+
+		if(properties.buffer.length>properties.frame.width)
 			printBuffer();
-		else if(settings.mask_input) 
+		else if(settings.mask_input)
 			properties.frame.write(settings.mask_char,properties.attr);
 		else
 			properties.frame.write(key,properties.attr);
-			
+
 		if(settings.show_cursor)
 			printCursor();
 		return undefined;
 	}
 	function backspace() {
-		if(properties.buffer.length == 0) 
+		if(properties.buffer.length == 0)
 			return undefined;
 		properties.buffer=properties.buffer.substr(0,properties.buffer.length-1);
 		if(properties.buffer.length+1>=properties.frame.width) {
@@ -287,7 +285,7 @@ function InputLine(frame) {
 			printCursor();
 	}
 	function submit() {
-		// if(strlen(properties.buffer)<1) 
+		// if(strlen(properties.buffer)<1)
 			// return null;
 		if(properties.buffer[0]==";") {
 			if(properties.buffer.length>1 && bbs.compare_ars("SYSOP")) {

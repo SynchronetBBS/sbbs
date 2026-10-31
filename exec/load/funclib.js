@@ -1,6 +1,6 @@
 /*
 	Javascript Library of useful functions
-	by MCMLXXIX 
+	by MCMLXXIX
 */
 
 function getColorExpression(colour)
@@ -389,12 +389,12 @@ function toXML(obj)
 	}
 	return result;
 }
-function setPosition(x,y) 
+function setPosition(x,y)
 {
 	console.gotoxy(x,y);
 	console.pushxy();
 }
-function pushMessage(txt,container) 
+function pushMessage(txt,container)
 {
 	if(!container)
 		container = console;
@@ -403,7 +403,7 @@ function pushMessage(txt,container)
 	container.popxy();
 	container.down();
 	container.pushxy();
-}	
+}
 function pushxy(name)
 {
 	if(!js.global.saved_coords)
@@ -412,7 +412,7 @@ function pushxy(name)
 		js.global.saved_coords[name]=console.getxy();
 	else
 		console.pushxy();
-}	
+}
 function popxy(name)
 {
 	if(name)
@@ -421,7 +421,7 @@ function popxy(name)
 	else
 		console.popxy();
 }
-function combine(obj1,obj2,concat_str) 
+function combine(obj1,obj2,concat_str)
 {
 	var newobj = {};
 	if(obj2 instanceof Array)
@@ -471,7 +471,7 @@ function combine(obj1,obj2,concat_str)
 				else
 					newobj["_"+i]=obj2[i];
 			}
-			else 
+			else
 				newobj[i] = obj2[i];
 			break;
 		case "object":
@@ -481,22 +481,22 @@ function combine(obj1,obj2,concat_str)
 				newobj["_"+i] = {};
 				newobj = combine(newobj["_"+i],obj2[i],concat_str);
 			}
-			else	
+			else
 				newobj[i] = obj2[i];
 			break;
 		}
 	}
 	return newobj;
 }
-function compressList(list) 
+function compressList(list)
 {
 	var c=[];
 	for(var l in list)
 		c.push(list[l]);
 	return c;
 }
-function sortListByProperty(list,prop) 
-{ 
+function sortListByProperty(list,prop)
+{
 	var data=compressList(list);
 	var numItems=data.length;
 	for(n=0; n<numItems; n++)	{
@@ -510,11 +510,11 @@ function sortListByProperty(list,prop)
 	}
 	return data;
 }
-function logStamp(msg) 
+function logStamp(msg)
 {
 	if(!js.global.LogTimer)
 		js.global.LogTimer={};
-		
+
 	var t = js.global.LogTimer;
 	var now = Date.now();
 
@@ -524,7 +524,7 @@ function logStamp(msg)
 	}
 	if(!t.last)
 		t.last = now;
-		
+
 	log(format("%4d",(now-t.last)) + " [" + (now - t.start) + "] " + msg);
 	t.last = now;
 }
@@ -587,7 +587,7 @@ function colorPicker(x, y, frame, attr) {
 		BG_BROWN,
 		BG_LIGHTGRAY
 	];
-	
+
 	var fgmask = (1<<0)|(1<<1)|(1<<2)|(1<<3);
 	var bgmask = (1<<4)|(1<<5)|(1<<6);
 	var blkmask = (1<<7);
@@ -598,7 +598,7 @@ function colorPicker(x, y, frame, attr) {
 	var fgColour = attr&fgmask;
 	var bgColour = ((attr&bgmask)>>4);
 	var blink = ((attr&blkmask)>>7) ? blkmask : 0;
-	
+
 	var palette = new Frame(x, y, 36, 6, BG_BLUE|WHITE, frame);
 	var subPalette = new Frame(palette.x + 2, palette.y + 1, palette.width - 4, palette.height - 2, BG_BLACK, palette);
 	var pfgCursor = new Frame(x, y, 2, 1, BG_BLACK|WHITE|blink, subPalette);

@@ -2,7 +2,7 @@
  * ctrl/modopts.ini (and by extension ctrl/modopts.d/*.ini) or
  * ctrl/modopts/modname.ini
  *
- * For ctrl/modopts.ini (and ctrl/modopts.d/*.ini): 
+ * For ctrl/modopts.ini (and ctrl/modopts.d/*.ini):
  *   Parses a single .ini section using the first argument to modopts.js as the
  *   section name and return an object containing the section keys as
  *   properties with Boolean, Number, or String values.

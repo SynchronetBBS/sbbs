@@ -7,7 +7,7 @@
  */
 
 "use strict";
- 
+
 if (typeof(require) === "function")
 {
 	require("text.js", "Pause");
@@ -963,7 +963,7 @@ function getCurrentTimeStr()
 	var timeStr = strftime("%I:%M%p", time());
 	timeStr = timeStr.replace("AM", "a");
 	timeStr = timeStr.replace("PM", "p");
-	
+
 	return timeStr;
 }
 
@@ -2509,7 +2509,7 @@ function wrapTextLinesForQuoting(pTextLines, pQuotePrefix, pIndentQuoteLines, pT
 						else if (lineScreenLen > arbitraryLongLineLen && numLinesInSection > 1 && !nextLineIsBlank && lineLastLength <= mostOfConsoleWidth)
 							sectionText += "\r\n";
 						else if (lineScreenLen <= halfConsoleWidth && !nextLineIsBlank)
-							sectionText += "\r\n";					
+							sectionText += "\r\n";
 						else
 							sectionText += " ";
 					}

@@ -1,5 +1,3 @@
-// $Id: xbin_lib.js,v 1.3 2018/02/06 09:13:08 rswindell Exp $
-
 load('xbin_defs.js');
 
 function read(file)
@@ -79,7 +77,7 @@ function read(file)
 					}
 					break;
 			}
-		}		
+		}
 	}
 
 	return image;

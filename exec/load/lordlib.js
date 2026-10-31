@@ -1,10 +1,7 @@
 /************ Synchronet LORD game data library *************
 
-		by mcmlxxix - March 5, 2015 
+		by mcmlxxix - March 5, 2015
 		www.thebrokenbubble.com
-		
-		$Id: lordlib.js,v 1.1 2015/03/05 20:03:44 mcmlxxix Exp $
-		$Revision: 1.1 $
 */
 
 /********************** API usage example**************************
@@ -20,7 +17,7 @@ for(var p=0;p<LORD.players.length;p++) {
 	var player = LORD.players[p];
 	console.writeln("Name: " + player.name + " Level: " + player.level);
 }
-	
+
 */
 
 load("cnflib.js");
@@ -88,31 +85,31 @@ struct.lord_player={
 /* LORD player file structure */
 struct.lord_players = {
 	players:	{
-		bytes:struct.lord_player,	
-		type:"lst", 
+		bytes:struct.lord_player,
+		type:"lst",
 		length:file_size(lordPlayerFile)/CNF.getBytes(struct.lord_player)
 	}
 }
 
 /* LORD game object */
 function Lord(path) {
-	
+
 	/* module settings */
 	this.gamePath = path;
 	this.playerFile = "player.dat";
 	this.heroFile = "lasthero.dat";
 	this.mailPrefix = "mail";
-	
+
 	/* game properties */
 	this.players = [];
 	this.mail = {};
 	this.lastHero;
-	
+
 	/* constructor */
 	this.loadPlayers();
 	this.loadHero();
 	this.loadMail();
-	
+
 }
 
 /* LORD game object methods */

@@ -1,53 +1,53 @@
-/*     
+/*
 	Event Timer  - for Synchronet 3.15a+ (2011)
-	
+
 	-	code by mcmlxxix
-	
+
 	methods:
-	
+
 	-	Timer.cycle()
 	-	Timer.addEvent(interval,repeat,action,arguments,context)
-		
+
 		- interval = time to wait before running event (in milliseconds)
 		- repeat = how many times to run the event (TRUE = run infinitely, FALSE = run once)
 		- action = the function to call when running the event
-		- arguments = the arguments to pass to the action 
+		- arguments = the arguments to pass to the action
 		- context = the context (scope) in which to run the event
 		- pause = stop the event from running (toggle TRUE/FALSE)
 		- abort = cause the event to be flagged for deletion by timer.cycle() (toggle TRUE/FALSE)
-	
-	sample usage: 
-	
+
+	sample usage:
+
 		load(event-timer.js);
 		var timer=new Timer();
-		
+
 		function hello() {
 			print("hello\r\n");
 		}
 
 		//will print "hello" 10 times at 10 second intervals
 		var event1 = timer.addEvent(10000,10,hello);
-		
+
 		//will print "hello" infinitely at 20 second intervals
 		var event2 = timer.addEvent(20000,true,print,"hello");
 		as
 		//will print "hello" once after 30 seconds
 		var event3 = timer.addEvent(30000,false,
-		
+
 		while(timer.events.length > 0) {
-			
+
 			// iterate events list and run any events that are scheduled
 			timer.cycle();
 			mswait(1000);
-			
-			// mark event1 for deletion on next timer.cycle() 
+
+			// mark event1 for deletion on next timer.cycle()
 			event1.abort = true;
 		}
 */
 function Timer() {
 	this.VERSION = "$Revision: 1.8 $".replace(/\$/g,'').split(' ')[1];
 	this.events = [];
-	
+
 	/* called by parent script, generally in a loop, and generally with a pause or timeout to minimize cpu usage */
 	this.cycle = function() {
 		var now = Date.now();
@@ -79,14 +79,14 @@ function Timer() {
 		/* return the number of events run this cycle */
 		return count;
 	}
-	
+
 	/* create a new event, do not include () on action parameter */
 	this.addEvent = function(interval,repeat,action,arguments,context) {
 		var event=new TimerEvent(interval,repeat,action,arguments,context);
 		this.events.push(event);
 		return event;
 	}
-	
+
 	/* event object created by addEvent */
 	function TimerEvent(interval,repeat,action,arguments,context) {
 		/* last time_t at which event was executed */
@@ -109,7 +109,7 @@ function Timer() {
 			this.lastrun = Date.now();
 			this.action.apply(this.context,this.arguments);
 		}
-		
+
 		/* poll event for time remaining until next run */
 		this.__defineGetter__("nextrun",function() {
 			return (this.interval - (Date.now() - this.lastrun));
@@ -118,12 +118,12 @@ function Timer() {
 };
 
 /* event emitter/handler adapter */
-function Event() { 
-	this.adapt = function(object) { 
+function Event() {
+	this.adapt = function(object) {
 		object.prototype.__events__ = {};
-		object.prototype.on = function(event,handler) { 
+		object.prototype.on = function(event,handler) {
 			this.__events__[event.toUpperCase()] = handler;
-		} 
+		}
 		object.prototype.emit = function(event,args) {
 			args = Array.prototype.slice.call(arguments).slice(1);
 			if(typeof this.__events__[event.toUpperCase()] == "function") {

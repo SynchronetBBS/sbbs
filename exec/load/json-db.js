@@ -1,6 +1,6 @@
 /* $Id: json-db.js,v 1.40 2015/11/04 09:43:45 deuce Exp $ */
 
-/*     
+/*
 	JSON database  - for Synchronet 3.15a+ (2011)
 
 	-	code by mcmlxxix
@@ -8,12 +8,12 @@
 	-	dongs by echicken
 	-	positive reinforcement by cyan
 	-	function names by weatherman
-	-	mild concern by digitalman 
+	-	mild concern by digitalman
 
 	methods:
-	
+
 	-	Database.status(client,location);
-	-	Database.who(client,location); 
+	-	Database.who(client,location);
 	-	Database.query(client,query);
 	-	Database.cycle(Date.now());
 	-	Database.load();
@@ -28,22 +28,22 @@
 	-	Database.remove(client,record,property);
 	-	Database.subscribe(client,record,property);
 	-	Database.unsubscribe(client,record,property);
-	
+
 	optional arguments:
-	
+
 	-	argv[0] = filename;
-	
+
 */
 
 function JSONdb (fileName, scope) {
 	this.VERSION = "$Revision: 1.40 $".replace(/\$/g,'').split(' ')[1];
-	
+
     /* database storage file */
-	if(fileName) 
+	if(fileName)
 		this.file=new File(fileName);
-    else 
+    else
 		this.file=undefined;
-	
+
     /* master database object */
 	this.masterData={
 		/* top-level data object */
@@ -55,16 +55,16 @@ function JSONdb (fileName, scope) {
 		/* top-level data object */
 		data:{}
 	};
-	
+
 	/* queued array of data requests (get/put/create/delete) */
 	this.queue={};
-	
+
 	/* general list of db subscribers (for quick release if no subscriptions) */
 	this.subscriptions={};
-	
+
 	/* list of disconnected clients */
 	this.disconnected={};
-	
+
 	/* database settings */
 	this.settings={
 		/* misc settings */
@@ -77,7 +77,7 @@ function JSONdb (fileName, scope) {
 		UPDATES:false,
 		DEFAULT_TIMEOUT:0
 	};
-	
+
 	/* lock constants */
 	var locks = {
 		UNLOCK:-1,
@@ -85,7 +85,7 @@ function JSONdb (fileName, scope) {
 		READ:1,
 		WRITE:2,
 	}
-	
+
 	/* operation constants */
 	var opers = {
 		READ:0,
@@ -105,7 +105,7 @@ function JSONdb (fileName, scope) {
 		KEYTYPES:14,
 		SPLICE:15
 	}
-	
+
 	/* error constants */
 	var errors = {
 		INVALID_REQUEST:0,
@@ -120,7 +120,7 @@ function JSONdb (fileName, scope) {
 		INVALID_LOCK:9,
 		INVALID_OPER:10
 	};
-	
+
 	/*************************** database methods ****************************/
     /* subscribe a client to an object */
     this.subscribe = function(request,record) {
@@ -141,7 +141,7 @@ function JSONdb (fileName, scope) {
 		}
 		return true;
     };
-    
+
     /* unsubscribe a client from an object */
     this.unsubscribe = function(request,record) {
 		var client = request.client;
@@ -158,7 +158,7 @@ function JSONdb (fileName, scope) {
 		}
 		return true;
     };
-    
+
     /* The point of a read lock is *only* to prevent someone from
 	getting a write lock... just a simple counter is usually enough. */
     this.lock = function(request,record) {
@@ -248,8 +248,8 @@ function JSONdb (fileName, scope) {
 			break
 		}
     };
-	
-    /* server's data retrieval method (not directly called by client) */    
+
+    /* server's data retrieval method (not directly called by client) */
     this.read = function(request,record) {
 		var client = request.client;
 		/* if the requested data does not exist, result is undefined */
@@ -267,7 +267,7 @@ function JSONdb (fileName, scope) {
             return false;
         }
     };
-    
+
 	/* pop a record off the end of an array */
 	this.pop = function(request,record) {
 		var client = request.client;
@@ -277,9 +277,9 @@ function JSONdb (fileName, scope) {
 			return true;
 		}
 		/* if this client has this record locked  */
-		else if(record.info.lock[client.id] && 
+		else if(record.info.lock[client.id] &&
 			record.info.lock[client.id].type == locks.WRITE) {
-			if(record.data[record.property] instanceof Array) 
+			if(record.data[record.property] instanceof Array)
 				send_packet(client,"RESPONSE","POP",record.location,record.data[record.property].pop());
 			else
 				this.error(client,errors.NON_ARRAY);
@@ -290,7 +290,7 @@ function JSONdb (fileName, scope) {
             return false;
         }
 	}
-	
+
 	/* shift a record off the beginning of an array */
 	this.shift = function(request,record) {
 		var client = request.client;
@@ -300,9 +300,9 @@ function JSONdb (fileName, scope) {
 			return true;
 		}
 		/* if this client has this record locked  */
-		else if(record.info.lock[client.id] && 
+		else if(record.info.lock[client.id] &&
 		record.info.lock[client.id].type == locks.WRITE) {
-			if(record.data[record.property] instanceof Array) 
+			if(record.data[record.property] instanceof Array)
 				send_packet(client,"RESPONSE","SHIFT",record.location,record.data[record.property].shift());
 			else
 				this.error(client,errors.NON_ARRAY);
@@ -324,7 +324,7 @@ function JSONdb (fileName, scope) {
 			return true;
 		}
 		/* if this client has this record locked  */
-		else if(record.info.lock[client.id] && 
+		else if(record.info.lock[client.id] &&
 			record.info.lock[client.id].type == locks.WRITE) {
 			if(record.data[record.property] instanceof Array) {
 				var index = record.data[record.property].length;
@@ -352,13 +352,13 @@ function JSONdb (fileName, scope) {
 			return true;
 		}
 		/* if this client has this record locked  */
-		else if(record.info.lock[client.id] && 
+		else if(record.info.lock[client.id] &&
 			record.info.lock[client.id].type == locks.WRITE) {
 			if(record.data[record.property] instanceof Array) {
 				record.data[record.property].splice(request.data.start,request.data.num,request.data.data);
 
 				/* remove existing shadow records that have been replaced by new data */
-				// if(record.shadow[record.property] instanceof Array) 
+				// if(record.shadow[record.property] instanceof Array)
 					// record.shadow[record.property].splice(request.data.start,request.data.num,new Shadow());
 				/* populate this object's children with shadow objects */
 				composite_sketch(record.data[record.property][request.data.start],record.shadow[record.property][request.data.start]);
@@ -373,7 +373,7 @@ function JSONdb (fileName, scope) {
             return false;
         }
 	}
-	
+
 	/* push a record onto the beginning of an array */
 	this.unshift = function(request,record) {
 		var client = request.client;
@@ -384,7 +384,7 @@ function JSONdb (fileName, scope) {
 			return true;
 		}
 		/* if this client has this record locked  */
-		else if(record.info.lock[client.id] && 
+		else if(record.info.lock[client.id] &&
 			record.info.lock[client.id].type == locks.WRITE) {
 			if(record.data[record.property] instanceof Array) {
 				var index = record.data[record.property].length;
@@ -401,7 +401,7 @@ function JSONdb (fileName, scope) {
             return false;
         }
 	}
-	
+
 	/* slice portion of array into new array */
 	this.slice = function(request,record) {
 		var client = request.client;
@@ -426,13 +426,13 @@ function JSONdb (fileName, scope) {
             return false;
         }
 	}
-	
-    /* server's data submission method (not directly called by client) */    
+
+    /* server's data submission method (not directly called by client) */
     this.write = function(request,record) {
 		var client = request.client;
 		var data = request.data;
 		/* if this client has this record locked  */
-		if(record.info.lock[client.id] && 
+		if(record.info.lock[client.id] &&
 		record.info.lock[client.id].type == locks.WRITE) {
 			record.data[record.property]=data;
 			/* populate this object's children with shadow objects */
@@ -467,7 +467,7 @@ function JSONdb (fileName, scope) {
             return false;
         }
 	}
- 
+
 	/* retrieve a list of object keys */
 	this.keyTypes = function(request,record) {
 		var client = request.client;
@@ -493,18 +493,18 @@ function JSONdb (fileName, scope) {
             return false;
         }
 	}
- 
+
     /* remove a record from the database (requires WRITE_LOCK) */
     this.remove = function(request,record) {
 		var client = request.client;
-		
+
 		/* if the requested data does not exist, do nothing */
 		if(record.data === undefined || !record.data.hasOwnProperty(record.property)) {
 			return true;
 		}
-		
+
 		/* if this client has this record locked */
-		else if(record.shadow[record.property]._lock[client.id] && 
+		else if(record.shadow[record.property]._lock[client.id] &&
 			record.shadow[record.property]._lock[client.id].type == locks.WRITE) {
 			delete record.data[record.property];
 			return true;
@@ -520,7 +520,7 @@ function JSONdb (fileName, scope) {
 	this.status = function(request,record) {
 		var client = request.client;
 		var sub=[];
-		for(var s in record.info.subscribers) 
+		for(var s in record.info.subscribers)
 			sub.push(s);
 		var data={
 			subscribers:sub,
@@ -542,19 +542,19 @@ function JSONdb (fileName, scope) {
 	/* generic query handler, will process locks, reads, writes, and unlocks
 	and put them into the appropriate queues */
 	this.query = function(client,query) {
-		
+
 		/* retain original query location for subscriber updates */
 		var location = query.location;
 		if(location == undefined || location.length == 0)
 			location = "data";
-		else 
+		else
 			location = "data." + location;
-			
+
 		/* store the parent name */
 		var parent = get_pname(location);
 		/* strip the last child identifier from the string */
 		var property = get_cname(location);
-		
+
 		/* temporary array for queue additions */
 		var q=[];
 
@@ -562,7 +562,7 @@ function JSONdb (fileName, scope) {
 		if(query.nick !== undefined) {
 			client.nick = query.nick;
 		}
-		
+
 		/* if there is a username supplied, attach it to the client object */
 		if(query.system !== undefined) {
 			client.system = query.system;
@@ -584,10 +584,10 @@ function JSONdb (fileName, scope) {
 			client,query.oper,query.location,parent,property,query.data,query.timeout
 		));
 		/* push this query into a queue to be processed at the next response cycle (this.cycle()) */;
-		
-		
+
+
 		/* if there is an attached lock operation, process accordingly */
-		if(query.lock !== locks.NONE) {	
+		if(query.lock !== locks.NONE) {
 			/* put lock ahead of the operation in request queue */
 			q.unshift(new Request(
 				client,"LOCK",query.location,parent,property,query.lock
@@ -597,13 +597,13 @@ function JSONdb (fileName, scope) {
 				client,"LOCK",query.location,parent,property,locks.UNLOCK
 			));
 		}
-		
+
 		/* add the temporary queue to the main queue */
 		if(!this.queue[client.id])
 			this.queue[client.id]=[];
 		this.queue[client.id]=this.queue[client.id].concat(q);
 	}
-    
+
 	/* generate an error object and send it to client */
 	this.error = function(client,error_num) {
 		var error_desc="Unknown error";
@@ -645,11 +645,11 @@ function JSONdb (fileName, scope) {
 		var error=new Error(error_num,error_desc);
 		send_packet(client,"ERROR",undefined,undefined,error);
 	}
-	
-    /* internal periodic data storage method 
+
+    /* internal periodic data storage method
 	TODO: this should probably eventually be a background
 	thread to prevent lag when writing a large database to file */
-    this.save = function() { 
+    this.save = function() {
 		if(!this.file)
 			return;
 		/* if we are due for a data update, save everything to file */
@@ -661,15 +661,15 @@ function JSONdb (fileName, scope) {
 		// Also, this is called on clean exit.
 		if(this.settings.KEEP_READABLE)
 			this.file.write(JSON.stringify(this.masterData.data,undefined,'\t'));
-		else 
+		else
 			this.file.write(JSON.stringify(this.masterData.data));
 		this.file.close();
 		this.settings.LAST_SAVE=Date.now();
 		this.settings.UPDATES=false;
     };
-    
+
     /* data initialization (likely happens only once) */
-    this.load = function() { 
+    this.load = function() {
 		if(!this.file)
 			return;
 		if(!file_exists(this.file.name))
@@ -683,10 +683,10 @@ function JSONdb (fileName, scope) {
 		else {
 			this.masterData.data = {};
 		}
-		this.file.close(); 
+		this.file.close();
         this.masterShadow.data=composite_sketch(this.masterData.data);
     };
-	
+
 	/* initialize db and settings */
 	this.init = function() {
 		/* load general db settings */
@@ -694,7 +694,7 @@ function JSONdb (fileName, scope) {
 			var file = new File(this.settings.FILE);
 			file.open("r",true);
 			var settings = file.iniGetObject();
-			file.close(); 
+			file.close();
 			if(settings.save_interval)
 				this.settings.SAVE_INTERVAL = Number(settings.save_interval);
 			if(settings.keep_readable)
@@ -705,12 +705,12 @@ function JSONdb (fileName, scope) {
         this.settings.LAST_SAVE = Date.now();
 		log(LOG_INFO,"database initialized (v" + this.VERSION + "): " + fileName);
 	};
- 
+
 	/* schedule client for subscription and lock release */
 	this.release = function(client) {
 		this.disconnected[client.id] = client;
 	}
- 
+
     /* main "loop" called by server */
     this.cycle = function() {
 		/* process request queue, removing successful operations */
@@ -722,12 +722,12 @@ function JSONdb (fileName, scope) {
 			for(var r=0;r<this.queue[c].length;r++) {
 				var request=this.queue[c][r];
 				var result=false;
-				
+
 				/* locate the requested record within the database */
 				var record=identify_remains.call(
 					this,request.oper,request.location,request.parent,request.property
 				);
-				
+
 				/* if there was an error parsing object location, delete request */
 				if(!record) {
 					log(LOG_WARNING,"db: bad request removed from queue");
@@ -735,7 +735,7 @@ function JSONdb (fileName, scope) {
 					this.queue[c].splice(r--,1);
 					continue;
 				}
-				
+
 				switch(request.oper.toUpperCase()) {
 				case "READ":
 					result=this.read(request,record);
@@ -790,41 +790,41 @@ function JSONdb (fileName, scope) {
 					this.queue[c].splice(r--,1);
 					break;
 				}
-				
+
 				/* if the request did not succeed, move to the next user queue */
 				if(!check_result(request,record,result))
 					break;
 				this.queue[c].splice(r--,1);
 			}
-		} 
-		
+		}
+
 		/* terminate any disconnected clients after processing queue */
 		for(var _c in this.disconnected) {
 			var c = this.disconnected[_c];
 			/* release any locks the client holds */
 			free_prisoners(c,this.masterShadow);
-			
+
 			/* release any subscriptions the client holds */
 			cancel_subscriptions(c,this.subscriptions);
-			
+
 			/* remove any remaining client queries */
 			fuh_queue(c,this.queue);
 		}
-		
+
 		/* reset disconnected client object */
 		this.disconnected={};
-		
+
 		if(!this.settings.UPDATES)
 			return;
 		if(!this.settings.SAVE_INTERVAL > 0)
 			return;
-        if(Date.now() - this.settings.LAST_SAVE < (this.settings.SAVE_INTERVAL * 1000)) 
+        if(Date.now() - this.settings.LAST_SAVE < (this.settings.SAVE_INTERVAL * 1000))
 			return;
 		this.save();
 	};
 
 	/**************************** database objects *****************************/
-	/* locking object generated by Database.lock() method 
+	/* locking object generated by Database.lock() method
 	contains the type of lock requested, and the time at which the request came in
 	TODO: possibly "expire" unfulfilled lock requests after a certain period */
 	function Lock(lock_type,timestamp) {
@@ -837,8 +837,8 @@ function JSONdb (fileName, scope) {
 		this.num=error_num;
 		this.description=error_desc;
 	}
-	
-	/* shadow properties generated by composite_sketch() 
+
+	/* shadow properties generated by composite_sketch()
 	contains a relative object's subscribers, locks, and child name */
 	function Shadow() {
 		this._lock={};
@@ -846,7 +846,7 @@ function JSONdb (fileName, scope) {
 		this._subscribers={};
 	}
 
-	/* record object returned by identify_remains() 
+	/* record object returned by identify_remains()
 	contains the requested object, its shadow object,
 	the prevailing lock state of that object (affected by parents/children),
 	and a list of subscribers associated with that object or its parents */
@@ -879,24 +879,24 @@ function JSONdb (fileName, scope) {
 		/* create shadow object */
 		if(!shadow)
 			shadow=new Shadow();
-		   
+
 		/* iterate object members */
 		for(var p in obj) {
 			if(typeof obj[p] == "object")
 				shadow[p]=composite_sketch(obj[p],shadow[p]);
 		}
-		
+
 		/*  returns an object containing the passed objects property keys
 		with their own lock, subscribers, and name properties
 		also adds a location property to keys of original object */
-		
+
 		return shadow;
 	}
 
 	/* parse an object location name and return the object (ex: dicewarz2.games.1.players.1.tiles.0)
 	an object containing the corresponding data and its shadow object */
 	function identify_remains(oper,location,parent,property) {
-	
+
 		var object=this.masterData;
 		var shadow=this.masterShadow;
 		var info={
@@ -907,14 +907,14 @@ function JSONdb (fileName, scope) {
 		};
 
 		if(parent !== undefined) {
-			/* iterate through split object name checking the keys against the database and 
+			/* iterate through split object name checking the keys against the database and
 			checking the lock statuses against the shadow copy */
 			var p=parent.split(/\./);
 			for(var _c in p) {
 				var c = p[_c];
 				/* in the event of a write request, create new data if it does not exist*/
 				/* ensure that the shadow object exists in order to allow for non-read operations */
-				if(shadow[c] === undefined) 
+				if(shadow[c] === undefined)
 					create_shadow(shadow,c);
 				shadow=shadow[c];
 				/* keep track of current object, and store the immediate parent of the request object */
@@ -929,28 +929,28 @@ function JSONdb (fileName, scope) {
 		}
 
 		/* ensure requested shadow object's existance */
-		if(shadow[property] === undefined || shadow[property]._lock === undefined) 
+		if(shadow[property] === undefined || shadow[property]._lock === undefined)
 			create_shadow(shadow,property);
-			
+
 		/* continue on through the selected shadow object's children to check for locked children */
 		info = search_party(shadow[property],info);
-		
+
 		/* return selected database object, shadow object, and overall lock status of the chosen tree */
 		return new Record(object,shadow,location,property,info);
 	}
-	
+
 	/* if the requested child object does not exist, create it */
 	function create_shadow(shadow,property) {
 		log(LOG_DEBUG,"creating new shadow: " + property);
 		shadow[property]=new Shadow();
 	}
-	
+
 	/* if the requested child object does not exist, create it */
 	function create_data(data,property) {
 		log(LOG_DEBUG,"creating new data: " + property);
 		data[property]={};
 	}
-	
+
 	/* release locks on an object recursively */
 	function free_prisoners(client,shadow) {
 		if(shadow._lock && shadow._lock[client.id]) {
@@ -958,11 +958,11 @@ function JSONdb (fileName, scope) {
 			delete shadow._lock[client.id];
 		}
 		for(var s in shadow) {
-			if(typeof shadow[s] == "object") 
+			if(typeof shadow[s] == "object")
 				free_prisoners(client,shadow[s]);
 		}
 	}
-	
+
 	/* remove any remaining client queries from queue */
 	function fuh_queue(client,queue) {
 		while(queue[client.id] && queue[client.id].length > 0) {
@@ -972,7 +972,7 @@ function JSONdb (fileName, scope) {
 		}
 		delete queue[client.id];
 	}
-	
+
 	/* release subscriptions on an object recursively */
 	function cancel_subscriptions(client,subscriptions) {
 		var records = subscriptions[client.id];
@@ -984,7 +984,7 @@ function JSONdb (fileName, scope) {
 		}
 		delete subscriptions[client.id];
 	}
-	
+
 	/* return the prevailing lock type and pending lock status for an object */
 	function investigate(shadow, info) {
 		/* if we havent found a write locked record yet, keep searching */
@@ -1001,13 +1001,13 @@ function JSONdb (fileName, scope) {
 		return info;
 	}
 
-	/* recursively search object for any existing locked children, 
+	/* recursively search object for any existing locked children,
 	return highest lock level (WRITE > READ > NONE)  */
 	function search_party(shadow,info) {
 		if(shadow == undefined)
 			return info;
 		info = investigate(shadow,info);
-		
+
 		for(var _i in shadow) {
 			var i = shadow[_i];
 			if(i instanceof Shadow)
@@ -1020,7 +1020,7 @@ function JSONdb (fileName, scope) {
 	function check_result(request,record,result) {
 		if(result) {
 			log(LOG_DEBUG,format("db: %s %s %s OK",
-				request.client.id,request.oper,record.location));  
+				request.client.id,request.oper,record.location));
 			if(request.timeout >= 0) {
 				switch(request.oper.toUpperCase()) {
 				case "WRITE":
@@ -1047,7 +1047,7 @@ function JSONdb (fileName, scope) {
 			return false;
 		}
 	}
-	
+
 	/* send updates of this object to all subscribers */
 	function send_data_updates(client,record) {
 		for(var _c in record.info.subscribers) {
@@ -1058,14 +1058,14 @@ function JSONdb (fileName, scope) {
 			send_packet(c,"UPDATE","WRITE",record.location,get_record_data(record));
 		}
 	}
-	
+
 	/* retrieve record data, if present */
 	function get_record_data(record) {
 		if(record.data === undefined)
 			return undefined;
 		return record.data[record.property];
 	}
-	
+
 	/* send update of client subscription to all subscribers */
 	function send_subscriber_updates(client,record,oper) {
 		for(var _c in record.info.subscribers) {
@@ -1076,7 +1076,7 @@ function JSONdb (fileName, scope) {
 			send_packet(c,"UPDATE",oper,record.location,get_client_info(client));
 		}
 	}
-	
+
 	/* retrieve client nickname and system name, if present, from client socket */
 	function get_client_info(client) {
 		return {
@@ -1085,7 +1085,7 @@ function JSONdb (fileName, scope) {
 			system:client.system
 		}
 	}
-	
+
 	/* retrieve a list of subscribers to this record */
 	function get_subscriber_list(record) {
 		var data = [];
@@ -1103,24 +1103,24 @@ function JSONdb (fileName, scope) {
 			return str.substr(0,i);
 		return undefined;
 	}
-	
+
 	/* check a lock value against valid lock types */
 	function valid_lock(lock) {
 		for(var _l in locks) {
 			var l = locks[_l];
-			if(l == lock) 
+			if(l == lock)
 				return true;
 		}
 		return false;
 	}
-	
+
 	/* check an operation against valid operation types */
 	function valid_oper(oper) {
 		if(opers[oper] !== undefined)
 			return true;
 		return false;
 	}
-	
+
 	/* parse child object name from a dot-delimited string */
 	function get_cname(str) {
 		var i = str.lastIndexOf('.');
@@ -1133,7 +1133,7 @@ function JSONdb (fileName, scope) {
 	function timeout_expired(request) {
 		return (Date.now() - request.time >= request.timeout);
 	}
-	
+
 	/* count object members */
 	function count(obj) {
 		var c=0;
@@ -1141,7 +1141,7 @@ function JSONdb (fileName, scope) {
 			c++;
 		return c;
 	}
-	
+
 	/* send data packet to a client */
 	function send_packet(client,func,oper,location,data) {
 		var packet = {

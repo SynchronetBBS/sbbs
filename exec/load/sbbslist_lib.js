@@ -1,4 +1,3 @@
-// $Id: sbbslist_lib.js,v 1.24 2020/04/22 00:54:58 rswindell Exp $
 // @format.tab-size 4
 
 // Synchronet BBS List (SBL) v4 Library
@@ -232,7 +231,7 @@ function property_value(bbs, property)
 				else
 					value = Math.ceil(bbs.total.storage / 1024) + "KB";
 			}
-			break;				
+			break;
 		case "description":
 			value = bbs.description.join(" ");
 			break;
@@ -260,8 +259,8 @@ function property_value(bbs, property)
 						protocols.push(bbs.service[i].protocol);
 				}
 			}
-			if(bbs.entry 
-				&& bbs.entry.autoverify 
+			if(bbs.entry
+				&& bbs.entry.autoverify
 				&& bbs.entry.autoverify.last_success
 				&& bbs.entry.autoverify.last_success.other_services) {
 				protocols = protocols.concat(bbs.entry.autoverify.last_success.other_services.tcp);
@@ -270,16 +269,16 @@ function property_value(bbs, property)
 			break;
 		}
 		case "tcp_services":
-			if(bbs.entry 
-				&& bbs.entry.autoverify 
+			if(bbs.entry
+				&& bbs.entry.autoverify
 				&& bbs.entry.autoverify.last_success
 				&& bbs.entry.autoverify.last_success.other_services) {
 				value = bbs.entry.autoverify.last_success.other_services.tcp;
 			}
 			break;
 		case "udp_services":
-			if(bbs.entry 
-				&& bbs.entry.autoverify 
+			if(bbs.entry
+				&& bbs.entry.autoverify
 				&& bbs.entry.autoverify.last_success
 				&& bbs.entry.autoverify.last_success.other_services) {
 				value = bbs.entry.autoverify.last_success.other_services.udp;
@@ -363,7 +362,7 @@ function sort(list, property)
 		list.sort(verify_compare);
 	else if(property=="active")
 		list.sort(active_compare);
-	else {	
+	else {
 		if(property)
 			sort_property=property;
 		list.sort(compare);
@@ -518,7 +517,7 @@ function remove(bbs)
         return false;
     }
     var list = parse(f);
-	var index = find_value(list, "name", bbs.name); 
+	var index = find_value(list, "name", bbs.name);
 	if(index < 0 ) {
 		f.close();
 		unlock();
@@ -548,7 +547,7 @@ function replace(bbs)
         return false;
     }
     var list = parse(f);
-	var index = find_value(list, "name", bbs.name); 
+	var index = find_value(list, "name", bbs.name);
 	if(index < 0 ) {
 		f.close();
 		unlock();
@@ -672,12 +671,12 @@ function new_system(name, nodes, stats)
 	if(!stats)
 		stats = { users:1, doors:0, dirs:0, subs:0, files:0, msgs:0, storage:0 };
 	return {
-		name: name, 
-		entry:{ created:{}, updated:{} }, 
-		sysop:[], 
-		service:[], 
-		terminal:{ nodes: nodes, types:[] }, 
-		network:[], 
+		name: name,
+		entry:{ created:{}, updated:{} },
+		sysop:[],
+		service:[],
+		terminal:{ nodes: nodes, types:[] },
+		network:[],
 		description:[],
 		total: stats
 	};
@@ -709,12 +708,12 @@ function check_entry(bbs)
 function system_stats()
 {
 	return {
-		users: system.stats.total_users, 
-		subs: Object.keys(msg_area.sub).length, 
-		dirs: Object.keys(file_area.dir).length, 
-		doors: Object.keys(xtrn_area.prog).length, 
-		storage:disk_size(system.data_dir, 1024*1024)*1024*1024, 
-		msgs: system.stats.total_messages, 
+		users: system.stats.total_users,
+		subs: Object.keys(msg_area.sub).length,
+		dirs: Object.keys(file_area.dir).length,
+		doors: Object.keys(xtrn_area.prog).length,
+		storage:disk_size(system.data_dir, 1024*1024)*1024*1024,
+		msgs: system.stats.total_messages,
 		files: system.stats.total_files
 	};
 }

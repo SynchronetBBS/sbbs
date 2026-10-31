@@ -2,8 +2,6 @@
 
 // Synchronet inter-bbs instant message library
 
-// $Id: sbbsimsg_lib.js,v 1.6 2019/06/15 03:07:56 rswindell Exp $
-
 require("sockdefs.js", 'SOCK_DGRAM');
 
 var SentAddressHistoryLength = 10;
@@ -28,7 +26,7 @@ function read_sys_list(include_self)
 		if(list[i]==null)
 			break;
 		var line = list[i].trimLeft();
-		if(line.charAt(0)==';')		// comment? 
+		if(line.charAt(0)==';')		// comment?
 			continue;
 
 		var word = line.split('\t');
@@ -48,7 +46,7 @@ function read_sys_list(include_self)
 
 		this.sys_list[ip_addr] = { host: host, name: name, users: [] };
 	}
-	
+
 	return this.sys_list;
 }
 
@@ -87,10 +85,10 @@ function parse_active_users(message, logon_callback, logoff_callback)
 	var sys = sys_list[message.ip_address];
 	if(!sys)
 		return "Unknown system: " + message.ip_address;
-	
+
 	sys.last_response = time();
 	var old_users = sys.users.slice();
-	
+
 	if(message.data[0] == '[') {
 		try {
 			sys.users = JSON.parse(message.data);
@@ -100,7 +98,7 @@ function parse_active_users(message, logon_callback, logoff_callback)
 	}
 	else {
 		var response = message.data.split("\r\n");
-		
+
 		// Skip header
 		while(response.length && response[0].charAt(0)!='-')
 			response.shift();
@@ -110,14 +108,14 @@ function parse_active_users(message, logon_callback, logoff_callback)
 			response.shift();	// Delete any blank lines
 		while(response.length && !response[response.length-1].length)
 			response.pop();		// Delete trailing blank lines
-		
+
 		sys.users = [];
 
 		for(var i in response) {
 			if(response[i]=="")
 				continue;
 
-			sys.users.push( { 
+			sys.users.push( {
 				name: format("%.25s",response[i]).trimRight(),
 				action: response[i].substr(26, 31).trimLeft().trimRight(),
 				timeon: parseTimeOn(response[i].substr(57, 9).trimLeft()),
@@ -142,7 +140,7 @@ function parse_active_users(message, logon_callback, logoff_callback)
 				logoff_callback(old_users[i], sys);
 		}
 	}
-			
+
 	return true;
 }
 
@@ -166,7 +164,7 @@ function poll_systems(sent, interval, timeout, callback)
 		var message = receive_active_users();
 		if(message == null)
 			continue;
-		
+
 		replies++;
 
 		var result = parse_active_users(message);
@@ -199,11 +197,11 @@ function send_msg(dest, msg, from)
 	sock.close();
 	if(result < 1)
 		return "MSP Send to " + host + " failed with error " + sock.last_error;
-	
+
 	var userprops = load({}, "userprops.js")
 	var addr_list = userprops.get(props_sent, "address", []);
 	var addr_idx = addr_list.indexOf(dest);
-	if(addr_idx >= 0)	 
+	if(addr_idx >= 0)
 		addr_list.splice(addr_idx, 1);
 	addr_list.unshift(dest);
 	if(addr_list.length > SentAddressHistoryLength)
@@ -215,7 +213,7 @@ function send_msg(dest, msg, from)
 
 // TEST CODE ONLY:
 if(this.argc == 1 && argv[0] == "test") {
-	
+
 	this.read_sys_list();
 	print(JSON.stringify(sys_list, null ,4));
 	var sent = request_active_users();

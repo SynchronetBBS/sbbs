@@ -1,4 +1,3 @@
-// $Id: ircbot_functions.js,v 1.33 2020/06/29 02:02:38 echicken Exp $
 /*
 
  This program is free software; you can redistribute it and/or modify
@@ -29,15 +28,15 @@ function Server_command(srv,cmdline,onick,ouh) {
 		if(chan	&& chan.modules[m] != true) {
 			continue;
 		}
-		if(module 
-			&& module.enabled 
+		if(module
+			&& module.enabled
 			&& module.Server_Commands[main_cmd]) {
 			try {
 				cmd=IRC_parsecommand(cmdline);
 				if (cmd === 0)
 					return;
 				cmd.shift();
-				module.Server_Commands[main_cmd](srv,cmd,onick,ouh);	
+				module.Server_Commands[main_cmd](srv,cmd,onick,ouh);
 			} catch(e) {
 				log(m + " module error: " + e);
 				module.enabled=false;
@@ -103,7 +102,7 @@ function Server_bot_command(srv,bot_cmds,target,onick,ouh,cmdline) {
 	var cmd=IRC_parsecommand(cmdline);
 	if (cmd === 0)
 		return 0;
-	
+
 	var access_level = srv.bot_access(onick,ouh);
 	var botcmd = bot_cmds[cmd[0].toUpperCase()];
 	if (botcmd) {
@@ -165,13 +164,13 @@ function Server_get_buffer(target) {
 	if(target_buffer == false) {
 		target_buffer=new Server_Buffer(target);
 		this.buffers.push(target_buffer);
-	} 
+	}
 	return target_buffer;
 }
 
 function Server_writeout(str) {
 	log("--> " + this.host + ": " + str);
-	
+
 	var target="~";
 	var target_buffer=this.get_buffer(target);
 	target_buffer.buffer.push(str.slice(0, max_paragraph_length) + "\r\n");
@@ -185,7 +184,7 @@ function Server_target_out(target,str,msgtype) {
 
 	if (!msgtype)
 		msgtype = "PRIVMSG";
-	
+
 	var irc_header = msgtype + " " + target + " :";
 	var msg_queue = chunk_string(str, max_paragraph_length - irc_header.length);
 	var target_buffer=this.get_buffer(target);
@@ -195,7 +194,7 @@ function Server_target_out(target,str,msgtype) {
 		log("--> " + this.host + ": " + outstr);
 		target_buffer.buffer.push(outstr + "\r\n");
 	}
-	
+
 }
 
 /* server functions */

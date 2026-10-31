@@ -1028,7 +1028,7 @@ var CallSign={
 		var line;
 		var incountry=false;
 		var continents={
-			AF:'Africa', 
+			AF:'Africa',
 			AN:'Antarctica',
 			AS:'Asia',
 			EU:'Europe',

@@ -300,7 +300,7 @@ lbMenu.ValidateSelectItem = function(pItemRetval) {
 	}
 }
 
-OnItemSelect is a function that is called when an item is selected, or toggled 
+OnItemSelect is a function that is called when an item is selected, or toggled
 if multi-select is enabled.
 
 Parameters:
@@ -622,7 +622,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// the user can select it.
 	this.ValidateSelectItem = function(pItemRetval) { return true; }
 
-	// OnItemSelect is a function that is called when an item is selected, or toggled 
+	// OnItemSelect is a function that is called when an item is selected, or toggled
 	// if multi-select is enabled.
 	//
 	// Parameters:
@@ -917,7 +917,7 @@ function DDLightbarMenu_SetPos(pX, pY)
 			this.pos.x = pX.x;
 			this.pos.y = pX.y;
 		}
-		
+
 	}
 	else if ((typeof(pX) == "number") && (typeof(pY) == "number"))
 	{
@@ -2025,13 +2025,13 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			}
 			else // this.mouseEnabled is false
 				this.lastUserInput = console.getkey(inputMode);
-				
-			
+
+
 			// If the user is no longer online (disconnected) or the JS engine has
 			// been terminated, then exit the loop now
 			if (bbs.online == 0 || js.terminated)
 				break;
-			
+
 
 			// If no further input processing needs to be done due to a mouse click
 			// action, then continue to the next loop iteration.
@@ -2358,7 +2358,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	// Set the screen color back to normal so that text written to the screen
 	// after this looks good.
 	console.attributes = "N";
-	
+
 	// If in multi-select mode, populate userChoices with the choices
 	// that the user selected.
 	if (this.multiSelect && (Object.keys(selectedItemIndexes).length > 0))

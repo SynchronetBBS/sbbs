@@ -269,9 +269,9 @@ var CS_FILE_FIND_OLD_UPLOADS=250;
 var CS_INC_MAIN_CMDS=251;
 var CS_INC_FILE_CMDS=252;
 var CS_PRINTFILE_STR=253;
-var CS_PAGE_GURU=254;				
+var CS_PAGE_GURU=254;
 var CS_SPY=255;						/* 0xFF */
-	
+
 
 /* Variable instructions (sub-op-code) */
 /* Preceeded by CS_VAR_INSTRUCTION */
@@ -457,7 +457,7 @@ var CS_FTP_CWD=19;						/* change working dir */
 var CS_FTP_DIR=20;						/* path */
 var CS_FTP_PUT=21;						/* path */
 var CS_FTP_GET=22;						/* path, offset */
-var CS_FTP_RENAME=23;					
+var CS_FTP_RENAME=23;
 var CS_FTP_DELETE=24;
 var CS_FTP_UNUSED7=25;
 var CS_FTP_UNUSED6=26;

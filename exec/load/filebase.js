@@ -4,11 +4,11 @@
  *
  * This is file is now just an unnecessary shim for the new FileBase class
  * and should be deprecated.
- * 
+ *
  * Similar to filedir.js.
- * 
+ *
  * Each element in the array is an object with the following properties:
- * 
+ *
  * base:       Base filename.
  * ext:        Filename extension.
  * datoffset:  Offset in .dat file of file data. - N/A
@@ -37,7 +37,7 @@ function OldFileBase(dir) {
 	for(var i = 0; i < file_list.length; i++) {
 		var file = file_list[i];
 		ret.push({
-			name: file.name, 
+			name: file.name,
 			uldate: file.added,
 			dldate: file.last_downloaded,
 			credits: file.cost,

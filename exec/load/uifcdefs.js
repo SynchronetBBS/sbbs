@@ -38,7 +38,7 @@ var MSK_TAGALL = MSK_TAG | MSK_OFF;
 var MAX_OPLN	= 75;	/* Maximum length of each option per menu call */
 var MAX_BUFS	= 7;	/* Maximum number of screen buffers to save */
 var MIN_LINES = 14;   /* Minimum number of screen lines supported */
-var MAX_LINES = 60;   /* Maximum number of screen rows supported */ 
+var MAX_LINES = 60;   /* Maximum number of screen rows supported */
 var MAX_BFLN	= 80*MAX_LINES*2;	/* Maximum size of screen buffers */
 
 								/**************************/
@@ -49,7 +49,7 @@ var UIFC_MOUSE	= (1<<1);	/* Mouse installed and available */
 var UIFC_MONO		= (1<<2);	/* Force monochrome mode */
 var UIFC_COLOR	= (1<<3);	/* Force color mode */
 var UIFC_IBM		= (1<<4);	/* Force use of IBM charset	*/
-var UIFC_NOCTRL	= (1<<5);	/* Don't allow useage of CTRL keys for movement 
+var UIFC_NOCTRL	= (1<<5);	/* Don't allow useage of CTRL keys for movement
 								 *	 etc in menus (Still available in text boxes) */
 
 								/*******************************/

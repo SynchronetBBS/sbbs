@@ -84,7 +84,7 @@ function is_valid(buf)
 	load("cga_defs.js");
 	if(!buf || !buf.length || buf.length != this.size)
 		return false;
-	var invalid = buf.split('').filter(function (e,i) { 
+	var invalid = buf.split('').filter(function (e,i) {
 		if((i&1) == 0) { // char
 			switch(e) {
 				case '\x00':
@@ -282,7 +282,7 @@ function import_file(usernum, filename, offset)
 function is_enabled(obj)
 {
 	return obj
-		&& typeof obj == 'object' 
+		&& typeof obj == 'object'
 		&& typeof obj.data == 'string'
 		&& obj.data.length
 		&& !obj.disabled;

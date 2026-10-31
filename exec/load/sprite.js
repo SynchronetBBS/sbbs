@@ -227,10 +227,10 @@ var Sprite = {
 					continue;
 				if(sprites[s] === sprite)
 					continue;
-				if(sprite.x >= sprites[s].x + sprites[s].frame.width + margin 
+				if(sprite.x >= sprites[s].x + sprites[s].frame.width + margin
 					|| sprite.x + sprite.frame.width + margin <= sprites[s].x)
 					continue;
-				if(sprite.y >= sprites[s].y + sprites[s].frame.height + margin 
+				if(sprite.y >= sprites[s].y + sprites[s].frame.height + margin
 					|| sprite.y + sprite.frame.height + margin <= sprites[s].y)
 					continue;
 				yarg.push(sprites[s]);
@@ -258,7 +258,7 @@ var Sprite = {
 				}
 			}
 		}
-		
+
 		return false;
 	},
 	checkBelow:function(sprite) {
@@ -269,7 +269,7 @@ var Sprite = {
 					continue;
 				if((sprite.y + sprite.frame.height != sprites[s].y))
 					continue;
-				if(sprite.x >= sprites[s].x + sprites[s].frame.width 
+				if(sprite.x >= sprites[s].x + sprites[s].frame.width
 					|| sprite.x + sprite.frame.width <= sprites[s].x)
 					continue;
 				yarg.push(sprites[s]);
@@ -288,10 +288,10 @@ var Sprite = {
 			for(var s = 0; s < sprites.length; s++) {
 				if(!sprites[s].open)
 					continue;
-				if(sprite.y <= sprites[s].y 
+				if(sprite.y <= sprites[s].y
 					|| sprite.y > sprites[s].y + sprites[s].frame.height)
 					continue;
-				if(sprite.x >= sprites[s].x + sprites[s].frame.width 
+				if(sprite.x >= sprites[s].x + sprites[s].frame.width
 					|| sprite.x + sprite.frame.width <= sprites[s].x)
 					continue;
 				yarg.push(sprites[s]);
@@ -517,13 +517,13 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 		this.frame.h_scroll = true;
 		this.frame.transparent = true;
 		this.frame.top();
-		this.frame.load(fileName + ".bin", 
-			(this.ini.width * countMembers(this.positions)), 
+		this.frame.load(fileName + ".bin",
+			(this.ini.width * countMembers(this.positions)),
 			(this.ini.height * countMembers(this.bearings)));
 		this.frame.scrollTo(this.positions[this.position],this.bearings[this.bearing]);
 	}
 	init.apply(this,arguments);
-	
+
 	Sprite.aerials.push(this);
 }
 Sprite.Aerial.prototype.canMove = function(bearing) {
@@ -642,7 +642,7 @@ Sprite.Aerial.prototype.turn = function(direction) {
 	/* increment or decrement bearing */
 	if(direction == "cw")
 		b++;
-	else if(direction == "ccw") 
+	else if(direction == "ccw")
 		b--;
 	if(b>=this.ini.bearings.length)
 		b=0;
@@ -706,10 +706,10 @@ Sprite.Aerial.prototype.putWeapon = function() {
 		default:
 			break;
 	}
-	if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > this.frame.parent.width 
+	if(this.weaponCoordinates.x < 1 || this.weaponCoordinates.x > this.frame.parent.width
 		|| this.weaponCoordinates.y < 1 || this.weaponCoordinates.y > this.frame.parent.height)
 		return false;
-	var w = new Sprite.Aerial(this.ini.weapon, this.frame.parent, 
+	var w = new Sprite.Aerial(this.ini.weapon, this.frame.parent,
 		this.weaponCoordinates.x, this.weaponCoordinates.y, this.bearing);
 	w.owner = this;
 	w.frame.open(); // Shouldn't be necessary, but sprite doesn't appear unless I do this
@@ -861,7 +861,7 @@ Sprite.Aerial.prototype.pursue = function(s) {
 }
 Sprite.Aerial.prototype.remove = function() {
 	this.open = false;
-	this.frame.close();	
+	this.frame.close();
 }
 Sprite.Aerial.prototype.moveTo = function(x, y) {
 	this.x = x;
@@ -875,7 +875,7 @@ Sprite.Aerial.prototype.turnTo = function(bearing) {
 	this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);
 }
 
-/*	Profile Sprite 
+/*	Profile Sprite
 
 	This is the type of sprite you would create for a 'platformer' type
 	environment. Typically side-scrolling games where gravity is a factor.
@@ -1046,7 +1046,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 		this.frame.transparent = true;
 		this.frame.v_scroll = true;
 		this.frame.h_scroll = true;
-		this.frame.load(fileName + ".bin", 
+		this.frame.load(fileName + ".bin",
 			(this.ini.width * countMembers(this.ini.positions)),
 			(this.ini.height * countMembers(this.ini.bearings)));
 		this.frame.top();
@@ -1060,7 +1060,7 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 		// }
 	}
 	init.apply(this,arguments);
-	Sprite.profiles.push(this);	
+	Sprite.profiles.push(this);
 }
 Sprite.Profile.prototype.canMove = function() {
 	var n = (this.bearing.match(/n/) !== null);
@@ -1220,7 +1220,7 @@ Sprite.Profile.prototype.putWeapon = function() {
 	}
 	if(	this.weaponCoordinates.x - this.frame.parent.x < 1
 		||
-		this.weaponCoordinates.x - this.frame.parent.x > this.frame.parent.width 
+		this.weaponCoordinates.x - this.frame.parent.x > this.frame.parent.width
 		||
 		this.weaponCoordinates.y - this.frame.parent.y < 1
 		||
@@ -1329,7 +1329,7 @@ Sprite.Profile.prototype.cycle = function() {
 		ret = true;
 		this.lastBearing = this.bearing;
 		this.lastPosition = this.position;
-		this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);			
+		this.frame.scrollTo(this.positions[this.position], this.bearings[this.bearing]);
 	}
 	if(this.x != this.frame.x || this.y != this.frame.y) {
 		ret = true;
@@ -1357,7 +1357,7 @@ Sprite.Profile.prototype.jump = function() {
 Sprite.Profile.prototype.pursue = function(s) {
 	var targetBearing;
 	var attack = false;
-	if(this.x > s.x + s.frame.width) 
+	if(this.x > s.x + s.frame.width)
 		targetBearing = "w";
 	else if(this.x + this.width < s.x)
 		targetBearing = "e";
@@ -1366,13 +1366,13 @@ Sprite.Profile.prototype.pursue = function(s) {
 		this.turnTo(targetBearing);
 	else if(s.inJump && !this.inJump)
 		this.jump();
-	//else 
+	//else
 		//this.move("forward");
 	return attack;
 }
 Sprite.Profile.prototype.remove = function() {
 	this.open = false;
-	this.frame.close();	
+	this.frame.close();
 }
 Sprite.Profile.prototype.moveTo = function(x, y) {
 	this.x = x;
@@ -1396,13 +1396,13 @@ Sprite.Profile.prototype.changePosition = function(position) {
 
 	This is what you would use to construct platforms, walls, ceilings.
 	By being a subclass of Sprite, overlaps and other interference can be detected
-	just like any other sprite, thus giving you an easy way to construct 
+	just like any other sprite, thus giving you an easy way to construct
 	a sprite-friendly environment.
-	
+
 	Methods:
-	
+
 		sprite.move(bearing)	Where 'bearing' is one of n,ne,e,se,s,sw,w,nw.
-								The sprite will move one space in the bearing 
+								The sprite will move one space in the bearing
 								specified.
 
 */

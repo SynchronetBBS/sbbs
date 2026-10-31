@@ -1,5 +1,3 @@
-// $Id: msgutils.js,v 1.28 2016/04/24 00:55:45 deuce Exp $
-
 require('sbbsdefs.js', 'HIGH');
 
 function attr_to_ansi(atr, curatr)
@@ -54,7 +52,7 @@ function attr_to_ansi(atr, curatr)
 	if((atr&0x70) != (curatr&0x70)) {
 		switch(atr&0x70) {
 			/* The BG_BLACK macro is 0x200, so isn't in the mask */
-			case 0 /* BG_BLACK */:	
+			case 0 /* BG_BLACK */:
 				str+="40;";
 				break;
 			case BG_RED:
@@ -105,14 +103,14 @@ function expand_body(body, sys_misc, mode)
 //				sys_status|=SS_NEST_PF; 	/* keep it only one message deep! */
 //				sprintf(tmp3,"%s%s",cfg.text_dir,tmp2);
 //				printfile(tmp3,0);
-//				sys_status&=~SS_NEST_PF; 
+//				sys_status&=~SS_NEST_PF;
 //			}
 //			else if(toupper(str[l+1])=='Z')             /* Ctrl-AZ==EOF */
 //				break;
 //			else {
 //				ctrl_a(str[l+1]);
-//				l+=2; 
-//			} 
+//				l+=2;
+//			}
 //		}
 	body=body.replace(/[`ú]\[/g, '\x1b['); /* Convert `[ and ú[ to ESC[ */
 	if(sys_misc & SYS_PCBOARD) {
@@ -203,7 +201,7 @@ function expand_body(body, sys_misc, mode)
 					break;
 				case 'S':   /* swap foreground and background */
 					new_attr = (cur_attr&0x07)<<4;
-					break; 
+					break;
 			}
 			var ret=attr_to_ansi(new_attr,cur_attr);
 			cur_attr=new_attr;
@@ -243,7 +241,7 @@ function expand_body(body, sys_misc, mode)
 					break;
 				case '9':
 					new_attr=CYAN;
-					break; 
+					break;
 			}
 
 			var ret=attr_to_ansi(new_attr,cur_attr);
@@ -344,14 +342,14 @@ function expand_body(body, sys_misc, mode)
 	threads.thread	- Object
 	threads.thread[x].newest	- Date of most recent message in this thread
 	threads.thread[x].messages	- Array of headers of messages in this thread
-	
+
 	Iterate over threads from oldest to newest:
 	for(var t in threads.thread) {
 		for(var m in threads.thread[t].messages) {
 			// Do stuff
 		}
 	}
-	
+
 	Iterate over threads from most recently to least recently updated:
 	for(var t in threads.order) {
 		for(var m in threads.thread[threads.order[t]].messages) {

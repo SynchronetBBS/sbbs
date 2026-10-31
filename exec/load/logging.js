@@ -8,7 +8,7 @@ function Logger(root, name)
 	this.Init=function()
 	{
 		var now=time();
-		var loglist=directory(this.root + this.prefix + "*.log"); 	
+		var loglist=directory(this.root + this.prefix + "*.log");
 		for(l in loglist)
 		{
 			var then=file_date(loglist[l]);
@@ -20,13 +20,13 @@ function Logger(root, name)
 				file_remove(remove);
 			}
 		}
-		loglist=directory(this.root + this.prefix + "*.log"); 	
+		loglist=directory(this.root + this.prefix + "*.log");
 		var numlogs=loglist.length;
 		for(n=0;n<numlogs;n++)
 		{
-			for(m = 0; m < (numlogs-1); m++) 
+			for(m = 0; m < (numlogs-1); m++)
 			{
-				if(file_date(loglist[m]) < file_date(loglist[m+1])) 
+				if(file_date(loglist[m]) < file_date(loglist[m+1]))
 				{
 					holder = loglist[m+1];
 					loglist[m+1] = loglist[m];
@@ -48,7 +48,7 @@ function Logger(root, name)
 		this.logfile=new File(this.root + this.prefix + num + ".log");
 		this.Log("****" + system.datestr() +" - "+ system.timestr());
 	}
-	this.ScreenDump=function()	
+	this.ScreenDump=function()
 	{
 		console.clear();
 		console.printfile(this.logfile.name);

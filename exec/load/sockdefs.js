@@ -5,8 +5,6 @@
  * Per RFC 790, September 1981, taken from the BSD file netinet/in.h.
  */
 
-/* $Id: sockdefs.js,v 1.8 2020/04/09 19:16:46 deuce Exp $ */
-
 /*
  * Protocols
  */
@@ -92,13 +90,13 @@ if (Socket.AF_INET6 !== undefined)
 /* Option name parameter to Socket.getoption/setoption */
 var sockopts = [
 	"TYPE",
-	"DEBUG",		
-	"LINGER", 
-	"SNDBUF",		
-	"RCVBUF",		
-	"SNDLOWAT",	
-	"RCVLOWAT",	
-	"SNDTIMEO",	
+	"DEBUG",
+	"LINGER",
+	"SNDBUF",
+	"RCVBUF",
+	"SNDLOWAT",
+	"RCVLOWAT",
+	"SNDTIMEO",
 	"RCVTIMEO",
 	"KEEPALIVE",
 	"REUSEADDR",

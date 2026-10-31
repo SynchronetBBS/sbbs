@@ -20,7 +20,7 @@ function ExternalMenus() {
 	this.options = {};
 	this.xtrn_custommenu_options = {};
 	this.menuconfig = {};
-	
+
 	this.getOptions();
 	this.getMenuConfig();
 }
@@ -33,7 +33,7 @@ ExternalMenus.prototype.getMenuConfig = function() {
 		config_src = config_file.read();
 		config_file.close();
 	}
-	
+
 	if (typeof config_src !== "undefined") {
 		this.menuconfig = JSON.parse(config_src.toString());
 	}
@@ -55,7 +55,7 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 	}
 
 	// We start with the option from xtrnmenu. If it doesn't exist,
-	// we use the option from xtrn_sec (if applicable). And if that doesn't exist, we use the 
+	// we use the option from xtrn_sec (if applicable). And if that doesn't exist, we use the
 	// default (system or in code).
 
 	if (typeof this.xtrn_custommenu_options.multicolumn !== "undefined") {
@@ -222,13 +222,13 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 
 	this.options.custom_menu_not_found_msg = (typeof this.options.custom_menu_not_found_msg !== "undefined")
 		? this.options.custom_menu_not_found_msg : "Menu %MENUID% not found";
-	
+
 	this.options.custom_menu_program_not_found_msg = (typeof this.options.custom_menu_program_not_found_msg  !== "undefined")
 		? this.options.custom_menu_program_not_found_msg  : "Menu %MENUID% not found";
 
 	this.options.use_xtrn_sec = (typeof this.xtrn_custommenu_options.use_xtrn_sec !== "undefined")
 		? this.xtrn_custommenu_options.use_xtrn_sec : false;
-	
+
 	this.options.custom_quit_msg = (typeof this.xtrn_custommenu_options.custom_quit_msg !== "undefined")
 		? this.xtrn_custommenu_options.custom_quit_msg : 'Quit';
 
@@ -245,19 +245,19 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 
 	this.options.custom_logoff_msg = (typeof this.xtrn_custommenu_options.custom_logoff_msg !== "undefined")
 		? this.xtrn_custommenu_options.custom_logoff_msg : 'Logoff';
-	
+
 	this.options.json_enabled = (typeof this.xtrn_custommenu_options.json_enabled !== undefined)
 		? this.xtrn_custommenu_options.json_enabled : false;
 	this.options.json_host = (typeof this.xtrn_custommenu_options.json_host !== undefined)
 		? this.xtrn_custommenu_options.json_host : "localhost";
 	this.options.json_port = (typeof this.xtrn_custommenu_options.json_port !== undefined)
 		? this.xtrn_custommenu_options.json_port : 10088;
-	
+
 	this.options.blacklist_tracking_xtrncodes = (typeof this.xtrn_custommenu_options.blacklist_tracking_xtrncodes !== undefined)
 		? this.xtrn_custommenu_options.blacklist_tracking_xtrncodes : "";
 	this.options.blacklist_tracking_xtrnsec = (typeof this.xtrn_custommenu_options.blacklist_tracking_xtrnsec !== undefined)
 		? this.xtrn_custommenu_options.blacklist_tracking_xtrnsec : "";
-	
+
 	this.options.custom = this.xtrn_custommenu_options;
 
 	return this.options;
@@ -271,9 +271,9 @@ ExternalMenus.prototype.getMenu = function(menuid) {
 	} else {
 		menuid = menuid.toLowerCase();
 	}
-	
+
 	var menu;
-	
+
 	if ((typeof this.menuconfig !== "undefined") && (typeof this.menuconfig.menus !== "undefined")) {
 		this.menuconfig.menus.some(function (indmenu) {
 			if (indmenu.id.toLowerCase() == menuid) {
@@ -281,12 +281,12 @@ ExternalMenus.prototype.getMenu = function(menuid) {
 			}
 		});
 	}
-	
+
 	if (!menu && (menuid == "main")) {
 		// no custom menus defined, make one to mimic old behavior
-		
+
 		var menuitems = [];
-		
+
 		var i;
 		xtrn_area.sec_list.forEach(function (sec) {
 			if (sec.can_access) {
@@ -300,7 +300,7 @@ ExternalMenus.prototype.getMenu = function(menuid) {
 				i++;
 			}
 		});
-		
+
 		menu = {
 			id: "main",
 			title: "Main Menu",
@@ -312,29 +312,29 @@ ExternalMenus.prototype.getMenu = function(menuid) {
 
 // return a section menu object (stock synchronet external door section)
 ExternalMenus.prototype.getSectionMenu = function(menuid) {
-	
+
 	// grab the specified menu, or get the main menu
 	if ((typeof menuid === "undefined") || !menuid) {
 		return false;
 	}
-	
+
 	var menuitems = [];
 	var title;
-	
+
 	var menu = {
 		id: menuid,
 		title: null,
 		items: []
 	}
-	
+
 	xtrn_area.sec_list.some(function (sec) {
 		if (sec.code.toLowerCase() == menuid.toLowerCase()) {
 			menu.title = sec.name;
-			
+
 			if (!sec.can_access || sec.prog_list.length < 1) {
 				return false;
 			}
-			
+
 			sec.prog_list.some(function (prog) {
 				menuitems.push({
 					input : null,
@@ -345,27 +345,27 @@ ExternalMenus.prototype.getSectionMenu = function(menuid) {
 					cost: prog.cost
 				});
 			});
-			
+
 			if (menuitems.length > 0) {
 				menu.items = menuitems;
 			}
 			return;
 		}
 	});
-	
+
 	return menu;
 }
 
 // Sort the menu items according to options
 ExternalMenus.prototype.getSortedItems = function(menuobj) {
 	var sort_type;
-	
+
 	if ((typeof menuobj.sort_type !== "undefined") && menuobj.sort_type) {
 		sort_type = menuobj.sort_type; // "name" or "key"
 	} else {
 		sort_type = this.options.sort; // bool
 	}
-	
+
 	// first, build a new menu with only options they have access to
 	var menuitemsfiltered = [];
 	for (i in menuobj.items) {
@@ -379,7 +379,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 					}
 				}
 				break;
-			
+
 			case 'xtrnprog':
 				for (j in xtrn_area.sec_list) {
 					for (var k in xtrn_area.sec_list[j].prog_list) {
@@ -391,7 +391,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 					}
 				}
 				break;
-			
+
 			case 'custommenu':
 			default:
 				if ((typeof menuobj.items[i].access_string === "undefined") || !menuobj.items[i].access_string) {
@@ -406,7 +406,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 				break;
 		}
 	}
-	
+
 	// if no custom input keys are specified for an input, then assign a numeric input
 	// this would mimic the built-in external section menu functionality
 	// but this is only assigned on sort_type key because if the sort type is for
@@ -421,7 +421,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 		}
 	}
 	sortind++;
-	
+
 	if (sort_type == "key") {
 		for (i in menuitemsfiltered) {
 			if (!menuitemsfiltered[i].input) {
@@ -430,7 +430,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 			}
 		}
 	}
-	
+
 	if (sort_type) {
 		switch (sort_type) {
 			case "key":
@@ -443,7 +443,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 				break;
 		}
 	}
-	
+
 	// if this is a sort by title and the key is empty, it will be assigned the next available number
 	// this is to support auto-generated inputs like is done on the built-in section menus
 	// however, to keep the numeric keys in order, the numbers could not be pre-assigned like it done
@@ -454,7 +454,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 			sortind++;
 		}
 	}
-	
+
 	return menuitemsfiltered;
 }
 
@@ -507,16 +507,16 @@ ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
 
 	var menu;
 	var menuitems = [];
-	
+
 	if (itemcount === undefined) {
 		itemcount = 0;
 	}
- 	
+
 	if (menutype === undefined) {
 		log(LOG_DEBUG, "xtrnmenulib: getSpecial called without menutype");
 		return false;
 	}
-	
+
 	if (!this.options.json_enabled) {
 		log(LOG_DEBUG, "xtrnmenulib: Skipping " + menutype + " because JSON is not enabled");
 		return false;
@@ -558,12 +558,12 @@ ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
 			log(LOG_ERR, "xtrnmenulib: Unknown special menu type: " + menutype);
 			return false;
 	}
-	
+
 	if (!jsonData) {
 		jsonData = {};
 	}
 	sortedItems = this.sort_special(jsonData);
-	
+
 	var i = 1;
 	for (var d=0; d<sortedItems.length; d++) {
 		var doorid = sortedItems[d];
@@ -619,7 +619,7 @@ ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
 				break;
 			}
 		}
-		
+
 		if ((itemcount > 0) && ((d + 1) >= itemcount)) {
 			break;
 		}
@@ -639,16 +639,16 @@ ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
 ExternalMenus.prototype.getFavorites = function(title, itemcount) {
 	var menu;
 	var menuitems = [];
-	
+
 	if (itemcount === undefined) {
 		itemcount = 0;
 	}
-	
+
 	if (!this.options.json_enabled) {
 		log(LOG_DEBUG, "xtrnmenulib: Skipping favorites because JSON is not enabled");
 		return false;
 	}
-	
+
 	try {
 		require("json-client.js", "JSONClient");
 		var jsonClient = new JSONClient(this.options.json_host, this.options.json_port);
@@ -657,20 +657,20 @@ ExternalMenus.prototype.getFavorites = function(title, itemcount) {
 		log(LOG_ERR, "xtrnmenulib: Could not initialize JSON database so favorites is now disabled: " + e);
 		return false;
 	}
-	
+
 	var sortedItems = [];
 	var jsonData = jsonClient.read("xtrnmenu", "favorites_" + user.alias, 1);
-	
+
 	if (!jsonData) {
 		jsonData = {};
 	}
-	
+
 	var i = 1;
 	for (var d=0; d<jsonData.length; d++) {
 		for (var e in xtrn_area.prog) {
 			if (xtrn_area.prog[e].code.toLowerCase() == jsonData[d].toLowerCase()) {
 				var stats;
-				
+
 				menuitems.push({
 					input: i,
 					target: xtrn_area.prog[e].code,
@@ -683,7 +683,7 @@ ExternalMenus.prototype.getFavorites = function(title, itemcount) {
 				break;
 			}
 		}
-		
+
 		if ((itemcount > 0) && ((d + 1) >= itemcount)) {
 			break;
 		}
@@ -694,6 +694,6 @@ ExternalMenus.prototype.getFavorites = function(title, itemcount) {
 		title: title !== undefined ? title : 'Favorites',
 		items: menuitems,
 	};
-	
+
 	return menu;
 }

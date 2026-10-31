@@ -1,4 +1,3 @@
-// $Id: ircbot_commands.js,v 1.37 2015/03/04 18:25:38 mcmlxxix Exp $
 /*
 
  This program is free software; you can redistribute it and/or modify
@@ -26,7 +25,7 @@ var Bot_Commands = new Object();
 Bot_Commands["RELOAD"] = new Bot_Command(50,false,true);
 Bot_Commands["RELOAD"].usage =
 	command_prefix?command_prefix.toUpperCase():""+" RELOAD";
-Bot_Commands["RELOAD"].help = 
+Bot_Commands["RELOAD"].help =
 	"Reloads the internal bot command and function structure.  No arguments.";
 Bot_Commands["RELOAD"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	load("load/ircbot_commands.js");
@@ -62,7 +61,7 @@ Bot_Commands["JOIN"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	}
 	var chan=cmd.shift().toUpperCase();
 	var key=cmd.shift();
-	
+
 	if(srv.channel[chan]) {
 		srv.o(target,"I am already in that channel","NOTICE");
 		return;
@@ -85,7 +84,7 @@ Bot_Commands["PART"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		srv.o(target,"I am not in that channel","NOTICE");
 		return;
 	}
-	srv.writeout("PART " + chan + " :" + onick + " has asked me to leave."); 
+	srv.writeout("PART " + chan + " :" + onick + " has asked me to leave.");
 	delete srv.channel[chan];
 	srv.o(target,"Ok.","NOTICE");
 	return;
@@ -126,7 +125,7 @@ Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			if(bot_cmd.help) srv.o(onick,"Help: " + bot_cmd.help,"NOTICE");
 			else srv.o(onick,"No help available for this command.","NOTICE");
 			return true;
-		} 
+		}
 		return false;
 	}
 	function list_out(bot_cmds,name) {
@@ -138,7 +137,7 @@ Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		}
 		srv.o(onick,"[" + name + "] " + cmdstr.substr(1).toLowerCase(),"NOTICE");
 	}
-	
+
 	var hlp_main=cmd[1];
 	/* if no module or command was specified, list all commands, and general command usage */
 	if(!hlp_main) {
@@ -147,12 +146,12 @@ Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		for(var m in Modules) {
 			list_out(Modules[m].Bot_Commands,m.toLowerCase());
 		}
-	/* if there is a module matching the first command parameter 
+	/* if there is a module matching the first command parameter
 		display help information for that module */
 	} else	if(Modules[hlp_main.toUpperCase()]) {
 		var module=Modules[hlp_main.toUpperCase()];
 		var hlp_cmd=cmd[2];
-		
+
 		/* if a command was specified, list that command's help info */
 		if(hlp_cmd) {
 			if(module.Bot_Commands.HELP) {
@@ -166,18 +165,18 @@ Bot_Commands["HELP"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		}
 	} else {
 		/* if there is help information for the command specified show it */
-		if(Bot_Commands[hlp_main.toUpperCase()]) 
+		if(Bot_Commands[hlp_main.toUpperCase()])
 			help_out(Bot_Commands[hlp_main.toUpperCase()]);
-		
+
 		/* otherwise if this is not a private message, check the current channel's
 			ACTIVE modules for a command that matches */
 		else if(target != onick) {
 			var chan=srv.channel[target.toUpperCase()];
 			for(var m in chan.modules) {
 				var module=Modules[m];
-				if(module.Bot_Commands.HELP) 
+				if(module.Bot_Commands.HELP)
 					module.Bot_Commands.HELP.command(target,onick,ouh,srv,lvl,cmd);
-				else if(module.Bot_Commands[hlp_main.toUpperCase()]) 
+				else if(module.Bot_Commands[hlp_main.toUpperCase()])
 					help_out(module.Bot_Commands[hlp_main.toUpperCase()]);
 			}
 		}
@@ -287,7 +286,7 @@ Bot_Commands["GREET"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			usr.comment = "";
 			return;
 		}
-		if (cmd[1].toUpperCase() == "NULL") 
+		if (cmd[1].toUpperCase() == "NULL")
 			cmd[1] = "";
 		cmd.shift();
 		var the_greet = cmd.join(" ");
@@ -314,7 +313,7 @@ Bot_Commands["SAVE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 
 Bot_Commands["PREFIX"] = new Bot_Command(80,false,true);
 Bot_Commands["PREFIX"].usage =
-	get_cmd_prefix() + "PREFIX <command prefix>, " + 
+	get_cmd_prefix() + "PREFIX <command prefix>, " +
 	get_cmd_prefix() + "PREFIX";
 Bot_Commands["PREFIX"].help =
 	"Changes the bot command prefix.";
@@ -392,7 +391,7 @@ Bot_Commands["MODULE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		} else if(target == onick) {
 			var str="modules (msg):";
 			for(m in Modules) {
-				if(Modules[m].enabled) 
+				if(Modules[m].enabled)
 					str+=" +" + m.toLowerCase();
 			}
 			srv.o(target,str);
@@ -400,7 +399,7 @@ Bot_Commands["MODULE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		} else {
 			chan=srv.channel[target.toUpperCase()];
 		}
-	
+
 		var str="modules (" + chan.name + "):";
 		var mods=chan.modules;
 		for(m in Modules) {
@@ -419,7 +418,7 @@ Bot_Commands["MODULE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	/* first parameters should be either a channel name or ALL */
 	var channels=[];
 	var count=0;
-	
+
 	if(cmd[0].toUpperCase() == "ALL") {
 		cmd.shift();
 		for(var c in srv.channel) {
@@ -435,19 +434,19 @@ Bot_Commands["MODULE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 			channels.push(chan_str.toUpperCase());
 		}
 	}
-	
+
 	var chan_list=[];
 	var mod_list=[];
-	
+
 	var chan_str="";
 	var mod_str="";
-	
+
 	var mode=cmd.shift();
 	if(!mode) {
 		srv.o(target,"Syntax error");
 		return;
 	}
-	
+
 	while(mode) {
 		var operator = 0;
 		if(mode[0] == "+") {
@@ -460,12 +459,12 @@ Bot_Commands["MODULE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		}
 		var mod=mode.substr(1).toUpperCase();
 		mode=mode[0];
-		
+
 		if(mod == "ALL") {
 			for(var m in Modules) {
 				if(channels.length == 0) {
 					channels.push(target.toUpperCase());
-				} 
+				}
 				for(var c=0;c<channels.length;c++) {
 					var chan=srv.channel[channels[c].toUpperCase()];
 					if(chan.modules[m] !== operator) {
@@ -485,7 +484,7 @@ Bot_Commands["MODULE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 		} else if(Modules[mod]) {
 			if(channels.length == 0) {
 				channels.push(target.toUpperCase());
-			} 
+			}
 			for(var c=0;c<channels.length;c++) {
 				var chan=srv.channel[channels[c].toUpperCase()];
 				if(chan.modules[mod] !== operator) {
@@ -531,7 +530,7 @@ Bot_Commands["IGNORE"].command = function (target,onick,ouh,srv,lvl,cmd) {
 	if(!srv.users[usr]) {
 		srv.o(target,usr + " is not in my database.","NOTICE");
 		return;
-	} 
+	}
 	if(srv.ignore[usr]) {
 		srv.o(target,usr + " removed from ignore list.","NOTICE");
 		srv.ignore[usr]=false;
@@ -549,19 +548,19 @@ Server_Commands["JOIN"]= function (srv,cmd,onick,ouh) {
 	if (cmd[0][0] == ":")
 		cmd[0] = cmd[0].slice(1);
 	var chan = srv.channel[cmd[0].toUpperCase()];
-	
+
 	if(!chan) {
 		log("channel not in server channel list");
 		return;
 	}
-	
+
 	// Me joining.
 	if ((onick == srv.curnick) && !chan.is_joined) {
 		chan.is_joined = true;
 		srv.writeout("WHO " + cmd[0]);
 		return;
 	}
-	
+
 	// Someone else joining.
 	if(!srv.users[onick.toUpperCase()])	srv.users[onick.toUpperCase()] = new Server_User(ouh,onick);
 	else srv.users[onick.toUpperCase()].uh=ouh;
@@ -622,11 +621,11 @@ Server_Commands["QUIT"]=Server_Commands["PART"];
 Server_Commands["KICK"] = function (srv,cmd,onick,ouh)	{
 	if (cmd[0][0] == ":")
 		cmd[0] = cmd[0].slice(1);
-		
+
 	var chan_name=cmd.shift();
 	var kicked=cmd.shift();
 	var chan = srv.channel[chan_name.toUpperCase()];
-	
+
 	if ((kicked == srv.curnick) && chan && chan.is_joined) {
 		chan.is_joined = false;
 		return;
@@ -642,21 +641,21 @@ Server_Commands["KICK"] = function (srv,cmd,onick,ouh)	{
 	}
 }
 
-Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{ 
-	if(!srv.users[onick.toUpperCase()])	
+Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
+	if(!srv.users[onick.toUpperCase()])
 		srv.users[onick.toUpperCase()] = new Server_User(ouh,onick);
 	srv.users[onick.toUpperCase()].last_spoke=time();
 
 	if (cmd[0][0] == "#" || cmd[0][0] == "&") {
 		var chan=srv.channel[cmd[0].toUpperCase()];
 		if(!chan) return;
-		
+
 		if (srv.pipe && srv.pipe[chan.name.toUpperCase()]) {
 			var thispipe = srv.pipe[chan.name.toUpperCase()];
-			thispipe.srv.o(thispipe.target, "<" + onick + "> " 
+			thispipe.srv.o(thispipe.target, "<" + onick + "> "
 				+ IRC_string(cmd.join(" "), 1));
 		}
-		
+
 		cmd=parse_cmd_prefix(cmd);
 		if(!cmd)
 			return false;
@@ -671,7 +670,7 @@ Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
 		} catch(e) {
 			srv.o(chan.name,e);
 		}
-		
+
 		for(var m in Modules) {
 			var module=Modules[m];
 			if(!module || !module.enabled) continue;
@@ -684,7 +683,7 @@ Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
 				}
 			}
 		}
-	} else if (cmd[0].toUpperCase() == 
+	} else if (cmd[0].toUpperCase() ==
 			   srv.curnick.toUpperCase()) { // MSG?
 		cmd[1] = cmd[1].slice(1).toUpperCase();
 		cmd.shift();
@@ -695,11 +694,11 @@ Server_Commands["PRIVMSG"] = function (srv,cmd,onick,ouh)	{
 			return;
 		}
 		srv.bot_command(srv,Bot_Commands,onick,onick,ouh,cmd.join(" "));
-		
+
 		for(var m in Modules) {
 			var module=Modules[m];
 			if(!module || !module.enabled) continue;
-			
+
 			try {
 				srv.bot_command(srv,module.Bot_Commands,onick,onick,ouh,cmd.join(" "));
 			} catch(e) {
@@ -714,7 +713,7 @@ Server_Commands["PING"] = function (srv,cmd,onick,ouh)	{ // "Ping."
 	srv.writeout("PONG :" + cmd.join(" ").substr(1).toLowerCase());
 }
 
-Server_Commands["ERROR"] = function (srv,cmd,onick,ouh)	{ 
+Server_Commands["ERROR"] = function (srv,cmd,onick,ouh)	{
 			srv.sock.close();
 			srv.sock = 0;
 }

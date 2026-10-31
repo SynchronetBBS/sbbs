@@ -20,7 +20,7 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 	THE SOFTWARE.
 
-   Usage:      
+   Usage:
       var jpath = new JPath( myjsonobj );
 
       var somevalue = jpath.$('book/title').json;  //results in title
@@ -35,7 +35,7 @@
       [] predicates
       operators ( >=, ==, <= )
       array selection
-      .. 	         
+      ..
       *
       and, or
       nodename[0]
@@ -47,7 +47,7 @@
 
    Tested With:
       Firefox 2-3, IE 6-7
-   
+
    Update Log:
       1.0.1 - Bugfix for zero-based element selection
       1.0.2 - Bugfix for IE not handling eval() and returning a function
@@ -57,20 +57,20 @@
                   Added support for count() xpath function
                   Added support for and, or boolean expression in predicate blocks
                   Added support for global selector $$ and //
-                  Added support for wildcard (*) selector support 
+                  Added support for wildcard (*) selector support
 	  1.0.4 - Changed to MIT license
 	  1.0.5 - Bugfix for greedy regexp
 */
 
-/* $id: $ 
+/* $id: $
 
 	mcmlxxix wuz here '13
-	
+
 */
 
-function JPath( json, parent ) { 
-    this.json = json; 
-    this._parent = parent; 
+function JPath( json, parent ) {
+    this.json = json;
+    this._parent = parent;
 }
 
 JPath.prototype = {
@@ -80,7 +80,7 @@ JPath.prototype = {
       Copy of current json segment to operate on
    */
    json: null,
-   
+
    /*
       Property: parent
       Parent json object, null if root.
@@ -101,7 +101,7 @@ JPath.prototype = {
    '$': function ( str ) {
       var result = null;
       var working = this;
-      
+
       if ( this.json && str !== null )
       {
          switch ( typeof(str) )
@@ -115,15 +115,15 @@ JPath.prototype = {
             break;
 
             case 'string':
-               var names = str.split('/');     
+               var names = str.split('/');
 
                //foreach slash delimited node name//
                for ( var i=0; i<names.length ; i++ )
                {
-                  var name = new RegExp('^' + names[i].replace(/\*/g,'.*') + '$');                  
+                  var name = new RegExp('^' + names[i].replace(/\*/g,'.*') + '$');
                   var isArray = (working.json instanceof Array);
                   var a = new Array();
-                  
+
                   //foreach working node property//
                   for ( var p in working.json )
                   {
@@ -134,10 +134,10 @@ JPath.prototype = {
                            a = a.concat( this.findAllByRegExp( name, working.json[p] ) );
                         }
                         else if ( name.test(p) )
-                        {                        
+                        {
                            a.push( working.json[p] );
                         }
-                     }                  
+                     }
                   }
 
                   working = new JPath( ( a.length==0 ? null : ( ( a.length == 1) ? a[0] : a ) ), working );
@@ -145,9 +145,9 @@ JPath.prototype = {
 
                return working;
             break;
-         }   
+         }
       }
-      
+
       return new JPath( result, this );
    },
 
@@ -161,25 +161,25 @@ JPath.prototype = {
       Return:
         jpath - Returns the resulting jpath object after performing find query.
 
-   */   
-   '$$': function( str ) {   
+   */
+   '$$': function( str ) {
       var r = this.$(str,true);
       var arr = new Array();
-      
-      if ( r.json instanceof Array ) 
-         arr = arr.concat(r); 
+
+      if ( r.json instanceof Array )
+         arr = arr.concat(r);
       else if ( r.json !== null )
          arr.push(r);
-         
+
       for ( var p in this.json ) {
          if ( typeof( this.json[p] ) == 'object' ) {
             arr = arr.concat( new JPath( this.json[p], this ).$$(str));
          }
       }
-      
+
       return arr;
    },
-   
+
    /*
       Method: findAllByRegExp
       Looks through a list of an object properties using a regular expression
@@ -193,7 +193,7 @@ JPath.prototype = {
    */
    findAllByRegExp: function( re, obj ) {
       var a = new Array();
-   
+
       for ( var p in obj ) {
          if ( obj instanceof Array ) {
             a = a.concat( this.findAllByRegExp( re, obj[p] ) );
@@ -240,7 +240,7 @@ JPath.prototype = {
       var quotes = /(\'|\")([^\1]*?)\1/;
       var saves = new Array();
       while ( quotes.test(str) ) {
-         saves.push( str.match(quotes)[2] ); 
+         saves.push( str.match(quotes)[2] );
          str = str.replace(quotes,'%'+ (saves.length-1) +'%');
       }
 
@@ -322,12 +322,12 @@ JPath.prototype = {
 
       Parameters:
          string - optional node name to count, defaults to all
-      
+
       Return:
         booean - Returns number of child nodes found
    */
    count: function(n) {
-      var found = this.$( n || '*').json;         
+      var found = this.$( n || '*').json;
       return ( found ? ( found instanceof Array ? found.length : 1 ) : 0 );
    },
 

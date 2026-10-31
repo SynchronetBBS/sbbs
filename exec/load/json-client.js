@@ -1,17 +1,17 @@
 load("json-sock.js");
-/*     
+/*
 	JSON client  - for Synchronet 3.15a+ (2011)
 
 	-	code by mcmlxxix
-	
+
 	-	it is recommended to create a callback function specific to your program
 	-	and assign it to the callback property of the JSONClient object. If you do
 	-	not do this, any packets not specifically requested by your program
 	-	will be pushed into an array and sit there until you handle them
 
 	direct methods: these methods can be called directly by the main script
-	
-	-	JSONClient.cycle(); 
+
+	-	JSONClient.cycle();
 	-	JSONClient.connect();
 	-	JSONClient.disconnect();
 	-	JSONClient.read(scope,location,lock);
@@ -30,31 +30,31 @@ load("json-sock.js");
 	-	JSONClient.status(scope,location);
 	-	JSONClient.who(scope,location);
 	-	JSONClient.ident(scope,username,password);
-	
+
 	NOTE: scope is the module or root service you wish to send the command to,
 	location is a dot-notated object property, and lock is one of the following:
 		LOCK_READ = 1
 		LOCK_WRITE = 2
 		LOCK_UNLOCK = -1
-		
+
 	indirect methods: these will generally be called automatically by the other methods
 	and you will not typically need to use them
-	
-	-	JSONClient.callback();     
+
+	-	JSONClient.callback();
 	-	JSONClient.send();
 	-	JSONClient.receive();
 	-	JSONClient.wait();
-	
-	arguments: 
-	
+
+	arguments:
+
 	-	argv[0] = serverAddr;
 	-	argv[1] = serverPort;
-	
+
 	sample usage:
-	
+
 		load("json-client.js");
 		var client=new JSONClient(myServer,myPort);
-		
+
 		while(1) {
 			doSomething();
 			client.lock("myscript","mydatabase.dong",LOCK_READ);
@@ -63,19 +63,19 @@ load("json-sock.js");
 			print("look at my " + dong);
 			client.cycle();
 		}
-	
+
 */
 
 function JSONClient(serverAddr,serverPort) {
 	this.VERSION = "1.30";
 	this.serverAddr=serverAddr;
-    if(this.serverAddr==undefined) 
+    if(this.serverAddr==undefined)
 		throw new Error("no host specified");
 
 	this.serverPort=serverPort;
     if(this.serverPort==undefined)
 		throw new Error("no port specified");
-	
+
 	this.settings={
 		CONNECTION_TIMEOUT:		10,
 		PING_INTERVAL:			60*1000,
@@ -83,24 +83,24 @@ function JSONClient(serverAddr,serverPort) {
 		SOCK_TIMEOUT:			30*1000,
 		TIMEOUT:				-1
 	};
-        
-    this.socket=undefined; 
+
+    this.socket=undefined;
 	this.callback;
 	this.updates=[];
-	
+
 	/* connection state */
 	this.__defineGetter__("connected",function() {
 		return this.socket.is_connected;
 	});
-	
+
 	/* convert null values to undefined when parsing */
 	Socket.prototype.reviver = function(k,v) { if(v === null) return undefined; return v; };
-	
+
 	/* create new socket connection to server */
     this.connect = function() {
 		if(this.socket && this.socket.is_connected)
 			return false;
-			
+
         this.socket=new Socket();
 		if(!this.socket.connect(this.serverAddr,this.serverPort,this.settings.CONNECTION_TIMEOUT)) {
 			var connect_error = this.socket.error;
@@ -110,7 +110,7 @@ function JSONClient(serverAddr,serverPort) {
 		}
 		return true;
     }
-    
+
     this.disconnect = function() {
 		if(this.socket && this.socket.is_connected) {
 			this.socket.close();
@@ -118,7 +118,7 @@ function JSONClient(serverAddr,serverPort) {
 		}
 		return false;
     }
-    
+
 	/* subscribe to object updates */
     this.subscribe=function(scope,location) {
 		this.send({
@@ -133,7 +133,7 @@ function JSONClient(serverAddr,serverPort) {
 		if(this.settings.TIMEOUT >= 0)
 			return this.wait();
     }
-    
+
     this.unsubscribe=function(scope,location) {
 		this.send({
 			scope:scope,
@@ -145,7 +145,7 @@ function JSONClient(serverAddr,serverPort) {
 		if(this.settings.TIMEOUT >= 0)
 			return this.wait();
     }
-	
+
 	/* lock an object */
 	this.lock = function(scope,location,lock) {
 		this.send({
@@ -159,12 +159,12 @@ function JSONClient(serverAddr,serverPort) {
 		if(this.settings.TIMEOUT >= 0)
 			return this.wait();
 	}
-	
-	/* unlock an object */ 
+
+	/* unlock an object */
 	this.unlock = function(scope,location) {
 		return this.lock(scope,location,-1);
 	}
-    
+
 	/* read object data (lock for reading or writing, blocking) */
     this.read=function(scope,location,lock) {
 		this.send({
@@ -177,7 +177,7 @@ function JSONClient(serverAddr,serverPort) {
 		});
 		return this.wait();
     }
-	
+
 	/* array slice method */
 	this.slice=function(scope,location,start,end,lock) {
 		this.send({
@@ -213,7 +213,7 @@ function JSONClient(serverAddr,serverPort) {
 		if(this.settings.TIMEOUT >= 0)
 			return this.wait(this.settings.TIMEOUT);
 	}
-	
+
 	/* read multiple object data (lock for reading or writing, blocking) */
 	/* readmulti([['tw2','sector.1',undefined,'sector'],['tw2','planets.1',undefined,'planet']]); */
 	this.readmulti=function(objects) {
@@ -247,7 +247,7 @@ function JSONClient(serverAddr,serverPort) {
 		});
 		return this.wait();
 	}
-	
+
 	/* read object keys and key types (lock for reading or writing, blocking) */
 	this.keyTypes=function(scope,location,lock) {
 		this.send({
@@ -286,7 +286,7 @@ function JSONClient(serverAddr,serverPort) {
         });
 		return this.wait();
     }
-    
+
 	/* store object data (lock for writing) */
     this.write=function(scope,location,data,lock) {
         this.send({
@@ -346,7 +346,7 @@ function JSONClient(serverAddr,serverPort) {
 		if(this.settings.TIMEOUT >= 0)
 			return this.wait();
     }
-	
+
 	/* package a query and send through the socket */
 	this.send=function(packet) {
 		if(!this.socket.is_connected)
@@ -358,7 +358,7 @@ function JSONClient(serverAddr,serverPort) {
 	this.receive=function() {
 		if(!this.socket.is_connected)
 			return false; 	// Was throw("socket disconnected"); but this was filling up the error.log with every server recycle
-		if(!this.socket.data_waiting) 
+		if(!this.socket.data_waiting)
 			return false;
 		var packet=this.socket.recvJSON();
 		if(packet != null) {
@@ -377,7 +377,7 @@ function JSONClient(serverAddr,serverPort) {
 		}
 		return false;
 	}
-	
+
 	/* do not return until the expected response is received */
 	this.wait=function() {
 		var start = Date.now();
@@ -385,11 +385,11 @@ function JSONClient(serverAddr,serverPort) {
 			var packet = this.receive();
 			if(!packet)
 				continue;
-			else if(packet.func == "RESPONSE") 
+			else if(packet.func == "RESPONSE")
 				return packet.data;
 			else if(typeof this.callback == "function")
 				this.callback(packet);
-			else 
+			else
 				this.updates.push(packet);
 		} while(Date.now() - start < this.settings.SOCK_TIMEOUT);
 		throw new Error("timed out waiting for server response");
@@ -402,10 +402,10 @@ function JSONClient(serverAddr,serverPort) {
 			return false;
 		else if(typeof this.callback == "function")
 			this.callback(packet);
-		else 
+		else
 			this.updates.push(packet);
 	}
-	
+
 	/* identify this client as a bbs user */
 	this.ident=function(scope,username,pw) {
 		pw = md5_calc(pw.toUpperCase(),true);
@@ -440,7 +440,7 @@ function JSONClient(serverAddr,serverPort) {
         });
 		return this.wait();
 	}
-	
+
 	this.connect();
 	log(LOG_INFO,"JSON client initialized (v" + this.VERSION + ")");
 };

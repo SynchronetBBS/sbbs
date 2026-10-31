@@ -1,5 +1,4 @@
-/* CNF data structure definitions (see scfglib2.c, scfgdefs.h) 
-	$Id: cnflib.js,v 1.15 2020/03/15 08:47:52 rswindell Exp $
+/* CNF data structure definitions (see scfglib2.c, scfgdefs.h)
 */
 
 js.global.load(js.global,"cnfdefs.js");
@@ -97,9 +96,9 @@ var CNF = new (function() {
 	function readNative(file,struct) {
 		var list = [];
 		var records = getInt(file,UINT16_T);
-		
+
 		for(var i=0;i<records;i++) {
-			if(file.eof) 
+			if(file.eof)
 				break;
 			list[i] = {
 				name:getStr(file,struct.name.bytes),
@@ -180,7 +179,7 @@ var CNF = new (function() {
 			return system.ctrl_dir + fileName;
 		return fileName;
 	}
-	
+
 	/* read records from .cnf file */
 	this.read = function(fileName,struct) {
 		if(!struct) {
@@ -248,7 +247,7 @@ var CNF = new (function() {
 		var f = new File(fullpath(fileName));
 		if(!f.open('wb'))
 			return false;
-		
+
 		writeRecord(f,struct,data);
 		f.close();
 		return true;

@@ -1,6 +1,6 @@
 // mailutil.js
 
-// Parses Internet mail and USENET article header fields 
+// Parses Internet mail and USENET article header fields
 // for use with newsutil.js and mailproc_util.js
 
 //Michael J. Ryan - 2004-04-16 - tracker1(at)theroughnecks.net

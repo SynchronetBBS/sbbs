@@ -43,8 +43,8 @@ function add(obj)
 	}
 	if(obj.terminal === undefined
 		&& js.global.console !== undefined) {
-		obj.terminal =  { 
-			desc: console.terminal, 
+		obj.terminal =  {
+			desc: console.terminal,
 			type: console.type,
 			charset: console.charset,
 			support: console.term_supports(),
@@ -52,7 +52,7 @@ function add(obj)
 			rows: console.screen_rows,
 		};
 	}
-	
+
 	if(!this.json_lines)
 		this.json_lines = load({}, "json_lines.js");
 
@@ -63,7 +63,7 @@ function get(num, days_ago)
 {
 	if(!this.json_lines)
 		this.json_lines = load({}, "json_lines.js");
-	
+
 	var result = json_lines.get(filename(days_ago), num);
 	if(days_ago !== undefined || typeof result !== 'object')
 		return result;

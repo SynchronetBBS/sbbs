@@ -1,4 +1,4 @@
-/* 	
+/*
 	Javascript CVS client for Synchronet (2011)
 	-	code by mcmlxxix
 	-	awesome by Deuce
@@ -7,7 +7,7 @@
 CVS = new (function () {
 	this.VERSION = "$Revision: 1.18 $".split(' ')[1];
 	this.socket = undefined;
-	
+
 ////////////////////////////////// SETTINGS
 
 	/* connection defaults */
@@ -58,7 +58,7 @@ CVS = new (function () {
 		'error':				true,	// Handled
 		'ok':					true,	// Handled
 	};
-	
+
 	/* populated by response to valid-requests  */
 	this.validRequests = {
 		'valid-requests':		true,	// Better be.
@@ -66,10 +66,10 @@ CVS = new (function () {
 	};
 
 ////////////////////////////////// METHODS
-	
+
 	/* connect to server and authenticate */
 	this.connect = function(srv,root,usr,pw) {
-	
+
 		if(srv)
 			this.CVSSERV = srv;
 		if(root)
@@ -78,7 +78,7 @@ CVS = new (function () {
 			this.CVSUSER = usr;
 		if(pw)
 			this.CVSPASS = pw;
-	
+
 		this.socket=new Socket();
 		if (this.socket.connect(this.CVSSERV,2401))
 			this.authenticate();
@@ -86,7 +86,7 @@ CVS = new (function () {
 			this.socket.close();
 		this.init();
 	}
-	
+
 	/* initialize protocol */
 	this.init = function() {
 		this.protocol["Valid-responses"]();
@@ -108,7 +108,7 @@ CVS = new (function () {
 			this.request(this.CVSUSER);
 			/* send cvs password */
 			this.socket.send("A");
-			for(var c=0;c<this.CVSPASS.length;c++) 
+			for(var c=0;c<this.CVSPASS.length;c++)
 				this.socket.sendBin(encode_char(this.CVSPASS[c]),1);
 			this.socket.send("\n");
 			this.request("END AUTH REQUEST");
@@ -246,13 +246,13 @@ CVS = new (function () {
 ////////////////////////////////// MAGIC PROPERTIES
 
 	/*
-	 * check for a response from the cvs server 
+	 * check for a response from the cvs server
 	 * This will handle whatever it can, and return
 	 * only unhandled responses.
-	 * 
+	 *
 	 * While it "handles" error, it still returns it.
 	 */
-	
+
 	this.__defineGetter__("response", function() {
 		function split_cmd(str, count) {
 			if(count==undefined)
@@ -270,7 +270,7 @@ CVS = new (function () {
 			ret.push(str);
 			return ret;
 		}
-		
+
 		function recv_file(socket) {
 			var length=parseInt(socket.recvline());
 			var ret='';
@@ -378,7 +378,7 @@ CVS = new (function () {
 	this.protocol = {
 
 		//TODO ---> http://www.cvsnt.org/cvsclient/Requests.html
-	
+
 		rcmd:function(cmd, arg) {
 			if(!this.parent.validRequests[cmd])
 				throw(cmd+' command not supported by remote!');
@@ -465,7 +465,7 @@ CVS = new (function () {
 		Set:function(varValPair) { this.cmd('Set', varValPair); },
 	};
 	this.protocol.parent=this;
-	
+
 ////////////////////////////////// INTERNAL FUNCTIONS
 
 	/* cvs password encryption */

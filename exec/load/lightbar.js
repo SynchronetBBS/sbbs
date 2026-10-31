@@ -1,6 +1,5 @@
 /*
  * Generic lightbar interface.
- * $Id: lightbar.js,v 1.48 2020/04/09 04:44:11 deuce Exp $
  */
 
 /* ToDo: Support multiple columns */
@@ -174,7 +173,7 @@ Lightbar.prototype.getval = function(current,key)
 				this.nodraw=false;
 				return(key);
 			}
-			
+
 			switch(key) {
 				case 'Mouse':
 					if (mk.mouse.button === 0) {
@@ -257,7 +256,7 @@ Lightbar.prototype.getval = function(current,key)
 					break;
 				default:
 					for(i=0; i<this.items.length; i++) {
-						if((!this.items[i].disabled) && (this.items[i].text.indexOf('|'+key)!=-1 
+						if((!this.items[i].disabled) && (this.items[i].text.indexOf('|'+key)!=-1
 						|| this.items[i].text.indexOf('|'+key.toLowerCase())!=-1)) {
 							if(this.items[i].retval==undefined)
 								continue;
@@ -277,7 +276,7 @@ Lightbar.prototype.getval = function(current,key)
 
 			if(!loop) return key;
 			key=undefined;
-		} 
+		}
 	}
 };
 
@@ -512,7 +511,7 @@ Lightbar.prototype.draw = function(current)
 					console.write(' ');
 			}
 		}
-		
+
 		// Output each char.
 		for(j=0; j<this.items[i].text.length; j++) {
 			// Check if we've gone past width somehow
@@ -549,7 +548,7 @@ Lightbar.prototype.draw = function(current)
 			console.write(ch);
 			k++;
 		}
-		
+
 		// Set correct attribute for right width padding
 		if(this.current==i)
 			console.attributes=cattr;
@@ -598,7 +597,7 @@ Lightbar.prototype.draw = function(current)
 		alert("No items with a return value!");
 		return;
 	}
-	
+
 	// Move cursor to the current selection
 	console.gotoxy(cursx,cursy);
 };

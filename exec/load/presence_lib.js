@@ -6,7 +6,7 @@ require("sbbsdefs.js", 'USER_DELETED');
 
 "use strict";
 
-// Returns a string, hopefully the full name of the External Program referenced by 'code' 
+// Returns a string, hopefully the full name of the External Program referenced by 'code'
 // or referenced by 1-based number (as stored in node.dab 'aux' field)
 function xtrn_name(code)
 {

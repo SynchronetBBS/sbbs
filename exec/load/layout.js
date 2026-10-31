@@ -1,29 +1,28 @@
-/* $Id: layout.js,v 1.34 2014/02/02 19:50:08 mcmlxxix Exp $ */
-/* Window-style layout library for Synchronet 3.15+ 
- * 
+/* Window-style layout library for Synchronet 3.15+
+ *
  * NOTE: frame.js is required to use this library
  * if a Frame() object is not supplied to a Layout()
  * on creation, one will be created internally, however
  * it is recommended that you create an external frame object
  * as a basis for any other libraries that use frames.
- * 
+ *
  * NOTE: There is no real need to manually draw the contents of a layout
  * as long as either Frame.cycle() or Layout.cycle() are part of your
- * loop. If you use "blocking" operations with a layout or frame, 
+ * loop. If you use "blocking" operations with a layout or frame,
  * then use Layout.draw() or Frame.draw() to update your views.
- * 
+ *
  * Layout methods:
- * 
- * 	addView(title,x,y,width,height) 
+ *
+ * 	addView(title,x,y,width,height)
  * 	getViewByName(title)
  *	open()
  *	close()
  * 	draw()
  * 	cycle()
  * 	getcmd(cmd)
- * 
+ *
  * Layout properties:
- * 
+ *
  * 	x
  * 	y
  * 	width
@@ -33,15 +32,15 @@
  * 		border_bg,
  * 		border_fg,
  * 		title_bg,
- *		title_fg, 
+ *		title_fg,
  *		tab_bg,
  *		tab_fg,
  *		view_bg,
  *		view_fg
  *  }
- * 
+ *
  * LayoutView methods:
- * 
+ *
  * 	addTab(title,type,content)
  * 	getTabByTitle(title)
  *	open()
@@ -49,9 +48,9 @@
  * 	draw()
  * 	cycle()
  * 	getcmd(cmd)
- * 
+ *
  * LayoutView properties:
- * 
+ *
  * 	x
  * 	y
  * 	width
@@ -59,17 +58,17 @@
  * 	title
  * 	frame
  * 	colors (a reference to the parent layout's "colors" property)
- *  
- * LayoutView toggles: 
- * 
- * NOTE: changing these values will resize and reinitialize 
+ *
+ * LayoutView toggles:
+ *
+ * NOTE: changing these values will resize and reinitialize
  * the view's components
- * 
+ *
  * 	show_border = (true|false)
  * 	show_title = (true|false)
  * 	show_tabs = (true|false)
- * 
- * NOTE: when adding a tab with the content parameter specified, 
+ *
+ * NOTE: when adding a tab with the content parameter specified,
  * the content must correspond to one of the predefined object types
  * listed below:
  *
@@ -77,14 +76,14 @@
  *	content: Frame(), 	type: "graphic"
  *	content: JSONChat(),type: "chat"
  *	content: Graphic(),	type: "graphic"
- * 
+ *
  * NOTE: default event handlers are included in the open, close, and activation
  * methods of most layout objects:
- *	
+ *
  *	<obj>.onKeyPress[key] - run if defined and specified key is pressed
  *
  *	NOTE: onKeyPress handler available for all layout objects. if a handler is defined
- *	it should return true (if the key was handled) or false (if the key was not handled) 
+ *	it should return true (if the key was handled) or false (if the key was not handled)
  *	in order to stop the layout from attempting to pass it to other objects.
  *
  *	Layout.onOpen - run when layout.open() is called
@@ -95,7 +94,7 @@
  *	LayoutView.onExit - run when view.active is set to false
  *	ViewTab.onEnter - run when tab.active is set to true
  *	ViewTab.onExit - run when tab.active is set to false
- *	
+ *
  */
 
 if(js.global.getColor == undefined)
@@ -103,9 +102,9 @@ if(js.global.getColor == undefined)
 if(js.global.Frame == undefined)
 	js.global.load(js.global,"frame.js");
 
-/* main layout object, intended to contain child layout view objects */ 
+/* main layout object, intended to contain child layout view objects */
 function Layout(frame) {
-	
+
 	/* private properties */
 	var properties={
 		views:[],
@@ -114,7 +113,7 @@ function Layout(frame) {
 	var frames={
 		main:undefined
 	}
-	
+
 	/* read-only properties */
 	this.__defineGetter__("x",function() {
 		return frames.main.x;
@@ -131,7 +130,7 @@ function Layout(frame) {
 	this.__defineGetter__("frame",function() {
 		return frames.main;
 	});
-	
+
 	/* settings */
 	this.__defineGetter__("current",function() {
 		return properties.views[properties.index];
@@ -157,7 +156,7 @@ function Layout(frame) {
 		}
 		return false;
 	});
-	
+
 	/* public properties */
 	this.colors={
 		title_bg:BG_BLUE,
@@ -182,12 +181,12 @@ function Layout(frame) {
 			var v = properties.views[_v];
 			v.open();
 		}
-		if(typeof this.onOpen == "function") 
+		if(typeof this.onOpen == "function")
 			this.onOpen();
 	}
 	this.close=function() {
 		frames.main.close();
-		if(typeof this.onClose == "function") 
+		if(typeof this.onClose == "function")
 			this.onClose();
 	}
 	this.addView=function(title,x,y,w,h) {
@@ -240,7 +239,7 @@ function Layout(frame) {
 				return v;
 		}
 	}
-	
+
 	/* default command handler for views */
 	this.handleKeyEvent = function(cmd) {
 		if(this.current) {
@@ -253,13 +252,13 @@ function Layout(frame) {
 		return false;
 	}
 	this.getcmd=function(cmd) {
-		if(!cmd) 
+		if(!cmd)
 			return false;
 		if(this.handleKeyEvent(cmd))
 			return true;
 		switch(cmd) {
-		case '\x09': 
-			if(properties.views.length > 1) 
+		case '\x09':
+			if(properties.views.length > 1)
 				nextView();
 			return true;
 		case '\x0f':
@@ -278,7 +277,7 @@ function Layout(frame) {
 	this.onOpen;
 	this.onClose;
 	this.onKeyPress = {};
-	
+
 	/* constructor */
 	function nextView() {
 		var start = properties.index++;
@@ -316,7 +315,7 @@ function Layout(frame) {
 }
 
 /* layout view object, holds view tab objects
- * NOTE: this can be instantiated independently from Layout, 
+ * NOTE: this can be instantiated independently from Layout,
  * but must be supplied a frame with the desired dimensions,
  * normally instantiated via Layout.addView() */
 function LayoutView(title,frame,parent) {
@@ -343,7 +342,7 @@ function LayoutView(title,frame,parent) {
 		tabs:undefined,
 		content:undefined
 	};
-	
+
 	/* read-only properties */
 	this.__defineGetter__("x",function() {
 		return frames.main.x;
@@ -369,7 +368,7 @@ function LayoutView(title,frame,parent) {
 	this.__defineGetter__("tabs",function() {
 		return properties.tabs;
 	});
-	
+
 	/* settings */
 	this.__defineGetter__("show_title",function() {
 		return settings.show_title;
@@ -437,24 +436,24 @@ function LayoutView(title,frame,parent) {
 		return true;
 	});
 	this.__defineSetter__("active",function(bool) {
-		if(typeof bool !== "boolean" || settings.active == bool) 
+		if(typeof bool !== "boolean" || settings.active == bool)
 			return false;
 		settings.active = bool;
 		if(settings.active) {
 			frames.title.attr = this.colors.title_bg+this.colors.title_fg;
 			setTitle();
-			if(typeof this.onEnter == "function") 
+			if(typeof this.onEnter == "function")
 				this.onEnter();
 		}
 		else {
 			frames.title.attr = this.colors.inactive_title_bg + this.colors.inactive_title_fg;
 			setTitle();
-			if(typeof this.onExit == "function") 
+			if(typeof this.onExit == "function")
 				this.onExit();
 		}
 		return true;
 	});
-	
+
 	/* public methods */
 	this.open=function() {
 		for(var _t in properties.tabs) {
@@ -465,7 +464,7 @@ function LayoutView(title,frame,parent) {
 		setViewFrames();
 		this.current=0;
 		this.frame.open();
-		if(typeof this.onOpen == "function") 
+		if(typeof this.onOpen == "function")
 			this.onOpen();
 	}
 	this.close=function() {
@@ -474,7 +473,7 @@ function LayoutView(title,frame,parent) {
 			if(typeof t.close == "function")
 				t.close();
 		}
-		if(typeof this.onClose == "function") 
+		if(typeof this.onClose == "function")
 			this.onClose();
 	}
 	this.draw=function() {
@@ -488,7 +487,7 @@ function LayoutView(title,frame,parent) {
 		}
 	}
 	this.addTab=function(title,type,content) {
-		/* use this view's location and dimensions as 
+		/* use this view's location and dimensions as
 		starting point for new tabs */
 		var x = frames.content.x;
 		var y = frames.content.y;
@@ -496,7 +495,7 @@ function LayoutView(title,frame,parent) {
 		var h = frames.content.height;
 		var attr = this.colors.view_bg + this.colors.view_fg;
 		var f = new Frame(x,y,w,h,attr,frames.content);
-		var t = new ViewTab(title,f,this);	
+		var t = new ViewTab(title,f,this);
 		f.open();
 		setContent(t,type,content);
 		properties.tabs.push(t);
@@ -556,7 +555,7 @@ function LayoutView(title,frame,parent) {
 		return false;
 	}
 	this.getcmd=function(cmd) {
-		if(!cmd) 
+		if(!cmd)
 			return false;
 		if(this.handleKeyEvent(cmd))
 			return true;
@@ -593,14 +592,14 @@ function LayoutView(title,frame,parent) {
 			break;
 		}
 	}
-	
+
 	/* event handlers */
 	this.onEnter;
 	this.onExit;
 	this.onOpen;
 	this.onClose;
 	this.onKeyPress = {};
-	
+
 	/* private methods */
 	function setContent(tab,type,content) {
 		if(!type)
@@ -626,7 +625,7 @@ function LayoutView(title,frame,parent) {
 		case "CHAT":
 			if(typeof JSONChat == "undefined")
 				load("json-chat.js");
-			if(content instanceof JSONChat) 
+			if(content instanceof JSONChat)
 				tab.chat = content;
 			else
 				tab.chat = new JSONChat();
@@ -640,21 +639,21 @@ function LayoutView(title,frame,parent) {
 					return this.frame.scroll(0,-1);
 				case KEY_DOWN:
 					return this.frame.scroll(0,1);
-				default: 
+				default:
 					this.frame.scrollTo(1,this.frame.data_height - this.frame.height);
 					return this.chat.submit.call(this.chat,this.title,cmd);
 				}
 			}
 			tab.cycle = function() {
 				var chan = this.chat.channels[this.title.toUpperCase()];
-				if(!chan || chan.messages.length == 0) 
+				if(!chan || chan.messages.length == 0)
 					return false;
 				this.frame.scrollTo(1,this.frame.data_height - this.frame.height);
 				while(chan.messages.length > 0) {
 					var msg = chan.messages.shift();
 					var str = "";
 					if(msg.nick)
-						var str = getColor(this.chat.colors.NICK_COLOR) + msg.nick.name + "\1n: " + 
+						var str = getColor(this.chat.colors.NICK_COLOR) + msg.nick.name + "\1n: " +
 						getColor(this.chat.colors.TEXT_COLOR) + msg.str;
 					else
 						var str = getColor(this.chat.colors.NOTICE_COLOR) + msg.str;
@@ -699,15 +698,15 @@ function LayoutView(title,frame,parent) {
 		var w = frames.main.width;
 		var h = frames.main.height;
 		var colors = relations.parent.colors;
-		
+
 		/* delete all existing content frames */
 		if(frames.border)
 			frames.border.delete();
-		if(frames.title) 
+		if(frames.title)
 			frames.title.delete();
-		if(frames.tabs) 
+		if(frames.tabs)
 			frames.tabs.delete();
-		if(frames.content) 
+		if(frames.content)
 			frames.content.delete();
 		/* recreate any frames set to be displayed */
 		if(settings.show_border) {
@@ -731,14 +730,14 @@ function LayoutView(title,frame,parent) {
 			h--;
 		}
 
-		frames.content = new Frame(x,y,w,h,undefined,frames.main); 
+		frames.content = new Frame(x,y,w,h,undefined,frames.main);
 	}
 	function setViewFrames() {
 		if(settings.show_border)
 			setBorder();
 		if(settings.show_title)
 			setTitle();
-		if(settings.show_tabs) 
+		if(settings.show_tabs)
 			setTabs();
 	}
 	function setBorder() {
@@ -754,7 +753,7 @@ function LayoutView(title,frame,parent) {
                         (   (x==1)
                             ?
                             218
-                            : 
+                            :
                             (   (x==frames.border.width)
                                 ?
                                 191
@@ -777,7 +776,7 @@ function LayoutView(title,frame,parent) {
                                 )
                             )
                             :
-                            179 
+                            179
                         )
                     )
                 );
@@ -799,28 +798,28 @@ function LayoutView(title,frame,parent) {
 		var tab_str="";
 		if(properties.tabs.length > 0) {
 			tab_str+=act_color + properties.tabs[properties.index].title + inact_color;
-			
+
 			/* if there are items below the current index */
 			var t=properties.index-1;
 			while(t >= 0 && console.strlen(tab_str) < max_width) {
-				if(console.strlen(tab_str)+properties.tabs[t].title.length+1 > max_width) 
+				if(console.strlen(tab_str)+properties.tabs[t].title.length+1 > max_width)
 					break;
 				tab_str=properties.tabs[t].title + " " + tab_str;
 				t--;
 			}
-			if(t >= 0) 
+			if(t >= 0)
 				left_arrow = arrow_color + left_arrow;
-				
+
 			/* if there are items above the current index */
 			t=properties.index+1;
 			while(t < properties.tabs.length && console.strlen(tab_str) < max_width) {
-				if(console.strlen(tab_str)+properties.tabs[t].title.length+1 > max_width) 
+				if(console.strlen(tab_str)+properties.tabs[t].title.length+1 > max_width)
 					break;
 				tab_str=
 					tab_str + " " +	properties.tabs[t].title;
 				t++;
 			}
-			if(t < properties.tabs.length) 
+			if(t < properties.tabs.length)
 				right_arrow = arrow_color + right_arrow;
 		}
 		tab_str+=format("%-*s",max_width-console.strlen(tab_str),"");
@@ -831,7 +830,7 @@ function LayoutView(title,frame,parent) {
 		frames.title.clear();
 		frames.title.center(properties.title);
 	}
-	
+
 	/* constructor */
 	function init(title,frame,parent) {
 		properties.title = title;
@@ -889,22 +888,22 @@ function ViewTab(title,frame,parent) {
 	this.__defineGetter__("frame",function() {
 		return frames.main;
 	});
-	this.__defineGetter__("parent",function() {	
+	this.__defineGetter__("parent",function() {
 		return relations.parent;
 	});
-	
+
 	/* settings */
 	this.__defineSetter__("active",function(bool) {
-		if(typeof bool !== "boolean" || settings.active == bool) 
+		if(typeof bool !== "boolean" || settings.active == bool)
 			return false;
 		settings.active = bool;
 		if(settings.active) {
 			frames.main.top();
-			if(typeof this.onEnter == "function") 
+			if(typeof this.onEnter == "function")
 				this.onEnter();
 		}
 		else {
-			if(typeof this.onExit == "function") 
+			if(typeof this.onExit == "function")
 				this.onExit();
 		}
 		return true;
@@ -916,7 +915,7 @@ function ViewTab(title,frame,parent) {
 		settings.hotkeys = hotkeys;
 	});
 
-	/* default command handler 
+	/* default command handler
 	 * (can be overridden for specialized tabs) */
 	this.handleKeyEvent = function(cmd) {
 		if(this.onKeyPress[cmd]) {
@@ -930,12 +929,12 @@ function ViewTab(title,frame,parent) {
 		frames.main.putmsg(cmd);
 		return true;
 	}
-	
+
 	/* event handlers */
 	this.onEnter;
 	this.onExit;
 	this.onKeyPress = {};
-	
+
 	/* constructor */
 	function init(title,frame,parent) {
 		properties.title = title;

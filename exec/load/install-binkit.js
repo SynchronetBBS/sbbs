@@ -6,7 +6,7 @@
 
 // returns true on success, an error string on failure
 function install_binkit()
-{	
+{
 	require("sbbsdefs.js", 'EVENT_DISABLED');
 	var cfglib = load({}, "cfglib.js");
 	var xtrn_cfg = cfglib.read("xtrn.ini");

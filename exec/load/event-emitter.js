@@ -1,15 +1,13 @@
 /**
- * $Id: event-emitter.js,v 1.1 2019/07/20 04:37:01 echicken Exp $
- * 
  * Same API as the node.js events.EventEmitter except:
  * - Has no concept of MaxListeners
  * - Does not allow prependListener or prependOnceListener
  * Both can be added if needed, it just seems like a hassle right now.
- *  
+ *
  * Example:
- * 
+ *
  * load('event-emitter.js');
- * 
+ *
  * const MyClass = function () {
  *		EventEmitter.call(this);
  *		this.triggerHelloWorld = function () {
@@ -20,31 +18,31 @@
  *		}
  *	}
  *	inherits(MyClass, EventEmitter);
- *	
+ *
  *	const myInstance = new MyClass();
- *	
+ *
  *	const hwl = myInstance.on('helloWorld', function (str) {
  *		writeln(str);
  *	});
- *	
+ *
  *	const sl = myInstance.on('say', function (str) {
  *		writeln(str);
  *	});
- *	
+ *
  *	myInstance.on('newListener', function (e, l) {
  *		writeln('New listener for ' + e + ', ' + l);
  *	});
- *	
+ *
  *	myInstance.on('removeListener', function (e, l) {
  *		writeln('Removed listener for ' + e + ', ' + l);
  *	});
- *	
+ *
  *	myInstance.triggerHelloWorld();
  *	myInstance.triggerSay('World, hello!');
- *	
+ *
  *	myInstance.removeListener('say', sl);
  *	myInstance.triggerSay("This won't happen.");
- *	
+ *
  *	myInstance.removeAllListeners('helloWorld');
  *	myInstance.triggerHelloWorld(); // Also won't happen
  */

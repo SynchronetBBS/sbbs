@@ -2,36 +2,36 @@
 
 /*
  * var acme = new ACMEv2({key:CryptContext, key_id:undefined})
- * 
+ *
  * // For a new account:
  * {
  * 	var terms_url = acme.get_terms_of_service();
- * 
+ *
  * 	acme->create_new_account({termsOfServiceAgreed:1});
  * }
- * 
+ *
  * // Save the key_id somewhere so it can be reused.
- * 
+ *
  * var order = acme.create_new_order({identifiers:[{type:"dns",value:"example.com"}]});
  * var authz = acme.get_authorization(order.authorizations[0]);
  * var challenges = authz.challenges;
- * 
+ *
  * // Pick a challenge, and satisfy it.
- * 
+ *
  * acme.accept_challenge(challenge);
- * 
+ *
  * while (!acme->poll_authorization(order.authorizations[0]))
  * 	mswait(1000);
- * 
+ *
  * // Make a key and CSR for *.example.com
- * 
+ *
  * order = acme.finalize_order(order, csr);
- * 
+ *
  * while (order.status !== 'valid') {
  * 	mswait(1000);
  * 	order = acme.poll_order(order);
  * }
- * 
+ *
  * var cert = acme.get_cert(order);
  */
 

@@ -1,5 +1,3 @@
-// $Id: json_lines.js,v 1.1 2019/08/15 19:15:39 rswindell Exp $
-
 // Library for dealing with "JSON Lines" (.jsonl)
 //                     and  "Newline Delimited JSON" (.ndjson) files
 

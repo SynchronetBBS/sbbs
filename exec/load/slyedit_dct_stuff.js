@@ -135,7 +135,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 				  " " + gConfigSettings.DCTColors.TopLabelColor + "From " +
 				  gConfigSettings.DCTColors.TopLabelColonColor + ": " +
 				  gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
-				  gConfigSettings.DCTColors.TopFromFillColor + CP437_BULLET_OPERATOR + 
+				  gConfigSettings.DCTColors.TopFromFillColor + CP437_BULLET_OPERATOR +
 				  gConfigSettings.DCTColors.TopFromColor);
 	console.print(gConfigSettings.DCTColors.TopFromFillColor);
 	var fieldWidth = Math.floor(console.screen_columns * (28/80)) - 2;
@@ -227,7 +227,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	              randomTwoColorString(CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE,
 	              gConfigSettings.DCTColors.TopBorderColor1,
 	              gConfigSettings.DCTColors.TopBorderColor2));
-	
+
 	// Line 4: Top border for message area
 	++lineNum;
 	displayTextAreaTopBorder_DCTStyle(lineNum, pEditLeft, pEditRight);
@@ -258,7 +258,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	console.gotoxy(infoX, subjLineNum);
 	var subj = gMsgSubj.substr(0, +(console.screen_columns - 15));
 	console.print(subj, P_AUTO_UTF8);
-	
+
 	// Go to the start of the edit area
 	console.gotoxy(pEditLeft, pEditTop);
 

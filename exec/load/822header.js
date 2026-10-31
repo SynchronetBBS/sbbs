@@ -49,7 +49,7 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 			this.rfc822 += "Organization: "+this.from_org+"\r\n";
 		if(this.newsgroups != undefined)
 			this.rfc822 += "Newsgroups: "+this.newsgroups+"\r\n";
-		
+
 		if(this.replyto_list != undefined)
 			this.rfc822 += "Reply-To: "+this.replyto_list+"\r\n";
 		else if(this.replyto != undefined)
@@ -71,14 +71,14 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 			this.rfc822 += "References: "+this.reply_id+"\r\n";
 		if(this.reverse_path != undefined)
 			this.rfc822 += "Return-Path: "+this.reverse_path+"\r\n";
-		
+
 		// "Received" headers
 		if(this.field_list!=undefined) {
 			for(i in this.field_list)
 				if(this.field_list[i].type == SMTPRECEIVED)
 					this.rfc822 += "Received: " + this.field_list[i].data + "\r\n";
 		}
-		
+
 		if(this.priority)
 			this.rfc822 += "X-Priority: " + this.priority + "\r\n";
 
@@ -99,7 +99,7 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 			this.rfc822 += "X-FTN-CHRS: "+this.ftn_charset+"\r\n";
 		if(this.ftn_bbsid != undefined)
 			this.rfc822 += "X-FTN-BBSID: "+this.ftn_bbsid+"\r\n";
-		
+
 		// Other Fidonet headers
 		if(this.field_list!=undefined) {
 			for(i in this.field_list)
@@ -112,10 +112,10 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 				if(this.field_list[i].type==FIDOPATH)
 					this.rfc822 += "X-FTN-PATH: " + this.field_list[i].data + "\r\n";
 		}
-	
+
 		// Other RFC822 headers
 		if(this.field_list!=undefined) {
-			for(i in this.field_list) 
+			for(i in this.field_list)
 				if(this.field_list[i].type==RFC822HEADER) {
 					if(this.field_list[i].data.toLowerCase().indexOf("content-type:")==0)
 						content_type = this.field_list[i].data;

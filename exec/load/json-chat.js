@@ -13,13 +13,13 @@ function JSONChat(usernum,jsonclient,host,port) {
 	var settings = {
 		MAX_HISTORY:20
 	};
-	
+
 	this.nick;
 	this.channels = {};
 	this.client = jsonclient;
 	this.chatView = undefined;
 	this.userView = undefined;
-	
+
 	this.__defineGetter__("colors",function() {
 		return colors;
 	});
@@ -29,13 +29,13 @@ function JSONChat(usernum,jsonclient,host,port) {
 
 	this.connect = function() {
 		var usr;
-		if(usernum > 0 && system.username(usernum)) 
+		if(usernum > 0 && system.username(usernum))
 			usr = new User(usernum);
-		if(usr) 
+		if(usr)
 			this.nick = new Nick(usr.alias,system.name,usr.ip_address);
 		else if(user && user.number > 0)
 			this.nick = new Nick(user.alias,system.name,user.ip_address);
-			
+
 		if(!this.client) {
 			if(!host || isNaN(port))
 				throw new Error("invalid client arguments");
@@ -44,19 +44,19 @@ function JSONChat(usernum,jsonclient,host,port) {
 		if(!this.client.connect()) {
 			return false;
 		}
-		
+
 		if(this.nick)
 			this.client.subscribe("chat","channels." + this.nick.name + ".messages");
 		else
 			throw new Error("invalid user number");
-		for(var c in this.channels) 
+		for(var c in this.channels)
 			this.join(c.name);
 		return true;
 	}
-	
+
 	this.submit = function(target,str) {
 		/* if the string has been passed with a leading '/' */
-		if(str[0] == "/") 
+		if(str[0] == "/")
 			return this.getcmd(target,str);
 		/* ignore escape sequences */
 		switch(str) {
@@ -77,7 +77,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 		chan.messages.push(message);
 		return true;
 	}
-	
+
 	this.clear = function(target) {
 		var chan = this.channels[target.toUpperCase()];
 		this.client.write("chat","channels." + chan.name + ".history",[],2);
@@ -87,8 +87,8 @@ function JSONChat(usernum,jsonclient,host,port) {
 			if(tab)
 				tab.frame.clear();
 		}
-	} 
-	
+	}
+
 	this.join = function(target) {
 		this.client.subscribe("chat","channels." + target + ".messages");
 		this.channels[target.toUpperCase()] = new Channel(target);
@@ -117,13 +117,13 @@ function JSONChat(usernum,jsonclient,host,port) {
 		}
 		this.who(target);
 	}
-	
+
 	this.part = function(target) {
 		var chan = this.channels[target.toUpperCase()];
 		this.client.unsubscribe("chat","channels." + chan.name + ".messages");
 		delete this.channels[target.toUpperCase()];
 	}
-	
+
 	this.who = function(target) {
 		var chan = this.channels[target.toUpperCase()];
 		chan.users = getUserList(this,chan);
@@ -136,7 +136,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 		chan.messages.push(new Message(undefined,"Users in " + chan.name + ": " + uList.join(", "),Date.now()));
 		return chan.users;
 	}
-	
+
 	this.disconnect = function() {
 		this.client.unsubscribe("chat","channels." + this.nick.name + ".messages");
 		for(var _c in this.channels) {
@@ -145,14 +145,14 @@ function JSONChat(usernum,jsonclient,host,port) {
 		}
 		this.channels = {};
 	}
-	
+
 	/* pass any client update packets to this function to process inbound messages/status updates */
 	this.update = function(packet) {
 		var arr = packet.location.split(".");
 		var channel;
 		var usr;
 		var message;
-			
+
 		while(arr.length > 0) {
 			switch(arr.shift().toUpperCase()) {
 			case "CHANNELS":
@@ -170,7 +170,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 				break;
 			}
 		}
-		
+
 		if(!channel)
 			return false;
 		switch(packet.oper.toUpperCase()) {
@@ -191,11 +191,11 @@ function JSONChat(usernum,jsonclient,host,port) {
 		}
 		return true;
 	}
-	
+
 	/* check client for update packets */
 	this.cycle = function() {
 		this.client.cycle();
-		while(this.client.updates.length) 
+		while(this.client.updates.length)
 			this.update(this.client.updates.shift());
 		if(this.chatView)
 			syncChatView(this.chatView,this);
@@ -212,17 +212,17 @@ function JSONChat(usernum,jsonclient,host,port) {
 		this.client.push("chat","channels." + chan.name + ".history",message,2);
 		chan.messages.push(message);
 	}
-	
+
 	/* process chat commands */
 	this.getcmd = function(target,cmdstr) {
 		/* if the command string is empty */
-		if(!cmdstr) 
+		if(!cmdstr)
 			return false;
-			
+
 		/* if the command has been passed with a leading '/' */
 		if(cmdstr[0] == "/")
 			cmdstr = cmdstr.substr(1);
-			
+
 		cmdstr = cmdstr.split(" ");
 		switch(cmdstr[0].toUpperCase()) {
 		case "J":
@@ -243,7 +243,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 		case "KICK":
 			// todo
 			break;
-		case "CLEAR":	
+		case "CLEAR":
 			this.clear(target);
 			break;
 		case "WHO":
@@ -282,21 +282,21 @@ function JSONChat(usernum,jsonclient,host,port) {
 		}
 		return true;
 	}
-	
+
 	/* user identification object */
 	function Nick(name,host,ip)	{
 		this.name = name;
 		this.host = host;
 		this.ip = ip;
 	}
-	
+
 	/* channel object (stores users and messages) */
 	function Channel(name) {
 		this.name = name;
 		this.messages = [];
 		this.users = [];
 	}
-	
+
 	/* message object (Nick, String, Time) */
 	function Message(nick,str,time) {
 		this.nick = nick;
@@ -304,12 +304,12 @@ function JSONChat(usernum,jsonclient,host,port) {
 		this.time = time;
 		this.str = this.str.replace(/[\f\r\n\x14\x15\x10\b]/g,'');
 	}
-	
+
 	/* retrieve user list */
 	function getUserList(chat,chan) {
 		return chat.client.who("chat","channels." + chan.name + ".messages");
 	}
-	
+
 	/* adapter for updating chat layout view */
 	function syncChatView(view,chat) {
 		for(var _c in chat.channels) {
@@ -332,7 +332,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 			}
 		}
 	}
-	
+
 	/* adapter for updating user list layout view */
 	function syncUserView(view,chat) {
 		for(var _c in chat.channels) {
@@ -356,7 +356,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 			}
 		}
 	}
-	
+
 	/* adapter for listing channel users */
 	function updateUserView(view,chan) {
 		var tab = view.getTab(chan.name);
@@ -368,7 +368,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 			}
 		}
 	}
-	
+
 	/* constructor */
 	this.connect();
 }

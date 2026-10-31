@@ -475,13 +475,13 @@ NNTPClient.prototype.GetArticle = function(pArticleNum)
 	if (retObj.articleBody.length > 0)
 	{
 		//retObj.articleBody = lineWrapArticleBody(retObj.articleBody);
-		
+
 		// From newsutil.js
 		retObj.articleBody = decode_news_body(retObj.articleHdr, retObj.articleBody);
 
 		// Decode quoted printable strings/characters in the article body
 		retObj.articleBody = decodeQuotedPrintable(retObj.articleBody);
-	
+
 	}
 
 	return retObj;
@@ -596,7 +596,7 @@ NNTPClient.prototype.GetArticleBody = function(pArticleNum, pArticleHdr)
 
 			// Line-wrap the article body for the user's terminal
 			//retObj.body = lineWrapArticleBody(retObj.body);
-			
+
 			// From newsutil.js
 			if (typeof(pArticleHdr) === "object")
 				retObj.body = decode_news_body(pArticleHdr, retObj.body);
@@ -605,7 +605,7 @@ NNTPClient.prototype.GetArticleBody = function(pArticleNum, pArticleHdr)
 			retObj.body = decodeQuotedPrintable(retObj.body);
 		}
 	}
-	
+
 	return retObj;
 }
 
@@ -853,7 +853,7 @@ function lineWrapArticleBody(pBody)
 		Section 2:
 		begLineIdx: 2
 		endLineIdx: 59
-		linePrefix: > 
+		linePrefix: >
 		*/
 		if (msgSections[i].linePrefix.length > 0)
 		{

@@ -172,7 +172,7 @@ var DirFile = function(dir, filename) {
 	var self = this;
 
 	var properties = {
-		'fullPath' : dir.path + filename, 
+		'fullPath' : dir.path + filename,
 		'name' : filename,
 		'altPath' : 0, // ?
 		'credit' : 0, // Credit?

@@ -1,4 +1,3 @@
-// $Id: fido.js,v 1.36 2020/03/23 18:17:07 rswindell Exp $
 require('fido_syscfg.js', 'FTNDomains');
 
 /*
@@ -10,10 +9,10 @@ require('fido_syscfg.js', 'FTNDomains');
  * 		zone
  * 		point
  * 		domain
- * 
+ *
  * 		These are type and value checked when assigned and throw an
  * 		exception when illegal.
- * 
+ *
  * 		inet_host	- Internet hostname at the binkp.net domain or listed
  * 					  in nodelist.
  * 		str			- Address as a string in the most possible dimensions
@@ -28,10 +27,10 @@ require('fido_syscfg.js', 'FTNDomains');
  * 		if necessary and returns a FIDO.Addr object.
  * 		I could have done a magic constructor that accepts this, but then
  * 		Magic would be involved and I don't really like magic.
- * 		
+ *
  * FIDO.parse_flo_file_path(path, default_zone, domain)
  * 		Parses a flo filename and path into the returned FIDO.Addr object.
- * 
+ *
  * FIDO.parse_nodelist(path, warn[, domain])
  * 		Parses a nodelist and returns an object with an entries object in
  * 		it containing all the nodelist entries (4D address is the key

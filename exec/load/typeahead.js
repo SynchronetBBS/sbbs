@@ -282,7 +282,7 @@ var Typeahead = function (options) {
         if (typeof options.datasources !== 'undefined' && Array.isArray(options.datasources)) {
             properties.datasources = options.datasources.filter(function (d) {
                 return (typeof d === 'function');
-            });  
+            });
         }
 
     }
@@ -376,7 +376,7 @@ var Typeahead = function (options) {
                 }
             }
         }
-        
+
         display.tree.open();
 
         properties.suggested = true;

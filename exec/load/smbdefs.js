@@ -1,4 +1,3 @@
-// $Id: smbdefs.js,v 1.11 2019/08/26 08:57:14 rswindell Exp $
 // Synchronet Message Base constant definitions (from smbdefs.h and smblib.h)
 // @format.tab-size 4
 
@@ -33,7 +32,7 @@ var SMB_NOHASH			= 4;		// Do not calculate or store hashes
 
 /* Message Types */
 var MSG_TYPE_NORMAL		= 0;		// Classic message (for reading)
-var MSG_TYPE_POLL			= 1;		// A poll question 
+var MSG_TYPE_POLL			= 1;		// A poll question
 var MSG_TYPE_BALLOT		= 2;		// Voter response to poll or normal message
 var MSG_TYPE_POLL_CLOSURE	= 3;		// Closure of an existing poll
 

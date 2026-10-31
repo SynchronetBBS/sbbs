@@ -1,4 +1,3 @@
-// $Id: sauce_lib.js,v 1.10 2020/03/26 07:40:03 rswindell Exp $
 // vi: tabstop=4
 
 var defs = {
@@ -171,7 +170,7 @@ function write(fname, obj)
 			obj.tinfo1 = obj.cols;
 			obj.tinfo2 = obj.rows;
 			break;
-	}	
+	}
 
 	file.write('\x1a');	// Ctrl-Z, CPM-EOF
 	if(obj.comment.length) {

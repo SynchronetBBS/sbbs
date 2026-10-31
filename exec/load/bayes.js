@@ -1,18 +1,18 @@
-/** $Id: bayes.js,v 1.1 2015/12/14 21:05:44 mcmlxxix Exp $
+/**
 	Bayes Classifier ~
 	Modified for Synchronet from: http://www.dusbabek.org/~garyd/bayes/bayes.js **/
 
 function Bayes() {
-	
+
 	/* minimum probability for content to match a given class */
 	this.THRESHOLD = 0.7;
-	
+
 	/* number of words to classify together */
 	this.WORD_GROUPING = 1;
 
 	/* remove common words from content before classifying? (recommended true, if WORD_GROUPING == 1) */
 	this.STRIP_COMMON = true;
-	
+
 	/* There are two ways to compute joint probability. The easy way is to use the product of individual probabilities.
 	The problem with this approach is that for large texts, probability tends towards extremely small values (think of
 	0.01 * 0.01 * 0.01.	The solution is to use the sum of the logarithms of the probabilities.	No chance of underflow,
@@ -31,7 +31,7 @@ Bayes.COMMON_WORDS = " the of an a to in is you that it he was for on are as wit
 					+ "some her would make like him into time has look two more write go see number no way could people "
 					+ "my than first been call who its now find long down day did get come made may part "
 					+ "this and ";
-					
+
 /* punctuation I want stripped from all text.	I'm taking the easy road at this point and assuming everything I come
 across will be 7-bit ascii. */
 Bayes.SYMBOLS = "!@#$%^&*()-+_=[]{}\\|;':\",.<>/?~`";
@@ -45,25 +45,25 @@ Bayes.prototype = {
 	words: {},
 	// stores information relating to how many times a classification has been assigned to a specific word.
 	classes: {__length:0},
-	
+
 	/** public api **/
-	
+
 	isClass: function(content, cls) {
 		var result = this.getClass(content);
-		if(result[0] 
+		if(result[0]
 			&& result[0].classification.toLowerCase() == cls.toLowerCase()
 			&& result[0].probability >= this.THRESHOLD)
 			return true;
 		else
 			return false;
 	},
-	
+
 	// classify a word or words
 	getClass: function(content) {
 		var tokens = this.scrub(content);
 		var probs = [];
 		var probSum = 0;
-		
+
 		for (var cls in this.classes) {
 			if (cls == "__length") continue;
 			var prob = this.probabilityOfClassGivenDocument(cls, tokens);
@@ -74,7 +74,7 @@ Bayes.prototype = {
 				pc : this.probabilityOfClass(cls)
 			};
 		}
-		
+
 		// normalize
 		// the log normalization conversion took me quite a bit of googling to figure out.	I'm still not sure how
 		// accurate the math is.	Probabilities are adding up to 1 though, so I must be nearly right.
@@ -104,16 +104,16 @@ Bayes.prototype = {
 		probs.sort(function(a, b) {
 			return b.probability - a.probability;
 		});
-		
+
 		return probs;
 	},
-	
+
 	// learn a word (or several words). This is where the statisical information is noted.
 	teach: function(content, cls) {
 		var tokens = this.scrub(content);
 		var token;
 		for (var i=0;i<tokens.length+this.WORD_GROUPING-1;i++) {
-			if(this.WORD_GROUPING > 1) 
+			if(this.WORD_GROUPING > 1)
 				token = tokens.slice(i,i+this.WORD_GROUPING);
 			else
 				token = tokens[i];
@@ -128,7 +128,7 @@ Bayes.prototype = {
 
 	// converts to lower case, removes punctuation and common words, converts to array.
 	scrub: function(content) {
-		
+
 		// remove common words.
 		function strip_common_words(tokens) {
 			var newTokens = [];
@@ -161,12 +161,12 @@ Bayes.prototype = {
 
 		if(this.STRIP_COMMON)
 			content = strip_common_words(content);
-		
+
 		return content;
 	},
 
 	/** internal shit **/
-	
+
 	// ensure that there are no null entries for a given word or class.
 	sanitize: function(wrd, cls) {
 		if (wrd != null) {
@@ -187,7 +187,7 @@ Bayes.prototype = {
 		var prob = (this.USE_LOGS?0:1);
 		var token;
 		for (var i=0;i<tokens.length+this.WORD_GROUPING-1;i++) {
-			if(this.WORD_GROUPING > 1) 
+			if(this.WORD_GROUPING > 1)
 				token = tokens.slice(i,i+this.WORD_GROUPING);
 			else
 				token = tokens[i];

@@ -1,10 +1,9 @@
 /* 	CNF file reader/writer - mcmlxxix - 2013
-	$Id: cnfdefs.js,v 1.10 2020/03/01 19:12:28 rswindell Exp $
 */
 
 /* miscellaneous constants required for cnf parsing
    (if adding definitions to this file, make sure the required
-   constants are defined... if not, add them) 
+   constants are defined... if not, add them)
  */
 
 /* Note: rev 1.3 (and earlier) of this file used field names derived from the
@@ -33,8 +32,8 @@ var UINT64_T = 		8;
 var UCHAR = 		1;
 
 
-/* CNF structure - 
-object properties must be in the same order as they are read from file 
+/* CNF structure -
+object properties must be in the same order as they are read from file
 and any dependencies must be defined before a data structure that uses them */
 var struct = {};
 
@@ -219,7 +218,7 @@ struct.cmd_shell_t={
 	__PADDING__:{bytes:16}
 };
 
-/* NOTE: top-level data structures only below this point 
+/* NOTE: top-level data structures only below this point
 as they may contain references to the data structures above
 and will not work if they are defined first */
 
@@ -309,7 +308,7 @@ struct.main={
 	prextrn_mod:        {bytes:LEN_MODNAME+1,       type:"str"},
 	postxtrn_mod:       {bytes:LEN_MODNAME+1,       type:"str"},
 	tempxfer_mod:       {bytes:LEN_MODNAME+1,       type:"str"},
-	
+
 	__PADDING3__:		{bytes:184},
 	newuser_gender_options:	{bytes:41,				type:"str"},
 	user_backup_level:	{bytes:UINT16_T,			type:"int"},
@@ -368,7 +367,7 @@ struct.msg={
 	inetmail_sem:	{bytes:LEN_DIR+1, 		type:"str"},
 	inetmail_settings:	{bytes:UINT32_T, 		type:"int"},
 	inetmail_cost:	{bytes:UINT32_T, 		type:"int"},
-	smtpmail_sem:	{bytes:LEN_DIR+1, 		type:"str"}	
+	smtpmail_sem:	{bytes:LEN_DIR+1, 		type:"str"}
 };
 
 /************/

@@ -1,5 +1,3 @@
-/* $Id: mapgenerator.js,v 1.14 2015/03/17 15:28:52 mcmlxxix Exp $ */
-
 /* JavaScript Random Terrain Generator
    by MCMLXXIX (2012)
 
@@ -86,14 +84,14 @@ function Map(width,height) {
 		width:0,
 		height:0
 	};
-	
+
 	/* map generation modes */
 	var modes = {
 		island:(1<<0),
 		lake:(1<<1),
 		border:(1<<2)
 	};
-	
+
 	/* map generation settings */
 	var settings = {
 		minRadius:10,
@@ -104,7 +102,7 @@ function Map(width,height) {
 		hills:100,
 		mode:0
 	};
-	
+
 	this.__defineGetter__("width",function() {
 		return properties.width;
 	});
@@ -230,7 +228,7 @@ function Map(width,height) {
 		settings.peak = Number(peak);
 		return true;
 	});
-	
+
 	/* return a cross section (horizontal) */
 	this.xSection = function(y,ceiling) {
 		var section = [];
@@ -238,7 +236,7 @@ function Map(width,height) {
 			ceiling = this.sectionHeight;
 		for(var x=0;x<this.length;x++) {
 			section[x]=[];
-			
+
 			// var a = this[x][y];
 			// if(a == undefined)
 				// throw("Invalid elevation data '" + a + "' at " + x + ":" + y);
@@ -247,15 +245,15 @@ function Map(width,height) {
 			// var d = c*(height);
 			var d = this[x][y];
 			var i=0;
-			for(;i<d;i++) 
+			for(;i<d;i++)
 				section[x].unshift(1);
 			for(;i<ceiling;i++)
 				section[x].unshift(0);
 		}
-		
+
 		return section;
 	}
-	
+
 	/* return a cross section (vertical) */
 	this.ySection = function(x,ceiling) {
 		var section = [];
@@ -263,7 +261,7 @@ function Map(width,height) {
 			ceiling = this.sectionHeight;
 		for(var y=0;y<this[x].length;y++) {
 			section[y]=[];
-			
+
 			// var a = this[x][y];
 			// if(a == undefined)
 				// throw("Invalid elevation data '" + a + "' at " + x + ":" + y);
@@ -272,31 +270,31 @@ function Map(width,height) {
 			// var d = c*(height-2);
 			var d = this[x][y];
 			var i=0;
-			for(;i<d;i++) 
+			for(;i<d;i++)
 				section[y].unshift(1);
 			for(;i<ceiling;i++)
 				section[y].unshift(0);
 		}
-		
+
 		return section.reverse();
 	}
-	
+
 	/* generate a land object of specified width, height, base elevation */
-	this.randomize = function(base,peak,hills) { 
+	this.randomize = function(base,peak,hills) {
 
 		if(!hills)
 			hills = settings.hills;
-		
+
 		/* generate specified number of "hills" */
-		for(var h=0;h<hills;h++) 
+		for(var h=0;h<hills;h++)
 			this.poke();
-		
+
 		/* normalize elevation values to fit between base elevation and scale */
 		this.normalize(base,peak);
-		
+
 		return true;
 	}
-	
+
 	/* wipe map clear */
 	this.clear = function() {
 		for(var x=0;x<properties.width;x++) {
@@ -305,7 +303,7 @@ function Map(width,height) {
 			}
 		}
 	}
-	
+
 	/* normalize elevation data between a base and peak value */
 	this.normalize = function(base,peak) {
 		if(base == undefined)
@@ -316,7 +314,7 @@ function Map(width,height) {
 		/* iterate map again and adjust values to fit scale */
 		if(this.range == 0)
 			return false;
-			
+
 		for(var x=0;x<this.length;x++) {
 			for(var y=0;y<this[x].length;y++) {
 				var a = this[x][y];
@@ -333,19 +331,19 @@ function Map(width,height) {
 				this[x][y] = e;
 			}
 		}
-		
+
 		setRange(this);
 		return true;
 	}
 
-	/* generate a randomized feature on a map starting 
+	/* generate a randomized feature on a map starting
 	from an optionally specified x,y position in a given direction */
 	this.poke = function(xoff,yoff,radius,direction) {
-	
+
 		/* pick a hill radius between min and max */
 		if(radius == undefined)
 			radius = random(settings.maxRadius-settings.minRadius)+settings.minRadius;
-			
+
 		/* pick a random starting position */
 		if(yoff == undefined) {
 			if(settings.mode&modes.island)
@@ -359,7 +357,7 @@ function Map(width,height) {
 			else
 				yoff = random(this[0].length+(2*radius))-radius;
 		}
-			
+
 		/* default elevation change */
 		if(direction == undefined) {
 			if(settings.mode&modes.lake)
@@ -367,10 +365,10 @@ function Map(width,height) {
 			else
 				direction = 1;
 		}
-		
+
 		for(var y=-radius;y<radius;y++) {
 			var halfRow=Math.round(Math.sqrt(Math.sq(radius)-Math.sq(y)));
-			for(var x=-halfRow;x<halfRow;x++) {     
+			for(var x=-halfRow;x<halfRow;x++) {
 				//var h = Math.sq(radius) - (Math.sq(x) + Math.sq(y));
 				if(this[xoff+x] && this[xoff+x][yoff+y] !== undefined)
 					this[xoff+x][yoff+y] += direction;
@@ -382,12 +380,12 @@ function Map(width,height) {
 		}
 		return true;
 	}
-	
+
 	/* initialize map */
 	this.init = function(width,height) {
 		if(isNaN(width) || isNaN(height))
 			throw("Map() width and height arguments must be integers > 0");
-		if(this.length > 0) 
+		if(this.length > 0)
 			this.splice(0,this.length);
 		for(var x=0;x<width;x++) {
 			this.push([]);
@@ -395,18 +393,18 @@ function Map(width,height) {
 				this[x][y]=0;
 			}
 		}
-		
+
 		properties.width = width;
 		properties.height = height;
 	}
-	
+
 	/* private range finding function */
 	function setRange(map) {
 		var min=undefined;
 		var max=undefined;
 		var mean=undefined;
 		var total=0;
-		
+
 		/* iterate map and find the min and max values */
 		for(var x=0;x<map.length;x++) {
 			for(var y=0;y<map[x].length;y++) {
@@ -416,13 +414,13 @@ function Map(width,height) {
 					max = map[x][y];
 				total+=map[x][y];
 			}
-		}	
-		
+		}
+
 		mean = total / (map[0].length * map.length);
 		range = max - min;
-		
+
 		//log(format("min:%f,max:%f,mean:%f,range:%f",min,max,mean,range));
-		
+
 		properties.min = min;
 		properties.max = max;
 		properties.mean = mean;
@@ -432,4 +430,4 @@ function Map(width,height) {
 	/* initialize map object */
 	this.init(width,height);
 }
-Map.prototype = new Array();	
+Map.prototype = new Array();

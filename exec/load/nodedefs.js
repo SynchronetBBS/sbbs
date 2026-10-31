@@ -49,7 +49,7 @@ var NodeStatus		=[			/* Node.status value descriptions			*/
 	,"Running external event"
 	,"Waiting for node %d to finish external event"
 	,"Logging out "
-	];			
+	];
 
 								/********************************************/
 								/* Legal values for Node.action				*/
@@ -132,7 +132,7 @@ var   NODE_EXT    	=(1<<12);   /* Extended info on node action				*/
 var   NODE_LCHAT	=(1<<13);   /* Being pulled into local chat				*/
 var   NODE_FCHAT	=(1<<14);	/* Being forced into private chat			*/
 								/********************************************/
-								
+
 /* Values for bbs.node_connection			*/
 var NODE_CONNECTION_LOCAL   = 0;
 var NODE_CONNECTION_TELNET  = 0xffff;

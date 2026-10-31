@@ -1,36 +1,36 @@
 /*
 
-	Javascript Event Calendar 
+	Javascript Event Calendar
 	for Synchronet v3.15+
 	by Matt Johnson (2009)
-	
+
 */
 
 //TODO: make event calendar handle events, as the name would suggest
 //		example: highlight birthdays, league reset dates, etc...
 
 
-Date.prototype.getDayName = function(day,shortName) 
-{   
-	var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];   
-	if(shortName) 
-	{  
+Date.prototype.getDayName = function(day,shortName)
+{
+	var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+	if(shortName)
+	{
 		if(day) return days[day].substr(0,3);
-		return days[this.getDay()].substr(0,3);  
-	} 
-	else 
-	{      
+		return days[this.getDay()].substr(0,3);
+	}
+	else
+	{
 		if(day) return days[day];
-		return days[this.getDay()];   
+		return days[this.getDay()];
 	}
 }
-Date.prototype.getMonthName = function() 
-{   
+Date.prototype.getMonthName = function()
+{
 	var months=['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-	return months[this.getMonth()]; 
+	return months[this.getMonth()];
 }
-Date.prototype.daysInMonth = function() 
-{   
+Date.prototype.daysInMonth = function()
+{
 	return new Date(this.getFullYear(), this.getMonth()+1, 0).getDate()
 }
 
@@ -52,28 +52,28 @@ function Calendar(x,y,fg,hl,sel)
 	this.month=new Month(this.date.getMonthName(),this.date.getFullYear());
 	this.daysinmonth=this.date.daysInMonth();
 	this.selected=new Date().getDate();
-	this.offset=new Date(this.date.getFullYear(), this.date.getMonth(), 1).getDay();    
-	
+	this.offset=new Date(this.date.getFullYear(), this.date.getMonth(), 1).getDay();
+
 	this.init=function()
 	{
 		var numDays = this.daysinmonth;
-		var startDay = this.offset;     
-		
-		for(var i=0; i<startDay; i++) 
-		{ 
+		var startDay = this.offset;
+
+		for(var i=0; i<startDay; i++)
+		{
 			this.month.days.push(new Day());
 		}
 		var border=startDay;
-		
-		for(i=1; i<=numDays; i++) 
-		{   
+
+		for(i=1; i<=numDays; i++)
+		{
 			this.month.days.push(new Day(this.date.getDayName(i),i));
-			border++;      
-		}     
-		while((border++%7)!=0) 
-		{  
+			border++;
+		}
+		while((border++%7)!=0)
+		{
 			this.month.days.push(new Day());
-		}     
+		}
 	}
 	this.draw=function()
 	{
@@ -86,7 +86,7 @@ function Calendar(x,y,fg,hl,sel)
 		console.gotoxy(x,y);
 		for(l=0;l<this.month.days.length;l++)
 		{
-			if(l>0 && (l%7)==0) 
+			if(l>0 && (l%7)==0)
 			{
 				console.putmsg("\1-" + this.fg + "\xB3",P_SAVEATR);
 				y++;
@@ -124,36 +124,36 @@ function Calendar(x,y,fg,hl,sel)
 		switch(cmd)
 		{
 			case KEY_UP:
-				if(this.selected>7) 
+				if(this.selected>7)
 				{
 					this.drawDay(this.selected);
 					this.selected-=7;
 					this.drawDay(this.selected,this.sel);
-				}	
+				}
 				break;
 			case KEY_DOWN:
-				if(this.selected+7<=this.daysinmonth) 
+				if(this.selected+7<=this.daysinmonth)
 				{
 					this.drawDay(this.selected);
 					this.selected+=7;
 					this.drawDay(this.selected,this.sel);
-				}	
+				}
 				break;
 			case KEY_LEFT:
-				if(this.selected>1) 
+				if(this.selected>1)
 				{
 					this.drawDay(this.selected);
 					this.selected--;
 					this.drawDay(this.selected,this.sel);
-				}	
+				}
 				break;
 			case KEY_RIGHT:
-				if(this.selected<this.daysinmonth) 
+				if(this.selected<this.daysinmonth)
 				{
 					this.drawDay(this.selected);
 					this.selected++;
 					this.drawDay(this.selected,this.sel);
-				}	
+				}
 				break;
 			case "\x1b":
 				this.drawDay(this.selected);

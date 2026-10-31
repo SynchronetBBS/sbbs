@@ -2,8 +2,6 @@
 
 // Utility functions for Synchronet external mail processors
 
-// $Id: mailproc_util.js,v 1.13 2019/05/02 21:23:04 rswindell Exp $
-
 require("sbbsdefs.js", 'NET_INTERNET');
 require("smbdefs.js", 'RFC822HEADER');
 require("mailutil.js", 'mail_get_name');
@@ -24,8 +22,8 @@ function parse_msg_header(msgtxt)
 			hdr[last_field=match[1].toLowerCase()]=match[2];
 		else if(last_field)		// Folded header field
 			hdr[last_field]+=msgtxt[i];
-	}	
-		
+	}
+
 	return(hdr);
 }
 
@@ -101,8 +99,8 @@ function convert_msg_header(hdr_array)
 				if(hdr.field_list==undefined)
 					hdr.field_list=new Array();
 				hdr.field_list.push(
-					{	type: RFC822HEADER, 
-						data: f + ": " + data 
+					{	type: RFC822HEADER,
+						data: f + ": " + data
 					}
 				);
 				break;

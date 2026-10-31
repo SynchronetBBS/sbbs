@@ -2,8 +2,6 @@
 
 /* Helper functions to get values from sbbs.ini/services.ini for fTelnet */
 
-/* $Id: ftelnethelper.js,v 1.11 2019/08/11 16:43:05 echicken Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -55,7 +53,7 @@ var FWSSPort           = -1;
 function GetSBBSIniValues() {
 	if (!FLoadedSBBSIni) {
 		FLoadedSBBSIni = true;
-		
+
 		try {
 			var f = new File(file_cfgname(system.ctrl_dir, "sbbs.ini"));
 			if (f.open("r", true)) {
@@ -76,14 +74,14 @@ function GetSBBSIniValues() {
 function GetServicesIniValues() {
 	if (!FLoadedServicesIni) {
 		FLoadedServicesIni = true;
-		
+
 		try {
 			var f = new File(file_cfgname(system.ctrl_dir, "services.ini"));
 			if (f.open("r", true)) {
 				// Try to get the WS service port
                 FWSPort = f.iniGetValue("WS", "Port", -1);
                 FWSEnabled = (FWSPort > 0) && f.iniGetValue("WS", "Enabled", true);
-				
+
 				// Try to get the WSS service port
                 FWSSPort = f.iniGetValue("WSS", "Port", -1);
                 FWSSEnabled = (FWSSPort > 0) && f.iniGetValue("WSS", "Enabled", true);

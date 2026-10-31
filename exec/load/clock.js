@@ -7,7 +7,7 @@ function DigitalClock()
 	this.lastupdate=-1;
 	this.digits=[];
 	this.hidden=false;
-	
+
 	this.days=[
 		"Sun",
 		"Mon",
@@ -31,7 +31,7 @@ function DigitalClock()
 		"Nov",
 		"Dec"
 	];
-	
+
 	this.init=function(x,y,w,fg,bg)
 	{
 		if(x) this.x=x;
@@ -69,10 +69,10 @@ function DigitalClock()
 		console.attributes=this.bg + BLACK;
 		console.write(printPadded("",this.width,"\xDF"));
 		console.attributes=this.bg + this.fg;
-		
+
 		var gap=this.width-14;
 		var offset=parseInt(gap/2,10);
-		
+
 		for(i=0;i<3;i++)
 		{
 			console.popxy();
@@ -107,7 +107,7 @@ function DigitalClock()
 	}
 	this.loadDigits=function()
 	{
-		var zero=[	
+		var zero=[
 			"\xDA\xB7",
 			"\xB3\xBA",
 			"\xC0\xBD"
@@ -157,7 +157,7 @@ function DigitalClock()
 			"\xC0\xB6",
 			"\xC0\xBD"
 		];
-		
+
 		this.digits[0]=zero;
 		this.digits[1]=one;
 		this.digits[2]=two;

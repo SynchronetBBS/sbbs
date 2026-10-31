@@ -1,23 +1,23 @@
 /*
    irclib.js
-  
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
-  
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details:
    https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
-  
+
    A library of useful IRC functions and objects that can be used to assist
    in the creation of IRC clients, bots, servers, or custom shells.
-  
+
    If you use this to create something neat, let me know about it! :)
    Either email, or find me on #synchronet, irc.synchro.net, nick 'Cyan'
-  
+
    Copyright 2003-2022 Randy Sommerfeld <cyan@synchro.net>
 */
 
@@ -87,7 +87,7 @@ function IRC_parse(str) {
 function IRC_parse_tags(str) {
 	var ret = {};
 	var e, q;
-	
+
 	if (!str || str[0] != "@")
 		return ret;
 

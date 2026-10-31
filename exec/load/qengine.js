@@ -3,8 +3,6 @@
 	USING  FILE I/O FOR USER PRESENCE DETECTION & NAMED QUEUES FOR REAL-TIME MULTIPLAYER DATA
 */
 
-// $Id: qengine.js,v 1.13 2010/11/17 01:33:34 rswindell Exp $
-
 if(!js.global || js.global.SYS_CLOSED==undefined)
 	load("sbbsdefs.js");
 if(!js.global || js.global.Logger==undefined)
@@ -30,7 +28,7 @@ function DataQueue(root,name,log_)
 	//this.thread;
 
 	KillFile=this.user_file;
-	
+
 	this.ReceiveData=function(ident)
 	{
 		this.UpdateUsers();
@@ -44,7 +42,7 @@ function DataQueue(root,name,log_)
 				data.push=incoming_data;
 			}
 		}
-		else 
+		else
 		{
 			while(this.stream.data_waiting)
 			{
@@ -58,7 +56,7 @@ function DataQueue(root,name,log_)
 	this.SendData=function(data,ident)
 	{
 		this.UpdateUsers();
-		for(user_ in this.users) 
+		for(user_ in this.users)
 		{
 			this.users[user_].Send(data,ident);
 			this.log("sending: " + ident + " to user: " + this.users[user_].name);
@@ -67,7 +65,7 @@ function DataQueue(root,name,log_)
 	this.FindUser=function(id)
 	{
 		var exclusive;
-		if(!this.user_file.is_open) 
+		if(!this.user_file.is_open)
 		{
 			exclusive=true;
 			this.user_file.open('r+',true);
@@ -103,7 +101,7 @@ function DataQueue(root,name,log_)
 				this.log("loaded new user: " + user_fullname);
 			}
 		}
-		for(user_ in this.users) 
+		for(user_ in this.users)
 		{
 			var usr=this.users[user_];
 			if(!this.user_file.iniGetValue(this.thread,usr.name))
@@ -113,7 +111,7 @@ function DataQueue(root,name,log_)
 				{
 					this.notices.push(usr.alias + " joined " + room + ".");
 				}
-				else 
+				else
 				{
 					this.notices.push(usr.alias + " has left.");
 				}
@@ -131,11 +129,11 @@ function DataQueue(root,name,log_)
 	this.Init=function(thread,status)
 	{
 		if(thread==this.thread) return;
-		else 
+		else
 		{
 			this.users=[];
 			this.UpdateUsers();
-			this.user_file.open((file_exists(this.user_file.name) ? 'r+':'w+'),true); 	
+			this.user_file.open((file_exists(this.user_file.name) ? 'r+':'w+'),true);
 			this.user_file.iniRemoveKey(this.thread,system.qwk_id + "." + user.alias);
 			this.thread=thread;
 			KillThread=this.thread;

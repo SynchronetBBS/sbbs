@@ -1,4 +1,4 @@
-/* 
+/*
 SIF questionaire library -
 emulates baja functions CREATE_SIF, READ_SIF
 $id: $
@@ -13,7 +13,7 @@ SIF = new (function() {
 		var d = f.read();
 		f.close();
 		var q = [];
-		
+
 		// <STX>text<ETX>mode[mod][l][r][x][.n]["str"]
 		while(d.length > 0) {
 			// STX     is the ASCII code for start of text (ASCII 2 / Ctrl-B)
@@ -63,14 +63,14 @@ SIF = new (function() {
 					// "1234...". If this string is specified in 'c' input mode, 'u' and 'n'
 					// have no effect and input will be converted to uppercase automatically.
 			var str = match[7];
-			
+
 			/* strip out remaining crap */
 			d = d.substr(d.indexOf("\n"));
-			
-			/* store question object */ 
+
+			/* store question object */
 			q.push(new Question(text,mode,mod,input,crlf,max,min,str));
 		}
-		
+
 		return q;
 	}
 
@@ -108,7 +108,7 @@ SIF = new (function() {
 		}
 		f.close();
 	}
-	
+
 	/* run questionaire routine */
 	this.create=function(sifFile,answerFile) {
 		var sifData = this.read_file(sifFile);
@@ -132,7 +132,7 @@ SIF = new (function() {
 		console.crlf();
 		this.write_answers(sifData,answerFile);
 	}
-	
+
 	/* show questions and answers */
 	this.read=function(sifFile,answerFile) {
 		var sifData = this.read_answers(this.read_file(sifFile));
@@ -143,10 +143,10 @@ SIF = new (function() {
 			console.crlf();
 		}
 	}
-	
+
 	/* get a character */
 	function getChar(q) {
-		if(q.str) 
+		if(q.str)
 			return console.getkeys(q.str).toUpperCase();
 		switch(q.mod) {
 		case 'n':
@@ -157,10 +157,10 @@ SIF = new (function() {
 			return console.getkey(K_NONE);
 		}
 	}
-	
+
 	/* get a string */
 	function getStr(q) {
-		if(q.str) 
+		if(q.str)
 			return console.gettemplate(q.str);
 		var mode = K_NONE;
 		switch(q.mod) {
@@ -184,11 +184,11 @@ SIF = new (function() {
 
 	/* pad a string with ETX */
 	function padAnswer(str,len) {
-		while(str.length < len) 
+		while(str.length < len)
 			str += "";
 		return str;
 	}
-	
+
 	/* SIF question object */
 	function Question(text,mode,mod,input,crlf,max,min,str,answer) {
 		this.text=text;

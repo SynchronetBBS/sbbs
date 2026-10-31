@@ -1,4 +1,3 @@
-// $Id: fidocfg.js,v 1.45 2020/04/12 01:34:13 rswindell Exp $
 require('fido.js', 'FIDO');
 
 /*

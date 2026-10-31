@@ -1,5 +1,3 @@
-// $Id: mimehdr.js,v 1.7 2019/07/24 22:07:17 rswindell Exp $
-
 // Support for RFC2047:
 //
 //        MIME (Multipurpose Internet Mail Extensions) Part Three:
@@ -7,13 +5,13 @@
 
 require("utf8_cp437.js", 'utf8_cp437');
 
-// Returns an array of 'encoded-words' 
+// Returns an array of 'encoded-words'
 function decode(hvalue)
 {
 	var result = [];
 	var regex = /(\=\?[a-zA-Z0-9-]+\?.\?[^ ?]*\?\=|\S+\s*)/g;
 	var word;
-	
+
 	while(hvalue && (word = regex.exec(hvalue)) !== null) {
 		var str = word[1];
 		var retval = { charset: 'unspecified (US-ASCII)', data: str };
@@ -23,7 +21,7 @@ function decode(hvalue)
 			result.push(retval);
 			continue;
 		}
-		
+
 		retval.charset = match[1].toLowerCase();
 		switch(match[2].toUpperCase()) {
 			case 'Q':	// "similar to" Quoted-printable

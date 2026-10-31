@@ -132,7 +132,7 @@ function ConcensusObject(host, port, scope)
 		this.add_issue_funcs(issue);
 		issue.index=index;
 		return issue;
-	}	
+	}
 
 	this.get_closed_issues=function()
 	{

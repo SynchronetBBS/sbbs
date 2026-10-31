@@ -112,7 +112,7 @@ function bbs_service(service)
             case "modem":
                 protocol="tel"
                 break;
-			default:	
+			default:
                 if(service.port == standard_service_port[protocol])
                     port="";
                 break;
@@ -286,20 +286,20 @@ function bbs_table_entry(num, bbs)
 //    if(bbs.capture)
 //        writeln(format('<td rowspan="%u">', bbs.service.length));
 //    else
-   
+
 	if(!bbs.entry.autoverify || !bbs.entry.autoverify.success) {
         write('<tr><td>');
-		if(bbs.entry.verified) 
+		if(bbs.entry.verified)
 			writeln("Last verified on " + localDateStr(bbs.entry.verified.on) + " by " + encode_text(bbs.entry.verified.by));
 	}
 	else {
         if(bbs.preview) {
             write('<tr><td>'); // style="border-style:outset;">');
-      //     	writeln('<div>'); // onclick="this.className=\'overlay\'">'); 
+      //     	writeln('<div>'); // onclick="this.className=\'overlay\'">');
 			bbs_preview(num, bbs);
 	//		writeln('</div>');
         }
-        if(bbs.entry.autoverify.last_success.other_services 
+        if(bbs.entry.autoverify.last_success.other_services
             && bbs.entry.autoverify.last_success.other_services.tcp
             && bbs.entry.autoverify.last_success.other_services.tcp.length) {
             write('<tr><td>Also: ');

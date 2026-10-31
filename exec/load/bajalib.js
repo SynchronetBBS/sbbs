@@ -1,4 +1,4 @@
-// [6.1] - Quick Function Reference 
+// [6.1] - Quick Function Reference
 var baja = {};
 var globals = {};
 var functions = {};
@@ -31,9 +31,9 @@ baja["GLOBAL_STR"] = function() {
 // SET <str_var> <"cstr">
 // SET <int_var> <#>
 baja["SET"] = function(var1, var2) {
-	if(variables[var1] == "STR") 
+	if(variables[var1] == "STR")
 		return var1 + " = " + var2 + ";";
-	if(variables[var1] == "INT") 
+	if(variables[var1] == "INT")
 		return var1 + " = Number(" + var2 + ");";
 }
 // COPY <str_var> <any_var>
@@ -48,35 +48,35 @@ baja["SWAP"] = function(var1,var2) {
 // STRCAT <str_var> <str_var or "cstr">
 baja["STRCAT"] = function() {
 	var line = arguments[0] + " = " + arguments[0];
-	for(var a=1;a<arguments.length;a++) 
+	for(var a=1;a<arguments.length;a++)
 		line += " + " + arguments[a];
 	return line + ";";
 }
 // SPRINTF <str_var> <"cstr"> <any_var> [any_var] [...]
 baja["SPRINTF"] = function() {
 	line = arguments[0] + " = " + "format(" + arguments[1];
-	for(var a=2;a<arguments.length;a++) 
+	for(var a=2;a<arguments.length;a++)
 		line += ", " + arguments[a];
 	return line + ");";
 }
 // TIME_STR <str_var> <int_var>
-baja["TIME_STR"] = function(var1,var2) { 
+baja["TIME_STR"] = function(var1,var2) {
 	return var1 + " = system.timestr(" + var2 + ");";
 }
 // DATE_STR <str_var> <int_var>
-baja["DATE_STR"] = function(var1,var2) { 
+baja["DATE_STR"] = function(var1,var2) {
 	return var1 + " = system.datestr(" + var2 + ");";
 }
 // SECOND_STR <str_var> <int_var>
-baja["SECOND_STR"] = function(var1,var2) { 
+baja["SECOND_STR"] = function(var1,var2) {
 	return var1 + " = system.secondstr(" + var2 + ");";
 }
 // FTIME_STR <str_var> <"cstr"> <int_var>
-baja["FTIME_STR"] = function(var1,var2,var3) { 
+baja["FTIME_STR"] = function(var1,var2,var3) {
 	return format("%s = strftime(%s,%s);",var1,var2,var3);
 }
 // SHIFT_STR [str_var] <#>
-baja["SHIFT_STR"] = function(var1,var2) { 
+baja["SHIFT_STR"] = function(var1,var2) {
 	if(!var2)
 		return "bbs.command_str = bbs.command_str.substr(" + var1 + ");";
 	return var1 + " = " + var1 + ".substr(" + var2 + ");";
@@ -140,7 +140,7 @@ baja["XOR"] = function(num1,num2) { return num1 + " ^= " + num2 + ";"; }
 // COPY <int_var> <any_var>
 baja["COPY"] = function(var1, var2) { return 'var1 = var2.toString();'; }
 // SWAP <int_var> <any_var>
-baja["SWAP"] = function(var1, var2) { return 'var2 = [var1, var1 = var2][0];' }; 
+baja["SWAP"] = function(var1, var2) { return 'var2 = [var1, var1 = var2][0];' };
 // RANDOM <int_var> <#>
 baja["RANDOM"] = function(var1,num1) { return var1 + " = Math.random() * " + num1 + ";"; }
 // TIME <int_var>
@@ -148,7 +148,7 @@ baja["TIME"] = function(var1) { return var1 + " = time();"; }
 // STRLEN <int_var> <str_var>
 baja["STRLEN"] = function(var1,var2) { return var1 + " = console.strlen(" + var2 + ");"; }
 // DATE_INT <int_var> <str_var>
-baja["DATE_INT"] = function(var1,var2) { 
+baja["DATE_INT"] = function(var1,var2) {
 	var line = var1 + " = new Date(";
 	var2 = var2.replace(/(\d{2})\/(\d{2})\/(\d{2})/,"$1/$2/20$3");
 	return line + var2 + ");";
@@ -173,7 +173,7 @@ baja["RETURN"] = function() { return "return;\r\n})();"; }
 // SETLOGIC <TRUE or FALSE or GREATER or LESS>
 baja["SETLOGIC"] = function(var1) { return "system.baja.logicState = " + var1.toUpperCase() + ";"; }
 // COMPARE <any_var> <any_var or "cstr" or #>
-baja["COMPARE"] = function(var1,var2) { 
+baja["COMPARE"] = function(var1,var2) {
 	var line = "";
 	if(!functions["compare"]) {
 		functions["compare"] = true;
@@ -218,9 +218,9 @@ baja["IF_LESS_OR_EQUAL"] = function() {
 // ELSE
 baja["ELSE"] = function() {	return "}\r\nelse {"; }
 // END_IF
-baja["END_IF"] = function() { 
+baja["END_IF"] = function() {
 	ifLevel = false;
-	return "}"; 
+	return "}";
 }
 baja["ENDIF"] = baja["END_IF"];
 // SWITCH <int_var>
@@ -265,7 +265,7 @@ baja["CMDSTR"] = function(var1) {
 }
 // END_CMD
 baja["END_CMD"] = function() {
-	if(!labels.length) 
+	if(!labels.length)
 		return "}";
 	var line = "continue " + labels[labels.length-1] + ";";
 	if(!ifLevel)
@@ -273,12 +273,12 @@ baja["END_CMD"] = function() {
 	return line;
 }
 // CMD_POP
-baja["CMD_POP"] = function() { 
+baja["CMD_POP"] = function() {
 	labels.pop();
 	return "}";
 }
 // COMPARE_KEY <key>
-baja["COMPARE_KEY"] = function(var1) { 
+baja["COMPARE_KEY"] = function(var1) {
 	return "system.baja.logicState = (" + var1 + " == system.baja.cmdKey?TRUE:FALSE);";
 }
 // COMPARE_KEYS <keylist>
@@ -286,27 +286,27 @@ baja["COMPARE_KEYS"] = function(var1) {
 	return "system.baja.logicState = (" + var1 + ".indexOf(system.baja.cmdKey) >= 0?TRUE:FALSE);";
 }
 // COMPARE_STR <"cstr">
-baja["COMPARE_STR"] = function(var1) { 
-	return "system.baja.logicState = (" + var1 + 
+baja["COMPARE_STR"] = function(var1) {
+	return "system.baja.logicState = (" + var1 +
 		".toUpperCase() == bbs.command_str.toUpperCase()?TRUE:FALSE);";
 }
 // COMPARE_WORD <"cstr">
-baja["COMPARE_WORD"] = function(var1) { 
-	return "system.baja.logicState = (bbs.command_str.toUpperCase().indexOf(" + 
+baja["COMPARE_WORD"] = function(var1) {
+	return "system.baja.logicState = (bbs.command_str.toUpperCase().indexOf(" +
 		var1 + ".toUpperCase()) == 0?TRUE:FALSE);";
 }
 // COMPARE_ARS <ars>
-baja["COMPARE_ARS"] = function(var1) { 
+baja["COMPARE_ARS"] = function(var1) {
 	return "system.baja.logicState = (user.compare_ars(" + var1 + ")?TRUE:FALSE);";
 }
 // COMPARE_STRN <#> <str_var> <str_var or "cstr">
-baja["COMPARE_STRN"] = function(var1,var2,var3) { 
+baja["COMPARE_STRN"] = function(var1,var2,var3) {
 	return format("system.baja.logicState = (%s.substr(0,%s).toUpperCase() == %s.substr(0,%s).toUpperCase()?TRUE:FALSE);",
 		var2,var1,var3,var1);
 }
 // COMPARE_SUBSTR <str_var> <str_var or "cstr">
-baja["COMPARE_SUBSTR"] = function(var1,var2) { 
-	return "system.baja.logicState = (" + var1 + ".indexOf(" + 
+baja["COMPARE_SUBSTR"] = function(var1,var2) {
+	return "system.baja.logicState = (" + var1 + ".indexOf(" +
 		var2 + ") >= 0?TRUE:FALSE);";
 }
 
@@ -317,7 +317,7 @@ baja["PRINT"] = function(var1) { return "console.print(" + var1 + ");"; }
 // PRINTF <"cstr"> <any_var> [any_var] [...]
 baja["PRINTF"] = function() {
 	var line = "printf(" + arguments[0];
-	for(var a=1;a<arguments.length;a++) 
+	for(var a=1;a<arguments.length;a++)
 		line += ", " + arguments[a];
 	return line + ");";
 }
@@ -336,30 +336,30 @@ baja["CLS"] = function() { return "console.clear();"; }
 // CRLF
 baja["CRLF"] = function() { return "console.crlf();"; }
 // PRINTFILE <"str" or str_var> [#]
-baja["PRINTFILE"] = function(var1, var2) { 
-	return format("console.printfile(%s,%s);",var1,var2); 
+baja["PRINTFILE"] = function(var1, var2) {
+	return format("console.printfile(%s,%s);",var1,var2);
 }
 // PRINTTAIL <str_var> <#> <#>
-baja["PRINTTAIL"] = function(var1,var2,var3) { 
-	return format("console.printtail(%s,%s,%s);",var1,var3,var2); 
+baja["PRINTTAIL"] = function(var1,var2,var3) {
+	return format("console.printtail(%s,%s,%s);",var1,var3,var2);
 }
 // PRINTFILE_STR
-baja["PRINTFILE_STR"] = function(var1) { 
-	return "console.printfile(bbs.command_str);"; 
+baja["PRINTFILE_STR"] = function(var1) {
+	return "console.printfile(bbs.command_str);";
 }
 // PRINTFILE_LOCAL <"str">
 baja["PRINTFILE_LOCAL"] = baja["PRINTFILE"];
 // PRINTFILE_REMOTE <"str">
 baja["PRINTFILE_REMOTE"] = baja["PRINTFILE"];
 // LIST_TEXT_FILE
-baja["LIST_TEXT_FILE"] = function(var1, var2) { 
+baja["LIST_TEXT_FILE"] = function(var1, var2) {
 	var line = "if(bbs.check_syspass()) {\r\n";
-	return line + ("console.printfile(%s,%s);\r\n}",var1,var2); 
+	return line + ("console.printfile(%s,%s);\r\n}",var1,var2);
 }
 // EDIT_TEXT_FILE
-baja["EDIT_TEXT_FILE"] = function(var1, var2) { 
+baja["EDIT_TEXT_FILE"] = function(var1, var2) {
 	var line = "if(bbs.check_syspass()) {\r\n";
-	return line + ("console.editfile(%s,%s);\r\n}",var1,var2); 
+	return line + ("console.editfile(%s,%s);\r\n}",var1,var2);
 }
 // PAUSE
 baja["PAUSE"] = function() { return "console.pause();"; }
@@ -378,12 +378,12 @@ baja["USERLIST_ALL"] = function() { return "bbs.list_users(0);"; }
 // USERLIST_LOGONS
 baja["USERLIST_LOGONS"] = function() { return "bbs.list_logons();"; }
 // YES_NO <"cstr">
-baja["YES_NO"] = function(var1) { 
-	return "system.baja.logicState = (console.yesno(" + var1 + ")?TRUE:FALSE);"; 
+baja["YES_NO"] = function(var1) {
+	return "system.baja.logicState = (console.yesno(" + var1 + ")?TRUE:FALSE);";
 }
 // NO_YES <"cstr">
-baja["NO_YES"] = function(var1) { 
-	return "system.baja.logicState = (console.noyes(" + var1 + ")?TRUE:FALSE);"; 
+baja["NO_YES"] = function(var1) {
+	return "system.baja.logicState = (console.noyes(" + var1 + ")?TRUE:FALSE);";
 }
 // READ_SIF <"str">
 baja["READ_SIF"] = function(var1) {
@@ -392,7 +392,7 @@ baja["READ_SIF"] = function(var1) {
 		functions["SIF"] = true;
 		line += 'load("siflib.js");\r\n';
 	}
-	return line + 'SIF.read(' + var1 + '.sif,bbs.command_str);'; 
+	return line + 'SIF.read(' + var1 + '.sif,bbs.command_str);';
 }
 // SAVELINE
 baja["SAVELINE"] = function() { return "console.saveline();"; }
@@ -428,7 +428,7 @@ baja["GETCMD"] = function(var1) {
 	return 'system.baja.cmdKey = console.getkeys(\"' + var1 + '\").toUpperCase();';
 }
 // GETSTR [str_var] [#] [#]
-baja["GETSTR"] = function(var1,var2,var3) { 
+baja["GETSTR"] = function(var1,var2,var3) {
 	var str = var1;
 	var len = var2;
 	var mode = var3;
@@ -452,7 +452,7 @@ baja["GETSTR"] = function(var1,var2,var3) {
 	return str + " = console.getstr(" + len + "," + mode + ");";
 }
 // GETLINE [str_var] [#]
-baja["GETLINE"] = function(var1,var2) { 
+baja["GETLINE"] = function(var1,var2) {
 	var str = var1;
 	var len = var2;
 	/* an argument is missing! */
@@ -468,7 +468,7 @@ baja["GETLINE"] = function(var1,var2) {
 	return str + " = console.getstr(" + len + ",K_LINE);";
 }
 // GETSTRUPR [str_var] [#]
-baja["GETSTRUPR"] = function(var1,var2) { 
+baja["GETSTRUPR"] = function(var1,var2) {
 	var str = var1;
 	var len = var2;
 	/* an argument is missing! */
@@ -484,7 +484,7 @@ baja["GETSTRUPR"] = function(var1,var2) {
 	return str + " = console.getstr(" + len + ",K_UPPER);";
 }
 // GETNAME [str_var] [#]
-baja["GETNAME"] = function(var1,var2) { 
+baja["GETNAME"] = function(var1,var2) {
 	var str = var1;
 	var len = var2;
 	/* an argument is missing! */
@@ -515,7 +515,7 @@ baja["GETLINES"] = function() { return "console.getlines();"; }
 // GETNUM [any_var] <#>
 baja["GETNUM"] = function(var1,var2) { return var1 + " = console.getnum(" + var2 + ");"; }
 // GET_TEMPLATE <"str">
-baja["GET_TEMPLATE"] = function(var1) { 
+baja["GET_TEMPLATE"] = function(var1) {
 	return "bbs.command_str = console.gettemplate(" + var1 + ");";
 }
 // CHKSYSPASS
@@ -527,7 +527,7 @@ baja["CREATE_SIF"] = function(var1) {
 		functions["SIF"] = true;
 		line += 'load("siflib.js");\r\n';
 	}
-	return line + 'SIF.create(' + var1 + '.sif,bbs.command_str);'; 
+	return line + 'SIF.create(' + var1 + '.sif,bbs.command_str);';
 }
 
 // Miscellaneous Functions
@@ -577,7 +577,7 @@ baja["EXEC_INT"] = function(var1) { return "bbs.exec(" + var1 + ",(1<<1));"; }
 // EXEC_BIN <"str">
 baja["EXEC_BIN"] = function(var1) { return "bbs.exec(\"*" + var1.replace(/\"/g,'') + "\");"; }
 // EXEC_XTRN <"str">
-baja["EXEC_XTRN"] = function(var1) { 
+baja["EXEC_XTRN"] = function(var1) {
 	var line = 'if(typeof xtrn_area.prog[' + var1 + '] != "undefined" &&';
 	line +=	'user.compare_ars(xtrn_area.prog[' + var1 + '].ars)) {\r\n';
 	line += 'bbs.exec_xtrn(' + var1 + ');\r\n';
@@ -593,8 +593,8 @@ baja["LOGKEY"] = function(var1) { return "bbs.log_key(system.baja.cmdKey);"; }
 // LOGKEY_COMMA
 baja["LOGKEY_COMMA"] = function(var1) { return "bbs.log_key(system.baja.cmdKey,true);"; }
 // NODE_STATUS <#>
-baja["NODE_STATUS"] = function(var1) { 
-	return "system.node_list[bbs.node_num-1].status = " + var1 + ";"; 
+baja["NODE_STATUS"] = function(var1) {
+	return "system.node_list[bbs.node_num-1].status = " + var1 + ";";
 }
 // NODE_ACTION <#>
 baja["NODE_ACTION"] = function(var1) { return "bbs.node_action = " + var1 + ";"; }
@@ -603,19 +603,19 @@ baja["INC_MAIN_CMDS"] = function(var1) { return "bbs.main_cmds++;"; }
 // INC_FILE_CMDS
 baja["INC_FILE_CMDS"] = function(var1) { return "bbs.file_cmds++;"; }
 // COMPARE_USER_MISC <#>
-baja["COMPARE_USER_MISC"] = function(var1) { 
+baja["COMPARE_USER_MISC"] = function(var1) {
 	return format("system.baja.logicState = (user.settings&(%s) == %s)?TRUE:FALSE;",var1,var1);
 }
 // COMPARE_USER_CHAT <#>
-baja["COMPARE_USER_CHAT"] = function(var1) { 
+baja["COMPARE_USER_CHAT"] = function(var1) {
 	return format("system.baja.logicState = (user.chat_settings&(%s) == %s)?TRUE:FALSE;",var1,var1);
 }
 // COMPARE_USER_QWK  <#>
-baja["COMPARE_USER_QWK"] = function(var1) { 
+baja["COMPARE_USER_QWK"] = function(var1) {
 	return format("system.baja.logicState = (user.qwk_settings&(%s) == %s)?TRUE:FALSE;",var1,var1);
 }
 // COMPARE_NODE_MISC <#>
-baja["COMPARE_NODE_MISC"] = function(var1) { 
+baja["COMPARE_NODE_MISC"] = function(var1) {
 	return format("system.baja.logicState = (system.node_list[bbs.node_num].misc&(%s) == %s)?TRUE:FALSE;",var1,var1);
 }
 // TOGGLE_USER_MISC <#>
@@ -625,27 +625,27 @@ baja["TOGGLE_USER_CHAT"] = function(var1) { return format("user.chat_settings ^=
 // TOGGLE_USER_QWK  <#>
 baja["TOGGLE_USER_QWK"] = function(var1) { return format("user.qwk_settings ^= (%s);",var1); }
 // TOGGLE_NODE_MISC <#>
-baja["TOGGLE_NODE_MISC"] = function(var1) { 
-	return format("system.node_list[bbs.node_num].misc ^= (%s);",var1); 
+baja["TOGGLE_NODE_MISC"] = function(var1) {
+	return format("system.node_list[bbs.node_num].misc ^= (%s);",var1);
 }
 // TOGGLE_USER_FLAG <char> <char>
-baja["TOGGLE_USER_FLAG"] = function(var1,var2) { 
+baja["TOGGLE_USER_FLAG"] = function(var1,var2) {
 	return "user.security.flags" + var1 + " ^= (" + var2 + ");";
 }
 // ADJUST_USER_CREDITS <#>
-baja["ADJUST_USER_CREDITS"] = function(var1) { 
+baja["ADJUST_USER_CREDITS"] = function(var1) {
 	return "user.security.credits += " + var1 + ";";
 }
 // ADJUST_USER_MINUTES <#>
-baja["ADJUST_USER_MINUTES"] = function(var1) { 
+baja["ADJUST_USER_MINUTES"] = function(var1) {
 	return "user.security.minutes += " + var1 + ";";
 }
 // SET_USER_LEVEL <#>
-baja["SET_USER_LEVEL"] = function(var1) { 
+baja["SET_USER_LEVEL"] = function(var1) {
 	return "user.security.level = " + var1 + ";";
 }
 // SET_USER_STRING <#>
-baja["SET_USER_STRING"] = function(var1) { 
+baja["SET_USER_STRING"] = function(var1) {
 	// !define USER_STRING_ALIAS	0
 	// !define USER_STRING_REALNAME	1
 	// !define USER_STRING_HANDLE	2
@@ -669,36 +669,36 @@ baja["SET_USER_STRING"] = function(var1) {
 	return "user." + uStrings[var1] + " = bbs.command_str;";
 }
 // USER_EVENT <#>
-baja["USER_EVENT"] = function(var1) { 
+baja["USER_EVENT"] = function(var1) {
 	return "bbs.user_event(" + var1 + ");";
 }
 // AUTO_MESSAGE
-baja["AUTO_MESSAGE"] = function() { 
+baja["AUTO_MESSAGE"] = function() {
 	var line = "if(!(user.security.restrictions&UREST_AUTO_MESSAGE)) {\r\n";
 	line += "bbs.auto_msg();\r\n";
 	line += "}";
 	return line;
 }
 // USER_DEFAULTS
-baja["USER_DEFAULTS"] = function() { 
+baja["USER_DEFAULTS"] = function() {
 	var line = "if(!(user.security.restrictions&UREST_EDIT_DEFAULTS)) {\r\n";
 	line += "bbs.user_config();\r\n";
 	line += "}";
 	return line;
 }
 // USER_EDIT
-baja["USER_EDIT"] = function() { 
+baja["USER_EDIT"] = function() {
 	var line = "if(user.compare_ars(\"SYSOP\") || (bbs.sys_status&SS_TMPSYSOP)) {\r\n";
 	line += "bbs.edit_user();\r\n";
 	line += "}";
 	return line;
 }
 // TEXT_FILE_SECTION
-baja["TEXT_FILE_SECTION"] = function() { 
+baja["TEXT_FILE_SECTION"] = function() {
 	return "bbs.text_sec();";
 }
 // XTRN_EXEC
-baja["XTRN_EXEC"] = function() { 
+baja["XTRN_EXEC"] = function() {
 	var line = 'if(typeof xtrn_area.prog[bbs.command_str] != "undefined" &&';
 	line +=	'user.compare_ars(xtrn_area.prog[bbs.command_str].ars)) {\r\n';
 	line += 'bbs.exec_xtrn(bbs.command_str);\r\n';
@@ -706,15 +706,15 @@ baja["XTRN_EXEC"] = function() {
 	return line;
 }
 // XTRN_SECTION
-baja["XTRN_SECTION"] = function() { 
+baja["XTRN_SECTION"] = function() {
 	return "bbs.xtrn_sec();";
 }
 // MINUTE_BANK
-baja["MINUTE_BANK"] = function() { 
+baja["MINUTE_BANK"] = function() {
 	return "bbs.time_bank();";
 }
 // CHANGE_USER
-baja["CHANGE_USER"] = function() { 
+baja["CHANGE_USER"] = function() {
 	var line = "if(user.compare_ars(\"SYSOP\") || (bbs.sys_status&SS_TMPSYSOP)) {\r\n";
 	line += "bbs.change_user();\r\n";
 	line += "}";
@@ -722,31 +722,31 @@ baja["CHANGE_USER"] = function() {
 }
 // ANSI_CAPTURE (v2 only) *NOT SUPPORTED*
 // FINDUSER
-baja["FINDUSER"] = function() { 
+baja["FINDUSER"] = function() {
 	return "system.baja.logicState = (bbs.finduser(" + bbs.command_str + ")?TRUE:FALSE);";
 }
 // SELECT_SHELL
-baja["SELECT_SHELL"] = function() { 
+baja["SELECT_SHELL"] = function() {
 	return "system.baja.logicState = (bbs.select_shell()?TRUE:FALSE);";
 }
 // SET_SHELL
-baja["SET_SHELL"] = function() { 
+baja["SET_SHELL"] = function() {
 	var line = "user.command_shell = bbs.command_str;\r\n";
 	line += "system.baja.logicState = (user.command_shell == bbs.command_str?TRUE:FALSE);";
 	return line;
 }
 // SELECT_EDITOR
-baja["SELECT_EDITOR"] = function() { 
+baja["SELECT_EDITOR"] = function() {
 	return "system.baja.logicState = (bbs.select_editor()?TRUE:FALSE);";
 }
 // SET_EDITOR
-baja["SET_EDITOR"] = function() { 
+baja["SET_EDITOR"] = function() {
 	var line = "user.editor = bbs.command_str;\r\n";
 	line += "system.baja.logicState = (user.editor == bbs.command_str?TRUE:FALSE);\r\n";
 	return line;
 }
 // TRASHCAN <"str">
-baja["TRASHCAN"] = function(var1) { 
+baja["TRASHCAN"] = function(var1) {
 	var line = "system.baja.logicState = (system.trashcan(system.text_dir" + var1 + ",bbs.command_str)?TRUE:FALSE);";
 	line += "if(system.baja.logicState == TRUE && file_exists(system.text_dir + \"bad" + var1 + ".msg\") {\r\n";
 	line += "console.printfile(system.text_dir + \"bad" + var1 + ".msg\");\r\n";
@@ -754,7 +754,7 @@ baja["TRASHCAN"] = function(var1) {
 	return line;
 }
 // GETTIMELEFT
-baja["GETTIMELEFT"] = function() { 
+baja["GETTIMELEFT"] = function() {
 	var line = "if(bbs.time_left() == 0) {\r\n";
 	line += "console.print(\"Out of time\");\r\n";
 	line += "bbs.hangup();\r\n";
@@ -763,12 +763,12 @@ baja["GETTIMELEFT"] = function() {
 // MSWAIT <#>
 baja["MSWAIT"] = function(num1) { return "mswait(" + num1 + ");"; }
 // SEND_FILE_VIA <char> <"str" or str_var>
-baja["SEND_FILE_VIA"] = function(var1,var2) { 
-	return format("bbs.send_file(%s,%s);",var2,var1); 
+baja["SEND_FILE_VIA"] = function(var1,var2) {
+	return format("bbs.send_file(%s,%s);",var2,var1);
 }
 // RECEIVE_FILE_VIA <char> <"str" or str_var>
-baja["RECEIVE_FILE_VIA"] = function(var1,var2) { 
-	return format("bbs.receive_file(%s,%s);",var2,var1); 
+baja["RECEIVE_FILE_VIA"] = function(var1,var2) {
+	return format("bbs.receive_file(%s,%s);",var2,var1);
 }
 
 // Mail Functions
@@ -1250,7 +1250,7 @@ baja["INFO_VERSION"] = function() { return 'bbs.ver();'; }
 // INFO_XFER_POLICY
 baja["INFO_XFER_POLICY"] = function() { return 'bbs.xfer_policy();'; }
 // GURU_LOG
-baja["GURU_LOG"] = function() { 
+baja["GURU_LOG"] = function() {
 	var line = "";
 	if(!functions["gurulog"]) {
 		line += "system.baja.gurulog = " + gurulog.toString() + ";\r\n";
@@ -1259,7 +1259,7 @@ baja["GURU_LOG"] = function() {
 	return line + "gurulog(\"guru.log\");";
 }
 // ERROR_LOG
-baja["ERROR_LOG"] = function() { 
+baja["ERROR_LOG"] = function() {
 	var line = "";
 	if(!functions["errlog"]) {
 		line += "system.baja.errlog = " + errlog.toString() + ";\r\n";
@@ -1268,7 +1268,7 @@ baja["ERROR_LOG"] = function() {
 	return line + "system.baja.errlog(\"error.log\");";
 }
 // SYSTEM_LOG
-baja["SYSTEM_LOG"] = function() { 
+baja["SYSTEM_LOG"] = function() {
 	var line = "";
 	if(!functions["syslog"]) {
 		line += "system.baja.syslog = " + syslog.toString() + ";\r\n";
@@ -1277,7 +1277,7 @@ baja["SYSTEM_LOG"] = function() {
 	return line + "system.baja.syslog(strftime(\"logs/%m%d%y.log\",time()));";
 }
 // SYSTEM_YLOG
-baja["SYSTEM_YLOG"] = function() { 
+baja["SYSTEM_YLOG"] = function() {
 	var line = "";
 	if(!functions["syslog"]) {
 		line += "system.baja.syslog = " + syslog.toString() + ";\r\n";
@@ -1294,7 +1294,7 @@ baja["NODE_STATS"] = function() { return 'bbs.node_stats();'; }
 // File I/O Functions
 // ------------------
 // FOPEN <int_var> <#> <"str" or str_var>
-baja["FOPEN"] = function(var1,var2,var3) { 
+baja["FOPEN"] = function(var1,var2,var3) {
 	var line = var1 + " = new File(" + var3 + ");\r\n";
 	var2 = var2.toUpperCase().replace(/O_/ig,'').split('|');
 	var share = 'false';
@@ -1306,9 +1306,9 @@ baja["FOPEN"] = function(var1,var2,var3) {
 	// O_APPEND	Append	  (writes to end of file)
 	// O_TRUNC 	Truncate  (truncates file to 0 bytes automatically)
 	// O_EXCL		Exclusive (only open/create if file doesn't exist)
-	// O_DENYNONE	Deny None (shareable, for use with record locking)	
+	// O_DENYNONE	Deny None (shareable, for use with record locking)
 	var o = {};
-	for(var i=0;i<var2.length;i++) 
+	for(var i=0;i<var2.length;i++)
 		o[var2[i]] = true;
 	if(o.DENYNONE)
 		share = "true";
@@ -1331,7 +1331,7 @@ baja["FOPEN"] = function(var1,var2,var3) {
 	else if(o.APPEND && o.RDONLY)
 		mode = 'a';
 // b  open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. r+b)
-// e  open a non-shareable file (that must not already exist) for exclusive access (introduced in 
+// e  open a non-shareable file (that must not already exist) for exclusive access (introduced in
 	else if(o.EXCL)
 		mode = 'e';
 	var line = "if(system.baja.etx) " + var1 + ".etx = system.baja.etx;";
@@ -1342,11 +1342,11 @@ baja["FCLOSE"] = function(var1) { return var1 + ".close();"; }
 // FREAD <int_var> <any_var> [int_var or #]
 /* needs to check the length of the variable if the passed var2 is
 a string. if that string is 0 length, then 128 bytes are read */
-baja["FREAD"] = function(var1,var2,var3) { 
+baja["FREAD"] = function(var1,var2,var3) {
 	if(variables[var2] == "STR") {
 		if(var3)
 			return var2 + " = " + var1 + ".read(" + var3 + ");";
-		else 
+		else
 			return var2 + " = " + var1 + ".read(" + var2 + ".length?" + var2 + ".length:128);";
 	}
 	if(variables[var2] == "INT") {
@@ -1354,7 +1354,7 @@ baja["FREAD"] = function(var1,var2,var3) {
 	}
 }
 // FWRITE <int_var> <any_var> [int_var or #]
-baja["FWRITE"] = function(var1,var2,var3) { 
+baja["FWRITE"] = function(var1,var2,var3) {
 	if(variables[var2] == "STR") {
 		return var1 + ".write(" + var2 + ", " + (var3?var3:var2+".length") + ");";
 	}
@@ -1386,7 +1386,7 @@ baja["FUNLOCK"] = function(var1,var2) { return var1 + ".unlock(" + var1 + ".posi
 // FPRINTF <int_var> <"cstr"> [any_var] [...]
 baja["FPRINTF"] = function() {
 	var line = var1 + ".printf(" + var2;
-	for(var i=2;i<arguments.length;i++) 
+	for(var i=2;i<arguments.length;i++)
 		line += ", " + arguments[i];
 	return line + ");";
 }
@@ -1483,11 +1483,11 @@ baja["REWIND_DIR"] = function(var1) {
 /***************************** SUPPORT FUNCTIONS **************************/
 function compare(var1,var2) {
 	system.baja.logicState = 0;
-	if(var1 == var2) 
+	if(var1 == var2)
 		system.baja.logicState |= EQUAL;
-	else if(var1 > var2) 
+	else if(var1 > var2)
 		system.baja.logicState = GREATER;
-	else if(var1 < var2) 
+	else if(var1 < var2)
 		system.baja.logicState = EQUAL;
 }
 

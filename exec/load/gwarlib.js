@@ -1,10 +1,7 @@
 /************ Synchronet Global War game data library *************
 
-		by mcmlxxix - March 4, 2015 
+		by mcmlxxix - March 4, 2015
 		www.thebrokenbubble.com
-		
-		$Id: gwarlib.js,v 1.5 2015/03/05 22:19:10 mcmlxxix Exp $
-		$Revision: 1.5 $
 */
 
 /********************** API usage example**************************
@@ -25,32 +22,32 @@ if(myturns.length > -1) {
 */
 
 /************************ API reference ***************************
-	
-GWAR.loadGames(); 
+
+GWAR.loadGames();
 
 	called automatically upon loading script. populates GWAR.gameList object
 	with all game data contained in the specified path
-	
+
 GWAR.loadGame(gameNumber);
 
 	refreshes game data for specified game number within GWAR.gameList object
 	and returns the game object
-	
+
 GWAR.hasContinent(gameNumber,playerName,continent);
 
 	returns true or false depending on whether the specified player owns all
 	of the countries in the specified continent in the specified game
-	
+
 GWAR.hasCards(gameNumber,playerName);
-	
+
 	returns true or false depending on whether the specified player has a
 	redeemable set of cards in the specified game
-	
+
 GWAR.getPlayerTurns(playerName);
 
 	scans all GWAR.gameList for games whose next turn is the specified player.
 	returns an array of integers representing game numbers
-	
+
 GWAR.getGameTurn(gameNumber);
 
 	returns a GlobalWarPlayer object representing the player whose turn is next
@@ -66,7 +63,7 @@ function GlobalWar(path) {
 	this.gamePath = path;
 	this.gameList = {};
 	this.players = {};
-	
+
 	this.countryList = [
 		"Afghanistan","Alaska","Alberta","Argentina","Brazil","Mexico",
 		"China","Zaire","East Africa","Eastern Australia","Eastern United States",
@@ -75,8 +72,8 @@ function GlobalWar(path) {
 		"Germany","Yukon","Ontario","Peru","Quebec","Scandinavia","Siam",
 		"Siberia","South Africa","Italy","Ukraine","Ural","Venezuela",
 		"Western Australia","Spain","Western United States","Taimyr"
-	];	
-	
+	];
+
 	this.continentList = {
 		"north america":	[1,2,5,10,13,26,27,29,40],
 		"south america":	[3,4,28,37],
@@ -85,7 +82,7 @@ function GlobalWar(path) {
 		"asia":				[0,6,15,17,18,19,21,22,31,32,36,41],
 		"australia":		[9,16,23,38]
 	};
-	
+
 	/* constructor */
 	this.loadGames();
 	this.loadScores();
@@ -175,15 +172,15 @@ function GlobalWarGame(rootFileName, gameNumber) {
 
 	this.lastUpdate = 0;
 	this.gameNumber = gameNumber;
-	this.dataFile = new File(rootFileName + ".DAT"); 
-	this.logFile = new File(rootFileName + ".LOG"); 
-	this.msgFile = new File(rootFileName + ".MSG"); 
-	
+	this.dataFile = new File(rootFileName + ".DAT");
+	this.logFile = new File(rootFileName + ".LOG");
+	this.msgFile = new File(rootFileName + ".MSG");
+
 	/* Note: "daynum" refers to a real number which is the number of days since
 	January 1, 1985.   Example: a daynum of 1671.6039 works out to be
 	July 30, 1989 (1/1/85 + 1671 days).  Adding another .6039 days works out
 	to be 14.4936 hours, which puts us at about 2:29 pm. */
-		
+
 	this.baseDate = new Date("January 1, 1985 00:00:00");
 	this.dayMS = 24 * 60 * 60 * 1000;
 
@@ -194,9 +191,9 @@ function GlobalWarGame(rootFileName, gameNumber) {
 	this.countries = [];	/* lines 40 - 123 */
 	this.passwords = [];	/* lines 124 - 126 */
 	this.maxForts;			/* line 127 */
-	
+
 	/* populated after load */
-	this.settings = { 		
+	this.settings = {
 		team:false,
 		started:false,
 		completed:false,
@@ -207,7 +204,7 @@ function GlobalWarGame(rootFileName, gameNumber) {
 		sequential:true,
 		date:undefined
 	};
-	
+
 	/* constructor */
 	this.loadGame();
 	this.parseEvent();
@@ -216,7 +213,7 @@ function GlobalWarGame(rootFileName, gameNumber) {
 /* global war game data methods */
 GlobalWarGame.prototype.loadGame = function() {
 	var f = this.dataFile;
-	
+
 	f.open('r',true);
 	this.gameEvent = f.readln();
 	this.eventDay = f.readln();
@@ -235,13 +232,13 @@ GlobalWarGame.prototype.loadGame = function() {
 		this.players[p].system = f.readln();
 	}
 	f.close();
-	
+
 	this.lastUpdate = Date.now();
 }
 GlobalWarGame.prototype.parseEvent = function() {
 	this.settings.date = new Date(this.baseDate.getTime() + (this.dayMS * this.eventDay));
 	var event = this.gameEvent.substr(1);
-	if(event > 10000) 
+	if(event > 10000)
 		this.settings.sequential = false;
 	if(event.substr(1) > 1000)
 		this.settings.adjacent = true;
@@ -277,18 +274,18 @@ GlobalWarGame.prototype.parseEvent = function() {
 	}
 }
 GlobalWarGame.prototype.loadPlayer = function(file, playerNumber) {
-	var playerName = file.readln(); 
-	var vote = file.readln(); 
-	var lastTurn = file.readln(); 
+	var playerName = file.readln();
+	var vote = file.readln();
+	var lastTurn = file.readln();
 	var cards = {
 		general : file.readln(),
 		king : file.readln(),
 		queen : file.readln()
 	}
 	return new GlobalWarPlayer(
-		playerNumber, 
-		playerName, 
-		(vote=="T"?true:false), 
+		playerNumber,
+		playerName,
+		(vote=="T"?true:false),
 		new Date(this.baseDate.getTime() + this.dayMS * Number(lastTurn)),
 		cards
 	);
@@ -299,7 +296,7 @@ GlobalWarGame.prototype.loadCountry = function(file, countryNumber) {
 		armies:file.readln(),
 		owner:file.readln()-1
 	};
-}	
+}
 GlobalWarGame.prototype.getNextTurnPlayer = function() {
 	var nextPlayer;
 	for(var i=0;i<this.players.length;i++) {

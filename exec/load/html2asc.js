@@ -27,7 +27,7 @@ function html2asc(buf, mono, footnotes)
 		HEADING2		=""
 		HEADING3		=""
 		HEADING4		=""
-		HEADING5		=""	
+		HEADING5		=""
 		HEADING6		=""
 		BOLD			=""
 		ITALIC			=""
@@ -46,10 +46,10 @@ function html2asc(buf, mono, footnotes)
 
 	// Pre block (defeat white-space condensation)
 	buf=buf.replace(/<pre>([^<]*)<\/pre>/gi
-						,function (str, text) { 
+						,function (str, text) {
 							return  text.replace(/ /gi,"&#32;")
-										.replace(/\n/gi,"&#10;"); 
-						} 
+										.replace(/\n/gi,"&#10;");
+						}
 					);
 
 	// Condense white-space

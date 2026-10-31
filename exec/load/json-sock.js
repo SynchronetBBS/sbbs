@@ -4,7 +4,7 @@ Socket.prototype.VERSION = "$Revision: 1.18 $".replace(/\$/g,'').split(' ')[1];
 /* round trip packet time */
 Socket.prototype.latency = 0;
 /* one way (latency / 2) */
-Socket.prototype.time_offset = 0; 
+Socket.prototype.time_offset = 0;
 /* largest receivable packet */
 Socket.prototype.max_recv = 131072;
 /* timeout for socket.recvline() */
@@ -33,8 +33,8 @@ Socket.prototype.sendJSON = function(object) {
 };
 
 /*  socket prototype to automatically decode JSON data */
-Socket.prototype.recvJSON = function() { 
-	var packet=this.recvline(this.max_recv,this.recv_wait); 
+Socket.prototype.recvJSON = function() {
+	var packet=this.recvline(this.max_recv,this.recv_wait);
 	if(packet != null) {
 		if(this.debug_logging)
 			log(LOG_DEBUG,"<--" + this.descriptor + ": " + packet);
@@ -43,7 +43,7 @@ Socket.prototype.recvJSON = function() {
 			if(packet.scope && packet.scope.toUpperCase() == "SOCKET") {
 				this.process(packet);
 			}
-		} 
+		}
 		catch(e) {
 			log(LOG_ERROR,format("recvJSON(%s): %s '%s'", this.descriptor, e, packet));
 		}
@@ -60,7 +60,7 @@ Socket.prototype.process = function(packet) {
 	}
 }
 
-/* ping pong */		
+/* ping pong */
 Socket.prototype.pingOut = function(func) {
 	var ping={
 		scope:"SOCKET",

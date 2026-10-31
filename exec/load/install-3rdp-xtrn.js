@@ -26,10 +26,10 @@ function scan(options)
 		options.src_dir = fullpath(system.ctrl_dir + "../xtrn/3rdp-install/");
 	if(!options.xtrn_dir)
 		options.xtrn_dir = fullpath(system.ctrl_dir + "../xtrn/");
-	
+
 	var out = [];
 	var exe_list = {};
-	
+
 	directory(options.src_dir + '*.ini').forEach(function (e) {
 		const f = new File(e);
 		if (!f.open('r')) {

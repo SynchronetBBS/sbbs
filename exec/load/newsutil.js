@@ -1,4 +1,4 @@
-// Generates and parses USENET news headers 
+// Generates and parses USENET news headers
 // for use with newslink.js and nntpservice.js
 
 require("mailutil.js", 'mail_get_name');
@@ -148,7 +148,7 @@ function parse_news_header(hdr, line)
 	if((line.charAt(0)==' ' || line.charAt(0)=='\t') && hdr.field_list) {
 		/* "folded" header field */
 		hdr.field_list.push(
-			{	type: RFC822HEADER, 
+			{	type: RFC822HEADER,
 				data: line
 			}
 		);
@@ -160,7 +160,7 @@ function parse_news_header(hdr, line)
 
 	data=line.slice(sp+1);
 	while(data.charAt(0)==' '	// trim prepended spaces
-		|| data.charAt(0)=='\t')	
+		|| data.charAt(0)=='\t')
 		data=data.slice(1);
 	data=truncsp(data);			// trim trailing spaces
 
@@ -250,9 +250,9 @@ function parse_news_header(hdr, line)
 			if(hdr.extra_headers==undefined)
 				hdr.extra_headers={};
 			hdr.extra_headers[line.toLowerCase()]=
-				{	type: RFC822HEADER, 
+				{	type: RFC822HEADER,
 					get data() { return(this.hdr_name+': '+this.hdr_data); },
-					set data(v) { 
+					set data(v) {
 						var m=v.split(/:\s*/,2);
 						if(m.length==1)
 							this.hdr_data=v;

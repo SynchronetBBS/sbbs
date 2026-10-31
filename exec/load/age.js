@@ -6,7 +6,7 @@ function seconds(t, adjust_for_zone)
 	var	now = time();
 	if(adjust_for_zone)
 		now += new Date().getTimezoneOffset() * 60
-	
+
 	var diff = now - Number(t);
 	if(diff < 0) {
 		past = system.text(InTheFuture);
@@ -46,7 +46,7 @@ function string(t, adjust_for_zone)
 	var	units = system.text(Years);
 	var value;
 	var diff = seconds(t, adjust_for_zone);
-	
+
 	if(diff < 60) {
 		value = format("%.0f", diff);
 		units = system.text(Seconds);
@@ -64,7 +64,7 @@ function string(t, adjust_for_zone)
 		units = system.text(Months);
 	} else
 		value = format("%.1f", diff / (60.0 * 60.0 * 24.0 * 365.25));
-	
+
 	return(format(system.text(AgeOfPostedItem), value, units, past));
 }
 

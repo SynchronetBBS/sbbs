@@ -974,7 +974,7 @@ function ANSIAttrsToSyncAttrs(pText)
 // Return value: Boolean - Whether or not the text has ANSI codes in it
 function textHasANSICodes(pText)
 {
-	
+
 	return(/\033\[[0-9]+[mM]/.test(pText) || /\033\[[0-9]+(;[0-9]+)+[mM]/.test(pText) ||
 	       /\033\[[0-9]+[aAbBcCdD]/.test(pText) || /\033\[[0-9]+;[0-9]+[hHfF]/.test(pText) ||
 	       /\033\[[sSuUkK]/.test(pText) || /\033\[2[jJ]/.test(pText));

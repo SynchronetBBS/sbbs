@@ -230,7 +230,7 @@ new function() {
 	this.ftp.bind_retry_delay = f.iniGetValue(sect, "BindRetryDelay", this.bind_retry_delay);
 	this.ftp.login_attempt = get_login_attempt_settings(f, sect, this);
 	this.ftp.max_concurrent_connections = f.iniGetValue(sect, "MaxConcurrentConnections", 0);
-	
+
 	sect = "Mail";
 	this.mail.autostart = f.iniGetValue(sect, "AutoStart", true);
 	this.mail.outgoing4 = f.iniGetValue(sect, "OutboundInterface", this.outgoing4);

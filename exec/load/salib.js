@@ -1,6 +1,5 @@
 /*
  * http://spamassassin.apache.org/full/3.0.x/dist/spamd/PROTOCOL
- * $Id: salib.js,v 1.28 2016/04/24 00:55:45 deuce Exp $
  */
 
 require('sockdefs.js', 'SOCK_STREAM');

@@ -143,7 +143,7 @@ Object.defineProperty(Graphic.prototype, "BIN", {
 
 /*
  * ANSI property is the string representation of the graphic as ANSI
- * 
+ *
  * NOTE: Reading the ANSI property generates ANSI sequences which can put
  *       printable characters in the last column of the display (e.g. col 80)
  *       potentially resulting in extra blank lines in some terminals.
@@ -219,7 +219,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 						case 41:
 							bg = obj.defs.BG_RED;
 							break;
-						case 42: 
+						case 42:
 							bg = obj.defs.BG_GREEN;
 							break;
 						case 43:
@@ -287,7 +287,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 			'A':function(params) {
 				if (params[0] === undefined || params[0] === '')
 					params[0] = 1;
-	
+
 				y -= parseInt(params[0], 10);
 				if (y < 0)
 					y = 0;
@@ -342,7 +342,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 		var ch;
 		var doorway_char = false;
 
-		/* parse 'ATCODES'?? 
+		/* parse 'ATCODES'??
 		ans = ans.replace(/@(.*)@/g,
 			function (str, code, offset, s) {
 				return bbs.atcode(code);
@@ -357,7 +357,7 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 					cmd = m[2];
 					if (paramstr.search(/^[<=>?]/) != 0) {
 						params=paramstr.split(/;/);
-	
+
 						if (std_cmds[cmd] !== undefined)
 							std_cmds[cmd](params,this);
 					}
@@ -427,7 +427,7 @@ Graphic.prototype.ctrl_a_sequence = function(attr, curattr)
 	if(attr == curattr)
 		return '';
 	var str = '';
-	if(((curattr&this.defs.BLINK) && !(attr&this.defs.BLINK)) 
+	if(((curattr&this.defs.BLINK) && !(attr&this.defs.BLINK))
 		|| ((curattr&this.defs.HIGH) && !(attr&this.defs.HIGH))) {
 		str += "\x01N";
 		curattr = this.defs.LIGHTGRAY;
@@ -493,7 +493,7 @@ Graphic.prototype.ctrl_a_sequence = function(attr, curattr)
 		}
 	}
 	return str;
-}	
+}
 
 Object.defineProperty(Graphic.prototype, "MSG", {
 	get: function() {
@@ -675,7 +675,7 @@ Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 		}
 		var randy=random(placeholder[randx].length);
 		var position=placeholder[randx][randy];
-		if(!position) 
+		if(!position)
 			continue;
 		if(position.x != console.screen_columns	|| position.y != console.screen_rows) {
 			if(xpos+position.x >= console.screen_columns && ypos+position.y >= console.screen_rows) {
@@ -812,10 +812,10 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 			}
 		);
 	}
-	
+
 	/* wrap text at graphic width */
 	txt=word_wrap(txt,this.width);
-	
+
 	/* ToDo: Expand \1D, \1T, \1<, \1Z */
 	/* ToDo: "Expand" (ie: remove from string when appropriate) per-level/per-flag stuff */
 	/* ToDo: Strip ANSI (I betcha @-codes can slap it in there) */
@@ -829,7 +829,7 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 			this.scroll();
 			y--;
 		}
-		
+
 		ch=txt[p++];
 		switch(ch) {
 			case '\x01':		/* CTRL-A code */

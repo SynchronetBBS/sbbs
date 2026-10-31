@@ -1210,17 +1210,17 @@ if (dk.console.remote_io === undefined) {
 require("local_console.js", "dk_local_console_loaded");
 
 // Fun stuff from sbbsdef.js...
-log.EMERG       =0;			/* system is unusable                       */   
-log.ALERT       =1;			/* action must be taken immediately         */   
-log.CRIT        =2;			/* critical conditions                      */   
-log.CRITICAL    =log.CRIT;	/* critical conditions                      */   
-log.ERR         =3;			/* error conditions                         */   
-log.ERROR       =log.ERR;	/* error conditions                         */   
-log.WARNING     =4;			/* warning conditions                       */   
-log.WARN        =log.WARNING;/* warning conditions                       */   
-log.NOTICE      =5;			/* normal but significant condition         */   
-log.INFO        =6;			/* informational                            */   
-log.DEBUG       =7;			/* debug-level messages                     */   
+log.EMERG       =0;			/* system is unusable                       */
+log.ALERT       =1;			/* action must be taken immediately         */
+log.CRIT        =2;			/* critical conditions                      */
+log.CRITICAL    =log.CRIT;	/* critical conditions                      */
+log.ERR         =3;			/* error conditions                         */
+log.ERROR       =log.ERR;	/* error conditions                         */
+log.WARNING     =4;			/* warning conditions                       */
+log.WARN        =log.WARNING;/* warning conditions                       */
+log.NOTICE      =5;			/* normal but significant condition         */
+log.INFO        =6;			/* informational                            */
+log.DEBUG       =7;			/* debug-level messages                     */
 
 directory.MARK		=(1<<1);	/* Append a slash to each name.  */
 directory.NOSORT	=(1<<2);	/* Don't sort the names.  */

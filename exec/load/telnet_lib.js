@@ -1,5 +1,3 @@
-// $Id: telnet_lib.js,v 1.1 2015/08/31 20:12:41 rswindell Exp $
-
 var IAC	=255	/* 0xff - Interpret as command */
 var DONT	=254	/* 0xfe - Don't do option */
 var DO	=253	/* 0xfd - Do option */

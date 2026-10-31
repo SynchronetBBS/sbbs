@@ -1,4 +1,3 @@
-// $Id: cardlib.js,v 1.7 2010/06/09 17:47:31 mcmlxxix Exp $
 /*
 	A library for dealing with a traditional deck of cards in various ways.
 	Licensed under the GPLv2 by Randolph E. Sommerfeld <cyan@rrx.ca>
@@ -65,7 +64,7 @@ function Card(value, suit) {
 	this.suit = suit;
 	this.color = "";
 	this.char = VALUE_CHAR[value] + SUIT_CHAR[suit];
-	
+
 	if(suit==HEARTS || suit==DIAMONDS)	this.color=String.fromCharCode(3)+"5";
 	else if(suit==SPADES || suit==CLUBS)	this.color=String.fromCharCode(3)+"1";
 }
@@ -129,7 +128,7 @@ function Rank(cards) {
 			count[cards[c].value] = 0;
 		count[cards[c].value]++;
 	}
-	
+
 	if (count[ACE] && count[TWO] && count[THREE] && count[FOUR]
 		&& count[FIVE]) {
 			hand.rank |= STRAIGHT;
@@ -206,7 +205,7 @@ function Rank(cards) {
 		hand.rank=RF;
 	else if (hand.rank&STRAIGHT_FLUSH)
 		hand.rank=SF;
-	else if (hand.rank&FOUR_OF_A_KIND) 
+	else if (hand.rank&FOUR_OF_A_KIND)
 		hand.rank=FK;
 	else if (hand.rank&FULL_HOUSE)
 		hand.rank=FH;
@@ -226,12 +225,12 @@ function Rank(cards) {
 	if(hand.rank!=ST)
 		hand.str=RANKS[hand.rank];
 
-	/* Push contents of "count" array into 
-		rank.group array using the count as 
+	/* Push contents of "count" array into
+		rank.group array using the count as
 		the array index. unshift() will leave
 		the cards sorted from high to low. */
-	for(c in count) { 
-		hand.group[count[c]].unshift(c); 
+	for(c in count) {
+		hand.group[count[c]].unshift(c);
 	}
 	return hand;
 }

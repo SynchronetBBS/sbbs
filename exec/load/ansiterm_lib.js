@@ -19,7 +19,7 @@ var defs = {
 		blink_alt_charset:		34,
 		no_blink:				35,
 	},
-	
+
 	mouse_reporting: {
 		x10_compatible:			9,
 		normal_tracking:		1000,

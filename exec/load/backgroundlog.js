@@ -1,6 +1,6 @@
 load("sbbsdefs.js");
 
-js.global.log = function(log_level, message) { 
+js.global.log = function(log_level, message) {
 	if(js.global.parent_queue != undefined) {
 		parent_queue.write({LOG_LEVEL:log_level,message:message},"log");
 	}

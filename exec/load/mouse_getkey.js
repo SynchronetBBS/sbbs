@@ -1,5 +1,3 @@
-// $Id: mouse_getkey.js,v 1.5 2020/05/01 19:42:31 rswindell Exp $
-
 function mouse_getkey(mode, timeout, enabled)
 {
 	var key;
@@ -21,7 +19,7 @@ function mouse_getkey(mode, timeout, enabled)
 	if (safe_mode != mode) {
 		throw new Error("Invalid mode "+mode+" for mouse_getkey()");
 	}
-	
+
 	function mouse_enable(enable)
 	{
 		const mouse_passthru = (CON_MOUSE_CLK_PASSTHRU | CON_MOUSE_REL_PASSTHRU);

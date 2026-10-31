@@ -1,5 +1,3 @@
-// $Id: cterm_lib.js,v 1.24 2020/06/06 08:37:50 rswindell Exp $
-
 // Library for dealing with CTerm/SyncTERM enhanced features (e.g. fonts)
 
 load('sbbsdefs.js');
@@ -92,7 +90,7 @@ function query(request)
 /*
  * Like query() but you pass a string of intermediate bytes and final
  * byte, and it waits for and returns just that response.
- * 
+ *
  * It also requests a DSR to terminate the request, so we almost never
  * timeout.
  */
@@ -612,7 +610,7 @@ function xbin_draw(image, xpos, ypos, fg_color, bg_color, delay, cycle)
 		}
 		this.redefine_palette(palette);
 	}
-	
+
 	ansiterm.send("ext_mode", "clear", "cursor");
 	ansiterm.send("ext_mode", "clear", "autowrap");
 //	log(LOG_DEBUG, 'CTerm Enabled modes ' + this.query_mode());

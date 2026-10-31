@@ -1,5 +1,3 @@
-// $Id: termcapture_lib.js,v 1.7 2019/03/22 14:23:53 rswindell Exp $
-
 // Currently, only supports Telnet and RLogin
 
 var ESC = 27
@@ -17,7 +15,7 @@ var max_line_length = 256*1024;
 var error="";
 
 function capture()
-{ 
+{
 	if(!address) {
 		error = "No address specified";
 		return false;
@@ -131,7 +129,7 @@ function capture()
         if(curline.length >= this.max_line_length) {
             log(LOG_DEBUG,"Stopping capture on line length of " + curline.length);
             stopcause = "Max line length reached:" + this.max_line_length + " bytes";
-            break; 
+            break;
         }
         lastbyte=byte;
     }
