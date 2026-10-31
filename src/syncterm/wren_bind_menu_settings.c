@@ -1447,6 +1447,7 @@ insert_web_list(size_t index, const char *name, const char *uri)
 		return false;
 	}
 	settings.webgets = items;
+	items[count] = NULL;
 	memmove(&items[index + 1], &items[index],
 	    (count - index + 1) * sizeof(*items));
 	items[index] = entry;

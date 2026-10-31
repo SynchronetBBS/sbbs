@@ -537,6 +537,18 @@ if(UNIX AND NOT WITHOUT_SDL)
 	add_test(NAME termtest
 		COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run_termtest.sh
 			$<TARGET_FILE:syncterm> $<TARGET_FILE:termtest>)
+	# This fixture isolates configuration and disables the cache through XDG.
+	if(NOT APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "Haiku")
+		add_test(NAME menu_web_lists_test
+			COMMAND ${CMAKE_COMMAND} -E env
+				--unset=DISPLAY --unset=WAYLAND_DISPLAY
+				--unset=XAUTHORITY --unset=XDG_RUNTIME_DIR
+				SYNCTERM=$<TARGET_FILE:syncterm>
+				MALLOC_CONF=junk:true MALLOC_PERTURB_=165
+				${CMAKE_CURRENT_SOURCE_DIR}/run_wren.sh --menu-no-cache
+				scripts/menu_web_lists_test.wren)
+		set_tests_properties(menu_web_lists_test PROPERTIES TIMEOUT 45)
+	endif()
 endif()
 
 install(TARGETS syncterm DESTINATION bin)

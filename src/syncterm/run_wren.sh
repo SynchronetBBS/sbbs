@@ -11,7 +11,7 @@
 # Exit code: ordinary scripts succeed if no "[wren] " lines hit stderr.
 # wrentest.wren succeeds only after reporting a TOTAL with zero failures.
 #
-# Usage: run_wren.sh [--menu|--menu-write|--picker] <script.wren>
+# Usage: run_wren.sh [--menu|--menu-write|--menu-no-cache|--picker] <script.wren>
 #
 # The harness uses the GNUmakefile-default debug build at
 #     clang.freebsd.amd64.exe.debug/syncterm
@@ -22,12 +22,15 @@ set -u
 
 MENU_SUITE=false
 MENU_WRITABLE=false
+MENU_NO_CACHE=false
 PICKER_SUITE=false
 if [ "${1:-}" = "--menu" ] || [ "${1:-}" = "--menu-write" ] ||
-    [ "${1:-}" = "--picker" ]; then
+    [ "${1:-}" = "--menu-no-cache" ] || [ "${1:-}" = "--picker" ]; then
 	MENU_SUITE=true
 	if [ "$1" = "--menu-write" ]; then
 		MENU_WRITABLE=true
+	elif [ "$1" = "--menu-no-cache" ]; then
+		MENU_NO_CACHE=true
 	elif [ "$1" = "--picker" ]; then
 		PICKER_SUITE=true
 	fi
@@ -36,7 +39,7 @@ fi
 
 SCRIPT="${1:-}"
 if [ -z "$SCRIPT" ]; then
-	echo "Usage: $0 [--menu|--menu-write|--picker] <script.wren>" >&2
+	echo "Usage: $0 [--menu|--menu-write|--menu-no-cache|--picker] <script.wren>" >&2
 	exit 1
 fi
 
@@ -158,7 +161,16 @@ fi
 # personal SyncTERM scripts directory.
 export XDG_DATA_HOME="$DATA_HOME"
 export XDG_CACHE_HOME="$DATA_HOME/cache"
-mkdir -p "$XDG_CACHE_HOME"
+if $MENU_NO_CACHE; then
+	# Force the documented no-cache add path without an HTTP dependency.
+	: > "$XDG_CACHE_HOME"
+	export XDG_CONFIG_HOME="$DATA_HOME/config"
+	mkdir -p "$XDG_CONFIG_HOME/syncterm"
+	# Omitting WebLists leaves settings.webgets NULL, as on a new install.
+	printf '[SyncTERM]\nAudioModes=0\n' > "$XDG_CONFIG_HOME/syncterm/syncterm.ini"
+else
+	mkdir -p "$XDG_CACHE_HOME"
+fi
 
 export SDL_VIDEODRIVER=offscreen
 export SDL_RENDER_DRIVER=software
