@@ -694,6 +694,13 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	}
 
 	js_PrepareToExecute(js_cx, js_glob, path, startup_dir, js_scope);
+	// A script may clear js.auto_terminate / js.terminate_on_disconnect for its
+	// own run (dorkit.js does), but js_callback is per-node and shared by every
+	// script this node executes, so a change left behind would disable the
+	// disconnect/recycle aborts for the rest of the session:
+	// scope it to this script by restoring the flags when it returns.
+	JSBool auto_terminate = js_callback.auto_terminate;
+	JSBool terminate_on_disconnect = js_callback.terminate_on_disconnect;
 	events = js_callback.events;
 	js_callback.events = NULL;
 	rq_head = js_callback.rq_head;
@@ -753,6 +760,8 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 
 	JS_GC(js_cx);
 
+	js_callback.auto_terminate = auto_terminate;
+	js_callback.terminate_on_disconnect = terminate_on_disconnect;
 	js_callback.events = events;
 	js_callback.rq_head = rq_head;
 	js_callback.rq_tail = rq_tail;

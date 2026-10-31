@@ -1,6 +1,12 @@
 /*jslint bitwise, this, devel, getset, for*/
 // TODO: Auto-pause stuff...
 
+// dorkit handles disconnects itself (see Private_connection_check), so turn
+// off the host's automatic script termination for this run only: the flags
+// are per-node and shared by every script the session runs, so put the
+// caller's values back when this script exits.
+js.on_exit("js.auto_terminate = " + js.auto_terminate + ";");
+js.on_exit("js.terminate_on_disconnect = " + js.terminate_on_disconnect + ";");
 js.auto_terminate = false;
 js.terminate_on_disconnect = false;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");

@@ -200,6 +200,11 @@
   Synchronet FOSSIL/UART driver), without requiring distinct node
   number ranges; an updated `sbbsexec.dll` is needed on the second
   instance
+- A JavaScript door that turns off `js.auto_terminate` or
+  `js.terminate_on_disconnect` for its own run (e.g. dorkit-based
+  doors such as LORD) no longer leaves them off for the rest of the
+  session: a later script could then keep a node busy for hours
+  after its caller disconnected, and ignore recycle requests
 - WWIV `CHAIN.TXT` drop file: the time-of-call and time-used fields
   (lines 24 and 25) are now populated rather than always zero
 - `PCBOARD.SYS` drop file: the download-allowance, conference and

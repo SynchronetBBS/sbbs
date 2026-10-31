@@ -177,7 +177,7 @@ displayProgramLogo(true, false);
 // In a loop until the user chooses to exit, show the main menu and let the user make
 // a choice of what to do
 var continueOn = true;
-while (continueOn)
+while (continueOn && bbs.online)
 {
 	switch (doMainMenu())
 	{
@@ -708,9 +708,12 @@ function doMainMenu()
 	var validKeys = "123qQ";
 	if (user.is_sysop)
 		validKeys += "9"; // Clear scores
-	var userChoice = console.getkeys(validKeys, -1, K_UPPER).toString();
+	var userChoice = console.getkeys(validKeys, -1, K_UPPER);
 	console.attributes = "N";
-	if (userChoice.length == 0 || userChoice == "Q")
+	// getkeys() returns a number (not a string) when input was aborted or
+	// the user is no longer online; treat either as quitting rather than
+	// falling through to the ACTION_PLAY default and looping forever.
+	if (!bbs.online || typeof(userChoice) !== "string" || userChoice.length == 0 || userChoice == "Q")
 		menuAction = ACTION_QUIT;
 	else if (userChoice == "1")
 		menuAction = ACTION_PLAY;
