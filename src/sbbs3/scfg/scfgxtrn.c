@@ -2416,6 +2416,8 @@ void xedit_cfg()
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "RBBS/QuickBBS", "DORINFO1.DEF");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "TriBBS", "TRIBBS.SYS");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "Mystic", "DOOR32.SYS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "BBSdev", "BBSDEV.DRP");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "Synchronet", "DOORDROP.INI");
 					opt[k][0] = 0;
 					k = cfg.xedit[i]->type;
 					uifc.helpbuf =
@@ -2434,7 +2436,7 @@ void xedit_cfg()
 							cfg.xedit[i]->misc |= XTRN_NATIVE;
 						uifc.changes = TRUE;
 					}
-					if (cfg.xedit[i]->type) {
+					if (cfg.xedit[i]->type && cfg.xedit[i]->type != XTRN_BBSDEV) {
 lowercase_filename:
 						k = (cfg.xedit[i]->misc & XTRN_LWRCASE) ? 0:1;
 						k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0, "Lowercase Filename", uifcYesNoOpts);

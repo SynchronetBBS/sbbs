@@ -1310,6 +1310,7 @@ public:
 	bool	user_event(user_event_t);			/* Executes user event(s) */
 	void	moduserdat(uint xtrnnum);
 	const char* xtrn_dropdir(const xtrn_t*, char* buf, size_t);
+	bool	dos_drop_path(const char* host_path, uint32_t dir_misc, const char* dos_startup_dir, char* buf, size_t);
 
 	/* logfile.cpp */
 	void	logentry(const char *code,const char *entry);

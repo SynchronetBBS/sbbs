@@ -1922,6 +1922,38 @@ const char* sbbs_t::xtrn_dropdir(const xtrn_t* xtrn, char* buf, size_t maxlen)
 }
 
 /****************************************************************************/
+/* The path a DOS program sees for the drop file written at host_path,		*/
+/* in the drop file directory that dir_misc selects (XTRN_STARTUPDIR,		*/
+/* XTRN_TEMP_DIR, else the node directory)									*/
+/****************************************************************************/
+bool sbbs_t::dos_drop_path(const char* host_path, uint32_t dir_misc, const char* dos_startup_dir, char* buf, size_t size)
+{
+#if defined(__linux__)
+	if (dir_misc & XTRN_STARTUPDIR)
+		snprintf(buf, size, "%s%s", dos_startup_dir, getfname(host_path));
+	else if (dir_misc & XTRN_TEMP_DIR)
+		snprintf(buf, size, "%s%s", DOSEMU_TEMP_DIR, getfname(host_path));
+	else
+		snprintf(buf, size, "%s\\%s", DOSEMU_NODE_DRIVE, getfname(host_path));
+#elif defined(__FreeBSD__)
+	if (dir_misc & XTRN_STARTUPDIR)
+		snprintf(buf, size, "%s%s", DOSCMD_XTRN_DIR, getfname(host_path));
+	else if (dir_misc & XTRN_TEMP_DIR)
+		snprintf(buf, size, "%s%s", DOSCMD_TEMP_DIR, getfname(host_path));
+	else
+		snprintf(buf, size, "%s%s", DOSCMD_NODE_DIR, getfname(host_path));
+#elif defined(_WIN32)
+	if (GetShortPathName(host_path, buf, size) == 0) {
+		errormsg(WHERE, ERR_CHK, host_path, 0);
+		return false;
+	}
+#else
+	strlcpy(buf, host_path, size);
+#endif
+	return true;
+}
+
+/****************************************************************************/
 /* This function handles configured external program execution. 			*/
 /****************************************************************************/
 bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
@@ -2098,44 +2130,26 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	char     drop_file[MAX_PATH + 1];
 	char     startup_dir[MAX_PATH + 1];
 	uint32_t drop_misc = doordrop_misc(&cfg, cfg.xtrn[xtrnnum]);
+	bool     dos = cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*'
+	               && !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE);
 #if defined(__linux__)
-	if (cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*' && !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
+	if (dos) {
 		SAFEPRINTF2(startup_dir, "%s\\%s", DOSEMU_XTRN_DRIVE, getdirname(cfg.xtrn[xtrnnum]->path));
 		backslash(startup_dir);
-		if (drop_misc & XTRN_STARTUPDIR)
-			SAFEPRINTF2(drop_file, "%s%s", startup_dir, getfname(path));
-		else if (drop_misc & XTRN_TEMP_DIR)
-			SAFEPRINTF2(drop_file, "%s%s", DOSEMU_TEMP_DIR, getfname(path));
-		else
-			SAFEPRINTF2(drop_file, "%s\\%s", DOSEMU_NODE_DRIVE, getfname(path));
 	}
 	else
 #endif
 	{
 		cmdstr(cfg.xtrn[xtrnnum]->path, "", "", startup_dir);
-		SAFECOPY(drop_file, path);
 	}
-#if defined(__FreeBSD__)
-	if (drop_env
-	    && cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*'
-	    && !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
-		if (drop_misc & XTRN_STARTUPDIR)
-			SAFEPRINTF(drop_file, "C:\\%s", getfname(path));
-		else if (drop_misc & XTRN_TEMP_DIR)
-			SAFEPRINTF(drop_file, "D:\\TEMP\\%s", getfname(path));
-		else
-			SAFEPRINTF(drop_file, "D:\\%s", getfname(path));
-	}
-#elif defined(_WIN32)
-	if (drop_env
-	    && cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*'
-	    && !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
-		if (GetShortPathName(path, drop_file, sizeof(drop_file)) == 0) {
-			errormsg(WHERE, ERR_CHK, path, 0);
-			return false;
-		}
-	}
+	SAFECOPY(drop_file, path);
+#if defined(__linux__)
+	bool map_dos_path = dos; // %F is the DOSEMU path for every drop file type
+#else
+	bool map_dos_path = dos && drop_env;
 #endif
+	if (map_dos_path && !dos_drop_path(path, drop_misc, startup_dir, drop_file, sizeof drop_file))
+		return false;
 	if (action != NODE_PCHT) {
 		if (getnodedat(cfg.node_num, &thisnode, true)) {
 			thisnode.action = NODE_XTRN;

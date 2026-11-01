@@ -481,8 +481,9 @@
   → SendMail Support, for outbound DKIM message signing
 - New **Terminal Server → Max Concurrent Connections...**
   submenu (threshold, duration, silent variant)
-- New `DOORDROP.INI` **BBS Drop File Type** for online programs,
-  with a **Support UTF-8 Encoding** option for its text values
+- New `DOORDROP.INI` **BBS Drop File Type** for online programs and
+  external editors (`BBSDEV.DRP` is now offered for editors too), with a
+  **Support UTF-8 Encoding** option for online programs that use it
 - New **Message/File Total Interval** option under System → Advanced
   Options, setting how long the system-wide message and file totals
   are re-used before being counted again (default `10m`, `0` to count

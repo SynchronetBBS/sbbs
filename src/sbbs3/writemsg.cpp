@@ -610,10 +610,39 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			}
 		}
 		editor_inf(useron_xedit, to, from, subj, mode, subnum_is_valid(subnum) ? cfg.sub[subnum]->sname : nulstr, tagfile);
+		char        drop_host[MAX_PATH + 1] = "";
+		char        drop_file[MAX_PATH + 1] = "";
+		const char* drop_var = NULL;
 		if (cfg.xedit[useron_xedit - 1]->type) {
 			gettimeleft();
-			xtrndat(mode & WM_ANON ? text[Anonymous]:from, cfg.node_dir, cfg.xedit[useron_xedit - 1]->type
-			        , timeleft, cfg.xedit[useron_xedit - 1]->misc);
+			bool wrote = xtrndat(mode & WM_ANON ? text[Anonymous]:from, cfg.node_dir, cfg.xedit[useron_xedit - 1]->type
+			                     , timeleft, cfg.xedit[useron_xedit - 1]->misc);
+			if (cfg.xedit[useron_xedit - 1]->type == XTRN_BBSDEV)
+				drop_var = "BBSDEV_DRP";
+			else if (cfg.xedit[useron_xedit - 1]->type == XTRN_DOORDROP)
+				drop_var = "DOORDROP_INI";
+			if (drop_var != NULL) {
+				if (!wrote) {
+					free(buf);
+					return false;
+				}
+				SAFECOPY(str, cfg.xedit[useron_xedit - 1]->type == XTRN_BBSDEV ? "BBSDEV.DRP" : "DOORDROP.INI");
+				if ((cfg.xedit[useron_xedit - 1]->misc & XTRN_LWRCASE) && cfg.xedit[useron_xedit - 1]->type != XTRN_BBSDEV)
+					strlwr(str);
+				SAFEPRINTF2(drop_host, "%s%s", cfg.node_dir, str);
+				if (!isabspath(drop_host)) {
+					lprintf(LOG_ERR, "Drop file path is not absolute: %s", drop_host);
+					free(buf);
+					return false;
+				}
+				SAFECOPY(drop_file, drop_host);
+				if (cfg.xedit[useron_xedit - 1]->rcmd[0] != '?' && cfg.xedit[useron_xedit - 1]->rcmd[0] != '*'
+				    && !(cfg.xedit[useron_xedit - 1]->misc & XTRN_NATIVE)
+				    && !dos_drop_path(drop_host, /* dir_misc: */ 0, NULL, drop_file, sizeof drop_file)) {
+					free(buf);
+					return false;
+				}
+			}
 		}
 
 		if (cfg.xedit[useron_xedit - 1]->misc & XTRN_STDIO) {
@@ -642,8 +671,10 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		auto        savsubnum = smb.subnum;
 		smb.subnum = subnum;    /* Allow JS msgeditors to use bbs.smb_sub* */
 		const char* cmd = cmdstr(cfg.xedit[useron_xedit - 1]->rcmd, msgtmp, nulstr, NULL, ex_mode);
-		int         result = external(cmd, ex_mode, cfg.node_dir);
+		int         result = external(cmd, ex_mode, cfg.node_dir, drop_var, drop_var == NULL ? NULL : drop_file);
 		smb.subnum = savsubnum;
+		if (cfg.xedit[useron_xedit - 1]->type == XTRN_DOORDROP)
+			(void)remove(drop_host);
 		lprintf(LOG_DEBUG, "'%s' returned %d", cmd, result);
 		rioctl(IOSM | PAUSE | ABORT);
 

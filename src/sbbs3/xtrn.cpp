@@ -1357,30 +1357,30 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 			return -1;
 		}
 		if (startup_dir[0])
-			fprintf(doscmdrc, "assign C: %s\n", startup_dir);
+			fprintf(doscmdrc, "assign %s %s\n", DOSCMD_XTRN_DRIVE, startup_dir);
 		else
-			fprintf(doscmdrc, "assign C: .\n");
+			fprintf(doscmdrc, "assign %s .\n", DOSCMD_XTRN_DRIVE);
 
-		fprintf(doscmdrc, "assign D: %s\n", cfg.node_dir);
+		fprintf(doscmdrc, "assign %s %s\n", DOSCMD_NODE_DRIVE, cfg.node_dir);
 		SAFECOPY(str, cfg.exec_dir);
 		if ((p = strrchr(str, '/')) != NULL)
 			*p = 0;
 		if ((p = strrchr(str, '/')) != NULL)
 			*p = 0;
-		fprintf(doscmdrc, "assign E: %s\n", str);
+		fprintf(doscmdrc, "assign %s %s\n", DOSCMD_ROOT_DRIVE, str);
 
 		/* setup doscmd env here */
 		/* ToDo Note, this assumes that the BBS uses standard dir names */
-		fprintf(doscmdrc, "DSZLOG=E:\\node%d\\PROTOCOL.LOG\n", cfg.node_num);
-		fprintf(doscmdrc, "SBBSNODE=D:\\\n");
-		fprintf(doscmdrc, "SBBSCTRL=E:\\ctrl\\\n");
-		fprintf(doscmdrc, "SBBSDATA=E:\\data\\\n");
-		fprintf(doscmdrc, "SBBSEXEC=E:\\exec\\\n");
+		fprintf(doscmdrc, "DSZLOG=%snode%d\\PROTOCOL.LOG\n", DOSCMD_ROOT_DIR, cfg.node_num);
+		fprintf(doscmdrc, "SBBSNODE=%s\n", DOSCMD_NODE_DIR);
+		fprintf(doscmdrc, "SBBSCTRL=%sctrl\\\n", DOSCMD_ROOT_DIR);
+		fprintf(doscmdrc, "SBBSDATA=%sdata\\\n", DOSCMD_ROOT_DIR);
+		fprintf(doscmdrc, "SBBSEXEC=%sexec\\\n", DOSCMD_ROOT_DIR);
 		if (drop_path != NULL)
 			fprintf(doscmdrc, "%s=%s\n", drop_var, drop_path);
 		fprintf(doscmdrc, "SBBSNNUM=%d\n", cfg.node_num);
 		fprintf(doscmdrc, "PCBNODE=%d\n", cfg.node_num);
-		fprintf(doscmdrc, "PCBDRIVE=D:\n");
+		fprintf(doscmdrc, "PCBDRIVE=%s\n", DOSCMD_NODE_DRIVE);
 		fprintf(doscmdrc, "PCBDIR=\\\n");
 
 		fclose(doscmdrc);

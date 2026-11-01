@@ -841,6 +841,15 @@ enum {                            // readmail and delmailidx which types
 #define DOSEMU_TEMP_DIR     DOSEMU_NODE_DRIVE "\\TEMP\\"
 #define DOSEMU_TEXT_DIR     DOSEMU_CTRL_DRIVE "\\..\\TEXT\\"
 
+// FreeBSD doscmd drive assignments (see the .doscmdrc writer in xtrn.cpp)
+#define DOSCMD_XTRN_DRIVE   "C:"    // xtrn's startup-dir
+#define DOSCMD_NODE_DRIVE   "D:"
+#define DOSCMD_ROOT_DRIVE   "E:"    // Parent of the ctrl, data, exec and node dirs
+#define DOSCMD_XTRN_DIR     DOSCMD_XTRN_DRIVE "\\"
+#define DOSCMD_NODE_DIR     DOSCMD_NODE_DRIVE "\\"
+#define DOSCMD_ROOT_DIR     DOSCMD_ROOT_DRIVE "\\"
+#define DOSCMD_TEMP_DIR     DOSCMD_NODE_DRIVE "\\TEMP\\"
+
 // telnet_gate() mode bits
 #define TG_ECHO         (1 << 0)  // Turn on telnet echo
 #define TG_CRLF         (1 << 1)  // Expand sole CR to CRLF
