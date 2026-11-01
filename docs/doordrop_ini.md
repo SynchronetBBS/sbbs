@@ -1,12 +1,12 @@
-# DOORDROP.INI: a named-value door drop file (draft)
+# DOORDROP.INI: a named-value door drop file
 
-Draft 0.8 · 2026-10-02 · Rob Swindell
+Version 1.0 · 2026-10-31 · Rob Swindell
 
-**This is a draft under community review. Don't implement it, in a host or a door, except to experiment, until it reaches 1.0.** Keys, names and rules are still changing between drafts, and an implementation of a draft will need rework; the draft 0.3 implementation already does, after the file and variable were renamed. Review comments are welcome (see Open questions for where the draft is headed).
+**This is version 1.0.** Later versions add keys under the rules in Extensions and versioning, so a door written for this version keeps working; Open questions lists the candidates. An implementation of a draft before 1.0 needs rework, since names, keys and rules changed between drafts. Review comments are still welcome.
 
 ## Status and goals
 
-DOORDROP.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is draft 0.8. Through draft 0.6 the file was called DROPFILE.INI and the variable `DROPFILE_INI`; the name changed to avoid confusion with the `DROPFILE.###` of DTS-0001 (see Why INI), and an implementation written against an earlier draft uses the old names. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
+DOORDROP.INI hands a door the details of a caller's session as named `KEY=value` lines, so a door reads only the keys it needs and new keys need no central registry. In this spec, the **host** is the BBS or other system that runs the door and writes the file. This is version 1.0. Through draft 0.6 the file was called DROPFILE.INI and the variable `DROPFILE_INI`; the name changed to avoid confusion with the `DROPFILE.###` of DTS-0001 (see Why INI), and an implementation written against an earlier draft uses the old names. The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are used as described in BCP 14 [RFC2119] [RFC8174] when they appear in capitals.
 
 Goals:
 
@@ -130,7 +130,7 @@ Time limits are given as seconds remaining (`TIME_LEFT`), not as a clock time. A
 
 ## Defined keys
 
-Six keys are always required: `FILE_TIME`, `SYS_SOFTWARE`, `SYS_NAME`, `SYS_OP`, `SYS_NODE_NUM` and `COMM_TYPE`. `COMM_CHARSET`, `USER_ALIAS`, `USER_NUMBER` and `USER_KEY` are also required unless `COMM_TYPE` is `local`, where no caller is connected; then the user keys, if present, describe the account the door runs under. The connection keys marked "for" a type are required with that type. Every other key is optional, and the Default column says what a missing key means.
+Six keys are always required: `FILE_TIME`, `SYS_SOFTWARE`, `SYS_NAME`, `SYS_OP`, `SYS_NODE_NUM` and `COMM_TYPE`. `COMM_CHARSET`, `USER_ALIAS`, `USER_NUMBER`, `USER_KEY`, `TERM_TYPE`, `TERM_COLS` and `TERM_ROWS` are also required unless `COMM_TYPE` is `local`, where no caller is connected; then the user keys, if present, describe the account the door runs under. The connection keys marked "for" a type are required with that type. Every other key is optional, and the Default column says what a missing key means.
 
 ### File: `[file]`
 
@@ -254,13 +254,13 @@ There is no standard security level key. A level's range, its ordering (whether 
 
 ### Terminal: `[terminal]`
 
-`TERM_` keys describe the caller's terminal: what it is and what it can do. The host may have detected a value or taken it from the user's manual terminal settings, for example when the user has turned off automatic terminal detection. `PREF_` keys (next section) are the user's choices about how doors should behave, whatever the terminal can do. All keys in this section are optional. A missing `TERM_` key reads as its default. In the capability table below, the default `0` means the host didn't detect the capability, not that the terminal lacks it, so a door MAY query the terminal itself before relying on it. Producers SHOULD always write `TERM_TYPE`, since a missing one means `dumb`.
+`TERM_` keys describe the caller's terminal: what it is and what it can do. The host may have detected a value or taken it from the user's manual terminal settings, for example when the user has turned off automatic terminal detection. `PREF_` keys (next section) are the user's choices about how doors should behave, whatever the terminal can do. `TERM_TYPE`, `TERM_COLS` and `TERM_ROWS` are required unless `COMM_TYPE` is `local`; all other keys in this section are optional. A missing `TERM_` key reads as its default. In the capability table below, the default `0` means the host didn't detect the capability, not that the terminal lacks it, so a door MAY query the terminal itself before relying on it.
 
 | Key | Type | Meaning | Default |
 | --- | --- | --- | --- |
-| `TERM_COLS` | int | Width in character cells | `80` |
-| `TERM_ROWS` | int | Usable height in character cells, excluding any status line the host adds | `24` |
-| `TERM_TYPE` | token | The kind of terminal: `dumb` (plain text, no cursor control), `ansi` (ANSI escape sequences), `avatar` (AVATAR/0+ [FSC-0025], which includes ANSI, so a door without AVATAR output treats it as `ansi`) `petscii` (Commodore PETSCII control codes) or `atascii` (Atari 8-bit ATASCII control codes, with `0x9B` as end of line). A RIPscrip terminal is `ansi`, with `TERM_RIP` set | `dumb` |
+| `TERM_COLS` | int | Width in character cells | required unless `local`; then `80` |
+| `TERM_ROWS` | int | Usable height in character cells, excluding any status line the host adds | required unless `local`; then `24` |
+| `TERM_TYPE` | token | The kind of terminal: `dumb` (plain text, no cursor control), `ansi` (ANSI escape sequences), `avatar` (AVATAR/0+ [FSC-0025], which includes ANSI, so a door without AVATAR output treats it as `ansi`) `petscii` (Commodore PETSCII control codes) or `atascii` (Atari 8-bit ATASCII control codes, with `0x9B` as end of line). A RIPscrip terminal is `ansi`, with `TERM_RIP` set | required unless `local`; then `dumb` |
 | `TERM_RIP` | ascii | RIPscrip version the terminal reported, as `<major>.<minor>`, such as `1.54` from a `RIPSCRIP015400` reply to `CSI !`; or `unknown` when the terminal supports RIPscrip but reported no version, such as when the user set RIP manually. Written only when `TERM_TYPE` is `ansi`; missing means no RIPscrip | none |
 | `TERM_CHARSET` | ascii | The caller's terminal character set, from the names listed under `COMM_CHARSET`. It equals `COMM_CHARSET` when the host passes the door's bytes through untranslated, and may differ when the host translates them | unknown |
 | `TERM_MONO` | bool | `1` = no color, because the terminal can't show it or the user turned it off: the door may send ANSI sequences but no color changes, whatever `TERM_COLORS` says | `0` |
@@ -269,7 +269,7 @@ There is no standard security level key. A level's range, its ordering (whether 
 | `TERM_TERMINFO` | ascii | The terminal type name the caller's client sent, from Telnet TERMINAL-TYPE [RFC1091], the SSH pty request [RFC4254] or the RLogin connection, such as `xterm-256color` or `ansi`, for doors that use curses or terminfo. The host passes it on as received, without checking it; a door that doesn't find it in its terminfo database uses one that matches `TERM_TYPE` | unknown |
 | `TERM_CTERM` | ascii | CTerm revision from `CSI c`, with the reply's `;` separators turned into dots: `<major>.<minor>`, such as `1.332`, or `<major>.<minor>.<fork>` from a forked CTerm, such as `1.332.4` (see below) | not CTerm |
 
-`TERM_COLS` and `TERM_ROWS` are the size when the host wrote the file. The host, not the door, receives a later Telnet NAWS or SSH window-change message, so a door on a `socket`, `stdio` or other connection hears nothing of a resize during the session. A door that cares queries the terminal itself, such as with `CSI 18 t` [XTERM] or a cursor position report after moving the cursor to row 999, column 999.
+`TERM_TYPE`, `TERM_COLS` and `TERM_ROWS` are required because a door can't do without them and every host has them. `TERM_TYPE` is the terminal type the host itself sends to. `TERM_COLS` and `TERM_ROWS` are the size the host itself uses for the session, whether detected or taken from the user's settings, so the door pages and lays out its screens as the host does. They are the size when the host wrote the file. The host, not the door, receives a later Telnet NAWS or SSH window-change message, so a door on a `socket`, `stdio` or other connection hears nothing of a resize during the session. A door that cares queries the terminal itself, such as with `CSI 18 t` [XTERM] or a cursor position report after moving the cursor to row 999, column 999.
 
 A forked CTerm adds its own revision as a third field and leaves the first two as the CTerm revision it was forked from. A door checking for a CTerm feature compares only `<major>.<minor>`; the third field means something only to a door that knows that fork. Each field is a decimal number, so compare them numerically, not as text: `1.40` is older than `1.332`.
 
@@ -436,7 +436,7 @@ X_SBBS_LEVEL=50
 X_SBBS_SECTION=GAMES
 ```
 
-A DOS door on a FOSSIL driver, with only the required keys plus two optional ones; the screen size is the default 80 by 24:
+A DOS door on a FOSSIL driver, with only the required keys plus `TIME_LEFT`:
 
 ```ini
 [file]
@@ -459,6 +459,8 @@ USER_NUMBER=7
 USER_KEY=7
 
 [terminal]
+TERM_COLS=80
+TERM_ROWS=24
 TERM_TYPE=ansi
 
 [session]
@@ -620,6 +622,7 @@ DOORDROP.INI would be one more drop file type that the sysop selects in SCFG for
   - `X_SBBS_LEVEL` = the user's security level; see Vendor keys and MODUSER.DAT below for the other `X_SBBS_` keys.
   - `FILE_UTF8` and `COMM_CHARSET` as described under Encodings below, and `TERM_CHARSET` from the user's terminal character set, the same value Synchronet writes as `chars` in the node's `terminal.ini`, with `PETSCII` in place of its `CBM-ASCII`.
   - `TERM_TERMINFO` from the terminal type the client sent, the same string Synchronet logs at logon from Telnet TERMINAL-TYPE, the SSH pty request or RLogin; left out when the client sent none. `TERM_NAME` needs a query Synchronet doesn't send yet (a to-do below).
+  - `TERM_COLS` and `TERM_ROWS` from the session's current screen width and height, detected or from the user's terminal settings, the same size Synchronet pages output with.
   - `TERM_CTERM` from the CTerm revision Synchronet detected, including a fork's third field (`console.cterm_fork`, #1250).
   - `TERM_TYPE` from the user's terminal type, the same value Synchronet writes as `type` in the node's `terminal.ini`, in lowercase and with `RIP` written as `ansi`; never `avatar` or `atascii`, which Synchronet doesn't detect or support; `TERM_RIP` when that type is `RIP`, with the version from the logon detection reply, or `unknown` when RIP was set manually; and `TERM_BRIGHT_BG` from `ICE_COLOR`, whether auto-detected or set manually, and `TERM_MONO=1` when the settings have `ANSI` without `COLOR` (XTRN.DAT's `Mono`).
   - `TERM_DOORWAY` when the terminal identified itself as CTerm.
@@ -732,7 +735,7 @@ Work Synchronet needs beyond writing the file itself, before every key above can
 - [ ] **Message editor keys:** this file is offered to message editors too, but has no keys for the message being written: the area, the recipient, the subject, the quote file and the result file. DTS-0001 defined them. Add a `[message]` section, or leave editors to their host's own files?
 - [ ] **Test files:** publish sample files with their expected key values, since the Win32 profile API, Python's `configparser` and plain line readers already disagree on quoted values and on a key in the wrong section.
 - [ ] **Door data directories (shelved):** add `USER_DATA_DIR` (a door's per-user data, such as Synchronet's `data/user/<####>/<door>/`) and `DATA_DIR` (a door's shared data, such as `data/<door>/`)? The termgfx doors take these on the command line today (`-home`, `--data-dir`).
-- [ ] **Reviewers:** ask these people to review this draft before Synchronet ships it:
+- [ ] **Reviewers:** ask these people to review this specification before Synchronet ships it:
   - BBS authors: ENiGMA½ (NuSkooler), Icy Board (mkrueger) and Deuce.
   - Door and door kit authors with recent releases (GitHub handles):
     - binary-knight: Usurper Reborn, which reads DOOR32.SYS
@@ -744,7 +747,7 @@ Work Synchronet needs beyond writing the file itself, before every key above can
     - thewebexpert: bbs-door-server, a multi-node DOSBox door server for Synchronet
     - CryptoJones: the AdmiralBBS door specification
     - Smooth (Phenom Productions): Phenom Dropfile, a JSON drop file for Mystic BBS [PHENOM]
-  - The r/bbs community, with a post linking to the draft.
+  - The r/bbs community, with a post linking to the specification.
 
 ## References
 
