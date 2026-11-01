@@ -153,12 +153,19 @@ void sbbs_t::show_msgattr(const smbmsg_t* msg)
 }
 
 /* Returns a CP437 text.dat string converted to UTF-8, when appropriate */
+/* Returns NULL if the string could not be converted (the caller must then display in CP437) */
 const char* sbbs_t::msghdr_text(const smbmsg_t* msg, uint index, bool can_utf8)
 {
 	if (msg == NULL || !can_utf8 || !(msg->hdr.auxattr & MSG_HFIELDS_UTF8))
 		return text[index];
 
-	if (cp437_to_utf8_str(text[index], msghdr_utf8_text, sizeof(msghdr_utf8_text), /* min-char-val: */ '\x80') < 1)
+	int result = cp437_to_utf8_str(text[index], msghdr_utf8_text, sizeof(msghdr_utf8_text), /* min-char-val: */ '\x80');
+	if (result < 0) {
+		lprintf(LOG_WARNING, "Message header text string %s (%u) is %u bytes, too long to convert to UTF-8 in %u bytes"
+		        , text_id[index], index + 1, (unsigned)strlen(text[index]), (unsigned)sizeof(msghdr_utf8_text));
+		return NULL;
+	}
+	if (result == 0) // nothing to convert
 		return text[index];
 
 	return msghdr_utf8_text;
@@ -208,6 +215,11 @@ void sbbs_t::list_msg(const smbmsg_t* msg, uint fmt, uint num, const char* from,
 	char to_buf[128];
 	char subj_buf[256];
 	bool can_utf8 = (term->charset() == CHARSET_UTF8);
+	const char* fmt_str = msghdr_text(msg, fmt, can_utf8);
+	if (fmt_str == NULL) { // display the whole line in CP437 instead
+		can_utf8 = false;
+		fmt_str = text[fmt];
+	}
 	int  mode = P_TRUNCATE | (can_utf8 && (msg->hdr.auxattr & MSG_HFIELDS_UTF8) ? P_UTF8 : 0);
 
 	if (anonymous)
@@ -217,10 +229,26 @@ void sbbs_t::list_msg(const smbmsg_t* msg, uint fmt, uint num, const char* from,
 	const char* subj = msghdr_field(msg, msg->subj, subj_buf, sizeof subj_buf, can_utf8);
 
 	if (to == NULL)
-		bprintf(mode, msghdr_text(msg, fmt, can_utf8), num, from, flag, subj);
+		bprintf(mode, fmt_str, num, from, flag, subj);
 	else
-		bprintf(mode, msghdr_text(msg, fmt, can_utf8), num, from
+		bprintf(mode, fmt_str, num, from
 			, msghdr_field(msg, to, to_buf, sizeof to_buf, can_utf8), flag, subj);
+}
+
+/****************************************************************************/
+/* Displays one message header line: a text.dat format string and a field.  */
+/* If the format string can't be converted to UTF-8, the line is displayed   */
+/* in CP437 instead, field included.                                        */
+/****************************************************************************/
+void sbbs_t::show_msghdr_line(const smbmsg_t* msg, uint index, const char* field, int pmode)
+{
+	const char* fmt = msghdr_text(msg, index);
+	if (fmt != NULL)
+		bprintf(pmode, fmt, field);
+	else {
+		char buf[256];
+		bprintf(text[index], msghdr_field(msg, field, buf, sizeof buf, /* can_utf8: */ false));
+	}
 }
 
 /****************************************************************************/
@@ -260,13 +288,13 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 	}
 	msghdr_tos = (term->row == 0);
 	if (!menu("msghdr", P_NOERROR)) {
-		bprintf(pmode, msghdr_text(msg, MsgSubj), current_msg_subj);
+		show_msghdr_line(msg, MsgSubj, current_msg_subj, pmode);
 		if (msg->tags && *msg->tags)
 			bprintf(text[MsgTags], msg->tags);
 		if (msg->hdr.attr || msg->hdr.netattr || (msg->hdr.auxattr & ~MSG_HFIELDS_UTF8))
 			show_msgattr(msg);
 		if (current_msg_to != NULL && *current_msg_to != 0) {
-			bprintf(pmode, msghdr_text(msg, MsgTo), current_msg_to);
+			show_msghdr_line(msg, MsgTo, current_msg_to, pmode);
 			if (msg->to_net.addr != NULL)
 				bprintf(text[MsgToNet], smb_netaddrstr(&msg->to_net, str));
 			if (msg->to_ext)
@@ -275,7 +303,7 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 		if (msg->cc_list != NULL)
 			bprintf(text[MsgCarbonCopyList], msg->cc_list);
 		if (current_msg_from != NULL && (!(msg->hdr.attr & MSG_ANONYMOUS) || useron_is_sysop())) {
-			bprintf(pmode, msghdr_text(msg, MsgFrom), current_msg_from);
+			show_msghdr_line(msg, MsgFrom, current_msg_from, pmode);
 			if (msg->from_ext)
 				bprintf(text[MsgFromExt], msg->from_ext);
 			if (msg->from_net.addr != NULL)
