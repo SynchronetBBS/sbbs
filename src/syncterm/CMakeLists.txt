@@ -474,6 +474,14 @@ if(NOT WITHOUT_RETRO)
 endif()
 
 enable_testing()
+add_executable(audio_apc_test audio_apc_test.c audio_apc.c xp_sndfile.c)
+require_libs(audio_apc_test hash encode xpdev)
+target_include_directories(audio_apc_test PRIVATE ../conio ../sbbs3)
+target_compile_definitions(audio_apc_test PRIVATE
+	SDL_MAIN_HANDLED WITHOUT_SNDFILE
+	xptone_open=audio_test_device_open
+	xptone_close=audio_test_device_close)
+add_test(NAME audio_apc_test COMMAND audio_apc_test)
 add_executable(bbs_cache_test
 	bbs_cache_test.c bbs_cache.c ../conio/utf8_codepages.c)
 require_libs(bbs_cache_test hash xpdev)

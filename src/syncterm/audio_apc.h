@@ -39,9 +39,10 @@ void audio_ext_state_7(struct cterminal *cterm, int nparams,
  * transition, and emits the async CSI = 7 ; <ch> ; 0 n notification. */
 void audio_apc_poll(struct cterminal *cterm);
 
-/* Session teardown — free all patch slots, close all APC-owned channel
- * handles.  Called from the place JXL's pixmap cleanup runs. */
-void audio_apc_cleanup(void);
+/* Session teardown: stop all session audio before releasing device refs,
+ * free patch slots, and close APC-owned channels. cterm retains ownership
+ * of its music/SFX handles for cterm_end(). Safe to repeat or pass NULL. */
+void audio_apc_cleanup(struct cterminal *cterm);
 
 #ifdef __cplusplus
 }

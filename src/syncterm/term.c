@@ -4955,7 +4955,7 @@ check_hangup(int key, bool *ret, int oldmc, struct mouse_state *ms)
 {
 	setup_mouse_events(ms);
 	finish_scrollback();
-	audio_apc_cleanup();
+	audio_apc_cleanup(cterm);
 	cterm_end(cterm, 0);
 	cterm = NULL;
 	conn_close();
@@ -5298,6 +5298,9 @@ doterm(struct bbslist *bbs)
 							 * SftpApp drives the degraded modal and
 							 * keeps is_connected true until the queue
 							 * drains, so we go straight to teardown. */
+							/* Stop audio before protocol shutdown or the disconnect
+							 * notice can block while waiting for input. */
+							audio_apc_cleanup(cterm);
 							/* Finish protocol teardown before presenting details so
 							 * SSH's final diagnostics are visible to F1 and Wren. */
 							conn_close();
@@ -5305,7 +5308,6 @@ doterm(struct bbslist *bbs)
 								show_disconnect_notice(bbs);
 							check_exit(false);
 							finish_scrollback();
-							audio_apc_cleanup();
 							cterm_end(cterm, 0);
 							cterm = NULL;
 							hidemouse();
@@ -5532,6 +5534,9 @@ doterm(struct bbslist *bbs)
  *       hold_update=oldmc;
  */
 	finish_scrollback();
+	audio_apc_cleanup(cterm);
+	cterm_end(cterm, 0);
+	cterm = NULL;
 	ret = false;
 end:
 	/* Last chance for scripts to flush per-session state — runs while

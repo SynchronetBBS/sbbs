@@ -728,9 +728,23 @@ audio_apc_poll(struct cterminal *cterm)
 }
 
 void
-audio_apc_cleanup(void)
+audio_apc_cleanup(struct cterminal *cterm)
 {
 	int i;
+	/* Releasing a device reference drains every remaining mixer stream.
+	 * Stop the whole session before the first xptone_close(), including
+	 * cterm-owned music/SFX and any status-line subterminal streams. */
+	for (struct cterminal *terminal = cterm; terminal != NULL;
+	    terminal = terminal->status_sub) {
+		xp_audio_stop(terminal->music_stream);
+		xp_audio_stop(terminal->fx_stream);
+	}
+	if (apc_channels_init) {
+		for (i = 0; i < AUDIO_APC_CHANNELS - AUDIO_APC_FIRST_APC_CH; i++) {
+			if (apc_channels[i] >= 0)
+				xp_audio_stop(apc_channels[i]);
+		}
+	}
 	for (i = 0; i < AUDIO_APC_PATCH_SLOTS; i++) {
 		free(patches[i].frames);
 		patches[i].frames  = NULL;
@@ -743,8 +757,8 @@ audio_apc_cleanup(void)
 				xptone_close();
 				apc_channels[i] = -1;
 			}
-			apc_notify[i + AUDIO_APC_FIRST_APC_CH] = false;
-			apc_last_state[i + AUDIO_APC_FIRST_APC_CH] = 0;
 		}
 	}
+	memset(apc_notify, 0, sizeof(apc_notify));
+	memset(apc_last_state, 0, sizeof(apc_last_state));
 }
