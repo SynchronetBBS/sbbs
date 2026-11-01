@@ -258,6 +258,9 @@ static char* dropfile(int type, ulong misc)
 		case XTRN_BBSDEV:
 			strcpy(str, "BBSDEV.DRP");
 			break;
+		case XTRN_DOORDROP:
+			strcpy(str, "DOORDROP.INI");
+			break;
 		default:
 			strcpy(str, "None");
 			return str;
@@ -1468,7 +1471,7 @@ void xtrn_cfg(int section)
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Disable Local Display"
 			         , cfg.xtrn[i]->misc & XTRN_NODISPLAY ? "Yes" : "No");
 			snprintf(opt[k++], MAX_OPLN, "%-23.23s%-4s%s", "BBS Drop File Type"
-			         , (cfg.xtrn[i]->type != XTRN_NONE && (cfg.xtrn[i]->misc & XTRN_REALNAME)) ? "(R)":nulstr
+			         , (cfg.xtrn[i]->type != XTRN_NONE && cfg.xtrn[i]->type != XTRN_DOORDROP && (cfg.xtrn[i]->misc & XTRN_REALNAME)) ? "(R)":nulstr
 			         , dropfile(cfg.xtrn[i]->type, cfg.xtrn[i]->misc));
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Place Drop File In"
 			         , cfg.xtrn[i]->misc & XTRN_STARTUPDIR ? "Start-Up Directory":cfg.xtrn[i]->misc & XTRN_TEMP_DIR ? "Temp Directory" : "Node Directory");
@@ -1724,6 +1727,7 @@ void xtrn_cfg(int section)
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "TriBBS", "TRIBBS.SYS");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "Mystic", "DOOR32.SYS");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "BBSdev", "BBSDEV.DRP");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "Synchronet", "DOORDROP.INI");
 					opt[k][0] = 0;
 					k = cfg.xtrn[i]->type;
 					uifc.helpbuf =
@@ -1746,6 +1750,13 @@ void xtrn_cfg(int section)
 						"  Solar Realms    DOORFILE.SR\n"
 						"  Synchronet      XTRN.DAT                      MODUSER.DAT\n"
 						"  BBSdev          BBSDEV.DRP\n"
+						"  Synchronet      DOORDROP.INI\n"
+						"\n"
+						"`DOORDROP.INI`\n"
+						"DOORDROP.INI is a read-only door information file of named values.\n"
+						"The absolute path visible to the door is supplied in the\n"
+						"`DOORDROP_INI` environment variable and with the `%F` command-line\n"
+						"specifier. Its text is in CP437 unless the door supports UTF-8.\n"
 						"\n"
 						"`BBSDEV.DRP`\n"
 						"BBSDEV.DRP is a read-only, UTF-8 door information file. The exact\n"
@@ -1773,7 +1784,8 @@ void xtrn_cfg(int section)
 							cfg.xtrn[i]->misc |= XTRN_NATIVE;
 						uifc.changes = TRUE;
 					}
-					if (cfg.xtrn[i]->type && cfg.xtrn[i]->type != XTRN_BBSDEV && cfg.uq & UQ_ALIASES) {
+					if (cfg.xtrn[i]->type && cfg.xtrn[i]->type != XTRN_BBSDEV && cfg.xtrn[i]->type != XTRN_DOORDROP
+					    && cfg.uq & UQ_ALIASES) {
 						k = (cfg.xtrn[i]->misc & XTRN_REALNAME) ? 0:1;
 						k = uifc.list(WIN_MID, 0, 0, 0, &k, 0, "Use Real Names", uifcYesNoOpts);
 						if (k == -1)
@@ -1798,6 +1810,16 @@ void xtrn_cfg(int section)
 							cfg.xtrn[i]->misc &= ~XTRN_LWRCASE;
 							uifc.changes = TRUE;
 						}
+					}
+					if (cfg.xtrn[i]->type == XTRN_DOORDROP) {
+						toggle_flag("Support UTF-8 Encoding"
+						            , &cfg.xtrn[i]->misc, XTRN_UTF8, false,
+						            "`Support UTF-8 Encoding:`\n"
+						            "\n"
+						            "If this program can decode UTF-8 encoded text, set this option to\n"
+						            "`Yes` and the text values in its `DOORDROP.INI` file will be UTF-8\n"
+						            "encoded. Otherwise, they will be CP437 encoded."
+						            );
 					}
 					break;
 				case __COUNTER__:

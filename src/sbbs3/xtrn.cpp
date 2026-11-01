@@ -334,7 +334,7 @@ static void add_env_var(str_list_t* list, const char* var, const char* val)
 /****************************************************************************/
 /* Runs an external program (on Windows) 									*/
 /****************************************************************************/
-int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, const char* bbsdev_drp)
+int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, const char* drop_var, const char* drop_path)
 {
 	char                str[MAX_PATH + 1];
 	char*               env_block = NULL;
@@ -382,6 +382,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 	xtrn_mode = mode;
 	lprintf(LOG_DEBUG, "Executing external: %s", cmdline);
 	SetEnvironmentVariable("BBSDEV_DRP", NULL);
+	SetEnvironmentVariable("DOORDROP_INI", NULL);
 
 	if (startup_dir != NULL && startup_dir[0] && !isdir(startup_dir)) {
 		errormsg(WHERE, ERR_CHK, startup_dir, 0);
@@ -389,8 +390,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 	}
 
 	term->clear_hotspots();
-	if (bbsdev_drp != NULL && (*cmdline == '*' || *cmdline == '?')) {
-		lprintf(LOG_ERR, "BBSDEV_DRP cannot be passed to an in-process module: %s", cmdline);
+	if (drop_path != NULL && (*cmdline == '*' || *cmdline == '?')) {
+		lprintf(LOG_ERR, "%s cannot be passed to an in-process module: %s", drop_var, cmdline);
 		return -1;
 	}
 
@@ -470,8 +471,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 		add_env_var(&env_list, "SBBSCTRL", cfg.ctrl_dir);
 		add_env_var(&env_list, "SBBSDATA", cfg.data_dir);
 		add_env_var(&env_list, "SBBSEXEC", cfg.exec_dir);
-		if (bbsdev_drp != NULL)
-			add_env_var(&env_list, "BBSDEV_DRP", bbsdev_drp);
+		if (drop_path != NULL)
+			add_env_var(&env_list, drop_var, drop_path);
 		sprintf(str, "%d", cfg.node_num);
 		add_env_var(&env_list, "SBBSNNUM", str);
 		/* date/time env vars */
@@ -534,8 +535,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 		fprintf(fp, "SBBSCTRL=%s\n", ctrl_dir);
 		fprintf(fp, "SBBSDATA=%s\n", data_dir);
 		fprintf(fp, "SBBSEXEC=%s\n", exec_dir);
-		if (bbsdev_drp != NULL)
-			fprintf(fp, "BBSDEV_DRP=%s\n", bbsdev_drp);
+		if (drop_path != NULL)
+			fprintf(fp, "%s=%s\n", drop_var, drop_path);
 		fprintf(fp, "SBBSNNUM=%d\n", cfg.node_num);
 		fprintf(fp, "PCBNODE=%d\n", cfg.node_num);
 		fprintf(fp, "PCBDRIVE=%.2s\n", node_dir);
@@ -1222,7 +1223,7 @@ xtrn_waitpid(pid_t wpid, int *status, int options)
 /****************************************************************************/
 /* Runs an external program (on *nix) 										*/
 /****************************************************************************/
-int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, const char* bbsdev_drp)
+int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, const char* drop_var, const char* drop_path)
 {
 	char          str[MAX_PATH + 1];
 	char          fname[MAX_PATH + 1];
@@ -1260,8 +1261,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 	lprintf(LOG_DEBUG, "Executing external: %s", cmdline);
 
 	term->clear_hotspots();
-	if (bbsdev_drp != NULL && (*cmdline == '*' || *cmdline == '?')) {
-		lprintf(LOG_ERR, "BBSDEV_DRP cannot be passed to an in-process module: %s", cmdline);
+	if (drop_path != NULL && (*cmdline == '*' || *cmdline == '?')) {
+		lprintf(LOG_ERR, "%s cannot be passed to an in-process module: %s", drop_var, cmdline);
 		return -1;
 	}
 
@@ -1375,8 +1376,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 		fprintf(doscmdrc, "SBBSCTRL=E:\\ctrl\\\n");
 		fprintf(doscmdrc, "SBBSDATA=E:\\data\\\n");
 		fprintf(doscmdrc, "SBBSEXEC=E:\\exec\\\n");
-		if (bbsdev_drp != NULL)
-			fprintf(doscmdrc, "BBSDEV_DRP=%s\n", bbsdev_drp);
+		if (drop_path != NULL)
+			fprintf(doscmdrc, "%s=%s\n", drop_var, drop_path);
 		fprintf(doscmdrc, "SBBSNNUM=%d\n", cfg.node_num);
 		fprintf(doscmdrc, "PCBNODE=%d\n", cfg.node_num);
 		fprintf(doscmdrc, "PCBDRIVE=D:\n");
@@ -1539,8 +1540,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 		fprintf(dosemubatfp, "SET SBBSCTRL=%s\r\n", ctrldrive);
 		fprintf(dosemubatfp, "SET SBBSDATA=%s\r\n", datadrive);
 		fprintf(dosemubatfp, "SET SBBSEXEC=%s\r\n", execdrive);
-		if (bbsdev_drp != NULL)
-			fprintf(dosemubatfp, "SET BBSDEV_DRP=%s\r\n", bbsdev_drp);
+		if (drop_path != NULL)
+			fprintf(dosemubatfp, "SET %s=%s\r\n", drop_var, drop_path);
 		fprintf(dosemubatfp, "SET PCBNODE=%d\r\n", cfg.node_num);
 		fprintf(dosemubatfp, "SET PCBDRIVE=%s\r\n", nodedrive);
 		fprintf(dosemubatfp, "SET PCBDIR=\\\r\n");
@@ -1901,10 +1902,10 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 		}
 	}
 	if (pid == 0) {    /* child process */
-		if (bbsdev_drp != NULL)
-			setenv("BBSDEV_DRP", bbsdev_drp, /* overwrite */ TRUE);
-		else
-			unsetenv("BBSDEV_DRP");
+		unsetenv("BBSDEV_DRP");
+		unsetenv("DOORDROP_INI");
+		if (drop_path != NULL)
+			setenv(drop_var, drop_path, /* overwrite */ TRUE);
 		/* Give away all privs for good now */
 		if (startup->setuid != NULL)
 			startup->setuid(TRUE);
@@ -1980,7 +1981,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 			close(out_pipe[1]);     /* close excess file descriptor */
 		}
 
-		if (!(mode & EX_STDIO) && !(bbsdev_drp != NULL && online == ON_LOCAL)) {
+		if (!(mode & EX_STDIO) && !(drop_path != NULL && online == ON_LOCAL)) {
 			int fd;
 
 			/* Redirect stdio to /dev/null */

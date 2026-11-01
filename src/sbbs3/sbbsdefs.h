@@ -391,6 +391,7 @@ enum {                               // Values for xtrn_t.type
 	, XTRN_TRIBBS                    // TRIBBS.SYS
 	, XTRN_DOOR32                    // DOOR32.SYS
 	, XTRN_BBSDEV                    // BBSDEV.DRP
+	, XTRN_DOORDROP                  // DOORDROP.INI
 };
 
 typedef enum {                       // Values for xtrn_t.event
@@ -443,7 +444,7 @@ typedef enum {                       // Values for xtrn_t.event
 #define XTRN_NOECHO      (1 << 20)  // prog: don't echo stdin to stdout, w/XTRN_STDIO (== EX_NOECHO)
 #define XTRN_QUOTEWRAP   (1 << 21)  // editor: word-wrap quoted message text
 #define XTRN_SAVECOLUMNS (1 << 22)  // editor: save/share current terminal width
-#define XTRN_UTF8        (1 << 23)  // editor: supports UTF-8
+#define XTRN_UTF8        (1 << 23)  // prog, editor: supports UTF-8
 #define XTRN_TEMP_DIR    (1 << 24)  // prog: place drop files in temp dir
 #define XTRN_UART        (1 << 25)  // prog: enable the virtual UART driver (== EX_UART)
 #define XTRN_FOSSIL      (1 << 26)  // prog: enable the int14h/FOSSIL driver (== EX_FOSSIL)

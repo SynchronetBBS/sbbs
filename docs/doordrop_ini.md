@@ -703,7 +703,7 @@ Two independent rules set the encoding keys:
 | `1` | yes | US-ASCII | `US-ASCII` | The door converts to ASCII |
 | `1` | yes | PETSCII | `PETSCII` | The door converts to PETSCII |
 
-Doors have no UTF-8 setting yet. The "Support UTF-8 Encoding" toggle (`XTRN_UTF8`) exists only for message editors in SCFG, and would need to be added for doors. Editors get drop files too (`writemsg.cpp` calls `xtrndat()`), so for them the rule works today.
+Doors and message editors both have the "Support UTF-8 Encoding" toggle (`XTRN_UTF8`) in SCFG; for a door it is offered when DOORDROP.INI is its drop file type.
 
 ### Synchronet to-dos
 
@@ -718,11 +718,11 @@ Work Synchronet needs beyond writing the file itself, before every key above can
 - [ ] **Personal details per door:** a door option in SCFG that leaves out `USER_REALNAME` and the other personal keys listed under Security and privacy.
 - [ ] **`TERM_KEYS_KITTY`:** add the kitty keyboard query (`CSI ? u`) to the once-per-session capability queries.
 - [ ] **`TERM_SIXEL_SCALE` (optional):** add the sixel scale probe to the once-per-session capability queries.
-- [ ] **`FILE_UTF8`:** add the "Support UTF-8 Encoding" option (`XTRN_UTF8`) for doors in SCFG; today it exists only for message editors.
-- [ ] **Standard-I/O echo:** imply the no-echo option for a door of this drop file type, so `stdio` means what the spec says.
+- [x] **`FILE_UTF8`:** add the "Support UTF-8 Encoding" option (`XTRN_UTF8`) for doors in SCFG, offered when DOORDROP.INI is the door's drop file type.
+- [x] **Standard-I/O echo:** imply the no-echo option for a door of this drop file type, so `stdio` means what the spec says.
 - [ ] **"Use Real Name" option (`XTRN_REALNAME`):** in the older formats it swaps the single name field to the real name. This file has separate keys, so it must never alter `USER_ALIAS`; use it as the per-door gate for writing `USER_REALNAME`, alongside or instead of the personal-details option above. Decide separately whether a door should be told to address the user by real name, which would be a policy key rather than this bit.
 - [ ] **WWIV color codes (`XTRN_WWIVCOLOR`):** Synchronet rewrites WWIV color codes in a standard-I/O door's output when this option is set, the same kind of fact about the connection as `COMM_CHARSET`. Decide whether a door needs an `[x-sbbs]` key saying so.
-- [ ] **`USER_LANG`:** move the BCP 47 syntax check that the BBSDEV.DRP writer uses (`bbsdev_language_tag_valid()` in `xtrn_sec.cpp`) into a shared helper, so both writers use it.
+- [x] **`USER_LANG`:** use the BCP 47 syntax check that the BBSDEV.DRP writer uses (`bbsdev_language_tag_valid()` in `xtrn_sec.cpp`) for both writers.
 
 ## Open questions
 

@@ -209,6 +209,10 @@
   (lines 24 and 25) are now populated rather than always zero
 - `PCBOARD.SYS` drop file: the download-allowance, conference and
   language-extension fields are now populated
+- New `DOORDROP.INI` drop file type (see `docs/doordrop_ini.md`):
+  named `KEY=value` session details (user, terminal capabilities,
+  time left, preferences) passed to the door via the `DOORDROP_INI`
+  environment variable and `%F`
 - Configuration changes now reach new callers without waiting for
   every node to disconnect: when a recycle is signaled (the
   `ctrl/recycle` semaphore, an MQTT recycle, `SIGHUP` /
@@ -477,6 +481,8 @@
   → SendMail Support, for outbound DKIM message signing
 - New **Terminal Server → Max Concurrent Connections...**
   submenu (threshold, duration, silent variant)
+- New `DOORDROP.INI` **BBS Drop File Type** for online programs,
+  with a **Support UTF-8 Encoding** option for its text values
 - New **Message/File Total Interval** option under System → Advanced
   Options, setting how long the system-wide message and file totals
   are re-used before being counted again (default `10m`, `0` to count

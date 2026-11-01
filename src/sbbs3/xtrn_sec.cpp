@@ -22,6 +22,7 @@
 #include "sbbs.h"
 #include "pcbdefs.hpp"
 #include "qbbsdefs.hpp"
+#include "uartdefs.h"
 
 /****************************************************************************/
 /* This is the external programs (doors) section of the bbs                 */
@@ -159,6 +160,159 @@ static bool bbsdev_write(FILE* fp, const char* const line[], size_t count)
 }
 
 /****************************************************************************/
+/* DOORDROP.INI 1.0 (docs/doordrop_ini.md) value formatting					*/
+/****************************************************************************/
+#define DOORDROP_MAX_LINE   255
+
+static bool doordrop_control(enum unicode_codepoint cp)
+{
+	return cp <= UNICODE_INFORMATION_SEPARATOR_ONE
+	       || (cp >= UNICODE_DELETE && cp <= UNICODE_APPLICATION_PROGRAM_COMMAND)
+	       || cp == UNICODE_LINE_SEPARATOR || cp == UNICODE_PARAGRAPH_SEPARATOR
+	       || (cp >= UNICODE_LEFT_TO_RIGHT_EMBEDDING && cp <= UNICODE_RIGHT_TO_LEFT_OVERRIDE)
+	       || (cp >= UNICODE_LEFT_TO_RIGHT_ISOLATE && cp <= UNICODE_POP_DIRECTIONAL_ISOLATE);
+}
+
+// Convert a stored (CP437 or UTF-8) string to a text value of at most 'max' bytes
+static void doordrop_text(const char* src, char* dest, size_t max, bool utf8)
+{
+	size_t srclen = strlen(src);
+	size_t len = 0;
+	bool   src_utf8 = !str_is_ascii(src) && utf8_str_is_valid(src);
+
+	for (size_t i = 0; i < srclen;) {
+		enum unicode_codepoint cp;
+		if (src_utf8) {
+			int n = utf8_getc(src + i, srclen - i, &cp);
+			if (n < 1)
+				break;
+			i += n;
+		} else {
+			uchar ch = src[i++];
+			if (ch < 0x80)
+				cp = (enum unicode_codepoint)ch;
+			else
+				cp = cp437_unicode_tbl[ch];
+		}
+		if (cp == UNICODE_NO_BREAK_SPACE)
+			cp = UNICODE_SPACE;
+		else if (doordrop_control(cp))
+			cp = (enum unicode_codepoint)'?';
+		char buf[UTF8_MAX_LEN];
+		int  n = 1;
+		if (cp < 0x80)
+			buf[0] = (char)cp;
+		else if (utf8) {
+			n = utf8_putc(buf, sizeof buf, cp);
+			if (n < 1) {
+				buf[0] = '?';
+				n = 1;
+			}
+		} else {
+			uchar ch = (uchar)unicode_to_cp437(cp);
+			// The CP437 glyphs that share the control code bytes aren't allowed in text values
+			if (ch < ' ' || ch == (uchar)CP437_HOUSE || ch == (uchar)CP437_NO_BREAK_SPACE)
+				ch = '?';
+			buf[0] = (char)ch;
+		}
+		if (len + n > max)
+			break;
+		memcpy(dest + len, buf, n);
+		len += n;
+	}
+	dest[len] = '\0';
+	truncsp(dest);
+	char* p = dest;
+	SKIP_WHITESPACE(p);
+	memmove(dest, p, strlen(p) + 1);
+}
+
+static bool doordrop_ascii(const char* str)
+{
+	if (*str == '\0')
+		return false;
+	for (; *str != '\0'; str++) {
+		if (*str < 0x21 || *str > 0x7E)
+			return false;
+	}
+	return true;
+}
+
+// Values that don't fit the line limit are left out
+static void doordrop_put(FILE* fp, const char* key, const char* value)
+{
+	if (value == NULL || *value == '\0' || strlen(key) + 1 + strlen(value) > DOORDROP_MAX_LINE)
+		return;
+	fprintf(fp, "%s=%s\r\n", key, value);
+}
+
+static void doordrop_put_ascii(FILE* fp, const char* key, const char* value)
+{
+	if (value != NULL && doordrop_ascii(value))
+		doordrop_put(fp, key, value);
+}
+
+static void doordrop_put_uint(FILE* fp, const char* key, uint64_t value)
+{
+	char str[32];
+	snprintf(str, sizeof str, "%" PRIu64, value);
+	doordrop_put(fp, key, str);
+}
+
+static void doordrop_put_text(FILE* fp, const char* key, const char* value, bool utf8, bool required = false)
+{
+	char str[DOORDROP_MAX_LINE + 1];
+	doordrop_text(value == NULL ? "" : value, str, DOORDROP_MAX_LINE - strlen(key) - 1, utf8);
+	if (*str == '\0' && required)
+		SAFECOPY(str, "?");
+	doordrop_put(fp, key, str);
+}
+
+static void doordrop_put_date(FILE* fp, const char* key, int year, int month, int day)
+{
+	char str[32];
+	if (year < 1 || year > 9999 || month < 1 || month > 12 || day < 1 || day > 31)
+		return;
+	snprintf(str, sizeof str, "%04d-%02d-%02d", year, month, day);
+	doordrop_put(fp, key, str);
+}
+
+static void doordrop_put_flags(FILE* fp, const char* key, uint32_t flags)
+{
+	char   str[64];
+	size_t len = 0;
+	for (int i = 0; i < 26; i++) {
+		if (flags & (1UL << i))
+			str[len++] = 'A' + i;
+	}
+	str[len] = '\0';
+	doordrop_put(fp, key, str);
+}
+
+static const char* doordrop_charset(Terminal* term)
+{
+	switch (term->charset()) {
+		case CHARSET_PETSCII:
+			return "PETSCII";
+		case CHARSET_UTF8:
+			return "UTF-8";
+		case CHARSET_ASCII:
+			return "US-ASCII";
+		default:
+			return "CP437";
+	}
+}
+
+// The start-up directory is shared by every node running a multiuser door
+static uint32_t doordrop_misc(const scfg_t* cfg, const xtrn_t* xtrn)
+{
+	uint32_t misc = xtrn->misc;
+	if (xtrn->type == XTRN_DOORDROP && (misc & XTRN_MULTIUSER) && cfg->sys_nodes > 1)
+		misc &= ~XTRN_STARTUPDIR;
+	return misc;
+}
+
+/****************************************************************************/
 /* Convert from unix time (seconds since 1/70) to julian (days since 1900)	*/
 /****************************************************************************/
 int unixtojulian(time_t unix_time)
@@ -248,7 +402,7 @@ static void lfexpand(char *str, uint misc)
 /* Creates various types of xtrn (Doors, Chains, etc.) data (drop) files.	*/
 /****************************************************************************/
 bool sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tleft
-                     , uint misc)
+                     , uint misc, const xtrn_t* xtrn)
 {
 	char      str[1024], tmp2[128], *p;
 	char      tmp[512];
@@ -1217,10 +1371,278 @@ bool sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		}
 	}
 
+	else if (type == XTRN_DOORDROP) { /* DOORDROP.INI 1.0 */
+		bool        utf8 = (misc & XTRN_UTF8) != 0;
+		const char* comm_type;
+		SOCKET      sock = INVALID_SOCKET;
+
+		if (misc & XTRN_CONIO) {
+			lprintf(LOG_ERR, "DOORDROP.INI does not support Windows console interception");
+			return false;
+		}
+		if (misc & XTRN_STDIO)
+			comm_type = "stdio";
+		else if (misc & XTRN_NATIVE) {
+			if (online == ON_LOCAL)
+				comm_type = "local";
+			else {
+				sock = client_socket_dup.load();
+				if (!passthru_thread_running || sock == INVALID_SOCKET) {
+					lprintf(LOG_ERR, "DOORDROP.INI socket communication requested without an inherited socket");
+					return false;
+				}
+				comm_type = "socket";
+			}
+		} else if (misc & XTRN_UART)
+			comm_type = "uart";
+		else
+			comm_type = "fossil";
+		bool local = strcmp(comm_type, "local") == 0;
+
+		char file_time[32];
+		now = time(NULL);
+		if (localtime_r(&now, &tm) == NULL) {
+			lprintf(LOG_ERR, "Unable to format DOORDROP.INI file time");
+			return false;
+		}
+		{
+			int    offset = smb_tzutc(sys_timezone(&cfg));
+			size_t len = strftime(file_time, sizeof file_time, "%Y-%m-%dT%H:%M:%S", &tm);
+			snprintf(file_time + len, sizeof file_time - len, "%c%02d:%02d"
+			         , offset < 0 ? '-' : '+', abs(offset) / 60, abs(offset) % 60);
+		}
+
+		SAFECOPY(tmp, "DOORDROP.INI");
+		if (misc & XTRN_LWRCASE)
+			strlwr(tmp);
+		SAFEPRINTF2(str, "%s%s", dropdir, tmp);
+		(void)removecase(str);
+		if ((fp = fnopen(NULL, str, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY)) == NULL) {
+			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY);
+			return false;
+		}
+#if !defined(_WIN32)
+		(void)CHMOD(str, S_IRUSR | S_IWUSR);
+#endif
+		char val[DOORDROP_MAX_LINE + 1];
+
+		fprintf(fp, "; Written by Synchronet %s%c\r\n", VERSION, REVISION);
+		fprintf(fp, "[file]\r\n");
+		if (utf8)
+			doordrop_put(fp, "FILE_UTF8", "1");
+		doordrop_put(fp, "FILE_TIME", file_time);
+
+		fprintf(fp, "[system]\r\n");
+		snprintf(val, sizeof val, "Synchronet %s%c", VERSION, REVISION);
+		doordrop_put_text(fp, "SYS_SOFTWARE", val, utf8, /* required: */ true);
+		doordrop_put(fp, "SYS_VENDOR", "SBBS");
+		snprintf(val, sizeof val, "%s%c", VERSION, REVISION);
+		doordrop_put(fp, "SYS_VERSION", val);
+		doordrop_put_text(fp, "SYS_NAME", cfg.sys_name, utf8, /* required: */ true);
+		doordrop_put_text(fp, "SYS_OP", cfg.sys_op, utf8, /* required: */ true);
+		doordrop_put_uint(fp, "SYS_NODE_NUM", cfg.node_num);
+		doordrop_put_uint(fp, "SYS_NODE_COUNT", cfg.sys_nodes);
+		doordrop_put_ascii(fp, "SYS_QWKID", cfg.sys_id);
+		doordrop_put_ascii(fp, "SYS_HOSTNAME", startup->host_name);
+		val[0] = '\0';
+		for (int n = 0; n < cfg.total_faddrs; n++) {
+			char addr[64];
+			if (n > 0)
+				SAFECAT(val, ",");
+			SAFECAT(val, smb_faddrtoa(&cfg.faddr[n], addr));
+		}
+		doordrop_put_ascii(fp, "SYS_FTN_ADDR", val);
+		doordrop_put_text(fp, "SYS_LOCATION", cfg.sys_location, utf8);
+		if (sysop_available(&cfg))
+			doordrop_put(fp, "SYS_OP_AVAILABLE", "1");
+		doordrop_put(fp, "SYS_DATE_FORMAT"
+		             , cfg.sys_date_fmt == DDMMYY ? "dmy" : cfg.sys_date_fmt == YYMMDD ? "ymd" : "mdy");
+
+		fprintf(fp, "[comm]\r\n");
+		doordrop_put(fp, "COMM_TYPE", comm_type);
+		doordrop_put(fp, "COMM_CHARSET", (misc & XTRN_BIN) ? doordrop_charset(term) : "CP437");
+		if (sock != INVALID_SOCKET)
+			doordrop_put_uint(fp, "COMM_HANDLE", (uint64_t)sock);
+		if (strcmp(comm_type, "fossil") == 0 || strcmp(comm_type, "uart") == 0) {
+			doordrop_put_uint(fp, "COMM_PORT", cfg.com_port);
+			if (strcmp(comm_type, "uart") == 0) {
+				doordrop_put_uint(fp, "UART_BASE", UART_COM1_IO_BASE);
+				doordrop_put_uint(fp, "UART_IRQ", UART_COM1_IRQ);
+			}
+			if (dte_rate)
+				doordrop_put_uint(fp, "COMM_RATE", dte_rate);
+		}
+
+		if (useron.number) {
+			bool dialup = stricmp(telnet_terminal, "sexpots") == 0;
+			fprintf(fp, "[user]\r\n");
+			doordrop_put_text(fp, "USER_ALIAS", useron.alias, utf8, /* required: */ true);
+			doordrop_put_uint(fp, "USER_NUMBER", useron.number);
+			snprintf(val, sizeof val, "%u-%" PRId32, useron.number, useron.firston);
+			doordrop_put(fp, "USER_KEY", val);
+			doordrop_put(fp, "USER_ROLE", user_is_guest(&useron) ? "guest" : user_is_sysop(&useron) ? "sysop" : "user");
+			SAFECOPY(val, useron.lang);
+			REPLACE_CHARS(val, '_', '-', p);
+			if (bbsdev_language_tag_valid(val))
+				doordrop_put(fp, "USER_LANG", val);
+			doordrop_put_text(fp, "USER_REALNAME", useron.name, utf8);
+			doordrop_put_text(fp, "USER_LOCATION", useron.location, utf8);
+			if (useron.birth[0] != '\0')
+				doordrop_put_date(fp, "USER_BIRTHDATE", getbirthyear(&cfg, useron.birth)
+				                  , getbirthmonth(&cfg, useron.birth), getbirthday(&cfg, useron.birth));
+			if (useron.gender > ' ') {
+				char gender[2] = { (char)useron.gender, '\0' };
+				doordrop_put_text(fp, "USER_GENDER", gender, utf8);
+			}
+			if (!local) {
+				if (dialup) {
+					if (stricmp(cid, "Unknown") != 0)
+						doordrop_put_ascii(fp, "USER_CALLER_ID", cid);
+				} else {
+					doordrop_put_ascii(fp, "USER_IP", client_ipaddr);
+					if (strcmp(client_name, STR_NO_HOSTNAME) != 0)
+						doordrop_put_ascii(fp, "USER_HOSTNAME", client_name);
+				}
+				if (dialup)
+					doordrop_put(fp, "USER_PROTOCOL", "serial");
+				else if (stricmp(client.protocol, "Telnet") == 0 || stricmp(client.protocol, "RLogin") == 0
+				         || stricmp(client.protocol, "SSH") == 0 || stricmp(client.protocol, "Raw") == 0) {
+					SAFECOPY(val, client.protocol);
+					strlwr(val);
+					doordrop_put(fp, "USER_PROTOCOL", val);
+				}
+			}
+			doordrop_put_text(fp, "USER_HANDLE", useron.handle, utf8);
+			doordrop_put_ascii(fp, "USER_EMAIL", usermailaddr(&cfg, val
+			                                                  , (cfg.inetmail_misc & NMAIL_ALIAS) || (useron.rest & UREST_REAL_NAME)
+			        ? useron.alias : useron.name));
+			doordrop_put_ascii(fp, "USER_NETMAIL", useron.netmail);
+		}
+
+		fprintf(fp, "[terminal]\r\n");
+		doordrop_put_uint(fp, "TERM_COLS", term->cols > 0 ? term->cols : TERM_COLS_DEFAULT);
+		doordrop_put_uint(fp, "TERM_ROWS", term->rows > 0 ? term->rows : TERM_ROWS_DEFAULT);
+		const char* term_type = term->charset() == CHARSET_PETSCII ? "petscii" : term->supports(ANSI) ? "ansi" : "dumb";
+		doordrop_put(fp, "TERM_TYPE", term_type);
+		if (strcmp(term_type, "ansi") == 0 && term->supports(RIP))
+			doordrop_put(fp, "TERM_RIP", "unknown");
+		doordrop_put(fp, "TERM_CHARSET", doordrop_charset(term));
+		if (term->supports(ANSI) && !term->supports(COLOR))
+			doordrop_put(fp, "TERM_MONO", "1");
+		if (term->supports(SWAP_DELETE))
+			doordrop_put(fp, "TERM_BACKSPACE", "127");
+		if (!local) {
+			// The type the client sent, not the one answer() synthesized when it sent none
+			if (stricmp(client.protocol, "Telnet") == 0)
+				SAFECOPY(val, telnet_terminal);
+			else if (stricmp(client.protocol, "RLogin") == 0) {
+				SAFECOPY(val, rlogin_term);
+				truncstr(val, "/");
+			} else
+				SAFECOPY(val, terminal);
+			doordrop_put_ascii(fp, "TERM_TERMINFO", val);
+		}
+		if (term->cterm_version != 0) {
+			if (term->cterm_fork != 0)
+				snprintf(val, sizeof val, "%u.%u.%u", term->cterm_version / 1000, term->cterm_version % 1000, term->cterm_fork);
+			else
+				snprintf(val, sizeof val, "%u.%u", term->cterm_version / 1000, term->cterm_version % 1000);
+			doordrop_put(fp, "TERM_CTERM", val);
+			doordrop_put(fp, "TERM_DOORWAY", "1");
+		}
+		if (term->supports(ICE_COLOR))
+			doordrop_put(fp, "TERM_BRIGHT_BG", "1");
+		if (term->supports(MOUSE))
+			doordrop_put(fp, "TERM_MOUSE", "1");
+		if (term->audio_files)
+			doordrop_put(fp, "TERM_SNDFILE", "1");
+
+		fprintf(fp, "[session]\r\n");
+		if (!user_is_sysop(&useron)) {
+			uint64_t left = tleft;
+			bool     limited = true;
+			if (xtrn != nullptr && (xtrn->misc & XTRN_FREETIME)) {
+				// The user's clock stops while in the door
+				limited = xtrn->maxtime != 0;
+				left = xtrn->maxtime * 60;
+				if (event_time) {
+					uint64_t until_event = event_time > now ? (uint64_t)(event_time - now) : 0;
+					if (!limited || until_event < left)
+						left = until_event;
+					limited = true;
+				}
+			}
+			if (limited)
+				doordrop_put_uint(fp, "TIME_LEFT", left);
+		}
+		SAFECOPY(val, temp_dir);
+		if (*lastchar(val) == '/' || *lastchar(val) == '\\')
+			*lastchar(val) = '\0';
+		for (p = val; *p != '\0' && !iscntrl((uchar)*p); p++)
+			;
+		if (*p == '\0')
+			doordrop_put(fp, "TEMP_DIR", val);
+		if (misc & XTRN_NODISPLAY)
+			doordrop_put(fp, "LOCAL_DISPLAY", "0");
+		uint idle_limit = (xtrn != nullptr && xtrn->max_inactivity > 0) ? xtrn->max_inactivity : max_socket_inactivity.load();
+		if (idle_limit > 0)
+			doordrop_put_uint(fp, "IDLE_LIMIT", idle_limit);
+
+		if (xtrn != nullptr) {
+			fprintf(fp, "[door]\r\n");
+			doordrop_put_ascii(fp, "DOOR_CODE", xtrn->code);
+			doordrop_put_text(fp, "DOOR_NAME", xtrn->name, utf8);
+		}
+
+		fprintf(fp, "[preferences]\r\n");
+		if (useron.misc & NO_SOUND)
+			doordrop_put(fp, "PREF_SOUND", "0");
+		if (!(useron.misc & MOUSE))
+			doordrop_put(fp, "PREF_MOUSE", "0");
+		if (!(useron.misc & UPAUSE))
+			doordrop_put(fp, "PREF_PAUSE", "0");
+		if (useron.misc & EXPERT)
+			doordrop_put(fp, "PREF_EXPERT", "1");
+		if (thisnode.misc & NODE_POFF)
+			doordrop_put(fp, "PREF_PAGEABLE", "0");
+		if (useron.chat & CHAT_NOACT)
+			doordrop_put(fp, "PREF_ALERTS", "0");
+		if (thisnode.status == NODE_QUIET)
+			doordrop_put(fp, "PREF_QUIET", "1");
+
+		fprintf(fp, "[x-sbbs]\r\n");
+		if (useron.number) {
+			doordrop_put_uint(fp, "X_SBBS_LEVEL", useron.level);
+			doordrop_put_flags(fp, "X_SBBS_FLAGS1", useron.flags1);
+			doordrop_put_flags(fp, "X_SBBS_FLAGS2", useron.flags2);
+			doordrop_put_flags(fp, "X_SBBS_FLAGS3", useron.flags3);
+			doordrop_put_flags(fp, "X_SBBS_FLAGS4", useron.flags4);
+			doordrop_put_flags(fp, "X_SBBS_EXEMPT", useron.exempt);
+			doordrop_put_flags(fp, "X_SBBS_REST", useron.rest);
+			time_t expire = useron.expire;
+			if (expire && localtime_r(&expire, &tm) != NULL)
+				doordrop_put_date(fp, "X_SBBS_EXPIRE", 1900 + tm.tm_year, 1 + tm.tm_mon, tm.tm_mday);
+			doordrop_put_uint(fp, "X_SBBS_MINUTES", useron.min);
+			doordrop_put_uint(fp, "X_SBBS_CREDITS", useron.cdt);
+			doordrop_put_uint(fp, "X_SBBS_FREE_CREDITS", useron.freecdt);
+		}
+		if (xtrn != nullptr && xtrn->sec < cfg.total_xtrnsecs)
+			doordrop_put_ascii(fp, "X_SBBS_SECTION", cfg.xtrnsec[xtrn->sec]->code);
+
+		bool write_ok = !ferror(fp);
+		if (fclose(fp) != 0)
+			write_ok = false;
+		if (!write_ok) {
+			errormsg(WHERE, ERR_WRITE, str, 0);
+			remove(str);
+			return false;
+		}
+	}
+
 	else if (type)
 		errormsg(WHERE, ERR_CHK, "Drop file type", type);
 
-	return type == XTRN_NONE || type <= XTRN_BBSDEV;
+	return type == XTRN_NONE || type <= XTRN_DOORDROP;
 
 }
 
@@ -1486,9 +1908,10 @@ void sbbs_t::moduserdat(uint xtrnnum)
 const char* sbbs_t::xtrn_dropdir(const xtrn_t* xtrn, char* buf, size_t maxlen)
 {
 	const char* p = cfg.node_dir;
-	if (xtrn->misc & XTRN_STARTUPDIR)
+	uint32_t    misc = doordrop_misc(&cfg, xtrn);
+	if (misc & XTRN_STARTUPDIR)
 		p = xtrn->path;
-	else if (xtrn->misc & XTRN_TEMP_DIR)
+	else if (misc & XTRN_TEMP_DIR)
 		p = cfg.temp_dir;
 	char path[MAX_PATH + 1];
 	SAFECOPY(path, p);
@@ -1519,11 +1942,11 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		bputs(text[CantRunThatProgram]);
 		return false;
 	}
-	if (cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV
+	if ((cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV || cfg.xtrn[xtrnnum]->type == XTRN_DOORDROP)
 	    && ((cfg.xtrn[xtrnnum]->misc & XTRN_CONIO)
 	    || cfg.xtrn[xtrnnum]->cmd[0] == '*' || cfg.xtrn[xtrnnum]->cmd[0] == '?')) {
-		lprintf(LOG_ERR, "BBSDEV.DRP requires a child process and a supported communication method: %s"
-		        , cfg.xtrn[xtrnnum]->name);
+		lprintf(LOG_ERR, "%s requires a child process and a supported communication method: %s"
+		        , cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV ? "BBSDEV.DRP" : "DOORDROP.INI", cfg.xtrn[xtrnnum]->name);
 		bputs(text[CantRunThatProgram]);
 		return false;
 	}
@@ -1614,6 +2037,9 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 			case XTRN_BBSDEV:
 				SAFECOPY(name, "BBSDEV.DRP");
 				break;
+			case XTRN_DOORDROP:
+				SAFECOPY(name, "DOORDROP.INI");
+				break;
 			default:
 				SAFECOPY(name, "XTRN.DAT");
 				break;
@@ -1621,8 +2047,9 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	if ((cfg.xtrn[xtrnnum]->misc & XTRN_LWRCASE) && cfg.xtrn[xtrnnum]->type != XTRN_BBSDEV)
 		strlwr(name);
 	SAFECAT(path, name);
-	if (cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV && !isabspath(path)) {
-		lprintf(LOG_ERR, "BBSDEV.DRP path is not absolute: %s", path);
+	bool drop_env = cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV || cfg.xtrn[xtrnnum]->type == XTRN_DOORDROP;
+	if (drop_env && !isabspath(path)) {
+		lprintf(LOG_ERR, "Drop file path is not absolute: %s", path);
 		return false;
 	}
 	if (cfg.xtrn[xtrnnum]->misc & XTRN_REALNAME) {
@@ -1634,7 +2061,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	tleft = timeleft + (cfg.xtrn[xtrnnum]->textra * 60);
 	if (cfg.xtrn[xtrnnum]->maxtime && tleft > (cfg.xtrn[xtrnnum]->maxtime * 60))
 		tleft = (cfg.xtrn[xtrnnum]->maxtime * 60);
-	if (!xtrndat(name, dropdir, cfg.xtrn[xtrnnum]->type, tleft, cfg.xtrn[xtrnnum]->misc))
+	if (!xtrndat(name, dropdir, cfg.xtrn[xtrnnum]->type, tleft, cfg.xtrn[xtrnnum]->misc, cfg.xtrn[xtrnnum]))
 		return false;
 	if (!online)
 		return false;
@@ -1661,20 +2088,23 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	else if (cfg.xtrn[xtrnnum]->misc & XTRN_FOSSIL)
 		mode |= EX_FOSSIL;
 	mode |= (cfg.xtrn[xtrnnum]->misc & (XTRN_BIN | XTRN_CHKTIME | XTRN_NATIVE | XTRN_NOECHO | XTRN_NODISPLAY | XTRN_WWIVCOLOR));
+	if (cfg.xtrn[xtrnnum]->type == XTRN_DOORDROP)
+		mode |= EX_NOECHO;
 	if (cfg.xtrn[xtrnnum]->misc & XTRN_MODUSERDAT) {        /* Delete MODUSER.DAT */
 		SAFEPRINTF(str, "%sMODUSER.DAT", dropdir);    /* if for some weird  */
 		(void)removecase(str);                      /* reason it's there  */
 	}
 
-	char drop_file[MAX_PATH + 1];
-	char startup_dir[MAX_PATH + 1];
+	char     drop_file[MAX_PATH + 1];
+	char     startup_dir[MAX_PATH + 1];
+	uint32_t drop_misc = doordrop_misc(&cfg, cfg.xtrn[xtrnnum]);
 #if defined(__linux__)
 	if (cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*' && !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
 		SAFEPRINTF2(startup_dir, "%s\\%s", DOSEMU_XTRN_DRIVE, getdirname(cfg.xtrn[xtrnnum]->path));
 		backslash(startup_dir);
-		if (cfg.xtrn[xtrnnum]->misc & XTRN_STARTUPDIR)
+		if (drop_misc & XTRN_STARTUPDIR)
 			SAFEPRINTF2(drop_file, "%s%s", startup_dir, getfname(path));
-		else if (cfg.xtrn[xtrnnum]->misc & XTRN_TEMP_DIR)
+		else if (drop_misc & XTRN_TEMP_DIR)
 			SAFEPRINTF2(drop_file, "%s%s", DOSEMU_TEMP_DIR, getfname(path));
 		else
 			SAFEPRINTF2(drop_file, "%s\\%s", DOSEMU_NODE_DRIVE, getfname(path));
@@ -1686,18 +2116,18 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		SAFECOPY(drop_file, path);
 	}
 #if defined(__FreeBSD__)
-	if (cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV
+	if (drop_env
 	    && cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*'
 	    && !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
-		if (cfg.xtrn[xtrnnum]->misc & XTRN_STARTUPDIR)
+		if (drop_misc & XTRN_STARTUPDIR)
 			SAFEPRINTF(drop_file, "C:\\%s", getfname(path));
-		else if (cfg.xtrn[xtrnnum]->misc & XTRN_TEMP_DIR)
+		else if (drop_misc & XTRN_TEMP_DIR)
 			SAFEPRINTF(drop_file, "D:\\TEMP\\%s", getfname(path));
 		else
 			SAFEPRINTF(drop_file, "D:\\%s", getfname(path));
 	}
 #elif defined(_WIN32)
-	if (cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV
+	if (drop_env
 	    && cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*'
 	    && !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
 		if (GetShortPathName(path, drop_file, sizeof(drop_file)) == 0) {
@@ -1728,7 +2158,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	external(cmdstr(cfg.xtrn[xtrnnum]->cmd, drop_file, startup_dir, NULL, mode)
 	         , mode
 	         , cfg.xtrn[xtrnnum]->path
-	         , cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV ? drop_file : NULL);
+	         , cfg.xtrn[xtrnnum]->type == XTRN_BBSDEV ? "BBSDEV_DRP" : "DOORDROP_INI"
+	         , drop_env ? drop_file : NULL);
 	end = time(NULL);
 	audio_music_name[0] = '\0'; /* The program may have changed or stopped the music */
 
@@ -1738,6 +2169,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		external(cmdstr(cfg.xtrn[xtrnnum]->clean, drop_file, startup_dir, NULL, mode)
 		         , mode & ~(EX_STDIN | EX_CONIO), cfg.xtrn[xtrnnum]->path);
 	}
+	if (cfg.xtrn[xtrnnum]->type == XTRN_DOORDROP)
+		(void)remove(path);
 	if (cfg.xtrn[xtrnnum]->max_inactivity > 0)
 		max_socket_inactivity = saved_max_socket_inactivity;
 	/* Re-open the logfile */
