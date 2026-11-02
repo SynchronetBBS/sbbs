@@ -1,4 +1,4 @@
-var REVISION = "1.41";
+var REVISION = "1.42";
 
 load('sbbsdefs.js');
 load("lz-string.js");
@@ -42,12 +42,14 @@ function parse_user_msg(text)
             json_end=i;
     }
     if(json_begin && json_end > json_begin) {
-        text=text.splice(json_begin, json_end-json_begin);
+        text=text.splice(json_begin, json_end-json_begin).join('');
         try {
-            if((obj = JSON.parse(text.join(''))) != undefined)
+            if((obj = JSON.parse(text)) != undefined)
                 return obj;
         } catch(e) {
-            alert("Error " + e + " parsing JSON");
+            alert("Error " + e + " parsing JSON (" + text.length + " chars): "
+                + (text.length > 80 ? text.substr(0, 40) + "..." + text.substr(-40) : text));
+            log(LOG_DEBUG, text);
         }
         return false;
     }
