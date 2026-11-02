@@ -603,10 +603,6 @@ function Xtrnsec(sec)
 	xtrnsecprogwidth+=2;
 	if(xtrnsecprogwidth>37)
 		xtrnsecprogwidth=37;
-	if(xtrn_area.sec_list[sec].prog_list.length+3+sec <= console.screen_rows)
-		this.ypos=sec+2;
-	else
-		this.ypos=console.screen_rows-j-1;
 	this.xpos=40-xtrnsecprogwidth-2;
 	this.add("\xda"+bars80.substr(0,xtrnsecprogwidth)+"\xbf",undefined,undefined,"","");
 	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length && j<console.screen_rows-3; j++) {
@@ -614,6 +610,8 @@ function Xtrnsec(sec)
 			this.add("|"+hotkeys.substr(j,1)+" "+xtrn_area.sec_list[sec].prog_list[j].name,j.toString(),xtrnsecprogwidth);
 	}
 	this.add("\xc0"+bars80.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
+	// Keep the completed menu below the main bar and within the screen.
+	this.ypos=Math.min(sec+2,console.screen_rows-this.items.length+1);
 }
 Xtrnsec.prototype=ShellLB.prototype;
 
