@@ -260,16 +260,16 @@ function message_callback()
 		if(msg_rows>old_rows)
 			display_rows=msg_rows;
 		// Is this lightbar inside of the message window?
-		if(this.ypos+this.items.length-1 /* Last Used Row */ > console.screen_rows-display_rows /* Row above top row of message window */) {
+		if(this.ypos+this.get_height()-1 /* Last Used Row */ > console.screen_rows-display_rows /* Row above top row of message window */) {
 			/* Draw to left of lightbar */
 			if(this.xpos>1)
 				cleararea(1,console.screen_rows-display_rows+1,this.xpos-1,display_rows,false);
 			/* Draw below lightbar */
-			i=this.ypos+this.items[0].length;
+			i=this.ypos+this.get_height();
 			if(i<=console.screen_rows)
-				cleararea(this.xpos,i,this.items[0].length,console.screen_rows-i+1,true);
+				cleararea(this.xpos,i,this.items[0].text.length,console.screen_rows-i+1,true);
 			/* Draw to right of lightbar */
-			i=this.xpos+this.items[0].length;
+			i=this.xpos+this.items[0].text.length;
 			if(i<=console.screen_columns)
 				cleararea(i,console.screen_rows-display_rows+1,console.screen_columns-i+1,display_rows,true);
 		}
@@ -299,7 +299,7 @@ function ShellLB() {
 ShellLB.prototype = new Lightbar;
 // Extend the Lightbar prototype...
 ShellLB.prototype.erase=function() {
-	cleararea(this.xpos,this.ypos,this.items[0].text.length,this.items.length,true);
+	cleararea(this.xpos,this.ypos,this.items[0].text.length,this.get_height(),true);
 };
 ShellLB.prototype.lpadding="\xb3";
 ShellLB.prototype.rpadding="\xb3";
@@ -554,17 +554,43 @@ function Chatmenu()
 }
 Chatmenu.prototype=ShellLB.prototype;
 
+function setup_xtrn_menu(menu)
+{
+	menu.max_height=console.screen_rows-1;
+	menu.fixed_top=1;
+	menu.fixed_bottom=1;
+	// Page Up shares Ctrl-P's key code.  Use it for paging in these menus.
+	menu.hotkeys=menu.hotkeys.replace(ctrl('P'), '');
+	menu.draw=draw_xtrn_menu;
+}
+
+function draw_xtrn_menu(current)
+{
+	Lightbar.prototype.draw.call(this, current);
+	if(this.get_height()>=this.items.length)
+		return;
+	var visible=this.get_visible_items();
+	var x=this.xpos+this.items[0].text.length-3;
+	console.attributes=this.bg<<4|this.fg;
+	console.gotoxy(x, this.ypos);
+	console.write(this.scroll_offset>0 ? '^' : '\xc4');
+	console.gotoxy(x, this.ypos+this.get_height()-1);
+	console.write(visible[visible.length-2]<this.items.length-2 ? 'v' : '\xc4');
+	console.gotoxy(this.xpos+this.lpadding.length, this.ypos+this.get_item_row(this.current));
+}
+
 // Generate menus of available xtrn sections.
 function Xtrnsecs()
 {
 	var hotkeys="1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*():;<>";
 
 	this.items=new Array();
+	setup_xtrn_menu(this);
 	this.xpos=40;
 	this.ypos=2;
 	var xtrnsecwidth=0;
 	var j;
-	for(j=0; j<xtrn_area.sec_list.length && j<console.screen_rows-2; j++) {
+	for(j=0; j<xtrn_area.sec_list.length; j++) {
 		if(xtrn_area.sec_list[j].name.length > xtrnsecwidth)
 			xtrnsecwidth=xtrn_area.sec_list[j].name.length;
 	}
@@ -581,22 +607,24 @@ function Xtrnsecs()
 			}
 		}
 		if (canaccess) {
-			this.add("< |" + hotkeys.substr(j, 1) + " " + xtrn_area.sec_list[j].name, j.toString(), xtrnsecwidth);
+			var hotkey=hotkeys.substr(j, 1);
+			this.add("< " + (hotkey ? "|"+hotkey : " ") + " " + xtrn_area.sec_list[j].name, j.toString(), xtrnsecwidth);
 		}
 	}
 	this.add("\xc0"+bars80.substr(0,xtrnsecwidth)+"\xd9",undefined,undefined,"","");
 }
 Xtrnsecs.prototype=ShellLB.prototype;
 
-function Xtrnsec(sec)
+function Xtrnsec(sec, y)
 {
 	var hotkeys="1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*():;<>";
 	this.items=new Array();
+	setup_xtrn_menu(this);
 	var j=0;
 
-	xtrnsecprogwidth=0;
+	var xtrnsecprogwidth=0;
 	// Figure out the correct width
-	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length && j < (console.screen_rows-2); j++) {
+	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length; j++) {
 		if(xtrn_area.sec_list[sec].prog_list[j].name.length > xtrnsecprogwidth)
 			xtrnsecprogwidth=xtrn_area.sec_list[sec].prog_list[j].name.length;
 	}
@@ -605,13 +633,15 @@ function Xtrnsec(sec)
 		xtrnsecprogwidth=37;
 	this.xpos=40-xtrnsecprogwidth-2;
 	this.add("\xda"+bars80.substr(0,xtrnsecprogwidth)+"\xbf",undefined,undefined,"","");
-	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length && j<console.screen_rows-3; j++) {
-		if (xtrn_area.sec_list[sec].prog_list[j].can_access)
-			this.add("|"+hotkeys.substr(j,1)+" "+xtrn_area.sec_list[sec].prog_list[j].name,j.toString(),xtrnsecprogwidth);
+	for(j=0; j<xtrn_area.sec_list[sec].prog_list.length; j++) {
+		if (xtrn_area.sec_list[sec].prog_list[j].can_access) {
+			var hotkey=hotkeys.substr(j,1);
+			this.add((hotkey ? "|"+hotkey : " ")+" "+xtrn_area.sec_list[sec].prog_list[j].name,j.toString(),xtrnsecprogwidth);
+		}
 	}
 	this.add("\xc0"+bars80.substr(0,xtrnsecprogwidth)+"\xd9",undefined,undefined,"","");
 	// Keep the completed menu below the main bar and within the screen.
-	this.ypos=Math.min(sec+2,console.screen_rows-this.items.length+1);
+	this.ypos=Math.max(2, Math.min(y===undefined ? sec+2 : y,console.screen_rows-this.get_height()+1));
 }
 Xtrnsec.prototype=ShellLB.prototype;
 
@@ -731,7 +761,7 @@ while(bbs.online) {
 			while(!done && bbs.online) {
 				x_sec=xtrnsec.getval();
 				if(x_sec==KEY_LEFT)
-					x_sec=(xtrnsec.current-1).toString();
+					x_sec=xtrnsec.items[xtrnsec.current].retval;
 				if(x_sec==KEY_RIGHT) {
 					main_right();
 					break;
@@ -756,7 +786,7 @@ while(bbs.online) {
 					console.beep();
 					continue;
 				}
-				var this_xtrnsec=new Xtrnsec(curr_xtrnsec);
+				var this_xtrnsec=new Xtrnsec(curr_xtrnsec,xtrnsec.ypos+xtrnsec.get_item_row(xtrnsec.current)-1);
 				menus_displayed.push(this_xtrnsec);
 				while(bbs.online) {
 					x_prog=this_xtrnsec.getval();

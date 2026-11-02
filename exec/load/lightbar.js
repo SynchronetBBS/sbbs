@@ -36,6 +36,10 @@ require("mouse_getkey.js", 'mouse_getkey');
  *  kfg: Hotkey forground colour for non-current item
  *  khfg: Hotkey foreground colour for current item
  *  current: Index of currently highlighted item
+ *  max_height: Maximum rows for a vertical menu (0 means no scrolling).
+ *  fixed_top, fixed_bottom: Number of items pinned above/below the scrolling
+ *         entries.  Leave at least one row available for scrolling entries.
+ *  scroll_offset: Number of entries skipped below the fixed top items.
  *  align: If width is greater than the text length, a zero indicates the text
  *         should be left-aligned, a 1 indicates it should be right-aligned, and
  *         a 2 indicates it should be centered.
@@ -68,6 +72,10 @@ Lightbar.prototype.dbg=1;
 Lightbar.prototype.kfg=15;
 Lightbar.prototype.khfg=15;
 Lightbar.prototype.current=0;
+Lightbar.prototype.max_height=0;
+Lightbar.prototype.fixed_top=0;
+Lightbar.prototype.fixed_bottom=0;
+Lightbar.prototype.scroll_offset=0;
 Lightbar.prototype.align=0;
 Lightbar.prototype.force_width=-1;
 Lightbar.prototype.lpadding=null;
@@ -107,6 +115,51 @@ Lightbar.prototype.add = function(txt, retval, width, lpadding, rpadding, disabl
 Lightbar.prototype.clear = function()
 {
 	this.items=new Array();
+	this.scroll_offset=0;
+};
+
+// Visible height and item indices are shared by drawing, hit testing and callers
+// that position or erase a menu.  Item indices/return values never change.
+Lightbar.prototype.get_height = function()
+{
+	if(this.direction==0 && this.max_height>0)
+		return Math.min(this.items.length, this.max_height);
+	return this.items.length;
+};
+
+Lightbar.prototype.get_visible_items = function()
+{
+	var height=this.get_height();
+	var top=0;
+	var bottom=0;
+	if(height<this.items.length) {
+		top=Math.max(0, Math.min(this.fixed_top, height-1));
+		bottom=Math.max(0, Math.min(this.fixed_bottom, height-top-1));
+	}
+	var rows=height-top-bottom;
+	var end=this.items.length-bottom;
+	this.scroll_offset=Math.max(0, Math.min(this.scroll_offset, end-top-rows));
+	if(this.current>=top && this.current<end) {
+		if(this.current<top+this.scroll_offset)
+			this.scroll_offset=this.current-top;
+		else if(this.current>=top+this.scroll_offset+rows)
+			this.scroll_offset=this.current-top-rows+1;
+	}
+	var visible=[];
+	var i;
+	for(i=0; i<top; i++)
+		visible.push(i);
+	for(i=top+this.scroll_offset; i<top+this.scroll_offset+rows; i++)
+		visible.push(i);
+	for(i=end; i<this.items.length; i++)
+		visible.push(i);
+	return visible;
+};
+
+// Return an item's zero-based screen row within a vertical menu, or -1 if hidden.
+Lightbar.prototype.get_item_row = function(index)
+{
+	return this.get_visible_items().indexOf(index);
 };
 
 Lightbar.prototype.failsafe_getval = function()
@@ -185,6 +238,8 @@ Lightbar.prototype.getval = function(current,key)
 						}
 						else {
 							delete this.mouse_miss_str;
+							if(this.items[hit].disabled || this.items[hit].retval==undefined)
+							break;
 							this.draw(hit);
 							this.nodraw=false;
 							if(this.items[this.current].retval==undefined)
@@ -239,6 +294,29 @@ Lightbar.prototype.getval = function(current,key)
 							this.current=0;
 					}
 					break;
+				case KEY_PAGEUP:
+				case KEY_PAGEDN:
+					if(this.direction==0 && this.max_height>0) {
+						var step=key==KEY_PAGEUP ? -1 : 1;
+						var page=Math.max(1, this.get_height()-this.fixed_top-this.fixed_bottom);
+						var target=Math.max(0, Math.min(this.items.length-1, this.current+step*page));
+						// Seek in the requested direction; at the end, seek back to
+						// the last selectable entry without wrapping around.
+						while(target>=0 && target<this.items.length &&
+							(this.items[target].disabled || this.items[target].retval==undefined))
+							target+=step;
+						if(target<0 || target>=this.items.length) {
+							target=step<0 ? 0 : this.items.length-1;
+							while(target>=0 && target<this.items.length &&
+								(this.items[target].disabled || this.items[target].retval==undefined))
+								target-=step;
+						}
+						if(target>=0 && target<this.items.length) {
+							this.current=target;
+							this.scroll_offset+=step*page;
+						}
+					}
+					break;
 				case KEY_END:
 					this.current=this.items.length-1;
 					while(this.items[this.current].disabled || this.items[this.current].retval==undefined) {
@@ -290,8 +368,10 @@ Lightbar.prototype.mouse_hit = function(x, y)
 	var i;
 	var curx=this.xpos;
 	var cury=this.ypos;
+	var visible=this.get_visible_items();
 
-	for(i=0; i<this.items.length; i++) {
+	for(var row=0; row<visible.length; row++) {
+		i=visible[row];
 		var width;
 
 		// Some basic validation.
@@ -338,7 +418,8 @@ Lightbar.prototype.mouse_hit = function(x, y)
 		var rpadding=this.rpadding;
 		if(this.items[i].rpadding!=undefined)
 			rpadding=this.items[i].rpadding;
-		curx += rpadding.length;
+		if(rpadding != undefined && rpadding != null)
+			curx += rpadding.length;
 
 		if(this.direction==0) {
 			cury++;
@@ -376,7 +457,7 @@ Lightbar.prototype.draw = function(current)
 	}
 
 	/* Check that a vertical lightbar fits on the screen */
-	if(this.direction==0 && (this.ypos+this.items.length-1 > console.screen_rows)) {
+	if(this.direction==0 && (this.ypos+this.get_height()-1 > console.screen_rows)) {
 		alert("Screen too short for lightbar!");
 		return;
 	}
@@ -440,7 +521,9 @@ Lightbar.prototype.draw = function(current)
 	var cursx=this.xpos;
 	var cursy=this.ypos;
 	var item_count=0;
-	for(i=0; i<this.items.length; i++) {
+	var visible=this.get_visible_items();
+	for(var row=0; row<visible.length; row++) {
+		i=visible[row];
 		var width;
 
 		// Some basic validation.
