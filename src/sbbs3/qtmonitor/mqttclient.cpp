@@ -141,8 +141,20 @@ void MqttClient::connectToBroker()
 			for (const auto &c : QSslConfiguration::supportedCiphers())
 				if (c.name().contains("PSK"))
 					pskCiphers << c;
-			if (!pskCiphers.isEmpty())
+			if (!pskCiphers.isEmpty()) {
 				config.setCiphers(pskCiphers);
+				if (QSslSocket::activeBackend() == QStringLiteral("openssl")) {
+					// cryptlib uses 1536-bit DH for PSK (1024 in some builds).
+					// OpenSSL level 2 requires 2048 bits; level 1 permits both
+					// while retaining DHE-PSK and forward secrecy. Qt's
+					// setCiphers() cannot interpret @SECLEVEL directives.
+					QStringList cipherNames;
+					for (const auto &cipher : pskCiphers)
+						cipherNames << cipher.name();
+					config.setBackendConfigurationOption("CipherString",
+						(cipherNames.join(':') + QStringLiteral(":@SECLEVEL=1")).toLatin1());
+				}
+			}
 		}
 
 		m_socket->setSslConfiguration(config);

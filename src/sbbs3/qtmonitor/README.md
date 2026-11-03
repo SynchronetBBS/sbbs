@@ -76,6 +76,11 @@ qtmonitor -m BROKER_HOST --psk-id ALIAS --psk-key PASSWORD -P SYSPASS
 
 Settings are saved after first use. Subsequent runs need no arguments.
 
+With the OpenSSL TLS backend, PSK connections use security level 1 to accept
+cryptlib's 1536-bit DH parameters (1024-bit in some builds). This preserves
+DHE-PSK forward secrecy, but permits smaller DH keys than OpenSSL's default
+level 2. Certificate-only connections retain the default security level.
+
 On FreeBSD and Linux, qtmonitor stores these settings in
 `~/.config/Synchronet/qtmonitor.conf`. Window geometry and dock layout are
 written when qtmonitor closes cleanly.

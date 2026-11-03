@@ -52,6 +52,17 @@ include(CTest)
 if(BUILD_TESTING)
     find_package(Qt6 COMPONENTS Test QUIET)
     if(Qt6Test_FOUND)
+        add_executable(qtmonitor_mqtt_tls_test
+            tests/mqtt_tls_test.cpp
+            mqttclient.cpp
+        )
+        target_include_directories(qtmonitor_mqtt_tls_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+        target_link_libraries(qtmonitor_mqtt_tls_test PRIVATE
+            Qt6::Core Qt6::Network Qt6::Mqtt Qt6::Test
+        )
+        add_test(NAME qtmonitor_mqtt_tls COMMAND qtmonitor_mqtt_tls_test)
+        qt_finalize_target(qtmonitor_mqtt_tls_test)
+
         add_executable(qtmonitor_dock_test
             tests/dock_behavior_test.cpp
             ${QTMONITOR_SOURCES}
