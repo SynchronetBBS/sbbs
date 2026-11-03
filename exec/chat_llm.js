@@ -2461,6 +2461,11 @@ function chat_session(input, ctx)
                     : '')
                  + ' window=' + window
                  + (ctx._dedup ? ' dedup=' + ctx._dedup : '')
+                 /* fix_scfg_paths() rewrote or dropped N path claims.
+                  * Surfaced here because the chat log is the only place
+                  * a misfire on real traffic would be noticed. */
+                 + (ctx._scfg_path_fixes
+                    ? ' scfgfix=' + ctx._scfg_path_fixes : '')
                  + ' stream=' + (opts._stream_used ? 'yes' : 'no')
                  + (opts._stream_used && opts._ttfc !== null
                     ? ' ttfc=' + opts._ttfc.toFixed(2) + 's'
@@ -3442,6 +3447,12 @@ function inject_retrieval(input, ctx, cfg)
      * filter strip the very URLs it retrieved. */
     ctx._valid_wiki_urls = {};
     _add_urls_from(ctx.retrieved_context, ctx._valid_wiki_urls);
+    /* Ground truth for fix_scfg_paths(): derived from the index's scfg
+     * chunks, not from the retrieved ones, so a reply's SCFG path claim
+     * is checked whether or not retrieval happened to surface the right
+     * menu this turn -- which is the whole point, since BM25 ranks those
+     * chunks in only when the question's words match an option label. */
+    ctx._scfg_paths = scfg_path_index(idx);
     ctx._rag_wiki_hits = [];
     for (var hi = 0; hi < hits.length; hi++) {
         var prov = hits[hi].provenance || '';
@@ -3638,6 +3649,217 @@ function strip_fake_urls(reply, ctx) {
     return stripped;
 }
 
+/* --- SCFG menu-path validation ----------------------------------
+ *
+ * The guru invents SCFG navigation.  It told #synchronet to "Navigate
+ * to Util -> Modules -> Certtool" and to use "util:SCFG:Servers->SMTP
+ * Server settings"; SCFG has no Util menu, and both of those are
+ * DokuWiki page IDs (util:scfg, module:certtool) rendered as menu
+ * paths, because the page ID sits in front of the model in every
+ * chunk's "Cite this URL verbatim" line.
+ *
+ * Indexing scfgindex.h (see llm_index/scfg.js) fixes the questions
+ * whose wording matches an option label, but retrieval is ranking, not
+ * verification: measured on five everyday-phrasing questions, none
+ * retrieved an scfg chunk and three answers still stated a path that
+ * does not exist -- including one where the RIGHT wiki page was
+ * retrieved and the model mislocated the option anyway.  So the check
+ * belongs here, after generation, the same way strip_fake_urls()
+ * polices citations.
+ *
+ * SCOPE, deliberately narrow: only a chain the reply ATTRIBUTES to
+ * SCFG is touched.  Other Synchronet UIs have menu paths too --
+ * sbbsctrl's tree ("servers -> ftp -> configure"), the terminal
+ * interface -- and "rewriting" one of those into an SCFG path would be
+ * worse than the original error.  A real SCFG path stated without
+ * naming SCFG is therefore left alone; missing one of those costs
+ * nothing, while corrupting unrelated text costs the reply.
+ */
+
+/* {paths, labels} derived from the index's scfg chunks.  Cached ON the
+ * index object: load_index() replaces that object when the .idx file's
+ * mtime changes, so the derived tables are invalidated with it and a
+ * nightly rebuild can't leave stale paths behind. */
+/* Compare SCFG path text the way a sysop writes it, not the way the
+ * index stores it: a submenu label carries a trailing ellipsis ("Security
+ * Options...", "SSH Support...") that a model routinely omits, and a path
+ * at the end of a sentence picks up a period.  Both forms must hit the
+ * same key, or a CORRECT path gets "corrected" into its parent menu --
+ * which is how "System > Security Options... > Create Self-signed
+ * Certificate" came back as bare "System". */
+function _scfg_norm(part)
+{
+    return String(part).replace(/^\s+|\s+$/g, '')
+                       .replace(/\.+$/, '')
+                       .toLowerCase();
+}
+
+function _scfg_key(parts)
+{
+    var out = [];
+    for (var i = 0; i < parts.length; i++) out.push(_scfg_norm(parts[i]));
+    return out.join(' > ');
+}
+
+function scfg_path_index(idx)
+{
+    if (!idx || !idx.docs) return null;
+    if (idx._scfg_paths !== undefined) return idx._scfg_paths;
+
+    var paths  = {};   /* normalized path (and every prefix) -> canonical */
+    var labels = {};   /* normalized option label -> canonical path, or
+                        * '' when the label appears under more than one
+                        * parent ("Enabled" is under 25 of them) */
+    var count = 0;
+    for (var i = 0; i < idx.docs.length; i++) {
+        var d = idx.docs[i];
+        if (!d || String(d.id || '').indexOf('scfg/') !== 0) continue;
+        var lines = String(d.text || '').split('\n');
+        for (var li = 0; li < lines.length; li++) {
+            var m = lines[li].match(/^SCFG > (.+?)\s*$/);
+            if (!m) continue;
+            var parts = m[1].split(' > ');
+            for (var p = 1; p <= parts.length; p++) {
+                var slice = parts.slice(0, p);
+                var key   = _scfg_key(slice);
+                if (paths[key] === undefined) {
+                    paths[key] = slice.join(' > ');
+                    count++;
+                }
+            }
+            var label = _scfg_norm(parts[parts.length - 1]);
+            if (labels[label] === undefined)      labels[label] = m[1];
+            else if (labels[label] !== m[1])      labels[label] = '';
+        }
+    }
+    idx._scfg_paths = count ? { paths: paths, labels: labels, count: count }
+                            : null;
+    return idx._scfg_paths;
+}
+
+/* Split a matched chain into path parts, dropping the SCFG name itself
+ * wherever it appears ("util:SCFG:Servers" puts it in the middle). */
+function _scfg_chain_parts(chain)
+{
+    var raw = chain.split(/\s*(?:->|>|:)\s*/);
+    var parts = [];
+    for (var i = 0; i < raw.length; i++) {
+        var s = raw[i].replace(/^[\s"'(]+|[\s"',;:!?)]+$/g, '');
+        /* A connector the hop pattern allowed mid-label can be left
+         * dangling at the end ("...Main Options to"); drop it. */
+        s = s.replace(/\s+(?:of|the|per|and|or|to|for|in|on|a|with|by)$/i, '');
+        if (!s) continue;
+        if (/^(?:scfg|synchronet configuration utility)$/i.test(s)) continue;
+        parts.push(s);
+    }
+    /* All-numeric chains are comparisons, not paths ("9 > 5"). */
+    var alpha = false;
+    for (var p = 0; p < parts.length; p++)
+        if (/[A-Za-z]/.test(parts[p])) alpha = true;
+    return alpha ? parts : [];
+}
+
+function fix_scfg_paths(reply, ctx)
+{
+    var pi = ctx && ctx._scfg_paths;
+    if (!pi || !reply) return reply;
+    var text = String(reply);
+
+    /* URL spans are off limits: wiki page IDs are colon-separated
+     * (wiki.synchro.net/config:ssl.cert), so a chain matcher that
+     * treats ":" as a separator would otherwise rewrite citations. */
+    var url_spans = [];
+    var urlre = /\bhttps?:\/\/\S+/g;
+    var um;
+    while ((um = urlre.exec(text)) !== null)
+        url_spans.push([um.index, um.index + um[0].length]);
+
+    /* A hop looks like an SCFG label: Title Case, or starting with a
+     * number ("40 Column PETSCII Support"), and continuing only with
+     * capitalized/numeric words or a short list of connectors.  That
+     * boundary is what stops a hop from swallowing the prose after it
+     * -- with spaces allowed freely, "SCFG->System->Security
+     * Options... is where the password lives" matched through to
+     * "lives", and the rewrite mangled the sentence.  Prose resumes in
+     * lower case, so the chain ends where the label does. */
+    var WORD = "(?:[A-Z0-9][A-Za-z0-9()'/&._-]*"
+             + "|of|the|per|and|or|to|for|in|on|a|with|by)";
+    var PART = "[A-Z0-9][A-Za-z0-9()'/&._-]*(?:\\s+" + WORD + "){0,5}";
+    var chainre = new RegExp(PART + "(?:\\s*(?:->|>|:)\\s*" + PART + "){1,5}", 'g');
+    var fixes = [];
+    var m;
+    while ((m = chainre.exec(text)) !== null) {
+        var start = m.index, end = m.index + m[0].length;
+        var overlapped = false;
+        for (var u = 0; u < url_spans.length; u++)
+            if (start < url_spans[u][1] && end > url_spans[u][0])
+                overlapped = true;
+        if (overlapped) continue;
+
+        /* Attribution gate: SCFG named inside the chain, or earlier in
+         * the same sentence. */
+        var head = text.slice(0, start);
+        var sentence = head.split(/[.!?]\s/).pop();
+        var named = /\bSCFG\b|Synchronet Configuration Utility/i;
+        if (!named.test(m[0]) && !named.test(sentence)) continue;
+
+        /* A chain written as a DokuWiki page ID carries its namespace
+         * ("util:SCFG:Servers->..."); swallow that lower-case prefix so
+         * the rewrite doesn't leave "util:" glued to the result. */
+        var ns = head.match(/[a-z][a-z0-9_.-]*:$/);
+        if (ns) start -= ns[0].length;
+
+        var parts = _scfg_chain_parts(m[0]);
+        if (parts.length < 2) continue;
+
+        if (pi.paths[_scfg_key(parts)] !== undefined) continue;  /* real */
+
+        /* 1. Unique option label anywhere in SCFG -> use its real path.
+         *    Also tried with a trailing filler word removed, which is
+         *    how "SMTP Server settings" reaches "SMTP Server". */
+        var last = _scfg_norm(parts[parts.length - 1]);
+        var cand = pi.labels[last];
+        if (!cand) {
+            var trimmed = last.replace(/\s+(?:settings?|options?|menu|section|screen)$/, '');
+            if (trimmed !== last && pi.labels[trimmed]) cand = pi.labels[trimmed];
+        }
+        /* 2. Otherwise the longest leading prefix that is a real menu. */
+        if (!cand) {
+            for (var n = parts.length - 1; n >= 1; n--) {
+                var pk = _scfg_key(parts.slice(0, n));
+                if (pi.paths[pk] !== undefined) { cand = pi.paths[pk]; break; }
+            }
+        }
+        /* 3. Nothing recoverable: keep the SCFG mention, drop the path. */
+        var had_scfg = /\bSCFG\b/i.test(m[0]);
+        var repl = cand ? ((had_scfg ? 'SCFG > ' : '') + cand)
+                        : (had_scfg ? 'SCFG' : '');
+        /* The hop pattern allows a connector mid-label, so the match can
+         * end on one that belongs to the sentence ("... Certtool TO
+         * generate a new cert").  Put it back, or the rewrite eats the
+         * verb's preposition and the sentence reads "SCFG generate". */
+        var tail = m[0].match(/\s+(of|the|per|and|or|to|for|in|on|a|with|by)$/i);
+        if (tail) repl += tail[0];
+        fixes.push({ start: start, end: end, from: m[0], to: repl });
+    }
+    if (!fixes.length) return reply;
+
+    /* Right to left so earlier offsets stay valid. */
+    for (var f = fixes.length - 1; f >= 0; f--) {
+        text = text.slice(0, fixes[f].start) + fixes[f].to
+             + text.slice(fixes[f].end);
+        log(LOG_INFO, 'chat_llm: SCFG path "' + fixes[f].from
+            + '" is not in the option index -> "' + fixes[f].to + '"');
+    }
+    if (ctx) ctx._scfg_path_fixes = fixes.length;
+
+    /* Tidy what a replacement can leave behind. */
+    text = text.replace(/\bSCFG\s+SCFG\b/gi, 'SCFG');
+    text = text.replace(/[ \t]{2,}/g, ' ');
+    text = text.replace(/\s+([.,;:!?])/g, '$1');
+    return text.replace(/^\s+|\s+$/g, '');
+}
+
 /* Post-process an assembled reply into the form that is spoken,
  * logged, and persisted.  Kept as one function so a regenerated reply
  * (see the dedup retry in chat_session) goes through exactly the same
@@ -3646,6 +3868,7 @@ function strip_fake_urls(reply, ctx) {
 function _finish_reply(reply, ctx) {
     if (reply === null) return null;
     reply = final_reply_postprocess(reply);
+    reply = fix_scfg_paths(reply, ctx);
     /* strip BEFORE append: fabricated wiki/archive URLs in the body
      * shouldn't suppress a legitimate appended top-wiki URL via
      * append_wiki_url_if_missing's "already cited" guard. */
