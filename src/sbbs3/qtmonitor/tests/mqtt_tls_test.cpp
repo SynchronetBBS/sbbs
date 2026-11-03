@@ -1,15 +1,20 @@
 #include "mqttclient.h"
 
 #include <QHostAddress>
-#include <QProcess>
 #include <QSignalSpy>
-#include <QStandardPaths>
 #include <QSslCipher>
 #include <QSslDiffieHellmanParameters>
 #include <QSslKey>
 #include <QTcpServer>
-#include <QTemporaryFile>
+#include <QTcpSocket>
 #include <QTest>
+
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+
+#include <cstring>
+#include <memory>
 
 // RFC 3526 group 5, matching cryptlib's default PSK DH size. Public
 // parameters only; test identities and keys never come from user settings.
@@ -26,47 +31,83 @@ static const QByteArray Identity = QByteArrayLiteral("qtmonitor-test");
 static const QByteArray Key = QByteArrayLiteral("qtmonitor-test-password");
 static const QString Cipher = QStringLiteral("DHE-PSK-AES128-CBC-SHA256");
 
-class PskServer
+class PskServer : public QTcpServer
 {
 public:
+	PskServer()
+	{
+		connect(this, &QTcpServer::newConnection, this, [this] {
+			auto *socket = nextPendingConnection();
+			auto ssl = std::shared_ptr<SSL>(SSL_new(m_context.get()), SSL_free);
+			BIO *input = BIO_new(BIO_s_mem());
+			BIO *output = BIO_new(BIO_s_mem());
+			if (!ssl || !input || !output) {
+				BIO_free(input);
+				BIO_free(output);
+				socket->abort();
+				return;
+			}
+			// Memory BIOs keep this fixture independent of native socket
+			// descriptor types and let Qt drive the server without a thread.
+			SSL_set_bio(ssl.get(), input, output);
+			SSL_set_accept_state(ssl.get());
+			connect(socket, &QTcpSocket::readyRead, socket, [socket, ssl] {
+				const auto data = socket->readAll();
+				if (SSL_is_init_finished(ssl.get()))
+					return; // This fixture only needs the TLS handshake.
+				BIO *input = SSL_get_rbio(ssl.get());
+				if (BIO_write(input, data.constData(), int(data.size())) != data.size()) {
+					socket->abort();
+					return;
+				}
+				ERR_clear_error();
+				const int result = SSL_do_handshake(ssl.get());
+				const int error = result == 1 ? SSL_ERROR_NONE : SSL_get_error(ssl.get(), result);
+				BIO *output = SSL_get_wbio(ssl.get());
+				char buffer[4096];
+				int count;
+				while ((count = BIO_read(output, buffer, sizeof(buffer))) > 0)
+					socket->write(buffer, count);
+				if (error != SSL_ERROR_NONE && error != SSL_ERROR_WANT_READ
+				    && error != SSL_ERROR_WANT_WRITE)
+					socket->disconnectFromHost(); // Flush any fatal TLS alert.
+			});
+		});
+	}
+
 	bool start()
 	{
-		if (!m_dhFile.open() || m_dhFile.write(DhParameters) != DhParameters.size()
-		    || !m_dhFile.flush())
+		m_context.reset(SSL_CTX_new(TLS_server_method()));
+		if (!m_context)
 			return false;
-		QTcpServer reservePort;
-		if (!reservePort.listen(QHostAddress::LocalHost))
+		SSL_CTX_set_security_level(m_context.get(), 1);
+		if (SSL_CTX_set_min_proto_version(m_context.get(), TLS1_2_VERSION) != 1
+		    || SSL_CTX_set_max_proto_version(m_context.get(), TLS1_2_VERSION) != 1
+		    || SSL_CTX_set_cipher_list(m_context.get(), Cipher.toLatin1().constData()) != 1)
 			return false;
-		m_port = reservePort.serverPort();
-		reservePort.close();
-		m_process.setProcessChannelMode(QProcess::MergedChannels);
-		m_process.start(QStandardPaths::findExecutable("openssl"), {
-			"s_server", "-accept", QStringLiteral("127.0.0.1:%1").arg(m_port),
-			"-nocert", "-tls1_2", "-cipher", Cipher + ":@SECLEVEL=1",
-			"-dhparam", m_dhFile.fileName(), "-psk", QString::fromLatin1(Key.toHex()),
-			"-psk_identity", QString::fromLatin1(Identity)
-		});
-		return m_process.waitForStarted(1000);
-	}
-	~PskServer()
-	{
-		if (m_process.state() != QProcess::NotRunning) {
-			m_process.kill();
-			m_process.waitForFinished(1000);
+		auto bio = std::unique_ptr<BIO, decltype(&BIO_free)>(
+			BIO_new_mem_buf(DhParameters.constData(), int(DhParameters.size())), BIO_free);
+		if (!bio)
+			return false;
+		EVP_PKEY *parameters = PEM_read_bio_Parameters(bio.get(), nullptr);
+		if (!parameters)
+			return false;
+		if (SSL_CTX_set0_tmp_dh_pkey(m_context.get(), parameters) != 1) {
+			EVP_PKEY_free(parameters);
+			return false;
 		}
+		SSL_CTX_set_psk_server_callback(m_context.get(),
+			[](SSL *, const char *identity, unsigned char *key, unsigned int maxKeySize) -> unsigned int {
+				if (!identity || Identity != identity || maxKeySize < Key.size())
+					return 0;
+				std::memcpy(key, Key.constData(), size_t(Key.size()));
+				return unsigned(Key.size());
+			});
+		return listen(QHostAddress::LocalHost);
 	}
-	bool ready()
-	{
-		m_output += m_process.readAll();
-		return m_output.contains("ACCEPT");
-	}
-	quint16 serverPort() const { return m_port; }
 
 private:
-	QTemporaryFile m_dhFile;
-	QProcess m_process;
-	QByteArray m_output;
-	quint16 m_port = 0;
+	std::unique_ptr<SSL_CTX, decltype(&SSL_CTX_free)> m_context{nullptr, SSL_CTX_free};
 };
 
 class MqttTlsTest : public QObject
@@ -78,8 +119,6 @@ private slots:
 	{
 		if (!QSslSocket::supportsSsl() || QSslSocket::activeBackend() != "openssl")
 			QSKIP("OpenSSL TLS backend required for DH security level tests");
-		if (QStandardPaths::findExecutable("openssl").isEmpty())
-			QSKIP("OpenSSL command line tool required for the local TLS server");
 		QVERIFY(!QSslCipher(Cipher).isNull());
 		QVERIFY(QSslDiffieHellmanParameters::fromEncoded(DhParameters).isValid());
 	}
@@ -87,8 +126,7 @@ private slots:
 	void levelTwoRejectsCryptlibDhSize()
 	{
 		PskServer server;
-		QVERIFY(server.start());
-		QTRY_VERIFY_WITH_TIMEOUT(server.ready(), 5000);
+		QVERIFY2(server.start(), ERR_error_string(ERR_peek_last_error(), nullptr));
 		QSslSocket socket;
 		auto config = socket.sslConfiguration();
 		config.setProtocol(QSsl::TlsV1_2);
@@ -121,8 +159,7 @@ private slots:
 		QFETCH(bool, accepted);
 		const auto defaults = QSslConfiguration::defaultConfiguration();
 		PskServer server;
-		QVERIFY(server.start());
-		QTRY_VERIFY_WITH_TIMEOUT(server.ready(), 5000);
+		QVERIFY2(server.start(), ERR_error_string(ERR_peek_last_error(), nullptr));
 		MqttClient client;
 		client.configure("127.0.0.1", server.serverPort(), {}, {}, {}, Identity, key);
 		client.connectToBroker();
@@ -130,7 +167,7 @@ private slots:
 		QVERIFY(socket);
 		QSignalSpy errors(&client, &MqttClient::errorOccurred);
 		QTRY_VERIFY_WITH_TIMEOUT(socket->isEncrypted() || !errors.isEmpty(), 5000);
-		QCOMPARE(socket->isEncrypted(), accepted);
+		QVERIFY2(socket->isEncrypted() == accepted, qPrintable(socket->errorString()));
 		if (accepted) {
 			QCOMPARE(socket->sslConfiguration().sessionCipher().name(), Cipher);
 			QCOMPARE(socket->sslConfiguration().ephemeralServerKey().length(), 1536);
