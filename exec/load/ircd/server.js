@@ -65,6 +65,7 @@ function IRC_Server() {
 	this.bcast_to_servers_raw=IRCClient_bcast_to_servers_raw;
 	this.bcast_to_uchans_unique=IRCClient_bcast_to_uchans_unique;
 	this.globops=IRCClient_globops;
+	this.global=IRCClient_global;
 	// Output helpers
 	this.server_nick_info=IRCClient_server_nick_info;
 	this.server_chan_info=IRCClient_server_chan_info;
@@ -132,12 +133,12 @@ function Server_Work(cmdline) {
 		return 0;
 	}
 
-	/* A server prefix is an assertion by the authenticated peer, not a
-	   channel user's MODE request.  Before accepting either kind of MODE
-	   (or a KICK), make sure the claimed origin is actually on this link. */
+	/* A source prefix is an assertion by the authenticated peer. Validate
+	   its route before using either channel privileges or U:line trust. */
 	if ((cmd.verb == "MODE" || cmd.verb == "KICK"
 		|| cmd.verb == "JOIN" || cmd.verb == "SJOIN" || cmd.verb == "TOPIC" || cmd.verb == "TSMAP" || cmd.verb == "LINKSEC"
 		|| cmd.verb == "PART" || cmd.verb == "PRIVMSG" || cmd.verb == "NOTICE"
+		|| cmd.verb == "INVITE" || cmd.verb == "KILL" || cmd.verb == "AKILL" || cmd.verb == "RAKILL" || cmd.verb == "SQUIT"
 		|| cmd.verb == "NICK" || cmd.verb == "QUIT" || cmd.verb == "SERVER" || cmd.verb == "CLIENTTLS")
 		&& origin !== this
 		&& (origin.local || !origin.parent
@@ -367,7 +368,7 @@ function Server_Work(cmdline) {
 		j = Users[p[0].toUpperCase()];
 		if (!j)
 			break;
-		if (j.channels[tmp.nam.toUpperCase()])
+		if (j.channels[tmp.nam.toUpperCase()] && !origin.uline)
 			break;
 		j.originatorout(format(
 			"INVITE %s :%s",
@@ -419,6 +420,11 @@ function Server_Work(cmdline) {
 			break;
 		}
 		if (!j.channels[tmp.nam.toUpperCase()]) {
+			if (origin.uline) {
+				this.bcast_to_servers_raw(format(":%s KICK %s %s :%s",
+					origin.nick, tmp.nam, j.nick, p[2] || j.nick));
+				break;
+			}
 			log(LOG_WARNING, format("KICK: %s not in %s", j.nick, tmp.nam));
 			break;
 		}
@@ -473,7 +479,7 @@ function Server_Work(cmdline) {
 				tmp = search_nickbuf(k[i]);
 			if (!tmp)
 				continue;
-			if (!Enforcement || this.hub || (tmp.parent == this.nick)) {
+			if (!Enforcement || this.hub || origin.uline || (tmp.parent == this.nick)) {
 				umode_notice(USERMODE_KILL,"Notice",format(
 					"Received KILL message for %s. From %s Path: %s!Synchronet!%s (%s)",
 					tmp.nuh,
@@ -585,7 +591,10 @@ function Server_Work(cmdline) {
 			p = IRC_exception_filter_modes(p, IRC_has_chanexcept(this));
 			if (!p) break;
 			var creator_result = origin.set_chanmode(tmp, p, mode_ts,
-				{merge: this.bursting && !origin.uline});
+				{merge: this.bursting && !origin.uline, local_only: !!origin.uline});
+			/* Services send corrections, not just deltas. A matching hub
+			   must relay the complete request to repair downstream state. */
+			if (origin.uline) IRC_bcast_chanmode(origin, tmp, p.join(" "), mode_ts);
 			if (creator_grant && creator_result !== 2 && tmp.modelist[CHANMODE_OP][founder.id])
 				tmp.services_creator_op = founder.id;
 			break;
@@ -669,7 +678,7 @@ function Server_Work(cmdline) {
 				break;
 			}
 			if (!this.hub) {
-				if (!this.check_nickname(p[0],true)) {
+				if (!this.check_nickname(p[0], true, origin.uline)) {
 					gnotice(format(
 						"Server %s trying to introduce invalid nickname: %s",
 						this.nick,
@@ -735,12 +744,7 @@ function Server_Work(cmdline) {
 			j.ip = /^[0-9]+$/.test(p[8]) && Number(p[8]) <= 4294967295
 				? int_to_ip(Number(p[8])) : p[8];
 			j.setusermode(p[3]);
-			for (i in ULines) {
-				if (ULines[i] == p[6]) {
-					j.uline = true;
-					break;
-				}
-			}
+			j.uline = ULine_Exists(j.servername);
 			IRC_bcast_nick(j, this);
 			umode_notice(USERMODE_DEBUG,"RemoteClient",format(
 				"NICK %s %s@%s %s %s :%s",
@@ -837,7 +841,10 @@ function Server_Work(cmdline) {
 			break;
 		tmp = p[0].split(",");
 		for (i in tmp) {
-			origin.do_part(tmp[i]);
+			var part_channel = Channels[tmp[i].toUpperCase()];
+			if (origin.uline && part_channel && part_channel.nam[0] == "#" && !origin.channels[part_channel.nam.toUpperCase()])
+				IRC_bcast_part(origin, part_channel);
+			else origin.do_part(tmp[i]);
 			if (!this.hub && !this.uline && IRC_has_tsmap(this) && /^[0-9]+[.][0-9]+$/.test(p[1]))
 				this.ircout("TSMAP PARTACK " + tmp[i] + " " + p[1]);
 		}
@@ -980,7 +987,7 @@ function Server_Work(cmdline) {
 			this.linkparent = ServerName;
 			this.parent = this.nick;
 		} else if (p[1] > 1) {
-			if (this.hub) {
+			if (this.hub || origin.uline) {
 				if (IRC_Services && IRC_Services.owns_server(p[0])) IRC_Services.stop_central(this);
 				if (searchbyserver(p[0])) {
 					umode_notice(USERMODE_OPER,"Notice",format(
@@ -1011,12 +1018,7 @@ function Server_Work(cmdline) {
 				tmp.parent = this.nick;
 				tmp.linkparent = origin.nick;
 				tmp.local = false;
-				for (i in ULines) {
-					if (ULines[i] == p[0]) {
-						tmp.uline = true;
-						break;
-					}
-				}
+				tmp.uline = ULine_Exists(tmp.nick);
 				this.bcast_to_servers_raw(format(
 					":%s SERVER %s %d :%s",
 					tmp.linkparent,
@@ -1072,7 +1074,9 @@ function Server_Work(cmdline) {
 			break;
 
 		/* Validate members before changing the channel's timestamp or modes.
-		   A snapshot can introduce only users routed through its sender. */
+		   Ordinary snapshots can name only users behind the sending link.
+		   A validated U:lined origin can correct membership/status anywhere
+		   on the network, including users local to the receiving server. */
 		var members = [], seen_members = {}, member_modes = p.slice(2, -1);
 		member_modes = IRC_exception_filter_modes(member_modes, IRC_has_chanexcept(this)) || ["+"];
 		j = p[p.length - 1].split(/ +/);
@@ -1080,8 +1084,8 @@ function Server_Work(cmdline) {
 			if (!j[i]) continue;
 			k = new SJOIN_Nick(j[i]);
 			n = Users[k.nick.toUpperCase()];
-			if (!n || n.local || !n.parent
-				|| n.parent.toLowerCase() != this.nick.toLowerCase()) {
+			if (!n || (!origin.uline && (n.local || !n.parent
+				|| n.parent.toLowerCase() != this.nick.toLowerCase()))) {
 				umode_notice(USERMODE_OPER, "Notice", format(
 					"Ignoring SJOIN member %s from wrong or unknown route %s",
 					k.nick, this.nick));
@@ -1109,7 +1113,7 @@ function Server_Work(cmdline) {
 		if (leaf_assertion && existing_channel)
 			ts_rejected = true;
 		else
-			ts_rejected = this.set_chanmode(tmp, member_modes, leaf_assertion ? 0 : sjoin_ts,
+			ts_rejected = origin.set_chanmode(tmp, member_modes, leaf_assertion ? 0 : sjoin_ts,
 				{merge: !origin.uline, local_only: true}) === 2;
 		valid_nicks = [];
 		if (tmp.pending_burst && tmp.pending_burst !== this)
@@ -1161,7 +1165,7 @@ function Server_Work(cmdline) {
 			IRC_resync_leaf(this, tmp, member_modes);
 		break;
 	case "SQUIT":
-		if (!p[0] || !this.hub)
+		if (!p[0] || (!this.hub && !origin.uline))
 			tmp = this;
 		else
 			tmp = searchbyserver(p[0]);
@@ -1175,6 +1179,14 @@ function Server_Work(cmdline) {
 				this.nick
 			));
 			this.quit("Forwards SQUIT.",true);
+			break;
+		}
+		/* Services JUPE sends SQUIT immediately followed by SERVER for the
+		   same name. Retire the old subtree now, and propagate the services
+		   origin toward every branch, before accepting the replacement. */
+		if (origin.uline) {
+			this.bcast_to_servers_raw(format(":%s SQUIT %s :%s", origin.nick, tmp.nick, p[1]));
+			tmp.quit(p[1], true, false, origin);
 			break;
 		}
 		/* message from our uplink telling us a server is gone */
@@ -1276,8 +1288,9 @@ function Server_Work(cmdline) {
 		if (IRC_legacy_leaf(this)) IRC_note_legacy_topic(this, tmp, p[2]);
 		var topic_ts = leaf_topic ? Math.max(Epoch(), tmp.topictime + 1)
 			: IRC_parse_channel_timestamp(p[2]);
-		if (topic_ts === null || !topic_ts)
+		if (topic_ts === null || (!topic_ts && !origin.uline))
 			break;
+		if (!topic_ts) topic_ts = Math.max(Epoch(), tmp.topictime + 1);
 		if (leaf_topic) {
 			if (!IRC_leaf_burst_channel(this, origin, tmp)
 				&& (origin.server || !origin.channels[tmp.nam.toUpperCase()]
@@ -1291,22 +1304,25 @@ function Server_Work(cmdline) {
 		}
 		/* Preserve the source timestamp on every route. Concurrent changes
 		   with equal timestamps choose the same record independent of order. */
-		if (topic_ts < tmp.topictime
+		if (!origin.uline && (topic_ts < tmp.topictime
 			|| (topic_ts == tmp.topictime
-				&& (p[1] + "\x00" + p[3]) <= (tmp.topicchangedby + "\x00" + tmp.topic)))
+				&& (p[1] + "\x00" + p[3]) <= (tmp.topicchangedby + "\x00" + tmp.topic))))
 			break;
-		log(LOG_DEBUG, format("TOPIC: %s set topic on %s (origin local=%s, from server=%s)",
-			origin.nick, tmp.nam,
-			origin.local ? "yes" : "no",
-			this.nick));
-		tmp.topictime = topic_ts;
-		tmp.topic = p[3];
-		tmp.topicchangedby = p[1];
-		origin.bcast_to_channel(tmp, format(
-			"TOPIC %s :%s",
-			tmp.nam,
-			tmp.topic
-		),false /*bcast*/);
+		if (tmp.topictime != topic_ts || tmp.topic != p[3] || tmp.topicchangedby != p[1]) {
+			log(LOG_DEBUG, format("TOPIC: %s set topic on %s (origin local=%s, from server=%s)",
+				origin.nick, tmp.nam,
+				origin.local ? "yes" : "no",
+				this.nick));
+			tmp.topictime = topic_ts;
+			tmp.topic = p[3];
+			tmp.topicchangedby = p[1];
+			origin.bcast_to_channel(tmp, format(
+				"TOPIC %s :%s",
+				tmp.nam,
+				tmp.topic
+			),false /*bcast*/);
+		}
+		/* A services topic lock/restore must continue past a matching hub. */
 		IRC_bcast_topic(origin, tmp, this);
 		if (leaf_topic)
 			IRC_send_topic_sync(this, tmp);
@@ -1585,9 +1601,9 @@ function IRC_send_topic(peer, chan, origin) {
 	}
 	var line = "TOPIC " + chan.nam + " " + (chan.topicchangedby || ServerName)
 		+ " " + ts + " :" + chan.topic;
-	/* Server prefixes are implicit on direct links. Omitting them also
-	   keeps maximum-length topics and channel names inside the wire limit. */
-	if (!origin || origin.server) peer.rawout(line);
+	/* Ordinary server prefixes can be implicit. Services must retain their
+	   validated origin so topic locks/restores stay authoritative downstream. */
+	if (!origin || (origin.server && !origin.uline)) peer.rawout(line);
 	else peer.originatorout(line, origin);
 }
 
@@ -1615,6 +1631,7 @@ function IRC_server_join(peer, user, name, ts) {
 	var fresh = !chan;
 	var leaf = !peer.hub && !user.uline && !peer.uline;
 	if (user.channels[name.toUpperCase()]) {
+		if (user.uline) IRC_bcast_join(user, user.channels[name.toUpperCase()], ts || user.channels[name.toUpperCase()].created);
 		delete peer.timestamp_claim;
 		return;
 	}

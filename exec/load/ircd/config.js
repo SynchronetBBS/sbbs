@@ -360,6 +360,15 @@ function Read_Config_File() {
 	if (IRCDCFG_Editor)
 		return;
 
+	/* Rehash applies service trust to the existing network as well as
+	   future introductions. Keep WHOIS and service aliases in agreement. */
+	for (i in Servers)
+		Servers[i].uline = ULine_Exists(Servers[i].nick);
+	if (typeof Users !== "undefined") {
+		for (i in Users)
+			Users[i].uline = !Users[i].local && ULine_Exists(Users[i].servername);
+	}
+
 	Scan_For_Banned_Clients();
 	for (i in CLines) {
 		c = CLines[i];

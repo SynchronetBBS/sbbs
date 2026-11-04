@@ -61,6 +61,13 @@ entire services trust list. The default `services.synchro.net` and
 `stats.synchro.net` entries are added only when no services sections exist.
 Empty or disabled services sections also suppress the defaults.
 
+Version 2.10 applies changes to this trust list on rehash to connected servers
+and their service users, without requiring a reconnect. Trusting or untrusting
+a server updates service alias routing, WHOIS service status, and services
+privileges together. Server names are matched without case sensitivity when
+links and service users are introduced. These trust entries are independent
+of whether local BBS services or the embedded authority are enabled.
+
 `NickExpireDays` and `ChannelExpireDays` independently expire registrations
 after the specified number of unused days. Both default to `0`, which disables
 expiry. For example, `NickExpireDays=30` and `ChannelExpireDays=90` expire

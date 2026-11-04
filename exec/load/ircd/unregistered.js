@@ -598,17 +598,10 @@ function QWK_Master_Authentication(qwkid) {
 
 function Register_Unregistered_Local_Server(unreg, p, nline) {
 	var i, s;
-	var is_uline = false;
+	var is_uline = ULine_Exists(p[0]);
 	/* Only relinquish the embedded namespace after the normal server
 	   password/QWK authentication has succeeded. */
 	if (IRC_Services && IRC_Services.owns_server(p[0])) IRC_Services.stop_central();
-
-	for (i in ULines) {
-		if (ULines[i] == p[0]) {
-			is_uline = true;
-			break;
-		}
-	}
 
 	if (!is_uline) {
 		if (!unreg.their_capab || unreg.their_capab.indexOf("TSJOIN") < 0) {

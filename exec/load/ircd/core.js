@@ -41,6 +41,14 @@ function Notify_Servers_Of_Shutdown(reason) {
 		return;
 	Shutdown_Notified = true;
 
+	/* Retire embedded bots/servers before the final queue flush. Doing
+	   this only in on_exit queues their QUIT/SQUIT after DIE/RESTART has
+	   already flushed (and may have closed) the server links. */
+	if (IRC_Services) {
+		try { IRC_Services.stop(); }
+		catch (e) { log(LOG_WARNING, "Notify_Servers_Of_Shutdown services stop error: " + e); }
+	}
+
 	/* A QUIT for each local user so peers drop them individually, clearing
 	   channel membership and op state, rather than waiting to detect the
 	   dead link. */
@@ -1150,7 +1158,7 @@ function IRCClient_bcast_to_channel_servers(chan, str) {
 	}
 }
 
-function IRCClient_check_nickname(newnick,squelch) {
+function IRCClient_check_nickname(newnick,squelch,allow_reserved) {
 	var qline_nick;
 	var checknick;
 	var regexp;
@@ -1173,9 +1181,9 @@ function IRCClient_check_nickname(newnick,squelch) {
 			this.numeric("433", newnick + " :Nickname is already in use.");
 		return 0;
 	}
-	/* Third, match against Q:Lines */
+	/* Services may introduce reserved bots; syntax/collision checks still apply. */
 	for (i in QLines) {
-		if(wildmatch(newnick, QLines[i].nick)) {
+		if (!allow_reserved && wildmatch(newnick, QLines[i].nick)) {
 			if (!squelch)
 				this.numeric(432, newnick + " :" + QLines[i].reason);
 			return 0;
@@ -1310,7 +1318,7 @@ function IRCClient_global(target,type_str,send_str) {
 			Local_Users[i].originatorout(global_str,this);
 	}
 	global_str = ":" + this.nick + " " + global_str;
-	if(this.local && this.parent) /* Incoming from a local server */
+	if (this.parent && Servers[this.parent.toLowerCase()]) /* Exclude the incoming link. */
 		Servers[this.parent.toLowerCase()].bcast_to_servers_raw(global_str);
 	else if (this.flags&OLINE_CAN_GGNOTICE) /* From a local oper */
 		server_bcast_to_servers(global_str);
@@ -1344,8 +1352,8 @@ function IRCClient_globops(str) {
 function IRCClient_do_msg(target,type_str,send_str) {
 	if (IRC_Services && type_str == "PRIVMSG" && IRC_Services.intercept(this, target, send_str)) return 1;
 	if (   (target[0] == "$")
-		&& (this.mode&USERMODE_OPER)
-		&& ((this.flags&OLINE_CAN_LGNOTICE) || !this.local)
+		&& (this.uline || ((this.mode&USERMODE_OPER)
+			&& ((this.flags&OLINE_CAN_LGNOTICE) || !this.local)))
 	) {
 		return this.global(target,type_str,send_str);
 	}

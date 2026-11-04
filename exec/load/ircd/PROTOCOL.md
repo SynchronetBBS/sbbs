@@ -28,6 +28,35 @@ probes and corrective commands. TSJOIN-capable legacy hubs receive a founder
 SJOIN when a new channel is created, avoiding their rejection of a separate
 server-prefixed founder MODE.
 
+An SJOIN from a U:lined services origin may name known users on any route,
+including users local to the receiver. Hubs retain that origin and member
+status when forwarding it, and apply the services origin's timestamp
+authority even when it arrives through an ordinary hub. The origin itself
+must still be routed through the sending link; unknown members are rejected.
+SJOINs from ordinary hubs and leaves may name only users behind their link.
+
+Services MODE, TOPIC, JOIN, PART and KICK corrections continue through hubs
+whose local state already matches the request. MODE relays retain the full
+requested change, including modes that were already set locally. Services
+topic locks/restores may carry an older saved timestamp; a zero topic
+timestamp is assigned a positive timestamp at the first receiver. Relays
+preserve the services source so its authority survives each hop.
+
+A services connection need not be configured as a hub to send cross-route
+KILLs, global notices, or the SQUIT/SERVER sequence used for JUPE. SQUIT
+retires the old server subtree before its replacement is introduced. The
+replacement receives trust only from its own configured U:line. Global
+services notices do not require an operator user mode. Services may also
+introduce their reserved bot nicknames, subject to syntax and collision
+checks. These privileges belong to the configured services origin, and the
+claimed source must be reachable through the incoming link; an ordinary user or server on a
+trusted connection does not inherit them.
+
+Shutdown retires embedded services before the final synchronous queue
+flush, preserving their QUIT/SQUIT messages along with queued channel state
+and local users' QUITs. DIE, RESTART and the exit backstop share this
+idempotent shutdown path.
+
 Untrusted older leaves receive ordinary JOIN/MODE corrections. Timestamped
 MODE uses TS zero, so an older local channel age cannot block hub authority.
 An old leaf can retain a different local channel age; its assertions cannot
