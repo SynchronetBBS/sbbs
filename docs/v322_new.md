@@ -402,6 +402,11 @@
   (never-expiring) filter entries instead of timed ones
 - Auto-detected DNS server addresses are now restricted to IPv4, since
   the MX look-up only speaks IPv4
+- Hostname patterns in `spamblock.cfg` (e.g. `*.mail.example`) block
+  SMTP sessions again: since v3.18 only the client's IP address had been
+  compared against that file, so hostname entries (which the stock
+  file's comments have always described) silently never matched. Needs
+  the Mail Server's hostname look-ups enabled, like `host.can`
 
 ## Services
 

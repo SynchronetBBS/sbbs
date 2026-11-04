@@ -3340,10 +3340,10 @@ static bool smtp_client_thread(smtp_t* smtp)
 		}
 
 		spam_block_exempt = find2strs(host_ip, host_name, spam_block_exemptions, NULL);
-		if (!spam_block_exempt && spam_block.listed(host_ip)) {
-			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s (%u total)"
-			        , socket, client.protocol, host_ip, spam_block.fname, spam_block.total_found.load());
-			sockprintf(socket, client.protocol, session, "550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
+		if (!spam_block_exempt && spam_block.listed(host_ip, host_name)) {
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s: %s (%u total)"
+			        , socket, client.protocol, host_ip, spam_block.fname, host_name, spam_block.total_found.load());
+			sockprintf(socket, client.protocol, session, "550 CLIENT BLOCKED: %s", host_ip);
 			return false;
 		}
 		struct trash trash;
