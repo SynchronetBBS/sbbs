@@ -35,8 +35,10 @@
 
 // Honeypot / spam-trap use: give a bait address a section with "block" so each
 // hit both trains Bayes as spam AND filters the sender's IP (via the same
-// filter_ip mechanism Synchronet's built-in spam-bait uses - honoring
-// spamblock_exempt.cfg and de-duplicating).  Such a section replaces a
+// filter_ip mechanism Synchronet's built-in spam-bait uses - de-duplicating
+// and honoring ipfilter_exempt.cfg; hosts listed in spamblock_exempt.cfg are
+// skipped here as well, as the built-in spam-bait does).  Such a section
+// replaces a
 // spambait.cfg entry (which would otherwise short-circuit at RCPT, before any
 // mail processor runs) and should be listed BEFORE the scanning [SPAMC] section
 // so trap mail is learned/blocked rather than rejected-without-learning:
@@ -122,10 +124,20 @@ function main()
 
 	/* Honeypot/spam-trap mode: filter the sender's IP.  A trap hit is spam by
 	   definition, so block regardless of whether Bayes just learned it.  Uses
-	   the same filter_ip() as the built-in spam-bait (checks spamblock_exempt.cfg
-	   and won't duplicate an active entry). */
+	   the same filter_ip() as the built-in spam-bait (checks ipfilter_exempt.cfg
+	   and won't duplicate an active entry).  filter_ip() does not consult
+	   spamblock_exempt.cfg itself (the mail server checks it before calling), so
+	   check it here too: a host the sysop exempted from spamblock.cfg must not
+	   be written into it by a trap hit. */
 	if(block) {
 		var reason = "SPAM TRAP (" + recipient_address + ") taken";
+		var exempt_file = system.ctrl_dir + "spamblock_exempt.cfg";
+		if(system.findstr(exempt_file, client.ip_address)
+			|| system.findstr(exempt_file, client.host_name)) {
+			log(LOG_NOTICE, "NOT BLOCKING IP ADDRESS: " + client.ip_address
+				+ " (listed in spamblock_exempt.cfg) (" + reason + ")");
+			return;
+		}
 		/* NOTE: duration must precede the filename - js_filter_ip() stops
 		   parsing arguments once the filename (6th string) is set. */
 		if(system.filter_ip(client.protocol, reason, client.host_name
