@@ -1356,7 +1356,7 @@ bool sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			write_ok = false;
 		if (!write_ok) {
 			errormsg(WHERE, ERR_WRITE, str, 0);
-			remove(str);
+			fremove(WHERE, str);
 			return false;
 		}
 #if defined(_WIN32)
@@ -1366,7 +1366,7 @@ bool sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 #endif
 		if (chmod_result != 0) {
 			errormsg(WHERE, ERR_WRITE, str, errno);
-			remove(str);
+			fremove(WHERE, str);
 			return false;
 		}
 	}
@@ -1634,7 +1634,7 @@ bool sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			write_ok = false;
 		if (!write_ok) {
 			errormsg(WHERE, ERR_WRITE, str, 0);
-			remove(str);
+			fremove(WHERE, str);
 			return false;
 		}
 	}

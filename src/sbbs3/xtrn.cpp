@@ -1993,6 +1993,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir, con
 				if (fd > 2)
 					close(fd);
 			}
+			// coverity[RESOURCE_LEAK:SUPPRESS] an fd of 0-2 is now one of the child's standard streams
 		}
 
 		if (mode & EX_BG)  /* background execution, detach child */
