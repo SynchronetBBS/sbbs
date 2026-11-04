@@ -762,6 +762,9 @@
   header field used to re-word-wrap text for other terminal widths
 - `delfiles.js` locks the file base during deletion to prevent
   FTP-upload contention
+- `delfiles.js` treats a file already missing from disk as deleted and
+  removes its file base entry, instead of aborting the whole run (and
+  leaving every later file unpurged) on a stale entry
 - Stock JS modules updated for SpiderMonkey 128 compatibility
   (in preparation for v3.30): `for each` replaced with
   `for...in`, E4X removed from `funclib.js`, top-level `const`

@@ -48,6 +48,24 @@ if(dir_list.length < 1)
 
 if(options.test)
 	log("Running in test (read-only) mode");
+
+// Remove a file from the file base and from disk. A file that has already
+// gone from disk is treated as deleted: only its file base entry is removed.
+function remove_file(base, dir_code, name, path)
+{
+	var del = file_exists(path);
+	if(!del)
+		log(LOG_WARNING, dir_code + ": File missing from disk, removing entry only: " + path);
+	try {
+		if(base.remove(name, /* delete: */del))
+			return true;
+		alert(base.error);
+	} catch(e) {
+		alert(e);
+	}
+	return false;
+}
+
 var now = time();
 for(var i in dir_list) {
 	var dir_code = dir_list[i];
@@ -122,14 +140,8 @@ for(var i in dir_list) {
 					continue;
 				}
 				log(LOG_INFO, dir_code + ": Removing " + path + " " + age_desc + " " + file_age + " days ago");
-				if(options.test)
+				if(options.test || remove_file(base, dir_code, file.name, path))
 					removed++;
-				else {
-					if(!base.remove(file.name, /* delete: */true))
-						alert(base.error);
-					else
-						removed++;
-				}
 			}
 		}
 		if(removed)
@@ -146,15 +158,16 @@ for(var i in dir_list) {
 			var file = list[j];
 			if(exclude.indexOf(file.name.toUpperCase()) >= 0)
 				continue;
-			log(LOG_INFO, dir_code + ": Removing " + file.name);
-			if(options.test)
-				removed++;
-			else {
-				if(!base.remove(file.name, /* delete: */true))
-					alert(base.error);
-				else
-					removed++;
+			var path;
+			try {
+				path = base.get_path(file.name);
+			} catch (e) {
+				alert(e);
+				continue;
 			}
+			log(LOG_INFO, dir_code + ": Removing " + path);
+			if(options.test || remove_file(base, dir_code, file.name, path))
+				removed++;
 		}
 		if(removed)
 			log(LOG_NOTICE, dir_code + ": Removed " + removed + " of " + list.length + " files due to max file limit of " + max_files);
