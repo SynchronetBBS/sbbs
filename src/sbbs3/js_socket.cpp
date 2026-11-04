@@ -189,6 +189,8 @@ struct js_socket_tls_pending {
 	lprintf_fn logger;
 	scfg_t *cfg; // Owned snapshot of the fields used by ssl.c.
 	bool key_added;
+	bool server_mode;
+	bool needs_private_key;
 	js_socket_tls_pending *next;
 };
 
@@ -349,7 +351,7 @@ remove_js_socket_event(JSContext *cx, js_callback_t *cb, SOCKET sock)
 				free(ev);
 			}
 		}
-		else if (ev->type == JS_EVENT_SOCKET_CONNECT || ev->type == JS_EVENT_SOCKET_TLS) {
+		else if (ev->type == JS_EVENT_SOCKET_TLS) {
 			if (ev->data.connect.sock == sock) {
 				if (ev->next)
 					ev->next->prev = ev->prev;
@@ -400,6 +402,13 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 		}
 	}
 
+	if (p->connect_pending) {
+		/* The connect worker still uses the descriptor saved in its event.
+		 * JS close() is immediate; the event collector performs native close. */
+		p->sock = INVALID_SOCKET;
+		p->is_connected = false;
+		return;
+	}
 	if (p->sock == INVALID_SOCKET) {
 		p->is_connected = false;
 		return;
@@ -1140,8 +1149,67 @@ js_connect_event_thread(void *args)
 done:
 	send(a->sv[1], (char *)&cr, sizeof cr, 0);
 	closesocket(a->sv[1]);
-	freeaddrinfo(res);
+	if (res != NULL)
+		freeaddrinfo(res);
+	free(a->host);
 	free(a);
+}
+
+/* Called only on the JS thread. The result/EOF acknowledges that the worker
+ * has stopped using event->data.connect.sock, so it is now safe to close it.
+ * During teardown this may wait for the system resolver/connect timeout. */
+bool js_socket_finish_connect(JSContext *cx, struct js_event_list *event, bool discard)
+{
+	js_socket_private_t *p = (js_socket_private_t *)JS_GetPrivate(cx, event->cx);
+	struct js_connect_result result;
+	size_t received = 0;
+	jsrefcount rc = JS_SUSPENDREQUEST(cx);
+	while (received < sizeof result) {
+		int rd = recv(event->data.connect.sv[0], (char *)&result + received, sizeof result - received, 0);
+		if (rd == SOCKET_ERROR && SOCKET_ERRNO == EINTR)
+			continue;
+		if (rd <= 0)
+			break;
+		received += rd;
+	}
+	closesocket(event->data.connect.sv[0]);
+	JS_RESUMEREQUEST(cx, rc);
+	if (!p)
+		return false; // The event root normally guarantees its private data.
+	p->connect_pending = false;
+	bool closed = p->sock == INVALID_SOCKET;
+	if (discard || closed) {
+		rc = JS_SUSPENDREQUEST(cx);
+		if (!p->external)
+			close_socket(event->data.connect.sock);
+		else if (closed)
+			shutdown(event->data.connect.sock, SHUT_RDWR);
+		JS_RESUMEREQUEST(cx, rc);
+		p->sock = INVALID_SOCKET;
+		p->is_connected = false;
+		return false;
+	}
+	if (received != sizeof result) {
+		result.error = ECONNABORTED;
+		result.gai = FALSE;
+	}
+	p->is_connected = result.error == 0;
+	if (p->is_connected) {
+		socklen_t length = sizeof p->remote_addr;
+		rc = JS_SUSPENDREQUEST(cx);
+		if (getpeername(event->data.connect.sock, &p->remote_addr.addr, &length) == -1) {
+			p->is_connected = false;
+			result.error = SOCKET_ERRNO;
+			result.gai = FALSE;
+		}
+		JS_RESUMEREQUEST(cx, rc);
+	}
+	if (!p->is_connected) {
+		memset(&p->remote_addr, 0, sizeof p->remote_addr);
+		p->remote_addr.addr.sa_family = AF_UNSPEC;
+		store_socket_error(p, result.error, result.gai ? gai_strerror(result.error) : NULL);
+	}
+	return true;
 }
 
 static JSBool
@@ -1233,9 +1301,23 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 	p->js_cb = cb;
 	cb->events = ev;
 
-	_beginthread(js_connect_event_thread, 0 /* Can be smaller... */, args);
+	if (_beginthread(js_connect_event_thread, 0 /* Can be smaller... */, args) == static_cast<uintptr_t>(-1)) {
+		cb->events = ev->next;
+		if (ev->next)
+			ev->next->prev = NULL;
+		JS_RemoveObjectRoot(cx, &ev->cx);
+		JS_RemoveObjectRoot(cx, &ev->cbobj);
+		closesocket(sv[0]);
+		closesocket(sv[1]);
+		free(args->host);
+		free(args);
+		free(ev);
+		JS_ReportError(cx, "Unable to start connection worker");
+		return JS_FALSE;
+	}
 
-	// Connect in progress; is_connected is settled when the callback fires
+	// Only the JS thread reads/writes this flag; the worker has its own args.
+	p->connect_pending = true;
 	p->is_connected = false;
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	return JS_TRUE;
@@ -1256,6 +1338,11 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 	int                  timeout = 10000; /* Default time-out */
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
+		return JS_FALSE;
+	}
+
+	if (p->connect_pending) {
+		JS_ReportError(cx, "Socket connection pending");
 		return JS_FALSE;
 	}
 
@@ -2632,8 +2719,8 @@ static void js_socket_tls_thread(void *arg)
 {
 	js_socket_tls_pending *pending = static_cast<js_socket_tls_pending *>(arg);
 	SetThreadName("sbbs/jsTLS");
-	int status = CRYPT_ERROR_NOTINITED;
-	if (ssl_sync(pending->cfg, pending->logger)) {
+	int status = pending->needs_private_key ? CRYPT_ERROR_NOTINITED : CRYPT_OK;
+	if (pending->needs_private_key && ssl_sync(pending->cfg, pending->logger)) {
 		// coverity[MISSING_LOCK:SUPPRESS] session is not written until after our notification
 		status = add_private_key(pending->cfg, pending->logger, pending->session);
 		pending->key_added = status == CRYPT_OK;
@@ -2642,7 +2729,7 @@ static void js_socket_tls_thread(void *arg)
 	bool cancelled = pending->cancelled;
 	pthread_mutex_unlock(&pending->mutex);
 	if (status == CRYPT_OK && !cancelled)
-		status = js_socket_activate_tls(pending->session, true, &pending->cert);
+		status = js_socket_activate_tls(pending->session, pending->server_mode, &pending->cert);
 	pthread_mutex_lock(&pending->mutex);
 	pending->status = status;
 	/* The event endpoint remains open until cancellation has set this flag. */
@@ -2680,11 +2767,11 @@ JSBool js_socket_finish_tls(JSContext *cx, JSObject *obj)
 		cert = pending->cert;
 		pending->cert = -1;
 		p->is_connected = true;
-		p->tls_server = true;
+		p->tls_server = pending->server_mode;
 	}
 	else {
 		char *estr;
-		GCESH(status, p, pending->session, estr, "accepting TLS session");
+		GCESH(status, p, pending->session, estr, pending->server_mode ? "accepting TLS session" : "connecting TLS session");
 		store_socket_error(p, status, "TLS handshake failed");
 	}
 	pthread_mutex_unlock(&pending->mutex);
@@ -2692,7 +2779,7 @@ JSBool js_socket_finish_tls(JSContext *cx, JSObject *obj)
 	return js_socket_tls_certificate(cx, obj, cert);
 }
 
-static JSBool js_accept_tls(JSContext *cx, uintN argc, jsval *arglist)
+static JSBool js_start_tls(JSContext *cx, uintN argc, jsval *arglist, bool server_mode)
 {
 	JSObject *obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *argv = JS_ARGV(cx, arglist);
@@ -2702,16 +2789,20 @@ static JSBool js_accept_tls(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	if (!cb->events_supported || p->sock == INVALID_SOCKET || !p->is_connected
 	    || p->external || p->set || p->type != SOCK_STREAM || p->session != -1 || p->tls_pending) {
-		JS_ReportError(cx, "acceptTLS requires an owned, connected plaintext socket and callback support");
+		JS_ReportError(cx, "TLS negotiation requires an owned, connected plaintext socket and callback support");
 		return JS_FALSE;
 	}
 	for (js_event_list *event = cb->events; event; event = event->next) {
 		if ((event->type == JS_EVENT_SOCKET_READABLE || event->type == JS_EVENT_SOCKET_READABLE_ONCE
 		    || event->type == JS_EVENT_SOCKET_WRITABLE || event->type == JS_EVENT_SOCKET_WRITABLE_ONCE)
 		    && event->data.sock == p->sock) {
-			JS_ReportError(cx, "Remove socket event handlers before acceptTLS");
+			JS_ReportError(cx, "Remove socket event handlers before TLS negotiation");
 			return JS_FALSE;
 		}
+	}
+	if (argc < 1) {
+		JS_ReportError(cx, "TLS negotiation requires a callback");
+		return JS_FALSE;
 	}
 	JSFunction *callback = JS_ValueToFunction(cx, argv[0]);
 	if (!callback)
@@ -2744,7 +2835,9 @@ static JSBool js_accept_tls(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	scfg_t *cfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	pending->cfg = (scfg_t *)calloc(1, sizeof *pending->cfg);
-	if (!cfg || !pending->cfg) {
+	pending->server_mode = server_mode;
+	pending->needs_private_key = server_mode || p->tls_clientauth;
+	if ((!cfg && pending->needs_private_key) || !pending->cfg) {
 		free(pending->cfg);
 		pthread_mutex_destroy(&pending->mutex);
 		free(pending);
@@ -2756,15 +2849,19 @@ static JSBool js_accept_tls(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	/* ssl.c only reads these fixed-size strings and this flag. Do not copy
 	 * pointers into host configuration which may be freed during shutdown. */
-	SAFECOPY(pending->cfg->ctrl_dir, cfg->ctrl_dir);
-	SAFECOPY(pending->cfg->sys_pass, cfg->sys_pass);
-	SAFECOPY(pending->cfg->sys_name, cfg->sys_name);
-	SAFECOPY(pending->cfg->sys_inetaddr, cfg->sys_inetaddr);
-	pending->cfg->create_self_signed_cert = cfg->create_self_signed_cert;
+	if (cfg) {
+		SAFECOPY(pending->cfg->ctrl_dir, cfg->ctrl_dir);
+		SAFECOPY(pending->cfg->sys_pass, cfg->sys_pass);
+		SAFECOPY(pending->cfg->sys_name, cfg->sys_name);
+		SAFECOPY(pending->cfg->sys_inetaddr, cfg->sys_inetaddr);
+		pending->cfg->create_self_signed_cert = cfg->create_self_signed_cert;
+	}
 	p->js_cb = cb;
-	int status = js_socket_prepare_tls(cx, p, true, true);
+	int status = js_socket_prepare_tls(cx, p, server_mode, true);
 	if (status == CRYPT_OK)
 		status = do_cryptAttribute(p, CRYPT_OPTION_NET_CONNECTTIMEOUT, timeout);
+	if (status == CRYPT_OK)
+		status = do_cryptAttribute(p, CRYPT_OPTION_NET_READTIMEOUT, timeout);
 	if (status != CRYPT_OK) {
 		memset(pending->cfg, 0, sizeof *pending->cfg);
 		free(pending->cfg);
@@ -2817,6 +2914,16 @@ static JSBool js_accept_tls(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+static JSBool js_accept_tls(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_start_tls(cx, argc, arglist, true);
+}
+
+static JSBool js_connect_tls(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_start_tls(cx, argc, arglist, false);
+}
+
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
 	jsval                idval;
@@ -2849,6 +2956,10 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			JS_ValueToBoolean(cx, *vp, &(p->debug));
 			break;
 		case SOCK_PROP_DESCRIPTOR:
+			if (p->connect_pending) {
+				JS_ReportError(cx, "Socket connection pending");
+				return JS_FALSE;
+			}
 			if (p->session != -1) {
 				if (p->tls_server)
 					destroy_session(sock_lprintf(p), p->session);
@@ -3195,6 +3306,11 @@ static jsSyncPropertySpec js_socket_properties[] = {
 };
 
 static jsSyncMethodSpec js_socket_functions[] = {
+	{"connectTLS", js_connect_tls, 1, JSTYPE_BOOLEAN, JSDOCSTR("callback [,timeout=10]")
+	 , JSDOCSTR("Negotiate outbound client TLS asynchronously on an owned connected plaintext socket. "
+	     "Calls callback with this set to the socket; ssl_session indicates success and tls_remote_cert exposes the peer certificate. "
+	     "The socket is unavailable until completion. close() cancels without invoking callback. Timeout is in seconds (5-300).")
+	 , 32101},
 	{"acceptTLS", js_accept_tls, 1, JSTYPE_BOOLEAN, JSDOCSTR("callback [,timeout=10]")
 	 , JSDOCSTR("Negotiate inbound TLS asynchronously on an owned connected socket. "
 	     "Calls callback with this set to the socket; ssl_session indicates success. "
@@ -3202,7 +3318,7 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	     "Timeout is in seconds (5-300).")
 	 , 32101},
 	{"close",       js_close,       0,  JSTYPE_VOID,    ""
-	 , JSDOCSTR("Close (shutdown) the socket immediately")
+	 , JSDOCSTR("Close the socket immediately for JavaScript. If connect(callback) is pending, native closure is deferred until the worker completes and its callback is suppressed.")
 	 , 310},
 	{"bind",        js_bind,        0,  JSTYPE_BOOLEAN, JSDOCSTR("[port] [,ip_address]")
 	 , JSDOCSTR("Bind socket to a TCP or UDP <i>port</i> (number or service name), "
@@ -3211,7 +3327,9 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	{"connect",     js_connect,     2,  JSTYPE_BOOLEAN, JSDOCSTR("host, port [,timeout=10] [,callback]")
 	 , JSDOCSTR("Connect to a remote port (number or service name) on the specified host (IP address or host name)"
 		        ", default <i>timeout</i> value is <i>10</i> (seconds).  Instead of a timeout, you can pass a <i>callback</i> "
-		        "which is called when the connection completes with the Socket object as the only parameter.")
+		        "which runs with this set to the Socket when the connection completes. "
+		        "A pending connection prevents another connect or descriptor replacement. close() suppresses the callback; "
+		        "native closure waits for worker completion, including during event teardown.")
 	 , 311},
 	{"listen",      js_listen,      0,  JSTYPE_BOOLEAN, JSDOCSTR("")
 	 , JSDOCSTR("Place socket in a state to listen for incoming connections (use before an accept)")

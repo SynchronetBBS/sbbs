@@ -319,6 +319,10 @@ function User_Work(cmdline) {
 		} else { /* Mode flags were passed */
 			if (parseInt(p[1]) == p[1])
 				p.splice(1,1);
+			if (!p[1]) {
+				this.numeric461("MODE");
+				break;
+			}
 			if ((p[0][0] == "#") || (p[0][0] == "&")) {
 				tmp = Channels[p[0].toUpperCase()];
 				if (!tmp || !IRC_channel_visible_to_user(this, tmp)) {
@@ -968,20 +972,7 @@ function User_Work(cmdline) {
 		}
 		p[0] = p[0].slice(0,MAX_NICKLEN);
 		if(this.check_nickname(p[0]) > 0) {
-			this.bcast_to_uchans_unique("NICK " + p[0]);
-			this.originatorout("NICK " + p[0],this);
-			if (p[0].toUpperCase() != this.nick.toUpperCase()) {
-				this.created = Epoch();
-				push_nickbuf(this.nick,p[0]);
-				Users[p[0].toUpperCase()] = this;
-				delete Users[this.nick.toUpperCase()];
-			}
-			this.bcast_to_servers(format(
-				"NICK %s :%lu",
-				p[0],
-				this.created
-			));
-			this.nick = p[0];
+			IRC_local_nick(this, p[0], p[0].toUpperCase() == this.nick.toUpperCase() ? this.created : Epoch());
 		}
 		break;
 	case "NOTICE":
@@ -1121,12 +1112,12 @@ function User_Work(cmdline) {
 				break;
 			}
 		} else {
-			this.numeric382("Rehashing.");
 			umode_notice(USERMODE_SERVER,"Notice",format(
 				"%s is rehashing Server config file while whistling innocently",
 				this.nick
 			));
-			Read_Config_File();
+			if (Read_Config_File()) this.numeric382("Rehashing.");
+			else this.server_notice("Configuration reload failed; retaining active configuration.");
 		}
 		break;
 	case "RESTART":

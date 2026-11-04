@@ -851,7 +851,8 @@ function Edit_Server(servername) {
                 format("%20s: %-40lu", "IRC Class", cline.ircclass),
                 format("%20s: %-40s", "Flags", NLine_Flags_String(nline.flags)),
                 format("%20s: %-40s", "Hub", hub),
-                format("%20s: %-40s", "Require TLS", !!cline.tls || !!nline.tls || cline.port == 6697 || cline.port == 994)
+                format("%20s: %-40s", "Require TLS", !!cline.tls || !!nline.tls || cline.port == 6697 || cline.port == 994),
+                format("%20s: %-40s", "Protocol", nline.protocol)
             ],
             ctx
         );
@@ -946,6 +947,16 @@ function Edit_Server(servername) {
                 nline.tls = cline.tls;
                 if (cline.tls && !TLS_Config.ca_file)
                     TLS_Menu();
+                break;
+            case 9:
+                Help_Window([
+                    "Use bahamut for an IRCServices Bahamut protocol connection.",
+                    "This enables ordinary ban exceptions (+e). Extended exceptions",
+                    "still require the peer's CHANEXCEPT capability."
+                ]);
+                var profile = uifc.list(WIN_MID, "Server Protocol", ["synchronet", "bahamut"]);
+                if (profile >= 0) nline.protocol = ["synchronet", "bahamut"][profile];
+                break;
         }
     }
     if (JSON.stringify([cline, nline]) != original) {

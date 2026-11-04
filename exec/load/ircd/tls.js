@@ -79,9 +79,11 @@ function IRC_tls_ca_certificates() {
 	return certs;
 }
 
-function IRC_tls_connect(socket) {
+function IRC_tls_connect(socket, complete) {
 	if (typeof socket.tls_nameverify != "boolean" || typeof socket.tls_certverify != "boolean" || typeof CryptCert != "function")
 		throw new Error("This Synchronet build cannot validate TLS server links");
+	if (typeof socket.connectTLS != "function")
+		throw new Error("Upgrade the Synchronet host: asynchronous outbound TLS requires Socket.connectTLS");
 	/* Read the trust configuration before starting TLS. Never send an IRC
 	   password until both the handshake and explicit chain check succeed. */
 	var roots = IRC_tls_ca_certificates();
@@ -89,8 +91,19 @@ function IRC_tls_connect(socket) {
 	socket.tls_nameverify = true;
 	socket.tls_certverify = true;
 	socket.tls_enhanced_certcheck = true;
-	socket.ssl_session = true;
-	if (!socket.ssl_session || !socket.tls_remote_cert) throw new Error("TLS peer did not supply a certificate");
+	return socket.connectTLS(function() {
+		var attempt = this.irc_connect_attempt;
+		if (attempt && (attempt.cancelled || attempt.done)) return;
+		var failure;
+		try { IRC_tls_validate(this, roots); }
+		catch (error) { failure = "TLS validation failed: " + error; }
+		complete.call(this, failure);
+	}, 10);
+}
+
+function IRC_tls_validate(socket, roots) {
+	if (!socket.ssl_session) throw new Error("TLS handshake failed: " + socket.error_str);
+	if (!socket.tls_remote_cert) throw new Error("TLS peer did not supply a certificate");
 	var peer = socket.tls_remote_cert;
 	IRC_tls_check_chain_usage(peer);
 	/* Some cryptlib versions expose a certverify flag without checking a

@@ -11,6 +11,16 @@ argv.forEach(function(arg) {
 if (legacy_source && !file_exists(legacy_source + "ircd.js"))
 	throw new Error("Missing legacy IRCd fixture");
 
+var filtered_leaf = false;
+if (legacy_source) {
+	var fixture = new File(legacy_source + "ircd.js");
+	if (!fixture.open("r")) throw new Error("Cannot inspect leaf capabilities");
+	var capabilities = fixture.read(); fixture.close();
+	var declaration = /\bserver_capab\s*=\s*["']([^"']*)["']/i.exec(capabilities);
+	if (!declaration) throw new Error("Missing leaf capability declaration");
+	filtered_leaf = declaration[1].split(/\s+/).indexOf("FULLCHAN") < 0;
+}
+
 var net = new IrcdTestNetwork(), clients = [];
 var a = {name: "hub1", sname: "visibilitya.ircd.local", port: 19780};
 var b = {name: "hub2", sname: "visibilityb.ircd.local", port: 19781};
@@ -88,7 +98,7 @@ try {
 			channels.forEach(function(channel) {
 				probes.forEach(function(c, i) {
 					var names = query(c, "NAMES " + channel, "366").join("\n");
-					check(legacy_source && i == 1 ? names.indexOf(channel) < 0 || !/ 353 /.test(names)
+					check(filtered_leaf && i == 1 ? names.indexOf(channel) < 0 || !/ 353 /.test(names)
 						: names.indexOf("@hiddenOwner") >= 0, "incorrect initial leaf view: " + names);
 				});
 			});
@@ -102,7 +112,7 @@ try {
 				no_rejections(owner);
 				probes.forEach(function(c, i) {
 					var names = query(c, "NAMES " + channel, "366").join("\n");
-					if (legacy_source && i == 1) {
+					if (filtered_leaf && i == 1) {
 						check(!/ 353 /.test(names), "runtime JOIN/MODE created a hidden legacy channel: " + names);
 						return;
 					}
@@ -135,12 +145,12 @@ try {
 				owner.send("MODE " + channel + " +n");
 				owner.send("MODE " + channel + " -n"); no_rejections(owner);
 				var names = query(probes[1], "NAMES " + channel, "366").join("\n");
-				check(legacy_source ? !/ 353 /.test(names) : names.indexOf("@hiddenOwner") >= 0,
+				check(filtered_leaf ? !/ 353 /.test(names) : names.indexOf("@hiddenOwner") >= 0,
 					"reconnect changed channel visibility");
 			});
 		},
 		"first legacy leaf JOIN receives full ops, modes, topic and bans and last PART hides it": function() {
-			if (!legacy_source) return;
+			if (!filtered_leaf) return;
 			channels.forEach(function(channel) {
 				var c = probes[1]; c.send("JOIN " + channel); c.expect(" 366 ", 5);
 				c.expect(":hiddenOwner!", 8); c.drain(500);
@@ -155,7 +165,7 @@ try {
 			});
 		},
 		"public and hidden mode transitions introduce and withdraw the legacy channel": function() {
-			if (!legacy_source) return;
+			if (!filtered_leaf) return;
 			channels.forEach(function(channel, i) {
 				owner.send("MODE " + channel + (i ? " -p" : " -s"));
 				check(wait_names(probes[1], channel, true).indexOf("@hiddenOwner") >= 0, "public transition lost ops");
@@ -165,7 +175,7 @@ try {
 			});
 		},
 		"last local KICK and QUIT also withdraw hidden state from the legacy leaf": function() {
-			if (!legacy_source) return;
+			if (!filtered_leaf) return;
 			var c = probes[1], channel = channels[0];
 			c.send("JOIN " + channel); c.expect(" 366 ", 5); c.expect(":hiddenOwner!", 8);
 			owner.send("KICK " + channel + " " + c.nick + " :visibility cleanup"); c.expect(" KICK ", 5);

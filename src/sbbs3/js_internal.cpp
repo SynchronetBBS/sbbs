@@ -1135,10 +1135,12 @@ js_clear_events(JSContext *cx, js_callback_t *cb)
 
 	for (ev = cb->events, nev = NULL; ev; ev = nev) {
 		nev = ev->next;
-		if (ev->type == JS_EVENT_SOCKET_TLS)
+		if (ev->type == JS_EVENT_SOCKET_CONNECT)
+			js_socket_finish_connect(cx, ev, true);
+		if (ev->type == JS_EVENT_SOCKET_TLS) {
 			js_socket_cancel_tls(cx, ev->cx);
-		if (ev->type == JS_EVENT_SOCKET_CONNECT || ev->type == JS_EVENT_SOCKET_TLS)
 			closesocket(ev->data.connect.sv[0]);
+		}
 		JS_RemoveObjectRoot(cx, &ev->cx);
 		JS_RemoveObjectRoot(cx, &ev->cbobj);
 		free(ev);
@@ -1181,7 +1183,6 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 	JSBool                 ret = JS_TRUE;
 	BOOL                   input_locked = FALSE;
 	js_socket_private_t*   jssp;
-	socklen_t              slen;
 	JSObject*              evo;
 	JSObject*              evfo;
 #ifdef PREFER_POLL
@@ -1469,6 +1470,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 			}
 		}
 		else {
+			bool invoke_callback = true;
 			// Store rooted copies of the object and function
 			evo = ev->cx;
 			JS_AddObjectRoot(cx, &evo);
@@ -1480,37 +1482,8 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				if (input_locked)
 					js_do_lock_input(cx, FALSE);
 			}
-			if (ev->type == JS_EVENT_SOCKET_CONNECT) {
-				struct js_connect_result cr;
-				int                      rd = recv(ev->data.connect.sv[0], (char *)&cr, sizeof cr, MSG_WAITALL);
-
-				if (rd != (int)sizeof cr) {
-					// The connect thread exited without reporting
-					cr.error = ECONNABORTED;
-					cr.gai = FALSE;
-				}
-				if ((jssp = (js_socket_private_t*)JS_GetPrivate(cx, ev->cx)) != NULL) {
-					jssp->is_connected = (cr.error == 0);
-					if (jssp->is_connected) {
-						slen = sizeof(jssp->remote_addr.addr);
-						if (getpeername(ev->data.connect.sock, &jssp->remote_addr.addr, &slen) == -1) {
-							jssp->is_connected = false;
-							cr.error = SOCKET_ERRNO;
-						}
-					}
-					if (!jssp->is_connected) {
-						memset(&jssp->remote_addr, 0, sizeof(jssp->remote_addr));
-						// This should be zero, but be paranoid
-						jssp->remote_addr.addr.sa_family = AF_UNSPEC;
-						jssp->last_error = cr.error;
-						if (cr.gai)
-							strlcpy(jssp->last_error_str, gai_strerror(cr.error), sizeof(jssp->last_error_str));
-						else
-							socket_strerror(cr.error, jssp->last_error_str, sizeof(jssp->last_error_str));
-					}
-				}
-				closesocket(ev->data.connect.sv[0]);
-			}
+			if (ev->type == JS_EVENT_SOCKET_CONNECT)
+				invoke_callback = js_socket_finish_connect(cx, ev, false);
 
 			if (ev->type == JS_EVENT_SOCKET_TLS) {
 				ret = js_socket_finish_tls(cx, ev->cx);
@@ -1551,7 +1524,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 					ev->next = NULL;
 				}
 			}
-			if (ret)
+			if (ret && invoke_callback)
 				ret = JS_CallFunctionValue(cx, evo, OBJECT_TO_JSVAL(evfo), 0, NULL, &rval);
 			JS_RemoveObjectRoot(cx, &evo);
 			JS_RemoveObjectRoot(cx, &evfo);

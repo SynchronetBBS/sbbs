@@ -188,23 +188,25 @@ var IRC_SERVICES_HELP = {
 				], examples:["/cs EXCEPT #mychannel ADD ~m:external:Bot!*@trusted.example","/cs EXCEPT #mychannel ADD ~m:moderated:Bot!*@trusted.example","/cs EXCEPT #mychannel LIST","/cs EXCEPT #mychannel DEL ~m:external:Bot!*@trusted.example"]
 			},
 			SET:{
-				syntax:["/cs SET #channel MLOCK <modes> [key/limit]","/cs SET #channel MLOCK NONE","/cs SET #channel KEEPTOPIC ON|OFF"], secure:true,
+				syntax:["/cs SET #channel MLOCK <modes> [key/limit/rate]","/cs SET #channel MLOCK NONE","/cs SET #channel KEEPTOPIC ON|OFF"], secure:true,
 				text:[
 					"Only authenticated members of the founder identity may change channel settings. They need not be in the channel or currently hold ops.",
 					"MLOCK enforces the saved supported channel modes. KEEPTOPIC records and restores the topic. Both survive authority restart and channel recreation.",
 					"Each MLOCK replaces the previous lock. + flags must be present, - flags absent, and omitted flags are unconstrained. Supported flags are i invite-only, m moderated, n no outside messages, p private, s secret, t ops-only topics, k key, and l member limit. +p and +s are mutually exclusive.",
 					"For +k, supply a key of 1-64 characters; for +l, supply an integer from 1 to 99999. Key/limit arguments follow the order k/l occur in the mode string. -k and -l take no argument and require their values to be removed.",
+					"Additional flags: R identified-only joins; M identified-only speech (ops/voice exempt); O operators-only joins; c no control codes; S known TLS clients only; j join rate. +j takes count:seconds; -j takes no argument. ChanServ manages r automatically.",
 					"MLOCK NONE stops enforcement without undoing current runtime modes. MLOCK does not save bans, exceptions, or user status: use EXCEPT and ACCESS for their supported persistent policies.",
 					"KEEPTOPIC ON captures the current topic and tracks later changes for restoration. OFF stops restoration without clearing the live topic. If the channel is absent, ON retains its previously saved topic.",
 					"Settings can be changed while the registered channel is absent, without creating it. Restored MODE/TOPIC updates may follow the initial JOIN replies. Use /cs HELP SET MLOCK or /cs HELP SET KEEPTOPIC for additional details."
 				], examples:["/cs SET #mychannel MLOCK +ntkl secret 25","/cs SET #mychannel MLOCK NONE","/cs SET #mychannel KEEPTOPIC ON"]
 			},
 			"SET MLOCK":{
-				syntax:["/cs SET #channel MLOCK <+/-imnpstkl> [key/limit]","/cs SET #channel MLOCK NONE"], secure:true,
+				syntax:["/cs SET #channel MLOCK <+/-imnpstklRMOcjS> [key/limit/rate]","/cs SET #channel MLOCK NONE"], secure:true,
 				text:[
 					"Founder identification is required. Replace the saved mode lock: + flags must be present and - flags must be absent. Modes omitted from the new lock are unconstrained.",
 					"Supported flags: i invite-only; m moderated; n no outside messages; p private; s secret; t topic changes require ops; k channel key; l member limit. Private and secret cannot both be enabled.",
 					"Supply a key after +k (1-64 characters) and a whole-number limit after +l (1-99999), in the order k/l occur in the mode string. -k and -l take no argument and require the key/limit to be removed.",
+					"Also supported: R identified-only joins; M identified-only speech (ops/voice exempt); O operators-only joins; c no control codes; S known TLS clients only; j join rate. +j needs count:seconds, each 1-2147483647; -j needs no argument. r is automatic.",
 					"The lock is applied to a live channel and reasserted after changes. An absent channel is not created; the lock returns after its next creation, through the normal services queue.",
 					"MLOCK NONE stops enforcing the lock but does not immediately undo current runtime modes. Ban/exception lists and op/voice grants are not boolean mode locks: use EXCEPT, ACCESS, or ordinary MODE as appropriate."
 				], examples:["/cs SET #mychannel MLOCK +nt","/cs SET #mychannel MLOCK +ntkl secret 25","/cs SET #mychannel MLOCK +nt-kl","/cs SET #mychannel MLOCK NONE"]

@@ -173,6 +173,7 @@ IRC_Services_Manager.prototype.ref = function(user) {
 IRC_Services_Manager.prototype.describe = function(user) {
 	return {ref:this.ref(user), nick:user.nick, server:user.servername.toLowerCase(), created:user.services_created || user.created,
 		rev:user.nick, username:user.uprefix, account:user.services_identity ? user.services_identity.id : null, auth_revision:user.services_auth_revision || 0,
+		identified:typeof IRC_services_identified == "function" && IRC_services_identified(user),
 		secure_path:this.config.require_tls ? IRC_tls_user_to_server(user, this.config.server) == "TLS" : undefined};
 };
 
@@ -237,7 +238,7 @@ IRC_Services_Manager.prototype.snapshot = function() {
 		for (var id in c.users) members.push({ref:this.ref(c.users[id]), op:!!c.modelist[CHANMODE_OP][id], voice:!!c.modelist[CHANMODE_VOICE][id],
 			creator_op:c.services_creator_op == id});
 		var channel = {ref:c.services_ref, name:c.nam, flags:c.chanmode(false).split(" ")[0],
-			key:c.arg[CHANMODE_KEY], limit:c.arg[CHANMODE_LIMIT], topic:c.topic, users:members,
+			key:c.arg[CHANMODE_KEY], limit:c.arg[CHANMODE_LIMIT], joinrate:c.arg[CHANMODE_JOINRATE], topic:c.topic, users:members,
 			exceptions:Object.keys(c.modelist[CHANMODE_EXCEPT]).map(function(i) { return c.modelist[CHANMODE_EXCEPT][i]; })};
 		sig = JSON.stringify(channel); chans[channel.ref] = true;
 		if (this.chancache[channel.ref] != sig && this.event({type:"channel", channel:channel})) this.chancache[channel.ref] = sig;
@@ -911,6 +912,17 @@ IRC_Services_Manager.prototype.action = function(a) {
 	if (a.actor && a.require_tls && this.tls_error(user, this.config.require_tls)) return;
 	if (a.target && (!target || (a.target.auth_revision !== undefined && a.target.auth_revision != (target.services_auth_revision || 0)) || a.target.account != (target.services_identity ? target.services_identity.id : null))) return;
 	if (a.type == "notice") { this.notice(a.service, user, a.text); return; }
+	if (a.type == "identified") {
+		if (!engine || !target) return;
+		var identified_user = engine.users[a.target.ref];
+		if (!identified_user) return;
+		var desired = engine.owns(identified_user, engine.account(identified_user.nick));
+		if (desired !== a.identified) return;
+		var state = IRC_external_state(target);
+		if (desired || state && state.owner == this.config.host)
+			IRC_receive_svsmode(null, this.service_server, [target.nick, desired ? "+r" : "-r"]);
+		return;
+	}
 	if (a.type == "kill") {
 		server_bcast_to_servers(":" + this.config.host + " KILL " + target.nick + " :Nickname reclaimed by its BBS account owner");
 		target.quit("Nickname reclaimed by its BBS account owner", true); return;
@@ -958,8 +970,11 @@ IRC_Services_Manager.prototype.action = function(a) {
 		}
 		delete c.services_exception_full;
 		this.service_server.set_chanmode(c, [a.add ? "+e" : "-e", entry.value], 0);
-	} else if (a.type == "mode") this.service_server.set_chanmode(c, [a.mode].concat(target ? [target.nick] : a.arg ? [a.arg] : []), 0);
-	else if (a.type == "topic") {
+	} else if (a.type == "mode") {
+		if ((a.mode == "+r" || a.mode == "-r") && engine
+			&& !!engine.store.data.channels[IRC_services_key(c.nam)] != (a.mode == "+r")) return;
+		this.service_server.set_chanmode(c, [a.mode].concat(target ? [target.nick] : a.arg ? [a.arg] : []), 0);
+	} else if (a.type == "topic") {
 		c.topic = a.text; c.topictime = Math.max(Epoch(), c.topictime + 1); c.topicchangedby = "ChanServ";
 		this.service_server.bcast_to_channel(c, "TOPIC " + c.nam + " :" + c.topic, false);
 		IRC_bcast_topic(this.service_server, c);

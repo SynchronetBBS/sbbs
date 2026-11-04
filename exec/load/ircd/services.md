@@ -68,6 +68,18 @@ privileges together. Server names are matched without case sensitivity when
 links and service users are introduced. These trust entries are independent
 of whether local BBS services or the embedded authority are enabled.
 
+For external IRCServices 5.1.24, see the
+[Bahamut compatibility audit](services-compatibility.md) for supported wire
+operations, confirmed gaps and proposed additions.
+Version 2.11 adds ordinary Bahamut exceptions, invite masks, routed SVSNICK,
+SVSMODE identity/stamps, channel policies and native realname/nickname S-lines.
+It also repairs mode argument handling and tracks AKILL ownership and expiry. Add
+`Protocol=bahamut` to the existing server-link section on the daemon directly
+connected to those services. See the [2.11 protocol rules](PROTOCOL.md#services-additions-in-211)
+for capability negotiation, identity/trust boundaries, ban lifecycle and
+behavior through older peers. S-lines carry no expiry; their runtime entries
+end when their authority disconnects and must be republished on reconnect.
+
 `NickExpireDays` and `ChannelExpireDays` independently expire registrations
 after the specified number of unused days. Both default to `0`, which disables
 expiry. For example, `NickExpireDays=30` and `ChannelExpireDays=90` expire
@@ -293,7 +305,7 @@ account across nickname changes:
 - `OP`, `DEOP`, `VOICE`, `DEVOICE`, `INVITE`, and `UNBAN` take
   `#channel [nickname]`. Access grants automatic ops or voice on joining.
 - `TOPIC #channel <text>` changes the topic.
-- `SET #channel MLOCK <+/-imnpstkl> [key/limit]` enforces channel modes.
+- `SET #channel MLOCK <+/-imnpstklRMOcjS> [key/limit/rate]` enforces channel modes.
   `MLOCK NONE` clears the lock. `SET #channel KEEPTOPIC ON|OFF` controls
   topic restoration. Only the founder changes settings or drops registration.
 - `INFO #channel` and `DROP #channel` inspect or remove registration.
@@ -312,6 +324,16 @@ OP/SOP access. A creator with only VOICE access receives voice instead. This
 correction also follows the services queue; later explicit operator grants
 remain intact. Registration ownership remains with the saved founder.
 Services startup does not create empty registered channels.
+In 2.11, ChanServ manages the channel's `r` marker automatically. NickServ's
+identification marker requires both authentication and ownership of the current
+registered nickname; a BBS login alone does not grant `+R`/`+M` access. These
+markers never substitute for BBS proof or mailbox authorization. `R` restricts
+joins to identified users, `M` restricts speech (ops/voice exempt), `O` restricts
+joins to operators, `c` rejects control/color codes, `j` limits join rate and
+`S` requires known client TLS. `+j` takes `count:seconds`; `-j` takes no argument.
+See the [protocol policies](PROTOCOL.md#invite-masks-and-channel-policies) for
+limits, invitations and old-peer behavior. `S` checks the client socket;
+services' RequireTLS policy separately protects the full path.
 Invites from an outside services user require updated IRC relays and the
 destination IRCd; older INVITE parsers can still require services to have ops.
 

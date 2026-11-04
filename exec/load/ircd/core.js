@@ -40,6 +40,7 @@ function Notify_Servers_Of_Shutdown(reason) {
 	if (Shutdown_Notified)
 		return;
 	Shutdown_Notified = true;
+	IRC_cancel_outbound_connect();
 
 	/* Retire embedded bots/servers before the final queue flush. Doing
 	   this only in on_exit queues their QUIT/SQUIT after DIE/RESTART has
@@ -169,6 +170,7 @@ function umode_notice(bit,ntype,nmessage) {
 
 function isklined(kl_str) {
 	var i;
+	IRC_expire_akills();
 
 	for (i in KLines) {
 		if (KLines[i].hostmask && wildmatch(kl_str,KLines[i].hostmask)) {
@@ -176,6 +178,79 @@ function isklined(kl_str) {
 		}
 	}
 	return 0;
+}
+
+/* Ban identity is literal and owned by the configured services server.
+   Wildcard matching is used only when enforcing a ban against a client. */
+function IRC_akill_owner(origin) {
+	return String(origin.server ? origin.nick : origin.servername).toLowerCase();
+}
+
+function IRC_akill_mask(user, host) {
+	return (user + "@" + host).toLowerCase().replace(/\*+/g, "*");
+}
+
+function IRC_expire_akills() {
+	for (var i in KLines) {
+		var ban = KLines[i];
+		if (ban.type != "A" || !ban.expires || ban.expires > Epoch()) continue;
+		delete KLines[i];
+		/* Old peers ignore AKILL's duration. Relay the expiry indicated by
+		   the trusted source using their existing removal command, only
+		   away from that source's current route. */
+		var owner = ban.owner && Servers[ban.owner], mask = ban.hostmask.split("@");
+		if (!owner || !owner.uline) continue;
+		for (var name in Local_Servers) {
+			var peer = Local_Servers[name];
+			if (peer.admitted && !peer.quitting && peer !== owner && peer.nick != owner.parent)
+				peer.rawout(format(":%s RAKILL %s %s", owner.nick, mask[1], mask[0]));
+		}
+	}
+}
+
+function IRC_receive_akill(origin, p) {
+	if (p.length != 6 || !p[5] || !/^[^\s@,]+$/.test(p[0]) || !/^[^\s@,]+$/.test(p[1])) return false;
+	var duration = IRC_parse_channel_timestamp(p[2]), created = IRC_parse_channel_timestamp(p[4]);
+	if (duration === null || created === null) return false;
+	var expires = duration ? created + duration : 0;
+	/* An expired replay must not overwrite a newer live entry. */
+	if (expires && expires <= Epoch()) return false;
+	IRC_expire_akills();
+	var owner = IRC_akill_owner(origin), mask = IRC_akill_mask(p[1], p[0]);
+	var entry = new KLine(mask, p[5], "A");
+	entry.owner = owner; entry.created = created; entry.duration = duration;
+	entry.expires = expires; entry.setter = p[3];
+	for (var i in KLines) {
+		var ban = KLines[i];
+		if (ban.type == "A" && ban.owner == owner && ban.hostmask == mask) {
+			if (ban.created > created) return true;
+			KLines[i] = entry;
+			Scan_For_Banned_Clients();
+			return true;
+		}
+	}
+	KLines.push(entry);
+	Scan_For_Banned_Clients();
+	return true;
+}
+
+function IRC_remove_akill(origin, user, host) {
+	var owner = IRC_akill_owner(origin), mask = IRC_akill_mask(user, host);
+	for (var i in KLines) {
+		var ban = KLines[i];
+		if (ban.type == "A" && ban.owner == owner && ban.hostmask == mask) delete KLines[i];
+	}
+}
+
+function IRC_burst_akills(peer) {
+	IRC_expire_akills();
+	for (var i in KLines) {
+		var ban = KLines[i], owner = ban.owner && Servers[ban.owner];
+		if (ban.type != "A" || !owner || !owner.uline || owner === peer || owner.parent == peer.nick) continue;
+		var mask = ban.hostmask.split("@");
+		peer.rawout(format(":%s AKILL %s %s %lu %s %lu :%s",
+			owner.nick, mask[1], mask[0], ban.duration, ban.setter, ban.created, ban.reason));
+	}
 }
 
 function IP_Banned(ip) {
@@ -277,28 +352,56 @@ function Automatic_Server_Connect() {
 		this.port
 	));
 
-	sock.connect(this.host, this.port, handle_outbound_server_connect);
+	IRC_start_outbound_connect(sock, this.host, this.port);
 
 	if (this.next_connect)
 		delete this.next_connect;
 }
 
-/* socket object with .cline attached */
-function handle_outbound_server_connect() {
-	var id, failure;
-
-	if (!Outbound_Connect_in_Progress)
-		log(LOG_DEBUG,"WARNING: Outbound connection while !Outbound_Connect_in_Progress");
-
-	if (this.is_connected && IRC_tls_required(this.cline, this.remote_port || this.cline.port)) {
-		try { IRC_tls_connect(this); }
-		catch (error) {
-			failure = "TLS validation failed: " + error;
-			log(LOG_WARNING, "Server link to " + this.cline.servername + ": " + failure);
-			this.close();
-		}
-	}
+var IRC_Outbound_Connect = null;
+function IRC_cancel_outbound_connect() {
+	var attempt = IRC_Outbound_Connect;
+	if (!attempt) return;
+	attempt.cancelled = true;
+	IRC_Outbound_Connect = null;
 	Outbound_Connect_in_Progress = false;
+	attempt.socket.close();
+}
+function IRC_start_outbound_connect(socket, host, port) {
+	socket.irc_connect_attempt = IRC_Outbound_Connect = {socket:socket, cline:socket.cline};
+	Outbound_Connect_in_Progress = true;
+	try {
+		if (socket.connect(host, port, handle_outbound_server_connect)) return true;
+	} catch (error) { socket.irc_connect_error = String(error); }
+	return IRC_finish_outbound_server_connect.call(socket, socket.irc_connect_error || socket.error_str || "TCP connection could not start");
+}
+
+/* TCP completion may only start TLS. Registration waits for its completion. */
+function handle_outbound_server_connect() {
+	var attempt = this.irc_connect_attempt;
+	if (attempt && (attempt.cancelled || attempt.done)) return false;
+	if (this.is_connected && IRC_tls_required(this.cline, this.remote_port || this.cline.port)) {
+		try {
+			if (IRC_tls_connect(this, IRC_finish_outbound_server_connect)) return true;
+		} catch (error) { return IRC_finish_outbound_server_connect.call(this, "TLS validation failed: " + error); }
+		return IRC_finish_outbound_server_connect.call(this, "Could not start asynchronous TLS negotiation");
+	}
+	return IRC_finish_outbound_server_connect.call(this);
+}
+function IRC_finish_outbound_server_connect(failure) {
+	var id, attempt = this.irc_connect_attempt;
+	if (attempt && (attempt.cancelled || attempt.done)) return false;
+	if (attempt) {
+		attempt.done = true;
+		if (IRC_Outbound_Connect === attempt) {
+			IRC_Outbound_Connect = null;
+			Outbound_Connect_in_Progress = false;
+		}
+	} else Outbound_Connect_in_Progress = false;
+	if (failure) {
+		log(LOG_WARNING, "Server link to " + this.cline.servername + ": " + failure);
+		this.close();
+	}
 
 	if (this.is_connected) {
 		umode_notice(USERMODE_ROUTING,"Routing",format(
@@ -366,6 +469,72 @@ function push_nickbuf(oldnick,newnick) {
 	NickHistory.unshift(new NickBuf(oldnick,newnick));
 	if(NickHistory.length >= MAX_NICKHISTORY)
 		NickHistory.pop();
+}
+
+/* Both client NICK and services SVSNICK commit through the owning server's
+   ordinary transition, including the acknowledgement back toward services. */
+function IRC_local_nick(user, nick, created) {
+	IRC_services_nick_changed(user, nick, created);
+	user.bcast_to_uchans_unique("NICK " + nick);
+	user.originatorout("NICK " + nick, user);
+	if (nick.toUpperCase() != user.nick.toUpperCase()) {
+		push_nickbuf(user.nick, nick);
+		Users[nick.toUpperCase()] = user;
+		delete Users[user.nick.toUpperCase()];
+	}
+	user.created = created;
+	user.bcast_to_servers(format("NICK %s :%lu", nick, created));
+	user.nick = nick;
+}
+
+function IRC_services_kill(origin, user, reason) {
+	var line = format("KILL %s :%s", user.nick, reason);
+	for (var name in Local_Servers) {
+		var peer = Local_Servers[name];
+		if (!peer.admitted) continue;
+		/* A local enforcement decision returning toward services is ours,
+		   not an assertion that the services source is behind this link. */
+		if (peer === origin || peer.nick == origin.parent) peer.ircout(line);
+		else peer.originatorout(line, origin);
+	}
+	user.quit(reason, true);
+}
+
+function IRC_receive_svsnick(peer, origin, p) {
+	if (!origin.uline || p.length != 3 || !p[1] || p[1].length > MAX_NICKLEN || IRC_check_nick(p[1])) return;
+	var ts = IRC_parse_channel_timestamp(p[2]);
+	if (ts === null || !ts) return;
+	var user = Users[p[0].toUpperCase()];
+	if (!user) return;
+	if (!user.local) {
+		var route = user.parent && Servers[String(user.parent).toLowerCase()];
+		if (!route || route === peer) return;
+		if (route.their_capab && route.their_capab.indexOf("SVSNICK") >= 0)
+			route.rawout(format(":%s SVSNICK %s %s :%lu", origin.nick, user.nick, p[1], ts));
+		else {
+			/* Old owners/hubs cannot execute SVSNICK. Use the existing
+			   services KILL dialect to free the nick without forging a rename
+			   for a client whose owning server still knows its old name. */
+			log(LOG_NOTICE, "SVSNICK: using KILL for " + user.nick + " through legacy peer " + route.nick);
+			IRC_services_kill(origin, user, "Services nickname enforcement (SVSNICK unavailable)");
+		}
+		return;
+	}
+	if (p[1] == user.nick) return;
+	/* Match Bahamut's bounded collision fallback. Only the owner chooses
+	   the actual name; all other servers learn it from the resulting NICK. */
+	var nick = p[1], collision = Users[nick.toUpperCase()], attempt = 0;
+	while (collision && collision !== user && attempt++ < 10) {
+		var suffix = "-" + random(99999);
+		nick = p[1].slice(0, MAX_NICKLEN - suffix.length) + suffix;
+		collision = Users[nick.toUpperCase()];
+	}
+	if (collision && collision !== user) {
+		IRC_services_kill(origin, user, "SVSNICK collision");
+		return;
+	}
+	if (user.check_nickname(nick, true) < 1) return;
+	IRC_local_nick(user, nick, ts);
 }
 
 function search_nickbuf(bufnick) {
@@ -1189,6 +1358,13 @@ function IRCClient_check_nickname(newnick,squelch,allow_reserved) {
 			return 0;
 		}
 	}
+	if (!allow_reserved && !this.uline && typeof IRC_match_sline == "function") {
+		var services_line = IRC_match_sline("Q", newnick);
+		if (services_line) {
+			if (!squelch) this.numeric(432, newnick + " :" + services_line.reason);
+			return 0;
+		}
+	}
 	return 1; /* Success */
 }
 
@@ -1258,6 +1434,7 @@ function IRCClient_do_whois(wi) {
 			wi.nick, wi.away
 		));
 	}
+	IRC_whois_services(this, wi);
 	if (wi.local) {
 		if (!this.local && wi.socket.ssl_session) {
 			this.numeric(671, format(
@@ -1384,6 +1561,15 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			&& !this.channels[chan.nam.toUpperCase()] && !chan.isexcepted(this.nuh, "external")) {
 			this.numeric(404, chan.nam + " :Cannot send to channel "
 				+ "(+n: no outside messages)");
+			return 0;
+		}
+		if (!this.uline && !IRC_is_internal_service(this) && (chan.mode & CHANMODE_REGMODERATED)
+			&& !IRC_services_identified(this) && !chan.modelist[CHANMODE_OP][this.id] && !chan.modelist[CHANMODE_VOICE][this.id]) {
+			this.numeric(477, chan.nam + " :Cannot send to channel (+M: identify to services first)");
+			return 0;
+		}
+		if (!this.uline && !IRC_is_internal_service(this) && (chan.mode & CHANMODE_NOCOLOR) && IRC_channel_has_controls(send_str)) {
+			this.numeric(404, chan.nam + " :Cannot send to channel (+c: control codes are prohibited)");
 			return 0;
 		}
 		if (   (chan.mode&CHANMODE_MODERATED)
@@ -1608,7 +1794,8 @@ function IRCClient_do_stats(statschar) {
 				n = NLines[i];
 				this.numeric(214,format("N %s * %s %s %u", n.host, n.servername, n.flags, n.ircclass));
 				IRC_stats_config(this, "Server:" + n.servername, {InboundHostname:n.host,
-					InboundClass:n.ircclass, InboundTLS:!!n.tls, Flags:NLine_Flags_String(n.flags), Hub:HLine_Exists(n.servername)});
+					InboundClass:n.ircclass, InboundTLS:!!n.tls, Protocol:n.protocol,
+					Flags:NLine_Flags_String(n.flags), Hub:HLine_Exists(n.servername)});
 			}
 			break;  
 		case "F":
@@ -1957,7 +2144,7 @@ function IRCClient_do_connect(con_server,con_port) {
 	sock.cline = con_cline;
 	sock.outbound = true;
 
-	sock.connect(con_cline.host, con_port, handle_outbound_server_connect);
+	IRC_start_outbound_connect(sock, con_cline.host, con_port);
 
 	return true;
 }
@@ -2934,6 +3121,8 @@ function IRCClient_setusermode(modestr) {
 			this.mode &= ~USERMODE_CHAR[i];
 		}
 	}
+	if (!(this.mode & USERMODE_OPER) && this.external_services)
+		this.external_services.admin = false;
 	if (!addmodes && !delmodes)
 		return 0;
 	var final_modestr = "";
@@ -2961,6 +3150,17 @@ function IRCClient_setusermode(modestr) {
    peer, and killing every link over it turns a local hiccup into a
    network-wide split. */
 var Stall_Generation = 0;
+var Last_Stall_Tick = system.timer;
+function IRC_check_callback_stall() {
+	var now = system.timer, gap = now - Last_Stall_Tick;
+	Last_Stall_Tick = now;
+	var threshold = typeof STALL_THRESHOLD_SECS == "number" ? STALL_THRESHOLD_SECS : 10;
+	if (gap < threshold) return;
+	Stall_Generation++;
+	log(LOG_WARNING, format("Callback engine stalled for %.1f seconds, forgiving one ping round on every connection", gap));
+	gnotice(format("Server stalled for %.1f seconds.", gap));
+}
+
 
 function IRCClient_check_timeout() {
 	var now = system.timer;
@@ -3069,20 +3269,26 @@ function IRC_has_clock_push(peer) {
 	return peer.their_capab && peer.their_capab.indexOf("CLOCKPUSH") >= 0;
 }
 
+/* Called before reading CLOCK as well as from timers: a ready socket may
+   run before the watchdog after a suspension. */
+function IRC_clock_stall_reset(peer, now) {
+	if (peer.clock_stall_generation === Stall_Generation) return;
+	var changed = peer.clock_stall_generation !== undefined;
+	peer.clock_stall_generation = Stall_Generation;
+	peer.clock_unverified_since = now;
+	if (!peer.admitted) peer.clock_admission_started = now;
+	if (changed && peer.admitted && peer.clock_enforce) peer.clock_recovering = true;
+	delete peer.clock_probe;
+	delete peer.last_clock_check;
+	delete peer.last_clock_announcement;
+}
+
 function IRC_clock_tick() {
-	if (this.quitting || this.uline)
-		return;
-	if (this.awaiting_hub_maps)
-		return;
+	if (this.quitting || this.uline) return;
+	IRC_check_callback_stall();
+	if (this.awaiting_hub_maps) return;
 	var now = system.timer;
-	if (this.clock_stall_generation !== Stall_Generation) {
-		this.clock_stall_generation = Stall_Generation;
-		this.clock_unverified_since = now;
-		if (!this.admitted) this.clock_admission_started = now;
-		delete this.clock_probe;
-		delete this.last_clock_check;
-		delete this.last_clock_announcement;
-	}
+	IRC_clock_stall_reset(this, now);
 	if (this.clock_unverified_since === undefined)
 		this.clock_unverified_since = now;
 	if (!this.admitted) {
@@ -3109,7 +3315,7 @@ function IRC_clock_tick() {
 			this.last_clock_announcement = now;
 			this.rawout("CLOCK -1 " + format("%.3f", IRC_clock_now()));
 		}
-		return;
+		if (!this.clock_recovering) return;
 	}
 	if (this.clock_probe) {
 		if (this.clock_probe.stall != Stall_Generation) {
@@ -3129,6 +3335,7 @@ function IRC_clock_tick() {
 }
 
 function IRC_receive_clock(peer, p) {
+	IRC_check_callback_stall();
 	if (p[0] == "ROLE" && p.length == 2 && (p[1] == "HUB" || p[1] == "LEAF")) {
 		/* A role assertion never grants hub trust: that comes only from
 		   our configuration. Freeze the role for this connection. */
@@ -3151,18 +3358,22 @@ function IRC_receive_clock(peer, p) {
 		peer.rawout("CLOCK " + p[0] + " " + format("%.3f", IRC_clock_now()));
 		return;
 	}
-	var periodic = p[0] == "-1", probe = peer.clock_probe;
+	var periodic = p[0] == "-1";
 	if (periodic) {
 		/* Unsolicited samples cannot establish readiness or enable clock
 		   enforcement on a leaf link, and must be explicitly negotiated. */
 		if (!IRC_has_clock_push(peer) || !peer.admitted || !peer.clock_enforce || p.length != 2)
 			return;
-	} else if (!probe || p[0] != probe.nonce || p.length != 2)
-		return;
+	}
+	IRC_clock_stall_reset(peer, system.timer);
+	var probe = peer.clock_probe;
+	if (!periodic && (!probe || p[0] != probe.nonce || p.length != 2)) return;
 	if (!/^[0-9]+(?:[.][0-9]{1,3})?$/.test(p[1]) || !isFinite(Number(p[1]))) {
 		peer.quit("Malformed CLOCK response");
 		return;
 	}
+	/* Queued announcements cannot complete recovery or prolong its deadline. */
+	if (periodic && peer.clock_recovering) { IRC_clock_tick.call(peer); return; }
 	var now = IRC_clock_now(), local = now, uncertainty = 0;
 	if (!periodic) {
 		delete peer.clock_probe;
@@ -3184,12 +3395,20 @@ function IRC_receive_clock(peer, p) {
 	   discrepancy in the reverse direction. Each end checks independently. */
 	var skew = Number(p[1]) - local, worst_skew = Math.abs(skew) + uncertainty;
 	if (worst_skew > Clock_MaxSkew) {
+		if (periodic) {
+			peer.clock_recovering = true;
+			peer.clock_unverified_since = system.timer;
+			delete peer.last_clock_check;
+			IRC_clock_tick.call(peer);
+			return;
+		}
 		var reason = format("Clock skew %.3f seconds exceeds %u-second limit (estimate %.3f +/- %.3f, local %.3f, peer %.3f)",
 			worst_skew, Clock_MaxSkew, skew, uncertainty, now, Number(p[1]));
 		log(LOG_WARNING, peer.nick + ": " + reason);
 		peer.quit(reason);
 		return;
 	}
+	if (!periodic) delete peer.clock_recovering;
 	peer.last_clock_check = system.timer;
 	peer.clock_unverified_since = system.timer;
 	peer.clock_skew = skew;

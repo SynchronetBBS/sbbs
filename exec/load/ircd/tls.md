@@ -162,6 +162,13 @@ other servers' clients. INTERNAL is restricted to services and daemon helpers.
 Conflicting reports cannot establish TLS, and observations disappear with the
 user object on quit or split. Nick changes retain the same connection state.
 
+The reserved native FileServ identity (`FileServ_` plus up to eight ASCII
+letters, digits, underscores or hyphens, username `bbs+ircd+files`) may carry
+INTERNAL only from its owning server on the validated route. Recognition
+preserves its channel-policy role across old relays but never infers TLS from
+its username. Missing legacy observations remain UNKNOWN, and contradictory
+reports remove the remote helper's policy exemption.
+
 Older peers receive no CLIENTTLS commands. A legacy reporting gap remains
 unknown, even if a previous WHOIS 671 described the target's socket as secure.
 This reporting is also used by the optional embedded-services TLS requirement;

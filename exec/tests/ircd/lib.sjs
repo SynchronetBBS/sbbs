@@ -256,6 +256,15 @@ IrcdClient.prototype.quit = function() {
 	this.sock.close();
 };
 
+/* Old daemons close the socket before flushing queued ERROR text. Verify
+   enforcement by the actual disconnect rather than requiring that text. */
+IrcdClient.prototype.expect_disconnect = function(timeout_sec) {
+	var until = Date.now() + (timeout_sec || 5) * 1000;
+	while (this.sock.is_connected && Date.now() < until)
+		this.sock.recvline(512, 0.2);
+	if (this.sock.is_connected) throw new Error("Client was not disconnected");
+};
+
 /* ---- Network test infrastructure (6-server hub+leaf topology) ---- */
 
 /*
@@ -350,6 +359,7 @@ IrcdTestNetwork.prototype._write_config = function(srv, server_sections) {
 		lines.push("OutboundPassword=" + IRCD_NET_LINK_PASS);
 		lines.push("Class=30");
 		lines.push("Hub=" + (s.is_hub ? "true" : "false"));
+		if (s.protocol) lines.push("Protocol=" + s.protocol);
 		lines.push("");
 		if (s.is_services) {
 			lines.push("[Services:" + s.sname + "]");

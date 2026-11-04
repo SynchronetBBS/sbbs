@@ -6,11 +6,11 @@ function check(value, message) { if (!value) throw new Error(message || "Asserti
 function state() {
 	var s = {system:{timer:1000}, ServerName:"local.test", ServerDesc:"Tests", server:{},
 		Users:{}, Servers:{}, Channels:{}, Local_Users:{}, Local_Servers:{}, Unregistered:{},
-		Assigned_IDs:{}, WhoWas:{}, WhoWasMap:[], NickHistory:[], ULines:[], QLines:[], Profile:{},
+		Assigned_IDs:{}, WhoWas:{}, WhoWasMap:[], NickHistory:[], ULines:[], QLines:[], KLines:[], Profile:{},
 		MAX_NICKLEN:30, Enforcement:true, YLines:[{pingfreq:90, connfreq:0, active:0}],
 		log:function() {}, js:{setImmediate:function() {}, clearInterval:function() {}},
 		Generate_ID:function() { return 1; }};
-	["irclib.js", "ircd/exceptions.js", "ircd/link-security.js", "ircd/client-security.js", "ircd/core.js", "ircd/user.js", "ircd/channel.js",
+	["irclib.js", "ircd/exceptions.js", "ircd/link-security.js", "ircd/client-security.js", "ircd/services-state.js", "ircd/services-lines.js", "ircd/channel-policy.js", "ircd/core.js", "ircd/user.js", "ircd/channel.js",
 	 "ircd/server.js", "ircd/config.js", "ircd/timestamps.js"].forEach(function(f) { load(s, f); });
 	s.Epoch = function() { return 1800000000; };
 	return s;

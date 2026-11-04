@@ -6,9 +6,20 @@ var net = new IrcdTestNetwork(), services, owner, target;
 var edge = {name:"hub1", sname:"edge.services.test", port:19730};
 var hub = {name:"hub2", sname:"hub.services.test", port:19731};
 var home = {name:"leaf1a", sname:"home.services.test", port:19732};
-var authority = {sname:"services.test", is_hub:false, is_services:true};
+var authority = {sname:"services.test", is_hub:false, is_services:true, protocol:"bahamut"};
 
 function check(ok, message) { if (!ok) throw new Error(message); }
+function services_expect(pattern) {
+	var until = Date.now() + 5000, seen = [];
+	while (Date.now() < until) {
+		var line = services.sock.recvline(512, 0.2);
+		if (!line) continue;
+		seen.push(line);
+		if (line.indexOf("PING ") == 0) services.send("PONG " + line.substr(5));
+		if (pattern.test(line)) return seen;
+	}
+	throw new Error("Services did not receive " + pattern + ": " + seen.join(" | "));
+}
 function status(client) {
 	client.send("NAMES #service");
 	return client.expect(" 353 ", 5).split(" :")[1];
@@ -42,6 +53,28 @@ try {
 			services.send(":ChanServ MODE #service 0 +v Owner");
 			target.expect("+v Owner", 5);
 		},
+		"Bahamut join-rate modes preserve following key and status arguments": function() {
+			services.send(":ChanServ MODE #service 0 +jko 2:30 servicekey Target");
+			target.expect("+kj servicekey 2:30", 5);
+			check(status(target).indexOf("@Target") >= 0, "Later op argument was lost");
+			services.send(":ChanServ MODE #service 0 -kj servicekey"); target.expect("-kj servicekey", 5);
+		},
+		"Bahamut services can add and clear ordinary exceptions across both hubs": function() {
+			services.send(":ChanServ MODE #service 0 +e *!*@trusted.invalid");
+			target.expect("+e *!*@trusted.invalid", 5);
+			target.send("MODE #service +e"); target.expect(" 348 Target #service *!*@trusted.invalid", 5); target.expect(" 349 ", 5);
+			services.send(":ChanServ MODE #service 0 -e *!*@trusted.invalid");
+			target.expect("-e *!*@trusted.invalid", 5);
+		},
+		"ordinary exception updates reach services while extended masks stay on capable links": function() {
+			owner.send("MODE #service +ee *!*@visible.invalid ~m:external:Target");
+			var seen = services_expect(/ MODE #service .*\+e \*!\*@visible[.]invalid/);
+			services.send("PING :exception-barrier");
+			seen = seen.concat(services_expect(/PONG .*exception-barrier/));
+			check(!seen.some(function(line) { return line.indexOf("~msgbypass:") >= 0; }), "Extended masks leaked to Bahamut");
+			owner.send("MODE #service -ee *!*@visible.invalid ~m:external:Target");
+			target.expect("-ee *!*@visible.invalid ~msgbypass:external:Target!*@*", 5);
+		},
 		"services restore an older saved topic through both hubs": function() {
 			owner.send("TOPIC #service :Unwanted topic");
 			target.expect("TOPIC #service :Unwanted topic", 5);
@@ -62,6 +95,19 @@ try {
 			target.expect(/INVITE Target :?#service$/, 5);
 			target.join("#service");
 			owner.expect("Target!", 5);
+		},
+		"SVSNICK reaches the owner and acknowledges a complete rename/hold/release lifecycle": function() {
+			var stamp = Math.floor(Date.now() / 1000);
+			services.send(":services.test SVSNICK Target Guest211 :" + stamp);
+			target.expect(/ NICK :?Guest211$/, 5); owner.expect(/:Target!.* NICK :?Guest211$/, 5);
+			services_expect(/:Target NICK Guest211 :[0-9]+/);
+			services.send("NICK Target 1 " + stamp + " +i enforcer services.test services.test 0 0 :Nickname enforcement");
+			owner.wait_for_nick("Target");
+			services.send(":Target QUIT :Released");
+			services.send(":services.test SVSNICK Guest211 Target :" + stamp);
+			target.expect(/ NICK :?Target$/, 5); owner.expect(/:Guest211!.* NICK :?Target$/, 5);
+			services_expect(/:Guest211 NICK Target :[0-9]+/);
+			check(status(target).indexOf("Target") >= 0, "Rename lost channel membership");
 		},
 		"services KILL reaches another route without disconnecting services": function() {
 			services.send(":services.test KILL Target :Nickname reclaimed");

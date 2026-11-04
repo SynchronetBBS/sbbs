@@ -74,6 +74,7 @@ IRC_Services_Engine.prototype.expire = function(now) {
 		channels.forEach(function(k) { delete next.channels[k]; });
 	});
 	channels.forEach(function(k) { delete self.exception_warnings[k]; });
+	this.authorization_changed();
 	log(LOG_INFO, format("Embedded services expired %u nickname and %u channel registrations", nicks.length, channels.length));
 };
 IRC_Services_Engine.prototype.notice = function(service, user, text) {
@@ -110,8 +111,13 @@ IRC_Services_Engine.prototype.authorization_changed = function() {
 		var u = self.users[ref], owner = self.account(u.nick);
 		if (!owner || self.owns(u, owner)) delete self.deadlines[ref];
 		else if (!self.deadlines[ref] || self.deadlines[ref].nick != u.nick) self.deadlines[ref] = {nick:u.nick, at:system.timer + 60};
+		self.sync_identified(u);
 	});
 	Object.keys(this.channels).forEach(function(k) { self.enforce(self.channels[k]); });
+};
+IRC_Services_Engine.prototype.sync_identified = function(user) {
+	var identified = this.owns(user, this.account(user.nick));
+	if (!!user.identified != identified) this.emit({type:"identified", target:user, identified:identified});
 };
 IRC_Services_Engine.prototype.commit = function(change) {
 	var next = IRC_services_copy(this.store.data); change(next); this.store.save(next);
@@ -126,6 +132,8 @@ IRC_Services_Engine.prototype.by_nick = function(nick) {
 };
 IRC_Services_Engine.prototype.enforce = function(channel) {
 	var record = this.store.data.channels[IRC_services_key(channel.name)], self = this;
+	var registered = channel.flags.indexOf("r") >= 0;
+	if (!!record != registered) this.emit({type:"mode", channel:channel, mode:record ? "+r" : "-r"});
 	if (!record) return;
 	channel.users.forEach(function(member) {
 		var user = self.users[member.ref], level = user && self.level(user, channel);
@@ -143,6 +151,8 @@ IRC_Services_Engine.prototype.enforce = function(channel) {
 		this.emit({type: "mode", channel: channel, mode: lock.key ? "+k" : "-k", arg: lock.key || "*"});
 	if (lock.limit !== undefined && channel.limit != lock.limit)
 		this.emit({type: "mode", channel: channel, mode: lock.limit ? "+l" : "-l", arg: lock.limit ? String(lock.limit) : ""});
+	if (lock.joinrate !== undefined && (channel.joinrate || "") != lock.joinrate)
+		this.emit({type:"mode", channel:channel, mode:lock.joinrate ? "+j" : "-j", arg:lock.joinrate});
 	var live = {}, occupied = 0, blocked = false, grants = record.exceptions || {};
 	(channel.exceptions || []).forEach(function(mask) { live[IRC_services_key(mask)] = true; occupied++; });
 	Object.keys(grants).sort().forEach(function(key) {
@@ -176,6 +186,7 @@ IRC_Services_Engine.prototype.event = function(event) {
 			this.notice("NickServ", event.user, "This nickname is registered. Identify to your BBS account within 60 seconds or change nicknames.");
 			this.deadlines[event.user.ref] = {nick: event.user.nick, at: system.timer + 60};
 		}
+		this.sync_identified(event.user);
 		return;
 	}
 	if (event.type == "quit") { this.note_user(event.ref, this.now()); delete this.users[event.ref]; delete this.sessions[event.ref]; delete this.deadlines[event.ref]; delete this.links[event.ref]; return; }
@@ -281,12 +292,12 @@ IRC_Services_Engine.prototype.nick_command = function(user, verb, args) {
 		if (this.nick_count([account]) >= this.max_nicks()) throw IRC_services_error("A network identity may register at most " + this.max_nicks() + " nicknames.");
 		var now = this.now();
 		this.commit(function(next) { next.nicks[key] = account; next.memo_accounts[key] = session.active; next.nick_last_used[key] = now; });
-		delete this.nick_usage[key]; reply("Nickname registered to your network identity.");
+		delete this.nick_usage[key]; this.authorization_changed(); reply("Nickname registered to your network identity.");
 	} else if (verb == "DROP") {
 		key = IRC_services_key(args[0] || user.nick);
 		if (!this.owns(user, data.nicks[key])) throw IRC_services_error("That nickname belongs to another account.");
 		this.commit(function(next) { delete next.nicks[key]; delete next.nick_last_used[key]; delete next.memo_accounts[key]; });
-		delete this.nick_usage[key]; reply("Nickname registration dropped.");
+		delete this.nick_usage[key]; this.authorization_changed(); reply("Nickname registration dropped.");
 	} else if (verb == "GHOST") {
 		if (args.length != 1 || !this.owns(user, this.account(args[0]))) throw IRC_services_error("Syntax: GHOST <nickname> (must belong to your account)");
 		var target = this.by_nick(args[0]);
@@ -351,7 +362,7 @@ function IRC_services_error(message, home) { var e = new Error(message); e.servi
 
 function IRC_services_mlock(args) {
 	var modes = args.shift(), lock = {on: "", off: ""}, add = true;
-	if (!modes || !/^[+-][imnpstkl+-]+$/.test(modes)) throw IRC_services_error("MLOCK accepts +/-imnpstkl; use MLOCK NONE to clear it.");
+	if (!modes || !/^[+-][imnpstklRMOcjS+-]+$/.test(modes)) throw IRC_services_error("MLOCK accepts +/-imnpstklRMOcjS; use MLOCK NONE to clear it.");
 	for (var i = 0; i < modes.length; i++) {
 		var c = modes[i];
 		if (c == "+" || c == "-") { add = c == "+"; continue; }
@@ -361,6 +372,10 @@ function IRC_services_mlock(args) {
 		} else if (c == "l") {
 			lock.limit = add ? Number(args.shift()) : 0;
 			if (add && (!isFinite(lock.limit) || lock.limit < 1 || lock.limit > 99999 || lock.limit % 1)) throw IRC_services_error("MLOCK +l requires a limit from 1 to 99999.");
+		} else if (c == "j") {
+			var rate = add ? IRC_joinrate_parse(args.shift()) : {value:"0", count:0};
+			if (!rate || (add && !rate.count)) throw IRC_services_error("MLOCK +j requires count:seconds (1 to 2147483647).");
+			lock.joinrate = add ? rate.value : "";
 		} else {
 			lock.on = lock.on.replace(c, ""); lock.off = lock.off.replace(c, "");
 			lock[add ? "on" : "off"] += c;
@@ -432,6 +447,7 @@ IRC_Services_Engine.prototype.channel_command = function(user, verb, args) {
 		this.commit(function(next) { delete next.channels[key]; });
 		delete this.channel_usage[key];
 		delete this.exception_warnings[key];
+		if (channel) this.enforce(channel);
 		reply("Channel registration dropped."); return;
 	}
 	if (verb == "ACCESS") {
@@ -453,7 +469,7 @@ IRC_Services_Engine.prototype.channel_command = function(user, verb, args) {
 		var setting = (args.shift() || "").toUpperCase(), lock, enabled;
 		if (setting == "MLOCK") lock = args.length == 1 && args[0].toUpperCase() == "NONE" ? {on:"",off:""} : IRC_services_mlock(args);
 		else if (setting == "KEEPTOPIC" && /^(ON|OFF)$/i.test(args[0] || "")) enabled = args[0].toUpperCase() == "ON";
-		else throw IRC_services_error("Syntax: SET #channel MLOCK <modes> [key/limit] | MLOCK NONE | KEEPTOPIC ON|OFF");
+		else throw IRC_services_error("Syntax: SET #channel MLOCK <modes> [key/limit/rate] | MLOCK NONE | KEEPTOPIC ON|OFF");
 		this.commit(function(next) { if (lock) next.channels[key].mlock = lock; else { next.channels[key].keeptopic = enabled; if (channel) next.channels[key].topic = channel.topic; } });
 		if (channel) this.enforce(channel); reply("Channel settings updated."); return;
 	}

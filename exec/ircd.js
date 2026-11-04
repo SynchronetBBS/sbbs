@@ -33,6 +33,9 @@ load("dns.js");
 load("ircd/tls.js");
 load("ircd/link-security.js");
 load("ircd/client-security.js");
+load("ircd/services-state.js");
+load("ircd/services-lines.js");
+load("ircd/channel-policy.js");
 load("ircd/core.js");
 load("ircd/unregistered.js");
 load("ircd/user.js");
@@ -43,7 +46,7 @@ load("ircd/timestamps.js");
 load("ircd/services.js");
 
 /*** Global Constants - Always in ALL_UPPERCASE ***/
-var VERSION = "SynchronetIRCd-2.10";
+var VERSION = "SynchronetIRCd-2.11";
 var VERSION_STR = format(
 	"Synchronet %s%s-%s%s (IRCd by Randy Sommerfeld)",
 	system.version, system.revision,
@@ -56,7 +59,7 @@ var VERSION_STR = format(
    Legacy hubs and leaves remain linkable during this rollout. Mandatory
    capability enforcement belongs to the next protocol version.
    U:lined services retain their legacy protocol. */
-var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE TSJOIN CLOCK CLOCKPUSH CSYNC TSMAP FULLCHAN LINKSEC CLIENTTLS CHANEXCEPT";
+var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE TSJOIN CLOCK CLOCKPUSH CSYNC TSMAP FULLCHAN LINKSEC CLIENTTLS CHANEXCEPT SVSNICK SVCSTATE INVMASK CHANPOLICY SLINES";
 /* This will be in the configuration for 2.0 */
 var SUMMON = true;
 
@@ -238,19 +241,7 @@ js.setTimeout(config_rehash_semaphore_check, Rehash_Poll_Msecs);
 var Last_Stall_Tick = system.timer;
 
 function stall_watchdog() {
-	var now = system.timer;
-	var gap = now - Last_Stall_Tick;
-
-	Last_Stall_Tick = now;
-	if (gap < STALL_THRESHOLD_SECS)
-		return;
-	Stall_Generation++;
-	log(LOG_WARNING, format(
-		"Callback engine stalled for %.1f seconds, "
-		+ "forgiving one ping round on every connection",
-		gap
-	));
-	gnotice(format("Server stalled for %.1f seconds.", gap));
+	IRC_check_callback_stall();
 }
 js.setInterval(stall_watchdog, STALL_TICK_MSECS);
 
@@ -266,6 +257,7 @@ function shutdown_semaphore_check() {
 	}
 }
 js.setInterval(shutdown_semaphore_check, 1000 /* milliseconds */);
+js.setInterval(IRC_expire_akills, 1000 /* milliseconds */);
 
 /* Belt-and-suspenders: js.on_exit fires whenever this script is torn down --
    by the services subsystem, the sysop, or a JSexec exit -- on every

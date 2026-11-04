@@ -26,7 +26,8 @@ from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--jsexec', type=Path, required=True)
 parser.add_argument('--ctrl', type=Path, default=Path('/tmp/ircd-services-bbs-fixture/ctrl'))
-parser.add_argument('--accept-only', action='store_true', help='Run native asynchronous accept API regressions only')
+parser.add_argument('--accept-only', action='store_true', help='Run native asynchronous TLS API regressions only')
+parser.add_argument('--outbound-stall-only', action='store_true', help='Run only the slow outbound TLS regression')
 parser.add_argument('--routes-only', action='store_true', help='Run the three-server route and services scenarios only')
 args = parser.parse_args()
 source = Path(__file__).resolve().parents[2]
@@ -44,7 +45,7 @@ def native(script, *arguments):
     return [str(args.jsexec), '-n', '-c', str(ctrl), '-i', str(source / 'load'), str(script), *map(str, arguments)]
 
 
-def certificate(name, issuer=None, ca=False, start=-1, end=2, dns='localhost', client_only=False, public_key=None, eku=True):
+def certificate(name, issuer=None, ca=False, start=-1, end=2, dns='localhost', client_only=False, public_key=None, eku=True, dual_use=False):
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, name)])
     now = datetime.now(timezone.utc)
@@ -61,7 +62,10 @@ def certificate(name, issuer=None, ca=False, start=-1, end=2, dns='localhost', c
     if not ca or client_only:
         builder = builder.add_extension(x509.SubjectAlternativeName([x509.DNSName(dns)]), critical=False)
         if eku:
-            builder = builder.add_extension(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.CLIENT_AUTH if client_only else ExtendedKeyUsageOID.SERVER_AUTH]), critical=False)
+            usages = [ExtendedKeyUsageOID.CLIENT_AUTH if client_only else ExtendedKeyUsageOID.SERVER_AUTH]
+            if dual_use:
+                usages.append(ExtendedKeyUsageOID.CLIENT_AUTH)
+            builder = builder.add_extension(x509.ExtendedKeyUsage(usages), critical=False)
     cert = builder.sign(issuer[1] if issuer else key, hashes.SHA256())
     (run / (name + '.pem')).write_bytes(cert.public_bytes(serialization.Encoding.PEM))
     (run / (name + '.key')).write_bytes(key.private_bytes(serialization.Encoding.PEM,
@@ -115,7 +119,7 @@ if (argv[0] == "create") {
 ''')
 subprocess.run(native(setup, 'create', run / 'native.csr'), check=True, timeout=30)
 csr = x509.load_pem_x509_csr((run / 'native.csr').read_bytes())
-server_cert, _ = certificate('native', root, public_key=csr.public_key())
+server_cert, _ = certificate('native', root, public_key=csr.public_key(), dual_use=True)
 (run / 'native.der').write_bytes(server_cert.public_bytes(serialization.Encoding.DER))
 subprocess.run(native(setup, 'import', run / 'native.der'), check=True, timeout=30)
 
@@ -180,11 +184,12 @@ cases = [
     ('empty CA bundle', 'valid.pem', 'valid.key', 'empty.pem', False),
     ('non-CA in bundle', 'valid.pem', 'valid.key', 'not-ca.pem', False),
 ]
-for name, cert, key, ca, accept in ([] if args.routes_only or args.accept_only else cases):
+for name, cert, key, ca, accept in ([] if args.routes_only or args.accept_only or args.outbound_stall_only else cases):
     peer = Peer(cert, key)
     result = subprocess.run(native(source / 'tests/ircd/tls-worker.sjs', run / ca, 'localhost', peer.port,
                                    'accept' if accept else 'reject'), capture_output=True, text=True, errors='replace', timeout=30)
     assert result.returncode == 0, name + ': ' + result.stdout + result.stderr
+    assert ('TLS_RESULT=' + ('accepted' if accept else 'rejected')) in result.stdout, name + ': missing TLS completion: ' + result.stdout + result.stderr
     peer.done.wait(16)
     assert peer.done.is_set(), name + ': peer thread did not finish'
     assert (b'PASS tls-test-password :TS\r\n' in peer.received) == accept, name + ': credential leak or missing handshake'
@@ -237,6 +242,38 @@ def accept_tls_api_test():
             if process.poll() is None:
                 process.kill()
                 process.communicate(timeout=5)
+
+
+def connect_tls_api_test():
+    for mode in ['success', 'client-auth', 'invalid', 'timeout', 'arguments', 'cancel', 'exit']:
+        listener = socket.socket()
+        listener.bind(('127.0.0.1', 0))
+        listener.listen()
+        listener.settimeout(10)
+        process = subprocess.Popen(native(source / 'tests/socket/connect-tls.sjs', listener.getsockname()[1], mode),
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        try:
+            with listener.accept()[0] as raw:
+                if mode in ('success', 'client-auth'):
+                    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+                    context.load_cert_chain(run / 'valid.pem', run / 'valid.key')
+                    if mode == 'client-auth':
+                        context.load_verify_locations(run / 'root.pem')
+                        context.verify_mode = ssl.CERT_REQUIRED
+                    with context.wrap_socket(raw, server_side=True) as secure:
+                        receive_until(secure, b'TLS ready', timeout=5)
+                elif mode == 'invalid':
+                    raw.sendall(b'not TLS\r\n')
+                    raw.shutdown(socket.SHUT_WR)
+                # Other modes intentionally leave the peer silent while JS timers run.
+                output, _ = process.communicate(timeout=12)
+                assert process.returncode == 0 and ('PASS: ' + mode) in output, output
+                print('PASS: native connectTLS', mode, flush=True)
+        finally:
+            listener.close()
+            if process.poll() is None:
+                process.kill()
+                process.wait(timeout=5)
 
 
 def daemon_test(automatic):
@@ -333,7 +370,10 @@ Class=1
                     client.sendall(b'PING :tls-pending-regression\r\n')
                     receive_until(client, b':tls-pending-regression', timeout=4)
                     context = ssl.create_default_context(cafile=run / 'root.pem')
-                    with context.wrap_socket(socket.create_connection(('127.0.0.1', tls), timeout=2), server_hostname='localhost') as secure:
+                    # Private-key loading runs in the workers and can serialize
+                    # on a cold cache. Bound TLS completion separately from the
+                    # IRC responsiveness assertion above (native timeout: 10s).
+                    with context.wrap_socket(socket.create_connection(('127.0.0.1', tls), timeout=8), server_hostname='localhost') as secure:
                         secure.sendall(b'NICK concurrentTLS\r\nUSER concurrentTLS 0 * :Concurrent TLS\r\n')
                         receive_until(secure, b' 001 ', timeout=2)
                     # A failed handshake must release its slot too.
@@ -380,7 +420,18 @@ Class=1
                     receive_until(leaf, b'SERVER hub.test ')
                 # Native TLS server role serves the installed BBS ssl.cert.
                 context = ssl.create_default_context(cafile=run / 'root.pem')
-                with context.wrap_socket(socket.create_connection(('127.0.0.1', tls), timeout=5), server_hostname='localhost') as secure:
+                deadline = time.monotonic() + 12  # configured 10s handshake timeout + drain margin
+                while True:
+                    raw = socket.create_connection(('127.0.0.1', tls), timeout=5)
+                    try:
+                        secure = context.wrap_socket(raw, server_hostname='localhost')
+                        break
+                    except (ssl.SSLEOFError, ConnectionResetError):
+                        raw.close()
+                        if time.monotonic() >= deadline:
+                            raise
+                        time.sleep(0.1)
+                with secure:
                     secure.sendall(b'NICK tlsclient\r\nUSER tlsclient 0 * :TLS client\r\n')
                     receive_until(secure, b' 001 ')
                 client.sendall(b'DIE\r\n')
@@ -399,11 +450,121 @@ Class=1
         assert process is None or process.returncode in (0, -signal.SIGTERM), 'IRCd crashed: ' + logfile.read_text()
 
 
-if not args.routes_only:
+def outbound_stall_test():
+    """A silent configured TLS peer must not stall clients, REHASH or shutdown."""
+    listener = socket.socket()
+    listener.bind(('127.0.0.1', 0))
+    listener.listen()
+    listener.settimeout(20)
+    tlsport, port = listener.getsockname()[1], free_port()
+    config = run / 'outbound-stall.ini'
+    config.write_text(f"""[Info]
+Servername=stall.test
+[TLS]
+CAFile={run / 'root.pem'}
+[Port:{port}]
+Default=true
+[Class:1]
+PingFrequency=120
+ConnectFrequency=0
+Maximum=100
+SendQ=2000000
+[Allow]
+Mask=*@*
+Class=1
+[Operator:testop]
+Nick=testop
+Mask=*@*
+Password=testpass
+Flags=OD
+Class=1
+[Server:slow]
+Servername=slow.test
+Hostname=localhost
+Password=tls-test-password
+Port={tlsport}
+TLS=true
+Hub=true
+Class=1
+""")
+    logfile = run / 'outbound-stall.log'
+    process = None
+    with ExitStack() as peers:
+        try:
+            with logfile.open('w') as output:
+                process = subprocess.Popen(native(source / 'ircd.js', '-f', config, '-a', '127.0.0.1'),
+                                           stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT)
+            deadline = time.monotonic() + 15
+            while True:
+                try:
+                    client = socket.create_connection(('127.0.0.1', port), timeout=.2)
+                    break
+                except OSError:
+                    assert time.monotonic() < deadline and process.poll() is None, logfile.read_text()
+                    time.sleep(.05)
+            with client:
+                client.sendall(b'NICK testop\r\nUSER testop 0 * :TLS stall regression\r\n')
+                receive_until(client, b' 376 ')
+                client.sendall(b'OPER testop testpass\r\n')
+                receive_until(client, b' 381 ')
+                client.sendall(b'MODE testop +n\r\n')
+                receive_until(client, b'MODE testop')
+                time.sleep(2.1)  # reset the operator command flood window
+
+                observer = peers.enter_context(socket.create_connection(('127.0.0.1', port), timeout=2))
+                observer.sendall(b'NICK observer\r\nUSER observer 0 * :Unrelated client\r\n')
+                receive_until(observer, b' 376 ')
+
+                def connect_silent_peer():
+                    client.sendall(f'CONNECT slow.test {tlsport}\r\n'.encode())
+                    peer = peers.enter_context(listener.accept()[0])
+                    peer.settimeout(3)
+                    hello = peer.recv(8192)
+                    assert hello[:1] == b'\x16' and b'tls-test-password' not in hello, repr(hello)
+                    began = time.monotonic()
+                    observer.sendall(b'PING :outbound-responsive\r\n')
+                    receive_until(observer, b'outbound-responsive', timeout=2)
+                    assert time.monotonic() - began < 2, 'Outbound TLS blocked the callback loop'
+                    return peer
+
+                connect_silent_peer()
+                time.sleep(2.1)  # allow the operator command flood window to reset
+                # A failed reload must retain this attempt and the active policy.
+                hidden = config.with_suffix('.hidden')
+                config.rename(hidden)
+                try:
+                    client.sendall(b'REHASH\r\n')
+                    receive_until(client, b'Configuration reload failed', timeout=2)
+                finally:
+                    hidden.rename(config)
+                client.sendall(b'REHASH\r\n')
+                receive_until(client, b' 382 ', timeout=2)
+                # A successful reload cancels the old attempt and frees the slot.
+                connect_silent_peer()
+                receive_until(client, b'Failed to connect to slow.test', timeout=13)
+                assert b'tls-test-password' not in logfile.read_bytes(), 'Password logged'
+                connect_silent_peer()
+                began = time.monotonic()
+                client.sendall(b'DIE\r\n')
+                assert process.wait(timeout=4) == 0, logfile.read_text()
+                assert time.monotonic() - began < 4, 'Shutdown waited for outbound TLS timeout'
+            print('PASS: silent outbound TLS preserves PING, reload, timeout and shutdown', flush=True)
+        finally:
+            listener.close()
+            if process and process.poll() is None:
+                process.send_signal(signal.SIGTERM)
+                process.wait(timeout=10)
+
+
+if args.outbound_stall_only:
+    outbound_stall_test()
+elif not args.routes_only:
     accept_tls_api_test()
+    connect_tls_api_test()
     if not args.accept_only:
         daemon_test(True)
         daemon_test(False)
+        outbound_stall_test()
 
 
 def route_test():
@@ -572,10 +733,48 @@ Class=30
                 service(client, 'NickServ', 'IDENTIFY Some.User TESTPASS', 'requires TLS')
                 service(target, 'NickServ@a.test', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+A')
                 service(target, 'NickServ', 'REGISTER', 'Nickname registered')
+                end = time.monotonic() + 10
+                while b' 307 ' not in whois(target, 'securetarget', True):
+                    assert time.monotonic() < end, 'Embedded identification did not reach the owning server'
+                    time.sleep(.2)
+                secure.sendall(b'JOIN #tls-only\r\n')
+                receive_until(secure, b' 366 ')
+                secure.sendall(b'MODE #tls-only +S\r\n')
+                receive_until(secure, b'MODE #tls-only +S')
+                target.sendall(b'JOIN #tls-only\r\n')
+                receive_until(target, b' 366 ')
+                client.sendall(b'JOIN #tls-only\r\n')
+                receive_until(client, b' 489 ')
+                target.sendall(b'JOIN #identified-policy\r\n')
+                receive_until(target, b' 366 ')
+                service(target, 'ChanServ', 'REGISTER #identified-policy Test policy', 'Channel registered')
+                service(target, 'ChanServ', 'SET #identified-policy MLOCK +RMSj 2:10', 'Channel settings updated')
+                target.sendall(b'MODE #identified-policy\r\n')
+                modes = receive_until(target, b' 324 ')
+                assert b'2:10' in modes and b'R' in modes and b'S' in modes, repr(modes)
+                service(secure, 'NickServ@a.test', 'IDENTIFY Some.User TESTPASS', 'Identified as Some.User+A')
+                service(secure, 'NickServ', 'REGISTER', 'Nickname registered')
+                end = time.monotonic() + 10
+                while b' 307 ' not in whois(secure, 'secureviewer', True):
+                    assert time.monotonic() < end, 'Second registered nickname did not get identification'
+                    time.sleep(.2)
+                secure.sendall(b'JOIN #identified-policy\r\n')
+                receive_until(secure, b' 366 ')
                 service(client, 'NickServ', 'INFO securetarget', 'Registered network identity')
                 service(target, 'MemoServ@a.test', 'STATUS', 'No telegrams')
                 service(client, 'MemoServ', 'READ', 'requires TLS')
                 service(target, 'NickServ', 'LOGOUT ALL', 'All BBS logins removed')
+                end = time.monotonic() + 10
+                while b' 307 ' in whois(target, 'securetarget', True):
+                    assert time.monotonic() < end, 'Logout retained the services identification marker'
+                    time.sleep(.2)
+                target.sendall(b'PART #identified-policy\r\n')
+                receive_until(target, b' PART ')
+                target.sendall(b'JOIN #identified-policy\r\n')
+                receive_until(target, b' 477 ')
+                target.sendall(b'PRIVMSG #tls-only :policy checks complete\r\n')
+                receive_until(secure, b'policy checks complete')
+            print('PASS: embedded identity and extended mode locks cross native hops; S admits TLS and rejects plaintext clients', flush=True)
             print('PASS: WHOIS 671 and protected services work across native TLS hops; public commands remain available', flush=True)
 
             stop('c')
@@ -626,6 +825,6 @@ Class=30
             assert process.returncode in (0, -signal.SIGTERM), 'Route IRCd crashed: ' + logfile.read_text()
 
 
-if not args.accept_only:
+if not args.accept_only and not args.outbound_stall_only:
     route_test()
 print('All native TLS tests passed.', flush=True)

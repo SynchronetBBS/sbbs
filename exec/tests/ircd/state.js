@@ -6,6 +6,18 @@ load(js.exec_dir + "lib.sjs");
 load(js.exec_dir + "state-fixture.sjs");
 
 run_tests({
+	"numeric-only and empty MODE arguments preserve channel state and the client": function() {
+		var s = new_state(), u = new_user(s, "Owner"), c = join_user(s, u, "#test");
+		c.modelist[s.CHANMODE_OP][u.id] = u;
+		["MODE #test 123", "MODE #test 0", "MODE #test :", "MODE Owner 123"].forEach(function(line) {
+			u.work(line);
+			check(!u.quitting && c.mode == s.CHANMODE_NONE, "malformed MODE changed state");
+		});
+		check(u.received.filter(function(line) { return / 461 /.test(line); }).length == 4, "missing MODE parameter error");
+		check(s.IRCClient_set_chanmode.call(u, c, []) === 0 && s.IRCClient_set_chanmode.call(u, c, [null]) === 0, "shared setter accepted missing modes");
+		u.work("MODE #test +m");
+		check(c.mode & s.CHANMODE_MODERATED, "valid MODE stopped working");
+	},
 	"trusted services can invite without channel membership while ordinary outsiders cannot": function() {
 		var s=new_state(), peer=new_peer(s,"uplink.test",true), owner=new_user(s,"Owner"), guest=new_user(s,"Guest");
 		var c=join_user(s,owner,"#test"), bot=new_user(s,"ChanServ",peer.nick), outsider=new_user(s,"Outsider",peer.nick);
@@ -361,7 +373,7 @@ run_tests({
 			&& !existing.modelist[s.CHANMODE_BAN].length, "leaf overrode established channel");
 		p.work("BURST 0");
 		check(!p.quitting && !fresh.pending_burst, "burst completion failed");
-		check(/MODE #existing 0 -b \*!\*@forged/.test(p.sent.join("\n")), "rejected ban not undone");
+		check(/MODE #existing -b \*!\*@forged/.test(p.sent.join("\n")), "rejected ban not undone");
 		check(!/CSYNC |TSMAP |CLOCK /.test(p.sent.join("\n")), "legacy correction used extensions");
 		p.work(":oldleaf.test MODE #fresh 0 +s");
 		check(!(fresh.mode & s.CHANMODE_SECRET), "burst privilege survived BURST 0");
@@ -382,8 +394,8 @@ run_tests({
 		c.topic = "canonical"; c.topicchangedby = "HubUser"; c.topictime = s.now;
 		s.IRC_note_legacy_topic(p, c, s.now + 86400);
 		s.IRC_resync_leaf(p, c);
-		check(p.sent.indexOf(":hub.test MODE #legacy 0 -l") >= 0
-			&& p.sent.indexOf(":hub.test MODE #legacy 0 +o OldUser") >= 0, "MODE not unconditional");
+		check(p.sent.indexOf(":hub.test MODE #legacy -l") >= 0
+			&& p.sent.indexOf(":hub.test MODE #legacy +o OldUser") >= 0, "MODE not unconditional");
 		check(p.sent.join("\n").indexOf(" " + (s.now + 86401) + " :canonical") >= 0,
 			"old leaf rejected newer topic correction");
 		check(c.topictime == s.now && c.created == s.now, "presentation changed network timestamps");
@@ -395,8 +407,8 @@ run_tests({
 		s.IRC_bcast_join(local, c, c.created);
 		s.IRC_bcast_chanmode(local, c, "-l+ov Local Local", c.created);
 		check(p.sent[0] == ":Local JOIN #legacy", "JOIN can reset drifting leaf status");
-		check(p.sent[1] == ":Local MODE #legacy 0 -l"
-			&& p.sent[2] == ":Local MODE #legacy 0 -+ov Local Local", "legacy -l misaligns nickname arguments");
+		check(p.sent[1] == ":Local MODE #legacy -l"
+			&& p.sent[2] == ":Local MODE #legacy -+ov Local Local", "legacy -l misaligns nickname arguments");
 	},
 	"legacy leaf correction does not resurrect its departed users": function() {
 		var s = new_state(), p = new_peer(s, "oldleaf.test", false);
@@ -494,14 +506,17 @@ run_tests({
 			&& p.sent[1] == "CLOCK -1 1800000015.000"
 			&& p.sent[2] == "CLOCK -1 1800000030.000", "requests sent or cadence reset by replies");
 	},
-	"periodic clocks enforce either skew boundary and include queue delay": function() {
+	"suspect periodic clocks require a fresh probe before rejecting either boundary": function() {
 		[-31, -30, -3, 0, 3, 30, 31].forEach(function(skew) {
 			var s = new_state(), p = new_peer(s, "peer.test", true);
 			p.their_capab.push("CLOCKPUSH"); p.clock_verified = true;
 			p.work("CLOCK -1 " + (s.now + skew));
-			check(!!p.quitting == (Math.abs(skew) > 30), "wrong skew decision for " + skew);
-			check(!p.sent.length, "unsolicited announcement answered");
-			if (!p.quitting) check(p.clock_unverified_since == s.system.timer, "sample did not refresh deadline");
+			check(!p.quitting, "queued announcement caused a split");
+			if (Math.abs(skew) > 30) {
+				check(p.clock_recovering && p.clock_probe, "suspect sample did not request confirmation");
+				p.work("CLOCK " + p.clock_probe.nonce + " " + (s.now + skew));
+				check(p.quitting && /Clock skew/.test(p.quit_reason), "confirmed drift was accepted");
+			} else check(!p.sent.length && !p.clock_probe && p.clock_unverified_since == s.system.timer, "valid periodic sample not accepted");
 		});
 	},
 	"opposite announcement detects an ahead clock concealed by one-way delay": function() {
@@ -515,7 +530,9 @@ run_tests({
 		check(!ba.quitting, "delay did not conceal ahead clock in the expected direction");
 		a.now += 31; a.system.timer += 31;
 		ab.work("CLOCK -1 " + b.now);
-		check(ab.quitting && /Clock skew/.test(ab.quit_reason), "reverse announcement missed actual skew");
+		check(ab.clock_probe && !ab.quitting, "reverse announcement did not request confirmation");
+		ab.work("CLOCK " + ab.clock_probe.nonce + " " + b.now);
+		check(ab.quitting && /Clock skew/.test(ab.quit_reason), "reverse confirmation missed actual skew");
 	},
 	"missing periodic clocks time out without sending a new probe": function() {
 		var s = new_state(), p = new_peer(s, "peer.test", true);
@@ -527,15 +544,49 @@ run_tests({
 		check(p.quitting && /Periodic clock announcement timed out/.test(p.quit_reason), "missing announcement ignored");
 		check(!p.clock_probe && !p.sent.some(function(line) { return /^CLOCK [0-9]+$/.test(line); }), "periodic mode requested a sample");
 	},
-	"periodic clocks recover after a local callback stall": function() {
+	"periodic clocks require fresh confirmation after a stall regardless of callback order": function() {
+		[false, true].forEach(function(watchdog_first) {
+			var s = new_state({detect_stalls:true}), p = new_peer(s, "peer.test", true);
+			p.their_capab.push("CLOCKPUSH"); p.clock_verified = true;
+			s.IRC_clock_tick.call(p);
+			var queued = s.now;
+			s.system.timer += 36; s.now += 36;
+			if (watchdog_first) s.IRC_check_callback_stall();
+			p.work("CLOCK -1 " + queued);
+			check(!p.quitting && p.clock_recovering && p.clock_probe && s.Stall_Generation == 1, "stall did not invalidate queued sample");
+			var nonce = p.clock_probe.nonce, deadline = p.clock_unverified_since;
+			s.system.timer += 2; s.now += 2;
+			p.work("CLOCK -1 " + s.now); p.work("CLOCK -1 " + queued);
+			check(p.clock_probe.nonce == nonce && p.clock_unverified_since == deadline, "queued pushes replaced probe or extended deadline");
+			p.work("CLOCK " + nonce + " " + (s.now - 1));
+			check(!p.quitting && !p.clock_probe && !p.clock_recovering && p.clock_unverified_since == s.system.timer, "fresh confirmation did not resume periodic mode");
+		});
+	},
+	"a delayed announcement without a local stall recovers with an aligned confirmation": function() {
 		var s = new_state(), p = new_peer(s, "peer.test", true);
 		p.their_capab.push("CLOCKPUSH"); p.clock_verified = true;
-		s.IRC_clock_tick.call(p);
-		s.system.timer += 120; s.now += 120; s.Stall_Generation++;
-		s.IRC_clock_tick.call(p);
-		check(!p.quitting && !p.clock_probe && p.sent.length == 2, "stall did not restart announcements");
-		p.work("CLOCK -1 " + s.now);
-		check(!p.quitting && p.clock_unverified_since == s.system.timer, "fresh sample not accepted after stall");
+		p.work("CLOCK -1 " + (s.now - 45));
+		check(!p.quitting && p.clock_recovering && p.clock_probe && s.Stall_Generation == 0, "queued sample split an aligned peer");
+		var nonce = p.clock_probe.nonce, deadline = p.clock_unverified_since;
+		s.system.timer++; s.now++;
+		p.work("CLOCK -1 " + s.now); p.work("CLOCK -1 " + (s.now - 45));
+		check(p.clock_probe.nonce == nonce && p.clock_unverified_since == deadline, "pushes reset confirmation");
+		p.work("CLOCK " + nonce + " " + (s.now - 0.5));
+		check(!p.quitting && !p.clock_recovering && !p.clock_probe, "aligned confirmation did not recover");
+	},
+	"queued pushes cannot keep an unconfirmed periodic peer linked": function() {
+		var s = new_state(), p = new_peer(s, "peer.test", true);
+		p.their_capab.push("CLOCKPUSH"); p.clock_verified = true;
+		p.work("CLOCK -1 " + (s.now - 36));
+		for (var i = 0; i < 15; i++) { s.system.timer++; s.now++; p.work("CLOCK -1 " + s.now); }
+		check(p.quitting && /Clock verification timed out/.test(p.quit_reason), "queued pushes defeated confirmation timeout");
+	},
+	"a wall-clock step during confirmation discards its uncertainty bounds": function() {
+		var s = new_state(), p = new_peer(s, "peer.test", true);
+		s.IRC_clock_tick.call(p); var nonce = p.clock_probe.nonce;
+		s.now += 100; s.system.timer++;
+		p.work("CLOCK " + nonce + " " + (s.now - 100));
+		check(!p.quitting && p.clock_probe && p.clock_probe.nonce != nonce, "clock step caused a split or reused old bounds");
 	},
 	"periodic clocks reject malformed timestamps": function() {
 		["NaN", "Infinity", "-1", "1.1234"].forEach(function(value) {
@@ -700,7 +751,7 @@ run_tests({
 				var burst = p.sent.join("\n");
 				check(burst.indexOf("Owner") >= 0 && burst.indexOf("Guest") >= 0
 					&& burst.indexOf("hidden topic") >= 0, "first JOIN did not receive full state");
-				check(csync ? burst.indexOf("@Owner") >= 0 : /MODE #hidden 0 \+o Owner/.test(burst), "first JOIN lost operator state");
+				check(csync ? burst.indexOf("@Owner") >= 0 : /MODE #hidden \+o Owner/.test(burst), "first JOIN lost operator state");
 				p.sent = []; member.do_part(c.nam);
 				check(/:Owner PART #hidden/.test(p.sent.join("\n")) && /:Guest PART #hidden/.test(p.sent.join("\n")), "last PART retained cached channel");
 				p.sent = []; owner.work("MODE #hidden +n");
@@ -720,7 +771,7 @@ run_tests({
 		new_user(s, "OldMember", p.nick); p.work(":OldMember JOIN #hidden");
 		owner.work("MODE #hidden +n");
 		var state = p.sent.join("\n");
-		var op = state.indexOf("MODE #hidden 0 +o Owner"), mode = state.search(/:Owner MODE #hidden (?:0 )?\+n/);
+		var op = state.indexOf("MODE #hidden +o Owner"), mode = state.search(/:Owner MODE #hidden (?:0 )?\+n/);
 		check(state.indexOf(":Owner JOIN #hidden") >= 0
 			&& op >= 0 && mode > op,
 			"runtime MODE reached a bursting legacy leaf before actor ops: " + state);

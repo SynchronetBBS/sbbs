@@ -1,12 +1,14 @@
 /* Actual old/new processes, including both directions of hub/leaf links.
  * Supply --legacy-source=/path/to/previous/exec/ (including its load tree).
- * The fixture is external so this test never silently substitutes new code.
+ * Add --legacy-leaves-only to keep every hub current and run only the leaf
+ * from the saved tree. The fixture never silently substitutes new leaf code.
  */
 "use strict";
 load(js.exec_dir + "lib.sjs");
 
-var legacy_source = "";
+var legacy_source = "", legacy_leaves_only = false;
 argv.forEach(function(arg) {
+	if (arg == "--legacy-leaves-only") legacy_leaves_only = true;
 	if (arg.indexOf("--legacy-source=") == 0) legacy_source = backslash(arg.substr(16));
 });
 if (!legacy_source) {
@@ -18,6 +20,7 @@ if (!file_exists(legacy_source + "ircd.js")) throw new Error("Missing legacy IRC
 var net = new IrcdTestNetwork(), clients = [];
 var hub = {name: "hub1", sname: "newhub.ircd.local", port: 19760, capab_enforce: true};
 var oldhub = {name: "hub2", sname: "oldhub.ircd.local", port: 19761, source_dir: legacy_source};
+if (legacy_leaves_only) delete oldhub.source_dir;
 var oldleaf = {name: "leaf1a", sname: "oldleaf.ircd.local", port: 19762, source_dir: legacy_source};
 var leaf = {name: "leaf2a", sname: "newleaf.ircd.local", port: 19763};
 var nodes = [hub, oldhub, oldleaf, leaf], users, founder, oper;

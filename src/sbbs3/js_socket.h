@@ -14,6 +14,7 @@ typedef struct
 	BOOL debug;
 	BOOL nonblocking;
 	BOOL is_connected;
+	bool connect_pending; /* Main-thread-only: retain the descriptor until completion. */
 	BOOL network_byte_order;
 	int last_error;
 	char last_error_str[SOCKET_STRERROR_BUFLEN];
@@ -42,6 +43,9 @@ struct js_connect_result {
 	int error;		/* 0 on success */
 	BOOL gai;		/* error is a getaddrinfo() result, not a socket error */
 };
+
+/* Collect completion; false suppresses a closed/discarded socket's callback. */
+bool js_socket_finish_connect(JSContext *cx, struct js_event_list *event, bool discard);
 
 bool js_socket_tls_readable(js_socket_private_t* p);
 void js_socket_cancel_tls(JSContext *cx, JSObject *obj);

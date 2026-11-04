@@ -206,9 +206,12 @@ run_tests({
 	},
 	"validated TLS precedes every outbound IRC credential": function() {
 		var s = state(), sock = socket(cline(s, true));
-		s.IRC_tls_connect = function(c) { check(!c.output.length, "credentials preceded validation"); c.verified = true; };
+		var complete;
+		s.IRC_tls_connect = function(c, callback) { check(!c.output.length, "credentials preceded validation"); complete = callback; return true; };
 		check(s.handle_outbound_server_connect.call(sock));
-		check(sock.verified && /^PASS private-password/.test(sock.output[0]));
+		check(!sock.output.length && s.Outbound_Connect_in_Progress, "pending TLS released credentials or connection slot");
+		complete.call(sock);
+		check(/^PASS private-password/.test(sock.output[0]) && !s.Outbound_Connect_in_Progress);
 	},
 	"validation failure closes without credentials and schedules reconnect": function() {
 		var s = state(), sock = socket(cline(s, true));
@@ -217,6 +220,34 @@ run_tests({
 		s.Reset_Autoconnect = function(c, delay) { s.delay = delay; };
 		check(!s.handle_outbound_server_connect.call(sock));
 		check(!sock.output.length && !sock.is_connected && s.delay == 60000 && !s.Outbound_Connect_in_Progress);
+	},
+	"asynchronous failure and cancellation release only their own attempt": function() {
+		["failure", "rehash", "shutdown"].forEach(function(mode) {
+			var s = state(), sock = socket(cline(s, true)), complete;
+			s.IRC_tls_connect = function(c, callback) { complete = callback; return true; };
+			sock.connect = function(host, port, callback) { callback.call(this); return true; };
+			s.IRC_start_outbound_connect(sock, "peer.test", 6697);
+			check(!sock.output.length && s.Outbound_Connect_in_Progress);
+			if (mode == "failure") complete.call(sock, "TLS validation failed");
+			else s.IRC_cancel_outbound_connect();
+			check(!sock.output.length && !sock.is_connected && !s.Outbound_Connect_in_Progress);
+			var next = socket(cline(s, true));
+			next.connect = function() { return true; };
+			s.IRC_start_outbound_connect(next, "peer.test", 6697);
+			complete.call(sock);
+			check(!sock.output.length && s.Outbound_Connect_in_Progress && s.IRC_Outbound_Connect.socket === next, "obsolete callback affected new attempt");
+			s.IRC_cancel_outbound_connect();
+		});
+	},
+	"outbound TLS never uses a synchronous fallback when connectTLS is absent": function() {
+		var s = state(), sock = socket(cline(s, true));
+		var warning = "";
+		s.log = function(level, message) { warning += message; };
+		s.CryptCert = function() {};
+		sock.tls_nameverify = sock.tls_certverify = true;
+		sock.__defineSetter__("ssl_session", function() { throw new Error("Synchronous TLS invoked"); });
+		check(!s.handle_outbound_server_connect.call(sock) && !sock.output.length && !sock.is_connected);
+		check(warning.indexOf("requires Socket.connectTLS") >= 0, "missing API was not diagnosed");
 	},
 	"plaintext links retain the existing handshake": function() {
 		var s = state(), sock = socket(cline(s, false));
@@ -253,7 +284,7 @@ run_tests({
 		var s = state(), connected;
 		s.Outbound_Connect_in_Progress = false;
 		s.CLines.push(cline(s, true));
-		s.Socket = function() { this.connect = function(host, port, callback) { this.cline = s.CLines[0]; connected = this; this.remote_port = port; }; };
+		s.Socket = function() { this.connect = function(host, port, callback) { this.cline = s.CLines[0]; connected = this; this.remote_port = port; return true; }; };
 		var oper = {nick:"Oper", uprefix:"oper", hostname:"test", server_notice:function() {}};
 		check(s.IRCClient_do_connect.call(oper, "peer.test", "16667"));
 		check(s.IRC_tls_required(connected.cline, connected.remote_port));

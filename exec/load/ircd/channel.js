@@ -33,6 +33,14 @@ var CHANMODE_SECRET   =(1<<9); /* +s */
 var CHANMODE_TOPIC    =(1<<10); /* +t */
 var CHANMODE_VOICE    =(1<<11); /* +v */
 var CHANMODE_EXCEPT   =(1<<12); /* +e */
+var CHANMODE_INVITEMASK=(1<<13); /* +I */
+var CHANMODE_REGISTERED=(1<<14); /* +r */
+var CHANMODE_REGISTEREDONLY=(1<<15); /* +R */
+var CHANMODE_REGMODERATED=(1<<16); /* +M */
+var CHANMODE_OPERONLY =(1<<17); /* +O */
+var CHANMODE_NOCOLOR  =(1<<18); /* +c */
+var CHANMODE_JOINRATE =(1<<19); /* +j */
+var CHANMODE_SECURE   =(1<<20); /* +S */
 
 var MODE = {};
 MODE[CHANMODE_BAN]      = new IRC_Channel_Mode("b",true,false,true,false);
@@ -47,6 +55,14 @@ MODE[CHANMODE_SECRET]   = new IRC_Channel_Mode("s",false,true,false,false);
 MODE[CHANMODE_TOPIC]    = new IRC_Channel_Mode("t",false,true,false,false);
 MODE[CHANMODE_VOICE]    = new IRC_Channel_Mode("v",true,false,true,true);
 MODE[CHANMODE_EXCEPT]   = new IRC_Channel_Mode("e",true,false,true,false);
+MODE[CHANMODE_INVITEMASK]= new IRC_Channel_Mode("I",true,false,true,false);
+MODE[CHANMODE_REGISTERED]= new IRC_Channel_Mode("r",false,true,false,false);
+MODE[CHANMODE_REGISTEREDONLY]= new IRC_Channel_Mode("R",false,true,false,false);
+MODE[CHANMODE_REGMODERATED]= new IRC_Channel_Mode("M",false,true,false,false);
+MODE[CHANMODE_OPERONLY] = new IRC_Channel_Mode("O",false,true,false,false);
+MODE[CHANMODE_NOCOLOR] = new IRC_Channel_Mode("c",false,true,false,false);
+MODE[CHANMODE_JOINRATE]= new IRC_Channel_Mode("j",true,true,false,false);
+MODE[CHANMODE_SECURE]  = new IRC_Channel_Mode("S",false,true,false,false);
 
 /* Object Prototypes */
 
@@ -64,16 +80,20 @@ function Channel(name) {
 	this.arg = {};
 	this.arg[CHANMODE_LIMIT] = 0;
 	this.arg[CHANMODE_KEY] = "";
+	this.arg[CHANMODE_JOINRATE] = "";
 	this.users = {};
 	this.modelist = {};
 	this.modelist[CHANMODE_OP] = {};
 	this.modelist[CHANMODE_VOICE] = {};
 	this.modelist[CHANMODE_BAN] = [];
 	this.modelist[CHANMODE_EXCEPT] = [];
+	this.modelist[CHANMODE_INVITEMASK] = [];
 	this.bantime = {};
 	this.bancreator = {};
 	this.excepttime = {};
 	this.exceptcreator = {};
+	this.invitemasktime = {};
+	this.invitemaskcreator = {};
 	this.created = Epoch();
 	/* The raw identity value stays wire-valid even with a clock outside the
 	   protocol epoch range. Object identity distinguishes repeated values. */
@@ -83,6 +103,7 @@ function Channel(name) {
 	this.chanmode = Channel_chanmode;
 	this.isbanned = Channel_isbanned;
 	this.isexcepted = Channel_isexcepted;
+	this.isinvitematched = Channel_isinvitematched;
 	this.count_modelist = Channel_count_modelist;
 	this.occupants = Channel_Occupants;
 	this.match_list_mask = Channel_match_list_mask;
@@ -206,6 +227,12 @@ function Channel_chanmode(show_args) {
 		tmp_mode += "s";
 	if (this.mode&CHANMODE_TOPIC)
 		tmp_mode += "t";
+	var policies = [CHANMODE_REGISTERED, CHANMODE_REGISTEREDONLY, CHANMODE_REGMODERATED,
+		CHANMODE_OPERONLY, CHANMODE_NOCOLOR, CHANMODE_JOINRATE, CHANMODE_SECURE];
+	for (var i = 0; i < policies.length; i++) if (this.mode & policies[i]) {
+		tmp_mode += MODE[policies[i]].modechar;
+		if (policies[i] == CHANMODE_JOINRATE && show_args) tmp_extras += " " + this.arg[policies[i]];
+	}
 	return tmp_mode + tmp_extras;
 }
 
@@ -224,6 +251,12 @@ function Channel_isexcepted(nuh, type) {
 		var entry = IRC_exception_parse(this.modelist[CHANMODE_EXCEPT][i]);
 		if (entry && entry.type == type && wildmatch(nuh, entry.mask)) return true;
 	}
+	return false;
+}
+
+function Channel_isinvitematched(nuh) {
+	for (var i in this.modelist[CHANMODE_INVITEMASK])
+		if (wildmatch(nuh, this.modelist[CHANMODE_INVITEMASK][i])) return true;
 	return false;
 }
 
@@ -262,9 +295,13 @@ function ChanMode(chan,user) {
 	this.list[CHANMODE_EXCEPT] = {};
 	this.list[CHANMODE_EXCEPT][false] = [];
 	this.list[CHANMODE_EXCEPT][true] = [];
+	this.list[CHANMODE_INVITEMASK] = {};
+	this.list[CHANMODE_INVITEMASK][false] = [];
+	this.list[CHANMODE_INVITEMASK][true] = [];
 	this.state_arg = {};
 	this.state_arg[CHANMODE_KEY] = "";
 	this.state_arg[CHANMODE_LIMIT] = "";
+	this.state_arg[CHANMODE_JOINRATE] = "";
 	this.addbits = 0;
 	this.delbits = 0;
 	this.addmodes = "";
@@ -330,7 +367,7 @@ function IRC_bcast_chanmode(origin, chan, modes, ts) {
 }
 
 function IRC_send_chanmode(peer, origin, chan, modes, ts) {
-	var supported_modes = IRC_exception_filter_modes(modes.split(" "), IRC_has_chanexcept(peer));
+	var supported_modes = IRC_exception_filter_modes(modes.split(" "), IRC_exception_support(peer), IRC_extended_modes(peer));
 	if (!supported_modes) return;
 	modes = supported_modes.join(" ");
 	/* Old hubs replace channel age on server-prefixed MODE 0, then
@@ -354,7 +391,7 @@ function IRC_send_chanmode(peer, origin, chan, modes, ts) {
 		if (remove_limit) {
 			peer.originatorout(prefix + "-l", origin);
 			fields[0] = filtered;
-			if (!/[a-z]/.test(filtered)) return;
+			if (!/[a-zA-Z]/.test(filtered)) return;
 			modes = fields.join(" ");
 		}
 	}
@@ -392,6 +429,8 @@ function Channel_reset_timestamp(chan, ts) {
 	chan.mode = CHANMODE_NONE;
 	chan.arg[CHANMODE_KEY] = "";
 	chan.arg[CHANMODE_LIMIT] = 0;
+	chan.arg[CHANMODE_JOINRATE] = "";
+	delete chan.joinrate;
 	chan.modelist[CHANMODE_OP] = {};
 	chan.modelist[CHANMODE_VOICE] = {};
 	delete chan.pending_founder;
@@ -425,9 +464,15 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 	var final_modestr = "";
 	options = options || {};
 
-	if (!chan || !cm_args) {
-		throw "set_chanmode() called without chan or cm_args";
-		return;
+	if (!chan || !cm_args || typeof cm_args[0] != "string" || !cm_args[0].length)
+		return 0;
+	/* Reject unknown argument grammars before a TS reset or any mutation. */
+	for (i = 0; i < cm_args[0].length; i++) {
+		if (cm_args[0][i] != "+" && cm_args[0][i] != "-"
+			&& IRC_chanmode_argc(cm_args[0][i], true) === null) {
+			if (this.local && !this.server) this.numeric(472, cm_args[0][i] + " :is unknown mode char to me.");
+			return 0;
+		}
 	}
 
 	/* TS-based conflict resolution for server bursts.
@@ -503,6 +548,19 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 			case "i":
 				c.tweaktmpmode(CHANMODE_INVITE,add);
 				break;
+			case "I":
+				if (add && cm_args.length <= mode_args_counter) { c.addbits |= CHANMODE_INVITEMASK; break; }
+				if (cm_args.length <= mode_args_counter) break;
+				var invite_raw = cm_args[mode_args_counter++], invite = IRC_exception_parse(invite_raw);
+				var invite_source = this.server ? this.nick : this.nuh;
+				if (!invite || invite.type != "ban"
+					|| (":" + invite_source + " MODE " + chan.nam + " 4294967295 +I " + invite.value).length > 510
+					|| (":" + ServerName + " 346 " + this.nick + " " + chan.nam + " " + invite.value).length > 510) {
+					if (this.local && !this.server) this.numeric(696, chan.nam + " I * :Invalid invite mask");
+					break;
+				}
+				c.tweaktmpmodelist(CHANMODE_INVITEMASK, add, invite.value);
+				break;
 			case "k":
 				if(cm_args.length > mode_args_counter) {
 					c.tweaktmpmode(CHANMODE_KEY,add);
@@ -524,6 +582,30 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 				break;
 			case "m":
 				c.tweaktmpmode(CHANMODE_MODERATED,add);
+				break;
+			case "r":
+				if (this.uline || (this.server && (!this.local || this.hub)))
+					c.tweaktmpmode(CHANMODE_REGISTERED, add);
+				else if (this.local && !this.server) this.numeric(482, chan.nam + " :Only services can change channel registration");
+				break;
+			case "R": c.tweaktmpmode(CHANMODE_REGISTEREDONLY, add); break;
+			case "M": c.tweaktmpmode(CHANMODE_REGMODERATED, add); break;
+			case "O":
+				if (!this.server && !this.uline && !(this.mode & USERMODE_OPER)) {
+					if (this.local) this.numeric(481, ":Only IRC operators can change +O");
+				} else c.tweaktmpmode(CHANMODE_OPERONLY, add);
+				break;
+			case "c": c.tweaktmpmode(CHANMODE_NOCOLOR, add); break;
+			case "S": c.tweaktmpmode(CHANMODE_SECURE, add); break;
+			case "j":
+				if (!add) { c.tweaktmpmode(CHANMODE_JOINRATE, false); break; }
+				var rate = IRC_joinrate_parse(cm_args[mode_args_counter++]);
+				if (!rate) {
+					if (this.local && !this.server) this.numeric(696, chan.nam + " j * :Join rate must be count:seconds (1 to 2147483647), or 0 to disable");
+					break;
+				}
+				c.state_arg[CHANMODE_JOINRATE] = rate.count ? rate.value : "";
+				c.tweaktmpmode(CHANMODE_JOINRATE, !!rate.count);
 				break;
 			case "n":
 				c.tweaktmpmode(CHANMODE_NOOUTSIDE,add);
@@ -556,6 +638,7 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 				mode_args_counter++;
 				break;
 			default:
+				if (IRC_chanmode_argc(cm_args[0][i], add)) mode_args_counter++;
 				if ((!this.parent) && (!this.server))
 					this.numeric(472, cm_args[0][i] + " :is unknown mode char to me.");
 				mode_counter--;
@@ -573,6 +656,13 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 		if ((c.addbits & CHANMODE_LIMIT) && (chan.mode & CHANMODE_LIMIT))
 			c.state_arg[CHANMODE_LIMIT] = String(Math.max(
 				Number(chan.arg[CHANMODE_LIMIT]), Number(c.state_arg[CHANMODE_LIMIT])));
+		if ((c.addbits & CHANMODE_JOINRATE) && (chan.mode & CHANMODE_JOINRATE)) {
+			var old_rate = IRC_joinrate_parse(chan.arg[CHANMODE_JOINRATE]), new_rate = IRC_joinrate_parse(c.state_arg[CHANMODE_JOINRATE]);
+			/* Converge on the lower sustained rate, then the smaller burst. */
+			if (old_rate.count / old_rate.seconds < new_rate.count / new_rate.seconds
+				|| (old_rate.count / old_rate.seconds == new_rate.count / new_rate.seconds && old_rate.count < new_rate.count))
+				c.state_arg[CHANMODE_JOINRATE] = old_rate.value;
+		}
 		if ((chan.mode | c.addbits) & CHANMODE_SECRET) {
 			c.addbits &= ~CHANMODE_PRIVATE;
 			if (c.addbits & CHANMODE_SECRET)
@@ -596,7 +686,7 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 						&& (
 							   !(chan.mode&i)
 							|| (
-								  (i==CHANMODE_LIMIT || i==CHANMODE_KEY)
+								  (i==CHANMODE_LIMIT || i==CHANMODE_KEY || i==CHANMODE_JOINRATE)
 								&&(chan.arg[i]!=c.state_arg[i])
 							   )
 						   )
@@ -607,6 +697,7 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 					c.addmodeargs += " " +
 						c.state_arg[i];
 					chan.arg[i] = c.state_arg[i];
+					if (i == CHANMODE_JOINRATE) delete chan.joinrate;
 				}
 			} else if ((c.delbits&i) && (chan.mode&i)) {
 				c.delmodes += MODE[i].modechar;
@@ -615,6 +706,7 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 					if (i == CHANMODE_KEY)
 						c.delmodeargs += " " + chan.arg[i];
 					chan.arg[i] = i == CHANMODE_LIMIT ? 0 : "";
+					if (i == CHANMODE_JOINRATE) delete chan.joinrate;
 				}
 			}
 		}
@@ -659,6 +751,34 @@ function IRCClient_set_chanmode(chan,cm_args,ts,options) {
 			if (chan.modelist[CHANMODE_EXCEPT][j].toUpperCase() != c.list[CHANMODE_EXCEPT][false][i].toUpperCase()) continue;
 			c.delmodes += "e"; c.delmodeargs += " " + chan.modelist[CHANMODE_EXCEPT][j];
 			delete chan.modelist[CHANMODE_EXCEPT][j]; delete chan.excepttime[j]; delete chan.exceptcreator[j];
+		}
+	}
+
+	if (c.addbits & CHANMODE_INVITEMASK) {
+		for (i in chan.modelist[CHANMODE_INVITEMASK]) {
+			var invite_reply = chan.nam + " " + chan.modelist[CHANMODE_INVITEMASK][i];
+			var invite_metadata = " " + chan.invitemaskcreator[i] + " " + chan.invitemasktime[i];
+			if ((":" + ServerName + " 346 " + this.nick + " " + invite_reply + invite_metadata).length <= 510) invite_reply += invite_metadata;
+			this.numeric(346, invite_reply);
+		}
+		this.numeric(347, chan.nam + " :End of channel invite mask list");
+	}
+	for (i in c.list[CHANMODE_INVITEMASK][true]) {
+		var invite_value = c.list[CHANMODE_INVITEMASK][true][i];
+		if (chan.is_str_member_of_chanmode_list(CHANMODE_INVITEMASK, invite_value)) continue;
+		if (chan.count_modelist(CHANMODE_INVITEMASK) >= IRC_MAX_INVITEMASKS && this.local && !this.server) {
+			this.numeric(478, chan.nam + " " + invite_value + " :Channel invite mask list is full");
+			continue;
+		}
+		var invite_id = chan.modelist[CHANMODE_INVITEMASK].push(invite_value) - 1;
+		chan.invitemasktime[invite_id] = Epoch(); chan.invitemaskcreator[invite_id] = this.nuh || this.nick;
+		c.addmodes += "I"; c.addmodeargs += " " + invite_value;
+	}
+	for (i in c.list[CHANMODE_INVITEMASK][false]) {
+		for (j in chan.modelist[CHANMODE_INVITEMASK]) {
+			if (chan.modelist[CHANMODE_INVITEMASK][j].toUpperCase() != c.list[CHANMODE_INVITEMASK][false][i].toUpperCase()) continue;
+			c.delmodes += "I"; c.delmodeargs += " " + chan.modelist[CHANMODE_INVITEMASK][j];
+			delete chan.modelist[CHANMODE_INVITEMASK][j]; delete chan.invitemasktime[j]; delete chan.invitemaskcreator[j];
 		}
 	}
 
@@ -777,7 +897,12 @@ function IRCClient_do_join(chan_name,join_key,join_ts) {
 	if (Channels[uc_chan_name]) {
 		var chan = Channels[uc_chan_name];
 		if (this.local) {
-			if ((chan.mode&CHANMODE_INVITE) && (uc_chan_name != this.invited)) {
+			var policy_denied = IRC_channel_join_policy(this, chan, true);
+			if (policy_denied) {
+				this.numeric(policy_denied.numeric, chan.nam + " :" + policy_denied.reason);
+				return 0;
+			}
+			if ((chan.mode&CHANMODE_INVITE) && (uc_chan_name != this.invited) && !chan.isinvitematched(this.nuh)) {
 				this.numeric("473", chan.nam
 					+ " :Cannot join channel (+i: invite only)");
 				return 0;
@@ -856,6 +981,7 @@ function IRCClient_do_join(chan_name,join_key,join_ts) {
 			chan.services_creator_op = this.id;
 		}
 	}
+	IRC_channel_joined(this, chan);
 	if (this.invited.toUpperCase() == chan.nam.toUpperCase())
 		this.invited = "";
 	this.channels[uc_chan_name] = chan;

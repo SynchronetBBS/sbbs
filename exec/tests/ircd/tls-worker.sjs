@@ -9,11 +9,17 @@ var YLines = {1:{connfreq:0}};
 function Unregistered_Client() {}
 var sock = new Socket(); sock.array_buffer = false;
 sock.cline = {servername:"peer.test", host:argv[1], port:Number(argv[2]), password:"tls-test-password", ircclass:1, tls:true};
-try {
-	if (!sock.connect(argv[1], Number(argv[2]))) throw new Error("TCP connect failed");
-	var success = handle_outbound_server_connect.call(sock);
-	if (success != (argv[3] == "accept")) throw new Error("Unexpected TLS result: " + success);
+function finished(failure) {
+	var success = IRC_finish_outbound_server_connect.call(this, failure);
+	if (success != (argv[3] == "accept")) throw new Error("Unexpected TLS result: " + success + " " + failure);
 	if (IRC_TLS_CA_Cache && IRC_TLS_CA_Cache.certs.some(function(c) { return c.trusted_implicit; }))
 		throw new Error("CA trust leaked after validation");
 	print("TLS_RESULT=" + (success ? "accepted" : "rejected"));
-} finally { sock.close(); }
+	this.close();
+}
+if (!sock.connect(argv[1], Number(argv[2]))) throw new Error("TCP connect failed");
+var started, failure;
+try { started = IRC_tls_connect(sock, finished); }
+catch (error) { failure = String(error); }
+if (!started) finished.call(sock, failure || "Could not start TLS");
+js.do_callbacks = true;

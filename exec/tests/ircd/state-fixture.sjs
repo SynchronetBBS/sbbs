@@ -2,12 +2,12 @@
 "use strict";
 var next_id = 0;
 
-function new_state() {
+function new_state(options) {
 	var s = {
 		system: {timer: 1000}, now: 1800000000,
 		ServerName: "hub.test", ServerDesc: "State tests", server: {},
 		Users: {}, Servers: {}, Channels: {}, Local_Users: {}, Local_Servers: {},
-		Assigned_IDs: {}, Unregistered: {}, ULines: [], QLines: [], Profile: {},
+		Assigned_IDs: {}, Unregistered: {}, ULines: [], QLines: [], KLines: [], ZLines: [], Profile: {},
 		WhoWas: {}, WhoWasMap: [], NickHistory: [],
 		MAX_CHANLEN: 100, MAX_USER_CHANS: 100, MAX_MODES: 6, MAX_BANS: 25,
 		MAX_NICKLEN: 30, MAX_NICKHISTORY: 1000, MAX_WHOWAS: 1000,
@@ -16,8 +16,11 @@ function new_state() {
 		js: {setImmediate: function() {}, setTimeout: function() {}, clearInterval: function() {}},
 		Generate_ID: function() { return ++next_id; }
 	};
-	["irclib.js", "ircd/exceptions.js", "ircd/link-security.js", "ircd/client-security.js", "ircd/core.js", "ircd/user.js", "ircd/channel.js",
+	["irclib.js", "ircd/exceptions.js", "ircd/link-security.js", "ircd/client-security.js", "ircd/services-state.js", "ircd/services-lines.js", "ircd/channel-policy.js", "ircd/core.js", "ircd/user.js", "ircd/channel.js",
 	 "ircd/server.js", "ircd/config.js", "ircd/timestamps.js"].forEach(function(f) { load(s, f); });
+	/* Most logical tests advance time without suspending callbacks. Explicit
+	   stall tests opt into the real detector; others set Stall_Generation. */
+	if (!options || !options.detect_stalls) s.IRC_check_callback_stall = function() {};
 	s.Epoch = function() { return s.now; };
 	s.IRC_clock_now = function() { return s.now; };
 	return s;
@@ -66,7 +69,7 @@ function join_user(s, u, name, ts) {
 
 function check(cond, message) {
 	if (!cond)
-		throw new Error(message);
+		throw new Error(message || new Error().stack);
 }
 
 function channel_sync(peer, ts, name, modes, members, bans) {

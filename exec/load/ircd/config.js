@@ -260,15 +260,69 @@ function parse_oline_flags(flags) {
 	return oline_flags;
 }
 
-function Clear_Config_Globals() {
-	if (typeof IRC_tls_clear_cache == "function") IRC_tls_clear_cache();
+/* Parsing runs synchronously against fresh tables. Preserve the active object
+ * references until the candidate is complete; no timers, caches or services
+ * are touched during staging, including when a parser throws. */
+var IRC_Config_Loaded = false;
+var ServerName, NetworkName, ServerDesc, Default_Port, Admin1,
+	Admin2, Admin3, Die_Password, Restart_Password, CapabEnforce,
+	TLS_Config, TLS_Ports, Clock_MaxSkew, EmbeddedServices_Config, CLines,
+	HLines, ILines, KLines, NLines, OLines,
+	PLines, QLines, ULines, YLines, ZLines,
+	WLines, RBL, Config_Filename, Time_Config_Read;
+function IRC_config_capture() {
+	return {
+		ServerName:ServerName, NetworkName:NetworkName, ServerDesc:ServerDesc, Default_Port:Default_Port,
+		Admin1:Admin1, Admin2:Admin2, Admin3:Admin3, Die_Password:Die_Password,
+		Restart_Password:Restart_Password, CapabEnforce:CapabEnforce, TLS_Config:TLS_Config, TLS_Ports:TLS_Ports,
+		Clock_MaxSkew:Clock_MaxSkew, EmbeddedServices_Config:EmbeddedServices_Config, CLines:CLines, HLines:HLines,
+		ILines:ILines, KLines:KLines, NLines:NLines, OLines:OLines,
+		PLines:PLines, QLines:QLines, ULines:ULines, YLines:YLines,
+		ZLines:ZLines, WLines:WLines, RBL:RBL, Config_Filename:Config_Filename,
+		Time_Config_Read:Time_Config_Read
+	};
+}
+function IRC_config_install(state) {
+	ServerName = state.ServerName;
+	NetworkName = state.NetworkName;
+	ServerDesc = state.ServerDesc;
+	Default_Port = state.Default_Port;
+	Admin1 = state.Admin1;
+	Admin2 = state.Admin2;
+	Admin3 = state.Admin3;
+	Die_Password = state.Die_Password;
+	Restart_Password = state.Restart_Password;
+	CapabEnforce = state.CapabEnforce;
+	TLS_Config = state.TLS_Config;
+	TLS_Ports = state.TLS_Ports;
+	Clock_MaxSkew = state.Clock_MaxSkew;
+	EmbeddedServices_Config = state.EmbeddedServices_Config;
+	CLines = state.CLines;
+	HLines = state.HLines;
+	ILines = state.ILines;
+	KLines = state.KLines;
+	NLines = state.NLines;
+	OLines = state.OLines;
+	PLines = state.PLines;
+	QLines = state.QLines;
+	ULines = state.ULines;
+	YLines = state.YLines;
+	ZLines = state.ZLines;
+	WLines = state.WLines;
+	RBL = state.RBL;
+	Config_Filename = state.Config_Filename;
+	Time_Config_Read = state.Time_Config_Read;
+}
+
+function Clear_Config_Globals(staging) {
+	if (!staging && typeof IRC_tls_clear_cache == "function") IRC_tls_clear_cache();
 	TLS_Config = {ca_file:""}; TLS_Ports = {};
 	Clock_MaxSkew = 30;
 	EmbeddedServices_Config = {enabled:false, nickserv:false, memoserv:false, fileserv:false, files:IRC_files_defaults(), bbs_require_tls:false, require_tls:false, host:"services.synchro.net", database:"", nick_expire_days:0, channel_expire_days:0, max_nicks:10};
 	Admin1 = "";
 	Admin2 = "";
 	Admin3 = "";
-	if (typeof CLines !== 'undefined') {
+	if (!staging && typeof CLines !== 'undefined') {
 		for (i in CLines) {
 			if (CLines[i].next_connect) {
 				js.clearTimeout(CLines[i].next_connect);
@@ -315,59 +369,91 @@ function expand_config_macros(str) {
 }
 
 function Read_Config_File() {
-	var file_handle, i, c;
+	var file_handle, i, c, candidate, failure;
+	var previous = IRC_config_capture(), filename = Config_Filename;
+	var service_bans = !IRCDCFG_Editor && typeof KLines != "undefined"
+		? KLines.filter(function(ban) { return ban.type == "A"; }) : [];
 
-	Clear_Config_Globals();
-
-	if (Config_Filename && Config_Filename.length) {
-		if(!(Config_Filename.indexOf('/')>=0 || Config_Filename.indexOf('\\')>=0))
-			Config_Filename = system.ctrl_dir + Config_Filename;
+	if (filename && filename.length) {
+		if(!(filename.indexOf('/')>=0 || filename.indexOf('\\')>=0))
+			filename = system.ctrl_dir + filename;
 	} else {
-		Config_Filename = system.ctrl_dir + "ircd." + system.local_host_name + ".ini";
-		if(!file_exists(Config_Filename))
-			Config_Filename = system.ctrl_dir + "ircd." + system.local_host_name + ".conf";
-		if(!file_exists(Config_Filename))
-			Config_Filename = system.ctrl_dir + "ircd." + system.host_name + ".ini";
-		if(!file_exists(Config_Filename))
-			Config_Filename = system.ctrl_dir + "ircd." + system.host_name + ".conf";
-		if(!file_exists(Config_Filename))
-			Config_Filename = system.ctrl_dir + "ircd.ini";
-		if(!file_exists(Config_Filename))
-			Config_Filename = system.ctrl_dir + "ircd.conf";
+		filename = system.ctrl_dir + "ircd." + system.local_host_name + ".ini";
+		if(!file_exists(filename))
+			filename = system.ctrl_dir + "ircd." + system.local_host_name + ".conf";
+		if(!file_exists(filename))
+			filename = system.ctrl_dir + "ircd." + system.host_name + ".ini";
+		if(!file_exists(filename))
+			filename = system.ctrl_dir + "ircd." + system.host_name + ".conf";
+		if(!file_exists(filename))
+			filename = system.ctrl_dir + "ircd.ini";
+		if(!file_exists(filename))
+			filename = system.ctrl_dir + "ircd.conf";
 	}
-	if (!IRCDCFG_Editor)
-		log(LOG_INFO,"Trying to read configuration from: " + Config_Filename);
-	file_handle = new File(Config_Filename);
-	if (file_handle.open("r")) {
-		if (/\.ini$/i.test(Config_Filename))
-			read_ini_config(file_handle);
-		else
-			read_conf_config(file_handle);
-		file_handle.close();
-	} else {
-		load_config_defaults();
-		if (!IRCDCFG_Editor)
-			log(LOG_NOTICE, "Couldn't open configuration file! Proceeding with defaults only.");
+	if (!IRCDCFG_Editor) log(LOG_INFO, "Trying to read configuration from: " + filename);
+	try {
+		file_handle = new File(filename);
+		var opened = file_handle.open("r");
+		if (!opened && IRC_Config_Loaded && !IRCDCFG_Editor)
+			throw new Error("Cannot open configuration file " + filename);
+		Clear_Config_Globals(true);
+		Config_Filename = filename;
+		if (opened) {
+			if (/\.ini$/i.test(filename)) read_ini_config(file_handle);
+			else read_conf_config(file_handle);
+			if (file_handle.error) throw new Error("Cannot read configuration file " + filename);
+		} else {
+			load_config_defaults();
+			if (!IRCDCFG_Editor) log(LOG_NOTICE, "Couldn't open configuration file! Proceeding with defaults only.");
+		}
+		YLines[0] = new YLine(120,600,100,1000000);
+		candidate = IRC_config_capture();
+	} catch (error) { failure = error; }
+	finally {
+		if (file_handle && file_handle.is_open) file_handle.close();
+		IRC_config_install(previous);
 	}
-
+	if (!candidate) {
+		/* Startup and conversion/editor callers must still see parser errors. */
+		if (!IRC_Config_Loaded || IRCDCFG_Editor) throw failure;
+		log(LOG_ERR, "IRCd configuration was not reloaded; retaining active configuration: " + failure);
+		return false;
+	}
+	/* Commit only after parsing succeeds. Pending callbacks must not use an
+	   obsolete C-line or a CA object destroyed by this successful reload. */
+	if (!IRCDCFG_Editor) {
+		if (typeof IRC_cancel_outbound_connect == "function") IRC_cancel_outbound_connect();
+		if (typeof IRC_tls_clear_cache == "function") IRC_tls_clear_cache();
+		(previous.CLines || []).forEach(function(line) {
+			if (line.next_connect) { js.clearTimeout(line.next_connect); delete line.next_connect; }
+		});
+	}
+	IRC_config_install(candidate);
+	Time_Config_Read = Epoch();
+	IRC_Config_Loaded = true;
 	if ((true_array_len(ILines) < 1) && !IRCDCFG_Editor)
 		log(LOG_WARNING, "!WARNING Nobody appears to be allowed to connect - configure in [Allow]");
-
-	Time_Config_Read = Epoch();
-
-	YLines[0] = new YLine(120,600,100,1000000); /* Hardcoded class for fallback */
-
-	if (IRCDCFG_Editor)
-		return;
+	if (IRCDCFG_Editor) return true;
 
 	/* Rehash applies service trust to the existing network as well as
 	   future introductions. Keep WHOIS and service aliases in agreement. */
 	for (i in Servers)
 		Servers[i].uline = ULine_Exists(Servers[i].nick);
+	if (typeof Local_Servers != "undefined") for (i in Local_Servers) {
+		var peer_config = Find_NLine(Local_Servers[i].nick);
+		Local_Servers[i].protocol = peer_config ? peer_config.protocol : "synchronet";
+	}
 	if (typeof Users !== "undefined") {
 		for (i in Users)
 			Users[i].uline = !Users[i].local && ULine_Exists(Users[i].servername);
 	}
+	if (typeof IRC_services_rehash_state == "function") IRC_services_rehash_state();
+	if (typeof IRC_reconcile_slines == "function") IRC_reconcile_slines();
+	/* Full REHASH reloads local policy, retaining live bans owned by an
+	   authority that is still trusted. REHASH AKILLS remains an explicit clear. */
+	service_bans.forEach(function(ban) {
+		if (ban.owner && ULine_Exists(ban.owner) && (!ban.expires || ban.expires > Epoch())) KLines.push(ban);
+	});
 
 	Scan_For_Banned_Clients();
 	for (i in CLines) {
@@ -393,6 +479,7 @@ function Read_Config_File() {
 			Reset_Autoconnect(c, 1 /* connect immediately */);
 	}
 	if (typeof IRC_Services !== "undefined" && IRC_Services) IRC_services_start();
+	return true;
 }
 
 function NLine_Flags_String(bits) {
@@ -625,6 +712,7 @@ function Write_Config_File(fn) {
 		f.writeln(format("Hostname=%s", CLines[i].host));
 		f.writeln(format("Port=%lu", CLines[i].port));
 		f.writeln("TLS=" + !!(CLines[i].tls || (n && n.tls)));
+		f.writeln("Protocol=" + (n && n.protocol || "synchronet"));
 		if (n)
 			f.writeln(format("InboundPassword=%s", n.password));
 		f.writeln(format("OutboundPassword=%s", CLines[i].password));
@@ -649,6 +737,7 @@ function Write_Config_File(fn) {
 		f.writeln(format("Hostname=%s", NLines[i].host));
 		f.writeln("Port=0");
 		f.writeln("TLS=" + !!NLines[i].tls);
+		f.writeln("Protocol=" + (NLines[i].protocol || "synchronet"));
 		f.writeln(format("Password=%s", NLines[i].password));
 		f.writeln(format("Class=%lu", NLines[i].ircclass));
 		if (NLines[i].flags)
@@ -1109,8 +1198,13 @@ function ini_Hub(arg, ini) {
 function ini_Server(arg, ini) {
 	ini = ini_keys(ini);
 	var ircclass, port, tls;
+	var protocol = ini.protocol === undefined ? "synchronet" : String(ini.protocol).toLowerCase();
+	if (protocol != "synchronet" && protocol != "bahamut") {
+		log(LOG_WARNING, "Invalid Protocol in [Server:" + arg + "]; section ignored");
+		return;
+	}
 
-	if (!ini.servername || !ini.hostname || !ini.class) {
+	if (!ini.servername || !ini.hostname || ini.class === undefined || ini.class === "") {
 		log(LOG_WARNING,format(
 			"!WARNING Missing information from [Server:%s], Section ignored.",
 			arg
@@ -1157,7 +1251,8 @@ function ini_Server(arg, ini) {
 		ini.servername,
 		parse_nline_flags(ini.flags),
 		ircclass,
-		tls
+		tls,
+		protocol
 	));
 }
 
@@ -1541,10 +1636,11 @@ function KLine(hostmask,reason,type) {
 	this.type = type;
 }
 
-function NLine(host,password,servername,flags,ircclass,tls) {
+function NLine(host,password,servername,flags,ircclass,tls,protocol) {
 	this.host = host;
 	this.password = password;
 	this.tls = !!tls;
+	this.protocol = protocol || "synchronet";
 	this.servername = servername;
 	this.flags = flags;
 	this.ircclass = ircclass;

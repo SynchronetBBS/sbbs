@@ -174,6 +174,7 @@ try {
             menu(s, "Edit_Server", [
                 {title:"Editing Server", pick:3}, {title:"Editing Server", pick:4},
                 {title:"Editing Server", pick:8}, {title:"Require TLS for this server?", pick:0},
+				{title:"Editing Server", pick:9}, {title:"Server Protocol", pick:"bahamut"},
                 {title:"Editing Server", pick:-1}
             ], ["changed-a", "renamed.test", "private-root.pem"], "A.TEST");
             check(s.Find_NLine("b.test").password == "in-b");
@@ -182,6 +183,7 @@ try {
             check(s.HLine_Exists("renamed.test") && !s.HLine_Exists("a.test"));
             check(s.Write_Config_File(s.Config_Filename)); s.Read_Config_File();
             check(s.Find_CLine("renamed.test").tls && s.Find_NLine("renamed.test").password == "changed-a");
+            check(s.Find_NLine("renamed.test").protocol == "bahamut");
         },
         "inbound-only rules appear in the server list and deletion removes hub authority": function() {
             var s = editor(); s.CLines = [];

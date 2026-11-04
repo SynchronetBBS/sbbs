@@ -452,6 +452,14 @@ function Unregistered_Quit(msg) {
 
 function Unregistered_Welcome() {
 	var i, my_iline;
+	if (typeof IRC_match_sline == "function") {
+		var services_line = IRC_match_sline("Q", this.nick) || IRC_match_sline("G", this.realname);
+		if (services_line) {
+			this.numeric(465, ":S" + services_line.type + "LINE: " + services_line.reason);
+			this.quit("S" + services_line.type + "LINE: " + services_line.reason);
+			return 0;
+		}
+	}
 
 	if (   isklined(this.uprefix + "@" + this.hostname)
 		|| isklined(this.uprefix + "@" + this.ip)
@@ -526,7 +534,7 @@ function Unregistered_Welcome() {
 	this.numeric("001", ":Welcome to the " + NetworkName + " IRC Service, " + new_user.nuh);
 	this.numeric("002", ":Your host is " + ServerName + ", running version " + VERSION);
 	this.numeric("003", format(":This server was created %s", SERVER_UPTIME_STRF));
-	this.numeric("004", ServerName + " " + VERSION + " oiwbgscrkfydnhF beiklmnopstv");
+	this.numeric("004", ServerName + " " + VERSION + " oiwbgscrkfydnhF beIiklmnpstovrRMOcjS");
 	/* This needs to be rewritten so the server capabilities are rendered dynamically */
 	this.numeric("005","NETWORK=" + NetworkName
 		+ " MAXBANS=" + MAX_BANS
@@ -544,9 +552,9 @@ function Unregistered_Welcome() {
 	this.numeric("005","CASEMAPPING=ascii"
 		+ " SILENCE=" + MAX_SILENCE
 		+ " ELIST=cmnt"
-		+ " CHANMODES=be,k,l,imnpst"
-		+ " EXCEPTS=e EXTBAN=~,m"
-		+ " MAXLIST=b:" + MAX_BANS + ",e:" + IRC_MAX_EXCEPTIONS
+		+ " CHANMODES=beI,k,lj,imnpstrRMOcS"
+		+ " EXCEPTS=e INVEX=I EXTBAN=~,m"
+		+ " MAXLIST=b:" + MAX_BANS + ",e:" + IRC_MAX_EXCEPTIONS + ",I:" + IRC_MAX_INVITEMASKS
 		+ " TARGMAX=JOIN:,KICK:,KILL:,NOTICE:,PART:,PRIVMSG:,WHOIS:,WHOWAS: " /* FIXME */
 		+ " :are available on this server.");
 	this.numeric("005","AWAYLEN=" + MAX_AWAYLEN
@@ -636,6 +644,7 @@ function Register_Unregistered_Local_Server(unreg, p, nline) {
 	s.linkparent = ServerName;
 	s.id = p[0].toLowerCase();
 	s.flags = nline.flags;
+	s.protocol = nline.protocol || "synchronet";
 	s.nick = p[0];
 	s.their_capab = unreg.their_capab || [];
 	s.hostname = unreg.hostname;
