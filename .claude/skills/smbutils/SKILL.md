@@ -1,6 +1,6 @@
 ---
 name: smbutils
-description: Use when inspecting, validating, repairing, importing into, or maintaining a Synchronet Message Base (SMB) file — mail (mail.shd), message sub-boards (data/subs/<code>.shd), or file bases (data/file/<code>.shd) — via the smbutil, chksmb, or fixsmb command-line tools. Trigger whenever the user mentions smbutil, chksmb, fixsmb, SMB files, .shd / .sdt / .sid / .sha files, "the mail base", "rebuild/renumber the message base", "pack the sub", "check the message base for corruption", "repair an SMB", "dump a hash file", "view headers", "import a message", or any low-level inspection, validation, or repair of a Synchronet messaging file that isn't doable from inside the BBS or MsgBase JS API. Prefer this skill over guessing flags or shelling out blind.
+description: Use when inspecting, validating, repairing, importing into, or maintaining a Synchronet Message Base (SMB) file — mail (mail.shd), message sub-boards (data/subs/<code>.shd), or file bases (data/dirs/<code>.shd) — via the smbutil, chksmb, or fixsmb command-line tools. Trigger whenever the user mentions smbutil, chksmb, fixsmb, SMB files, .shd / .sdt / .sid / .sha files, "the mail base", "rebuild/renumber the message base", "pack the sub", "check the message base for corruption", "repair an SMB", "dump a hash file", "view headers", "import a message", or any low-level inspection, validation, or repair of a Synchronet messaging file that isn't doable from inside the BBS or MsgBase JS API. Prefer this skill over guessing flags or shelling out blind.
 ---
 
 # Synchronet SMB Utilities — smbutil, chksmb, fixsmb
@@ -19,7 +19,9 @@ SMB is the common on-disk format for:
 
 - Local email (`data/mail.shd`)
 - Message sub-boards (`data/subs/<subcode>.shd`)
-- File bases (`data/file/<dircode>.shd`)
+- File bases (`data/dirs/<dircode>.shd`, or under the directory's own
+  `data_dir` when one is set in SCFG; see the `filebase` skill for the
+  `FileBase` JavaScript API)
 
 If the task can be done from inside Synchronet (SCFG, the BBS itself, or a
 `MsgBase` JS script via `jsexec`), prefer that. Reach for `smbutil` when:
@@ -96,7 +98,7 @@ extension explicitly also works; it's stripped.
 ```
 data/mail                          # local e-mail
 data/subs/syncdata.synchronet      # sub-board
-data/file/<dircode>                # file base
+data/dirs/<dircode>                # file base
 ```
 
 All three tools accept one or more bases — shell globs (e.g. `*.shd`) work
