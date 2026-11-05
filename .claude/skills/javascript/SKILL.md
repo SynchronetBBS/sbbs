@@ -1099,7 +1099,8 @@ way to learn an API, and many double as ready-made tools. Grep for `new X(` or
 `sendmsg.js`, `scrubmsgs.js`, `delmsgs.js`, `dupefind.js`, `ftnmsgdump.js`,
 `binkit.js` (also a `Socket` reference), `echoareas.js`.
 **FileBase:** `addfiles.js`, `delfiles.js`, `filelist.js`, `fileman.js`,
-`purgefiles.js`, `rehashfiles.js`, `hashfile.js`.
+`purgefiles.js`, `rehashfiles.js`, `hashfile.js`. (The API itself and its
+traps are in the `filebase` skill.)
 **Users:** `allusers.js` (user-walk template), `badpasswords.js`,
 `inactive_user_email.js`, `last10logins.js`, `makeuser.js`.
 **Config:** `exportcfg.js` / `importcfg.js` (SCFG ↔ JSON), `make_areas_ini.js`.
@@ -1275,5 +1276,7 @@ To update any of these wiki pages, see the `synchronet-wiki` skill.
 
 - **Run JS / jsexec flags / Windows debug builds** → `jsexec`.
 - **SMB storage-layer repair (smbutil/chksmb/fixsmb)** → `smbutils`.
+- **File bases: `FileBase`, FILE_ID.DIZ import, filename rules, `addfiles.js`,
+  adding a directory** → `filebase`.
 - **Build sbbs.dll / a debug binary** → `synchronet-build`.
 - **Display/menu files, @-codes, Ctrl-A** → `menus`.
