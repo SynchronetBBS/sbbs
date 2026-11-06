@@ -57,6 +57,7 @@ import "ui_help_test"      for UiHelpTest
 import "ui_progress_test"  for UiProgressTest
 import "ui_logview_test"   for UiLogviewTest
 import "scrollback_view"   for ScrollbackView
+import "scrollback_view_test" for ScrollbackViewTest
 
 class WrenTest {
   static run() {
@@ -317,6 +318,7 @@ class WrenTest {
     // ------ Surface.urlAt / Scrollback -----------------------------
     testSurfaceUrlAt_()
     testScrollbackContract_()
+    fold_(ScrollbackViewTest.run())
 
     // ------ inject a sentinel key for async onKey filter test ------
     // Filter key must have low byte 0x00 (or 0xe0) - ciolib's

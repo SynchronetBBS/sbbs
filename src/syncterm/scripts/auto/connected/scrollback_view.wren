@@ -11,8 +11,8 @@
 // since we're already nested inside a hook-driven blocking loop).
 //
 // Non-cterm areas (status bar, any frame around cterm) get blanked
-// to plain yellow-on-blue once on entry; the status bar's update
-// timer is paused for the duration because doterm() is parked
+// to plain yellow-on-blue (red after disconnect) once on entry. The
+// status bar's update timer is paused because doterm() is parked
 // inside our blocking Input.next() loop.
 
 import "syncterm" for Scrollback, Surface, Screen, Input, Key, Mouse, KeyEvent, MouseEvent, CTerm, Hook
@@ -32,6 +32,17 @@ class ScrollbackView {
   }
 
   static run() {
+    run_(false, false)
+  }
+
+  // The disconnect notice temporarily owns the last main-display row.
+  // Exclude it from the captured content, and reserve a red status row
+  // only when the status bar was enabled before the disconnect.
+  static runDisconnected(hasStatus) {
+    run_(true, hasStatus)
+  }
+
+  static run_(disconnected, hasStatus) {
     Fiber.new {
       // Replace the caller's mask for the duration of the viewer.
       // Retaining a BBS tracking mask would deliver raw motion here,
@@ -41,26 +52,26 @@ class ScrollbackView {
       Screen.modalRun(Fn.new {
         var w = Scrollback.width
         var visH = CTerm.height
+        var liveH = visH - (disconnected ? 1 : 0)
+        if (disconnected && hasStatus) visH = visH - 1
         var x = CTerm.originX
         var y = CTerm.originY
-        if (w <= 0 || visH <= 0) return
-        var live = Screen.readRect(x, y, x + w - 1, y + visH - 1)
+        if (w <= 0 || visH <= 0 || liveH <= 0) return
+        var live = Screen.readRect(x, y, x + w - 1, y + liveH - 1)
         if (live == null) return
         var viewport = Surface.new(w, visH)
         var historyH = Scrollback.height
-        blankSurroundings_()
+        blankSurroundings_(disconnected)
         viewLoop_(viewport, live, historyH)
       })
       Input.mouseEvents = savedMouse
     }.call()
   }
 
-  // Paint the entire screen with yellow-on-blue spaces, so the area
-  // outside the cterm region (any centered/left-justified frame plus
-  // the status bar row) shows a solid blue background.  The cterm
-  // area gets overpainted with scrollback content each loop iter.
-  static blankSurroundings_() {
-    Screen.attr = 0x1e   // yellow on blue, no blink (blank cells)
+  // Blank the frame and status row in blue while connected, red after
+  // disconnect. The content area gets overpainted on each iteration.
+  static blankSurroundings_(disconnected) {
+    Screen.attr = disconnected ? 0x4e : 0x1e
     var sz = Screen.size
     Screen.window.bounds = [1, 1, sz[0], sz[1]]
     Screen.window.clear()
@@ -68,12 +79,12 @@ class ScrollbackView {
 
   // Blocking pan loop.  `top` is the logical scrollback row that
   // displays at screen row 1 of the cterm area.  Range is
-  // [0, totalRows - cterm.height]; capped each iteration.  Initial
+  // [0, totalRows - viewport.height]; capped each iteration.  Initial
   // top = visibleRowsFromTheBottom so the first paint matches what
   // the user was just looking at.
   static viewLoop_(viewport, live, historyH) {
     var w       = viewport.width
-    var visH    = CTerm.height
+    var visH    = viewport.height
     var totalH  = historyH + live.height
     var maxTop  = totalH - visH
     if (maxTop < 0) maxTop = 0

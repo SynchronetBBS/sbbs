@@ -330,6 +330,23 @@ wren_host_help(const char *title, const char *body)
 	return wrenCall(state.vm, state.host_help_handle) == WREN_RESULT_SUCCESS;
 }
 
+bool
+wren_host_disconnected_scrollback(bool has_status)
+{
+	if (!active || !on_owner_thread() || state.vm == NULL ||
+	    !wrenHasModule(state.vm, "scrollback_view") ||
+	    !wrenHasVariable(state.vm, "scrollback_view", "ScrollbackView"))
+		return false;
+
+	wrenEnsureSlots(state.vm, 2);
+	wrenGetVariable(state.vm, "scrollback_view", "ScrollbackView", 0);
+	WrenHandle *run = wrenMakeCallHandle(state.vm, "runDisconnected(_)");
+	wrenSetSlotBool(state.vm, 1, has_status);
+	WrenInterpretResult result = wrenCall(state.vm, run);
+	wrenReleaseHandle(state.vm, run);
+	return result == WREN_RESULT_SUCCESS;
+}
+
 void
 wren_log_clear(void)
 {

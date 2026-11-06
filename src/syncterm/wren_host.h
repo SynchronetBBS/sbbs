@@ -122,6 +122,11 @@ bool wren_host_alert_help(const char *title, const char *message,
                           const char *help_text);
 bool wren_host_help(const char *title, const char *body);
 
+/* Browse the still-live cterm history from the disconnect notice.  The
+ * notice occupies the final main-display row; has_status records whether
+ * the SyncTERM status bar was enabled before that row was prepared. */
+bool wren_host_disconnected_scrollback(bool has_status);
+
 /* Fires any Hook.every() callbacks whose deadline has elapsed. Called
  * from doterm() just before the main-loop sleep. */
 void wren_host_dispatch_timer(void);

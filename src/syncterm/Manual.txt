@@ -968,6 +968,12 @@ Entry menu.
 
 ==== Viewing the Scrollback
 
+Press kbd:[Alt+B] or scroll the mouse wheel up to enter scrollback while
+connected or at the Disconnected notice. At that notice, kbd:[Enter]
+exits and kbd:[F1] shows connection details. Disconnected scrollback
+reserves a red bottom row when the status bar is enabled; with the
+status bar disabled, history fills the bottom row as well.
+
 When viewing the scrollback, the following keys are supported:
 
 kbd:[↑]::

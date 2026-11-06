@@ -4382,6 +4382,8 @@ show_disconnect_notice(struct bbslist *bbs)
 	char message[1200];
 	char details[1024];
 	const char *popup_message = reason;
+	bool has_status = !term.nostatus;
+	uint64_t mouse_events;
 	int key;
 
 	/* Take this before waiting for input so the connected duration records
@@ -4393,11 +4395,26 @@ show_disconnect_notice(struct bbslist *bbs)
 	prepare_disconnect_notice_row();
 	if (!paint_disconnect_notice_row(true))
 		return;
+	mouse_events = ciomouse_getevents();
+	ciomouse_setevents(UINT64_C(1) << CIOLIB_BUTTON_4_PRESS);
 	position_disconnect_notice_cursor();
 	for (;;) {
 		key = syncterm_getkey();
 		if (key == '\r' || key == '\n' || key == CIO_KEY_QUIT)
 			break;
+		if (key == CIO_KEY_MOUSE) {
+			struct mouse_event event;
+			if (getmouse(&event) != 0 ||
+			    event.event != CIOLIB_BUTTON_4_PRESS)
+				continue;
+			key = 0x3000; /* Alt-B */
+		}
+		if (key == 0x3000) { /* Alt-B */
+			(void)wren_host_disconnected_scrollback(has_status);
+			(void)paint_disconnect_notice_row(true);
+			position_disconnect_notice_cursor();
+			continue;
+		}
 		if (key == CIO_KEY_F(1)) {
 			bool has_log = bbs != NULL &&
 			    conn_type_has_diagnostics(bbs->conn_type);
@@ -4416,15 +4433,12 @@ show_disconnect_notice(struct bbslist *bbs)
 			position_disconnect_notice_cursor();
 			continue;
 		}
-		if (key == CIO_KEY_MOUSE) {
-			getmouse(NULL);
-			continue;
-		}
 #ifdef CIOLIB_KEY_EVENTS
 		if (key == CIO_KEY_KEY_EVENT)
 			ciokey_clear_events();
 #endif
 	}
+	ciomouse_setevents(mouse_events);
 	/* Keep application chrome out of the completed session's offline
 	 * scrollback.  The row was newly exposed for this notice, so restore it
 	 * as a terminal-style blank before finish_scrollback() captures it. */
