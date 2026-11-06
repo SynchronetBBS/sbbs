@@ -1168,7 +1168,7 @@ bool js_socket_finish_connect(JSContext *cx, struct js_event_list *event, bool d
 		int rd = recv(event->data.connect.sv[0], (char *)&result + received, sizeof result - received, 0);
 		if (rd == SOCKET_ERROR && SOCKET_ERRNO == EINTR)
 			continue;
-		if (rd <= 0)
+		if (rd <= 0 || (size_t)rd > sizeof result - received)
 			break;
 		received += rd;
 	}
