@@ -3918,6 +3918,7 @@ connected:
 
 	if (!js_DefineSocketOptionsArray(cx, obj, type)) {
 		JS_ReportError(cx, "js_DefineSocketOptionsArray failed");
+		JS_SetPrivate(cx, obj, NULL); // or the finalizer would use and free p again
 		closesocket(p->sock);
 		free(p);
 		return JS_FALSE;
@@ -4111,6 +4112,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (!js_DefineSocketOptionsArray(cx, obj, type)) {
 		JS_ReportError(cx, "js_DefineSocketOptionsArray failed");
+		JS_SetPrivate(cx, obj, NULL); // or the finalizer would use and free p again
 		xpms_destroy(set, sock_close_cb, nullptr);
 		free(p);
 		return JS_FALSE;
@@ -4237,6 +4239,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (!js_DefineSocketOptionsArray(cx, obj, type)) {
 		JS_ReportError(cx, "js_DefineSocketOptionsArray failed");
+		JS_SetPrivate(cx, obj, NULL); // or the finalizer would use and free p again
 		closesocket(p->sock);
 		free(p);
 		return JS_FALSE;
