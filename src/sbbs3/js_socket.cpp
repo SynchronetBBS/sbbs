@@ -4051,10 +4051,12 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		HANDLE_PENDING(cx, interface);
 		rc = JS_SUSPENDREQUEST(cx);
 		if (!xpms_add(set, domain, type, proto, interface, port, protocol, NULL, ls_cb, NULL, &cb)) {
+			free(interface);
 			JS_RESUMEREQUEST(cx, rc);
 			JS_ReportError(cx, "Unable to add host to socket set");
 			goto fail;
 		}
+		free(interface);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	else {
@@ -4081,12 +4083,13 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
+	free(protocol); /* The set keeps its own copy for each listener */
+
 	obj = JS_NewObject(cx, &js_socket_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 
 	if ((p = (js_socket_private_t*)malloc(sizeof(js_socket_private_t))) == NULL) {
 		JS_ReportError(cx, "malloc failed");
-		free(protocol);
 		xpms_destroy(set, sock_close_cb, nullptr);
 		return JS_FALSE;
 	}

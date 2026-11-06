@@ -26,6 +26,11 @@ closed.close(); /* A second close() is harmless */
 if (closed.accept() !== undefined || closed.poll() !== -1)
 	throw new Error("A closed ListeningSocket still accepts or polls");
 
+/* The interface may be one string instead of an array */
+port = free_port();
+new ListeningSocket("127.0.0.1", port, "Test", {retry_count: 0}).close();
+rebinds(port, "close() of a single-interface listener");
+
 port = free_port();
 (function() { listen(port); })();
 js.gc(true);
