@@ -1009,15 +1009,17 @@ void tevents_cfg()
 							"`Number of Executions Per Day:`\n"
 							"\n"
 							"This is the maximum number of times the system will execute this event\n"
-							"per day.\n"
+							"per day. The interval is rounded up to whole minutes, so the displayed\n"
+							"number of executions may be lower than the number entered.\n"
+							"Values above 1440 select the minimum interval of one minute.\n"
 						;
 						if (uifc.input(WIN_MID | WIN_SAV, 0, 0
 						               , "Number of Executions Per Day"
 						               , str, 4, K_NUMBER | K_EDIT) > 0) {
 							cfg.event[i]->time = 0;
 							k = atoi(str);
-							if (k && k <= 1440)
-								cfg.event[i]->freq = 1440 / k;
+							if (k > 0)
+								cfg.event[i]->freq = (1440 + k - 1) / k;
 							else
 								cfg.event[i]->freq = 0;
 						}

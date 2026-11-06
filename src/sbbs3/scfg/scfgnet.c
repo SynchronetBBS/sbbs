@@ -1528,15 +1528,17 @@ void qhub_edit(int num)
 						"per day to this QWK network hub. This value is actually converted by\n"
 						"Synchronet into minutes between call-outs and when the BBS is idle\n"
 						"and this number of minutes since the last call-out is reached, it will\n"
-						"perform a call-out.\n"
+						"perform a call-out. The interval is rounded up to whole minutes, so\n"
+						"the displayed number of call-outs may be lower than the number entered.\n"
+						"Values above 1440 select the minimum interval of one minute.\n"
 					;
 					if (uifc.input(WIN_MID | WIN_SAV, 0, 0
 					               , "Number of Call-outs Per Day"
 					               , str, 4, K_NUMBER | K_EDIT) > 0) {
 						cfg.qhub[num]->time = 0;
 						i = atoi(str);
-						if (i && i <= 1440)
-							cfg.qhub[num]->freq = 1440 / i;
+						if (i > 0)
+							cfg.qhub[num]->freq = (1440 + i - 1) / i;
 						else
 							cfg.qhub[num]->freq = 0;
 					}
