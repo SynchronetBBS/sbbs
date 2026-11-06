@@ -24,6 +24,7 @@ typedef struct
 	BOOL tls_server;
 	char *hostname;
 	struct xpms_set *set;
+	bool set_owned;     /* ListeningSocket created the set: closing destroys it */
 	size_t unflushed;
 	char peeked_byte;
 	BOOL peeked;

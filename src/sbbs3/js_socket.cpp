@@ -37,6 +37,7 @@ static int do_cryptAttribute(js_socket_private_t *p, CRYPT_ATTRIBUTE_TYPE attr, 
 static int do_cryptAttributeString(js_socket_private_t *p, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len);
 static void js_socket_tls_release(struct js_socket_tls_pending *pending);
 static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize);
+void sock_close_cb(SOCKET sock, void *cb_data);
 static bool js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type);
 static JSBool js_accept(JSContext *cx, uintN argc, jsval *arglist);
 static JSBool js_bind(JSContext *cx, uintN argc, jsval *arglist);
@@ -402,6 +403,13 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 		}
 	}
 
+	/* A ListeningSocket's listeners are its set's; it has no p->sock to close.
+	 * A set the host shares with the script (server.socket) is the host's. */
+	if (p->set != NULL && p->set_owned) {
+		xpms_destroy(p->set, sock_close_cb, NULL);
+		p->set = NULL;
+	}
+
 	if (p->connect_pending) {
 		/* The connect worker still uses the descriptor saved in its event.
 		 * JS close() is immediate; the event collector performs native close. */
@@ -672,8 +680,6 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 
 	do_js_close(cx, p, true);
 
-	if (!p->external)
-		free(p->set);
 	free(p->hostname);
 	free(p);
 
@@ -4087,6 +4093,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	p->js_cb = js_find_callback(cx); /* so blocking reads can notice the script's termination (#1255) */
 	p->type = type;
 	p->set = set;
+	p->set_owned = true;
 	p->sock = INVALID_SOCKET;
 	p->external = true;
 	p->network_byte_order = true;
