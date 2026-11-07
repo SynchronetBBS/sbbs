@@ -14,12 +14,27 @@ require("userdefs.js", "USER_ICE_COLOR");
  * attr_mask = mask attribute bits (e.g. to disable BLINK)
  * ch = default character (default of space)
  *
+ * Alternatively, new Graphic(frame) copies a Frame's current viewport,
+ * including its scroll offset, using frame.attr as the default attribute.
+ * Unset cells use the default character and attribute. Cells are copied,
+ * so subsequent changes to either object do not affect the other.
+ *
  * Instance variable data contains an array of array of Graphics.Cell objects
  *
  * Instance variables atcodes are slated for removal.
  */
 function Graphic(w,h,attr,ch, dw)
 {
+	var frame;
+	// Use the public Frame API so frames loaded in another scope also work.
+	if(w !== null && typeof w === "object" && typeof w.getData === "function") {
+		frame=w;
+		w=frame.width;
+		h=frame.height;
+		if(attr===undefined)
+			attr=frame.attr;
+	}
+
 	if(ch==undefined)
 		this.ch=' ';
 	else
@@ -57,7 +72,14 @@ function Graphic(w,h,attr,ch, dw)
 			if(y==0) {
 				this.data[x]=new Array(this.height);
 			}
-			this.data[x][y]=new this.Cell(this.ch,this.attribute);
+			if(frame) {
+				var cell=frame.getData(x,y,true);
+				this.data[x][y]=new this.Cell(
+					cell.ch===undefined ? this.ch : cell.ch,
+					cell.attr===undefined ? this.attribute : cell.attr);
+			}
+			else
+				this.data[x][y]=new this.Cell(this.ch,this.attribute);
 		}
 	}
 }
