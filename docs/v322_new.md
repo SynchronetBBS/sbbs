@@ -269,6 +269,10 @@
 - `?script` archiver commands are not supported for packets created
   outside a terminal session (FTP, Web, scripts and the event thread's
   sweeps); use a native archiver or a built-in format
+- Fix: the Telnet/RLogin gateway (`bbs.telnet_gate()`, `bbs.rlogin_gate()`,
+  `?rlogin`) no longer drops output from the remote host when the user's
+  connection is slower than the host's output (e.g. a door sending Sixel
+  graphics); it now paces its reads to the output buffer (issue #1325)
 
 ## Web Server
 

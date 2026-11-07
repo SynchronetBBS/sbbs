@@ -417,7 +417,15 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 				else if ((mode & TG_NOLF) && buf[rd - 1] == '\n')
 					rd--;
 				if (!gotline && (mode & TG_ECHO) && rd) {
-					RingBufWrite(&outbuf, buf, rd);
+					// Local echo: RingBufWrite() stores only what fits, so wait for
+					// the output thread to make room for the remainder (#1325)
+					ssize_t echoed = 0;
+					for (attempts = 0; attempts < 60 && online; attempts++) {
+						echoed += RingBufWrite(&outbuf, buf + echoed, rd - echoed);
+						if (echoed >= rd)
+							break;
+						flush_output(OUTCOM_RETRY_DELAY);
+					}
 				}
 			} /* Not Telnet Binary mode */
 			if (rd > 0) {
@@ -436,27 +444,37 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 				}
 			}
 		}
-		rd = recv(remote_socket, (char*)buf, sizeof(buf), 0);
-		if (rd < 0) {
-			if (SOCKET_ERRNO == EWOULDBLOCK) {
-				if (mode & TG_NODESYNC) {
-					sync();
-				} else {
-					// Check if the node has been interrupted
-					getnodedat(cfg.node_num, &thisnode);
-					if (thisnode.misc & NODE_INTR)
-						break;
-				}
-				YIELD();
-				continue;
+		// Receive only as much from the remote as the output buffer can hold:
+		// RingBufWrite() silently drops whatever doesn't fit (#1325)
+		size_t avail = RingBufFree(&outbuf);
+		if (mode & TG_EXPANDLF)
+			avail /= 2;     // expand_lf() may double the data
+		if (avail > sizeof(buf))
+			avail = sizeof(buf);
+		rd = 0;
+		if (avail > 0) {
+			rd = recv(remote_socket, (char*)buf, avail, 0);
+			if (rd < 0 && SOCKET_ERRNO != EWOULDBLOCK) {
+				lprintf(LOG_NOTICE, "!TELGATE ERROR %d (%s) receiving on socket %d"
+				        , SOCKET_ERRNO, socket_strerror(SOCKET_ERRNO), remote_socket);
+				break;
 			}
-			lprintf(LOG_NOTICE, "!TELGATE ERROR %d (%s) receiving on socket %d"
-				, SOCKET_ERRNO, socket_strerror(SOCKET_ERRNO), remote_socket);
-			break;
+			if (!rd) {
+				lprintf(LOG_INFO, "Node %d Telnet gate disconnected", cfg.node_num);
+				break;
+			}
 		}
-		if (!rd) {
-			lprintf(LOG_INFO, "Node %d Telnet gate disconnected", cfg.node_num);
-			break;
+		if (rd < 1) { // Nothing received or no room in the output buffer for it
+			if (mode & TG_NODESYNC) {
+				sync();
+			} else {
+				// Check if the node has been interrupted
+				getnodedat(cfg.node_num, &thisnode);
+				if (thisnode.misc & NODE_INTR)
+					break;
+			}
+			YIELD();
+			continue;
 		}
 		uint8_t* p = buf;
 		if (!(mode & (TG_RLOGIN | TG_PASSTHRU | TG_RAW)))
