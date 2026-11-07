@@ -30,7 +30,7 @@ js_cryptcon_error(JSContext *cx, CRYPT_CONTEXT ctx, int error)
 		JS_ReportError(cx, "CryptLib error %d", error);
 		return;
 	}
-	errstr[errlen + 1] = 0;
+	errstr[errlen] = 0;
 
 	JS_ReportError(cx, "Cryptlib error %d (%s)", error, errstr);
 	free(errstr);
