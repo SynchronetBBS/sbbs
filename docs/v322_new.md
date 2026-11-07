@@ -805,6 +805,12 @@
   name, or an explicit mask with the new `-replace=<mask>` form
   (it previously wrote the literal text `Replaces true`, which
   matched nothing)
+- `login.js`: the "confirm your Internet e-mail address" prompt (shown
+  when a user asks for their forgotten password to be e-mailed) now
+  accepts a full-length address on any terminal width. Input was cut
+  off at the end of the prompt's screen line (18 characters at 64
+  columns, 34 at 80), so longer addresses were always rejected as
+  incorrect
 
 ## JavaScript
 

@@ -96,8 +96,8 @@ for(var c=0; c < options.login_prompts; c++) {
 				&& !console.noyes("Email your password to you")) {
 				var email_addr = u.netmail;
 				if(options.confirm_email_address !== false) {
-					console.print("\x01n\x01c\x01hPlease confirm your Internet e-mail address: \x01y");
-					var email_addr = console.getstr(LEN_NETMAIL);
+					console.print("\x01n\x01c\x01hPlease confirm your Internet e-mail address:\r\n\x01y");
+					var email_addr = console.getstr(LEN_NETMAIL, K_LINEWRAP);
 				}
 				if(email_addr.toLowerCase() == u.netmail.toLowerCase()) {
 
