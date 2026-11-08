@@ -595,13 +595,16 @@ if(UNIX)
 	install(FILES icons/syncterm-mini.svg DESTINATION share/icons/hicolor/scalable/apps)
 endif()
 
-if(UNIX AND NOT APPLE AND NOT WITHOUT_SDL)
+# ciolib exports WITH_SDL only when SDL was actually found and enabled.
+# WITHOUT_SDL can remain OFF when SDL is absent, including on CI runners.
+get_target_property(_ciolib_definitions ciolib INTERFACE_COMPILE_DEFINITIONS)
+if(UNIX AND NOT APPLE AND "WITH_SDL" IN_LIST _ciolib_definitions)
 	add_executable(skypix_test skypix_test.c rip_icons.c ansi_filter.c)
 	require_libs(skypix_test ciolib hash encode xpdev)
 	target_include_directories(skypix_test PRIVATE ../sbbs3)
 	target_compile_options(skypix_test PRIVATE -ffunction-sections -fdata-sections)
 	target_link_options(skypix_test PRIVATE -Wl,--gc-sections)
-	target_compile_definitions(skypix_test PRIVATE WITH_SDL
+	target_compile_definitions(skypix_test PRIVATE
 		SKYPIX_FONT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/skypix-fonts")
 	add_test(NAME skypix_test COMMAND ${CMAKE_COMMAND} -E env
 		SDL_VIDEODRIVER=offscreen SDL_RENDER_DRIVER=software

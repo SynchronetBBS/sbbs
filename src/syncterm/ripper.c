@@ -7795,7 +7795,7 @@ find_user_var(const char *name)
 	struct rip_user_var *uv;
 
 	for (uv = rip.user_vars; uv != NULL; uv = uv->next) {
-		if (strcasecmp(uv->name, name) == 0)
+		if (stricmp(uv->name, name) == 0)
 			return uv;
 	}
 	return NULL;
