@@ -367,10 +367,19 @@ if(NOT WITHOUT_DEUCESSH)
 			set(ENV{PKG_CONFIG_PATH}
 			    "${_dssh_extra_pkgconfig}:$ENV{PKG_CONFIG_PATH}")
 		endif()
+		# project() rewrites ENV{CC}/ENV{CXX} to the compiler executable,
+		# dropping ARG1 (e.g. gcc from CC="ccache gcc").  Pass the resolved
+		# compiler commands explicitly so the probe uses the same toolchain.
 		execute_process(
 		    COMMAND ${CMAKE_COMMAND}
 		        -S ${CMAKE_CURRENT_SOURCE_DIR}/../ssh
 		        -B ${_dssh_probe_dir}
+		        "-DCMAKE_C_COMPILER:FILEPATH=${CMAKE_C_COMPILER}"
+		        "-DCMAKE_C_COMPILER_ARG1:STRING=${CMAKE_C_COMPILER_ARG1}"
+		        "-DCMAKE_C_COMPILER_LAUNCHER:STRING=${CMAKE_C_COMPILER_LAUNCHER}"
+		        "-DCMAKE_CXX_COMPILER:FILEPATH=${CMAKE_CXX_COMPILER}"
+		        "-DCMAKE_CXX_COMPILER_ARG1:STRING=${CMAKE_CXX_COMPILER_ARG1}"
+		        "-DCMAKE_CXX_COMPILER_LAUNCHER:STRING=${CMAKE_CXX_COMPILER_LAUNCHER}"
 		        -DCMAKE_BUILD_TYPE=Release
 		        -DDEUCESSH_CRYPTO_BACKEND=${DEUCESSH_CRYPTO_BACKEND}
 		    RESULT_VARIABLE _dssh_cfg_rc
