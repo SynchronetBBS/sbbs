@@ -166,6 +166,14 @@
   wide "unsupported character" glyph and so go undetected
   (issue #1284); U+2060 in text is now also measured as zero-width
   and dropped, not shown as `¿`, on CP437 terminals
+- The internal message editor accepts Unicode (UTF-8) text from
+  UTF-8 terminals, as the subject prompt already did: characters with
+  no CP437 equivalent are no longer silently dropped, word-wrap and
+  the cursor work in columns rather than bytes, and the message is
+  saved with a UTF-8 charset header (issue #1317)
+- Fix: after typing a multi-byte (e.g. emoji) character into a UTF-8
+  input field, the cursor jumped back to the start of the field, so
+  text typed next overwrote it on screen
 - Goodbye messages and pre-login banners no longer log noisy
   "send failed" warnings when the client disconnects mid-message
 - Fix line-wrap divide-by-zero crash when an SFTP-only client

@@ -20,32 +20,6 @@
  ****************************************************************************/
 
 #include "sbbs.h"
-#include "utf8.h"
-
-/****************************************************************************/
-/* Redraws str using i as current cursor position and l as length           */
-/* Currently only used by getstr() - so should be moved to getstr.cpp?		*/
-/****************************************************************************/
-void sbbs_t::redrwstr(char *strin, int i, int l, int mode)
-{
-	if (i <= 0)
-		i = 0;
-	else
-		term->cursor_left(i);
-	if (l < 0)
-		l = 0;
-	if (mode)
-		bprintf(mode, "%-*.*s", l, l, strin);
-	else
-		rprintf("%-*.*s", l, l, strin);
-	term->cleartoeol();
-	if (i < l) {
-		auto_utf8(strin, mode);
-		if (mode & P_UTF8)
-			l = utf8_str_total_width(strin, unicode_zerowidth);
-		term->cursor_left(l - i);
-	}
-}
 
 int sbbs_t::uselect(bool add, uint num, const char *title, const char *name, const uchar *ar)
 {

@@ -25,7 +25,9 @@
 #include "git_branch.h"
 #include "git_hash.h"
 
-#define MAX_LINE_LEN    ((term->cols - 1) + 2)
+// Maximum length of a line of message text (in the internal editor), in bytes, including CR/LF and NUL
+// Lines may contain multi-byte (UTF-8) chars, so this is more than the terminal width (columns)
+#define MAX_LINE_LEN    ((term->cols - 1) * UTF8_MAX_LEN + 3)
 
 const char *quote_fmt = " > %.*s\r\n";
 void quotestr(char *str);
@@ -1062,12 +1064,12 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 			if (line < 1)
 				term->carriage_return();
 			ulong prev_con = console;
-			int   kmode = K_WORDWRAP | K_MSG | K_EDIT | K_NOCRLF | K_USEOFFSET;
+			int   kmode = K_UTF8 | K_WORDWRAP | K_MSG | K_EDIT | K_NOCRLF | K_USEOFFSET;
 			if (line)
 				kmode |= K_LEFTEXIT;
 			if (str[line] != NULL)
 				kmode |= K_RIGHTEXIT;
-			getstr(strin, term->cols - 1, kmode);
+			getstr(strin, max_line_len - 3, kmode);
 			if ((prev_con & CON_DELETELINE) /* Ctrl-X/ZDLE */ && strncmp(strin, "B00", 3) == 0) {
 				strin[0] = 0;
 				prot = 'Z';
@@ -1176,7 +1178,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 					continue;
 				lines = strListCount(str);
 				i = atoi(strin + 2) - 1;
-				j = K_MSG | K_EDIT; /* use j for the getstr mode */
+				j = K_UTF8 | K_MSG | K_EDIT; /* use j for the getstr mode */
 				if (i == -1) { /* /E means edit last line */
 					i = lines - 1;
 					j |= K_WORDWRAP;  /* wrap when editing last line */
@@ -1185,7 +1187,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 					bputs(text[InvalidLineNumber]);
 				else {
 					SAFECOPY(strin, str[i]);
-					getstr(strin, term->cols - 1, j);
+					getstr(strin, max_line_len - 3, j);
 					strListReplace(str, i, strin);
 				}
 				continue;
