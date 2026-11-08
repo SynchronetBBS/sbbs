@@ -512,6 +512,15 @@
   template (issue #1280)
 - Help-text updates for the sub-board Semaphore File and Pointer
   Index options, and the Parent Directory import prompt
+- File directory and sub-board configuration windows widen to fit
+  their longest line on terminals wider than 80 columns, so long
+  Actual File Paths are readable at a glance (issue #1327)
+- Pressing Enter on a blank Actual File Path now shows the derived
+  path in the input box, where it can be scrolled; leaving it as-is
+  keeps the setting blank (derived) (issue #1327)
+- Help text for the Actual File Path, FidoNet Area Tag, and Newsgroup
+  Name options now explains that a `[bracketed]` value is derived,
+  not stored
 - Expanded inline help for the Servers → \* → JavaScript Settings
   menu (Heap Size, Time Limit, GC Interval, Yield Interval, Load
   Path) — corrects the wrong "ticks" wording (these are

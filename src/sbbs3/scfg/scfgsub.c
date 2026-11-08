@@ -443,7 +443,7 @@ void sub_cfg(int grpnum)
 				wmode |= WIN_LEFTKEY;
 			if (next != i)
 				wmode |= WIN_RIGHTKEY;
-			switch (uifc.list(wmode, 0, 0, 72, &opt_dflt, 0, str, opt)) {
+			switch (uifc.list(wmode, 0, 0, opt_width(opt, 72), &opt_dflt, 0, str, opt)) {
 				case -1:
 					done = 1;
 					break;
@@ -509,7 +509,8 @@ void sub_cfg(int grpnum)
 						"\n"
 						"This is the name of the sub-board used for newsgroup readers. If no name\n"
 						"is configured here, a name will be automatically generated from the\n"
-						"Sub-board's Short Name and message group's Short Name.\n"
+						"Sub-board's Short Name and message group's Short Name and displayed\n"
+						"within `[`brackets`]` for your information.\n"
 						"\n"
 						"A newsgroup name (per RFC 5536) may ~ only ~ contain the characters:\n"
 						"    [`a-z`], [`A-Z`], [`0-9`], '`+`', '`_`', '`-`', and '`.`'.\n"
@@ -526,7 +527,8 @@ void sub_cfg(int grpnum)
 						"This field may be used to specify the FidoNet-style `Echo/Area Tag` for\n"
 						"this message area. If no tag name is configured here, a tag name will be\n"
 						"automatically generated from the Sub-board's `Newsgroup Name` (if exists)\n"
-						"or the Sub-board's `Short Name`.\n"
+						"or the Sub-board's `Short Name` and displayed within `[`brackets`]` for\n"
+						"your information.\n"
 						"\n"
 						"This tag may ~ not ~ contain spaces."
 					;

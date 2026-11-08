@@ -118,6 +118,7 @@ void bail(int code);
 void errormsg(int line, const char* function, const char *source, const char* action, const char *object, ulong access);
 void clearptrs(int subnum);
 int  save_changes(int mode);
+int  opt_width(char** opt, int min_width);
 void node_menu(void);
 void node_cfg(void);
 void results(int i);

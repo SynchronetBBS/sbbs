@@ -1870,6 +1870,9 @@ void dir_cfg(int libnum)
 		"either the library's `Parent Directory` (if set) or the data directory\n"
 		"(e.g. ../data/dirs/)\n"
 		"\n"
+		"When this setting is blank or not a full/absolute path, the resulting\n"
+		"full path is displayed within `[`brackets`]` for your information.\n"
+		"\n"
 		ADDFILES_HELP
 	;
 
@@ -2114,7 +2117,7 @@ void dir_cfg(int libnum)
 				wmode |= WIN_LEFTKEY;
 			if (next != i)
 				wmode |= WIN_RIGHTKEY;
-			switch (uifc.list(wmode, 0, 0, 72, &opt_dflt, 0, str, opt)) {
+			switch (uifc.list(wmode, 0, 0, opt_width(opt, 72), &opt_dflt, 0, str, opt)) {
 				case -1:
 					done = 1;
 					break;
@@ -2164,7 +2167,8 @@ void dir_cfg(int libnum)
 						"\n"
 						"This field may be used to specify the FidoNet-style `Echo/Area Tag` for\n"
 						"this file area.  If no tag name is configured here, a tag name will be\n"
-						"automatically generated from the Directory's `Short Name`.\n"
+						"automatically generated from the Directory's `Short Name` and displayed\n"
+						"within `[`brackets`]` for your information.\n"
 						"\n"
 						"This tag may ~ not ~ contain spaces."
 					;
@@ -2238,8 +2242,17 @@ void dir_cfg(int libnum)
 					break;
 				case 10:
 					uifc.helpbuf = dir_actual_path_help;
-					uifc.input(WIN_L2R | WIN_SAV, 0, 17, "Actual File Path (directory)"
-					           , cfg.dir[i]->path, sizeof(cfg.dir[i]->path) - 1, K_EDIT);
+					SAFECOPY(str, cfg.dir[i]->path);
+					/* Seed a blank setting with the derived path so the sysop can view
+					 * (scroll) the whole thing; 'path' holds it from the menu display */
+					if (str[0] == '\0' && strlen(path) <= sizeof(cfg.dir[i]->path) - 1)
+						SAFECOPY(str, path);
+					if (uifc.input(WIN_L2R | WIN_SAV, 0, 17, "Actual File Path (directory)"
+					               , str, sizeof(cfg.dir[i]->path) - 1, K_EDIT) < 0)
+						break;
+					if (paths_are_same(str, path)) /* still the derived path: keep it derived */
+						str[0] = '\0';
+					SAFECOPY(cfg.dir[i]->path, str);
 					break;
 				case 11:
 					uifc.helpbuf = max_files_help;

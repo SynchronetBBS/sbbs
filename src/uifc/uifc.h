@@ -97,7 +97,7 @@
 #define MSK_PUT     MSK_PASTE
 
 /* Don't forget, negative return values are used for extended keys (if WIN_EXTKEYS used)! */
-#define MAX_OPLN    75      /* Maximum length of each option per menu call */
+#define MAX_OPLN    256     /* Maximum length of each option per menu call */
 #define MAX_BUFS    7       /* Maximum number of screen buffers to save */
 #define MIN_LINES   14      /* Minimum number of screen lines supported */
 #define MAX_LINES   255     /* Maximum number of screen lines supported (ciolib screenheight is a uchar) */

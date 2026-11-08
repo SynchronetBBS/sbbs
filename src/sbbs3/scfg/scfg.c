@@ -184,6 +184,21 @@ int toggle_flag(const char* title, uint* misc, uint flag, bool invert, const cha
 	return k;
 }
 
+/* Width for a uifc.list() window: wide enough for the longest option (plus
+ * window borders), but never narrower than min_width. uifc clips the window
+ * to the screen width, so on a wider terminal long options get the room. */
+int opt_width(char** opt, int min_width)
+{
+	int width = min_width;
+
+	for (int i = 0; opt[i] != NULL && opt[i][0] != '\0'; i++) {
+		int len = (int)strlen(opt[i]) + 5;
+		if (len > width)
+			width = len;
+	}
+	return width;
+}
+
 void wizard_msg(int page, int total, const char* text)
 {
 	uifc.showbuf(WIN_HLP | WIN_DYN | WIN_L2R, 2, 2, 76, 20, "Setup Wizard", text, NULL, NULL);
