@@ -670,8 +670,13 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 			if (found)
 				break;
 			if (isfullpath(code) || *subdir == '\0') {
-				if (!(mode & P_NOERROR))
+				if (!(mode & P_NOERROR)) {
+					if (isfullpath(code))
+						SAFEPRINTF(path, "%s.*", code);
+					else
+						SAFEPRINTF2(path, "%smenu/%s.*", cfg.text_dir, code);
 					errormsg(WHERE, ERR_CHK, path);
+				}
 				return false;
 			}
 		}
