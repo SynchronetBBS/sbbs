@@ -51,6 +51,8 @@ Source: "c:\sbbs\src\syncterm\syncterm.ini"; DestDir: "{autoappdata}\{#MyAppName
 Source: "s:\xfer\sbbs\syncterm.lst"; DestDir: "{commonappdata}\{#MyAppName}"; Tasks: systemlist; Flags: ignoreversion confirmoverwrite
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
+Source: "c:\sbbs\src\syncterm\skypix-fonts\*"; DestDir: "{autoappdata}\{#MyAppName}\fonts"; Flags: ignoreversion recursesubdirs createallsubdirs
+
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\Get Synchronet BBS List"; Filename: "{sys}\curl.exe"; Parameters: "http://synchro.net/syncterm.lst -o {commonappdata}\{#MyAppName}\syncterm.lst"; IconFilename: "{app}\{#MyAppExeName}"; Comment: "Get the latest Synchronet BBS List from Vertrauen";

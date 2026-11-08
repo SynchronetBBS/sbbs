@@ -519,6 +519,7 @@ endif
 
 DESTDIR	?=
 PREFIX	?= /usr/local
+CFLAGS += -DSKYPIX_FONT_DIR=\"${PREFIX}/share/syncterm/fonts\"
 DESKTOPDIR ?= $(PREFIX)/share/applications
 
 CFLAGS	+=	-DPREFIX=\"${DESTDIR}${PREFIX}\"
@@ -633,6 +634,8 @@ installdirs:
 	-mkdir -p ${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps
 
 install: $(SYNCTERM) syncterm.1.gz installdirs
+	-mkdir -p ${DESTDIR}${PREFIX}/share/syncterm/fonts
+	cp -R skypix-fonts/. ${DESTDIR}${PREFIX}/share/syncterm/fonts/
 	@echo Installing...
 	${INSTALL_EXE} ${SYNCTERM} ${DESTDIR}${PREFIX}/bin
 	${INSTALL_DATA} syncterm16.png ${DESTDIR}${PREFIX}/share/icons/hicolor/16x16/apps/syncterm.png
@@ -674,6 +677,8 @@ changelog.gz: CHANGES
 	${QUIET}gzip -9n < CHANGES > changelog.gz
 
 dpkg: $(SYNCTERM) syncterm.1.gz dpkg-control dpkgdirs changelog.gz
+	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/syncterm/fonts
+	${QUIET}cp -R skypix-fonts/. dpkg${DESTDIR}${PREFIX}/share/syncterm/fonts/
 	@echo Creating $@
 	${QUIET}${INSTALL_EXE} ${SYNCTERM} dpkg${DESTDIR}${PREFIX}/bin
 	${QUIET}${INSTALL_DATA} syncterm16.png dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/16x16/apps/syncterm.png

@@ -124,6 +124,8 @@ enum {
 	RIP_VERSION_1
 	,
 	RIP_VERSION_3
+	,
+	RIP_VERSION_SKYPIX
 };
 
 enum {

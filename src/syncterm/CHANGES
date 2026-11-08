@@ -1,5 +1,7 @@
 Version 1.10
 ------------
+Fix SkyPix font strings, drawing order and font reset; implement area fill (#299)
+Add a dedicated SkyPix graphics setting and install native Amiga fonts
 BBS cache directories are now deleted/renamed with the entry
 Use portable per-BBS cache keys compatible with v2.0 (ticket #297)
 Stop session audio before disconnect notices and audio-device teardown

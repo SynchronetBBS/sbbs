@@ -904,7 +904,8 @@ class BbsEditor {
   }
 
   static ripHelp_() {
-    return "# RIP Version\n\nRIP v1 requires EGA mode. RIP v3 works in any screen mode."
+    return "# Graphics\n\nRIP v1 requires EGA mode. RIP v3 works in any screen mode. " +
+        "Select SkyPix for Amiga BBS graphics."
   }
 
   static logFileHelp_() {
@@ -1239,9 +1240,9 @@ class BbsEditor {
     rows.add(choiceRow_(app, d, "font", "Font", fontChoices))
     if (ansi_(d["screenMode"])) {
       rows.add(choiceRow_(app, d, "music", "ANSI Music", Menu.musicModes))
-      rows.add(row_("RIP", MenuUi.rowName(Menu.ripModes, d["rip"]),
+      rows.add(row_("Graphics", MenuUi.rowName(Menu.ripModes, d["rip"]),
           Fn.new {
-        var value = MenuUi.choice(app, "RIP", Menu.ripModes, d["rip"],
+        var value = MenuUi.choice(app, "Graphics", Menu.ripModes, d["rip"],
             ripHelp_())
         if (value != null) {
           d["rip"] = value

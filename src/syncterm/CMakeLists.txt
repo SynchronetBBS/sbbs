@@ -326,6 +326,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	set_source_files_properties(SyncTERM.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif()
 require_libs(syncterm ciolib comio encode hash sftp xpdev)
+# Match Common.gmake: bitmap consumers need the same feature guards as ciolib.
+get_target_property(_ciolib_sources ciolib SOURCES)
+if("bitmap_con.c" IN_LIST _ciolib_sources)
+	target_compile_definitions(ciolib PUBLIC HAS_VSTAT HAS_BITMAP)
+endif()
 # Add xptls after xpdev.  The xptls archive contains only xptls objects;
 # xpdev remains a separate final-link dependency.
 add_subdirectory(../xptls xptls EXCLUDE_FROM_ALL)
@@ -568,6 +573,9 @@ if(UNIX AND NOT WITHOUT_SDL)
 	endif()
 endif()
 
+target_compile_definitions(syncterm PRIVATE
+	SKYPIX_FONT_DIR="${CMAKE_INSTALL_PREFIX}/share/syncterm/fonts")
+install(DIRECTORY skypix-fonts/ DESTINATION share/syncterm/fonts)
 install(TARGETS syncterm DESTINATION bin)
 if(UNIX)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syncterm.man
@@ -585,4 +593,18 @@ if(UNIX)
 	install(FILES syncterm256.png DESTINATION share/icons/hicolor/256x256/apps RENAME syncterm.png)
 	install(FILES icons/syncterm.svg DESTINATION share/icons/hicolor/scalable/apps)
 	install(FILES icons/syncterm-mini.svg DESTINATION share/icons/hicolor/scalable/apps)
+endif()
+
+if(UNIX AND NOT APPLE AND NOT WITHOUT_SDL)
+	add_executable(skypix_test skypix_test.c rip_icons.c ansi_filter.c)
+	require_libs(skypix_test ciolib hash encode xpdev)
+	target_include_directories(skypix_test PRIVATE ../sbbs3)
+	target_compile_options(skypix_test PRIVATE -ffunction-sections -fdata-sections)
+	target_link_options(skypix_test PRIVATE -Wl,--gc-sections)
+	target_compile_definitions(skypix_test PRIVATE WITH_SDL
+		SKYPIX_FONT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/skypix-fonts")
+	add_test(NAME skypix_test COMMAND ${CMAKE_COMMAND} -E env
+		SDL_VIDEODRIVER=offscreen SDL_RENDER_DRIVER=software
+		SDL_VIDEO_EGL_DRIVER=none $<TARGET_FILE:skypix_test>)
+	set_tests_properties(skypix_test PROPERTIES TIMEOUT 30)
 endif()

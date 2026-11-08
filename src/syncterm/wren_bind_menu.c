@@ -283,7 +283,7 @@ BBS_NUM_PROPERTY(port, port, 0, 65535)
 BBS_NUM_PROPERTY(connType, conn_type, CONN_TYPE_UNKNOWN,
     CONN_TYPE_TERMINATOR - 1)
 BBS_NUM_PROPERTY(music, music, CTERM_MUSIC_SYNCTERM, CTERM_MUSIC_ENABLED)
-BBS_NUM_PROPERTY(rip, rip, RIP_VERSION_NONE, RIP_VERSION_3)
+BBS_NUM_PROPERTY(rip, rip, RIP_VERSION_NONE, RIP_VERSION_SKYPIX)
 BBS_NUM_PROPERTY(addressFamily, address_family, ADDRESS_FAMILY_UNSPEC,
     ADDRESS_FAMILY_INET6)
 BBS_NUM_PROPERTY(screenMode, screen_mode, SCREEN_MODE_CURRENT,
@@ -938,9 +938,9 @@ static char *const address_family_names[] = {
 	"As per DNS", "IPv4 only", "IPv6 only", NULL
 };
 static const int rip_values[] = {
-	RIP_VERSION_NONE, RIP_VERSION_1, RIP_VERSION_3
+	RIP_VERSION_NONE, RIP_VERSION_1, RIP_VERSION_3, RIP_VERSION_SKYPIX
 };
-static char *const rip_names[] = { "Off", "RIPv1", "RIPv3", NULL };
+static char *const rip_names[] = { "Off", "RIPv1", "RIPv3", "SkyPix", NULL };
 static const int flow_values[] = {
 	COM_FLOW_CONTROL_RTS_CTS,
 	COM_FLOW_CONTROL_XON_OFF,

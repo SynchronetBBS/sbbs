@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 enum fonttype {
-	FONTTYPE_STANDARD = 0x00ff,
-	FONTTYPE_TAGGED = 0x020f
+	FONTTYPE_STANDARD = 0x0f00,
+	FONTTYPE_TAGGED = 0x0f02
 };
 
 struct StandardFontEntry {

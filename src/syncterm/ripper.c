@@ -7616,7 +7616,7 @@ static void draw_line_to(int target_x, int target_y, int *ppos);
 static void reinit_screen(uint8_t *font, int fontx, int fonty);
 static bool no_viewport(void);
 
-static const char *ripver[] = {"", "RIPSCRIP015410", "RIPSCRIP030001"};
+static const char *ripver[] = {"", "RIPSCRIP015410", "RIPSCRIP030001", ""};
 
 #define RIP_MOUSE_EVENT_NONE 0
 #define RIP_MOUSE_EVENT_TEXT 1
@@ -17404,8 +17404,10 @@ draw_glyph(uint8_t ch)
 		}
 	}
 	else {
-		if (ch == '\r')
+		if (ch == '\r') {
 			amiga_x = 0;
+			return;
+		}
 		gettextinfo(&ti);
 		vmode = find_vmode(ti.currmode);
 		if (ch == '\n') {
@@ -17542,12 +17544,100 @@ amiga_cputs(char *str)
 
 static bool skypix = false;
 
+/* Native disk-font names are relative to the font drawer. The descriptor's
+ * strike path is checked too; it is data, not a trusted filesystem path. */
+static bool
+skypix_font_path(char *path, size_t size, const char *name)
+{
+	if (*name == 0 || *name == '/' || *name == '\\'
+	    || strchr(name, ':') || strchr(name, '\\') || strstr(name, ".."))
+		return false;
+#ifndef SYNCVIEW
+	char ini[MAX_PATH + 1];
+	if (get_syncterm_filename(ini, sizeof(ini), SYNCTERM_PATH_INI, false)) {
+		*getfname(ini) = 0;
+		int len = snprintf(path, size, "%sfonts/%s", ini, name);
+		if (len >= 0 && (size_t)len < size && fexist(path))
+			return true;
+	}
+#endif
+#ifdef SKYPIX_FONT_DIR
+	int len = snprintf(path, size, "%s/%s", SKYPIX_FONT_DIR, name);
+	return len >= 0 && (size_t)len < size && fexist(path);
+#else
+	return false;
+#endif
+}
+
+/* JR-Comm command 3 always uses Flood mode 1. Replace each matching seed
+ * pixel when enqueuing it, so the queue holds at most one entry per pixel.
+ * Allocate before changing anything and commit both blink planes together. */
 static void
-do_skypix(char *buf, size_t len)
+skypix_area_fill(int x, int y, uint32_t colour)
+{
+	int sx = map_rip_x(rip.viewport.sx);
+	int sy = map_rip_y(rip.viewport.sy);
+	int ex = map_rip_x(rip.viewport.ex);
+	int ey = map_rip_y(rip.viewport.ey);
+	assert_rwlock_rdlock(&vstatlock);
+	if (ex >= vstat.scrnwidth)
+		ex = vstat.scrnwidth - 1;
+	if (ey >= vstat.scrnheight)
+		ey = vstat.scrnheight - 1;
+	assert_rwlock_unlock(&vstatlock);
+	x = map_rip_x(x) - sx;
+	y = map_rip_y(y) - sy;
+	if (sx < 0 || sy < 0 || ex < sx || ey < sy || x < 0 || y < 0
+	    || x > ex - sx || y > ey - sy)
+		return;
+	struct ciolib_pixels *pixels = getpixels(sx, sy, ex, ey, false);
+	if (pixels == NULL)
+		return;
+	size_t w = pixels->width, h = pixels->height;
+	size_t seed = (size_t)y * w + x;
+	/* High cell-state bits are not part of the pixel colour. */
+	uint32_t target = pixels->pixels[seed] & 0x80ffffff;
+	colour &= 0x80ffffff;
+	if (target == colour || w > SIZE_MAX / h / sizeof(size_t)) {
+		freepixels(pixels);
+		return;
+	}
+	size_t *queue = malloc(w * h * sizeof(*queue));
+	if (queue == NULL) {
+		freepixels(pixels);
+		return;
+	}
+	size_t head = 0, tail = 0;
+	queue[tail++] = seed;
+	pixels->pixels[seed] = colour;
+	if (pixels->pixelsb)
+		pixels->pixelsb[seed] = colour;
+	while (head < tail) {
+		size_t p = queue[head++];
+		size_t adjacent[4] = {p % w ? p - 1 : p,
+		    p % w < w - 1 ? p + 1 : p, p >= w ? p - w : p,
+		    p / w < h - 1 ? p + w : p};
+		for (unsigned i = 0; i < 4; i++) {
+			size_t q = adjacent[i];
+			if ((pixels->pixels[q] & 0x80ffffff) != target)
+				continue;
+			pixels->pixels[q] = colour;
+			if (pixels->pixelsb)
+				pixels->pixelsb[q] = colour;
+			queue[tail++] = q;
+		}
+	}
+	setpixels(sx, sy, ex, ey, 0, 0, 0, 0, pixels, NULL);
+	free(queue);
+	freepixels(pixels);
+}
+
+static void
+do_skypix(const char *buf, char *sarg)
 {
 	size_t           argc = 0;
-	char            *p = &buf[1];
-	long            *argv;
+	char            *p;
+	long             argv[17] = {0};
 	int              i;
 	int              x, y, ang;
 	uint32_t         fg;
@@ -17556,7 +17646,6 @@ do_skypix(char *buf, size_t len)
 	int              olw;
 	struct text_info ti;
 	int              vmode;
-	char            *sarg = NULL;
 	FILE            *font;
 #ifndef SYNCVIEW
 	char             cache_path[MAX_PATH + 1];
@@ -17565,29 +17654,19 @@ do_skypix(char *buf, size_t len)
 	if (skypix == false) {
 		skypix = true;
 		cterm->skypix = true;
-		do_skypix("\x1b[12!", 5);
+		do_skypix("\x1b[12!", NULL);
 	}
-	while (p) {
-		p++;
-		p = strchr(p, ';');
-		argc++;
-	}
-	argv = malloc(sizeof(*argv) * argc);
-	if (argv == NULL)
-		return;
-	for (i = 0, p = &buf[2]; i < argc; i++) {
-		argv[i] = strtol(p, &p, 10);
-		if (*p == ';')
-			p++;
-		else
+	p = (char *)&buf[2];
+	do {
+		char *end;
+		if (argc == sizeof(argv) / sizeof(*argv))
+			return;
+		argv[argc++] = strtol(p, &end, 10);
+		p = end;
+		if (*p != ';')
 			break;
-	}
-	if (len > p - buf + 1) {
-		sarg = p + 1;
-		p = strchr(sarg, '!');
-		if (p)
-			*p = 0;
-	}
+		p++;
+	} while (*p);
 // printf("do_skypix(\"%s\")\n", &buf[2]);
 	switch (argv[0]) {
 		case 1: // Set Pixel
@@ -17604,8 +17683,9 @@ do_skypix(char *buf, size_t len)
 			rip.x = argv[1];
 			rip.y = argv[2];
 			break;
-		case 3: // Flood fill...
-			printf("TODO: SkyPix Flood Fill mode %ld\n", argv[0]);
+		case 3: // JR-Comm ignores the transmitted mode and uses seed fill.
+			if (argc >= 4)
+				skypix_area_fill(argv[2], argv[3], cterm->fg_color);
 			break;
 		case 4: // Rectangle Fill...
 			if (argc < 5)
@@ -17675,24 +17755,20 @@ do_skypix(char *buf, size_t len)
                                 // Set cterm position from amiga_x/y
 				gettextinfo(&ti);
 				vmode = find_vmode(ti.currmode);
-				if (vmode == -1)
-					break;
-				if (amiga_font != NULL) {
+				if (vmode != -1 && amiga_font != NULL) {
 					cterm_gotoxy(cterm, (amiga_x / vparams[vmode].charwidth) + 1,
 					    ((amiga_y
 					    + ((amiga_font->height - amiga_font->baseline - 1)
 					        << doubled)) / vparams[vmode].charheight) + 1);
-					free(amiga_font);
-					amiga_font = NULL;
 				}
-
-                                // cterm->font_render = NULL;
+				FREE_AND_NULL(amiga_font);
+				cterm->font_render = NULL;
 				break;
 			}
 			free(amiga_font);
 			amiga_font = NULL;
 
-                        // cterm->font_render = NULL;
+			cterm->font_render = NULL;
 			if (strstr(sarg, ".."))
 				break;
 			if (strchr(sarg, '/'))
@@ -17700,9 +17776,12 @@ do_skypix(char *buf, size_t len)
 			if (strchr(sarg, '\\'))
 				break;
 			strlwr(sarg);
-			off_t flen = flength(sarg);
+			char font_path[MAX_PATH + 1];
+			if (!skypix_font_path(font_path, sizeof(font_path), sarg))
+				break;
+			off_t flen = flength(font_path);
 			size_t nchars;
-			if (flen < 0) {
+			if (flen < (off_t)sizeof(struct FontContentsHeader) || flen > 1024 * 1024) {
 				printf("TODO: Unable to allocate %" PRIdOFF " bytes for font %s.\n", flen, sarg);
 				break;
 			}
@@ -17711,7 +17790,7 @@ do_skypix(char *buf, size_t len)
 				printf("TODO: Unable to allocate %" PRIdOFF " bytes for font %s.\n", flen, sarg);
 				break;
 			}
-			font = fopen(sarg, "rb");
+			font = fopen(font_path, "rb");
 			if (font == NULL) {
 				printf("TODO: Unable to open font %s\n", sarg);
 				free(fnt);
@@ -17725,6 +17804,12 @@ do_skypix(char *buf, size_t len)
 			fclose(font);
 			doubled = false;
 			fnt->header.count = htons(fnt->header.count);
+			if ((htons(fnt->header.type) != FONTTYPE_STANDARD
+			        && htons(fnt->header.type) != FONTTYPE_TAGGED)
+			    || fnt->header.count > ((size_t)flen - sizeof(fnt->header)) / sizeof(fnt->entry[0])) {
+				free(fnt);
+				break;
+			}
 
                         // First look for an exact match...
 			for (i = 0; i < fnt->header.count; i++) {
@@ -17745,14 +17830,22 @@ do_skypix(char *buf, size_t len)
 				free(fnt);
 				break;
 			}
+			if (memchr(fnt->entry[i].std.name, 0, 254) == NULL) {
+				free(fnt);
+				break;
+			}
 			strlwr(fnt->entry[i].std.name);
-			flen = flength(fnt->entry[i].std.name);
-			if (flen < 0) {
+			if (!skypix_font_path(font_path, sizeof(font_path), fnt->entry[i].std.name)) {
+				free(fnt);
+				break;
+			}
+			flen = flength(font_path);
+			if (flen < (off_t)sizeof(struct FontHeader) || flen > 1024 * 1024) {
 				printf("TODO: Unable to read font %s size\n", fnt->entry[i].std.name);
 				free(fnt);
 				break;
 			}
-			font = fopen(fnt->entry[i].std.name, "rb");
+			font = fopen(font_path, "rb");
 			if (font == NULL) {
 				printf("TODO: Unable to open font %s\n", fnt->entry[i].std.name);
 				free(fnt);
@@ -17782,19 +17875,30 @@ do_skypix(char *buf, size_t len)
 			amiga_font->fontSpaceOffset = htonl(amiga_font->fontSpaceOffset);
 			amiga_font->kernOffset = htonl(amiga_font->kernOffset);
 			nchars = amiga_font->last - amiga_font->first + 1;
-			if (amiga_font->first > amiga_font->last
-			    || (size_t)flen < sizeof(struct FontHeader)
-			    || 0x20 + amiga_font->charlocOffset + nchars * 4 > (size_t)flen
+			if (amiga_font->height == 0 || amiga_font->height > 512
+			    || amiga_font->baseline >= amiga_font->height
+			    || amiga_font->first > amiga_font->last
+			    || (uint64_t)0x20 + amiga_font->charlocOffset + nchars * 4 > (size_t)flen
 			    || (amiga_font->fontSpaceOffset != 0
-			        && 0x20 + amiga_font->fontSpaceOffset + nchars * 2 > (size_t)flen)
+			        && (uint64_t)0x20 + amiga_font->fontSpaceOffset + nchars * 2 > (size_t)flen)
 			    || (amiga_font->kernOffset != 0
-			        && 0x20 + amiga_font->kernOffset + nchars * 2 > (size_t)flen)
-			    || 0x20 + amiga_font->dataOffset + (size_t)amiga_font->height * amiga_font->modulo > (size_t)flen) {
+			        && (uint64_t)0x20 + amiga_font->kernOffset + nchars * 2 > (size_t)flen)
+			    || (uint64_t)0x20 + amiga_font->dataOffset + (size_t)amiga_font->height * amiga_font->modulo > (size_t)flen) {
 				free(amiga_font);
 				amiga_font = NULL;
 				break;
 			}
-			cterm->font_render = amiga_cputs;
+			for (size_t ch = 0; ch < nchars; ch++) {
+				uint8_t *loc = (uint8_t *)amiga_font + 0x20 + amiga_font->charlocOffset + ch * 4;
+				unsigned bit = ((unsigned)loc[0] << 8) | loc[1];
+				unsigned width = ((unsigned)loc[2] << 8) | loc[3];
+				if (bit + width > (unsigned)amiga_font->modulo * 8) {
+					FREE_AND_NULL(amiga_font);
+					break;
+				}
+			}
+			if (amiga_font != NULL)
+				cterm->font_render = amiga_cputs;
 			break;
 		case 11: // Set palette...
 			if (argc < 17)
@@ -17853,26 +17957,35 @@ do_skypix(char *buf, size_t len)
 			setpalette(fg, 0xcccc, 0, 0x8888);
 			break;
 		case 13: // Filled ellipse
+			if (argc < 5)
+				break;
 			memcpy(fp, rip.fill_pattern, sizeof(rip.fill_pattern));
 			memset(rip.fill_pattern, 0xff, sizeof(rip.fill_pattern));
-			oc = cterm->attr & 0x0f;
+			oc = rip.fill_color;
 			olw = rip.line_width;
-			rip.fill_color = (cterm->attr >> 4) & 0x0f;
+			rip.fill_color = cterm->attr & 0x0f;
 			rip.line_width = 1;
-			full_ellipse(argv[1], argv[2], 0, 360, argv[3], argv[4], true, map_rip_color(rip.color));
+			full_ellipse(argv[1], argv[2], 0, 360, argv[3], argv[4], true, cterm->fg_color);
+			memcpy(rip.fill_pattern, fp, sizeof(fp));
 			rip.fill_color = oc;
 			rip.line_width = olw;
 			break;
 		case 14: // Delay
+			if (argc < 2)
+				break;
 			SLEEP(argv[1] * 1000 / 60);
 			break;
 		case 15: // Set FG
+			if (argc < 2)
+				break;
 			cterm->attr = (cterm->attr & 0xf0) | argv[1];
 			textattr(cterm->attr);
 			attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
 			setcolour(cterm->fg_color, cterm->bg_color);
 			break;
 		case 16: // XModem transfer(!)
+			if (argc < 2)
+				break;
 #ifndef SYNCVIEW
 			if ((sarg != NULL) && ((argv[1] == 20) || (argv[1] == 1))) {
 				p = strchr(sarg, ':');
@@ -17880,6 +17993,9 @@ do_skypix(char *buf, size_t len)
 					p = sarg;
 				else
 					p++;
+				if (*p == 0 || strchr(p, '/') || strchr(p, '\\')
+				    || strchr(p, ':') || strstr(p, ".."))
+					break;
 				if (!get_cache_fn_subdir(rip.bbs, cache_path, sizeof(cache_path), "SkyPix"))
 					break;
 				char *dldir = strdup(rip.bbs->dldir);
@@ -17901,12 +18017,16 @@ do_skypix(char *buf, size_t len)
 			printf("TODO: SkyPix Set Display Mode (%ld)\n", argv[0]);
 			break;
 		case 18: // Set background
+			if (argc < 2)
+				break;
 			cterm->attr = (cterm->attr & 0x0f) | (argv[1] << 4);
 			textattr(cterm->attr);
 			attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
 			setcolour(cterm->fg_color, cterm->bg_color);
 			break;
 		case 19: // Text cursor position (in pixels)
+			if (argc < 3)
+				break;
 			gettextinfo(&ti);
 			vmode = find_vmode(ti.currmode);
 			if (vmode == -1)
@@ -17929,16 +18049,15 @@ do_skypix(char *buf, size_t len)
 			printf("TODO: SkyPix Define Gadget\n");
 			break;
 		case 99: // Not documented... reset?
-                        // cterm->font_render = NULL;
+			cterm->font_render = NULL;
 			free(amiga_font);
 			amiga_font = NULL;
-			do_skypix("\x1b[12!", 5);
+			do_skypix("\x1b[12!", NULL);
 			break;
 		default:
 			printf("TODO: Undocumented command %ld\n", argv[0]);
 			break;
 	}
-	free(argv);
 }
 
 /*
@@ -18096,9 +18215,13 @@ static struct rip_cb {
 	bool               ebc;      // completion flag - drives LF suppression
 	enum rip_cb_state  st;
 
-	// ESC accumulator for \x1b[!/0/1/2! and SkyPix strings.
-	uint8_t            esc[RIP_ESC_MAX];
+	// Numeric ESC prefix plus a separate, bounded SkyPix string.
+	uint8_t            esc[RIP_ESC_MAX + 1];
 	size_t             esc_len;
+	char               sky_string[256];
+	size_t             sky_len;
+	bool               sky_pending;
+	bool               sky_discard;
 
 	// ANSI/BANSI music in flight: set when we just forwarded a
 	// CSI M or CSI N with no params (the introducers that arm
@@ -18396,6 +18519,28 @@ rip_play_scene(const char *filename)
 static int
 cb_esc_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 {
+	if (cb.sky_pending) {
+		if (c == '!') {
+			cb.sky_string[cb.sky_len] = 0;
+			if (!cb.sky_discard)
+				do_skypix((char *)cb.esc, cb.sky_string);
+			cb.sky_pending = cb.sky_discard = false;
+			cb.sky_len = cb.esc_len = 0;
+			cb.st = cb.len ? RS_CMD : RS_IDLE;
+		}
+		else if (c == 0x1b) {
+			cb.sky_pending = cb.sky_discard = false;
+			cb.sky_len = 0;
+			cb.esc[0] = c;
+			cb.esc_len = 1;
+		}
+		else if (cb.sky_len + 1 < sizeof(cb.sky_string))
+			cb.sky_string[cb.sky_len++] = c;
+		else
+			cb.sky_discard = true;
+		return 1;
+	}
+
 	// Entry path: esc_len == 0 and c == ESC starts accumulating.
 	// cb_feed only routes us here when c is ESC or we were already
 	// accumulating, so the c != 0x1b case below is defensive only.
@@ -18439,18 +18584,26 @@ cb_esc_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 	if (c == '!') {
 		cb.esc[pos] = '!';
 		cb.esc_len++;
+		cb.esc[cb.esc_len] = 0;
+		char *end;
+		long command = strtol((char *)&cb.esc[2], &end, 10);
+		if (command == 16 || (command == 10 && *end == ';' && strtol(end + 1, NULL, 10) != 0)) {
+			cb.sky_pending = true;
+			cb.sky_len = 0;
+			return 1;
+		}
 		size_t plen = cb.esc_len;
 
 		if (plen == 3) {
 			// "\x1b[!": version query
-			if (rip.version)
+			if (rip.version && rip.version != RIP_VERSION_SKYPIX)
 				conn_send(ripver[rip.version], 14, 1000);
 		}
 		else if (plen == 4 && cb.esc[2] == '0') {
-			if (rip.version)
+			if (rip.version && rip.version != RIP_VERSION_SKYPIX)
 				conn_send(ripver[rip.version], 14, 1000);
 		}
-		else if (plen == 4 && cb.esc[2] == '1') {
+		else if (plen == 4 && cb.esc[2] == '1' && rip.version != RIP_VERSION_SKYPIX) {
 			// Disable RIP: one-way door
 			rip.enabled = false;
 		}
@@ -18459,7 +18612,7 @@ cb_esc_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 		}
 		else {
 			// Try SkyPix for the remaining \x1b[<N>;...! forms.
-			do_skypix((char *)cb.esc, cb.esc_len);
+			do_skypix((char *)cb.esc, NULL);
 		}
 
 		cb.esc_len = 0;
@@ -18523,6 +18676,10 @@ cb_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 	// New ESC when the main buffer is empty: enter sub-machine.
 	if (c == 0x1b && cb.len == 0)
 		return cb_esc_feed(c, origbuf, out);
+
+	// A dedicated SkyPix connection treats RIP introducers as ordinary text.
+	if (rip.version == RIP_VERSION_SKYPIX)
+		return 0;
 
 	// Main RIP parser.
 	if (cb.len == 0) {
@@ -18631,14 +18788,14 @@ cb_defer_push(const uint8_t *data, size_t n)
 	cb.defer_len += n;
 }
 
-// Predicate: would feeding this byte to cb_feed trigger a RIP command
+// Predicate: would feeding this byte to cb_feed trigger a graphics command
 // dispatch?  (Used to detect the "text-emitted, no more dispatches
 // allowed" edge so we can defer cleanly.)
 static bool
 cb_would_dispatch(uint8_t c)
 {
 	if (cb.esc_len > 0)
-		return false;
+		return c == '!';
 	if (cb.len < 1)
 		return false;
 	if (c != '|' && c != '\r')
@@ -18701,6 +18858,8 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 				return out;
 			}
 			int r = cb_feed(c, origbuf, &out);
+			if (out > 0)
+				can_dispatch = false;
 			if (r == 0) {
 				bool suppress = false;
 				if (cb.ebc) {
@@ -18787,11 +18946,15 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 		// passthrough output through cterm_write, leaving cterm's
 		// cursor in sync with the byte stream so the cursor fallback
 		// in cb_accept_introducer reads an accurate value.
-		if (cb.len == 0 && c == '!') {
+		// A SkyPix '!' terminates a command; it is not a RIP introducer.
+		if (rip.version != RIP_VERSION_SKYPIX && cb.len == 0
+		    && cb.esc_len == 0 && c == '!') {
 			cb_defer_push(&origbuf[i], blen - i);
 			return out;
 		}
 		int r = cb_feed(c, origbuf, &out);
+		if (out > 0)
+			can_dispatch = false;
 		if (r == 0) {
 			// Byte not consumed: apply the EBC suppression
 			// rule.  A just-dispatched command swallows a
@@ -18916,6 +19079,13 @@ init_rip_ver(int ripver)
 		// doesn't inherit cb.bytes/cb.defer/cb.window from a
 		// prior session.
 		cb_reset_state();
+		FREE_AND_NULL(amiga_font);
+		skypix = doubled = false;
+		amiga_x = amiga_y = 0;
+		if (cterm != NULL) {
+			cterm->skypix = false;
+			cterm->font_render = NULL;
+		}
 		kill_mouse_fields();
 		kill_saved_mouse_fields();
 		if (rip.clipboard) {
