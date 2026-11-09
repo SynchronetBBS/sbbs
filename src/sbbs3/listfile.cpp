@@ -404,11 +404,11 @@ bool sbbs_t::listfile(file_t* f, const int dirnum, const char *search, const cha
 	else if ((cfg.dir[dirnum]->misc & (DIR_FREE | DIR_FCHK)) == (DIR_FREE | DIR_FCHK))
 		cdt = getfilesize(&cfg, f);
 	char     bytes[32];
-	unsigned units = 1;
+	uint64_t units = 1;
 	do {
 		byte_estimate_to_str(cdt, bytes, sizeof(bytes), units, /* precision: */ 1);
 		units *= 1024;
-	} while (strlen(bytes) > 6 && units < 1024 * 1024 * 1024);
+	} while (strlen(bytes) > 6 && units <= 1024ULL * 1024 * 1024 * 1024);
 	attr(cfg.color[size_attr]);
 	if (useron.misc & BATCHFLAG) {
 		if (!cdt && !(cfg.dir[dirnum]->misc & DIR_FREE)) {
@@ -1110,12 +1110,12 @@ void sbbs_t::listfiletofile(file_t* f, FILE* fp)
 	char     fname[13]; /* This is one of the only 8.3 filename formats left! (used for display purposes only) */
 	char     bytes[32];
 	char     desc[LEN_FDESC + 1];
-	unsigned units = 1;
+	uint64_t units = 1;
 	off_t    size = f->cost;
 	do {
 		byte_estimate_to_str(size, bytes, sizeof(bytes), units, /* precision: */ 1);
 		units *= 1024;
-	} while (strlen(bytes) > 6 && units < 1024 * 1024 * 1024);
+	} while (strlen(bytes) > 6 && units <= 1024ULL * 1024 * 1024 * 1024);
 	SAFECOPY(desc, (f->desc == NULL || *f->desc == '\0') ? f->name : f->desc);
 	fprintf(fp, "%-*s %7s %s\r\n", (int)sizeof(fname) - 1, format_filename(f->name, fname, sizeof(fname) - 1, /* pad: */ TRUE)
 	        , bytes, ascii_str((uchar*)desc));
