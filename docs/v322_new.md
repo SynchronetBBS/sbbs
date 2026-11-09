@@ -1171,3 +1171,5 @@ BBS over MQTT 5.0 (TLS-PSK, TLS+CA, or mTLS).
 - A caller reaching an off-hook node (e.g. during a local logon) now gets the
   `BusyNotice` and is disconnected instead of being held on a silent
   connection that never rings
+- A new incoming call rings immediately; it used to wait out the remainder of
+  the 6-second ring interval left over from the previous call

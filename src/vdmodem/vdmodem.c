@@ -1734,7 +1734,7 @@ int main(int argc, char** argv)
 			if (modem.ringing) {
 				if (modem.ringcount < 1)
 					dprintf("Incoming connection");
-				if (now - lastring > RING_DELAY) {
+				if (modem.ringcount < 1 || now - lastring > RING_DELAY) {
 					dprintf("RING");
 					if (modem.speaker && cfg.ring_sound[0])
 						PlaySound(cfg.ring_sound, NULL, SND_ASYNC | SND_FILENAME);
