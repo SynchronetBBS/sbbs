@@ -1168,3 +1168,6 @@ BBS over MQTT 5.0 (TLS-PSK, TLS+CA, or mTLS).
   the exit of the process that bound it (issue #1175)
 - `ATZ` no longer adopts another node's number from a `Node=` key in a shared
   `svdm.ini` (its responses went to that node's mailslot)
+- A caller reaching an off-hook node (e.g. during a local logon) now gets the
+  `BusyNotice` and is disconnected instead of being held on a silent
+  connection that never rings

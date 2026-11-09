@@ -1147,8 +1147,8 @@ bool hunt_pipe_io(HANDLE pipe, bool write, struct hunt_msg* msg, DWORD timeout)
 	return result;
 }
 
-// Caller holds hunt_mutex
-bool hunt_idle(struct modem* modem)
+// Can this node take an incoming call right now? Caller holds hunt_mutex
+bool modem_idle(struct modem* modem)
 {
 	return sock == INVALID_SOCKET && !hunt_reserved && !modem->offhook && !modem->online && !modem->ringing;
 }
@@ -1281,7 +1281,7 @@ void hunt_pipe_thread(void* arg)
 		struct hunt_msg msg = {0};
 		if (hunt_pipe_io(pipe, /* write: */ false, &msg, HUNT_TIMEOUT) && msg.type == HUNT_OFFER) {
 			pthread_mutex_lock(&hunt_mutex);
-			bool claim = hunt_idle(modem);
+			bool claim = modem_idle(modem);
 			if (claim)
 				hunt_reserved = true;
 			pthread_mutex_unlock(&hunt_mutex);
@@ -1324,14 +1324,12 @@ void listen_thread(void* arg)
 				continue;
 			}
 			pthread_mutex_lock(&hunt_mutex);
-			bool taken = cfg.hunt ? hunt_idle(modem) : sock == INVALID_SOCKET;
+			bool taken = modem_idle(modem);
 			if (taken) {
 				sock = newsock;
 				addr = newaddr;
-				if (!modem->offhook && !modem->online) {
-					modem->ringing = true;
-					modem->ringcount = 0;
-				}
+				modem->ringing = true;
+				modem->ringcount = 0;
 			}
 			pthread_mutex_unlock(&hunt_mutex);
 			if (taken)
