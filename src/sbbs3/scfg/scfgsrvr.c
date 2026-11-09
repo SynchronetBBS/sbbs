@@ -86,7 +86,21 @@ static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
 			"across reset or recycles of SBBS.\n"
 			"\n"
 			"Filters of IP Addresses (stored in text/ip.can file) `are` persistent\n"
-			"across resets of SBBS but may be configured to have a limited lifetime."
+			"across resets of SBBS but may be configured to have a limited lifetime.\n"
+			"\n"
+			"`Delay`: milliseconds to pause after each failed login attempt.\n"
+			"\n"
+			"`Throttle`: milliseconds, multiplied by the number of failed attempts\n"
+			"from the client's IP address, to delay that client's connections.\n"
+			"\n"
+			"`Hack Log Threshold`: failed attempts from an IP address before they\n"
+			"are logged to `hack.log`.\n"
+			"\n"
+			"`Temporary Ban Threshold`: failed attempts from an IP address before\n"
+			"it is temporarily banned, for the `Temporary Ban Duration`.\n"
+			"\n"
+			"`Automatic Filter Threshold`: failed attempts from an IP address before\n"
+			"it is added to the filter file, for the `Automatic Filter Duration`.\n"
 		;
 		switch (uifc.list(WIN_ACT | WIN_BOT | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "Failed Login Attempts", opt)) {
@@ -612,6 +626,30 @@ static void global_cfg(void)
 			"These settings can be over-ridden on a per-server basis via other SCFG\n"
 			"Server Configuration menus or by editing the corresponding keys in each\n"
 			"`[server]` section of the `ctrl/sbbs.ini` file.\n"
+			"\n"
+			"`Log Level`: most verbose severity of messages to log.\n"
+			"\n"
+			"`TLS Error Level`: most severe level at which TLS errors are logged.\n"
+			"\n"
+			"`Network Interfaces`: IPv4/IPv6 addresses to accept connections on,\n"
+			"comma-separated.\n"
+			"\n"
+			"`Outbound Interface`: IPv4 address to make outgoing connections from.\n"
+			"\n"
+			"`Bind Retry Count`, `Bind Retry Delay`: how many more times to try\n"
+			"binding a network port that is in use, and how long to wait between\n"
+			"attempts.\n"
+			"\n"
+			"`Sem File Check Interval`: time between checks for semaphore files.\n"
+			"\n"
+			"`Login Requirements`: access requirements a user must meet to log in.\n"
+			"\n"
+			"`JavaScript Settings`: JavaScript engine limits.\n"
+			"\n"
+			"`Failed Login Attempts`: delays and automatic filtering of clients\n"
+			"after failed logins.\n"
+			"\n"
+			"Changes take effect after the servers are recycled.\n"
 		;
 		switch (uifc.list(WIN_ACT | WIN_RHT | WIN_SAV | WIN_ESC, 0, 0, 0, &cur, &bar
 		                  , "Global Server Settings", opt)) {
@@ -718,6 +756,21 @@ static void telnet_srvr_cfg(bbs_startup_t* startup)
 		         , startup->options & BBS_OPT_NO_TELNET ? "N/A" : startup->options & BBS_OPT_NO_TELNET_GA ? "No" : "Yes");
 		opt[i][0] = '\0';
 
+		uifc.helpbuf =
+			"`Telnet Support:`\n"
+			"\n"
+			"`Enabled`: accept Telnet connections.\n"
+			"\n"
+			"`Interfaces`: IPv4/IPv6 addresses to accept connections on,\n"
+			"comma-separated.\n"
+			"\n"
+			"`Port`: TCP port to accept connections on.\n"
+			"\n"
+			"`Command Debug`: log Telnet commands and responses, at the `Debug` log\n"
+			"level.\n"
+			"\n"
+			"`Send Go-Aheads`: periodically send the Telnet `Go Ahead` command.\n"
+		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "Telnet Support", opt)) {
 			case 0:
@@ -781,6 +834,28 @@ static void ssh_srvr_cfg(bbs_startup_t* startup)
 
 		opt[i][0] = '\0';
 
+		uifc.helpbuf =
+			"`SSH Support:`\n"
+			"\n"
+			"`Enabled`: accept SSH connections.\n"
+			"\n"
+			"`Interfaces`: IPv4/IPv6 addresses to accept connections on,\n"
+			"comma-separated.\n"
+			"\n"
+			"`Port`: TCP port to accept connections on.\n"
+			"\n"
+			"`Connect Timeout`: time allowed to establish an SSH session.\n"
+			"\n"
+			"`Error Level`: most severe level at which SSH errors are logged.\n"
+			"\n"
+			"`User Authentication Type`: `Any` accepts any SSH credentials and does\n"
+			"not allow SFTP.  `Valid Key or Username` requires valid credentials.\n"
+			"\n"
+			"`File Transfer (SFTP) Support`: allow SFTP over SSH sessions.\n"
+			"\n"
+			"`Max SFTP Inactivity`: disconnect an SFTP session whose socket has been\n"
+			"idle this long.  `0` disables this.\n"
+		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "SSH Support", opt)) {
 			case 0:
@@ -854,6 +929,16 @@ static void rlogin_srvr_cfg(bbs_startup_t* startup)
 		snprintf(opt[i++], MAX_OPLN, "%-20s%u", "Port", startup->rlogin_port);
 		opt[i][0] = '\0';
 
+		uifc.helpbuf =
+			"`RLogin Support:`\n"
+			"\n"
+			"`Enabled`: accept RLogin connections.\n"
+			"\n"
+			"`Interfaces`: IPv4/IPv6 addresses to accept connections on,\n"
+			"comma-separated.\n"
+			"\n"
+			"`Port`: TCP port to accept connections on.\n"
+		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "RLogin Support", opt)) {
 			case 0:
@@ -1234,6 +1319,16 @@ static void http_srvr_cfg(web_startup_t* startup)
 		snprintf(opt[i++], MAX_OPLN, "%-20s%u", "Port", startup->port);
 		opt[i][0] = '\0';
 
+		uifc.helpbuf =
+			"`HTTP Support:`\n"
+			"\n"
+			"`Enabled`: accept unencrypted HTTP connections.\n"
+			"\n"
+			"`Interfaces`: IPv4/IPv6 addresses to accept connections on,\n"
+			"comma-separated.\n"
+			"\n"
+			"`Port`: TCP port to accept connections on.\n"
+		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "HTTP Support", opt)) {
 			case 0:
@@ -1278,6 +1373,19 @@ static void https_srvr_cfg(web_startup_t* startup)
 		         , startup->options & WEB_OPT_ALLOW_TLS ? (startup->options & WEB_OPT_HSTS_SAFE ? "Yes" : "No") : "N/A");
 		opt[i][0] = '\0';
 
+		uifc.helpbuf =
+			"`HTTPS Support:`\n"
+			"\n"
+			"`Enabled`: accept HTTP connections encrypted with TLS.\n"
+			"\n"
+			"`Interfaces`: IPv4/IPv6 addresses to accept connections on,\n"
+			"comma-separated.\n"
+			"\n"
+			"`Port`: TCP port to accept connections on.\n"
+			"\n"
+			"`Strict Transport Security`: tell browsers to use only HTTPS with this\n"
+			"site.  Set to `Yes` only if every URL can be served over HTTPS.\n"
+		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "HTTPS Support", opt)) {
 			case 0:
@@ -1326,6 +1434,22 @@ static void websrvr_cgi_cfg(web_startup_t* startup)
 		snprintf(opt[i++], MAX_OPLN, "%-25s%s", "Max Inactivity", vduration(startup->max_cgi_inactivity, strDefault));
 		opt[i][0] = '\0';
 
+		uifc.helpbuf =
+			"`Web Server CGI Support:`\n"
+			"\n"
+			"`Enabled`: allow the Web Server to run external CGI programs.\n"
+			"\n"
+			"`Directory`: directory containing CGI programs.\n"
+			"\n"
+			"`File Extensions`: filename extensions of CGI programs,\n"
+			"comma-separated.\n"
+			"\n"
+			"`Default Content-Type`: MIME type assumed for CGI program output that\n"
+			"does not specify one.\n"
+			"\n"
+			"`Max Inactivity`: how long a CGI program may produce no output before\n"
+			"it is abandoned.\n"
+		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "Web Server CGI Support", opt)) {
 			case 0:
@@ -1371,6 +1495,17 @@ static void websrvr_filebase_cfg(web_startup_t* startup)
 		         , startup->options & WEB_OPT_VIRTUAL_HOSTS ? startup->file_vpath_for_vhosts ? "Yes" : "No" : "N/A");
 		opt[i][0] = '\0';
 
+		uifc.helpbuf =
+			"`Web Server Filebase Support:`\n"
+			"\n"
+			"`Enabled`: allow browsing and downloading of file areas over the web.\n"
+			"\n"
+			"`Index Script`: script that generates file area listings.\n"
+			"\n"
+			"`VPath Prefix`: URL path under which file areas appear.\n"
+			"\n"
+			"`VPath for VHosts`: also make file areas available on virtual hosts.\n"
+		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "Web Server Filebase Support", opt)) {
 			case 0:
@@ -1494,6 +1629,64 @@ static void websrvr_cfg(void)
 			"\n"
 			"Advanced features such as Virtual Hosts, Filebase access, and Strict\n"
 			"Transport Security are also supported.\n"
+			"\n"
+			"`Enabled`: run the Web Server when Synchronet starts.\n"
+			"\n"
+			"`Log Level`: most verbose severity of messages to log.\n"
+			"\n"
+			"`HTTP Support`, `HTTPS Support`: enable each protocol and set its\n"
+			"network interfaces and TCP port.\n"
+			"\n"
+			"`SSJS File Extension`: filename extension of Server-side JavaScript\n"
+			"files.\n"
+			"\n"
+			"`Index Filenames`: files to look for when a URL names a directory.\n"
+			"\n"
+			"`Content Root Directory`: top directory of the served content.\n"
+			"\n"
+			"`Error Sub-directory`: directory of the HTTP error pages.\n"
+			"\n"
+			"`Virtual Host Support`: serve content from a sub-directory of the\n"
+			"root named for the hostname in each request.\n"
+			"\n"
+			"`Access Logging`: log each request to an HTTP access log file.\n"
+			"\n"
+			"`Access Log Format`: format of access log lines.\n"
+			"\n"
+			"`Max Clients`: limit on simultaneous clients.\n"
+			"\n"
+			"`Max Inactivity`: disconnect a client idle this long.\n"
+			"\n"
+			"`Max Concurrent Connections`: limit simultaneous connections from a\n"
+			"single client IP address.\n"
+			"\n"
+			"`Rate Limiting`: limits on the rate of connections and requests.\n"
+			"\n"
+			"`Authentication Methods`: HTTP authentication methods to offer,\n"
+			"comma-separated.  The default is `Basic,Digest`.\n"
+			"\n"
+			"`Output Buffer Drain Timeout`: milliseconds to wait for more output to\n"
+			"accumulate before sending what is already buffered.\n"
+			"\n"
+			"`Lookup Client Hostname`: look up the hostname of each incoming\n"
+			"connection.  `No` logs only IP addresses.\n"
+			"\n"
+			"`CGI Support`: running external CGI programs.\n"
+			"\n"
+			"`Filebase Support`: access to file areas over the web.\n"
+			"\n"
+			"`Login Requirements`: access requirements a user must meet to log in\n"
+			"to this server.\n"
+			"\n"
+			"`Login Info Save`: access requirements a user must meet to have login\n"
+			"details saved to the user base.\n"
+			"\n"
+			"`JavaScript Settings`: JavaScript engine limits for this server.\n"
+			"\n"
+			"`Failed Login Attempts`: delays and automatic filtering of clients\n"
+			"after failed logins.\n"
+			"\n"
+			"Changes take effect after the server is recycled.\n"
 			"\n"
 			"For full documentation, see `http://wiki.synchro.net/server:web`\n"
 		;
@@ -1734,6 +1927,61 @@ static void ftpsrvr_cfg(void)
 			"Active and passive FTP transfers are supported along with QWK message\n"
 			"packet transfers, dynamically-generated file indexes, and other advanced\n"
 			"features.\n"
+			"\n"
+			"`Enabled`: run the FTP Server when Synchronet starts.\n"
+			"\n"
+			"`Log Level`: most verbose severity of messages to log.\n"
+			"\n"
+			"`Network Interfaces`: IPv4/IPv6 addresses to accept connections on,\n"
+			"comma-separated.\n"
+			"\n"
+			"`Control Port`: TCP port for FTP commands.  The active data port is\n"
+			"one less than this port.\n"
+			"\n"
+			"`Passive Interface`: IPv4 address given to clients for passive\n"
+			"transfers, or automatic detection of the public address.\n"
+			"\n"
+			"`Passive Port Range`: TCP ports to use for passive transfers.\n"
+			"\n"
+			"`Auto-generate Index File`: offer a dynamically generated file index\n"
+			"under this filename.\n"
+			"\n"
+			"`QWK Message Packet Transfers`: allow users to download QWK packets\n"
+			"and upload REP packets.\n"
+			"\n"
+			"`QWK Message Packet Timeout`: time allowed to create a QWK packet.\n"
+			"\n"
+			"`Max Clients`: limit on simultaneous clients.\n"
+			"\n"
+			"`Max Inactivity`: disconnect a client idle this long.\n"
+			"\n"
+			"`Max Concurrent Connections`: limit simultaneous connections from a\n"
+			"single client IP address.\n"
+			"\n"
+			"`Min Uploaded File Size`, `Max Uploaded File Size`: limits on the size\n"
+			"of uploaded files.  A maximum of `0` means unlimited.\n"
+			"\n"
+			"`Limit Rate of Requests`: limits on the rate of client requests.\n"
+			"\n"
+			"`Sysop File System Access`: allow sysops to access the local file\n"
+			"system, outside of the file areas.\n"
+			"\n"
+			"`Allow Bounce Transfers`: allow non-guest users to direct data\n"
+			"connections to a host other than their own.\n"
+			"\n"
+			"`Lookup Client Hostname`: look up the hostname of each incoming\n"
+			"connection.  `No` logs only IP addresses.\n"
+			"\n"
+			"`Login Requirements`: access requirements a user must meet to log in\n"
+			"to this server.\n"
+			"\n"
+			"`Login Info Save`: access requirements a user must meet to have login\n"
+			"details saved to the user base.\n"
+			"\n"
+			"`Failed Login Attempts`: delays and automatic filtering of clients\n"
+			"after failed logins.\n"
+			"\n"
+			"Changes take effect after the server is recycled.\n"
 			"\n"
 			"For full documentation, see `http://wiki.synchro.net/server:ftp`\n"
 		;
@@ -2100,6 +2348,14 @@ static void submission_srvr_cfg(mail_startup_t* startup)
 		snprintf(opt[i++], MAX_OPLN, "%-10s%u", "Port", startup->submission_port);
 		opt[i][0] = '\0';
 
+		uifc.helpbuf =
+			"`Submission Support:`\n"
+			"\n"
+			"`Enabled`: accept mail from users' mail clients on the SMTP Submission\n"
+			"port.\n"
+			"\n"
+			"`Port`: TCP port to accept connections on.\n"
+		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "Submission Support", opt)) {
 			case 0:
@@ -2129,6 +2385,14 @@ static void submissions_srvr_cfg(mail_startup_t* startup)
 		snprintf(opt[i++], MAX_OPLN, "%-10s%u", "Port", startup->submissions_port);
 		opt[i][0] = '\0';
 
+		uifc.helpbuf =
+			"`Submission/TLS Support:`\n"
+			"\n"
+			"`Enabled`: accept mail from users' mail clients on a TLS-encrypted\n"
+			"SMTP Submission port.\n"
+			"\n"
+			"`Port`: TCP port to accept connections on.\n"
+		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "Submission/TLS Support", opt)) {
 			case 0:
@@ -2158,6 +2422,13 @@ static void pop3_srvr_cfg(mail_startup_t* startup)
 		snprintf(opt[i++], MAX_OPLN, "%-10s%u", "Port", startup->pop3_port);
 		opt[i][0] = '\0';
 
+		uifc.helpbuf =
+			"`POP3 Support:`\n"
+			"\n"
+			"`Enabled`: allow users' mail clients to retrieve mail using POP3.\n"
+			"\n"
+			"`Port`: TCP port to accept connections on.\n"
+		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "POP3 Support", opt)) {
 			case 0:
@@ -2187,6 +2458,14 @@ static void pop3s_srvr_cfg(mail_startup_t* startup)
 		snprintf(opt[i++], MAX_OPLN, "%-10s%u", "Port", startup->pop3s_port);
 		opt[i][0] = '\0';
 
+		uifc.helpbuf =
+			"`POP3/TLS Support:`\n"
+			"\n"
+			"`Enabled`: allow users' mail clients to retrieve mail using POP3 over\n"
+			"a TLS-encrypted port.\n"
+			"\n"
+			"`Port`: TCP port to accept connections on.\n"
+		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "POP3/TLS Support", opt)) {
 			case 0:
@@ -2316,6 +2595,89 @@ static void mailsrvr_cfg(void)
 			"well as sending mail to clients via the POP3 or POP3S protocols and\n"
 			"sending mail to other servers (the SendMail thread) via [E]SMTP and\n"
 			"[E]SMTPS protocols.\n"
+			"\n"
+			"`Enabled`: run the Mail Server when Synchronet starts.\n"
+			"\n"
+			"`Log Level`: most verbose severity of messages to log.\n"
+			"\n"
+			"`SMTP Interfaces`, `POP3 Interfaces`: IPv4/IPv6 addresses to accept\n"
+			"each protocol's connections on, comma-separated.\n"
+			"\n"
+			"`SMTP Support`: TCP port for receiving mail.\n"
+			"\n"
+			"`Submission Support`, `Submission/TLS Support`: ports for accepting\n"
+			"mail from users' mail clients.\n"
+			"\n"
+			"`POP3 Support`, `POP3/TLS Support`: ports for users' mail clients to\n"
+			"retrieve mail.\n"
+			"\n"
+			"`Mark Retrieved Mail as Read`: mark mail as read when it is retrieved\n"
+			"using POP3.\n"
+			"\n"
+			"`Max Clients`: limit on simultaneous clients.\n"
+			"\n"
+			"`Max Inactivity`: disconnect a client idle this long.\n"
+			"\n"
+			"`Max Concurrent Connections`: limit simultaneous unauthenticated\n"
+			"connections from a single client IP address.\n"
+			"\n"
+			"`Max Recipients Per Message`: limit on recipients of one message.\n"
+			"\n"
+			"`Max Messages Waiting`: refuse mail for a user with more than this\n"
+			"many messages waiting, unless the user is exempt.\n"
+			"\n"
+			"`Max Receive Message Size`: largest message to accept.\n"
+			"\n"
+			"`Limit Rate of Requests`: limits on the rate of client requests.\n"
+			"\n"
+			"`Post Recipient`: replaces the recipient name of messages posted to\n"
+			"message areas through this server.\n"
+			"\n"
+			"`Default Recipient`: user who receives mail addressed to an unknown\n"
+			"local user.\n"
+			"\n"
+			"`Receive By Sysop Aliases`: accept mail addressed to the built-in\n"
+			"sysop aliases.\n"
+			"\n"
+			"`Notify Local Recipients`: notify users of newly received mail.\n"
+			"\n"
+			"`Notify Offline Recipients`: also notify users who are not online.\n"
+			"\n"
+			"`Allow Users to Relay Mail`: allow authenticated users to send mail\n"
+			"to external addresses.\n"
+			"\n"
+			"`Lookup Client Hostname`: look up the hostname of each incoming\n"
+			"connection.  `No` logs only IP addresses.\n"
+			"\n"
+			"`Check Headers against DNSBL`: also check the addresses in a message's\n"
+			"`Received` header fields against DNS-based blacklists.\n"
+			"\n"
+			"`DNS-Blacklisted Servers`: how to treat mail from a listed server:\n"
+			"`Refuse Session`, `Silently Ignore` (accept and discard), `Refuse Mail`,\n"
+			"or `Tag Mail`.  Sessions from listed servers can also be throttled.\n"
+			"\n"
+			"`Hash DNS-Blacklisted Msgs`: store hashes of messages from blacklisted\n"
+			"servers, for recognizing the same SPAM later.\n"
+			"\n"
+			"`Kill SPAM When Read`: delete SPAM messages after they are read.\n"
+			"\n"
+			"`Spammer IP-Filter Duration`: how long to ban the IP address of a\n"
+			"client that takes SPAM bait.\n"
+			"\n"
+			"`SendMail Support`: delivery of outbound mail, direct or by relay.\n"
+			"\n"
+			"`Login Requirements`: access requirements a user must meet to log in\n"
+			"to this server.\n"
+			"\n"
+			"`Archive Requirements`: access requirements a user must meet to have\n"
+			"copies of their mail archived.\n"
+			"\n"
+			"`JavaScript Settings`: JavaScript engine limits for this server.\n"
+			"\n"
+			"`Failed Login Attempts`: delays and automatic filtering of clients\n"
+			"after failed logins.\n"
+			"\n"
+			"Changes take effect after the server is recycled.\n"
 			"\n"
 			"For full documentation, see `http://wiki.synchro.net/server:mail`\n"
 		;
