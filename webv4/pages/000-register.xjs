@@ -20,11 +20,11 @@
 	}
 
 	function required(mask) {
-		return ((system.new_user_questions&mask) ? (' ' + locale.strings.page_register.stat_suffix_field_required) : '');
+		return ((system.newuser_questions&mask) ? (' ' + locale.strings.page_register.stat_suffix_field_required) : '');
 	}
 
 	function notRequired(mask) {
-		return ((system.new_user_questions&mask) ? '' : (' ' + locale.strings.page_register.stat_suffix_field_required));
+		return ((system.newuser_questions&mask) ? '' : (' ' + locale.strings.page_register.stat_suffix_field_required));
 	}
 
 

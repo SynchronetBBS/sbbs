@@ -35,7 +35,7 @@ var prepUser = {
 };
 
 function required(mask) {
-	return (system.new_user_questions&mask);
+	return (system.newuser_questions&mask);
 }
 
 function clean_param(param) {
@@ -147,8 +147,7 @@ if (valid_param('gender', 1, 1) && ['X', 'M', 'F', 'O'].indexOf(request.get_para
 	reply.errors.push(locale.strings.api_register.error_invalid_gender);
 }
 
-if (request.has_param('birth') && clean_param('birth').match(/^\d\d\/\d\d\/\d\d$/) !== null) {
-	// Should really test for valid date (and date format per system config)
+if (request.has_param('birth') && clean_param('birth').match(/^\d\d\/\d\d\/\d\d$/) !== null && system.check_birthdate(clean_param('birth'))) {
 	prepUser.birthdate = clean_param('birth');
 } else if (required(UQ_BIRTH)) {
 	reply.errors.push(locale.strings.api_register.error_invalid_birthdate);

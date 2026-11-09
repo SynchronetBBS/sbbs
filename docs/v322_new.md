@@ -325,6 +325,10 @@
   of waiting on the Terminal Server's event thread; a pending REP no longer
   blocks a new upload (the 409 reply is gone). It still works unchanged on
   older binaries
+- Fix: webv4 new user registration ignored the SCFG new user questions.
+  Signups now must supply the fields set to Yes there, such as real name,
+  location, gender and birthdate, may omit e-mail where it is disabled, and
+  are refused an invalid birthdate
 
 ## FTP Server
 
