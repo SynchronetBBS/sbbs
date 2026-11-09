@@ -1055,13 +1055,16 @@ static void termsrvr_cfg(void)
 			"`SSH Support`, `Telnet Support`, `RLogin Support`: enable each protocol\n"
 			"and set its TCP port and related options.\n"
 			"\n"
-			"`40 Column PETSCII Support`, `80 Column PETSCII Support`: TCP ports for\n"
-			"Commodore (PETSCII) terminal connections.  `0` disables each.\n"
+			"`40 Column PETSCII Support`, `80 Column PETSCII Support`: connections\n"
+			"arriving on these TCP ports are treated as Commodore (PETSCII)\n"
+			"terminals.  The server must also be set to listen on the port, by\n"
+			"adding it to a protocol's `Interfaces` (e.g. `1.2.3.4:64`).  `0` disables\n"
+			"each.\n"
 			"\n"
 			"`DOS Program Support`: allow running 16-bit DOS programs.\n"
 			"\n"
-			"`Max Concurrent Connections`: limit simultaneous connections from a\n"
-			"single client IP address.\n"
+			"`Max Concurrent Connections`: limit simultaneous connections that have\n"
+			"not logged in from a single client IP address.\n"
 			"\n"
 			"The four `Max ... Inactivity` options: disconnect a client whose socket\n"
 			"has been idle this long at each stage, from login through the user\n"
@@ -1439,7 +1442,8 @@ static void websrvr_cgi_cfg(web_startup_t* startup)
 			"\n"
 			"`Enabled`: allow the Web Server to run external CGI programs.\n"
 			"\n"
-			"`Directory`: directory containing CGI programs.\n"
+			"`Directory`: directory containing CGI programs, relative to the content\n"
+			"root unless a full path is given.\n"
 			"\n"
 			"`File Extensions`: filename extensions of CGI programs,\n"
 			"comma-separated.\n"
@@ -1644,7 +1648,8 @@ static void websrvr_cfg(void)
 			"\n"
 			"`Content Root Directory`: top directory of the served content.\n"
 			"\n"
-			"`Error Sub-directory`: directory of the HTTP error pages.\n"
+			"`Error Sub-directory`: directory of the HTTP error pages, relative to\n"
+			"the `Content Root Directory` unless a full path is given.\n"
 			"\n"
 			"`Virtual Host Support`: serve content from a sub-directory of the\n"
 			"root named for the hostname in each request.\n"
@@ -1949,7 +1954,8 @@ static void ftpsrvr_cfg(void)
 			"`QWK Message Packet Transfers`: allow users to download QWK packets\n"
 			"and upload REP packets.\n"
 			"\n"
-			"`QWK Message Packet Timeout`: time allowed to create a QWK packet.\n"
+			"`QWK Message Packet Timeout`: how long a download waits for a free\n"
+			"packing slot when the server is busy creating QWK packets.\n"
 			"\n"
 			"`Max Clients`: limit on simultaneous clients.\n"
 			"\n"
@@ -2044,7 +2050,7 @@ static void ftpsrvr_cfg(void)
 				break;
 			case 8:
 				SAFECOPY(str, duration(startup.qwk_timeout, false, strDefault));
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "QWK Message Packet Creation Timeout", str, 10, K_EDIT) > 0)
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Wait for a QWK Packing Slot", str, 10, K_EDIT) > 0)
 					startup.qwk_timeout = (uint16_t)parse_duration(str);
 				break;
 			case 9:
