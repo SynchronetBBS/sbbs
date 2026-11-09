@@ -3295,7 +3295,7 @@ void sys_cfg(void)
 								"  `hack.log`\n"
 								"  `spam.log`\n"
 								"  `guru.log`\n"
-								"  `events.log`\n"
+								"  `events.log` (or `events#.log`)\n"
 								"\n"
 								"The largest supported log file size limit is 4294967295 (3.99G) bytes.\n"
 								"Log files that have reached or exceeded the configured size limit are\n"
