@@ -2078,6 +2078,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Nodes > Node Configuration > Event"
 	},
 	{
+		"Event Log File",
+		"Terminal Server",
+		"Servers > Terminal Server > Event Log File"
+	},
+	{
 		"Event Log Level",
 		"Terminal Server",
 		"Servers > Terminal Server > Event Log Level"

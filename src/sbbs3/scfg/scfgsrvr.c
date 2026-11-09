@@ -946,6 +946,8 @@ static void termsrvr_cfg(void)
 		         , startup.options & BBS_OPT_NO_EVENTS ? "N/A" : startup.options & BBS_OPT_NO_QWK_EVENTS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Event Log Level"
 		         , startup.options & BBS_OPT_NO_EVENTS ? "N/A" : iniLogLevelStringList()[startup.event_log_level]);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Event Log File"
+		         , startup.options & BBS_OPT_NO_EVENTS ? "N/A" : startup.options & BBS_OPT_NO_EVENT_LOG_FILE ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
@@ -958,6 +960,11 @@ static void termsrvr_cfg(void)
 			"The initialization settings of the Synchronet server that provides the\n"
 			"traditional BBS experience over `Telnet`, `SSH`, `RLogin`, or `Raw TCP`\n"
 			"protocols.\n"
+			"\n"
+			"`Event Log File`: save timed event log output to `events.log` in the\n"
+			"`Logs Directory`, in addition to the server log.  Set to `No` if the\n"
+			"server log (e.g. syslog) already retains this output.  `Event Log Level`\n"
+			"applies to both.\n"
 			"\n"
 			"For full documentation, see `http://wiki.synchro.net/server:terminal`\n"
 		;
@@ -1110,15 +1117,20 @@ static void termsrvr_cfg(void)
 				uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &startup.event_log_level, 0, "Event Log Level", iniLogLevelStringList());
 				break;
 			case 18:
-				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
+				if (startup.options & BBS_OPT_NO_EVENTS)
+					break;
+				startup.options ^= BBS_OPT_NO_EVENT_LOG_FILE;
 				break;
 			case 19:
-				getar("Terminal Server Login", startup.login_ars, /* helpbuf: */ NULL);
+				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			case 20:
-				js_startup_cfg(&startup.js);
+				getar("Terminal Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
 			case 21:
+				js_startup_cfg(&startup.js);
+				break;
+			case 22:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:

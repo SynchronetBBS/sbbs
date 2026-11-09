@@ -231,6 +231,7 @@ static struct init_field {
 #define BBS_OPT_NO_TELNET           (1 << 15) /* Don't accept incoming telnet connections */
 #define BBS_OPT_ALLOW_SFTP          (1 << 16) /* Allow logins via BSD SFTP		*/
 #define BBS_OPT_SSH_ANYAUTH         (1 << 17) /* Blindly accept any SSH credentials */
+#define BBS_OPT_NO_EVENT_LOG_FILE   (1 << 18) /* Don't write data/events*.log		*/
 #define BBS_OPT_HAPROXY_PROTO       (1 << 26) /* Incoming requests are via HAproxy */
 #define BBS_OPT_NO_RECYCLE          (1 << 27) /* Disable recycling of server		*/
 #define BBS_OPT_GET_IDENT           (1 << 28) /* Get Identity (RFC 1413)			*/
@@ -251,6 +252,7 @@ static ini_bitdesc_t bbs_options[] = {
 	{ BBS_OPT_NO_QWK_EVENTS, "NO_QWK_EVENTS"    },
 	{ BBS_OPT_NO_TELNET_GA, "NO_TELNET_GA"     },
 	{ BBS_OPT_NO_EVENTS, "NO_EVENTS"        },
+	{ BBS_OPT_NO_EVENT_LOG_FILE, "NO_EVENT_LOG_FILE" },
 	{ BBS_OPT_NO_HOST_LOOKUP, "NO_HOST_LOOKUP"   },
 	{ BBS_OPT_NO_SPY_SOCKETS, "NO_SPY_SOCKETS"   },
 	{ BBS_OPT_ALLOW_SSH, "ALLOW_SSH"        },

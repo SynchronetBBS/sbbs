@@ -281,6 +281,9 @@
   `?rlogin`) no longer drops output from the remote host when the user's
   connection is slower than the host's output (e.g. a door sending Sixel
   graphics); it now paces its reads to the output buffer (issue #1325)
+- New `NO_EVENT_LOG_FILE` option (SCFG: **Event Log File**) stops writing
+  `data/events*.log` while leaving event output in the server log; setting
+  `EventLogLevel` to 0 for this purpose silenced both
 
 ## Web Server
 

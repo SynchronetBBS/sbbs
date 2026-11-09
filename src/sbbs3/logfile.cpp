@@ -406,7 +406,7 @@ extern "C" size_t fprintlog(scfg_t* cfg, FILE** fp, const char* str)
 		, tm.tm_hour, tm.tm_min, tm.tm_sec
 		, str);
 	fflush(*fp);
-	if (cfg->max_log_size && ftell(*fp) >= (off_t)cfg->max_log_size) {
+	if (cfg->max_log_size && cfg->max_logs_kept && ftell(*fp) >= (off_t)cfg->max_log_size) {
 		fclose(*fp);
 		*fp = NULL;
 	}
