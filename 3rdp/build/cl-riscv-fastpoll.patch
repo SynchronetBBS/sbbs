@@ -1,0 +1,56 @@
+--- ./random/unix.c.orig
++++ ./random/unix.c
+@@ -255,7 +255,8 @@
+ #endif /* Slowaris */
+ #if defined( __clang__ ) && \
+ 	!( defined( __arm ) || defined( __arm__ ) || \
+-	   defined( __aarch64__ ) || defined( __arm64 ) )
++	   defined( __aarch64__ ) || defined( __arm64 ) || \
++	   defined( __riscv ) )
+   #if __has_builtin( __builtin_readcyclecounter )
+ 	unsigned long long cycleCounterValue;
+   #endif /* Built-in function support */
+@@ -319,7 +320,8 @@
+ #endif /* rdtsc available */
+ #if defined( __clang__ ) && \
+ 	!( defined( __arm ) || defined( __arm__ ) || \
+-	   defined( __aarch64__ ) || defined( __arm64 ) )
++	   defined( __aarch64__ ) || defined( __arm64 ) || \
++	   defined( __riscv ) )
+   /* ARM systems have a cycle-counter that's accessed via 
+      "mrs reg, PMCCNTR_EL0", but access from user-space to this, and the
+ 	 Performance Monitoring Unit (PMU) that it's part of, is usually 
+@@ -338,21 +340,18 @@
+ #endif /* __clang__ */
+ #if ( defined( __GNUC__ ) || defined( __clang__ ) ) && defined( __riscv )
+ 	{
+-	long cycles, timer, instret;
+-
+-	/* RISC-V MSR read code, from "The RISC-V Instruction Set Manual, 
+-	   Volume II: Privileged Architecture", section "Control and Status 
+-	   Registers", read the cycle count (rdcycle), timer (rdtime), and 
+-	   instructions-retired count (rdinstret) */
+-	asm volatile( "csrr %[cycles], cycle\n\t"
+-		"csrr %[timer], time\n\t"
+-		"csrr %[instret], instret\n\n"
+-		: [cycles] "=r"(cycles), /* Output */
+-			[instret] "=r"(instret),
+-			[timer] "=r"(timer)
+-		: /* Input */
+-		: /* Registers clobbered */
+-		);
++	struct timespec ts;
++	long cycles = 0, timer = 0, instret = 0;
++
++	/* The cycle and instret CSRs are not accessible from user mode on
++	   Linux (access is controlled by scounteren), so reading them with
++	   'csrr' raises SIGILL.  Use the monotonic clock instead. */
++	if( clock_gettime( CLOCK_MONOTONIC, &ts ) == 0 )
++		{
++		cycles = ( long ) ts.tv_nsec;
++		timer = ( long ) ts.tv_sec ^ ( long ) ts.tv_nsec;
++		instret = ( long ) ts.tv_sec;
++		}
+ 	addRandomData( randomState, &cycles, sizeof( long ) );
+ 	addRandomData( randomState, &timer, sizeof( long ) );
+ 	addRandomData( randomState, &instret, sizeof( long ) );
