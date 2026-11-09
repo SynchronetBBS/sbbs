@@ -1162,3 +1162,9 @@ BBS over MQTT 5.0 (TLS-PSK, TLS+CA, or mTLS).
 - v0.7: no longer consumes a full CPU core while waiting for a call or
   connected (issue #1176); `SocketSelectTimeout` now defaults to 1 (ms),
   set it to 0 to restore the previous spin-wait while online
+- v0.8: `Hunt=true` in `svdm.ini` lets multiple nodes (one `svdm` process
+  each) share one listening TCP port: incoming calls roll over to an idle
+  node, callers get the `BusyNotice` when none is free, and the port survives
+  the exit of the process that bound it (issue #1175)
+- `ATZ` no longer adopts another node's number from a `Node=` key in a shared
+  `svdm.ini` (its responses went to that node's mailslot)

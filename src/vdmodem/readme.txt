@@ -161,7 +161,40 @@ Run Telix (popular comm program for MS-DOS from the 1980s):
 Run Renegade BBS Software (in WFC mode), listening on all network interfaces
 for incoming TCP connections:
   svdm -l renegade
-  
+
+===== Multiple Nodes =====
+To run a multi-node DOS BBS, run one SVDM process per node, each from its own
+working directory (SVDM writes dosxtrn.env, DOSXTRN.RET and client.ini to the
+current directory). Give each process a unique node number with the -n option
+and run each BBS node's program or batch file, e.g.:
+  cd \SF\NODE1
+  svdm -l -n1 -p23 sf
+  cd \SF\NODE2
+  svdm -l -n2 -p24 sf
+
+Each node runs in its own NTVDM with its own virtual UART, so configure every
+BBS node for the same COM port that SVDM emulates (COM1 unless changed in
+svdm.ini, see Ports). A node number given with -n takes precedence over a
+"Node" key in svdm.ini, so one svdm.ini can be shared by all nodes.
+
+==== Hunt Group ====
+By default each listening SVDM process needs its own TCP port and callers must
+know all of them. Set "Hunt" to true in the root section of svdm.ini to let
+every node listen on the same TCP port:
+  Hunt=true
+
+The first process to start owns the port and answers incoming connections.
+When it is busy, off-hook or already ringing, it hands the connection to the
+first idle node (lowest node number first), which then sees the RING. When no
+node is free, the caller receives the BusyNotice text and is disconnected. If
+the owning process exits, one of the remaining nodes takes over the port
+within a few seconds and calls in progress on the other nodes are unaffected.
+
+All nodes of a hunt group must run under the same user account and at the
+same elevation (either all "as administrator" or none); a node that can't be
+reached is skipped. The IP filter (IpFilterFile) is applied once, by the
+owner. Hunt is ignored when the -h option is used.
+
 ===== Dialing =====
 
 SVDM responds to the ATD dial command to perform an outbound TCP connection.

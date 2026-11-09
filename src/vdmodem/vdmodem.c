@@ -34,6 +34,7 @@
 #include "dirwrap.h"
 #include "gen_defs.h"
 #include "sockwrap.h"
+#include "threadwrap.h"
 #include "telnet.h"
 #include "ini_file.h"
 #include "vdd_func.h"
@@ -41,12 +42,17 @@
 #include "git_hash.h"
 
 #define TITLE "Synchronet Virtual DOS Modem for Windows"
-#define VERSION "0.7"
+#define VERSION "0.8"
 
 bool              external_socket;
 union xp_sockaddr addr;
 SOCKET            sock = INVALID_SOCKET;
 SOCKET            listening_sock = INVALID_SOCKET;
+bool              hunt_owner;      // this process holds the hunt group's listening socket
+bool              hunt_reserved;   // a call is being handed to this process by the owner
+pthread_mutex_t   hunt_mutex;      // guards sock, hunt_reserved and the modem state they depend on
+#define HUNT_TIMEOUT 3000 // milliseconds to wait on a hunt group peer
+#define HUNT_RETRY 5000 // milliseconds between a secondary's attempts to take over the port
 HANDLE            hangup_event = INVALID_HANDLE_VALUE; // e.g. program drops DTR
 HANDLE            hungup_event = INVALID_HANDLE_VALUE; // e.g. ATH0
 HANDLE            carrier_event = INVALID_HANDLE_VALUE;
@@ -74,6 +80,7 @@ struct {
 	int node_num;
 	uint16_t port;
 	bool listen;
+	bool hunt;
 	bool debug;
 	bool terminate_on_disconnect;
 	ulong data_rate;
@@ -306,7 +313,9 @@ void disconnect(struct modem* modem)
 		shutdown(sock, SD_SEND);
 		closesocket(sock);
 	}
+	pthread_mutex_lock(&hunt_mutex);
 	sock = INVALID_SOCKET;
+	pthread_mutex_unlock(&hunt_mutex);
 	SetEvent(hungup_event);
 	SetEvent(carrier_event);
 }
@@ -758,7 +767,7 @@ void init_telnet_options()
 
 char* answer(struct modem* modem)
 {
-	if (listening_sock == INVALID_SOCKET)
+	if (!cfg.listen)
 		return response(modem, NO_DIAL_TONE);
 
 	if (sock == INVALID_SOCKET)
@@ -850,7 +859,7 @@ char* atmodem_exec(struct modem* modem)
 			case 'A':
 				return answer(modem);
 			case 'D':
-				if (sock != INVALID_SOCKET) {
+				if (sock != INVALID_SOCKET || hunt_reserved) {
 					dprintf("Can't dial: Already connected");
 					return error(modem);
 				}
@@ -911,7 +920,7 @@ char* atmodem_exec(struct modem* modem)
 					dprintf("S%lu = %lu", sreg, val);
 					switch (sreg) {
 						case 0:
-							if (val && listening_sock == INVALID_SOCKET) {
+							if (val && !cfg.listen) {
 								dprintf("Can't enable auto-answer when not in listening mode");
 								return error(modem);
 							}
@@ -1070,6 +1079,226 @@ BOOL vdd_writestr(HANDLE* slot, char* str)
 	return vdd_write(slot, str, strlen(str));
 }
 
+// Returns 0 on success, else the Winsock error code
+int start_listening(SOCKET s)
+{
+	bool created = false;
+
+	if (s == INVALID_SOCKET) {
+		s = socket(listen_address_family(), SOCK_STREAM, IPPROTO_IP);
+		if (s == INVALID_SOCKET)
+			return WSAGetLastError();
+		created = true;
+	}
+	if (bind(s, &listening_interface.addr, xp_sockaddr_len(&listening_interface)) != 0
+	    || listen(s, /* backlog: */ cfg.hunt ? SOMAXCONN : 1) != 0) {
+		int error = WSAGetLastError();
+		if (created)
+			closesocket(s);
+		return error;
+	}
+	listening_sock = s;
+	return 0;
+}
+
+// Hunt group: SVDM processes sharing one listening TCP port. The process that
+// binds the port (the owner) accepts each connection and, when it can't take
+// the call itself, offers the socket to the other members over their named
+// pipes. The member that claims it receives a WSADuplicateSocket() copy.
+
+enum hunt_msg_type {
+	HUNT_OFFER      // owner -> member: a call is waiting
+	, HUNT_CLAIM    // member -> owner: send it, I'm idle
+	, HUNT_BUSY     // member -> owner: can't take it
+	, HUNT_SOCKET   // owner -> member: the duplicated socket (info)
+	, HUNT_ACK      // member -> owner: socket received, owner may close its copy
+	, HUNT_NAK      // either: failed, offer the call elsewhere
+};
+
+struct hunt_msg {
+	uint32_t type;
+	WSAPROTOCOL_INFOW info; // HUNT_SOCKET only
+};
+
+void hunt_pipe_name(char* buf, size_t size, int node_num)
+{
+	safe_snprintf(buf, size, "\\\\.\\pipe\\svdm-hunt-%u-%d", inet_addrport(&listening_interface), node_num);
+}
+
+// Overlapped read or write of one whole message, abandoned after 'timeout' milliseconds
+bool hunt_pipe_io(HANDLE pipe, bool write, struct hunt_msg* msg, DWORD timeout)
+{
+	OVERLAPPED ov = {0};
+	DWORD      xfer = 0;
+	bool       result = false;
+
+	ov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (ov.hEvent == NULL)
+		return false;
+	BOOL started = write ? WriteFile(pipe, msg, sizeof(*msg), NULL, &ov)
+	               : ReadFile(pipe, msg, sizeof(*msg), NULL, &ov);
+	if (started || GetLastError() == ERROR_IO_PENDING) {
+		if (WaitForSingleObject(ov.hEvent, timeout) != WAIT_OBJECT_0)
+			CancelIo(pipe);
+		if (GetOverlappedResult(pipe, &ov, &xfer, TRUE))
+			result = (xfer == sizeof(*msg));
+	}
+	CloseHandle(ov.hEvent);
+	return result;
+}
+
+// Caller holds hunt_mutex
+bool hunt_idle(struct modem* modem)
+{
+	return sock == INVALID_SOCKET && !hunt_reserved && !modem->offhook && !modem->online && !modem->ringing;
+}
+
+// Owner: offer an accepted connection to one member, true if it took the call
+bool hunt_offer(SOCKET newsock, int node_num)
+{
+	char            path[MAX_PATH + 1];
+	struct hunt_msg msg = {0};
+	bool            result = false;
+
+	hunt_pipe_name(path, sizeof(path), node_num);
+	HANDLE          pipe = CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+	if (pipe == INVALID_HANDLE_VALUE && GetLastError() == ERROR_PIPE_BUSY && WaitNamedPipe(path, 100))
+		pipe = CreateFile(path, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+	if (pipe == INVALID_HANDLE_VALUE) {
+		DWORD error = GetLastError();
+		if (error != ERROR_FILE_NOT_FOUND)
+			dprintf("Error %lu opening hunt group pipe '%s'", error, path);
+		return false;
+	}
+	DWORD           mode = PIPE_READMODE_MESSAGE;
+	SetNamedPipeHandleState(pipe, &mode, NULL, NULL);
+	msg.type = HUNT_OFFER;
+	if (!hunt_pipe_io(pipe, /* write: */ true, &msg, HUNT_TIMEOUT)
+	    || !hunt_pipe_io(pipe, /* write: */ false, &msg, HUNT_TIMEOUT))
+		dprintf("Error %lu offering call to node %d", GetLastError(), node_num);
+	else if (msg.type == HUNT_CLAIM) {
+		DWORD pid = 0;
+		msg.type = HUNT_NAK;
+		if (!GetNamedPipeServerProcessId(pipe, &pid))
+			dprintf("Error %lu getting process ID of node %d", GetLastError(), node_num);
+		else if (WSADuplicateSocketW(newsock, pid, &msg.info) != 0)
+			dprintf("Error %d duplicating socket for node %d (process %lu)", WSAGetLastError(), node_num, pid);
+		else
+			msg.type = HUNT_SOCKET;
+		bool  sent = msg.type == HUNT_SOCKET;
+		if (hunt_pipe_io(pipe, /* write: */ true, &msg, HUNT_TIMEOUT) && sent
+		    && hunt_pipe_io(pipe, /* write: */ false, &msg, HUNT_TIMEOUT))
+			result = (msg.type == HUNT_ACK);
+	}
+	CloseHandle(pipe);
+	return result;
+}
+
+// Owner: find a member for an accepted connection, true if one took the call
+bool hunt_dispatch(SOCKET newsock)
+{
+	for (int node_num = 0; node_num <= 0xff; node_num++) {
+		if (node_num == cfg.node_num)
+			continue;
+		if (hunt_offer(newsock, node_num)) {
+			dprintf("Call handed to node %d", node_num);
+			closesocket(newsock); // the member's copy keeps the connection open
+			return true;
+		}
+	}
+	return false;
+}
+
+// Member: receive a duplicated socket, true (with sock/addr/ringing set) if it's ours now
+bool hunt_receive(struct modem* modem, struct hunt_msg* msg)
+{
+	union xp_sockaddr newaddr = {0};
+	socklen_t         addrlen = sizeof(newaddr);
+	bool              result = false;
+
+	SOCKET            newsock = WSASocketW(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, &msg->info, 0, 0);
+	if (newsock == INVALID_SOCKET) {
+		dprintf("Error %d creating socket from hunt group owner", WSAGetLastError());
+		return false;
+	}
+	if (getpeername(newsock, &newaddr.addr, &addrlen) != 0)
+		dprintf("Error %d getting peer address of hunt group socket", WSAGetLastError());
+	else {
+		pthread_mutex_lock(&hunt_mutex);
+		if (sock == INVALID_SOCKET && !modem->offhook && !modem->online) {
+			sock = newsock;
+			addr = newaddr;
+			modem->ringing = true;
+			modem->ringcount = 0;
+			result = true;
+		}
+		pthread_mutex_unlock(&hunt_mutex);
+	}
+	if (result) {
+		char ipaddr[256];
+		dprintf("Connection from TCP port %hu at %s received from hunt group owner"
+		        , inet_addrport(&newaddr), inet_addrtop(&newaddr, ipaddr, sizeof(ipaddr)));
+	} else
+		closesocket(newsock);
+	return result;
+}
+
+// Member: serve this node's pipe (every hunt group process runs one)
+void hunt_pipe_thread(void* arg)
+{
+	struct modem* modem = (struct modem*)arg;
+	char          path[MAX_PATH + 1];
+
+	hunt_pipe_name(path, sizeof(path), cfg.node_num);
+	HANDLE        pipe = CreateNamedPipe(path
+	                                     , PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED
+	                                     , PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS
+	                                     , /* instances: */ 1
+	                                     , sizeof(struct hunt_msg) // output buffer size
+	                                     , sizeof(struct hunt_msg) // input buffer size
+	                                     , /* default timeout: */ 0
+	                                     , /* security: */ NULL);
+	if (pipe == INVALID_HANDLE_VALUE) {
+		dprintf("Error %lu creating hunt group pipe '%s'", GetLastError(), path);
+		return;
+	}
+	for (;;) {
+		OVERLAPPED ov = {0};
+		ov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+		if (!ConnectNamedPipe(pipe, &ov)) {
+			DWORD error = GetLastError();
+			if (error == ERROR_IO_PENDING)
+				WaitForSingleObject(ov.hEvent, INFINITE);
+			else if (error != ERROR_PIPE_CONNECTED) {
+				dprintf("Error %lu waiting on hunt group pipe", error);
+				CloseHandle(ov.hEvent);
+				Sleep(1000);
+				continue;
+			}
+		}
+		CloseHandle(ov.hEvent);
+
+		struct hunt_msg msg = {0};
+		if (hunt_pipe_io(pipe, /* write: */ false, &msg, HUNT_TIMEOUT) && msg.type == HUNT_OFFER) {
+			pthread_mutex_lock(&hunt_mutex);
+			bool claim = hunt_idle(modem);
+			if (claim)
+				hunt_reserved = true;
+			pthread_mutex_unlock(&hunt_mutex);
+			msg.type = claim ? HUNT_CLAIM : HUNT_BUSY;
+			if (hunt_pipe_io(pipe, /* write: */ true, &msg, HUNT_TIMEOUT) && claim) {
+				bool received = hunt_pipe_io(pipe, /* write: */ false, &msg, HUNT_TIMEOUT)
+				                && msg.type == HUNT_SOCKET
+				                && hunt_receive(modem, &msg);
+				msg.type = received ? HUNT_ACK : HUNT_NAK;
+				hunt_pipe_io(pipe, /* write: */ true, &msg, HUNT_TIMEOUT);
+			}
+			hunt_reserved = false;
+		}
+		DisconnectNamedPipe(pipe);
+	}
+}
+
 void listen_thread(void* arg)
 {
 	struct modem* modem = (struct modem*)arg;
@@ -1094,20 +1323,47 @@ void listen_thread(void* arg)
 				closesocket(newsock);
 				continue;
 			}
-			if (sock != INVALID_SOCKET) {    // In-use
-				send(newsock, cfg.busy_notice, strlen(cfg.busy_notice), /* flags: */ 0);
-				shutdown(newsock, SD_SEND);
-				closesocket(newsock);
+			pthread_mutex_lock(&hunt_mutex);
+			bool taken = cfg.hunt ? hunt_idle(modem) : sock == INVALID_SOCKET;
+			if (taken) {
+				sock = newsock;
+				addr = newaddr;
+				if (!modem->offhook && !modem->online) {
+					modem->ringing = true;
+					modem->ringcount = 0;
+				}
+			}
+			pthread_mutex_unlock(&hunt_mutex);
+			if (taken)
 				continue;
-			}
-			sock = newsock;
-			addr = newaddr;
-			if (!modem->offhook && !modem->online) {
-				modem->ringing = true;
-				modem->ringcount = 0;
-			}
+			if (cfg.hunt && hunt_dispatch(newsock))
+				continue;
+			// In-use
+			send(newsock, cfg.busy_notice, strlen(cfg.busy_notice), /* flags: */ 0);
+			shutdown(newsock, SD_SEND);
+			closesocket(newsock);
 		}
 	}
+}
+
+// Member: keep trying to bind the port so it outlives the owner process
+void hunt_takeover_thread(void* arg)
+{
+	struct modem* modem = (struct modem*)arg;
+	char          tmp[256];
+
+	for (;;) {
+		Sleep(HUNT_RETRY);
+		int result = start_listening(INVALID_SOCKET);
+		if (result == 0)
+			break;
+		if (result != WSAEADDRINUSE)
+			dprintf("Error %d listening on TCP port %u", result, inet_addrport(&listening_interface));
+	}
+	hunt_owner = true;
+	fprintf(stderr, "Listening on TCP port %u at %s (took over the hunt group)\n"
+	        , inet_addrport(&listening_interface), inet_addrtop(&listening_interface, tmp, sizeof(tmp)));
+	_beginthread(listen_thread, /* stack_size: */ 0, modem);
 }
 
 bool read_ini(const char* ini_fname)
@@ -1123,6 +1379,7 @@ bool read_ini(const char* ini_fname)
 	cfg.port = iniGetShortInt(ini, ROOT_SECTION, "Port", cfg.port);
 	cfg.node_num = iniGetInteger(ini, ROOT_SECTION, "Node", cfg.node_num);
 	cfg.listen = iniGetBool(ini, ROOT_SECTION, "Listen", cfg.listen);
+	cfg.hunt = iniGetBool(ini, ROOT_SECTION, "Hunt", cfg.hunt);
 	cfg.debug = iniGetBool(ini, ROOT_SECTION, "Debug", cfg.debug);
 	cfg.server_echo = iniGetBool(ini, ROOT_SECTION, "ServerEcho", cfg.server_echo);
 	cfg.server_binary = iniGetBool(ini, ROOT_SECTION, "ServerBinary", cfg.server_binary);
@@ -1165,7 +1422,7 @@ int main(int argc, char** argv)
 	int       result;
 
 	fprintf(stdout, TITLE " v" VERSION " Copyright %s Rob Swindell\n", &__DATE__[7]);
-	if ((result = WSAStartup(MAKEWORD(1, 1), &WSAData)) == 0)
+	if ((result = WSAStartup(MAKEWORD(2, 2), &WSAData)) == 0)
 		dprintf("%s %s", WSAData.szDescription, WSAData.szSystemStatus);
 	else {
 		fprintf(stderr, "!WinSock startup ERROR %d", result);
@@ -1280,32 +1537,29 @@ int main(int argc, char** argv)
 
 	struct modem modem = {0};
 	init(&modem);
+	pthread_mutex_init(&hunt_mutex, NULL);
 
 	if (cfg.listen) {
-		if (sock != INVALID_SOCKET)
-			listening_sock = sock;
-		else {
-			listening_sock = socket(listen_address_family(), SOCK_STREAM, IPPROTO_IP);
-			if (listening_sock == INVALID_SOCKET) {
-				fprintf(stderr, "Error %ld creating socket\n", WSAGetLastError());
-				return EXIT_FAILURE;
-			}
-		}
 		listening_interface.addr.sa_family = listen_address_family();
 		inet_setaddrport(&listening_interface, cfg.port);
-		result = bind(listening_sock, &listening_interface.addr, xp_sockaddr_len(&listening_interface));
-		if (result != 0) {
-			fprintf(stderr, "Error %d binding socket\n", WSAGetLastError());
+		if (cfg.hunt && sock != INVALID_SOCKET) {
+			fprintf(stderr, "Hunt group is not supported with the -h option: ignored\n");
+			cfg.hunt = false;
+		}
+		result = start_listening(sock);
+		if (result == 0) {
+			fprintf(stderr, "Listening on TCP port %u at %s\n"
+			        , inet_addrport(&listening_interface), inet_addrtop(&listening_interface, tmp, sizeof(tmp)));
+			hunt_owner = true;
+			_beginthread(listen_thread, /* stack_size: */ 0, &modem);
+		} else if (cfg.hunt && result == WSAEADDRINUSE) {
+			fprintf(stderr, "TCP port %u at %s is in use: joining its hunt group\n"
+			        , inet_addrport(&listening_interface), inet_addrtop(&listening_interface, tmp, sizeof(tmp)));
+		} else {
+			fprintf(stderr, "Error %d listening on TCP port %u at %s\n"
+			        , result, inet_addrport(&listening_interface), inet_addrtop(&listening_interface, tmp, sizeof(tmp)));
 			return EXIT_FAILURE;
 		}
-		if (listen(listening_sock, /* backlog: */ 1) != 0) {
-			fprintf(stderr, "Error %d listening on socket\n", WSAGetLastError());
-			return EXIT_FAILURE;
-		}
-		fprintf(stderr, "Listening on TCP port %u at %s\n"
-		        , inet_addrport(&listening_interface), inet_addrtop(&listening_interface, tmp, sizeof(tmp)));
-
-		_beginthread(listen_thread, /* stack_size: */ 0, &modem);
 	} else {
 		if (sock != INVALID_SOCKET) { // -h option specified without -l
 			setsockopts(sock);
@@ -1376,6 +1630,12 @@ int main(int argc, char** argv)
 	if (hungup_event == NULL) {
 		fprintf(stderr, "Error %ld creating '%s'\n", GetLastError(), path);
 		return EXIT_FAILURE;
+	}
+
+	if (cfg.listen && cfg.hunt) {
+		_beginthread(hunt_pipe_thread, /* stack_size: */ 0, &modem);
+		if (!hunt_owner)
+			_beginthread(hunt_takeover_thread, /* stack_size: */ 0, &modem);
 	}
 
 	STARTUPINFO startup_info = {0};
