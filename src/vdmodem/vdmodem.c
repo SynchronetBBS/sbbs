@@ -984,7 +984,10 @@ char* atmodem_exec(struct modem* modem)
 				break;
 			case 'Z':
 				if (fexist(ini_fname)) {
-					if (!read_ini(ini_fname))
+					int node_num = cfg.node_num; // the mailslots/events are already named for this node
+					bool success = read_ini(ini_fname);
+					cfg.node_num = node_num;
+					if (!success)
 						return error(modem);
 				}
 				init(modem);
