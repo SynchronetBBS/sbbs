@@ -12,6 +12,9 @@
 	notifempty
 	create 640 sbbs sbbs
 	maxage 90
+	compress
+	# keep the most recent rotated log (sbbs.log.1) uncompressed for grep
+	delaycompress
 	# rsyslogd keeps writing to the renamed file until told to reopen it
 	postrotate
 		if [ -x /usr/lib/rsyslog/rsyslog-rotate ]; then
