@@ -6,6 +6,30 @@ load(js.exec_dir + "lib.sjs");
 load(js.exec_dir + "state-fixture.sjs");
 
 run_tests({
+	"LIST +M preserves complete channel modes without exposing mode arguments": function() {
+		var s = new_state(), owner = new_user(s, "Owner"), viewer = new_user(s, "Viewer");
+		var c = join_user(s, owner, "#listmodes");
+		c.topic = "Mode display regression";
+		c.arg[s.CHANMODE_KEY] = "private-list-key";
+		c.arg[s.CHANMODE_LIMIT] = 42;
+		[
+			[0, "+"],
+			[s.CHANMODE_NOOUTSIDE | s.CHANMODE_TOPIC, "+nt"],
+			[s.CHANMODE_TOPIC | s.CHANMODE_REGISTERED, "+tr"],
+			[s.CHANMODE_KEY | s.CHANMODE_LIMIT | s.CHANMODE_NOOUTSIDE | s.CHANMODE_TOPIC | s.CHANMODE_REGISTERED, "+klntr"]
+		].forEach(function(test) {
+			c.mode = s.CHANMODE_NONE | test[0];
+			viewer.received = [];
+			viewer.work("MODE #listmodes");
+			viewer.work("LIST +Ma #listmodes");
+			var replies = viewer.received.map(s.IRC_parse);
+			var modes = replies.filter(function(reply) { return reply.verb == "324"; });
+			var listings = replies.filter(function(reply) { return reply.verb == "322"; });
+			check(modes.length == 1 && modes[0].params[2] == test[1], "unexpected MODE reply");
+			check(listings.length == 1 && listings[0].params[3] == "[" + test[1] + "] " + c.topic,
+				"LIST +M lost mode characters or exposed arguments: " + viewer.received.join(" | "));
+		});
+	},
 	"numeric-only and empty MODE arguments preserve channel state and the client": function() {
 		var s = new_state(), u = new_user(s, "Owner"), c = join_user(s, u, "#test");
 		c.modelist[s.CHANMODE_OP][u.id] = u;

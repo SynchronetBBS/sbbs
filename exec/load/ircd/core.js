@@ -1001,13 +1001,12 @@ function IRCClient_numeric321() {
 }
 
 function IRCClient_numeric322(chan,modes) {
-	var channel_name, tmp;
+	var channel_name;
 	var disp_topic = "";
 	var is_onchan = this.channels[chan.nam.toUpperCase()];
 
 	if (modes&LIST_DISPLAY_CHAN_MODES) {
-		tmp = chan.chanmode();
-		disp_topic += format("[%s] ", tmp.slice(0,tmp.length-1));
+		disp_topic += format("[%s] ", chan.chanmode());
 	} else if (modes&LIST_DISPLAY_CHAN_TS) {
 		disp_topic += format("[%lu] ", chan.created);
 	}
