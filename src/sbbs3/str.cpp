@@ -476,7 +476,6 @@ void sbbs_t::sof(char *fname, char *answers, int len)
 	int  file;
 	int  length, l = 0, m, a = 0;
 
-	*answers = '\0';
 	snprintf(str, sizeof str, "%s%s.sif", cfg.text_dir, fname);
 	if ((file = nopen(str, O_RDONLY)) == -1) {
 		errormsg(WHERE, ERR_OPEN, str, O_RDONLY);
@@ -586,7 +585,8 @@ void sbbs_t::sof(char *fname, char *answers, int len)
 			}
 			if (!max)
 				continue;
-			getrec(answers, a, max, str);
+			// The data file may be shorter than this SIF expects
+			getrec(answers, a, (max < len - a) ? max : len - a, str);
 			bputs(str);
 			attr(LIGHTGRAY);
 			term->newline();
