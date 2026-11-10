@@ -28,6 +28,7 @@ typedef struct
 	size_t unflushed;
 	char peeked_byte;
 	BOOL peeked;
+	bool tls_drained;   /* The last pop came up short: no plaintext is buffered in the session */
 	uint16_t local_port;
 	js_callback_t *js_cb;
 	int tls_minver;

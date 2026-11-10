@@ -457,6 +457,9 @@ bool js_socket_tls_readable(js_socket_private_t* p)
 		return false;
 	if (p->peeked)
 		return true;
+	// A pop waits on the descriptor even with a zero timeout: only probe for buffered plaintext
+	if (p->tls_drained)
+		return false;
 	if (do_cryptAttribute(p, CRYPT_OPTION_NET_READTIMEOUT, 0) != CRYPT_OK)
 		return true;
 	status = cryptPopData(p->session, &p->peeked_byte, 1, &copied);
@@ -465,10 +468,15 @@ bool js_socket_tls_readable(js_socket_private_t* p)
 			p->peeked = true;
 			return true;
 		}
+		p->tls_drained = true;
+		return false;
+	}
+	if (status == CRYPT_ERROR_TIMEOUT) {
+		p->tls_drained = true;
 		return false;
 	}
 	/* Let the normal receive path handle EOF and errors. */
-	return status != CRYPT_ERROR_TIMEOUT;
+	return true;
 }
 
 /* Returns > 0 upon successful data received (even if there was an error or disconnection) */
@@ -534,12 +542,17 @@ static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf
 		}
 		else {
 			status = cryptPopData(p->session, buf, len, &copied);
-			if (cryptStatusOK(status))
+			p->tls_drained = false;
+			if (cryptStatusOK(status)) {
 				ret = copied;
+				p->tls_drained = copied < (int)len;
+			}
 			else {
 				ret = -1;
-				if (status == CRYPT_ERROR_TIMEOUT)
+				if (status == CRYPT_ERROR_TIMEOUT) {
 					ret = 0;
+					p->tls_drained = true;
+				}
 				else if (status != CRYPT_ERROR_COMPLETE) {
 					GCES(ret, p, estr, "popping data");
 					do_js_close(cx, p, false);
@@ -2628,6 +2641,7 @@ static int js_socket_prepare_tls(JSContext *cx, js_socket_private_t *p, bool ser
 	    server_mode ? CRYPT_SESSION_TLS_SERVER : CRYPT_SESSION_TLS);
 	if (ret != CRYPT_OK)
 		return ret;
+	p->tls_drained = false;
 	p->tls_server = server_mode && !defer_key;
 	set_socket_nonblocking(p->sock, false);
 	int nodelay = 1;
