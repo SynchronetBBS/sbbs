@@ -1175,6 +1175,62 @@ static HANDLE std_handle(DWORD id)
 
 	return h == INVALID_HANDLE_VALUE ? NULL : h;
 }
+
+/****************************************************************************/
+/* Run a command-line in a child that inherits the standard handles named	*/
+/* in *si and no others.  Plain handle inheritance would also hand it every	*/
+/* inheritable handle open anywhere in this process at that moment (each	*/
+/* fopen()ed file, for one), to be held open until the child exits.			*/
+/****************************************************************************/
+static BOOL create_process(const char* app, char* cmd, STARTUPINFOA* si, PROCESS_INFORMATION* pi)
+{
+#ifdef PROC_THREAD_ATTRIBUTE_HANDLE_LIST    /* Windows Vista and later */
+	STARTUPINFOEXA six;
+	HANDLE         std[3];
+	HANDLE         list[3];
+	DWORD          count = 0;
+	DWORD          flags;
+	SIZE_T         size = 0;
+	BOOL           success = FALSE;
+	DWORD          i;
+	DWORD          j;
+
+	std[0] = si->hStdInput;
+	std[1] = si->hStdOutput;
+	std[2] = si->hStdError;
+	/* The list is rejected whole if it repeats a handle or names one that
+	   isn't inheritable. */
+	for (i = 0; i < 3; i++) {
+		if (std[i] == NULL || !GetHandleInformation(std[i], &flags) || !(flags & HANDLE_FLAG_INHERIT))
+			continue;
+		for (j = 0; j < count; j++) {
+			if (list[j] == std[i])
+				break;
+		}
+		if (j == count)
+			list[count++] = std[i];
+	}
+	memset(&six, 0, sizeof six);
+	six.StartupInfo = *si;
+	six.StartupInfo.cb = sizeof six;
+	InitializeProcThreadAttributeList(NULL, 1, 0, &size);
+	if (count > 0 && size > 0 && (six.lpAttributeList = malloc(size)) != NULL) {
+		if (InitializeProcThreadAttributeList(six.lpAttributeList, 1, 0, &size)) {
+			if (UpdateProcThreadAttribute(six.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST
+			                              , list, count * sizeof list[0], NULL, NULL))
+				success = CreateProcessA(app, cmd, NULL, NULL, /* inherit: */ TRUE
+				                         , CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT
+				                         , NULL, NULL, &six.StartupInfo, pi);
+			DeleteProcThreadAttributeList(six.lpAttributeList);
+		}
+		free(six.lpAttributeList);
+	}
+	if (success)
+		return TRUE;
+#endif
+	return CreateProcessA(app, cmd, NULL, NULL, /* inherit: */ TRUE
+	                      , CREATE_NO_WINDOW, NULL, NULL, si, pi);
+}
 #endif
 
 /****************************************************************************/
@@ -1300,8 +1356,7 @@ int xp_popen(const char* cmdline, str_list_t* lines)
 	/* popen(,"r") captures stdout only, leaving stderr to the parent's. */
 	si.hStdError = std_handle(STD_ERROR_HANDLE);
 	memset(&pi, 0, sizeof pi);
-	success = CreateProcessA(comspec, cmd, NULL, NULL, /* inherit: */ TRUE
-	                         , CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+	success = create_process(comspec, cmd, &si, &pi);
 	free(cmd);
 	CloseHandle(wr);    /* the child holds the only write end now */
 	if (!success) {
@@ -1488,8 +1543,7 @@ FILE* xp_pipe_open(const char* cmdline, const char* mode, intptr_t* child)
 		si.hStdOutput = reading ? theirs : std_handle(STD_OUTPUT_HANDLE);
 		si.hStdError = std_handle(STD_ERROR_HANDLE);
 		memset(&pi, 0, sizeof pi);
-		success = CreateProcessA(comspec, cmd, NULL, NULL, /* inherit: */ TRUE
-		                         , CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+		success = create_process(comspec, cmd, &si, &pi);
 		free(cmd);
 		CloseHandle(theirs);    /* the child holds the only copy now */
 		if (!success) {
