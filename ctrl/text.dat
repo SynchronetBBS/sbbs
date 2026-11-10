@@ -206,7 +206,7 @@
 "\1?You can't download.\r\n"                              165 R_Download
 "\1/\1w\1hSearching current library@ELLIPSIS@\r\n\1q"   166 SearchingAllDirs
 "\1w\1hSearching all libraries@ELLIPSIS@\r\n\1q"         167 SearchingAllLibs
-"\r\n\1w\1h%u Files Listed.\r\n"                          168 NFilesListed
+"\1?\1w\1h%u Files Listed.\r\n"                            168 NFilesListed
 "\1?\1w\1hEmpty directory.\r\n"                           169 EmptyDir
 "\1?\1cSearching for files "\                             170 NScanHdr
 	"uploaded after\1\\ \1h%s\1n\r\n"

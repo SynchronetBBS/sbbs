@@ -319,10 +319,12 @@ void PETSCII_Terminal::cleartoeol()
 
 void PETSCII_Terminal::clearline()
 {
-	int c = column;
+	int      c = column;
+	unsigned saved_lastcrcol = lastcrcol;
 	carriage_return();
 	cleartoeol();
 	cursor_right(c);
+	lastcrcol = saved_lastcrcol;
 }
 
 void PETSCII_Terminal::cursor_home()

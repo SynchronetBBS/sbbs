@@ -295,8 +295,10 @@ public:
 		cursor_left(cols - col);
 	}
 	virtual void clearline() {
+		unsigned saved_lastcrcol = lastcrcol;
 		carriage_return();
 		cleartoeol();
+		lastcrcol = saved_lastcrcol;
 	}
 
 	virtual void cursor_home() {}
