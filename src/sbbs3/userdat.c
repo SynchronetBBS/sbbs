@@ -3498,7 +3498,10 @@ int logoutuserdat(scfg_t* cfg, user_t* user, time_t logontime)
 			user->ttoday = UINT_MAX;
 		result = fputuserdat(cfg, user, file);
 	}
+	unlockuserdat(file, user->number);
 	close(file);
+	if (result == USER_SUCCESS)
+		dirtyuserdat(cfg, user->number);
 
 	return result;
 }
