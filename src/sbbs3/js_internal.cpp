@@ -329,6 +329,7 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 
 // This is kind of halfway between js_execfile() in exec.cpp and js_load
 extern JSClass js_global_class; // Hurr derr
+static void eval_on_exit(JSContext *cx, JSObject *obj, js_callback_t* cb);
 static int
 js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -540,7 +541,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, rval);
 	JS_ClearPendingException(cx);
 
-	js_EvalOnExit(cx, js_scope, js_callback);
+	eval_on_exit(cx, js_scope, js_callback);
 	JS_ReportPendingException(cx);
 	JS_DestroyScript(cx, js_script);
 	while (gptp->bg_count > orig_bgcount) {
@@ -1182,6 +1183,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 	jsrefcount             rc;
 	JSBool                 ret = JS_TRUE;
 	BOOL                   input_locked = FALSE;
+	bool                   timed_out;
 	js_socket_private_t*   jssp;
 	JSObject*              evo;
 	JSObject*              evfo;
@@ -1194,8 +1196,8 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 	fd_set                 wfds;
 	struct timeval         tv;
 	SOCKET                 hsock;
-	int                    sret;
 #endif
+	int                    sret;
 
 	if (!cb->events_supported)
 		return JS_FALSE;
@@ -1208,6 +1210,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 		tev = NULL;
 		cev = NULL;
 		rev = NULL;
+		timed_out = false;
 #ifdef PREFER_POLL
 		fds = NULL;
 		sc = 0;
@@ -1343,7 +1346,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 
 		// TODO: suspend/resume request
 #ifdef PREFER_POLL
-		switch (poll(fds, cfd, timeout)) {
+		sret = poll(fds, cfd, timeout);
 #else
 		if (hsock == 0) {
 			// No descriptors: select() would fail with EINVAL on Windows
@@ -1356,11 +1359,12 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 			tv.tv_usec = (timeout % 1000) * 1000;
 			sret = select(hsock + 1, &rfds, &wfds, NULL, timeout < 0 ? NULL : &tv);
 		}
-		switch (sret) {
 #endif
+		switch (sret) {
 			case 0:     // Timeout
 				JS_RESUMEREQUEST(cx, rc);
 				ev = NULL; // Select fairly among ready classes below.
+				timed_out = true;
 				break;
 			case -1:    // Error...
 				JS_RESUMEREQUEST(cx, rc);
@@ -1454,7 +1458,14 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 
 		if (ev == NULL) {
 			if (cb->rq_head == NULL) {
-				JS_ReportError(cx, "poll() returned ready, but didn't find anything");
+				// The wait can end before the timer is due by our clock: wait again
+				if (timed_out)
+					goto done;
+				char next_timer[32] = "none";
+				if (deadline != UINT64_MAX)
+					snprintf(next_timer, sizeof next_timer, "%lld ms", (long long)(deadline - now));
+				JS_ReportError(cx, "poll() returned ready (%d), but didn't find anything (timeout: %d ms, next timer: %s)"
+				               , sret, timeout, next_timer);
 				ret = JS_FALSE;
 				goto done;
 			}
@@ -1640,7 +1651,7 @@ static JSClass js_internal_class = {
 	, JS_FinalizeStub        /* finalize		*/
 };
 
-void js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
+static void eval_on_exit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 {
 	char*                    p;
 	jsval                    rval;
@@ -1664,7 +1675,7 @@ void js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 			}
 			else {
 				oes = pt->onexit;
-				js_EvalOnExit(cx, pt->onexit->scope, cb);
+				eval_on_exit(cx, pt->onexit->scope, cb);
 				if (oes == pt->onexit) {
 					// This *really* shouldn't happen...
 					JS_ReportError(cx, "js_EvalOnExit() did not pop on_exit stack");
@@ -1707,6 +1718,14 @@ void js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 		cb->auto_terminate = TRUE;
 	if (terminate_on_disconnect)
 		cb->terminate_on_disconnect = TRUE;
+}
+
+void js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
+{
+	eval_on_exit(cx, obj, cb);
+	// The host's event loop has ended: anything a handler registered can never run
+	if (obj == JS_GetGlobalObject(cx))
+		js_clear_events(cx, cb);
 }
 
 JSObject* js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_callback_t* cb, js_startup_t* startup)
