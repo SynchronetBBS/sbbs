@@ -984,7 +984,7 @@ public:
 	bool	msg_subject_matches(const idxrec_t& idx, const smbmsg_t& msg);
 	void	show_msgattr(const smbmsg_t*);
 	void	show_msghdr(smb_t*, const smbmsg_t*, const char *subj = NULL, const char* from = NULL, const char* to = NULL);
-	void	show_msghdr_line(const smbmsg_t*, uint index, const char* field, int pmode);
+	void	show_msghdr_field(const smbmsg_t*, uint index, const char* field, int pmode);
 	bool	show_msg(smb_t*, smbmsg_t*, int p_mode = 0, post_t* post = NULL);
 	bool	msgtotxt(smb_t*, smbmsg_t*, const char *fname, bool header = true, uint gettxt_mode = GETMSGTXT_ALL);
 	const char* msghdr_text(const smbmsg_t*, uint index, bool can_utf8 = true);

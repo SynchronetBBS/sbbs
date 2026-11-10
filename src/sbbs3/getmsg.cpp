@@ -236,11 +236,10 @@ void sbbs_t::list_msg(const smbmsg_t* msg, uint fmt, uint num, const char* from,
 }
 
 /****************************************************************************/
-/* Displays one message header line: a text.dat format string and a field.  */
-/* If the format string can't be converted to UTF-8, the line is displayed   */
-/* in CP437 instead, field included.                                        */
+/* Displays one message header field using a text.dat format string. If the */
+/* format string can't be converted to UTF-8, both are displayed in CP437.  */
 /****************************************************************************/
-void sbbs_t::show_msghdr_line(const smbmsg_t* msg, uint index, const char* field, int pmode)
+void sbbs_t::show_msghdr_field(const smbmsg_t* msg, uint index, const char* field, int pmode)
 {
 	const char* fmt = msghdr_text(msg, index);
 	if (fmt != NULL)
@@ -288,13 +287,13 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 	}
 	msghdr_tos = (term->row == 0);
 	if (!menu("msghdr", P_NOERROR)) {
-		show_msghdr_line(msg, MsgSubj, current_msg_subj, pmode);
+		show_msghdr_field(msg, MsgSubj, current_msg_subj, pmode);
 		if (msg->tags && *msg->tags)
 			bprintf(text[MsgTags], msg->tags);
 		if (msg->hdr.attr || msg->hdr.netattr || (msg->hdr.auxattr & ~MSG_HFIELDS_UTF8))
 			show_msgattr(msg);
 		if (current_msg_to != NULL && *current_msg_to != 0) {
-			show_msghdr_line(msg, MsgTo, current_msg_to, pmode);
+			show_msghdr_field(msg, MsgTo, current_msg_to, pmode);
 			if (msg->to_net.addr != NULL)
 				bprintf(text[MsgToNet], smb_netaddrstr(&msg->to_net, str));
 			if (msg->to_ext)
@@ -303,7 +302,7 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 		if (msg->cc_list != NULL)
 			bprintf(text[MsgCarbonCopyList], msg->cc_list);
 		if (current_msg_from != NULL && (!(msg->hdr.attr & MSG_ANONYMOUS) || useron_is_sysop())) {
-			show_msghdr_line(msg, MsgFrom, current_msg_from, pmode);
+			show_msghdr_field(msg, MsgFrom, current_msg_from, pmode);
 			if (msg->from_ext)
 				bprintf(text[MsgFromExt], msg->from_ext);
 			if (msg->from_net.addr != NULL)
