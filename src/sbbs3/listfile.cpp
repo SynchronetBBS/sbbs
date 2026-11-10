@@ -175,8 +175,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 			}
 		}
 		if (useron.misc & BATCHFLAG && letter == 'A' && found && !tofile
-		    && !(mode & (FL_EXT | FL_VIEW))
-		    && (!mode || !(useron.misc & EXPERT)))
+		    && !(mode & (FL_EXT | FL_VIEW)))
 			bputs(text[FileListBatchCommands]);
 		m++;
 		if (!found && !(mode & (FL_EXT | FL_VIEW))) {
