@@ -79,6 +79,34 @@ function Notify_Servers_Of_Shutdown(reason) {
 	}
 }
 
+var PLine_Sockets = [];
+
+/* A JSexec -l re-run stays in the same process, where a listener left open
+   by the previous run goes on taking the new run's connections. */
+function Close_All_Sockets() {
+	var i;
+
+	function close_socket(sock) {
+		try {
+			if (sock)
+				sock.close();
+		} catch (e) {
+			log(LOG_WARNING, "Close_All_Sockets error: " + e);
+		}
+	}
+
+	for (i in Unregistered)
+		close_socket(Unregistered[i].socket);
+	for (i in Local_Servers)
+		close_socket(Local_Servers[i].socket);
+	for (i in Local_Users)
+		close_socket(Local_Users[i].socket);
+	while (PLine_Sockets.length)
+		close_socket(PLine_Sockets.pop());
+	if (typeof server === "object")
+		close_socket(server.socket);
+}
+
 function terminate_everything(str, error) {
 	var i;
 	var sendstr;
@@ -3659,6 +3687,7 @@ function Open_PLines() {
 			sock.nonblocking = true;
 			sock.debug = false;
 			sock.on("read", accept_new_socket);
+			PLine_Sockets.push(sock);
 		}
 	}
 }

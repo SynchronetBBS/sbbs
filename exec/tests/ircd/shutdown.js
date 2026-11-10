@@ -97,6 +97,17 @@ run_tests({
 		check(peer.socket.wire.indexOf(":Local QUIT :Shutdown test\r\n") >= 0 && peer.sendq.empty);
 		check(s.warnings.some(function(message) { return message.indexOf("services stop error") >= 0; }));
 	},
+	"the exit hook closes every client, link and listening socket": function() {
+		var s = shutdown_state(), peer = shutdown_peer(s), closed = [];
+		function listener(name) { return {close:function() { closed.push(name); }}; }
+		s.user.socket.close = function() { closed.push("user"); };
+		s.Unregistered.x = {socket:{close:function() { throw new Error("Already closed"); }}};
+		s.PLine_Sockets.push(listener("pline"));
+		s.server = {socket:listener("server")};
+		s.Close_All_Sockets();
+		check(peer.socket.closed && closed.join() == "user,pline,server", "Sockets left open: " + closed.join());
+		check(s.PLine_Sockets.length == 0 && s.warnings.length == 1);
+	},
 	"DIE flushes departures before stopping callbacks and the exit backstop does not repeat them": function() {
 		var s = shutdown_state(), peer = shutdown_peer(s);
 		s.user.mode |= s.USERMODE_OPER; s.user.flags |= s.OLINE_CAN_DIE;

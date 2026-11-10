@@ -262,7 +262,9 @@ js.setInterval(IRC_expire_akills, 1000 /* milliseconds */);
 /* Belt-and-suspenders: js.on_exit fires whenever this script is torn down --
    by the services subsystem, the sysop, or a JSexec exit -- on every
    platform, even if the terminated poll above never ran.  Notify is
-   idempotent, so the DIE/RESTART path and this backstop never double-send. */
+   idempotent, so the DIE/RESTART path and this backstop never double-send.
+   Exit handlers run last-in first-out: the sockets close after the notify. */
+js.on_exit("Close_All_Sockets();");
 js.on_exit("Notify_Servers_Of_Shutdown('Server shutting down');");
 
 Open_PLines();
