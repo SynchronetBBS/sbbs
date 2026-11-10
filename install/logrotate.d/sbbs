@@ -12,4 +12,12 @@
 	notifempty
 	create 640 sbbs sbbs
 	maxage 90
+	# rsyslogd keeps writing to the renamed file until told to reopen it
+	postrotate
+		if [ -x /usr/lib/rsyslog/rsyslog-rotate ]; then
+			/usr/lib/rsyslog/rsyslog-rotate
+		else
+			pkill -HUP -x rsyslogd || true
+		fi
+	endscript
 }
