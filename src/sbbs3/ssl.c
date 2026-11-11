@@ -460,8 +460,16 @@ bool ssl_sync(scfg_t *scfg, int (*lprintf)(int level, const char* fmt, ...))
 
 	if (!do_cryptInit(lprintf))
 		return false;
+	if (!rwlock_wrlock(&tls_cert_file_date_lock)) {
+		lprintf(LOG_ERR, "Unable to lock tls_cert_file_date_lock for write at %d", __LINE__);
+		return false;
+	}
 	if (!cert_path[0])
 		SAFEPRINTF2(cert_path, "%s%s", scfg->ctrl_dir, "ssl.cert");
+	if (!rwlock_unlock(&tls_cert_file_date_lock)) {
+		lprintf(LOG_ERR, "Unable to unlock tls_cert_file_date_lock for write at %d", __LINE__);
+		return false;
+	}
 	time_t fd = fdate(cert_path);
 	if (!rwlock_rdlock(&tls_cert_file_date_lock)) {
 		lprintf(LOG_ERR, "Unable to lock tls_cert_file_date_lock for read at %d", __LINE__);
@@ -552,7 +560,6 @@ failure_return_2:
 	cryptKeysetClose(ssl_keyset);
 failure_return_1:
 	cryptDestroyContext(cert);
-	cert_path[0] = 0;
 	return false;
 }
 
@@ -625,7 +632,6 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 
 	if (cert_entry->cert == -1) {
 		free(cert_entry);
-		cert_path[0] = 0;
 		cert_entry = NULL;
 	}
 	else {
