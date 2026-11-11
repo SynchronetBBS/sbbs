@@ -26,7 +26,7 @@ struct xpms_set* xpms_create(unsigned int retries, unsigned int wait_secs,
 	return ret;
 }
 
-void xpms_destroy(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET, void *), void *cbdata)
+void xpms_close(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET, void *), void *cbdata)
 {
 	size_t i;
 
@@ -44,6 +44,17 @@ void xpms_destroy(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET, void *
 				sock_destroy(xpms_set->socks[i].sock, cbdata);
 		}
 		xpms_set->socks[i].sock = INVALID_SOCKET;
+	}
+}
+
+void xpms_destroy(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET, void *), void *cbdata)
+{
+	size_t i;
+
+	if (!xpms_set)
+		return;
+	xpms_close(xpms_set, sock_destroy, cbdata);
+	for (i = 0; i < xpms_set->sock_count; i++) {
 		FREE_AND_NULL(xpms_set->socks[i].address);
 		FREE_AND_NULL(xpms_set->socks[i].prot);
 	}

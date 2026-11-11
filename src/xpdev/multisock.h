@@ -37,6 +37,7 @@ extern "C" {
 
 DLLEXPORT struct xpms_set* xpms_create(unsigned int retries, unsigned int wait_secs,
 	int (*lprintf)(int level, const char *fmt, ...));
+DLLEXPORT void xpms_close(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET, void *), void *cbdata);
 DLLEXPORT void xpms_destroy(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET, void *), void *cbdata);
 DLLEXPORT bool xpms_add(struct xpms_set *xpms_set, int domain, int type,
 	int protocol, const char *addr, uint16_t port, const char *prot, bool* terminated,

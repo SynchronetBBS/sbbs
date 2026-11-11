@@ -8166,6 +8166,7 @@ void web_server(void* arg)
 		}
 
 		set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
+		xpms_close(ws_set, close_socket_cb, NULL);
 
 		if (session) {
 			pthread_mutex_unlock(&session->struct_filled);

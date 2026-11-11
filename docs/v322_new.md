@@ -98,6 +98,9 @@
 - `[Mail] POP3Interface` and `[Web] TLSInterface` now default to their
   own server's `Interface` rather than `[Global] Interface`, so adding
   (for example) `::` to `[Mail] Interface` now enables IPv6 for POP3 too
+- The terminal, mail, FTP, and web servers now close their listening
+  sockets as soon as a shutdown or recycle begins, so new connections
+  are refused right away instead of hanging until active clients leave
 
 ## Terminal Server
 

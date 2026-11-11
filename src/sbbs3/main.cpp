@@ -6453,6 +6453,7 @@ NO_PASSTHRU:
 		}
 
 		sbbs->client_socket = INVALID_SOCKET;
+		xpms_close(ts_set, sock_close_cb, startup);
 		if (events != NULL)
 			events->terminated = true;
 		// Wake-up BBS output thread so it can terminate

@@ -5780,6 +5780,7 @@ void ftp_server(void* arg)
 		}
 
 		set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
+		xpms_close(ftp_set, ftp_close_socket_cb, NULL);
 
 #if 0 /* def _DEBUG */
 		lprintf(LOG_DEBUG, "0000 terminate_server: %d", terminate_server);

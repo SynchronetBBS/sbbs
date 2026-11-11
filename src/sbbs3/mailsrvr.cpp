@@ -6953,6 +6953,7 @@ void mail_server(void* arg)
 		}
 
 		set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
+		xpms_close(mail_set, mail_close_socket_cb, NULL);
 
 		if (protected_uint32_value(active_clients)) {
 			lprintf(LOG_INFO, "Waiting for %d active clients to disconnect..."
