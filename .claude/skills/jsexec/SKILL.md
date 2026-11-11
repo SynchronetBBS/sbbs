@@ -89,6 +89,23 @@ you want. **Do not add `-q`** — it redirects all stdout (including `print()`) 
 jsexec -n -r "print(JSON.stringify({v: system.version, nodes: system.node_list.length}));"
 ```
 
+### Status messages vanish when stdin is not a tty
+
+Status output (the banner, `Re-running: …`, `-> Terminated Locally (signal: N)`,
+`-> Recycled Locally …`, and any `lprintf` above `ErrorLevel`) goes to a status
+stream that jsexec sends to the **null device** whenever **stdin is not a
+terminal**. That includes a systemd service, a cron job, a backgrounded `&` test,
+and any run from a tool harness. `-n` sends it there too. Only messages at or
+below `ErrorLevel` (`ctrl/jsexec.ini`, default `Warning`) reach stderr.
+
+So the absence of a status line in a journal or a captured log proves nothing.
+To see it, pass **`-S`** (status → stdout) or `-S<file>`:
+
+```bash
+jsexec -S script.js > out.txt 2>&1 & pid=$!; sleep 2; kill -TERM $pid; wait $pid
+grep Locally out.txt     # -> Terminated Locally (signal: 15)
+```
+
 ## What the jsexec environment provides (vs a BBS session)
 
 jsexec runs *outside* a user session, so the global surface differs from what
@@ -376,7 +393,9 @@ echo concern, so reading lines off the `stdin` File is fine there.
 jsexec's process exit status has exactly **two** sources:
 
 1. The `exit_code` global, which `exit(N)` sets — status is then `N`.
-2. An **uncaught exception**, which yields status **1**.
+2. An **uncaught exception** (or an abort), which yields status **1**, except
+   for an abort caused by an external stop; see
+   [Stopped or recycled from outside](#stopped-or-recycled-from-outside-signals).
 
 A script that does neither exits **0**, no matter what it did or failed to do.
 
@@ -415,6 +434,26 @@ Other verified behavior:
   Distinguish them by that same stderr line.
 - A module that needs to signal failure to a caller (timed event, shell script,
   cron) **must** call `exit(N)`. Returning `false` from `main()` reports success.
+
+### Stopped or recycled from outside (signals)
+
+SIGTERM/SIGINT/SIGQUIT (on Windows, Ctrl-C/Break/close/logoff/shutdown) set
+`js.terminated`, and SIGHUP recycles (re-runs the script). Either way the
+operation callback **aborts** the running script, logging
+`!JavaScript warning <file> line N: Terminated` at the line it was on. A script
+that polls `js.terminated` in its loop condition still usually gets aborted
+before it reaches that check, so it can't count on exiting through it.
+
+- **Current builds:** a script aborted only by such a stop or recycle exits
+  **0**, unless it set `exit_code` itself. So `systemctl stop` of a jsexec
+  service is not a failure.
+- **Older builds** exited **1** (`!Module (<name>) set exit_code: 1`). systemd
+  then logged every routine stop/restart as `status=1/FAILURE` /
+  `Failed with result 'exit-code'`. That status is cosmetic; check the journal
+  for a `systemctl stop` before treating it as a crash.
+- A script that sets `js.terminated = true` itself and keeps running is aborted
+  the same way, but **still exits 1**: only an external signal counts as a
+  deliberate stop.
 
 ## Pitfalls
 

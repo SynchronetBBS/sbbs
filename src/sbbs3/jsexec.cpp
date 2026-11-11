@@ -81,7 +81,7 @@ bool               pause_on_exit = false;
 bool               pause_on_error = false;
 bool               terminated = false;
 bool               recycled;
-volatile int       terminate_signal;
+volatile int       terminate_signal = -1; // not 0: that's CTRL_C_EVENT
 volatile int       recycle_signal;
 bool               require_cfg = true;
 int                log_level = DEFAULT_LOG_LEVEL;
@@ -1198,8 +1198,8 @@ long js_exec(const char *fname, const char* buf, char** args)
 			mfprintf(statfp, "Using JavaScript exit_code: %s", p);
 			free(p);
 			JS_ValueToInt32(js_cx, rval, &result);
-		} else if (!exec_result)
-			result = EXIT_FAILURE;
+		} else if (!exec_result && terminate_signal < 0 && !recycle_signal)
+			result = EXIT_FAILURE;  // not merely aborted by a local stop/recycle
 		js_EvalOnExit(js_cx, js_glob, &cb);
 
 		JS_ReportPendingException(js_cx);
@@ -1675,7 +1675,7 @@ extern "C" int main(int argc, char **argv
 		fprintf(statfp, "\n");
 
 		result = js_exec(module, js_buf, &argv[argn]);
-		if (terminate_signal)
+		if (terminate_signal >= 0)
 			lprintf(LOG_NOTICE, "\n-> Terminated Locally (signal: %d)", terminate_signal);
 		if (recycle_signal) {
 			lprintf(LOG_NOTICE, "\n-> Recycled Locally (signal: %d)", recycle_signal);
