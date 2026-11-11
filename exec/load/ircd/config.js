@@ -1494,7 +1494,10 @@ function read_conf_config(conf) {
 
 	while (!conf.eof) {
 		conf_line = conf.readln();
-		if ((conf_line != null) && conf_line.match("[:]")) {
+		/* A failed read never sets eof */
+		if (conf_line === null)
+			break;
+		if (conf_line.match("[:]")) {
 			arg = fancy_split(conf_line);
 			for (i in arg) {
 				arg[i] = expand_config_macros(arg[i]);

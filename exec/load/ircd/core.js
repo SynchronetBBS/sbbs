@@ -1241,11 +1241,12 @@ function IRCClient_motd() {
 		this.numeric(372, ":- " + strftime("%m/%d/%Y %H:%M",motd_file.date));
 		while (!motd_file.eof) {
 			motd_line = motd_file.readln();
-			if (motd_line != null) {
-				if (typeof codepage_encode == 'function')
-					motd_line = codepage_encode(false, 0, motd_line);
-				this.numeric(372, ":- " + motd_line);
-			}
+			/* A failed read never sets eof */
+			if (motd_line === null)
+				break;
+			if (typeof codepage_encode == 'function')
+				motd_line = codepage_encode(false, 0, motd_line);
+			this.numeric(372, ":- " + motd_line);
 		}
 		motd_file.close();
 	}
