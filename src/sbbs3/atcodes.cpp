@@ -274,7 +274,7 @@ static const char* getpath(scfg_t* cfg, const char* path)
 
 // Support duration output formats, examples: 0           90m                100h
 #define DURATION_FULL_HHMMSS           'F' // 00:00:00    01:30:00           100:00:00
-#define DURATION_TRUNCATED_HHMMSS      '!' // 0:00:00     1:30:00            00:00:00
+#define DURATION_TRUNCATED_HHMMSS      '!' // 0:00:00     1:30:00            100:00:00
 #define DURATION_MINIMAL_HHMMSS        'A' // 0           1:30:00            100:00:00
 #define DURATION_FULL_HHMM             'T' // 00:00       01:30              100:00
 #define DURATION_MINIMAL_HHMM          'B' // 0           1:30               100:00
@@ -291,7 +291,10 @@ static char* duration(uint seconds, char* str, size_t maxlen, char fmt, char def
 		case DURATION_FULL_HHMMSS:
 			return sectostr(seconds, str);
 		case DURATION_TRUNCATED_HHMMSS:
-			return sectostr(seconds, str) + 1; // Legacy truncation when hours > 9
+		{
+			char* p = sectostr(seconds, str);
+			return (*p == '0') ? p + 1 : p; // Drop a leading zero only (hours < 10)
+		}
 		case DURATION_MINIMAL_HHMMSS:
 			return seconds_to_str(seconds, str);
 		case DURATION_FULL_HHMM:

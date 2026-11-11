@@ -646,6 +646,8 @@
   modifiers (alignment, width, truncation) work on them and
   `bbs.atcode()` / `bbs.expand_atcodes()` return them rather
   than emitting stray output (issue #1198)
+- Fixed: `@TUSED@` and `@TLEFT@` dropped the first digit of the hours once
+  a time reached 10 hours (e.g. 14 hours shown as `4:44:30`) (issue #1336)
 
 ## Stock Modules
 
