@@ -332,6 +332,8 @@
   Signups now must supply the fields set to Yes there, such as real name,
   location, gender and birthdate, may omit e-mail where it is disabled, and
   are refused an invalid birthdate
+- Fix: the webv4 mail page could take minutes to load on a large mail base;
+  it now reads the mail index once instead of looking up every message number
 
 ## FTP Server
 

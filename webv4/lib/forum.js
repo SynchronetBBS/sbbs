@@ -312,14 +312,34 @@ function getUserPollData(sub, id) {
     return ret;
 }
 
+// Returns the headers of the non-deleted mail to or from the current user, in
+// index order. Reads the index once and then only the matching headers, rather
+// than looking up every message number between first_msg and last_msg.
+function get_user_mail_headers(msg_base) {
+    const headers = [];
+    const index = msg_base.get_index();
+    if (!index) return headers;
+    const unum = user.number & 0xffff; // the index to/from fields are 16-bit
+    for (var i = 0; i < index.length; i++) {
+        var idx = index[i];
+        if (idx.attr&MSG_DELETE) continue;
+        if (idx.to != unum && idx.from != unum) continue;
+        var h = msg_base.get_msg_header(true, idx.offset);
+        if (h === null || h.number != idx.number) h = msg_base.get_msg_header(idx.number); // index changed since read
+        if (h === null || h.attr&MSG_DELETE) continue;
+        headers.push(h);
+    }
+    return headers;
+}
+
 function getMailHeaders(sent, ascending) {
     if (sent !== undefined && sent && user.security.restrictions&UREST_READ_SENT_MAIL) return []; // They'll just see nothing.  Provide actual feedback?  Does anyone use REST K?
     var headers = [];
     var msgBase = new MsgBase('mail');
     if (!msgBase.open()) return headers;
-    for (var m = msgBase.first_msg; m <= msgBase.last_msg; m++) {
-        var h = msgBase.get_msg_header(m);
-        if (h === null || h.attr&MSG_DELETE) continue;
+    const mail = get_user_mail_headers(msgBase);
+    for (var m = 0; m < mail.length; m++) {
+        var h = mail[m];
         if ((sent !== undefined && sent) && h.from_ext != user.number) continue;
         if ((sent === undefined || !sent) && h.to_ext != user.number) continue;
         headers.push(h);
@@ -343,9 +363,9 @@ function get_mail_headers(filter, ascending) {
     if (filter == 'sent' && user.security.restrictions&UREST_READ_SENT_MAIL) return ret; // I don't remember what this is for.
     const msg_base = new MsgBase('mail');
     if (!msg_base.open()) return ret;
-    for (var n = msg_base.first_msg; n <= msg_base.last_msg; n++) {
-        var h = msg_base.get_msg_header(n);
-        if (h === null || h.attr&MSG_DELETE) continue;
+    const mail = get_user_mail_headers(msg_base);
+    for (var n = 0; n < mail.length; n++) {
+        var h = mail[n];
         if (h.from_ext == user.number) {
             h.attr&MSG_READ ? ret.sent.read++ : (ret.sent.unread++);
             if (filter == 'sent') ret.headers.push(h);
