@@ -1184,6 +1184,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 	JSBool                 ret = JS_TRUE;
 	BOOL                   input_locked = FALSE;
 	bool                   timed_out;
+	bool                   flush_pending;
 	js_socket_private_t*   jssp;
 	JSObject*              evo;
 	JSObject*              evfo;
@@ -1211,6 +1212,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 		cev = NULL;
 		rev = NULL;
 		timed_out = false;
+		flush_pending = false;
 #ifdef PREFER_POLL
 		fds = NULL;
 		sc = 0;
@@ -1243,6 +1245,9 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 			if (ev->type != JS_EVENT_SOCKET_READABLE && ev->type != JS_EVENT_SOCKET_READABLE_ONCE)
 				continue;
 			jssp = (js_socket_private_t*)JS_GetPrivate(cx, ev->cx);
+			// Sockets after the first with buffered input wait for a later pass
+			if (js_socket_tls_flush_pending(jssp))
+				flush_pending = true;
 			if (js_socket_tls_readable(jssp)) {
 				rev = ev;
 				break;
@@ -1252,6 +1257,8 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 		rc = JS_SUSPENDREQUEST(cx);
 		if (cb->rq_head || rev)
 			timeout = 0;
+		else if (flush_pending)
+			timeout = 20;   // Retry the unwritten TLS output soon
 		for (ev = *head; ev; ev = ev->next) {
 			switch (ev->type) {
 				case JS_EVENT_SOCKET_READABLE_ONCE:

@@ -29,6 +29,8 @@ typedef struct
 	char peeked_byte;
 	BOOL peeked;
 	bool tls_drained;   /* The last pop came up short: no plaintext is buffered in the session */
+	bool tls_write_nowait;  /* The session's write timeout is zeroed, for a non-blocking socket */
+	int tls_write_timeout;  /* The session's own write timeout, restored when blocking again */
 	uint16_t local_port;
 	js_callback_t *js_cb;
 	int tls_minver;
@@ -50,6 +52,7 @@ struct js_connect_result {
 bool js_socket_finish_connect(JSContext *cx, struct js_event_list *event, bool discard);
 
 bool js_socket_tls_readable(js_socket_private_t* p);
+bool js_socket_tls_flush_pending(js_socket_private_t* p);
 void js_socket_cancel_tls(JSContext *cx, JSObject *obj);
 JSBool js_socket_finish_tls(JSContext *cx, JSObject *obj);
 

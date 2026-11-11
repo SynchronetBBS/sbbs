@@ -865,6 +865,10 @@
 - Windows: scripts using socket callbacks (`Socket.on()`,
   e.g. the IRC daemon) no longer stop accepting new connections
   once the process reaches 64 open sockets
+- Non-blocking TLS `Socket`: `send()` no longer stalls the script
+  for 5 seconds or more at a time when the peer is not reading;
+  output the peer has not yet taken is sent on by the event loop
+  (for sockets with a `read` callback)
 - `Socket` log output (`debug` traces, TLS errors, listening-socket
   bind failures) now goes to the log of the server or program running
   the script (Mail, Web, Services, `jsexec`) instead of always the

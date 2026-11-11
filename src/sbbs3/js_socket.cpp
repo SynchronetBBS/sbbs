@@ -319,11 +319,50 @@ static bool do_CryptFlush(js_socket_private_t *p)
 			p->unflushed = 0;
 			return true;
 		}
+		// A non-blocking flush that could not write everything resumes on the next one
+		if (ret == CRYPT_ERROR_TIMEOUT && p->nonblocking)
+			return false;
 		if (ret != CRYPT_ERROR_COMPLETE)
 			GCES(ret, p, estr, "flushing data");
 		return false;
 	}
 	return true;
+}
+
+// cryptlib otherwise waits out its write timeout on a peer that is not reading
+static bool js_socket_tls_write_timeout(js_socket_private_t *p)
+{
+	bool nowait = p->nonblocking != 0;
+
+	if (nowait == p->tls_write_nowait)
+		return true;
+	if (nowait && cryptGetAttribute(p->session, CRYPT_OPTION_NET_WRITETIMEOUT, &p->tls_write_timeout) != CRYPT_OK)
+		return false;
+	if (do_cryptAttribute(p, CRYPT_OPTION_NET_WRITETIMEOUT, nowait ? 0 : p->tls_write_timeout) != CRYPT_OK)
+		return false;
+	p->tls_write_nowait = nowait;
+	return true;
+}
+
+// Even with a zero timeout, cryptlib waits 5 ms or more on a descriptor that is not writable
+static bool js_socket_tls_write_stalled(js_socket_private_t *p)
+{
+	return p->nonblocking && p->unflushed != 0 && !socket_writable(p->sock, 0);
+}
+
+/* Retries the output that a non-blocking TLS send left in the session; true while some remains.
+ * The event loop calls this only for sockets with a read event: a script that sends on a
+ * non-blocking TLS socket without one keeps the remainder until its next send.
+ * close() does not wait for it either: whatever a stalled peer has not taken is discarded. */
+bool js_socket_tls_flush_pending(js_socket_private_t* p)
+{
+	if (p == NULL || p->session == -1 || !p->nonblocking || p->unflushed == 0)
+		return false;
+	if (js_socket_tls_write_stalled(p))
+		return true;
+	if (!js_socket_tls_write_timeout(p))
+		return false;
+	return !do_CryptFlush(p) && p->session != -1 && p->unflushed != 0;
 }
 
 static void
@@ -591,6 +630,8 @@ static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, s
 
 	if (p->session == -1)
 		return sendsocket(p->sock, static_cast<const char *>(msg), len);
+	if (!js_socket_tls_write_timeout(p) || js_socket_tls_write_stalled(p))
+		return 0;
 	do {
 		// If we don't limit this, we occasionally get errors on large sends...
 		if ((ret = cryptPushData(p->session, msg, len > 0x2000 ? 0x2000 : len, &copied)) == CRYPT_OK) {
@@ -636,10 +677,21 @@ static off_t js_socket_sendfilesocket(js_socket_private_t *p, int file)
 		if (rd == 0)
 			break;
 		ssize_t sent = 0;
+		unsigned stalls = 0;
 		while (sent < rd) {
 			ptrdiff_t wr = js_socket_sendsocket(p, buf + sent, rd - sent, false);
 			if (wr > 0) {
 				sent += wr;
+				stalls = 0;
+			}
+			else if (wr == 0 && p->session != -1 && p->nonblocking && stalls < 1000
+			         && !js_socket_terminated(p) && socket_check(p->sock, NULL, NULL, 0)) {
+				/* A non-blocking TLS send takes nothing while the peer is not reading: wait for room,
+				 * as below for a plain socket. A writable socket that still takes nothing is failing. */
+				if (socket_writable(p->sock, 1000)) {
+					stalls++;
+					SLEEP(1);
+				}
 			}
 			else if (wr == SOCKET_ERROR && SOCKET_ERRNO == EWOULDBLOCK) {
 				wr = 0;
@@ -2642,6 +2694,7 @@ static int js_socket_prepare_tls(JSContext *cx, js_socket_private_t *p, bool ser
 	if (ret != CRYPT_OK)
 		return ret;
 	p->tls_drained = false;
+	p->tls_write_nowait = false;
 	p->tls_server = server_mode && !defer_key;
 	set_socket_nonblocking(p->sock, false);
 	int nodelay = 1;
