@@ -28,7 +28,7 @@ typedef struct
 	size_t unflushed;
 	char peeked_byte;
 	BOOL peeked;
-	bool tls_drained;   /* The last pop came up short: no plaintext is buffered in the session */
+	bool tls_drained;   /* The last pop came up short: neither plaintext nor an error is waiting in the session */
 	bool tls_write_nowait;  /* The session's write timeout is zeroed, for a non-blocking socket */
 	int tls_write_timeout;  /* The session's own write timeout, restored when blocking again */
 	uint16_t local_port;

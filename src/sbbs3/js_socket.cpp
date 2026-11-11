@@ -487,6 +487,16 @@ static bool js_socket_peek_byte(JSContext *cx, js_socket_private_t *p)
 	return false;
 }
 
+/* cryptlib reports a fatal error met after the data a pop returned on the next pop only, having
+ * already consumed the input: the descriptor will not signal it. Each pop starts by clearing the
+ * session's error message, so one left by a pop that succeeded is that error. */
+static bool js_socket_tls_error_saved(js_socket_private_t *p)
+{
+	int len = 0;
+
+	return cryptGetAttributeString(p->session, CRYPT_ATTRIBUTE_ERRORMESSAGE, NULL, &len) == CRYPT_OK && len > 0;
+}
+
 bool js_socket_tls_readable(js_socket_private_t* p)
 {
 	int copied;
@@ -584,7 +594,7 @@ static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf
 			p->tls_drained = false;
 			if (cryptStatusOK(status)) {
 				ret = copied;
-				p->tls_drained = copied < (int)len;
+				p->tls_drained = copied < (int)len && !js_socket_tls_error_saved(p);
 			}
 			else {
 				ret = -1;
