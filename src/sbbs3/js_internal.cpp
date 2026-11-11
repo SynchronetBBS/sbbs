@@ -173,8 +173,13 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 
 	switch (tiny) {
 		case PROP_TERMINATED:
-			if (cb->terminated != NULL)
-				JS_ValueToBoolean(cx, *vp, (int *)cb->terminated);
+			if (cb->terminated != NULL) {
+				// JSBool is an int; *cb->terminated is a 1-byte bool
+				JSBool b;
+				if (!JS_ValueToBoolean(cx, *vp, &b))
+					return JS_FALSE;
+				*cb->terminated = b;
+			}
 			break;
 		case PROP_AUTO_TERMINATE:
 			JS_ValueToBoolean(cx, *vp, &cb->auto_terminate);
