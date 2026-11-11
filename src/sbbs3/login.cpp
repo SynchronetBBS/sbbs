@@ -57,8 +57,14 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 	}
 	useron.number = usernum;
 	if (useron.number) {
-		getuserdat(&cfg, &useron);
-		if (useron.number && useron.misc & (DELETED | INACTIVE))
+		int result = getuserdat(&cfg, &useron);
+		if (result != USER_SUCCESS) {
+			errormsg(WHERE, ERR_READ, "user data", result, username);
+			useron.number = 0;
+			useron.misc = useron_misc;
+			return LOGIC_FALSE;
+		}
+		if (useron.misc & (DELETED | INACTIVE))
 			useron.number = 0;
 	}
 

@@ -160,16 +160,27 @@ bool sbbs_t::answer()
 			   (but keep full terminal type/speed string in rlogin_term): */
 			truncstr(terminal, "/");
 			useron.number = 0;
+			bool lookup_failed = false;
 			if (rlogin_name[0]) {
 				int usernum = find_login_id(&cfg, rlogin_name);
-				if (usernum < 0)
+				if (usernum < 0) {
 					lprintf(LOG_ERR, "%04d %s !ERROR %d looking up user '%s'"
 					        , client_socket.load(), client.protocol, usernum, rlogin_name);
+					lookup_failed = true;
+				}
 				else
 					useron.number = usernum;
 			}
 			if (useron.number) {
-				getuserdat(&cfg, &useron);
+				int result = getuserdat(&cfg, &useron);
+				if (result != USER_SUCCESS) {
+					lprintf(LOG_ERR, "%04d %s !ERROR %d reading user data for '%s'"
+					        , client_socket.load(), client.protocol, result, rlogin_name);
+					useron.number = 0;
+					lookup_failed = true;
+				}
+			}
+			if (useron.number) {
 				SAFEPRINTF(path, "%srlogin.cfg", cfg.ctrl_dir);
 				if (!findstr(client.addr, path)) {
 					SAFECOPY(tmp, rlogin_pass);
@@ -222,7 +233,7 @@ bool sbbs_t::answer()
 					}
 				}
 			}
-			else {
+			else if (!lookup_failed) {
 				if (cfg.sys_misc & SM_ECHO_PW)
 					lprintf(LOG_NOTICE, "RLogin !UNKNOWN USER: '%s' (password: %s)", rlogin_name, rlogin_pass);
 				else

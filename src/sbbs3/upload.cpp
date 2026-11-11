@@ -420,7 +420,11 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 					bputs(text[DuplicateUser]);
 					continue;
 				}
-				getuserdat(&cfg, &user);
+				int result = getuserdat(&cfg, &user);
+				if (result != USER_SUCCESS) {
+					errormsg(WHERE, ERR_READ, "user data", result, usernum);
+					continue;
+				}
 				if (!user_can_download(&cfg, cfg.user_dir, &user, /* client: */ NULL, /* reason: */ NULL)) {
 					bprintf(text[UserWontBeAbleToDl], user.alias);
 				} else {

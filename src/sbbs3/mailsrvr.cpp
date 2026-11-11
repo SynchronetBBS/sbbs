@@ -5071,7 +5071,12 @@ static bool smtp_client_thread(smtp_t* smtp)
 					    && startup->options & MAIL_OPT_SMTP_AUTH_VIA_IP) {
 						relay_user.number = finduserstr(&scfg, 0, USER_IPADDR, host_ip, /* del */ false, /* next */ false, NULL, NULL);
 						if (relay_user.number) {
-							getuserdat(&scfg, &relay_user);
+							if ((i = getuserdat(&scfg, &relay_user)) != USER_SUCCESS) {
+								errprintf(LOG_ERR, WHERE, "%04d %-5s %s !ERROR %d reading data for user with IP address %s"
+								          , socket, client.protocol, client_id, i, host_ip);
+								sockprintf(socket, client.protocol, session, "451 4.3.0 User lookup failed");
+								continue;
+							}
 							if (relay_user.laston < time(NULL) - (60 * 60))  /* logon in past hour? */
 								relay_user.number = 0;
 						}

@@ -2935,8 +2935,15 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 
-		if (!user_is_guest(&user))
-			getuserdat(&scfg, &user);   /* get current user data */
+		if (!user_is_guest(&user)) {   /* get current user data */
+			user_t current = {};
+
+			current.number = user.number;
+			if ((i = getuserdat(&scfg, &current)) == USER_SUCCESS)
+				user = current;
+			else
+				errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d re-reading user data", sock, user.alias, i);
+		}
 
 		if ((timeleft = (long)gettimeleft(&scfg, &user, logintime)) < 1L) {
 			sockprintf(sock, sess, "421 Sorry, you've run out of time.");
