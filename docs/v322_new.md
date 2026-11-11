@@ -963,6 +963,8 @@
 
 ## JSexec
 
+- New `-T` option prefixes each log and status message with the date
+  and time (to the millisecond)
 - Restored the "SBBSCTRL environment variable missing" startup
   warning
 - Fix `SBBSCTRL` environment clobber when running large

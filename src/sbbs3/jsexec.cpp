@@ -41,6 +41,7 @@
 #include "jsdebug.h"
 #include "git_branch.h"
 #include "git_hash.h"
+#include <chrono>
 
 #define DEFAULT_LOG_LEVEL   LOG_INFO
 #define DEFAULT_ERR_LOG_LVL LOG_WARNING
@@ -93,6 +94,7 @@ struct termios     orig_term;
 #endif
 char               orig_cwd[MAX_PATH + 1];
 bool               debugger = false;
+bool               log_timestamps = false;
 #ifndef PROG_NAME
 #define PROG_NAME "JSexec"
 #endif
@@ -158,6 +160,7 @@ void usage()
 	        "    -o<filename>   send console messages to file instead of stdout\n"
 	        "    -S<filename>   send status messages to file instead of stderr\n"
 	        "    -S             send status messages to stdout\n"
+	        "    -T             prefix log and status messages with the date and time\n"
 	        "    -n             send status messages to %s instead of stderr\n"
 	        "    -q             send console messages to %s instead of stdout\n"
 	        "    -v             display version details and exit\n"
@@ -224,10 +227,28 @@ raw_tty(void)
 	}
 }
 
+// "YYYY-MM-DD HH:MM:SS.mmm " in local time, or an empty string unless enabled (-T)
+static const char* log_timestamp(char* buf, size_t size)
+{
+	buf[0] = 0;
+	if (!log_timestamps)
+		return buf;
+	auto      now = std::chrono::system_clock::now();
+	time_t    t = std::chrono::system_clock::to_time_t(now);
+	int       ms = (int)(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() % 1000);
+	struct tm tm;
+	if (localtime_r(&t, &tm) == NULL)
+		return buf;
+	snprintf(buf, size, "%04d-%02d-%02d %02d:%02d:%02d.%03d "
+	         , tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, ms);
+	return buf;
+}
+
 int mfprintf(FILE* fp, const char *fmt, ...)
 {
 	va_list argptr;
 	char    sbuf[8192];
+	char    tbuf[32];
 	int     ret = 0;
 
 	va_start(argptr, fmt);
@@ -238,7 +259,7 @@ int mfprintf(FILE* fp, const char *fmt, ...)
 	/* Mutex-protect stdout/stderr */
 	pthread_mutex_lock(&output_mutex);
 
-	ret = fprintf(fp, "%s\n", sbuf);
+	ret = fprintf(fp, "%s%s\n", log_timestamp(tbuf, sizeof tbuf), sbuf);
 
 	pthread_mutex_unlock(&output_mutex);
 	return ret;
@@ -249,6 +270,7 @@ int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
 	char    sbuf[8192];
+	char    tbuf[32];
 	int     ret = 0;
 
 	if (level > log_level)
@@ -268,13 +290,14 @@ int lprintf(int level, const char *fmt, ...)
 	/* Mutex-protect stdout/stderr */
 	pthread_mutex_lock(&output_mutex);
 
+	log_timestamp(tbuf, sizeof tbuf);
 	if (level <= err_level) {
-		ret = fprintf(errfp, "%s\n", sbuf);
+		ret = fprintf(errfp, "%s%s\n", tbuf, sbuf);
 		if (errfp != stderr)
-			ret = fprintf(statfp, "%s\n", sbuf);
+			ret = fprintf(statfp, "%s%s\n", tbuf, sbuf);
 	}
 	if (level > err_level)
-		ret = fprintf(statfp, "%s\n", sbuf);
+		ret = fprintf(statfp, "%s%s\n", tbuf, sbuf);
 
 	pthread_mutex_unlock(&output_mutex);
 	return ret;
@@ -1485,6 +1508,9 @@ extern "C" int main(int argc, char **argv
 					break;
 				case 'l':
 					loop = true;
+					break;
+				case 'T':
+					log_timestamps = true;
 					break;
 				case 'S':
 					if (*p == '\0')
