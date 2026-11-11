@@ -472,10 +472,8 @@ bool ssl_sync(scfg_t *scfg, int (*lprintf)(int level, const char* fmt, ...))
 		lprintf(LOG_ERR, "Unable to unlock tls_cert_file_date_lock for read at %d", __LINE__);
 		return false;
 	}
-	if (epoch_date != 0) {
-		if (fd != epoch_date)
-			return ssl_new_epoch(scfg, lprintf);
-	}
+	if (fd != epoch_date)
+		return ssl_new_epoch(scfg, lprintf);
 	return true;
 }
 
@@ -580,6 +578,20 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 	size_t backoff_ms = 1;
 	unsigned loops = 0;
 	while (cert_entry->cert == -1) {
+		/* Snapshot before loading, so a concurrent epoch change cannot make an
+		 * old certificate look current. Repeat after self-signed creation, which
+		 * starts a new epoch and must run without this read lock held. */
+		if (!rwlock_rdlock(&cert_epoch_lock)) {
+			lprintf(LOG_ERR, "Unable to lock cert_epoch_lock for read at %d", __LINE__);
+			free(cert_entry);
+			return NULL;
+		}
+		cert_entry->epoch = cert_epoch;
+		if (!rwlock_unlock(&cert_epoch_lock)) {
+			lprintf(LOG_ERR, "Unable to unlock cert_epoch_lock for read at %d", __LINE__);
+			free(cert_entry);
+			return NULL;
+		}
 		assert_pthread_mutex_lock(&get_ssl_cert_mutex);
 		/* Get the certificate... first try loading it from a file... */
 		if (cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_READONLY))) {
@@ -635,7 +647,7 @@ static struct cert_list *get_sess_list_entry(scfg_t *cfg, int (*lprintf)(int lev
 	while (1) {
 		if (cert_list == NULL) {
 			assert_pthread_mutex_unlock(&ssl_cert_list_mutex);
-			if (!rwlock_rdlock(&cert_epoch_lock)) {
+			if (!rwlock_unlock(&cert_epoch_lock)) {
 				lprintf(LOG_ERR, "Failed to unlock cert_epoch_lock for read at %d", __LINE__);
 			}
 			return get_ssl_cert(cfg, lprintf);
@@ -648,7 +660,7 @@ static struct cert_list *get_sess_list_entry(scfg_t *cfg, int (*lprintf)(int lev
 		free(ret);
 	}
 	assert_pthread_mutex_unlock(&ssl_cert_list_mutex);
-	if (!rwlock_rdlock(&cert_epoch_lock)) {
+	if (!rwlock_unlock(&cert_epoch_lock)) {
 		lprintf(LOG_ERR, "Failed to unlock cert_epoch_lock for read at %d", __LINE__);
 	}
 	return ret;
