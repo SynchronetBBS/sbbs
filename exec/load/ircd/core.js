@@ -432,6 +432,8 @@ function IRC_finish_outbound_server_connect(failure) {
 	}
 
 	if (this.is_connected) {
+		/* As accepted links are: a send must never wait on a peer that is not reading */
+		this.nonblocking = true;
 		umode_notice(USERMODE_ROUTING,"Routing",format(
 			"Connected to %s (%s:%u), Sock (%s:%u), Class %u. Sending handshake.",
 			this.cline.servername,
