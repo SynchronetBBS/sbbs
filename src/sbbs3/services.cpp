@@ -1328,7 +1328,7 @@ static void js_service_thread(void* arg)
 
 	JS_ClearPendingException(js_cx);
 
-	js_script = JS_CompileFile(js_cx, js_glob, spath);
+	js_script = js_CompileFile(js_cx, js_glob, spath);
 
 	if (js_script == NULL) {
 		if (service->log_level >= LOG_ERR)
@@ -1456,7 +1456,7 @@ static void js_static_service_thread(void* arg)
 
 		JS_SetOperationCallback(js_cx, js_OperationCallback);
 
-		if ((js_script = JS_CompileFile(js_cx, js_glob, spath)) == NULL)  {
+		if ((js_script = js_CompileFile(js_cx, js_glob, spath)) == NULL)  {
 			if (service->log_level >= LOG_ERR)
 				errprintf(LOG_ERR, WHERE, "!JavaScript FAILED to compile script (%s)", spath);
 			break;

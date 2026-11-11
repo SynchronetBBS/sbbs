@@ -6544,7 +6544,7 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 
 		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Compiling script: %s"
 			, session->socket, session->client.protocol, session->host_ip, script);
-		if ((js_script = JS_CompileFile(session->js_cx, session->js_glob
+		if ((js_script = js_CompileFile(session->js_cx, session->js_glob
 		                                , script)) == NULL) {
 			errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !JavaScript FAILED to compile script (%s)"
 			          , session->socket, session->client.protocol, session->host_ip, script);

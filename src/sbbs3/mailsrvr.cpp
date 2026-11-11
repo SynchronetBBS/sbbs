@@ -2613,7 +2613,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		} else {
 			lprintf(LOG_DEBUG, "%04d %-5s Executing: %s"
 			        , sock, log_prefix, cmdline);
-			if ((js_script = JS_CompileFile(*js_cx, js_scope, path)) != NULL)
+			if ((js_script = js_CompileFile(*js_cx, js_scope, path)) != NULL)
 				js_PrepareToExecute(*js_cx, js_scope, path, /* startup_dir: */ NULL, js_scope);
 		}
 		if (js_script == NULL)

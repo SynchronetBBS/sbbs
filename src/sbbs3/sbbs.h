@@ -1618,6 +1618,7 @@ extern "C" {
 	DLLEXPORT JSObject* js_CreateInternalJsObject(JSContext*, JSObject* parent, js_callback_t*, js_startup_t*);
 	DLLEXPORT JSBool	js_CommonOperationCallback(JSContext*, js_callback_t*);
 	DLLEXPORT void		js_EvalOnExit(JSContext*, JSObject*, js_callback_t*);
+	DLLEXPORT JSObject*	js_CompileFile(JSContext*, JSObject*, const char* path);
 	DLLEXPORT void		js_PrepareToExecute(JSContext*, JSObject*, const char *filename, const char* startup_dir, JSObject *);
 	DLLEXPORT JSBool	js_IsTerminated(JSContext*, JSObject*);
 	DLLEXPORT char*		js_getstring(JSContext *cx, JSString *str);

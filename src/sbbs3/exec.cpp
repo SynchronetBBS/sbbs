@@ -650,7 +650,7 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 
 		JS_ClearPendingException(js_cx);
 
-		js_script = JS_CompileFile(js_cx, js_scope, path);
+		js_script = js_CompileFile(js_cx, js_scope, path);
 	}
 
 	if (js_scope == NULL || js_script == NULL) {

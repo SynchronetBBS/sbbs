@@ -515,7 +515,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	js_script = JS_CompileFile(cx, js_scope, path);
+	js_script = js_CompileFile(cx, js_scope, path);
 
 	if (js_script == NULL) {
 		/* If the script fails to compile, it's not a fatal error
@@ -1782,6 +1782,55 @@ void msvc_invalid_parameter_handler(const wchar_t* expression,
 {
 }
 #endif
+
+// Use instead of JS_CompileFile(), which treats a read error as end-of-file
+// and doesn't bound its reads to the buffer it sized from fstat()
+JSObject* js_CompileFile(JSContext* cx, JSObject* obj, const char* path)
+{
+	FILE* fp = fopen(path, "r");
+	if (fp == NULL) {
+		JS_ReportError(cx, "can't open %s: %s", path, strerror(errno));
+		return NULL;
+	}
+
+	char*  buf = NULL;
+	size_t size = 0;
+	size_t len = 0;
+	int    err = 0;
+	off_t  flen = filelength(fileno(fp));
+
+	while (true) {
+		if (len >= size) {
+			size_t newsize = size ? size * 2 : (flen > 0 ? (size_t)flen + 1 : 4096);
+			char*  newbuf = static_cast<char*>(realloc(buf, newsize));
+			if (newbuf == NULL) {
+				free(buf);
+				fclose(fp);
+				JS_ReportOutOfMemory(cx);
+				return NULL;
+			}
+			buf = newbuf;
+			size = newsize;
+		}
+		size_t rd = fread(buf + len, sizeof(char), size - len, fp);
+		if (rd == 0) {
+			if (ferror(fp))
+				err = errno ? errno : EIO;
+			break;
+		}
+		len += rd;
+	}
+	fclose(fp);
+	if (err) {
+		free(buf);
+		JS_ReportError(cx, "error %d (%s) reading %s at offset %u", err, strerror(err), path, (unsigned)len);
+		return NULL;
+	}
+
+	JSObject* script = JS_CompileScript(cx, obj, buf, len, path, 1);
+	free(buf);
+	return script;
+}
 
 void js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filename, const char* startup_dir, JSObject *scope)
 {

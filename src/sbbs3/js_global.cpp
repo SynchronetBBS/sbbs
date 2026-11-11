@@ -674,7 +674,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_ClearPendingException(exec_cx);
 
-	if ((script = JS_CompileFile(exec_cx, exec_obj, path)) == NULL) {
+	if ((script = js_CompileFile(exec_cx, exec_obj, path)) == NULL) {
 		if (background) {
 			JS_ENDREQUEST(bg->cx);
 			JS_RemoveObjectRoot(bg->cx, &bg->obj);
