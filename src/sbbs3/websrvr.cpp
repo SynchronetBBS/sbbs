@@ -1300,6 +1300,10 @@ static void close_request(http_session_t * session)
 
 	smb_freefilemem(&session->file);
 	memset(&session->req, 0, sizeof(session->req));
+	// Per-request state kept outside session->req: if left set by a file-area
+	// (FileVPath) request, the next request on this keep-alive connection would
+	// skip the web-root check and the webctrl.ini walk (AccessRequirements etc.)
+	session->parsed_vpath = PARSED_VPATH_NONE;
 }
 
 // Opens the response content (SSJS output) file if necessary
