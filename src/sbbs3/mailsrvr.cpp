@@ -2996,6 +2996,21 @@ end:
 }
 
 /****************************************************************************/
+/* Re-read an authenticated user's record, leaving *user intact on failure  */
+/* (getuserdat() zeroes user->number on failure).                           */
+/****************************************************************************/
+static int smtp_reread_user(user_t* user)
+{
+	user_t tmp = {};
+
+	tmp.number = user->number;
+	int    result = getuserdat(&scfg, &tmp);
+	if (result == USER_SUCCESS)
+		*user = tmp;
+	return result;
+}
+
+/****************************************************************************/
 /* Resolve a local recipient name to a user number, 0 if it matches none.   */
 /* 'name' is a local-part after any alias.cfg substitution; 'aliased' says   */
 /* whether that substitution occurred, which is what permits the user-number */
@@ -4921,7 +4936,13 @@ static bool smtp_client_thread(smtp_t* smtp)
 				}
 			}
 
-			if (relay_user.number && getuserdat(&scfg, &relay_user) == USER_SUCCESS
+			if (relay_user.number && (i = smtp_reread_user(&relay_user)) != USER_SUCCESS) {
+				errprintf(LOG_ERR, WHERE, "%04d %-5s %s !ERROR %d re-reading data for user #%u (%s)"
+				          , socket, client.protocol, client_id, i, relay_user.number, relay_user.alias);
+				sockprintf(socket, client.protocol, session, "451 4.3.0 User lookup failed");
+				continue;
+			}
+			if (relay_user.number
 				&& (relay_user.etoday + rcpt_count) >= scfg.level_emailperday[relay_user.level]
 			    && !(relay_user.exempt & UEXEMPT_EMAIL_LIMIT)) {
 				lprintf(LOG_NOTICE, "%04d %-5s %s !EMAILS PER DAY LIMIT (%u) REACHED FOR USER #%u (%s)"
@@ -5054,8 +5075,13 @@ static bool smtp_client_thread(smtp_t* smtp)
 							if (relay_user.laston < time(NULL) - (60 * 60))  /* logon in past hour? */
 								relay_user.number = 0;
 						}
-					} else
-						getuserdat(&scfg, &relay_user);
+					} else if (relay_user.number != 0
+					           && (i = smtp_reread_user(&relay_user)) != USER_SUCCESS) {
+						errprintf(LOG_ERR, WHERE, "%04d %-5s %s !ERROR %d re-reading data for user #%u (%s)"
+						          , socket, client.protocol, client_id, i, relay_user.number, relay_user.alias);
+						sockprintf(socket, client.protocol, session, "451 4.3.0 User lookup failed");
+						continue;
+					}
 					/* An authenticated user sending to an external address via a
 					 * submission port is submitting, not relaying (RFC 6409), so
 					 * ALLOW_RELAY doesn't apply - but their restrictions still do. */
