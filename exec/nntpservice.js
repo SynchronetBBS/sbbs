@@ -168,9 +168,16 @@ function get_newsgroup_list()
 	return newsgroup_list;
 }
 
+// Command line as it may appear in a log: AUTHINFO arguments other than USER
+// (i.e. passwords) are masked
+function loggable(cmdline)
+{
+	return cmdline.replace(/^(\s*AUTHINFO\s+(?!USER\b)\S+\s+).*/i, "$1********");
+}
+
 function bogus_cmd(cmdline)
 {
-	log(LOG_DEBUG, "Received bogus command: '" + cmdline + "'");
+	log(LOG_DEBUG, "Received bogus command: '" + loggable(cmdline) + "'");
 	bogus_cmd_counter++;
 }
 
@@ -199,7 +206,7 @@ while(client.socket.is_connected && !quit) {
 		log(format("!TOO MANY BOGUS COMMANDS (%u)", bogus_cmd_counter));
 		if(filter_bogus_clients) {
 			log(LOG_NOTICE,"!FILTERING CLIENT'S IP ADDRESS: " + client.ip_address);
-			system.filter_ip("NNTP","- TOO MANY BOGUS COMMANDS (Example: " + cmdline +")"
+			system.filter_ip("NNTP","- TOO MANY BOGUS COMMANDS (Example: " + loggable(cmdline) +")"
 				, client.host_name, client.ip_address, client.user_name);
 		}
 		break;
@@ -228,7 +235,7 @@ while(client.socket.is_connected && !quit) {
 		continue;
 	}
 
-	log((selected==null ? "":("["+selected.newsgroup+"] ")) +format("cmd: %s",cmdline));
+	log((selected==null ? "":("["+selected.newsgroup+"] ")) +format("cmd: %s",loggable(cmdline)));
 
 	cmd=cmdline.split(' ');
 

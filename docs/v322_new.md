@@ -452,6 +452,8 @@
 - NNTP and IMAP: message text is no longer advertised as
   `format=flowed` unless the message says it is, so a reader no
   longer re-wraps hard-wrapped text or reflows its quoted blocks
+- Fix: NNTP no longer writes users' passwords to the log; the argument
+  of `AUTHINFO PASS` is masked
 - A `format=` parameter on a part of a multi-part MIME message is
   now honored (previously only a single-part message's was)
 - `websocketservice.js`: the file it writes beside each relayed
