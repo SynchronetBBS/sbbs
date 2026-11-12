@@ -203,6 +203,33 @@ What this means for what you write *today*:
 indexOf/reduce`, `Object.keys`, getters/setters, `try/catch/finally`, `e4x`
 XML literals (avoid). When in doubt, match the idioms in nearby `exec/*.js`.
 
+### Source encoding: write non-ASCII as escapes, never raw bytes
+
+SpiderMonkey 1.8.5 reads a script byte-for-byte, so a raw CP437 byte in a
+string literal (a box-drawing character, `£` as 0x9C) "works" today. The
+`next-js` branch compiles every script as **UTF-8**, where such a byte is
+malformed input. In new code write the byte as an escape, `"\xCD"`, or build
+it with `ascii(205)`; in a regex character class, `[\xFA]`. Comments should be
+plain ASCII.
+
+A few stock files still contain raw CP437 or Windows-1252 bytes (issue #1341
+lists them). Before editing one, check:
+
+```bash
+LC_ALL=C grep -nP '[\x80-\xff]' <file>      # any output = non-ASCII bytes present
+```
+
+Claude Code's Edit tool refuses a file that isn't valid UTF-8 (nothing is
+written). Make the change as a byte-level replacement instead, and assert the
+old text occurs exactly once, since a replace that matches nothing succeeds
+silently:
+
+```python
+b = open(path, 'rb').read()
+assert b.count(old) == 1      # old/new are bytes; match the file's LF/CRLF
+open(path, 'wb').write(b.replace(old, new))
+```
+
 ## The host object model
 
 The full surface depends on context. Under `jsexec` (no user session) you get
@@ -662,6 +689,82 @@ mb.save_msg({ to: "Eva", to_ext: "614",
               from: "Claude.Ai", from_ext: "960",   // link the sender
               subject: "..." }, body);
 ```
+
+### Scanning a base: walk the index, not the message numbers
+
+Message numbers are **sparse**: deletions and packing leave gaps, so a base
+can hold 9,000 messages numbered across a span of 25,000. A loop like
+
+```javascript
+for (var n = mb.first_msg; n <= mb.last_msg; n++)   // DON'T
+    var h = mb.get_msg_header(n);                    // null for most n
+```
+
+does one locked index search per *number*, existing or not. On a base read
+over a network share each call is a round trip (8.6 ms measured), so that loop
+took minutes where an index read took seconds. The same goes for loops starting
+at a user's `scan_ptr`, which is 0 for a sub they have never read, and for any
+range a client supplies (NNTP `XOVER 1-`, IMAP `UID FETCH 1:4294967295`):
+clamp it to `first_msg`..`last_msg` first.
+
+**`get_index()`** reads the whole index in one call and returns an array of
+records `{number, offset, attr, to, from, subject, time, ...}` in message-number
+order. It takes no arguments, so its cost scales with the base's total size
+(it builds a JS object per record); for "the newest N" or "starting at number
+X" on a very large base, walk offsets instead (below). Then read only the
+headers you need, **by offset**:
+
+```javascript
+var index = mb.get_index();
+for (var i = 0; index && i < index.length; i++) {
+    var idx = index[i];
+    if (idx.attr & (MSG_DELETE | MSG_VOTE)) continue;
+    var h = mb.get_msg_header(/* by_offset */true, idx.offset);
+    if (h === null || h.number != idx.number)       // index changed since read
+        h = mb.get_msg_header(idx.number);
+    if (h === null) continue;
+    // ...
+}
+```
+
+Index `to`/`from` fields let you filter before reading any header:
+
+- **Mail base:** they are the recipient/sender **user numbers**, 16 bits wide
+  (compare against `user.number & 0xffff`).
+- **Sub-board:** they are a **CRC-16 of the lower-cased name**. Compare against
+  `crc16_calc(name.toLowerCase())`, and confirm a match from the header, since
+  a 16-bit CRC collides.
+
+⚠️ **Vote records and `include_votes`.** `get_msg_index()` and
+`get_msg_header()` return **`null` for a vote record** (`MSG_VOTE`) unless their
+`include_votes` argument is true. `get_index()` returns votes like any other
+record. So:
+
+- When you replace a per-offset `get_msg_index(true, i)` loop with
+  `get_index()`, skip `MSG_VOTE` records yourself, or votes that used to be
+  dropped as `null` start showing up.
+- A **binary search over offsets** must pass `include_votes`, or a probe that
+  lands on a vote returns `null` and the search cannot tell which way to go:
+
+```javascript
+// offset of the first index record numbered 'number' or higher
+function first_offset(mb, number) {
+    var lo = 0, hi = mb.total_msgs;
+    while (lo < hi) {
+        var mid = Math.floor((lo + hi) / 2);
+        var idx = mb.get_msg_index(/* by_offset */true, mid, /* include_votes */true);
+        if (idx == null) break;
+        if (idx.number < number) lo = mid + 1; else hi = mid;
+    }
+    return lo;
+}
+```
+
+From that offset, read `get_msg_header(true, offset)` forward (or backward for
+newest-first) until you pass the range or have enough messages: one read per
+real message, plus about 18 index reads to find the start in 160,000 messages.
+Stock examples: `nntpservice.js` `for_each_article()`, `gopherservice.js` (a
+sub listed a page at a time), `msgutils.js` `getMessageThreads(sub, max)`.
 
 ## Reading text files: `readAll()`/`readln()` split lines at 512 bytes
 
