@@ -29,22 +29,36 @@
  *             is in an alt path (since they're not visible to JS).
  */
 
+require("sbbsdefs.js", "DIR_FCHK");
+
 function OldFileBase(dir) {
 	var ret = [];
 	var filebase = new FileBase(dir);
 	if(!filebase.open())
 		return ret;
 
-	/* Build each path here rather than with filebase.get_path(), which looks
-	   the file up by name (a linear index scan) and so made this function
-	   O(n^2) in the directory's file count.  A file's path is its
-	   directory's path plus its name; file_getcase() does the same
-	   case-correcting existence check as get_path() and returns undefined
-	   when the file is missing. */
+	/* Not filebase.get_path(): it looks each file up by name, a linear index
+	   scan, making this O(n^2).  Where the directory checks for files,
+	   get_list() has already found each one (size is -1 if missing), so
+	   only a case-sensitive file system still needs file_getcase() to
+	   correct the name's case. */
 	var dir_obj = file_area.dir[dir] || file_area.dir[String(dir).toLowerCase()];
+	var fchk = dir_obj && (dir_obj.settings & DIR_FCHK);
+	var case_sensitive = system.platform.toLowerCase() != "win32";
 	var file_list = filebase.get_list(FileBase.DETAIL.EXTENDED);
 	for(var i = 0; i < file_list.length; i++) {
 		var file = file_list[i];
+		var path;
+		if(!dir_obj)
+			path = filebase.get_path(file.name);
+		else if(!fchk)
+			path = dir_obj.path + file.name;
+		else if(file.size < 0)
+			path = undefined;
+		else if(case_sensitive)
+			path = file_getcase(dir_obj.path + file.name);
+		else
+			path = dir_obj.path + file.name;
 		ret.push({
 			name: file.name,
 			uldate: file.added,
@@ -56,8 +70,7 @@ function OldFileBase(dir) {
 			extdesc: file.extdesc,
 			anonymous: file.anon,
 			size: file.size,
-			path: dir_obj ? file_getcase(dir_obj.path + file.name)
-				: filebase.get_path(file.name)
+			path: path
 		});
 	}
 
