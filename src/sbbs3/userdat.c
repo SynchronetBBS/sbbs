@@ -4221,13 +4221,13 @@ bool user_is_active(user_t* user)
 }
 
 /****************************************************************************/
-/* Determine if the specified user is a guest account						*/
+/* Determine if the specified user is a guest account or nobody				*/
 /****************************************************************************/
 bool user_is_guest(user_t* user)
 {
 	if (user == NULL)
 		return false;
-	return user->rest & UREST_EDIT_DEFAULTS;
+	return user->number == 0 || (user->rest & UREST_EDIT_DEFAULTS);
 }
 
 /****************************************************************************/

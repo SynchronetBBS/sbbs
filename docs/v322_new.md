@@ -19,6 +19,8 @@
 - New `SOUND` and `MOUSE` ARS keywords: `SOUND` is true when the user's
   terminal can play the audio @-codes and the user has not turned sound
   off, `MOUSE` when the terminal supports mouse hot-spots (issue #1292)
+- The `GUEST` ARS keyword now also matches a not-logged-in user (e.g. an
+  unauthenticated web request), so `NOT GUEST` requires a login
 
 - Optional **internal MQTT 5.0 broker** built into Synchronet (no
   external libmosquitto dependency)
