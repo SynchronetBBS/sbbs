@@ -675,10 +675,21 @@ function parse_seq_set(set, uid) {
 			range[0]=range[1];
 			range[1]=i;
 		}
+		if(uid) {
+			// UIDs are sparse and a client may send any range (e.g. 1:4294967295)
+			for(i=0; i<index.offsets.length; i++) {
+				msgnum=index.offsets[i];
+				if(msgnum >= range[0] && msgnum <= range[1])
+					response.push(msgnum);
+			}
+			continue;
+		}
+		if(range[0] < 1)
+			range[0]=1;
+		if(range[1] > index.offsets.length)
+			range[1]=index.offsets.length;
 		for(i=range[0]; i<=range[1]; i++) {
-			msgnum=parseInt(i, 10);
-			if(!uid)
-				msgnum=index.offsets[msgnum-1];
+			msgnum=index.offsets[i-1];
 			if(msgnum==undefined || index.idx[msgnum]==undefined)
 				continue;
 			response.push(msgnum);
@@ -1405,9 +1416,10 @@ function read_index(base)
 	index.total=base.total_msgs;
 
 	index.code = get_base_code(base);
-	for(i=0; i<index.total; i++) {
-		idx=base.get_msg_index(true,i);
-		if(idx==null) {
+	var records = base.get_index();
+	for(i=0; records && i<records.length; i++) {
+		idx=records[i];
+		if(idx==null || (idx.attr&MSG_VOTE)) {
 			continue;
 		}
 		if(base.subnum==-1) {

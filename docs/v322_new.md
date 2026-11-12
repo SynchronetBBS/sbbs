@@ -460,6 +460,10 @@
   instead of looking up every article number in it (far faster on
   sparsely numbered groups and the mail group), and `XHDR` now accepts
   an open-ended range (`N-`)
+- IMAP: a folder's message list is read with one index read rather than
+  one per message, and a UID range is matched against the folder's
+  messages instead of iterating every number in it (a client's
+  `UID FETCH 1:4294967295` could keep the service busy indefinitely)
 - A `format=` parameter on a part of a multi-part MIME message is
   now honored (previously only a single-part message's was)
 - `websocketservice.js`: the file it writes beside each relayed
