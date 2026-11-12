@@ -19,11 +19,36 @@ var REVISION = "1.18";
 var GOPHER_PORT = client.socket.local_port;
 
 var debug = false;
+var max_msgs = 100;	// messages listed per page of a sub (0 = all)
 
 // Parse arguments
-for(i=0;i<argc;i++)
+for(i=0;i<argc;i++) {
 	if(argv[i].toLowerCase()=="-d")
 		debug = true;
+	else if(argv[i].toLowerCase().indexOf("-maxmsgs=")==0) {
+		var val = parseInt(argv[i].slice(9), 10);
+		if(!isNaN(val) && val >= 0)
+			max_msgs = val;
+	}
+}
+
+// Offset of the first index record numbered 'number' or higher
+function first_offset(msgbase, number)
+{
+	var lo = 0;
+	var hi = msgbase.total_msgs;
+	while(lo < hi) {
+		var mid = Math.floor((lo + hi) / 2);
+		var idx = msgbase.get_msg_index(/* by_offset */true, mid, /* include_votes */true);
+		if(idx == null)
+			break;
+		if(idx.number < number)
+			lo = mid + 1;
+		else
+			hi = mid;
+	}
+	return lo;
+}
 
 // Write a string to the client socket
 function write(str)
@@ -295,14 +320,30 @@ if(field.length > 1) {
 					);
 			writeln(format("0%s\tnull\tnull\tnull\r\n",msginfo));
 	**/
-			var hdr_list = msgbase.get_all_msg_headers();
-			first = msgbase.first_msg;
-			for(i=msgbase.last_msg; hdr_list != null && i>=first; i--) {
-				hdr = hdr_list[i];
+			// Newest first, max_msgs at a time: sub:<code> lists the newest,
+			// sub:<code>:before:<number> those numbered below <number>
+			var offset = msgbase.total_msgs - 1;
+			if(field[2] == "before")
+				offset = first_offset(msgbase, Number(field[3])) - 1;
+			var listed = 0;
+			var oldest = 0;
+			for(; offset >= 0; offset--) {
+				hdr = msgbase.get_msg_header(/* by_offset */true, offset);
 				if(hdr==null)
 					continue;
 				if(hdr.attr&MSG_DELETE)
 					continue;
+				if(max_msgs && listed >= max_msgs) {
+					writeln("1Older messages\tsub:"
+						+ field[1] + ":before:" + oldest + "\t"
+						+ system.host_name + "\t"
+						+ GOPHER_PORT
+						);
+					break;
+				}
+				i = hdr.number;
+				oldest = i;
+				listed++;
 				date = system.timestr(hdr.when_written_time);
 				msginfo=format("%-25.25s %-25.25s %-25.25s %s"
 					,hdr.subject

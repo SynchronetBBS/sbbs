@@ -464,6 +464,9 @@
   one per message, and a UID range is matched against the folder's
   messages instead of iterating every number in it (a client's
   `UID FETCH 1:4294967295` could keep the service busy indefinitely)
+- Gopher: a message area is listed 100 messages at a time, newest first,
+  with a link to older messages, instead of reading and listing every
+  message in the area at once; `-maxmsgs=N` sets the page size (0 = all)
 - A `format=` parameter on a part of a multi-part MIME message is
   now honored (previously only a single-part message's was)
 - `websocketservice.js`: the file it writes beside each relayed
