@@ -324,6 +324,9 @@ static bool do_CryptFlush(js_socket_private_t *p)
 			return false;
 		if (ret != CRYPT_ERROR_COMPLETE)
 			GCES(ret, p, estr, "flushing data");
+		// Only a timeout leaves the session able to send the rest
+		if (ret != CRYPT_ERROR_TIMEOUT)
+			p->unflushed = 0;
 		return false;
 	}
 	return true;
@@ -408,6 +411,19 @@ remove_js_socket_event(JSContext *cx, js_callback_t *cb, SOCKET sock)
 	}
 }
 
+/* Ending the session waits 5 seconds or more to send the close alert, and again for the peer
+ * to acknowledge it: let it send the alert only if it can go at once, and not wait for the reply.
+ * An alert sent behind a partly-written record would reach the peer as a corrupt record. */
+static void js_socket_tls_close_nowait(js_socket_private_t *p, bool abort)
+{
+	if (p->sock == INVALID_SOCKET || p->connect_pending)
+		return;
+	if (abort || p->unflushed != 0 || !socket_writable(p->sock, 0))
+		shutdown(p->sock, SHUT_RDWR);
+	else
+		shutdown(p->sock, SHUT_RD);
+}
+
 static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 {
 	size_t i;
@@ -421,11 +437,16 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 			remove_js_socket_event(cx, p->js_cb, sock);
 	}
 	if (p->session != -1) {
+		// A close alert that cannot be sent is not this socket's error
+		int err = SOCKET_ERRNO;
+		if (p->nonblocking && !p->external)
+			js_socket_tls_close_nowait(p, false);
 		if (p->tls_server || p->tls_clientauth)
 			destroy_session(sock_lprintf(p), p->session);
 		else
 			cryptDestroySession(p->session);
 		p->session = -1;
+		set_socket_errno(err);
 	}
 
 	// Delete any event handlers for the socket
@@ -603,7 +624,8 @@ static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf
 					p->tls_drained = true;
 				}
 				else if (status != CRYPT_ERROR_COMPLETE) {
-					GCES(ret, p, estr, "popping data");
+					GCES(status, p, estr, "popping data");
+					js_socket_tls_close_nowait(p, true);
 					do_js_close(cx, p, false);
 				}
 			}
