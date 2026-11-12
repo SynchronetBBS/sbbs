@@ -92,6 +92,27 @@ off_t filelength(int fd)
 	#else
 		#warning Linux OFD locks not enabled!
 	#endif
+
+	#include <sys/vfs.h>    /* fstatfs() */
+	#define CIFS_SUPER_MAGIC 0xFF534D42
+	#define SMB2_SUPER_MAGIC 0xFE534D42
+
+/* Linux CIFS can fail a lock with EAGAIN (local conflict) after the server
+   granted it, leaving the server lock held: release it. */
+static void undo_failed_lock(int fd, struct flock* alock, int err)
+{
+	struct statfs fs;
+	struct flock  unlck = *alock;
+
+	if (err != EAGAIN)
+		return;
+	if (fstatfs(fd, &fs) != 0
+	    || (fs.f_type != CIFS_SUPER_MAGIC && fs.f_type != SMB2_SUPER_MAGIC))
+		return;
+	unlck.l_type = F_UNLCK;
+	(void)fcntl(fd, F_SETLK, &unlck);
+	errno = err;
+}
 #endif
 
 /* Sets a lock on a portion of a file */
@@ -113,8 +134,10 @@ int xp_lockfile(int fd, off_t pos, off_t len, bool block)
 	alock.l_len = len;
 
 	int result = fcntl(fd, block ? F_SETLKW : F_SETLK, &alock);
-	if (result == -1 && errno != EINVAL)
+	if (result == -1 && errno != EINVAL) {
+		undo_failed_lock(fd, &alock, errno);
 		return -1;
+	}
 #elif !defined(__QNX__) && !defined(__solaris__)
 	/* flock() isn't forced to a lock type by the fd's access mode the way
 	   fcntl() is, so mirror the fcntl path: a read-only fd takes a shared
@@ -168,8 +191,10 @@ int rdlock(int fd, off_t pos, off_t len)
 	alock.l_len = len;
 
 	int result = fcntl(fd, F_SETLK, &alock);
-	if (result == -1 && errno != EINVAL)
+	if (result == -1 && errno != EINVAL) {
+		undo_failed_lock(fd, &alock, errno);
 		return -1;
+	}
 #elif !defined(__QNX__) && !defined(__solaris__)
 	/* use flock (doesn't work over NFS) */
 	if (flock(fd, LOCK_SH | LOCK_NB) != 0 && errno != EOPNOTSUPP)
