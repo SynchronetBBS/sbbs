@@ -334,6 +334,9 @@
   are refused an invalid birthdate
 - Fix: the webv4 mail page could take minutes to load on a large mail base;
   it now reads the mail index once instead of looking up every message number
+- Fix: webv4 forum unread counts could take minutes to compute, and were
+  recomputed every minute for each logged-in viewer; they now come from one
+  index read per sub, and unchanged subs are not recounted
 
 ## FTP Server
 

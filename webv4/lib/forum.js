@@ -80,6 +80,11 @@ function getNewestMessagePerSub(grp) {
     }, {});
 }
 
+// Results of getSubUnreadCount() by sub code, for as long as this script runs.
+// A long-running caller (lib/events/forum.js) rescans every sub on a timer;
+// a sub whose message base and scan pointer haven't changed isn't recounted.
+var sub_unread_cache = {};
+
 function getSubUnreadCount(sub) {
 
     var ret = {
@@ -96,17 +101,37 @@ function getSubUnreadCount(sub) {
         if (!mb.open()) throw new Error(mb.error);
     }
 
-    var sy = msg_area.sub[mb.cfg.code].scan_cfg&SCAN_CFG_YONLY;
-    var sn = msg_area.sub[mb.cfg.code].scan_cfg&SCAN_CFG_NEW;
-    for (var m = msg_area.sub[mb.cfg.code].scan_ptr + 1; m <= mb.last_msg; m++) {
-        var h = mb.get_msg_header(m);
-        if (h === null || h.attr&MSG_DELETE || h.attr&MSG_NODISP) continue;
-        if ((sy && (h.to_ext === user.number || h.to === user.alias || h.to === user.name)) || sn) ret.scanned++;
+    const code = mb.cfg.code;
+    const scan_ptr = msg_area.sub[code].scan_ptr;
+    const scan_cfg = msg_area.sub[code].scan_cfg;
+    const key = [mb.last_msg, mb.total_msgs, scan_ptr, scan_cfg].join(',');
+    const cached = sub_unread_cache[code];
+    if (cached !== undefined && cached.key === key) {
+        if (!(sub instanceof MsgBase)) mb.close();
+        return cached.count;
+    }
+
+    const sy = scan_cfg&SCAN_CFG_YONLY;
+    const sn = scan_cfg&SCAN_CFG_NEW;
+    // The index 'to' field is a CRC-16 of the lower-cased recipient name
+    const to_crc = (sy && !sn) ? [crc16_calc(user.alias.toLowerCase()), crc16_calc(user.name.toLowerCase())] : null;
+    const index = scan_ptr < mb.last_msg ? (mb.get_index() || []) : [];
+    for (var i = index.length - 1; i >= 0; i--) {
+        var idx = index[i];
+        if (idx.number <= scan_ptr) break; // index is in ascending number order
+        if (idx.attr&(MSG_DELETE|MSG_NODISP|MSG_VOTE)) continue;
         ret.total++;
+        if (sn) {
+            ret.scanned++;
+        } else if (to_crc !== null && to_crc.indexOf(idx.to) >= 0) {
+            var h = mb.get_msg_header(idx.number); // CRCs collide; check the name
+            if (h !== null && (h.to_ext === user.number || h.to === user.alias || h.to === user.name)) ret.scanned++;
+        }
     }
 
     if (!(sub instanceof MsgBase)) mb.close();
-    
+
+    sub_unread_cache[code] = { key: key, count: ret };
     return ret;
 
 }
@@ -970,18 +995,20 @@ function getMessageThreads(sub, max) {
         }
     }
 
+    // The newest 'count' messages, in ascending number order
     function getSomeMessageHeaders(msgBase, count) {
-        var start = msgBase.last_msg - count;
-        if (start < msgBase.first_msg) start = msgBase.first_msg;
-        var headers = {};
-        var c = 0;
-        for (var m = start; m <= msgBase.last_msg; m++) {
-            var header = msgBase.get_msg_header(m);
+        const index = msgBase.get_index() || [];
+        const newest = [];
+        for (var i = index.length - 1; i >= 0 && newest.length < count; i--) {
+            if (index[i].attr&(MSG_DELETE|MSG_VOTE)) continue;
+            var header = msgBase.get_msg_header(index[i].number);
             if (header === null || header.attr&MSG_DELETE) continue;
             if (settings.forum_no_spam && is_spam(header)) continue;
-            headers[header.number] = header;
-            c++;
-            if (c >= count) break;
+            newest.push(header);
+        }
+        var headers = {};
+        for (var n = newest.length - 1; n >= 0; n--) {
+            headers[newest[n].number] = newest[n];
         }
         return headers;
     }
@@ -1003,7 +1030,7 @@ function getMessageThreads(sub, max) {
             return;
         }
 
-        if (settings.forum_no_spam && is_spam(header)) {
+        if (settings.forum_no_spam && is_spam(headers[h])) {
             delete headers[h];
             return;
         }

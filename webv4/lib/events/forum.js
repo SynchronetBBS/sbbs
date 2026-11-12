@@ -4,6 +4,7 @@ var request = require({}, settings.web_lib + 'request.js', 'request');
 var last_subs;
 var last_groups;
 var last_threads;
+var last_threads_key;
 var last_run = 0;
 var is_real_user = is_user();
 var frequency = (settings.refresh_interval || 60000) / 1000;
@@ -53,7 +54,20 @@ function scan_subs(group) {
     last_subs = scan;
 }
 
+// Votes are messages too, so any change to a thread changes one of these
+function threads_key(sub) {
+    if (msg_area.sub[sub] === undefined) return '';
+    const mb = new MsgBase(sub);
+    if (!mb.open()) return '';
+    const key = [mb.last_msg, mb.total_msgs, msg_area.sub[sub].scan_ptr].join(',');
+    mb.close();
+    return key;
+}
+
 function scan_threads(sub) {
+    const key = threads_key(sub);
+    if (last_threads && key !== '' && key === last_threads_key) return;
+    last_threads_key = key;
     const scan = getThreadStats(sub, !is_real_user);
     if (!last_threads) {
         forum_emit('threads', scan);
@@ -75,10 +89,13 @@ function scan_threads(sub) {
 
 function cycle() {
     if (time() - last_run <= frequency) return;
-    last_run = time();
-    if (is_real_user && request.has_param('groups_unread')) scan_groups();
-    if (is_real_user && request.has_param('subs_unread')) scan_subs(request.get_param('subs_unread'));
-    if (request.has_param('sub')) scan_threads(request.get_param('sub'));
+    try {
+        if (is_real_user && request.has_param('groups_unread')) scan_groups();
+        if (is_real_user && request.has_param('subs_unread')) scan_subs(request.get_param('subs_unread'));
+        if (request.has_param('sub')) scan_threads(request.get_param('sub'));
+    } finally {
+        last_run = time(); // after the scan, so a slow one isn't followed immediately by another
+    }
 }
 
 this;
