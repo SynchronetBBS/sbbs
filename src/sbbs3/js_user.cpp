@@ -33,18 +33,17 @@ struct user_private_t
 	JSBool cached {false};
 	client_t* client {nullptr};
 	struct mqtt* mqtt {nullptr};
-	int file {-1}; // for fast read operations, only
 	scfg_t* cfg;
 
+	// Don't keep the user base open between reads: over SMB, a shared record
+	// lock can outlive its unlock until the file is closed
 	void getuserdat(void)
 	{
 		if (user->number != 0 && !cached) {
-			if (file < 1)
-				file = openuserdat(cfg, /* for_modify: */ false);
 			int usernumber = user->number;
-			if (fgetuserdat(cfg, user, file) == 0)
+			if (::getuserdat(cfg, user) == 0)
 				cached = true;
-			user->number = usernumber; // Can be zeroed by fgetuserdat() failure
+			user->number = usernumber; // Can be zeroed by getuserdat() failure
 		}
 	}
 
@@ -1114,11 +1113,7 @@ static void js_user_finalize(JSContext *cx, JSObject *obj)
 {
 	user_private_t* p = (user_private_t*)JS_GetPrivate(cx, obj);
 
-	if (p != nullptr) {
-		if (p->file > 0)
-			closeuserdat(p->file);
-		delete p;
-	}
+	delete p;
 
 	JS_SetPrivate(cx, obj, nullptr);
 }
@@ -1554,18 +1549,11 @@ js_user_close(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	user_private_t* p;
-	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
-
-	rc = JS_SUSPENDREQUEST(cx);
-	if (p->file > 0)
-		closeuserdat(p->file);
-	p->file = -1;
-	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
 }
