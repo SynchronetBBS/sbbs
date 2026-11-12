@@ -173,6 +173,13 @@ function dump_obj(obj, name)
 	}
 }
 
+// Received command line as it may appear in a log: LOGIN arguments (the
+// password) are masked
+function loggable(line)
+{
+	return line.replace(/^(\S+\s+LOGIN\s+).*/i, "$1********");
+}
+
 function debug_log(line, rx)
 {
 	if(debug)
@@ -3370,7 +3377,7 @@ while(1) {
 	line=client.socket.recvline(10240, 1);
 	if(line != null && line != '') {
 		waited = 0;
-		debug_log("RECV: "+line, true);
+		debug_log("RECV: "+loggable(line), true);
 		parse_command(line);
 	}
 	else {
