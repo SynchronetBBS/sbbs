@@ -379,6 +379,8 @@ static enum qwkjob_result qwkjob_pack_locked(sbbs_t* sbbs, const qwkjob_host_t* 
 {
 	char tmppath[MAX_PATH + 1];
 	char qwkpath[MAX_PATH + 1];
+	char dir[MAX_PATH + 1];
+	char spec[64];
 	uint count = 0;
 	enum qwkjob_result reason = QWKJOB_FAILED;
 
@@ -386,6 +388,12 @@ static enum qwkjob_result qwkjob_pack_locked(sbbs_t* sbbs, const qwkjob_host_t* 
 		return QWKJOB_FAILED;
 	if (qwkjob_terminated(host))
 		return QWKJOB_FAILED;
+	// The user's pack lock is held, so any temp packet of theirs was left by a failed job
+	SAFEPRINTF(dir, "%sfile/", sbbs->cfg.data_dir);
+	SAFEPRINTF(spec, "%04u.*.qwk.tmp", usernum);
+	int removed = ::delfiles(dir, spec, 0);
+	if (removed > 0)
+		sbbs->lprintf(LOG_NOTICE, "Removed %d stale temp packet(s): %s%s", removed, dir, spec);
 	sbbs->lprintf(LOG_INFO, "Packing QWK Message Packet");
 	SAFEPRINTF4(tmppath, "%sfile/%04u.%s.%d.qwk.tmp", sbbs->cfg.data_dir, usernum, qwkjob_local_host_name(), (int)getpid());
 	SAFEPRINTF2(qwkpath, "%sfile/%04u.qwk", sbbs->cfg.data_dir, usernum);
