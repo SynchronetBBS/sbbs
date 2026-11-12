@@ -372,16 +372,22 @@ function getMessageThreads(sub, max) {
 	msgBase.open();
 	if(!msgBase.is_open)
 		return false;
-	if(max === undefined || max == 0 || msgBase.last_msg - max < msgBase.first_msg)
-		max = msgBase.first_msg;
-	else
-		max = msgBase.last_msg - max;
-	if(msgBase.get_all_msg_headers !== undefined && max <= msgBase.first_msg)
+	if(!max || max >= msgBase.total_msgs)
 		header_num=msgBase.get_all_msg_headers();
-	else {
-		for(m=max; m <= msgBase.last_msg; m++) {
-			header=msgBase.get_msg_header(m);
-			header_num[header.num]=header;
+	else {	// the newest 'max' messages
+		var index = msgBase.get_index();
+		var newest = [];
+		for(m = index ? index.length - 1 : -1; m >= 0 && newest.length < max; m--) {
+			if(index[m].attr&(MSG_DELETE|MSG_VOTE))
+				continue;
+			newest.unshift(index[m]);
+		}
+		for(m = 0; m < newest.length; m++) {
+			header=msgBase.get_msg_header(/* by_offset */true, newest[m].offset);
+			if(header == null || header.number != newest[m].number)	// index changed since read
+				header=msgBase.get_msg_header(newest[m].number);
+			if(header != null)
+				header_num[header.number]=header;
 		}
 	}
 

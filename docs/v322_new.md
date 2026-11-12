@@ -665,6 +665,9 @@
 
 ## Stock Modules
 
+- Fix: `msgutils.js` `getMessageThreads()` with a message limit threw an
+  error on a missing message number and otherwise returned a single
+  message; it now threads the newest messages up to the limit
 - New: **LLM-backed Guru** — optional JavaScript chat engine
   (`chat_llm.js`) that backs a Guru, or an IRC bot
   (`chat_llm_irc.js`), with a local or hosted LLM: tool calling,
