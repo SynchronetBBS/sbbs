@@ -58,6 +58,9 @@ DLLEXPORT char*			getfilepath(scfg_t*, file_t*, char* path);
 DLLEXPORT char*			getfilevpath(scfg_t*, file_t*, char* path, size_t);
 DLLEXPORT off_t			getfilesize(scfg_t*, file_t*);
 DLLEXPORT time_t		getfiletime(scfg_t*, file_t*);
+DLLEXPORT size_t		getfilestats(scfg_t*, int dirnum, file_t*, size_t count);
+/* Below this many files, checking each one is cheaper than reading the directory */
+#define FILESTATS_MIN_COUNT 32
 DLLEXPORT ulong			gettimetodl(scfg_t*, file_t*, uint rate_cps);
 DLLEXPORT ulong			getuserxfers(scfg_t*, const char* from, uint to);
 DLLEXPORT bool			hashfile(scfg_t*, file_t*);

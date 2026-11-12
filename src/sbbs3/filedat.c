@@ -34,6 +34,10 @@
 #include "fnv1a.h"   // fnv1a32_str()
 #include "utf8.h"
 
+#if defined(_MSC_VER) || defined(__MINGW32__)
+	#include <io.h>     // _findfirst64()
+#endif
+
 /* libarchive: */
 #include <archive.h>
 #include <archive_entry.h>
@@ -856,6 +860,170 @@ time_t getfiletime(scfg_t* cfg, file_t* f)
 		return f->time;
 	f->time = fdate(getfilepath(cfg, f, fpath));
 	return f->time;
+}
+
+struct dirent_stats {
+	char* name;
+	off_t size;
+	time_t time;
+};
+
+static int dirent_stats_cmp(const void* p1, const void* p2)
+{
+	const struct dirent_stats* e1 = (const struct dirent_stats*)p1;
+	const struct dirent_stats* e2 = (const struct dirent_stats*)p2;
+	int                        diff = stricmp(e1->name, e2->name);
+	if (diff == 0)
+		diff = strcmp(e1->name, e2->name);
+	return diff;
+}
+
+static void free_dirent_stats(struct dirent_stats* list, size_t count)
+{
+	for (size_t i = 0; i < count; i++)
+		free(list[i].name);
+	free(list);
+}
+
+static bool add_dirent_stats(struct dirent_stats** list, size_t* count, size_t* alloc
+                             , const char* name, off_t size, time_t time)
+{
+	if (*count >= *alloc) {
+		size_t               new_alloc = *alloc ? *alloc * 2 : 1024;
+		struct dirent_stats* np = (struct dirent_stats*)realloc(*list, new_alloc * sizeof **list);
+		if (np == NULL)
+			return false;
+		*list = np;
+		*alloc = new_alloc;
+	}
+	if (((*list)[*count].name = strdup(name)) == NULL)
+		return false;
+	(*list)[*count].size = size;
+	(*list)[*count].time = time;
+	(*count)++;
+	return true;
+}
+
+/* Read the names (and, where the platform provides them with the directory
+   entries, the sizes and modification times) of the regular files in 'path'.
+   Returns a list sorted by dirent_stats_cmp(), or NULL on failure. */
+static struct dirent_stats* read_dirent_stats(const char* path, size_t* count)
+{
+	struct dirent_stats* list = NULL;
+	size_t               alloc = 0;
+	bool                 ok = true;
+
+	*count = 0;
+#if defined(_MSC_VER) || defined(__MINGW32__)
+	/* Not opendir(): its dirent has no size or time, so each file would
+	   still need a stat() (an SMB round trip on a network share). */
+	char                  pattern[MAX_PATH + 1];
+	struct __finddata64_t fd;
+	intptr_t              handle;
+
+	SAFEPRINTF(pattern, "%s*", path);
+	if ((handle = _findfirst64(pattern, &fd)) == -1)
+		return NULL;
+	do {
+		if (fd.attrib & _A_SUBDIR)
+			continue;
+		if (!(ok = add_dirent_stats(&list, count, &alloc, fd.name, (off_t)fd.size, (time_t)fd.time_write)))
+			break;
+	} while (_findnext64(handle, &fd) == 0);
+	_findclose(handle);
+#else
+	/* Names only; the caller stats just the entries it needs. */
+	DIR*           dir;
+	struct dirent* de;
+
+	if ((dir = opendir(path)) == NULL)
+		return NULL;
+	while ((de = readdir(dir)) != NULL) {
+		if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
+			continue;
+		if (!(ok = add_dirent_stats(&list, count, &alloc, de->d_name, -1, 0)))
+			break;
+	}
+	closedir(dir);
+#endif
+	if (!ok) {
+		free_dirent_stats(list, *count);
+		*count = 0;
+		return NULL;
+	}
+	if (*count > 0)
+		qsort(list, *count, sizeof *list, dirent_stats_cmp);
+	return list;
+}
+
+/* Find 'name' in a list sorted by dirent_stats_cmp(), ignoring case but
+   preferring an exact match, as fexistcase() does. */
+static struct dirent_stats* find_dirent_stats(struct dirent_stats* list, size_t count, const char* name)
+{
+	size_t lo = 0;
+	size_t hi = count;
+
+	/* Find the first entry that matches ignoring case */
+	while (lo < hi) {
+		size_t mid = lo + (hi - lo) / 2;
+		if (stricmp(list[mid].name, name) < 0)
+			lo = mid + 1;
+		else
+			hi = mid;
+	}
+	if (lo >= count || stricmp(list[lo].name, name) != 0)
+		return NULL;
+	for (size_t i = lo; i < count && stricmp(list[i].name, name) == 0; i++) {
+		if (strcmp(list[i].name, name) == 0)
+			return &list[i];
+	}
+	return &list[lo];
+}
+
+/****************************************************************************/
+/* Set the current size and modification time (file_t.size and .time) of	*/
+/* the files in 'list' (all in directory 'dirnum') by reading the storage	*/
+/* directory once, rather than checking each file on its own as				*/
+/* getfilesize() and getfiletime() do. A file not found (or empty) is left	*/
+/* for those functions to check individually, as before.					*/
+/* Returns the number of files whose size and time were set.				*/
+/****************************************************************************/
+size_t getfilestats(scfg_t* cfg, int dirnum, file_t* list, size_t count)
+{
+	size_t               entries;
+	size_t               found = 0;
+	struct dirent_stats* dir;
+
+	if (!dirnum_is_valid(cfg, dirnum) || list == NULL || count < 1)
+		return 0;
+	if ((dir = read_dirent_stats(cfg->dir[dirnum]->path, &entries)) == NULL)
+		return 0;
+	for (size_t i = 0; i < count; i++) {
+		file_t*              f = &list[i];
+		const char*          name = f->name == NULL ? f->file_idx.name : f->name;
+		struct dirent_stats* e;
+
+		if (f->dir != dirnum || (e = find_dirent_stats(dir, entries, name)) == NULL)
+			continue;
+#if !(defined(_MSC_VER) || defined(__MINGW32__))
+		if (e->size < 0) {
+			char        path[MAX_PATH + 1];
+			struct stat st;
+			SAFEPRINTF2(path, "%s%s", cfg->dir[dirnum]->path, e->name);
+			if (stat(path, &st) != 0 || S_ISDIR(st.st_mode))
+				continue;
+			e->size = st.st_size;
+			e->time = st.st_mtime;
+		}
+#endif
+		if (e->size <= 0 || e->time <= 0)
+			continue;
+		f->size = e->size;
+		f->time = e->time;
+		found++;
+	}
+	free_dirent_stats(dir, entries);
+	return found;
 }
 
 // Return estimated time to transfer file, in seconds

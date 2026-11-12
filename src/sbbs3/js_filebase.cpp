@@ -919,6 +919,9 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 	size_t  file_count;
 	file_t* file_list = loadfiles(&p->smb, filespec, t, detail, sort, &file_count);
 	if (file_list != NULL) {
+		if (file_count >= FILESTATS_MIN_COUNT && detail >= file_detail_normal
+		    && dirnum_is_valid(scfg, p->smb.dirnum) && (scfg->dir[p->smb.dirnum]->misc & DIR_FCHK))
+			getfilestats(scfg, p->smb.dirnum, file_list, file_count);
 		for (size_t i = 0; i < file_count; i++) {
 			JSObject* fobj;
 			if ((fobj = JS_NewObject(cx, NULL, NULL, array)) == NULL) {
