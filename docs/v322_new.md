@@ -454,6 +454,10 @@
   longer re-wraps hard-wrapped text or reflows its quoted blocks
 - Fix: NNTP no longer writes users' passwords to the log; the argument
   of `AUTHINFO PASS` is masked
+- NNTP: `XOVER`/`XHDR` read only the messages in the requested range
+  instead of looking up every article number in it (far faster on
+  sparsely numbered groups and the mail group), and `XHDR` now accepts
+  an open-ended range (`N-`)
 - A `format=` parameter on a part of a multi-part MIME message is
   now honored (previously only a single-part message's was)
 - `websocketservice.js`: the file it writes beside each relayed

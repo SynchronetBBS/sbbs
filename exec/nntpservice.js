@@ -153,6 +153,92 @@ function count_msgs(msgbase)
 	return { total: count, first: first, last: last };
 }
 
+// Article range "N", "N-" (N to the last article) or "N-M"
+function parse_range(msgbase, str)
+{
+	var range = str.split('-');
+	var first = Number(range[0]);
+	var last = first;
+	if(range.length > 1) {
+		last = Number(range[1]);
+		if(last == 0)
+			last = msgbase.last_msg;
+	}
+	return { first: first, last: last };
+}
+
+// Offset of the first index record numbered 'number' or higher
+function first_offset(msgbase, number)
+{
+	var lo = 0;
+	var hi = msgbase.total_msgs;
+	while(lo < hi) {
+		var mid = Math.floor((lo + hi) / 2);
+		var idx = msgbase.get_msg_index(/* by_offset */true, mid, /* include_votes */true);
+		if(idx == null)
+			break;
+		if(idx.number < number)
+			lo = mid + 1;
+		else
+			hi = mid;
+	}
+	return lo;
+}
+
+// Calls func(hdr) for each message numbered first through last, in order,
+// reading only the headers of messages that exist (and, in the mail group,
+// are to or from the user) rather than looking up every number in the range
+function for_each_article(msgbase, first, last, func)
+{
+	var hdr;
+	var i;
+
+	if(first < msgbase.first_msg)
+		first = msgbase.first_msg;
+	if(last > msgbase.last_msg)
+		last = msgbase.last_msg;
+	if(isNaN(first) || isNaN(last) || first > last)
+		return;
+
+	if(last - first < 32) {	// no fewer lookups than a search of the index
+		for(i = first; i <= last; i++) {
+			hdr = msgbase.get_msg_header(false, i);
+			if(hdr != null)
+				func(hdr);
+		}
+		return;
+	}
+
+	if(msgbase.attributes & SMB_EMAIL) {
+		var index = msgbase.get_index();
+		var unum = user.number & 0xffff;	// index to/from fields are 16-bit
+		for(i = 0; index && i < index.length; i++) {
+			var idx = index[i];
+			if(idx.number < first)
+				continue;
+			if(idx.number > last)
+				break;
+			if(idx.to != unum && idx.from != unum)
+				continue;
+			hdr = msgbase.get_msg_header(/* by_offset */true, idx.offset);
+			if(hdr == null || hdr.number != idx.number)	// index changed since read
+				hdr = msgbase.get_msg_header(false, idx.number);
+			if(hdr != null)
+				func(hdr);
+		}
+		return;
+	}
+
+	for(i = first_offset(msgbase, first); i < msgbase.total_msgs; i++) {
+		hdr = msgbase.get_msg_header(/* by_offset */true, i);
+		if(hdr == null || hdr.number < first)
+			continue;
+		if(hdr.number > last)
+			break;
+		func(hdr);
+	}
+}
+
 function get_newsgroup_list()
 {
 	// list of newsgroup names the logged-in user has access to
@@ -521,9 +607,9 @@ while(client.socket.is_connected && !quit) {
 				current_article = count.first;
 			} else {	// LISTGROUP
 				writeln("211 list of article numbers follow");
-				var total_msgs = msgbase.total_msgs;
-				for(i=0;i<total_msgs;i++) {
-					var idx=msgbase.get_msg_index(/* by_offset */true,i);
+				var index = msgbase.get_index();
+				for(i=0; index && i<index.length; i++) {
+					var idx=index[i];
 					if(idx==null)
 						continue;
 					if(idx.attr&MSG_DELETE)	/* marked for deletion */
@@ -559,29 +645,23 @@ while(client.socket.is_connected && !quit) {
 			var first, last;
 			if(cmd[1]==undefined || cmd[1].length==0)
 				first=last=current_article;
-			else if(cmd[1].indexOf('-')>=0)	{ /* range */
-				range=cmd[1].split('-');
-				first=Number(range[0]);
-				last=Number(range[1]);
-				if(last == 0)
-				   last = msgbase.last_msg;
-			} else
-				first=last=Number(cmd[1]);
+			else {
+				range=parse_range(msgbase, cmd[1]);
+				first=range.first;
+				last=range.last;
+			}
 			writeln("224 Overview information follows for articles " + first + " through " + last);
-			for(i=first;i<=last;i++) {
-				hdr=msgbase.get_msg_header(false,i);
-				if(hdr==null)
-					continue;
+			for_each_article(msgbase, first, last, function(hdr) {
 				if(hdr.attr&MSG_DELETE)	/* marked for deletion */
-					continue;
+					return;
 				if(hdr.attr&MSG_VOTE)
-					continue;
+					return;
 				if(msgbase.attributes & SMB_EMAIL) {
 					if(hdr.to_ext != user.number && hdr.from_ext != user.number)
-						continue;
+						return;
 				}
 				writeln(format("%u\t%s\t%s\t%s\t%s\t%s\t%u\t%u\tXref:%s"
-					,i
+					,hdr.number
 					,get_news_subject(hdr)
 					,get_news_from(hdr)
 					,hdr.date
@@ -591,7 +671,7 @@ while(client.socket.is_connected && !quit) {
 					,Math.round(hdr.data_length/79)+1	// line count
 					,xref(hdr)
 					));
-			}
+			});
 			writeln(".");	// end of list
 			break;
 
@@ -615,24 +695,15 @@ while(client.socket.is_connected && !quit) {
 				break;
 			}
 			writeln("221 Header follows");
-			var first, last;
-			if(cmd[2].indexOf('-')>=0)	{ /* range */
-				range=cmd[2].split('-');
-				first=Number(range[0]);
-				last=Number(range[1]);
-			} else
-				first=last=Number(cmd[2]);
-			for(i=first;i<=last;i++) {
-				hdr=msgbase.get_msg_header(false,i);
-				if(hdr==null)
-					continue;
+			range=parse_range(msgbase, cmd[2]);
+			for_each_article(msgbase, range.first, range.last, function(hdr) {
 				if(hdr.attr&MSG_DELETE)	/* marked for deletion */
-					continue;
+					return;
 				if(hdr.attr&MSG_VOTE)
-					continue;
+					return;
 				if(msgbase.attributes & SMB_EMAIL) {
 					if(hdr.to_ext != user.number && hdr.from_ext != user.number)
-						continue;
+						return;
 				}
 				var field="";
 				switch(cmd[1].toLowerCase()) {	/* header */
@@ -683,8 +754,8 @@ while(client.socket.is_connected && !quit) {
 				if(field==undefined)
 					field="";
 
-				writeln(format("%u %s",i,field.toString()));
-			}
+				writeln(format("%u %s",hdr.number,field.toString()));
+			});
 			writeln(".");	// end of list
 			break;
 
