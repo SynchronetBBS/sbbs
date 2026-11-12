@@ -23,6 +23,8 @@
  * anonymous:  Anonymous upload
  * altpath:    Index into the internal array of alt paths (not visible to JavaScript) - N/A
  * extdesc:    May be undefined... extended description.
+ * size:       Size in bytes: the file's actual size when the directory checks
+ *             for files, otherwise the size recorded in the file base.
  * path:       Full path to file.  Undefined if the file doesn't exist or
  *             is in an alt path (since they're not visible to JS).
  */
@@ -33,6 +35,13 @@ function OldFileBase(dir) {
 	if(!filebase.open())
 		return ret;
 
+	/* Build each path here rather than with filebase.get_path(), which looks
+	   the file up by name (a linear index scan) and so made this function
+	   O(n^2) in the directory's file count.  A file's path is its
+	   directory's path plus its name; file_getcase() does the same
+	   case-correcting existence check as get_path() and returns undefined
+	   when the file is missing. */
+	var dir_obj = file_area.dir[dir] || file_area.dir[String(dir).toLowerCase()];
 	var file_list = filebase.get_list(FileBase.DETAIL.EXTENDED);
 	for(var i = 0; i < file_list.length; i++) {
 		var file = file_list[i];
@@ -46,7 +55,9 @@ function OldFileBase(dir) {
 			downloaded: file.times_downloaded,
 			extdesc: file.extdesc,
 			anonymous: file.anon,
-			path: filebase.get_path(file.name)
+			size: file.size,
+			path: dir_obj ? file_getcase(dir_obj.path + file.name)
+				: filebase.get_path(file.name)
 		});
 	}
 

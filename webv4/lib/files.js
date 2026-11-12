@@ -28,8 +28,8 @@ function listDirectories(lib) {
 
 function listFiles(dir) {
 	return (new OldFileBase(file_area.dir[dir].code)).map(function (df) {
-        df.size = df.path ? file_size_str(file_size(df.path)) : 'Unknown';
-        df._size = df.path ? file_size(df.path) : 0;
+        df._size = df.path ? df.size : 0;
+        df.size = df.path ? file_size_str(df._size) : 'Unknown';
 		return df;
 	});
 }
