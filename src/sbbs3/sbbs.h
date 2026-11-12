@@ -1334,10 +1334,11 @@ public:
 	void	errormsg(int line, const char* function, const char *source, const char* action, const char *object
 				,int access=0, const char *extinfo=NULL);
 	bool	hacklog(const char* prot, const char* text);
-	void	fremove(int line, const char* function, const char *source, const char* path, bool log_all_errors = false) {
-		int result = remove(path);
+	bool	fremove(int line, const char* function, const char *source, const char* path, bool log_all_errors = false) {
+		int result = xp_remove_file(path);
 		if(result != 0 && (log_all_errors == true || errno != ENOENT))
 			errormsg(line, function, source, ERR_REMOVE, path);
+		return result == 0;
 	}
 
 	/* qwk.cpp */

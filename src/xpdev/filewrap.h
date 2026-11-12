@@ -19,8 +19,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef _FILEWRAP_H
-#define _FILEWRAP_H
+#ifndef FILEWRAP_H_
+#define FILEWRAP_H_
 
 #include "wrapdll.h"	/* DLLEXPORT */
 #include "gen_defs.h"	/* int32_t, int64_t */
@@ -148,6 +148,10 @@
 #define FILE_RETRY_ERRNO(x) ((x)==EACCES || (x)==EAGAIN || (x)==EDEADLOCK || (x)==EBUSY || (x)==EIO)
 #define FILE_RETRY_DELAY(x, y) SLEEP((((x) / 10) * ((y) / 2)) + xp_random((y) + 1))
 
+// Limits of xp_rename_file(), xp_replace_file() and xp_remove_file() retries while another process holds the file open
+#define XP_FILE_BUSY_RETRIES	8
+#define XP_FILE_BUSY_DELAY		250	// milliseconds
+
 /**************/
 /* Prototypes */
 /**************/
@@ -185,6 +189,9 @@ DLLEXPORT time_t	filetime(int fd);
 #ifndef _WIN32
 DLLEXPORT void		xp_close_inherited_fds(int keep);
 #endif
+DLLEXPORT int		xp_rename_file(const char* src, const char* dest);
+DLLEXPORT int		xp_replace_file(const char* src, const char* dest);
+DLLEXPORT int		xp_remove_file(const char* path);
 
 #if defined(__cplusplus)
 }

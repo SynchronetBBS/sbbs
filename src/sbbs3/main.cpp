@@ -4166,14 +4166,14 @@ int sbbs_t::mv(const char* path, const char* dest, bool copy)
 		        , dest);
 		return -1;
 	}
-	if (!copy && rename(src, dest) == 0)
+	if (!copy && xp_rename_file(src, dest) == 0)
 		return 0;
 	if (!CopyFile(src, dest, /* fail if exists: */ !copy)) {
 		errormsg(WHERE, "CopyFile", src, 0, dest);
 		return -1;
 	}
-	if (!copy && remove(src) != 0) {
-		errormsg(WHERE, ERR_REMOVE, src, 0);
+	if (!copy && !fremove(WHERE, src, /* log-all-errors: */ true)) {
+		fremove(WHERE, dest, /* log-all-errors: */ true);   // a failed move leaves the file only at its source
 		return -1;
 	}
 	return 0;

@@ -38,7 +38,11 @@
 #include <limits.h> /* struct stat */
 #include <stdlib.h>     /* realloc() */
 
+#include <errno.h>
+#include <stdio.h>      /* remove(), rename() */
+
 #include "filewrap.h"   /* Verify prototypes */
+#include "genwrap.h"    /* SLEEP() */
 
 /****************************************************************************/
 /* Returns the modification time of the file in 'fd'						*/
@@ -564,3 +568,89 @@ void xp_close_inherited_fds(int keep)
 #endif
 }
 #endif
+
+/****************************************************************************/
+/* Whether the last failed rename or removal was blocked by another process */
+/* holding the file open (e.g. a virus scanner, or a host of an SMB share)  */
+/****************************************************************************/
+static bool file_busy(void)
+{
+#ifdef _WIN32
+	return GetLastError() == ERROR_SHARING_VIOLATION;
+#else
+	return errno == EBUSY;
+#endif
+}
+
+/****************************************************************************/
+/* Renames 'src' to 'dest', replacing any existing 'dest' and retrying      */
+/* (briefly) while another process holds either file open.                  */
+/* Returns 0 on success, or -1 with errno (and the Windows last-error) set  */
+/****************************************************************************/
+int xp_replace_file(const char* src, const char* dest)
+{
+	int retry;
+
+	for (retry = 0;; retry++) {
+#ifdef _WIN32
+		DWORD err;
+
+		if (MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING))
+			return 0;
+		err = GetLastError();
+		switch (err) {
+			case ERROR_FILE_NOT_FOUND:
+			case ERROR_PATH_NOT_FOUND:
+				errno = ENOENT;
+				break;
+			case ERROR_SHARING_VIOLATION:
+			case ERROR_LOCK_VIOLATION:
+			case ERROR_ACCESS_DENIED:
+				errno = EACCES;
+				break;
+			default:
+				errno = EIO;
+				break;
+		}
+		SetLastError(err);
+#else
+		if (rename(src, dest) == 0)
+			return 0;
+#endif
+		if (!file_busy() || retry >= XP_FILE_BUSY_RETRIES)
+			return -1;
+		SLEEP(XP_FILE_BUSY_DELAY);
+	}
+}
+
+/****************************************************************************/
+/* rename(), retrying (briefly) while another process holds either file     */
+/* open. Whether an existing 'dest' is replaced varies by platform.         */
+/****************************************************************************/
+int xp_rename_file(const char* src, const char* dest)
+{
+	int retry;
+
+	for (retry = 0; rename(src, dest) != 0; retry++) {
+		if (!file_busy() || retry >= XP_FILE_BUSY_RETRIES)
+			return -1;
+		SLEEP(XP_FILE_BUSY_DELAY);
+	}
+	return 0;
+}
+
+/****************************************************************************/
+/* Removes a file, retrying (briefly) while another process holds it open.  */
+/* Returns 0 on success, or -1 with errno (and the Windows last-error) set  */
+/****************************************************************************/
+int xp_remove_file(const char* path)
+{
+	int retry;
+
+	for (retry = 0; remove(path) != 0; retry++) {
+		if (!file_busy() || retry >= XP_FILE_BUSY_RETRIES)
+			return -1;
+		SLEEP(XP_FILE_BUSY_DELAY);
+	}
+	return 0;
+}

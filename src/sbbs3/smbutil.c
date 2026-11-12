@@ -1626,7 +1626,7 @@ void packmsgs(ulong packable)
 	for (i = PACK_SDT; i <= PACK_SID; i++) {
 		SAFEPRINTF2(fname, "%s.%s", smb.file, pack_ext[i]);
 		SAFEPRINTF2(tmpfname, "%s.%s$", smb.file, pack_ext[i]);
-		if (rename(tmpfname, fname) != 0) {
+		if (xp_rename_file(tmpfname, fname) != 0) {
 			fprintf(errfp, "\n%s!Error %d (%s) renaming %s to %s\n"
 			        , beep, errno, strerror(errno), tmpfname, fname);
 			pack_abort(moved);

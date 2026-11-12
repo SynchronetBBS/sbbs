@@ -586,7 +586,7 @@ bool ftp_remove(SOCKET sock, int line, const char* fname, const char* username, 
 {
 	int ret = 0;
 
-	if (fexist(fname) && (ret = remove(fname)) != 0) {
+	if (fexist(fname) && (ret = xp_remove_file(fname)) != 0) {
 		if (fexist(fname)) { // In case there was a race condition (other host deleted file first)
 			char error[256];
 			lprintf(err_level, "%04d <%s> !ERROR %d (%s) (line %d) removing file: %s"
@@ -932,7 +932,7 @@ static bool queue_rep(const xfer_t* xfer, char* dest, size_t size)
 		}
 		snprintf(dest, size, "%sfile/%04u.%" PRIx64 ".rep", scfg.data_dir, usernum, t + i);
 	}
-	if (rename(xfer->filename, dest) == 0)
+	if (xp_rename_file(xfer->filename, dest) == 0)
 		return true;
 	// temp_dir may be on another volume: copy beside dest (a name the sweep ignores), then rename.
 	// Not ".rep*": Windows matches "*.rep" against 8.3 short names too.
@@ -941,7 +941,7 @@ static bool queue_rep(const xfer_t* xfer, char* dest, size_t size)
 	         , qwkjob_local_host_name(), (int)xfer->ctrl_sock);
 	if (!CopyFile(xfer->filename, staged, /* failIfExists: */ FALSE))
 		return false;
-	if (rename(staged, dest) != 0) {
+	if (xp_rename_file(staged, dest) != 0) {
 		ftp_remove(xfer->ctrl_sock, __LINE__, staged, xfer->alias, LOG_ERR);
 		return false;
 	}
@@ -961,7 +961,7 @@ static void import_rep(const xfer_t* xfer)
 	// An empty packet is dropped, whatever the result (e.g. busy); a non-empty one left after a
 	// failure (e.g. a temp dir error or a shutdown mid-import) is queued for the sweep to retry
 	if (flength(xfer->filename) == 0) {
-		if (remove(xfer->filename) != 0)
+		if (xp_remove_file(xfer->filename) != 0)
 			errprintf(LOG_ERR, WHERE, "%04d <%s> !ERROR %d (%s) removing %s", xfer->ctrl_sock, xfer->alias
 			          , errno, safe_strerror(errno, errstr, sizeof errstr), xfer->filename);
 		return;

@@ -599,7 +599,7 @@ int lprintf(int level, char *fmt, ...)
 bool delfile(const char *filename, int line)
 {
 	lprintf(LOG_DEBUG, "Deleting %s (from line %u)", filename, line);
-	if (remove(filename) != 0) {
+	if (xp_remove_file(filename) != 0) {
 		lprintf(LOG_ERR, "ERROR %u (%s) line %u removing file %s"
 		        , errno, strerror(errno), line, filename);
 		return false;
@@ -2272,7 +2272,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, c
 			(void)chmod(outpath, st.st_mode); /* best-effort permission preserve before rename */
 		if (cfg.areafile_backups == 0 || !backup(cfg.areafile, cfg.areafile_backups, /* ren: */ TRUE))
 			delfile(cfg.areafile, __LINE__);                    /* Delete AREAS.BBS */
-		if (rename(outpath, cfg.areafile))           /* Rename new AREAS.BBS file */
+		if (xp_rename_file(outpath, cfg.areafile))           /* Rename new AREAS.BBS file */
 			lprintf(LOG_ERR, "ERROR line %d renaming %s to %s", __LINE__, outpath, cfg.areafile);
 	}
 	(void)remove(outpath); // expected to fail (file does not exist) much of the time
@@ -3257,7 +3257,7 @@ bool unpack_bundle(const char* inbound)
 				path[strlen(path) - 2] = '-';
 			if (fexistcase(path))
 				delfile(path, __LINE__);
-			if (rename(fname, path) == 0)
+			if (xp_rename_file(fname, path) == 0)
 				lprintf(LOG_NOTICE, "Bad bundle (%s) renamed to: %s", fname, path);
 			else
 				lprintf(LOG_ERR, "ERROR line %d renaming %s to %s"
@@ -3310,7 +3310,7 @@ int mv(const char *insrc, const char *indest, bool copy)
 	        || (src[1] == ':' && dest[1] == ':' && toupper(src[0]) == toupper(dest[0])))
 #endif
 	    ) {
-		if (rename(src, dest) == 0)     /* same drive, so move */
+		if (xp_rename_file(src, dest) == 0)     /* same drive, so move */
 			return 0;
 		/* rename failed, so attempt copy */
 	}
@@ -3351,8 +3351,10 @@ int mv(const char *insrc, const char *indest, bool copy)
 	}
 	fclose(inp);
 	fclose(outp);
-	if (result == 0 && !copy)
-		delfile(src, __LINE__);
+	if (result == 0 && !copy && !delfile(src, __LINE__)) {
+		delfile(dest, __LINE__);    /* a failed move leaves the file only at its source */
+		result = -1;
+	}
 	return result;
 }
 

@@ -416,7 +416,7 @@ bool sbbs_t::process_batch_upload_queue()
 		SAFEPRINTF2(dest, "%s%s", cfg.dir[dir]->path, filename);
 		if (fexistcase(src) && fexistcase(dest)) { /* file's in two places */
 			bprintf(text[FileAlreadyOnline], filename, lib_name(dir), dir_name(dir));
-			remove(src);    /* this is the one received */
+			xp_remove_file(src);    /* this is the one received */
 			continue;
 		}
 

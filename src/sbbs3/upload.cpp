@@ -95,7 +95,7 @@ bool sbbs_t::uploadfile(file_t* f)
 				              , result);
 				bprintf(text[FileHadErrors], f->name, cfg.ftest[i]->ext);
 				if (!useron_is_sysop() || yesno(text[DeleteFileQ]))
-					remove(path);
+					xp_remove_file(path);
 				return false;
 			}
 			SAFEPRINTF(str, "%ssbbsfile.nam", cfg.node_dir);
@@ -120,7 +120,7 @@ bool sbbs_t::uploadfile(file_t* f)
 
 	if ((length = flength(path)) == 0L) {
 		bprintf(text[FileZeroLength], f->name);
-		remove(path);
+		xp_remove_file(path);
 		llprintf(LOG_NOTICE, "U!", "attempted to upload %s to %s %s (Zero length)"
 		              , f->name
 		              , cfg.lib[cfg.dir[f->dir]->lib]->sname, cfg.dir[f->dir]->sname);
@@ -139,7 +139,7 @@ bool sbbs_t::uploadfile(file_t* f)
 				    && dupe_cache_findfile(upload_dupe_cache, &cfg, usrdir[i][j], f)) {
 					bprintf(text[FileAlreadyOnline], f->name, lib_name(usrdir[i][j]), dir_name(usrdir[i][j]));
 					if (!dir_op(f->dir)) {
-						remove(path);
+						xp_remove_file(path);
 						llprintf(LOG_NOTICE, "U!", "attempted to upload %s to %s %s (duplicate hash)"
 						              , f->name
 						              , cfg.lib[cfg.dir[f->dir]->lib]->sname, cfg.dir[f->dir]->sname);

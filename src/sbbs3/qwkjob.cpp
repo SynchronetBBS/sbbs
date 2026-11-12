@@ -285,15 +285,6 @@ static void qwkjob_remove_temp_dir(const qwkjob_host_t* host, const char* path)
 		qwkjob_temp_dir_active((unsigned)strtoul(serial + 1, NULL, 10), false);
 }
 
-static bool qwkjob_replace_file(const char* src, const char* dest)
-{
-#ifdef _WIN32
-	return MoveFileExA(src, dest, MOVEFILE_REPLACE_EXISTING) != 0;
-#else
-	return rename(src, dest) == 0;
-#endif
-}
-
 // Whether path names a file directly in dir (both are resolved to full paths)
 static bool qwkjob_path_in_dir(const char* path, const char* dir)
 {
@@ -408,7 +399,7 @@ static enum qwkjob_result qwkjob_pack_locked(sbbs_t* sbbs, const qwkjob_host_t* 
 		sbbs->fremove(WHERE, tmppath);
 		return QWKJOB_FAILED;
 	}
-	if (!qwkjob_replace_file(tmppath, qwkpath)) {
+	if (xp_replace_file(tmppath, qwkpath) != 0) {
 #ifdef _WIN32
 		sbbs->lprintf(LOG_ERR, "!ERROR (WinError %u) renaming %s to %s", (uint)GetLastError(), tmppath, qwkpath);
 #else
