@@ -4,7 +4,9 @@
 	var request = require({}, settings.web_lib + 'request.js', 'request');
 	load(settings.web_lib + 'files.js');
     locale.section = 'page_files';
-	if (request.has_param('dir') && file_area.dir[request.get_param('dir')]) {
+	/* file_area.dir has every directory, accessible or not; check can_access */
+	if (request.has_param('dir') && file_area.dir[request.get_param('dir')]
+		&& file_area.dir[request.get_param('dir')].can_access) {
 ?>
 	<ol class="breadcrumb">
 		<li>
