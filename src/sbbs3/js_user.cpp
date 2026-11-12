@@ -1596,8 +1596,9 @@ static jsSyncMethodSpec js_user_functions[] = {
 	 , JSDOCSTR("Return <tt>true</tt> if the user has the specified access to the specified file directory. If no access string (second argument) is specified, <i>any access</i> is checked.")
 	 , 321},
 	{"close",           js_user_close,      0,  JSTYPE_VOID,    JSDOCSTR("")
-	 , JSDOCSTR("Close the <tt>user.tab</tt> file, if open. The file will be automatically reopened if necessary.")
-	 , 31902},
+	 , JSDOCSTR("Does nothing; retained for backward compatibility. "
+		        "As of v3.22, the <tt>user.tab</tt> file is no longer held open by a User object, so there is nothing to close.")
+	 , 32200},
 	{0}
 };
 
