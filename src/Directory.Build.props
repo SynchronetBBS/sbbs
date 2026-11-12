@@ -13,9 +13,20 @@
   discards every socket past the 64th, and select() then never reports it.
 -->
 <Project>
+  <!--
+    Compile the source files of each project in parallel (cl /MP), capped at
+    CL_MPCount compiler processes per project. The cap is deliberately low:
+    the GitLab runner overlaps several of these builds on one machine.
+    The Visual Studio IDE sets CL_MPCount itself; from the command line,
+    override with e.g. "build.bat /p:CL_MPCount=8".
+  -->
+  <PropertyGroup>
+    <CL_MPCount Condition="'$(CL_MPCount)' == ''">4</CL_MPCount>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <PreprocessorDefinitions>FD_SETSIZE=1024;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>
