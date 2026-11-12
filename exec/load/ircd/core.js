@@ -2068,13 +2068,17 @@ function IRCClient_do_links(mask) {
 
 /* Don't hunt for servers based on nicknames, as TRACE is more explicit. */
 function IRCClient_do_trace(target) {
-	var server = searchbyserver(target);
+	/* A matching local server terminates the hunt, even if another server
+	   also matches the mask. Nicknames are handled separately below. */
+	var server = wildmatch(ServerName,target) ? -1 : search_server_only(target);
+	var next;
 
 	if (server == -1) { /* we hunted ourselves */
 		this.trace_all_opers();
 	} else if (server) {
+		next = server.local ? server : Servers[server.parent.toLowerCase()];
+		this.numeric200(target,next.nick);
 		server.rawout(":" + this.nick + " TRACE " + target);
-		this.numeric200(target,server.nick);
 		return 0;
 	} else {
 		/* Okay, we've probably got a user. */
@@ -2088,8 +2092,9 @@ function IRCClient_do_trace(target) {
 			else
 				this.numeric205(nick);
 		} else {
-			nick.rawout(":" + this.nick + " TRACE " + target);
 			this.numeric200(target,Servers[nick.parent.toLowerCase()].nick);
+			nick.rawout(":" + this.nick + " TRACE " + target);
+			return 0;
 		}
 	}
 	this.numeric(262, target + " :End of /TRACE.");
