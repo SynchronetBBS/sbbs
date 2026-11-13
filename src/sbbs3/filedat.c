@@ -939,7 +939,7 @@ static struct dirent_stats* read_dirent_stats(const char* path, size_t* count)
 	if ((dir = opendir(path)) == NULL)
 		return NULL;
 	while ((de = readdir(dir)) != NULL) {
-		if (strcmp(de->d_name, ".") == 0 || strcmp(de->d_name, "..") == 0)
+		if (de->d_name[0] == '.') // includes "." and "..", never a legal filename
 			continue;
 		if (!(ok = add_dirent_stats(&list, count, &alloc, de->d_name, -1, 0)))
 			break;
