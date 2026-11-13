@@ -1048,39 +1048,24 @@ function browse(list)
 
 	function determine_top(top, current, pagesize, list)
 	{
-		var ret_obj = {
-			top: top,
-			new_page: false
+		var new_top = top;
+
+		// Scroll just far enough to bring the current entry onto the page
+		if (current < new_top)
+			new_top = current;
+		else if (current >= new_top + pagesize)
+			new_top = current - pagesize + 1;
+		// Keep a full page of entries displayed when possible (e.g. after
+		// the list has been replaced with a shorter one)
+		if (new_top > list.length - pagesize)
+			new_top = list.length - pagesize;
+		if (new_top < 0)
+			new_top = 0;
+
+		return {
+			top: new_top,
+			new_page: new_top != top
 		};
-
-		if (top > current)
-			ret_obj.top = current;
-		else if (top < 0)
-			ret_obj.top = 0;
-
-		if (current >= top+pagesize)
-		{
-			ret_obj.top = top + 1;
-			// If the number of entries is less than the page size (i.e., on the last
-			// page), then adjust top so that there will be a full page of entries
-			var num_entries_remaining = list.length - ret_obj.top;
-			if (num_entries_remaining < pagesize)
-			{
-				ret_obj.top = list.length - pagesize;
-				if (ret_obj.top < 0)
-					ret_obj.top = 0;
-			}
-			ret_obj.new_page = true;
-		}
-		else if (current < top)
-		{
-			ret_obj.top = top - 1;
-			if (ret_obj.top < 0)
-				ret_obj.top = 0;
-			ret_obj.new_page = true;
-		}
-
-		return ret_obj;
 	}
 
 	console.line_counter = 0;
@@ -1266,6 +1251,8 @@ function browse(list)
 					else
 						console_beep();
 				}
+				current = top = 0;
+				new_page = true;
 				break;
 			case 'G':
 				console.clearline();
