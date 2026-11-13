@@ -431,7 +431,8 @@ size_t sbbs_t::cp437_out(int ich)
 	// UTF-8 Note that CP437 0x7C maps to U+00A6 so we can't just do
 	//       everything below 0x80 this way.
 	if (term->charset() == CHARSET_UTF8) {
-		if (ch != '\a') {
+		// SO terminates ANSI music and must not become U+266B (#1344)
+		if (ch != '\a' && !(ch == '\x0e' && term->in_music_string())) {
 			char utf8[UTF8_MAX_LEN + 1];
 			enum unicode_codepoint codepoint = cp437_unicode_tbl[ch];
 			if (codepoint == 0)

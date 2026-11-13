@@ -35,6 +35,7 @@ public:
 	virtual bool parse_output(char ch);
 	virtual bool in_control_string();
 	virtual bool parser_idle();
+	virtual bool in_music_string();
 	// Needs to handle C0 and C1
 	virtual bool parse_input_sequence(char& ch, int mode);
 	virtual struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot);
@@ -57,6 +58,7 @@ private:
 	ANSI_Parser ansiParser{};
 	unsigned saved_row{0};
 	unsigned saved_column{0};
+	bool music{false};
 };
 
 #endif

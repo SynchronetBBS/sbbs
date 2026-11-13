@@ -332,6 +332,9 @@ public:
 	/* True when no control sequence is in progress. */
 	virtual bool parser_idle() { return true; }
 
+	/* True while output is inside an ANSI music string. */
+	virtual bool in_music_string() { return false; }
+
 	/* SyncTERM paces every wire byte against the emulated rate, so a
 	   bulk control string must not be sent under it. */
 	void suspend_output_rate() {

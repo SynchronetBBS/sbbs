@@ -869,9 +869,13 @@ void ANSI_Terminal::handle_control_sequence() {
 				case 'z':	// Invoke Macro
 					// TODO
 					break;
-				case 'N':	// "ANSI" Music
+				case 'M':	// "ANSI" Music (or DL, when parameters are present)
+					if (ansiParser.ansi_params.empty())
+						music = true;
+					break;
+				case 'N':	// BananaCom Music
 				case '|':	// SyncTERM Music
-					// TODO
+					music = true;
 					break;
 			}
 		}
@@ -896,7 +900,11 @@ bool ANSI_Terminal::in_control_string() {
 }
 
 bool ANSI_Terminal::parser_idle() {
-	return ansiParser.current_state() == ansiState_none;
+	return !music && ansiParser.current_state() == ansiState_none;
+}
+
+bool ANSI_Terminal::in_music_string() {
+	return music;
 }
 
 bool ANSI_Terminal::parse_output(char ich) {
@@ -904,6 +912,21 @@ bool ANSI_Terminal::parse_output(char ich) {
 
 	if (utf8_increment(ch))
 		return true;
+
+	// The music string between the introducer and SO is not displayed.
+	// Any byte outside the music alphabet aborts it, and is then
+	// processed normally.
+	if (music) {
+		static const char musicchars[] = "aAbBcCdDeEfFgGlLmMnNoOpPsStT0123456789.-+#<> ";
+		if (ch == '\x0e') {	// SO
+			music = false;
+			control_string_ended = true;
+			return true;
+		}
+		if (ch != '\0' && strchr(musicchars, ch) != nullptr)
+			return true;
+		music = false;
+	}
 
 	switch (ansiParser.parse(ch)) {
 		case ansiState_final:
