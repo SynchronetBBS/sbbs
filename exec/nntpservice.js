@@ -255,9 +255,11 @@ function get_newsgroup_list()
 }
 
 // Command line as it may appear in a log: AUTHINFO arguments other than USER
-// (i.e. passwords) are masked
+// (i.e. passwords) are masked unless the sysop has enabled logging passwords
 function loggable(cmdline)
 {
+	if (system.settings & SYS_ECHO_PW)
+		return cmdline;
 	return cmdline.replace(/^(\s*AUTHINFO\s+(?!USER\b)\S+\s+).*/i, "$1********");
 }
 

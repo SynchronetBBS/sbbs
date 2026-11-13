@@ -174,9 +174,11 @@ function dump_obj(obj, name)
 }
 
 // Received command line as it may appear in a log: LOGIN arguments (the
-// password) are masked
+// password) are masked unless the sysop has enabled logging passwords
 function loggable(line)
 {
+	if (system.settings & SYS_ECHO_PW)
+		return line;
 	return line.replace(/^(\S+\s+LOGIN\s+).*/i, "$1********");
 }
 

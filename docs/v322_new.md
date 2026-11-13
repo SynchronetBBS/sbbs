@@ -458,9 +458,11 @@
   `format=flowed` unless the message says it is, so a reader no
   longer re-wraps hard-wrapped text or reflows its quoted blocks
 - Fix: NNTP no longer writes users' passwords to the log; the argument
-  of `AUTHINFO PASS` is masked
+  of `AUTHINFO PASS` is masked unless *Display/Log Passwords Locally* is
+  enabled in SCFG
 - Fix: IMAP run with `-d` or `-r` (debug logging) no longer writes
-  users' passwords to the log; the arguments of `LOGIN` are masked
+  users' passwords to the log; the arguments of `LOGIN` are masked unless
+  *Display/Log Passwords Locally* is enabled in SCFG
 - NNTP: `XOVER`/`XHDR` read only the messages in the requested range
   instead of looking up every article number in it (far faster on
   sparsely numbered groups and the mail group), and `XHDR` now accepts
