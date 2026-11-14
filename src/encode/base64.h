@@ -1,12 +1,6 @@
-/* SPDX-License-Identifier: LGPL-2.0-or-later */
+/* Copyright (c) Stephen Hurd and Rob Swindell; SPDX-License-Identifier: BSD-2-Clause */
 
-/*
- * Public interface for the Base64 implementation in base64.c.
- *
- * This header is licensed under the same GNU Lesser General Public License
- * terms as the implementation. It replaces an older header whose GPL notice
- * was added in error and did not reflect the license of base64.c.
- */
+/* Public interface for the Base64 implementation in base64.c. */
 
 #ifndef XPDEV_ENCODE_BASE64_H
 #define XPDEV_ENCODE_BASE64_H
