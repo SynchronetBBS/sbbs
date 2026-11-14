@@ -1555,20 +1555,6 @@ static bool pop3_client_thread(pop3_t* pop3)
 			truncsp(buf);
 			if (startup->options & MAIL_OPT_DEBUG_POP3)
 				lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, client.protocol, loggable_line(buf));
-			if (!host_exempt.listed(host_ip, host_name)) {
-				std::string rl_key = rate_limit_key(host_ip, &startup->rate_limit);
-				unsigned    denials = 0;
-				if (request_rate_limiter->allowRequest(rl_key, &denials
-				        , rl_key == host_ip ? std::string() : std::string(host_ip)) == false) {
-					lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> Too many requests per rate limit (%u over %us) for %s"
-						, socket, client.protocol, host_ip, user.alias
-						, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds, rl_key.c_str());
-					rate_limit_filter(socket, &scfg, client.protocol, host_ip, host_name, rl_key, denials, request_rate_limiter
-					    , &startup->rate_limit, lprintf);
-					sockprintf(socket, client.protocol, session, "-ERR too many requests, try again later");
-					break;
-				}
-			}
 			if (smb_islocked(&smb)) {
 				lprintf(LOG_WARNING, "%04d %-5s [%s] <%s> !MAIL BASE LOCKED: %s", socket, client.protocol, host_ip, user.alias, smb.last_error);
 				sockprintf(socket, client.protocol, session, "-ERR database locked, try again later");
