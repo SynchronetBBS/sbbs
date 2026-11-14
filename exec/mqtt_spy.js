@@ -4,6 +4,7 @@
 
 require("key_defs.js", "CTRL_C");
 require("nodedefs.js", "NodeStatus");
+require("cga_defs.js", "ANSI_NORMAL");
 
 "use strict";
 
@@ -51,6 +52,17 @@ function output(str)
 	else
 		write(str);
 }
+
+// The spied-upon node's output may have left the terminal in any attribute
+function reset_attributes()
+{
+	if(js.global.console)
+		write_raw(console.ansi(ANSI_NORMAL));
+	else
+		write("\x1b[0m");
+}
+
+js.time_limit = 0;
 
 printf("*** Synchronet MQTT Spy ");
 
@@ -100,6 +112,7 @@ try {
 				if(new_status != node_status) {
 					node_status = new_status;
 					var node_aux = msg.data.split('\t')[5];
+					reset_attributes();
 					print("\r\nNew node status: "
 						+ format(NodeStatus[node_status], node_aux));
 				}
@@ -135,5 +148,6 @@ try {
 } catch(e) {
 	print(e);
 }
+reset_attributes();
 print();
 print("Done spying");
