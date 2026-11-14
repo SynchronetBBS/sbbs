@@ -9,8 +9,18 @@
  * write()
  */
 
+/*
+ * With no argument, runs every test directory below this one.
+ * With an argument, runs only that sub-directory, e.g. from a sysop's
+ * terminal session (where the bbs object exists):
+ *   ;EXEC ?<exec dir>/tests/test.js atcodes
+ */
 var testroot = js.exec_dir;
+var subdir = (argc > 0) ? argv[0] : null;
 var testdirs = {};
+
+if (subdir)
+	testroot = backslash(testroot + subdir);
 
 function depth_first(root, parent)
 {
@@ -47,15 +57,22 @@ function depth_first(root, parent)
 	}, parent[root]);
 }
 
+if (this.stdout === undefined)
+	stdout = console;
+
+if (!file_isdir(testroot)) {
+	stdout.writeln("No such test directory: " + testroot);
+	exit(1);
+}
 depth_first(testroot, testdirs);
+if (testdirs[testroot] === undefined)
+	exit(0);
 // Do not run tests in top-level
-testdirs[testroot].tests = [];
+if (!subdir)
+	testdirs[testroot].tests = [];
 
 var passed = 0;
 var failed = 0;
-
-if (this.stdout === undefined)
-	stdout = console;
 
 function run_tests(location, obj)
 {
