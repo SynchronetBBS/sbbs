@@ -190,6 +190,8 @@ int main(int argc, char **argv)
 		, lzhblocks, lzhsaved
 		, ctrl_chars;
 	ulong         hdr_overlap;
+	uint32_t*     datrefs = NULL;   /* headers referencing each data block */
+	ulong         datrecs = 0, datreferr;
 	off_t         shd_length;
 	ulong         oldest = 0;
 	ulong         largest = 0;
@@ -387,6 +389,11 @@ int main(int argc, char **argv)
 				printf("!Size of SDA file (%lu) does not match SDT file (%lu)\n"
 				       , (ulong)filelength(fileno(smb.sda_fp))
 				       , (ulong)filelength(fileno(smb.sdt_fp)));
+			datrecs = (ulong)(filelength(fileno(smb.sda_fp)) / sizeof(uint16_t));
+			if (datrecs && (datrefs = calloc(datrecs, sizeof(*datrefs))) == NULL) {
+				printf("Error allocating %lu bytes of memory\n", datrecs * sizeof(*datrefs));
+				return ++errors;
+			}
 		}
 
 		headers = deleted = orphan = dupenumhdr = attr = zeronum = timeerr = lockerr = hdrerr = 0;
@@ -406,6 +413,7 @@ int main(int argc, char **argv)
 		msgids = 0;
 		ctrl_chars = 0;
 		hdr_overlap = 0;
+		datreferr = 0;
 		oldest = 0;
 		largest = 0;
 		largest_msgnum = 0;
@@ -832,6 +840,17 @@ int main(int argc, char **argv)
 				}
 				else
 					delhdrblocks += (size / SHD_BLOCK_LEN);
+
+				if (datrefs != NULL) {
+					/* A header still allocated (deleted or not) holds its data blocks */
+					fseek(smb.sha_fp, (l - smb.status.header_offset) / SHD_BLOCK_LEN, SEEK_SET);
+					if (fgetc(smb.sha_fp) > 0) {
+						ulong    first = msg.hdr.offset / SDT_BLOCK_LEN;
+						uint32_t datblocks = smb_datblocks(smb_getmsgdatlen(&msg));
+						for (m = 0; m < datblocks && first + m < datrecs; m++)
+							datrefs[first + m]++;
+					}
+				}
 			}
 
 			else { /* Hyper Alloc */
@@ -875,7 +894,17 @@ int main(int argc, char **argv)
 					break;
 				if (!i)
 					deldatblocks++;
+				if (datrefs != NULL && !terminated && i != datrefs[l / 2]) {
+					fprintf(stderr, "%sData Block %lu allocated %d times, used by %" PRIu32 " headers\n"
+					        , beep, l / 2, i, datrefs[l / 2]);
+					if (extinfo)
+						printf("ERR: Data block %lu allocation count (%d) does not match "
+						       "the number of headers using it (%" PRIu32 ")\n"
+						       , l / 2, i, datrefs[l / 2]);
+					datreferr++;
+				}
 			}
+			FREE_AND_NULL(datrefs);
 
 			smb_close_ha(&smb);
 			smb_close_da(&smb);
@@ -1188,6 +1217,10 @@ int main(int argc, char **argv)
 			printf("%-35.35s (!): %lu\n"
 			       , "Misallocated Active Header Blocks"
 			       , actalloc);
+		if (datreferr)
+			printf("%-35.35s (!): %lu\n"
+			       , "Data Block Reference Mismatches"
+			       , datreferr);
 		/***
 		if(delalloc)
 		    printf("%-35.35s (!): %lu\n"
@@ -1229,7 +1262,7 @@ int main(int argc, char **argv)
 			|| getbodyerr || gettailerr
 			|| orphan || dupenumhdr || dupenum || dupeoff || attr
 			|| lockerr || hdrerr || hdrnumerr || idxnumerr || idxofferr
-			|| actalloc || datactalloc || misnumbered || timeerr
+			|| actalloc || datactalloc || datreferr || misnumbered || timeerr
 			|| intransit || unvalidated || ctrl_chars
 			|| subjcrc || fromcrc || tocrc || fname_err
 			|| dfieldoffset || dfieldlength || xlaterr || idxerr) {
