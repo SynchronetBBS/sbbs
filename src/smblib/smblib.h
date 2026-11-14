@@ -55,6 +55,7 @@
 #define SMB_ERR_HDR_VER     -104        /* Unsupported version */
 #define SMB_ERR_HDR_FIELD   -105        /* Missing header field */
 #define SMB_ERR_HDR_ATTR    -106        /* Invalid message attributes */
+#define SMB_ERR_HDR_NUMBER  -107        /* Header is not the indexed message's */
 #define SMB_ERR_NOT_FOUND   -110        /* Item not found */
 #define SMB_ERR_DAT_OFFSET  -120        /* Invalid data offset (>4GB) */
 #define SMB_ERR_DAT_LEN     -121        /* Invalid data length (>2GB) */
@@ -128,6 +129,7 @@ SMBEXPORT uint      smb_getmsgdatlen(smbmsg_t*);
 SMBEXPORT uint      smb_getmsgtxtlen(smbmsg_t*);
 SMBEXPORT int       smb_lockmsghdr(smb_t*, smbmsg_t*);
 SMBEXPORT int       smb_getmsghdr(smb_t*, smbmsg_t*);
+SMBEXPORT int       smb_getmsghdr_for_idx(smb_t*, smbmsg_t*);
 SMBEXPORT int       smb_unlockmsghdr(smb_t*, smbmsg_t*);
 SMBEXPORT int       smb_addcrc(smb_t*, uint32_t crc);
 

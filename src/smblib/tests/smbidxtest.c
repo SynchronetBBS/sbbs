@@ -165,9 +165,44 @@ void Test_NoCorruption(CuTest* tc)
 	smb_close(&smb);
 }
 
+/*
+ * An index record pointing at another message's header: smb_getmsghdr() reads
+ * whatever is at the offset, smb_getmsghdr_for_idx() refuses it.
+ */
+void Test_HeaderOfAnotherMessageIsRefused(CuTest* tc)
+{
+	smb_t    smb = create_test_smb(tc, 3);
+	smbmsg_t msg;
+	smbmsg_t other;
+
+	memset(&msg, 0, sizeof(msg));
+	msg.hdr.number = 2;
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_getmsgidx(&smb, &msg));
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_getmsghdr_for_idx(&smb, &msg));
+	CuAssertIntEquals(tc, 2, (int)msg.hdr.number);
+	CuAssertStrEquals(tc, "Test message 2", msg.subj);
+	smb_freemsgmem(&msg);
+
+	memset(&other, 0, sizeof(other));
+	other.hdr.number = 3;
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_getmsgidx(&smb, &other));
+	msg.idx.offset = other.idx.offset;
+
+	CuAssertIntEquals(tc, SMB_ERR_HDR_NUMBER, smb_getmsghdr_for_idx(&smb, &msg));
+	CuAssertIntEquals(tc, 2, (int)msg.idx.number);
+	CuAssertIntEquals(tc, 0, (int)msg.total_hfields);
+
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_getmsghdr(&smb, &msg));
+	CuAssertIntEquals(tc, 3, (int)msg.hdr.number);
+	smb_freemsgmem(&msg);
+
+	smb_close(&smb);
+}
+
 CuSuite* SmbIdxTestSuite(void)
 {
 	CuSuite* suite = CuSuiteNew();
+	SUITE_ADD_TEST(suite, Test_HeaderOfAnotherMessageIsRefused);
 	SUITE_ADD_TEST(suite, Test_NoCorruption);
 	SUITE_ADD_TEST(suite, Test_ShortIndexByOne);
 	SUITE_ADD_TEST(suite, Test_ShortIndexByTwo);

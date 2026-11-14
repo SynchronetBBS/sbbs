@@ -1531,7 +1531,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 				        , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
 				break;
 			}
-			i = smb_getmsghdr(&smb, &msg);
+			i = smb_getmsghdr_for_idx(&smb, &msg);
 			smb_unlockmsghdr(&smb, &msg);
 			if (i != 0) {
 				errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) line %u, msg #%u"
@@ -1599,7 +1599,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 						        , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
 						break;
 					}
-					if ((i = smb_getmsghdr(&smb, &msg)) != SMB_SUCCESS) {
+					if ((i = smb_getmsghdr_for_idx(&smb, &msg)) != SMB_SUCCESS) {
 						smb_unlockmsghdr(&smb, &msg);
 						errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) line %u, msg #%u"
 						          , socket, client.protocol, user.alias, i, smb.last_error, __LINE__, msg.idx.number);
@@ -1650,7 +1650,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 						sockprintf(socket, client.protocol, session, "-ERR %d locking message header", i);
 						continue;
 					}
-					i = smb_getmsghdr(&smb, &msg);
+					i = smb_getmsghdr_for_idx(&smb, &msg);
 					smb_unlockmsghdr(&smb, &msg);
 					if (i != 0) {
 						smb_freemsgmem(&msg);
@@ -1689,7 +1689,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 						        , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
 						break;
 					}
-					i = smb_getmsghdr(&smb, &msg);
+					i = smb_getmsghdr_for_idx(&smb, &msg);
 					smb_unlockmsghdr(&smb, &msg);
 					if (i != 0) {
 						smb_freemsgmem(&msg);
@@ -1759,7 +1759,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 					sockprintf(socket, client.protocol, session, "-ERR %d locking message header", i);
 					continue;
 				}
-				i = smb_getmsghdr(&smb, &msg);
+				i = smb_getmsghdr_for_idx(&smb, &msg);
 				smb_unlockmsghdr(&smb, &msg);
 				if (i != 0) {
 					errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) line %u, msg #%u"
@@ -1864,7 +1864,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 					sockprintf(socket, client.protocol, session, "-ERR %d locking message header", i);
 					continue;
 				}
-				if ((i = smb_getmsghdr(&smb, &msg)) != SMB_SUCCESS) {
+				if ((i = smb_getmsghdr_for_idx(&smb, &msg)) != SMB_SUCCESS) {
 					smb_unlockmsghdr(&smb, &msg);
 					smb_unlocksmbhdr(&smb);
 					errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) line %u, msg #%u"
@@ -6028,7 +6028,7 @@ static void sendmail_thread(void* arg)
 				        , i, smb.last_error, msg.idx.number);
 				continue;
 			}
-			if ((i = smb_getmsghdr(&smb, &msg)) != SMB_SUCCESS) {
+			if ((i = smb_getmsghdr_for_idx(&smb, &msg)) != SMB_SUCCESS) {
 				smb_unlockmsghdr(&smb, &msg);
 				errprintf(LOG_ERR, WHERE, "0000 !SEND ERROR %d (%s) line %u, msg #%u"
 				          , i, smb.last_error, __LINE__, msg.idx.number);

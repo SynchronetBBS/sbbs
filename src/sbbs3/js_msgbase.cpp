@@ -1780,7 +1780,7 @@ js_get_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_TRUE;
 		}
 
-		if ((p->p->smb_result = smb_getmsghdr(&(p->p->smb), &(p->msg))) != SMB_SUCCESS) {
+		if ((p->p->smb_result = smb_getmsghdr_for_idx(&(p->p->smb), &(p->msg))) != SMB_SUCCESS) {
 			smb_unlockmsghdr(&(p->p->smb), &(p->msg));
 			JS_RESUMEREQUEST(cx, rc);
 			free(p);
@@ -2005,7 +2005,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 		p->post = post[off];
 
 		rc = JS_SUSPENDREQUEST(cx);
-		priv->smb_result = smb_getmsghdr(&(priv->smb), &(p->msg));
+		priv->smb_result = smb_getmsghdr_for_idx(&(priv->smb), &(p->msg));
 		JS_RESUMEREQUEST(cx, rc);
 		if (priv->smb_result != SMB_SUCCESS) {
 			smb_unlocksmbhdr(&(priv->smb));
@@ -2169,7 +2169,7 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	do {
-		if ((p->smb_result = smb_getmsghdr(&(p->smb), &msg)) != SMB_SUCCESS)
+		if ((p->smb_result = smb_getmsghdr_for_idx(&(p->smb), &msg)) != SMB_SUCCESS)
 			break;
 
 		smb_freemsghdrmem(&msg);    /* prevent duplicate header fields */
@@ -2265,7 +2265,7 @@ js_remove_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc = JS_SUSPENDREQUEST(cx);
 	if ((p->smb_result = smb_getmsgidx(&(p->smb), &msg)) == SMB_SUCCESS
-	    && (p->smb_result = smb_getmsghdr(&(p->smb), &msg)) == SMB_SUCCESS) {
+	    && (p->smb_result = smb_getmsghdr_for_idx(&(p->smb), &msg)) == SMB_SUCCESS) {
 
 		msg.hdr.attr |= MSG_DELETE;
 
@@ -2294,7 +2294,7 @@ static char* get_msg_text(private_t* p, smbmsg_t* msg, bool strip_ctrl_a, bool d
 		if ((p->smb_result = smb_lockmsghdr(&(p->smb), msg)) != SMB_SUCCESS)
 			return NULL;
 
-		if ((p->smb_result = smb_getmsghdr(&(p->smb), msg)) != SMB_SUCCESS) {
+		if ((p->smb_result = smb_getmsghdr_for_idx(&(p->smb), msg)) != SMB_SUCCESS) {
 			smb_unlockmsghdr(&(p->smb), msg);
 			return NULL;
 		}

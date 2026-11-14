@@ -1133,6 +1133,29 @@ int smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 }
 
 /****************************************************************************/
+/* Reads the header of the message whose index record is in msg->idx (e.g.	*/
+/* from smb_getmsgidx()), failing when the header at msg->idx.offset		*/
+/* belongs to a different message.											*/
+/* Must call smb_freemsgmem() to free memory allocated for var len strs 	*/
+/****************************************************************************/
+int smb_getmsghdr_for_idx(smb_t* smb, smbmsg_t* msg)
+{
+	uint32_t number = msg->idx.number;
+	int      retval = smb_getmsghdr(smb, msg);
+
+	if (retval != SMB_SUCCESS)
+		return retval;
+	if (msg->hdr.number != number) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s header at offset %u is msg %u, not indexed msg %u", __FUNCTION__
+		              , (uint)msg->idx.offset, (uint)msg->hdr.number, (uint)number);
+		smb_freemsgmem(msg);
+		return SMB_ERR_HDR_NUMBER;
+	}
+	return SMB_SUCCESS;
+}
+
+/****************************************************************************/
 /* Frees memory allocated for variable-length header fields in 'msg'        */
 /****************************************************************************/
 void smb_freemsghdrmem(smbmsg_t* msg)
