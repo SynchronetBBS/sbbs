@@ -981,6 +981,7 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 
 	struct statvfs fs;
 	uint64_t       blocks;
+	uint64_t       total;
 
 	if (statvfs(path, &fs) < 0)
 		return 0;
@@ -990,15 +991,17 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 	else
 		blocks = fs.f_blocks;
 
+	total = (uint64_t)fs.f_bsize * blocks;
 	if (unit > 1)
-		blocks /= unit;
-	return fs.f_bsize * blocks;
+		total /= unit;
+	return total;
 
 /* statfs is also used under FreeBSD (Though it *supports* statvfs() now too) */
 #elif defined(__GLIBC__) || defined(BSD)
 
 	struct statfs fs;
 	uint64_t      blocks;
+	uint64_t      total;
 
 	if (statfs(path, &fs) < 0)
 		return 0;
@@ -1008,9 +1011,10 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 	else
 		blocks = fs.f_blocks;
 
+	total = (uint64_t)fs.f_bsize * blocks;
 	if (unit > 1)
-		blocks /= unit;
-	return fs.f_bsize * blocks;
+		total /= unit;
+	return total;
 
 #else
 
