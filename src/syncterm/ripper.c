@@ -18230,7 +18230,8 @@ static struct rip_cb {
 	bool               ebc;      // completion flag - suppresses the next text byte except VT
 	enum rip_cb_state  st;
 
-	// Numeric ESC prefix plus a separate, bounded SkyPix string.
+	// Numeric ESC prefix plus a separate, bounded SkyPix string. In RIPv1
+	// an unfinished prefix can coexist with a SOH/STX command in bytes[].
 	uint8_t            esc[RIP_ESC_MAX + 1];
 	size_t             esc_len;
 	char               sky_string[256];
@@ -18540,10 +18541,8 @@ rip_play_scene(const char *filename)
 //
 // Called only when rip.enabled && !rip_suspended.
 //
-// Always returns 1: every byte that reaches cb_esc_feed is routed
-// through the ESC sub-machine and is therefore invisible to the
-// main (1A04-equivalent) parser's sliding window, even on flush-back
-// paths where the accumulated bytes end up being re-emitted to cterm.
+// Always returns 1. The caller records the raw byte in history, including
+// flush-back paths where the buffered prefix is re-emitted to cterm.
 static int
 cb_esc_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 {
@@ -18718,9 +18717,25 @@ cb_delimiter_is_data(uint8_t c)
 static int
 cb_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 {
-	// ESC sub-machine takes priority when already running.
-	if (cb.esc_len > 0)
+	if (cb.esc_len > 0 && (cb.len == 0 || rip.version != RIP_VERSION_1 || cb.sky_pending)) {
+		/* 1A04:01C6/01FC lets SOH/STX start RIP while ANSI is pending.
+		 * Keep the prefix, then assemble the RIP command independently.
+		 * A full escape buffer still takes the normal overflow path. */
+		if (rip.version == RIP_VERSION_1 && !cb.sky_pending && cb.esc_len < RIP_ESC_MAX
+		    && (c == 0x01 || c == 0x02) && cb_accept_introducer(c)) {
+			cb_push(c);
+			cb.st = RS_CMD;
+			return 1;
+		}
+		/* Completion applies to the next text byte before the unfinished
+		 * ANSI sequence receives it. In particular, do not append its LF. */
+		if (rip.version == RIP_VERSION_1 && !cb.sky_pending && cb.ebc) {
+			cb.ebc = false;
+			if (c != 0x0b)
+				return 1;
+		}
 		return cb_esc_feed(c, origbuf, out);
+	}
 
 	// New ESC when the main buffer is empty: enter sub-machine.
 	if (c == 0x1b && cb.len == 0) {
@@ -18753,10 +18768,20 @@ cb_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 	if (cb.len == 1 && c != '|') {
 		uint8_t b0 = cb.bytes[0];
 		if (b0 == '!' || b0 == 0x01 || b0 == 0x02) {
+			bool pending_escape = cb.esc_len > 0;
+			/* The introducer proved to be ordinary text. ANSI must see
+			 * its saved prefix before this introducer and the current byte. */
+			if (pending_escape) {
+				memcpy(&origbuf[*out], cb.esc, cb.esc_len);
+				*out += cb.esc_len;
+				cb.esc_len = 0;
+			}
 			origbuf[(*out)++] = b0;
 			cb_clear();
 			cb.ebc = false;
 			cb.st = RS_IDLE;
+			if (pending_escape && c == 0x1b)
+				return cb_esc_feed(c, origbuf, out);
 			// Return 0 so the caller emits c to the text window
 			// (with EBC suppression which we just cleared).
 			return 0;
@@ -18784,7 +18809,7 @@ cb_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 		}
 		// Dispatch normally.
 		cb_dispatch();
-		cb.st = RS_IDLE;
+		cb.st = cb.esc_len ? RS_ESC : RS_IDLE;
 		return 1;
 	}
 
@@ -18837,13 +18862,31 @@ cb_defer_push(const uint8_t *data, size_t n)
 static bool
 cb_would_dispatch(uint8_t c)
 {
+	if (cb.len > 0 && (cb.esc_len == 0 || (rip.version == RIP_VERSION_1 && !cb.sky_pending))) {
+		if (c != '|' && c != '\r')
+			return false;
+		return !cb_delimiter_is_data(c);
+	}
 	if (cb.esc_len > 0)
 		return c == '!';
-	if (cb.len < 1)
-		return false;
-	if (c != '|' && c != '\r')
-		return false;
-	return !cb_delimiter_is_data(c);
+	return false;
+}
+
+/* Maximum immediate passthrough from one raw byte. VT's three-byte expansion
+ * has its own capacity check below. A bogus introducer may also release the
+ * suspended escape prefix, so deferred input can expand beyond its own size. */
+static size_t
+cb_passthrough_bound(uint8_t c)
+{
+	if (cb.len > 0) {
+		if (cb.len == 1 && c != '|'
+		    && (cb.bytes[0] == '!' || cb.bytes[0] == 0x01 || cb.bytes[0] == 0x02))
+			return cb.esc_len + 1 + (c == 0x0b ? 0 : 1);
+		return 0;
+	}
+	if (cb.esc_len > 0)
+		return cb.esc_len + 1;
+	return c == 0x0b ? 0 : 1;
 }
 
 // parse_rip body.  See parse_rip() below for the exported entry point.
@@ -18864,7 +18907,6 @@ cb_would_dispatch(uint8_t c)
 static size_t
 parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 {
-	(void)maxlen;
 	size_t out = 0;
 	// Once text has been emitted to origbuf in this call, no more
 	// RIP dispatches are allowed: subsequent dispatch-trigger bytes
@@ -18889,7 +18931,8 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 			 * introducer, just as we do for fresh input below. */
 			bool pending_introducer = out > 0 && rip.version != RIP_VERSION_SKYPIX
 			    && cb.len == 0 && cb.esc_len == 0 && c == '!';
-			if (pending_introducer || (!can_dispatch && cb_would_dispatch(c))) {
+			if (pending_introducer || (!can_dispatch && cb_would_dispatch(c))
+			    || (out > 0 && cb_passthrough_bound(c) > maxlen - out)) {
 				// Save the rest for a future drain.
 				cb_defer_push(&defer[i], defer_len - i);
 				free(defer);
@@ -18958,13 +19001,18 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 	//
 	// A partial ESC sequence or lone introducer from a previous call can
 	// be emitted along with the current byte. Reserve headroom so that
-	// flush-back cannot overwrite unread input. The caller guarantees at
-	// least RIP_ESC_MAX bytes of tail headroom.
+	// flush-back cannot overwrite unread input. If the input already fills
+	// the caller's buffer, move it to the deferred queue instead of growing
+	// the input in place. Its separate storage also bounds output on drain.
 	size_t phase2_start = 0;
 	size_t pending = cb.esc_len;
 	if (cb.len == 1 && (cb.bytes[0] == '!' || cb.bytes[0] == 0x01 || cb.bytes[0] == 0x02))
 		pending++;
 	if (pending > 0 && blen > 0) {
+		if (pending > maxlen || blen > maxlen - pending) {
+			cb_defer_push(origbuf, blen);
+			return out;
+		}
 		memmove(&origbuf[pending], origbuf, blen);
 		phase2_start = pending;
 		blen += pending;

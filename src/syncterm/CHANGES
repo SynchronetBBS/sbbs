@@ -1,5 +1,6 @@
 Version 1.10
 ------------
+Allow RIPv1 SOH/STX commands to interrupt and resume unfinished ANSI sequences
 Accept zero-padded RIP autosense parameters and the level-0 block-mode alias
 Match RIPterm 1.54 backslash delimiters, byte history, and bare-pipe restarts
 Suppress a post-command ESC before starting RIP's ANSI accumulator

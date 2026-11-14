@@ -214,8 +214,8 @@ test_introducers(void)
  * Check every two-part split and bytewise: TCP packet boundaries must not
  * change command output, ordinary text, or the five raw history bytes. */
 static void
-check_wire(const char *name, int version, const char *wire,
-    const char *expected_host, const char *expected_text, int color)
+check_wire_reply(const char *name, int version, const char *wire,
+    const char *expected_host, const char *expected_text, int color, const char *expected_reply)
 {
 	size_t length = strlen(wire);
 	for (size_t split = 0; split <= length + 1; split++) {
@@ -238,6 +238,8 @@ check_wire(const char *name, int version, const char *wire,
 		    || memcmp(host.bytes, expected_host, host.length) != 0
 		    || wire_text.length != strlen(expected_text)
 		    || memcmp(wire_text.bytes, expected_text, wire_text.length) != 0
+		    || wire_replies.length != strlen(expected_reply)
+		    || memcmp(wire_replies.bytes, expected_reply, wire_replies.length) != 0
 		    || rip.color != color) {
 			fprintf(stderr, "%s (RIP %d, split %zu): host=%zu bytes, text=%zu bytes, color=%d\n",
 			    name, version, split, host.length, wire_text.length, rip.color);
@@ -247,6 +249,13 @@ check_wire(const char *name, int version, const char *wire,
 			history[i] = (uint8_t)wire[length - 1 - i];
 		assert(memcmp(cb.window, history, sizeof(history)) == 0);
 	}
+}
+
+static void
+check_wire(const char *name, int version, const char *wire,
+    const char *expected_host, const char *expected_text, int color)
+{
+	check_wire_reply(name, version, wire, expected_host, expected_text, color, "");
 }
 
 static void
@@ -404,6 +413,122 @@ test_block_alias(void)
 	}
 }
 
+static void
+test_interleaving(void)
+{
+	/* 1A04:01C6 branches to 01FC, where SOH/STX still start RIP.
+	 * ANSI retains its prefix while the intervening RIP bytes are consumed. */
+	static const struct {
+		const char *name, *wire, *host, *text;
+		int color;
+	} cases[] = {
+		{"SOH during CSI", "\x1b[31\x01|1\x1b" "0000OK\r\nmZ", "OK", "\x1b[31mZ", 1},
+		{"STX during CSI", "\x1b[31\x02|1\x1b" "0000OK\r\nmZ", "OK", "\x1b[31mZ", 1},
+		{"SOH after ESC", "\x1b\x01|1\x1b" "0000OK\r\n[31mZ", "OK", "\x1b[31mZ", 1},
+		{"completion before CSI", "\x1b[3\x01|#\rX1mZ", "", "\x1b[31mZ", 1},
+		{"two interruptions", "\x1b[3\x01|1\x1b" "0000A\r\n1\x02|1\x1b" "0000B\r\nmZ", "AB", "\x1b[31mZ", 1},
+		{"RIP argument ESC", "\x1b[31\x01|1\x1b" "0000\x1b[!\r\nmZ", "\x1b[!", "\x1b[31mZ", 1},
+		{"bogus SOH", "\x1b[31\x01XYZ", "", "\x1b[31\x01XYZ", 1},
+		{"bogus STX", "\x1b[31\x02XYZ", "", "\x1b[31\x02XYZ", 1},
+		{"escaped SOH", "\x1b[\\\x01|c0F\r\n", "", "\x1b[\\\x01|c0F\r\n", 1},
+		{"escaped STX", "\x1b[\\\x02|c0F\r\n", "", "\x1b[\\\x02|c0F\r\n", 1},
+		{"bang inside escape", "\x1b!|c0F\r\n", "", "\x1b!|c0F\r\n", 1},
+		{"graphics after text", "A\x1b[31\x01|c0F|X2S2S\r\nmZ", "", "A\x1b[31mZ", 15},
+	};
+	for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
+		check_wire(cases[i].name, RIP_VERSION_1, cases[i].wire,
+		    cases[i].host, cases[i].text, cases[i].color);
+		assert(cb.esc_len == 0 && cb.len == 0);
+	}
+	check_wire_reply("resumed autosense", RIP_VERSION_1, "\x1b[00\x01|#\r\n!Z",
+	    "", "Z", 1, "RIPSCRIP015410");
+	check_wire_reply("new escape after bogus SOH", RIP_VERSION_1, "\x1b[31\x01\x1b[00!Z",
+	    "", "\x1b[31\x01Z", 1, "RIPSCRIP015410");
+	check_wire("SkyPix string payload", RIP_VERSION_1, "\x1b[16;99!a\x01|c0F\r\n!Z",
+	    "", "Z", 1);
+	/* Graphics must follow the preceding text and precede the resumed SGR. */
+	const char *wire = cases[sizeof(cases) / sizeof(*cases) - 1].wire;
+	size_t length = strlen(wire);
+	for (size_t split = 0; split <= length + 1; split++) {
+		struct vmem_cell cells[2];
+		struct ciolib_pixels *p;
+		reset(RIP_VERSION_1);
+		/* Complete the fixture's mode-change redraw before painting pixels. */
+		freepixels(getpixels(0, 0, 0, 0, false));
+		if (split <= length) {
+			feed(wire, split);
+			feed(wire + split, length - split);
+		}
+		else {
+			for (size_t j = 0; j < length; j++)
+				feed(wire + j, 1);
+		}
+		p = getpixels(100, 100, 100, 100, false);
+		if (p && (p->pixels[0] != map_rip_color(15) || p->pixelsb[0] != map_rip_color(15)))
+			fprintf(stderr, "Interleaved rendering split %zu: primary=%08x alternate=%08x expected=%08x\n",
+			    split, p->pixels[0], p->pixelsb[0], map_rip_color(15));
+		assert(p && p->pixels[0] == map_rip_color(15) && p->pixelsb[0] == map_rip_color(15));
+		freepixels(p);
+		assert(vmem_gettext(1, 1, 2, 1, cells));
+		assert(cells[0].ch == 'A' && (cells[0].legacy_attr & 7) == LIGHTGRAY);
+		assert(cells[1].ch == 'Z' && (cells[1].legacy_attr & 7) == RED);
+	}
+	/* RIPv3 keeps its existing behavior: SOH ends escape lookahead and
+	 * the following pipe does not begin a RIP command. */
+	check_wire("v3 escape priority", RIP_VERSION_3, "\x1b[31\x01|c0F\r\n",
+	    "", "\x1b[31\x01|c0F\r\n", 1);
+}
+
+static void
+test_interleaving_capacity(void)
+{
+	/* A saved prefix plus a bogus introducer can expand passthrough even
+	 * when the next input fills the whole buffer. Check deferred drains
+	 * too, including VT's extra two output bytes. */
+	for (size_t capacity = RIP_ESC_MAX + 1; capacity <= 64; capacity += 31) {
+		for (int intro = 1; intro <= 2; intro++) {
+			for (int vt = 0; vt <= 1; vt++) {
+				uint8_t guarded[66];
+				uint8_t prefix[RIP_ESC_MAX], expected[100];
+				size_t length = capacity, expected_length = sizeof(prefix);
+				unsigned calls = 0;
+				reset(RIP_VERSION_1);
+				prefix[0] = 0x1b;
+				prefix[1] = '[';
+				memset(prefix + 2, '0', sizeof(prefix) - 3);
+				prefix[sizeof(prefix) - 1] = intro;
+				feed(prefix, sizeof(prefix));
+				assert(cb.esc_len == RIP_ESC_MAX - 1 && cb.len == 1);
+				memcpy(expected, prefix, sizeof(prefix));
+				if (vt) {
+					memcpy(expected + expected_length, "\x1b[B", 3);
+					expected_length += 3;
+				}
+				memset(expected + expected_length, 'X', capacity - vt);
+				expected_length += capacity - vt;
+				memset(guarded, 0xa5, sizeof(guarded));
+				memset(guarded + 1, 'X', capacity);
+				if (vt)
+					guarded[1] = 0x0b;
+				do {
+					size_t n = parse_rip(guarded + 1, length, capacity);
+					assert(n <= capacity && guarded[0] == 0xa5 && guarded[capacity + 1] == 0xa5);
+					capture_output((const char *)guarded + 1, n, &wire_text);
+					if (n)
+						cterm_write(cterm, guarded + 1, n, NULL);
+					length = 0;
+					assert(++calls < 100);
+				} while (cb.defer_len);
+				assert(wire_text.length == expected_length);
+				assert(memcmp(wire_text.bytes, expected, expected_length) == 0);
+				assert(cb.len == 0 && cb.esc_len == 0);
+				for (size_t i = 0; i < sizeof(cb.window); i++)
+					assert(cb.window[i] == 'X');
+			}
+		}
+	}
+}
+
 int
 main(int argc, char **argv)
 {
@@ -420,6 +545,10 @@ main(int argc, char **argv)
 		test_autosense();
 	if (argc == 1 || strcmp(argv[1], "block-alias") == 0)
 		test_block_alias();
-	puts("RIP: callbacks, stream ordering, backslashes, history, autosense and block alias passed");
+	if (argc == 1 || strcmp(argv[1], "interleaving") == 0)
+		test_interleaving();
+	if (argc == 1 || strcmp(argv[1], "capacity") == 0)
+		test_interleaving_capacity();
+	puts("RIP: callbacks, ordering, escapes, history, autosense, block alias and interleaving passed");
 	return 0;
 }
