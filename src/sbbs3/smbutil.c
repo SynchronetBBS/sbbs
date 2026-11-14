@@ -1494,7 +1494,11 @@ void packmsgs(ulong packable)
 			}
 
 			if (!(smb.status.attr & SMB_HYPERALLOC)) {
+				/* allocate against the new data file, not the one being read */
+				FILE* old_sdt = smb.sdt_fp;
+				smb.sdt_fp = tmp_sdt;
 				offset = smb_fallocdat(&smb, (uint32_t)m, 1);
+				smb.sdt_fp = old_sdt;
 				if (offset < 0) {
 					fprintf(errfp, "\n%s!Data allocation failure %ld (%s) for message #%lu"
 					        " - message skipped\n"
@@ -1556,8 +1560,13 @@ void packmsgs(ulong packable)
 		off_t offset;
 		if (smb.status.attr & SMB_HYPERALLOC)
 			offset = ftello(tmp_shd);
-		else
+		else {
+			/* allocate against the new header file, not the one being read */
+			FILE* old_shd = smb.shd_fp;
+			smb.shd_fp = tmp_shd;
 			offset = smb_fallochdr(&smb, (ulong)length) + smb.status.header_offset;
+			smb.shd_fp = old_shd;
+		}
 		if (offset < 0) {
 			fprintf(errfp, "\n%s!Header allocation failure %ld (%s) for message #%lu"
 			        " - message skipped\n"

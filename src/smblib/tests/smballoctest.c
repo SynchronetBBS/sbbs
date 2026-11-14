@@ -159,6 +159,76 @@ void Test_UnaccountedDataIsKept(CuTest* tc)
 	smb_close(&smb);
 }
 
+/* An allocation file that reads empty (e.g. a stalled network share) does
+   not lead to new data being allocated over the data file's live blocks */
+static void alloc_with_empty_allocation_file(CuTest* tc, bool fast)
+{
+	smbmsg_t msg;
+	smb_t    smb = add_body_and_tail(tc, &msg);
+	FILE*    fp;
+	off_t    offset;
+
+	fp = fopen(TEST_SMB_PATH ".sda", "wb");
+	CuAssertPtrNotNull(tc, fp);
+	fclose(fp);
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_open_da(&smb));
+	if (fast)
+		offset = smb_fallocdat(&smb, 100, 1);
+	else
+		offset = smb_allocdat(&smb, 100, 1);
+	CuAssertIntEquals_Msg(tc, smb.last_error, 2 * SDT_BLOCK_LEN, (int)offset);
+	CuAssertIntEquals(tc, 3 * sizeof(uint16_t), (int)filelength(fileno(smb.sda_fp)));
+	smb_close_da(&smb);
+	smb_freemsgmem(&msg);
+	smb_close(&smb);
+}
+
+void Test_AllocDoesNotOverwriteUnaccountedData(CuTest* tc)
+{
+	alloc_with_empty_allocation_file(tc, false);
+}
+
+void Test_FastAllocDoesNotOverwriteUnaccountedData(CuTest* tc)
+{
+	alloc_with_empty_allocation_file(tc, true);
+}
+
+/* Likewise, a header allocation file that reads empty does not lead to a
+   new header being allocated over the header file's live headers */
+static void allochdr_with_empty_allocation_file(CuTest* tc, bool fast)
+{
+	smbmsg_t msg;
+	smb_t    smb = add_body_and_tail(tc, &msg);
+	FILE*    fp;
+	off_t    offset;
+	off_t    hdrs_length = filelength(fileno(smb.shd_fp)) - smb.status.header_offset;
+
+	CuAssertTrue(tc, hdrs_length > 0);
+	fp = fopen(TEST_SMB_PATH ".sha", "wb");
+	CuAssertPtrNotNull(tc, fp);
+	fclose(fp);
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_open_ha(&smb));
+	if (fast)
+		offset = smb_fallochdr(&smb, 100);
+	else
+		offset = smb_allochdr(&smb, 100);
+	CuAssertIntEquals_Msg(tc, smb.last_error, (int)hdrs_length, (int)offset);
+	CuAssertIntEquals(tc, (int)(hdrs_length / SHD_BLOCK_LEN) + 1, (int)filelength(fileno(smb.sha_fp)));
+	smb_close_ha(&smb);
+	smb_freemsgmem(&msg);
+	smb_close(&smb);
+}
+
+void Test_AllocHdrDoesNotOverwriteUnaccountedHeaders(CuTest* tc)
+{
+	allochdr_with_empty_allocation_file(tc, false);
+}
+
+void Test_FastAllocHdrDoesNotOverwriteUnaccountedHeaders(CuTest* tc)
+{
+	allochdr_with_empty_allocation_file(tc, true);
+}
+
 /* A header the allocation file doesn't cover is not freed by truncating
    the header file at it */
 void Test_ShortHeaderAllocationFileKeepsHeaders(CuTest* tc)
@@ -343,6 +413,10 @@ CuSuite* SmbAllocTestSuite(void)
 	SUITE_ADD_TEST(suite, Test_CallerHeldHeaderLockIsKept);
 	SUITE_ADD_TEST(suite, Test_FreeingLastDataTruncatesDataFile);
 	SUITE_ADD_TEST(suite, Test_UnaccountedDataIsKept);
+	SUITE_ADD_TEST(suite, Test_AllocDoesNotOverwriteUnaccountedData);
+	SUITE_ADD_TEST(suite, Test_FastAllocDoesNotOverwriteUnaccountedData);
+	SUITE_ADD_TEST(suite, Test_AllocHdrDoesNotOverwriteUnaccountedHeaders);
+	SUITE_ADD_TEST(suite, Test_FastAllocHdrDoesNotOverwriteUnaccountedHeaders);
 	SUITE_ADD_TEST(suite, Test_ShortHeaderAllocationFileKeepsHeaders);
 	SUITE_ADD_TEST(suite, Test_NothingToFreeClosesAllocationFile);
 	SUITE_ADD_TEST(suite, Test_HeaderGrowthKeepsCallerHeldHeaderLock);
