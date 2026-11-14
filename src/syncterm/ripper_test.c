@@ -16,9 +16,10 @@ struct output {
 	size_t length;
 };
 
-static struct output keys, replies, wire_text;
+static struct output keys, replies, wire_text, wire_replies;
 static unsigned mode_changes, audio_queries, size_changes;
 static void *mode_data;
+static void capture_output(const char *bytes, size_t length, void *data);
 
 void
 get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostatus)
@@ -38,8 +39,8 @@ get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostat
 int
 conn_send(const void *bytes, size_t size, unsigned timeout)
 {
-	(void)bytes;
 	(void)timeout;
+	capture_output(bytes, size, &wire_replies);
 	return size;
 }
 
@@ -90,6 +91,7 @@ reset(int version)
 	memset(&keys, 0, sizeof(keys));
 	memset(&replies, 0, sizeof(replies));
 	memset(&wire_text, 0, sizeof(wire_text));
+	memset(&wire_replies, 0, sizeof(wire_replies));
 	mode_changes = audio_queries = size_changes = 0;
 }
 
@@ -307,6 +309,101 @@ test_history(void)
 	}
 }
 
+static void
+test_autosense(void)
+{
+	/* 09C6:064A-06AD uses numeric parameter count/value, not spelling. */
+	static const struct {
+		const char *wire;
+		bool query, enabled;
+	} cases[] = {
+		{"\x1b[!", true, true},
+		{"\x1b[0!", true, true},
+		{"\x1b[00!", true, true},
+		{"\x1b[0000000000000000!", true, true},
+		{"\x1b[1!", false, false},
+		{"\x1b[01!", false, false},
+		{"\x1b[0001!", false, false},
+		{"\x1b[2!", false, true},
+		{"\x1b[02!", false, true},
+		{"\x1b[0002!", false, true},
+		{"\x1b[3!", false, true},
+		{"\x1b[00;0!", false, true},
+		{"\x1b[0;00!", false, true},
+	};
+	for (int version = RIP_VERSION_1; version <= RIP_VERSION_3; version++) {
+		for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
+			size_t length = strlen(cases[i].wire);
+			for (size_t split = 0; split <= length + 1; split++) {
+				const char *expected = version == RIP_VERSION_1
+				    ? "RIPSCRIP015410" : "RIPSCRIP030001";
+				reset(version);
+				if (split <= length) {
+					feed(cases[i].wire, split);
+					feed(cases[i].wire + split, length - split);
+				}
+				else {
+					for (size_t j = 0; j < length; j++)
+						feed(cases[i].wire + j, 1);
+				}
+				assert(wire_replies.length == (cases[i].query ? 14 : 0));
+				if (cases[i].query) {
+					assert(memcmp(wire_replies.bytes, expected, 14) == 0);
+					assert(!skypix && !cterm->skypix);
+				}
+				assert(rip.enabled == cases[i].enabled);
+				/* CSI handling must neither leak bytes nor eat the text
+				 * immediately following its final '!'. */
+				assert(wire_text.length == 0);
+				feed("HELLO", 5);
+				assert(wire_text.length == 5);
+				assert(memcmp(wire_text.bytes, "HELLO", 5) == 0);
+				if (!cases[i].enabled) {
+					/* Disable remains one-way, including a padded request. */
+					feed("\x1b[2!", 4);
+					assert(!rip.enabled && wire_replies.length == 0);
+				}
+			}
+		}
+	}
+}
+
+static void
+test_block_alias(void)
+{
+	/* Descriptor entries 59/60 share 1814:197D's block-mode handler.
+	 * SYNCVIEW compiles out transfers and cache access, but retains command
+	 * recognition and argument validation. Dispatch reports recognition. */
+	static const char *commands[] = {
+		"!|9\x1b" "01010000asset.icn<>",
+		"!|0\x1b" "01010000asset.icn<>",
+		"\x01|0\x1b" "01010000asset.icn<>",
+		"!|#|0\x1b" "01010000asset.icn<>",
+	};
+	for (int version = RIP_VERSION_1; version <= RIP_VERSION_3; version++) {
+		for (size_t i = 0; i < sizeof(commands) / sizeof(*commands); i++) {
+			size_t length = strlen(commands[i]);
+			for (size_t split = 0; split <= length + 1; split++) {
+				reset(version);
+				if (split <= length) {
+					feed(commands[i], split);
+					feed(commands[i] + split, length - split);
+				}
+				else {
+					for (size_t j = 0; j < length; j++)
+						feed(commands[i] + j, 1);
+				}
+				assert(cb.len > 0 && wire_text.length == 0);
+				assert(cb_dispatch());
+				assert(cb.len == 0 && cb.ebc);
+				feed("\nZ", 2);
+				assert(wire_text.length == 1 && wire_text.bytes[0] == 'Z');
+				assert(wire_replies.length == 0);
+			}
+		}
+	}
+}
+
 int
 main(int argc, char **argv)
 {
@@ -319,6 +416,10 @@ main(int argc, char **argv)
 		test_backslashes();
 	if (argc == 1 || strcmp(argv[1], "history") == 0)
 		test_history();
-	puts("RIP: callbacks, stream ordering, backslashes and byte history passed");
+	if (argc == 1 || strcmp(argv[1], "autosense") == 0)
+		test_autosense();
+	if (argc == 1 || strcmp(argv[1], "block-alias") == 0)
+		test_block_alias();
+	puts("RIP: callbacks, stream ordering, backslashes, history, autosense and block alias passed");
 	return 0;
 }

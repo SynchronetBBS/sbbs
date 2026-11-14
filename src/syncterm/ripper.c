@@ -7580,7 +7580,7 @@ static const unsigned char * const rip_fonts[] = {
 	Bold
 };
 static int parse_mega(const char *buf, int fieldwidth, int *consumed);
-static void do_rip_command(int level, int sublevel, int cmd, const char *args);
+static bool do_rip_command(int level, int sublevel, int cmd, const char *args);
 #ifndef SYNCVIEW
 static char *rip_input_dialog(const char *prompt, const char *initial,
     int field_width, bool reject_blank);
@@ -13269,7 +13269,7 @@ rip_poly_bezier(const char *args, bool filled, bool closed)
 
 #define ADJUST_LIMIT(name, var) if (var < min ## name) min ## name = var; if (var > max ## name) max ## name = var;
 
-static void
+static bool
 do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 {
 	int      arg1, arg2, arg3, arg4;
@@ -13282,9 +13282,14 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 	FILE    *icn;
 #endif
 
+	/* RIPterm's level-0 and level-9 ESC descriptors share the block-mode
+	 * handler. Normalize before descriptor lookup and dispatch. */
+	if (level == 0 && sublevel == 0 && cmd == '\x1b')
+		level = 9;
+
 	args = strdup(rawargs);
 	if (args == NULL)
-		return;
+		return false;
 
 	/*
 	 * Generic pre-validation: look up the command descriptor and
@@ -13305,7 +13310,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 			    &text_start, &has_text);
 			if (nparsed < 0) {
 				free(args);
-				return;
+				return false;
 			}
 			if (text_start >= 0) {
 				if (has_text && args[text_start] == '\0')
@@ -17347,6 +17352,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 		fflush(stdout);
 	}
 	free(args);
+	return handled;
 }
 
 struct FontHeader *amiga_font;
@@ -18366,13 +18372,13 @@ cb_unescape(uint8_t *buf, size_t *len)
 // '\r' (non-continuation), or from the caller explicitly on flush.
 // cb.ebc is always set (even on malformed or unknown commands) so
 // that a trailing LF after the dispatched command is suppressed.
-static void
+static bool
 cb_dispatch(void)
 {
 	if (cb.len < 2) {
 		cb.ebc = true;
 		cb_clear();
-		return;
+		return false;
 	}
 
 	// Run the backslash preprocessor on the raw buffer.
@@ -18380,7 +18386,7 @@ cb_dispatch(void)
 	if (cb.len < 2) {
 		cb.ebc = true;
 		cb_clear();
-		return;
+		return false;
 	}
 
 	// buf[0] is either an introducer (!/SOH/STX) from the very first
@@ -18394,7 +18400,7 @@ cb_dispatch(void)
 		if (cb.len < 2 || cb.bytes[1] != '|') {
 			cb.ebc = true;
 			cb_clear();
-			return;
+			return false;
 		}
 		p = 2;
 	}
@@ -18405,11 +18411,15 @@ cb_dispatch(void)
 		// Shouldn't happen: dispatch with no recognizable header.
 		cb.ebc = true;
 		cb_clear();
-		return;
+		return false;
 	}
 
 	int level = 0, sublevel = 0;
-	if (p < cb.len && cb.bytes[p] >= '1' && cb.bytes[p] <= '9') {
+	/* The explicit zero prefix is a documented alias for block mode,
+	 * not a general prefix for ordinary level-0 commands. */
+	if (p + 1 < cb.len && cb.bytes[p] == '0' && cb.bytes[p + 1] == '\x1b')
+		p++;
+	else if (p < cb.len && cb.bytes[p] >= '1' && cb.bytes[p] <= '9') {
 		level = cb.bytes[p++] - '0';
 		if (p < cb.len && cb.bytes[p] >= '1' && cb.bytes[p] <= '9') {
 			sublevel = cb.bytes[p++] - '0';
@@ -18419,7 +18429,7 @@ cb_dispatch(void)
 	if (p >= cb.len) {
 		cb.ebc = true;
 		cb_clear();
-		return;
+		return false;
 	}
 
 	int cmd = cb.bytes[p++];
@@ -18435,10 +18445,11 @@ cb_dispatch(void)
 	// cb.bytes is always +1 sized for terminator.
 	args[arglen] = 0;
 
-	do_rip_command(level, sublevel, cmd, args);
+	bool handled = do_rip_command(level, sublevel, cmd, args);
 
 	cb.ebc = true;
 	cb_clear();
+	return handled;
 }
 
 static int cb_feed(uint8_t c, uint8_t *origbuf, size_t *out);
@@ -18610,21 +18621,25 @@ cb_esc_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 			return 1;
 		}
 		size_t plen = cb.esc_len;
+		/* RIPterm's CSI handler compares a single decoded parameter.
+		 * Preserve the dedicated SkyPix command spellings separately. */
+		bool numeric_autosense = rip.version != RIP_VERSION_SKYPIX
+		    && end == (char *)&cb.esc[plen - 1];
 
 		if (plen == 3) {
 			// "\x1b[!": version query
 			if (rip.version && rip.version != RIP_VERSION_SKYPIX)
 				conn_send(ripver[rip.version], 14, 1000);
 		}
-		else if (plen == 4 && cb.esc[2] == '0') {
+		else if ((plen == 4 && cb.esc[2] == '0') || (numeric_autosense && command == 0)) {
 			if (rip.version && rip.version != RIP_VERSION_SKYPIX)
 				conn_send(ripver[rip.version], 14, 1000);
 		}
-		else if (plen == 4 && cb.esc[2] == '1' && rip.version != RIP_VERSION_SKYPIX) {
+		else if (numeric_autosense && command == 1) {
 			// Disable RIP: one-way door
 			rip.enabled = false;
 		}
-		else if (plen == 4 && cb.esc[2] == '2') {
+		else if ((plen == 4 && cb.esc[2] == '2') || (numeric_autosense && command == 2)) {
 			// Already enabled (we wouldn't be here otherwise)
 		}
 		else {
