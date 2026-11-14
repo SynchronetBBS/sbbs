@@ -18220,8 +18220,8 @@ static struct rip_cb {
 	uint8_t           *bytes;    // heap, grows by realloc
 	size_t             len;      // current length
 	size_t             cap;
-	uint8_t            window[5]; // sliding window for BOL detection
-	bool               ebc;      // completion flag - drives LF suppression
+	uint8_t            window[5]; // previous raw input bytes, including consumed commands/CSI
+	bool               ebc;      // completion flag - suppresses the next text byte except VT
 	enum rip_cb_state  st;
 
 	// Numeric ESC prefix plus a separate, bounded SkyPix string.
@@ -18336,6 +18336,7 @@ cb_accept_introducer(uint8_t c)
 //   `\|`          -> 0xFF  (escaped pipe; restored after argument slicing)
 //   `\X` (X != |) -> X     (generic backslash escape)
 //   other bytes   -> copy
+// RIPterm 1.54 also drops an unmatched trailing backslash.
 // Shrinks the buffer.
 static void
 cb_unescape(uint8_t *buf, size_t *len)
@@ -18343,6 +18344,10 @@ cb_unescape(uint8_t *buf, size_t *len)
 	size_t src = 0, dst = 0;
 	while (src < *len) {
 		uint8_t c = buf[src];
+		/* RIPterm copies the terminator for an unmatched final escape.
+		 * Stop here instead of reading beyond that terminator. */
+		if (rip.version == RIP_VERSION_1 && c == '\\' && src + 1 == *len)
+			break;
 		if (c == '\\' && src + 1 < *len) {
 			uint8_t nx = buf[src + 1];
 			src += 2;
@@ -18481,7 +18486,9 @@ rip_play_scene(const char *filename)
 	while ((nread = fread(fbuf, 1, sizeof(fbuf), f)) > 0) {
 		for (size_t i = 0; i < nread; i++) {
 			size_t text_out = 0;
-			cb_feed(fbuf[i], text_discard, &text_out);
+			if (cb_feed(fbuf[i], text_discard, &text_out) == 0)
+				cb.ebc = false;
+			cb_slide(fbuf[i]);
 		}
 	}
 
@@ -18498,7 +18505,9 @@ rip_play_scene(const char *filename)
 		cb.defer_cap = 0;
 		for (size_t i = 0; i < defer_len; i++) {
 			size_t text_out = 0;
-			cb_feed(defer[i], text_discard, &text_out);
+			if (cb_feed(defer[i], text_discard, &text_out) == 0)
+				cb.ebc = false;
+			cb_slide(defer[i]);
 		}
 		free(defer);
 	}
@@ -18668,12 +18677,29 @@ cb_esc_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 	return 1;
 }
 
-// Feed one byte to the parser.
-// Returns 1 if consumed, 0 if caller should emit c to the text window.
-// May write bytes to origbuf[*out..] for un-rip and ESC flush-back.
-// Feed a single byte through the RIP command parser.
-// Returns 1 if the byte was consumed (stashed in cb or acted on),
-// 0 if it should pass through to cterm.
+// Shared delimiter decision for assembly and text-before-graphics deferral.
+static bool
+cb_delimiter_is_data(uint8_t c)
+{
+	size_t nbs = 0;
+	size_t i = cb.len;
+	while (i > 0 && cb.bytes[i - 1] == '\\') {
+		nbs++;
+		i--;
+	}
+	if (rip.version == RIP_VERSION_1) {
+		/* 1A04:008A-00CE examines the last two buffered bytes before
+		 * pipe; 0135-0165 examines the last three before CR. These
+		 * bounded checks deliberately differ from slash parity. */
+		if (c == '|')
+			return nbs == 1 || (nbs == 0 && cb.window[0] == '\\');
+		return nbs == 1 || nbs >= 3;
+	}
+	return (nbs & 1) != 0;
+}
+
+// Feed one byte. Returns 1 if consumed, 0 if the caller should emit c to
+// the text window. May write un-rip/ESC flush-back bytes to origbuf[*out..].
 static int
 cb_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 {
@@ -18682,8 +18708,13 @@ cb_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 		return cb_esc_feed(c, origbuf, out);
 
 	// New ESC when the main buffer is empty: enter sub-machine.
-	if (c == 0x1b && cb.len == 0)
+	if (c == 0x1b && cb.len == 0) {
+		/* EBC applies before the text window's ANSI parser sees ESC.
+		 * Let the caller suppress it and clear completion normally. */
+		if (cb.ebc)
+			return 0;
 		return cb_esc_feed(c, origbuf, out);
+	}
 
 	// A dedicated SkyPix connection treats RIP introducers as ordinary text.
 	if (rip.version == RIP_VERSION_SKYPIX)
@@ -18718,6 +18749,10 @@ cb_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 		// b0 is '|' (mid-sequence): fall through to normal
 		// buffering below.
 	}
+	/* 1A04:00F4-0117 restarts a bare pipe on any introducer, without
+	 * consulting BOL. The new introducer is buffered by the normal path. */
+	if (cb.len == 1 && cb.bytes[0] == '|' && (c == '!' || c == 0x01 || c == 0x02))
+		cb_clear();
 
 	// LF is unconditionally swallowed mid-command.
 	if (c == '\n')
@@ -18725,21 +18760,14 @@ cb_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 
 	// CR terminates the command (after backslash continuation check).
 	if (c == '\r') {
-		// Count trailing backslashes.
-		size_t nbs = 0;
-		size_t i = cb.len;
-		while (i > 0 && cb.bytes[i - 1] == '\\') {
-			nbs++;
-			i--;
-		}
-		if (nbs & 1) {
-			// Odd: line continuation.  Strip the trailing '\'
+		if (cb_delimiter_is_data(c)) {
+			// Line continuation. Strip the trailing '\'
 			// and keep the buffer open.
 			cb.len--;
 			cb.bytes[cb.len] = 0;
 			return 1;
 		}
-		// Even (incl. 0): dispatch normally.
+		// Dispatch normally.
 		cb_dispatch();
 		cb.st = RS_IDLE;
 		return 1;
@@ -18747,15 +18775,7 @@ cb_feed(uint8_t c, uint8_t *origbuf, size_t *out)
 
 	// '|' is the command boundary.
 	if (c == '|') {
-		// Check for `\|` escape: an odd number of trailing
-		// backslashes means the '|' is data, not a boundary.
-		size_t nbs = 0;
-		size_t i = cb.len;
-		while (i > 0 && cb.bytes[i - 1] == '\\') {
-			nbs++;
-			i--;
-		}
-		if (nbs & 1) {
+		if (cb_delimiter_is_data(c)) {
 			cb_push(c);
 			return 1;
 		}
@@ -18808,17 +18828,7 @@ cb_would_dispatch(uint8_t c)
 		return false;
 	if (c != '|' && c != '\r')
 		return false;
-	// Odd count of trailing backslashes means escape/continuation,
-	// not a real dispatch.
-	size_t nbs = 0;
-	size_t i = cb.len;
-	while (i > 0 && cb.bytes[i - 1] == '\\') {
-		nbs++;
-		i--;
-	}
-	if (nbs & 1)
-		return false;
-	return true;
+	return !cb_delimiter_is_data(c);
 }
 
 // parse_rip body.  See parse_rip() below for the exported entry point.
@@ -18921,12 +18931,10 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 					}
 					can_dispatch = false;
 				}
-				// Slide only on bytes that pass through to
-				// cterm.  Consumed bytes (main-parser buffer
-				// accumulation or ESC sub-machine) are
-				// invisible to the BOL sliding window.
-				cb_slide(c);
 			}
+			/* 1634:029B-02FB records every consumed raw byte, even
+			 * when RIP/ANSI consumed it or text output was suppressed. */
+			cb_slide(c);
 		}
 		free(defer);
 	}
@@ -19033,12 +19041,8 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 				}
 				can_dispatch = false;
 			}
-			// Slide only on bytes that pass through to cterm.
-			// Consumed bytes (main-parser buffer accumulation
-			// or ESC sub-machine) are invisible to the BOL
-			// sliding window.
-			cb_slide(c);
 		}
+		cb_slide(c);
 	}
 	return out;
 }

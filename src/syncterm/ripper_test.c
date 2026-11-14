@@ -16,7 +16,7 @@ struct output {
 	size_t length;
 };
 
-static struct output keys, replies;
+static struct output keys, replies, wire_text;
 static unsigned mode_changes, audio_queries, size_changes;
 static void *mode_data;
 
@@ -89,6 +89,7 @@ reset(int version)
 	cterm_write(cterm, "\x1b[H", 3, NULL);
 	memset(&keys, 0, sizeof(keys));
 	memset(&replies, 0, sizeof(replies));
+	memset(&wire_text, 0, sizeof(wire_text));
 	mode_changes = audio_queries = size_changes = 0;
 }
 
@@ -101,8 +102,10 @@ feed(const void *bytes, size_t length)
 	memcpy(buffer, bytes, length);
 	do {
 		size_t n = parse_rip(buffer, length, sizeof(buffer));
-		if (n)
+		if (n) {
+			capture_output((const char *)buffer, n, &wire_text);
 			cterm_write(cterm, buffer, n, NULL);
+		}
 		length = 0;
 		assert(++calls < 1000);
 	} while (cb.defer_len);
@@ -205,6 +208,105 @@ test_introducers(void)
 	}
 }
 
+/* Literal expectations from RIPTERM.EXE 1A04:007E-0186 and 1634:0272-02FB.
+ * Check every two-part split and bytewise: TCP packet boundaries must not
+ * change command output, ordinary text, or the five raw history bytes. */
+static void
+check_wire(const char *name, int version, const char *wire,
+    const char *expected_host, const char *expected_text, int color)
+{
+	size_t length = strlen(wire);
+	for (size_t split = 0; split <= length + 1; split++) {
+		struct output host = {0};
+		uint8_t history[5] = {0};
+		reset(version);
+		if (split <= length) {
+			feed(wire, split);
+			feed(wire + split, length - split);
+		}
+		else {
+			for (size_t i = 0; i < length; i++)
+				feed(wire + i, 1);
+		}
+		while (ripbuf) {
+			char c = rip_getch();
+			capture_output(&c, 1, &host);
+		}
+		if (host.length != strlen(expected_host)
+		    || memcmp(host.bytes, expected_host, host.length) != 0
+		    || wire_text.length != strlen(expected_text)
+		    || memcmp(wire_text.bytes, expected_text, wire_text.length) != 0
+		    || rip.color != color) {
+			fprintf(stderr, "%s (RIP %d, split %zu): host=%zu bytes, text=%zu bytes, color=%d\n",
+			    name, version, split, host.length, wire_text.length, rip.color);
+			assert(false);
+		}
+		for (size_t i = 0; i < sizeof(history) && i < length; i++)
+			history[i] = (uint8_t)wire[length - 1 - i];
+		assert(memcmp(cb.window, history, sizeof(history)) == 0);
+	}
+}
+
+static void
+test_backslashes(void)
+{
+	/* RIP 1.54 examines two bytes before pipe and three before CR, rather
+	 * than slash parity. RIP v3 retains SyncTERM's conventional escaping. */
+	static const char *pipe_v1[] = {
+		"Anext", "A|1\x1b" "0000next", "A\\next", "A\\next",
+		"A\\\\next", "A\\\\next", "A\\\\\\next",
+	};
+	static const char *pipe_v3[] = {
+		"Anext", "A|1\x1b" "0000next", "A\\next", "A\\|1\x1b" "0000next",
+		"A\\\\next", "A\\\\|1\x1b" "0000next", "A\\\\\\next",
+	};
+	static const char *cr_v1[] = {"A", "AB", "A\\", "A\\B", "A\\B", "A\\\\B", "A\\\\B"};
+	static const char *cr_v3[] = {"A", "AB", "A\\", "A\\B", "A\\\\", "A\\\\B", "A\\\\\\"};
+	for (int version = RIP_VERSION_1; version <= RIP_VERSION_3; version++) {
+		for (size_t n = 0; n < sizeof(pipe_v1) / sizeof(*pipe_v1); n++) {
+			char wire[80] = "!|1\x1b" "0000A";
+			size_t prefix = strlen(wire);
+			memset(wire + prefix, '\\', n);
+			strlcpy(wire + prefix + n, "|1\x1b" "0000next\r\nZ", sizeof(wire) - prefix - n);
+			check_wire("pipe backslashes", version, wire,
+			    version == RIP_VERSION_1 ? pipe_v1[n] : pipe_v3[n], "Z", 1);
+			strlcpy(wire + prefix + n, "\r\nB\r\nZ", sizeof(wire) - prefix - n);
+			check_wire("CR backslashes", version, wire,
+			    version == RIP_VERSION_1 ? cr_v1[n] : cr_v3[n],
+			    n == 0 || n == 2 || (version == RIP_VERSION_3 && n % 2 == 0)
+			    ? "B\r\nZ" : "Z", 1);
+		}
+	}
+}
+
+static void
+test_history(void)
+{
+	static const struct {
+		const char *name, *wire, *text;
+		int color;
+	} cases[] = {
+		{"completion ESC", "!|#\r\x1b[31mZ", "[31mZ", 1},
+		{"completion printable", "!|#\rXYZ", "YZ", 1},
+		{"completion LF", "!|#\r\nZ", "Z", 1},
+		{"completion VT", "!|#\r\vZ", "\x1b[BZ", 1},
+		{"bare pipe bang", "!|#|!XYZ\r\n", "!XYZ\r\n", 1},
+		{"bare pipe SOH", "!|#|\x01XYZ\r\n", "\x01XYZ\r\n", 1},
+		{"bare pipe STX", "!|#|\x02XYZ\r\n", "\x02XYZ\r\n", 1},
+		{"restart bang", "!|#|!|c0F\r\n", "", 15},
+		{"restart SOH", "!|#|\x01|c0F\r\n", "", 15},
+		{"restart STX", "!|#|\x02|c0F\r\n", "", 15},
+		{"consumed CR", "ABC\x01|#\r!|c0F\r\n", "ABC", 15},
+		{"cursor after CR", "\r\x1b[1;10H!|c0F\r\n", "\r\x1b[1;10H!|c0F\r\n", 1},
+		{"slash before CSI", "ABC\\\x1b[0m\x01|c0F\r\n", "ABC\\\x1b[0m", 15},
+		{"slash CSI final", "ABC\x1b[\\\x01|c0F\r\n", "ABC\x1b[\\\x01|c0F\r\n", 1},
+	};
+	for (int version = RIP_VERSION_1; version <= RIP_VERSION_3; version++) {
+		for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++)
+			check_wire(cases[i].name, version, cases[i].wire, "", cases[i].text, cases[i].color);
+	}
+}
+
 int
 main(int argc, char **argv)
 {
@@ -213,6 +315,10 @@ main(int argc, char **argv)
 		test_reinit();
 	if (argc == 1 || strcmp(argv[1], "introducers") == 0)
 		test_introducers();
-	puts("RIP: terminal callbacks and introducer stream ordering passed");
+	if (argc == 1 || strcmp(argv[1], "backslashes") == 0)
+		test_backslashes();
+	if (argc == 1 || strcmp(argv[1], "history") == 0)
+		test_history();
+	puts("RIP: callbacks, stream ordering, backslashes and byte history passed");
 	return 0;
 }

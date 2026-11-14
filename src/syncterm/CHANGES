@@ -1,5 +1,7 @@
 Version 1.10
 ------------
+Match RIPterm 1.54 backslash delimiters, byte history, and bare-pipe restarts
+Suppress a post-command ESC before starting RIP's ANSI accumulator
 Fix lost keyboard/button input and session callbacks after RIP screen resets
 Fix packet-dependent RIP command recognition after ordinary text
 Fix SkyPix font strings, drawing order and font reset; implement area fill (#299)
