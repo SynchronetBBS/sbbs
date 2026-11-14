@@ -29,40 +29,41 @@
 int sbbs_t::delmail(uint usernumber, int which)
 {
 	uint      i, l;
+	uint32_t  total;
+	uint32_t  removed = 0;
 	time_t    now;
 	idxrec_t *idxbuf;
 	smbmsg_t  msg;
-	int       removed = 0;
 
 	now = time(NULL);
 	if (!smb.is_locked) {
 		errormsg(WHERE, ERR_CHK, smb.file, 0, "was not locked by us");
 		return 0;
 	}
+	// The lock file doesn't stop a process that already has the base open,
+	// so the index and status are replaced under the header lock
+	if ((i = smb_locksmbhdr(&smb)) != 0) {
+		errormsg(WHERE, ERR_LOCK, smb.file, i, smb.last_error);
+		return 0;
+	}
 	if ((i = smb_getstatus(&smb)) != 0) {
+		smb_unlocksmbhdr(&smb);
 		errormsg(WHERE, ERR_READ, smb.file, i, smb.last_error);
 		return 0;
 	}
-	if (!smb.status.total_msgs)
-		return 0;
-	if ((idxbuf = (idxrec_t *)malloc(smb.status.total_msgs * sizeof(idxrec_t))) == NULL) {
-		errormsg(WHERE, ERR_ALLOC, smb.file, smb.status.total_msgs * sizeof(idxrec_t));
-		return 0;
-	}
-	if ((i = smb_open_da(&smb)) != 0) {
-		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
-		free(idxbuf);
+	total = smb.status.total_msgs;
+	if (!total) {
+		smb_unlocksmbhdr(&smb);
 		return 0;
 	}
-	if ((i = smb_open_ha(&smb)) != 0) {
-		smb_close_da(&smb);
-		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
-		free(idxbuf);
+	// Kept records fill idxbuf from the front, removed records from the back
+	if ((idxbuf = (idxrec_t *)malloc(total * sizeof(idxrec_t))) == NULL) {
+		smb_unlocksmbhdr(&smb);
+		errormsg(WHERE, ERR_ALLOC, smb.file, total * sizeof(idxrec_t));
 		return 0;
 	}
 	smb_rewind(smb.sid_fp);
-	for (l = 0; l < smb.status.total_msgs;) {
-		progress(text[Deleting], l, smb.status.total_msgs);
+	for (l = 0; l + removed < total;) {
 		memset(&msg, 0, sizeof(msg));
 		if (smb_fread(&smb, &msg.idx, sizeof(idxrec_t), smb.sid_fp) != sizeof(idxrec_t))
 			break;
@@ -81,29 +82,13 @@ int sbbs_t::delmail(uint usernumber, int which)
 			else if (msg.idx.attr & MSG_KILLREAD && msg.idx.attr & MSG_READ)
 				msg.idx.attr |= MSG_DELETE;
 			if (msg.idx.attr & MSG_DELETE) {
-				/* Don't need to lock message because base is locked */
-				if ((i = smb_getmsghdr(&smb, &msg)) != 0)
-					errormsg(WHERE, ERR_READ, smb.file, i, smb.last_error);
-				else {
-					if (msg.hdr.attr != msg.idx.attr) {
-						msg.hdr.attr = msg.idx.attr;
-						if ((i = smb_putmsghdr(&smb, &msg)) != 0)
-							errormsg(WHERE, ERR_WRITE, smb.file, i, smb.last_error);
-					}
-					if ((i = smb_freemsg(&smb, &msg)) != 0)
-						errormsg(WHERE, ERR_REMOVE, smb.file, i, smb.last_error);
-					if (msg.hdr.auxattr & MSG_FILEATTACH)
-						delfattach(&cfg, &msg);
-					smb_freemsgmem(&msg);
-				}
-				removed++;
+				idxbuf[total - ++removed] = msg.idx;
 				continue;
 			}
 		}
 		idxbuf[l] = msg.idx;
 		l++;
 	}
-	bputs(text[DoneDeleting]);
 	smb_rewind(smb.sid_fp);
 	for (i = 0; i < l; i++) {
 		if (smb_fwrite(&smb, &idxbuf[i], sizeof(idxrec_t), smb.sid_fp) != sizeof(idxrec_t)) {
@@ -116,6 +101,41 @@ int sbbs_t::delmail(uint usernumber, int which)
 		errormsg(WHERE, "truncating", smb.file, i * sizeof(idxrec_t));
 	smb.status.total_msgs = i;
 	smb_putstatus(&smb);
+	smb_unlocksmbhdr(&smb);
+
+	// The removed messages are no longer indexed: free their headers and data
+	if ((i = smb_open_da(&smb)) != 0) {
+		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
+		free(idxbuf);
+		return removed;
+	}
+	if ((i = smb_open_ha(&smb)) != 0) {
+		smb_close_da(&smb);
+		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
+		free(idxbuf);
+		return removed;
+	}
+	for (l = 0; l < removed; l++) {
+		progress(text[Deleting], l, removed);
+		memset(&msg, 0, sizeof(msg));
+		msg.idx = idxbuf[total - 1 - l];
+		/* Don't need to lock message because base is locked */
+		if ((i = smb_getmsghdr(&smb, &msg)) != 0) {
+			errormsg(WHERE, ERR_READ, smb.file, i, smb.last_error);
+			continue;
+		}
+		if (msg.hdr.attr != msg.idx.attr) {
+			msg.hdr.attr = msg.idx.attr;
+			if ((i = smb_putmsghdr(&smb, &msg)) != 0)
+				errormsg(WHERE, ERR_WRITE, smb.file, i, smb.last_error);
+		}
+		if ((i = smb_freemsg(&smb, &msg)) != 0)
+			errormsg(WHERE, ERR_REMOVE, smb.file, i, smb.last_error);
+		if (msg.hdr.auxattr & MSG_FILEATTACH)
+			delfattach(&cfg, &msg);
+		smb_freemsgmem(&msg);
+	}
+	bputs(text[DoneDeleting]);
 	free(idxbuf);
 	smb_close_ha(&smb);
 	smb_close_da(&smb);
