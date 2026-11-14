@@ -540,8 +540,11 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 			}
 			if (total == 1) {
 				addtobatdl(bf[0]);
-				if (ch == 'D')
+				if (ch == 'D') {
 					start_batch_download();
+					if (term->lncntr)
+						pause();
+				}
 				term->newline();
 				return 2;
 			}
@@ -581,8 +584,11 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 						addtobatdl(bf[str[c] - 'A']);
 					}
 				}
-				if (ch == 'D')
+				if (ch == 'D') {
 					start_batch_download();
+					if (term->lncntr)
+						pause();
+				}
 				term->newline();
 				return 2;
 			}
