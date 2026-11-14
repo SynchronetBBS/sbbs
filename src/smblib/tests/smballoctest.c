@@ -106,6 +106,29 @@ void Test_SharedCopiesReferencedByMessage(CuTest* tc)
 	smb_close(&smb);
 }
 
+/* A caller rewriting the index holds the header lock across these calls */
+void Test_CallerHeldHeaderLockIsKept(CuTest* tc)
+{
+	smbmsg_t msg;
+	smb_t    smb = add_body_and_tail(tc, &msg);
+
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_locksmbhdr(&smb));
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_incmsg_dfields(&smb, &msg, 1));
+	CuAssertTrue(tc, smb.smbhdr_locked);
+	delete_copy(tc, &smb, &msg);
+	CuAssertTrue(tc, smb.smbhdr_locked);
+	smb_unlocksmbhdr(&smb);
+
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_incmsg_dfields(&smb, &msg, 1));
+	CuAssertTrue(tc, !smb.smbhdr_locked);
+	delete_copy(tc, &smb, &msg);
+	CuAssertTrue(tc, !smb.smbhdr_locked);
+
+	CuAssertStrEquals(tc, "1 1", counts(tc, &msg));
+	smb_freemsgmem(&msg);
+	smb_close(&smb);
+}
+
 /* smbutil pack references shared data with smb_incmsgdat() over the whole
    data length; deleting a copy must not free blocks the others still use. */
 void Test_SharedCopiesReferencedByPack(CuTest* tc)
@@ -170,6 +193,7 @@ CuSuite* SmbAllocTestSuite(void)
 	SUITE_ADD_TEST(suite, Test_DeleteFreesEveryBlock);
 	SUITE_ADD_TEST(suite, Test_SharedCopiesReferencedByMessage);
 	SUITE_ADD_TEST(suite, Test_SharedCopiesReferencedByPack);
+	SUITE_ADD_TEST(suite, Test_CallerHeldHeaderLockIsKept);
 	SUITE_ADD_TEST(suite, Test_DataLengthIsExtent);
 	return suite;
 }

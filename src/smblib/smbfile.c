@@ -528,7 +528,7 @@ int smb_updatemsgtxt(smb_t* smb, smbmsg_t* msg, int storage, const char* body, c
 	/* finally */
 
 	FREE_AND_NULL(new_dfield);
-	smb_unlocksmbhdr(smb);  /* smb_freemsgdat() may have released it already */
+	smb_unlocksmbhdr(smb);
 
 	return retval;
 }

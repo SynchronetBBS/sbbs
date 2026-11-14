@@ -202,11 +202,12 @@ off_t smb_fallocdat(smb_t* smb, off_t length, uint16_t refs)
 /****************************************************************************/
 /* De-allocates space for data												*/
 /* Returns non-zero on error												*/
-/* Always unlocks the SMB header (when not hyper-alloc)						*/
+/* Leaves the SMB header locked only if it was locked by the caller			*/
 /****************************************************************************/
 int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 {
 	bool      da_opened = false;
+	bool      hdr_locked;
 	int       retval = SMB_SUCCESS;
 	int       i;
 	uint16_t* rec;
@@ -236,7 +237,8 @@ int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 	if (flen < sizeof(uint16_t))
 		return 0;   // Nothing to do
 
-	if (!smb->smbhdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
+	hdr_locked = smb->smbhdr_locked;
+	if (!hdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
 
 	sda_offset = (offset / SDT_BLOCK_LEN) * (off_t)sizeof(*rec);
@@ -267,7 +269,8 @@ int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 			retval = SMB_ERR_TRUNCATE;
 	if (da_opened)
 		smb_close_da(smb);
-	smb_unlocksmbhdr(smb);
+	if (!hdr_locked)
+		smb_unlocksmbhdr(smb);
 	return retval;
 }
 
@@ -306,12 +309,13 @@ int smb_incdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 /* Increments data allocation records (message references) by number of		*/
 /* header references specified (usually 1)									*/
 /* The opposite function of smb_freemsg()									*/
-/* Always unlocks the SMB header (when not hyper-alloc)						*/
+/* Leaves the SMB header locked only if it was locked by the caller			*/
 /****************************************************************************/
 int smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
 	int  i = SMB_SUCCESS;
 	bool da_opened = false;
+	bool hdr_locked;
 
 	if (smb->status.attr & SMB_HYPERALLOC)  /* Nothing to do */
 		return SMB_SUCCESS;
@@ -322,11 +326,13 @@ int smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 		da_opened = true;
 	}
 
-	if (!smb->smbhdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
+	hdr_locked = smb->smbhdr_locked;
+	if (!hdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
 
 	i = smb_incdat(smb, msg->hdr.offset, smb_getmsgdatlen(msg), refs);
-	smb_unlocksmbhdr(smb);
+	if (!hdr_locked)
+		smb_unlocksmbhdr(smb);
 
 	if (da_opened)
 		smb_close_da(smb);

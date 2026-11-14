@@ -1101,8 +1101,8 @@ static void pack_abort(uint moved)
 /* Release the data just copied for a message the pack is dropping.			*/
 /* Pack only appends to the new SDT and SDA, so that data is the last		*/
 /* allocation in each, and truncating back to its offset frees it.			*/
-/* (smb_freemsgdat() can't be used here: it unlocks the SMB header and		*/
-/* truncates smb.sdt_fp, which is the original data file being read.)		*/
+/* (smb_freemsgdat() can't be used here: it truncates smb.sdt_fp, which is	*/
+/* the original data file being read.)										*/
 /****************************************************************************/
 static void pack_drop_dat(FILE* tmp_sdt, off_t offset)
 {
