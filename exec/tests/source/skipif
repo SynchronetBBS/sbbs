@@ -1,0 +1,1 @@
+!file_exists(js.exec_dir + "../../.git") && !file_isdir(js.exec_dir + "../../.git")

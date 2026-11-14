@@ -867,6 +867,12 @@
   off at the end of the prompt's screen line (18 characters at 64
   columns, 34 at 80), so longer addresses were always rejected as
   incorrect
+- Fix: Ham Radio License Test (`xtrn/hamtest`) questions that showed
+  stray accented letters in place of quotes, apostrophes and spaces
+  (Windows-1252 characters) now display as plain ASCII
+- Stock JavaScript files are now all ASCII or valid UTF-8: the raw
+  CP437 characters in DrugLord, Milliways Casino and two LORD IGMs are
+  now escape sequences, with unchanged output (issue #1341)
 
 ## JavaScript
 

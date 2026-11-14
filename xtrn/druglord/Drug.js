@@ -61,7 +61,7 @@ function buy_drugs() {
 
         if ((druglord_state['cash'] / price) >= 1) {
             var max_units = Math.min(Math.floor(druglord_state['cash'] / price), (druglord_state['inventory_size'] - get_player_drug_units()));
-            console.write("Buy how many units of " + drug.name + " for œ" + nice_number(price) + "/unit? (CR: max - " + max_units + "): ");
+            console.write("Buy how many units of " + drug.name + " for \x9C" + nice_number(price) + "/unit? (CR: max - " + max_units + "): ");
 
             var buy_amt = console.getnum(max_units);
             // Returns 0 if CR entered.
@@ -77,7 +77,7 @@ function buy_drugs() {
                 if ((get_player_drug_units() + buy_amt) <= druglord_state['inventory_size']) {
 
                     var cost = buy_amt * price;
-                    var buy_confirm = console.yesno(buy_amt + " units will cost œ" + nice_number(cost));
+                    var buy_confirm = console.yesno(buy_amt + " units will cost \x9C" + nice_number(cost));
 
                     if (buy_confirm) {
                         console.writeln("You pay for the transaction.");
@@ -129,7 +129,7 @@ function sell_drugs() {
         var price = druglord_state['location'].price[drug.name.toLowerCase()];
         
         if (drug.inventory >= 1) {
-            console.write("Sell how many units of " + drug.name + " for œ" + nice_number(price) + "/unit? (CR: max - " + drug.inventory + "): ");
+            console.write("Sell how many units of " + drug.name + " for \x9C" + nice_number(price) + "/unit? (CR: max - " + drug.inventory + "): ");
 
             var sell_amt = console.getnum(drug.inventory);
 
@@ -141,7 +141,7 @@ function sell_drugs() {
 
             if (sell_amt != NaN & sell_amt >= 1) {
                 var cost = sell_amt * price;
-                var sell_confirm = console.yesno("Sell " + sell_amt + " units for œ" + nice_number(cost));
+                var sell_confirm = console.yesno("Sell " + sell_amt + " units for \x9C" + nice_number(cost));
 
                 if (sell_confirm) {
                     console.writeln("You get paid for the transaction.");

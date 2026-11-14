@@ -72,7 +72,7 @@ function command_prompt(currentPlace,menu_keys) {
 function press_a_key(no_clear) {
 	var ch;
 	//lw('  `2<`0MORE`2>');
-	lw(' `@ם `0Press A Key `@ם');	
+	lw(' `@\xED `0Press A Key `@\xED');	
 	flush_keys();	
 	ch = getkey();
 	if(no_clear) {
@@ -475,7 +475,7 @@ function mainMenu() {
 		if (menu_redisplay == true) {
 			sclrscr();
 			sln('');
-			lln('  `5.ת`#שת`2[`0The Outhouse`2]`#תש`5ת.');
+			lln('  `5.\xFA`#\xF9\xFA`2[`0The Outhouse`2]`#\xFA\xF9`5\xFA.');
 			sln('');
 			lln('  `2  You realize that you really do need to make a pit stop so you head');
 			lln('  `2towards the outhouses. When you get there you see a `0very `2long line.');
@@ -485,10 +485,10 @@ function mainMenu() {
 			sln('');
 			lln('  `2What would you like to do?');
 			sln('');
-			lln('        `5ת`2[`0w`2]`5ת `0W`2ait in line at the outhouse.');
-			lln('        `5ת`2[`0g`2]`5ת `0G`2o behind the trees.');
-			lln('        `5ת`2[`0r`2]`5ת `0R`2ead the small sign.');
-			lln('        `5ת`2[`0l`2]`5ת `0L`2eave, you decide to just hold it for awhile.');
+			lln('        `5\xFA`2[`0w`2]`5\xFA `0W`2ait in line at the outhouse.');
+			lln('        `5\xFA`2[`0g`2]`5\xFA `0G`2o behind the trees.');
+			lln('        `5\xFA`2[`0r`2]`5\xFA `0R`2ead the small sign.');
+			lln('        `5\xFA`2[`0l`2]`5\xFA `0L`2eave, you decide to just hold it for awhile.');
 			sln('');
 			menu_redisplay = false;
 		}

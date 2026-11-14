@@ -112,7 +112,7 @@ function expand_body(body, sys_misc, mode)
 //				l+=2;
 //			}
 //		}
-	body=body.replace(/[`ú]\[/g, '\x1b['); /* Convert `[ and ú[ to ESC[ */
+	body=body.replace(/[`\xFA]\[/g, '\x1b['); /* Convert `[ and \xFA[ to ESC[ */
 	if(sys_misc & SYS_PCBOARD) {
 		body=body.replace(/@X([0-9a-zA-Z]{2})/g, function (str, code) {
 			var new_attr=parseInt(code, 16);

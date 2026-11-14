@@ -21,14 +21,14 @@ Sha1.hash = function(msg, utf8encode) {
   // convert string to UTF-8, as SHA only deals with byte-streams
   if (utf8encode) msg = Utf8.encode(msg);
 
-  // constants [§4.2.1]
+  // constants [section 4.2.1]
   var K = [0x5a827999, 0x6ed9eba1, 0x8f1bbcdc, 0xca62c1d6];
 
   // PREPROCESSING
 
-  msg += String.fromCharCode(0x80);  // add trailing '1' bit (+ 0's padding) to string [§5.1.1]
+  msg += String.fromCharCode(0x80);  // add trailing '1' bit (+ 0's padding) to string [section 5.1.1]
 
-  // convert string msg into 512-bit/16-integer blocks arrays of ints [§5.2.1]
+  // convert string msg into 512-bit/16-integer blocks arrays of ints [section 5.2.1]
   var l = msg.length/4 + 2;  // length (in 32-bit integers) of msg + .1. + appended length
   var N = Math.ceil(l/16);   // number of 16-integer-blocks required to hold 'l' ints
   var M = new Array(N);
@@ -40,20 +40,20 @@ Sha1.hash = function(msg, utf8encode) {
         (msg.charCodeAt(i*64+j*4+2)<<8) | (msg.charCodeAt(i*64+j*4+3));
     } // note running off the end of msg is ok 'cos bitwise ops on NaN return 0
   }
-  // add length (in bits) into final pair of 32-bit integers (big-endian) [§5.1.1]
+  // add length (in bits) into final pair of 32-bit integers (big-endian) [section 5.1.1]
   // note: most significant word would be (len-1)*8 >>> 32, but since JS converts
   // bitwise-op args to 32 bits, we need to simulate this by arithmetic operators
   M[N-1][14] = ((msg.length-1)*8) / Math.pow(2, 32); M[N-1][14] = Math.floor(M[N-1][14])
   M[N-1][15] = ((msg.length-1)*8) & 0xffffffff;
 
-  // set initial hash value [§5.3.1]
+  // set initial hash value [section 5.3.1]
   var H0 = 0x67452301;
   var H1 = 0xefcdab89;
   var H2 = 0x98badcfe;
   var H3 = 0x10325476;
   var H4 = 0xc3d2e1f0;
 
-  // HASH COMPUTATION [§6.1.2]
+  // HASH COMPUTATION [section 6.1.2]
 
   var W = new Array(80); var a, b, c, d, e;
   for (var i=0; i<N; i++) {
@@ -89,7 +89,7 @@ Sha1.hash = function(msg, utf8encode) {
 }
 
 //
-// function 'f' [§4.1.1]
+// function 'f' [section 4.1.1]
 //
 Sha1.f = function(s, x, y, z)  {
   switch (s) {
@@ -101,7 +101,7 @@ Sha1.f = function(s, x, y, z)  {
 }
 
 //
-// rotate left (circular left shift) value x by n positions [§3.2.5]
+// rotate left (circular left shift) value x by n positions [section 3.2.5]
 //
 Sha1.ROTL = function(x, n) {
   return (x<<n) | (x>>>(32-n));

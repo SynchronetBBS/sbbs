@@ -137,7 +137,7 @@ while (druglord_state['is_playing']) {
             console.write(' owned');
 
         console.write(')\t\t' + ANSI.BOLD + druglord_state['drugs'][a].name + ANSI.DEFAULT);
-        console.write("\t\tœ" + nice_number(druglord_state['location'].price[druglord_state['drugs'][a].name.toLowerCase()]));
+        console.write("\t\t\x9C" + nice_number(druglord_state['location'].price[druglord_state['drugs'][a].name.toLowerCase()]));
 
         if (a == 0)
             console.write("/unit");
@@ -155,10 +155,10 @@ while (druglord_state['is_playing']) {
     console.crlf();
 
     /* Display cash. */
-    console.write(ANSI.FG_GREEN + " Cash: œ" + ANSI.BOLD + nice_number(druglord_state['cash']) + ANSI.DEFAULT);
+    console.write(ANSI.FG_GREEN + " Cash: \x9C" + ANSI.BOLD + nice_number(druglord_state['cash']) + ANSI.DEFAULT);
     /* Display debt. */
     if (druglord_state['debt'] > 0) {
-        console.write("\t" + ANSI.FG_RED + " Debt: œ" + ANSI.BOLD + nice_number(druglord_state['debt']) + ANSI.DEFAULT);
+        console.write("\t" + ANSI.FG_RED + " Debt: \x9C" + ANSI.BOLD + nice_number(druglord_state['debt']) + ANSI.DEFAULT);
     }
     /* Display pockets. */
     console.writeln("\t" + ANSI.FG_CYAN + " Pockets: " + ANSI.BOLD + (druglord_state['inventory_size'] - get_player_drug_units()) + " spaces free." + ANSI.DEFAULT);
@@ -275,10 +275,10 @@ function check_state() {
         console.crlf();
         console.writeln("  " + ANSI.BOLD + ANSI.FG_YELLOW + ANSI.BG_MAGENTA + " TIME'S UP! " + ANSI.DEFAULT);
         console.crlf();
-        console.writeln(ANSI.BOLD + "\tFinal balance:\tœ" + nice_number((druglord_state['cash'] - druglord_state['debt'])) + "." + ANSI.DEFAULT);
+        console.writeln(ANSI.BOLD + "\tFinal balance:\t\x9C" + nice_number((druglord_state['cash'] - druglord_state['debt'])) + "." + ANSI.DEFAULT);
         console.crlf();
         console.crlf();
-        console.writeln(ANSI.BOLD + "\tFinal score:\tœ" + nice_number(druglord_state['score']) + "." + ANSI.DEFAULT);
+        console.writeln(ANSI.BOLD + "\tFinal score:\t\x9C" + nice_number(druglord_state['score']) + "." + ANSI.DEFAULT);
 
         if (druglord_state['score'] >= 1000000) {
             console.writeln(ANSI.BOLD + ANSI.FG_YELLOW + "\t\tYou've joined the Millionaire's Club--congratulations!" + ANSI.DEFAULT);
@@ -301,7 +301,7 @@ function daily_news() {
 
         console.crlf();
         console.writeln(ANSI.FG_RED + "You do not have today's edition of The Daily DrugLord Insider." + ANSI.DEFAULT);
-        var buy_paper = console.noyes("Purchase today's edition for œ" + nice_number(newspaper_price));
+        var buy_paper = console.noyes("Purchase today's edition for \x9C" + nice_number(newspaper_price));
         if (buy_paper == false) {
             /* Buy today's newspaper edition. */
 
@@ -502,7 +502,7 @@ function json_show_scores() {
                     var score = scores[bbses[b]][players[c]].score;
                     if (score >= 1000000)
                         col = ANSI.BOLD + ANSI.FG_YELLOW;
-                    console.writeln(col + "  " + players[c] + ANSI.DEFAULT + ":\t\t\tœ" + nice_number(score));
+                    console.writeln(col + "  " + players[c] + ANSI.DEFAULT + ":\t\t\t\x9C" + nice_number(score));
                 }
             }
             console.crlf();

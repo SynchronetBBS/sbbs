@@ -257,7 +257,7 @@ var test={
 				answers:[
 				"Lead can contaminate food if hands are not washed carefully after handling",
 					"High voltages can cause lead-tin solder to disintegrate suddenly",
-					"Tin in the solder can “cold flow” causing shorts in the circuit",
+					"Tin in the solder can \"cold flow\" causing shorts in the circuit",
 					"RF energy can convert the lead into a poisonous gas"
 				],
 			},
@@ -627,7 +627,7 @@ var test={
 			},
 			{
 				title:"G1B12 (A) [97.101(a)]",
-				question:"Who or what determines “good engineering and good amateur practice” as applied to the operation of an amateur station in all respects not covered by the Part 97 rules?",
+				question:"Who or what determines \"good engineering and good amateur practice\" as applied to the operation of an amateur station in all respects not covered by the Part 97 rules?",
 				answer:0,
 				answers:[
 				"The FCC",
@@ -775,7 +775,7 @@ var test={
 				"Give your call sign followed by the words \"General Class\"",
 					"No special identification is needed",
 					"Give your call sign followed by \"slant AG\"",
-					"Give your call sign followed the abbreviation “CSCE”"
+					"Give your call sign followed the abbreviation \"CSCE\""
 				],
 			},
 			{
@@ -851,7 +851,7 @@ var test={
 				answers:[
 				"The person must be a resident of the U.S. for a minimum of 5 years",
 					"The person must hold an FCC granted Amateur Radio license of General Class or above",
-					"The person’s home citizenship must be in the ITU 2 region",
+					"The person's home citizenship must be in the ITU 2 region",
 					"None of these choices is correct; non-U.S. citizens cannot be volunteer examiners"
 				],
 			},
@@ -887,7 +887,7 @@ var test={
 				question:"Which of the following would disqualify a third party from participating in stating a message over an amateur station?",
 				answer:0,
 				answers:[
-				"The third party’s amateur license had ever been revoked ",
+				"The third party's amateur license had ever been revoked ",
 					"The third party is not a U.S. citizen",
 					"The third party is a licensed amateur",
 					"The third party is speaking in a language other than English, French, or Spanish"
@@ -1131,7 +1131,7 @@ var test={
 				answer:2,
 				answers:[
 				"Nets always have priority",
-					"QSO’s in process always have priority",
+					"QSO's in process always have priority",
 					"No one has priority access to frequencies, common courtesy should be a guide",
 					"Contest operations must always yield to non-contest use of frequencies"
 				],
@@ -1188,7 +1188,7 @@ var test={
 				"Send \"QRL?\" on CW, followed by your call sign; or, if using phone, ask if the frequency is in use, followed by your call sign",
 					"Listen for 2 minutes before calling CQ ",
 					"Send the letter \"V\" in Morse code several times and listen for a response",
-					"Send “QSY” on CW or if using phone, announce “the frequency is in use”, then send your call and listen for a response"
+					"Send \"QSY\" on CW or if using phone, announce \"the frequency is in use\", then send your call and listen for a response"
 				],
 			},
 			{
@@ -1204,7 +1204,7 @@ var test={
 			},
 			{
 				title:"G2B08 (A) ",
-				question:"What is the “DX window” in a voluntary band plan?",
+				question:"What is the \"DX window\" in a voluntary band plan?",
 				answer:0,
 				answers:[
 				"A portion of the band that should not be used for contacts between stations within the 48 contiguous United States ",
@@ -1232,7 +1232,7 @@ var test={
 				"When they declare a temporary state of communication emergency",
 					"When they seize your equipment for use in disaster communications",
 					"Only when all amateur stations are instructed to stop transmitting",
-					"When the President’s War Emergency Powers have been invoked"
+					"When the President's War Emergency Powers have been invoked"
 				],
 			},
 			{
@@ -1319,7 +1319,7 @@ var test={
 			},
 			{
 				title:"G2C06 (D) ",
-				question:"What does the term “zero beat” mean in CW operation?",
+				question:"What does the term \"zero beat\" mean in CW operation?",
 				answer:3,
 				answers:[
 				"Matching the speed of the transmitting station",
@@ -1330,7 +1330,7 @@ var test={
 			},
 			{
 				title:"G2C07 (A) ",
-				question:"When sending CW, what does a “C” mean when added to the RST report?",
+				question:"When sending CW, what does a \"C\" mean when added to the RST report?",
 				answer:0,
 				answers:[
 				"Chirpy or unstable signal",
@@ -1374,7 +1374,7 @@ var test={
 			},
 			{
 				title:"G2C11 (D) ",
-				question:"What does the Q signal “QRV” mean?",
+				question:"What does the Q signal \"QRV\" mean?",
 				answer:3,
 				answers:[
 				"You are sending too fast",
@@ -1412,7 +1412,7 @@ var test={
 			},
 			{
 				title:"G2D03 (B) ",
-				question:"What skills learned during “hidden transmitter hunts” are of help to the Amateur Auxiliary? ",
+				question:"What skills learned during \"hidden transmitter hunts\" are of help to the Amateur Auxiliary? ",
 				answer:1,
 				answers:[
 				"Identification of out of band operation ",
@@ -1445,7 +1445,7 @@ var test={
 			},
 			{
 				title:"G2D06 (C)",
-				question:"How is a directional antenna pointed when making a “long-path” contact with another station?",
+				question:"How is a directional antenna pointed when making a \"long-path\" contact with another station?",
 				answer:2,
 				answers:[
 				"Toward the rising Sun ",
@@ -1769,8 +1769,8 @@ var test={
 				answer:2,
 				answers:[
 				"Long term oscillations in the upper atmosphere",
-					"Cyclic variation in the Earth’s radiation belts",
-					"The Sun’s rotation on its axis",
+					"Cyclic variation in the Earth's radiation belts",
+					"The Sun's rotation on its axis",
 					"The position of the Moon in its orbit"
 				],
 			},
@@ -1791,7 +1791,7 @@ var test={
 				answer:1,
 				answers:[
 				"The relative position of sunspots on the surface of the Sun",
-					"The short term stability of the Earth’s magnetic field",
+					"The short term stability of the Earth's magnetic field",
 					"The stability of the Sun\'s magnetic field",
 					"The solar radio flux at Boulder, Colorado"
 				],
@@ -1803,7 +1803,7 @@ var test={
 				answers:[
 				"The relative position of sunspots on the surface of the Sun ",
 					"The amount of polarization of the Sun\'s electric field",
-					"The long term stability of the Earth’s geomagnetic field",
+					"The long term stability of the Earth's geomagnetic field",
 					"The solar radio flux at Boulder, Colorado"
 				],
 			},
@@ -2017,7 +2017,7 @@ var test={
 			},
 			{
 				title:"G3C04 (D)",
-				question:"What does the term “critical angle” mean as used in radio wave propagation?",
+				question:"What does the term \"critical angle\" mean as used in radio wave propagation?",
 				answer:3,
 				answers:[
 				"The long path azimuth of a distant station",
@@ -2721,7 +2721,7 @@ var test={
 			},
 			{
 				title:"G4D10 (A) ",
-				question:"How close to the lower edge of the 40 meter General Class phone segment should your displayed carrier frequency be when using 3 kHz wide LSB?",
+				question:"How close to the lower edge of the 40 meter General Class phone segment should your displayed carrier frequency be when using 3 kHz wide LSB?",
 				answer:0,
 				answers:[
 				"3 kHz above the edge of the segment",
@@ -2732,7 +2732,7 @@ var test={
 			},
 			{
 				title:"G4D11 (B) ",
-				question:"How close to the upper edge of the 20 meter General Class band should your displayed carrier frequency be when using 3 kHz wide USB? ",
+				question:"How close to the upper edge of the 20 meter General Class band should your displayed carrier frequency be when using 3 kHz wide USB? ",
 				answer:1,
 				answers:[
 				"3 kHz above the edge of the band",
@@ -2795,7 +2795,7 @@ var test={
 				question:"Which of the following most limits the effectiveness of an HF mobile transceiver operating in the 75 meter band?",
 				answer:2,
 				answers:[
-				"“Picket Fencing” signal variation",
+				"\"Picket Fencing\" signal variation",
 					"The wire gauge of the DC power line to the transceiver",
 					"The antenna system",
 					"FCC rules limiting mobile output power on the 75 meter band"
@@ -3413,7 +3413,7 @@ var test={
 				question:"What will happen to the resistance if the temperature of a resistor is increased?",
 				answer:2,
 				answers:[
-				"It will change depending on the resistor’s reactance coefficient",
+				"It will change depending on the resistor's reactance coefficient",
 					"It will stay the same",
 					"It will change depending on the resistor\'s temperature coefficient",
 					"It will become time dependent"
@@ -3669,7 +3669,7 @@ var test={
 		],
 	},
 	{
-		group:'G6C - Analog and digital integrated circuits (IC’s); microprocessors; memory; I/O devices; microwave IC’s (MMIC’s ); display devices ',
+		group:'G6C - Analog and digital integrated circuits (IC\'s); microprocessors; memory; I/O devices; microwave IC\'s (MMIC\'s ); display devices ',
 		questions:[
 			{
 				title:"G6C01 (D) ",
@@ -3717,7 +3717,7 @@ var test={
 			},
 			{
 				title:"G6C05 (C)",
-				question:"What is meant when memory is characterized as “non-volatile”?",
+				question:"What is meant when memory is characterized as \"non-volatile\"?",
 				answer:2,
 				answers:[
 				"It is resistant to radiation damage",

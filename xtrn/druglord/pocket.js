@@ -15,7 +15,7 @@ function buy_pockets() {
 
     if (buy_amt != undefined && buy_amt > 0) {
 
-        var buy_cfm = console.noyes("Buy " + buy_amt + " pocketspace for œ" + nice_number(buy_amt * price));
+        var buy_cfm = console.noyes("Buy " + buy_amt + " pocketspace for \x9C" + nice_number(buy_amt * price));
 
         if (buy_cfm == false) {
             /* Increase pocket size. */

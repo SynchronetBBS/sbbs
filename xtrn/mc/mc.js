@@ -301,39 +301,40 @@ function check_played(i)
 function logon(a)
 {
 	var j='               ';
+	var border = new Array(47).join('\xCD');
 	ansic(4);
 	console.print(j);
-	console.print('ษออออออออออออออออออออออออออออออออออออออออออออออป\r\n');
+	console.print('\xC9' + border + '\xBB\r\n');
 	ansic(4);
 	console.print(j); 
-	console.print('บ ');
+	console.print('\xBA ');
 	ansic(2);
-	console.print('Û฿Û฿Û  Û  Û    Û    Û  Û   Û  Û฿฿Û  Û Û  Û฿฿');
+	console.print('\xDB\xDF\xDB\xDF\xDB  \xDB  \xDB    \xDB    \xDB  \xDB   \xDB  \xDB\xDF\xDF\xDB  \xDB \xDB  \xDB\xDF\xDF');
 	ansic(4);
-	console.print(' บ\r\n');
+	console.print(' \xBA\r\n');
 
-	ansic(4); console.print(j); console.print('บ '); ansic(2);
-	console.print('Û ฿ Û  Û  Û    Û    Û  Û Û Û  Û฿฿Û   Û   ฿฿Û');
-	ansic(4); console.print(' บ\r\n');
+	ansic(4); console.print(j); console.print('\xBA '); ansic(2);
+	console.print('\xDB \xDF \xDB  \xDB  \xDB    \xDB    \xDB  \xDB \xDB \xDB  \xDB\xDF\xDF\xDB   \xDB   \xDF\xDF\xDB');
+	ansic(4); console.print(' \xBA\r\n');
 
-	ansic(4); console.print(j); console.print('บ '); ansic(2);
-	console.print('฿   ฿  ฿  ฿฿฿  ฿฿฿  ฿  ฿฿฿฿฿  ฿  ฿   ฿   ฿฿฿');
-	ansic(4); console.print(' บ\r\n');
+	ansic(4); console.print(j); console.print('\xBA '); ansic(2);
+	console.print('\xDF   \xDF  \xDF  \xDF\xDF\xDF  \xDF\xDF\xDF  \xDF  \xDF\xDF\xDF\xDF\xDF  \xDF  \xDF   \xDF   \xDF\xDF\xDF');
+	ansic(4); console.print(' \xBA\r\n');
 
-	ansic(4); console.print(j); console.print('บ '); ansic(2);
-	console.print('       Û฿฿฿  Û฿฿Û  Û฿฿  Û  ÛÜ  Û  Û฿฿Û      ');
-	ansic(4); console.print(' บ\r\n');
+	ansic(4); console.print(j); console.print('\xBA '); ansic(2);
+	console.print('       \xDB\xDF\xDF\xDF  \xDB\xDF\xDF\xDB  \xDB\xDF\xDF  \xDB  \xDB\xDC  \xDB  \xDB\xDF\xDF\xDB      ');
+	ansic(4); console.print(' \xBA\r\n');
 
-	ansic(4); console.print(j); console.print('บ '); ansic(2);
-	console.print('       Û     Û฿฿Û  ฿฿Û  Û  Û ฿ÜÛ  Û  Û      ');
-	ansic(4); console.print(' บ\r\n');
+	ansic(4); console.print(j); console.print('\xBA '); ansic(2);
+	console.print('       \xDB     \xDB\xDF\xDF\xDB  \xDF\xDF\xDB  \xDB  \xDB \xDF\xDC\xDB  \xDB  \xDB      ');
+	ansic(4); console.print(' \xBA\r\n');
 
-	ansic(4); console.print(j); console.print('บ '); ansic(2);
-	console.print('       ฿฿฿฿  ฿  ฿  ฿฿฿  ฿  ฿   ฿  ฿฿฿฿      ');
-	ansic(4); console.print(' บ\r\n');
+	ansic(4); console.print(j); console.print('\xBA '); ansic(2);
+	console.print('       \xDF\xDF\xDF\xDF  \xDF  \xDF  \xDF\xDF\xDF  \xDF  \xDF   \xDF  \xDF\xDF\xDF\xDF      ');
+	ansic(4); console.print(' \xBA\r\n');
 
 	ansic(4); console.print(j);
-	console.print('ศออออออออออออออออออออออออออออออออออออออออออออออผ\r\n');
+	console.print('\xC8' + border + '\xBC\r\n');
 
 	if(a==1 || a==2) {
 		ansic(5);

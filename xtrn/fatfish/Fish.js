@@ -425,7 +425,7 @@ function fish_length_to_weight_bass(mm) {
     //log(mm + "mm ---> " + v + "kg");
     //return v;
 
-    // length x length x girth ÷ 1,200
+    // length x length x girth ~= 1,200
     var inches = (mm * 0.0393700787).toFixed(2); // Convert mm to inches.
     var girth = (inches * 0.58).toFixed(2);   // Girth in inches.
     var pounds = ((inches * inches * girth) / 1200).toFixed(2);

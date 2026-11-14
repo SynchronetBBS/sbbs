@@ -4672,12 +4672,12 @@ var test={
 			},
 			{
 				title:"E6F11 (B)",
-				question:"Which of the following is the approximate open-circuit voltage produced by a fully-illuminated siliconÿphotovoltaic cell?",
+				question:"Which of the following is the approximate open-circuit voltage produced by a fully-illuminated silicon photovoltaic cell?",
 				answer:1,
 				answers:[
 				"0.1 V",
 					"0.5 V",
-					"1.5ÿV",
+					"1.5 V",
 					"12 V"
 				],
 			},

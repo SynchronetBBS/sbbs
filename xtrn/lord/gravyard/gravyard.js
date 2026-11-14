@@ -5,7 +5,7 @@
 	(c) 2023 Lloyd Hannesson - dasme@dasme.org
 */
 var graName = 'The Warrior\'s Graveyard';
-var graNameFancy = '`8ן `%T`7he `%W`7arrior\'s `%G`7raveyard `8ן';
+var graNameFancy = '`8\xEF `%T`7he `%W`7arrior\'s `%G`7raveyard `8\xEF';
 var graVersion = 'JS v1.1';
 var graDebug = false;
 var menu_redisplay = true;
@@ -333,7 +333,7 @@ function command_prompt(currentPlace,menu_keys) {
 function press_a_key(no_clear) {
 	var ch;
 	//lw('  `2<`0MORE`2>');
-	lw(' `@ם `0Press A Key `@ם');	
+	lw(' `@\xED `0Press A Key `@\xED');	
 	flush_keys();	
 	ch = getkey();
 	if(no_clear) {
@@ -547,7 +547,7 @@ function graPlayGame() {
 	} else {
 		sclrscr();
 		sln('');
-		lln('  `5.ת`#שת`2[`0Game of Chance`2]`#תש`5ת.');
+		lln('  `5.\xFA`#\xF9\xFA`2[`0Game of Chance`2]`#\xFA\xF9`5\xFA.');
 		sln('');
 		lln('  `0"Let\'s play a game!" `2you say to the Old Hag. She thinks for a second');
 		lln('  `2and then agrees to play a game. I have four marbles in this bag, 2 are');
@@ -711,7 +711,7 @@ function graBuyAide() {
 
 	sclrscr();
 	sln('');
-	lln('  `5.ת`#שת`2[`0Buying Some Lemon Aide`2]`#תש`5ת.');
+	lln('  `5.\xFA`#\xF9\xFA`2[`0Buying Some Lemon Aide`2]`#\xFA\xF9`5\xFA.');
 	sln('');
 	lln('    `2You look at the Lemon-Aide that the Juice-Seller is pushing on you and');
 	lln('  `2ask, `0"What the hell is in that stuff? It almost looks green!?"');
