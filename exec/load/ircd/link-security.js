@@ -167,9 +167,11 @@ function IRC_tls_user_to_server(user, servername) {
 }
 
 function IRC_whois_tls(viewer, target) {
-	var status = IRC_tls_combine(IRC_tls_user_to_server(viewer, target.servername), IRC_client_tls_status(target));
+	var route = IRC_tls_user_to_server(viewer, target.servername), endpoint = IRC_client_tls_status(target);
+	var status = IRC_tls_combine(route, endpoint);
 	var text = status == "TLS" ? "TLS path: every client and server connection between you and this user is encrypted."
 		: status == "PLAIN" ? "TLS path: an unencrypted connection exists between you and this user."
+		: route == "TLS" && endpoint == "UNKNOWN" ? "TLS path: your connection and all server hops are encrypted; target endpoint transport is unknown."
 		: "TLS path: full-path encryption between you and this user is unknown.";
 	viewer.numeric(status == "TLS" ? 671 : 320, target.nick + " :" + text);
 }

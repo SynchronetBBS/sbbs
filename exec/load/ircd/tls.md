@@ -153,6 +153,12 @@ path excludes unrelated uplinks above the two clients' common ancestor.
 Server-qualified WHOIS queries are assessed at the requesting client's server,
 which suppresses older servers' endpoint-only 671 replies.
 
+When the requesting client's connection and every server hop are known to be
+encrypted, but the target's endpoint transport is unknown, WHOIS reports those
+facts separately in numeric 320. This can occur with external service bots
+that provide no endpoint transport report. It does not infer an internal
+endpoint from services trust or change the requirements for numeric 671.
+
 The optional `CLIENTTLS` capability carries
 `:<owning-server> CLIENTTLS <nickname> <TLS|PLAIN|INTERNAL>` immediately after
 each NICK introduction, including bursts. Only the user's owning server may

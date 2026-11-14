@@ -75,11 +75,32 @@ run_tests({
 		var s = state(), p = peer(s, "hub.test", true, ["LINKSEC", "CLIENTTLS"]), viewer = client(s);
 		var target = remote_user(s, "Remote", p); viewer.socket = {ssl_session:true};
 		tls(s, p, true, true);
-		check(whois(s, viewer, target).indexOf("full-path encryption between you and this user is unknown") >= 0);
+		var output = whois(s, viewer, target);
+		check(output.indexOf(" 320 Viewer Remote :TLS path: your connection and all server hops are encrypted; target endpoint transport is unknown.") >= 0, output);
+		check(output.indexOf(" 671 ") < 0, output);
 		p.work(":hub.test CLIENTTLS Remote TLS");
 		check(whois(s, viewer, target).indexOf(" 671 Viewer Remote :TLS path:") >= 0);
 		p.work(":hub.test CLIENTTLS Remote PLAIN");
 		check(whois(s, viewer, target).indexOf("unencrypted connection") >= 0);
+	},
+	"WHOIS distinguishes a missing services endpoint report only on a known encrypted route": function() {
+		var s = state(), p = peer(s, "hub.test", true), viewer = client(s);
+		var services = remote(s, "services.test", p.nick, p.nick);
+		var target = remote_user(s, "NickServ", p); target.servername = services.nick; target.uline = true;
+		viewer.socket = {ssl_session:true}; tls(s, p, true, true);
+		check(whois(s, viewer, target).indexOf("full-path encryption between you and this user is unknown") >= 0);
+		receive(s, p, p.nick, services.nick, "TLS", "IN", "NA");
+		var output = whois(s, viewer, target);
+		check(output.indexOf(" 320 Viewer NickServ :TLS path: your connection and all server hops are encrypted; target endpoint transport is unknown.") >= 0, output);
+		check(output.indexOf(" 671 ") < 0 && !target.client_tls && !target.services_internal, output);
+		viewer.socket = {};
+		check(whois(s, viewer, target).indexOf("full-path encryption between you and this user is unknown") >= 0);
+		viewer.socket.ssl_session = false;
+		check(whois(s, viewer, target).indexOf("unencrypted connection") >= 0);
+		viewer.socket.ssl_session = true;
+		receive(s, p, p.nick, services.nick, "PLAIN", "IN", "NA");
+		output = whois(s, viewer, target);
+		check(output.indexOf("unencrypted connection") >= 0 && output.indexOf("all server hops are encrypted") < 0, output);
 	},
 	"a leaf can report only the transport of its own clients": function() {
 		var s = state(), leaf = peer(s, "leaf.test", false, ["CLIENTTLS"]), other = peer(s, "other.test", true, ["CLIENTTLS"]);
@@ -133,7 +154,7 @@ run_tests({
 		viewer.socket = {ssl_session:true}; s.Users.VIEWER = viewer; tls(s, p, true, true);
 		p.work(":hub.test 311 Viewer Remote ident host * :Name");
 		p.work(":hub.test 671 Viewer Remote :is using a secure connection.");
-		check(viewer.lines.join("\n").indexOf("full-path encryption between you and this user is unknown") >= 0);
+		check(viewer.lines.join("\n").indexOf(" 320 Viewer Remote :TLS path: your connection and all server hops are encrypted; target endpoint transport is unknown.") >= 0);
 		check(viewer.lines.join("\n").indexOf(" 671 ") < 0);
 	},
 	"outbound socket validation is visible to ordinary registered clients": function() {
