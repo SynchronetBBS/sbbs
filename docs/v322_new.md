@@ -599,6 +599,7 @@
   expanded value, the counterpart of `U`
 - New `@XFER_TIME@`, `@XFER_CPS@` and `@XFER_PROT@` @-codes: the duration,
   rate and protocol of the most recent file transfer (#1158)
+- `@CPS@` now accepts a byte-count format, e.g. `@CPS:V@` (`15.2K`)
 - New `E` duration format (e.g. `@XFER_TIME:E@`, `@TLEFT:E@`): words down to
   the second, e.g. "1 minute 42 seconds"
 - New `@RAINBOW:DEFAULT@` restores the configured rainbow colors after a

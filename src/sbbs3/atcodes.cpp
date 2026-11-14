@@ -735,10 +735,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (!strcmp(sp, "CPS")) {
-		safe_snprintf(str, maxlen, "%u", cur_cps);
-		return str;
-	}
+	if (code_match(sp, "CPS", &param))
+		return byte_count(cur_cps, str, maxlen, param, BYTE_COUNT_BYTES);
 
 	// Most recent single-file transfer: empty when its duration is unknown (batch, SFTP)
 	if (code_match(sp, "XFER_TIME", &param)) {
