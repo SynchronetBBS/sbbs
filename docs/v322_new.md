@@ -601,6 +601,10 @@
   rate and protocol of the most recent file transfer (#1158)
 - `@CPS@` and `@FREESPACE@` now accept a byte-count format, e.g. `@CPS:V@`
   (`15.2K`) or `@FREESPACE:V@` (`27.8G`)
+- Fix: on Linux and other Unix-like systems, `@FREESPACEG@`, `@FREESPACET@`
+  and the JavaScript `disk_free()`/`disk_size()` with a large unit reported 0,
+  and kibibyte/mebibyte free space figures were rounded down to the
+  filesystem block size
 - New `E` duration format (e.g. `@XFER_TIME:E@`, `@TLEFT:E@`): words down to
   the second, e.g. "1 minute 42 seconds"
 - New `@RAINBOW:DEFAULT@` restores the configured rainbow colors after a
