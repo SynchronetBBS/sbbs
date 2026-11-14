@@ -2178,7 +2178,7 @@ js_restoreline(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
-js_ansi(JSContext *cx, uintN argc, jsval *arglist)
+js_attrstr(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *   argv = JS_ARGV(cx, arglist);
 	int32     attr = 0;
@@ -3138,11 +3138,13 @@ static jsSyncMethodSpec js_console_functions[] = {
 	 , JSDOCSTR("Pop the most recently <i>saved line</i> of text and attributes and display it on the remote console")
 	 , 310
 	},
-	{"ansi",            js_ansi,            1, JSTYPE_STRING,   JSDOCSTR("attribute [,current_attribute]")
-	 , JSDOCSTR("Returns ANSI sequence required to generate specified terminal <i>attribute</i> "
-		        "(e.g. <tt>YELLOW|HIGH|BG_BLUE</tt>), "
-		        "if <i>current_attribute</i> is specified, an optimized ANSI sequence may be returned")
-	 , 310
+	{"ansi",            js_attrstr,         1, JSTYPE_ALIAS },
+	{"attrstr",         js_attrstr,         1, JSTYPE_STRING,   JSDOCSTR("attribute [,current_attribute]")
+	 , JSDOCSTR("Returns the control sequence (e.g. ANSI or PETSCII) required to generate the specified terminal "
+		        "<i>attribute</i> (e.g. <tt>YELLOW|HIGH|BG_BLUE</tt>) on the user's terminal "
+		        "(an empty string if the terminal does not support attributes), "
+		        "if <i>current_attribute</i> is specified, an optimized sequence may be returned")
+	 , 322
 	},
 	{"ansi_save",       js_pushxy,          0, JSTYPE_ALIAS },
 	{"ansi_pushxy",     js_pushxy,          0, JSTYPE_ALIAS },

@@ -996,6 +996,9 @@
   CTerm version the fork was based on
 - New `system.qwk_pack()` and `system.qwk_unpack()` methods create or
   import a QWK/REP packet for a user (by number) or a QWKnet hub (by ID)
+- `console.ansi()` renamed `console.attrstr()` (`ansi()` remains as an
+  alias): it returns the sequence for the user's terminal type (e.g.
+  PETSCII), not only ANSI
 
 ## JSexec
 
