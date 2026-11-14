@@ -339,6 +339,9 @@
 - Fix: webv4 forum unread counts could take minutes to compute, and were
   recomputed every minute for each logged-in viewer; they now come from one
   index read per sub, and unchanged subs are not recounted
+- webv4 forum thread lists and thread views are cached per sub in
+  `data/webv4/threads/` and rebuilt only when the sub changes, instead of
+  reading every message header in the sub on each page view
 
 ## FTP Server
 

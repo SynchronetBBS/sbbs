@@ -939,7 +939,106 @@ function setScanCfg(sub, cfg) {
 
 }
 
+// Bump when the structure built by buildMessageThreads() changes
+var THREAD_CACHE_VERSION = 1;
+
+// A sub's threads are cached in data/webv4/threads/<code>.json, keyed on
+// the state of the message base files: the first line is the key, the rest
+// is the threads object. Nothing per-user is cached (see countUnread()).
+function threadCache(sub, max) {
+    const base = msg_area.sub[sub].data_dir + msg_area.sub[sub].code.toLowerCase();
+    const dir = system.data_dir + 'webv4/threads/';
+    const fn = dir + msg_area.sub[sub].code.toLowerCase() + '.json';
+    const mtime = [file_date(base + '.shd'), file_date(base + '.sid')];
+    const key = [
+        THREAD_CACHE_VERSION,
+        max || 0,
+        settings.forum_no_spam ? 1 : 0,
+        mtime[0], file_size(base + '.shd'),
+        mtime[1], file_size(base + '.sid'),
+    ].join(' ');
+    // File times have one-second resolution (and hosts sharing the base
+    // may disagree on the time), so a base modified within the last few
+    // seconds could change again without changing the key
+    const age = time() - Math.max(mtime[0], mtime[1]);
+
+    return {
+        read: function () {
+            const f = new File(fn);
+            if (!f.open('r')) return null;
+            var threads = null;
+            try {
+                if (f.readln() === key) threads = JSON.parse(f.read());
+            } catch (err) {
+                threads = null;
+            }
+            f.close();
+            if (!threads || !threads.thread || !threads.order) return null;
+            return threads;
+        },
+        write: function (threads) {
+            if (age < 5) return;
+            if (!file_isdir(dir) && !mkpath(dir)) return;
+            const tmp = format('%s.%d.%d.tmp', fn, Date.now(), random(1000000));
+            const f = new File(tmp);
+            if (!f.open('w')) return;
+            // One thread at a time: a single JSON.stringify() of a large
+            // sub's threads can exhaust the JS heap
+            f.writeln(key);
+            f.write('{"thread":{');
+            var first = true;
+            for (var t in threads.thread) {
+                f.write((first ? '' : ',') + JSON.stringify(t) + ':' + JSON.stringify(threads.thread[t]));
+                first = false;
+            }
+            f.write('},"order":' + JSON.stringify(threads.order) + '}');
+            const ok = f.error === 0;
+            f.close();
+            if (!ok) {
+                file_remove(tmp);
+                return;
+            }
+            if (!file_rename(tmp, fn)) {
+                // Windows won't rename over an existing file
+                file_remove(fn);
+                if (!file_rename(tmp, fn)) file_remove(tmp);
+            }
+        },
+    };
+}
+
+function countUnread(sub, threads) {
+    if (!is_user()) return;
+    const scan_ptr = msg_area.sub[sub].scan_ptr;
+    for (var t in threads.thread) {
+        var thread = threads.thread[t];
+        thread.unread = 0;
+        for (var m in thread.messages) {
+            if (thread.messages[m].number > scan_ptr) thread.unread++;
+        }
+    }
+}
+
 function getMessageThreads(sub, max) {
+
+    if (msg_area.sub[sub] === undefined || !msg_area.sub[sub].can_read) {
+        return { thread: {}, order: [] };
+    }
+
+    const cache = threadCache(sub, max);
+    var threads = cache.read();
+    if (!threads) {
+        threads = buildMessageThreads(sub, max);
+        if (!threads) return { thread: {}, order: [] };
+        cache.write(threads);
+    }
+    countUnread(sub, threads);
+    return threads;
+
+}
+
+// Returns null if the sub's message base can't be opened
+function buildMessageThreads(sub, max) {
 
     var threads = {
         thread: {},
@@ -947,16 +1046,10 @@ function getMessageThreads(sub, max) {
     };
     var subjects = {};
 
-    if (msg_area.sub[sub] === undefined) return threads;
-    if (!msg_area.sub[sub].can_read) return threads;
-
     function addToThread(thread_id, header, subject) {
         if (subject !== undefined) subjects[subject] = thread_id;
         if (header.when_written_time > threads.thread[thread_id].newest) {
             threads.thread[thread_id].newest = header.when_written_time;
-        }
-        if (is_user() && header.number > msg_area.sub[sub].scan_ptr) {
-            threads.thread[thread_id].unread++;
         }
         threads.thread[thread_id].messages[header.number] = {
             attr: header.attr,
@@ -1014,14 +1107,14 @@ function getMessageThreads(sub, max) {
     }
 
     var msgBase = new MsgBase(sub);
-    if (!msgBase.open()) return threads;
+    if (!msgBase.open()) return null;
     if ((typeof max == 'number' && max > 0) || typeof msgBase.get_all_msg_headers != 'function') {
         var headers = getSomeMessageHeaders(msgBase, max);
     } else {
         var headers = msgBase.get_all_msg_headers();
     }
     msgBase.close();
-    if (!headers) return threads;
+    if (!headers) return null;
 
     Object.keys(headers).forEach(function (h) {
 
