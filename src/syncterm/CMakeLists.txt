@@ -610,4 +610,13 @@ if(UNIX AND NOT APPLE AND "WITH_SDL" IN_LIST _ciolib_definitions)
 		SDL_VIDEODRIVER=offscreen SDL_RENDER_DRIVER=software
 		SDL_VIDEO_EGL_DRIVER=none $<TARGET_FILE:skypix_test>)
 	set_tests_properties(skypix_test PROPERTIES TIMEOUT 30)
+	add_executable(ripper_test ripper_test.c rip_icons.c ansi_filter.c)
+	require_libs(ripper_test ciolib hash encode xpdev)
+	target_include_directories(ripper_test PRIVATE ../sbbs3)
+	target_compile_options(ripper_test PRIVATE -ffunction-sections -fdata-sections)
+	target_link_options(ripper_test PRIVATE -Wl,--gc-sections)
+	add_test(NAME ripper_test COMMAND ${CMAKE_COMMAND} -E env
+		SDL_VIDEODRIVER=offscreen SDL_RENDER_DRIVER=software
+		SDL_VIDEO_EGL_DRIVER=none $<TARGET_FILE:ripper_test>)
+	set_tests_properties(ripper_test PROPERTIES TIMEOUT 30)
 endif()

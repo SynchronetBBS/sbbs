@@ -12118,6 +12118,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
         // TODO: Mystery rows in 8x8 mode...
 	struct ciolib_pixels *pix = getpixels(0, 0, rip.x_max - 1, rip.y_max - 1, false);
 	struct cterminal      oldcterm = *cterm;
+	bool                  key_event_data_is_cterm = oldcterm.key_event_mode_change_cbdata == cterm;
 	int                   old_hold = hold_update;
 	int                   cols = 80;
 	int                   rows = 43;
@@ -12195,8 +12196,6 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	clrscr();
 	get_term_win_size(&term.width, &term.height, NULL, NULL, &term.nostatus);
 	term.width = cols;
-	void (*old_rcb)(const char *, size_t, void *) = cterm->response_cb;
-	void *old_rcbdat = cterm->response_cbdata;
 	cterm = cterm_init(rows + (term.nostatus ? 0 : -1),
 	        cols,
 	        oldcterm.x,
@@ -12207,16 +12206,26 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	        oldcterm.emulation);
 	if (lcf & CTERM_LCF_FORCED)
 		cterm->last_column_flag = CTERM_LCF_FORCED | CTERM_LCF_ENABLED;
-	cterm->response_cb = old_rcb;
-	cterm->response_cbdata = old_rcbdat;
+	/* Keep the session's output channels and hooks across terminal replacement.
+	 * oldcterm is the snapshot taken before cterm_end freed the old instance. */
+	cterm->response_cb = oldcterm.response_cb;
+	cterm->response_cbdata = oldcterm.response_cbdata;
+	cterm->keystroke_cb = oldcterm.keystroke_cb;
+	cterm->keystroke_cbdata = oldcterm.keystroke_cbdata;
 	cterm->apc_handler = oldcterm.apc_handler;
 	cterm->apc_handler_data = oldcterm.apc_handler_data;
+	cterm->ext_state_7_cb = oldcterm.ext_state_7_cb;
 	cterm->mouse_state_change = oldcterm.mouse_state_change;
 	cterm->mouse_state_change_cbdata = oldcterm.mouse_state_change_cbdata;
+	cterm->key_event_mode_change = oldcterm.key_event_mode_change;
+	cterm->key_event_mode_change_cbdata = key_event_data_is_cterm
+	    ? cterm : oldcterm.key_event_mode_change_cbdata;
 	cterm->mouse_state_query = oldcterm.mouse_state_query;
 	cterm->mouse_state_query_cbdata = oldcterm.mouse_state_query_cbdata;
 	cterm->status_display_cb = oldcterm.status_display_cb;
 	cterm->status_display_cbdata = oldcterm.status_display_cbdata;
+	cterm->size_change_cb = oldcterm.size_change_cb;
+	cterm->size_change_cbdata = oldcterm.size_change_cbdata;
 	cterm->status_display_type = term.nostatus ? 0 : 1;
 	cterm->music_enable = oldcterm.music_enable;
 	cterm->backpos = oldcterm.backpos;
@@ -18306,9 +18315,8 @@ cb_slide(uint8_t c)
 // arrived at column 1 via an ANSI CUP sequence rather than via CR/LF.
 // For the fallback to be accurate, cterm must have already processed
 // every passthrough byte emitted so far in this stream — parse_rip_new
-// guarantees that by deferring `!` introducers encountered at
-// cb.len == 0, so they're only checked at the start of a fresh
-// parse_rip(0) drain after cterm_write has caught up.
+// guarantees that by deferring `!` introducers when text is pending,
+// including while draining deferred input, until cterm_write has caught up.
 static bool
 cb_accept_introducer(uint8_t c)
 {
@@ -18851,7 +18859,12 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 		cb.defer_cap = 0;
 		for (size_t i = 0; i < defer_len; i++) {
 			uint8_t c = defer[i];
-			if (!can_dispatch && cb_would_dispatch(c)) {
+			/* An earlier bogus introducer may have emitted text in this
+			 * drain. Flush it before consulting cterm's cursor for another
+			 * introducer, just as we do for fresh input below. */
+			bool pending_introducer = out > 0 && rip.version != RIP_VERSION_SKYPIX
+			    && cb.len == 0 && cb.esc_len == 0 && c == '!';
+			if (pending_introducer || (!can_dispatch && cb_would_dispatch(c))) {
 				// Save the rest for a future drain.
 				cb_defer_push(&defer[i], defer_len - i);
 				free(defer);
@@ -18920,17 +18933,18 @@ parse_rip_new(BYTE *origbuf, size_t blen, size_t maxlen)
 
 	// Phase 2: process origbuf bytes.
 	//
-	// If an ESC sequence was left partially accumulated at the end of a
-	// previous call (cb.esc_len > 0), the first flush-back in this call
-	// would memcpy cb.esc into origbuf[0..] and clobber unread input
-	// bytes at origbuf[0..cb.esc_len-1].  Shift the input forward by
-	// cb.esc_len so the pending flush lands in reserved headroom.  The
-	// caller guarantees at least RIP_ESC_MAX bytes of tail headroom.
+	// A partial ESC sequence or lone introducer from a previous call can
+	// be emitted along with the current byte. Reserve headroom so that
+	// flush-back cannot overwrite unread input. The caller guarantees at
+	// least RIP_ESC_MAX bytes of tail headroom.
 	size_t phase2_start = 0;
-	if (cb.esc_len > 0 && blen > 0) {
-		memmove(&origbuf[cb.esc_len], origbuf, blen);
-		phase2_start = cb.esc_len;
-		blen += cb.esc_len;
+	size_t pending = cb.esc_len;
+	if (cb.len == 1 && (cb.bytes[0] == '!' || cb.bytes[0] == 0x01 || cb.bytes[0] == 0x02))
+		pending++;
+	if (pending > 0 && blen > 0) {
+		memmove(&origbuf[pending], origbuf, blen);
+		phase2_start = pending;
+		blen += pending;
 	}
 	for (size_t i = phase2_start; i < blen; i++) {
 		uint8_t c = origbuf[i];

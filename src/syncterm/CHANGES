@@ -1,5 +1,7 @@
 Version 1.10
 ------------
+Fix lost keyboard/button input and session callbacks after RIP screen resets
+Fix packet-dependent RIP command recognition after ordinary text
 Fix SkyPix font strings, drawing order and font reset; implement area fill (#299)
 Add a dedicated SkyPix graphics setting and install native Amiga fonts
 BBS cache directories are now deleted/renamed with the entry
