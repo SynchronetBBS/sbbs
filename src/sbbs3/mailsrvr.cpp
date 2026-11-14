@@ -27,6 +27,8 @@
 #include <string.h>         /* strrchr */
 #include <fcntl.h>          /* Open flags */
 #include <errno.h>          /* errno */
+#include <string>
+#include <vector>
 
 /* Synchronet-specific headers */
 #undef SBBS /* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
@@ -1666,20 +1668,26 @@ static bool pop3_client_thread(pop3_t* pop3)
 					continue;
 				}
 				/* List ALL messages */
-				sockprintf(socket, client.protocol, session, "+OK %u messages (%lu bytes)", msgs, bytes);
-				for (l = 0; l < msgs && !smb_islocked(&smb); l++) {
+				// A client treats a message missing from a UIDL list as gone
+				// from the server, so only ever send a complete list
+				std::vector<std::string> list;
+				for (l = 0; l < msgs; l++) {
+					if (smb_islocked(&smb)) {
+						lprintf(LOG_WARNING, "%04d %-5s [%s] <%s> !MAIL BASE LOCKED: %s", socket, client.protocol, host_ip, user.alias, smb.last_error);
+						break;
+					}
 					msg.hdr.number = mail[l].number;
 					if ((i = smb_getmsgidx(&smb, &msg)) != SMB_SUCCESS) {
 						errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) getting message index"
 						          , socket, client.protocol, user.alias, i, smb.last_error);
-						continue;
+						break;
 					}
 					if (msg.idx.attr & MSG_DELETE)
 						continue;
 					if ((i = smb_lockmsghdr(&smb, &msg)) != SMB_SUCCESS) {
 						lprintf(LOG_WARNING, "%04d %-5s <%s> !ERROR %d (%s) locking message header #%u"
 						        , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
-						continue;
+						break;
 					}
 					i = smb_getmsghdr(&smb, &msg);
 					smb_unlockmsghdr(&smb, &msg);
@@ -1687,15 +1695,23 @@ static bool pop3_client_thread(pop3_t* pop3)
 						smb_freemsgmem(&msg);
 						errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) line %u, msg #%u"
 						          , socket, client.protocol, user.alias, i, smb.last_error, __LINE__, msg.idx.number);
-						continue;
+						break;
 					}
-					if (!strnicmp(buf, "LIST", 4)) {
-						i = sockprintf(socket, client.protocol, session, "%u %u", l + 1, msg.hdr.length + smb_getmsgtxtlen(&msg));
-					} else /* UIDL */
-						i = sockprintf(socket, client.protocol, session, "%u %u", l + 1, msg.hdr.number);
-
+					char line[64];
+					if (!strnicmp(buf, "LIST", 4))
+						SAFEPRINTF2(line, "%u %u", l + 1, msg.hdr.length + smb_getmsgtxtlen(&msg));
+					else /* UIDL */
+						SAFEPRINTF2(line, "%u %u", l + 1, msg.hdr.number);
+					list.push_back(line);
 					smb_freemsgmem(&msg);
-					if (i < 1)
+				}
+				if (l < msgs) {
+					sockprintf(socket, client.protocol, session, "-ERR unable to list messages, try again later");
+					break;
+				}
+				sockprintf(socket, client.protocol, session, "+OK %u messages (%lu bytes)", msgs, bytes);
+				for (const std::string& entry : list) {
+					if (sockprintf(socket, client.protocol, session, "%s", entry.c_str()) < 1)
 						break;
 				}
 				sockprintf(socket, client.protocol, session, ".");
