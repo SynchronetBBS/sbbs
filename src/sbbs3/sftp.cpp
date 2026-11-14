@@ -1327,6 +1327,7 @@ record_transfer(sbbs_t *sbbs, sftp_filedescriptor_t desc, bool upload)
 		file.size = flength(desc->local_path);
 		file.file_idx.idx.offset = desc->idx_offset;
 		file.file_idx.idx.number = desc->idx_number;
+		SAFECOPY(sbbs->xfer_prot, "SFTP");
 		if (upload)
 			sbbs->uploadfile(&file);
 		else

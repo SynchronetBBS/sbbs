@@ -38,7 +38,7 @@ struct current_file_scope {
 	}
 };
 
-bool sbbs_t::uploadfile(file_t* f)
+bool sbbs_t::uploadfile(file_t* f, time_t elapsed)
 {
 	char  path[MAX_PATH + 1];
 	char  str[MAX_PATH + 1] = "";
@@ -177,7 +177,7 @@ bool sbbs_t::uploadfile(file_t* f)
 		f->hdr.attr |= MSG_ANONYMOUS;
 	smb_hfield_bin(f, SMB_COST, length);
 	smb_hfield_str(f, SENDER, useron.alias);
-	bprintf(text[FileNBytesReceived], f->name, u64toac(length, tmp));
+	show_xfer_result(f, length, /* upload: */ true, elapsed);
 	int addfile_result;
 	if (!addfile(&cfg, f, ext, /* metadata: */ NULL, &client, &addfile_result)) {
 		errormsg(WHERE, "adding file to database", f->name, addfile_result);
@@ -473,6 +473,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 	if (tags[0])
 		smb_hfield_str(&f, SMB_TAGS, tags);
 	if (fexistcase(path)) {   /* File is on disk */
+		xfer_prot[0] = '\0';
 		result = uploadfile(&f);
 	} else {
 		bool batch = !(dirnum == cfg.user_dir || !cfg.max_batup);  /* no batch user to user xfers */
@@ -501,7 +502,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 				protocol(cfg.prot[i], XFER_UPLOAD, path, nulstr, /* cd: */ true, /* autohang: */ true, &elapsed);
 				if (!(cfg.dir[dirnum]->misc & DIR_ULTIME)) /* Don't deduct upload time */
 					starttime += elapsed;
-				result = uploadfile(&f);
+				result = uploadfile(&f, elapsed);
 				autohangup();
 			}
 		}

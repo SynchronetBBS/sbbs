@@ -1182,3 +1182,5 @@
 "Users"                                                      985 UsersNoun
 "\r\n\1n\1hProcessing uploaded file \1c@FILE_NAME@\1n@ELLIPSIS@\r\n" 986 ProcessingUploadedFile
 "\1_\1w\1hQWK packet transfer already in progress elsewhere\r\n"  987 QWKTransferInProgress
+"\1_\1w\1h@FILE_NAME@ (@FILE_BYTES|T@ bytes) sent in @XFER_TIME@ (@XFER_CPS|T@ cps).\r\n" 988 FileSentIn
+"\1_\1w\1h@FILE_NAME@ (@FILE_BYTES|T@ bytes) received in @XFER_TIME@ (@XFER_CPS|T@ cps).\r\n" 989 FileReceivedIn

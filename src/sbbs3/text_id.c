@@ -988,4 +988,6 @@ const char* const text_id[]={
 	,"UsersNoun"
 	,"ProcessingUploadedFile"
 	,"QWKTransferInProgress"
+	,"FileSentIn"
+	,"FileReceivedIn"
 };

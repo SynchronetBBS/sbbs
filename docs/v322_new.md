@@ -120,6 +120,10 @@
   search forward, `n` / `N` next / previous match, `?` for help
   - Pager no longer exits silently at end-of-file; a final prompt
     allows scroll-back, re-search, or quit
+- Single-file transfers now report how long they took, e.g.
+  `AP180701.ZIP (1,568,203 bytes) sent in 0:01:42 (15,374 cps).`
+  (new `FileSentIn` and `FileReceivedIn` text strings; batch and SFTP
+  transfers keep the old message) (#1158)
 - `printfile()` now handles files of 2 GiB or larger
 - New auto-filter for clients repeatedly hitting the per-IP
   unauthenticated concurrent-connection cap (effective against
@@ -593,6 +597,10 @@
   so the QWK menu's command keys follow translations (#1242)
 - New `D` @-code format modifier (`@CODE|D@` or `@CODE-D@`): lower-case the
   expanded value, the counterpart of `U`
+- New `@XFER_TIME@`, `@XFER_CPS@` and `@XFER_PROT@` @-codes: the duration,
+  rate and protocol of the most recent file transfer (#1158)
+- New `E` duration format (e.g. `@XFER_TIME:E@`, `@TLEFT:E@`): words down to
+  the second, e.g. "1 minute 42 seconds"
 - New `@RAINBOW:DEFAULT@` restores the configured rainbow colors after a
   `@RAINBOW:<list>@`
 - New PCBoard @-code aliases (issue #940):

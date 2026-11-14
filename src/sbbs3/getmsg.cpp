@@ -540,8 +540,11 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del, bool 
 									useron.dlb = adjustuserval(&cfg, &useron
 									                           , USER_DLB, length);
 									downloadedbytes(length, elapsed);
-									bprintf(text[FileNBytesSent]
-									        , getfname(fpath), u64toac(length, tmp));
+									file_t f = {{}};
+									f.name = getfname(fpath);
+									f.dir = INVALID_DIR;
+									f.size = length;
+									show_xfer_result(&f, length, /* upload: */ false, elapsed);
 									llprintf("D-"
 									           , "downloaded attached file: %s"
 									           , getfname(fpath));

@@ -1004,6 +1004,8 @@ enum text {
 	,UsersNoun
 	,ProcessingUploadedFile
 	,QWKTransferInProgress
+	,FileSentIn
+	,FileReceivedIn
 
 	,TOTAL_TEXT
 };

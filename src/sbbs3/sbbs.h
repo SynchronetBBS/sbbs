@@ -676,6 +676,9 @@ public:
 	char	connection[LEN_CONNECTION+1];	/* Connection Description */
 	uint	cur_rate=0;		/* Current Connection (DCE) Rate */
 	uint	cur_cps=10000;	/* Current Average Download CPS */
+	off_t	xfer_bytes = 0;		/* Size of the most recent file transfer */
+	time_t	xfer_elapsed = -1;	/* Duration of that transfer in seconds, -1 if unknown */
+	char	xfer_prot[sizeof(prot_t::name)]{};	/* Protocol used for that transfer */
 	uint	dte_rate=0;		/* Current COM Port (DTE) Rate */
 	time_t 	getkey_last_activity=0;		/* User inactivity timeout reference */
 	uint 	timeleft_warn=0;/* low timeleft warning flag */
@@ -1231,7 +1234,7 @@ public:
 	int64_t	backup(const char* fname, int backup_level, bool rename);
 
 	/* upload.cpp */
-	bool	uploadfile(file_t* f);
+	bool	uploadfile(file_t* f, time_t elapsed = -1);
 	bool	okay_to_upload(int dirnum);
 	bool	upload(int dirnum, const char* fname = nullptr);
 	char	upload_lastdesc[LEN_FDESC+1]{};
@@ -1240,7 +1243,8 @@ public:
 	/* download.cpp */
 	void	data_transfer_begin(uchar& local_binary_tx, uchar& remote_binary_tx);
 	void	data_transfer_end(uchar local_binary_tx, uchar remote_binary_tx);
-	void	downloadedfile(file_t* f);
+	void	downloadedfile(file_t* f, time_t elapsed = -1);
+	void	show_xfer_result(file_t* f, off_t bytes, bool upload, time_t elapsed);
 	void	notdownloaded(off_t size, time_t elapsed);
 	void	downloadedbytes(off_t size, time_t elapsed);
 	int		protocol(prot_t* prot, enum XFER_TYPE, const char *fpath, const char *fspec, bool cd, bool autohangup=true, time_t* elapsed=NULL);

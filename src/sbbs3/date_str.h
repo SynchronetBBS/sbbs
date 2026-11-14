@@ -48,6 +48,7 @@ DLLEXPORT char* time_as_hhmmss(scfg_t*, time_t, char* str, size_t);
 DLLEXPORT char* timestr(scfg_t*, time32_t, char* str);
 DLLEXPORT char* minutes_as_hhmm(uint minutes, char* str, size_t, bool verbose);
 DLLEXPORT char* minutes_to_str(uint minutes, char* str, size_t, bool estimate, bool words);
+DLLEXPORT char* seconds_to_words(uint seconds, char* str, size_t);
 
 #ifdef __cplusplus
 }

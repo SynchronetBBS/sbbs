@@ -1084,7 +1084,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 					if (cfg.dir[f->dir]->misc & DIR_TFREE)
 						starttime += elapsed;
 					if (checkprotresult(cfg.prot[i], error, f)) {
-						downloadedfile(f);
+						downloadedfile(f, elapsed);
 						downloadedbytes(f->size, elapsed);
 					} else
 						notdownloaded(f->size, elapsed);

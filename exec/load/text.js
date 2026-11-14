@@ -994,8 +994,10 @@ var UserNoun=984;
 var UsersNoun=985;
 var ProcessingUploadedFile=986;
 var QWKTransferInProgress=987;
+var FileSentIn=988;
+var FileReceivedIn=989;
 
-var TOTAL_TEXT=987;
+var TOTAL_TEXT=989;
 
 /* Former names of renamed strings */
 var NScanPmQ=406;

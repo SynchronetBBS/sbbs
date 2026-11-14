@@ -282,6 +282,7 @@ static const char* getpath(scfg_t* cfg, const char* path)
 #define DURATION_MINIMAL_VERBAL        'C' // 0m          1.5h               4.2d
 #define DURATION_FULL_WORDS            'W' // 0 minutes   1 hour 30 minutes  4 days 4 hours 0 minutes
 #define DURATION_MINIMAL_WORDS         'D' // 0 minutes   1.5 hours          4.2 days
+#define DURATION_EXACT_WORDS           'E' // 0 seconds   1 hour 30 minutes  4 days 4 hours 0 minutes
 #define DURATION_SECONDS               'S' // 0           5400               360000
 #define DURATION_MINUTES               'M' // 0           90                 6000
 
@@ -309,6 +310,8 @@ static char* duration(uint seconds, char* str, size_t maxlen, char fmt, char def
 			return minutes_to_str(seconds / 60, str, maxlen, /* estimate: */ false, /* words: */ true);
 		case DURATION_MINIMAL_WORDS:
 			return minutes_to_str(seconds / 60, str, maxlen, /* estimate: */ true, /* words: */ true);
+		case DURATION_EXACT_WORDS:
+			return seconds_to_words(seconds, str, maxlen);
 		case DURATION_SECONDS:
 			snprintf(str, maxlen, "%u", seconds);
 			return str;
@@ -735,6 +738,20 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (!strcmp(sp, "CPS")) {
 		safe_snprintf(str, maxlen, "%u", cur_cps);
 		return str;
+	}
+
+	// Most recent single-file transfer: empty when its duration is unknown (batch, SFTP)
+	if (code_match(sp, "XFER_TIME", &param)) {
+		if (xfer_elapsed < 0)
+			return nulstr;
+		return duration(static_cast<uint>(xfer_elapsed), str, maxlen, param, DURATION_TRUNCATED_HHMMSS);
+	}
+	if (strcmp(sp, "XFER_PROT") == 0)
+		return xfer_prot;
+	if (code_match(sp, "XFER_CPS", &param)) {
+		if (xfer_elapsed < 0)
+			return nulstr;
+		return byte_count(xfer_elapsed <= 1 ? xfer_bytes : xfer_bytes / xfer_elapsed, str, maxlen, param, BYTE_COUNT_BYTES);
 	}
 
 	if (!strcmp(sp, "COLS")) {

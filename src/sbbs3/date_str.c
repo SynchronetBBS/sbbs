@@ -288,6 +288,25 @@ char* minutes_to_str(uint minutes, char* str, size_t size, bool estimate, bool w
 }
 
 /****************************************************************************/
+/* Format a duration in seconds as words, e.g. "1 minute 42 seconds"		*/
+/****************************************************************************/
+char* seconds_to_words(uint seconds, char* str, size_t size)
+{
+	uint sec = seconds % 60;
+
+	if (seconds < 60) {
+		safe_snprintf(str, size, "%u second%s", sec, sec == 1 ? "" : "s");
+		return str;
+	}
+	minutes_to_str(seconds / 60, str, size, /* estimate: */ false, /* words: */ true);
+	if (sec != 0) {
+		size_t len = strlen(str);
+		safe_snprintf(str + len, size - len, " %u second%s", sec, sec == 1 ? "" : "s");
+	}
+	return str;
+}
+
+/****************************************************************************/
 /* Returns 5 or 6 character string, depending on configuration				*/
 /****************************************************************************/
 char* tm_as_hhmm(scfg_t* cfg, struct tm* tm, char* str)

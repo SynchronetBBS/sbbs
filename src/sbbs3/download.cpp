@@ -28,9 +28,8 @@
 /* Updates downloader, uploader and downloaded file data                    */
 /* Must have offset, dir and name fields filled prior to call.              */
 /****************************************************************************/
-void sbbs_t::downloadedfile(file_t* f)
+void sbbs_t::downloadedfile(file_t* f, time_t elapsed)
 {
-	char  tmp[512];
 	off_t length;
 
 	length = getfilesize(&cfg, f);
@@ -38,7 +37,7 @@ void sbbs_t::downloadedfile(file_t* f)
 		logon_dlb += length;  /* Update 'this call' stats */
 		logon_dls++;
 	}
-	bprintf(text[FileNBytesSent], f->name, ultoac((ulong)length, tmp));
+	show_xfer_result(f, length, /* upload: */ false, elapsed);
 	llprintf("D-", "downloaded %s (%" PRId64 " bytes) from %s %s"
 	         , f->name
 	         , length
@@ -50,6 +49,26 @@ void sbbs_t::downloadedfile(file_t* f)
 	mqtt_file_download(mqtt, &useron, f->dir, f->name, length, &client);
 
 	user_event(EVENT_DOWNLOAD);
+}
+
+/****************************************************************************/
+/* Display the "sent" or "received" line for a completed file transfer,		*/
+/* with its duration and rate when known (elapsed >= 0)						*/
+/****************************************************************************/
+void sbbs_t::show_xfer_result(file_t* f, off_t bytes, bool upload, time_t elapsed)
+{
+	file_t* saved_file = current_file;
+
+	xfer_bytes = bytes;
+	xfer_elapsed = elapsed;
+	current_file = f;
+	if (elapsed >= 0)
+		bputs(text[upload ? FileReceivedIn : FileSentIn]);
+	else {
+		char tmp[32];
+		bprintf(text[upload ? FileNBytesReceived : FileNBytesSent], f->name, u64toac(bytes, tmp));
+	}
+	current_file = saved_file;
 }
 
 /****************************************************************************/
@@ -135,6 +154,7 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	long  ex_mode;
 	FILE* stream;
 
+	SAFECOPY(xfer_prot, prot->name);
 	SAFEPRINTF(protlog, "%sPROTOCOL.LOG", cfg.node_dir);
 	remove(protlog);                        /* Deletes the protocol log */
 	autohang = false;
@@ -430,7 +450,15 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 		downloadedbytes(length, elapsed);
 		char bytes[32];
 		u64toac(length, bytes);
-		bprintf(text[FileNBytesSent], getfname(fname), bytes);
+		if (current_file != nullptr && strcmp(current_file->name, getfname(fname)) == 0)
+			show_xfer_result(current_file, length, /* upload: */ false, elapsed);
+		else {
+			file_t f = {{}};
+			f.name = getfname(fname);
+			f.dir = INVALID_DIR;
+			f.size = length;
+			show_xfer_result(&f, length, /* upload: */ false, elapsed);
+		}
 		llprintf("D-", "downloaded %s: %s (%s bytes)"
 		            , desc == NULL ? "file" : desc, fname, bytes);
 		autohangup();
