@@ -167,6 +167,7 @@ struct rip_button_style {
 	int                      bflags;
 	bool                     selected;
 	uint8_t                  hotkey;
+	bool                     highlight_hotkey;
 	char                    *template_cmd;
 	int                      font_num;
 	int                      font_size;
@@ -319,6 +320,11 @@ static struct {
 	struct saved_clipboard scb;
 	struct saved_screen screen_saves[11]; // 0-9 = numbered, 10 = default
 	struct rip_user_var *user_vars;
+	/* Requested RIP 1.54 words are distinct from bounded renderer state. */
+	struct {
+		uint16_t line[3], fill[9], font[5], viewport[4], palette[16], button[14];
+		uint16_t text_window[6], cursor[2];
+	} requested;
 } rip = {
 	true,
 	3,
@@ -7743,11 +7749,13 @@ set_ega_palette(void)
 	int      i;
 	uint32_t fg;
 
+	/* RIPv1 writes the low byte to the adapter. Map the six EGA colour
+	 * bits safely; reserved hardware bits are not RGB table indexes. */
 	for (i = 0; i < 16; i++) {
 		attr2palette(i, &fg, NULL);
 		ega_colours[i] = fg;
-		setpalette(fg, ega_palette[curr_ega_palette[i]][0], ega_palette[curr_ega_palette[i]][1],
-		    ega_palette[curr_ega_palette[i]][2]);
+		setpalette(fg, ega_palette[curr_ega_palette[i] & 63][0], ega_palette[curr_ega_palette[i] & 63][1],
+		    ega_palette[curr_ega_palette[i] & 63][2]);
 	}
 }
 
@@ -9104,9 +9112,64 @@ rip_image_too_large(void)
  * on '|' or '\0' is accepted after 1+ valid chars.  Any other char
  * is an error.  *consumed receives the number of input chars used.
  */
+static bool
+parse_rip_word(const char *buf, int fieldwidth, uint16_t *word, int *consumed)
+{
+	uint16_t magnitude = 0;
+	bool negative = fieldwidth > 0 && buf[0] == '-';
+	bool converting = true;
+	int i;
+	*consumed = 0;
+	for (i = 0; i < fieldwidth; i++) {
+		unsigned char c = (unsigned char)buf[i];
+		unsigned digit;
+		if (c >= '0' && c <= '9')
+			digit = c - '0';
+		else if (c >= 'A' && c <= 'Z')
+			digit = c - 'A' + 10;
+		else if (c >= 'a' && c <= 'z')
+			digit = c - 'a' + 10;
+		else if (c == '-') {
+			if (i != 0)
+				converting = false;
+			continue;
+		}
+		else if (i > 0 && (c == 0 || c == '|'))
+			break;
+		else
+			return false;
+		if (converting)
+			magnitude = (uint16_t)((uint32_t)magnitude * 36 + digit);
+	}
+	if (i == 0)
+		return false;
+	*word = negative ? (uint16_t)(0u - magnitude) : magnitude;
+	*consumed = i;
+	return true;
+}
+
+static int
+rip_signed_word(int word)
+{
+	return word < 0x8000 ? word : word - 0x10000;
+}
+
+static int
+rip_signed_byte(int word)
+{
+	unsigned byte = (uint8_t)word;
+	return byte < 0x80 ? (int)byte : (int)byte - 0x100;
+}
+
+/* Keep the legacy integer/-1 interface for extensions. Valid RIPv1 words
+ * are always 0..65535 here, so ffff can never collide with parse failure. */
 static int
 parse_mega(const char *buf, int fieldwidth, int *consumed)
 {
+	if (rip.version == RIP_VERSION_1) {
+		uint16_t word;
+		return parse_rip_word(buf, fieldwidth, &word, consumed) ? word : -1;
+	}
 	int i;
 	int ret = 0;
 
@@ -9216,6 +9279,14 @@ static const struct rip_cmd_desc {
 static const char *
 find_rip_desc(int level, int cmd)
 {
+	if (rip.version == RIP_VERSION_1 && level == 1) {
+		/* The three reserved style words are separate fields. Regions
+		 * have a host-command text suffix after their reserved words. */
+		if (cmd == 'B')
+			return "2#2#2#4#2#2#2#2#2#2#2#2#2#2#2#2#2#";
+		if (cmd == 'M')
+			return "2#2#2#2#2#1#1#4#1#++";
+	}
 	for (size_t i = 0; i < RIP_CMD_DESC_COUNT; i++) {
 		if (rip_cmd_descs[i].level == level
 		    && rip_cmd_descs[i].cmd == cmd)
@@ -9239,6 +9310,7 @@ parse_rip_args(const char *args, const char *desc, int *parsed,
 	int nparsed = 0;
 	int consumed;
 	const char *d = desc;
+	int retained = rip.version == RIP_VERSION_1 && max_parsed > 511 ? 511 : max_parsed;
 
 	*text_start = -1;
 	*has_text = false;
@@ -9263,13 +9335,14 @@ parse_rip_args(const char *args, const char *desc, int *parsed,
 			d++;
 			/* Parse repeated fields until end of input */
 			while (args[offset] != '\0') {
-				if (nparsed >= max_parsed)
+				if (nparsed >= retained && rip.version != RIP_VERSION_1)
 					break;
 				int val = parse_mega(&args[offset], width,
 				    &consumed);
 				if (val < 0 || consumed == 0)
 					break;
-				parsed[nparsed++] = val;
+				if (nparsed < retained)
+					parsed[nparsed++] = val;
 				offset += consumed;
 			}
 			/*
@@ -9290,7 +9363,7 @@ parse_rip_args(const char *args, const char *desc, int *parsed,
 		d++;
 
 		/* Fixed-width numeric field */
-		if (nparsed >= max_parsed)
+		if (nparsed >= retained)
 			return -1;
 		int val = parse_mega(&args[offset], width, &consumed);
 		if (val < 0)
@@ -9399,13 +9472,27 @@ fill_pixel(int x, int y)
 {
 	x += rip.viewport.sx;
 	y += rip.viewport.sy;
-	if ((x > rip.viewport.ex) || (y > rip.viewport.ey))
+	if (x < rip.viewport.sx || y < rip.viewport.sy
+	    || x > rip.viewport.ex || y > rip.viewport.ey)
 		return;
 
         // Handle the translation here for nicer fills...
 	x = map_rip_x(x);
 	y = map_rip_y(y);
 	native_fill_pixel(x, y);
+}
+
+static void
+fill_span(int x1, int x2, int y)
+{
+	if (y < 0 || y > rip.viewport.ey - rip.viewport.sy)
+		return;
+	if (x1 < 0)
+		x1 = 0;
+	if (x2 > rip.viewport.ex - rip.viewport.sx)
+		x2 = rip.viewport.ex - rip.viewport.sx;
+	for (int x = x1; x <= x2; x++)
+		fill_pixel(x, y);
 }
 
 static int
@@ -9773,22 +9860,22 @@ cs_clip_line(int *x1p, int *y1p, int *x2p, int *y2p)
 		// exited on oc1 & oc2).  Same reasoning for dy!=0 on y clips.
 		if (oc1 & 1) {
 			// x < left
-			y1 += (sx - x1) * dy / dx;
+			y1 += (int64_t)(sx - x1) * dy / dx;
 			x1 = sx;
 		}
 		else if (oc1 & 2) {
 			// x > right
-			y1 += (ex - x1) * dy / dx;
+			y1 += (int64_t)(ex - x1) * dy / dx;
 			x1 = ex;
 		}
 		else if (oc1 & 4) {
 			// y < top
-			x1 += (sy - y1) * dx / dy;
+			x1 += (int64_t)(sy - y1) * dx / dy;
 			y1 = sy;
 		}
 		else if (oc1 & 8) {
 			// y > bottom
-			x1 += (ey - y1) * dx / dy;
+			x1 += (int64_t)(ey - y1) * dx / dy;
 			y1 = ey;
 		}
 
@@ -10978,7 +11065,7 @@ draw_button(struct rip_button_style *but, bool inverted)
 		rip.bstyle.flags.autostamp = false;
 		rip.bstyle.flags.sunken = false;
 	}
-	if (but->label) {
+	if (but->label && but->label_location <= LABEL_LOC_BELOW) {
 		int saved_font_num = rip.font.num;
 		int saved_font_size = rip.font.size;
 		bool saved_font_vertical = rip.font.vertical;
@@ -11132,10 +11219,10 @@ draw_button(struct rip_button_style *but, bool inverted)
 				rip.color = inverted ? (0x0f ^ but->cfore) : but->cfore;
 
 				int hk_pos = -1;
-				if (but->flags.highlighthk
-				    || but->flags.underlinehk) {
+				if (but->highlight_hotkey && (but->flags.highlighthk
+				    || but->flags.underlinehk)) {
 					for (i = 0; but->label[i]; i++) {
-						if (toupper(but->label[i])
+						if (toupper((unsigned char)but->label[i])
 						    == toupper(but->hotkey)) {
 							hk_pos = i;
 							break;
@@ -11201,6 +11288,19 @@ draw_button(struct rip_button_style *but, bool inverted)
 	}
 }
 
+static bool
+rip_field_capacity(void)
+{
+	unsigned count = 0;
+	if (rip.version != RIP_VERSION_1)
+		return true;
+	for (struct mouse_field *field = rip.mfields; field; field = field->next) {
+		if (++count >= 128)
+			return false;
+	}
+	return true;
+}
+
 static void
 add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, const char *text)
 {
@@ -11209,17 +11309,33 @@ add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, const char *te
 	char                    *label;
 	char                    *p;
 
+	if (rip.bstyle.flags.mouse && !rip_field_capacity())
+		return;
 	but = malloc(sizeof(struct rip_button_style));
+	if (but == NULL)
+		return;
 	memcpy(but, &rip.bstyle, offsetof(struct rip_button_style, box));
 	but->box.x1 = x1 + rip.viewport.sx;
 	but->box.y1 = y1 + rip.viewport.sy;
-	if (rip.bstyle.button == BUTTON_TYPE_PLAIN && rip.bstyle.width && rip.bstyle.height) {
+	if (rip.bstyle.button == BUTTON_TYPE_PLAIN && rip.bstyle.width > 0 && rip.bstyle.height > 0) {
 		but->box.x2 = but->box.x1 + rip.bstyle.width;
 		but->box.y2 = but->box.y1 + rip.bstyle.height;
 	}
 	else {
 		but->box.x2 = x2 + rip.viewport.sx;
 		but->box.y2 = y2 + rip.viewport.sy;
+	}
+	if (rip.version == RIP_VERSION_1 && but->button == BUTTON_TYPE_PLAIN) {
+		if (but->box.x1 > but->box.x2) {
+			int t = but->box.x1;
+			but->box.x1 = but->box.x2;
+			but->box.x2 = t;
+		}
+		if (but->box.y1 > but->box.y2) {
+			int t = but->box.y1;
+			but->box.y1 = but->box.y2;
+			but->box.y2 = t;
+		}
 	}
 	p = strstr(text, "<>");
 	if (p == NULL) {
@@ -11264,12 +11380,21 @@ add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, const char *te
 	but->bflags = flags;
 	but->selected = (flags & 1) != 0;
 	but->hotkey = hotkey;
+	but->highlight_hotkey = rip.version != RIP_VERSION_1 || rip_signed_word(hotkey) > 0;
 	but->template_cmd = NULL;
 	but->font_num = rip.font.num;
 	but->font_size = rip.font.size;
 	but->font_vertical = rip.font.vertical;
 	if (but->flags.mouse) {
 		mf = malloc(sizeof(*mf));
+		if (mf == NULL) {
+			free(but->command);
+			free(but->icon);
+			free(but->label);
+			free(but->template_cmd);
+			free(but);
+			return;
+		}
 		mf->data.button = but;
 		mf->type = MOUSE_FIELD_BUTTON;
 		mf->next = rip.mfields;
@@ -12342,17 +12467,37 @@ bgi_cos32(int angle_deg)
 	return bgi_sin32(angle_deg + 90);
 }
 
+/* The aspect helper sign-extends its input; the returned radius is a word. */
+static int
+rip_circle_y_radius(int radius)
+{
+	int input = rip.version == RIP_VERSION_1 ? rip_signed_word(radius) : radius;
+	double scaled;
+	int result;
+	assert_rwlock_rdlock(&vstatlock);
+	if (vstat.scrnwidth == 640 && vstat.scrnheight == 350)
+		result = input * 7750 / 10000;
+	else {
+		scaled = input * ((double)vstat.scrnwidth / vstat.scrnheight)
+		    / ((double)vstat.aspect_width / vstat.aspect_height);
+		/* Display geometry is host state, not permission for an unsafe cast. */
+		result = isfinite(scaled) && scaled >= INT_MIN && scaled <= INT_MAX ? (int)scaled : 0;
+	}
+	assert_rwlock_unlock(&vstatlock);
+	return rip.version == RIP_VERSION_1 ? (uint16_t)result : result;
+}
+
 // Compute the arc endpoint coordinate using BGI's exact integer math.
 // result = (trig_value_32 * radius) >> 16
-static int16_t
-bgi_trig_mul(int32_t trig32, int16_t radius)
+static int
+bgi_trig_mul(int32_t trig32, uint16_t radius)
 {
 	// 32x16 unsigned multiply, take high 16 bits
 	uint16_t lo = (uint16_t)(trig32 & 0xFFFF);
 	uint16_t hi = (uint16_t)((trig32 >> 16) & 0xFFFF);
 	uint32_t r1 = (uint32_t)hi * (uint16_t)radius;
 	uint32_t r2 = (uint32_t)lo * (uint16_t)radius;
-	return (int16_t)((r1 & 0xFFFF) + (r2 >> 16));
+	return rip_signed_word((uint16_t)((r1 & 0xFFFF) + (r2 >> 16)));
 }
 
 // Compute the arc clipping limit for a given angle on ellipse (a, b).
@@ -12360,8 +12505,8 @@ bgi_trig_mul(int32_t trig32, int16_t radius)
 static int
 bgi_arc_limit(int a, int b, int angle_deg)
 {
-	int16_t sx = bgi_trig_mul(bgi_cos32(angle_deg), (int16_t)a);
-	int16_t sy = -bgi_trig_mul(bgi_sin32(angle_deg), (int16_t)b);
+	int sx = bgi_trig_mul(bgi_cos32(angle_deg), (uint16_t)a);
+	int sy = rip_signed_word((uint16_t)-bgi_trig_mul(bgi_sin32(angle_deg), (uint16_t)b));
 	return bgi_metric(sx, sy);
 }
 
@@ -12572,6 +12717,10 @@ scanline_poly_fill(const struct point *pts, size_t npts)
 	if (isects == NULL)
 		return;
 
+	if (min_y < 0)
+		min_y = 0;
+	if (max_y > rip.viewport.ey - rip.viewport.sy)
+		max_y = rip.viewport.ey - rip.viewport.sy;
 	for (int y = min_y; y <= max_y; y++) {
 		int nisects = 0;
 
@@ -12599,7 +12748,7 @@ scanline_poly_fill(const struct point *pts, size_t npts)
 			if (y < y0 || y >= y1)
 				continue;
 
-			int ix = x0 + (long)(y - y0) * (x1 - x0) / (y1 - y0);
+			int ix = x0 + (int64_t)(y - y0) * (x1 - x0) / (y1 - y0);
 
 			int j = nisects;
 			while (j > 0 && isects[j - 1] > ix) {
@@ -12610,10 +12759,8 @@ scanline_poly_fill(const struct point *pts, size_t npts)
 			nisects++;
 		}
 
-		for (int k = 0; k + 1 < nisects; k += 2) {
-			for (int fx = isects[k]; fx <= isects[k + 1]; fx++)
-				fill_pixel(fx, y);
-		}
+		for (int k = 0; k + 1 < nisects; k += 2)
+			fill_span(isects[k], isects[k + 1], y);
 	}
 
 	free(isects);
@@ -12629,17 +12776,9 @@ ellipse_plot(int xc, int yc, int x, int y, int a, int b, int sa, int ea,
 		// BGI draws fill FIRST: two horizontal spans per
 		// stepping point, dispatched as patterned bar fills.
 		if (fill) {
-			int fx;
-			if (y == 0) {
-				for (fx = xc - x; fx <= xc + x; fx++)
-					fill_pixel(fx, yc);
-			}
-			else {
-				for (fx = xc - x; fx <= xc + x; fx++) {
-					fill_pixel(fx, yc + y);
-					fill_pixel(fx, yc - y);
-				}
-			}
+			fill_span(xc - x, xc + x, yc + y);
+			if (y != 0)
+				fill_span(xc - x, xc + x, yc - y);
 		}
 	}
 	else {
@@ -12694,16 +12833,16 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 	bool   inv = (end_limit <= start_limit);
 
 	// Scale by 100 to maintain precision without fractions.
-	long   bigger = (a > b) ? a : b;
-	long   a_sq_100 = bigger * bigger * 100;
-	long   step = a_sq_100 / a / a;
-	long   step_const = a_sq_100 / b / b;
-	long   temp = step_const * b;
-	long   error = temp * b - a_sq_100;
-	long   delta = 2 * temp;
-	long   incr = 0;
-	long   incr_accum = 0;
-	long   threshold = 0;
+	int64_t bigger = (a > b) ? a : b;
+	int64_t a_sq_100 = bigger * bigger * 100;
+	int64_t step = a_sq_100 / a / a;
+	int64_t step_const = a_sq_100 / b / b;
+	int64_t temp = step_const * b;
+	int64_t error = temp * b - a_sq_100;
+	int64_t delta = 2 * temp;
+	int64_t incr = 0;
+	int64_t incr_accum = 0;
+	int64_t threshold = 0;
 
 	// BGI runs two passes: fill first, then border on top.
 	// For thick unfilled arcs, BGI skips Bresenham and only
@@ -13162,6 +13301,15 @@ rip_bezier(int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4, int c
 	free(targets);
 }
 
+static int
+parse_poly_field(const char *args, size_t length, size_t offset, int width)
+{
+	int consumed;
+	if (offset >= length)
+		return -1;
+	return parse_mega(args + offset, width, &consumed);
+}
+
 static void
 rip_poly_bezier(const char *args, bool filled, bool closed)
 {
@@ -13176,19 +13324,23 @@ rip_poly_bezier(const char *args, bool filled, bool closed)
 	int      ch = 4;
 	bool     last_was_bez = false;
 
-	int _c;
-	num = parse_mega(&args[0], 2, &_c);
+	size_t length = strlen(args);
+	num = parse_poly_field(args, length, 0, 2);
 	if (num < 0)
 		return;
-	count = parse_mega(&args[2], 2, &_c);
+	count = parse_poly_field(args, length, 2, 2);
 	if (count <= 0)
 		return;
-	sx = parse_mega(&args[5], 2, &_c);
+	sx = parse_poly_field(args, length, 5, 2);
 	if (sx < 0)
 		return;
-	sy = parse_mega(&args[7], 2, &_c);
+	if (rip.version == RIP_VERSION_1)
+		sx = rip_signed_word(sx);
+	sy = parse_poly_field(args, length, 7, 2);
 	if (sy < 0)
 		return;
+	if (rip.version == RIP_VERSION_1)
+		sy = rip_signed_word(sy);
 	lx = sx;
 	ly = sy;
 
@@ -13196,19 +13348,23 @@ rip_poly_bezier(const char *args, bool filled, bool closed)
 		fg |= 0x40000000;
 
 	for (i = 0; i < num; i++) {
-		type = parse_mega(&args[ch], 1, &_c);
+		type = parse_poly_field(args, length, ch, 1);
 		ch++;
 		switch (type) {
 			case -1: // Finished?
 				printf("Stopping at %d of %d\n", i, num);
-				break;
+				return;
 			case 0:  // Straight
-				x1 = parse_mega(&args[ch], 2, &_c);
+				x1 = parse_poly_field(args, length, ch, 2);
 				if (x1 == -1)
 					return;
-				y1 = parse_mega(&args[ch + 2], 2, &_c);
+				if (rip.version == RIP_VERSION_1)
+					x1 = rip_signed_word(x1);
+				y1 = parse_poly_field(args, length, ch + 2, 2);
 				if (y1 == -1)
 					return;
+				if (rip.version == RIP_VERSION_1)
+					y1 = rip_signed_word(y1);
 				ch += 4;
 				if (!last_was_bez)
 					set_line(lx, ly, x1, y1, fg, rip.line_pattern, rip.line_width);
@@ -13220,36 +13376,52 @@ rip_poly_bezier(const char *args, bool filled, bool closed)
 			case 2: // Other bezier.
 			case 5: // ??? yet another bezier...
 			case 6: // ??? yet another bezier...
-				x1 = parse_mega(&args[ch], 2, &_c);
+				x1 = parse_poly_field(args, length, ch, 2);
 				if (x1 == -1)
 					return;
-				y1 = parse_mega(&args[ch + 2], 2, &_c);
+				if (rip.version == RIP_VERSION_1)
+					x1 = rip_signed_word(x1);
+				y1 = parse_poly_field(args, length, ch + 2, 2);
 				if (y1 == -1)
 					return;
-				x2 = parse_mega(&args[ch + 4], 2, &_c);
+				if (rip.version == RIP_VERSION_1)
+					y1 = rip_signed_word(y1);
+				x2 = parse_poly_field(args, length, ch + 4, 2);
 				if (x2 == -1)
 					return;
-				y2 = parse_mega(&args[ch + 6], 2, &_c);
+				if (rip.version == RIP_VERSION_1)
+					x2 = rip_signed_word(x2);
+				y2 = parse_poly_field(args, length, ch + 6, 2);
 				if (y2 == -1)
 					return;
-				x3 = parse_mega(&args[ch + 8], 2, &_c);
+				if (rip.version == RIP_VERSION_1)
+					y2 = rip_signed_word(y2);
+				x3 = parse_poly_field(args, length, ch + 8, 2);
 				if (x3 == -1)
 					return;
-				y3 = parse_mega(&args[ch + 10], 2, &_c);
+				if (rip.version == RIP_VERSION_1)
+					x3 = rip_signed_word(x3);
+				y3 = parse_poly_field(args, length, ch + 10, 2);
 				if (y3 == -1)
 					return;
+				if (rip.version == RIP_VERSION_1)
+					y3 = rip_signed_word(y3);
 				ch += 12;
-				if (args[ch] == 0) {
+				if ((size_t)ch >= length) {
 					x4 = sx;
 					y4 = sy;
 				}
 				else {
-					x4 = parse_mega(&args[ch + 1], 2, &_c);
+					x4 = parse_poly_field(args, length, ch + 1, 2);
 					if (x4 == -1)
 						return;
-					y4 = parse_mega(&args[ch + 3], 2, &_c);
+					if (rip.version == RIP_VERSION_1)
+						x4 = rip_signed_word(x4);
+					y4 = parse_poly_field(args, length, ch + 3, 2);
 					if (y4 == -1)
 						return;
+					if (rip.version == RIP_VERSION_1)
+						y4 = rip_signed_word(y4);
 				}
 				rip_bezier(x1, y1, x2, y2, x3, y3, x4, y4, count, fg);
 				lx = x4;
@@ -13268,6 +13440,255 @@ rip_poly_bezier(const char *args, bool filled, bool closed)
 }
 
 #define ADJUST_LIMIT(name, var) if (var < min ## name) min ## name = var; if (var > max ## name) max ## name = var;
+
+
+/* Screen copy, independent of the graphics viewport, drawing mode and
+ * clipboard. RIPv1 follows RIPterm 1.54's 0c16:0623 byte geometry; RIPv3
+ * uses the documented outward X alignment and inclusive Y endpoints. */
+static void
+rip_copy_region(const int *p)
+{
+	int left = p[0], top = p[1], right = p[2], bottom = p[3];
+	int dest = p[5];
+	int original_dy, width, height;
+	int sx, sy, ex, ey, dy;
+	struct ciolib_pixels *pixels;
+
+	if (left > right) {
+		int t = left;
+		left = right;
+		right = t;
+	}
+	if (top > bottom) {
+		int t = top;
+		top = bottom;
+		bottom = t;
+	}
+	original_dy = bottom - top;
+	if (rip.version == RIP_VERSION_1) {
+		if (original_dy == 0)
+			return;
+		left -= left % 8;
+		if (right % 8 != 0)
+			left += 8 - right % 8;
+		left -= p[4] % 8;
+	}
+	if (rip.x_dim <= 0 || rip.y_dim <= 0 || rip.x_max <= 0 || rip.y_max <= 0)
+		return;
+	/* Clamp before forming bitmap dimensions or addresses. */
+	if (left < 0)
+		left = 0;
+	if (right < 0)
+		right = 0;
+	if (top < 0)
+		top = 0;
+	if (bottom < 0)
+		bottom = 0;
+	if (dest < 0)
+		dest = 0;
+	if (left >= rip.x_dim)
+		left = rip.x_dim - 1;
+	if (right >= rip.x_dim)
+		right = rip.x_dim - 1;
+	if (top >= rip.y_dim)
+		top = rip.y_dim - 1;
+	if (bottom >= rip.y_dim)
+		bottom = rip.y_dim - 1;
+	if (dest >= rip.y_dim)
+		dest = rip.y_dim - 1;
+
+	height = bottom - top + 1;
+	if (rip.version == RIP_VERSION_1) {
+		/* The reference checks the original Y difference, before clamping,
+		 * and its downward helper sorts the adjusted X endpoints again. */
+		if (dest + original_dy - 1 >= rip.y_dim)
+			return;
+		if (dest > top && left > right) {
+			int t = left;
+			left = right;
+			right = t;
+		}
+		if (left > right)
+			return;
+		width = (right - left + 1) / 8 * 8;
+		left = left / 8 * 8;
+		/* Its loose bottom check can reach non-display video memory.
+		 * Copy the visible part without accessing beyond our bitmap. */
+		if (height > rip.y_dim - dest)
+			height = rip.y_dim - dest;
+	}
+	else {
+		if (height > rip.y_dim - dest)
+			return;
+		left = left / 8 * 8;
+		right = (right + 7) / 8 * 8;
+		if (right >= rip.x_dim)
+			right = rip.x_dim;
+		width = right - left;
+	}
+	if (width <= 0 || height <= 0 || dest == top)
+		return;
+	right = left + width - 1;
+	bottom = top + height - 1;
+	sx = map_rip_x(left);
+	ex = map_rip_x(right);
+	sy = map_rip_y(top);
+	ey = map_rip_y(bottom);
+	dy = map_rip_y(dest);
+	/* Snapshot both blink buffers before writing, for either overlap
+	 * direction. This does not use or replace the RIP image clipboard. */
+	pixels = getpixels(sx, sy, ex, ey, false);
+	if (pixels == NULL)
+		return;
+	if (rip.y_max == rip.y_dim)
+		setpixels(sx, dy, ex, dy + pixels->height - 1, 0, 0, 0, 0, pixels, NULL);
+	else {
+		/* A reduced display can map different logical rows onto the same
+		 * physical row. Use the same mapping as other RIP primitives. */
+		for (int row = 0; row < height; row++) {
+			int source_row = map_rip_y(top + row) - sy;
+			int dest_row = map_rip_y(dest + row);
+			setpixels(sx, dest_row, ex, dest_row, 0, source_row, 0, 0, pixels, NULL);
+		}
+	}
+	freepixels(pixels);
+}
+
+/* Word roles are explicit: coordinates/angles become signed, while indexes,
+ * enums and flags retain their unsigned words until checked by the consumer. */
+static bool
+rip_v1_arguments(int level, int cmd, int *p, int n)
+{
+	static const struct { int level, cmd, first, count; } coordinates[] = {
+		{0, '@', 0, 2}, {0, 'm', 0, 2}, {0, 'X', 0, 2}, {0, 'j', 0, 2},
+		{0, 'A', 0, 4}, {0, 'I', 0, 4}, {0, 'O', 0, 4}, {0, 'V', 0, 4}, {0, 'i', 0, 4},
+		{0, 'C', 0, 2}, {0, 'o', 0, 2}, {0, 'F', 0, 2},
+		{0, 'B', 0, 4}, {0, 'K', 0, 4}, {0, 'L', 0, 4}, {0, 'R', 0, 4}, {0, 'v', 0, 4},
+		{0, 'P', 1, 511}, {0, 'p', 1, 511}, {0, 'l', 1, 511}, {0, 'Z', 0, 9},
+		{1, 'C', 0, 4}, {1, 'T', 0, 4}, {1, 'U', 0, 4}, {1, 'M', 1, 4},
+		{1, 'G', 0, 6},
+		{1, 'I', 0, 2}, {1, 'P', 0, 2},
+	};
+	if (level == 0) {
+		switch (cmd) {
+			case '=':
+				for (int i = 0; i < n && i < 3; i++)
+					rip.requested.line[i] = (uint16_t)p[i];
+				break;
+			case 'c':
+				if (n)
+					p[0] &= 15;
+				break;
+			case 'F':
+				if (n >= 3)
+					p[2] &= 15;
+				break;
+			case 'S': case 's':
+				for (int i = 0; i < n && i < 9; i++)
+					rip.requested.fill[i] = (uint16_t)p[i];
+				if (cmd == 'S' && n >= 2)
+					p[1] &= 15;
+				if (cmd == 's' && n >= 9 && p[8] > 15)
+					return false;
+				break;
+			case 'Q':
+				for (int i = 0; i < n && i < 16; i++) {
+					rip.requested.palette[i] = (uint16_t)p[i];
+					p[i] = (uint8_t)p[i];
+				}
+				break;
+			case 'a':
+				if (n >= 2) {
+					if (p[0] > 15)
+						return false;
+					rip.requested.palette[p[0]] = (uint16_t)p[1];
+					p[1] = (uint8_t)p[1];
+				}
+				break;
+			case 'Y':
+				for (int i = 0; i < n && i < 5; i++)
+					rip.requested.font[i] = (uint16_t)p[i];
+				if (n >= 3) {
+					if (p[0] > 10) {
+						p[0] = 0;
+						p[2] = 1;
+					}
+					else {
+						p[2] = (uint8_t)p[2];
+						/* Keep this renderer's metric-table indexes in 1..10. */
+						if (p[2] < 1 || p[2] > 10)
+							p[2] = rip.font.size;
+					}
+					p[1] = (uint8_t)p[1];
+				}
+				break;
+			case 'w':
+				for (int i = 0; i < n && i < 6; i++)
+					rip.requested.text_window[i] = (uint16_t)p[i];
+				for (int i = 0; i < n && i < 4; i++) {
+					p[i] = rip_signed_byte(p[i]);
+					if (i < 2 && p[i] < 0)
+						p[i] = 0;
+				}
+				if (n >= 6) {
+					p[4] = (uint8_t)p[4] != 0;
+					if (p[5] >= 5)
+						p[5] = 0;
+					/* RIPterm derives inclusive dimensions from signed byte
+					 * differences, even for reversed or negative end bytes.
+					 * rip_text_window then bounds the host terminal margins. */
+					p[2] = p[0] + abs(rip_signed_byte(p[2] - p[0]));
+					p[3] = p[1] + abs(rip_signed_byte(p[3] - p[1]));
+				}
+				break;
+			case 'g':
+				for (int i = 0; i < n && i < 2; i++) {
+					rip.requested.cursor[i] = (uint16_t)p[i];
+					p[i] = rip_signed_byte(p[i]);
+				}
+				break;
+			case 'v':
+				for (int i = 0; i < n && i < 4; i++)
+					rip.requested.viewport[i] = (uint16_t)p[i];
+				break;
+			case 'P': case 'p': case 'l':
+				if (n < 3 || p[0] < 2 || p[0] > (n - 1) / 2 || ((n - 1) & 1))
+					return false;
+				break;
+		}
+	}
+	else if (level == 1) {
+		if (cmd == 'B' && n >= 17) {
+			for (int i = 0; i < 14; i++)
+				rip.requested.button[i] = (uint16_t)p[i];
+			p[0] = rip_signed_word(p[0]);
+			p[1] = rip_signed_word(p[1]);
+			for (int i = 5; i <= 9; i++)
+				p[i] &= 15;
+			p[12] &= 15;
+			p[13] &= 15;
+		}
+		if (cmd == 'M' && n >= 7) {
+			if (p[0] > 127)
+				return false;
+			p[5] = p[5] != 0;
+			p[6] = p[6] != 0;
+		}
+		if ((cmd == 'I' || cmd == 'P') && n >= 3) {
+			p[2] = (uint8_t)p[2];
+			if (p[2] > 4)
+				return false;
+		}
+	}
+	for (size_t j = 0; j < sizeof(coordinates) / sizeof(*coordinates); j++) {
+		if (coordinates[j].level == level && coordinates[j].cmd == cmd) {
+			for (int i = coordinates[j].first; i < n && i < coordinates[j].first + coordinates[j].count; i++)
+				p[i] = rip_signed_word(p[i]);
+			break;
+		}
+	}
+	return true;
+}
 
 static bool
 do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
@@ -13291,6 +13712,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 	if (args == NULL)
 		return false;
 
+	if (rip.version == RIP_VERSION_1 && level == 9 && cmd == '\x1b' && strlen(args) > 1031)
+		args[1031] = 0; /* Eight numeric bytes, then at most 1023 text bytes. */
+
 	/*
 	 * Generic pre-validation: look up the command descriptor and
 	 * parse all numeric fields.  On error, bail (matches RIPterm).
@@ -13313,6 +13737,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 				return false;
 			}
 			if (text_start >= 0) {
+				if (rip.version == RIP_VERSION_1 && has_text && strlen(args + text_start) > 1023)
+					args[text_start + 1023] = 0;
 				if (has_text && args[text_start] == '\0')
 					text = " ";
 				else
@@ -13321,6 +13747,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 		}
 	}
 
+	if (rip.version == RIP_VERSION_1 && !rip_v1_arguments(level, cmd, parsed, nparsed)) {
+		free(args);
+		return false;
+	}
 	switch (level) {
 		case 0:
 			switch (sublevel) {
@@ -13512,19 +13942,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if (nparsed < 5)
 								break;
-							assert_rwlock_rdlock(&vstatlock);
-							if ((vstat.scrnwidth == 640) && (vstat.scrnheight == 350)) {
-                                                                // Detect EGA mode and use the same value as RIPterm
-                                                                // did.
-								arg3 = (parsed[4] * 7750 / 10000);
-							}
-							else {
-								arg3 = parsed[4]
-								    * ((double)vstat.scrnwidth / vstat.scrnheight)
-								    / ((double)vstat.aspect_width
-								    / vstat.aspect_height);
-							}
-							assert_rwlock_unlock(&vstatlock);
+							arg3 = rip_circle_y_radius(parsed[4]);
 							full_ellipse(parsed[0], parsed[1], parsed[2], parsed[3], parsed[4], arg3, false,
 							    map_rip_color(rip.color));
 							break;
@@ -13574,19 +13992,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if (nparsed < 3)
 								break;
-							assert_rwlock_rdlock(&vstatlock);
-							if ((vstat.scrnwidth == 640) && (vstat.scrnheight == 350)) {
-                                                                // Detect EGA mode and use the same value as RIPterm
-                                                                // did.
-								arg3 = (parsed[2] * 7750 / 10000);
-							}
-							else {
-								arg3 = parsed[2]
-								    * ((double)vstat.scrnwidth / vstat.scrnheight)
-								    / ((double)vstat.aspect_width
-								    / vstat.aspect_height);
-							}
-							assert_rwlock_unlock(&vstatlock);
+							arg3 = rip_circle_y_radius(parsed[2]);
 							full_ellipse(parsed[0], parsed[1], 0, 360, parsed[2], arg3, false,
 							    map_rip_color(rip.color));
 							break;
@@ -13631,7 +14037,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (nparsed < 3)
 								break;
-							if ((parsed[0] > (rip.viewport.ex - rip.viewport.sx))
+							if (parsed[0] < 0 || parsed[1] < 0
+							    || (parsed[0] > (rip.viewport.ex - rip.viewport.sx))
 							    || (parsed[1] > (rip.viewport.ey - rip.viewport.sy)))
 								break;
 							if (parsed[2] > 255)
@@ -13736,19 +14143,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								parsed[2] = parsed[3];
 								parsed[3] = tmp;
 							}
-							assert_rwlock_rdlock(&vstatlock);
-							if ((vstat.scrnwidth == 640) && (vstat.scrnheight == 350)) {
-                                                                // Detect EGA mode and use the same value as RIPterm
-                                                                // did.
-								arg3 = (parsed[4] * 7750 / 10000);
-							}
-							else {
-								arg3 = parsed[4]
-								    * ((double)vstat.scrnwidth / vstat.scrnheight)
-								    / ((double)vstat.aspect_width
-								    / vstat.aspect_height);
-							}
-							assert_rwlock_unlock(&vstatlock);
+							arg3 = rip_circle_y_radius(parsed[4]);
 							fg = map_rip_color(rip.color);
 
 							// RIPterm splits pie slices at quadrant
@@ -13803,11 +14198,11 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							// start and end angles (RIPterm draws
 							// these separately, after all sub-arcs).
 							if (rip.borders) {
-								int ex = parsed[0] + bgi_trig_mul(bgi_cos32(parsed[2]), (int16_t)parsed[4]);
-								int ey = parsed[1] - bgi_trig_mul(bgi_sin32(parsed[2]), (int16_t)arg3);
+								int ex = parsed[0] + bgi_trig_mul(bgi_cos32(parsed[2]), (uint16_t)parsed[4]);
+								int ey = parsed[1] - bgi_trig_mul(bgi_sin32(parsed[2]), (uint16_t)arg3);
 								draw_line(parsed[0], parsed[1], ex, ey);
-								ex = parsed[0] + bgi_trig_mul(bgi_cos32(parsed[3]), (int16_t)parsed[4]);
-								ey = parsed[1] - bgi_trig_mul(bgi_sin32(parsed[3]), (int16_t)arg3);
+								ex = parsed[0] + bgi_trig_mul(bgi_cos32(parsed[3]), (uint16_t)parsed[4]);
+								ey = parsed[1] - bgi_trig_mul(bgi_sin32(parsed[3]), (uint16_t)arg3);
 								draw_line(parsed[0], parsed[1], ex, ey);
 							}
 							break;
@@ -13910,6 +14305,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							fg = map_rip_color(rip.color);
 							{
 								int npoints = parsed[0];
+								if (npoints < 2 || npoints > (nparsed - 1) / 2)
+									break;
 								/*
 								 * The RIP handler appends a
 								 * closing copy of the first
@@ -13953,7 +14350,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (nparsed < 16)
 								break;
 							for (i = 0; i < 16; i++) {
-								if ((parsed[i] < 0) || (parsed[i] > 63))
+								if (rip.version != RIP_VERSION_1 && (parsed[i] < 0 || parsed[i] > 63))
 									break;
 								curr_ega_palette[i] = parsed[i];
 							}
@@ -14220,7 +14617,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (nparsed < 9)
 								break;
 							if (parsed[8] <= 0)
-								parsed[8] = 0x3FC; // RIPterm bug: residual DX from COM1 MCR I/O
+								parsed[8] = rip.version == RIP_VERSION_1 ? 200 : 0x3FC;
 							rip_bezier(parsed[0],
 							    parsed[1],
 							    parsed[2],
@@ -14253,14 +14650,14 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if (parsed[0] > 15)
 								break;
-							if (parsed[1] > 63)
+							if (rip.version != RIP_VERSION_1 && parsed[1] > 63)
 								break;
 							curr_ega_palette[parsed[0]] = parsed[1];
 							attr2palette(parsed[0], &fg, NULL);
 							setpalette(fg,
-							    ega_palette[parsed[1]][0],
-							    ega_palette[parsed[1]][1],
-							    ega_palette[parsed[1]][2]);
+							    ega_palette[parsed[1] & 63][0],
+							    ega_palette[parsed[1] & 63][1],
+							    ega_palette[parsed[1] & 63][2]);
 
                                                         // TODO: Extended palette.
 							if (parsed[0] < 16)
@@ -14521,11 +14918,11 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							// trig-computed endpoints of the ORIGINAL
 							// start and end angles.
 							if (rip.borders) {
-								int ex = parsed[0] + bgi_trig_mul(bgi_cos32(parsed[2]), (int16_t)parsed[4]);
-								int ey = parsed[1] - bgi_trig_mul(bgi_sin32(parsed[2]), (int16_t)parsed[5]);
+								int ex = parsed[0] + bgi_trig_mul(bgi_cos32(parsed[2]), (uint16_t)parsed[4]);
+								int ey = parsed[1] - bgi_trig_mul(bgi_sin32(parsed[2]), (uint16_t)parsed[5]);
 								draw_line(parsed[0], parsed[1], ex, ey);
-								ex = parsed[0] + bgi_trig_mul(bgi_cos32(parsed[3]), (int16_t)parsed[4]);
-								ey = parsed[1] - bgi_trig_mul(bgi_sin32(parsed[3]), (int16_t)parsed[5]);
+								ex = parsed[0] + bgi_trig_mul(bgi_cos32(parsed[3]), (uint16_t)parsed[4]);
+								ey = parsed[1] - bgi_trig_mul(bgi_sin32(parsed[3]), (uint16_t)parsed[5]);
 								draw_line(parsed[0], parsed[1], ex, ey);
 							}
 							break;
@@ -14571,6 +14968,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							{
 								int npoints = parsed[0];
+								if (npoints < 2 || npoints > (nparsed - 1) / 2)
+									break;
 								for (i = 1; i < npoints; i++) {
 									draw_line(parsed[1 + (i - 1) * 2],
 									    parsed[2 + (i - 1) * 2],
@@ -14593,9 +14992,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (nparsed < 2)
 								break;
-							if (parsed[0] > rip.viewport.ex - rip.viewport.sx + 1)
+							if (rip.version != RIP_VERSION_1 && parsed[0] > rip.viewport.ex - rip.viewport.sx + 1)
 								break;
-							if (parsed[1] > rip.viewport.ey - rip.viewport.sy + 1)
+							if (rip.version != RIP_VERSION_1 && parsed[1] > rip.viewport.ey - rip.viewport.sy + 1)
 								break;
 							rip.x = parsed[0];
 							rip.y = parsed[1];
@@ -14646,6 +15045,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							{
 								int npoints = parsed[0];
+								if (npoints < 2 || npoints > (nparsed - 1) / 2)
+									break;
 								/*
 								 * The RIP handler appends a
 								 * closing copy of the first
@@ -14782,11 +15183,29 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								/* Disable viewport */
 							}
 							else {
+								if (rip.version == RIP_VERSION_1) {
+									if (parsed[0] > parsed[2]) {
+										int t = parsed[0];
+										parsed[0] = parsed[2];
+										parsed[2] = t;
+									}
+									if (parsed[1] > parsed[3]) {
+										int t = parsed[1];
+										parsed[1] = parsed[3];
+										parsed[3] = t;
+									}
+									if (parsed[0] >= rip.x_dim)
+										parsed[0] = rip.x_dim - 1;
+									if (parsed[1] >= rip.y_dim)
+										parsed[1] = rip.y_dim - 1;
+								}
 								if (parsed[2] >= rip.x_dim)
 									parsed[2] = rip.x_dim - 1;
 								if (parsed[3] >= rip.y_dim)
 									parsed[3] = rip.y_dim - 1;
-								if (parsed[0] >= parsed[2] || parsed[1] >= parsed[3])
+								if (parsed[0] < 0 || parsed[1] < 0
+								    || parsed[0] > parsed[2] || parsed[1] > parsed[3]
+								    || (rip.version != RIP_VERSION_1 && (parsed[0] == parsed[2] || parsed[1] == parsed[3])))
 									break;
 							}
 							rip.viewport.sx = parsed[0];
@@ -15790,12 +16209,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (nparsed < 15)
 								break;
-							if ((parsed[2] < 0) || (parsed[2] > LABEL_LOC_BELOW)) // Orient
+							if (rip.version != RIP_VERSION_1 && ((parsed[2] < 0) || (parsed[2] > LABEL_LOC_BELOW))) // Orient
 								break;
 							arg1 = parsed[3]
 							    & (BUTTON_FLAG1_CLIPBOARD | BUTTON_FLAG1_ICON
 							    | BUTTON_FLAG1_PLAIN); // Flags
-							if (arg1 & (arg1 - 1))
+							if (rip.version != RIP_VERSION_1 && (arg1 & (arg1 - 1)))
 								break;
 							if (parsed[5] > 255)         // dfore
 								break;
@@ -15807,7 +16226,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if (parsed[9] > 255)         // surface
 								break;
-							if (parsed[10] > 255)        // group_no
+							if (rip.version != RIP_VERSION_1 && parsed[10] > 255) // group_no
 								break;
 							if (parsed[12] > 255)        // uline_col
 								break;
@@ -16312,6 +16731,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * by
                                                          * TeleGrafix.
                                                          */
+							handled = true;
+							if (nparsed >= 6)
+								rip_copy_region(parsed);
 							break;
 						case 'I': // RIP_LOAD_ICON !|1I <x> <y> <mode> <clipboard> <res>
                                                           // <filename>
@@ -16465,10 +16887,24 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							/* parsed: [0]=num [1]=x0 [2]=y0 [3]=x1 [4]=y1
 							 *         [5]=clk [6]=clr [7..8]=res */
-							if (parsed[3] > rip.viewport.ex - rip.viewport.sx)
+							if (!rip_field_capacity())
 								break;
-							if (parsed[4] > rip.viewport.ey - rip.viewport.sy)
-								break;
+							if (rip.version == RIP_VERSION_1) {
+								if (parsed[1] > rip.viewport.ex - rip.viewport.sx)
+									parsed[1] = rip.viewport.ex - rip.viewport.sx;
+								if (parsed[2] > rip.viewport.ey - rip.viewport.sy)
+									parsed[2] = rip.viewport.ey - rip.viewport.sy;
+								if (parsed[3] > rip.viewport.ex - rip.viewport.sx)
+									parsed[3] = rip.viewport.ex - rip.viewport.sx;
+								if (parsed[4] > rip.viewport.ey - rip.viewport.sy)
+									parsed[4] = rip.viewport.ey - rip.viewport.sy;
+							}
+							else {
+								if (parsed[3] > rip.viewport.ex - rip.viewport.sx)
+									break;
+								if (parsed[4] > rip.viewport.ey - rip.viewport.sy)
+									break;
+							}
 							if (parsed[5] > 1 || parsed[6] > 1)
 								break;
 							{
@@ -16536,6 +16972,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							}
 							if (rip.clipboard) {
+								if (parsed[0] + rip.viewport.sx < 0 || parsed[1] + rip.viewport.sy < 0)
+									break;
 								if (parsed[0] + rip.viewport.sx + rip.clipboard->width - 1
 								    > rip.viewport.ex)
 									break;
@@ -17185,13 +17623,13 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          *        the very next line.
                                                          */
 							handled = true;
-							if (parse_megas(args, &arg1, 1, &arg2, 1, &arg3, 2, &arg4, 4, NULL))
+							if (strlen(args) < 8 || parse_megas(args, &arg1, 1, &arg2, 1, &arg3, 2, &arg4, 4, NULL))
 								break;
-							if (arg1 > 1)
+							if (rip.version != RIP_VERSION_1 && arg1 > 1)
 								break;
 							if ((arg2 == 4) || (arg2 > 7))
 								break;
-							if ((arg3 == 0) || (arg3 == 5))
+							if ((arg3 == 0) || (arg3 == 5) || (rip.version == RIP_VERSION_1 && arg3 > 5))
 								break;
 							if (strstr(&args[8], ".."))
 								break;

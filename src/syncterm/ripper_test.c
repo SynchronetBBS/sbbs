@@ -529,6 +529,415 @@ test_interleaving_capacity(void)
 	}
 }
 
+/* Literal values below come from RIP154_PARSER.adoc, rather than from the
+ * decoder under test. Exercise the same words through descriptors and wire. */
+static void
+test_words(void)
+{
+	static const struct { const char *bytes; int width, word, consumed; } cases[] = {
+		{"-A", 2, 65526, 2}, {"A-", 2, 10, 2}, {"0-", 2, 0, 2},
+		{"-001", 4, 65535, 4}, {"1EKF", 4, 65535, 4}, {"1EKG", 4, 0, 4},
+		{"1eKf", 4, 65535, 4}, {"-", 1, 0, 1}, {"-", 2, 0, 1},
+		{"A-5", 3, 10, 3}, {"--A", 3, 0, 3}, {"F", 2, 15, 1},
+		{"F|", 2, 15, 1}, {"ZZZZZ", 5, 41983, 5},
+	};
+	static const char *bad[] = {"", "|", "?", "A?", "A-?", "\x80", "A\xff"};
+	int parsed[1025], text_start, consumed;
+	bool has_text;
+	char many[1201];
+	reset(RIP_VERSION_1);
+	for (size_t i = 0; i < sizeof(cases) / sizeof(*cases); i++) {
+		int word = parse_mega(cases[i].bytes, cases[i].width, &consumed);
+		assert(word == cases[i].word && consumed == cases[i].consumed);
+	}
+	for (size_t i = 0; i < sizeof(bad) / sizeof(*bad); i++) {
+		assert(parse_mega(bad[i], 3, &consumed) == -1);
+		assert(consumed == 0);
+	}
+	assert(rip_signed_word(0x7fff) == 32767);
+	assert(rip_signed_word(0x8000) == -32768);
+	assert(rip_signed_word(0xffff) == -1);
+	assert(parse_rip_args("0F", "2#2#", parsed, 1025, &text_start, &has_text) == -1);
+	assert(parse_rip_args("0FF", "2#2#", parsed, 1025, &text_start, &has_text) == 2);
+	assert(parsed[0] == 15 && parsed[1] == 15 && text_start == 3);
+	assert(parse_rip_args("-001", "4#", parsed, 1025, &text_start, &has_text) == 1);
+	assert(parsed[0] == 65535);
+	/* Arbitrary suffixes of fixed descriptors are not additional fields. */
+	assert(parse_rip_args("0F?", "2#", parsed, 1025, &text_start, &has_text) == 1);
+	assert(text_start == 2);
+	memset(many, '0', 1200);
+	many[1200] = 0;
+	parsed[511] = 0x12345678;
+	assert(parse_rip_args(many, "+2#", parsed, 1025, &text_start, &has_text) == 511);
+	assert(text_start == 1200 && parsed[511] == 0x12345678);
+	/* Scan and validate even fields which cannot be retained. */
+	many[1199] = '?';
+	assert(parse_rip_args(many, "+2#", parsed, 1025, &text_start, &has_text) == -1);
+	many[1199] = '0';
+	reset(RIP_VERSION_3);
+	assert(parse_mega("-A", 2, &consumed) == 10);
+	assert(parse_mega("A-", 2, &consumed) == 360);
+	assert(parse_mega("1EKG", 4, &consumed) == 65536);
+	assert(parse_rip_args(many, "+2#", parsed, 1025, &text_start, &has_text) == 600);
+}
+
+static void
+feed_split(const char *wire, size_t split)
+{
+	size_t length = strlen(wire);
+	if (split <= length) {
+		feed(wire, split);
+		feed(wire + split, length - split);
+	}
+	else {
+		for (size_t i = 0; i < length; i++)
+			feed(wire + i, 1);
+	}
+}
+
+static void
+assert_pixel(int x, int y, int color)
+{
+	struct ciolib_pixels *p = getpixels(x, y, x, y, false);
+	assert(p && p->pixels[0] == map_rip_color(color) && p->pixelsb[0] == map_rip_color(color));
+	freepixels(p);
+}
+
+static void
+test_word_consumers(void)
+{
+	static const char *patterns[] = {"-001", "1EKF", "1eKf", "1EKG"};
+	static const char *colors[] = {"-1", "-A", "A-", "0-", "F"};
+	static const int expected[] = {15, 6, 10, 0, 15};
+	char wire[1200];
+	for (size_t i = 0; i < sizeof(patterns) / sizeof(*patterns); i++) {
+		snprintf(wire, sizeof(wire), "!|=04%s01|m-A0-\r\n", patterns[i]);
+		for (size_t split = 0; split <= strlen(wire) + 1; split++) {
+			reset(RIP_VERSION_1);
+			feed_split(wire, split);
+			assert(rip.line_style == 4 && rip.line_width == 1);
+			assert(rip.line_pattern == (i == 3 ? 0 : 0xffff));
+			assert(rip.x == -10 && rip.y == 0);
+			assert(wire_text.length == 0);
+		}
+	}
+	for (size_t i = 0; i < sizeof(colors) / sizeof(*colors); i++) {
+		snprintf(wire, sizeof(wire), "!|c%s\r\n", colors[i]);
+		check_wire("word colour", RIP_VERSION_1, wire, "", "", expected[i]);
+	}
+	reset(RIP_VERSION_1);
+	assert(do_rip_command(0, 0, '=', "04-00101"));
+	assert(do_rip_command(0, 0, '=', "-1000001"));
+	assert(rip.requested.line[0] == 65535 && rip.line_style == 4 && rip.line_pattern == 65535);
+	assert(do_rip_command(0, 0, '=', "000000-1"));
+	assert(rip.requested.line[2] == 65535 && rip.line_style == 4 && rip.line_width == 1);
+	assert(do_rip_command(0, 0, 'S', "01-1"));
+	assert(rip.fill_style == 1 && rip.fill_color == 15);
+	assert(do_rip_command(0, 0, 'S', "-101"));
+	assert(rip.requested.fill[0] == 65535 && rip.fill_style == 1 && rip.fill_color == 15);
+	assert(do_rip_command(0, 0, 's', "-1-A00FF000000000F"));
+	assert(rip.fill_pattern[0] == 255 && rip.fill_pattern[1] == 246 && rip.fill_pattern[3] == 43);
+	assert(!do_rip_command(0, 0, 's', "0000000000000000-1"));
+	assert(rip.requested.fill[8] == 65535 && rip.fill_pattern[0] == 255 && rip.fill_color == 15);
+	assert(!do_rip_command(0, 0, 'a', "-10F"));
+	assert(do_rip_command(0, 0, 'a', "00-1"));
+	assert(rip.requested.palette[0] == 65535 && curr_ega_palette[0] == 255);
+	assert(do_rip_command(0, 0, 'a', "0000"));
+	/* Invalid font falls back; unsupported metric sizes remain bounded. */
+	assert(do_rip_command(0, 0, 'Y', "01000300"));
+	assert(do_rip_command(0, 0, 'Y', "-1000300"));
+	assert(rip.requested.font[0] == 65535 && rip.font.num == 0 && rip.font.size == 1);
+	assert(do_rip_command(0, 0, 'Y', "0000-100"));
+	assert(rip.requested.font[2] == 65535 && rip.font.size == 1);
+	assert(!do_rip_command(1, 0, 'P', "0000-10"));
+	assert(!do_rip_command(1, 0, 'I', "0000-1000file"));
+	/* Reserved numeric fields are still required and validated. */
+	assert(!do_rip_command(0, 0, 'Y', "000001?0"));
+	memset(wire, '0', 35);
+	wire[35] = '?';
+	wire[36] = 0;
+	assert(!do_rip_command(1, 0, 'B', wire));
+	assert(!do_rip_command(0, 0, 'm', "-1"));
+	assert(rip.x == 0 && rip.y == 0);
+
+	/* Signed endpoints are clipped at the viewport; a negative flood seed
+	 * must not reach bitmap indexing. Check every split and bytewise input. */
+	snprintf(wire, sizeof(wire), "!|c-1|S01-1|L-10A0A0A|B-10K020M|F-1000F\r\n");
+	for (size_t split = 0; split <= strlen(wire) + 1; split++) {
+		reset(RIP_VERSION_1);
+		freepixels(getpixels(0, 0, 0, 0, false));
+		feed_split(wire, split);
+		assert_pixel(0, 10, 15);
+		assert_pixel(10, 10, 15);
+		assert_pixel(11, 10, 0);
+		assert_pixel(0, 20, 15);
+		assert_pixel(2, 22, 15);
+		assert_pixel(3, 22, 0);
+	}
+	reset(RIP_VERSION_1);
+	assert(do_rip_command(0, 0, 'v', "0K0U0A0A"));
+	assert(rip.viewport.sx == 10 && rip.viewport.sy == 10 && rip.viewport.ex == 20 && rip.viewport.ey == 30);
+	assert(do_rip_command(0, 0, 'v', "-1000A0A"));
+	assert(rip.requested.viewport[0] == 65535 && rip.viewport.sx == 10);
+	assert(do_rip_command(0, 0, 'v', "05050505"));
+	assert(rip.viewport.sx == 5 && rip.viewport.sy == 5 && rip.viewport.ex == 5 && rip.viewport.ey == 5);
+	assert(do_rip_command(0, 0, 'v', "JZZZJZZZ"));
+	assert(rip.viewport.sx == 639 && rip.viewport.sy == 349 && rip.viewport.ex == 639 && rip.viewport.ey == 349);
+	reset(RIP_VERSION_1);
+	assert(do_rip_command(0, 0, 'w', "-1-1-1-190"));
+	assert(rip.requested.text_window[2] == 65535);
+	assert(cterm->left_margin == 1 && cterm->top_margin == 1);
+	assert(cterm->right_margin == 2 && cterm->bottom_margin == 2);
+	assert(cterm->extattr & CTERM_EXTATTR_AUTOWRAP);
+	assert(do_rip_command(0, 0, 'g', "-A-1"));
+	assert(rip.requested.cursor[0] == 65526 && rip.requested.cursor[1] == 65535);
+	reset(RIP_VERSION_1);
+	assert(rip_circle_y_radius(65526) == 65529); /* -10 * .775 -> -7 */
+	assert(bgi_trig_mul(65536, 65535) == -1);
+	/* Large unsigned radii must use bounded spans and wide intermediates. */
+	assert(do_rip_command(0, 0, 'o', "0000-1-1"));
+	assert(do_rip_command(0, 0, 'C', "0000-A"));
+	assert(do_rip_command(0, 0, 'I', "0000-A0A01"));
+	assert(do_rip_command(0, 0, 'Z', "-100000000000000-1"));
+	assert(rip.x == 0 && rip.y == 0);
+	/* A missing vertex cannot be replaced by stale stack contents. */
+	assert(!do_rip_command(0, 0, 'P', "ZZ00000000"));
+	assert(!do_rip_command(0, 0, 'p', "0000000000"));
+	assert(!do_rip_command(0, 0, 'l', "0300000000"));
+	assert(do_rip_command(0, 0, 'l', "02-1000100"));
+	/* 511 retained words hold 255 pairs. A larger declared count must
+	 * not make the renderer read the scanned-but-unretained tail. */
+	memset(wire, '0', 1100);
+	memcpy(wire, "73", 2);
+	wire[1100] = 0;
+	assert(do_rip_command(0, 0, 'P', wire));
+	wire[1] = '4';
+	assert(!do_rip_command(0, 0, 'P', wire));
+	wire[1099] = '?';
+	assert(!do_rip_command(0, 0, 'P', wire));
+	check_wire("bad numeric recovery", RIP_VERSION_1, "!|cA?|c-1\r\n", "", "", 15);
+	for (size_t len = 0; len < 12; len++) {
+		memset(wire, '0', len);
+		wire[len] = 0;
+		rip_poly_bezier(wire, false, false);
+	}
+}
+
+static void
+test_word_buttons_and_text(void)
+{
+	char args[1200];
+	int parsed[20], offset;
+	bool text;
+	/* Seventeen fields, with a full word of flags and three reserved words. */
+	const char *style = "-1" "-1" "02" "-001" "00" "-1" "-A" "0F" "00"
+	    "0A" "-Z" "02" "0F" "0F" "00" "00" "00";
+	reset(RIP_VERSION_1);
+	assert(parse_rip_args(style, find_rip_desc(1, 'B'), parsed, 20, &offset, &text) == 17);
+	assert(offset == 36);
+	assert(do_rip_command(1, 0, 'B', style));
+	assert(rip.bstyle.width == -1 && rip.bstyle.height == -1);
+	assert(rip.bstyle.flags.sunken && rip.bstyle.group == 65501);
+	assert(rip.bstyle.cfore == 15 && rip.bstyle.cdshadow == 6);
+	/* Use a plain mouse button for deterministic field inspection. */
+	rip.bstyle.button = BUTTON_TYPE_PLAIN;
+	rip.bstyle.flags.bevel = false;
+	rip.bstyle.flags.dropshadow = false;
+	rip.bstyle.flags.autostamp = false;
+	rip.bstyle.flags.mouse = true;
+	assert(do_rip_command(1, 0, 'U', "0A0A0K0K-120<>Label<>GO"));
+	assert(rip.mfields && rip.mfields->type == MOUSE_FIELD_BUTTON);
+	assert(!rip.mfields->data.button->selected);
+	assert(rip.mfields->data.button->box.x2 == 20);
+	assert(rip.mfields->data.button->hotkey == 255);
+	assert(!rip.mfields->data.button->highlight_hotkey);
+	assert(!do_rip_command(1, 0, 'M', "-100000A0A0000000GO"));
+	assert(do_rip_command(1, 0, 'M', "0000000A0A9900000GO"));
+	assert(rip.mfields->type == MOUSE_FIELD_HOT);
+	assert(rip.mfields->data.hot->invertable && rip.mfields->data.hot->resetafter);
+	assert(strcmp(rip.mfields->data.hot->command, "GO") == 0);
+	for (int i = 0; i < 130; i++)
+		assert(do_rip_command(1, 0, 'M', "0000000A0A0000000GO"));
+	unsigned fields = 0;
+	for (struct mouse_field *field = rip.mfields; field; field = field->next)
+		fields++;
+	assert(fields == 128);
+	/* Freeform text retains at most 1023 bytes; empty text is a space. */
+	reset(RIP_VERSION_1);
+	memcpy(args, "0000", 4);
+	memset(args + 4, 'X', 1100);
+	args[1104] = 0;
+	assert(do_rip_command(1, 0, '\x1b', args));
+	for (int i = 0; i < 1023; i++)
+		assert(rip_getch() == 'X');
+	assert(ripbuf == NULL);
+	assert(do_rip_command(1, 0, '\x1b', "0000"));
+	assert(rip_getch() == ' ' && ripbuf == NULL);
+	/* Confirm the text cap in stream assembly, including bytewise input. */
+	memcpy(args, "!|1\x1b" "0000", 8);
+	memset(args + 8, 'X', 1100);
+	memcpy(args + 1108, "\r\n", 3);
+	static const size_t splits[] = {0, 1, 8, 512, 1031, 1108, 1110, 1111};
+	for (size_t split = 0; split < sizeof(splits) / sizeof(*splits); split++) {
+		reset(RIP_VERSION_1);
+		feed_split(args, splits[split]);
+		for (int i = 0; i < 1023; i++)
+			assert(rip_getch() == 'X');
+		assert(ripbuf == NULL && wire_text.length == 0);
+	}
+}
+
+struct copy_expect {
+	int x, y, width, height, dest;
+};
+
+static struct ciolib_pixels *
+copy_fixture(int version)
+{
+	struct ciolib_pixels *pixels;
+	reset(version);
+	/* Finish the mode-change redraw before setting an independent image. */
+	freepixels(getpixels(0, 0, 0, 0, false));
+	pixels = getpixels(0, 0, 639, 349, false);
+	assert(pixels && pixels->width == 640 && pixels->height == 350);
+	for (unsigned y = 0; y < pixels->height; y++) {
+		for (unsigned x = 0; x < pixels->width; x++) {
+			size_t i = y * pixels->width + x;
+			/* Unique RGB pixels identify the original row and column.
+			 * Distinct blink buffers catch a one-buffer-only copy. */
+			pixels->pixels[i] = 0x80000000u | ((y + 1) << 11) | x;
+			pixels->pixelsb[i] = pixels->pixels[i] | 0x00800000u;
+		}
+	}
+	assert(setpixels(0, 0, 639, 349, 0, 0, 0, 0, pixels, NULL));
+	freepixels(pixels);
+	return getpixels(0, 0, 639, 349, false);
+}
+
+static void
+check_copy_image(const char *name, const struct ciolib_pixels *before,
+    struct copy_expect expected)
+{
+	struct ciolib_pixels *after = getpixels(0, 0, 639, 349, false);
+	assert(before && after);
+	for (int y = 0; y < 350; y++) {
+		for (int x = 0; x < 640; x++) {
+			size_t dest = y * 640 + x;
+			size_t source = dest;
+			if (x >= expected.x && x < expected.x + expected.width
+			    && y >= expected.dest && y < expected.dest + expected.height)
+				source = (expected.y + y - expected.dest) * 640 + x;
+			if (after->pixels[dest] != before->pixels[source]
+			    || after->pixelsb[dest] != before->pixelsb[source]) {
+				fprintf(stderr, "Copy %s at %d,%d: primary=%08x/%08x alternate=%08x/%08x\n",
+				    name, x, y, after->pixels[dest], before->pixels[source],
+				    after->pixelsb[dest], before->pixelsb[source]);
+				assert(false);
+			}
+		}
+	}
+	freepixels(after);
+}
+
+static void
+test_copy_region(void)
+{
+	/* Literal rectangles are derived from the disassembly at 0c16:0623,
+	 * and the documented outward rounding for v3. Zero rectangles mean
+	 * no pixels change. The source image must survive overlapping copies. */
+	static const struct {
+		const char *name, *args;
+		struct copy_expect v1, v3;
+		bool v1_only;
+	} cases[] = {
+		{"up", "080A0O0C0002", {8, 10, 16, 3, 2}, {8, 10, 16, 3, 2}},
+		{"down overlap", "080A0O0D000B", {8, 10, 16, 4, 11}, {8, 10, 16, 4, 11}},
+		{"up overlap", "080A0O0D0009", {8, 10, 16, 4, 9}, {8, 10, 16, 4, 9}},
+		{"reversed", "0O0D080A0002", {8, 10, 16, 4, 2}, {8, 10, 16, 4, 2}},
+		{"same line", "080A0O0C000A", {0}, {0}},
+		{"one row", "080A0O0A0002", {0}, {8, 10, 16, 1, 2}},
+		{"unaligned", "0E0A120C0002", {8, 10, 24, 3, 2}, {8, 10, 32, 3, 2}},
+		{"reserved positive", "0E0A120C0702", {0, 10, 32, 3, 2}, {8, 10, 32, 3, 2}},
+		{"reserved negative", "0E0A120C-702", {16, 10, 16, 3, 2}, {0}, true},
+		{"negative left", "-A0A0O0C0002", {0, 10, 24, 3, 2}, {0}, true},
+		{"negative source row", "08-10O02000A", {8, 0, 16, 3, 10}, {0}, true},
+		{"negative destination", "080A0O0C00-1", {8, 10, 16, 3, 0}, {0}, true},
+		{"pre-clamp height guard", "089G0OB4008C", {0}, {8, 340, 16, 10, 300}},
+		{"source bottom clamp", "089G0OB40000", {8, 340, 16, 10, 0}, {8, 340, 16, 10, 0}},
+		{"source right clamp", "HK0AJG0C0002", {0}, {632, 10, 8, 3, 2}},
+		{"large copy", "0000HR9O0001", {0, 0, 632, 349, 1}, {0, 0, 640, 349, 1}},
+		{"full width", "0000HR9O0101", {0, 0, 640, 349, 1}, {0, 0, 640, 349, 1}},
+		{"loose bottom guard", "080A0O0B009P", {8, 10, 16, 1, 349}, {0}},
+		{"destination overflow", "080A0O0D009O", {0}, {0}},
+		{"negative source rows", "08-20O-10002", {8, 0, 16, 1, 2}, {0}, true},
+		{"missing field", "080A0O0C00", {0}, {0}},
+		{"invalid reserved field", "080A0O0C?002", {0}, {0}},
+		{"no whole byte", "080A080C0002", {0}, {0}},
+		{"negative x bounds", "-A0A-10C0002", {0}, {0}, true},
+		{"resort adjusted x down", "080A090C-70K", {8, 10, 8, 3, 20}, {0}, true},
+	};
+	char wire[80];
+	for (int version = RIP_VERSION_1; version <= RIP_VERSION_3; version++) {
+		for (size_t c = 0; c < sizeof(cases) / sizeof(*cases); c++) {
+			if (cases[c].v1_only && version != RIP_VERSION_1)
+				continue;
+			snprintf(wire, sizeof(wire), "!|1G%s\r\n", cases[c].args);
+			for (int bytewise = 0; bytewise <= 1; bytewise++) {
+				struct ciolib_pixels *before = copy_fixture(version);
+				struct ciolib_pixels *clipboard = getpixels(300, 200, 301, 201, false);
+				assert(before && clipboard);
+				rip.clipboard = clipboard;
+				rip.x = 31;
+				rip.y = 41;
+				rip.xor = true;
+				rip.line_pattern = 0;
+				rip.line_width = 3;
+				/* Alternate a disabled viewport and a remote viewport. */
+				rip.viewport.sx = rip.viewport.sy = c & 1 ? 0 : 300;
+				rip.viewport.ex = rip.viewport.ey = c & 1 ? 0 : 310;
+				feed_split(wire, bytewise ? strlen(wire) + 1 : 0);
+				check_copy_image(cases[c].name, before,
+				    version == RIP_VERSION_1 ? cases[c].v1 : cases[c].v3);
+				assert(rip.clipboard == clipboard);
+				assert(rip.x == 31 && rip.y == 41 && rip.xor);
+				assert(rip.line_pattern == 0 && rip.line_width == 3);
+				assert(rip.viewport.sx == (c & 1 ? 0 : 300));
+				assert(rip.viewport.ex == (c & 1 ? 0 : 310));
+				assert(wire_text.length == 0 && wire_replies.length == 0);
+				freepixels(before);
+			}
+		}
+	}
+	/* Packet boundaries may fall anywhere in the numeric descriptor. */
+	snprintf(wire, sizeof(wire), "!|1G080A0O0D000B\r\n");
+	for (size_t split = 0; split <= strlen(wire); split++) {
+		struct ciolib_pixels *before = copy_fixture(RIP_VERSION_1);
+		feed_split(wire, split);
+		check_copy_image("packet split", before, (struct copy_expect){8, 10, 16, 4, 11});
+		freepixels(before);
+	}
+	/* Test the reduced-display row mapping with independently chosen pixels.
+	 * Logical source rows 10,11,12 map to physical 5,6,6; destination
+	 * rows 3,4,5 map to 2,2,3, so both destination rows finish with row 6. */
+	struct ciolib_pixels *before = copy_fixture(RIP_VERSION_1);
+	rip.x_max = 320;
+	rip.y_max = 175;
+	assert(do_rip_command(1, 0, 'G', "080A0O0C0003"));
+	struct ciolib_pixels *after = getpixels(0, 0, 639, 349, false);
+	assert(after);
+	for (int y = 0; y < 350; y++) {
+		for (int x = 0; x < 640; x++) {
+			size_t dest = y * 640 + x;
+			size_t source = x >= 4 && x <= 12 && y >= 2 && y <= 3 ? 6 * 640 + x : dest;
+			assert(after->pixels[dest] == before->pixels[source]);
+			assert(after->pixelsb[dest] == before->pixelsb[source]);
+		}
+	}
+	freepixels(after);
+	freepixels(before);
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -549,6 +958,14 @@ main(int argc, char **argv)
 		test_interleaving();
 	if (argc == 1 || strcmp(argv[1], "capacity") == 0)
 		test_interleaving_capacity();
-	puts("RIP: callbacks, ordering, escapes, history, autosense, block alias and interleaving passed");
+	if (argc == 1 || strcmp(argv[1], "words") == 0)
+		test_words();
+	if (argc == 1 || strcmp(argv[1], "word-consumers") == 0)
+		test_word_consumers();
+	if (argc == 1 || strcmp(argv[1], "word-buttons") == 0)
+		test_word_buttons_and_text();
+	if (argc == 1 || strcmp(argv[1], "copy-region") == 0)
+		test_copy_region();
+	puts("RIP: callbacks, ordering, escapes, history, autosense, block alias, interleaving, numeric words and screen copy passed");
 	return 0;
 }

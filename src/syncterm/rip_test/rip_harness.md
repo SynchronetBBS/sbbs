@@ -124,3 +124,79 @@ Pixel colors reported as `name(index)` using EGA palette:
 4. **Flood fill: fillfg as border** — BGI uses EGA Color Compare with fill color, so pre-existing pixels matching the fill color block seed propagation (blitz.rip)
 5. **Bezier start point** — zero-length draw at start needed in all modes, not just XOR (7up-svr5.rip)
 6. **8x8 font data** — 764 byte corrections across 141 glyphs extracted from RIPterm runtime (ag-awe.rip, ag-tr6.rip, many others)
+
+
+## Native numeric parser regression tests
+
+`ripper_test.c` includes the production parser and bitmap renderer. Build and
+run it with the SkyPix regression tests from the SyncTERM directory:
+
+```sh
+cmake --build build --target ripper_test skypix_test syncterm -j4
+ctest --test-dir build --output-on-failure -R '^(ripper_test|skypix_test)$'
+```
+
+The `words`, `word-consumers`, and `word-buttons` filters run the numeric
+cases separately. The fixture uses SDL offscreen; standalone invocations need
+`SDL_VIDEODRIVER=offscreen SDL_RENDER_DRIVER=software SDL_VIDEO_EGL_DRIVER=none`.
+The reference for the RIPv1 expectations is `RIP154_PARSER.adoc` in the
+research tree (`/bbsdev/syncterm/docs/`). These tests check literal reference
+words, consumer state, selected pixels, replies and packet boundaries. They
+are not fresh DOS pixel comparisons.
+
+RIPv1 numeric conversion retains the low 16 bits before the consumer assigns
+a signed coordinate, byte, unsigned index or mask role. In particular,
+`-001` and `1EKF` both produce `ffff`, `1EKG` produces zero, and `A-` produces
+ten. Numeric storage stops at 511 words while validation continues; text
+storage stops at 1023 bytes. Invalid mandatory/reserved fields prevent the
+body from running. Polygon counts must fit the retained pairs, including
+space for the closing vertex. Reference reads of unavailable vertices and
+out-of-range palette indexes are deliberately bounded in C.
+
+Requested line, fill, font, viewport, palette, button and text-window words
+are retained separately from effective renderer state. Invalid line/fill
+requests leave the effective drawing state unchanged. Palette values retain
+the low port byte and map the six EGA colour bits through a bounded table.
+Invalid fonts fall back to font 0, size 1. The verified RIPterm metric table has
+entries for sizes 1..10 only; its unchecked size lookup can read neighbouring
+font entries or unrelated data. SyncTERM keeps metric indexes bounded.
+Similarly, RIPterm stores out-of-range TTY cursor bytes which its erase
+command can subsequently use in rectangle arithmetic. SyncTERM retains its
+terminal cursor/window bounds. Those unchecked reference behaviours do not
+establish supported rendering cases or unfinished numeric-parser requirements.
+BGI glyph scaling is separate from RIPterm's metric lookup; no general claim
+of size parity beyond the verified entries is made here. Later SyncTERM
+command extensions are separate from signed numeric decoding. RIPv3 retains
+its existing numeric conversion and
+descriptor policy; shared bounds and wide intermediates also protect its
+renderer.
+
+
+## Copy-region regression tests
+
+The `copy-region` filter in `ripper_test` exercises `!|1G` through the
+production parser. It seeds distinct images in the two blink buffers and
+compares every pixel with an independently specified expected rectangle.
+It covers both overlap directions, reversed endpoints, disabled and offset
+viewports, unchanged clipboard/drawing state, negative coordinates, screen
+clamps, malformed fields, packet splits, reduced display mapping and copies
+larger than the BGI clipboard-size limit.
+
+RIPv1 follows the reference helper at `0c16:0623`, as recorded in
+`RIP154_PARSER.adoc`: signed endpoint sorting, signed remainders in X
+alignment, use of the nominally reserved fifth word, whole-byte widths,
+the initial zero-height exit and the destination check using the original
+Y difference. The downward helper at `0c16:0293` sorts the adjusted
+endpoints again. Both paths copy inclusive source rows. For example,
+`!|1G080A0O0D000B` copies X=8..23, Y=10..13 to Y=11..14.
+
+The reference's loose bottom check can allow writes beyond the displayed
+rows. The native implementation copies the visible destination rows and
+never accesses pixels outside its bitmap. Nonpositive byte widths are
+ignored safely. RIPv3 uses the specified outward X alignment, ignores the
+reserved fifth word, permits a single source row, and requires the entire
+destination rectangle to fit. Both versions copy absolute screen pixels
+independently of the graphics viewport, pattern and write mode. A temporary
+snapshot preserves both blink buffers during overlapping copies without
+replacing the RIP clipboard. These are source/disassembly-directed native
+tests; no fresh DOS captures are claimed.
