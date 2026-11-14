@@ -724,7 +724,12 @@
 - New: `uselect_rip.js` — RIP-capable "Select Item" loadable
   module; `RIPScrollbar` gains a horizontal mode
 - `uselect.js` pages lists longer than the screen and supports
-  arrow-key, Home/End and PgUp/PgDn navigation (new `more_fmt` modopt)
+  arrow-key, Home/End and PgUp/PgDn navigation, repainting only what
+  changed (new `more_fmt` modopt). The stock `ctrl/modopts.ini` marks the
+  default item with `->` and a highlighted name; an existing
+  `modopts.ini` keeps the v3.21 look (`*`). For a reverse-video bar, set
+  `[uselect]` `default_item_fmt` to
+  `"\x01U->\x01v%*s(\x01V%d\x01v) \x01n\x017\x01k%s\x01n \x01U<-"`
 - New: `qwk_sec.js`: the QWK message packet menu is now a loadable
   module (SCFG->System->Loadable Modules->QWK Section), replacing the
   built-in menu
@@ -820,6 +825,18 @@
   `main_enter`/`file_enter` run a JavaScript expression (shells built on
   `shell_lib.js`); `[xtrn_sec]` `enter_sound`, `enter_music` and
   `eval_first` do the same for the external programs section
+- Message group/sub-board and file library/directory selection (`J`
+  in shells built on `shell_lib.js`) supports arrow-key, Home/End and
+  PgUp/PgDn navigation and pages lists longer than the screen. New
+  `ctrl/modopts.ini` `[shell]` options: `default_item_prefix` and
+  `nondefault_item_prefix` replace the `*` marker, `default_item_attr`
+  highlights the default area's name (e.g. `"\x01V"`, or
+  `"\x01n\x017\x01k"` for a reverse-video bar), and `more_fmt` formats
+  the `[x-y of n]` indicator. The stock `modopts.ini` uses `->` and a
+  highlighted name; an existing one keeps the v3.21 look (`*`)
+- New `load/select_item.js` library: the numbered-list selector (paging,
+  arrow keys, in-place repainting) behind `uselect.js` and the area
+  selection lists
 - More strings in stock modules route through `gettext()` for
   `ctrl/text.ini` `[JS]`-section customization
 - Good Time Trivia gains a `useDoveNetSyncData` option that

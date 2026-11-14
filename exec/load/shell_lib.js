@@ -8,6 +8,7 @@
 require("sbbsdefs.js", "USER_EXPERT");
 require("nodedefs.js", "NODE_MAIN");
 require("gettext.js", "gettext");
+require("select_item.js", "select_item");
 
 var options = load("modopts.js", "shell");
 if(!options)
@@ -97,6 +98,102 @@ function get_dir_num(str)
 		bbs.curdir = num - 1;
 }
 
+// The prefix (e.g. '*') printed before an item of an area list, per the
+// modopts.ini [shell] default_item_prefix and nondefault_item_prefix options
+function area_item_prefix(is_default)
+{
+	if(is_default)
+		return options.default_item_prefix !== undefined ? options.default_item_prefix : '*';
+	return options.nondefault_item_prefix !== undefined ? options.nondefault_item_prefix : ' ';
+}
+
+// Indent of the "more" indicator: aligned with the item numbers that follow
+// the default item prefix (e.g. '*')
+function area_more_indent()
+{
+	return Math.max(strip_ctrl(area_item_prefix(true)).length
+		, strip_ctrl(area_item_prefix(false)).length) + 1;
+}
+
+// The width of the text.dat area list formats' description field (60),
+// less any columns taken by a prefix wider than the stock 1-column '*', so
+// that a line of an area list doesn't reach the last column and wrap
+function area_desc_field_width()
+{
+	var prefix_width = Math.max(strip_ctrl(area_item_prefix(true)).length
+		, strip_ctrl(area_item_prefix(false)).length);
+	return Math.max(60 - Math.max(prefix_width - 1, 0), 1);
+}
+
+// The widest description in a list of areas (as displayed in the description field)
+function area_desc_widest(list)
+{
+	var field_width = area_desc_field_width();
+	var widest = 0;
+	for(var i = 0; i < list.length; ++i)
+		widest = Math.max(widest, Math.min(list[i].description.length, field_width));
+	return widest;
+}
+
+// Format an area list item using the text.dat format 'fmt', narrowing its
+// description field to fit a wide prefix, and highlighting the description
+// of the default item with the modopts.ini [shell] default_item_attr option.
+// Both apply only if the format's description field is the expected width
+// (%-60.60s), so that a customized format is never misaligned.
+function area_item_str(fmt, num, desc, count, widest, is_default)
+{
+	var field = "%-60.60s";
+	if(fmt.indexOf(field) >= 0) {
+		var width = area_desc_field_width();
+		if(is_default && options.default_item_attr) {
+			desc = options.default_item_attr + format("%-*s", widest, desc.substr(0, widest))
+				+ "\x01n" + format("%-*s", width - widest, "");
+			fmt = fmt.replace(field, "%s");
+		} else
+			fmt = fmt.replace(field, "%-" + width + "." + width + "s");
+	}
+	// The caller (or select_item) ends the line
+	return format(fmt, num, desc, "", count).replace(/[\r\n]+$/, "");
+}
+
+function print_grp(i, is_default, widest, redraw, eol)
+{
+	if(widest === undefined)
+		widest = area_desc_widest(msg_area.grp_list);
+	console.print(area_item_prefix(is_default));
+	if(i<9) console.print(' ');
+	if(!redraw)
+		console.add_hotspot(i+1);
+	console.print(area_item_str(bbs.text(bbs.text.GrpLstFmt), i+1
+		,msg_area.grp_list[i].description, msg_area.grp_list[i].sub_list.length
+		,widest, is_default));
+	if(eol !== false)
+		console.newline();
+}
+
+function print_sub(grp, i, is_default, widest, redraw, eol)
+{
+	if(widest === undefined)
+		widest = area_desc_widest(msg_area.grp_list[grp].sub_list);
+	console.print(area_item_prefix(is_default));
+	var str = area_item_str(bbs.text(bbs.text.SubLstFmt), i+1
+		,msg_area.grp_list[grp].sub_list[i].description
+		,msg_area.grp_list[grp].sub_list[i].posts
+		,widest, is_default);
+	if(i<9) console.print(' ');
+	if(i<99) console.print(' ');
+	if(!redraw)
+		console.add_hotspot(i+1);
+	console.print(str);
+	if(eol !== false)
+		console.newline();
+}
+
+function sub_list_hdr(grp)
+{
+	return "\r\n" + format(bbs.text(bbs.text.SubLstHdr), msg_area.grp_list[grp].description);
+}
+
 // List Message Groups
 function show_grps()
 {
@@ -105,15 +202,9 @@ function show_grps()
 	if(bbs.menu("grps", P_NOERROR))
 		return;
 	console.print(bbs.text(bbs.text.GrpLstHdr));
-	for(var i=0; i < msg_area.grp_list.length && !console.aborted; i++) {
-		if(i == bbs.curgrp)
-			console.print('*');
-		else console.print(' ');
-		if(i<9) console.print(' ');
-		console.add_hotspot(i+1);
-		console.print(format(bbs.text(bbs.text.GrpLstFmt), i+1
-			,msg_area.grp_list[i].description, "", msg_area.grp_list[i].sub_list.length));
-	}
+	var widest = area_desc_widest(msg_area.grp_list);
+	for(var i=0; i < msg_area.grp_list.length && !console.aborted; i++)
+		print_grp(i, i == bbs.curgrp, widest);
 }
 
 function show_subs(grp)
@@ -122,58 +213,94 @@ function show_subs(grp)
 		return;
 	if(bbs.menu("subs" + (msg_area.grp_list[grp].number + 1), P_NOERROR))
 		return;
-	console.newline();
-	console.print(format(bbs.text(bbs.text.SubLstHdr), msg_area.grp_list[grp].description));
+	console.print(sub_list_hdr(grp));
 	var sub = cursub(grp);
-	for(var i=0; i < usrsubs[grp] && !console.aborted; ++i) {
-		if(i==sub) console.print('*');
-		else console.print(' ');
-		var str = format(bbs.text(bbs.text.SubLstFmt),i+1
-			,msg_area.grp_list[grp].sub_list[i].description, ""
-			,msg_area.grp_list[grp].sub_list[i].posts);
-		if(i<9) console.print(' ');
-		if(i<99) console.print(' ');
-		console.add_hotspot(i+1);
-		console.print(str);
-	}
+	var widest = area_desc_widest(msg_area.grp_list[grp].sub_list);
+	for(var i=0; i < usrsubs[grp] && !console.aborted; ++i)
+		print_sub(grp, i, i == sub, widest);
 }
 
 function select_msg_area()
 {
 	if(usrgrps < 1)
 		return false;
+	var grp = bbs.curgrp;
+	var grp_widest = area_desc_widest(msg_area.grp_list);
 	while(bbs.online) {
-		var j=0;
 		if(usrgrps > 1) {
-			show_grps();
-			console.mnemonics(format(bbs.text(bbs.text.JoinWhichGrp), bbs.curgrp + 1));
-			j=console.getnum(usrgrps);
-			console.clear_hotspots();
-			if(j==-1)
+			var i = select_item({
+				count: usrgrps,
+				current: grp,
+				header: bbs.text(bbs.text.GrpLstHdr),
+				prompt: function(num) { return format(bbs.text(bbs.text.JoinWhichGrp), num); },
+				print_item: function(i, is_default, redraw) { print_grp(i, is_default, grp_widest, redraw, false); },
+				menu: function() { return bbs.menu("grps", P_NOERROR); },
+				more_fmt: options.more_fmt,
+				more_indent: area_more_indent()
+			});
+			if(i < 0)
 				return false;
-			if(!j)
-				j=bbs.curgrp;
-			else
-				j--;
+			grp = i;
 		}
-		show_subs(j);
-		console.mnemonics(format(bbs.text(bbs.text.JoinWhichSub), cursub(j)+1));
-		i=console.getnum(usrsubs[j]);
-		console.clear_hotspots();
-		if(i==-1) {
+		var sub_widest = area_desc_widest(msg_area.grp_list[grp].sub_list);
+		var sub = select_item({
+			count: usrsubs[grp],
+			current: cursub(grp),
+			header: sub_list_hdr(grp),
+			prompt: function(num) { return format(bbs.text(bbs.text.JoinWhichSub), num); },
+			print_item: function(i, is_default, redraw) { print_sub(grp, i, is_default, sub_widest, redraw, false); },
+			menu: function() { return bbs.menu("subs" + (msg_area.grp_list[grp].number + 1), P_NOERROR); },
+			more_fmt: options.more_fmt,
+			more_indent: area_more_indent()
+		});
+		if(sub < 0) {
 			if(usrgrps==1)
 				return false;
 			continue;
 		}
-		if(!i)
-			i=cursub(j);
-		else
-			i--;
-		bbs.curgrp=j;
-		bbs.cursub=i;
+		bbs.curgrp=grp;
+		bbs.cursub=sub;
 		return true;
 	}
 	return false;
+}
+
+function print_lib(i, is_default, widest, redraw, eol)
+{
+	if(widest === undefined)
+		widest = area_desc_widest(file_area.lib_list);
+	console.print(area_item_prefix(is_default));
+	if(i<9) console.print(' ');
+	if(!redraw)
+		console.add_hotspot(i+1);
+	console.print(area_item_str(bbs.text(bbs.text.LibLstFmt), i+1
+		,file_area.lib_list[i].description, file_area.lib_list[i].dir_list.length
+		,widest, is_default));
+	if(eol !== false)
+		console.newline();
+}
+
+function print_dir(lib, i, is_default, widest, redraw, eol)
+{
+	if(widest === undefined)
+		widest = area_desc_widest(file_area.lib_list[lib].dir_list);
+	console.print(area_item_prefix(is_default));
+	var str = area_item_str(bbs.text(bbs.text.DirLstFmt), i+1
+		,file_area.lib_list[lib].dir_list[i].description
+		,file_area.lib_list[lib].dir_list[i].files
+		,widest, is_default);
+	if(i<9) console.print(' ');
+	if(i<99) console.print(' ');
+	if(!redraw)
+		console.add_hotspot(i+1);
+	console.print(str);
+	if(eol !== false)
+		console.newline();
+}
+
+function dir_list_hdr(lib)
+{
+	return "\r\n" + format(bbs.text(bbs.text.DirLstHdr), file_area.lib_list[lib].description);
 }
 
 // List File Libraries
@@ -184,15 +311,9 @@ function show_libs()
 	if(bbs.menu("libs", P_NOERROR))
 		return;
 	console.print(bbs.text(bbs.text.LibLstHdr));
-	for(var i=0; i < file_area.lib_list.length && !console.aborted; i++) {
-		if(i == bbs.curlib)
-			console.print('*');
-		else console.print(' ');
-		if(i<9) console.print(' ');
-		console.add_hotspot(i+1);
-		console.print(format(bbs.text(bbs.text.LibLstFmt), i+1
-			,file_area.lib_list[i].description, "", file_area.lib_list[i].dir_list.length));
-	}
+	var widest = area_desc_widest(file_area.lib_list);
+	for(var i=0; i < file_area.lib_list.length && !console.aborted; i++)
+		print_lib(i, i == bbs.curlib, widest);
 }
 
 function show_dirs(lib)
@@ -201,20 +322,11 @@ function show_dirs(lib)
 		return;
 	if(bbs.menu("dirs" + (file_area.lib_list[lib].number + 1), P_NOERROR))
 		return;
-	console.newline();
-	console.print(format(bbs.text(bbs.text.DirLstHdr), file_area.lib_list[lib].description));
+	console.print(dir_list_hdr(lib));
 	var dir = curdir(lib);
-	for(var i=0; i < usrdirs[lib] && !console.aborted; ++i) {
-		if(i==dir) console.print('*');
-		else console.print(' ');
-		var str = format(bbs.text(bbs.text.DirLstFmt),i+1
-			,file_area.lib_list[lib].dir_list[i].description, ""
-			,file_area.lib_list[lib].dir_list[i].files);
-		if(i<9) console.print(' ');
-		if(i<99) console.print(' ');
-		console.add_hotspot(i+1);
-		console.print(str);
-	}
+	var widest = area_desc_widest(file_area.lib_list[lib].dir_list);
+	for(var i=0; i < usrdirs[lib] && !console.aborted; ++i)
+		print_dir(lib, i, i == dir, widest);
 }
 
 function select_file_area()
@@ -222,35 +334,42 @@ function select_file_area()
 	var usrlibs = file_area.lib_list.length;
 	if(usrlibs < 1)
 		return false;
+	var lib = bbs.curlib;
+	var lib_widest = area_desc_widest(file_area.lib_list);
 	while(bbs.online) {
-		var j=0;
 		if(usrlibs > 1) {
-			show_libs();
-			console.mnemonics(format(bbs.text(bbs.text.JoinWhichGrp), bbs.curlib + 1));
-			j=console.getnum(usrlibs);
-			console.clear_hotspots();
-			if(j==-1)
+			var i = select_item({
+				count: usrlibs,
+				current: lib,
+				header: bbs.text(bbs.text.LibLstHdr),
+				prompt: function(num) { return format(bbs.text(bbs.text.JoinWhichLib), num); },
+				print_item: function(i, is_default, redraw) { print_lib(i, is_default, lib_widest, redraw, false); },
+				menu: function() { return bbs.menu("libs", P_NOERROR); },
+				more_fmt: options.more_fmt,
+				more_indent: area_more_indent()
+			});
+			if(i < 0)
 				return false;
-			if(!j)
-				j=bbs.curlib;
-			else
-				j--;
+			lib = i;
 		}
-		show_dirs(j);
-		console.mnemonics(format(bbs.text(bbs.text.JoinWhichDir), curdir(j)+1));
-		i=console.getnum(usrdirs[j]);
-		console.clear_hotspots();
-		if(i==-1) {
+		var dir_widest = area_desc_widest(file_area.lib_list[lib].dir_list);
+		var dir = select_item({
+			count: usrdirs[lib],
+			current: curdir(lib),
+			header: dir_list_hdr(lib),
+			prompt: function(num) { return format(bbs.text(bbs.text.JoinWhichDir), num); },
+			print_item: function(i, is_default, redraw) { print_dir(lib, i, is_default, dir_widest, redraw, false); },
+			menu: function() { return bbs.menu("dirs" + (file_area.lib_list[lib].number + 1), P_NOERROR); },
+			more_fmt: options.more_fmt,
+			more_indent: area_more_indent()
+		});
+		if(dir < 0) {
 			if(usrlibs==1)
 				return false;
 			continue;
 		}
-		if(!i)
-			i=curdir(j);
-		else
-			i--;
-		bbs.curlib=j;
-		bbs.curdir=i;
+		bbs.curlib=lib;
+		bbs.curdir=dir;
 		return true;
 	}
 	return false;

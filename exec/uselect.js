@@ -9,7 +9,7 @@
 // - prompt_fmt
 // - more_fmt (shown when the items don't fit on one screen)
 
-require("key_defs.js", "KEY_UP");
+require("select_item.js", "select_item");
 
 var options = load("modopts.js", "uselect:" + console.uselect_title);
 if (!options)
@@ -26,91 +26,56 @@ function digits(n)
 
 var items = console.uselect_items;
 var widest = 0;
-for(var i = 0; i < items.length; ++i)
+var current = -1;
+for(var i = 0; i < items.length; ++i) {
 	widest = Math.max(items[i].name.length, widest);
+	if (current < 0 && items[i].num == dflt)
+		current = i;
+}
 
-function count_lines(str)
+function print_item(i, is_default, redraw)
 {
-	return str.split('\n').length - 1;
-}
-
-var top = 0; // index of first item displayed (when paging)
-
-while (bbs.online && !js.terminated) {
-	var hdr = format(options.header_fmt || bbs.text(bbs.text.SelectItemHdr), console.uselect_title);
-	var prompt = format(options.prompt_fmt || bbs.text(bbs.text.SelectItemWhich), 1);
-	// Rows available for items: the screen, less the header, the prompt
-	// (and the cursor line it ends on)
-	var rows = console.screen_rows - count_lines(hdr) - count_lines(prompt) - 1;
-	var page = items.length;
-	// The "more" indicator goes on the prompt's leading blank line, if it has one
-	var more_on_blank = /^\r?\n/.test(prompt);
-	if (page > rows)
-		page = Math.max(more_on_blank ? rows : rows - 1, 1);
-
-	var udflt = 1;
-	for(var i = 0; i < items.length; ++i) {
-		if (items[i].num == dflt) {
-			udflt = i + 1;
-			break;
-		}
-	}
-	// Scroll the page so the default item is visible
-	if (udflt - 1 < top)
-		top = udflt - 1;
-	else if (udflt - 1 >= top + page)
-		top = udflt - page;
-	top = Math.max(0, Math.min(top, items.length - page));
-
-	console.clear_hotspots();
-	console.print(hdr);
-	console.line_counter = 0;
-	for(var i = top; i < items.length && i < top + page; ++i) {
-		var hotspot = i + 1;
-		var fmt = options.default_item_fmt || "\x01U*\x01v%*s(\x01V%d\x01v) \x01U%s";
-		if (items[i].num != dflt)
-			fmt = options.nondefault_item_fmt || "\x01U \x01v%*s(\x01V%d\x01v) \x01U%s";
-		console.print(format(fmt
-			, digits(hotspot) - digits(items.length), ""
-			, hotspot, format("%-*s", widest, items[i].name)));
-		if(digits(hotspot) < digits(items.length))
-			hotspot += '\r';
+	var hotspot = i + 1;
+	var fmt;
+	if (is_default)
+		fmt = options.default_item_fmt || "\x01U*\x01v%*s(\x01V%d\x01v) \x01U%s";
+	else
+		fmt = options.nondefault_item_fmt || "\x01U \x01v%*s(\x01V%d\x01v) \x01U%s";
+	console.print(format(fmt
+		, digits(hotspot) - digits(items.length), ""
+		, hotspot, format("%-*s", widest, items[i].name)));
+	if(digits(hotspot) < digits(items.length))
+		hotspot += '\r';
+	if (!redraw)
 		console.add_hotspot(hotspot);
-		console.newline();
-	}
-	if (page < items.length) {
-		console.print(format(options.more_fmt || "\x01n\x01h\x01k  [%u-%u of %u]"
-			, top + 1, top + page, items.length));
-		if (!more_on_blank)
-			console.newline();
-	}
-	console.line_counter = 0;
-
-	console.mnemonics(format(options.prompt_fmt || bbs.text(bbs.text.SelectItemWhich), udflt));
-	var choice = console.getnum(items.length, 0, /* navkeys: */true);
-	if (typeof choice === 'string') {
-		var cur = udflt - 1;
-		if (choice == KEY_UP)
-			cur--;
-		else if (choice == KEY_DOWN)
-			cur++;
-		else if (choice == KEY_PAGEUP) {
-			cur -= page;
-			top -= page;
-		} else if (choice == KEY_PAGEDN) {
-			cur += page;
-			top += page;
-		} else if (choice == KEY_HOME)
-			cur = 0;
-		else if (choice == KEY_END)
-			cur = items.length - 1;
-		cur = Math.max(0, Math.min(cur, items.length - 1));
-		dflt = items[cur].num;
-		continue;
-	}
-	if (choice > 0)
-		choice = items[choice - 1].num;
-	else if (choice == 0)
-		choice = dflt;
-	exit(choice);
 }
+
+// Indent of the "more" indicator: aligned with the item numbers that follow
+// the marker (e.g. '*') at the start of the item formats
+function more_indent()
+{
+	var width = 1;
+	var fmts = [options.default_item_fmt, options.nondefault_item_fmt];
+	for (var i = 0; i < fmts.length; ++i) {
+		if (fmts[i])
+			width = Math.max(width, strip_ctrl(fmts[i].substr(0, fmts[i].indexOf('%'))).length);
+	}
+	return width + 1;
+}
+
+var choice = select_item({
+	count: items.length,
+	current: current,
+	header: format(options.header_fmt || bbs.text(bbs.text.SelectItemHdr), console.uselect_title),
+	prompt: function(num) {
+		return format(options.prompt_fmt || bbs.text(bbs.text.SelectItemWhich), num);
+	},
+	print_item: print_item,
+	more_fmt: options.more_fmt,
+	more_indent: more_indent()
+});
+if (choice >= 0)
+	exit(items[choice].num);
+if (choice == -2) // Enter with no default item
+	exit(dflt);
+exit(-1);
