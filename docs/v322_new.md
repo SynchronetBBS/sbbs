@@ -125,6 +125,10 @@
   (new `FileSentIn` and `FileReceivedIn` text strings; batch and SFTP
   transfers keep the old message) (#1158)
 - `printfile()` now handles files of 2 GiB or larger
+- A `?script` command line with a relative path (e.g. `?tests/test.js`)
+  that isn't found relative to the `ctrl` directory is now also searched
+  for in the external program's startup directory, `mods` and `exec`, as
+  bare script names already were
 - New auto-filter for clients repeatedly hitting the per-IP
   unauthenticated concurrent-connection cap (effective against
   bots that tie up nodes idling at the login prompt) — optional

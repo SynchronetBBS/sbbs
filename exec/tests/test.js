@@ -13,7 +13,7 @@
  * With no argument, runs every test directory below this one.
  * With an argument, runs only that sub-directory, e.g. from a sysop's
  * terminal session (where the bbs object exists):
- *   ;EXEC ?<exec dir>/tests/test.js atcodes
+ *   ;EXEC ?tests/test.js atcodes
  */
 var testroot = js.exec_dir;
 var subdir = (argc > 0) ? argv[0] : null;

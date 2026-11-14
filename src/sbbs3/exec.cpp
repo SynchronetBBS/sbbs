@@ -580,11 +580,13 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	}
 	fname = cmdline;
 
-	path[0] = 0;
-	if (strcspn(fname, "/\\") == strlen(fname)) {
-		const char* js_ext = "";
-		if (getfext(fname) == NULL)
-			js_ext = ".js";
+	const char* js_ext = "";
+	if (getfext(fname) == NULL)
+		js_ext = ".js";
+	SAFEPRINTF2(path, "%s%s", fname, js_ext);
+	// A relative path is from the ctrl dir (the current directory) first
+	if (strcspn(fname, "/\\") == strlen(fname) || (!isfullpath(fname) && !fexistcase(path))) {
+		path[0] = 0;
 		if (startup_dir != NULL && *startup_dir)
 			SAFEPRINTF3(path, "%s%s%s", startup_dir, fname, js_ext);
 		if (path[0] == 0 || !fexistcase(path)) {
@@ -592,10 +594,6 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 			if (cfg.mods_dir[0] == 0 || !fexistcase(path))
 				SAFEPRINTF3(path, "%s%s%s", cfg.exec_dir, fname, js_ext);
 		}
-	} else {
-		SAFECOPY(path, fname);
-		if (getfext(fname) == NULL)
-			SAFEPRINTF(path, "%s.js", fname);
 	}
 
 	if (!fexistcase(path)) {
