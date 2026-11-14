@@ -129,6 +129,153 @@ void Test_CallerHeldHeaderLockIsKept(CuTest* tc)
 	smb_close(&smb);
 }
 
+/* Freeing the last data in a base truncates the data file with it */
+void Test_FreeingLastDataTruncatesDataFile(CuTest* tc)
+{
+	smbmsg_t msg;
+	smb_t    smb = add_body_and_tail(tc, &msg);
+
+	CuAssertIntEquals(tc, 2 * SDT_BLOCK_LEN, (int)filelength(fileno(smb.sdt_fp)));
+	delete_copy(tc, &smb, &msg);
+	CuAssertIntEquals(tc, 0, (int)filelength(fileno(smb.sdt_fp)));
+	smb_freemsgmem(&msg);
+	smb_close(&smb);
+}
+
+/* Data the allocation file doesn't account for is not truncated away */
+void Test_UnaccountedDataIsKept(CuTest* tc)
+{
+	smbmsg_t msg;
+	smb_t    smb = add_body_and_tail(tc, &msg);
+	char     block[SDT_BLOCK_LEN];
+
+	memset(block, 'X', sizeof(block));
+	CuAssertIntEquals(tc, 0, fseek(smb.sdt_fp, 0, SEEK_END));
+	CuAssertIntEquals(tc, 1, (int)fwrite(block, sizeof(block), 1, smb.sdt_fp));
+	CuAssertIntEquals(tc, 0, fflush(smb.sdt_fp));
+	delete_copy(tc, &smb, &msg);
+	CuAssertIntEquals(tc, 3 * SDT_BLOCK_LEN, (int)filelength(fileno(smb.sdt_fp)));
+	smb_freemsgmem(&msg);
+	smb_close(&smb);
+}
+
+/* A header the allocation file doesn't cover is not freed by truncating
+   the header file at it */
+void Test_ShortHeaderAllocationFileKeepsHeaders(CuTest* tc)
+{
+	smbmsg_t msg;
+	smb_t    smb = add_body_and_tail(tc, &msg);
+	off_t    shd_length = filelength(fileno(smb.shd_fp));
+	FILE*    fp;
+
+	fp = fopen(TEST_SMB_PATH ".sha", "wb");
+	CuAssertPtrNotNull(tc, fp);
+	fclose(fp);
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_open_ha(&smb));
+	CuAssertIntEquals(tc, SMB_ERR_FILE_LEN, smb_freemsg(&smb, &msg));
+	smb_close_ha(&smb);
+	CuAssertIntEquals(tc, (int)shd_length, (int)filelength(fileno(smb.shd_fp)));
+	smb_freemsgmem(&msg);
+	smb_close(&smb);
+}
+
+/* With nothing to free, the allocation file is not left open (exclusively) */
+void Test_NothingToFreeClosesAllocationFile(CuTest* tc)
+{
+	smbmsg_t msg;
+	smb_t    smb = add_body_and_tail(tc, &msg);
+
+	delete_copy(tc, &smb, &msg);    /* leaves an empty .sda */
+	CuAssertPtrEquals(tc, NULL, smb.sda_fp);
+	delete_copy(tc, &smb, &msg);
+	CuAssertPtrEquals(tc, NULL, smb.sda_fp);
+	smb_freemsgmem(&msg);
+	smb_close(&smb);
+}
+
+/* smb_updatemsg() holds the header lock while a header that has outgrown
+   its blocks is moved */
+void Test_HeaderGrowthKeepsCallerHeldHeaderLock(CuTest* tc)
+{
+	smbmsg_t msg;
+	smb_t    smb = add_body_and_tail(tc, &msg);
+	uint32_t offset = msg.idx.offset;
+	char     comment[SHD_BLOCK_LEN * 2];
+
+	memset(comment, 'C', sizeof(comment) - 1);
+	comment[sizeof(comment) - 1] = '\0';
+	CuAssertIntEquals(tc, SMB_SUCCESS, smb_hfield_str(&msg, SMB_COMMENT, comment));
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_locksmbhdr(&smb));
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_putmsg(&smb, &msg));
+	CuAssertTrue(tc, msg.idx.offset != offset);
+	CuAssertTrue(tc, smb.smbhdr_locked);
+	smb_unlocksmbhdr(&smb);
+	smb_freemsgmem(&msg);
+	smb_close(&smb);
+}
+
+/* A hyper-allocated base has no allocation files: an outgrown header is
+   appended to the header file and the original is marked deleted */
+void Test_HeaderGrowthInHyperAllocatedBase(CuTest* tc)
+{
+	smb_t    smb;
+	smbmsg_t msg;
+	smbmsg_t old;
+	uint32_t offset;
+	off_t    shd_length;
+	char     comment[SHD_BLOCK_LEN * 2];
+
+	remove(TEST_SMB_PATH ".shd");
+	remove(TEST_SMB_PATH ".sid");
+	remove(TEST_SMB_PATH ".sdt");
+	remove(TEST_SMB_PATH ".sda");
+	remove(TEST_SMB_PATH ".sha");
+	remove(TEST_SMB_PATH ".hash");
+	memset(&smb, 0, sizeof(smb));
+	SAFECOPY(smb.file, TEST_SMB_PATH);
+	smb.retry_time = 10;
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_open(&smb));
+	smb.status.attr = SMB_HYPERALLOC;
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_create(&smb));
+	memset(&msg, 0, sizeof(msg));
+	smb_hfield_str(&msg, SENDER, "sender");
+	smb_hfield_str(&msg, RECIPIENT, "recipient");
+	smb_hfield_str(&msg, SUBJECT, "hyper");
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS
+	                      , smb_addmsg(&smb, &msg, SMB_HYPERALLOC, SMB_HASH_SOURCE_NONE, XLAT_NONE
+	                                   , (uchar*)"body", NULL));
+	offset = msg.idx.offset;
+	shd_length = filelength(fileno(smb.shd_fp));
+
+	memset(comment, 'C', sizeof(comment) - 1);
+	comment[sizeof(comment) - 1] = '\0';
+	CuAssertIntEquals(tc, SMB_SUCCESS, smb_hfield_str(&msg, SMB_COMMENT, comment));
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_locksmbhdr(&smb));
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_putmsg(&smb, &msg));
+	CuAssertTrue(tc, smb.smbhdr_locked);
+	smb_unlocksmbhdr(&smb);
+	CuAssertIntEquals(tc, (int)shd_length, (int)msg.idx.offset);
+	smb_freemsgmem(&msg);
+
+	memset(&msg, 0, sizeof(msg));
+	msg.hdr.number = 1;
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_getmsgidx(&smb, &msg));
+	CuAssertIntEquals(tc, (int)shd_length, (int)msg.idx.offset);
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_getmsghdr(&smb, &msg));
+	CuAssertTrue(tc, !(msg.hdr.attr & MSG_DELETE));
+	CuAssertStrEquals(tc, "hyper", msg.subj);
+	CuAssertStrEquals(tc, comment, (char*)smb_get_hfield(&msg, SMB_COMMENT, NULL));
+	smb_freemsgmem(&msg);
+
+	memset(&old, 0, sizeof(old));
+	old.idx.offset = offset;
+	CuAssertIntEquals_Msg(tc, smb.last_error, SMB_SUCCESS, smb_getmsghdr(&smb, &old));
+	CuAssertTrue(tc, old.hdr.attr & MSG_DELETE);
+	smb_freemsgmem(&old);
+	CuAssertPtrEquals(tc, NULL, smb.sha_fp);
+	smb_close(&smb);
+}
+
 /* smbutil pack references shared data with smb_incmsgdat() over the whole
    data length; deleting a copy must not free blocks the others still use. */
 void Test_SharedCopiesReferencedByPack(CuTest* tc)
@@ -194,6 +341,12 @@ CuSuite* SmbAllocTestSuite(void)
 	SUITE_ADD_TEST(suite, Test_SharedCopiesReferencedByMessage);
 	SUITE_ADD_TEST(suite, Test_SharedCopiesReferencedByPack);
 	SUITE_ADD_TEST(suite, Test_CallerHeldHeaderLockIsKept);
+	SUITE_ADD_TEST(suite, Test_FreeingLastDataTruncatesDataFile);
+	SUITE_ADD_TEST(suite, Test_UnaccountedDataIsKept);
+	SUITE_ADD_TEST(suite, Test_ShortHeaderAllocationFileKeepsHeaders);
+	SUITE_ADD_TEST(suite, Test_NothingToFreeClosesAllocationFile);
+	SUITE_ADD_TEST(suite, Test_HeaderGrowthKeepsCallerHeldHeaderLock);
+	SUITE_ADD_TEST(suite, Test_HeaderGrowthInHyperAllocatedBase);
 	SUITE_ADD_TEST(suite, Test_DataLengthIsExtent);
 	return suite;
 }

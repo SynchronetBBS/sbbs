@@ -1638,18 +1638,22 @@ int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, bool new_msg)
 	uint   hdrlen;
 	off_t  idxlen;
 	size_t idxreclen = smb_idxreclen(smb);
+	bool   unlock;
 
 	if (smb->shd_fp == NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
 		return SMB_ERR_NOT_OPEN;
 	}
 
+	// Replacing an existing header leaves a caller-held lock in place
+	unlock = new_msg || !smb->smbhdr_locked;
 	if (!smb->smbhdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
 
 	hdrlen = smb_getmsghdrlen(msg);
 	if (hdrlen > SMB_MAX_HDR_LEN) { /* headers are limited to 64k in size */
-		smb_unlocksmbhdr(smb);
+		if (unlock)
+			smb_unlocksmbhdr(smb);
 		safe_snprintf(smb->last_error, sizeof(smb->last_error)
 		              , "%s illegal message header length (%u > %u)", __FUNCTION__
 		              , hdrlen, SMB_MAX_HDR_LEN);
@@ -1657,7 +1661,8 @@ int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, bool new_msg)
 	}
 
 	if ((i = smb_getstatus(smb)) != SMB_SUCCESS) {
-		smb_unlocksmbhdr(smb);
+		if (unlock)
+			smb_unlocksmbhdr(smb);
 		return i;
 	}
 
@@ -1673,14 +1678,16 @@ int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, bool new_msg)
 			if (diff == 1) {
 				/* .sid is one record long — truncate the orphan */
 				if (chsize(fileno(smb->sid_fp), smb->status.total_msgs * idxreclen) != 0) {
-					smb_unlocksmbhdr(smb);
+					if (unlock)
+						smb_unlocksmbhdr(smb);
 					return SMB_ERR_WRITE;
 				}
 			} else {
 				/* .sid is 1-2 records short — reduce total_msgs to match */
 				smb->status.total_msgs = (uint32_t)actual_msgs;
 				if ((i = smb_putstatus(smb)) != SMB_SUCCESS) {
-					smb_unlocksmbhdr(smb);
+					if (unlock)
+						smb_unlocksmbhdr(smb);
 					return i;
 				}
 			}
@@ -1688,7 +1695,8 @@ int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, bool new_msg)
 			safe_snprintf(smb->last_error, sizeof(smb->last_error)
 			              , "%s index file length (%" PRIdOFF "), expected (%d)", __FUNCTION__
 			              , idxlen, (uint)(smb->status.total_msgs * idxreclen));
-			smb_unlocksmbhdr(smb);
+			if (unlock)
+				smb_unlocksmbhdr(smb);
 			return SMB_ERR_FILE_LEN;
 		}
 	}
@@ -1702,7 +1710,8 @@ int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, bool new_msg)
 		/* This is *not* a dupe-check */
 		if (!(msg->flags & MSG_FLAG_HASHED) /* not already hashed */
 		    && (i = smb_hashmsg(smb, msg, /* text: */ NULL, /* update? */ true)) != SMB_SUCCESS) {
-			smb_unlocksmbhdr(smb);
+			if (unlock)
+				smb_unlocksmbhdr(smb);
 			return i;  /* error updating hash table */
 		}
 	}
@@ -1715,7 +1724,8 @@ int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, bool new_msg)
 	if (smb->status.attr & SMB_HYPERALLOC)
 		storage = SMB_HYPERALLOC;
 	if (storage != SMB_HYPERALLOC && (i = smb_open_ha(smb)) != SMB_SUCCESS) {
-		smb_unlocksmbhdr(smb);
+		if (unlock)
+			smb_unlocksmbhdr(smb);
 		return i;
 	}
 
@@ -1731,7 +1741,8 @@ int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, bool new_msg)
 	if (storage != SMB_HYPERALLOC)
 		smb_close_ha(smb);
 	if (l < 0) {
-		smb_unlocksmbhdr(smb);
+		if (unlock)
+			smb_unlocksmbhdr(smb);
 		return (int)l;
 	}
 
@@ -1745,7 +1756,8 @@ int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, bool new_msg)
 		smb->status.total_msgs++;
 		i = smb_putstatus(smb);
 	}
-	smb_unlocksmbhdr(smb);
+	if (unlock)
+		smb_unlocksmbhdr(smb);
 	return i;
 }
 

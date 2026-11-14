@@ -130,6 +130,12 @@ off_t smb_allocdat(smb_t* smb, off_t length, uint16_t refs)
 			break;
 		}
 	}
+	if (ferror(smb->sda_fp)) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s %d '%s' reading allocation record at offset %" PRIdOFF, __FUNCTION__
+		              , get_errno(), strerror(get_errno()), (offset / SDT_BLOCK_LEN) * (off_t)sizeof(i));
+		return SMB_ERR_READ;
+	}
 	if (!valid_dat_offset(offset, (off_t)blocks * SDT_BLOCK_LEN)) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error)
 		              , "%s invalid data offset: %" PRIdOFF " (%u blocks, max %" PRIdOFF ")"
@@ -214,7 +220,6 @@ int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 	uint      l, blocks, keep;
 	off_t     sda_offset;
 	off_t     flen;
-	off_t     sda_blocks;
 	off_t     sdt_blocks;
 
 	if (offset < 0)
@@ -234,12 +239,24 @@ int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 		da_opened = true;
 	}
 	flen = filelength(fileno(smb->sda_fp));
-	if (flen < sizeof(uint16_t))
-		return 0;   // Nothing to do
+	if (flen < (off_t)sizeof(uint16_t)) {
+		if (flen < 0) {
+			safe_snprintf(smb->last_error, sizeof(smb->last_error)
+			              , "%s %d '%s' getting length of allocation file", __FUNCTION__
+			              , get_errno(), strerror(get_errno()));
+			retval = SMB_ERR_FILE_LEN;
+		}
+		if (da_opened)
+			smb_close_da(smb);
+		return retval;  // Nothing to do
+	}
 
 	hdr_locked = smb->smbhdr_locked;
-	if (!hdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
+	if (!hdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS) {
+		if (da_opened)
+			smb_close_da(smb);
 		return SMB_ERR_LOCK;
+	}
 
 	sda_offset = (offset / SDT_BLOCK_LEN) * (off_t)sizeof(*rec);
 	if ((rec = read_dat_alloc(smb, sda_offset, blocks, __FUNCTION__, &retval)) != NULL) {
@@ -260,13 +277,20 @@ int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 		}
 		retval = write_dat_alloc(smb, sda_offset, rec, keep, __FUNCTION__);
 		free(rec);
+		fflush(smb->sda_fp);
+		// Truncate the data file to match, but only the blocks just removed
+		// from the end of the allocation file: data the allocation file never
+		// accounted for is left alone
+		if (keep < blocks) {
+			off_t sda_blocks = sda_offset / (off_t)sizeof(*rec) + keep;
+
+			sdt_blocks = filelength(fileno(smb->sdt_fp)) / SDT_BLOCK_LEN;
+			if (sdt_blocks > sda_blocks && sdt_blocks <= flen / (off_t)sizeof(*rec)
+			    && chsize(fileno(smb->sdt_fp), sda_blocks * SDT_BLOCK_LEN) != 0)
+				retval = SMB_ERR_TRUNCATE;
+		}
 	}
 	fflush(smb->sda_fp);
-	sda_blocks = filelength(fileno(smb->sda_fp)) / (off_t)sizeof(uint16_t);
-	sdt_blocks = filelength(fileno(smb->sdt_fp)) / SDT_BLOCK_LEN;
-	if (sda_blocks >= 0 && sdt_blocks > sda_blocks)
-		if (chsize(fileno(smb->sdt_fp), sda_blocks * SDT_BLOCK_LEN) != 0)
-			retval = SMB_ERR_TRUNCATE;
 	if (da_opened)
 		smb_close_da(smb);
 	if (!hdr_locked)
@@ -349,6 +373,7 @@ int smb_freemsghdr(smb_t* smb, off_t offset, uint length)
 	uchar c = 0;
 	int   l, blocks;
 	off_t sha_offset;
+	off_t sha_length;
 
 	if (smb->status.attr & SMB_HYPERALLOC)  /* Nothing to do */
 		return SMB_SUCCESS;
@@ -365,7 +390,14 @@ int smb_freemsghdr(smb_t* smb, off_t offset, uint length)
 	}
 
 	sha_offset = offset / SHD_BLOCK_LEN;
-	if (filelength(fileno(smb->sha_fp)) <= (sha_offset + blocks)) {
+	sha_length = filelength(fileno(smb->sha_fp));
+	if (sha_length < sha_offset + blocks) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s header at offset %" PRIdOFF " (%d blocks) is beyond the allocation file length: %" PRIdOFF
+		              , __FUNCTION__, offset, blocks, sha_length);
+		return SMB_ERR_FILE_LEN;
+	}
+	if (sha_length == sha_offset + blocks) {
 		if (chsize(fileno(smb->sha_fp), sha_offset) == 0) {
 			if (chsize(fileno(smb->shd_fp), (off_t)smb->status.header_offset + offset) != 0) {
 				safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s header truncation failure", __FUNCTION__);
@@ -449,6 +481,12 @@ off_t smb_allochdr(smb_t* smb, uint length)
 			offset -= (blocks * SHD_BLOCK_LEN);
 			break;
 		}
+	}
+	if (ferror(smb->sha_fp)) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s %d '%s' reading allocation record at offset %u", __FUNCTION__
+		              , get_errno(), strerror(get_errno()), offset / SHD_BLOCK_LEN);
+		return SMB_ERR_READ;
 	}
 	clearerr(smb->sha_fp);
 	if (fseek(smb->sha_fp, offset / SHD_BLOCK_LEN, SEEK_SET)) {
