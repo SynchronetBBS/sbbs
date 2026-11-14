@@ -5866,7 +5866,7 @@ bool retoss_bad_echomail(void)
 				FIND_CHAR(body_start, '\r');
 				SKIP_CHARSET(body_start, "\r\n");
 			}
-			retval = smb_addmsg(&smb, &newmsg, smb.status.attr & SMB_HYPERALLOC, dupechk_hashes, XLAT_NONE
+			retval = smb_addmsg(&smb, &newmsg, smb_storage_mode(&scfg, &smb), dupechk_hashes, XLAT_NONE
 			                    , (uchar*)body_start, (uchar*)tail);
 			FREE_AND_NULL(body);
 			FREE_AND_NULL(tail);
