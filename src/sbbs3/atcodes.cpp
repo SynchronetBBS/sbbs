@@ -1716,10 +1716,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (!strcmp(sp, "FREESPACE")) {
-		safe_snprintf(str, maxlen, "%" PRIu64, getfreediskspace(cfg.temp_dir, 0));
-		return str;
-	}
+	if (code_match(sp, "FREESPACE", &param))
+		return byte_count(getfreediskspace(cfg.temp_dir, 0), str, maxlen, param, BYTE_COUNT_BYTES);
 
 	if (!strcmp(sp, "FREESPACEK")) {
 		safe_snprintf(str, maxlen, "%" PRIu64, getfreediskspace(cfg.temp_dir, 1024));
