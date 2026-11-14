@@ -666,8 +666,10 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 /* Hot keyed number input routine.                                          */
 /* Returns a valid number between 1 and max, 0 if no number entered, or -1  */
 /* if the user hit the quit key (e.g. 'Q') or ctrl-c                        */
+/* If navkey is non-NULL, a navigation key (up/down/home/end/pageup/pagedn) */
+/* hit before any digits is stored in *navkey and GETNUM_NAVKEY is returned */
 /****************************************************************************/
-int sbbs_t::getnum(uint max, uint dflt)
+int sbbs_t::getnum(uint max, uint dflt, char* navkey)
 {
 	uchar ch, n = 0;
 	int   i = 0;
@@ -699,6 +701,13 @@ int sbbs_t::getnum(uint max, uint dflt)
 			if (!n)
 				return dflt;
 			return i;
+		}
+		else if (navkey != nullptr && !n
+		         && (ch == TERM_KEY_UP || ch == TERM_KEY_DOWN
+		             || ch == TERM_KEY_HOME || ch == TERM_KEY_END
+		             || ch == TERM_KEY_PAGEUP || ch == TERM_KEY_PAGEDN)) {
+			*navkey = ch;
+			return GETNUM_NAVKEY;
 		}
 		else if ((ch == BS || ch == DEL) && n) {
 			term->backspace();

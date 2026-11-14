@@ -953,6 +953,9 @@ js_getnum(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	uint32_t   maxnum = ~0;
 	int32      dflt = 0;
+	bool       navkeys = false;
+	char       navkey = 0;
+	int        result;
 	sbbs_t*    sbbs;
 	jsrefcount rc;
 
@@ -969,10 +972,19 @@ js_getnum(JSContext *cx, uintN argc, jsval *arglist)
 		if (!JS_ValueToInt32(cx, argv[1], &dflt))
 			return JS_FALSE;
 	}
+	if (argc > 2 && JSVAL_IS_BOOLEAN(argv[2]))
+		navkeys = JSVAL_TO_BOOLEAN(argv[2]);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->getnum(maxnum, dflt)));
+	result = sbbs->getnum(maxnum, dflt, navkeys ? &navkey : nullptr);
 	JS_RESUMEREQUEST(cx, rc);
+	if (result == GETNUM_NAVKEY) {
+		JSString* js_str = js_key_str(cx, navkey);
+		if (js_str == NULL)
+			return JS_FALSE;
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	} else
+		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
 	return JS_TRUE;
 }
 
@@ -2958,8 +2970,12 @@ static jsSyncMethodSpec js_console_functions[] = {
 		        )
 	 , 310
 	},
-	{"getnum",          js_getnum,          0, JSTYPE_NUMBER,   JSDOCSTR("[<i>number</i> maxnum [,<i>number</i> default]]")
-	 , JSDOCSTR("Get a number between 1 and <i>maxnum</i> from the user with a default value of <i>default</i>")
+	{"getnum",          js_getnum,          0, JSTYPE_NUMBER,   JSDOCSTR("[<i>number</i> maxnum [,<i>number</i> default] [,<i>bool</i> navkeys=false]]")
+	 , JSDOCSTR("Get a number between 1 and <i>maxnum</i> from the user with a default value of <i>default</i>, "
+		        "returns <tt>-1</tt> if the user hit the quit key or Ctrl-C. "
+		        "When <i>navkeys</i> is <tt>true</tt>, a navigation key (<tt>KEY_UP</tt>, <tt>KEY_DOWN</tt>, <tt>KEY_HOME</tt>, "
+		        "<tt>KEY_END</tt>, <tt>KEY_PAGEUP</tt> or <tt>KEY_PAGEDN</tt>) hit before any digits is returned as a <i>string</i> "
+		        "(<i>navkeys</i> argument added in v3.22)")
 	 , 310
 	},
 	{"getkeys",         js_getkeys,         1, JSTYPE_NUMBER,   JSDOCSTR("[<i>string</i> keys] [,<i>number></i> maxnum] [,<i>number</i> k_mode=K_UPPER]")

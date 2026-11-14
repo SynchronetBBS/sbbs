@@ -635,6 +635,9 @@ typedef enum {                       // Values for xtrn_t.event
 #define TERM_KEY_PAGEUP CTRL_P
 #define TERM_KEY_PAGEDN CTRL_N
 
+// Return value of sbbs_t::getnum() when a navigation key was hit (navkey != nullptr)
+#define GETNUM_NAVKEY   -2
+
 #define TERM_COLS_AUTO      0
 #define TERM_COLS_MIN       40
 #define TERM_COLS_MAX       999

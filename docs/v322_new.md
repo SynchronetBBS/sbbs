@@ -723,6 +723,8 @@
   (with `?raw` for the original `.md` as `text/plain`)
 - New: `uselect_rip.js` — RIP-capable "Select Item" loadable
   module; `RIPScrollbar` gains a horizontal mode
+- `uselect.js` pages lists longer than the screen and supports
+  arrow-key, Home/End and PgUp/PgDn navigation (new `more_fmt` modopt)
 - New: `qwk_sec.js`: the QWK message packet menu is now a loadable
   module (SCFG->System->Loadable Modules->QWK Section), replacing the
   built-in menu
@@ -1008,6 +1010,9 @@
 - `console.ansi()` renamed `console.attrstr()` (`ansi()` remains as an
   alias): it returns the sequence for the user's terminal type (e.g.
   PETSCII), not only ANSI
+- `console.getnum()` gains an optional third `navkeys` argument: when
+  `true`, an arrow, Home/End or PgUp/PgDn key hit before any digits is
+  returned as a `KEY_*` string
 
 ## JSexec
 

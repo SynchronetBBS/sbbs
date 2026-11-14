@@ -1063,7 +1063,7 @@ public:
 	/* getstr.cpp */
 	size_t	getstr_offset = 0;
 	size_t	getstr(char *str, size_t length, int mode, const str_list_t history = NULL);
-	int		getnum(uint max, uint dflt=0);
+	int		getnum(uint max, uint dflt=0, char* navkey = nullptr);
 
 	/* getkey.cpp */
 	char	getkey(int mode = K_NONE);
