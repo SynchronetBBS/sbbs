@@ -8,6 +8,19 @@ require("text.js", 'TextSectionLstHdr');
 require("nodedefs.js", 'NODE_RTXT');
 require("cga_defs.js", 'LIGHTGRAY');
 require("sbbsdefs.js", 'P_CPM_EOF');
+require("select_item.js", "select_item");
+
+// modopts.ini [text_sec] options:
+// - default_item_prefix, nondefault_item_prefix: what marks the default item
+//   of a list (and what takes its place before the other items)
+// - default_item_attr: attributes of the default item's highlighted name
+// - more_fmt: the indicator shown when a list doesn't fit on the screen
+// Without any of the first three, no default item is marked and the
+// navigation keys only scroll a list that is longer than the screen.
+var options = load("modopts.js", "text_sec", {});
+var marked = options.default_item_prefix !== undefined
+	|| options.nondefault_item_prefix !== undefined
+	|| Boolean(options.default_item_attr);
 
 var file_cnf = new File(system.ctrl_dir + "file.ini");
 if(!file_cnf.open('r')) {
@@ -73,6 +86,58 @@ function write_list(sec, list)
 	return true;
 }
 
+function item_prefix(is_default)
+{
+	var prefix = is_default ? options.default_item_prefix : options.nondefault_item_prefix;
+	return prefix === undefined ? "" : prefix;
+}
+
+function prefix_width()
+{
+	return Math.max(strip_ctrl(item_prefix(true)).length, strip_ctrl(item_prefix(false)).length);
+}
+
+// The widest name (or description) in a list, as far as fits on a line
+// after the item's prefix and number
+function widest_name(list, prop)
+{
+	var max = Math.max(console.screen_columns - prefix_width() - 6, 1);
+	var widest = 0;
+	for(var i = 0; i < list.length; i++)
+		widest = Math.max(widest, Math.min(String(list[i][prop]).length, max));
+	return widest;
+}
+
+// The default item's name is padded to the list's widest and highlighted,
+// but only when the text.dat format displays it with a plain %s, so that a
+// customized format is never misaligned
+function item_name(fmt, name, widest, is_default)
+{
+	if(!is_default || !options.default_item_attr || fmt.indexOf("%s") < 0)
+		return name;
+	return options.default_item_attr + format("%-*s", widest, String(name).substr(0, widest)) + "\x01n";
+}
+
+// Enter completes a clicked number that could be the start of a longer one
+function add_hotspot(num, count)
+{
+	console.add_hotspot(num * 10 <= count ? num + "\r" : num);
+}
+
+function item_str(fmt, num, name, widest, is_default)
+{
+	// select_item() ends the line
+	return format(fmt, num, item_name(fmt, name, widest, is_default)).replace(/[\r\n]+$/, "");
+}
+
+function show_menu(name)
+{
+	if(!bbs.menu_exists(name))
+		return false;
+	bbs.menu(name);
+	return true;
+}
+
 var usrsec = [];
 var txtsec = file_cnf.iniGetAllObjects("code", "text:");
 file_cnf.close();
@@ -85,47 +150,77 @@ if(!usrsec.length) {
 	exit();
 }
 bbs.node_action = NODE_RTXT;
+var cursec = 0;
+var sec_widest = widest_name(usrsec, "name");
 while(bbs.online) {
 	console.aborted = false;
-	if(bbs.menu_exists("text_sec"))
-		bbs.menu("text_sec");
-	else {
-		console.print(bbs.text(TextSectionLstHdr));
-		for(var i = 0; i < usrsec.length && !console.aborted; i++) {
-			if(i<9) console.print(' ');
-			console.add_hotspot(i + 1);
-			console.print(format(bbs.text(TextSectionLstFmt), i + 1, usrsec[i].name));
-		}
-	}
 	bbs.nodesync();
-	console.mnemonics(bbs.text(WhichTextSection));
-	var cursec = console.getnum(usrsec.length);
-	if(cursec < 1)	// Quit
+	// A menu file displayed in place of the list can't mark a default item
+	var sec_marked = marked && !bbs.menu_exists("text_sec");
+	cursec = select_item({
+		count: usrsec.length,
+		current: sec_marked ? cursec : -1,
+		no_default: !sec_marked,
+		header: bbs.text(TextSectionLstHdr),
+		prompt: function() { return bbs.text(WhichTextSection); },
+		print_item: function(i, is_default, redraw) {
+			console.print(item_prefix(is_default));
+			if(i<9) console.print(' ');
+			if(!redraw)
+				add_hotspot(i + 1, usrsec.length);
+			console.print(item_str(bbs.text(TextSectionLstFmt), i + 1, usrsec[i].name, sec_widest, is_default));
+		},
+		menu: function() { return show_menu("text_sec"); },
+		more_fmt: options.more_fmt,
+		more_indent: prefix_width() + 1
+	});
+	if(cursec < 0)	// Quit
 		break;
-	cursec--;
+	var curfile = 0;
 	while(bbs.online) {
 		var prev;
 		var list = read_list(usrsec[cursec]);
 		var menu = "text" + (cursec + 1);
+		var cmd;
 		console.aborted = false;
-		console.cmd_keys = user.is_sysop ? "?ARED" : "?";
-		if(bbs.menu_exists(menu))
-			bbs.menu(menu);
-		else {
-			console.print(format(bbs.text(TextFilesLstHdr), usrsec[cursec].name));
-			for(var i = 0; i < list.length && !console.aborted; i++) {
-				console.add_hotspot(i + 1);
-				console.print(format(bbs.text(TextFilesLstFmt), i + 1, list[i].desc + "\r\n"));
-			}
-		}
+		var keys = user.is_sysop ? "?ARED" : "?";
+		console.cmd_keys = keys;
 		bbs.nodesync();
-		var keys = console.quit_key + "?";
-		if(user.is_sysop) {
-			keys += "ARED";
-			console.mnemonics(bbs.text(WhichTextFileSysop));
-		} else
-			console.mnemonics(bbs.text(WhichTextFile));
-		var cmd = console.getkeys(keys, list.length);
+		if(list.length < 1) {	// nothing to select from
+			if(!show_menu(menu))
+				console.print(format(bbs.text(TextFilesLstHdr), usrsec[cursec].name));
+			console.mnemonics(bbs.text(user.is_sysop ? WhichTextFileSysop : WhichTextFile));
+			cmd = console.getkeys(console.quit_key + keys, 0);
+		} else {
+			var file_marked = marked && !bbs.menu_exists(menu);
+			var file_widest = widest_name(list, "desc");
+			var sel = {
+				count: list.length,
+				current: file_marked ? Math.min(curfile, list.length - 1) : -1,
+				no_default: !file_marked,
+				keys: keys,
+				header: format(bbs.text(TextFilesLstHdr), usrsec[cursec].name),
+				prompt: function() { return bbs.text(user.is_sysop ? WhichTextFileSysop : WhichTextFile); },
+				print_item: function(i, is_default, redraw) {
+					console.print(item_prefix(is_default));
+					if(!redraw)
+						add_hotspot(i + 1, list.length);
+					console.print(item_str(bbs.text(TextFilesLstFmt), i + 1, list[i].desc, file_widest, is_default));
+				},
+				menu: function() { return show_menu(menu); },
+				more_fmt: options.more_fmt,
+				more_indent: prefix_width() + 1
+			};
+			cmd = select_item(sel);
+			if(cmd === -1)	// Quit
+				break;
+			if(cmd === -2)	// Enter, with no default item
+				cmd = "";
+			else if(typeof cmd == "number")
+				cmd++;
+			else
+				curfile = sel.current;
+		}
 		if(cmd == console.quit_key || (!cmd && !prev))
 			break;
 		switch(cmd) {
@@ -216,6 +311,7 @@ while(bbs.online) {
 					cmd = prev + 1;
 				if(typeof(cmd) == "number" && cmd <= list.length) {
 					prev = cmd;
+					curfile = cmd;	// the next file is the new default
 					cmd--;
 					console.attributes = LIGHTGRAY;
 					if(list[cmd].ars !== undefined && !bbs.compare_ars(list[cmd].ars)) {

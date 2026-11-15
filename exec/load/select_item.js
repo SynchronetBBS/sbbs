@@ -1,14 +1,16 @@
 // Numbered-list selection with paging and arrow-key navigation
 // for Synchronet v3.22+ (uses console.getnum()'s navkeys argument)
 
-// Used by uselect.js and by the area selection functions of shell_lib.js
+// Used by uselect.js, text_sec.js and by the area selection functions of
+// shell_lib.js
 
 // Usage: require("select_item.js", "select_item");
 //        var index = select_item(opts);
 //
 // Returns the 0-based index of the selected item, -1 if the user quit
 // (quit key or Ctrl-C), or -2 if the user hit Enter while no item was the
-// default (opts.current < 0, nothing selected with the arrow keys).
+// default (opts.current < 0, nothing selected with the arrow keys), or one of
+// the opts.keys command keys (a string).
 //
 // opts:
 // - count       number of items (required)
@@ -27,6 +29,12 @@
 //               items don't fit on one screen: first, last, total
 // - more_indent optional indent (in columns) of the default indicator, e.g.
 //               to align it with the items after a marker (default: 2)
+// - keys        optional string of additional command keys (uppercase), any
+//               of which is returned to the caller, with opts.current set to
+//               the default item at the time
+// - no_default  true when the list doesn't mark a default item: the
+//               navigation keys then only scroll a list longer than the
+//               screen, and Enter returns -2
 
 require("key_defs.js", "KEY_UP");
 
@@ -47,16 +55,20 @@ function select_item(opts)
 	var more_row;		// screen row of the "more" indicator
 	var prompt_row;		// screen row of the last line of the prompt
 	var prev;			// previous default item, when only it and cur need repainting
+	var idle = false;	// the last key changed nothing, so there's nothing to repaint
+	var nav_keys = KEY_UP + KEY_DOWN + KEY_HOME + KEY_END + KEY_PAGEUP + KEY_PAGEDN;
 
 	if (count < 1)
 		return -1;
-	if (cur >= count)
+	if (cur >= count || opts.no_default)
 		cur = -1;
 	while (bbs.online && !js.terminated) {
 		var udflt = (cur < 0) ? 1 : cur + 1;
 		var prompt = opts.prompt(udflt);
 
-		if (drawn && prev !== undefined && repaint(prev, cur)) {
+		if (idle) {
+			idle = false;
+		} else if (drawn && prev !== undefined && repaint(prev, cur)) {
 			prev = undefined;
 		} else if (drawn && page < count && repaint_page(udflt)) {
 			prev = undefined;
@@ -98,10 +110,33 @@ function select_item(opts)
 			console.mnemonics(prompt);
 			prompt_row = console.current_row;
 		}
-		var choice = console.getnum(count, 0, drawn);
+		var choice = (opts.keys === undefined) ? console.getnum(count, 0, drawn) : get_choice();
+		if (typeof choice === 'object') {
+			console.clear_hotspots();
+			opts.current = cur;
+			return choice.key;
+		}
 		if (typeof choice === 'string') {
 			var next = udflt - 1;
 			var old_top = top;
+			if (opts.no_default) {
+				if (choice == KEY_UP)
+					top--;
+				else if (choice == KEY_DOWN)
+					top++;
+				else if (choice == KEY_PAGEUP)
+					top -= page;
+				else if (choice == KEY_PAGEDN)
+					top += page;
+				else if (choice == KEY_HOME)
+					top = 0;
+				else if (choice == KEY_END)
+					top = count - page;
+				top = Math.max(0, Math.min(top, count - page));
+				idle = (top == old_top);
+				prev = undefined;
+				continue;
+			}
 			if (choice == KEY_UP)
 				next--;
 			else if (choice == KEY_DOWN)
@@ -133,13 +168,33 @@ function select_item(opts)
 	}
 	return -1;
 
+	// console.getnum(), plus the caller's command keys: returns what it does
+	// (a number, or a navigation key string) or the command key as { key: }
+	function get_choice()
+	{
+		var nav = drawn ? nav_keys : "";
+		var key = console.getkeys(nav + console.quit_key + opts.keys, count);
+
+		if (typeof key === 'number')
+			return key > 0 ? key : -1;	// 0: aborted (Ctrl-C)
+		if (key === "")	// Enter
+			return 0;
+		if (key == console.quit_key)
+			return -1;
+		if (nav.indexOf(key) >= 0)
+			return key;
+		return { key: key };
+	}
+
 	// Scroll the page so the default item (1-based) is visible
 	function scroll_to(udflt)
 	{
-		if (udflt - 1 < top)
-			top = udflt - 1;
-		else if (udflt - 1 >= top + page)
-			top = udflt - page;
+		if (!opts.no_default) {
+			if (udflt - 1 < top)
+				top = udflt - 1;
+			else if (udflt - 1 >= top + page)
+				top = udflt - page;
+		}
 		top = Math.max(0, Math.min(top, count - page));
 	}
 
