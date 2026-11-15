@@ -11,16 +11,16 @@ require("sbbsdefs.js", 'P_CPM_EOF');
 require("select_item.js", "select_item");
 
 // modopts.ini [text_sec] options:
-// - default_item_prefix, nondefault_item_prefix: what marks the default item
+// - selected_item_prefix, unselected_item_prefix: what marks the default item
 //   of a list (and what takes its place before the other items)
-// - default_item_attr: attributes of the default item's highlighted name
+// - selected_item_attr: attributes of the default item's highlighted name
 // - more_fmt: the indicator shown when a list doesn't fit on the screen
 // Without any of the first three, no default item is marked and the
 // navigation keys only scroll a list that is longer than the screen.
 var options = load("modopts.js", "text_sec", {});
-var marked = options.default_item_prefix !== undefined
-	|| options.nondefault_item_prefix !== undefined
-	|| Boolean(options.default_item_attr);
+var marked = options.selected_item_prefix !== undefined
+	|| options.unselected_item_prefix !== undefined
+	|| Boolean(options.selected_item_attr);
 
 var file_cnf = new File(system.ctrl_dir + "file.ini");
 if(!file_cnf.open('r')) {
@@ -88,7 +88,7 @@ function write_list(sec, list)
 
 function item_prefix(is_default)
 {
-	var prefix = is_default ? options.default_item_prefix : options.nondefault_item_prefix;
+	var prefix = is_default ? options.selected_item_prefix : options.unselected_item_prefix;
 	return prefix === undefined ? "" : prefix;
 }
 
@@ -113,9 +113,9 @@ function widest_name(list, prop)
 // customized format is never misaligned
 function item_name(fmt, name, widest, is_default)
 {
-	if(!is_default || !options.default_item_attr || fmt.indexOf("%s") < 0)
+	if(!is_default || !options.selected_item_attr || fmt.indexOf("%s") < 0)
 		return name;
-	return options.default_item_attr + format("%-*s", widest, String(name).substr(0, widest)) + "\x01n";
+	return options.selected_item_attr + format("%-*s", widest, String(name).substr(0, widest)) + "\x01n";
 }
 
 // Enter completes a clicked number that could be the start of a longer one

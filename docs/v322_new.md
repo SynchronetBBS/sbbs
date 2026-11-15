@@ -754,7 +754,7 @@
   changed (new `more_fmt` modopt). The stock `ctrl/modopts.ini` marks the
   default item with `->` and a highlighted name; an existing
   `modopts.ini` keeps the v3.21 look (`*`). For a reverse-video bar, set
-  `[uselect]` `default_item_fmt` to
+  `[uselect]` `selected_item_fmt` to
   `"\x01U->\x01v%*s(\x01V%d\x01v) \x01n\x017\x01k%s\x01n \x01U<-"`
 - New: `qwk_sec.js`: the QWK message packet menu is now a loadable
   module (SCFG->System->Loadable Modules->QWK Section), replacing the
@@ -854,8 +854,8 @@
 - Message group/sub-board and file library/directory selection (`J`
   in shells built on `shell_lib.js`) supports arrow-key, Home/End and
   PgUp/PgDn navigation and pages lists longer than the screen. New
-  `ctrl/modopts.ini` `[shell]` options: `default_item_prefix` and
-  `nondefault_item_prefix` replace the `*` marker, `default_item_attr`
+  `ctrl/modopts.ini` `[shell]` options: `selected_item_prefix` and
+  `unselected_item_prefix` replace the `*` marker, `selected_item_attr`
   highlights the default area's name (e.g. `"\x01V"`, or
   `"\x01n\x017\x01k"` for a reverse-video bar), and `more_fmt` formats
   the `[x-y of n]` indicator. The stock `modopts.ini` uses `->` and a
@@ -866,13 +866,14 @@
 - The text file section and file lists (`text_sec.js`) page lists longer
   than the screen and support arrow-key, Home/End and PgUp/PgDn
   navigation; new `modopts.ini` `[text_sec]` options
-  `default_item_prefix`, `nondefault_item_prefix`, `default_item_attr`
+  `selected_item_prefix`, `unselected_item_prefix`, `selected_item_attr`
   and `more_fmt` mark and highlight the default item, as for the area
   selection lists. The stock `modopts.ini` uses `->` and a highlighted
   name; an existing one keeps the v3.21 look
 - The external program section and program lists (`xtrn_sec.js`) get the
   same paging, navigation (plus Left/Right between two columns) and
-  `modopts.ini` `[xtrn_sec]` options
+  `modopts.ini` `[xtrn_sec]` options, plus `lightbar` to
+  highlight the whole item as a lightbar
 - A menu file displayed in place of one of those lists (e.g. `xtrn_sec`,
   `xtrn<n>`, `text_sec`) is a lightbar menu when it has `@BAR` items
 - More strings in stock modules route through `gettext()` for

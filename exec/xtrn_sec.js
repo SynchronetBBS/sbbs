@@ -103,18 +103,20 @@ function digits(n)
     return 1 + digits(Math.floor(n / 10));
 }
 
-// modopts.ini [xtrn_sec] default_item_prefix, nondefault_item_prefix and
-// default_item_attr options: what marks the default item of a list (and what
+// modopts.ini [xtrn_sec] selected_item_prefix, unselected_item_prefix and
+// selected_item_attr options: what marks the default item of a list (and what
 // takes its place before the other items) and the attributes of its
 // highlighted name. Without any of them, no default item is marked and the
 // navigation keys only page through a list that doesn't fit on the screen.
-var marked = options.default_item_prefix !== undefined
-	|| options.nondefault_item_prefix !== undefined
-	|| Boolean(options.default_item_attr);
+// With lightbar set to true, selected_item_attr highlights the whole
+// item (its number too) as a bar the width of the list's widest item.
+var marked = options.selected_item_prefix !== undefined
+	|| options.unselected_item_prefix !== undefined
+	|| Boolean(options.selected_item_attr);
 
 function item_prefix(is_default)
 {
-	var prefix = is_default ? options.default_item_prefix : options.nondefault_item_prefix;
+	var prefix = is_default ? options.selected_item_prefix : options.unselected_item_prefix;
 	return prefix === undefined ? "" : prefix;
 }
 
@@ -137,9 +139,9 @@ function name_field(fmt)
 function item_str(fmt, num, item, widest, is_default)
 {
 	var name = item.name;
-	var field = (is_default && options.default_item_attr) ? name_field(fmt) : null;
+	var field = (is_default && options.selected_item_attr) ? name_field(fmt) : null;
 	if(field) {
-		name = options.default_item_attr + format("%-*s", widest, name.substr(0, widest)) + "\x01n";
+		name = options.selected_item_attr + format("%-*s", widest, name.substr(0, widest)) + "\x01n";
 		if(field.width > widest)
 			name += format("%*s", field.width - widest, "");
 		fmt = fmt.replace(field.spec, "%s");
@@ -184,7 +186,8 @@ function select_from(list, cur, lst)
 	if(pw && multicolumn && ((widest_item + pw) * 2)
 		+ strip_ctrl(options.multicolumn_separator).length >= console.screen_columns)
 		pw = 0;
-	var has_default = marked && !lst.has_menu && Boolean(pw || (options.default_item_attr && field));
+	var bar = Boolean(options.lightbar && options.selected_item_attr);
+	var has_default = marked && !lst.has_menu && Boolean(pw || bar || (options.selected_item_attr && field));
 
 	// Center on the widest row's DISPLAYED width
 	var margin = "";
@@ -230,9 +233,12 @@ function select_from(list, cur, lst)
 					hotspot += '\r';
 				console.add_hotspot(hotspot);
 			}
-			if(lst.align)
-				printf("%*s", max_digits - digits(i + 1), ""); // Indent to right justify number
-			write(item_str(fmt, i + 1, list[i], widest_name, is_default));
+			var justify = lst.align ? format("%*s", max_digits - digits(i + 1), "") : ""; // right justifies the number
+			if(bar && is_default)	// the item without its own colors, padded to the widest
+				write(options.selected_item_attr + format("%-*s", widest_item
+					, justify + strip_ctrl(item_str(fmt, i + 1, list[i], 0, false))) + "\x01n");
+			else
+				write(justify + item_str(fmt, i + 1, list[i], widest_name, is_default));
 		},
 		more_fmt: options.more_fmt,
 		more_indent: margin.length + pw + 1

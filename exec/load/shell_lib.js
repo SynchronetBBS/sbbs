@@ -99,12 +99,12 @@ function get_dir_num(str)
 }
 
 // The prefix (e.g. '*') printed before an item of an area list, per the
-// modopts.ini [shell] default_item_prefix and nondefault_item_prefix options
+// modopts.ini [shell] selected_item_prefix and unselected_item_prefix options
 function area_item_prefix(is_default)
 {
 	if(is_default)
-		return options.default_item_prefix !== undefined ? options.default_item_prefix : '*';
-	return options.nondefault_item_prefix !== undefined ? options.nondefault_item_prefix : ' ';
+		return options.selected_item_prefix !== undefined ? options.selected_item_prefix : '*';
+	return options.unselected_item_prefix !== undefined ? options.unselected_item_prefix : ' ';
 }
 
 // Indent of the "more" indicator: aligned with the item numbers that follow
@@ -137,7 +137,7 @@ function area_desc_widest(list)
 
 // Format an area list item using the text.dat format 'fmt', narrowing its
 // description field to fit a wide prefix, and highlighting the description
-// of the default item with the modopts.ini [shell] default_item_attr option.
+// of the default item with the modopts.ini [shell] selected_item_attr option.
 // Both apply only if the format's description field is the expected width
 // (%-60.60s), so that a customized format is never misaligned.
 function area_item_str(fmt, num, desc, count, widest, is_default)
@@ -145,8 +145,8 @@ function area_item_str(fmt, num, desc, count, widest, is_default)
 	var field = "%-60.60s";
 	if(fmt.indexOf(field) >= 0) {
 		var width = area_desc_field_width();
-		if(is_default && options.default_item_attr) {
-			desc = options.default_item_attr + format("%-*s", widest, desc.substr(0, widest))
+		if(is_default && options.selected_item_attr) {
+			desc = options.selected_item_attr + format("%-*s", widest, desc.substr(0, widest))
 				+ "\x01n" + format("%-*s", width - widest, "");
 			fmt = fmt.replace(field, "%s");
 		} else

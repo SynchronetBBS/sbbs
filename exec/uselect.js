@@ -4,8 +4,8 @@
 
 // Customizable via modopts/uselect options:
 // - header_fmt
-// - default_item_fmt
-// - nondefault_item_fmt
+// - selected_item_fmt
+// - unselected_item_fmt
 // - prompt_fmt
 // - more_fmt (shown when the items don't fit on one screen)
 
@@ -38,9 +38,9 @@ function print_item(i, is_default, redraw)
 	var hotspot = i + 1;
 	var fmt;
 	if (is_default)
-		fmt = options.default_item_fmt || "\x01U*\x01v%*s(\x01V%d\x01v) \x01U%s";
+		fmt = options.selected_item_fmt || "\x01U*\x01v%*s(\x01V%d\x01v) \x01U%s";
 	else
-		fmt = options.nondefault_item_fmt || "\x01U \x01v%*s(\x01V%d\x01v) \x01U%s";
+		fmt = options.unselected_item_fmt || "\x01U \x01v%*s(\x01V%d\x01v) \x01U%s";
 	console.print(format(fmt
 		, digits(hotspot) - digits(items.length), ""
 		, hotspot, format("%-*s", widest, items[i].name)));
@@ -55,7 +55,7 @@ function print_item(i, is_default, redraw)
 function more_indent()
 {
 	var width = 1;
-	var fmts = [options.default_item_fmt, options.nondefault_item_fmt];
+	var fmts = [options.selected_item_fmt, options.unselected_item_fmt];
 	for (var i = 0; i < fmts.length; ++i) {
 		if (fmts[i])
 			width = Math.max(width, strip_ctrl(fmts[i].substr(0, fmts[i].indexOf('%'))).length);
