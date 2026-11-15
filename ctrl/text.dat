@@ -1001,9 +1001,7 @@
 "(mono) "                                                 820 TerminalMonochrome
 "(color) "                                                821 TerminalColor
 "(iCE color) "                                            822 TerminalIceColor
-"Does your terminal display bright\1\\ background "\      823 IceColorTerminalQ
-    "(iCE) colors\r\n    \1n"\
-    "(i.e. \1i\1k\x013this text\1n is black on yellow and NOT BLINKING)"
+"Use bright background (iCE) colors,\1\\ not blinking text/fonts" 823 IceColorTerminalQ
 "Does your terminal support UTF-8"                        824 Utf8TerminalQ
 "\r\n\xb3 \1bCC  \1n\1b: \1h\1c%.70s"                     825 MsgCarbonCopyList
 "\1n\1hLogging on to @BBS@\1\\ as @ALIAS@@ELLIPSIS@\1n\r\n"\ 826 LoggingOn

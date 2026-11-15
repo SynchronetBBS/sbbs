@@ -110,12 +110,18 @@ function get_color(user)
 			continue;
 		}
 		if (color) {
+			var ice = user.settings & USER_ICE_COLOR;
 			user.settings |= USER_COLOR;
-			if (!(console.status & (CON_BLINK_FONT | CON_HBLINK_FONT))
-				&& confirm(bbs.text(bbs.text.IceColorTerminalQ), user.settings & USER_ICE_COLOR))
+			if (confirm(bbs.text(bbs.text.IceColorTerminalQ), ice))
 				user.settings |= USER_ICE_COLOR;
 			else
 				user.settings &= ~USER_ICE_COLOR;
+			if (user.number == js.global.user.number && (user.settings & USER_ICE_COLOR) != ice) {
+				// Apply now: iCE color replaces the default blink fonts (and vice versa)
+				js.global.user.settings = user.settings;
+				load({}, "cterm_lib.js").bright_background(Boolean(user.settings & USER_ICE_COLOR));
+				load({}, "fonts.js", "default");
+			}
 		}
 		else
 			user.settings &= ~(USER_COLOR | USER_AUTOTERM);

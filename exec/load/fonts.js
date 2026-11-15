@@ -1,5 +1,6 @@
 // Load and/or activate fonts into terminal based ctrl/fonts.ini file contents
 
+require("userdefs.js", 'USER_ICE_COLOR');
 var cterm = load({}, 'cterm_lib.js');
 
 function load_font(slot, filename)
@@ -32,6 +33,10 @@ function fonts(key)
 	slotnames.wantblink = undefined;
 	if(!obj)
 		return false;
+	// With iCE color, the blink attribute selects a bright background, so it
+	// can't also select a font: the user's setting wins over the 'default'
+	// blink fonts (a door's own fonts are still activated as configured)
+	var ice = key == 'default' && Boolean(user.settings & USER_ICE_COLOR);
 	for(var p in obj) {
 		if(parseInt(p, 10) || slotnames[p]) {	// load
 			load_font(slotnames[p] ? slotnames[p] : p, obj[p]);
@@ -42,6 +47,8 @@ function fonts(key)
 			var slotnum = parseInt(slotval, 10);
 			if(!bbs.compare_ars(requirements) || !bbs.compare_ars(obj.requirements))
 				slotnum = 0;
+			if(ice && (p == 'blink' || p == 'highblink'))
+				slotval = slotnum = 0;
 			log(LOG_DEBUG, "activate: " + obj[p] + " slot " + slotnum + " >= " + cterm.font_slot_first);
 			if(slotval !== undefined && slotnum >= cterm.font_slot_first
 				&& !cterm.fonts_loaded[slotnum]) {
@@ -57,6 +64,8 @@ function fonts(key)
 				log(LOG_WARNING, "Failed to activate font: " + cterm.font_styles[p]);
 		}
 	}
+	if(ice)	// Deactivating a blink font re-enables blinking
+		cterm.bright_background(true);
 	return true;
 }
 
