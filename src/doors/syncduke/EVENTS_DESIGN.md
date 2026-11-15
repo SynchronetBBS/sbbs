@@ -23,14 +23,16 @@ share the library. Not covered here.
 
 **In scope (A)**
 - SyncDuke **door** emits `events.jsonl` (`start` / `level` / `death`) via a
-  `-eventlog <path>` arg.
+  `-eventlog <path>` arg. (Since extended with `frag` and `end` records and a death
+  `cause` -- see the schema below.)
 - **`game_lobby.js`** gains generic events helpers (read / prune / feed + time utils).
 - SyncDuke **lobby** passes `-eventlog`, adds a "recent activity" view + prune,
   using the shared helpers.
 
 **Out of scope**
 - Any change to SyncDOOM or `syncdoom_lib.js` (that is Sub-project B).
-- Frag/deathmatch events (Duke co-op has no DM; N/A).
+- Frag/deathmatch events (Duke co-op has no DM; N/A). (Added later, with Dukematch:
+  the `frag` record below.)
 
 ## Architecture
 
@@ -61,7 +63,9 @@ generically; the lobby *supplies the per-event wording*.
 - **Schema — mirrors SyncDOOM** so the shared reader parses both games uniformly:
   - `start`: `{"time":<unix>,"type":"start","node":N,"usernum":N,"user":"..","term":{"desc":"..","cols":N,"rows":N},"tier":"..","build":{"hash":"..","date":".."},"mode":"..","skill":N}` — emitted once, at the first frame after the tier + terminal size have resolved (guarded by a "started" flag).
   - `level`: `{"time":..,"type":"level","node":N,"user":"..","map":"E#L#","secs":N,"skill":N}` — on level change; `secs` = the *previous* level's elapsed seconds.
-  - `death`: `{"time":..,"type":"death","node":N,"user":"..","map":"E#L#","secs":N}` — on the rising edge of `syncduke_player_dead()`.
+  - `death`: `{"time":..,"type":"death","node":N,"user":"..","cause":"..","by":"..","map":"..","secs":N}` — on the rising edge of `syncduke_player_dead()`. `cause` is `environment`, `suicide`, `monster` or `player` (SyncDOOM's four); `by` is the killer's name and is present only for `player`. Records written before the cause was added have neither field.
+  - `frag`: `{"time":..,"type":"frag","node":N,"killer":"..","victim":"..","map":".."}` — a Dukematch kill, logged by the killer's door (`syncduke_next_frag()`).
+  - `end`: `{"time":..,"type":"end","node":N,"user":"..","mode":"..","frags":N,"secs":N}` — once per door session, when the door exits (normal exit or hangup), if a game was started. `frags` is the player's Dukematch score (frags less self-kills); `secs` is the time since `start`. Duke has no game-over edge: a death or a level change drops `MODE_GAME` exactly as quitting to the menu does.
 - **Values** from existing engine state / accessors:
   - `map` = `"E%dL%d"` with `ud.volume_number+1`, `ud.level_number+1` (the +1 form the game itself displays).
   - `skill` = `ud.player_skill + 1`.
@@ -70,7 +74,7 @@ generically; the lobby *supplies the per-event wording*.
   - `tier` = the active tier's name (expose `sd_tier_name()` via an accessor, or reuse an existing tier-name export).
   - `node` = `sbbs_my_node()`; `user` = the door alias (`syncduke_door_alias()`); `usernum` from the `-home` path (as SyncDOOM derives it).
   - **elapsed `secs`** = a `totalclock` delta: capture `totalclock` at each level entry; on the next `level`/`death`, `secs = (totalclock - level_start)/120` (Build's 120 Hz tick). Confirm the tick rate/`totalclock` availability at implementation.
-- **Detection (`syncduke_events_tick()`):** compare last `(volume,level)` to current → emit `level` on change (and on first entry, with `secs` 0); track `syncduke_player_dead()` low→high → emit `death`. All gated on `-eventlog` being set and the engine being in a real game (`MODE_GAME`, not demo — reuse the same guard as the node status). The `start` event fires once when the tier/term are known.
+- **Detection (`syncduke_events_tick()`):** compare last `(volume,level)` to current → emit `level` on change (and on first entry, with `secs` 0); track `syncduke_player_dead()` low→high → emit `death`, with the cause from `syncduke_death_cause()`: a rise in `frags[killer][us]` names a player; otherwise `wackedbyactor`, the sprite that owned the lethal hit, is our own player sprite (suicide), another player's (friendly fire), an enemy (monster), or neither/unset (environment). All gated on `-eventlog` being set and the engine being in a real game (`MODE_GAME`, not demo — reuse the same guard as the node status). The `start` event fires once when the tier/term are known.
 - **Engine-state access** lives in `syncduke_events.c` (it includes `duke3d.h`); the writer/path could be split out but is kept together for one cohesive module.
 
 ## `game_lobby.js` shared events API
@@ -100,7 +104,11 @@ event-feed at these.)
   (mirroring SyncDOOM's `lobby.js` line 40; quote the path).
 - A SyncDuke per-event formatter `sd_event_text(e)` — e.g. `start` → "joined",
   `level` → "reached E1L1", `death` → "died on E1L1", each suffixed with
-  `gl.ago(e.time)`; unknown types → "" (skipped).
+  `gl.ago(e.time)`; unknown types → "" (skipped). (As shipped: `start` and `end` are
+  not shown; `level` → "cleared <map> in M:SS"; `frag` → "X fragged Y on <map>";
+  `death` is worded by `cause` as in SyncDOOM -- "was killed on", "blew themselves up
+  on", else "died on" -- and a `player` death is omitted, the killer's `frag` line
+  covering it.)
 - A "recent activity" menu entry → `sd_show_activity()` printing
   `gl.event_feed(SD_EVENTS, N, sd_event_text)`.
 - Prune on lobby entry: `gl.prune_events(SD_EVENTS, 2000, 1000)`.

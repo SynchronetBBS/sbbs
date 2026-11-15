@@ -32,7 +32,7 @@ the shared `exec/load/game_lobby.js`, not just the C door.
 | Shared lobby model (`exec/load/game_lobby.js`) | Yes — thin door layer over `gl` | Yes — thin door layer over `gl` (both converged) |
 | Lobby node paging (invite active nodes to a match) | Yes — `gl.page_targets`/`gl.send_pages` | Yes — `gl.page_targets`/`gl.send_pages` |
 | Live who's-online + recent-activity **lobby panel** | Yes — shared `gl.panel_cells`, opt-in `[lobby] live` | **Yes** — shared `gl.panel_cells`, opt-in `[lobby] live` |
-| Door activity/events log → lobby feed | Yes — `events.jsonl` (frags/level-clears/deaths) | **Yes** — `events.jsonl` (starts/level-reaches/deaths/**frags**) |
+| Door activity/events log → lobby feed | Yes — `events.jsonl` (frags/level-clears/deaths) | **Yes** — `events.jsonl` (starts/level-clears/deaths with cause/**frags**/session end) |
 | Configurable feed (`[lobby] activity_max`/`activity_max_age`/`panel_rows`) | Yes — shared `gl` accessors | Yes — shared `gl` accessors |
 | Inter-BBS federation | Designed, **not built** | No |
 | Multi-map selection | Engine passthrough (`-iwad/-file/-merge/-deh`); wadset picker is lobby-side | GRP dir configurable; single-GRP install is the clean config; no episode/map/usermap config |
@@ -181,14 +181,16 @@ events layer (`gl.recent_events` / `gl.event_feed` / `gl.prune_events`).
   launches with `-eventlog "<data>/syncdoom/events.jsonl"` and renders the feed
   (`syncdoom_lib.js:270-305` — `sd_event_text`/`sd_recent_events`/`sd_panel_cells`, thin
   wrappers over `gl`), shown in the full-screen `A` view and the bottom panel.
-- **SyncDuke:** `syncduke_events.c` appends **start / level (reached) / death** events
-  (`ev_emit`, `syncduke_events_tick`); the lobby launches with `-eventlog` (`sd_cmd`,
+- **SyncDuke:** `syncduke_events.c` appends **start / level / death / frag / end** events
+  (`ev_emit`, `syncduke_events_tick`, `syncduke_events_end`), the death carrying
+  SyncDOOM's `cause` (and `by`) fields; the lobby launches with `-eventlog` (`sd_cmd`,
   `syncduke_lib.js:117`), reads `SD_EVENTS` (`:35`), formats via `sd_event_text`
   (plain body — the display path adds the age), and shows them in the `L`og view
   (`lobby.js:174-177`) and the bottom panel. Bounded on entry by
   `gl.prune_events(SD_EVENTS, 2000, 1000)` (`lobby.js:270`).
 - Event *taxonomy* is door-specific and stays door-side (Doom filters out its
-  start/end/player-death records; Duke surfaces all of start/level/death). The raw read,
+  start/end/player-death records, and so does Duke). The one difference left in the
+  records: Duke's `end` is per door session, written at exit, where Doom's is per game. The raw read,
   filtering-by-displayability, formatting, oversample-fill, and pruning are shared in
   `gl`.
 
