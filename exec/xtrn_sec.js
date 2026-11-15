@@ -240,6 +240,7 @@ function select_from(list, cur, lst)
 			else
 				write(justify + item_str(fmt, i + 1, list[i], widest_name, is_default));
 		},
+		search: function(i) { return [list[i].name, list[i].code]; },
 		more_fmt: options.more_fmt,
 		more_indent: margin.length + pw + 1
 	});

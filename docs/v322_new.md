@@ -876,6 +876,9 @@
   highlight the whole item as a lightbar
 - A menu file displayed in place of one of those lists (e.g. `xtrn_sec`,
   `xtrn<n>`, `text_sec`) is a lightbar menu when it has `@BAR` items
+- Find in those lists (area selection, `uselect.js`, `text_sec.js`,
+  `xtrn_sec.js`): `/` or `F` prompts for a boolean search expression,
+  `N` and `P` find the next and previous match (issue #1345)
 - More strings in stock modules route through `gettext()` for
   `ctrl/text.ini` `[JS]`-section customization
 - Good Time Trivia gains a `useDoveNetSyncData` option that
@@ -937,6 +940,9 @@
 
 ## JavaScript
 
+- New global `bool_search(expression [,text] [,...])` function: the
+  boolean search engine of the BBS's text searches (`AND`/`OR`/`NOT`,
+  parentheses, phrases and quoted whole words); throws on a syntax error
 - New **`SQLite` JavaScript class** — first-class SQLite bindings,
   available wherever Synchronet runs JavaScript (Terminal, Mail,
   and Web servers, Services, `jsexec`, `jsdoor`, and background

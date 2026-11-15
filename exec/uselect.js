@@ -71,6 +71,7 @@ var choice = select_item({
 		return format(options.prompt_fmt || bbs.text(bbs.text.SelectItemWhich), num);
 	},
 	print_item: print_item,
+	search: function(i) { return items[i].name; },
 	more_fmt: options.more_fmt,
 	more_indent: more_indent()
 });

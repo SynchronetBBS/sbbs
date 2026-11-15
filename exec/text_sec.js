@@ -170,6 +170,7 @@ while(bbs.online) {
 				add_hotspot(i + 1, usrsec.length);
 			console.print(item_str(bbs.text(TextSectionLstFmt), i + 1, usrsec[i].name, sec_widest, is_default));
 		},
+		search: function(i) { return usrsec[i].name; },
 		menu: function() { return show_menu("text_sec"); },
 		more_fmt: options.more_fmt,
 		more_indent: prefix_width() + 1
@@ -207,6 +208,7 @@ while(bbs.online) {
 						add_hotspot(i + 1, list.length);
 					console.print(item_str(bbs.text(TextFilesLstFmt), i + 1, list[i].desc, file_widest, is_default));
 				},
+				search: function(i) { return [list[i].desc, file_getname(list[i].name)]; },
 				menu: function() { return show_menu(menu); },
 				more_fmt: options.more_fmt,
 				more_indent: prefix_width() + 1

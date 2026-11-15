@@ -234,6 +234,7 @@ function select_msg_area()
 				header: bbs.text(bbs.text.GrpLstHdr),
 				prompt: function(num) { return format(bbs.text(bbs.text.JoinWhichGrp), num); },
 				print_item: function(i, is_default, redraw) { print_grp(i, is_default, grp_widest, redraw, false); },
+				search: function(i) { return [msg_area.grp_list[i].description, msg_area.grp_list[i].name]; },
 				menu: function() { return bbs.menu("grps", P_NOERROR); },
 				more_fmt: options.more_fmt,
 				more_indent: area_more_indent()
@@ -249,6 +250,10 @@ function select_msg_area()
 			header: sub_list_hdr(grp),
 			prompt: function(num) { return format(bbs.text(bbs.text.JoinWhichSub), num); },
 			print_item: function(i, is_default, redraw) { print_sub(grp, i, is_default, sub_widest, redraw, false); },
+			search: function(i) {
+				var sub = msg_area.grp_list[grp].sub_list[i];
+				return [sub.description, sub.name, sub.code];
+			},
 			menu: function() { return bbs.menu("subs" + (msg_area.grp_list[grp].number + 1), P_NOERROR); },
 			more_fmt: options.more_fmt,
 			more_indent: area_more_indent()
@@ -344,6 +349,7 @@ function select_file_area()
 				header: bbs.text(bbs.text.LibLstHdr),
 				prompt: function(num) { return format(bbs.text(bbs.text.JoinWhichLib), num); },
 				print_item: function(i, is_default, redraw) { print_lib(i, is_default, lib_widest, redraw, false); },
+				search: function(i) { return [file_area.lib_list[i].description, file_area.lib_list[i].name]; },
 				menu: function() { return bbs.menu("libs", P_NOERROR); },
 				more_fmt: options.more_fmt,
 				more_indent: area_more_indent()
@@ -359,6 +365,10 @@ function select_file_area()
 			header: dir_list_hdr(lib),
 			prompt: function(num) { return format(bbs.text(bbs.text.JoinWhichDir), num); },
 			print_item: function(i, is_default, redraw) { print_dir(lib, i, is_default, dir_widest, redraw, false); },
+			search: function(i) {
+				var dir = file_area.lib_list[lib].dir_list[i];
+				return [dir.description, dir.name, dir.code];
+			},
 			menu: function() { return bbs.menu("dirs" + (file_area.lib_list[lib].number + 1), P_NOERROR); },
 			more_fmt: options.more_fmt,
 			more_indent: area_more_indent()
