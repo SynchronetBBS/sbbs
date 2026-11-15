@@ -22,9 +22,10 @@ class CaptureMenu {
   // rule -- see wren.md §8 / App's header comment).
   static run() {
     Fiber.new {
+      var action = null
       Screen.modalRun(Fn.new {
         if (!Capture.active) {
-          startFlow_()
+          action = startFlow_()
         } else if (Capture.paused) {
           pickAndAct_("Capture Control",
             "# Capture Control\n\n" +
@@ -54,10 +55,14 @@ class CaptureMenu {
         }
       })
       Input.setupMouseEvents()
+      // Restore the terminal before saving; the pickers leave their
+      // contents on the modal screen until modalRun returns.
+      if (action != null) action.call()
     }.call()
   }
 
-  // Type-selection + save-picker + dispatch.  Indices in the type
+  // Type-selection + save-picker.  Return the action to run after
+  // the modal screen is restored.  Indices in the type
   // list:
   //   0 = ASCII            (streaming log, escapes stripped)
   //   1 = Raw              (streaming log, escapes preserved)
@@ -93,10 +98,9 @@ class CaptureMenu {
       return
     }
     if (picked >= 2) {
-      CTerm.saveScreenshot(file, picked > 2)
-    } else {
-      Capture.start(file, picked == 1)
+      return Fn.new { CTerm.saveScreenshot(file, picked > 2) }
     }
+    return Fn.new { Capture.start(file, picked == 1) }
   }
 
   // Generic "show a list, dispatch on selection" helper used by the
