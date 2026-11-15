@@ -873,6 +873,8 @@
 - The external program section and program lists (`xtrn_sec.js`) get the
   same paging, navigation (plus Left/Right between two columns) and
   `modopts.ini` `[xtrn_sec]` options
+- A menu file displayed in place of one of those lists (e.g. `xtrn_sec`,
+  `xtrn<n>`, `text_sec`) is a lightbar menu when it has `@BAR` items
 - More strings in stock modules route through `gettext()` for
   `ctrl/text.ini` `[JS]`-section customization
 - Good Time Trivia gains a `useDoveNetSyncData` option that

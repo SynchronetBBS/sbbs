@@ -157,6 +157,7 @@ function item_str(fmt, num, item, widest, is_default)
 // - align: right-justify the item numbers
 // - menu: function() displaying a menu file in place of the list, if there's one
 // - has_menu: there's such a menu file
+// - chosen: the user has chosen an item ('cur') from this list before
 // - header: function(margin, indent, multicolumn) displaying what's above the items
 // - footer: function() displaying what's below them
 // - which: function(num) returning the prompt, num being the default item's number
@@ -204,7 +205,8 @@ function select_from(list, cur, lst)
 		console.attributes = LIGHTGRAY;
 	return select_item({
 		count: list.length,
-		current: has_default ? Math.min(cur, list.length - 1) : -1,
+		// The lightbar of a menu file starts on the item last chosen, if any
+		current: has_default ? Math.min(cur, list.length - 1) : (lst.has_menu && lst.chosen ? cur : -1),
 		no_default: !has_default,
 		no_clear: !options.clear_screen,
 		columns: multicolumn ? 2 : 1,
@@ -240,6 +242,7 @@ function select_from(list, cur, lst)
 function external_program_menu(xsec)
 {
 	var curprog = 0;
+	var chosen = false;
 
 	js.global.xtrn_sec = xtrn_area.sec_list[xsec].name;
 
@@ -302,6 +305,7 @@ function external_program_menu(xsec)
 			multicolumn_fmt: options.multicolumn_fmt,
 			align: options.align_prog_list,
 			has_menu: menu !== null,
+			chosen: chosen,
 			menu: function() {
 				if(menu === null)
 					return false;
@@ -337,6 +341,7 @@ function external_program_menu(xsec)
 		if(i < 0)	// Quit, or Enter with no default program
 			break;
 		curprog = i;
+		chosen = true;
 
 		bbs.exec_xtrn(prog_list[i].code);
 	}
@@ -345,6 +350,7 @@ function external_program_menu(xsec)
 function external_section_menu()
 {
     var xsec=0;
+    var chosen = false;
 
     while(bbs.online) {
 
@@ -374,6 +380,7 @@ function external_section_menu()
 			multicolumn_fmt: options.multicolumn_section_fmt,
 			align: options.align_section_list,
 			has_menu: has_menu,
+			chosen: chosen,
 			menu: function() {
 				if(!has_menu)
 					return false;
@@ -395,8 +402,10 @@ function external_section_menu()
 		if(num == -2) {	// Enter, with no marked default
 			if(has_menu)	// Enter = Quit, when there's no prompt
 				break;
-		} else
+		} else {
 			xsec = num;
+			chosen = true;
+		}
 
 		external_program_menu(sec_list[xsec].index);
     }

@@ -31,8 +31,11 @@
 //               the columns
 // - column_separator  optional string printed between columns (default: " ")
 // - menu        optional function() that displays a custom menu file in
-//               place of the list, returning true if it did (the arrow keys
-//               are then not supported since there's no list to update)
+//               place of the list, returning true if it did. The arrow keys
+//               then move between the file's lightbar items (@BAR codes),
+//               if it has any, each returning what could be typed instead
+//               (an item number, the quit key or one of opts.keys), the
+//               item for opts.current being highlighted first
 // - more_fmt    optional format string for the indicator shown when the
 //               items don't fit on one screen: first, last, total
 // - more_indent optional indent (in columns) of the default indicator, e.g.
@@ -74,6 +77,10 @@ function select_item(opts)
 	var prompt_row;		// screen row of the last line of the prompt
 	var prev;			// previous default item, when only it and cur need repainting
 	var idle = false;	// the last key changed nothing, so there's nothing to repaint
+	var bar;			// lightbar navigation of a custom menu's @BAR items
+	// The lightbar item first highlighted: the caller's default item, else the
+	// one the menu file names (@BARDEFAULT), else its first
+	var bar_cmd = (opts.current >= 0) ? String(opts.current + 1) : undefined;
 	var nav_keys = KEY_UP + KEY_DOWN + KEY_HOME + KEY_END + KEY_PAGEUP + KEY_PAGEDN;
 	if (cols > 1)
 		nav_keys += KEY_LEFT + KEY_RIGHT;
@@ -99,7 +106,15 @@ function select_item(opts)
 				console.clear_hotspots();
 			else
 				console.clear(); // also clears hotspots
-			if (!(opts.menu && opts.menu())) {
+			bar = undefined;
+			if (opts.menu && opts.menu()) {
+				// A menu file with lightbar items (@BAR codes) is navigated with
+				// the arrow keys, its items returning what a user could type
+				if (console.bars && console.bars.length) {
+					bar = new (load({}, "menubar.js").MenuBar)(bar_cmd);
+					bar.refresh();
+				}
+			} else {
 				var prompt_lines = select_item_count_lines(prompt);
 				if (typeof opts.header == 'function')
 					opts.header();
@@ -240,6 +255,31 @@ function select_item(opts)
 	function get_choice()
 	{
 		var nav = drawn ? nav_keys : "";
+		var cmds = console.quit_key + (opts.keys || "");
+
+		while (bar && bbs.online && !js.terminated) {
+			var k = console.getkey(K_UPPER);
+			if (console.aborted)
+				return -1;
+			var cmd = bar.handle(k);
+			if (cmd === '' || !k)	// the bar moved, or nothing was typed
+				continue;
+			if (k == '\r') {	// the highlighted item, if there's one
+				if (cmd == k)
+					return 0;
+				bar_cmd = cmd;
+				if (/^\d+$/.test(cmd) && cmd >= 1 && cmd <= count)
+					return parseInt(cmd, 10);
+				if (cmd.length == 1 && cmds.indexOf(cmd.toUpperCase()) >= 0)
+					return (cmd.toUpperCase() == console.quit_key) ? -1 : { key: cmd.toUpperCase() };
+				continue;
+			}
+			// What can be typed at the prompt is read (and echoed) there
+			if (cmds.indexOf(k) >= 0 || (k >= '1' && k <= '9' && k <= count)) {
+				console.ungetstr(k);
+				break;
+			}
+		}
 		var key = console.getkeys(nav + console.quit_key + (opts.keys || ""), count, K_UPPER | K_NOCRLF);
 
 		if (typeof key === 'number')
