@@ -882,6 +882,9 @@
   `xtrn_sec.js`): `F` or `/` prompts for a boolean search expression,
   then `N` and `P` find the next and previous match (issue #1345);
   until a search, `N` and `P` page the list like PgDn and PgUp
+- In those lists, Backspace backs out like the quit key; in a
+  single-column list (or lightbar menu file) so does Left arrow, and
+  Right arrow chooses the selected item like Enter
 - New: `scancfg.js`: the message scan configuration and new-scan
   pointer lists are now a loadable module (SCFG->System->Loadable
   Modules->Scan Config) with the same paging, navigation, Find and

@@ -12,6 +12,11 @@
 // default (opts.current < 0, nothing selected with the arrow keys), or one of
 // the opts.keys command keys (a string).
 //
+// Backspace is the same as the quit key. So is the left arrow key in a
+// single-column list, where the right arrow key is the same as Enter when
+// there's a default item. In a custom menu with lightbar items, the same
+// goes for an arrow key with no item to move to (see menubar.js).
+//
 // opts:
 // - count       number of items (required)
 // - current     0-based index of the default item (-1 for none)
@@ -306,6 +311,16 @@ function select_item(opts)
 	{
 		var nav = drawn ? nav_keys : "";
 		var cmds = console.quit_key + (opts.keys || "");
+		// Backspace leaves the list as the quit key does. So does the left
+		// arrow key where it doesn't move between columns or lightbar items,
+		// and there the right arrow key chooses the default item, as Enter
+		// does. A caller's own command key is left to the caller.
+		var back = (cmds.indexOf('\b') < 0) ? '\b' : "";
+		var fwd = "";
+		if (cols == 1 && cmds.indexOf(KEY_LEFT) < 0)
+			back += KEY_LEFT;
+		if (cols == 1 && !bar && cur >= 0 && cmds.indexOf(KEY_RIGHT) < 0)
+			fwd = KEY_RIGHT;
 
 		nav += find_keys_now();
 		for (var pk = 0; drawn && pk < page_keys.length; ++pk) {
@@ -320,9 +335,14 @@ function select_item(opts)
 			var cmd = bar.handle(k);
 			if (cmd === '' || !k)	// the bar moved, or nothing was typed
 				continue;
-			if (k == '\r') {	// the highlighted item, if there's one
-				if (cmd == k)
+			// The highlighted item, if there's one: Enter, or the right arrow
+			// key with no item to move to
+			if (k == '\r' || k == KEY_RIGHT) {
+				if (cmd == k) {
+					if (k == KEY_RIGHT)
+						continue;
 					return 0;
+				}
 				bar_cmd = cmd;
 				if (/^\d+$/.test(cmd) && cmd >= 1 && cmd <= count)
 					return parseInt(cmd, 10);
@@ -330,19 +350,21 @@ function select_item(opts)
 					return (cmd.toUpperCase() == console.quit_key) ? -1 : { key: cmd.toUpperCase() };
 				continue;
 			}
+			if (back.indexOf(k) >= 0)
+				return -1;
 			// What can be typed at the prompt is read (and echoed) there
 			if (cmds.indexOf(k) >= 0 || (k >= '1' && k <= '9' && k <= count)) {
 				console.ungetstr(k);
 				break;
 			}
 		}
-		var key = console.getkeys(nav + console.quit_key + (opts.keys || ""), count, K_UPPER | K_NOCRLF);
+		var key = console.getkeys(nav + back + fwd + cmds, count, K_UPPER | K_NOCRLF);
 
 		if (typeof key === 'number')
 			return key > 0 ? key : -1;	// 0: aborted (Ctrl-C)
-		if (key === "")	// Enter
+		if (key === "" || (fwd && key == fwd))	// Enter
 			return 0;
-		if (key == console.quit_key)
+		if (key == console.quit_key || back.indexOf(key) >= 0)
 			return -1;
 		if (nav.indexOf(key) >= 0)
 			return key;

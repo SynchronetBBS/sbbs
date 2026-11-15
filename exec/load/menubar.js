@@ -152,7 +152,9 @@ MenuBar.prototype.select = function(index)
 };
 
 // Move to the nearest item in the direction (dx, dy); with nothing further
-// that way, wrap around to the far end of the same line of items
+// that way, wrap around to the far end of the same line of items. Returns
+// false when there's no item to move to: none is before or beyond the
+// current one in that dimension (e.g. left or right in a single column).
 MenuBar.prototype.move = function(dx, dy)
 {
 	var cur = this.items[this.current];
@@ -161,7 +163,7 @@ MenuBar.prototype.move = function(dx, dy)
 
 	if (!cur) {	// nothing highlighted yet
 		this.select((dx < 0 || dy < 0) ? this.items.length - 1 : 0);
-		return;
+		return true;
 	}
 	for (i = 0; i < this.items.length; i++) {
 		if (i == this.current)
@@ -183,11 +185,18 @@ MenuBar.prototype.move = function(dx, dy)
 			}
 		}
 	}
+	if (best < 0 && wrap < 0)
+		return false;
 	this.select(best >= 0 ? best : wrap);
+	return true;
 };
 
 // Returns '' for a key that moved the bar, the current item's command for
 // Enter, and any other key unchanged (a hot-key also moves the bar to its item)
+// Where the items are in a single column, the left and right arrow keys have
+// no item to move to: the right arrow key then returns the current item's
+// command, as Enter does, and the left arrow key is returned unchanged (for
+// the caller to back out of the menu with, if it has somewhere to go)
 MenuBar.prototype.handle = function(key)
 {
 	var i;
@@ -202,11 +211,11 @@ MenuBar.prototype.handle = function(key)
 			this.move(0, 1);
 			return '';
 		case KEY_LEFT:
-			this.move(-1, 0);
-			return '';
+			return this.move(-1, 0) ? '' : key;
 		case KEY_RIGHT:
-			this.move(1, 0);
-			return '';
+			if (this.move(1, 0))
+				return '';
+			return (this.current < 0) ? key : this.items[this.current].cmd;
 		case KEY_HOME:
 			this.select(0);
 			return '';
