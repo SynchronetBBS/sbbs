@@ -15,6 +15,9 @@ load(js.exec_dir + "syncdoom_lib.js");
 
 var cfg = sd_load_config();
 
+// Lightbar over the @BAR regions of lobby.msg (art without them: plain hot-keys)
+var sd_bar = new (load({}, "menubar.js").MenuBar)();
+
 // ---------------------------------------------------------------------------
 // Launch helpers
 // ---------------------------------------------------------------------------
@@ -765,6 +768,7 @@ function sd_draw_art()
 {
 	console.clear();
 	console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
+	sd_bar.refresh();
 }
 
 // Repaint the live who's-online/activity panel, bottom-anchored and growing
@@ -803,6 +807,7 @@ function sd_lobby_wait()
 	var oldctrl = console.ctrlkey_passthru;
 	console.ctrlkey_passthru = -1;
 	console.ctrlkey_passthru = "-P";
+	console.ctrlkey_passthru &= ~(1 << 27);   // ...and ESC, so arrow keys are translated
 	sd_panel_rows_prev = -1;                  // first draw shouldn't trigger an art redraw
 	try {
 		while (!js.terminated && bbs.online) {
@@ -824,6 +829,9 @@ function sd_lobby_wait()
 			var c = console.inkey(K_UPPER | K_NOECHO, 1000);
 			if (!c)
 				continue;                    // timeout -> refresh
+			c = sd_bar.handle(c);            // arrows move the lightbar, Enter picks its item
+			if (!c)
+				continue;
 			if (c == "\r" || c == "\n" || c == "?") {   // redraw the lobby menu art
 				sd_draw_art();
 				sd_panel_rows_prev = -1;
@@ -866,14 +874,16 @@ function sd_main()
 			// The art IS the menu: its option keys are baked into the themeable
 			// lobby.msg (M/P/L/H/Q). No hardcoded hint strings here.
 			console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
+			sd_bar.refresh();
 			// Pass control keys to us so Ctrl-T/Ctrl-U/etc. don't draw over the art,
 			// but keep Ctrl-P with the BBS for node paging. Restore after.
 			var oldctrl = console.ctrlkey_passthru;
 			console.ctrlkey_passthru = -1;
 			console.ctrlkey_passthru = "-P";
+			console.ctrlkey_passthru &= ~(1 << 27);   // ...and ESC, so arrow keys are translated
 			// CR is in the set so Enter returns (-> no action -> the loop redraws);
 			// '?' likewise falls through to a redraw.
-			k = console.getkeys("\rMSLH?Q");
+			k = sd_bar.getkey("\rMSLH?Q");
 			console.ctrlkey_passthru = oldctrl;
 		}
 		console.clear();                 // wipe the art before the chosen action draws

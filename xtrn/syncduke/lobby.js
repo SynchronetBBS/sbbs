@@ -17,6 +17,9 @@ load(js.exec_dir + "syncduke_lib.js");
 
 var cfg = sd_load_config();
 
+// Lightbar over the @BAR regions of lobby.msg (art without them: plain hot-keys)
+var sd_bar = new (load({}, "menubar.js").MenuBar)();
+
 // ---------------------------------------------------------------------------
 // Launch
 // ---------------------------------------------------------------------------
@@ -291,6 +294,7 @@ function sd_show_activity() {
 function sd_draw_art() {
 	console.clear();
 	console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
+	sd_bar.refresh();
 }
 
 // Repaint the live panel, bottom-anchored and growing upward over the art. Only the
@@ -323,6 +327,7 @@ function sd_lobby_wait() {
 	var oldctrl = console.ctrlkey_passthru;
 	console.ctrlkey_passthru = -1;
 	console.ctrlkey_passthru = "-P";          // keep Ctrl-P (paging) with the BBS
+	console.ctrlkey_passthru &= ~(1 << 27);   // ...and ESC, so arrow keys are translated
 	sd_panel_rows_prev = -1;                  // first draw shouldn't trigger an art redraw
 	try {
 		while (!js.terminated && bbs.online) {
@@ -341,6 +346,9 @@ function sd_lobby_wait() {
 			var c = console.inkey(K_UPPER | K_NOECHO, 1000);
 			if (!c)
 				continue;                    // timeout -> refresh
+			c = sd_bar.handle(c);            // arrows move the lightbar, Enter picks its item
+			if (!c)
+				continue;
 			if (c == "\r" || c == "\n" || c == "?") {   // redraw the menu art
 				sd_draw_art();
 				sd_panel_rows_prev = -1;
@@ -457,11 +465,13 @@ function sd_main() {
 			// baked into the themeable file. Pass control keys to us so Ctrl-T/etc.
 			// don't draw over it, but keep Ctrl-P with the BBS for node paging.
 			console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
+			sd_bar.refresh();
 			var oldctrl = console.ctrlkey_passthru;
 			console.ctrlkey_passthru = -1;
 			console.ctrlkey_passthru = "-P";
+			console.ctrlkey_passthru &= ~(1 << 27);   // ...and ESC, so arrow keys are translated
 			// CR/'?' return -> no action -> the loop redraws the menu.
-			k = console.getkeys("\rMSLH?Q");
+			k = sd_bar.getkey("\rMSLH?Q");
 			console.ctrlkey_passthru = oldctrl;
 		}
 		console.clear();
