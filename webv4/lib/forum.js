@@ -979,7 +979,11 @@ function threadCache(sub, max) {
         write: function (threads) {
             if (age < 5) return;
             if (!file_isdir(dir) && !mkpath(dir)) return;
-            const tmp = format('%s.%d.%d.tmp', fn, Date.now(), random(1000000));
+            // Remove temporary files left by writes that never finished
+            directory(fn + '.*.tmp').forEach(function (e) {
+                if (time() - file_date(e) > 600) file_remove(e);
+            });
+            const tmp = fn + '.' + Date.now() + '.' + random(1000000) + '.tmp';
             const f = new File(tmp);
             if (!f.open('w')) return;
             // One thread at a time: a single JSON.stringify() of a large
