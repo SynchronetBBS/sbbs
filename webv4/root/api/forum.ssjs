@@ -190,10 +190,6 @@ if (request.has_param('call') && (http_request.method === 'GET' || http_request.
                 if (request.has_param('group')) reply = getNewestMessagePerSub(request.get_param('group'));
                 break;
 
-            case 'get-thread-list':
-                if (request.has_param('sub')) reply = getThreadList(request.get_param('sub'));
-                break;
-
             default:
                 break;
 
