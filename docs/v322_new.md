@@ -187,6 +187,8 @@
 - Fix: after typing a multi-byte (e.g. emoji) character into a UTF-8
   input field, the cursor jumped back to the start of the field, so
   text typed next overwrote it on screen
+- Fix: ANSI music did not play on UTF-8 terminals; the music string's
+  terminating Ctrl-N was sent as a "♫" character (issue #1344)
 - Goodbye messages and pre-login banners no longer log noisy
   "send failed" warnings when the client disconnects mid-message
 - Fix line-wrap divide-by-zero crash when an SFTP-only client
