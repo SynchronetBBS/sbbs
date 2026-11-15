@@ -5,6 +5,8 @@
 
 void Terminal::clear_hotspots(void)
 {
+	bars.clear();
+	bar_attr = 0;
 	if (!(flags_ & MOUSE))
 		return;
 	int spots = listCountNodes(mouse_hotspots);
@@ -20,6 +22,14 @@ void Terminal::clear_hotspots(void)
 
 void Terminal::scroll_hotspots(unsigned count)
 {
+	for (auto it = bars.begin(); it != bars.end();) {
+		if (it->y >= count) {
+			it->y -= count;
+			++it;
+		}
+		else
+			it = bars.erase(it);
+	}
 	if (!(flags_ & MOUSE))
 		return;
 	unsigned spots = 0;

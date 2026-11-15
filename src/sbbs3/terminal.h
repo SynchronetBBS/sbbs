@@ -4,6 +4,11 @@
 #include "sbbs.h"
 #include "utf8.h"
 #include "unicode.h"
+#ifdef __cplusplus
+#include <string>
+#include <utility>
+#include <vector>
+#endif
 
 #ifdef __cplusplus
 
@@ -13,6 +18,15 @@ struct mouse_hotspot {          // Mouse hot-spot
 	unsigned minx;
 	unsigned maxx;
 	bool     hungry;
+};
+
+struct lightbar {               // Display-file region marked with @BAR:cmd@ ... @BAR@
+	std::string cmd;
+	unsigned    x;                  // 0-based
+	unsigned    y;                  // 0-based
+	unsigned    width;
+	uint        attr;               // attribute in effect at the start of the region
+	std::string text;               // the region's source text (may contain Ctrl-A codes)
 };
 
 struct savedline {
@@ -76,6 +90,8 @@ public:
 	unsigned lbuf_seq_start{0};         // lbuflen when the current sequence began
 	bool     control_string_ended{false}; // a DCS/OSC/PM/APC/SOS just completed
 	link_list_t *mouse_hotspots{nullptr};
+	std::vector<lightbar> bars;
+	uint bar_attr{0};                   // attribute of a selected lightbar (0 = unspecified)
 
 protected:
 	sbbs_t* sbbs;
@@ -167,6 +183,8 @@ public:
 		// Take ownership of lists so they're not destroyed
 		t->mouse_hotspots = nullptr;
 		t->savedlines = nullptr;
+		bars = std::move(t->bars);
+		bar_attr = t->bar_attr;
 		// Copy line buffer
 		memcpy(lbuf, t->lbuf, sizeof(lbuf));
 		// TODO: This is pretty hacky...

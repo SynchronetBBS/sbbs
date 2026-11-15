@@ -85,6 +85,7 @@ enum {
 	, CON_PROP_SELECT_KEY
 	, CON_PROP_POINTERS_KEY
 	, CON_PROP_CMD_KEYS
+	, CON_PROP_BAR_ATTR
 
 	, CON_PROP_OUTPUT_RATE
 };
@@ -225,6 +226,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case CON_PROP_OUTPUT_RATE:
 			val = sbbs->term->cur_output_rate;
+			break;
+		case CON_PROP_BAR_ATTR:
+			val = sbbs->term->bar_attr;
 			break;
 		case CON_PROP_KEYBUF_LEVEL:
 			val = sbbs->keybuf_level();
@@ -541,6 +545,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "select_key", CON_PROP_SELECT_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
 	{   "pointers_key", CON_PROP_POINTERS_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
 	{   "cmd_keys", CON_PROP_CMD_KEYS, JSPROP_ENUMERATE, 32200},
+	{   "bar_attr", CON_PROP_BAR_ATTR, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
 	{0}
 };
 
@@ -548,6 +553,9 @@ static jsSyncPropertySpec js_console_properties[] = {
 static const char*        con_prop_desc[] = {
 	  "Array of text colors (in IBM CGA attribute format), as configured in the <tt>attr.ini</tt> file"
 	, "Array of items (each with a <tt>name</tt> and <tt>num</tt> property) enqueued via the <tt>uselect()</tt> method for user selection"
+	, "Array of lightbar regions marked with <tt>@BAR:cmd@</tt> ... <tt>@BAR@</tt> codes in the displayed file(s), "
+	  "each with <tt>cmd</tt>, <tt>x</tt>, <tt>y</tt> (1-based), <tt>width</tt>, <tt>attr</tt> and <tt>text</tt> properties; "
+	  "emptied when the screen is cleared - <small>READ ONLY</small>"
 	, "Status bit-field (see <tt>CON_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	, "Mouse mode bit-field (see <tt>MOUSE_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions, "
 	"set to <tt>true</tt> for default enabled mode, <tt>false</tt> to disable)"
@@ -616,6 +624,8 @@ static const char*        con_prop_desc[] = {
 	, "Command keys of the current prompt or menu: while set, <tt>quit_key</tt> (and the <tt>QUITCHAR</tt> @-code and <tt>~@Quit@</tt> mnemonic) "
 	  "is the first letter of the Quit text unless that is one of these keys, then 'Q', then an empty string when 'Q' is also one. "
 	  "Set to an empty string when done."
+	, "Attribute for the selected lightbar, as set by an <tt>@BARATTR@</tt> code in the last-displayed file "
+	  "(0 = not specified) - <small>READ ONLY</small>"
 	, NULL
 };
 #endif
@@ -3366,6 +3376,41 @@ static JSBool uselect_items_getter(JSContext *cx, JSObject *obj, jsid id, jsval 
 	return JS_TRUE;
 }
 
+static JSBool bars_getter(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+{
+	sbbs_t*   sbbs;
+
+	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == nullptr)
+		return JS_FALSE;
+
+	JSObject* array;
+	if ((array = JS_NewArrayObject(cx, 0, NULL)) == nullptr)
+		return JS_FALSE;
+	*vp = OBJECT_TO_JSVAL(array);   // root the array while it's populated
+	for (size_t i = 0; i < sbbs->term->bars.size(); ++i) {
+		const struct lightbar& bar = sbbs->term->bars[i];
+		JSObject*              item = JS_NewObject(cx, NULL, NULL, array);
+		if (item == nullptr)
+			return JS_FALSE;
+		jsval                  val = OBJECT_TO_JSVAL(item);
+		if (!JS_SetElement(cx, array, i, &val))
+			return JS_FALSE;
+
+		JSString* js_str = JS_NewStringCopyZ(cx, bar.cmd.c_str());
+		if (js_str == nullptr)
+			return JS_FALSE;
+		JS_DefineProperty(cx, item, "cmd", STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, item, "x", INT_TO_JSVAL(bar.x + 1), NULL, NULL, JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, item, "y", INT_TO_JSVAL(bar.y + 1), NULL, NULL, JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, item, "width", INT_TO_JSVAL(bar.width), NULL, NULL, JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, item, "attr", INT_TO_JSVAL(bar.attr), NULL, NULL, JSPROP_ENUMERATE);
+		if ((js_str = JS_NewStringCopyN(cx, bar.text.c_str(), bar.text.length())) == nullptr)
+			return JS_FALSE;
+		JS_DefineProperty(cx, item, "text", STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE);
+	}
+	return JS_TRUE;
+}
+
 JSClass js_console_class = {
 	"Console"               /* name			*/
 	, JSCLASS_HAS_PRIVATE    /* flags		*/
@@ -3417,6 +3462,12 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 		return NULL;
 	if (!JS_DefineProperty(cx, obj, "uselect_items", OBJECT_TO_JSVAL(array)
 	                       , uselect_items_getter, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+		return NULL;
+
+	if ((array = JS_NewArrayObject(cx, 0, NULL)) == NULL)
+		return NULL;
+	if (!JS_DefineProperty(cx, obj, "bars", OBJECT_TO_JSVAL(array)
+	                       , bars_getter, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return NULL;
 
 #ifdef BUILD_JSDOCS

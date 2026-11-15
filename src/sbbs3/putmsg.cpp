@@ -93,6 +93,9 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 	uint                 ansi_start = 0; // offset of the control sequence being parsed
 	uint                 lines_printed = 0;
 	struct mouse_hotspot hot_spot = {};
+	struct lightbar      bar = {};
+	bool                 bar_open = false;
+	uint                 bar_start = 0;
 
 	hot_attr = 0;
 	hungry_hotspots = true;
@@ -457,6 +460,47 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			if (str[l] == '@' && !(mode & P_NOATCODES)) {
 				if (memcmp(str + l, "@EOF@", 5) == 0)
 					break;
+				if (memcmp(str + l, "@BARATTR@", 9) == 0) {
+					term->bar_attr = curatr;
+					l += 9;
+					continue;
+				}
+				if (memcmp(str + l, "@BARATTR:", 9) == 0) {
+					const char* end = strchr(str + l + 9, '@');
+					if (end != NULL && end - (str + l + 9) < (ptrdiff_t)sizeof(tmp)) {
+						snprintf(tmp, sizeof tmp, "%.*s", (int)(end - (str + l + 9)), str + l + 9);
+						term->bar_attr = strtoattr(&cfg, tmp, /* endptr: */ NULL);
+						l = (uint)(end - str) + 1;
+						continue;
+					}
+				}
+				if (memcmp(str + l, "@BAR:", 5) == 0) {
+					const char* end = strchr(str + l + 5, '@');
+					if (end != NULL && end > str + l + 5 && end - (str + l + 5) < (ptrdiff_t)sizeof(tmp)) {
+						snprintf(tmp, sizeof tmp, "%.*s", (int)(end - (str + l + 5)), str + l + 5);
+						c_unescape_str(tmp);
+						bar.cmd = tmp;
+						bar.x = term->column;
+						bar.y = term->row;
+						bar.attr = curatr;
+						l = (uint)(end - str) + 1;
+						bar_start = l;
+						bar_open = true;
+						continue;
+					}
+				}
+				if (memcmp(str + l, "@BAR@", 5) == 0) {
+					if (bar_open && term->row == bar.y && term->column > bar.x) {
+						bar.width = term->column - bar.x;
+						bar.text.assign(str + bar_start, l - bar_start);
+						term->bars.push_back(bar);
+						term->add_hotspot(bar.cmd.c_str(), /* hungry: */ false, bar.x, term->column - 1, bar.y);
+					} else
+						lprintf(LOG_WARNING, "@BAR@ code without an @BAR:<cmd>@ code before it on the same row");
+					bar_open = false;
+					l += 5;
+					continue;
+				}
 				if (memcmp(str + l, "@CLEAR@", 7) == 0) {
 					cls();
 					clearabort();

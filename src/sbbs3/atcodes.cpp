@@ -175,6 +175,33 @@ int sbbs_t::show_atcode(const char *instr, uint cols, JSObject* obj)
 		return len;
 	}
 
+	if (*sp == '[') {   // Lightbar: @[text]cmd@ (underscores in text are displayed as spaces)
+		tp = strchr(sp + 1, ']');
+		if (tp != NULL && tp > sp + 1 && *(tp + 1) != '\0') {
+			sp++;
+			*tp = 0;
+			tp++;
+			c_unescape_str(tp);
+			for (p = sp; *p != '\0'; p++) {
+				if (*p == '_')
+					*p = ' ';
+			}
+			struct lightbar bar = {};
+			bar.cmd = tp;
+			bar.x = term->column;
+			bar.y = term->row;
+			bar.attr = curatr;
+			bar.text = sp;
+			bputs(sp);
+			if (term->row == bar.y && term->column > bar.x) {
+				bar.width = term->column - bar.x;
+				term->bars.push_back(bar);
+				term->add_hotspot(tp, /* hungry: */ false, bar.x, term->column - 1, bar.y);
+			}
+			return len;
+		}
+	}
+
 	// @!x@ for Ctrl-A x equivalent(s) */
 	if (*sp == '!') {
 		for (p = sp + 1; *p != '\0' && *p != '@'; p++)
