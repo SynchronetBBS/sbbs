@@ -902,7 +902,10 @@ var SYNCRETRO_CELL_FMT = "\1h\1c%3u%s\xb3 \1n\1c%s\1n";
 // dropping either one does not silently break the column grid. Measuring with
 // THIS cell's number also gets a >999 cartridge list right, where a hardcoded
 // prefix width would not: "%3u" pads 7 to 3 columns but spends 4 on 1000.
-function syncretro_cell(index, rom, width, fmt)
+//
+// `attr` (optional) is Ctrl-A codes to draw the padded title in -- the lobby's
+// selection bar -- leaving the number and separator in the format's own colors.
+function syncretro_cell(index, rom, width, fmt, attr)
 {
 	var label = (rom.label || rom.title) + (rom.year ? " (" + rom.year + ")" : "");
 	var mark = "";
@@ -936,6 +939,8 @@ function syncretro_cell(index, rom, width, fmt)
 	if (namew < 1)
 		namew = 1;
 	label = format("%-" + namew + "." + namew + "s", label);
+	if (attr)
+		label = attr + label + "\1n";
 	return mark_field ? format(fmt, index, mark, label)
 	                  : format(fmt, index, mark + label);
 }

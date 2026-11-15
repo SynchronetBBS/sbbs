@@ -352,6 +352,71 @@ syncretro_lobby_init(SPEC);
 eq(syncretro_parse_title("myrom.zip").title, "House Cabinet",
 	"games.local.ini works with no games.ini beside it");
 
+// --- the selection bar, and the boolean Find --------------------------------
+//
+// The picker loop itself, driven by scripted keys. Discovery and the door are
+// stubbed: what is under test is which cartridge each key sequence plays, and
+// that a move of the bar within a page repaints cells rather than the page.
+
+writeln("7. the selection bar and the boolean Find");
+
+var keys = [], played = [], clears = 0, clears_at = [], pauses = 0;
+var bbs = { online: true };
+var real_clear = console.clear;
+console.clear   = function () { clears++; real_clear.call(this); };
+console.getkey  = function () { clears_at.push(clears); return keys.length ? keys.shift() : "Q"; };
+console.getstr  = function () { return keys.shift(); };
+console.getnum  = function () { return keys.shift(); };
+console.ungetstr = function () {};
+console.pushxy  = function () {};
+console.popxy   = function () {};
+console.gotoxy  = function () { return true; };
+console.pause   = function () { pauses++; };
+
+var MANY = [];
+for (i = 1; i <= 50; i++)
+	MANY.push({name: "g" + i + ".int", title: "Game " + i, year: 0});
+syncretro_lobby_discover       = function () { return MANY; };
+syncretro_lobby_play           = function (rom) { played.push(rom.num); return false; };
+syncretro_lobby_mark_resumable = function () {};
+syncretro_lobby_bios_missing   = function () { return []; };
+
+function run_lobby(script)
+{
+	keys = script;
+	played = [];
+	clears = 0;
+	clears_at = [];
+	pauses = 0;
+	syncretro_lobby({ dir: dir, data_dir: dir });
+	return played.join(",");
+}
+
+// 80x24 with the stock header and footer: 2 columns of 18, 36 cartridges a page.
+reset_dir();
+eq(run_lobby(["\r", "\n", "5", 5]), "5", "without selected_attr, Enter and Down turn the page and a number plays");
+eq(syncretro_lobby_selattr, "", "and there is no selection bar");
+
+reset_dir();
+write_file("syncretro.local.ini", "[lobby]\nselected_attr : \\1h\\1y\n");
+eq(run_lobby([KEY_DOWN, KEY_RIGHT, "\r"]), "20", "Down then Right then Enter plays the cartridge under the bar");
+eq(clears_at.slice(0, 3).join(","), "1,1,1", "moving the bar within a page does not redraw the page");
+eq(run_lobby(["N", "\r", "P", KEY_LEFT, KEY_UP, "\r", KEY_END, "\r", KEY_HOME, "\r"]), "37,1,50,1",
+   "N/P carry the bar a page, Left and Up stop at the page's edge, Home/End go to the ends");
+eq(run_lobby(["7", 7, "\r"]), "7,7", "a cartridge played by number is where the bar then is");
+var sel_cell = syncretro_lobby_cell(MANY[0], true);
+check(sel_cell.indexOf("\1h\1yGame 1 ") > 0 && plain(sel_cell) === plain(syncretro_lobby_cell(MANY[0], false)),
+      "the selected cell is the same text, its title (not its number) in the bar's colors");
+
+if (typeof bool_search == "function") {
+	eq(run_lobby(["F", "game 1 & 0", "\r"]), "10", "Find takes a boolean expression and filters the list");
+	eq(run_lobby(["F", "\"3\" | \"4\"", KEY_DOWN, "\r"]), "4", "quoted terms match whole words");
+	eq(run_lobby(["F", "game 2", "F", "(oops", "\r"]), "2", "a syntax error leaves the list as it was");
+	eq(pauses, 1, "...after saying what was wrong with it, and waiting for a key");
+	eq(run_lobby(["F", "game 2", "F", "", KEY_END, "\r"]), "50", "an empty search lists everything again");
+}
+console.clear = real_clear;
+
 reset_dir();
 if (file_isdir(dir))
 	rmdir(dir);

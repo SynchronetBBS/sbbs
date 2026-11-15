@@ -138,6 +138,7 @@ var SYNCRETRO_LOBBY_TEXT = {
 	              + "\1h\1cQ\1nuit   "
 	              + "\1cPage \1h%d\1n\1c of \1h%d\1n: ",   /* page, page count */
 	search:         "\r\nSearch: ",
+	bad_search:     "\r\n\1h\1rInvalid search: \1c%s\1n\r\n",        /* what is wrong with it */
 	/* messages */
 	no_match:       "\r\n\1hNothing matches. \1n",
 	scanning:       "\r\n\1hScanning cartridges (first run, this takes a moment)...\1n",
@@ -167,6 +168,10 @@ var syncretro_lobby_ini_cache, syncretro_lobby_core_md5, syncretro_lobby_games;
  * one romset overriding it. Gates every claim the lobby makes about resuming. */
 var syncretro_lobby_savable;
 var syncretro_lobby_cellw;                             /* [lobby] cell_width, or the default above */
+/* [lobby] selected_attr: the Ctrl-A codes of the selection bar. Blank (the
+ * default) = no selected cartridge at all: no bar, no arrow-key navigation,
+ * and Enter still turns the page. */
+var syncretro_lobby_selattr;
 var syncretro_lobby_header, syncretro_lobby_footer;    /* optional display files ("" = none) */
 var syncretro_lobby_hrows, syncretro_lobby_frows;      /* rows those blocks occupy; see the draw */
 
@@ -331,6 +336,7 @@ function syncretro_lobby_init(spec)
 	syncretro_lobby_cellw = parseInt(syncretro_lobby_cfg.lobby.cell_width, 10);
 	if (!(syncretro_lobby_cellw > 0))
 		syncretro_lobby_cellw = SYNCRETRO_LOBBY_CELL_W;
+	syncretro_lobby_selattr = String(syncretro_lobby_cfg.lobby.selected_attr || "");
 
 	/* The optional display files: art the sysop drops in the door's own directory
 	 * to head or foot the picker, the way xtrn_sec.js takes an xtrn_head/xtrn_tail
@@ -533,7 +539,33 @@ function syncretro_lobby_top_played(board)
  * column 0 while it is still zero, so a header that opens with a blank line
  * would measure short -- and a geometry corrected to a short measurement is
  * worse than no correction at all. */
-function syncretro_lobby_draw(page, pages, board, cols, per_col)
+/* One cartridge's cell; the selected one with its title in the selection bar's
+ * colors (the number keeps its own). */
+function syncretro_lobby_cell(rom, selected)
+{
+	return syncretro_cell(rom.num, rom, syncretro_lobby_cellw, syncretro_lobby_text("cell_fmt")
+	                      , selected ? syncretro_lobby_selattr : "");
+}
+
+/* Redraw one cell of the page on the screen where syncretro_lobby_draw() put it
+ * (`top` is the row it reported as hrows), leaving the cursor where it was.
+ * False when the terminal cannot position the cursor -- the caller then draws
+ * the whole page again. */
+function syncretro_lobby_paint(pagelist, idx, selected, per_col, top)
+{
+	var ok;
+
+	console.pushxy();
+	ok = console.gotoxy(Math.floor(idx / per_col) * (syncretro_lobby_cellw + 1) + 1
+	                    , top + (idx % per_col) + 1);
+	if (ok)
+		console.putmsg(syncretro_lobby_cell(pagelist[idx], selected));
+	console.popxy();
+	return ok;
+}
+
+/* `sel` is the selected cartridge's index within the page, or -1 for none. */
+function syncretro_lobby_draw(page, pages, board, cols, per_col, sel)
 {
 	var i, j, line, idx, rom, hrows, frows;
 
@@ -578,8 +610,7 @@ function syncretro_lobby_draw(page, pages, board, cols, per_col)
 			if (idx >= pages[page].length)
 				break;
 			rom   = pages[page][idx];
-			line += syncretro_cell(rom.num, rom, syncretro_lobby_cellw,
-			                       syncretro_lobby_text("cell_fmt")) + " ";   /* fixed-width; no rpad */
+			line += syncretro_lobby_cell(rom, idx === sel) + " ";   /* fixed-width; no rpad */
 		}
 		if (line !== "")
 			console.putmsg(line + "\r\n");
@@ -1065,6 +1096,7 @@ function syncretro_lobby(spec)
 {
 	var roms, plays, board, cols, per_col, per_page, pages, page, key, i, filter;
 	var missing, drawn, regeom;
+	var bar, sel, moved, top, old, first, last;
 
 	syncretro_lobby_init(spec || {});
 
@@ -1084,6 +1116,7 @@ function syncretro_lobby(spec)
 	}
 	syncretro_lobby_number(roms);
 	syncretro_lobby_mark_resumable(roms);
+	bar = syncretro_lobby_selattr !== "";
 
 	/* One-shot entry sound, if the sysop configured one -- the same helper and the
 	 * same [lobby] enter_sound key SyncDuke and SyncDOOM use. Silent unless the
@@ -1094,9 +1127,12 @@ function syncretro_lobby(spec)
 	filter = roms;
 	page   = 0;
 	regeom = 0;
+	sel    = 0;
 	while (!js.terminated && bbs.online) {
-		plays    = syncretro_read_plays(syncretro_plays_path(syncretro_lobby_data_dir), syncretro_lobby_con.id);
-		board    = syncretro_top_played(plays, 5);
+		if (moved === undefined || !board) {   /* not for every step of the selection bar */
+			plays = syncretro_read_plays(syncretro_plays_path(syncretro_lobby_data_dir), syncretro_lobby_con.id);
+			board = syncretro_top_played(plays, 5);
+		}
 		cols     = syncretro_columns(console.screen_columns, syncretro_lobby_cellw);
 		per_col  = syncretro_page_rows(console.screen_rows, syncretro_lobby_hrows, syncretro_lobby_frows);
 		per_page = cols * per_col;
@@ -1110,7 +1146,25 @@ function syncretro_lobby(spec)
 			continue;
 		}
 
-		drawn = syncretro_lobby_draw(page, pages, board, cols, per_col);
+		/* With a selection bar, the page shown is the selected cartridge's.
+		 * A move within the page repaints two cells where they are; anything
+		 * else (or a terminal that cannot position the cursor) draws the page. */
+		if (bar) {
+			sel  = Math.max(0, Math.min(sel, filter.length - 1));
+			page = Math.floor(sel / per_page);
+			if (moved !== undefined && moved.page === page && moved.top !== undefined
+			    && syncretro_lobby_paint(pages[page], moved.sel, false, per_col, moved.top)
+			    && syncretro_lobby_paint(pages[page], sel - page * per_page, true, per_col, moved.top)) {
+				top = moved.top;
+				moved = undefined;
+			} else {
+				moved = undefined;
+				top = undefined;
+			}
+		}
+		if (!bar || top === undefined)
+			drawn = syncretro_lobby_draw(page, pages, board, cols, per_col
+			                             , bar ? sel - page * per_page : -1);
 
 		/* A display file turned out to be a different height than the page geometry
 		 * above assumed, so that geometry was wrong: adopt what was measured and
@@ -1133,6 +1187,7 @@ function syncretro_lobby(spec)
 			continue;
 		}
 		regeom = 0;
+		top = drawn.hrows;
 
 		key = console.getkey(K_UPPER);
 		if (key === "Q")
@@ -1151,6 +1206,53 @@ function syncretro_lobby(spec)
 		 * turns the escape sequence (ESC[V, ESC[5~) into the key code and returns
 		 * before inkey() gets to its Ctrl-P case, so only a literally typed Ctrl-P
 		 * pages a node. Same for PgDn/CTRL_N, Home/CTRL_B, End/CTRL_E. */
+		if (bar) {
+			/* The selection bar: the arrows move it (Up/Down through the whole
+			 * list, column after column and on to the next page; Left/Right
+			 * between the columns of this page), the paging keys carry it to the
+			 * same place on the next or previous page, and Enter plays what it
+			 * is on. KEY_DOWN is "\n", which is why this comes before the
+			 * paging block below. */
+			old   = sel;
+			first = page * per_page;
+			last  = first + pages[page].length - 1;
+			if (key === KEY_UP)
+				sel--;
+			else if (key === KEY_DOWN)
+				sel++;
+			else if (key === KEY_LEFT) {
+				if (sel - per_col >= first)
+					sel -= per_col;
+			} else if (key === KEY_RIGHT) {
+				if (sel + per_col <= last)
+					sel += per_col;
+				else if (Math.floor((sel - first) / per_col) < Math.floor((last - first) / per_col))
+					sel = last;   /* beside the empty bottom of the last column */
+			} else if (key === "N" || key === "+" || key === KEY_PAGEDN) {
+				if (page + 1 < pages.length)
+					sel += per_page;
+			} else if (key === "P" || key === "-" || key === KEY_PAGEUP) {
+				if (page > 0)
+					sel -= per_page;
+			} else if (key === KEY_HOME)
+				sel = 0;
+			else if (key === KEY_END)
+				sel = filter.length - 1;
+			else
+				old = undefined;
+			if (old !== undefined) {
+				sel = Math.max(0, Math.min(sel, filter.length - 1));
+				moved = { page: page, sel: old - first, top: top };
+				if (sel === old)
+					moved.sel = sel - first;   /* nothing to repaint, nothing to redraw */
+				continue;
+			}
+			if (key === "\r") {
+				if (!play(filter[sel]))
+					return;
+				continue;
+			}
+		}
 		if (key === "N" || key === "+" || key === "\r" || key === "\n" || key === KEY_PAGEDN) {
 			if (page + 1 < pages.length) page++;
 			continue;
@@ -1172,34 +1274,65 @@ function syncretro_lobby(spec)
 		 * '/' stays bound as the unprompted alias for the fingers that expect it. */
 		if (key === "F" || key === "/") {
 			syncretro_lobby_print("search");
-			var term = console.getstr(30, K_LINE).toLowerCase();
-			filter = term === "" ? roms : roms.filter(function (r) {
-				return r.title.toLowerCase().indexOf(term) >= 0;
-			});
+			var term = console.getstr(60, K_LINE);
+			var found = roms;
+			if (term !== "" && typeof bool_search == "function") {
+				/* The BBS's own boolean search: AND/OR/NOT (or & | !),
+				 * parentheses, phrases and "whole words". */
+				try {
+					found = roms.filter(function (r) {
+						return bool_search(term, r.title, r.label);
+					});
+				} catch (e) {
+					syncretro_lobby_print("bad_search", [e.message || e]);
+					console.pause();
+					continue;   /* the list as it was */
+				}
+			} else if (term !== "") {
+				term = term.toLowerCase();
+				found = roms.filter(function (r) {
+					return r.title.toLowerCase().indexOf(term) >= 0;
+				});
+			}
+			filter = found;
 			page = 0;
+			sel  = 0;
 			continue;
 		}
 		if (key >= "0" && key <= "9") {
 			console.ungetstr(key);
 			var n = console.getnum(roms.length);
 			if (n >= 1 && n <= roms.length) {
-				if (syncretro_lobby_play(roms[n - 1])) {    /* numbers index the FULL list */
-					roms = syncretro_lobby_discover();
-					if (!roms.length) {
-						syncretro_lobby_print("no_roms", [syncretro_lobby_rules.dir]);
-						console.pause();
-						return;
-					}
-					syncretro_lobby_number(roms);
-					filter = roms;
-					page = 0;
-				}
-				/* Refresh the marks whether or not a rescan happened: the game
-				 * just played may have written or updated its own snapshot, and
-				 * this is one directory() read, not a rediscovery. */
-				syncretro_lobby_mark_resumable(roms);
+				i = filter.indexOf(roms[n - 1]);    /* numbers index the FULL list */
+				if (i >= 0)
+					sel = i;                        /* the bar follows the cartridge played */
+				if (!play(roms[n - 1]))
+					return;
 			}
 			continue;
 		}
+	}
+
+	/* Play a cartridge and bring the list up to date. False when there is
+	 * nothing left to list. */
+	function play(rom)
+	{
+		if (syncretro_lobby_play(rom)) {
+			roms = syncretro_lobby_discover();
+			if (!roms.length) {
+				syncretro_lobby_print("no_roms", [syncretro_lobby_rules.dir]);
+				console.pause();
+				return false;
+			}
+			syncretro_lobby_number(roms);
+			filter = roms;
+			page = 0;
+			sel  = 0;
+		}
+		/* Refresh the marks whether or not a rescan happened: the game
+		 * just played may have written or updated its own snapshot, and
+		 * this is one directory() read, not a rediscovery. */
+		syncretro_lobby_mark_resumable(roms);
+		return true;
 	}
 }
