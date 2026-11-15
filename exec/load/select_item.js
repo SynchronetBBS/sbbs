@@ -1,5 +1,5 @@
 // Numbered-list selection with paging and arrow-key navigation
-// for Synchronet v3.22+ (uses console.getnum()'s navkeys argument)
+// for Synchronet v3.22+
 
 // Used by uselect.js, text_sec.js and by the area selection functions of
 // shell_lib.js
@@ -36,6 +36,7 @@
 //               navigation keys then only scroll a list longer than the
 //               screen, and Enter returns -2
 
+require("sbbsdefs.js", "K_NOCRLF");
 require("key_defs.js", "KEY_UP");
 
 function select_item_count_lines(str)
@@ -110,7 +111,9 @@ function select_item(opts)
 			console.mnemonics(prompt);
 			prompt_row = console.current_row;
 		}
-		var choice = (opts.keys === undefined) ? console.getnum(count, 0, drawn) : get_choice();
+		var choice = get_choice();
+		if (typeof choice !== 'string')
+			end_prompt();
 		if (typeof choice === 'object') {
 			console.clear_hotspots();
 			opts.current = cur;
@@ -168,12 +171,12 @@ function select_item(opts)
 	}
 	return -1;
 
-	// console.getnum(), plus the caller's command keys: returns what it does
-	// (a number, or a navigation key string) or the command key as { key: }
+	// Returns an item number, 0 for Enter, -1 for the quit key or Ctrl-C, a
+	// navigation key (a string) or one of the caller's command keys as { key: }
 	function get_choice()
 	{
 		var nav = drawn ? nav_keys : "";
-		var key = console.getkeys(nav + console.quit_key + opts.keys, count);
+		var key = console.getkeys(nav + console.quit_key + (opts.keys || ""), count, K_UPPER | K_NOCRLF);
 
 		if (typeof key === 'number')
 			return key > 0 ? key : -1;	// 0: aborted (Ctrl-C)
@@ -184,6 +187,21 @@ function select_item(opts)
 		if (nav.indexOf(key) >= 0)
 			return key;
 		return { key: key };
+	}
+
+	// End the prompt's line once the user has answered it. A full page leaves
+	// the prompt on the bottom line of the screen, where a newline would
+	// scroll the list, so that line is cleared for what's displayed next.
+	function end_prompt()
+	{
+		console.print("\x01n");
+		if (console.current_row < console.screen_rows - 1)
+			console.newline();
+		else {
+			console.print("\r");
+			console.cleartoeol();
+		}
+		console.line_counter = 0;
 	}
 
 	// Scroll the page so the default item (1-based) is visible
