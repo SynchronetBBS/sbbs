@@ -1,7 +1,8 @@
 // Lightbar @-codes: @BAR:cmd@ ... @BAR@, the @[text]cmd@ shorthand and
-// @BARATTR@. These only record menu items for a script to navigate (see
-// load/menubar.js), so the test displays a line of items and checks what
-// console.bars, console.bar_attr and console.bar_hot_attr report.
+// @BARATTR@ and @BARDEFAULT@. These only record menu items for a script to
+// navigate (see load/menubar.js), so the test displays a line of items and
+// checks what console.bars, console.bar_attr, console.bar_hot_attr and
+// console.bar_default report.
 // Each line it displays is erased again.
 
 require("sbbsdefs.js", "P_SAVEATR");
@@ -110,11 +111,25 @@ display("\x01h\x01y\x014@BARATTR@\x01n", function(row) {
 	check("console.bar_attr", console.bar_attr, YELLOW | BG_BLUE);
 });
 
+// @BARDEFAULT:cmd@ names the item to select first; it displays nothing
+display("@BAR:M@Menu@BAR@", function(row) {
+	check("console.bar_default", console.bar_default, "");
+});
+display("@BARDEFAULT:Q@@BAR:M@Menu@BAR@@BAR:Q@Quit@BAR@", function(row) {
+	check("console.bar_default", console.bar_default, "Q");
+	check_bar(0, { cmd: "M", x: 1 });
+	check("console.current_column", console.current_column, 8);
+});
+display("@BARDEFAULT:\\r@", function(row) {
+	check("console.bar_default", console.bar_default, "\r");
+});
+
 // Clearing the hot-spots (as clearing the screen does) forgets all of it
-display("@BARATTR:WH1:R@@BAR:M@Menu@BAR@", function(row) {
+display("@BARATTR:WH1:R@@BARDEFAULT:M@@BAR:M@Menu@BAR@", function(row) {
 	check("console.bars.length", console.bars.length, 1);
 	console.clear_hotspots();
 	check("console.bars.length", console.bars.length, 0);
+	check("console.bar_default", console.bar_default, "");
 	check("console.bar_attr", console.bar_attr, 0);
 	check("console.bar_hot_attr", console.bar_hot_attr, 0);
 });

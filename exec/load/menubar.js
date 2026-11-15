@@ -12,7 +12,7 @@
 // and may name the selected-state color with @BARATTR:<attr>@ (or a bare
 // @BARATTR@ to use the attribute in effect at that point of the file) and,
 // with @BARATTR:<attr>:<key-attr>@, a foreground color for each item's
-// command key.
+// command key. @BARDEFAULT:<cmd>@ names the item to highlight first.
 // The Terminal Server collects those regions while it displays the file and
 // exposes them as console.bars; this library adds the arrow-key navigation.
 //
@@ -32,8 +32,9 @@
 require("sbbsdefs.js", "K_UPPER");
 require("key_defs.js", "KEY_UP");
 
-// 'cmd' is the item to highlight first (default: the first one in the file);
-// pass false to highlight nothing until the user presses a navigation key
+// 'cmd' is the item to highlight first (default: the one the file names with
+// @BARDEFAULT:<cmd>@, else the first one in the file); pass false to highlight
+// nothing until the user presses a navigation key
 function MenuBar(cmd)
 {
 	this.items = [];
@@ -63,8 +64,9 @@ MenuBar.prototype.refresh = function()
 	this.attr = console.bar_attr || 0;
 	this.hot_attr = console.bar_hot_attr || 0;
 	this.current = (this.items.length && this.cmd !== false) ? 0 : -1;
+	var first = (this.cmd === undefined) ? console.bar_default : this.cmd;
 	for (i = 0; i < this.items.length; i++) {
-		if (this.items[i].cmd == this.cmd)
+		if (this.items[i].cmd == first)
 			this.current = i;
 	}
 	if (this.hot_attr) {	// the file was displayed without the command keys highlighted

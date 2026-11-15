@@ -658,7 +658,8 @@
   hot-spot color (the QWK and mail menu command keys are clickable again)
 - New lightbar @-codes for display files: `@BAR:cmd@` ... `@BAR@` (or the
   shorthand `@[text]cmd@`) marks a selectable, clickable menu item and
-  `@BARATTR:attr[:key-attr]@` sets the highlight and command-key colors
+  `@BARATTR:attr[:key-attr]@` sets the highlight and command-key colors,
+  `@BARDEFAULT:cmd@` names the item highlighted first
 - A user may enable iCE (bright background) colors on a BBS with default
   blink fonts; the setting then takes the place of those fonts
 - Fix: a Ctrl-A color code no longer cancels a preceding Ctrl-AE (bright
@@ -1043,8 +1044,9 @@
 - New `console.play_sound()`, `play_music()`, `cache_sound()`,
   `music_volume()`, `stop_music()` and `stop_sound()` methods: the
   terminal audio @-codes' features, for scripts
-- New `console.bars`, `console.bar_attr` and `console.bar_hot_attr`
-  properties and `load/menubar.js` library: arrow-key navigation of a
+- New `console.bars`, `console.bar_attr`, `console.bar_hot_attr` and
+  `console.bar_default` properties and `load/menubar.js` library:
+  arrow-key navigation of a
   display file's lightbar (`@BAR`) items
 - New `console.cterm_fork` property: the third component of a
   forked CTerm's (e.g. TERMinator's) version report, also written to the

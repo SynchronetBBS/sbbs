@@ -87,6 +87,7 @@ enum {
 	, CON_PROP_CMD_KEYS
 	, CON_PROP_BAR_ATTR
 	, CON_PROP_BAR_HOT_ATTR
+	, CON_PROP_BAR_DEFAULT
 
 	, CON_PROP_OUTPUT_RATE
 };
@@ -233,6 +234,10 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case CON_PROP_BAR_HOT_ATTR:
 			val = sbbs->term->bar_hot_attr;
+			break;
+		case CON_PROP_BAR_DEFAULT:
+			if ((js_str = JS_NewStringCopyZ(cx, sbbs->term->bar_default.c_str())) == NULL)
+				return JS_FALSE;
 			break;
 		case CON_PROP_KEYBUF_LEVEL:
 			val = sbbs->keybuf_level();
@@ -551,6 +556,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "cmd_keys", CON_PROP_CMD_KEYS, JSPROP_ENUMERATE, 32200},
 	{   "bar_attr", CON_PROP_BAR_ATTR, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
 	{   "bar_hot_attr", CON_PROP_BAR_HOT_ATTR, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
+	{   "bar_default", CON_PROP_BAR_DEFAULT, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
 	{0}
 };
 
@@ -633,6 +639,8 @@ static const char*        con_prop_desc[] = {
 	  "(0 = not specified) - <small>READ ONLY</small>"
 	, "Attribute (foreground) for the command key of each lightbar, as set by an <tt>@BARATTR:attr:key-attr@</tt> code in the last-displayed file "
 	  "(0 = not specified) - <small>READ ONLY</small>"
+	, "Command of the lightbar to select first, as set by an <tt>@BARDEFAULT:cmd@</tt> code in the last-displayed file "
+	  "(empty = not specified) - <small>READ ONLY</small>"
 	, NULL
 };
 #endif

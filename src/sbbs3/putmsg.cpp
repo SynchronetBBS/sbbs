@@ -480,6 +480,16 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 						continue;
 					}
 				}
+				if (memcmp(str + l, "@BARDEFAULT:", 12) == 0) {
+					const char* end = strchr(str + l + 12, '@');
+					if (end != NULL && end - (str + l + 12) < (ptrdiff_t)sizeof(tmp)) {
+						snprintf(tmp, sizeof tmp, "%.*s", (int)(end - (str + l + 12)), str + l + 12);
+						c_unescape_str(tmp);
+						term->bar_default = tmp;
+						l = (uint)(end - str) + 1;
+						continue;
+					}
+				}
 				if (memcmp(str + l, "@BAR:", 5) == 0) {
 					const char* end = strchr(str + l + 5, '@');
 					if (end != NULL && end > str + l + 5 && end - (str + l + 5) < (ptrdiff_t)sizeof(tmp)) {
