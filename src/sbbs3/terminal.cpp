@@ -7,6 +7,7 @@ void Terminal::clear_hotspots(void)
 {
 	bars.clear();
 	bar_attr = 0;
+	bar_hot_attr = 0;
 	if (!(flags_ & MOUSE))
 		return;
 	int spots = listCountNodes(mouse_hotspots);

@@ -469,7 +469,13 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					const char* end = strchr(str + l + 9, '@');
 					if (end != NULL && end - (str + l + 9) < (ptrdiff_t)sizeof(tmp)) {
 						snprintf(tmp, sizeof tmp, "%.*s", (int)(end - (str + l + 9)), str + l + 9);
-						term->bar_attr = strtoattr(&cfg, tmp, /* endptr: */ NULL);
+						char* hot = strchr(tmp, ':');   // @BARATTR:<bar-attr>[:<command-key-attr>]@
+						if (hot != NULL) {
+							*hot = '\0';
+							term->bar_hot_attr = strtoattr(&cfg, hot + 1, /* endptr: */ NULL);
+						}
+						if (*tmp != '\0')
+							term->bar_attr = strtoattr(&cfg, tmp, /* endptr: */ NULL);
 						l = (uint)(end - str) + 1;
 						continue;
 					}

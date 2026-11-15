@@ -86,6 +86,7 @@ enum {
 	, CON_PROP_POINTERS_KEY
 	, CON_PROP_CMD_KEYS
 	, CON_PROP_BAR_ATTR
+	, CON_PROP_BAR_HOT_ATTR
 
 	, CON_PROP_OUTPUT_RATE
 };
@@ -229,6 +230,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case CON_PROP_BAR_ATTR:
 			val = sbbs->term->bar_attr;
+			break;
+		case CON_PROP_BAR_HOT_ATTR:
+			val = sbbs->term->bar_hot_attr;
 			break;
 		case CON_PROP_KEYBUF_LEVEL:
 			val = sbbs->keybuf_level();
@@ -546,6 +550,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "pointers_key", CON_PROP_POINTERS_KEY, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
 	{   "cmd_keys", CON_PROP_CMD_KEYS, JSPROP_ENUMERATE, 32200},
 	{   "bar_attr", CON_PROP_BAR_ATTR, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
+	{   "bar_hot_attr", CON_PROP_BAR_HOT_ATTR, JSPROP_ENUMERATE | JSPROP_READONLY, 32200},
 	{0}
 };
 
@@ -625,6 +630,8 @@ static const char*        con_prop_desc[] = {
 	  "is the first letter of the Quit text unless that is one of these keys, then 'Q', then an empty string when 'Q' is also one. "
 	  "Set to an empty string when done."
 	, "Attribute for the selected lightbar, as set by an <tt>@BARATTR@</tt> code in the last-displayed file "
+	  "(0 = not specified) - <small>READ ONLY</small>"
+	, "Attribute (foreground) for the command key of each lightbar, as set by an <tt>@BARATTR:attr:key-attr@</tt> code in the last-displayed file "
 	  "(0 = not specified) - <small>READ ONLY</small>"
 	, NULL
 };

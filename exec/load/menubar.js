@@ -9,8 +9,10 @@
 //
 //     @[_Multi-player_]M@
 //
-// and may name the selected-state colour with @BARATTR:<attr>@ (or a bare
-// @BARATTR@ to use the attribute in effect at that point of the file).
+// and may name the selected-state color with @BARATTR:<attr>@ (or a bare
+// @BARATTR@ to use the attribute in effect at that point of the file) and,
+// with @BARATTR:<attr>:<key-attr>@, a foreground color for each item's
+// command key.
 // The Terminal Server collects those regions while it displays the file and
 // exposes them as console.bars; this library adds the arrow-key navigation.
 //
@@ -38,6 +40,7 @@ function MenuBar(cmd)
 	this.current = -1;
 	this.cmd = cmd;
 	this.attr = 0;
+	this.hot_attr = 0;
 }
 
 // Collect the regions of the file(s) just displayed and highlight the current
@@ -58,16 +61,23 @@ MenuBar.prototype.refresh = function()
 		this.items[j].parts.push(bars[i]);
 	}
 	this.attr = console.bar_attr || 0;
+	this.hot_attr = console.bar_hot_attr || 0;
 	this.current = (this.items.length && this.cmd !== false) ? 0 : -1;
 	for (i = 0; i < this.items.length; i++) {
 		if (this.items[i].cmd == this.cmd)
 			this.current = i;
 	}
+	if (this.hot_attr) {	// the file was displayed without the command keys highlighted
+		for (i = 0; i < this.items.length; i++) {
+			if (i != this.current)
+				this.draw(i, false);
+		}
+	}
 	this.draw(this.current, true);
 	return this.items.length;
 };
 
-// Without an @BARATTR code, a selected item is its own colours swapped
+// Without an @BARATTR code, a selected item is its own colors swapped
 function reversed(attr)
 {
 	var fg = attr & 0x07, bg = (attr >> 4) & 0x07;
@@ -76,6 +86,34 @@ function reversed(attr)
 		return 0x70;
 	return (fg << 4) | bg;
 }
+
+// Display an item's text as the file did, but with its command key (the first
+// occurrence of a single-character command in the text) in the hot attribute's
+// foreground color
+MenuBar.prototype.print = function(part)
+{
+	var text = part.text;
+	var i, attr;
+
+	if (this.hot_attr && part.cmd.length == 1) {
+		for (i = 0; i < text.length; i++) {
+			if (text.charAt(i) == '\x01') {	// skip a Ctrl-A code
+				i++;
+				continue;
+			}
+			if (text.charAt(i).toUpperCase() == part.cmd.toUpperCase()) {
+				console.print(text.substr(0, i));
+				attr = console.attributes;
+				console.attributes = (attr & ~0x0f) | (this.hot_attr & 0x0f);
+				console.print(text.charAt(i));
+				console.attributes = attr;
+				console.print(text.substr(i + 1));
+				return;
+			}
+		}
+	}
+	console.print(text);
+};
 
 MenuBar.prototype.draw = function(index, selected)
 {
@@ -94,7 +132,7 @@ MenuBar.prototype.draw = function(index, selected)
 			console.print(strip_ctrl_a(part.text));
 		} else {
 			console.attributes = part.attr;
-			console.print(part.text);
+			this.print(part);
 		}
 	}
 	console.popxy();

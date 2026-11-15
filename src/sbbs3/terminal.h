@@ -92,6 +92,7 @@ public:
 	link_list_t *mouse_hotspots{nullptr};
 	std::vector<lightbar> bars;
 	uint bar_attr{0};                   // attribute of a selected lightbar (0 = unspecified)
+	uint bar_hot_attr{0};               // attribute of a lightbar's command key (0 = unspecified)
 
 protected:
 	sbbs_t* sbbs;
@@ -185,6 +186,7 @@ public:
 		t->savedlines = nullptr;
 		bars = std::move(t->bars);
 		bar_attr = t->bar_attr;
+		bar_hot_attr = t->bar_hot_attr;
 		// Copy line buffer
 		memcpy(lbuf, t->lbuf, sizeof(lbuf));
 		// TODO: This is pretty hacky...
