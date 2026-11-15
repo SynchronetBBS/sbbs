@@ -302,26 +302,29 @@ function getUserPollData(sub, id) {
         tally: [],
         show_results: false,
     };
-    if (msg_area.sub[sub] === undefined) return ret;
+    if (msg_area.sub[sub] === undefined || !msg_area.sub[sub].can_read) return ret;
     id = parseInt(id);
     if (isNaN(id)) return ret;
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return ret;
-    // var header = msgBase.get_msg_header(id);
-    // Temporary use of get_all_msg_headers() to get header.tally for polls -- lol, "temporary"
-    var headers = msgBase.get_all_msg_headers();
-    var header = null;
-    for (var h in headers) {
-        if (headers[h].number !== id) continue;
-        header = headers[h];
-        break;
-    }
-    // End of temporary shitfest
-    if (header === null || !(header.attr&MSG_POLL)) {
+    var header = msgBase.get_msg_header(id);
+    if (header === null || !(header.attr&MSG_POLL) || header.attr&MSG_DELETE) {
         msgBase.close();
         return ret;
     }
-    if (header.tally && Array.isArray(header.tally)) ret.tally = header.tally;
+    var tally = getPollTally(sub, id);
+    if (tally === null) {
+        // Not in the threads (e.g. older than max_messages): only
+        // get_all_msg_headers() assembles a poll's tally
+        var headers = msgBase.get_all_msg_headers();
+        for (var h in headers) {
+            if (headers[h].number === id) {
+                tally = headers[h].tally;
+                break;
+            }
+        }
+    }
+    if (tally && Array.isArray(tally)) ret.tally = tally;
     ret.answers = msgBase.how_user_voted(header.number, msgBase.cfg.settings&SUB_NAME ? user.name : user.alias);
     msgBase.close();
     var pollAttr = header.auxattr&POLL_RESULTS_MASK;
@@ -1037,8 +1040,26 @@ function getMessageThreads(sub, max) {
         cache.write(threads);
     }
     countUnread(sub, threads);
+    lastMessageThreads = { sub: sub, max: max, threads: threads };
     return threads;
 
+}
+
+// The threads most recently returned by getMessageThreads(), for
+// getPollTally(); callers may modify them, so they are not returned again
+var lastMessageThreads = null;
+
+// A poll's tally, from the sub's threads (get_msg_header() doesn't provide it)
+function getPollTally(sub, number) {
+    const last = lastMessageThreads;
+    const threads = (last && last.sub === sub && last.max === settings.max_messages)
+        ? last.threads
+        : getMessageThreads(sub, settings.max_messages);
+    for (var t in threads.thread) {
+        var msg = threads.thread[t].messages[number];
+        if (msg !== undefined) return msg.tally || [];
+    }
+    return null;
 }
 
 // Returns null if the sub's message base can't be opened
