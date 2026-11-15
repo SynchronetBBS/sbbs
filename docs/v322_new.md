@@ -877,8 +877,9 @@
 - A menu file displayed in place of one of those lists (e.g. `xtrn_sec`,
   `xtrn<n>`, `text_sec`) is a lightbar menu when it has `@BAR` items
 - Find in those lists (area selection, `uselect.js`, `text_sec.js`,
-  `xtrn_sec.js`): `/` or `F` prompts for a boolean search expression,
-  `N` and `P` find the next and previous match (issue #1345)
+  `xtrn_sec.js`): `F` or `/` prompts for a boolean search expression,
+  then `N` and `P` find the next and previous match (issue #1345);
+  until a search, `N` and `P` page the list like PgDn and PgUp
 - More strings in stock modules route through `gettext()` for
   `ctrl/text.ini` `[JS]`-section customization
 - Good Time Trivia gains a `useDoveNetSyncData` option that

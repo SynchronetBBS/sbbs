@@ -49,11 +49,11 @@
 //               and, once there's been a search, 'N' or 'P' repeats it,
 //               each moving the default item to the next (or, for 'P',
 //               previous) match (not with no_default or a custom menu)
-//               The keys are named ("/=Find" and, once there's been a
-//               search, "/=Find, Next, Prev") after the "more" indicator or,
-//               when the list isn't paged, on the prompt's leading blank
-//               line (if it has one and there's no footer). Those strings
-//               are the text.ini "find_hint" and "find_next_hint" keys.
+//               The keys are named in the prompt, ahead of its first
+//               command key: "Find, " and, once there's been a search,
+//               "Next, Prev, " (the text.ini "find_hint" and
+//               "find_next_hint" keys). Until there's been a search, 'N' and
+//               'P' page the list.
 // - no_default  true when the list doesn't mark a default item: the
 //               navigation keys then only scroll a list longer than the
 //               screen, and Enter returns -2
@@ -66,7 +66,7 @@ require("key_defs.js", "KEY_UP");
 require("gettext.js", "gettext");
 
 // The last expression searched for (see opts.search), offered as the default
-// of the next search
+// of the next search, in this list or another
 var select_item_query = "";
 
 function select_item_count_lines(str)
@@ -94,7 +94,7 @@ function select_item(opts)
 	var prev;			// previous default item, when only it and cur need repainting
 	var idle = false;	// the last key changed nothing, so there's nothing to repaint
 	var listed = false;	// the list is (being) displayed where its items can be repainted
-	var hint_shown = "";	// the Find keys offered when the list was displayed
+	var searched = false;	// there's been a search of this list, for 'N' and 'P' to repeat
 	var bar;			// lightbar navigation of a custom menu's @BAR items
 	// The lightbar item first highlighted: the caller's default item, else the
 	// one the menu file names (@BARDEFAULT), else its first
@@ -102,9 +102,16 @@ function select_item(opts)
 	var nav_keys = KEY_UP + KEY_DOWN + KEY_HOME + KEY_END + KEY_PAGEUP + KEY_PAGEDN;
 	if (cols > 1)
 		nav_keys += KEY_LEFT + KEY_RIGHT;
-	// Find: '/' or 'F' to search, 'N' and 'P' for the next and previous match,
+	// Find: 'F' or '/' to search, 'N' and 'P' for the next and previous match,
 	// less any of those that are the caller's own command keys
 	var find_keys = "";
+	// 'N' and 'P' page the list (as PgDn and PgUp do) while they aren't
+	// repeating a search, unless they're the caller's own command keys
+	var page_keys = "";
+	if ((console.quit_key + (opts.keys || "")).indexOf('N') < 0)
+		page_keys += 'N';
+	if ((console.quit_key + (opts.keys || "")).indexOf('P') < 0)
+		page_keys += 'P';
 	if (opts.search && typeof bool_search == 'function') {
 		var find_all = "/FNP";
 		for (var fk = 0; fk < find_all.length; ++fk) {
@@ -121,8 +128,6 @@ function select_item(opts)
 		var udflt = (cur < 0) ? 1 : cur + 1;
 		var prompt = opts.prompt(udflt);
 
-		if (drawn && hint_shown != find_hint())	// e.g. the first search adds Next and Prev
-			drawn = false;
 		if (idle && drawn) {
 			idle = false;
 		} else if (drawn && prev !== undefined && repaint(prev, cur)) {
@@ -133,7 +138,6 @@ function select_item(opts)
 			drawn = false;
 			listed = false;
 			idle = false;
-			hint_shown = "";
 			prev = undefined;
 			if (opts.no_clear)
 				console.clear_hotspots();
@@ -187,15 +191,11 @@ function select_item(opts)
 					console.line_counter = 0;
 				}
 				listed = !opts.no_clear;
-				hint_shown = find_hint();
 				if (page < count) {
 					more_row = console.current_row;
 					print_more();
 					if (!more_on_blank)
 						console.newline();
-				} else if (more_on_blank && hint_shown) {
-					console.print("\x01n" + format("%*s", (opts.more_indent === undefined) ? 2 : opts.more_indent, ""));
-					print_find_hint(hint_shown);
 				}
 				if (opts.footer) {
 					opts.footer();
@@ -214,7 +214,7 @@ function select_item(opts)
 				drawn = listed;
 			}
 			console.line_counter = 0;
-			console.mnemonics(prompt);
+			console.mnemonics(with_find_hint(prompt));
 			prompt_row = console.current_row;
 		}
 		var choice = get_choice();
@@ -228,6 +228,8 @@ function select_item(opts)
 		if (typeof choice === 'string') {
 			var next = udflt - 1;
 			var old_top = top;
+			if (page_keys.indexOf(choice) >= 0 && find_keys_now().indexOf(choice) < 0)
+				choice = (choice == 'N') ? KEY_PAGEDN : KEY_PAGEUP;
 			if (find_keys.indexOf(choice) >= 0) {
 				var again = (choice == 'N' || choice == 'P');
 				var found = find(!again, next, choice == 'P');
@@ -306,6 +308,10 @@ function select_item(opts)
 		var cmds = console.quit_key + (opts.keys || "");
 
 		nav += find_keys_now();
+		for (var pk = 0; drawn && pk < page_keys.length; ++pk) {
+			if (nav.indexOf(page_keys.charAt(pk)) < 0)
+				nav += page_keys.charAt(pk);
+		}
 
 		while (bar && bbs.online && !js.terminated) {
 			var k = console.getkey(K_UPPER);
@@ -379,6 +385,7 @@ function select_item(opts)
 				continue;
 			}
 			select_item_query = str;
+			searched = true;
 			break;
 		}
 		for (var n = 1; n <= count; ++n) {
@@ -443,14 +450,9 @@ function select_item(opts)
 		return "\x01n\x01h\x01k" + format("%*s[%u-%u of %u]", indent, "", top + 1, last, count);
 	}
 
-	// The "more" indicator, followed by the Find keys
 	function print_more()
 	{
 		console.print(more_str());
-		if (find_hint()) {
-			console.print("\x01n  ");
-			print_find_hint(find_hint());
-		}
 	}
 
 	// The Find keys currently offered: those to repeat a search only once
@@ -459,28 +461,34 @@ function select_item(opts)
 	{
 		if (!listed || opts.no_default)	// Find moves the selected item
 			return "";
-		return select_item_query ? find_keys : find_keys.replace(/[NP]/g, "");
+		return searched ? find_keys : find_keys.replace(/[NP]/g, "");
 	}
 
-	// What tells the user of the Find keys offered (mnemonics), displayed
-	// after the "more" indicator or (when the list isn't paged) where that
-	// would be
-	function find_hint()
+	// The prompt with the Find keys offered named in it (mnemonics), ahead of
+	// the first command key of its last line (e.g. "Which, Find, Next, Prev,
+	// Quit or [1]: "), else at the start of that line
+	function with_find_hint(prompt)
 	{
 		var keys = find_keys_now();
+		var hint;
 
-		if (keys.indexOf('/') < 0)
-			return "";
+		// 'F' when it isn't the caller's own key, else its alias
+		if (keys.indexOf('F') >= 0)
+			hint = gettext("~@Find@, ", "find_hint");
+		else if (keys.indexOf('/') >= 0)
+			hint = gettext("~/=@Find@, ", "find_slash_hint");
+		else
+			return prompt;
 		if (keys.indexOf('N') >= 0 && keys.indexOf('P') >= 0)
-			return gettext("~/=@Find@, ~@Next@, ~@Previous@", "find_next_hint");
-		return gettext("~/=@Find@", "find_hint");
-	}
-
-	// Display the Find keys: mnemonics, but in colors that suit any list (the
-	// command keys in the normal attribute, the rest subdued)
-	function print_find_hint(hint)
-	{
-		console.mnemonics("\x01n\x01h\x01k" + bbs.expand_atcodes(hint).replace(/~(.)/g, "\x01n~$1\x01h\x01k"));
+			hint += gettext("~@Next@, ~@Previous@, ", "find_next_hint");
+		var line = prompt.lastIndexOf('\n') + 1;
+		var at = prompt.indexOf('~', line);
+		if (at < 0)
+			at = line + prompt.substr(line).match(/^(?:\x01.|[ \t])*/)[0].length;
+		// "Which or Quit" becomes "Which, Find, or Quit"
+		if (/[^,] or $/.test(prompt.substring(line, at)))
+			return prompt.substr(0, at - 4) + ", " + hint + "or " + prompt.substr(at);
+		return prompt.substr(0, at) + hint + prompt.substr(at);
 	}
 
 	// Repaint every item line of the page in place (after a page change),
@@ -536,6 +544,7 @@ function select_item(opts)
 		if (!goto_line(prompt_row))
 			return false;
 		var prompt = opts.prompt(udflt);
+		prompt = with_find_hint(prompt);
 		console.mnemonics(prompt.substr(prompt.lastIndexOf('\n') + 1));
 		// Clear what's left of a longer previous prompt, keeping the prompt's
 		// attributes for the echo of the user's input
