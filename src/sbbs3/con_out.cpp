@@ -1034,35 +1034,35 @@ void sbbs_t::ctrl_a(char x)
 			attr(LIGHTGRAY);
 			break;
 		case 'R':
-			atr = (atr & 0xf8) | RED;
+			atr = (atr & (BG_BRIGHT | 0xf8)) | RED;
 			attr(atr);
 			break;
 		case 'G':
-			atr = (atr & 0xf8) | GREEN;
+			atr = (atr & (BG_BRIGHT | 0xf8)) | GREEN;
 			attr(atr);
 			break;
 		case 'B':
-			atr = (atr & 0xf8) | BLUE;
+			atr = (atr & (BG_BRIGHT | 0xf8)) | BLUE;
 			attr(atr);
 			break;
 		case 'W':   /* White */
-			atr = (atr & 0xf8) | LIGHTGRAY;
+			atr = (atr & (BG_BRIGHT | 0xf8)) | LIGHTGRAY;
 			attr(atr);
 			break;
 		case 'C':
-			atr = (atr & 0xf8) | CYAN;
+			atr = (atr & (BG_BRIGHT | 0xf8)) | CYAN;
 			attr(atr);
 			break;
 		case 'M':
-			atr = (atr & 0xf8) | MAGENTA;
+			atr = (atr & (BG_BRIGHT | 0xf8)) | MAGENTA;
 			attr(atr);
 			break;
 		case 'Y':   /* Yellow */
-			atr = (atr & 0xf8) | BROWN;
+			atr = (atr & (BG_BRIGHT | 0xf8)) | BROWN;
 			attr(atr);
 			break;
 		case 'K':   /* Black */
-			atr = (atr & 0xf8) | BLACK;
+			atr = (atr & (BG_BRIGHT | 0xf8)) | BLACK;
 			attr(atr);
 			break;
 		case '0':   /* Black Background */
