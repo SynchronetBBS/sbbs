@@ -29,6 +29,7 @@
 #include "js_request.h"
 #include "wordwrap.h"
 #include "utf8.h"
+#include "boolsrch.h"
 
 /* SpiderMonkey: */
 #include <jsapi.h>
@@ -3820,6 +3821,75 @@ js_directory(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_bool_search(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *      argv = JS_ARGV(cx, arglist);
+	char*        query = NULL;
+	char*        errmsg = NULL;
+	char**       fields = NULL;
+	size_t       nfields = 0;
+	bool_expr_t* expr;
+	bool         result;
+	jsrefcount   rc;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if (!JSVAL_NULL_OR_VOID(argv[0])) {
+		JSVALUE_TO_MSTRING(cx, argv[0], query, NULL);
+		HANDLE_PENDING(cx, query);
+	}
+	if (query == NULL) {
+		JS_ReportError(cx, "no search expression specified");
+		return JS_FALSE;
+	}
+	expr = bool_expr_compile(query, &errmsg);
+	free(query);
+	if (expr == NULL) {
+		JS_ReportError(cx, "%s", errmsg != NULL ? errmsg : "invalid search expression");
+		free(errmsg);
+		return JS_FALSE;
+	}
+	free(errmsg);
+
+	if (argc > 1) {
+		if ((fields = (char**)calloc(argc - 1, sizeof(char*))) == NULL) {
+			bool_expr_free(expr);
+			JS_ReportError(cx, "calloc failure");
+			return JS_FALSE;
+		}
+		for (uintN argn = 1; argn < argc; argn++) {
+			if (JSVAL_NULL_OR_VOID(argv[argn]))
+				continue;
+			char* field = NULL;
+			JSVALUE_TO_MSTRING(cx, argv[argn], field, NULL);
+			if (JS_IsExceptionPending(cx)) {
+				free(field);
+				for (size_t i = 0; i < nfields; i++)
+					free(fields[i]);
+				free(fields);
+				bool_expr_free(expr);
+				return JS_FALSE;
+			}
+			if (field != NULL)
+				fields[nfields++] = field;
+		}
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	result = bool_expr_match_fields(expr, (const char* const*)fields, nfields);
+	for (size_t i = 0; i < nfields; i++)
+		free(fields[i]);
+	free(fields);
+	bool_expr_free(expr);
+	JS_RESUMEREQUEST(cx, rc);
+
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
 js_wildmatch(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *     argv = JS_ARGV(cx, arglist);
@@ -5119,6 +5189,15 @@ static jsSyncMethodSpec js_global_functions[] = {
 	 , JSDOCSTR("Return <tt>true</tt> if the <i>filename</i> matches the wildcard <i>pattern</i> (wildcard characters supported are '*' and '?'), "
 		        "if <i>path</i> is <tt>true</tt>, '*' will not match path delimiter characters (e.g. '/')")
 	 , 314},
+	{"bool_search",     js_bool_search,     1,  JSTYPE_BOOLEAN, JSDOCSTR("expression [,text] [,...]")
+	 , JSDOCSTR("Return <tt>true</tt> if the boolean search <i>expression</i> matches any of the <i>text</i> strings "
+		        "(a term of the expression may be found in any one of them). "
+		        "The expression syntax is that of the BBS's text searches: case-insensitive terms combined with "
+		        "<tt>AND</tt> or <tt>&amp;</tt>, <tt>OR</tt> or <tt>|</tt>, <tt>NOT</tt> or <tt>!</tt>, and parentheses; "
+		        "consecutive words are one phrase term and a double-quoted term matches whole words only. "
+		        "An invalid expression throws an exception whose message describes the syntax error, "
+		        "so an expression may be validated by calling this function with no <i>text</i>.")
+	 , 32200},
 	{"backslash",       js_backslash,       1,  JSTYPE_STRING,  JSDOCSTR("path")
 	 , JSDOCSTR("Return directory path with trailing (platform-specific) path delimiter "
 		        "(i.e. \"slash\" or \"backslash\")")
