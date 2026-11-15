@@ -222,6 +222,7 @@ JSDOOR_OBJS = 		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/js_cryptcon$(OFILE) \
 			$(MTOBJODIR)/js_cryptcert$(OFILE) \
 			$(MTOBJODIR)/js_cryptkeyset$(OFILE) \
+			$(MTOBJODIR)/boolsrch$(OFILE) \
 			$(MTOBJODIR)/js_global$(OFILE) \
 			$(MTOBJODIR)/js_rtpool$(OFILE) \
 			$(MTOBJODIR)/js_sprintf$(OFILE) \
