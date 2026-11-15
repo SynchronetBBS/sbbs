@@ -336,10 +336,20 @@ function sd_list_open_games(cfg) {
 // (gl.event_feed and gl.activity_cell) adds the "[age]" prefix + coloring, matching
 // SyncDOOM. Returns null for event types the feed doesn't surface, so they're skipped.
 function sd_event_text(e) {
+	// Guarded: " on undefined" is worse than saying nothing.
+	var on = e.map ? " on " + e.map : "";
+
 	switch (e.type) {
-		case "frag":  return e.killer + " fragged " + e.victim;
+		case "frag":  return e.killer + " fragged " + e.victim + on;
 		case "level": return e.user + " cleared " + e.map + " in " + gl.mmss(e.secs);
-		case "death": return e.user + " died on " + e.map;
+		case "death":
+			// Worded by cause, as SyncDOOM's feed is. A death at another player's hands
+			// is already the killer's "fragged" line. Records from a door that predates
+			// the cause field fall through to "died".
+			if (e.cause == "player")  return null;
+			if (e.cause == "suicide") return e.user + " blew themselves up" + on;
+			if (e.cause == "monster") return e.user + " was killed" + on;
+			return e.user + " died" + on;
 	}
 	// "start" is intentionally NOT rendered: a solo (or MP) join would post a lobby
 	// feed line every time someone launches the door, which clutters it. Matches

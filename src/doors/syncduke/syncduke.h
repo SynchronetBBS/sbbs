@@ -55,7 +55,8 @@ int      syncduke_node_composing(void);           /* is the in-game page-compose
 void     syncduke_node_compose_key(int c);        /* feed one typed key to the compose overlay */
 
 /* --- provided by syncduke_events.c (events.jsonl activity log) --- */
-void syncduke_events_tick(void);   /* per-frame: emit start/level/death to -eventlog */
+void syncduke_events_tick(void);   /* per-frame: emit start/level/death/frag to -eventlog */
+void syncduke_events_end(void);    /* door exit: emit the session's "end" record (once; no-op if no game was played) */
 
 /* --- provided by syncduke_input.c (terminal -> Build/Duke key state) ---
  * Self-contained (no engine linkage): syncduke_map_key is a pure function; the queue
@@ -177,6 +178,11 @@ int syncduke_player_dead(void);   /* 1 when the player is dead -- door drops the
 void syncduke_game_status(char *buf, size_t bufsz);   /* who's-online text: "playing SyncDuke" [+ ": <level>"] */
 void syncduke_map_name(int vol, int lev, char *buf, size_t sz);   /* level display name: CON's "RAW MEAT", a user map's basename, else "E#L#" */
 int syncduke_next_frag(int *victim);   /* dukematch: next not-yet-reported frag BY US -> *victim player #, else 0 */
+enum {
+	SYNCDUKE_DEATH_ENVIRONMENT, SYNCDUKE_DEATH_SUICIDE, SYNCDUKE_DEATH_MONSTER, SYNCDUKE_DEATH_PLAYER
+};
+int syncduke_death_cause(int *by);     /* what just killed us (SYNCDUKE_DEATH_*); *by = the player # for _PLAYER */
+int syncduke_my_frags(void);           /* our dukematch score so far: frags less self-kills */
 
 /* --- text-tier legible HUD overlay (game pop-up/status quotes as real chars) ---
  * In a text/block tier the game's own quote font rasterises to unreadable blocks. When

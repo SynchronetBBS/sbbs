@@ -69,6 +69,7 @@ void syncduke_hangup(const char *why)
 	syncduke_log("HANGUP: %s -- exiting", why ? why : "");
 	fprintf(stderr, "syncduke: client hangup (%s) -- exiting\n", why ? why : "");
 	fflush(stderr);
+	syncduke_events_end();
 	syncduke_term_restore();
 	_exit(0);   /* skip the engine's atexit cleanup, which could block on the dead socket */
 }

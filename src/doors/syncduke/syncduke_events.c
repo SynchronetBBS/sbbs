@@ -1,11 +1,12 @@
 /*
- * syncduke_events.c -- door-written events.jsonl activity log (start/level/death)
+ * syncduke_events.c -- door-written events.jsonl activity log (start/level/death/frag/end)
  * for the lobby's recent-activity feed. One compact JSON line per event, appended
  * (atomic, no lock) to the -eventlog path; "" disables logging. Includes duke3d.h
  * for the engine state the events describe. Mirrors src/doors/syncdoom/syncdoom.c's
  * sd_event_* model. Detector runs once per frame from _nextpage (syncduke_plat.c).
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <stdint.h>
@@ -140,16 +141,29 @@ static void ev_level(const char *map, int secs)
 	ev_emit(j);
 }
 
+/* "cause" and "by" match SyncDOOM's death record (sd_event_death). */
 static void ev_death(void)
 {
-	char j[300], ua[80], map[64], me[80];
+	static const char *cs[] = { "environment", "suicide", "monster", "player" };
+	char               j[500], ua[80], map[64], me[80], bn[24], be[80], byfield[100] = "";
+	int                by = -1;
+	int                cause = syncduke_death_cause(&by);
+
+	if (cause == SYNCDUKE_DEATH_PLAYER && by >= 0 && by < MAXPLAYERS) {
+		const char *name = ud.user_name[by];
+		if (name == NULL || name[0] == '\0') {
+			snprintf(bn, sizeof(bn), "player %d", by + 1);
+			name = bn;
+		}
+		snprintf(byfield, sizeof(byfield), "\"by\":\"%s\",", ev_esc(name, be, sizeof(be)));
+	}
 	ev_map(map, sizeof(map));
 	snprintf(j, sizeof(j),
 	         "{\"time\":%ld,\"type\":\"death\",\"node\":%d,\"user\":\"%s\","
-	         "\"map\":\"%s\",\"secs\":%d}",
+	         "\"cause\":\"%s\",%s\"map\":\"%s\",\"secs\":%d}",
 	         (long)time(NULL), sbbs_my_node(),
 	         ev_esc(syncduke_door_alias(), ua, sizeof(ua)),
-	         ev_esc(map, me, sizeof(me)), ev_secs());
+	         cs[cause], byfield, ev_esc(map, me, sizeof(me)), ev_secs());
 	ev_emit(j);
 }
 
@@ -169,6 +183,29 @@ static void ev_frag(int victim)
 	         ev_esc(syncduke_door_alias(), ka, sizeof(ka)),
 	         ev_esc(vname, va, sizeof(va)),
 	         ev_esc(map, me, sizeof(me)));
+	ev_emit(j);
+}
+
+static time_t ev_session_start;    /* when this session's "start" was logged (0 = no game played) */
+static char   ev_session_mode[24];
+
+/* The session's closing record: SyncDOOM's "end" (mode, frags, secs), where secs is
+ * the time since "start".  Duke has no game-over edge to hang it on -- deaths and
+ * level changes drop MODE_GAME just as quitting to the menu does -- so it is written
+ * when the door exits. */
+void syncduke_events_end(void)
+{
+	char j[300], ua[80];
+
+	if (ev_session_start == 0)
+		return;
+	snprintf(j, sizeof(j),
+	         "{\"time\":%ld,\"type\":\"end\",\"node\":%d,\"user\":\"%s\","
+	         "\"mode\":\"%s\",\"frags\":%d,\"secs\":%ld}",
+	         (long)time(NULL), sbbs_my_node(),
+	         ev_esc(syncduke_door_alias(), ua, sizeof(ua)),
+	         ev_session_mode, syncduke_my_frags(), (long)(time(NULL) - ev_session_start));
+	ev_session_start = 0;
 	ev_emit(j);
 }
 
@@ -198,6 +235,9 @@ void syncduke_events_tick(void)
 			 * "start", flooding the event log. */
 			started = 1;
 			ev_start();
+			ev_session_start = time(NULL);
+			snprintf(ev_session_mode, sizeof(ev_session_mode), "%s", ev_mode());
+			atexit(syncduke_events_end);
 		}
 		ev_capture_level();                         /* entering a level (or respawning) */
 		last_vol = vol; last_lev = lev;

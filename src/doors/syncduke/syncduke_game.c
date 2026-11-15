@@ -162,3 +162,44 @@ int syncduke_next_frag(int *victim)
 	}
 	return 0;
 }
+
+/* What killed our player, for the death event: call once, on the death edge.
+ *
+ * Another player: the engine credits the kill in frags[killer][us] (covering the
+ * kills that have no damaging sprite -- a stomp, a telefrag), so a count that rose
+ * since our last death names the killer.  Otherwise the engine's wackedbyactor is
+ * the sprite that owned the lethal hit: a player sprite (ours = a suicide by our own
+ * explosive, another's = friendly fire in co-op), an enemy, or something that is
+ * neither (an exploding barrel, a trap).  It is -1 when nothing hit us: a fall,
+ * drowning, a crusher. */
+int syncduke_death_cause(int *by)
+{
+	static short seen[MAXPLAYERS];
+	int          me = myconnectindex, killer = -1, j;
+
+	for (j = 0; j < MAXPLAYERS; j++) {
+		if (j != me && frags[j][me] > seen[j])
+			killer = j;
+		seen[j] = frags[j][me];            /* resync (a new match zeroes the matrix) */
+	}
+	j = ps[me].wackedbyactor;
+	if (killer < 0 && j >= 0 && j < MAXSPRITES && sprite[j].statnum < MAXSTATUS) {
+		if (sprite[j].picnum == APLAYER) {
+			if (sprite[j].yvel == me)
+				return SYNCDUKE_DEATH_SUICIDE;
+			killer = sprite[j].yvel;
+		} else if (badguy(&sprite[j])) {
+			return SYNCDUKE_DEATH_MONSTER;
+		}
+	}
+	if (killer < 0)
+		return SYNCDUKE_DEATH_ENVIRONMENT;
+	if (by != NULL)
+		*by = killer;
+	return SYNCDUKE_DEATH_PLAYER;
+}
+
+int syncduke_my_frags(void)
+{
+	return ps[myconnectindex].frag - ps[myconnectindex].fraggedself;
+}
