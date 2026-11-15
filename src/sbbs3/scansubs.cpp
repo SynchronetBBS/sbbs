@@ -251,6 +251,11 @@ void sbbs_t::new_scan_ptr_cfg()
 	uint     total_subs;
 	uint     subs;
 
+	bool     invoked;
+	exec_mod("scan configuration", cfg.scancfg_mod, &invoked, "ptrs");
+	if (invoked)
+		return;
+
 	while (online) {
 		bputs(text[CfgGrpLstHdr]);
 		for (i = 0; i < usrgrps && !msgabort(); i++) {
@@ -425,6 +430,11 @@ void sbbs_t::new_scan_cfg(uint misc)
 	int  s;
 	int  i, j;
 	uint t;
+
+	bool invoked;
+	exec_mod("scan configuration", cfg.scancfg_mod, &invoked, "cfg %u", misc);
+	if (invoked)
+		return;
 
 	while (online) {
 		bputs(text[CfgGrpLstHdr]);

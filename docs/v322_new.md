@@ -882,6 +882,12 @@
   `xtrn_sec.js`): `F` or `/` prompts for a boolean search expression,
   then `N` and `P` find the next and previous match (issue #1345);
   until a search, `N` and `P` page the list like PgDn and PgUp
+- New: `scancfg.js`: the message scan configuration and new-scan
+  pointer lists are now a loadable module (SCFG->System->Loadable
+  Modules->Scan Config) with the same paging, navigation, Find and
+  `modopts.ini` `[scancfg]` options (issue #1350). Set by the stock
+  `main.ini`; an existing system keeps the built-in lists until its
+  sysop sets it
 - More strings in stock modules route through `gettext()` for
   `ctrl/text.ini` `[JS]`-section customization
 - Good Time Trivia gains a `useDoveNetSyncData` option that

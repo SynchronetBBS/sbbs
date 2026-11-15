@@ -3547,6 +3547,7 @@ void sys_cfg(void)
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Read Mail", strListCombine(cfg.readmail_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Scan Msgs", strListCombine(cfg.scanposts_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Scan Subs", strListCombine(cfg.scansubs_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Scan Config", strListCombine(cfg.scancfg_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Msgs", strListCombine(cfg.listmsgs_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Logons", strListCombine(cfg.logonlist_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Users", strListCombine(cfg.userlist_mod.cmd, str, sizeof str, list_sep));
@@ -3589,6 +3590,7 @@ void sys_cfg(void)
 						"`Read Mail`        User reads email/netmail\n"
 						"`Scan Msgs`        User reads or scans a message sub-board\n"
 						"`Scan Subs`        User scans one or more sub-boards for msgs\n"
+						"`Scan Config`      User configures msg scans or new-scan pointers\n"
 						"`List Msgs`        User lists msgs from the msg read prompt\n"
 						"`List Logons`      User lists logons ('-y' for yesterday)\n"
 						"`List Users`       User lists the users of the system\n"
@@ -3682,45 +3684,48 @@ void sys_cfg(void)
 							mods_changed |= cfg_loadable_modules("Scan Subs", &cfg.scansubs_mod, mod_bar, 0);
 							break;
 						case 20:
-							mods_changed |= cfg_loadable_modules("List Msgs", &cfg.listmsgs_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Scan Config", &cfg.scancfg_mod, mod_bar, 0);
 							break;
 						case 21:
-							mods_changed |= cfg_loadable_modules("List Logons", &cfg.logonlist_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("List Msgs", &cfg.listmsgs_mod, mod_bar, 0);
 							break;
 						case 22:
-							mods_changed |= cfg_loadable_modules("List Users", &cfg.userlist_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("List Logons", &cfg.logonlist_mod, mod_bar, 0);
 							break;
 						case 23:
-							mods_changed |= cfg_loadable_modules("List Nodes", &cfg.nodelist_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("List Users", &cfg.userlist_mod, mod_bar, 0);
 							break;
 						case 24:
-							mods_changed |= cfg_loadable_modules("Who's Online", &cfg.whosonline_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("List Nodes", &cfg.nodelist_mod, mod_bar, 0);
 							break;
 						case 25:
-							mods_changed |= cfg_loadable_modules("Private Message", &cfg.privatemsg_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Who's Online", &cfg.whosonline_mod, mod_bar, 0);
 							break;
 						case 26:
-							mods_changed |= cfg_loadable_modules("Scan Dirs", &cfg.scandirs_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Private Message", &cfg.privatemsg_mod, mod_bar, 0);
 							break;
 						case 27:
-							mods_changed |= cfg_loadable_modules("List Files", &cfg.listfiles_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Scan Dirs", &cfg.scandirs_mod, mod_bar, 0);
 							break;
 						case 28:
-							mods_changed |= cfg_loadable_modules("View File Information", &cfg.fileinfo_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("List Files", &cfg.listfiles_mod, mod_bar, 0);
 							break;
 						case 29:
-							mods_changed |= cfg_loadable_modules("Batch File Transfer", &cfg.batxfer_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("View File Information", &cfg.fileinfo_mod, mod_bar, 0);
 							break;
 						case 30:
-							mods_changed |= cfg_loadable_modules("Temporary File Transfer", &cfg.tempxfer_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Batch File Transfer", &cfg.batxfer_mod, mod_bar, 0);
 							break;
 						case 31:
-							mods_changed |= cfg_loadable_modules("QWK Section", &cfg.qwksec_mod, mod_bar, 1);
+							mods_changed |= cfg_loadable_modules("Temporary File Transfer", &cfg.tempxfer_mod, mod_bar, 0);
 							break;
 						case 32:
-							mods_changed |= cfg_loadable_modules("Select Item", &cfg.uselect_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("QWK Section", &cfg.qwksec_mod, mod_bar, 1);
 							break;
 						case 33:
+							mods_changed |= cfg_loadable_modules("Select Item", &cfg.uselect_mod, mod_bar, 0);
+							break;
+						case 34:
 							mods_changed |= cfg_loadable_modules("Synchronize", &cfg.sync_mod, mod_bar, 0);
 							break;
 					}

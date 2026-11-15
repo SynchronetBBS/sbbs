@@ -438,6 +438,7 @@ void free_cfg(scfg_t* cfg)
 	free_loadable_module(&cfg->readmail_mod);
 	free_loadable_module(&cfg->scanposts_mod);
 	free_loadable_module(&cfg->scansubs_mod);
+	free_loadable_module(&cfg->scancfg_mod);
 	free_loadable_module(&cfg->listmsgs_mod);
 	free_loadable_module(&cfg->scandirs_mod);
 	free_loadable_module(&cfg->listfiles_mod);

@@ -359,6 +359,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->readmail_mod = read_loadable_mod(cfg, section, "readmail", "");
 	cfg->scanposts_mod = read_loadable_mod(cfg, section, "scanposts", "");
 	cfg->scansubs_mod = read_loadable_mod(cfg, section, "scansubs", "");
+	cfg->scancfg_mod = read_loadable_mod(cfg, section, "scancfg", "");
 	cfg->listmsgs_mod = read_loadable_mod(cfg, section, "listmsgs", "");
 	cfg->textsec_mod = read_loadable_mod(cfg, section, "textsec", "text_sec");
 	cfg->chatsec_mod = read_loadable_mod(cfg, section, "chatsec", "chat_sec");

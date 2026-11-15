@@ -645,6 +645,7 @@ typedef struct
 	struct loadable_module readmail_mod;		/* Reading mail module */
 	struct loadable_module scanposts_mod;		/* Scanning posts (in a single sub) module */
 	struct loadable_module scansubs_mod;		/* Scanning sub-boards module */
+	struct loadable_module scancfg_mod;		/* Message scan configuration module */
 	struct loadable_module listmsgs_mod;		/* Listing messages module */
 	struct loadable_module scandirs_mod;
 	struct loadable_module listfiles_mod;

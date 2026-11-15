@@ -249,6 +249,7 @@ bool write_main_cfg(scfg_t* cfg)
 	write_loadable_module(&ini, "readmail", cfg->readmail_mod);
 	write_loadable_module(&ini, "scanposts", cfg->scanposts_mod);
 	write_loadable_module(&ini, "scansubs", cfg->scansubs_mod);
+	write_loadable_module(&ini, "scancfg", cfg->scancfg_mod);
 	write_loadable_module(&ini, "listmsgs", cfg->listmsgs_mod);
 	write_loadable_module(&ini, "textsec", cfg->textsec_mod);
 	write_loadable_module(&ini, "chatsec", cfg->chatsec_mod);
