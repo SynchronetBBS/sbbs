@@ -861,8 +861,8 @@
   the `[x-y of n]` indicator. The stock `modopts.ini` uses `->` and a
   highlighted name; an existing one keeps the v3.21 look (`*`)
 - New `load/select_item.js` library: the numbered-list selector (paging,
-  arrow keys, in-place repainting) behind `uselect.js`, `text_sec.js`
-  and the area selection lists
+  arrow keys, in-place repainting) behind `uselect.js`, `text_sec.js`,
+  `xtrn_sec.js` and the area selection lists
 - The text file section and file lists (`text_sec.js`) page lists longer
   than the screen and support arrow-key, Home/End and PgUp/PgDn
   navigation; new `modopts.ini` `[text_sec]` options
@@ -870,6 +870,9 @@
   and `more_fmt` mark and highlight the default item, as for the area
   selection lists. The stock `modopts.ini` uses `->` and a highlighted
   name; an existing one keeps the v3.21 look
+- The external program section and program lists (`xtrn_sec.js`) get the
+  same paging, navigation (plus Left/Right between two columns) and
+  `modopts.ini` `[xtrn_sec]` options
 - More strings in stock modules route through `gettext()` for
   `ctrl/text.ini` `[JS]`-section customization
 - Good Time Trivia gains a `useDoveNetSyncData` option that

@@ -11,6 +11,7 @@ require("sbbsdefs.js", "P_NOERROR");
 
 /* text.dat entries */
 require("text.js", "XtrnProgLstFmt");
+require("select_item.js", "select_item");
 
 /* See if an xtrn section code was passed as an argument */
 /* must parse argv before calling load() */
@@ -102,9 +103,143 @@ function digits(n)
     return 1 + digits(Math.floor(n / 10));
 }
 
+// modopts.ini [xtrn_sec] default_item_prefix, nondefault_item_prefix and
+// default_item_attr options: what marks the default item of a list (and what
+// takes its place before the other items) and the attributes of its
+// highlighted name. Without any of them, no default item is marked and the
+// navigation keys only page through a list that doesn't fit on the screen.
+var marked = options.default_item_prefix !== undefined
+	|| options.nondefault_item_prefix !== undefined
+	|| Boolean(options.default_item_attr);
+
+function item_prefix(is_default)
+{
+	var prefix = is_default ? options.default_item_prefix : options.nondefault_item_prefix;
+	return prefix === undefined ? "" : prefix;
+}
+
+function prefix_width()
+{
+	return Math.max(strip_ctrl(item_prefix(true)).length, strip_ctrl(item_prefix(false)).length);
+}
+
+// The name field of a list item format: a plain %s (width: 0) or one of a
+// fixed width (e.g. %-32.32s). The name of the default item is highlighted
+// only in such a field, so that a customized format is never misaligned.
+function name_field(fmt)
+{
+	var m = fmt.match(/%(?:-(\d+)\.(\d+))?s/);
+	if(!m || m[1] != m[2])
+		return null;
+	return { spec: m[0], width: m[1] ? parseInt(m[1], 10) : 0 };
+}
+
+function item_str(fmt, num, item, widest, is_default)
+{
+	var name = item.name;
+	var field = (is_default && options.default_item_attr) ? name_field(fmt) : null;
+	if(field) {
+		name = options.default_item_attr + format("%-*s", widest, name.substr(0, widest)) + "\x01n";
+		if(field.width > widest)
+			name += format("%*s", field.width - widest, "");
+		fmt = fmt.replace(field.spec, "%s");
+	}
+	// select_item() ends the line
+	return format(fmt, num, name, item.cost).replace(/[\r\n]+$/, "");
+}
+
+// Display a numbered list of sections or programs, in one or two columns (or
+// the menu file that takes its place) and prompt the user to choose from it.
+// Returns what select_item() does: the index of the item chosen, -1 if the
+// user quit or -2 for Enter when no item is the default.
+// 'lst' describes the list:
+// - fmt, multicolumn_fmt: the item formats (number, name, cost)
+// - align: right-justify the item numbers
+// - menu: function() displaying a menu file in place of the list, if there's one
+// - has_menu: there's such a menu file
+// - header: function(margin, indent, multicolumn) displaying what's above the items
+// - footer: function() displaying what's below them
+// - which: function(num) returning the prompt, num being the default item's number
+function select_from(list, cur, lst)
+{
+	var multicolumn = options.multicolumn && list.length > options.singlecolumn_height;
+	var center = options.center && !multicolumn;
+	var fmt = multicolumn ? lst.multicolumn_fmt : lst.fmt;
+	var field = name_field(fmt);
+	var max_digits = digits(list.length);
+	var pw = marked ? prefix_width() : 0;
+	var widest_item = 0;	// as displayed, without attribute codes
+	var i;
+
+	for(i = 0; i < list.length; i++) {
+		var w = strip_ctrl(item_str(fmt, i + 1, list[i], 0, false)).length;
+		if(lst.align)
+			w += max_digits - digits(i + 1);
+		if(w > widest_item)
+			widest_item = w;
+	}
+	// A marker that would make two columns wider than the screen is left out
+	// (the highlighted name then marks the default item)
+	if(pw && multicolumn && ((widest_item + pw) * 2)
+		+ strip_ctrl(options.multicolumn_separator).length >= console.screen_columns)
+		pw = 0;
+	var has_default = marked && !lst.has_menu && Boolean(pw || (options.default_item_attr && field));
+
+	// Center on the widest row's DISPLAYED width
+	var margin = "";
+	if(center) {
+		var pad = Math.floor((console.screen_columns - (widest_item + pw)) / 2);
+		if(pad > 0)
+			margin = format("%*s", pad, "");
+	}
+	var indent = format("%*s", pw, "");	// what the titles have in place of the marker
+
+	var name_max = (field && field.width) ? field.width
+		: Math.max(console.screen_columns - margin.length - pw - 10, 1);
+	var widest_name = 0;
+	for(i = 0; i < list.length; i++)
+		widest_name = Math.max(widest_name, Math.min(list[i].name.length, name_max));
+
+	if(options.clear_screen)
+		console.attributes = LIGHTGRAY;
+	return select_item({
+		count: list.length,
+		current: has_default ? Math.min(cur, list.length - 1) : -1,
+		no_default: !has_default,
+		no_clear: !options.clear_screen,
+		columns: multicolumn ? 2 : 1,
+		column_separator: options.multicolumn_separator,
+		header: function() { lst.header(margin, indent, multicolumn); },
+		footer: lst.footer,
+		menu: lst.menu,
+		prompt: function(num) {
+			if(lst.has_menu)	// the menu file includes its own prompt, if any
+				return "";
+			var which = lst.which(has_default ? num : cur + 1);
+			return center ? "\r\n" + margin + which.trimLeft() : which;
+		},
+		print_item: function(i, is_default, redraw) {
+			write(margin);
+			if(pw)
+				console.print(item_prefix(is_default));
+			if(!redraw) {
+				var hotspot = i + 1;
+				if(digits(hotspot) < digits(list.length))
+					hotspot += '\r';
+				console.add_hotspot(hotspot);
+			}
+			if(lst.align)
+				printf("%*s", max_digits - digits(i + 1), ""); // Indent to right justify number
+			write(item_str(fmt, i + 1, list[i], widest_name, is_default));
+		},
+		more_fmt: options.more_fmt,
+		more_indent: margin.length + pw + 1
+	});
+}
+
 function external_program_menu(xsec)
 {
-    var i,j;
+	var curprog = 0;
 
 	js.global.xtrn_sec = xtrn_area.sec_list[xsec].name;
 
@@ -129,127 +264,79 @@ function external_program_menu(xsec)
 			bbs.exec_xtrn(prog_list[0].code);
 			break;
 		}
-		
-		if(options.clear_screen)
-			console.clear(LIGHTGRAY);
 
-		var show_header = true;
 		var secnum = xtrn_area.sec_list[xsec].number+1;
 		var seccode = xtrn_area.sec_list[xsec].code;
+		var menu = null;
+		if(bbs.menu_exists("xtrn" + secnum))
+			menu = "xtrn" + secnum;
+		else if(bbs.menu_exists("xtrn" + seccode))
+			menu = "xtrn" + seccode;
+		else if(options.sort)
+			prog_list.sort(sort_by_name);
 
-		if (bbs.menu("xtrn" + secnum + "_head", P_NOERROR)) {
-			show_header = false;
-		} else if (bbs.menu("xtrn" + seccode + "_head", P_NOERROR)) {
-			show_header = false;
-		} else {
+		// Returns true if the section has its own (in place of the list's) header
+		var show_head = function() {
+			if(bbs.menu("xtrn" + secnum + "_head", P_NOERROR)
+				|| bbs.menu("xtrn" + seccode + "_head", P_NOERROR))
+				return true;
 			bbs.menu("xtrn_head", P_NOERROR);
-		}
-
-		if(bbs.menu("xtrn" + secnum, P_NOERROR) || bbs.menu("xtrn" + seccode, P_NOERROR)) {
-			if(!bbs.menu("xtrn" + secnum + "_tail", P_NOERROR) &&
-				!bbs.menu("xtrn" + seccode + "_tail", P_NOERROR)) {
-				bbs.menu("xtrn_tail", P_NOERROR);
-			}
-		}
-		else {
-			var multicolumn = options.multicolumn && prog_list.length > options.singlecolumn_height;
-			var center = options.center && !multicolumn;
-			// Center on the actual rendered row width, not a fixed fraction of
-			// the screen: screen_columns/4 as a left margin only lands near
-			// center at 80 columns and drifts left as the terminal widens. Take
-			// the widest row's DISPLAYED width (strip_ctrl drops the zero-width
-			// \x01 attribute codes) and split the slack -- the same
-			// measure-the-content approach the section list below already uses.
-			var margin = "";
-			if(center) {
-				var widest = 0;
-				for(var pi = 0; pi < prog_list.length; pi++) {
-					var w = strip_ctrl(format(options.singlecolumn_fmt,
-						pi + 1, prog_list[pi].name, prog_list[pi].cost)).length;
-					if(w > widest)
-						widest = w;
-				}
-				var pad = Math.floor((console.screen_columns - widest) / 2);
-				if(pad > 0)
-					margin = format("%*s", pad, "");
-			}
-			if(options.sort)
-				prog_list.sort(sort_by_name);
-			if(show_header)
-				write(margin, format(options.header_fmt, xtrn_area.sec_list[xsec].name));
-			if(options.titles.trimRight() != '')
-				write(margin, options.titles);
-			if(multicolumn) {
-				write(options.multicolumn_separator);
-				if (options.titles.trimRight() != '')
-					write(options.titles);
-			}
-			if(options.underline.trimRight() != '') {
-				console.crlf();
-				write(margin, options.underline);
-			}
-			if(multicolumn) {
-				write(options.multicolumn_separator);
-				if (options.underline.trimRight() != '')
-					write(options.underline);
-			}
-			console.crlf();
-			var n;
-			if(multicolumn)
-				n=Math.floor(prog_list.length/2)+(prog_list.length&1);
-			else
-				n=prog_list.length;
-
-			var max_digits = digits(prog_list.length);
-			for(i=0;i<n && !console.aborted;i++) {
-				write(margin);
-				var hotspot = i+1;
-				if(digits(hotspot) < digits(prog_list.length))
-					hotspot += '\r';
-				console.add_hotspot(hotspot);
-				if(options.align_prog_list)
-					printf("%*s", max_digits - digits(i + 1), ""); // Indent to right justify number
-				printf(multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt
-					,i+1
-					,prog_list[i].name
-					,prog_list[i].cost);
-
-				if(multicolumn) {
-					j=Math.floor(prog_list.length/2)+i+(prog_list.length&1);
-					if(j<prog_list.length) {
-						write(options.multicolumn_separator);
-						hotspot = j+1;
-						if(digits(hotspot) < digits(prog_list.length))
-							hotspot += '\r';
-						console.add_hotspot(hotspot);
-						if(options.align_prog_list)
-							printf("%*s", max_digits - digits(j + 1), ""); // Indent to right justify number
-						printf(options.multicolumn_fmt, j+1
-							,prog_list[j].name
-							,prog_list[j].cost);
-					}
-				}
-				console.crlf();
-			}
+			return false;
+		};
+		var show_tail = function() {
 			if(!bbs.menu("xtrn" + secnum + "_tail", P_NOERROR)
-				&& !bbs.menu("xtrn" + seccode + "_tail", P_NOERROR)) {
+				&& !bbs.menu("xtrn" + seccode + "_tail", P_NOERROR))
 				bbs.menu("xtrn_tail", P_NOERROR);
-			}
-			bbs.node_sync();
-			if(margin) {
-				console.crlf();
-				write(margin);
-				console.mnemonics(options.which.trimLeft());
-			}
-			else
-				console.mnemonics(options.which);
-		}
+		};
+
+		var has_tail = bbs.menu_exists("xtrn" + secnum + "_tail")
+			|| bbs.menu_exists("xtrn" + seccode + "_tail")
+			|| bbs.menu_exists("xtrn_tail");
+
 		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
 		bbs.node_action=NODE_XTRN;
 		bbs.node_sync();
-		if((i=console.getnum(prog_list.length))<1)
+
+		var i = select_from(prog_list, curprog, {
+			fmt: options.singlecolumn_fmt,
+			multicolumn_fmt: options.multicolumn_fmt,
+			align: options.align_prog_list,
+			has_menu: menu !== null,
+			menu: function() {
+				if(menu === null)
+					return false;
+				show_head();
+				bbs.menu(menu);
+				show_tail();
+				return true;
+			},
+			header: function(margin, indent, multicolumn) {
+				if(!show_head())
+					write(margin, format(options.header_fmt, xtrn_area.sec_list[xsec].name));
+				if(options.titles.trimRight() != '')
+					write(margin, indent, options.titles);
+				if(multicolumn) {
+					write(options.multicolumn_separator);
+					if (options.titles.trimRight() != '')
+						write(indent, options.titles);
+				}
+				if(options.underline.trimRight() != '') {
+					console.crlf();
+					write(margin, indent, options.underline);
+				}
+				if(multicolumn) {
+					write(options.multicolumn_separator);
+					if (options.underline.trimRight() != '')
+						write(indent, options.underline);
+				}
+				console.crlf();
+			},
+			footer: has_tail ? show_tail : undefined,
+			which: function() { return options.which; }
+		});
+		if(i < 0)	// Quit, or Enter with no default program
 			break;
-		i--;
+		curprog = i;
 
 		bbs.exec_xtrn(prog_list[i].code);
 	}
@@ -257,7 +344,6 @@ function external_program_menu(xsec)
 
 function external_section_menu()
 {
-    var i,j;
     var xsec=0;
 
     while(bbs.online) {
@@ -279,94 +365,39 @@ function external_section_menu()
 		bbs.node_action=NODE_XTRN;
 		bbs.node_sync();
 
-		if(options.clear_screen)
-			console.clear(LIGHTGRAY);
+		var has_menu = bbs.menu_exists("xtrn_sec");
+		if(options.sort && !has_menu)
+			sec_list.sort(sort_by_name);
 
-		var show_header = !bbs.menu("xtrn_sec_head", P_NOERROR);
-
-		if(bbs.menu_exists("xtrn_sec")) {
-			bbs.menu("xtrn_sec");
-			bbs.menu("xtrn_sec_tail", P_NOERROR);
-			xsec = undefined; // no default section
-		}
-		else {
-			if(options.sort)
-				sec_list.sort(sort_by_name);
-
-			var multicolumn = options.multicolumn && sec_list.length > options.singlecolumn_height;
-			var center = options.center && !multicolumn;
-			// Center on the widest row's DISPLAYED width (strip_ctrl drops the
-			// zero-width \x01 attribute codes), the same way the program list
-			// does. The old (screen_columns - longest)/2 - 5 measured only the
-			// section NAME and guessed a 5-column decoration offset, so it
-			// mis-centered whenever section_fmt was customized.
-			var margin = "";
-			if(center) {
-				var widest = 0;
-				for(i = 0; i < sec_list.length; i++) {
-					var w = strip_ctrl(format(options.section_fmt,
-						i + 1, sec_list[i].name)).length;
-					if(w > widest)
-						widest = w;
-				}
-				var pad = Math.floor((console.screen_columns - widest) / 2);
-				if(pad > 0)
-					margin = format("%*s", pad, "");
-			}
-
-			if(show_header)
-				printf(margin + options.section_header_fmt.replace('\x01l', ''), options.section_header_title);
-
-			var n;
-			if (multicolumn)
-				n = Math.floor(sec_list.length / 2) + (sec_list.length & 1);
-			else
-				n = sec_list.length;
-			var max_digits = digits(sec_list.length);
-			for (i = 0; i < n && !console.aborted; i++) {
-				var hotspot = i+1;
-				if(digits(hotspot) < digits(sec_list.length))
-					hotspot += '\r';
-				console.add_hotspot(hotspot);
-				if(options.align_section_list)
-					printf("%*s", max_digits - digits(i + 1), ""); // Indent to right justify number
-				printf(margin + (multicolumn ? options.multicolumn_section_fmt : options.section_fmt), i + 1, sec_list[i].name);
-				if (multicolumn) {
-					var j = Math.floor(sec_list.length/2)+i+(sec_list.length&1);
-					if(j < sec_list.length) {
-						write(options.multicolumn_separator);
-						hotspot = j+1;
-						if(digits(hotspot) < digits(sec_list.length))
-							hotspot += '\r';
-						console.add_hotspot(hotspot);
-						if(options.align_section_list)
-							printf("%*s", max_digits - digits(j + 1), ""); // Indent to right justify number
-						printf(options.multicolumn_section_fmt, j+1, sec_list[j].name);
-					}
-					console.crlf();
-				}
-			}
-			bbs.menu("xtrn_sec_tail", P_NOERROR);
-			
-			bbs.node_sync();
-			if(center) {
-				console.crlf();
-				write(margin);
-				console.mnemonics(format(options.section_which, xsec + 1).trimLeft());
-			}
-			else
-				console.mnemonics(format(options.section_which, xsec + 1));
-		}
-
-		bbs.node_sync();
-		var num = console.getnum(sec_list.length);
-		if(num < 0)
+		var num = select_from(sec_list, xsec, {
+			fmt: options.section_fmt,
+			multicolumn_fmt: options.multicolumn_section_fmt,
+			align: options.align_section_list,
+			has_menu: has_menu,
+			menu: function() {
+				if(!has_menu)
+					return false;
+				bbs.menu("xtrn_sec_head", P_NOERROR);
+				bbs.menu("xtrn_sec");
+				bbs.menu("xtrn_sec_tail", P_NOERROR);
+				return true;
+			},
+			header: function(margin) {
+				if(!bbs.menu("xtrn_sec_head", P_NOERROR))
+					printf(margin + options.section_header_fmt.replace('\x01l', ''), options.section_header_title);
+			},
+			footer: bbs.menu_exists("xtrn_sec_tail")
+				? function() { bbs.menu("xtrn_sec_tail", P_NOERROR); } : undefined,
+			which: function(num) { return format(options.section_which, num); }
+		});
+		if(num == -1)	// Quit
 			break;
-		if(xsec === undefined && num == 0) // Enter = Quit, when there's no prompt
-			break;
-		if(num > 0)
-			xsec = num - 1;
-		
+		if(num == -2) {	// Enter, with no marked default
+			if(has_menu)	// Enter = Quit, when there's no prompt
+				break;
+		} else
+			xsec = num;
+
 		external_program_menu(sec_list[xsec].index);
     }
 }
