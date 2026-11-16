@@ -2448,10 +2448,13 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			break;
 		case FILE_PROP_POSITION:
 			if (p->fp != NULL) {
-				if (!JS_ValueToECMAUint32(cx, *vp, &u))
+				jsdouble pos;
+				if (!JS_ValueToNumber(cx, *vp, &pos))
 					return JS_FALSE;
+				if (!(pos >= 0))
+					pos = 0;
 				rc = JS_SUSPENDREQUEST(cx);
-				fseek(p->fp, u, SEEK_SET);
+				fseeko(p->fp, (off_t)pos, SEEK_SET);
 				JS_RESUMEREQUEST(cx, rc);
 			}
 			break;
@@ -2613,7 +2616,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case FILE_PROP_POSITION:
 			if (p->fp) {
 				rc = JS_SUSPENDREQUEST(cx);
-				lng = ftell(p->fp);
+				lng = ftello(p->fp);
 				JS_RESUMEREQUEST(cx, rc);
 				*vp = DOUBLE_TO_JSVAL((double)lng);
 			}

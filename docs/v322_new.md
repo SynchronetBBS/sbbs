@@ -1051,6 +1051,8 @@
 - `File.md5_base64` fix: was encoding 20 bytes instead of 16 (a
   28-character result with 4 bytes of uninitialized memory appended)
   since v3.19
+- `File.position` fix: was limited to 32 bits, so a script could not
+  seek beyond 4GB in a larger file
 - New SHA-256 support: `sha256_calc()` global and `File.sha256_hex`
   / `File.sha256_base64` properties, matching the existing MD5 and
   SHA-1 equivalents (the `File` properties stream the file, so
