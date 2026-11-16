@@ -1711,7 +1711,7 @@ char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
 					char sfpath[MAX_PATH + 1];
 					SAFECOPY(sfpath, fpath);
 					GetShortPathName(fpath, sfpath, sizeof(sfpath));
-					strncat(cmd, sfpath, avail);
+					strncat(cmd, quoted_string(sfpath, str, sizeof(str)), avail);
 #else
 					strncat(cmd, QUOTED_STRING(instr[i], fpath, str, sizeof(str)), avail);
 #endif
