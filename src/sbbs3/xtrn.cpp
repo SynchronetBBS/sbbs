@@ -2426,7 +2426,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 					char sfpath[MAX_PATH + 1];
 					SAFECOPY(sfpath, fpath);
 					GetShortPathName(fpath, sfpath, sizeof(sfpath));
-					strncat(cmd, quoted_string(sfpath, str, sizeof(str)), avail);
+					strncat(cmd, strpbrk(sfpath, " \t") != NULL ? quoted_string(sfpath, str, sizeof(str)) : sfpath, avail);
 #else
 					strncat(cmd, QUOTED_STRING(instr[i], fpath, str, sizeof(str)), avail);
 #endif
