@@ -299,6 +299,8 @@
 - New `NO_EVENT_LOG_FILE` option (SCFG: **Event Log File**) stops writing
   `data/events*.log` while leaving event output in the server log; setting
   `EventLogLevel` to 0 for this purpose silenced both
+- Fix: the `%~` command-line specifier (Windows) passed a filename
+  containing spaces unquoted when the file has no 8.3 short name
 
 ## Web Server
 
