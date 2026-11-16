@@ -22,6 +22,14 @@
 #include "sbbs.h"
 #include "boolsrch.h"
 
+// Keeps the preceding line's blank/non-blank state for the following text
+static void scanned(sbbs_t* sbbs)
+{
+	unsigned lastcrcol = sbbs->term->lastcrcol;
+	sbbs->bputs(sbbs->text[Scanned]);
+	sbbs->term->lastcrcol = lastcrcol;
+}
+
 /****************************************************************************/
 /* Used to scan single or multiple directories. 'mode' is the scan type.    */
 /****************************************************************************/
@@ -74,7 +82,7 @@ void sbbs_t::scandirs(int mode)
 	if (ch == text[DirLibKeys][0]) {
 		if ((s = listfiles(usrdir[curlib][curdir[curlib]], str, 0, mode)) == -1)
 			return;
-		bputs(text[Scanned]);
+		scanned(this);
 		if (s > 1)
 			bprintf(text[NFilesListed], s);
 		else if (!s && !(mode & FL_ULTIME))
@@ -95,7 +103,7 @@ void sbbs_t::scandirs(int mode)
 				k += s;
 		}
 		progress(text[Done], i, usrdirs[curlib]);
-		bputs(text[Scanned]);
+		scanned(this);
 		if (k > 1)
 			bprintf(text[NFilesListed], k);
 		else if (!k && !(mode & FL_ULTIME))
@@ -167,7 +175,7 @@ void sbbs_t::scanalldirs(int mode)
 			break;
 	}
 	progress(text[Done], d, total_dirs);
-	bputs(text[Scanned]);
+	scanned(this);
 	if (k > 1)
 		bprintf(text[NFilesListed], k);
 	else if (!k && !(mode & FL_ULTIME))
