@@ -235,7 +235,8 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 				}
 				else {
 					snprintf(hdr, sizeof hdr, text[ShortHdrLib], i + 1, cfg.lib[usrlib[i]]->sname);
-					bputs("\1[\1>\r\n");
+					term->clearline();
+					term->cond_blankline();
 					bputs(hdr);
 					c = term->bstrlen(hdr);
 				}
