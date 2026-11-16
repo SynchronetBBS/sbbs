@@ -747,6 +747,9 @@
   optional ANSI-art send/view and MOTD support
 - New: `typemd.js` and `load/md2asc.js` — Markdown viewer that
   converts to plain text with optional Ctrl-A attributes
+- New: `fileinfo.js` — viewer that identifies audio, video and image
+  files by content and displays format, length and tag details (and
+  any SAUCE record) without reading the whole file
 - New: `txt_handler.js` — DOS LIST-style HTML viewer for `.txt`
   files served by the Web server
 - New: `md_handler.js` — Markdown-to-HTML web content handler
