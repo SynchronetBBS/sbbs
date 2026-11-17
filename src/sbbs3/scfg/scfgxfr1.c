@@ -30,6 +30,9 @@ char* testable_files_help =
 	"once, each command line will be executed. A file extension of '`*`'\n"
 	"matches `all` files.\n"
 	"\n"
+	"More than one file extension may be given, separated by commas\n"
+	"(e.g. `zip,rar,7z`).\n"
+	"\n"
 	"The configured command lines must return an error code of 0 (no error)\n"
 	"to indicate that the file has passed each test. This method of file\n"
 	"testing upon upload is also known as an upload processing event.\n"
@@ -79,11 +82,162 @@ bool get_new_fextr(fextr_t* fextr)
 	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", fextr->cmd, LEN_CMD, K_TRIM) > 0;
 }
 
+// The most of a list of file extensions displayed in a file type list's
+// column and in a file type's own menu: what the screen width leaves room for
+#define MAX_EXT_COLUMN  ((int)uifc.scrn_width - 40)
+#define MAX_EXT_FIELD   ((int)uifc.scrn_width - 32)
+
+// A (possibly long) list of file extensions, abbreviated to fit a width
+static const char* ext_column(const char* ext, int width, char* buf, size_t size)
+{
+	if ((int)strlen(ext) <= width)
+		return ext;
+	snprintf(buf, size, "%.*s...", width - 3, ext);
+	return buf;
+}
+
+// The width of a file type list's extension(s) column: that of its longest
+// item, within limits
+static int ext_column_width(int width, const char* ext)
+{
+	int len = (int)strlen(ext);
+
+	if (len > MAX_EXT_COLUMN)
+		len = MAX_EXT_COLUMN;
+	return len > width ? len : width;
+}
+
+// Make a file extension fit for a comma-separated list: no commas,
+// white-space or leading dots
+static void normalize_ext(char* ext)
+{
+	char* dest = ext;
+
+	for (char* src = ext; *src != '\0'; src++) {
+		if (*src == ',' || IS_WHITESPACE(*src))
+			continue;
+		if (*src == '.' && dest == ext)
+			continue;
+		*dest++ = *src;
+	}
+	*dest = '\0';
+}
+
+// Whether a file extension may be added to (or, with 'index' >= 0, replace
+// an item of) a list that is stored in 'size' bytes, comma-separated
+static bool valid_ext(str_list_t list, const char* ext, int index, size_t size)
+{
+	size_t len = strlen(ext);
+
+	if (*ext == '\0')
+		return false;
+	for (int i = 0; list != NULL && list[i] != NULL; i++) {
+		if (i == index)
+			continue;
+		if (stricmp(list[i], ext) == 0) {
+			uifc.msgf("File extension already listed: %s", ext);
+			return false;
+		}
+		len += strlen(list[i]) + 1;
+	}
+	if (len >= size) {
+		uifc.msgf("Too many file extensions (%u characters maximum)", (uint)(size - 1));
+		return false;
+	}
+	return true;
+}
+
+// Edit a comma-separated list of file extensions as a list of items
+static void edit_ext_list(const char* title, char* ext, size_t size)
+{
+	static char save[MAX_FILEEXT_LEN + 1];
+	char        str[MAX_FILEEXT_LIST_LEN + 1];
+	char        item[MAX_FILEEXT_LEN + 1];
+	int         cur = 0, bar = 0;
+	int         i;
+	str_list_t  list = strListInit();
+
+	SAFECOPY(str, ext);
+	for (char* tok = strtok(str, ","); tok != NULL; tok = strtok(NULL, ",")) {
+		normalize_ext(tok);
+		if (*tok != '\0' && strListFind(list, tok, /* case-sensitive: */ false) < 0)
+			strListPush(&list, tok);
+	}
+	while (1) {
+		int count = (int)strListCount(list);
+		for (i = 0; i < count && i < MAX_OPTS; i++)
+			snprintf(opt[i], MAX_OPLN, "%s", list[i]);
+		opt[i][0] = 0;
+		uifc_winmode_t wmode = WIN_MID | WIN_SAV | WIN_ACT | WIN_INS | WIN_INSACT | WIN_XTR;
+		if (count > 0)
+			wmode |= WIN_COPY;
+		if (count > 1)
+			wmode |= WIN_DEL | WIN_CUT;
+		if (save[0] != '\0')
+			wmode |= WIN_PASTE | WIN_PASTEXTR;
+		uifc.helpbuf =
+			"`File Extensions:`\n"
+			"\n"
+			"This is the list of file extensions (suffixes) of this file type.  A file\n"
+			"with any of them is matched.  Use `Insert` to add a file extension and\n"
+			"`Delete` to remove one.\n"
+			"\n"
+			"File extensions are case insensitive and may contain wildcard\n"
+			"characters (i.e. `?` or `*`).  A file extension of '`*`' matches all files.\n"
+			"\n"
+			"At least one file extension is required.\n"
+		;
+		i = uifc.list(wmode, 0, 0, 0, &cur, &bar, title, opt);
+		if (i == -1)
+			break;
+		int msk = i & MSK_ON;
+		i &= MSK_OFF;
+		if (msk == MSK_DEL || msk == MSK_CUT) {
+			if (msk == MSK_CUT)
+				SAFECOPY(save, list[i]);
+			strListDelete(&list, i);
+			continue;
+		}
+		if (msk == MSK_COPY) {
+			SAFECOPY(save, list[i]);
+			continue;
+		}
+		if (msk == MSK_PASTE) {
+			if (valid_ext(list, save, -1, size))
+				strListInsert(&list, save, i);
+			continue;
+		}
+		if (msk == MSK_INS) {
+			*item = '\0';
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", item, sizeof(item) - 1, K_TRIM) < 1)
+				continue;
+			normalize_ext(item);
+			if (valid_ext(list, item, -1, size))
+				strListInsert(&list, item, i);
+			continue;
+		}
+		if (msk != 0 || i >= count)
+			continue;
+		SAFECOPY(item, list[i]);
+		if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension", item, sizeof(item) - 1, K_EDIT | K_TRIM) < 1)
+			continue;
+		normalize_ext(item);
+		if (valid_ext(list, item, i, size))
+			strListReplace(list, i, item);
+	}
+	strListCombine(list, str, sizeof str, ",");
+	strListFree(&list);
+	if (*str != '\0' && strcmp(str, ext) != 0) {
+		strlcpy(ext, str, size);
+		uifc.changes = TRUE;
+	}
+}
+
 bool get_new_fview(fview_t* fview)
 {
 	memset(fview, 0, sizeof *fview);
 	fview->ex_mode = EX_NATIVE;
-	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. txt, zip or *)", fview->ext, MAX_FILEEXT_LEN, K_TRIM) <= 0)
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extensions (e.g. txt, jpg,png or *)", fview->ext, sizeof(fview->ext) - 1, K_TRIM) <= 0)
 		return false;
 	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", fview->cmd, LEN_CMD, K_TRIM) > 0;
@@ -93,7 +247,7 @@ bool get_new_ftest(ftest_t* ftest)
 {
 	memset(ftest, 0, sizeof *ftest);
 	ftest->ex_mode = EX_NATIVE;
-	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", ftest->ext, MAX_FILEEXT_LEN, K_TRIM) < 1)
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extensions (e.g. zip, zip,rar or *)", ftest->ext, sizeof(ftest->ext) - 1, K_TRIM) < 1)
 		return false;
 	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", ftest->cmd, LEN_CMD, K_TRIM) > 0;
@@ -113,7 +267,7 @@ bool get_new_dlevent(dlevent_t* dlevent)
 {
 	memset(dlevent, 0, sizeof *dlevent);
 	dlevent->ex_mode = EX_NATIVE;
-	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", dlevent->ext, MAX_FILEEXT_LEN, K_TRIM) < 1)
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extensions (e.g. zip, zip,rar or *)", dlevent->ext, sizeof(dlevent->ext) - 1, K_TRIM) < 1)
 		return false;
 	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", dlevent->cmd, LEN_CMD, K_TRIM) > 0;
@@ -508,8 +662,11 @@ void xfer_opts()
 				break;
 			case __COUNTER__:   /* Viewable file types */
 				while (1) {
+					int ext_width = MAX_FILEEXT_LEN;
 					for (i = 0; i < cfg.total_fviews && i < MAX_OPTS; i++)
-						snprintf(opt[i], MAX_OPLN, "%-*s %s", MAX_FILEEXT_LEN, cfg.fview[i]->ext, cfg.fview[i]->cmd);
+						ext_width = ext_column_width(ext_width, cfg.fview[i]->ext);
+					for (i = 0; i < cfg.total_fviews && i < MAX_OPTS; i++)
+						snprintf(opt[i], MAX_OPLN, "%-*s %s", ext_width, ext_column(cfg.fview[i]->ext, ext_width, str, sizeof str), cfg.fview[i]->cmd);
 					opt[i][0] = 0;
 					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
 					if (cfg.total_fviews < MAX_OPTS)
@@ -528,9 +685,12 @@ void xfer_opts()
 						"The file types/extensions are case insensitive and may contain wildcard\n"
 						"characters (i.e. `?` or `*`).\n"
 						"\n"
+						"More than one file extension may be given, separated by commas\n"
+						"(e.g. `jpg,jpeg,png`).\n"
+						"\n"
 						"Specify the filename argument on the command-line with `%s` or `%f`."
 					;
-					i = uifc.list(i, 0, 0, 50, &fview_dflt, &fview_bar, "Viewable File Types", opt);
+					i = uifc.list(i, 0, 0, opt_width(opt, 50), &fview_dflt, &fview_bar, "Viewable File Types", opt);
 					if (i == -1)
 						break;
 					int msk = i & MSK_ON;
@@ -599,8 +759,8 @@ void xfer_opts()
 					done = 0;
 					while (!done) {
 						j = 0;
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "File Extension"
-						         , cfg.fview[i]->ext);
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "File Extensions"
+						         , ext_column(cfg.fview[i]->ext, MAX_EXT_FIELD, str, sizeof str));
 						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Command Line"
 						         , cfg.fview[i]->cmd);
 						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
@@ -627,9 +787,7 @@ void xfer_opts()
 									i++;
 								break;
 							case 0:
-								uifc.input(WIN_MID | WIN_SAV, 0, 0
-								           , "Viewable File Type Extension"
-								           , cfg.fview[i]->ext, sizeof(cfg.fview[i]->ext) - 1, K_EDIT);
+								edit_ext_list("Viewable File Type Extensions", cfg.fview[i]->ext, sizeof(cfg.fview[i]->ext));
 								break;
 							case 1:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
@@ -650,8 +808,11 @@ void xfer_opts()
 				break;
 			case __COUNTER__:    /* Testable file types */
 				while (1) {
+					int ext_width = MAX_FILEEXT_LEN;
 					for (i = 0; i < cfg.total_ftests && i < MAX_OPTS; i++)
-						snprintf(opt[i], MAX_OPLN, "%-*s %s", MAX_FILEEXT_LEN, cfg.ftest[i]->ext, cfg.ftest[i]->cmd);
+						ext_width = ext_column_width(ext_width, cfg.ftest[i]->ext);
+					for (i = 0; i < cfg.total_ftests && i < MAX_OPTS; i++)
+						snprintf(opt[i], MAX_OPLN, "%-*s %s", ext_width, ext_column(cfg.ftest[i]->ext, ext_width, str, sizeof str), cfg.ftest[i]->cmd);
 					opt[i][0] = 0;
 					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
 					if (cfg.total_ftests < MAX_OPTS)
@@ -661,7 +822,7 @@ void xfer_opts()
 					if (savftest.cmd[0])
 						i |= WIN_PASTE | WIN_PASTEXTR;
 					uifc.helpbuf = testable_files_help;
-					i = uifc.list(i, 0, 0, 50, &ftest_dflt, &ftest_bar, "Testable File Types", opt);
+					i = uifc.list(i, 0, 0, opt_width(opt, 50), &ftest_dflt, &ftest_bar, "Testable File Types", opt);
 					if (i == -1)
 						break;
 					int msk = i & MSK_ON;
@@ -731,8 +892,8 @@ void xfer_opts()
 					done = 0;
 					while (!done) {
 						j = 0;
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "File Extension"
-						         , cfg.ftest[i]->ext);
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "File Extensions"
+						         , ext_column(cfg.ftest[i]->ext, MAX_EXT_FIELD, str, sizeof str));
 						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Command Line"
 						         , cfg.ftest[i]->cmd);
 						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
@@ -762,9 +923,7 @@ void xfer_opts()
 									i++;
 								break;
 							case 0:
-								uifc.input(WIN_MID | WIN_SAV, 0, 0
-								           , "Testable File Type Extension"
-								           , cfg.ftest[i]->ext, sizeof(cfg.ftest[i]->ext) - 1, K_EDIT);
+								edit_ext_list("Testable File Type Extensions", cfg.ftest[i]->ext, sizeof(cfg.ftest[i]->ext));
 								break;
 							case 1:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
@@ -790,8 +949,11 @@ void xfer_opts()
 				break;
 			case __COUNTER__:    /* Download Events */
 				while (1) {
+					int ext_width = MAX_FILEEXT_LEN;
 					for (i = 0; i < cfg.total_dlevents && i < MAX_OPTS; i++)
-						snprintf(opt[i], MAX_OPLN, "%-*s %s", MAX_FILEEXT_LEN, cfg.dlevent[i]->ext, cfg.dlevent[i]->cmd);
+						ext_width = ext_column_width(ext_width, cfg.dlevent[i]->ext);
+					for (i = 0; i < cfg.total_dlevents && i < MAX_OPTS; i++)
+						snprintf(opt[i], MAX_OPLN, "%-*s %s", ext_width, ext_column(cfg.dlevent[i]->ext, ext_width, str, sizeof str), cfg.dlevent[i]->cmd);
 					opt[i][0] = 0;
 					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
 					if (cfg.total_dlevents < MAX_OPTS)
@@ -815,8 +977,11 @@ void xfer_opts()
 						"and performing a virus scan. While the external program is executing,\n"
 						"a text string is displayed to the user. This `working string` can be set\n"
 						"for each file type and command line listed.\n"
+						"\n"
+						"More than one file extension may be given, separated by commas\n"
+						"(e.g. `zip,rar,7z`).\n"
 					;
-					i = uifc.list(i, 0, 0, 50, &dlevent_dflt, &dlevent_bar, "Download Events", opt);
+					i = uifc.list(i, 0, 0, opt_width(opt, 50), &dlevent_dflt, &dlevent_bar, "Download Events", opt);
 					if (i == -1)
 						break;
 					int msk = i & MSK_ON;
@@ -886,8 +1051,8 @@ void xfer_opts()
 					done = 0;
 					while (!done) {
 						j = 0;
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "File Extension"
-						         , cfg.dlevent[i]->ext);
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "File Extensions"
+						         , ext_column(cfg.dlevent[i]->ext, MAX_EXT_FIELD, str, sizeof str));
 						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Command Line"
 						         , cfg.dlevent[i]->cmd);
 						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
@@ -916,9 +1081,7 @@ void xfer_opts()
 									i++;
 								break;
 							case 0:
-								uifc.input(WIN_MID | WIN_SAV, 0, 0
-								           , "Download Event Extension"
-								           , cfg.dlevent[i]->ext, sizeof(cfg.dlevent[i]->ext) - 1, K_EDIT);
+								edit_ext_list("Download Event Extensions", cfg.dlevent[i]->ext, sizeof(cfg.dlevent[i]->ext));
 								break;
 							case 1:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;

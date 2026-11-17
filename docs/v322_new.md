@@ -590,6 +590,9 @@
 - Online program **Pause After Execution** option is replaced by
   **Terminal Control** (`Clear` before and/or `Pause` after
   execution), also offered for Logon and New User fixed events
+- Viewable File Types, Testable File Types and Download Events accept
+  a comma-separated list of file extensions (e.g. `jpg,jpeg,png`), so
+  one entry can cover every type a command handles
 
 ## Customization
 

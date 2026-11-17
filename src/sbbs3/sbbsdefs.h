@@ -52,6 +52,7 @@
 
 #define MAX_FILENAME_LEN        64
 #define MAX_FILEEXT_LEN         15
+#define MAX_FILEEXT_LIST_LEN    255 // comma-separated list of file extensions
 #define ILLEGAL_FILENAME_CHARS  "\\/|<>:\";,%?*"
 #define SAFEST_FILENAME_CHARS   "-._0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 // Characters a command shell (sh or cmd.exe) would interpret in a substituted

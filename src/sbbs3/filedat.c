@@ -1219,11 +1219,28 @@ int archive_type(const char* archive, char* str, size_t size)
 	return result;
 }
 
+// 'type' is a file extension (which may contain wildcards) or a
+// comma-separated list of them
 bool file_type_match(const char* filename, const char* type)
 {
 	char filespec[MAX_PATH + 1];
-	SAFEPRINTF(filespec, "*.%s", type);
-	return wildmatch(filename, filespec, /* path: */ false, /* case-sensitive: */ false);
+
+	while (*type != '\0') {
+		SKIP_WHITESPACE(type);
+		size_t len = strcspn(type, ",");
+		const char* next = type + len;
+		while (len > 0 && IS_WHITESPACE(type[len - 1]))
+			len--;
+		if (len > 0) {
+			safe_snprintf(filespec, sizeof filespec, "*.%.*s", (int)len, type);
+			if (wildmatch(filename, filespec, /* path: */ false, /* case-sensitive: */ false))
+				return true;
+		}
+		type = next;
+		if (*type == ',')
+			type++;
+	}
+	return false;
 }
 
 str_list_t directory(const char* path)

@@ -220,6 +220,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Access Requirements",
 		"Module",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements"
 	},
 	{
@@ -271,6 +276,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Access Requirements",
 		"Module",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements"
 	},
 	{
 		"Access Requirements",
@@ -1090,6 +1100,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Clear Requirements",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Clear Requirements"
 	},
 	{
@@ -1141,6 +1156,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Clear Requirements",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Clear Requirements"
 	},
 	{
 		"Clear Requirements",
@@ -2369,28 +2389,28 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"File Extension",
-		"Download Event",
-		"File Options > Download Events > Download Event > File Extension"
-	},
-	{
-		"File Extension",
 		"Extractable File Type",
 		"File Options > Extractable File Types > Extractable File Type > File Extension"
-	},
-	{
-		"File Extension",
-		"Testable File Type",
-		"File Options > Testable File Types > Testable File Type > File Extension"
-	},
-	{
-		"File Extension",
-		"Viewable File Type",
-		"File Options > Viewable File Types > Viewable File Type > File Extension"
 	},
 	{
 		"File Extensions",
 		"CGI Support...",
 		"Servers > Web Server > CGI Support... > File Extensions"
+	},
+	{
+		"File Extensions",
+		"Download Event",
+		"File Options > Download Events > Download Event > File Extensions"
+	},
+	{
+		"File Extensions",
+		"Testable File Type",
+		"File Options > Testable File Types > Testable File Type > File Extensions"
+	},
+	{
+		"File Extensions",
+		"Viewable File Type",
+		"File Options > Viewable File Types > Viewable File Type > File Extensions"
 	},
 	{
 		"File Options",
@@ -3453,6 +3473,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Servers > Mail Server > Mark Retrieved Mail as Read"
 	},
 	{
+		"Max Cached File Size",
+		"Advanced Options",
+		"System > Advanced Options > Max Cached File Size"
+	},
+	{
 		"Max Clients",
 		"FTP Server",
 		"Servers > FTP Server > Max Clients"
@@ -3551,6 +3576,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Max SFTP Inactivity",
 		"SSH Support...",
 		"Servers > Terminal Server > SSH Support... > Max SFTP Inactivity"
+	},
+	{
+		"Max Sound File Size",
+		"Advanced Options",
+		"System > Advanced Options > Max Sound File Size"
 	},
 	{
 		"Max Uploaded File Size",
@@ -3824,8 +3854,18 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Module",
+		"QWK Section",
+		"System > Loadable Modules... > QWK Section > Module"
+	},
+	{
+		"Module",
 		"Read Mail",
 		"System > Loadable Modules... > Read Mail > Module"
+	},
+	{
+		"Module",
+		"Scan Config",
+		"System > Loadable Modules... > Scan Config > Module"
 	},
 	{
 		"Module",
@@ -4065,6 +4105,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Name / Command-line",
 		"Module",
+		"System > Loadable Modules... > Scan Config > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
 		"System > Loadable Modules... > List Msgs > Module > Name / Command-line"
 	},
 	{
@@ -4116,6 +4161,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Name / Command-line",
 		"Module",
 		"System > Loadable Modules... > Temp Transfer > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > QWK Section > Module > Name / Command-line"
 	},
 	{
 		"Name / Command-line",
@@ -4683,6 +4733,16 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > New User Values > QWK Packet Settings..."
 	},
 	{
+		"QWK Section",
+		"Loadable Modules",
+		"System > Loadable Modules > QWK Section"
+	},
+	{
+		"QWK Section",
+		"Loadable Modules...",
+		"System > Loadable Modules... > QWK Section"
+	},
+	{
 		"Rate Limiting",
 		"Limit Rate of Connections",
 		"Servers > Services Server > Limit Rate of Connections > Rate Limiting"
@@ -4836,6 +4896,16 @@ static const scfg_option_t scfg_option_index[] = {
 		"RLogin Support...",
 		"Terminal Server",
 		"Servers > Terminal Server > RLogin Support..."
+	},
+	{
+		"Scan Config",
+		"Loadable Modules",
+		"System > Loadable Modules > Scan Config"
+	},
+	{
+		"Scan Config",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Scan Config"
 	},
 	{
 		"Scan Dirs",
@@ -5110,6 +5180,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Age",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Age"
 	},
 	{
@@ -5161,6 +5236,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Age",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required Age"
 	},
 	{
 		"Set Required Age",
@@ -5445,6 +5525,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Day of Week",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Day of Week"
 	},
 	{
@@ -5496,6 +5581,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Day of Week",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required Day of Week"
 	},
 	{
 		"Set Required Day of Week",
@@ -5780,6 +5870,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Gender",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Gender"
 	},
 	{
@@ -5831,6 +5926,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Gender",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required Gender"
 	},
 	{
 		"Set Required Gender",
@@ -6115,6 +6215,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Number of Credits",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Number of Credits"
 	},
 	{
@@ -6166,6 +6271,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Number of Credits",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required Number of Credits"
 	},
 	{
 		"Set Required Number of Credits",
@@ -6450,6 +6560,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Post/Call Ratio (percentage)",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
 	},
 	{
@@ -6501,6 +6616,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Post/Call Ratio (percentage)",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
 	},
 	{
 		"Set Required Post/Call Ratio (percentage)",
@@ -6785,6 +6905,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Security Flag",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Security Flag"
 	},
 	{
@@ -6836,6 +6961,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Security Flag",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required Security Flag"
 	},
 	{
 		"Set Required Security Flag",
@@ -7120,6 +7250,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Security Level",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Security Level"
 	},
 	{
@@ -7171,6 +7306,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Security Level",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required Security Level"
 	},
 	{
 		"Set Required Security Level",
@@ -7455,6 +7595,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Terminal Type/Capability",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Terminal Type/Capability"
 	},
 	{
@@ -7506,6 +7651,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Terminal Type/Capability",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required Terminal Type/Capability"
 	},
 	{
 		"Set Required Terminal Type/Capability",
@@ -7790,6 +7940,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Time of Day",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Time of Day"
 	},
 	{
@@ -7841,6 +7996,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Time of Day",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required Time of Day"
 	},
 	{
 		"Set Required Time of Day",
@@ -8125,6 +8285,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Time Remaining",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Time Remaining"
 	},
 	{
@@ -8176,6 +8341,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Time Remaining",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required Time Remaining"
 	},
 	{
 		"Set Required Time Remaining",
@@ -8460,6 +8630,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Upload/Download Byte Ratio (percentage)",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
 	},
 	{
@@ -8511,6 +8686,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Upload/Download Byte Ratio (percentage)",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
 	},
 	{
 		"Set Required Upload/Download Byte Ratio (percentage)",
@@ -8795,6 +8975,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Upload/Download File Ratio (percentage)",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
 	},
 	{
@@ -8846,6 +9031,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Upload/Download File Ratio (percentage)",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
 	},
 	{
 		"Set Required Upload/Download File Ratio (percentage)",
@@ -9130,6 +9320,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required User Number",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required User Number"
 	},
 	{
@@ -9181,6 +9376,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required User Number",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required User Number"
 	},
 	{
 		"Set Required User Number",
@@ -9465,6 +9665,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required User Type (e.g. Sysop, Guest)",
 		"Access Requirements",
+		"System > Loadable Modules... > Scan Config > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
 		"System > Loadable Modules... > List Msgs > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
 	},
 	{
@@ -9516,6 +9721,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required User Type (e.g. Sysop, Guest)",
 		"Access Requirements",
 		"System > Loadable Modules... > Temp Transfer > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > QWK Section > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
 	},
 	{
 		"Set Required User Type (e.g. Sysop, Guest)",

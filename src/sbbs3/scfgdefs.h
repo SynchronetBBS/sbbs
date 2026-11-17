@@ -255,7 +255,7 @@ typedef struct {							/* Compressable file types */
 } fcomp_t;
 
 typedef struct {							/* Viewable file types */
-	char		ext[MAX_FILEEXT_LEN+1]; 	/* Extension */
+	char		ext[MAX_FILEEXT_LIST_LEN+1];	/* Extension(s), comma-separated */
 	char		arstr[LEN_ARSTR+1],			/* Access Requirements */
 				cmd[LEN_CMD+1]; 			/* Command line */
 	uchar		ar[LEN_ARSTR+1];
@@ -264,7 +264,7 @@ typedef struct {							/* Viewable file types */
 } fview_t;
 
 typedef struct {							/* Testable file types */
-	char		ext[MAX_FILEEXT_LEN+1]; 	/* Extension */
+	char		ext[MAX_FILEEXT_LIST_LEN+1];	/* Extension(s), comma-separated */
 	char		arstr[LEN_ARSTR+1],			/* Access requirement */
 				cmd[LEN_CMD+1], 			/* Command line */
 				workstr[41];				/* String to display while working */
@@ -274,7 +274,7 @@ typedef struct {							/* Testable file types */
 } ftest_t;
 
 typedef struct {							/* Download events */
-	char		ext[MAX_FILEEXT_LEN+1]; 	/* Extension */
+	char		ext[MAX_FILEEXT_LIST_LEN+1];	/* Extension(s), comma-separated */
 	char		arstr[LEN_ARSTR+1],			/* Access requirement */
 				cmd[LEN_CMD+1], 			/* Command line */
 				workstr[41];				/* String to display while working */
