@@ -536,9 +536,9 @@ function str_cmds(str)
 				return;
 			}
 
-			help["OLDUL [ALL|LIB|blank]"] =	"Lists all files uploaded before your last scan time";
-			help["OLD [ALL|LIB|blank]"] = "Lists all files not downloaded since your last scan time";
-			help["OFFLINE [ALL|LIB|blank]"] = "Lists all offline files";
+			help["OLDUL [ALL|LIB]"] =	"Lists all files uploaded before your last scan time";
+			help["OLD [ALL|LIB]"] = "Lists all files not downloaded since your last scan time";
+			help["OFFLINE [ALL|LIB]"] = "Lists all offline files";
 			if(word=="OLDUL" || word=="OLD" || word=="OFFLINE") {
 				str=str.replace(/^[A-Z]*\s/,"");
 				if(file_area.lib_list.length<1)
@@ -807,10 +807,21 @@ function str_cmds(str)
 	}
 	if(str=="HELP") {
 		write("\r\n\x01y\x01hAvailable commands\x01n\r\n\r\n");
+		var width = 0;
 		for(var i in help)
-			print_help(i, help[i]);
+			width = Math.max(width, i.length);
+		for(var i in help)
+			print_help(i, help[i], Math.min(width, 24));
 	} else if(word == "HELP") {
 		var cmd = str.substr(4).trim().toUpperCase();
+		if(!help[cmd]) {	// Match the command name (first word) exactly, then by prefix
+			for(var i in help) {
+				if(i.split(' ')[0] == cmd) {
+					cmd = i;
+					break;
+				}
+			}
+		}
 		if(!help[cmd]) {
 			for(var i in help) {
 				if(i.substr(0, cmd.length) == cmd) {
@@ -826,10 +837,31 @@ function str_cmds(str)
 	}
 }
 
-function print_help(cmd, desc)
+// Colorize command syntax: the command name in bright white, the [optional]
+// and <required> brackets and | choice separators in normal white, literal
+// keywords (e.g. ALL, LIB) in bright cyan, and placeholders in normal cyan
+function help_syntax(cmd)
 {
-	console.print(format("\x01h%-18s\x01n  ", cmd));
-	console.putmsg(word_wrap(desc, console.screen_columns - 21), P_INDENT);
+	var sp = cmd.indexOf(' ');
+	if(sp < 0)
+		return "\x01h\x01w" + cmd;
+	return "\x01h\x01w" + cmd.substr(0, sp) + "\x01n"
+		+ cmd.substr(sp).replace(/[\[\]<>|]|[^\[\]<>|]+/g, function(tok) {
+			if("[]<>|".indexOf(tok) >= 0)
+				return "\x01n\x01w" + tok;
+			if(/^[A-Z]+$/.test(tok))
+				return "\x01h\x01c" + tok;
+			return "\x01n\x01c" + tok;
+		});
+}
+
+function print_help(cmd, desc, width)
+{
+	if(!width)
+		width = cmd.length;
+	var pad = width - cmd.length;
+	console.print(help_syntax(cmd) + "\x01n" + format("%*s  ", pad > 0 ? pad : 0, ""));
+	console.putmsg(word_wrap(desc, console.screen_columns - Math.max(width, cmd.length) - 3), P_INDENT);
 }
 
 //### Generic routine to ask user for parameter if one wasn't specified ###
