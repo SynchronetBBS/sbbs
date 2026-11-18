@@ -3458,6 +3458,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Message Options > MailBase Storage Method"
 	},
 	{
+		"Mailbox Quota (per user)",
+		"Message Options",
+		"Message Options > Mailbox Quota (per user)"
+	},
+	{
 		"Mark Moved Files as New",
 		"Toggle Options...",
 		"File Areas > Directories > Toggle Options... > Mark Moved Files as New"
@@ -4686,6 +4691,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Purge E-mail by Age",
 		"Message Options",
 		"Message Options > Purge E-mail by Age"
+	},
+	{
+		"Purge Mailbox Trash by Age",
+		"Message Options",
+		"Message Options > Purge Mailbox Trash by Age"
 	},
 	{
 		"Purge SPAM by Age",

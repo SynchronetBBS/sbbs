@@ -1264,6 +1264,16 @@ void msg_opts()
 		else
 			SAFECOPY(str, "Disabled");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Purge SPAM by Age", str);
+		if (cfg.max_trashage)
+			SAFEPRINTF(str, "Enabled (%u days old)", cfg.max_trashage);
+		else
+			SAFECOPY(str, "Disabled");
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Purge Mailbox Trash by Age", str);
+		if (cfg.mailbox_quota)
+			byte_count_to_str(cfg.mailbox_quota, str, sizeof(str));
+		else
+			SAFECOPY(str, "Unlimited");
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Mailbox Quota (per user)", str);
 		if (cfg.sys_misc & SM_DELEMAIL)
 			SAFECOPY(str, "Immediately");
 		else
@@ -1322,6 +1332,14 @@ void msg_opts()
 			"\n"
 			"`Purge SPAM by Age`: automatically delete SPAM-tagged e-mail older\n"
 			"than the configured threshold.\n"
+			"\n"
+			"`Purge Mailbox Trash by Age`: number of days that messages in a\n"
+			"user's mailbox Trash folder are kept.  `Disabled` if the value is\n"
+			"`0` (Trash is never purged).  Default is `30`.\n"
+			"\n"
+			"`Mailbox Quota (per user)`: maximum size of each user's mailbox, in bytes\n"
+			"(a suffix of `K`, `M`, `G` or `T` may be used).  `Unlimited` if the value is `0`.\n"
+			"Default is `1G`.\n"
 			"\n"
 			"`Purge Deleted E-mail`: `Immediately` removes deleted messages on the\n"
 			"spot; `Daily` defers physical removal to nightly maintenance (faster\n"
@@ -1450,6 +1468,42 @@ void msg_opts()
 				cfg.max_spamage = atoi(str);
 				break;
 			case 6:
+				sprintf(str, "%u", cfg.max_trashage);
+				uifc.helpbuf =
+					"`Maximum Age of Mailbox Trash:`\n"
+					"\n"
+					"Each user has a personal mailbox, with folders, copies of sent messages\n"
+					"and a Trash folder, that is kept outside the shared e-mail base.\n"
+					"\n"
+					"This value is the maximum number of days that messages are kept in a\n"
+					"user's Trash folder. Use `0` to never purge the Trash.\n"
+				;
+				uifc.input(WIN_MID | WIN_SAV, 0, 17, "Maximum Age of Mailbox Trash "
+				           "(in days)", str, 5, K_EDIT | K_NUMBER);
+				cfg.max_trashage = atoi(str);
+				break;
+			case 7:
+				byte_count_to_str(cfg.mailbox_quota, str, sizeof(str));
+				uifc.helpbuf =
+					"`Mailbox Quota (per user):`\n"
+					"\n"
+					"Each user has a personal mailbox, with folders, copies of sent messages\n"
+					"and a Trash folder, that is kept outside the shared e-mail base.\n"
+					"\n"
+					"This value is the maximum size, in bytes, of a user's mailbox.  A suffix\n"
+					"of `K`, `M`, `G` or `T` may be used (e.g. `1G`).  Use `0` for `unlimited`.\n"
+					"A value that does not start with a digit is rejected and the quota is\n"
+					"left unchanged.\n"
+				;
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Mailbox Quota in Bytes (or K/M/G/T, 0=Unlimited)"
+				               , str, 20, K_UPPER | K_EDIT) > 0) {
+					if (IS_DIGIT(str[0]))
+						cfg.mailbox_quota = parse_byte_count(str, 1);
+					else
+						uifc.msg("Invalid quota (not a number): unchanged");
+				}
+				break;
+			case 8:
 				strcpy(opt[0], "Daily");
 				strcpy(opt[1], "Immediately");
 				opt[2][0] = 0;
@@ -1478,7 +1532,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 7:
+			case 9:
 				sprintf(str, "%" PRIu32, cfg.mail_maxcrcs);
 				uifc.helpbuf =
 					"`Maximum Number of E-mail CRCs:`\n"
@@ -1491,7 +1545,7 @@ void msg_opts()
 				           "CRCs", str, 5, K_EDIT | K_NUMBER);
 				cfg.mail_maxcrcs = atol(str);
 				break;
-			case 8:
+			case 10:
 				i = cfg.sys_misc & SM_ANON_EM ? 0:1;
 				uifc.helpbuf =
 					"`Allow Anonymous E-mail:`\n"
@@ -1511,7 +1565,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 9:
+			case 11:
 				i = cfg.sys_misc & SM_QUOTE_EM ? 0:1;
 				uifc.helpbuf =
 					"`Allow Quoting in E-mail:`\n"
@@ -1531,7 +1585,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 10:
+			case 12:
 				i = cfg.sys_misc & SM_FILE_EM ? 0:1;
 				uifc.helpbuf =
 					"`Allow File Attachment Uploads in E-mail:`\n"
@@ -1551,7 +1605,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 11:
+			case 13:
 				i = cfg.sys_misc & SM_FWDTONET ? 0:1;
 				uifc.helpbuf =
 					"`Allow Users to Have Their E-mail Forwarded to NetMail:`\n"
@@ -1572,7 +1626,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 12:
+			case 14:
 				i = cfg.sys_misc & SM_DELREADM ? 0:1;
 				uifc.helpbuf =
 					"`Kill Read E-mail Automatically:`\n"
@@ -1592,7 +1646,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 13:
+			case 15:
 				i = cfg.msg_misc & MM_REALNAME ? 0:1;
 				uifc.helpbuf =
 					"`Receive E-mail by Real Name:`\n"
@@ -1612,7 +1666,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 14:
+			case 16:
 				n = (cfg.msg_misc & MM_EMAILSIG) ? 0:1;
 				uifc.helpbuf =
 					"`Include User Signatures in E-mail:`\n"
@@ -1634,10 +1688,10 @@ void msg_opts()
 					cfg.msg_misc &= ~MM_EMAILSIG;
 				}
 				break;
-			case 15:
+			case 17:
 				edit_sys_delmsg_policy(false, false);
 				break;
-			case 16:
+			case 18:
 				n = (cfg.sys_misc & SM_FASTMAIL) ? 1:0;
 				strcpy(opt[0], "Self-packing");
 				strcpy(opt[1], "Fast Allocation");
@@ -1666,7 +1720,7 @@ void msg_opts()
 					cfg.sys_misc |= SM_FASTMAIL;
 				}
 				break;
-			case 17:
+			case 19:
 				uifc.helpbuf =
 					"`Days of New Messages for Guest:`\n"
 					"\n"

@@ -454,6 +454,8 @@ bool write_msgs_cfg(scfg_t* cfg)
 		iniSetUInteger(&ini, name, "max_crcs", cfg->mail_maxcrcs, &ini_style);
 		iniSetUInteger(&ini, name, "max_age", cfg->mail_maxage, &ini_style);
 		iniSetUInteger(&ini, name, "max_spam_age", cfg->max_spamage, &ini_style);
+		iniSetUInteger(&ini, name, "max_trash_age", cfg->max_trashage, &ini_style);
+		iniSetBytes(&ini, name, "mailbox_quota", 1, cfg->mailbox_quota, &ini_style);
 	}
 
 	{

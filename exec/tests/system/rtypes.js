@@ -25,6 +25,8 @@ var type = {
 	'text(1)'				: 'string',
 	'text("")'				: 'object', // null
 	'text("Email")'			: 'string',
+	'max_trash_age'			: 'number',
+	'mailbox_quota'			: 'number',
 };
 
 var prefix = "system.";

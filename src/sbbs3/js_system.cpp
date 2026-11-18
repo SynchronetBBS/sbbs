@@ -61,6 +61,8 @@ enum {
 	, SYS_PROP_PWDAYS
 	, SYS_PROP_MINPWLEN
 	, SYS_PROP_MAXPWLEN
+	, SYS_PROP_MAXTRASHAGE
+	, SYS_PROP_MAILBOXQUOTA
 	, SYS_PROP_DELDAYS
 	, SYS_PROP_AUTODEL
 
@@ -221,6 +223,12 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SYS_PROP_MAXPWLEN:
 			*vp = INT_TO_JSVAL(LEN_PASS);
+			break;
+		case SYS_PROP_MAXTRASHAGE:
+			*vp = INT_TO_JSVAL(cfg->max_trashage);
+			break;
+		case SYS_PROP_MAILBOXQUOTA:
+			*vp = DOUBLE_TO_JSVAL((double)cfg->mailbox_quota);
 			break;
 		case SYS_PROP_DELDAYS:
 			*vp = INT_TO_JSVAL(cfg->sys_deldays);
@@ -491,6 +499,10 @@ static jsSyncPropertySpec js_system_properties[] = {
 		, JSDOCSTR("Minimum number of characters in user passwords")},
 	{   "max_password_length",      SYS_PROP_MAXPWLEN,  SYSOBJ_RO_FLAGS,       31702
 		, JSDOCSTR("Maximum number of characters in user passwords")},
+	{   "max_trash_age",            SYS_PROP_MAXTRASHAGE, SYSOBJ_RO_FLAGS,     322
+		, JSDOCSTR("Days that messages in a user's mailbox Trash folder are kept (<tt>0</tt>=<i>never purge</i>)")},
+	{   "mailbox_quota",            SYS_PROP_MAILBOXQUOTA, SYSOBJ_RO_FLAGS,    322
+		, JSDOCSTR("Maximum size of a user's mailbox, in bytes (<tt>0</tt>=<i>unlimited</i>)")},
 	{   "deldays",                  SYS_PROP_DELDAYS,   SYSOBJ_RO_FLAGS,       310
 		, JSDOCSTR("Days to preserve deleted user records, record will not be reused/overwritten during this period")},
 	{   "autodel",                  SYS_PROP_AUTODEL,   SYSOBJ_RO_FLAGS,       31702

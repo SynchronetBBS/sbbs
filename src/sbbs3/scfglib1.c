@@ -541,6 +541,8 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->mail_maxcrcs = iniGetInteger(section, NULL, "max_crcs", 0);
 	cfg->mail_maxage = iniGetInteger(section, NULL, "max_age", 0);
 	cfg->max_spamage = iniGetInteger(section, NULL, "max_spam_age", 0);
+	cfg->max_trashage = iniGetInteger(section, NULL, "max_trash_age", 30);
+	cfg->mailbox_quota = iniGetBytes(section, NULL, "mailbox_quota", 1, 1073741824);
 
 	/******************/
 	/* Message Groups */

@@ -592,6 +592,8 @@ typedef struct
 	uint32_t		max_qwkmsgs;	/* Maximum messages per QWK packet */
 	uint16_t		max_qwkmsgage;	/* Maximum age (in days) of QWK messages to be imported */
 	uint16_t		max_spamage;	/* Maximum age (in days) of SPAM-tagged messages */
+	uint16_t		max_trashage;	/* Maximum age (in days) of mailbox Trash messages (0=never purge) */
+	uint64_t		mailbox_quota;	/* Maximum per-user mailbox size in bytes (0=unlimited) */
 	uint32_t		max_log_size;
 	uint16_t		max_logs_kept;
 	uint16_t		cdt_min_value;	/* Minutes per 100k credits */
