@@ -3,6 +3,7 @@
 var type = {
 	'adjust_credits(0)'		: 'boolean',
 	'adjust_minutes(0)'		: 'boolean',
+	'can_send_mail(0, 1)'	: 'boolean',
 	'compare_ars("")'		: 'boolean',
 	'compare_ars(undefined)'	: 'boolean',
 	'downloaded_file()'		: 'boolean',

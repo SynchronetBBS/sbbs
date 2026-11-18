@@ -1460,6 +1460,54 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_can_send_mail(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *    argv = JS_ARGV(cx, arglist);
+	user_private_t* p;
+	int32      net_type = 0;
+	int32      to_usernum = 0;
+	int32      count = 1;
+	jsrefcount rc;
+	scfg_t*    scfg;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
+
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
+		return JS_FALSE;
+
+	if (!JS_ValueToECMAInt32(cx, argv[0], &net_type))
+		return JS_FALSE;
+	if (argc > 1) {
+		if (js_argvIsNullOrVoid(cx, argv, 1))
+			return JS_FALSE;
+		if (!JS_ValueToECMAInt32(cx, argv[1], &to_usernum))
+			return JS_FALSE;
+	}
+	if (argc > 2) {
+		if (js_argvIsNullOrVoid(cx, argv, 2))
+			return JS_FALSE;
+		if (!JS_ValueToECMAInt32(cx, argv[2], &count))
+			return JS_FALSE;
+		if (count < 1)
+			count = 1;
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	p->getuserdat();
+	bool result = user_can_send_mail(scfg, static_cast<enum smb_net_type>(net_type), to_usernum, static_cast<uint>(count), p->user, nullptr);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
+static JSBool
 js_can_access_sub(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
@@ -1589,6 +1637,17 @@ static jsSyncMethodSpec js_user_functions[] = {
 		        "Note: this method does not account for pending forced timed events.<br>"
 		        "Note: for the pre-defined user object on the BBS, you almost certainly want bbs.get_time_left() instead.")
 	 , 31401},
+	{"can_send_mail",   js_can_send_mail,   1,  JSTYPE_BOOLEAN,  JSDOCSTR("<i>number</i> net_type [,<i>number</i> to_usernum=0] [,<i>number</i> count=1]")
+	 , JSDOCSTR("Return <tt>true</tt> if the user is currently allowed to send mail of the specified type "
+		        "(<tt>NET_NONE</tt> for local e-mail, <tt>NET_FIDO</tt> or <tt>NET_INTERNET</tt> for netmail), "
+		        "applying the same rules the terminal server does: the user's restriction flags, "
+		        "whether FidoNet or Internet mail is allowed at all, and the e-mail-per-day limit "
+		        "(unless the user is exempt from it).<br>"
+		        "Sysops are exempt from the per-day limit and from the netmail-allowed settings.<br>"
+		        "<i>to_usernum</i> is the recipient's user number for local e-mail (1 is the sysop, which has its own restriction).<br>"
+		        "<i>count</i> is the number of recipients (default: 1, minimum: 1); "
+		        "the per-day limit is checked against the user's e-mails sent today plus <i>count</i>.")
+	 , 322},
 	{"can_access_sub",  js_can_access_sub,  1,  JSTYPE_BOOLEAN,  JSDOCSTR("<i>string</i> sub_code or <i>number</i> sub_num, ['read', 'post', or 'operator']")
 	 , JSDOCSTR("Return <tt>true</tt> if the user has the specified access to the specified message sub-board. If no access string (second argument) is specified, <i>any access</i> is checked.")
 	 , 321},

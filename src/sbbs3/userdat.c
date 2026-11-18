@@ -4170,8 +4170,10 @@ bool user_can_send_netmail(user_t* user)
 /* Determine if the specified user can or cannot send email					*/
 /* 'reason' is an (optional) pointer to a text.dat item number				*/
 /* usernumber==0 for netmail												*/
+/* 'count' is the number of recipients (a value below 1 is treated as 1)	*/
+/* Sysops are exempt from the netmail-allowed and e-mail-per-day checks		*/
 /****************************************************************************/
-bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, int usernumber, user_t* user, uint* reason)
+bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, int usernumber, uint count, user_t* user, uint* reason)
 {
 	if (reason != NULL)
 		*reason = R_Email;
@@ -4183,9 +4185,9 @@ bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, int usernumber,
 		*reason = NoNetMailAllowed;
 	if (net_type != NET_NONE && !user_can_send_netmail(user))
 		return false;
-	if (net_type == NET_FIDO && !(cfg->netmail_misc & NMAIL_ALLOW))              /* Fido netmail globally disallowed */
+	if (net_type == NET_FIDO && !user_is_sysop(user) && !(cfg->netmail_misc & NMAIL_ALLOW))              /* Fido netmail globally disallowed */
 		return false;
-	if (net_type == NET_INTERNET && !(cfg->inetmail_misc & NMAIL_ALLOW))         /* Internet mail globally disallowed */
+	if (net_type == NET_INTERNET && !user_is_sysop(user) && !(cfg->inetmail_misc & NMAIL_ALLOW))         /* Internet mail globally disallowed */
 		return false;
 	if (reason != NULL)
 		*reason = R_Feedback;
@@ -4193,7 +4195,9 @@ bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, int usernumber,
 		return false;
 	if (reason != NULL)
 		*reason = TooManyEmailsToday;
-	if (user->etoday >= cfg->level_emailperday[user->level] && !(user->exempt & UEXEMPT_EMAIL_LIMIT))
+	if (count < 1)
+		count = 1;
+	if (user->etoday + count > cfg->level_emailperday[user->level] && !user_is_sysop(user) && !(user->exempt & UEXEMPT_EMAIL_LIMIT))
 		return false;
 
 	return true;

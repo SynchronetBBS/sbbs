@@ -29,6 +29,8 @@ static const char* msg_area_prop_desc[] = {
 	"Message area settings (bit-flags) - see <tt>MM_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	, "FidoNet NetMail settings (bit-flags) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	, "Internet NetMail settings (bit-flags) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	, "Credits charged per recipient to send a FidoNet NetMail message"
+	, "Credits charged per recipient to send an Internet NetMail message"
 	, NULL
 };
 
@@ -457,6 +459,26 @@ JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 		if (!JS_NewNumberValue(cx, p->cfg->inetmail_misc, &val))
 			return JS_FALSE;
 		if (!JS_SetProperty(cx, areaobj, "inet_netmail_settings", &val))
+			return JS_FALSE;
+		if (name)
+			return JS_TRUE;
+	}
+	if (name == NULL || strcmp(name, "fido_netmail_cost") == 0) {
+		if (name)
+			free(name);
+		if (!JS_NewNumberValue(cx, p->cfg->netmail_cost, &val))
+			return JS_FALSE;
+		if (!JS_SetProperty(cx, areaobj, "fido_netmail_cost", &val))
+			return JS_FALSE;
+		if (name)
+			return JS_TRUE;
+	}
+	if (name == NULL || strcmp(name, "inet_netmail_cost") == 0) {
+		if (name)
+			free(name);
+		if (!JS_NewNumberValue(cx, p->cfg->inetmail_cost, &val))
+			return JS_FALSE;
+		if (!JS_SetProperty(cx, areaobj, "inet_netmail_cost", &val))
 			return JS_FALSE;
 		if (name)
 			return JS_TRUE;
