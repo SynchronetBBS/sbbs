@@ -273,6 +273,9 @@ SMBEXPORT char*     smb_getplaintext(smbmsg_t*, char* body);
 SMBEXPORT uint8_t*  smb_getattachment(smbmsg_t*, char* body, char* filename, size_t filename_len, uint32_t* filelen, int index);
 SMBEXPORT uint      smb_countattachments(smb_t*, smbmsg_t*, const char* body);
 SMBEXPORT void      smb_parse_content_type(const char* content_type, char** subtype, char** charset, uint32_t* auxattr);
+SMBEXPORT smb_mimepart_t* smb_getmimeparts(const smbmsg_t*, const char* body, size_t* count);
+SMBEXPORT size_t    smb_decodemimepart(const smb_mimepart_t*, uint8_t* out);
+SMBEXPORT void      smb_freemimeparts(smb_mimepart_t*);
 
 /* smbfile.c */
 SMBEXPORT int       smb_feof(FILE* fp);

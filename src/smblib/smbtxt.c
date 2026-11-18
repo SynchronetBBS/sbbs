@@ -22,6 +22,7 @@
 /* ANSI */
 #include <stdlib.h> /* malloc/realloc/free */
 #include <string.h> /* strlen */
+#include <ctype.h>  /* tolower */
 
 /* XPDev */
 #include "xpendian.h"
@@ -693,4 +694,480 @@ uint smb_countattachments(smb_t* smb, smbmsg_t* msg, const char* body)
 
 	free(buf);
 	return count;
+}
+
+/* Enumeration of the leaf parts of a (possibly nested) MIME body, for a
+ * client that lists and saves them one at a time.
+ * Every scan is bounded by the end of the range given, rather than by a NUL. */
+
+struct mime_walk {
+	smb_mimepart_t* part;
+	size_t count;
+	size_t alloc;
+	bool failed;            /* memory allocation failure */
+};
+
+static const char* mime_nextline(const char* p, const char* end)
+{
+	const char* eol = memchr(p, '\n', end - p);
+
+	return (eol == NULL) ? end : eol + 1;
+}
+
+/* Return a malloc'd copy of the (unfolded, trimmed) value of header field
+ * 'name' in the header block [hdr, end), or NULL if there is none */
+static char* mime_hdrfield(const char* hdr, const char* end, const char* name)
+{
+	size_t      namelen = strlen(name);
+	const char* p;
+
+	for (p = hdr; p < end; p = mime_nextline(p, end)) {
+		if ((size_t)(end - p) <= namelen || strnicmp(p, name, namelen) != 0 || p[namelen] != ':')
+			continue;
+		const char* val = p + namelen + 1;
+		const char* fend = mime_nextline(p, end);
+		while (fend < end && (*fend == ' ' || *fend == '\t'))  /* folded continuation line */
+			fend = mime_nextline(fend, end);
+		char*       buf = (char*)malloc(fend - val + 1);
+		if (buf == NULL)
+			return NULL;
+		size_t      len = 0;
+		while (val < fend && (*val == ' ' || *val == '\t'))
+			val++;
+		for (; val < fend; val++) {
+			if (*val != '\r' && *val != '\n')
+				buf[len++] = *val;
+		}
+		buf[len] = '\0';
+		truncsp(buf);
+		return buf;
+	}
+	return NULL;
+}
+
+/* Copy the value of a header field up to its parameters, trimmed and
+ * lowercased (e.g. a media type or a disposition type) */
+static void mime_token(const char* value, char* out, size_t outlen)
+{
+	size_t len = 0;
+
+	while (*value == ' ' || *value == '\t')
+		value++;
+	for (; *value != '\0' && *value != ';' && len + 1 < outlen; value++)
+		out[len++] = (char)tolower((uchar) * value);
+	out[len] = '\0';
+	truncsp(out);
+}
+
+/* Copy the value of parameter 'attr' of a header field value into 'out' */
+static bool mime_param(const char* value, const char* attr, char* out, size_t outlen)
+{
+	size_t      attrlen = strlen(attr);
+	const char* p = strchr(value, ';');
+
+	*out = '\0';
+	while (p != NULL && *p != '\0') {
+		p++;    /* skip the ';' */
+		while (*p == ' ' || *p == '\t')
+			p++;
+		const char* name = p;
+		while (*p != '\0' && *p != '=' && *p != ';')
+			p++;
+		const char* name_end = p;
+		while (name_end > name && (name_end[-1] == ' ' || name_end[-1] == '\t'))
+			name_end--;
+		if (*p != '=')
+			continue;
+		bool   match = (size_t)(name_end - name) == attrlen && strnicmp(name, attr, attrlen) == 0;
+		size_t len = 0;
+		p++;
+		while (*p == ' ' || *p == '\t')
+			p++;
+		if (*p == '"') {
+			for (p++; *p != '\0' && *p != '"'; p++) {
+				if (*p == '\\' && p[1] != '\0')
+					p++;
+				if (match && len + 1 < outlen)
+					out[len++] = *p;
+			}
+		} else {
+			for (; *p != '\0' && *p != ';' && *p != ' ' && *p != '\t'; p++) {
+				if (match && len + 1 < outlen)
+					out[len++] = *p;
+			}
+		}
+		if (match) {
+			out[len] = '\0';
+			return true;
+		}
+		p = strchr(p, ';');
+	}
+	return false;
+}
+
+static void mime_lowercase(char* str)
+{
+	for (; *str != '\0'; str++)
+		*str = (char)tolower((uchar) * str);
+}
+
+static bool mime_addpart(struct mime_walk* w, const smb_mimepart_t* part)
+{
+	if (w->count >= w->alloc) {
+		size_t          alloc = w->alloc ? w->alloc * 2 : 8;
+		smb_mimepart_t* np = (smb_mimepart_t*)realloc(w->part, alloc * sizeof(*np));
+		if (np == NULL) {
+			w->failed = true;
+			return false;
+		}
+		w->part = np;
+		w->alloc = alloc;
+	}
+	w->part[w->count] = *part;
+	w->part[w->count].decoded_length = smb_decodemimepart(part, NULL);
+	w->count++;
+	return true;
+}
+
+/* Find the next delimiter line ("--boundary") at or after 'p', which must be
+ * at the start of a line: only a whole boundary is a delimiter */
+static const char* mime_delimiter(const char* p, const char* end, const char* delim, size_t len)
+{
+	for (; p < end; p = mime_nextline(p, end)) {
+		if ((size_t)(end - p) < len || memcmp(p, delim, len) != 0)
+			continue;
+		const char* after = p + len;
+		if (after >= end || *after == '\r' || *after == '\n' || *after == ' ' || *after == '\t'
+		    || (*after == '-' && after + 1 < end && after[1] == '-'))
+			return p;
+	}
+	return NULL;
+}
+
+/* Split an entity [p, end) at the empty line that ends its header block;
+ * without an empty line, it is all header (RFC2046) */
+static void mime_split(const char* p, const char* end, const char** hdr_end, const char** body)
+{
+	*hdr_end = end;
+	*body = end;
+	for (; p < end; p = mime_nextline(p, end)) {
+		if (*p == '\n') {
+			*hdr_end = p;
+			*body = p + 1;
+			return;
+		}
+		if (*p == '\r' && p + 1 < end && p[1] == '\n') {
+			*hdr_end = p;
+			*body = p + 2;
+			return;
+		}
+	}
+}
+
+static void mime_walk_entity(struct mime_walk*, const char* hdr, const char* hdr_end
+                             , const char* body, const char* body_end, const char* id, int depth);
+
+static void mime_walk_multipart(struct mime_walk* w, const char* body, const char* end
+                                , const char* boundary, const char* id, int depth)
+{
+	char        delim[2 + 256];   /* "--" + boundary */
+	char        child[sizeof(w->part->id)];
+	size_t      dlen = safe_snprintf(delim, sizeof(delim), "--%s", boundary);
+	const char* p = mime_delimiter(body, end, delim, dlen);
+	size_t      idlen = strlen(id);
+	int         n = 0;
+
+	while (p != NULL && !w->failed && w->count < SMB_MIMEPART_MAX_PARTS) {
+		const char* after = p + dlen;
+		if (end - after >= 2 && after[0] == '-' && after[1] == '-')   /* close delimiter */
+			break;
+		const char* content = mime_nextline(after, end);
+		const char* next = mime_delimiter(content, end, delim, dlen);
+		const char* content_end = end;
+		if (next != NULL) {   /* the line break before a delimiter is part of it */
+			content_end = next;
+			if (content_end > content && content_end[-1] == '\n')
+				content_end--;
+			if (content_end > content && content_end[-1] == '\r')
+				content_end--;
+		}
+		const char* hdr_end;
+		const char* child_body;
+		mime_split(content, content_end, &hdr_end, &child_body);
+		/* A truncated id could name two parts: stop where the next one would not fit */
+		size_t      digits = 1;
+		n++;
+		for (int i = n; i >= 10; i /= 10)
+			digits++;
+		if (idlen + (idlen > 0) + digits + 1 > sizeof(child))   /* parent "." index NUL */
+			break;
+		if (idlen == 0)
+			safe_snprintf(child, sizeof(child), "%d", n);
+		else
+			safe_snprintf(child, sizeof(child), "%s.%d", id, n);
+		mime_walk_entity(w, content, hdr_end, child_body, content_end, child, depth + 1);
+		p = next;
+	}
+}
+
+/* Add the leaf parts of an entity: a multipart's parts, or the entity itself.
+ * 'id' is empty for the message itself. */
+static void mime_walk_entity(struct mime_walk* w, const char* hdr, const char* hdr_end
+                             , const char* body, const char* body_end, const char* id, int depth)
+{
+	smb_mimepart_t part;
+	char           boundary[257];   /* one more than the longest boundary used */
+	char*          ctype;
+	char*          field;
+
+	memset(&part, 0, sizeof(part));
+	ctype = mime_hdrfield(hdr, hdr_end, "Content-Type");
+	if (ctype != NULL) {
+		mime_token(ctype, part.content_type, sizeof(part.content_type));
+		if (strchr(part.content_type, '/') == NULL)
+			part.content_type[0] = '\0';
+	}
+	if (part.content_type[0] == '\0')
+		SAFECOPY(part.content_type, "text/plain");
+	if (strncmp(part.content_type, "multipart/", 10) == 0) {
+		if (depth < SMB_MIMEPART_MAX_DEPTH && ctype != NULL
+		    && mime_param(ctype, "boundary", boundary, sizeof(boundary))
+		    && *truncsp(boundary) != '\0' && strlen(boundary) < sizeof(boundary) - 1) {
+			size_t count = w->count;
+			mime_walk_multipart(w, body, body_end, boundary, id, depth);
+			/* The message itself falls back to text/plain (smb_getmimeparts) */
+			if (w->count != count || w->failed || w->count >= SMB_MIMEPART_MAX_PARTS || *id == '\0') {
+				free(ctype);
+				return;
+			}
+		}
+		/* too deep, or not parsable, or no parts found: one part, as is */
+		SAFECOPY(part.content_type, "application/octet-stream");
+	} else {
+		if (ctype != NULL) {
+			mime_param(ctype, "charset", part.charset, sizeof(part.charset));
+			mime_lowercase(part.charset);
+			mime_param(ctype, "name", part.name, sizeof(part.name));
+		}
+		if ((field = mime_hdrfield(hdr, hdr_end, "Content-Transfer-Encoding")) != NULL) {
+			part.encoding = mime_encoding(field);
+			free(field);
+		}
+		if ((field = mime_hdrfield(hdr, hdr_end, "Content-Disposition")) != NULL) {
+			char name[sizeof(part.name)];
+			mime_token(field, part.disposition, sizeof(part.disposition));
+			if (strcmp(part.disposition, "inline") != 0 && strcmp(part.disposition, "attachment") != 0)
+				part.disposition[0] = '\0';
+			if (mime_param(field, "filename", name, sizeof(name)) && *name != '\0')
+				SAFECOPY(part.name, name);
+			free(field);
+		}
+		memmove(part.name, getfname(part.name), strlen(getfname(part.name)) + 1);
+		if ((field = mime_hdrfield(hdr, hdr_end, "Content-ID")) != NULL) {
+			char* cid = field;
+			if (*cid == '<')
+				cid++;
+			SAFECOPY(part.content_id, cid);
+			char* last = lastchar(part.content_id);
+			if (*last == '>')
+				*last = '\0';
+			free(field);
+		}
+	}
+	free(ctype);
+	SAFECOPY(part.id, *id == '\0' ? "1" : id);
+	part.data = body;
+	part.length = body_end - body;
+	mime_addpart(w, &part);
+}
+
+/* The character set of a message that is not MIME-encoded */
+static void mime_msgcharset(const smbmsg_t* msg, char* out, size_t outlen)
+{
+	size_t len = 0;
+
+	if (smb_msg_is_utf8(msg)) {
+		strlcpy(out, "utf-8", outlen);
+		return;
+	}
+	if (msg->ftn_charset != NULL) {   /* e.g. "CP437 2" */
+		const char* p = msg->ftn_charset;
+		SKIP_WHITESPACE(p);
+		for (; *p != '\0' && !IS_WHITESPACE(*p) && len + 1 < outlen; p++)
+			out[len++] = (char)tolower((uchar) * p);
+		out[len] = '\0';
+		if (len > 0)
+			return;
+	}
+	switch (msg->from_net.type) {
+		case NET_NONE:
+		case NET_FIDO:
+		case NET_QWK:
+			strlcpy(out, "cp437", outlen);
+			break;
+		default:
+			strlcpy(out, "windows-1252", outlen);
+			break;
+	}
+}
+
+/* List the leaf parts of a message body (as read by smb_getmsgtxt() with
+ * GETMSGTXT_BODY_ONLY), in document order: a message that is not MIME-encoded
+ * is one text/plain part. Returns a malloc'd array of *count parts (that
+ * point into 'body') to be freed with smb_freemimeparts(), or NULL on memory
+ * allocation failure. */
+smb_mimepart_t* smb_getmimeparts(const smbmsg_t* msg, const char* body, size_t* count)
+{
+	struct mime_walk w;
+	smb_mimepart_t   part;
+	size_t           len = strlen(body);
+
+	memset(&w, 0, sizeof(w));
+	*count = 0;
+	if (msg->mime_version != NULL && msg->content_type != NULL) {
+		/* The message's own MIME header fields, as a header block */
+		size_t hlen = 0;
+		char*  hdr;
+		for (int i = 0; i < msg->total_hfields; i++) {
+			if (msg->hfield[i].type == RFC822HEADER)
+				hlen += strlen((char*)msg->hfield_dat[i]) + 2;
+		}
+		if ((hdr = (char*)malloc(hlen + 1)) == NULL)
+			return NULL;
+		hlen = 0;
+		for (int i = 0; i < msg->total_hfields; i++) {
+			if (msg->hfield[i].type == RFC822HEADER)
+				hlen += sprintf(hdr + hlen, "%s\r\n", (char*)msg->hfield_dat[i]);
+		}
+		mime_walk_entity(&w, hdr, hdr + hlen, body, body + len, /* id: */ "", /* depth: */ 0);
+		free(hdr);
+	}
+	if (w.count == 0 && !w.failed) {  /* not MIME-encoded, or no parts found */
+		memset(&part, 0, sizeof(part));
+		SAFECOPY(part.id, "1");
+		SAFECOPY(part.content_type, "text/plain");
+		if (msg->mime_version == NULL || msg->content_type == NULL)
+			mime_msgcharset(msg, part.charset, sizeof(part.charset));
+		part.data = body;
+		part.length = len;
+		mime_addpart(&w, &part);
+	}
+	if (w.failed) {
+		free(w.part);
+		return NULL;
+	}
+	*count = w.count;
+	return w.part;
+}
+
+static int mime_b64_value(uchar ch)
+{
+	if (ch >= 'A' && ch <= 'Z')
+		return ch - 'A';
+	if (ch >= 'a' && ch <= 'z')
+		return ch - 'a' + 26;
+	if (ch >= '0' && ch <= '9')
+		return ch - '0' + 52;
+	if (ch == '+')
+		return 62;
+	if (ch == '/')
+		return 63;
+	return -1;
+}
+
+/* Characters outside the base64 alphabet are ignored (RFC2045) */
+static size_t mime_b64_decode(const char* p, size_t len, uint8_t* out)
+{
+	size_t   n = 0;
+	uint32_t bits = 0;
+	int      nbits = 0;
+
+	for (size_t i = 0; i < len; i++) {
+		int val = mime_b64_value((uchar)p[i]);
+		if (val < 0) {
+			if (p[i] == '=')  /* padding: the end of the data */
+				break;
+			continue;
+		}
+		bits = (bits << 6) | (uint32_t)val;
+		nbits += 6;
+		if (nbits >= 8) {
+			nbits -= 8;
+			if (out != NULL)
+				out[n] = (uint8_t)(bits >> nbits);
+			n++;
+			bits &= (1U << nbits) - 1;
+		}
+	}
+	return n;
+}
+
+static bool mime_eol(const char* p, const char* end)
+{
+	return p >= end || *p == '\n' || (*p == '\r' && p + 1 < end && p[1] == '\n');
+}
+
+/* Unlike qp_decode(), keeps every byte value: for attachments as well as text */
+static size_t mime_qp_decode(const char* p, size_t len, uint8_t* out)
+{
+	const char* end = p + len;
+	const char* q;
+	size_t      n = 0;
+
+	while (p < end) {
+		if (*p == '=') {
+			if (end - p >= 3 && IS_HEXDIGIT(p[1]) && IS_HEXDIGIT(p[2])) {
+				if (out != NULL)
+					out[n] = (uint8_t)((HEX_CHAR_TO_INT(p[1]) << 4) | HEX_CHAR_TO_INT(p[2]));
+				n++;
+				p += 3;
+				continue;
+			}
+			for (q = p + 1; q < end && (*q == ' ' || *q == '\t'); q++)
+				;
+			if (mime_eol(q, end)) {  /* soft line break */
+				p = (q >= end) ? end : mime_nextline(q, end);
+				continue;
+			}
+		} else if (*p == ' ' || *p == '\t') {
+			for (q = p; q < end && (*q == ' ' || *q == '\t'); q++)
+				;
+			if (mime_eol(q, end)) {  /* trailing white space is not data */
+				p = q;
+				continue;
+			}
+			for (; p < q; p++) {
+				if (out != NULL)
+					out[n] = (uint8_t)*p;
+				n++;
+			}
+			continue;
+		}
+		if (out != NULL)
+			out[n] = (uint8_t)*p;
+		n++;
+		p++;
+	}
+	return n;
+}
+
+void smb_freemimeparts(smb_mimepart_t* parts)
+{
+	free(parts);
+}
+
+/* Decode a part into 'out' (part->decoded_length bytes), or if 'out' is NULL,
+ * just return the decoded length */
+size_t smb_decodemimepart(const smb_mimepart_t* part, uint8_t* out)
+{
+	switch (part->encoding) {
+		case CONTENT_TRANFER_ENCODING_BASE64:
+			return mime_b64_decode(part->data, part->length, out);
+		case CONTENT_TRANFER_ENCODING_QUOTED_PRINTABLE:
+			return mime_qp_decode(part->data, part->length, out);
+		default:
+			if (out != NULL)
+				memcpy(out, part->data, part->length);
+			return part->length;
+	}
 }

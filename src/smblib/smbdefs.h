@@ -715,4 +715,21 @@ typedef struct {                /* Message/File base */
 
 } smb_t;
 
+/* A leaf MIME part of a message body, as listed by smb_getmimeparts() */
+#define SMB_MIMEPART_MAX_DEPTH  16      /* Deeper nested multiparts are one opaque part */
+#define SMB_MIMEPART_MAX_PARTS  1000    /* Parts beyond this number are not listed */
+
+typedef struct {
+	char id[80];                /* Dotted path, e.g. "1" or "2.1": 16 levels of up to 1000 fit */
+	char content_type[128];     /* Lowercase, without parameters */
+	char charset[64];           /* Lowercase, or empty */
+	char name[256];             /* File name, without any directory, or empty */
+	char content_id[256];       /* Without the angle brackets, or empty */
+	char disposition[16];       /* "inline", "attachment" or empty */
+	const char* data;           /* The (encoded) content, within the body */
+	size_t length;              /* Length of the encoded content */
+	size_t decoded_length;      /* Length of the decoded content */
+	int encoding;               /* Content-Transfer-Encoding (private to smbtxt.c) */
+} smb_mimepart_t;
+
 #endif /* Don't add anything after this #endif statement */

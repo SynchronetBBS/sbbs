@@ -668,8 +668,12 @@ ushort sys_timezone(scfg_t* cfg)
 
 int smb_storage_mode(scfg_t* cfg, smb_t* smb)
 {
-	if (smb == NULL || smb->subnum == INVALID_SUB || (smb->status.attr & SMB_EMAIL))
+	if (smb == NULL || smb->subnum == INVALID_SUB)
 		return (cfg->sys_misc & SM_FASTMAIL) ? SMB_FASTALLOC : SMB_SELFPACK;
+	// A path-opened e-mail base (e.g. a per-user mailbox) always self-packs:
+	// nothing else packs it, so freed space must be reused
+	if (smb->status.attr & SMB_EMAIL)
+		return SMB_SELFPACK;
 	if (!subnum_is_valid(cfg, smb->subnum))
 		return (smb->status.attr & SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_FASTALLOC;
 	if (cfg->sub[smb->subnum]->misc & SUB_HYPER) {

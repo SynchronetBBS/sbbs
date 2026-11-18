@@ -32,6 +32,7 @@ typedef struct
 	int smb_result;
 	JSBool debug;
 	uint32_t first_msg;
+	bool is_email;          // path-opened base requested as an e-mail base
 
 } private_t;
 
@@ -66,6 +67,33 @@ static void js_finalize_msgbase(JSContext *cx, JSObject *obj)
 
 extern JSClass js_msgbase_class;
 
+/* A path-opened base requested as an e-mail base: create it as one when it
+ * is new, otherwise it must already be one (the stored attribute counts).
+ * All under the header lock: a process that loses a race to create the base
+ * must find it created, not create it again over messages saved to it */
+static int open_email_path_base(smb_t* smb)
+{
+	int result;
+
+	if ((result = smb_locksmbhdr(smb)) != SMB_SUCCESS)
+		return result;
+	if (smb_fgetlength(smb->shd_fp) < (off_t)(sizeof(smbhdr_t) + sizeof(smb->status))) {
+		smbstatus_t status = {0};
+		status.attr = SMB_EMAIL;
+		smb->status = status;
+		result = smb_create(smb); // unlocks the header on success
+	}
+	else if ((result = smb_getstatus(smb)) == SMB_SUCCESS
+	         && !(smb->status.attr & SMB_EMAIL)) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s is not an e-mail message base", smb->file);
+		result = SMB_ERR_HDR_ATTR;
+	}
+	if (smb->smbhdr_locked)
+		smb_unlocksmbhdr(smb);
+	return result;
+}
+
 static JSBool
 js_open(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -95,9 +123,13 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	if (!subnum_is_valid(scfg, p->smb.subnum) && p->smb.subnum != INVALID_SUB)
+	if (!subnum_is_valid(scfg, p->smb.subnum) && p->smb.subnum != INVALID_SUB) {
 		p->smb_result = smb_open(&(p->smb));
-	else
+		if (p->smb_result == SMB_SUCCESS && p->is_email) {
+			if ((p->smb_result = open_email_path_base(&(p->smb))) != SMB_SUCCESS)
+				smb_close(&(p->smb));
+		}
+	} else
 		p->smb_result = smb_open_sub(scfg, &(p->smb), p->smb.subnum);
 	if (p->smb_result != SMB_SUCCESS) {
 		JS_RESUMEREQUEST(cx, rc);
@@ -292,6 +324,14 @@ static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 			JS_ReportError(cx, "Error %d adding RECIPIENTAGENT field to message header", smb_result);
 			goto err;
 		}
+	}
+
+	/* A per-recipient network attribute replaces the header's for this copy */
+	if (JS_GetProperty(cx, hdr, "netattr", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		uint32 netattr;
+		if (!JS_ValueToECMAUint32(cx, val, &netattr))
+			return false;
+		msg->hdr.netattr = netattr;
 	}
 
 	return true;
@@ -984,6 +1024,41 @@ static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			}
 			if ((smb_result = smb_hfield_str(msg, type, cp)) != SMB_SUCCESS) {
 				JS_ReportError(cx, "Error %d adding field (type %02Xh) to message header", smb_result, type);
+				goto err;
+			}
+		}
+	}
+
+	/* MIME headers are stored as RFC822 header lines, as when a message arrives */
+	for (i = 0; i < 2; i++) {
+		static const char* const mime_props[] = { "mime_version", "content_type" };
+		static const char* const mime_names[] = { "MIME-Version", "Content-Type" };
+		/* a header read back from a base has these lines in field_list too */
+		bool                     present = false;
+		size_t                   namelen = strlen(mime_names[i]);
+		for (int f = 0; f < msg->total_hfields && !present; f++) {
+			present = msg->hfield[f].type == RFC822HEADER && msg->hfield_dat[f] != NULL
+			          && strnicmp((const char*)msg->hfield_dat[f], mime_names[i], namelen) == 0
+			          && ((const char*)msg->hfield_dat[f])[namelen] == ':';
+		}
+		if (!present && JS_GetProperty(cx, hdr, mime_props[i], &val) && !JSVAL_NULL_OR_VOID(val)) {
+			JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
+			HANDLE_PENDING(cx, cp);
+			if (cp == NULL) {
+				JS_ReportError(cx, "Invalid \"%s\" string in header object", mime_props[i]);
+				goto err;
+			}
+			size_t line_sz = strlen(mime_names[i]) + strlen(cp) + 3;
+			char*  line = (char*)malloc(line_sz);
+			if (line == NULL) {
+				JS_ReportError(cx, "Error allocating %s header line", mime_names[i]);
+				goto err;
+			}
+			snprintf(line, line_sz, "%s: %s", mime_names[i], cp);
+			smb_result = smb_hfield_str(msg, RFC822HEADER, line);
+			free(line);
+			if (smb_result != SMB_SUCCESS) {
+				JS_ReportError(cx, "Error %d adding %s field to message header", smb_result, mime_names[i]);
 				goto err;
 			}
 		}
@@ -2550,78 +2625,27 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+/* Save the message described by 'hdr' with the given body (not freed here), to
+ * the recipients in 'rcpt_list' if non-NULL: the part of save_msg() and
+ * save_msg_from_file() that does not depend on where the body came from */
 static JSBool
-js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
+save_msg_common(JSContext *cx, jsval *arglist, private_t* p, JSObject* hdr
+                , JSObject* rcpt_list, client_t* client, char* body)
 {
-	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
-	jsval *    argv = JS_ARGV(cx, arglist);
-	char*      body = NULL;
-	uintN      n;
 	jsuint     i;
 	jsuint     rcpt_list_length = 0;
 	jsval      val;
-	JSObject*  hdr = NULL;
 	JSObject*  objarg;
-	JSObject*  rcpt_list = NULL;
 	JSClass*   cl;
 	smbmsg_t   rcpt_msg;
 	smbmsg_t   msg;
-	client_t*  client = NULL;
-	private_t* p;
 	JSBool     ret = JS_TRUE;
 	jsrefcount rc;
 	scfg_t*    scfg;
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-
-	if (js_argcIsInsufficient(cx, argc, 1))
-		return JS_FALSE;
-
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class)) == NULL) {
-		return JS_FALSE;
-	}
-
-	if (!SMB_IS_OPEN(&(p->smb))) {
-		if (!js_open(cx, 0, arglist))
-			return JS_FALSE;
-		if (JS_RVAL(cx, arglist) == JSVAL_FALSE)
-			return JS_TRUE;
-		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-	}
-
 	memset(&msg, 0, sizeof(msg));
-
-	for (n = 0; n < argc; n++) {
-		if (JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {
-			objarg = JSVAL_TO_OBJECT(argv[n]);
-			if (objarg == NULL)
-				continue;
-			if (objarg != NULL && (cl = JS_GetClass(cx, objarg)) != NULL && strcmp(cl->name, "Client") == 0) {
-				client = static_cast<client_t *>(JS_GetPrivate(cx, objarg));
-				continue;
-			}
-			if (JS_IsArrayObject(cx, objarg)) {      /* recipient_list is an array of objects */
-				if (body != NULL && rcpt_list == NULL) { /* body text already specified */
-					rcpt_list = objarg;
-					continue;
-				}
-			}
-			else if (hdr == NULL) {
-				hdr = objarg;
-				continue;
-			}
-		}
-		if (body == NULL) {
-			JSVALUE_TO_MSTRING(cx, argv[n], body, NULL);
-			HANDLE_PENDING(cx, body);
-			if (body == NULL) {
-				JS_ReportError(cx, "Invalid message body string");
-				return JS_FALSE;
-			}
-		}
-	}
 
 	// Find and use the global client object if possible...
 	if (client == NULL) {
@@ -2632,21 +2656,12 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	if (hdr == NULL) {
-		FREE_AND_NULL(body);
-		return JS_TRUE;
-	}
-	if (body == NULL)
-		body = strdup("");
-
 	if (rcpt_list != NULL) {
 		if (!JS_GetArrayLength(cx, rcpt_list, &rcpt_list_length)) {
-			free(body);
 			return JS_TRUE;
 		}
 		if (rcpt_list_length < 1) {
 			JS_ReportError(cx, "Empty recipient list");
-			free(body);
 			return JS_FALSE;
 		}
 	}
@@ -2696,8 +2711,10 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 				}
 				smb_freemsgmem(&rcpt_msg);  /* just in case we broke the loop */
 
-				if (i == rcpt_list_length)
+				if (i == rcpt_list_length) {
+					p->smb.last_error[0] = 0;
 					JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+				}
 				if (i > 1)
 					smb_incmsg_dfields(&(p->smb), &msg, (uint16_t)(i - 1));
 			}
@@ -2708,11 +2725,1022 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 		ret = JS_FALSE;
 		SAFECOPY(p->smb.last_error, "Header parsing failure (required field missing?)");
 	}
-	free(body);
-
 	smb_freemsgmem(&msg);
 
 	return ret;
+}
+
+static JSBool
+js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *    argv = JS_ARGV(cx, arglist);
+	char*      body = NULL;
+	uintN      n;
+	JSObject*  hdr = NULL;
+	JSObject*  objarg;
+	JSObject*  rcpt_list = NULL;
+	JSClass*   cl;
+	client_t*  client = NULL;
+	private_t* p;
+	JSBool     ret = JS_TRUE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+
+	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class)) == NULL) {
+		return JS_FALSE;
+	}
+
+	if (!SMB_IS_OPEN(&(p->smb))) {
+		if (!js_open(cx, 0, arglist))
+			return JS_FALSE;
+		if (JS_RVAL(cx, arglist) == JSVAL_FALSE)
+			return JS_TRUE;
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+	}
+
+	for (n = 0; n < argc; n++) {
+		if (JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {
+			objarg = JSVAL_TO_OBJECT(argv[n]);
+			if (objarg == NULL)
+				continue;
+			if (objarg != NULL && (cl = JS_GetClass(cx, objarg)) != NULL && strcmp(cl->name, "Client") == 0) {
+				client = static_cast<client_t *>(JS_GetPrivate(cx, objarg));
+				continue;
+			}
+			if (JS_IsArrayObject(cx, objarg)) {      /* recipient_list is an array of objects */
+				if (body != NULL && rcpt_list == NULL) { /* body text already specified */
+					rcpt_list = objarg;
+					continue;
+				}
+			}
+			else if (hdr == NULL) {
+				hdr = objarg;
+				continue;
+			}
+		}
+		if (body == NULL) {
+			JSVALUE_TO_MSTRING(cx, argv[n], body, NULL);
+			HANDLE_PENDING(cx, body);
+			if (body == NULL) {
+				JS_ReportError(cx, "Invalid message body string");
+				return JS_FALSE;
+			}
+		}
+	}
+
+	if (hdr == NULL) {
+		FREE_AND_NULL(body);
+		return JS_TRUE;
+	}
+	if (body == NULL)
+		body = strdup("");
+
+	ret = save_msg_common(cx, arglist, p, hdr, rcpt_list, client, body);
+	free(body);
+
+	return ret;
+}
+
+/* Read the whole file 'fname' into a new NUL-terminated native buffer (never a
+ * JS string). Returns NULL, with the reason in p->smb.last_error, on failure. */
+static char* read_body_file(private_t* p, const char* fname)
+{
+	FILE*  fp;
+	off_t  length;
+	char*  buf;
+	size_t len;
+
+	if ((fp = fopen(fname, "rb")) == NULL) {
+		p->smb_result = SMB_ERR_OPEN;
+		SAFEPRINTF2(p->smb.last_error, "error %d opening body file: %s", errno, fname);
+		return NULL;
+	}
+	length = filelength(fileno(fp));
+	if (length < 0 || (uint64_t)length >= (uint64_t)SIZE_MAX / 2) {
+		fclose(fp);
+		p->smb_result = SMB_ERR_READ;
+		SAFEPRINTF(p->smb.last_error, "invalid size of body file: %s", fname);
+		return NULL;
+	}
+	if ((buf = (char*)malloc((size_t)length + 1)) == NULL) {
+		fclose(fp);
+		p->smb_result = SMB_ERR_MEM;
+		SAFEPRINTF2(p->smb.last_error, "malloc failure of %" PRIdOFF " bytes for body file: %s", length, fname);
+		return NULL;
+	}
+	len = fread(buf, 1, (size_t)length, fp);
+	fclose(fp);
+	if (len != (size_t)length) {
+		free(buf);
+		p->smb_result = SMB_ERR_READ;
+		SAFEPRINTF(p->smb.last_error, "error reading body file: %s", fname);
+		return NULL;
+	}
+	buf[len] = '\0';
+	if (strlen(buf) != len) {
+		free(buf);
+		p->smb_result = SMB_ERR_READ;
+		SAFEPRINTF(p->smb.last_error, "body file contains a NUL character: %s", fname);
+		return NULL;
+	}
+	return buf;
+}
+
+static JSBool
+js_save_msg_from_file(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *    argv = JS_ARGV(cx, arglist);
+	char*      body;
+	char*      fname = NULL;
+	JSObject*  hdr;
+	JSObject*  rcpt_list = NULL;
+	private_t* p;
+	JSBool     ret;
+	jsrefcount rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return JS_FALSE;
+
+	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class)) == NULL) {
+		return JS_FALSE;
+	}
+
+	if (!SMB_IS_OPEN(&(p->smb))) {
+		if (!js_open(cx, 0, arglist))
+			return JS_FALSE;
+		if (JS_RVAL(cx, arglist) == JSVAL_FALSE)
+			return JS_TRUE;
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+	}
+
+	if (!JSVAL_IS_OBJECT(argv[0]) || JSVAL_IS_NULL(argv[0]) || JS_IsArrayObject(cx, JSVAL_TO_OBJECT(argv[0]))) {
+		JS_ReportError(cx, "Invalid message header object");
+		return JS_FALSE;
+	}
+	hdr = JSVAL_TO_OBJECT(argv[0]);
+
+	JSVALUE_TO_MSTRING(cx, argv[1], fname, NULL);
+	HANDLE_PENDING(cx, fname);
+	if (fname == NULL) {
+		JS_ReportError(cx, "Invalid body file path string");
+		return JS_FALSE;
+	}
+
+	if (argc > 2 && !JSVAL_NULL_OR_VOID(argv[2])) {
+		if (!JSVAL_IS_OBJECT(argv[2]) || !JS_IsArrayObject(cx, JSVAL_TO_OBJECT(argv[2]))) {
+			free(fname);
+			JS_ReportError(cx, "Invalid recipient list (not an array)");
+			return JS_FALSE;
+		}
+		rcpt_list = JSVAL_TO_OBJECT(argv[2]);
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	body = read_body_file(p, fname);
+	JS_RESUMEREQUEST(cx, rc);
+	free(fname);
+	if (body == NULL)
+		return JS_TRUE;
+
+	ret = save_msg_common(cx, arglist, p, hdr, rcpt_list, /* client: */ NULL, body);
+	free(body);
+
+	return ret;
+}
+
+/* Apply the header changes object of copy_msg()/move_msg() to the copy:
+ * only "tags" and "attr" are supported (others are refused, not ignored) */
+static bool apply_copy_header_changes(JSContext* cx, private_t* p, JSObject* changes, smbmsg_t* msg)
+{
+	JSIdArray* ids;
+	jsval      idval;
+	jsval      val;
+	char       name[128];
+	char*      cp;
+	uint32     u32;
+	bool       result = true;
+
+	if ((ids = JS_Enumerate(cx, changes)) == NULL)
+		return false;
+	for (jsint i = 0; result && i < ids->length; i++) {
+		JS_IdToValue(cx, ids->vector[i], &idval);
+		JSVALUE_TO_STRBUF(cx, idval, name, sizeof(name), NULL);
+		if (!JS_GetProperty(cx, changes, name, &val)) {
+			result = false;
+			break;
+		}
+		if (JSVAL_NULL_OR_VOID(val))
+			continue;
+		if (strcmp(name, "tags") == 0) {
+			cp = NULL;
+			JSVALUE_TO_MSTRING(cx, val, cp, NULL);
+			if (cp == NULL) {
+				p->smb_result = SMB_FAILURE;
+				SAFEPRINTF(p->smb.last_error, "Invalid \"%s\" string in header changes", name);
+				result = false;
+				break;
+			}
+			if ((p->smb_result = smb_new_hfield_str(msg, SMB_TAGS, cp)) != SMB_SUCCESS) {
+				SAFEPRINTF(p->smb.last_error, "Error %d setting the tags of the copy", p->smb_result);
+				result = false;
+			}
+			free(cp);
+		}
+		else if (strcmp(name, "attr") == 0) {
+			if (!JS_ValueToECMAUint32(cx, val, &u32)) {
+				result = false;
+				break;
+			}
+			msg->hdr.attr = (uint16_t)u32;
+		}
+		else {
+			p->smb_result = SMB_FAILURE;
+			SAFEPRINTF(p->smb.last_error, "Unsupported header change: \"%s\"", name);
+			result = false;
+		}
+	}
+	JS_DestroyIdArray(cx, ids);
+	return result;
+}
+
+/* Write a copy (newmsg, from smb_copymsgmem) of message 'msg' of base 'src'
+ * into base 'dst': the data fields are copied as stored (not decoded or
+ * re-encoded) and the header is added with smb_addmsghdr(), which assigns
+ * the new message number and builds the index record for dst's type.
+ * Errors are described in src->last_error. */
+static int write_msg_copy(scfg_t* scfg, smb_t* src, smbmsg_t* msg, smb_t* dst, smbmsg_t* newmsg)
+{
+	uint   length = smb_getmsgdatlen(msg);
+	uchar* buf = NULL;
+	off_t  offset;
+	off_t  l;
+	int    storage = smb_storage_mode(scfg, dst);
+	int    result = SMB_SUCCESS;
+
+	if (length > 0) {
+		if ((buf = (uchar*)malloc(length)) == NULL) {
+			safe_snprintf(src->last_error, sizeof(src->last_error)
+			              , "malloc failure of %u bytes for message data", length);
+			return SMB_ERR_MEM;
+		}
+		if (smb_fseek(src->sdt_fp, msg->hdr.offset, SEEK_SET) != 0
+		    || smb_fread(src, buf, length, src->sdt_fp) != length) {
+			safe_snprintf(src->last_error, sizeof(src->last_error)
+			              , "error reading %u bytes of data of message #%u", length, msg->hdr.number);
+			free(buf);
+			return SMB_ERR_READ;
+		}
+	}
+
+	do {
+		if ((result = smb_locksmbhdr(dst)) != SMB_SUCCESS)
+			break;
+		// A path-opened base that was never saved to: create it as smb_addmsg() does
+		if (smb_fgetlength(dst->shd_fp) < 1) {
+			if ((result = smb_create(dst)) != SMB_SUCCESS) // unlocks the header on success
+				break;
+			if ((result = smb_locksmbhdr(dst)) != SMB_SUCCESS)
+				break;
+		}
+		if ((result = smb_getstatus(dst)) != SMB_SUCCESS)
+			break;
+		if (length < 1) {
+			newmsg->hdr.offset = 0;
+			break;
+		}
+		if (dst->status.attr & SMB_HYPERALLOC) {
+			offset = smb_hallocdat(dst);
+			storage = SMB_HYPERALLOC;
+		} else {
+			if ((result = smb_open_da(dst)) != SMB_SUCCESS)
+				break;
+			if (storage == SMB_FASTALLOC)
+				offset = smb_fallocdat(dst, length, 1);
+			else {
+				offset = smb_allocdat(dst, length, 1);
+				storage = SMB_SELFPACK;
+			}
+			smb_close_da(dst);
+		}
+		if (offset < 0) {
+			result = (int)offset;
+			break;
+		}
+		if (offset > SMB_MAX_DAT_OFFSET - length) {
+			smb_freemsgdat(dst, offset, length, 1);
+			safe_snprintf(dst->last_error, sizeof(dst->last_error)
+			              , "data offset (%" PRIdOFF ") + length (%u) exceeds %" PRIdOFF
+			              , offset, length, SMB_MAX_DAT_OFFSET);
+			result = SMB_ERR_DAT_OFFSET;
+			break;
+		}
+		newmsg->hdr.offset = (uint32_t)offset;
+		if (smb_fseek(dst->sdt_fp, offset, SEEK_SET) != 0) {
+			safe_snprintf(dst->last_error, sizeof(dst->last_error), "seek error %d", errno);
+			result = SMB_ERR_SEEK;
+		}
+		else if (smb_fwrite(dst, buf, length, dst->sdt_fp) != length) {
+			safe_snprintf(dst->last_error, sizeof(dst->last_error), "error writing %u bytes of message data", length);
+			result = SMB_ERR_WRITE;
+		}
+		else {
+			for (l = length; l % SDT_BLOCK_LEN; l++) {
+				if (smb_fputc(0, dst->sdt_fp) != 0)
+					break;
+			}
+			if (l % SDT_BLOCK_LEN) {
+				safe_snprintf(dst->last_error, sizeof(dst->last_error), "error writing data padding");
+				result = SMB_ERR_WRITE;
+			}
+			else if (fflush(dst->sdt_fp) != 0) { // most of the data is written only now
+				safe_snprintf(dst->last_error, sizeof(dst->last_error)
+				              , "error %d flushing %u bytes of message data", errno, length);
+				result = SMB_ERR_WRITE;
+			}
+		}
+		if (result != SMB_SUCCESS)
+			smb_freemsg_dfields(dst, newmsg, 1);
+	} while (0);
+	free(buf);
+
+	if (result != SMB_SUCCESS) {
+		if (dst->smbhdr_locked)
+			smb_unlocksmbhdr(dst);
+	}
+	else if ((result = smb_addmsghdr(dst, newmsg, storage)) != SMB_SUCCESS) { // unlocks the header
+		if (length > 0)
+			smb_freemsg_dfields(dst, newmsg, 1);
+	}
+	if (result != SMB_SUCCESS && src != dst)
+		safe_snprintf(src->last_error, sizeof(src->last_error), "%s: %s", dst->file, dst->last_error);
+	return result;
+}
+
+/* Read message 'number' of 'smb' back from its header:
+ * 1 if it is flagged deleted, 0 if not, -1 if it cannot be read */
+static int msg_is_deleted(smb_t* smb, uint32_t number)
+{
+	smbmsg_t msg;
+	int      result = -1;
+
+	memset(&msg, 0, sizeof(msg));
+	msg.hdr.number = number;
+	if (smb_getmsgidx(smb, &msg) == SMB_SUCCESS
+	    && smb_getmsghdr_for_idx(smb, &msg) == SMB_SUCCESS)
+		result = (msg.hdr.attr & MSG_DELETE) ? 1 : 0;
+	smb_freemsgmem(&msg);
+	return result;
+}
+
+/* Undo a copy written by write_msg_copy(): flag it deleted, without letting
+ * its removal delete any attached files (the source still owns them) */
+static int undo_msg_copy(smb_t* dst, smbmsg_t* copy)
+{
+	copy->hdr.auxattr &= ~(MSG_FILEATTACH | MSG_KILLFILE);
+	copy->hdr.attr |= MSG_DELETE;
+	return smb_updatemsg(dst, copy);
+}
+
+/* A message number argument: number 0 (or a value that is not a number)
+ * would select the oldest message (index offset 0), so it is refused, with
+ * last_error set */
+static bool valid_msg_number(JSContext* cx, private_t* p, jsval val, const char* method, uint32* number)
+{
+	if (!JSVAL_IS_NUMBER(val)) {
+		p->smb_result = SMB_FAILURE;
+		SAFEPRINTF(p->smb.last_error, "%s: the message number is not a number", method);
+		return false;
+	}
+	if (!JS_ValueToECMAUint32(cx, val, number))
+		return false;
+	if (*number == 0) {
+		p->smb_result = SMB_FAILURE;
+		SAFEPRINTF(p->smb.last_error, "%s: invalid message number: 0", method);
+		return false;
+	}
+	return true;
+}
+
+static JSBool
+js_copy_or_move_msg(JSContext *cx, uintN argc, jsval *arglist, bool move)
+{
+	JSObject *  obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *     argv = JS_ARGV(cx, arglist);
+	JSObject*   changes = NULL;
+	uint32      number;
+	smbmsg_t    msg;
+	smbmsg_t    newmsg;
+	private_t*  p;
+	private_t*  dp;
+	jsrefcount  rc;
+	int         result;
+	scfg_t*     scfg;
+	const char* method = move ? "move_msg" : "copy_msg";
+
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return JS_FALSE;
+
+	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class)) == NULL)
+		return JS_FALSE;
+
+	if (!valid_msg_number(cx, p, argv[0], method, &number))
+		return JS_IsExceptionPending(cx) ? JS_FALSE : JS_TRUE;
+
+	if (JSVAL_IS_PRIMITIVE(argv[1])
+	    || (dp = (private_t*)JS_GetInstancePrivate(cx, JSVAL_TO_OBJECT(argv[1]), &js_msgbase_class, NULL)) == NULL) {
+		JS_ReportError(cx, "%s: destination is not a MsgBase object", method);
+		return JS_FALSE;
+	}
+
+	if (argc > 2 && !JSVAL_NULL_OR_VOID(argv[2])) {
+		if (JSVAL_IS_PRIMITIVE(argv[2])) {
+			JS_ReportError(cx, "%s: header changes is not an object", method);
+			return JS_FALSE;
+		}
+		changes = JSVAL_TO_OBJECT(argv[2]);
+	}
+
+	if (!SMB_IS_OPEN(&(p->smb)) || !SMB_IS_OPEN(&(dp->smb))) {
+		p->smb_result = SMB_ERR_NOT_OPEN;
+		SAFEPRINTF(p->smb.last_error, "%s: both message bases must be open", method);
+		return JS_TRUE;
+	}
+
+	if (move && (dp == p || strcmp(dp->smb.file, p->smb.file) == 0)) {
+		p->smb_result = SMB_FAILURE;
+		SAFEPRINTF(p->smb.last_error, "%s: the destination is the source message base", method);
+		return JS_TRUE;
+	}
+
+	memset(&msg, 0, sizeof(msg));
+	memset(&newmsg, 0, sizeof(newmsg));
+	msg.hdr.number = number;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	if ((p->smb_result = smb_getmsgidx(&(p->smb), &msg)) != SMB_SUCCESS
+	    || (p->smb_result = smb_getmsghdr_for_idx(&(p->smb), &msg)) != SMB_SUCCESS) {
+		smb_freemsgmem(&msg);
+		JS_RESUMEREQUEST(cx, rc);
+		return JS_TRUE;
+	}
+	JS_RESUMEREQUEST(cx, rc);
+
+	if (move && (msg.hdr.attr & MSG_DELETE)) {
+		p->smb_result = SMB_FAILURE;
+		SAFEPRINTF2(p->smb.last_error, "%s: message #%u is deleted", method, number);
+		smb_freemsgmem(&msg);
+		return JS_TRUE;
+	}
+
+	// Two messages must never own the same attached files
+	if (!move && (msg.hdr.auxattr & MSG_FILEATTACH)) {
+		p->smb_result = SMB_FAILURE;
+		SAFEPRINTF2(p->smb.last_error, "%s: message #%u has attached files (move it instead)", method, number);
+		smb_freemsgmem(&msg);
+		return JS_TRUE;
+	}
+
+	if ((p->smb_result = smb_copymsgmem(&(p->smb), &newmsg, &msg)) != SMB_SUCCESS) {
+		smb_freemsgmem(&newmsg);
+		smb_freemsgmem(&msg);
+		return JS_TRUE;
+	}
+
+	// Thread links are message numbers in the source base: clear them
+	newmsg.hdr.thread_id = 0;
+	newmsg.hdr.thread_back = 0;
+	newmsg.hdr.thread_next = 0;
+	newmsg.hdr.thread_first = 0;
+	newmsg.flags &= ~MSG_FLAG_HASHED;   // hash it in the destination
+
+	if (changes != NULL && !apply_copy_header_changes(cx, p, changes, &newmsg)) {
+		smb_freemsgmem(&newmsg);
+		smb_freemsgmem(&msg);
+		return JS_IsExceptionPending(cx) ? JS_FALSE : JS_TRUE;
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	result = write_msg_copy(scfg, &(p->smb), &msg, &(dp->smb), &newmsg);
+	if (result == SMB_SUCCESS && move) {
+		bool already_deleted = false;
+		int  deleted = 0;
+		char err[sizeof(p->smb.last_error)] = "";
+		// The copy now owns any attached files: the source must not delete them
+		msg.hdr.auxattr &= ~(MSG_FILEATTACH | MSG_KILLFILE);
+		msg.hdr.attr |= MSG_DELETE;
+		// As smb_updatemsg() does, but a message that a concurrent move (or
+		// removal) flagged deleted since it was read is not moved again
+		if ((result = smb_locksmbhdr(&(p->smb))) == SMB_SUCCESS) {
+			fflush(p->smb.sid_fp); // discard index records buffered by the earlier read
+			if ((result = smb_getmsgidx(&(p->smb), &msg)) == SMB_SUCCESS) {
+				if (msg.idx.attr & MSG_DELETE)
+					already_deleted = true;
+				else if ((result = smb_lockmsghdr(&(p->smb), &msg)) == SMB_SUCCESS) {
+					result = smb_putmsg(&(p->smb), &msg);
+					smb_unlockmsghdr(&(p->smb), &msg);
+				}
+			}
+		}
+		if (result != SMB_SUCCESS) {
+			SAFECOPY(err, p->smb.last_error);
+			// The header may have been written without the index: read it back
+			// (still under the header lock, if it was taken)
+			deleted = msg_is_deleted(&(p->smb), number);
+		}
+		if (p->smb.smbhdr_locked)
+			smb_unlocksmbhdr(&(p->smb));
+		if (already_deleted) {
+			int undo = undo_msg_copy(&(dp->smb), &newmsg);
+			if (undo == SMB_SUCCESS)
+				safe_snprintf(p->smb.last_error, sizeof(p->smb.last_error)
+				              , "%s: message #%u was deleted (by another move?), copy removed", method, number);
+			else
+				safe_snprintf(p->smb.last_error, sizeof(p->smb.last_error)
+				              , "%s: message #%u was deleted (by another move?), and error %d removing its copy #%u from %s (%s)"
+				              , method, number, undo, newmsg.hdr.number, dp->smb.file, dp->smb.last_error);
+			result = SMB_FAILURE;
+		}
+		else if (result != SMB_SUCCESS) {
+			if (deleted > 0) {
+				// The message now lives only in dest: keep the copy
+				safe_snprintf(p->smb.last_error, sizeof(p->smb.last_error)
+				              , "%s: message #%u flagged deleted, but with error %d (%s)", method, number, result, err);
+				result = SMB_SUCCESS;
+			}
+			else if (deleted < 0) {
+				// Unknown state of the source: a duplicate is better than a loss
+				safe_snprintf(p->smb.last_error, sizeof(p->smb.last_error)
+				              , "%s: error %d removing message #%u (%s), its state is unknown, so its copy #%u in %s was kept"
+				              , method, result, number, err, newmsg.hdr.number, dp->smb.file);
+			}
+			else {
+				int undo = undo_msg_copy(&(dp->smb), &newmsg);
+				if (undo == SMB_SUCCESS)
+					safe_snprintf(p->smb.last_error, sizeof(p->smb.last_error)
+					              , "%s: error %d removing message #%u (%s), copy removed", method, result, number, err);
+				else
+					safe_snprintf(p->smb.last_error, sizeof(p->smb.last_error)
+					              , "%s: error %d removing message #%u (%s), and error %d removing its copy #%u from %s (%s)"
+					              , method, result, number, err, undo, newmsg.hdr.number, dp->smb.file, dp->smb.last_error);
+			}
+		}
+	}
+	p->smb_result = result;
+	if (result == SMB_SUCCESS)
+		JS_SET_RVAL(cx, arglist, UINT_TO_JSVAL(newmsg.hdr.number));
+	smb_freemsgmem(&newmsg);
+	smb_freemsgmem(&msg);
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_copy_msg(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_copy_or_move_msg(cx, argc, arglist, /* move: */ false);
+}
+
+static JSBool
+js_move_msg(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_copy_or_move_msg(cx, argc, arglist, /* move: */ true);
+}
+
+/* Whether the paths name the same message base, compared as full paths
+ * ignoring case (a false match only refuses a purge) */
+static bool same_msgbase_path(const char* path, const char* base)
+{
+	char full_path[MAX_PATH + 1];
+	char full_base[MAX_PATH + 1];
+
+	if (FULLPATH(full_path, path, sizeof full_path) == NULL
+	    || FULLPATH(full_base, base, sizeof full_base) == NULL)
+		return stricmp(path, base) == 0;
+	return stricmp(full_path, full_base) == 0;
+}
+
+/* The system mail base and the configured sub-boards have maintenance of
+ * their own: whether this base is one of them, opened by code or by path */
+static bool msgbase_is_maintained(scfg_t* scfg, private_t* p)
+{
+	char path[MAX_PATH + 1];
+
+	if (p->smb.subnum == INVALID_SUB || subnum_is_valid(scfg, p->smb.subnum))
+		return true;
+	SAFEPRINTF(path, "%smail", scfg->data_dir);
+	if (same_msgbase_path(p->smb.file, path))
+		return true;
+	for (int i = 0; i < scfg->total_subs; i++) {
+		SAFEPRINTF2(path, "%s%s", scfg->sub[i]->data_dir, scfg->sub[i]->code);
+		if (same_msgbase_path(p->smb.file, path))
+			return true;
+	}
+	return false;
+}
+
+/* Flagged deleted, permanent or not: unlike delmail(), a purge expires
+ * nothing, so the permanent flag has nothing to protect */
+static bool msg_is_purgeable(const idxrec_t* idx)
+{
+	return (idx->attr & MSG_DELETE) != 0;
+}
+
+/* Free the messages flagged deleted: remove their index records, then
+ * free their header and data blocks (one data reference per header).
+ * The base is locked (lock file and header) throughout. Nothing is
+ * changed unless every purged message's header can be read; a failure
+ * rewriting the index restores it. A failure freeing blocks leaves them
+ * allocated, but unindexed, until the base is packed.
+ * Returns an SMB error code (with last_error set) or SMB_SUCCESS. */
+static int purge_deleted_msgs(smb_t* smb, uint32_t* purged)
+{
+	int       result;
+	uint32_t  total;
+	uint32_t  kept = 0;
+	uint32_t  removed = 0;
+	uint32_t  i;
+	idxrec_t* idx = NULL;
+	smbmsg_t* msgs = NULL;
+
+	*purged = 0;
+	if ((result = smb_lock(smb)) != SMB_SUCCESS)
+		return result;
+	// The lock file doesn't stop a process that already has the base open
+	if ((result = smb_locksmbhdr(smb)) != SMB_SUCCESS) {
+		smb_unlock(smb);
+		return result;
+	}
+	if ((result = smb_getstatus(smb)) != SMB_SUCCESS)
+		goto unlock;
+	// Its index records are larger (fileidxrec_t) than a message base's
+	if (smb->status.attr & SMB_FILE_DIRECTORY) {
+		result = SMB_FAILURE;
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "purge: not allowed on a file base");
+		goto unlock;
+	}
+	total = smb->status.total_msgs;
+	if (total < 1)
+		goto unlock;
+	if ((idx = static_cast<idxrec_t *>(malloc(total * sizeof(*idx)))) == NULL) {
+		result = SMB_ERR_MEM;
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "purge: malloc failure of %u index records", total);
+		goto unlock;
+	}
+	smb_rewind(smb->sid_fp);
+	if (smb_fread(smb, idx, total * sizeof(*idx), smb->sid_fp) != total * sizeof(*idx)) {
+		result = SMB_ERR_READ;
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "purge: error reading %u index records", total);
+		goto unlock;
+	}
+	for (i = 0; i < total; i++) {
+		if (msg_is_purgeable(&idx[i]))
+			removed++;
+	}
+	if (removed < 1)
+		goto unlock;
+	if ((msgs = static_cast<smbmsg_t *>(calloc(removed, sizeof(*msgs)))) == NULL) {
+		result = SMB_ERR_MEM;
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "purge: malloc failure of %u message headers", removed);
+		goto unlock;
+	}
+	// Read every header to be freed before changing anything
+	for (i = 0; i < total; i++) {
+		if (!msg_is_purgeable(&idx[i]))
+			continue;
+		msgs[kept].idx = idx[i];
+		if ((result = smb_getmsghdr_for_idx(smb, &msgs[kept])) != SMB_SUCCESS) {
+			char error[sizeof(smb->last_error)];
+			SAFECOPY(error, smb->last_error);
+			safe_snprintf(smb->last_error, sizeof(smb->last_error)
+			              , "purge: error %d reading the header of message #%u: %s"
+			              , result, idx[i].number, error);
+			removed = kept;
+			goto unlock;
+		}
+		kept++;
+	}
+	// Rewrite the index without the purged messages
+	kept = 0;
+	smb_rewind(smb->sid_fp);
+	for (i = 0; i < total && result == SMB_SUCCESS; i++) {
+		if (msg_is_purgeable(&idx[i]))
+			continue;
+		if (smb_fwrite(smb, &idx[i], sizeof(*idx), smb->sid_fp) != sizeof(*idx))
+			result = SMB_ERR_WRITE;
+		kept++;
+	}
+	if (result == SMB_SUCCESS && fflush(smb->sid_fp) != 0)
+		result = SMB_ERR_WRITE;
+	if (result == SMB_SUCCESS && smb_fsetlength(smb->sid_fp, kept * sizeof(*idx)) != 0)
+		result = SMB_ERR_TRUNCATE;
+	if (result == SMB_SUCCESS) {
+		smb->status.total_msgs = kept;
+		if ((result = smb_putstatus(smb)) != SMB_SUCCESS)
+			smb->status.total_msgs = total;
+	}
+	if (result != SMB_SUCCESS) {
+		// Put back the index as it was (the status on disk is unchanged)
+		smb_rewind(smb->sid_fp);
+		smb_clearerr(smb->sid_fp);
+		if (smb_fwrite(smb, idx, total * sizeof(*idx), smb->sid_fp) != total * sizeof(*idx)
+		    || fflush(smb->sid_fp) != 0
+		    || smb_fsetlength(smb->sid_fp, total * sizeof(*idx)) != 0)
+			safe_snprintf(smb->last_error, sizeof(smb->last_error)
+			              , "purge: error %d rewriting the index, and restoring it failed", result);
+		else
+			safe_snprintf(smb->last_error, sizeof(smb->last_error)
+			              , "purge: error %d rewriting the index (restored)", result);
+		goto unlock;
+	}
+	*purged = removed;
+
+	// The purged messages are no longer indexed: free their headers and data
+	if (!(smb->status.attr & SMB_HYPERALLOC)) {
+		if ((result = smb_open_da(smb)) == SMB_SUCCESS) {
+			if ((result = smb_open_ha(smb)) == SMB_SUCCESS) {
+				for (i = 0; i < removed; i++) {
+					int freed = smb_freemsg(smb, &msgs[i]);
+					if (freed != SMB_SUCCESS && result == SMB_SUCCESS)
+						result = freed;
+				}
+				smb_close_ha(smb);
+			}
+			smb_close_da(smb);
+		}
+		if (result != SMB_SUCCESS) {
+			char error[sizeof(smb->last_error)];
+			SAFECOPY(error, smb->last_error);
+			safe_snprintf(smb->last_error, sizeof(smb->last_error)
+			              , "purge: %u messages removed from the index, but error %d freeing their blocks"
+			              " (they stay allocated until the base is packed): %s"
+			              , removed, result, error);
+		}
+	}
+
+unlock:
+	if (msgs != NULL) {
+		for (i = 0; i < removed; i++)
+			smb_freemsgmem(&msgs[i]);
+		free(msgs);
+	}
+	free(idx);
+	smb_unlocksmbhdr(smb);
+	if (smb_unlock(smb) != SMB_SUCCESS && result == SMB_SUCCESS)
+		result = SMB_ERR_DELETE; // smb_unlock() set last_error
+	return result;
+}
+
+static JSBool
+js_purge(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
+	private_t* p;
+	scfg_t*    scfg;
+	uint32_t   purged;
+	jsrefcount rc;
+
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class)) == NULL)
+		return JS_FALSE;
+
+	if (msgbase_is_maintained(scfg, p)) {
+		p->smb_result = SMB_FAILURE;
+		SAFECOPY(p->smb.last_error
+		         , "purge: not allowed on the mail base or a sub-board (they have their own maintenance)");
+		return JS_TRUE;
+	}
+	if (!SMB_IS_OPEN(&(p->smb))) {
+		p->smb_result = SMB_ERR_NOT_OPEN;
+		SAFECOPY(p->smb.last_error, "purge: the message base is not open");
+		return JS_TRUE;
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	p->smb_result = purge_deleted_msgs(&(p->smb), &purged);
+	JS_RESUMEREQUEST(cx, rc);
+	if (p->smb_result == SMB_SUCCESS)
+		JS_SET_RVAL(cx, arglist, UINT_TO_JSVAL(purged));
+	return JS_TRUE;
+}
+
+/* Read the header and the undecoded body (no header fields or tails) of
+ * message 'number' (the caller frees both), or NULL with last_error set */
+static char* get_msg_body_for_parts(private_t* p, uint32_t number, smbmsg_t* msg)
+{
+	char* body;
+
+	memset(msg, 0, sizeof(*msg));
+	msg->hdr.number = number;
+	if ((p->smb_result = smb_getmsgidx(&(p->smb), msg)) != SMB_SUCCESS
+	    || (p->smb_result = smb_getmsghdr_for_idx(&(p->smb), msg)) != SMB_SUCCESS)
+		return NULL;
+	if ((body = get_msg_text(p, msg, /* strip_ctrl_a: */ false, /* dot_stuffing: */ false
+	                         , GETMSGTXT_BODY_ONLY, /* existing: */ JS_TRUE)) == NULL
+	    && p->smb_result == SMB_SUCCESS) {
+		p->smb_result = SMB_ERR_MEM;
+		SAFEPRINTF(p->smb.last_error, "error reading the body of message #%u", number);
+	}
+	return body;
+}
+
+static JSBool
+js_get_msg_parts(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *      obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *         argv = JS_ARGV(cx, arglist);
+	uint32          number;
+	smbmsg_t        msg;
+	smb_mimepart_t* parts = NULL;
+	size_t          count = 0;
+	char*           body;
+	private_t*      p;
+	jsrefcount      rc;
+	JSObject*       array;
+	JSObject*       part;
+	JSString*       js_str;
+	jsval           val;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+
+	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class)) == NULL)
+		return JS_FALSE;
+
+	if (!valid_msg_number(cx, p, argv[0], "get_msg_parts", &number))
+		return JS_IsExceptionPending(cx) ? JS_FALSE : JS_TRUE;
+
+	if (!SMB_IS_OPEN(&(p->smb))) {
+		p->smb_result = SMB_ERR_NOT_OPEN;
+		SAFECOPY(p->smb.last_error, "get_msg_parts: the message base is not open");
+		return JS_TRUE;
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	if ((body = get_msg_body_for_parts(p, number, &msg)) != NULL
+	    && (parts = smb_getmimeparts(&msg, body, &count)) == NULL) {
+		p->smb_result = SMB_ERR_MEM;
+		SAFECOPY(p->smb.last_error, "get_msg_parts: memory allocation failure");
+	}
+	JS_RESUMEREQUEST(cx, rc);
+
+	if (parts != NULL && (array = JS_NewArrayObject(cx, 0, NULL)) != NULL) {
+		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
+		for (size_t i = 0; i < count; i++) {
+			if ((part = JS_NewObject(cx, NULL, NULL, array)) == NULL)
+				break;
+			val = OBJECT_TO_JSVAL(part);
+			if (!JS_SetElement(cx, array, (jsint)i, &val))
+				break;
+			const struct {
+				const char* name;
+				const char* value;
+			} props[] = {
+				{ "id", parts[i].id },
+				{ "content_type", parts[i].content_type },
+				{ "charset", parts[i].charset },
+				{ "name", parts[i].name },
+				{ "content_id", parts[i].content_id },
+				{ "disposition", parts[i].disposition },
+			};
+			for (size_t j = 0; j < sizeof(props) / sizeof(props[0]); j++) {
+				if ((js_str = JS_NewStringCopyZ(cx, props[j].value)) == NULL)
+					break;
+				JS_DefineProperty(cx, part, props[j].name, STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE);
+			}
+			val = DOUBLE_TO_JSVAL((jsdouble)parts[i].decoded_length);
+			JS_DefineProperty(cx, part, "size", val, NULL, NULL, JSPROP_ENUMERATE);
+		}
+	}
+	smb_freemimeparts(parts);
+	smb_freemsgtxt(body);
+	smb_freemsgmem(&msg);
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_save_msg_part(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *      obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *         argv = JS_ARGV(cx, arglist);
+	uint32          number;
+	smbmsg_t        msg;
+	smb_mimepart_t* parts = NULL;
+	size_t          count = 0;
+	char*           body;
+	char            id[sizeof(parts->id) + 1];   // longer than any part id: not truncated to one
+	char*           path = NULL;
+	uint8_t*        decoded = NULL;
+	const void*     data = NULL;
+	size_t          len = 0;
+	FILE*           fp;
+	private_t*      p;
+	jsrefcount      rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if (js_argcIsInsufficient(cx, argc, 3))
+		return JS_FALSE;
+
+	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_msgbase_class)) == NULL)
+		return JS_FALSE;
+
+	if (!valid_msg_number(cx, p, argv[0], "save_msg_part", &number))
+		return JS_IsExceptionPending(cx) ? JS_FALSE : JS_TRUE;
+
+	if (!JSVAL_IS_STRING(argv[1])) {
+		JS_ReportError(cx, "save_msg_part: the part id is not a string");
+		return JS_FALSE;
+	}
+	JSVALUE_TO_STRBUF(cx, argv[1], id, sizeof(id), NULL);
+
+	JSVALUE_TO_MSTRING(cx, argv[2], path, NULL);
+	HANDLE_PENDING(cx, path);
+	if (path == NULL) {
+		JS_ReportError(cx, "save_msg_part: invalid file path string");
+		return JS_FALSE;
+	}
+
+	if (!SMB_IS_OPEN(&(p->smb))) {
+		free(path);
+		p->smb_result = SMB_ERR_NOT_OPEN;
+		SAFECOPY(p->smb.last_error, "save_msg_part: the message base is not open");
+		return JS_TRUE;
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	if ((body = get_msg_body_for_parts(p, number, &msg)) != NULL) {
+		if (strcmp(id, "0") == 0) {   /* the whole body, as stored */
+			data = body;
+			len = strlen(body);
+		} else if ((parts = smb_getmimeparts(&msg, body, &count)) == NULL) {
+			p->smb_result = SMB_ERR_MEM;
+			SAFECOPY(p->smb.last_error, "save_msg_part: memory allocation failure");
+		} else {
+			size_t i;
+			for (i = 0; i < count; i++) {
+				if (strcmp(parts[i].id, id) == 0)
+					break;
+			}
+			if (i >= count) {
+				p->smb_result = SMB_ERR_NOT_FOUND;
+				SAFEPRINTF2(p->smb.last_error, "save_msg_part: message #%u has no part \"%s\"", number, id);
+			} else if ((decoded = (uint8_t*)malloc(parts[i].decoded_length + 1)) == NULL) {
+				p->smb_result = SMB_ERR_MEM;
+				SAFEPRINTF(p->smb.last_error, "save_msg_part: malloc failure of %" XP_PRIsize_t "u bytes"
+				           , parts[i].decoded_length + 1);
+			} else {
+				len = smb_decodemimepart(&parts[i], decoded);
+				data = decoded;
+			}
+		}
+	}
+	if (data != NULL) {
+		if ((fp = fopen(path, "wb")) == NULL) {
+			p->smb_result = SMB_ERR_OPEN;
+			SAFEPRINTF2(p->smb.last_error, "save_msg_part: error %d creating %s", errno, path);
+		} else {
+			bool written = fwrite(data, 1, len, fp) == len;
+			if (fclose(fp) != 0)
+				written = false;
+			if (written)
+				JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+			else {
+				p->smb_result = SMB_ERR_WRITE;
+				SAFEPRINTF2(p->smb.last_error, "save_msg_part: error %d writing %s", errno, path);
+				remove(path);
+			}
+		}
+	}
+	free(decoded);
+	smb_freemimeparts(parts);
+	smb_freemsgtxt(body);
+	smb_freemsgmem(&msg);
+	JS_RESUMEREQUEST(cx, rc);
+	free(path);
+
+	return JS_TRUE;
 }
 
 static JSBool
@@ -3213,8 +4241,8 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 		        "<tr><td align=top><tt>replyto_net_addr</tt><td>Replies should be sent to this network address"
 		        "<tr><td align=top><tt>replyto_agent</tt><td>Replies should be sent to this agent type"
 		        "<tr><td align=top><tt>replyto_list</tt><td>Comma-separated list of mailboxes to reply-to, RFC822-style"
-		        "<tr><td align=top><tt>mime_version</tt><td>MIME Version (optional)"
-		        "<tr><td align=top><tt>content_type</tt><td>MIME Content-Type (optional)"
+		        "<tr><td align=top><tt>mime_version</tt><td>MIME Version (optional; ignored if <tt>field_list</tt> already has a <tt>MIME-Version:</tt> line, as in a header read from a base)"
+		        "<tr><td align=top><tt>content_type</tt><td>MIME Content-Type (optional; ignored if <tt>field_list</tt> already has a <tt>Content-Type:</tt> line, as in a header read from a base)"
 		        "<tr><td align=top><tt>summary</tt><td>Message Summary (optional)"
 		        "<tr><td align=top><tt>editor</tt><td>Message Editor used by author (optional)"
 		        "<tr><td align=top><tt>tags</tt><td>Message Tags (space-delimited, optional)"
@@ -3264,6 +4292,75 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 		        "<i>to</i>, <i>to_ext</i>, <i>to_org</i>, <i>to_net_type</i>, <i>to_net_addr</i>, and <i>to_agent</i>"
 		        )
 	 , 312},
+	{"save_msg_from_file", js_save_msg_from_file, 2, JSTYPE_BOOLEAN, JSDOCSTR("<i>object</i> header, <i>string</i> body_path [,<i>array</i> rcpt_list=<i>none</i>]")
+	 , JSDOCSTR("Save a message to the message base, like <i>save_msg()</i>, with the body read natively from the file <i>body_path</i> "
+		        "(the body never becomes a JavaScript string). The <i>header</i> and <i>rcpt_list</i> are as for <i>save_msg()</i>. "
+		        "Returns <i>false</i> (see <i>last_error</i>) if the file is missing, unreadable or contains a NUL character."
+		        "<br><br>"
+		        "An entry of <i>rcpt_list</i> may include a <tt>netattr</tt> property, which replaces the header's network "
+		        "attribute bit-flags for that recipient's copy only (also for <i>save_msg()</i>).")
+	 , 322},
+	{"copy_msg",        js_copy_msg,        3, JSTYPE_NUMBER,   JSDOCSTR("<i>number</i> msg_number, <i>MsgBase</i> dest [,<i>object</i> header_changes]")
+	 , JSDOCSTR("Copy a message into another open message base, returning the number of the new message in <i>dest</i> "
+		        "or <i>false</i> on failure (with <i>last_error</i> set on this message base).<br>"
+		        "Every header field, the attributes and the body (as stored) are copied unchanged, except the message number, "
+		        "the index record (built for the type of <i>dest</i>) and the thread links: "
+		        "<i>thread_id</i> becomes the copy's own number (a new thread) and "
+		        "<i>thread_back</i>, <i>thread_next</i> and <i>thread_first</i> are cleared; "
+		        "the <i>id</i> and <i>reply_id</i> strings are kept.<br>"
+		        "The optional <i>header_changes</i> object is applied to the copy before it is written; "
+		        "the only supported properties are <i>tags</i> and <i>attr</i> (<tt>MSG_DELETE</tt> in <i>attr</i> "
+		        "is not applied to the copy), and any other property fails the copy "
+		        "(<i>false</i>, with <i>last_error</i> and <i>status</i> set).<br>"
+		        "A message already marked for deletion is copied, and the copy is not marked for deletion.<br>"
+		        "A message with attached files is not copied (use <i>move_msg()</i>).")
+	 , 322},
+	{"move_msg",        js_move_msg,        3, JSTYPE_NUMBER,   JSDOCSTR("<i>number</i> msg_number, <i>MsgBase</i> dest [,<i>object</i> header_changes]")
+	 , JSDOCSTR("Copy a message into another open message base, as <i>copy_msg()</i> does, and mark the original for deletion, "
+		        "returning the number of the new message in <i>dest</i> or <i>false</i> on failure "
+		        "(with <i>last_error</i> set on this message base).<br>"
+		        "If the original cannot be marked for deletion, the outcome depends on its state when read back: "
+		        "still not marked, the copy is marked for deletion instead and <i>false</i> is returned; "
+		        "marked despite the error, the copy is kept and the move succeeds; "
+		        "unreadable, the copy is kept and <i>false</i> is returned, so a live duplicate can remain in "
+		        "<i>dest</i> (<i>last_error</i> says so). "
+		        "If another process (e.g. a concurrent move of the same message) marked the original for deletion "
+		        "after it was read, the copy is marked for deletion and <i>false</i> is returned.<br>"
+		        "Any attached files are left in place and passed to the copy: the original no longer refers to them.<br>"
+		        "A message already marked for deletion, or a <i>dest</i> that is this message base, is refused.")
+	 , 322},
+	{"purge",           js_purge,           0, JSTYPE_NUMBER,   JSDOCSTR("")
+	 , JSDOCSTR("Free the messages marked for deletion: their index records, headers and data "
+		        "(data shared with other messages, e.g. saved with a <i>rcpt_list</i>, is kept for them). "
+		        "Returns the number of messages purged (<tt>0</tt> when there was nothing to purge, so test for "
+		        "failure with <tt>=== false</tt>) or <i>false</i> on failure (see <i>last_error</i>). "
+		        "A failure after the index was rewritten leaves the purged messages out of the index "
+		        "even though freeing their blocks failed (<i>last_error</i> says so). "
+		        "The remaining messages keep their numbers and order. Attached files are not removed. "
+		        "Unlike the daily e-mail maintenance, which expires old mail and so spares permanent messages, "
+		        "a message marked for deletion is purged even if it is also marked permanent.<br>"
+		        "Allowed only on a message base opened by path: the e-mail message base and the sub-boards "
+		        "are maintained by the BBS and are refused, as is a file base.")
+	 , 322},
+	{"get_msg_parts",   js_get_msg_parts,   1, JSTYPE_ARRAY,    JSDOCSTR("<i>number</i> msg_number")
+	 , JSDOCSTR("Return an array of the leaf MIME parts of a message, in document order, or <i>null</i> on failure "
+		        "(see <i>last_error</i>). Each element is an object with the properties: "
+		        "<i>id</i> (a dotted path, e.g. <tt>\"1\"</tt> or <tt>\"2.1\"</tt>), "
+		        "<i>content_type</i> (lowercase, without parameters), <i>charset</i> (lowercase or empty), "
+		        "<i>name</i> (file name, or empty), <i>content_id</i> (without angle brackets), "
+		        "<i>disposition</i> (<tt>inline</tt>, <tt>attachment</tt> or empty) and "
+		        "<i>size</i> (the decoded length, in bytes).<br>"
+		        "A message that is not MIME-encoded is one <tt>text/plain</tt> part, whose <i>charset</i> is "
+		        "<tt>utf-8</tt> for a UTF-8 message, else that of its FidoNet charset (CHRS) header field, else "
+		        "<tt>cp437</tt> for a local, FidoNet or QWK message, else <tt>windows-1252</tt>.<br>"
+		        "Multiparts nested more than 16 levels deep are one <tt>application/octet-stream</tt> part.")
+	 , 322},
+	{"save_msg_part",   js_save_msg_part,   3, JSTYPE_BOOLEAN,  JSDOCSTR("<i>number</i> msg_number, <i>string</i> part_id, <i>string</i> path")
+	 , JSDOCSTR("Write the decoded content of a part (an <i>id</i> from <i>get_msg_parts()</i>) of a message "
+		        "to the file <i>path</i>, natively (the content never becomes a JavaScript string). "
+		        "Part id <tt>\"0\"</tt> writes the whole message body as stored (not decoded). "
+		        "Returns <i>false</i> on failure (see <i>last_error</i>).")
+	 , 322},
 	{"vote_msg",        js_vote_msg,        1, JSTYPE_BOOLEAN,  JSDOCSTR("<i>object</i> header")
 	 , JSDOCSTR("Create a new vote in message base.<p>The <i>header</i> object should contain the following properties:<br>"
 		        "<table>"
@@ -3384,6 +4481,10 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		is_path = JSVAL_TO_BOOLEAN(argv[argn]);
 		++argn;
 	}
+	if (argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
+		p->is_email = is_path && JSVAL_TO_BOOLEAN(argv[argn]);
+		++argn;
+	}
 	p->debug = JS_FALSE;
 
 	if (!JS_SetPrivate(cx, obj, p)) {
@@ -3395,9 +4496,12 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used for accessing message bases", 310);
 	js_DescribeSyncConstructor(cx, obj, "To create a new MsgBase object: "
-	                           "<tt>var msgbase = new MsgBase(<i>string</i> code_or_path, [<i>bool</i> is_path=false])</tt><br>"
+	                           "<tt>var msgbase = new MsgBase(<i>string</i> code_or_path, [<i>bool</i> is_path=false], [<i>bool</i> is_email=false])</tt><br>"
 	                           "where <i>code_or_path</i> is a sub-board internal code, or <tt>'mail'</tt> for the e-mail message base.<br>"
-	                           "When <i>is_path</i> is <tt>true</tt>, the string parameter specifies the path to a message base (not an internal code) - new behavior in v3.21."
+	                           "When <i>is_path</i> is <tt>true</tt>, the string parameter specifies the path to a message base (not an internal code) - new behavior in v3.21.<br>"
+	                           "When <i>is_path</i> and <i>is_email</i> are both <tt>true</tt>, <tt>open()</tt> creates a new message base as an e-mail base "
+	                           "(index records hold user numbers, duplicate messages are allowed) and fails if an existing message base is not an e-mail base "
+	                           "- new behavior in v3.22."
 	                           "<p>"
 	                           "The MsgBase retrieval methods that accept a <tt>by_offset</tt> argument as their optional first boolean argument "
 	                           "will interpret the following <i>number</i> argument as either a 1-based unique message number (by_offset=<tt>false</tt>) "
