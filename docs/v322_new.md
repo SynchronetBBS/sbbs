@@ -354,6 +354,10 @@
 - webv4 forum thread lists and thread views are cached per sub in
   `data/webv4/threads/` and rebuilt only when the sub changes, instead of
   reading every message header in the sub on each page view
+- New `[dir]` section in `ctrl/web_alias.ini` serves a directory outside
+  the web root at a request path (e.g. `/webmail/ = ../webmail/root/`),
+  without a link or a copy; requests stay confined to that directory and
+  its own `webctrl.ini` files apply
 
 ## FTP Server
 

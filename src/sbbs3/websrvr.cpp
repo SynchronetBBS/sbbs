@@ -138,6 +138,7 @@ static named_string_t**   mime_types;
 static named_string_t**   cgi_handlers;
 static named_string_t**   xjs_handlers;
 static named_string_t**   alias_list; // request path aliases
+static named_string_t**   dir_alias_list; // request path to directory aliases ([dir] section)
 
 static rateLimiter*       request_rate_limiter = nullptr;
 static rateLimiter*       connect_rate_limiter = nullptr;
@@ -249,6 +250,7 @@ struct http_request_t {
 	str_list_t cgi_env;
 	str_list_t dynamic_heads;
 	bool got_extra_path;
+	char dir_alias[MAX_PATH + 1];       /* [dir] alias directory (no trailing slash) serving this request, if any */
 
 	/* Dynamically (sever-side JS) generated HTML parameters */
 	FILE* fp;
@@ -2340,6 +2342,57 @@ static named_string_t** read_ini_list(char* path, const char* section, const cha
 	return list;
 }
 
+// Read the [dir] section of web_alias.ini (request path = directory), resolving
+// each directory to a full path (without a trailing slash) and dropping any
+// line that is not valid
+static named_string_t** read_dir_aliases(const char* path, named_string_t** list)
+{
+	FILE*  fp;
+	size_t count = 0;
+
+	list = iniFreeNamedStringList(list);
+	if ((fp = iniOpenFile(path, /* for_modify: */ false)) == NULL)
+		return NULL;
+	list = iniReadNamedStringList(fp, "dir");
+	iniCloseFile(fp);
+	if (list == NULL)
+		return NULL;
+	for (size_t i = 0; list[i] != NULL; i++) {
+		named_string_t* alias = list[i];
+		size_t          len = strlen(alias->name);
+		char            dir[MAX_PATH + 1];
+		char*           p;
+
+		if (len < 1 || alias->name[0] != '/' || alias->name[len - 1] != '/') {
+			lprintf(LOG_WARNING, "Ignoring [dir] alias in %s: %s = %s (request path must begin and end with '/')"
+			        , path, alias->name, alias->value);
+		} else if (strlen(alias->value) >= sizeof(dir)
+		           || prep_dir(scfg.ctrl_dir, strcpy(dir, alias->value), sizeof(dir)) == NULL
+		           || !isdir(dir)) {
+			lprintf(LOG_WARNING, "Ignoring [dir] alias in %s: %s = %s (not an existing directory)"
+			        , path, alias->name, alias->value);
+		} else {
+			if (IS_PATH_DELIM(*(p = lastchar(dir))))
+				*p = '\0';
+			if (dir[0] == '\0')
+				lprintf(LOG_WARNING, "Ignoring [dir] alias in %s: %s = %s (root directory)"
+				        , path, alias->name, alias->value);
+			else if ((p = strdup(dir)) != NULL) {
+				free(alias->value);
+				alias->value = p;
+				lprintf(LOG_INFO, "Directory alias: %s = %s", alias->name, alias->value);
+				list[count++] = alias;
+				continue;
+			}
+		}
+		free(alias->name);
+		free(alias->value);
+		free(alias);
+	}
+	list[count] = NULL;
+	return list;
+}
+
 static int sess_recv(http_session_t *session, char *buf, size_t length, int flags)
 {
 	int len = 0;
@@ -3520,10 +3573,59 @@ enum get_fullpath {
 	FULLPATH_VALID,
 	FULLPATH_NOEXIST
 };
+
+// Is path the directory dir (which has no trailing slash) or anything inside of it?
+static bool path_in_dir(const char* path, const char* dir)
+{
+	size_t len = strlen(dir);
+
+	return strncmp(path, dir, len) == 0 && (path[len] == '\0' || IS_PATH_DELIM(path[len]));
+}
+
+// Resolve a request for a [dir] alias (or for its key without the final '/')
+// to the aliased directory, bypassing the web root, virtual hosts and file areas
+static bool get_dir_alias_path(http_session_t * session, enum get_fullpath* result)
+{
+	const named_string_t* match = NULL;
+	size_t                match_len = 0;
+	char                  str[MAX_PATH + 1];
+
+	session->req.dir_alias[0] = '\0';
+	if (dir_alias_list == NULL)
+		return false;
+	for (size_t i = 0; dir_alias_list[i] != NULL; i++) {
+		const named_string_t* alias = dir_alias_list[i];
+		size_t                len = strlen(alias->name); // begins and ends with '/'
+		if (len > match_len && strncmp(session->req.physical_path, alias->name, len - 1) == 0
+		    && (session->req.physical_path[len - 1] == '/' || session->req.physical_path[len - 1] == '\0')) {
+			match = alias;
+			match_len = len;
+		}
+	}
+	if (match == NULL)
+		return false;
+	const char* rest = session->req.physical_path + match_len - 1; // empty or begins with '/'
+	*result = FULLPATH_INVALID;
+	if (strlen(match->value) + strlen(rest) >= sizeof(str))
+		return true;
+	snprintf(str, sizeof(str), "%s%s", match->value, rest);
+	if (FULLPATH(session->req.physical_path, str, sizeof(session->req.physical_path)) == NULL)
+		return true;
+	SAFECOPY(session->req.dir_alias, match->value);
+	session->parsed_vpath = PARSED_VPATH_NONE;
+	if (isabspath(session->req.physical_path))
+		*result = FULLPATH_VALID;
+	return true;
+}
+
 static enum get_fullpath get_fullpath(http_session_t * session)
 {
 	char str[MAX_PATH + 1];
 	bool vhost = false;
+	enum get_fullpath result;
+
+	if (get_dir_alias_path(session, &result))
+		return result;
 
 	if (alias_list != NULL) {
 		for (size_t i = 0; alias_list[i] != NULL; i++) {
@@ -3995,6 +4097,23 @@ static void read_webctrl_section(FILE *file, char *section, http_session_t *sess
 	iniFreeNamedStringList(values);
 }
 
+// Refuse (and log) a request whose resolved path is outside of the directory it must be in
+static bool outside_web_root(http_session_t * session, const char* path, const char* dir)
+{
+	char str[MAX_PATH * 2 + 64];
+
+	session->req.keep_alive = false;
+	send_error(session, __LINE__, "400 Bad Request");
+	SAFEPRINTF2(str, "Request for '%s' is outside of web root: %s", path, dir);
+	lprintf(LOG_NOTICE, "%04d %-5s [%s] !ERROR %s", session->socket, session->client.protocol, session->host_ip, str);
+	hacklog(&scfg, &mqtt, session->client.protocol, session->username, str, session->client.host, &session->addr);
+#ifdef _WIN32
+	if (startup->sound.hack[0] && !sound_muted(&scfg))
+		PlaySound(startup->sound.hack, NULL, SND_ASYNC | SND_FILENAME);
+#endif
+	return false;
+}
+
 static bool check_request(http_session_t * session)
 {
 	char        path[MAX_PATH + 1];
@@ -4074,23 +4193,15 @@ static bool check_request(http_session_t * session)
 	session->req.ars[0] = 0;
 
 	if (session->parsed_vpath == PARSED_VPATH_NONE) {
+		// A [dir] alias request is confined to (and its webctrl.ini walk starts at) the aliased directory
+		const char* base_dir = session->req.dir_alias[0] ? session->req.dir_alias : root_dir;
 
-		if (strnicmp(path, root_dir, strlen(root_dir))) {
-			session->req.keep_alive = false;
-			send_error(session, __LINE__, "400 Bad Request");
-			SAFEPRINTF2(str, "Request for '%s' is outside of web root: %s", path, root_dir);
-			lprintf(LOG_NOTICE, "%04d %-5s [%s] !ERROR %s", session->socket, session->client.protocol, session->host_ip, str);
-			hacklog(&scfg, &mqtt, session->client.protocol, session->username, str, session->client.host, &session->addr);
-#ifdef _WIN32
-			if (startup->sound.hack[0] && !sound_muted(&scfg))
-				PlaySound(startup->sound.hack, NULL, SND_ASYNC | SND_FILENAME);
-#endif
-			return false;
-		}
+		if (session->req.dir_alias[0] ? !path_in_dir(path, base_dir) : strnicmp(path, root_dir, strlen(root_dir)) != 0)
+			return outside_web_root(session, path, base_dir);
 
-		/* Walk up from root_dir checking for webctrl.ini */
+		/* Walk up from root_dir (or the [dir] alias directory) checking for webctrl.ini */
 		SAFECOPY(curdir, path);
-		last_slash = curdir + strlen(root_dir) - 1;
+		last_slash = curdir + strlen(base_dir) - 1;
 		/* Loop while there's more /s in path*/
 		p = last_slash;
 
@@ -4162,6 +4273,8 @@ static bool check_request(http_session_t * session)
 			if (session->req.dynamic)    /* Need to re-copy path here in case of re-checked PathInfoIndex change */
 				SAFECOPY(path, session->req.physical_path);
 		}
+		if (session->req.dir_alias[0] && !path_in_dir(path, session->req.dir_alias))
+			return outside_web_root(session, path, session->req.dir_alias);
 
 		if (!session->req.dynamic && session->req.extra_path_info[0])
 			send404 = true;
@@ -7427,6 +7540,7 @@ static void cleanup(int code)
 	cgi_handlers = iniFreeNamedStringList(cgi_handlers);
 	xjs_handlers = iniFreeNamedStringList(xjs_handlers);
 	alias_list = iniFreeNamedStringList(alias_list);
+	dir_alias_list = iniFreeNamedStringList(dir_alias_list);
 
 	cgi_env = iniFreeStringList(cgi_env);
 
@@ -7839,6 +7953,7 @@ void web_server(void* arg)
 		                             , xjs_handlers, true);
 		iniFileName(web_alias_ini, sizeof(web_alias_ini), scfg.ctrl_dir, "web_alias.ini");
 		alias_list = read_ini_list(web_alias_ini, ROOT_SECTION, "Request path aliases", alias_list, false);
+		dir_alias_list = read_dir_aliases(web_alias_ini, dir_alias_list);
 		if (!(startup->options & WEB_OPT_NO_FILEBASE))
 			add_vshortcuts();
 
