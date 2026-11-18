@@ -1105,6 +1105,19 @@
 - `console.getnum()` gains an optional third `navkeys` argument: when
   `true`, an arrow, Home/End or PgUp/PgDn key hit before any digits is
   returned as a `KEY_*` string
+- New `MsgBase` methods: `copy_msg()` and `move_msg()` between open
+  bases, `save_msg_from_file()` (body read from a file),
+  `get_msg_parts()` / `save_msg_part()` (a message's MIME parts, one
+  saved to a file) and `purge()` (frees deleted messages of a base opened
+  by path); `new MsgBase(path, true, true)` opens or creates an
+  e-mail-type base by path
+- `MsgBase.save_msg()` `rcpt_list` entries may carry their own `netattr`
+- New `User.can_send_mail()` method (the terminal server's sending
+  rules), `msg_area.fido_netmail_cost` / `inet_netmail_cost` and
+  `system.max_trash_age` / `mailbox_quota` properties
+- `MsgBase.save_msg()` now stores the header properties `mime_version`
+  and `content_type` (previously ignored), unless its `field_list`
+  already has `MIME-Version:` / `Content-Type:` lines
 
 ## JSexec
 
