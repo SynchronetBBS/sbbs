@@ -69,17 +69,19 @@ function Listing(dir, mode, filespec)
 Listing.prototype.load = function ()
 {
 	var since = 0;
-	if (this.mode & FL_ULTIME) {
-		bbs.last_new_file_time = time();
-		since = bbs.new_file_time;
-	}
 	if (this.mode & FL_FIND) {
+		if (!this.filespec)	// as the built-in lister does: nothing to find, nothing displayed
+			return false;
 		try {
 			bool_search(this.filespec, "");
 		} catch (e) {
 			console.print(format(bbs.text(InvalidSearchExpression), e.message || String(e)));
 			return false;
 		}
+	}
+	if (this.mode & FL_ULTIME) {
+		bbs.last_new_file_time = time();
+		since = bbs.new_file_time;
 	}
 	var fb = new FileBase(this.code);
 	if (!fb.open())
@@ -468,8 +470,10 @@ Listing.prototype.command = function (ch, choose)
 			}
 			if ((files = choose()) === null)
 				return null;
-			for (i = 0; i < files.length; i++)
-				bbs.batch_add_file(code, files[i].name);
+			for (i = 0; i < files.length; i++) {
+				if (!bbs.batch_add_file(code, files[i].name))
+					this.report_vanished(files[i]);
+			}
 			if (ch === "D") {
 				bbs.batch_download();
 				if (console.line_counter)
@@ -506,15 +510,30 @@ Listing.prototype.command = function (ch, choose)
 			} else if ((dest = this.choose_dest()) === null)
 				return CMD_REDRAW;
 			for (i = 0; i < files.length; i++) {
-				if (ch === "R")
-					bbs.remove_file(code, files[i].name, remfile, remcdt);
-				else
-					bbs.move_file(code, files[i].name, dest);
+				var done = (ch === "R")
+					? bbs.remove_file(code, files[i].name, remfile, remcdt)
+					: bbs.move_file(code, files[i].name, dest);
+				if (!done)
+					this.report_vanished(files[i]);
 			}
 			this.reload();
 			return CMD_REDRAW;
 	}
 	return CMD_NEXT;
+};
+
+// After an action on file f failed: if f is no longer in the directory
+// (e.g. another node removed it since it was listed), say so; any other
+// failure has already been reported by the action itself
+Listing.prototype.report_vanished = function (f)
+{
+	var fb = new FileBase(this.code);
+	if (!fb.open())
+		return;
+	var listed = fb.get(f.name) !== null;
+	fb.close();
+	if (!listed)
+		console.print(format(bbs.text(FileDoesNotExist), f.name));
 };
 
 // Re-read the directory after files were removed or moved
@@ -977,6 +996,8 @@ Listing.prototype.list_pages = function ()
 			page_down();
 			continue;
 		}
+		if (ch === KEY_DEL)	// as in msglist.js
+			ch = "R";
 		console.clear_hotspots();
 		console.clearline();
 		shown_prompt = null;	// cleared along with its hotspots

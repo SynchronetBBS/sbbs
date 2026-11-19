@@ -21,6 +21,6 @@
 (
 nhcOperator Commands:
 
-nhb[nhcRnhb]emove @FilesNoun@ @POS:25@ncDelete from disk and/or database
+nhb[nhcRnhb]emove @FilesNoun@ @POS:25@ncDelete from disk and/or database (hDelnc key too)
 nhb[nhcMnhb]ove @FilesNoun@ @POS:25@ncMove to another directoryn
 )
