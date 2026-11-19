@@ -903,6 +903,14 @@
   `modopts.ini` `[scancfg]` options (issue #1350). Set by the stock
   `main.ini`; an existing system keeps the built-in lists until its
   sysop sets it
+- New: `listfiles.js`: a List Files loadable module (SCFG->System->
+  Loadable Modules->List Files) that looks like the built-in file lister
+  by default and is customizable without code changes: header and footer
+  menu files per directory, per library or for all, an @-code template
+  for each file's line, and `modopts.ini` `[listfiles]` options (issue
+  #1353). With batch flagging on an ANSI or PETSCII terminal, the listing
+  is interactive: a lightbar that scrolls, PgUp/PgDn, and Space or a
+  double-click to tag files
 - More strings in stock modules route through `gettext()` for
   `ctrl/text.ini` `[JS]`-section customization
 - Good Time Trivia gains a `useDoveNetSyncData` option that
@@ -1071,6 +1079,10 @@
   back-fills `File.sha256_hex` (via cryptlib) on pre-3.22 builds
 - New `bbs.qwk_download()`, `bbs.qwk_upload()`, and
   `bbs.get_archive_formats()` methods
+- New `bbs.batch_add_file()`, `bbs.view_file_info()`,
+  `bbs.remove_file()` and `bbs.move_file()` methods, for one file in a
+  directory; `bbs.expand_atcodes()` expands the `@FILE_*@` codes for a
+  `FileBase` file object
 - New `console.upload_key`, `download_key`, `configure_key`, `select_key`,
   and `pointers_key` properties; all `console.*_key` properties now return
   an uppercase key
