@@ -171,6 +171,8 @@ Listing.prototype.print_header = function ()
 	var hdr;
 
 	if (!this.full_header()) {
+		if (this.interactive)	// the prompt names the library and directory
+			return false;
 		console.clearline();
 		console.cond_blankline();
 		hdr = format(bbs.text(ShortHdrLib), libnum, this.lib.name);
@@ -755,6 +757,7 @@ Listing.prototype.list_pages = function ()
 		console.clear_hotspots();
 		shown_prompt = null;	// its hotspots are gone too
 		if (full || list_row === undefined) {
+			console.line_counter = 0;	// as the built-in's "\x01q" does: clear without a pause
 			console.clear();
 			listing.show_header();
 			console.cond_newline();
