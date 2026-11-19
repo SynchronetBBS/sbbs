@@ -2622,7 +2622,9 @@ js_move_file(JSContext *cx, uintN argc, jsval *arglist)
 	if (found) {
 		jsrefcount rc = JS_SUSPENDREQUEST(cx);
 		smb_t      smb{};
-		if (can_remove_files(sbbs, dirnum) && smb_open_dir(&sbbs->cfg, &smb, dirnum) == SMB_SUCCESS) {
+		if (can_remove_files(sbbs, dirnum)
+		    && user_can_access_dir(&sbbs->cfg, newdir, &sbbs->useron, &sbbs->client)
+		    && smb_open_dir(&sbbs->cfg, &smb, dirnum) == SMB_SUCCESS) {
 			result = sbbs->movefile(&smb, &f, newdir);
 			smb_close(&smb);
 		}
@@ -5248,7 +5250,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	},
 	{"move_file",       js_move_file,       3,  JSTYPE_BOOLEAN, JSDOCSTR("dir_code, filename, dest_dir_code")
 	 , JSDOCSTR("Move a file to another file base directory, if the current user may remove files from the directory "
-		        "it's in.")
+		        "it's in and may access the destination directory.")
 	 , 322
 	},
 	{"batch_sort",      js_batch_sort,      1,  JSTYPE_BOOLEAN, JSDOCSTR("[upload_queue=false]")

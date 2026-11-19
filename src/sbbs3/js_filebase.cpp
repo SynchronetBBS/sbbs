@@ -462,6 +462,15 @@ parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 	return TRUE;
 }
 
+// As HANDLE_PENDING, but returning an SMB result (JS_FALSE == SMB_SUCCESS)
+// and leaving no freed pointer for the caller to free again
+#define HANDLE_PENDING_SMB(p) \
+	if (JS_IsExceptionPending(cx)) { \
+		FREE_AND_NULL(p); \
+		free(cp); \
+		return SMB_FAILURE; \
+	}
+
 int
 parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc, char** auxdata)
 {
@@ -476,7 +485,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	const char* prop_name = "name";
 	if (JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
-		HANDLE_PENDING(cx, cp);
+		HANDLE_PENDING_SMB(cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
@@ -491,7 +500,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	prop_name = "to_list";
 	if (JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
-		HANDLE_PENDING(cx, cp);
+		HANDLE_PENDING_SMB(cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
@@ -506,7 +515,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	prop_name = "from";
 	if (JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
-		HANDLE_PENDING(cx, cp);
+		HANDLE_PENDING_SMB(cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
@@ -521,7 +530,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	prop_name = "from_ip_addr";
 	if (JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
-		HANDLE_PENDING(cx, cp);
+		HANDLE_PENDING_SMB(cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
@@ -536,7 +545,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	prop_name = "from_host_name";
 	if (JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
-		HANDLE_PENDING(cx, cp);
+		HANDLE_PENDING_SMB(cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
@@ -551,7 +560,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	prop_name = "from_protocol";
 	if (JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
-		HANDLE_PENDING(cx, cp);
+		HANDLE_PENDING_SMB(cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
@@ -566,7 +575,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	prop_name = "from_port";
 	if (JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
-		HANDLE_PENDING(cx, cp);
+		HANDLE_PENDING_SMB(cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
@@ -581,7 +590,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	prop_name = "author";
 	if (JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
-		HANDLE_PENDING(cx, cp);
+		HANDLE_PENDING_SMB(cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
@@ -596,7 +605,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	prop_name = "author_org";
 	if (JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
-		HANDLE_PENDING(cx, cp);
+		HANDLE_PENDING_SMB(cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
@@ -611,7 +620,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	prop_name = "desc";
 	if (JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
-		HANDLE_PENDING(cx, cp);
+		HANDLE_PENDING_SMB(cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
@@ -626,7 +635,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	if (extdesc != NULL && JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		FREE_AND_NULL(*extdesc);
 		JSVALUE_TO_MSTRING(cx, val, *extdesc, NULL);
-		HANDLE_PENDING(cx, *extdesc);
+		HANDLE_PENDING_SMB(*extdesc);
 		if (*extdesc == NULL) {
 			free(cp);
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
@@ -638,7 +647,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	if (auxdata != NULL && JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		FREE_AND_NULL(*auxdata);
 		JSVALUE_TO_MSTRING(cx, val, *auxdata, NULL);
-		HANDLE_PENDING(cx, *auxdata);
+		HANDLE_PENDING_SMB(*auxdata);
 		if (*auxdata == NULL) {
 			free(cp);
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
@@ -649,7 +658,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	prop_name = "tags";
 	if (JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
-		HANDLE_PENDING(cx, cp);
+		HANDLE_PENDING_SMB(cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
@@ -712,6 +721,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc
 	free(cp);
 	return result;
 }
+#undef HANDLE_PENDING_SMB
 
 static JSBool
 js_hash_file(JSContext *cx, uintN argc, jsval *arglist)

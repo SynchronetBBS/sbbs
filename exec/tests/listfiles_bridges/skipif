@@ -1,1 +1,1 @@
-typeof bbs === 'undefined' || !file_area.dir["listfiles_test"]
+typeof bbs === 'undefined' || !file_area.dir["test_rm"]

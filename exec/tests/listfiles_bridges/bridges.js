@@ -1,9 +1,10 @@
 // bbs.batch_add_file(), bbs.remove_file() and bbs.move_file() against a
-// throwaway file base directory with the internal code LISTFILES_TEST (the
-// tests are skipped when there's no such directory). bbs.view_file_info()
-// is interactive and isn't tested here.
+// throwaway file base directory with the internal code TEST_RM (the tests
+// are skipped when there's no such directory), and file objects with a
+// property that throws. bbs.view_file_info() is interactive and isn't
+// tested here.
 
-var CODE = "listfiles_test";
+var CODE = "test_rm";
 var failures = [];
 
 function check(desc, got, expect)
@@ -57,6 +58,19 @@ try {
 	check("remove_file() bad dir throws", throws(function () { bbs.remove_file("no_such_dir", name); }), true);
 	check("move_file() bad dest throws", throws(function () { bbs.move_file(CODE, name, "no_such_dir"); }), true);
 	check("view_file_info() bad dir throws", throws(function () { bbs.view_file_info("no_such_dir", name); }), true);
+
+	// An exception while reading a file object's properties fails the call
+	var thrower = { toString: function () { throw new Error("thrown"); } };
+	check("expand_atcodes() with a throwing property throws"
+		, throws(function () { bbs.expand_atcodes("@FILE_NAME@", { name: name, desc: thrower }, CODE); }), true);
+	var bad_name = "x" + name;
+	fb.open();
+	check("FileBase.add() with a throwing property throws"
+		, throws(function () { fb.add({ name: bad_name, extdesc: thrower }); }), true);
+	check("FileBase.add() with a throwing property adds nothing", fb.get(bad_name), null);
+	if (fb.get(bad_name))
+		fb.remove(bad_name);
+	fb.close();
 } finally {
 	if (file_exists(path)) {
 		fb.open();
