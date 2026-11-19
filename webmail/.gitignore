@@ -1,0 +1,5 @@
+# The web server compiles root/index.xjs into root/index.xjs.ssjs (and
+# writes temporary files beside it while doing so), so webmail/root must be
+# writable by the user the BBS runs as, as with webv4.
+*.xjs.ssjs
+*.xjs.ssjs.*.tmp

@@ -1,0 +1,3 @@
+/* Loaded only when scripting is off (in <noscript>): the page then shows
+   the "needs JavaScript" text instead of the unsupported-browser block. */
+#wm-unsupported { display: none; }

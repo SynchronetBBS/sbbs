@@ -1,0 +1,180 @@
+<?xjs
+	// The web mail client's shell page.  The logic is in webmail/lib/shell.js
+	// (tested there); this page gathers the request, sets the headers and
+	// writes the HTML.  Every URL it writes is relative, so the app works at
+	// any alias and at the top of a virtual host.  No inline script: the
+	// page's policy forbids it.  The boot data goes in a JSON block that
+	// js/app.js reads.  The unsupported-browser block is shown when the app
+	// does not start (see js/check.js); with scripting off, the <noscript>
+	// text replaces it.  The web server compiles this file into
+	// index.xjs.ssjs beside it, so this directory must be writable by the
+	// user the BBS runs as, as with webv4.
+
+	var wm = (function () {
+		var COOKIE = "webmail";
+		var root = String(http_request.real_path).replace(/[^\/\\]*$/, "");
+
+		// The libraries: found beside this directory or in the default place
+		// to read the settings, then from the "directory" setting
+		function find_lib()
+		{
+			var c = [root + "../lib/", system.exec_dir + "../webmail/lib/"];
+			for (var i = 0; i < c.length; i++)
+				if (file_exists(c[i] + "config.js") && file_exists(c[i] + "shell.js"))
+					return c[i];
+			return c[c.length - 1];
+		}
+		var lib = find_lib();
+		var Config = load({}, lib + "config.js");
+		var config = Config.load();
+		if (file_exists(config.directory + "lib/shell.js"))
+			lib = config.directory + "lib/";
+		// Each library once: Session and Locale come with api.js
+		var Api = load({}, lib + "api.js");
+		var Session = Api.Session;
+		var Shell = load({}, lib + "shell.js");
+
+		var headers = http_request.header;
+		// {system} and {host} in the product name, for this request; from
+		// here on the config carries the name as written
+		config.product_name = Shell.product_name(config.product_name, headers.host);
+		var scheme = String(client.protocol).toLowerCase() === "https" ? "https" : "http";
+		var secure = Session.is_secure(scheme, headers, config);
+		var accept_language = typeof headers["accept-language"] === "string"
+			? headers["accept-language"] : "";
+
+		var h = Shell.headers(config, secure);
+		for (var k in h)
+			http_reply.header[k] = h[k];
+		http_reply.header["Content-Type"] = "text/html; charset=utf-8";
+
+		var page = { Shell: Shell, root: root, secure: secure };
+
+		if (Shell.needs_https(config, secure)) {
+			var s = Shell.strings(config, accept_language, Api.Locale);
+			http_reply.status = "403 Forbidden";
+			page.https = true;
+			page.lang = Shell.lang(s.locale);
+			page.title = Shell.html(config.product_name);
+			page.text = Shell.html(Shell.text(s.strings, "main.label_needs_https",
+				{ name: config.product_name }));
+			return page;
+		}
+
+		var UserData = null;
+		var path = Api.base_path(http_request.virtual_path);
+
+		var get_user = function (n) {
+			try {
+				var u = new User(n);
+				return u.number === n ? u : null;
+			} catch (e) {
+				return null;
+			}
+		};
+		var userdata = function (n) {
+			if (UserData === null)
+				UserData = load({}, lib + "userdata.js");
+			return new UserData(Api.userdata_dir(system.data_dir, n));
+		};
+		var set = null;
+		var env = {
+			config: config,
+			secure: secure,
+			cookie: http_request.cookie[COOKIE],
+			accept_language: accept_language,
+			client: { ip: http_request.remote_ip, agent: headers["user-agent"] },
+			webv4_user: function () {
+				return load({}, lib + "webv4.js").session_user(http_request.cookie, system.data_dir);
+			},
+			// session.get needs no password check and no mailbox
+			get_user: get_user,
+			userdata: userdata,
+			set_cookie: function (value, keep) {
+				set = { value: value, keep: keep };
+			}
+		};
+		var boot = Shell.boot(env, Api);
+		if (set !== null)
+			http_reply.header["Set-Cookie"] = COOKIE + "=" + set.value
+				+ Session.cookie_header(set.value, { secure: secure, keep: set.keep,
+					config: config, path: path });
+
+		// A failed boot carries the strings too (Shell.boot), or null (the
+		// page's own texts then have built-in English)
+		var strings = boot.strings;
+		page.lang = Shell.lang(boot.locale);
+		page.title = Shell.html(config.product_name);
+		// brand, login_text and footer_links are the sysop's markup,
+		// written as is
+		page.brand = config.brand !== "" ? config.brand : page.title;
+		page.login_text = config.login_text;
+		page.footer_links = config.footer_links;
+		var named = { name: config.product_name };
+		page.unsupported = Shell.html(Shell.text(strings, "main.label_unsupported_browser", named));
+		page.fallback_url = config.fallback_url !== "" ? Shell.html(config.fallback_url) : "";
+		page.fallback = Shell.html(Shell.text(strings, "main.label_fallback"));
+		page.reload = Shell.html(Shell.text(strings, "main.button_reload"));
+		page.boot = Shell.embed(boot);
+		// One version, in the path, for every script and stylesheet (see
+		// Shell.asset and the Rewrite rule in webctrl.ini)
+		var v = Shell.version(root);
+		page.css = Shell.asset(root, "css/style.css", v);
+		page.custom = file_exists(root + "css/custom.css") ? Shell.asset(root, "css/custom.css", v) : "";
+		page.noscript = Shell.html(Shell.text(strings, "main.label_javascript_required", named));
+		page.noscript_css = Shell.asset(root, "css/noscript.css", v);
+		page.app = Shell.asset(root, "js/app.js", v);
+		page.check = Shell.asset(root, "js/check.js", v);
+		return page;
+	})();
+	if (wm.https) {
+?>
+<!DOCTYPE html>
+<html lang="<? write(wm.lang); ?>">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title><? write(wm.title); ?></title>
+<link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+<p class="wm-unsupported"><? write(wm.text); ?></p>
+</body>
+</html>
+<?xjs
+		exit();
+	}
+?>
+<!DOCTYPE html>
+<html lang="<? write(wm.lang); ?>">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title><? write(wm.title); ?></title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="<? write(wm.css); ?>">
+<? if (wm.custom !== "") { ?>
+<link rel="stylesheet" href="<? write(wm.custom); ?>">
+<? } ?>
+<noscript><link rel="stylesheet" href="<? write(wm.noscript_css); ?>"></noscript>
+<script type="module" src="<? write(wm.app); ?>"></script>
+<script defer src="<? write(wm.check); ?>"></script>
+</head>
+<body>
+<noscript><p class="wm-unsupported"><? write(wm.noscript); ?></p></noscript>
+<div id="wm-unsupported" class="wm-unsupported">
+<p><? write(wm.unsupported); ?></p>
+<p><a href=""><? write(wm.reload); ?></a></p>
+<? if (wm.fallback_url !== "") { ?>
+<p><a href="<? write(wm.fallback_url); ?>"><? write(wm.fallback); ?></a></p>
+<? } ?>
+</div>
+<div id="app" hidden></div>
+<template id="wm-brand"><span class="brand-name"><? write(wm.brand); ?></span></template>
+<template id="wm-login-text"><? write(wm.login_text); ?></template>
+<template id="wm-footer"><? write(wm.footer_links); ?></template>
+<script type="application/json" id="boot"><? write(wm.boot); ?></script>
+</body>
+</html>

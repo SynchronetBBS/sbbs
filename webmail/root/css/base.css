@@ -1,0 +1,12 @@
+/* The few rules the page needs even when style.css cannot be loaded: the
+   look of the unsupported-browser, needs-JavaScript and needs-HTTPS
+   messages.  Linked first, by a plain path, so it does not depend on the
+   versioned paths that style.css and the scripts use. */
+.wm-unsupported {
+	max-width: 34em;
+	margin: 3em auto;
+	padding: 1em 1.25em;
+	border: 1px solid;
+	border-radius: 8px;
+	font: 16px/1.5 system-ui, sans-serif;
+}
