@@ -532,12 +532,20 @@ bool sbbs_t::answer()
 		}
 
 		if (cryptStatusOK(cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_WIDTH, &l)) && l > 0) {
-			term->cols = l;
-			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket.load(), client.addr, term->cols);
+			if (l >= TERM_COLS_MIN && l <= TERM_COLS_MAX) {
+				term->cols = l;
+				lprintf(LOG_DEBUG, "%04d SSH [%s] width %d", client_socket.load(), client.addr, term->cols);
+			}
+			else
+				lprintf(LOG_DEBUG, "%04d SSH [%s] ignoring out-of-range width %d", client_socket.load(), client.addr, l);
 		}
 		if (cryptStatusOK(cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT, &l)) && l > 0) {
-			term->rows = l;
-			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket.load(), client.addr, term->rows);
+			if (l >= TERM_ROWS_MIN && l <= TERM_ROWS_MAX) {
+				term->rows = l;
+				lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket.load(), client.addr, term->rows);
+			}
+			else
+				lprintf(LOG_DEBUG, "%04d SSH [%s] ignoring out-of-range height %d", client_socket.load(), client.addr, l);
 		}
 		// cryptGetAttributeString() does not take a destination size.
 		size_t ssh_terminal_length = 0;

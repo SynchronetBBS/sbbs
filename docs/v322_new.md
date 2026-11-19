@@ -200,6 +200,8 @@
   "send failed" warnings when the client disconnects mid-message
 - Fix line-wrap divide-by-zero crash when an SFTP-only client
   connects (no terminal dimensions negotiated, issue #1120)
+- SSH: out-of-range terminal width/height reported by the client is
+  now ignored, as for Telnet (issue #1368)
 - Fix: an emulated baud rate set by a message (or other output) is
   now restored when the display ends or is aborted
 - Fix: aborting a pause prompt with the spinning cursor enabled left
