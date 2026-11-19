@@ -462,7 +462,7 @@ parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 	return TRUE;
 }
 
-static int
+int
 parse_file_properties(JSContext *cx, JSObject* obj, file_t* file, char** extdesc, char** auxdata)
 {
 	char*       cp = NULL;

@@ -1674,6 +1674,7 @@ extern "C" {
 
 	/* js_filebase.c */
 	DLLEXPORT JSObject* js_CreateFileBaseClass(JSContext*, JSObject* parent);
+	int				parse_file_properties(JSContext*, JSObject*, file_t*, char** extdesc, char** auxdata);
 
 	/* js_socket.c */
 	DLLEXPORT JSObject* js_CreateSocketClass(JSContext* cx, JSObject* parent);

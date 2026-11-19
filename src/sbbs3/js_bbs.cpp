@@ -1808,21 +1808,56 @@ js_expand_atcodes(JSContext* cx, uintN argc, jsval* arglist)
 	if (instr == NULL)
 		return JS_FALSE;
 
+	file_t  file{};
+	file_t* fileptr = nullptr;
+	char*   extdesc = nullptr;
+	char*   auxdata = nullptr;
 	if (argc > 1 && (JSVAL_IS_OBJECT(argv[1]) && !JSVAL_IS_NULL(argv[1]))) {
-		JSObject* hdrobj;
-		if ((hdrobj = JSVAL_TO_OBJECT(argv[1])) == NULL) {
+		JSObject* obj;
+		if ((obj = JSVAL_TO_OBJECT(argv[1])) == NULL) {
 			free(instr);
 			return JS_FALSE;
 		}
-		if (!js_GetMsgHeaderObjectPrivates(cx, hdrobj, /* smb_t: */ NULL, &msg, /* post: */ NULL)) {
-			free(instr);
-			return JS_FALSE;
+		JSClass* cl = JS_GetClass(cx, obj);
+		if (cl != NULL && strcmp(cl->name, "MsgHeader") == 0) {
+			if (!js_GetMsgHeaderObjectPrivates(cx, obj, /* smb_t: */ NULL, &msg, /* post: */ NULL)) {
+				free(instr);
+				return JS_FALSE;
+			}
+		} else { // FileBase file metadata object, with the directory's internal code
+			char* code = NULL;
+			if (argc > 2)
+				JSVALUE_TO_MSTRING(cx, argv[2], code, NULL);
+			int   dirnum = (code == NULL) ? -1 : getdirnum(&sbbs->cfg, code);
+			if (!dirnum_is_valid(&sbbs->cfg, dirnum)) {
+				JS_ReportError(cx, "Invalid directory: %s", code == NULL ? "(none)" : code);
+				free(code);
+				free(instr);
+				return JS_FALSE;
+			}
+			free(code);
+			if (parse_file_properties(cx, obj, &file, &extdesc, &auxdata) != SMB_SUCCESS) {
+				smb_freefilemem(&file);
+				free(extdesc);
+				free(auxdata);
+				free(instr);
+				return JS_FALSE;
+			}
+			file.dir = dirnum;
+			fileptr = &file;
 		}
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
+	file_t* saved_file = sbbs->current_file;
+	if (fileptr != nullptr)
+		sbbs->current_file = fileptr;
 	sbbs->expand_atcodes(instr, result, sizeof result, msg);
+	sbbs->current_file = saved_file;
 	free(instr);
+	smb_freefilemem(&file);
+	free(extdesc);
+	free(auxdata);
 	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, result)));
 
@@ -2420,6 +2455,181 @@ js_batchaddlist(JSContext *cx, uintN argc, jsval *arglist)
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 
+	return JS_TRUE;
+}
+
+// Parse the directory internal code (argv[0]) and filename (argv[1]) and load
+// the file's metadata into 'f' (*found is false if there's no such file).
+// Returns false, with a pending JS error, for an invalid directory code.
+static bool
+js_load_dir_file(JSContext* cx, uintN argc, jsval* argv, sbbs_t* sbbs, int* dirnum, file_t* f, bool* found)
+{
+	char* code = NULL;
+	char* fname = NULL;
+
+	*found = false;
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return false;
+	JSVALUE_TO_MSTRING(cx, argv[0], code, NULL);
+	HANDLE_PENDING(cx, code);
+	if (code == NULL)
+		return false;
+	*dirnum = getdirnum(&sbbs->cfg, code);
+	if (!dirnum_is_valid(&sbbs->cfg, *dirnum)) {
+		JS_ReportError(cx, "Invalid directory: %s", code);
+		free(code);
+		return false;
+	}
+	free(code);
+	JSVALUE_TO_MSTRING(cx, argv[1], fname, NULL);
+	HANDLE_PENDING(cx, fname);
+	if (fname == NULL)
+		return false;
+	jsrefcount rc = JS_SUSPENDREQUEST(cx);
+	*found = loadfile(&sbbs->cfg, *dirnum, fname, f, file_detail_auxdata, NULL);
+	JS_RESUMEREQUEST(cx, rc);
+	free(fname);
+	return true;
+}
+
+static bool
+can_remove_files(sbbs_t* sbbs, int dirnum)
+{
+	return !(sbbs->useron.rest & UREST_REMOVE_FILES)
+	       && (sbbs->dir_op(dirnum) || (sbbs->useron.exempt & UEXEMPT_REMOVE_FILES));
+}
+
+static JSBool
+js_batch_add_file(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval * argv = JS_ARGV(cx, arglist);
+	sbbs_t* sbbs;
+	file_t  f{};
+	int     dirnum;
+	bool    found;
+	bool    result = false;
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+	if (!js_load_dir_file(cx, argc, argv, sbbs, &dirnum, &f, &found))
+		return JS_FALSE;
+	if (found) {
+		jsrefcount rc = JS_SUSPENDREQUEST(cx);
+		result = sbbs->addtobatdl(&f);
+		smb_freefilemem(&f);
+		JS_RESUMEREQUEST(cx, rc);
+	}
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
+js_view_file_info(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval * argv = JS_ARGV(cx, arglist);
+	sbbs_t* sbbs;
+	file_t  f{};
+	int     dirnum;
+	bool    found;
+	JSBool  extended = JS_TRUE;
+	int     result = 1;  // Next
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+	if (!js_load_dir_file(cx, argc, argv, sbbs, &dirnum, &f, &found))
+		return JS_FALSE;
+	if (argc > 2 && JSVAL_IS_BOOLEAN(argv[2]))
+		extended = JSVAL_TO_BOOLEAN(argv[2]);
+	if (found) {
+		jsrefcount rc = JS_SUSPENDREQUEST(cx);
+		result = sbbs->viewfile(&f, extended ? true : false);
+		smb_freefilemem(&f);
+		JS_RESUMEREQUEST(cx, rc);
+	}
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
+js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval * argv = JS_ARGV(cx, arglist);
+	sbbs_t* sbbs;
+	file_t  f{};
+	int     dirnum;
+	bool    found;
+	bool    result = false;
+	JSBool  delete_file = JS_FALSE;
+	JSBool  remove_credits = JS_FALSE;
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+	if (!js_load_dir_file(cx, argc, argv, sbbs, &dirnum, &f, &found))
+		return JS_FALSE;
+	if (argc > 2 && JSVAL_IS_BOOLEAN(argv[2]))
+		delete_file = JSVAL_TO_BOOLEAN(argv[2]);
+	if (argc > 3 && JSVAL_IS_BOOLEAN(argv[3]))
+		remove_credits = JSVAL_TO_BOOLEAN(argv[3]);
+	if (found) {
+		jsrefcount rc = JS_SUSPENDREQUEST(cx);
+		smb_t      smb{};
+		if (can_remove_files(sbbs, dirnum) && smb_open_dir(&sbbs->cfg, &smb, dirnum) == SMB_SUCCESS) {
+			if ((result = sbbs->removefile(&smb, &f)) == true) {
+				char path[MAX_PATH + 1];
+				if (delete_file && remove(getfilepath(&sbbs->cfg, &f, path)) != 0 && fexist(path))
+					sbbs->errormsg(WHERE, ERR_REMOVE, path);
+				if (remove_credits && f.cost > 0)
+					sbbs->removefcdt(&f);
+			}
+			smb_close(&smb);
+		}
+		smb_freefilemem(&f);
+		JS_RESUMEREQUEST(cx, rc);
+	}
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
+js_move_file(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval * argv = JS_ARGV(cx, arglist);
+	sbbs_t* sbbs;
+	file_t  f{};
+	int     dirnum;
+	int     newdir;
+	bool    found;
+	bool    result = false;
+	char*   code = NULL;
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+	if (js_argcIsInsufficient(cx, argc, 3))
+		return JS_FALSE;
+	JSVALUE_TO_MSTRING(cx, argv[2], code, NULL);
+	HANDLE_PENDING(cx, code);
+	if (code == NULL)
+		return JS_FALSE;
+	newdir = getdirnum(&sbbs->cfg, code);
+	if (!dirnum_is_valid(&sbbs->cfg, newdir)) {
+		JS_ReportError(cx, "Invalid directory: %s", code);
+		free(code);
+		return JS_FALSE;
+	}
+	free(code);
+	if (!js_load_dir_file(cx, argc, argv, sbbs, &dirnum, &f, &found))
+		return JS_FALSE;
+	if (found) {
+		jsrefcount rc = JS_SUSPENDREQUEST(cx);
+		smb_t      smb{};
+		if (can_remove_files(sbbs, dirnum) && smb_open_dir(&sbbs->cfg, &smb, dirnum) == SMB_SUCCESS) {
+			result = sbbs->movefile(&smb, &f, newdir);
+			smb_close(&smb);
+		}
+		smb_freefilemem(&f);
+		JS_RESUMEREQUEST(cx, rc);
+	}
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
 	return JS_TRUE;
 }
 
@@ -4886,9 +5096,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Return @-code value, specified <i>code</i> string does not include @ character delimiters.")
 	 , 310
 	},
-	{"expand_atcodes",  js_expand_atcodes,  1,  JSTYPE_STRING,  JSDOCSTR("string [,<i>object</i> msg_header]")
+	{"expand_atcodes",  js_expand_atcodes,  1,  JSTYPE_STRING,  JSDOCSTR("string [,<i>object</i> msg_header] or string, <i>object</i> file, <i>string</i> dir_code")
 	 , JSDOCSTR("Return string with @-code expanded values (some formatting and @-codes are not supported), "
-		        "using optional <tt>msg_header</tt> for <tt>MSG_*</tt> codes.")
+		        "using optional <tt>msg_header</tt> for <tt>MSG_*</tt> codes, or a FileBase <tt>file</tt> "
+		        "metadata object in the directory with internal code <tt>dir_code</tt> for <tt>FILE_*</tt> codes.")
 	 , 320
 	},
 	/* text.dat */
@@ -5018,6 +5229,27 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"batch_add_list",  js_batchaddlist,    1,  JSTYPE_VOID,    JSDOCSTR("list_filename")
 	 , JSDOCSTR("Add file list to batch download queue.")
 	 , 310
+	},
+	{"batch_add_file",  js_batch_add_file,  2,  JSTYPE_BOOLEAN, JSDOCSTR("dir_code, filename")
+	 , JSDOCSTR("Add a file, in the directory with internal code <tt>dir_code</tt>, to the batch download queue, "
+		        "displaying the reason when it can't be added. Returns <tt>false</tt> if it wasn't added or there's no such file.")
+	 , 322
+	},
+	{"view_file_info",  js_view_file_info,  2,  JSTYPE_NUMBER,  JSDOCSTR("dir_code, filename [,extended=true]")
+	 , JSDOCSTR("Display a file's extended information (or, when <tt>extended</tt> is <tt>false</tt>, its contents) "
+		        "and prompt for an action, as the built-in file lister does. Returns -1 if the file was added to the "
+		        "batch download queue, 1 for next (also returned when there's no such file), -2 for previous, or 0 for quit.")
+	 , 322
+	},
+	{"remove_file",     js_remove_file,     2,  JSTYPE_BOOLEAN, JSDOCSTR("dir_code, filename [,delete_file=false] [,remove_credits=false]")
+	 , JSDOCSTR("Remove a file from a file base directory (and optionally delete it from disk and remove the "
+		        "uploader's credits for it), if the current user may remove files from that directory.")
+	 , 322
+	},
+	{"move_file",       js_move_file,       3,  JSTYPE_BOOLEAN, JSDOCSTR("dir_code, filename, dest_dir_code")
+	 , JSDOCSTR("Move a file to another file base directory, if the current user may remove files from the directory "
+		        "it's in.")
+	 , 322
 	},
 	{"batch_sort",      js_batch_sort,      1,  JSTYPE_BOOLEAN, JSDOCSTR("[upload_queue=false]")
 	 , JSDOCSTR("Sort the batch download or batch upload queue.")
