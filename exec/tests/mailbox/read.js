@@ -45,7 +45,7 @@ function open_store(usernum, options)
 function read_file(path)
 {
 	var f = new File(path);
-	if (!f.open("rb"))
+	if (!f.open("rb", /* shareable: */ true))
 		throw new Error("cannot open " + path);
 	var s = f.read();
 	f.close();
