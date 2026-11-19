@@ -96,6 +96,20 @@ check("fit: can't fit, names down to one character"
 	, listfiles_shorten_to_fit(["Library", "Directory"], render_names, plain_len, 10)
 	, "L L D D (5 Files): ");
 
+check("extdesc lines: CR/LF", listfiles_extdesc_lines("one\r\ntwo\r\n"), ["one", "two"]);
+check("extdesc lines: leading blank line and normal attr dropped"
+	, listfiles_extdesc_lines("\r\n\x01nfirst\r\nsecond"), ["first", "second"]);
+check("extdesc lines: conditional newline breaks after text"
+	, listfiles_extdesc_lines("a\x01/b\x01/c"), ["a", "b", "c"]);
+check("extdesc lines: conditional newline at a line's start does nothing"
+	, listfiles_extdesc_lines("a\r\n\x01/b"), ["a", "b"]);
+check("extdesc lines: conditional newline after only color codes does nothing"
+	, listfiles_extdesc_lines("\x01h\x01/x\x01/"), ["\x01hx"]);
+check("extdesc lines: a line of just a conditional newline is still a line"
+	, listfiles_extdesc_lines("a\r\n\x01/\r\nb"), ["a", "", "b"]);
+check("extdesc lines: color codes carried to the next line"
+	, listfiles_extdesc_lines("\x01+\x01ra\x01/\x01-b"), ["\x01+\x01ra", "\x01-b"]);
+
 var d = listfiles_defaults();
 check("interactive line has no letter", d.line_fmt_interactive.indexOf("@LETTER@"), -1);
 check("tagged marker is the CP437 check mark", d.tagged_marker, "\xfb");

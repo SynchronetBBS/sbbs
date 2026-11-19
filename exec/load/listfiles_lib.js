@@ -239,6 +239,33 @@ function listfiles_shorten_to_fit(names, render, measure, width)
 	return text;
 }
 
+// The screen lines of an extended description: split at its line breaks
+// (CR/LF) and at its Ctrl-A conditional newlines (\x01/), which break only
+// once something visible is on the line. Leading blank lines and
+// normal-attribute codes, and trailing white space, are dropped.
+function listfiles_extdesc_lines(ext)
+{
+	var text = ext.replace(/\s+$/, "").replace(/^(\r\n|\x01[nN0wW])+/, "");
+	var result = [];
+	var lines = text.split(/\r?\n/);
+	for (var i = 0; i < lines.length; i++) {
+		var pieces = lines[i].split("\x01/");
+		var line = pieces[0];
+		var broken = false;
+		for (var k = 1; k < pieces.length; k++) {
+			if (strip_ctrl(line) !== "") {
+				result.push(line);
+				line = "";
+				broken = true;
+			}
+			line += pieces[k];
+		}
+		if (line !== "" || !broken)	// (nothing after a conditional newline: no line)
+			result.push(line);
+	}
+	return result;
+}
+
 // A window of items (files) of the given screen-line heights, with at most
 // 'rows' lines on the screen: an item taller than that counts as 'rows'
 // lines (it's clipped when displayed)

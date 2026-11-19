@@ -316,12 +316,6 @@ Listing.prototype.file_line = function (f, letter, fmt, overrides)
 	});
 };
 
-// A file's extended description lines, as displayed beside its line
-function extdesc_lines(ext)
-{
-	return ext.replace(/\s+$/, "").replace(/^(\r\n|\x01[nN0wW])+/, "").split(/\r?\n/);
-}
-
 // Display one file: its line (or 'text', if specified) and, beside it, any
 // extended description, clipped to 'max_lines' screen lines if specified
 Listing.prototype.show_file = function (f, letter, text, max_lines)
@@ -340,7 +334,7 @@ Listing.prototype.show_file = function (f, letter, text, max_lines)
 // clipped to 'max_lines' lines if specified. Returns the lines displayed.
 function print_extdesc(ext, max_lines)
 {
-	var lines = extdesc_lines(ext);
+	var lines = listfiles_extdesc_lines(ext);
 	if (max_lines !== undefined && lines.length > max_lines)
 		lines.length = Math.max(1, max_lines);
 	console.putmsg(lines.join("\r\n"), P_INDENT | P_NOATCODES | P_CPM_EOF | P_TRUNCATE | P_AUTO_UTF8);
@@ -614,7 +608,7 @@ Listing.prototype.list_letters = function ()
 				console.print(bbs.text(FileListBatchCommands));
 			var ext = this.extdesc(f);
 			if (ext !== null && page.length
-				&& console.line_counter + extdesc_lines(ext).length >= rows - 2) {
+				&& console.line_counter + listfiles_extdesc_lines(ext).length >= rows - 2) {
 				full = true;
 			} else {
 				if (!page.length)
@@ -696,7 +690,7 @@ Listing.prototype.list_pages = function ()
 		heights = [];
 		for (var i = 0; i < listing.files.length; i++) {
 			var ext = listing.extdesc(listing.files[i]);
-			heights.push(ext === null ? 1 : extdesc_lines(ext).length);
+			heights.push(ext === null ? 1 : listfiles_extdesc_lines(ext).length);
 		}
 	}
 
@@ -734,7 +728,7 @@ Listing.prototype.list_pages = function ()
 		var ext = listing.extdesc(listing.files[i]);
 		if (ext !== null) {
 			var col = console.current_column;
-			var ext_lines = extdesc_lines(ext);
+			var ext_lines = listfiles_extdesc_lines(ext);
 			if (ext_lines.length > max_lines)
 				ext_lines.length = Math.max(1, max_lines);
 			for (var k = 0; k < ext_lines.length; k++) {
