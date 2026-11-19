@@ -1300,6 +1300,8 @@ public:
 	int		viewfile(file_t* f, bool extdesc);
 	bool	viewfile(const char* path);
 	bool	viewfilecontents(file_t* f);
+	bool	can_view_file(file_t* f);
+	int		find_fview(const char* path);
 
 	/* xtrn.cpp */
 	int		external(const char* cmdline, int mode, const char* startup_dir=NULL, const char* drop_var=NULL, const char* drop_path=NULL);

@@ -2636,6 +2636,30 @@ js_move_file(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_can_view_file(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval * argv = JS_ARGV(cx, arglist);
+	sbbs_t* sbbs;
+	file_t  f{};
+	int     dirnum;
+	bool    found;
+	bool    result = false;
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+	if (!js_load_dir_file(cx, argc, argv, sbbs, &dirnum, &f, &found))
+		return JS_FALSE;
+	if (found) {
+		jsrefcount rc = JS_SUSPENDREQUEST(cx);
+		result = sbbs->can_view_file(&f);
+		smb_freefilemem(&f);
+		JS_RESUMEREQUEST(cx, rc);
+	}
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
 js_batch_clear(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *        argv = JS_ARGV(cx, arglist);
@@ -5251,6 +5275,11 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"move_file",       js_move_file,       3,  JSTYPE_BOOLEAN, JSDOCSTR("dir_code, filename, dest_dir_code")
 	 , JSDOCSTR("Move a file to another file base directory, if the current user may remove files from the directory "
 		        "it's in and may access the destination directory.")
+	 , 322
+	},
+	{"can_view_file",   js_can_view_file,   2,  JSTYPE_BOOLEAN, JSDOCSTR("dir_code, filename")
+	 , JSDOCSTR("Whether the current user may view the file's contents (a file viewer is configured for it that the "
+		        "user may use)")
 	 , 322
 	},
 	{"batch_sort",      js_batch_sort,      1,  JSTYPE_BOOLEAN, JSDOCSTR("[upload_queue=false]")

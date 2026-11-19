@@ -82,6 +82,19 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 	return 0;
 }
 
+/****************************************************************************/
+/* Returns the index of the first file viewer for 'path' that the user may  */
+/* use (with the current directory's ARS), or -1 if there is none           */
+/****************************************************************************/
+int sbbs_t::find_fview(const char* path)
+{
+	for (int i = 0; i < cfg.total_fviews; i++) {
+		if (file_type_match(path, cfg.fview[i]->ext) && chk_ar(cfg.fview[i]->ar, &useron, &client))
+			return i;
+	}
+	return -1;
+}
+
 /*****************************************************************************/
 /*****************************************************************************/
 bool sbbs_t::viewfile(const char* inpath)
@@ -94,11 +107,7 @@ bool sbbs_t::viewfile(const char* inpath)
 		bputs(text[FileNotFound]);
 		return false;
 	}
-	for (i = 0; i < cfg.total_fviews; i++)
-		if (file_type_match(path, cfg.fview[i]->ext) && chk_ar(cfg.fview[i]->ar, &useron, &client)) {
-			break;
-		}
-	if (i >= cfg.total_fviews) {
+	if ((i = find_fview(path)) < 0) {
 		bprintf(text[NonviewableFile], getfname(path));
 		return false;
 	}
@@ -124,6 +133,24 @@ bool sbbs_t::viewfilecontents(file_t* f)
 	uint savedir = curdirnum;
 	curdirnum = f->dir; /* for ARS */
 	bool result = viewfile(path);
+	curdirnum = savedir;
+	return result;
+}
+
+/****************************************************************************/
+/* Whether viewfilecontents() would display the file: it exists and a file  */
+/* viewer for it is available to the user. Displays nothing.                */
+/****************************************************************************/
+bool sbbs_t::can_view_file(file_t* f)
+{
+	char path[MAX_PATH + 1];
+
+	getfilepath(&cfg, f, path);
+	if (!fexistcase(path))
+		return false;
+	uint savedir = curdirnum;
+	curdirnum = f->dir; /* for ARS */
+	bool result = find_fview(path) >= 0;
 	curdirnum = savedir;
 	return result;
 }
