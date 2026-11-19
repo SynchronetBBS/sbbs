@@ -400,7 +400,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 	if (bodylen >= 2 && body[bodylen - 2] == CR && body[bodylen - 1] == LF)
 		bodylen -= 2;
 
-	while (taillen && tail[taillen - 1] <= ' ') taillen--; /* remove trailing garbage */
+	while (taillen && (uchar)tail[taillen - 1] <= ' ') taillen--; /* remove trailing garbage */
 
 	/* Parse QWK Kludges (QWKE standard and SyncQNET legacy) here: */
 	if (useron.rest & UREST_QWK_NODE || fromhub) {

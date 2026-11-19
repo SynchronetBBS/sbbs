@@ -513,7 +513,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 					*cp = 0;
 				l += strlen(str) + 1;
 				cp = str;
-				while (*cp && *cp <= ' ') cp++;
+				SKIP_WHITESPACE(cp);
 				safe_snprintf(senderaddr, sizeof(senderaddr), "%s/%s", sender_id, cp);
 				strupr(senderaddr);
 				smb_hfield(&msg, SENDERNETADDR, strlen(senderaddr), senderaddr);
@@ -545,7 +545,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 				*cp = 0;
 			l += strlen(str) + 1;
 			cp = str + 4;
-			while (*cp && *cp <= ' ') cp++;
+			SKIP_WHITESPACE(cp);
 			msg.hdr.when_written.zone = (short)ahtoul(cp);
 		}
 		else

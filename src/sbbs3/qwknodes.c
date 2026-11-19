@@ -129,7 +129,7 @@ void gettag(smbmsg_t* msg, char *tag)
 		p += 16;
 	if (!strnicmp(p, " * Synchronet * ", 16))
 		p += 16;
-	while (*p && *p <= ' ') p++;
+	SKIP_WHITESPACE(p);
 	strcpy(tag, p);
 	free(buf);
 }

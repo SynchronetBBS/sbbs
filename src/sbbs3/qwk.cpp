@@ -233,7 +233,7 @@ void sbbs_t::update_qwkroute(char *via)
 				}
 				strcpy(qwknode[i].id, node);
 				p++;
-				while (*p && *p <= ' ') p++;
+				SKIP_WHITESPACE(p);
 				snprintf(qwknode[i].path, sizeof qwknode[i].path, "%.127s", p);
 				qwknode[i].time = t;
 			}

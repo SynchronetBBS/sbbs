@@ -71,13 +71,13 @@ when_t rfc822date(char* date)
 
 	memset(&tm, 0, sizeof(tm));
 
-	while (*p && *p <= ' ') p++;
+	SKIP_WHITESPACE(p);
 	while (*p && !IS_DIGIT(*p)) p++;
 	/* DAY */
 	tm.tm_mday = atoi(p);
 	while (*p && IS_DIGIT(*p)) p++;
 	/* MONTH */
-	while (*p && *p <= ' ') p++;
+	SKIP_WHITESPACE(p);
 	sprintf(month, "%3.3s", p);
 	if (!stricmp(month, "jan"))
 		tm.tm_mon = 0;
@@ -113,7 +113,7 @@ when_t rfc822date(char* date)
 
 	while (*p && IS_DIGIT(*p)) p++;
 	/* HOUR */
-	while (*p && *p <= ' ') p++;
+	SKIP_WHITESPACE(p);
 	tm.tm_hour = atoi(p);
 	while (*p && IS_DIGIT(*p)) p++;
 	/* MINUTE */
@@ -127,7 +127,7 @@ when_t rfc822date(char* date)
 	tm.tm_sec = atoi(p);
 	while (*p && IS_DIGIT(*p)) p++;
 	/* TIME ZONE */
-	while (*p && *p <= ' ') p++;
+	SKIP_WHITESPACE(p);
 	if (*p) {
 		if (IS_DIGIT(*p) || *p == '-' || *p == '+') { /* [+|-]HHMM format */
 			if (*p == '+')

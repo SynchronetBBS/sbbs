@@ -167,7 +167,7 @@ int main(int argc, char**argv)
 		if (strncmp(str, "begin ", 6) == 0) {
 			p = str + 7;
 			while (*p && isdigit(*p)) p++;  /* skip mode */
-			while (*p && *p <= ' ') p++;
+			while (*p && isspace((unsigned char)*p)) p++;
 			if ((out = fopen(p, "wb")) == NULL) {
 				perror(p);
 				return 1;

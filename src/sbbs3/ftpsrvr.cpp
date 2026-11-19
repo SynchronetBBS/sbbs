@@ -1589,7 +1589,7 @@ char* dotname(char* in, char* out)
 	else
 		ch = '_';
 	for (i = 0; in[i]; i++)
-		if (in[i] <= ' ')
+		if ((uchar)in[i] <= ' ')
 			out[i] = ch;
 		else
 			out[i] = in[i];

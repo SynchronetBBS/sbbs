@@ -968,7 +968,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			len++;
 
 		tlen = len;
-		while (tlen && *(np + (tlen - 1)) <= ' ') /* Takes care of '\r' or spaces */
+		while (tlen && (uchar) * (np + (tlen - 1)) <= ' ') /* Takes care of '\r' or spaces */
 			tlen--;
 
 		/* session is dead: don't send attachments or the terminator, which
@@ -2773,7 +2773,7 @@ static char* get_header_field(char* buf, char* name, size_t maxlen)
 	char*  p;
 	size_t len;
 
-	if (buf[0] <= ' ') /* folded header */
+	if ((uchar)buf[0] <= ' ') /* folded header */
 		return NULL;
 
 	if ((p = strchr(buf, ':')) == NULL)
@@ -2798,7 +2798,7 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 	int    len;
 	ushort nettype;
 
-	if (buf[0] <= ' ' && *type != UNKNOWN) { /* folded header, append to previous */
+	if ((uchar)buf[0] <= ' ' && *type != UNKNOWN) { /* folded header, append to previous */
 		p = buf;
 		truncsp(p);
 		if (*type == RFC822HEADER || *type == SMTPRECEIVED)
