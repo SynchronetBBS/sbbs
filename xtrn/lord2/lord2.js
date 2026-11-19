@@ -4421,7 +4421,7 @@ function load_time()
 			throw new Error('Unable to open '+f.name);
 		f.truncate(0);
 		f.write(tday+'\r\n');
-		f.close;
+		f.close();
 		// TODO: Delete inactive players after 15 days.
 		try {
 			run_ref('maint', 'maint.ref');
@@ -4437,7 +4437,7 @@ function load_time()
 			throw new Error('Unable to open '+f.name);
 		f.truncate(0);
 		f.write(state.time+'\r\n');
-		f.close;
+		f.close();
 	}
 }
 
