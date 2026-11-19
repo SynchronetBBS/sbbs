@@ -110,7 +110,66 @@ check("extdesc lines: a line of just a conditional newline is still a line"
 check("extdesc lines: color codes carried to the next line"
 	, listfiles_extdesc_lines("\x01+\x01ra\x01/\x01-b"), ["\x01+\x01ra", "\x01-b"]);
 
+check("style default", listfiles_style("", true, true), "classic");
+check("style lightbar", listfiles_style("lightbar", true, true), "lightbar");
+check("style classic", listfiles_style("classic", true, true), "classic");
+check("style without batch flagging", listfiles_style("lightbar", false, true), "plain");
+check("style on a dumb terminal", listfiles_style("lightbar", true, false), "letters");
+check("style unknown", listfiles_style("bogus", true, true), "classic");
+check("style undefined", listfiles_style(undefined, true, true), "classic");
+
+check("rows: no pane", listfiles_lightbar_rows(24, true, false)
+	, {list_top:2, list_rows:21, pane_top:0, pane_rows:0});
+check("rows: pane", listfiles_lightbar_rows(24, true, true)
+	, {list_top:2, list_rows:11, pane_top:14, pane_rows:9});
+check("rows: too short for the pane", listfiles_lightbar_rows(10, true, true)
+	, {list_top:2, list_rows:7, pane_top:0, pane_rows:0});
+check("rows: no headings", listfiles_lightbar_rows(24, false, true).list_top, 1);
+check("rows: no headings, all rows used", listfiles_lightbar_rows(24, false, false).list_rows, 22);
+
+check("E hidden", listfiles_pane_key("E", false, "contents"), {shown:true, view:"info"});
+check("E info", listfiles_pane_key("E", true, "info"), {shown:false, view:"info"});
+check("E contents", listfiles_pane_key("E", true, "contents"), {shown:true, view:"info"});
+check("V hidden", listfiles_pane_key("V", false, "info"), {shown:true, view:"contents"});
+check("V info", listfiles_pane_key("V", true, "info"), {shown:true, view:"contents"});
+check("V contents", listfiles_pane_key("V", true, "contents"), {shown:false, view:"contents"});
+check("other key", listfiles_pane_key("X", true, "info"), {shown:true, view:"info"});
+
+check("contents: no method", listfiles_contents_allowed(undefined, {preview_contents:true}), false);
+check("contents: turned off", listfiles_contents_allowed(function () {}, {preview_contents:false}), false);
+check("contents: allowed", listfiles_contents_allowed(function () {}, {preview_contents:true}), true);
+
+check("text: ANSI and control characters removed"
+	, listfiles_text_lines("a\x1b[1;31mb\r\nc\x07d", 10, 79), ["ab", "cd"]);
+check("text: lone ESC removed", listfiles_text_lines("a\x1bb", 10, 79), ["ab"]);
+check("text: tab to a space", listfiles_text_lines("a\tb", 10, 79), ["a b"]);
+check("text: Ctrl-A codes kept", listfiles_text_lines("\x01hbold", 10, 79), ["\x01hbold"]);
+check("text: cut to width", listfiles_text_lines("abcdefghij", 10, 4), ["abcd"]);
+check("text: width counts printable characters", listfiles_text_lines("\x01habcdef", 10, 3), ["\x01habc"]);
+check("text: max lines", listfiles_text_lines("1\n2\n3\n4", 2, 79), ["1", "2"]);
+
+var entries = [{type:"directory", name:"d/", size:0, time:0}
+	, {type:"file", name:"a.txt", size:12, time:0}
+	, {type:"file", name:format("%0200d", 0), size:5, time:0}];
+var alines = listfiles_archive_lines(entries, 10, 79);
+check("archive: directories skipped", alines.length, 2);
+check("archive: name first", alines[0].substr(0, 5), "a.txt");
+check("archive: long name cut to fit", alines[1].length <= 79, true);
+check("archive: max lines", listfiles_archive_lines(entries, 1, 79).length, 1);
+
+check("contents: a reader that throws"
+	, listfiles_contents_lines(function () { throw new Error("bad zip"); }), {lines:[], note:"bad zip"});
+check("contents: a reader with no result", listfiles_contents_lines(function () { return null; }).lines, []);
+check("contents: a reader's lines", listfiles_contents_lines(function () { return ["x"]; }), {lines:["x"], note:""});
+
 var d = listfiles_defaults();
+check("default style", d.style, "classic");
+check("lightbar keys fit", strip_ctrl(d.lightbar_keys.replace(/~/g, "")).length <= 79, true);
+check("operator keys fit", strip_ctrl(d.lightbar_keys_operator.replace(/~/g, "")).length <= 79, true);
+check("operator keys add Remove", d.lightbar_keys_operator.indexOf("~Remove") >= 0, true);
+check("lightbar line has no letter", d.line_fmt_lightbar.indexOf("@LETTER@"), -1);
+check("preview size limit", d.preview_max_size, 52428800);
+check("preview delay", d.preview_delay, 0.5);
 check("interactive line has no letter", d.line_fmt_interactive.indexOf("@LETTER@"), -1);
 check("tagged marker is the CP437 check mark", d.tagged_marker, "\xfb");
 check("interactive commands name Space", strip_ctrl(d.interactive_commands || "").indexOf("[Space] Tag") >= 0, true);

@@ -50,7 +50,47 @@ function listfiles_defaults()
 		box_vertical: "\xba",
 		short_hdr_underline: "\xc4",
 		selected_item_attr: "\x01V",
-		lightbar: true
+		lightbar: true,
+		// The interactive style: "classic" (like the built-in lister) or
+		// "lightbar" (an area line on top, key tips on the bottom row, a
+		// preview pane)
+		style: "classic",
+		// The lightbar style's file line, area line (arguments: library name,
+		// directory name), position (current file number, number of files),
+		// column headings ("" for none) and key tips: a mnemonics string, ~
+		// before each key letter (the second for users who may remove files)
+		line_fmt_lightbar: "@NAME_ATTR@@NAME@@FLAGS@@LETTER_ATTR@@TAG@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
+		lightbar_area_fmt: "\x01n\x01k\x017 %s / %s",
+		lightbar_position_fmt: "[file %u of %u] ",
+		lightbar_headings: "\x01n\x01hName            Size Description",
+		lightbar_keys: "~Download ~Batch ~View ~Ext ~Help ~Quit  Space:Tag Tab:Pane",
+		lightbar_keys_operator: "~Download ~Batch ~View ~Ext ~Remove ~Move ~Help ~Quit  Space:Tag Tab:Pane",
+		lightbar_attr: "\x01n\x01h\x01w\x014",
+		// The preview pane: the info view's details (@FILE_*@ codes; the
+		// extended description follows), whether to show contents, which
+		// extensions are text files, and limits on reading contents
+		preview_info_fmt: "\x01n\x01cUploaded by \x01h@FILE_UPLOADER@\x01n\x01c on \x01h@FILE_DATE_ULED@\x01n\x01c, \x01h@FILE_SIZE@\x01n\x01c bytes\r\n"
+			+ "Downloaded \x01h@FILE_TIMES_DLED@\x01n\x01c times, last on \x01h@FILE_DATE_DLED@\x01n\x01c, cost \x01h@FILE_COST@\x01n\r\n",
+		preview_contents: true,
+		preview_text_exts: "txt,nfo,diz,doc,md,me,1st,asc",
+		preview_max_size: 52428800,
+		preview_max_lines: 500,
+		preview_delay: 0.5,	// seconds the bar rests on a file before its contents are read
+		// The pane's separator line: its fill, view labels, line range
+		// (first line, last line, number of lines) and colors (with and
+		// without the focus)
+		preview_separator: "\xc4",
+		preview_info_label: "\xb4 Info \xc3",
+		preview_contents_label: "\xb4 Contents \xc3",
+		preview_lines_fmt: "\xb4 Lines %u-%u of %u \xc3",
+		preview_attr: "\x01n\x01c",
+		preview_focus_attr: "\x01n\x01h\x01w",
+		// The pane's notes in place of contents (the error format's argument:
+		// the error)
+		preview_offline_note: "\x01n\x01y(this file is offline)",
+		preview_unviewable_note: "\x01n\x01y(this file's contents can't be viewed)",
+		preview_use_viewer_note: "\x01n\x01y(press V to view this file)",
+		preview_error_fmt: "\x01n\x01r(%s)"
 	};
 }
 
@@ -264,6 +304,113 @@ function listfiles_extdesc_lines(ext)
 			result.push(line);
 	}
 	return result;
+}
+
+// Which listing a user gets: "classic" or "lightbar" (the interactive
+// styles, for users with batch flagging enabled on a terminal that
+// positions the cursor; 'style' is the style option), "letters" (batch
+// flagging on another terminal) or "plain"
+function listfiles_style(style, batch, cursor)
+{
+	if (!batch)
+		return "plain";
+	if (!cursor)
+		return "letters";
+	return style === "lightbar" ? "lightbar" : "classic";
+}
+
+// The lightbar style's screen rows (0-based): the area line on row 0, any
+// column headings on row 1, the key tips on the last row, and between them
+// the list and, if 'pane' and there's room for both, a separator and the
+// preview pane
+function listfiles_lightbar_rows(screen_rows, headings, pane)
+{
+	var top = headings ? 2 : 1;
+	var avail = screen_rows - top - 1;
+	var rows = { list_top: top, list_rows: avail, pane_top: 0, pane_rows: 0 };
+	if (!pane)
+		return rows;
+	var list_rows = Math.ceil(avail / 2);
+	var pane_rows = avail - list_rows - 1;
+	if (list_rows < 3 || pane_rows < 3)
+		return rows;
+	rows.list_rows = list_rows;
+	rows.pane_top = top + list_rows + 1;
+	rows.pane_rows = pane_rows;
+	return rows;
+}
+
+// The preview pane's state after the E (info) or V (contents) key: the
+// key of a view not showing shows it; the key of the view showing hides the
+// pane. Other keys change nothing.
+function listfiles_pane_key(key, shown, view)
+{
+	var want = { E: "info", V: "contents" }[key];
+	if (!want)
+		return { shown: shown, view: view };
+	if (shown && view === want)
+		return { shown: false, view: view };
+	return { shown: true, view: want };
+}
+
+// Whether the preview pane may show files' contents at all: the option is
+// on and the BBS has can_view_file (bbs.can_view_file, new in v3.22)
+function listfiles_contents_allowed(can_view_file, opts)
+{
+	return opts.preview_contents !== false && typeof can_view_file === "function";
+}
+
+// Up to 'max_lines' lines of a text file's text for display, each cut to
+// 'width' printable columns: ANSI escape sequences and control characters
+// (except Ctrl-A codes) removed, tabs as spaces
+function listfiles_text_lines(text, max_lines, width)
+{
+	var lines = text.split(/\r?\n/);
+	var result = [];
+	for (var i = 0; i < lines.length && result.length < max_lines; i++) {
+		var line = lines[i].replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "").replace(/\t/g, " ")
+			.replace(/[\x00\x02-\x1f\x7f]/g, "");
+		var out = "";
+		var cols = 0;
+		for (var k = 0; k < line.length && cols < width; k++) {
+			out += line.charAt(k);
+			if (line.charAt(k) === "\x01" && k + 1 < line.length)
+				out += line.charAt(++k);
+			else
+				cols++;
+		}
+		result.push(out);
+	}
+	return result;
+}
+
+// Up to 'max_lines' lines listing an archive's files (entries as
+// Archive.list() returns them; directories skipped): name, size and date,
+// in 'width' columns
+function listfiles_archive_lines(entries, max_lines, width)
+{
+	var name_width = Math.max(1, width - 30);
+	var result = [];
+	for (var i = 0; i < entries.length && result.length < max_lines; i++) {
+		var e = entries[i];
+		if (e.type === "directory")
+			continue;
+		result.push(format("%-*.*s %10u %s", name_width, name_width, e.name, e.size
+			, system.datestr(e.time)));
+	}
+	return result;
+}
+
+// The lines reader() returns (e.g. a file's contents), or, if it throws,
+// no lines and the error as a note
+function listfiles_contents_lines(reader)
+{
+	try {
+		var lines = reader();
+		return { lines: lines || [], note: "" };
+	} catch (e) {
+		return { lines: [], note: String(e.message || e) };
+	}
 }
 
 // A window of items (files) of the given screen-line heights, with at most
