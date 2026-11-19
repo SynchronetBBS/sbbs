@@ -49,6 +49,14 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 	size_t       longest = 0;
 	bool_expr_t* find_expr = NULL;
 
+	if (mode & FL_ULTIME) { // before invoking a List Files module, which would display nothing (#1359)
+		if (!smb_init_dir(&cfg, &smb, dirnum))
+			return 0;
+		last_ns_time = now;
+		if (!newfiles(&smb, ns_time))    // this is fast
+			return 0;
+	}
+
 	if (!tofile) {
 		action = NODE_LFIL;
 		curdirnum = dirnum;
@@ -72,13 +80,6 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 	if (!smb_init_dir(&cfg, &smb, dirnum)) {
 		bool_expr_free(find_expr);
 		return 0;
-	}
-	if (mode & FL_ULTIME) {
-		last_ns_time = now;
-		if (!newfiles(&smb, ns_time)) {    // this is fast
-			bool_expr_free(find_expr);
-			return 0;
-		}
 	}
 	if (smb_open_dir(&cfg, &smb, dirnum) != SMB_SUCCESS) {
 		bool_expr_free(find_expr);

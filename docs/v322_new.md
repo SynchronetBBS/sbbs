@@ -159,6 +159,8 @@
   index once per batch instead of once per uploaded file, and each file
   is named as its post-processing (upload testers, hashing, duplicate
   scan) starts (issue #1132)
+- New-file scans no longer run the List Files loadable module for
+  directories with no new files, making them faster (issue #1359)
 - Fix: a long `@TYPE:` or `@INCLUDE:` @-code argument could overflow a
   stack buffer (issue #1191); over-long command lines are now also
   logged when truncated
