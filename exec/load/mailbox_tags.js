@@ -4,8 +4,8 @@
 //
 // A message's tags are one string (the header's "tags" field), tags
 // separated by single spaces. Reserved tags start with '$' and are matched
-// case-sensitively: $Sent $Archive $Trash (folders), $Starred, $Was:<tag>
-// (the folder a Trash message came from), $Failed and $Unsent (Sent copies).
+// case-sensitively: $Sent $Archive $Trash (folders), $Was:<tag> (the folder
+// a Trash message came from), $Failed and $Unsent (Sent copies).
 // A user folder's tag is its name's UTF-8 bytes with every byte except
 // A-Z a-z 0-9 . _ - and bytes >= 0x80 written as %XX (uppercase hex), so a
 // user tag never contains a space and never begins with '$'.
@@ -28,7 +28,6 @@ var Tags = (function () {
 		SENT: "$Sent",
 		ARCHIVE: "$Archive",
 		TRASH: "$Trash",
-		STARRED: "$Starred",
 		WAS: "$Was:",
 		FAILED: "$Failed",
 		UNSENT: "$Unsent",
@@ -151,7 +150,7 @@ var Tags = (function () {
 	T.parse = function (tags_string, opts)
 	{
 		var shared = !!(opts && opts.shared);
-		var r = { folder: "", starred: false, was: "", failed: false, unsent: false, other: [] };
+		var r = { folder: "", was: "", failed: false, unsent: false, other: [] };
 		if (tags_string === undefined || tags_string === null)
 			return r;
 		var list = String(tags_string).split(WS_RUN);
@@ -159,9 +158,7 @@ var Tags = (function () {
 			var t = list[i];
 			if (t === "")
 				continue;
-			if (t == T.STARRED && !r.starred)
-				r.starred = true;
-			else if (t == T.FAILED && !r.failed)
+			if (t == T.FAILED && !r.failed)
 				r.failed = true;
 			else if (t == T.UNSENT && !r.unsent)
 				r.unsent = true;
@@ -182,8 +179,6 @@ var Tags = (function () {
 		var list = [];
 		if (obj.folder)
 			list.push(obj.folder);
-		if (obj.starred)
-			list.push(T.STARRED);
 		if (obj.was)
 			list.push(T.WAS + obj.was);
 		if (obj.failed)

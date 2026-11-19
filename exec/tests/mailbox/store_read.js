@@ -10,7 +10,9 @@ load(D, Kit.exec_root() + "load/smbdefs.js");
 
 var ALICE = 60001;
 var BOB = 60002;
-var CARL = 125537;	// shares Alice's 16-bit index slot (125537 & 0xFFFF == 60001)
+// Mail addressed to user 125537 has 60001 (Alice) in the index's 16-bit
+// user number field (125537 & 0xFFFF == 60001); its header names Carl
+var CARL = 125537;
 
 var S = Kit.scratch();
 var shared = null;
@@ -74,7 +76,7 @@ try {
 	var A_read = save(shared, { to_ext: String(ALICE), from: "Carol", subject: "Hello Alice zz",
 		attr: D.MSG_READ });
 	var A_star = save(shared, { to_ext: String(ALICE), from: "Dave", subject: "starred zz",
-		tags: Tags.STARRED });
+		attr: D.MSG_VALIDATED });
 	var B_mail = save(shared, { to_ext: String(BOB), from: "Eve", subject: "secret for bob zz" });
 	var A_spam = save(shared, { to_ext: String(ALICE), from: "Spammer", subject: "Buy now zz",
 		attr: D.MSG_SPAM });
@@ -124,9 +126,9 @@ try {
 	var P_s = psave(Tags.SENT, "copy s zz", "<s@test>", D.MSG_READ);
 	var P_u = psave(Tags.SENT + " " + Tags.UNSENT, "copy u zz", "<u@test>", D.MSG_READ);
 	var P_a1 = psave(Tags.ARCHIVE, "archived zz");
-	var P_a2 = psave(Tags.ARCHIVE + " " + Tags.STARRED, "archived starred zz", null, D.MSG_READ);
+	var P_a2 = psave(Tags.ARCHIVE, "archived starred zz", null, D.MSG_READ | D.MSG_VALIDATED);
 	var P_t1 = psave(Tags.TRASH + " " + Tags.WAS + Tags.ARCHIVE, "trashed zz");
-	var P_t2 = psave(Tags.TRASH + " " + Tags.STARRED, "trashed starred zz");
+	var P_t2 = psave(Tags.TRASH, "trashed starred zz", null, D.MSG_VALIDATED);
 	var P_r = psave(Tags.encode("Receipts"), "receipt zz");
 	var P_x = psave(Tags.encode("Tax Stuff"), "taxes zz");
 	priv.close();
@@ -261,19 +263,17 @@ try {
 	Kit.eq([folder(BF, "archive").total, folder(BF, "trash").total], [0, 0], "Bob's private folders");
 	Kit.throws(function () { bst.resolve("s" + A_read); }, "forbidden");
 
-	// Carl (user number above 65535 in Alice's index slot)
-	var cst = open_store(CARL);
-	var CF = cst.folders();
-	Kit.eq([folder(CF, "inbox").total, folder(CF, "sent").total, folder(CF, "spam").total,
-		folder(CF, "starred").total], [1, 1, 0, 0], "Carl's folders");
-	Kit.eq(ids(cst.list("inbox")), ["s" + C_in], "Carl's inbox");
-	Kit.eq(ids(cst.list("sent")), ["s" + C_out], "Carl's sent");
-	Kit.eq(ids(cst.list("all", { search: "zz" })).sort(), carls.slice(0).sort(), "Carl's search all");
-	Kit.throws(function () { cst.resolve("s" + A_read); }, "forbidden");
-	Kit.throws(function () { cst.resolve("s" + E_extra); }, "forbidden");
+	// Records whose index field matches Alice but whose header names Carl
+	// (not listed for her: see "bobs" above) cannot be opened by her
+	Kit.eq([shared.get_msg_index(false, C_in).to, shared.get_msg_index(false, C_out).from],
+		[ALICE, ALICE], "Carl's mail has Alice's number in the index");
 	Kit.throws(function () { st.resolve("s" + C_in); }, "forbidden");
 	Kit.throws(function () { st.resolve("s" + C_out); }, "forbidden");
-	Kit.eq(cst.resolve("s" + C_out).role, "from", "Carl resolves his own");
+	Kit.eq(st.folders().length, F.length, "Carl's mail adds no folder");
+	// A user number above 65535 does not fit the index: refused
+	Kit.throws(function () { open_store(CARL); }, "invalid");
+	Kit.throws(function () { open_store(65536); }, "invalid");
+	Kit.eq(open_store(65535).usernum, 65535, "65535 accepted");
 
 	// state(): changes with Alice's mail only
 	var s1 = st.state();
@@ -292,22 +292,24 @@ try {
 	// A shared header's tags changed by the library: forget_shared()
 	var s3 = st.state();
 	var h = shared.get_msg_header(false, A_read, false);
-	h.tags = Tags.STARRED;
+	h.tags = "work";
 	if (!shared.put_msg_header(false, A_read, h))
 		throw new Error("put_msg_header: " + shared.last_error);
 	st.forget_shared([A_read]);
 	Kit.assert(st.state() != s3, "state after forget_shared");
-	Kit.assert(ids(st.list("starred")).indexOf("s" + A_read) >= 0, "starred after forget_shared");
+	st.list("inbox");
+	Kit.eq(jf.read("shared", null).recs[A_read][7][0], "work", "fact refreshed after forget_shared");
 
 	// A cached fact whose time no longer matches the index is discarded
 	var cache = jf.read("shared", null);
 	Kit.assert(cache && cache.recs[A_star] instanceof Array, "fact cached");
 	cache.recs[A_star][0] = 1;	// time
-	cache.recs[A_star][2] = 0;	// not starred
+	cache.recs[A_star][7][4] = "stale";	// the row's subject
 	jf.write("shared", cache);
-	Kit.assert(ids(st.list("starred")).indexOf("s" + A_star) >= 0, "stale fact discarded");
+	Kit.eq(jf.read("shared", null).recs[A_star][7][4], "stale", "stale fact written");
+	Kit.eq(item(st.list("inbox"), "s" + A_star).subject, "starred zz", "stale fact discarded");
 
-	// Lost update: one session reads facts, another stars the message and
+	// Lost update: one session reads facts, another retags the message and
 	// calls forget_shared() before the first saves; the stale fact must not
 	// be saved over the invalidation
 	var st2 = open_store(ALICE);
@@ -318,7 +320,7 @@ try {
 		if (rec.number == N && !raced) {
 			raced = true;
 			var nh = shared.get_msg_header(false, N, false);
-			nh.tags = Tags.STARRED;
+			nh.tags = "work";
 			if (!shared.put_msg_header(false, N, nh))
 				throw new Error("put_msg_header: " + shared.last_error);
 			st2.forget_shared([N]);
@@ -328,7 +330,8 @@ try {
 	st.folders();
 	Kit.assert(raced, "race ran");
 	delete st.read_fact;
-	Kit.assert(ids(st.list("starred")).indexOf("s" + N) >= 0, "no lost update");
+	st.list("inbox");
+	Kit.eq(jf.read("shared", null).recs[N][7][0], "work", "no lost update");
 
 	// limit is clamped to 100
 	for (i = 0; i < 101; i++)

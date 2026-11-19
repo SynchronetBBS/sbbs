@@ -413,6 +413,12 @@ try {
 			return put.apply(this, arguments);
 		};
 	});
+	// head: marked read, the list item only
+	g = counted.get(pid_fa, { mark_read: true, head: true });
+	Kit.eq(puts, 1, "private mark_read with head: one header write");
+	Kit.eq([g.id, g.read, g.folder], [pid_fa, true, "u:" + Tags.encode("Pics")], "head: the item, read");
+	Kit.eq([g.headers, g.text, g.html, g.parts], [undefined, undefined, undefined, undefined],
+		"head: no headers, bodies or parts");
 	g = counted.get(pid_fa, { mark_read: true });
 	Kit.eq(puts, 1, "private mark_read: one header write");
 	g = counted.get(pid_fa, { mark_read: true });

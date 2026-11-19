@@ -297,13 +297,13 @@ try {
 	// --- set: flags persist
 	ok(st.set([s1, "p" + PR], { read: true, starred: true }), "set read+starred");
 	Kit.assert(shdr(num_of(s1)).attr & D.MSG_READ, "shared read");
-	Kit.assert(Tags.parse(shdr(num_of(s1)).tags).starred, "shared starred");
+	Kit.assert(shdr(num_of(s1)).attr & D.MSG_VALIDATED, "shared starred");
 	Kit.assert(phdr(PR).attr & D.MSG_READ, "private read");
-	Kit.assert(ptags(PR).starred, "private starred");
+	Kit.assert(phdr(PR).attr & D.MSG_VALIDATED, "private starred");
 	Kit.assert(ids(st.list("starred")).indexOf(s1) >= 0, "starred list sees the shared star");
 	ok(st.set([s1], { read: false, starred: false }), "unset");
 	Kit.assert(!(shdr(num_of(s1)).attr & D.MSG_READ), "shared unread");
-	Kit.assert(!Tags.parse(shdr(num_of(s1)).tags).starred, "shared unstarred");
+	Kit.assert(!(shdr(num_of(s1)).attr & D.MSG_VALIDATED), "shared unstarred");
 	Kit.assert(ids(st.list("starred")).indexOf(s1) < 0, "unstarred in list");
 	ok(st.set(["s" + AS], { spam: false }), "not spam");
 	Kit.assert(!(shdr(AS).attr & D.MSG_SPAM), "spam cleared");
@@ -357,11 +357,11 @@ try {
 	Kit.assert(phdr(num_of(t1)) === null, "trash copy gone");
 
 	Kit.eq(one(st.remove(["p" + PR]), "delete from folder"), "p" + PR, "retagged in place");
-	Kit.eq([ptags(PR).folder, ptags(PR).was, ptags(PR).starred], [Tags.TRASH, "Receipts", true],
-		"trash from folder");
+	Kit.eq([ptags(PR).folder, ptags(PR).was, (phdr(PR).attr & D.MSG_VALIDATED) != 0],
+		[Tags.TRASH, "Receipts", true], "trash from folder");
 	one(st.restore(["p" + PR]), "restore to folder");
-	Kit.eq([ptags(PR).folder, ptags(PR).was, ptags(PR).starred], ["Receipts", "", true],
-		"back in folder, star kept");
+	Kit.eq([ptags(PR).folder, ptags(PR).was, (phdr(PR).attr & D.MSG_VALIDATED) != 0],
+		["Receipts", "", true], "back in folder, star kept");
 
 	one(st.remove(["p" + PS]), "delete from sent");
 	Kit.eq(ptags(PS).was, Tags.SENT, "trash from sent");
@@ -691,20 +691,28 @@ try {
 	Kit.eq(ptags(PS).folder, Tags.SENT, "private untouched after a conflict");
 	Kit.eq(ajf.read("folders", [])[0], "Receipts", "folders untouched after a conflict");
 
-	// --- forget_shared cannot take its lock after a shared write: the
-	// facts cache is deleted, so no stale star survives
+	// --- A star is an attribute: setting it needs no facts lock and keeps
+	// the facts cache.  forget_shared cannot take its lock after a shared
+	// write that changed a cached fact (here: Spam back to the Inbox): the
+	// facts cache is deleted, so no stale fact survives
 	Kit.assert(file_exists(ajf.path("shared")), "facts cache exists");
 	lock = st.jf.lock_path("shared");
 	Kit.assert(file_mutex(lock, "held by test", 60), "take facts lock");
 	st.jf.timeout = 200;
 	try {
 		one(st.set(["s" + QC], { starred: true }), "star while facts are locked");
+		Kit.assert(file_exists(ajf.path("shared")), "a star leaves the facts cache");
+		one(st.set(["s" + QC], { starred: false }), "unstar while facts are locked");
+		one(st.set(["s" + QC], { read: true, spam: true }), "spam while facts are locked");
+		Kit.assert(file_exists(ajf.path("shared")), "spam leaves the facts cache");
+		one(st.move(["s" + QC], "inbox"), "not spam while facts are locked");
 	} finally {
 		file_remove(lock);
 		st.jf.timeout = 5000;
 	}
 	Kit.assert(!file_exists(ajf.path("shared")), "facts cache deleted");
-	Kit.assert(ids(st.list("starred")).indexOf("s" + QC) >= 0, "star seen");
+	Kit.eq(shdr(QC).attr & D.MSG_SPAM, 0, "no longer spam");
+	Kit.assert(ids(st.list("inbox")).indexOf("s" + QC) >= 0, "back in the Inbox");
 
 	// --- A rename interrupted on its second message: what was retagged is
 	// recorded, the rest keeps the old tag, both folders list correctly

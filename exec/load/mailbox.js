@@ -2,7 +2,8 @@
 // private e-mail base (folders, Sent copies, Trash) presented as one.
 //
 // var Store = load("mailbox.js");
-// var store = new Store({usernum, alias, name, shared_path, data_dir, options, now});
+// var store = new Store({usernum, alias, name, shared_path, data_dir, options,
+//	now});
 // store.open();
 // store.folders();				// [{id, name, kind, total, unread}]
 // store.list(folder_id, {offset, limit, search});	// {total, items}
@@ -51,7 +52,7 @@
 // or "duplicate" (the same as another folder's, ASCII case ignored).
 //
 // Reading one message (each checks ownership like resolve()):
-// store.get(id, {mark_read});		// list item + {headers, comment, text, html, parts}
+// store.get(id, {mark_read, head});	// list item + {headers, comment, text, html, parts}
 // store.original(id);			// {rfc822, stored, external_files}
 // store.raw_file(id);			// {path, name, size, temp:true}
 // store.part_file(id, pid);		// {path, name, type, size, temp}
@@ -79,7 +80,8 @@
 // cannot be read is null and listed first in parts. parts is the MIME
 // attachments {pid, name, type, size, cid, inline}, then the file
 // attachments {pid: "f<n>", name, type, size} (size -1: missing, or not
-// a file this user may be served: see file_dir()). mark_read sets
+// a file this user may be served: see file_dir()). head: the list item
+// only (after mark_read), nothing else read. mark_read sets
 // MSG_READ once, on a shared message only when it is to the user, never
 // on a sent extra; a busy summary or a failed write leaves it unread
 // (logged) rather than failing the read.
@@ -239,7 +241,10 @@
 // If a sibling is not beside this file (this file was copied to mods/,
 // say), it is loaded by name through the normal load() search.
 //
-// The user: usernum must be a positive integer. The user's directory is
+// The user: usernum must be an integer from 1 to 65535, else the
+// constructor throws { code: "invalid" }: the mail base's index holds user
+// numbers in 16 bits, and the stock mail code finds a user's mail by that
+// field, so mail cannot work for a higher number. The user's directory is
 // data_dir + format("user/%04u/", usernum) and the private base is
 // "mailbox" in it; no caller-supplied string is part of a path. Reading
 // never creates the private base, mailbox.folders.json or
@@ -283,9 +288,12 @@
 //                         Message-ID also hides every copy of it); written
 //                         by the write side only, which drops entries that
 //                         no longer name a live shared record from the user
-//   mailbox.shared.json   {v, gen, recs: {number: [time, own, starred, id,
-//                         reply_id, to_net_type, sent, attempts]}}: the
-//                         facts cache (derived; deleting it is safe). gen
+//   mailbox.shared.json   {v, gen, recs: {number: [time, own, id, reply_id,
+//                         to_net_type, sent, attempts, row]}}:
+//                         the facts cache (derived; deleting it is safe);
+//                         row is the list row's header fields [tags, from,
+//                         from_addr, to, subject, date, zone, arrived,
+//                         priority, size, attach], null when own is 0. gen
 //                         is bumped by forget_shared(); a save whose gen
 //                         no longer matches the file is skipped
 //   mailbox.state.json    shared: {stamps, fp}, serial, and expired (the
@@ -311,13 +319,23 @@
 //                         copy the move left (see "reconcile" below)
 //
 // Membership: inbox = shared, to the user, not spam; spam = shared, to
-// the user, spam attribute; starred = $Starred in either base, not in
+// the user, spam attribute; starred = see Stars, either base, not in
 // Trash; sent = private $Sent plus shared records from the user (not
 // hidden by mailbox.hidden.json) whose Message-ID no private message
 // has, one per Message-ID, flagged extra:true (mail to oneself is in both
 // Inbox and Sent); trash, archive and user folders = private by tag. "all" (search
 // only) is everything except Spam and Trash, each message once. Deleted
 // messages are never listed.
+//
+// Stars: a starred message has the MSG_VALIDATED attribute, in either
+// base (the bit the stock IMAP service shows as \Flagged, so a star set
+// here shows there; the IMAP service lets only an operator set the flag
+// today, #1369). set({starred}) sets or
+// clears it with put_msg_header(), which writes the header and the index
+// record; move_msg() carries the attribute to the copy, so a star stays
+// with a message moved between the bases, to Trash and back. Whether a
+// row is starred is read on every call: from the index record (shared)
+// or the summary (private), never cached.
 //
 // Delivery (every Sent item): "queued" {waiting, attempts} while delivery
 // copies with its Message-ID, from the user, to a network address and not
@@ -328,20 +346,24 @@
 //
 // Cost: one get_index() pass over the shared base per call. Headers of the
 // user's shared records are read once each and the facts needed for
-// membership (owner check, $Starred, Message-ID, reply_id, network type,
-// sent) are cached in mailbox.shared.json, keyed by number and import
-// time; later calls read only records not seen before. A change this
-// library makes to a shared header (starring, spam, a move away) calls
-// forget_shared(). Listing or counting Sent also re-reads the
-// headers of the user's outbound network records not yet marked sent (for
-// the delivery state), and list() reads the headers of the rows it
-// returns (with search: of every candidate shared row).
+// membership (owner check, Message-ID, reply_id, network type, sent) and
+// the header fields of a list row are cached in mailbox.shared.json,
+// keyed by number and import time; later calls read only records not seen
+// before. A list row's attributes (read, replied, starred, spam) come from
+// the index on every call. A change this library makes to a shared
+// header's cached fields (its tags, a move away) calls forget_shared(); a
+// change of its attributes alone only counts as a change for state().
+// Listing or counting Sent also re-reads the headers of the user's
+// outbound network records not yet marked sent (for the delivery state).
+// A header field of a list row changed by something else in place (the
+// same number and import time) is not seen until forget_shared() or a
+// deletion of the cache.
 //
-// User numbers above 65535: the shared base's index holds 16-bit user
-// numbers, so such a user's index pass also picks up records of the user
-// whose number is equal modulo 65536. Those are dropped by the owner check
-// (they never show), but they still cost a header read the first time and
-// can make state() change when that other user's mail changes.
+// Owners: a shared record is a candidate for the user when its 16-bit
+// index field is the user's number; the owner is confirmed from the
+// header (to_ext, or from_ext for a sent extra) when the record is first
+// seen, and only then are its list fields cached. A record that is not
+// the user's after all is never listed (fact own 0, no row).
 //
 // Strings: display strings and search are UTF-8 byte strings; search
 // matches case-insensitively for ASCII letters only.
@@ -376,7 +398,7 @@ var Store = (function () {
 	var MAX_LIMIT = 100;
 	var SLICE_SIZE = 200;	// messages per summary lock in a long call
 	var DEFAULT_LIMIT = 50;
-	var FACTS_VERSION = 1;
+	var FACTS_VERSION = 3;
 	var BLOCK = 256;	// SHD_BLOCK_LEN and SDT_BLOCK_LEN (smbdefs.h)
 	var ID_RE = /^[sp][1-9][0-9]{0,9}$/;
 	var WS_RE = /[ \t\r\n\f\v]/;
@@ -385,12 +407,12 @@ var Store = (function () {
 	// Fact row fields (mailbox.shared.json "recs", keyed by number)
 	var F_TIME = 0;		// index time, to detect a reused number
 	var F_OWN = 1;		// bit 1: to_ext is the user, bit 2: from_ext is
-	var F_STAR = 2;		// $Starred
-	var F_ID = 3;		// Message-ID
-	var F_RID = 4;		// reply_id
-	var F_NET = 5;		// to_net_type
-	var F_DONE = 6;		// NETMSG_SENT seen (never cleared by the mail server)
-	var F_TRIES = 7;	// delivery_attempts when last read
+	var F_ID = 2;		// Message-ID
+	var F_RID = 3;		// reply_id
+	var F_NET = 4;		// to_net_type
+	var F_DONE = 5;		// NETMSG_SENT seen (never cleared by the mail server)
+	var F_TRIES = 6;	// delivery_attempts when last read
+	var F_ROW = 7;		// the list row's header fields (row_fields())
 	var OWN_TO = 1;
 	var OWN_FROM = 2;
 
@@ -477,12 +499,21 @@ var Store = (function () {
 		return "u:" + p.folder;
 	}
 
+	// Whether a message is starred: the MSG_VALIDATED attribute (attr from
+	// the index or the summary)
+	function is_starred(attr)
+	{
+		return (attr & D.MSG_VALIDATED) != 0;
+	}
+
 	function Store(o)
 	{
 		o = o || {};
 		var u = o.usernum;
-		if (typeof u != "number" || u !== Math.floor(u) || u < 1 || u > 0x7FFFFFFF)
+		if (typeof u != "number" || u !== Math.floor(u) || u < 1)
 			throw error("invalid", "usernum is not a positive integer");
+		if (u > 0xFFFF)
+			throw error("invalid", "user numbers above 65535 do not fit the mail index");
 		this.usernum = u;
 		this.alias = o.alias;
 		this.name = o.name;
@@ -618,8 +649,11 @@ var Store = (function () {
 			own |= OWN_TO;
 		if (parseInt(h.from_ext, 10) === this.usernum)
 			own |= OWN_FROM;
-		return [rec.time, own, Tags.parse(h.tags).starred ? 1 : 0, h.id || "", h.reply_id || "",
-			h.to_net_type || 0, (h.netattr & D.NETMSG_SENT) ? 1 : 0, h.delivery_attempts || 0];
+		// The list fields only of the user's own records: another user's
+		// subject and sender never go into this user's cache file
+		return [rec.time, own, h.id || "", h.reply_id || "",
+			h.to_net_type || 0, (h.netattr & D.NETMSG_SENT) ? 1 : 0, h.delivery_attempts || 0,
+			own ? row_fields(summarize_shared(this.shared_base(), h)) : null];
 	};
 
 	// Facts for every record in scan.all, from mailbox.shared.json where
@@ -636,7 +670,7 @@ var Store = (function () {
 		for (var i = 0; i < scan.all.length; i++) {
 			var rec = scan.all[i];
 			var f = cached[rec.number];
-			if (!(f instanceof Array) || f[F_TIME] !== rec.time) {
+			if (!(f instanceof Array) || f[F_TIME] !== rec.time || (f[F_OWN] && !valid_row(f))) {
 				f = this.read_fact(rec);
 				if (f === null)
 					continue;
@@ -694,6 +728,13 @@ var Store = (function () {
 			c.gen = gen;
 			return c;
 		});
+		this.bump_serial();
+	};
+
+	// Note a change for state() that no cached fact depends on (an
+	// attribute of a shared message, which list() reads from the index)
+	Store.prototype.bump_serial = function ()
+	{
 		this.jf.update("state", {}, function (s) {
 			if (s === null || typeof s != "object" || s instanceof Array)
 				s = {};
@@ -761,7 +802,7 @@ var Store = (function () {
 			if (row.msgid)
 				pids[row.msgid] = true;
 			cands.push({ kind: "p", num: row.num, arrived: row.arrived, folder: folder,
-				starred: p.starred && folder != "trash", unread: !(row.attr & D.MSG_READ),
+				starred: is_starred(row.attr) && folder != "trash", unread: !(row.attr & D.MSG_READ),
 				extra: false, msgid: row.msgid, row: row, parsed: p });
 		}
 		for (i = 0; i < scan.to.length; i++) {
@@ -771,8 +812,9 @@ var Store = (function () {
 				continue;
 			cands.push({ kind: "s", num: rec.number, arrived: rec.time,
 				folder: (rec.attr & D.MSG_SPAM) ? "spam" : "inbox",
-				starred: f[F_STAR] == 1, unread: !(rec.attr & D.MSG_READ),
-				extra: false, msgid: f[F_ID], rec: rec });
+				starred: is_starred(rec.attr),
+				unread: !(rec.attr & D.MSG_READ),
+				extra: false, msgid: f[F_ID], rec: rec, fact: f });
 		}
 		var info = { scan: scan, facts: facts, rows: rows, pids: pids };
 		if (want_sent) {
@@ -800,7 +842,7 @@ var Store = (function () {
 					ids_seen[id] = true;
 				}
 				cands.push({ kind: "s", num: rec.number, arrived: rec.time, folder: "sent",
-					starred: false, unread: false, extra: true, msgid: id, rec: rec });
+					starred: false, unread: false, extra: true, msgid: id, rec: rec, fact: f });
 			}
 		}
 		info.cands = cands;
@@ -883,14 +925,42 @@ var Store = (function () {
 		};
 	}
 
+	// The cached fields of a shared summary entry (F_ROW), and the entry
+	// back from them with the index record's attributes
+	function row_fields(s)
+	{
+		return [s.tags, s.from, s.from_addr, s.to, s.subject, s.date, s.zone, s.arrived,
+			s.priority, s.size, s.attach ? 1 : 0];
+	}
+
+	function row_summary(num, rec, f)
+	{
+		var r = f[F_ROW];
+		return { num: num, tags: r[0], from: r[1], from_addr: r[2], to: r[3], subject: r[4],
+			date: r[5], zone: r[6], arrived: r[7], priority: r[8], size: r[9],
+			attach: r[10] == 1, attr: rec.attr, msgid: f[F_ID] };
+	}
+
+	function valid_row(f)
+	{
+		var r = f === undefined ? undefined : f[F_ROW];
+		return r instanceof Array && r.length == 11;
+	}
+
 	// The summary entry for a candidate; null if its header is gone or
-	// (for a shared one) no longer the user's
+	// (for a shared one) no longer the user's. A shared one comes from the
+	// facts cache when it holds the row (collect() kept only records whose
+	// facts say they are the user's), else from the header.
 	Store.prototype.summary_of = function (c)
 	{
 		if (c.kind == "p")
 			return c.row;
 		if (c.sum !== undefined)
 			return c.sum;
+		if (valid_row(c.fact)) {
+			c.sum = row_summary(c.num, c.rec, c.fact);
+			return c.sum;
+		}
 		var h = this.shared_header(c.num);
 		c.sum = null;
 		if (h === null)
@@ -904,13 +974,12 @@ var Store = (function () {
 
 	function to_item(c, s)
 	{
-		var p = c.kind == "p" ? c.parsed : Tags.parse(s.tags);
 		var it = {
 			id: c.kind + c.num, from: s.from, from_addr: s.from_addr, to: s.to,
 			subject: s.subject, date: s.date, zone: s.zone, arrived: s.arrived, size: s.size,
 			read: c.extra ? true : (s.attr & D.MSG_READ) != 0,
 			replied: (s.attr & D.MSG_REPLIED) != 0,
-			starred: c.extra ? false : (p.starred && c.folder != "trash"),
+			starred: c.extra ? false : (is_starred(s.attr) && c.folder != "trash"),
 			attach: s.attach, priority: priority(s.priority), folder: c.folder
 		};
 		if (c.extra)
@@ -1371,7 +1440,8 @@ var Store = (function () {
 	{
 		var ctx = { rows: rows, pmb: pmb, now: now, by_num: {}, bytes: 0, added: [], removed: [],
 			changed: [], forget: [], trash: {}, hidden: [], folders: [], purge: false, gone: {},
-			used: {}, trash_order: null, journal: {}, journal_ok: false, keep: null, unknown: false };
+			used: {}, trash_order: null, journal: {}, journal_ok: false, keep: null, unknown: false,
+			touched: false };
 		for (var i = 0; i < rows.length; i++) {
 			ctx.by_num[rows[i].num] = rows[i];
 			ctx.bytes += rows[i].size;
@@ -1522,6 +1592,8 @@ var Store = (function () {
 		var i;
 		if (ctx.forget.length > 0)
 			this.forget_written(ctx.forget);
+		else if (ctx.touched)
+			this.touch_state();
 		var trash = ctx.trash;
 		var keep = ctx.keep;
 		var any = keep !== null;
@@ -1633,6 +1705,18 @@ var Store = (function () {
 				add(entries[j].key);
 			return out;
 		});
+	};
+
+	// bump_serial() after a shared header's attributes alone were
+	// rewritten; if that fails, the change serial's file is dropped
+	Store.prototype.touch_state = function ()
+	{
+		try {
+			this.bump_serial();
+		} catch (e) {
+			this.log_original("change serial not updated, file deleted", e);
+			file_remove(this.jf.path("state"));
+		}
 	};
 
 	// forget_shared() after shared headers were rewritten; if that fails
@@ -2131,7 +2215,7 @@ var Store = (function () {
 		var sh = this.journal_copy(ctx, key, h, false);
 		var smb = this.shared_base();
 		var attr = spam ? (h.attr | D.MSG_SPAM) : (h.attr & ~D.MSG_SPAM);
-		var tags = Tags.format({ starred: p.starred, other: p.other });
+		var tags = Tags.format({ other: p.other });
 		var s;
 		if (sh !== null) {	// finish an interrupted move
 			s = sh.number;
@@ -2167,28 +2251,20 @@ var Store = (function () {
 			throw error("invalid", "spam applies to Inbox and Spam only");
 		var h = r.header;
 		var attr = h.attr;
-		var old_tags = h.tags || "";
-		var tags = old_tags;
 		if (ch.read !== undefined)
 			attr = ch.read ? (attr | D.MSG_READ) : (attr & ~D.MSG_READ);
 		if (ch.spam !== undefined)
 			attr = ch.spam ? (attr | D.MSG_SPAM) : (attr & ~D.MSG_SPAM);
-		if (ch.starred !== undefined) {
-			var p = Tags.parse(tags, { shared: r.kind == "s" });
-			if (p.starred != !!ch.starred) {
-				p.starred = !!ch.starred;
-				tags = Tags.format(p);
-			}
-		}
-		if (attr === h.attr && tags === old_tags)
+		if (ch.starred !== undefined)
+			attr = ch.starred ? (attr | D.MSG_VALIDATED) : (attr & ~D.MSG_VALIDATED);
+		if (attr === h.attr)
 			return done(id);
 		h.attr = attr;
-		h.tags = tags;
 		this.put_header(r.base, r.number, h);
-		if (r.kind == "s")
-			ctx.forget.push(r.number);
-		else
+		if (r.kind == "p")
 			ctx.changed.push(r.number);
+		else
+			ctx.touched = true;	// attributes come from the index: no fact changed
 		return done(id);
 	};
 
@@ -2209,7 +2285,7 @@ var Store = (function () {
 				}
 				return done(id);
 			}
-			var n = this.move_in(r, ctx, Tags.format({ folder: tag, starred: p.starred, other: p.other }), true);
+			var n = this.move_in(r, ctx, Tags.format({ folder: tag, other: p.other }), true);
 			return done(id, "p" + n);
 		}
 		if (tag === null)
@@ -2234,8 +2310,7 @@ var Store = (function () {
 		var p = Tags.parse(h.tags, { shared: r.kind == "s" });
 		if (r.kind == "s") {
 			var was = (h.attr & D.MSG_SPAM) ? WAS_SPAM : WAS_INBOX;
-			var n = this.move_in(r, ctx, Tags.format({ folder: Tags.TRASH, starred: p.starred, was: was,
-				other: p.other }), false);
+			var n = this.move_in(r, ctx, Tags.format({ folder: Tags.TRASH, was: was, other: p.other }), false);
 			set_trash(ctx, n, ctx.now);
 			return done(id, "p" + n);
 		}
@@ -2966,13 +3041,16 @@ var Store = (function () {
 	};
 
 	// The message: the list item plus {headers, comment, text, html, parts}.
-	// opts.mark_read sets the read attribute (see mark_read).
+	// opts.mark_read sets the read attribute (see mark_read); opts.head
+	// returns the list item alone.
 	Store.prototype.get = function (id, opts)
 	{
 		opts = opts || {};
 		var r = this.resolve(id);
 		if (opts.mark_read)
 			this.mark_read(r);
+		if (opts.head)
+			return this.item_of(r);
 		var h = display_header(r);
 		var out = this.item_of(r);
 		var str = hstr(h);

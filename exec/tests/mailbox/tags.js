@@ -8,7 +8,6 @@ Kit.assert(Tags.encode("a b").indexOf(" ") < 0);
 Kit.eq(Tags.TRASH, "$Trash");
 Kit.eq(Tags.SENT, "$Sent");
 Kit.eq(Tags.ARCHIVE, "$Archive");
-Kit.eq(Tags.STARRED, "$Starred");
 Kit.eq(Tags.WAS, "$Was:");
 Kit.eq(Tags.FAILED, "$Failed");
 Kit.eq(Tags.UNSENT, "$Unsent");
@@ -72,9 +71,8 @@ Kit.assert(!Tags.canonical("$Sent"), "a raw $ tag is not a user-folder tag");
 // byte 0xA0 is not whitespace (a-grave is C3 A0)
 var grave = "Caf\xC3\xA0 x\xC3\xA0";
 var gt = Tags.encode(grave);
-Kit.eq(Tags.parse(gt + " $Starred").folder, gt, "0xA0 does not split a tag");
-Kit.eq(Tags.parse(gt + " $Starred").other, []);
-Kit.eq(Tags.format(Tags.parse(gt + " $Starred")), gt + " $Starred");
+Kit.eq(Tags.parse(gt + " $Failed").folder, gt, "0xA0 does not split a tag");
+Kit.eq(Tags.parse(gt + " $Failed").other, []);
 Kit.eq(Tags.parse("a\xA0b").folder, "a\xA0b");
 Kit.eq(Tags.parse("x\xC3\xA0 y\xC3\xA0").folder, "x\xC3\xA0");
 Kit.eq(Tags.parse("x\xC3\xA0 y\xC3\xA0").other, ["y\xC3\xA0"]);
@@ -111,8 +109,8 @@ Kit.eq(Tags.validate("a\x7Fb", []), "invalid", "DEL");
 Kit.eq(Tags.validate("\x00", []), "invalid", "NUL");
 Kit.eq(Tags.validate(" a b\t", []), null, "ASCII whitespace at the edges is trimmed, not invalid");
 // The tags of a shared message have no folder
-Kit.eq(Tags.parse("work urgent $Starred", { shared: true }),
-	{ folder: "", starred: true, was: "", failed: false, unsent: false, other: ["work", "urgent"] },
+Kit.eq(Tags.parse("work urgent $Failed", { shared: true }),
+	{ folder: "", was: "", failed: true, unsent: false, other: ["work", "urgent"] },
 	"shared: every tag but the flags is other");
 Kit.eq(Tags.parse("work urgent").folder, "work", "private: the first tag is the folder");
 Kit.eq(Tags.validate("  family ", ["Family"]), "duplicate");
@@ -133,12 +131,15 @@ Kit.eq(Tags.validate("x" + String.fromCharCode(0x20AC), []), "invalid");
 Kit.eq(Tags.validate("ok", undefined), null, "existing omitted");
 
 // parse / format
-var P = Tags.parse("$Starred Receipts $Was:$Inbox foreign");
-Kit.assert(P.folder == "Receipts" && P.starred && P.was == "$Inbox");
+var P = Tags.parse("Receipts $Was:$Inbox foreign");
+Kit.assert(P.folder == "Receipts" && P.was == "$Inbox");
 Kit.assert(!P.failed && !P.unsent && P.other[0] == "foreign");
-Kit.eq(Tags.parse(Tags.format(P)), P);
+Kit.eq(P.starred, undefined, "no starred field: the star is an attribute");
+Kit.eq(Tags.format(P), "Receipts $Was:$Inbox foreign");
+Kit.eq(Tags.parse(Tags.format(P)), P, "round-trips");
+Kit.eq(Tags.format({ folder: "Receipts", starred: true }), "Receipts", "format never writes a star");
 
-Kit.eq(Tags.parse(""), { folder: "", starred: false, was: "", failed: false, unsent: false, other: [] });
+Kit.eq(Tags.parse(""), { folder: "", was: "", failed: false, unsent: false, other: [] });
 Kit.eq(Tags.parse(undefined), Tags.parse(""));
 Kit.eq(Tags.parse(null), Tags.parse(""));
 Kit.eq(Tags.parse("   \t "), Tags.parse(""));
@@ -146,8 +147,8 @@ Kit.eq(Tags.parse("  $Sent   $Failed  ").folder, "$Sent");
 Kit.assert(Tags.parse("  $Sent   $Failed  ").failed);
 Kit.eq(Tags.parse("$Trash $Was:Receipts").was, "Receipts");
 Kit.eq(Tags.parse("$Sent $Unsent").unsent, true);
-Kit.eq(Tags.parse("$Starred").folder, "");
-Kit.eq(Tags.parse("$Weird mine $Other more"), { folder: "mine", starred: false, was: "", failed: false, unsent: false, other: ["$Weird", "$Other", "more"] });
+Kit.eq(Tags.parse("$Weird mine $Other more"), { folder: "mine", was: "", failed: false,
+	unsent: false, other: ["$Weird", "$Other", "more"] });
 Kit.eq(Tags.parse("$Weird").other, ["$Weird"], "unknown $ tag is not a folder");
 Kit.eq(Tags.parse("$Archive Receipts").other, ["Receipts"], "first folder wins");
 
@@ -158,16 +159,16 @@ Kit.throws(function () { Tags.format({ folder: "a\nb" }); }, "invalid");
 Kit.throws(function () { Tags.format({ was: "$Inbox x" }); }, "invalid");
 Kit.throws(function () { Tags.format({ was: "a\rb" }); }, "invalid");
 Kit.eq(Tags.format({ folder: "a\xA0b", was: "c\xA0d" }), "a\xA0b $Was:c\xA0d", "0xA0 is not whitespace");
-Kit.eq(Tags.format({ folder: "Receipts", starred: true, was: "$Inbox", failed: true, unsent: true, other: ["x", "$Y"] }),
-	"Receipts $Starred $Was:$Inbox $Failed $Unsent x $Y");
+Kit.eq(Tags.format({ folder: "Receipts", was: "$Inbox", failed: true, unsent: true, other: ["x", "$Y"] }),
+	"Receipts $Was:$Inbox $Failed $Unsent x $Y");
 Kit.eq(Tags.format({ other: ["x"], folder: "$Sent" }), "$Sent x");
 
 // parse(format(x)) == x, including an encoded non-ASCII folder
 var objs = [
 	Tags.parse(""),
 	Tags.parse("$Sent $Failed"),
-	Tags.parse("$Trash $Starred $Was:" + Tags.encode(utf8) + " zzz $Qq"),
-	{ folder: Tags.encode(utf8), starred: true, was: "$Inbox", failed: false, unsent: true, other: ["o1", "$o2"] }
+	Tags.parse("$Trash $Was:" + Tags.encode(utf8) + " zzz $Qq"),
+	{ folder: Tags.encode(utf8), was: "$Inbox", failed: false, unsent: true, other: ["o1", "$o2"] }
 ];
 for (i = 0; i < objs.length; i++)
 	Kit.eq(Tags.parse(Tags.format(objs[i])), objs[i], "format round trip " + i);
