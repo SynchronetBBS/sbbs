@@ -1,6 +1,6 @@
 // Library for the List Files loadable module (listfiles.js): option
 // defaults and merging, header/footer menu file lookup, filespec widening,
-// module-local @-codes, and pagination
+// module-local @-codes, and the window of files on the screen
 // for Synchronet v3.22+
 
 // Usage: load("listfiles_lib.js");
@@ -13,9 +13,27 @@ function listfiles_defaults()
 		// One file's line, for users with batch flagging enabled and without
 		line_fmt: "@NAME_ATTR@@NAME@@FLAGS@@LETTER_ATTR@@LETTER@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
 		line_fmt_nobatch: "@NAME_ATTR@@NAME@@FLAGS@@SIZE_ATTR@@SIZE-R7@@MISSING@@DESC_ATTR@@DESC@",
+		// For batch flagging on terminals that position the cursor (lightbar):
+		// the tagged/untagged marker in place of the letter
+		line_fmt_interactive: "@NAME_ATTR@@NAME@@FLAGS@@LETTER_ATTR@@TAG@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
+		// The command keys shown above the files in the interactive mode, below
+		// any header ("" for none, e.g. when a custom header shows them)
+		interactive_commands: "\x01n\x01>\x01q\x014 \x01h\x01y[\x01w\x01~D\x01y]ownload  [\x01w\x01~B\x01y]atch  [\x01wSpace\x01y] Tag  [\x01w\x01~V\x01y]iew  [\x01w\x01~E\x01y]xt Info  [\x01w\x01~T\x01y]oggle Desc  [\x01w\x01~Q\x01y]uit\x01>\x01n\r\n",
+		// The interactive mode's prompt. Arguments: more_above or no_more,
+		// more_below or no_more, library number, library name, directory
+		// number, directory name, number of files
+		interactive_prompt: "\x01n\x01c%s \x01hListing \x01n\x01c%s (\x01h%u\x01n\x01c) %s (\x01h%u\x01n\x01c) %s (\x01h\x01`?\x01n\x01c=Menu) (\x01h%u\x01n\x01c Files): \x01n\x01~",
+		// Right-justified on the line above the interactive mode's prompt
+		// ("" for none). Arguments: current file number, number of files
+		position_fmt: "\x01n\x01h\x01k[file %u of %u]",
+		// Whether there are more pages of files before and after this one,
+		// on either side of the prompt's verb (as msglist.js's reader shows)
+		more_above: "\x18",
+		more_below: "\x19",
+		no_more: "\xfe",
 		extdesc_marker: "+",
 		missing_marker: "-",
-		tagged_marker: "*",
+		tagged_marker: "\xfb",	// CP437 check mark, as msglist.js uses
 		untagged_marker: " ",
 		name_attr: "",
 		size_attr: "",
@@ -32,8 +50,7 @@ function listfiles_defaults()
 		box_vertical: "\xba",
 		short_hdr_underline: "\xc4",
 		selected_item_attr: "\x01V",
-		lightbar: true,
-		more_fmt: "\x01n\x01h\x01k   [%u-%u of %u]"
+		lightbar: true
 	};
 }
 
@@ -99,6 +116,30 @@ function listfiles_format_filename(name, size)
 	return result;
 }
 
+// A byte count estimated in at most 6 characters (e.g. "1023", "1.5K",
+// "976.6K", "10.0G"), as in the built-in file lister's size column
+function listfiles_size_str(bytes)
+{
+	var KB = 1024, MB = KB * KB, GB = MB * KB, TB = GB * KB, PB = TB * KB;
+	var str;
+	for (var unit = 1; ; unit *= 1024) {
+		if (bytes >= PB)
+			str = format("%.1fP", bytes / PB);
+		else if (bytes >= TB || unit == TB)
+			str = format("%.1fT", bytes / TB);
+		else if (bytes >= GB || unit == GB)
+			str = format("%.1fG", bytes / GB);
+		else if (bytes >= MB || unit == MB)
+			str = format("%.1fM", bytes / MB);
+		else if (bytes >= KB || unit == KB)
+			str = format("%.1fK", bytes / KB);
+		else
+			str = String(bytes);
+		if (str.length <= 6 || unit >= TB)
+			return str;
+	}
+}
+
 // Ctrl-A codes for an IBM CGA attribute value (e.g. from console.color_list[])
 function listfiles_attr_str(attr)
 {
@@ -154,25 +195,81 @@ function listfiles_local_codes(str, values)
 	});
 }
 
-// Split items (files) of the given screen-line heights into pages of at most
-// 'rows' lines each, in order: [{ first: index, count: n }, ...]. An item
-// taller than a page gets a page of its own (and is clipped when displayed).
-function listfiles_paginate(heights, rows)
+// Expand a file line template: the module-local @-codes from 'values', and
+// the rest of the template's text by expander(text) (e.g. a wrapper for
+// bbs.expand_atcodes()), called only on text with an '@' in it. The values
+// (e.g. an uploader's description) never pass through the expander.
+function listfiles_expand(fmt, values, expander)
 {
-	var pages = [];
-	var page = null;
-	var used = 0;
-	for (var i = 0; i < heights.length; i++) {
-		var h = Math.min(heights[i], rows);
-		if (page === null || used + h > rows) {
-			page = { first: i, count: 0 };
-			pages.push(page);
-			used = 0;
-		}
-		page.count++;
-		used += h;
+	var re = new RegExp("@(?:" + LISTFILES_LOCAL_CODES.join("|") + ")(?:-[LRC]|\\|[A-Z]*)?\\d*@", "g");
+	var result = "";
+	var last = 0;
+	var match;
+	function literal(text)
+	{
+		return text.indexOf("@") < 0 ? text : expander(text);
 	}
-	return pages;
+	while ((match = re.exec(fmt)) !== null) {
+		result += literal(fmt.substring(last, match.index));
+		result += listfiles_local_codes(match[0], values);
+		last = re.lastIndex;
+	}
+	return result + literal(fmt.substring(last));
+}
+
+// The text render(names) (e.g. a prompt with a library and directory name)
+// shortened to fit in 'width' columns, as measured by measure(text), by
+// shortening the longest of the names a character at a time (down to one
+// character each), so that what follows the names stays in view
+function listfiles_shorten_to_fit(names, render, measure, width)
+{
+	names = names.slice();
+	var text = render(names);
+	while (measure(text) > width) {
+		var longest = 0;
+		for (var i = 1; i < names.length; i++) {
+			if (names[i].length >= names[longest].length)
+				longest = i;
+		}
+		if (names[longest].length <= 1)
+			break;
+		names[longest] = names[longest].substr(0, names[longest].length - 1);
+		text = render(names);
+	}
+	return text;
+}
+
+// A window of items (files) of the given screen-line heights, with at most
+// 'rows' lines on the screen: an item taller than that counts as 'rows'
+// lines (it's clipped when displayed)
+
+// The number of items, starting with item 'top', that fit in the window
+// (at least one, unless there are none)
+function listfiles_window_count(heights, top, rows)
+{
+	var count = 0;
+	var used = 0;
+	for (var i = top; i < heights.length; i++) {
+		var h = Math.min(heights[i], rows);
+		if (count && used + h > rows)
+			break;
+		used += h;
+		count++;
+	}
+	return count;
+}
+
+// The first item of a window whose last item is 'bottom' (the window
+// reaching as far up as fits)
+function listfiles_window_top(heights, bottom, rows)
+{
+	var top = bottom;
+	var used = Math.min(heights[bottom], rows);
+	while (top > 0 && used + Math.min(heights[top - 1], rows) <= rows) {
+		top--;
+		used += Math.min(heights[top], rows);
+	}
+	return top;
 }
 
 this;
