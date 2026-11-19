@@ -1,7 +1,7 @@
 // listfiles_lib.js: options merging, header/footer menu lookup order,
 // filespec widening, module-local @-codes and pagination
 
-load("listfiles_lib.js");
+load(js.exec_dir + "../../load/listfiles_lib.js");
 
 var failures = [];
 
