@@ -558,7 +558,7 @@ char exascii_to_ascii_char(uchar ch)
 bool str_is_ascii(const char* str)
 {
 	for (const char* p = str; *p != 0; p++) {
-		if (*p < 0)
+		if ((uchar) * p > 0x7f)
 			return false;
 	}
 	return true;
