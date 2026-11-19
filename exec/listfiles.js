@@ -351,7 +351,7 @@ function aborted()
 Listing.prototype.list = function ()
 {
 	if (this.batch) {
-		var listed = cursor_capable() ? this.list_pages() : this.list_letters();
+		var listed = cursor_capable() ? this.list_pages(new ClassicLayout(this)) : this.list_letters();
 		if (listed > 0)
 			this.show_tail();
 		return listed;
@@ -668,12 +668,210 @@ var HOTSPOT_PREFIX = "\x1f";
 // (which tags or untags the file)
 var DOUBLE_CLICK_SECONDS = 0.5;
 
-// Interactive batch flagging: a highlighted current file moved with the
-// arrow keys (scrolling as needed) and paged with PgUp/PgDn, Space or a
-// double-click to tag files, and mouse selection of files
-Listing.prototype.list_pages = function ()
+// The classic interactive layout: the directory header and command keys,
+// the files with their extended descriptions beside them, and below the
+// list the current file's position and the prompt. 'engine' (set by
+// list_pages()) gives cur(), top(), bottom() and count().
+function ClassicLayout(listing)
+{
+	this.listing = listing;
+	this.opts = listing.opts;
+	this.engine = null;
+	this.shown_prompt = null;	// the prompt as displayed (with its hotspots)
+	this.prompt_end = 0;		// screen column after the displayed prompt
+}
+
+// Clear the screen and draw what's above the list. Returns the first list
+// row and the number of rows for files.
+ClassicLayout.prototype.begin = function ()
+{
+	console.line_counter = 0;	// as the built-in's "\x01q" does: clear without a pause
+	console.clear();
+	this.listing.show_header();
+	console.cond_newline();
+	var list_row = console.current_row;
+	return { list_row: list_row
+		, rows: Math.max(1, console.screen_rows - list_row - 2) };	// a blank line, then the prompt
+};
+
+// File i's screen lines: its line and any extended description beside it
+ClassicLayout.prototype.height = function (i)
+{
+	var ext = this.listing.extdesc(this.listing.files[i]);
+	return ext === null ? 1 : listfiles_extdesc_lines(ext).length;
+};
+
+// File i's line, highlighted when it's the current file
+ClassicLayout.prototype.line = function (i, current, tagged)
 {
 	var opts = this.opts;
+	var f = this.listing.files[i];
+	var overrides = { tag: tagged ? opts.tagged_marker : opts.untagged_marker };
+	if (current && !opts.lightbar)
+		overrides.name_attr = opts.selected_item_attr;
+	var text = this.listing.file_line(f, "", opts.line_fmt_interactive, overrides);
+	if (current && opts.lightbar)
+		text = "\x01n" + opts.selected_item_attr + strip_ctrl(text);
+	return text;
+};
+
+// Draw file i at screen row 'row' (0-based): its line and any extended
+// description beside it, at most 'max_lines' lines, each cleared to its
+// end. Returns the number of lines drawn.
+ClassicLayout.prototype.draw_file = function (i, row, max_lines, current, tagged)
+{
+	console.gotoxy(1, row + 1);
+	console.print(this.line(i, current, tagged), P_TRUNCATE);
+	var lines = 1;
+	var ext = this.listing.extdesc(this.listing.files[i]);
+	if (ext !== null) {
+		var col = console.current_column;
+		var ext_lines = listfiles_extdesc_lines(ext);
+		if (ext_lines.length > max_lines)
+			ext_lines.length = Math.max(1, max_lines);
+		for (var k = 0; k < ext_lines.length; k++) {
+			if (k) {	// blank the line up to the description column too
+				clear_to_eol();
+				console.gotoxy(1, row + k + 1);
+				var attr = console.attributes;
+				console.print("\x01n" + format("%*s", col, ""));
+				console.attributes = attr;
+			}
+			console.putmsg(ext_lines[k], P_NOATCODES | P_CPM_EOF | P_TRUNCATE | P_AUTO_UTF8);
+		}
+		lines = ext_lines.length;
+	}
+	clear_to_eol();
+	return lines;
+};
+
+// The mouse hotspots were cleared: the prompt's must be printed again, and
+// (when the screen wasn't cleared) the command keys'
+ClassicLayout.prototype.hotspots_cleared = function (full)
+{
+	this.shown_prompt = null;
+	if (!full && this.listing.bar_row !== undefined && this.opts.interactive_commands) {
+		console.gotoxy(1, this.listing.bar_row + 1);
+		console.print(this.opts.interactive_commands);
+	}
+};
+
+// The list ends before row 'end_row': clear what's left of a longer list
+// (when the screen wasn't cleared) and its prompt, and place the prompt
+ClassicLayout.prototype.after_list = function (end_row, full, empty)
+{
+	var listing = this.listing;
+	if (empty) {	// all removed or moved: leave() from here
+		listing.list_end_row = end_row;
+		listing.prompt_row = end_row;
+		return;
+	}
+	if (!full) {	// what's left of a longer list, and its prompt
+		for (var r = end_row; r <= listing.prompt_row; r++) {
+			console.gotoxy(1, r + 1);
+			console.cleartoeol();
+		}
+	}
+	listing.list_end_row = end_row;
+	listing.prompt_row = Math.min(end_row + 1, console.screen_rows - 1);
+};
+
+// The current file's position, right-justified on the (blank) line
+// above the prompt
+ClassicLayout.prototype.draw_position = function ()
+{
+	var listing = this.listing;
+	var opts = this.opts;
+	var row = listing.prompt_row - 1;
+	if (!opts.position_fmt || row < listing.list_end_row)
+		return;
+	var text = format(opts.position_fmt, this.engine.cur() + 1, listing.files.length);
+	var col = console.screen_columns - console.strlen(text);	// clear of the last column
+	console.gotoxy(1, row + 1);
+	console.cleartoeol();
+	if (col > 0) {
+		console.gotoxy(col, row + 1);
+		console.print(text + "\x01n");
+	}
+};
+
+// Draw what's below the list (the position and the prompt), leaving the
+// cursor at the end of the prompt
+ClassicLayout.prototype.draw_below = function ()
+{
+	var listing = this.listing;
+	var opts = this.opts;
+	var engine = this.engine;
+	this.draw_position();
+	var up = engine.top() > 0 ? opts.more_above : opts.no_more;
+	var down = engine.bottom() < engine.count() - 1 ? opts.more_below : opts.no_more;
+	// Long library/directory names are shortened so the end of the prompt
+	// fits; the prompt is still truncated, never wrapped (which would
+	// scroll the screen), if even that isn't enough
+	var prompt = listfiles_shorten_to_fit([listing.lib.name, listing.dir.name]
+		, function (names) {
+			return format(opts.interactive_prompt, up, down
+				, listing.dir.lib_index + 1, names[0]
+				, listing.dir.index + 1, names[1]
+				, listing.files.length);
+		}
+		, function (text) { return console.strlen(text); }
+		, console.screen_columns - 1);
+	// Print the prompt (adding its mouse hotspots) only when it changed or
+	// the hotspots were cleared; otherwise just return to its end
+	if (prompt !== this.shown_prompt) {
+		console.gotoxy(1, listing.prompt_row + 1);
+		console.cleartoeol();
+		console.print(prompt, P_TRUNCATE);
+		this.shown_prompt = prompt;
+		this.prompt_end = console.current_column;
+	} else
+		console.gotoxy(this.prompt_end + 1, listing.prompt_row + 1);
+};
+
+// A key for the layout itself: null (the classic layout has none)
+ClassicLayout.prototype.key = function (ch)
+{
+	return null;
+};
+
+// Before a command's output: the prompt line is cleared
+ClassicLayout.prototype.before_command = function ()
+{
+	console.clearline();
+	this.shown_prompt = null;	// cleared along with its hotspots
+};
+
+// Done with this directory: clear the position and prompt lines, leaving
+// the cursor where they were (for a footer, or the next directory)
+ClassicLayout.prototype.leave = function ()
+{
+	var listing = this.listing;
+	console.clear_hotspots();
+	var row = Math.max(listing.list_end_row, listing.prompt_row - 1);
+	for (var r = row; r <= listing.prompt_row; r++) {
+		console.gotoxy(1, r + 1);
+		console.cleartoeol();
+	}
+	console.gotoxy(1, row + 1);
+};
+
+// Clear the rest of the line in the normal attribute, keeping the
+// current one for what follows
+function clear_to_eol()
+{
+	var attr = console.attributes;
+	console.print("\x01n");
+	console.cleartoeol();
+	console.attributes = attr;
+}
+
+// Interactive batch flagging (the engine of the interactive styles, drawn
+// by 'layout'): a highlighted current file moved with the arrow keys
+// (scrolling as needed) and paged with PgUp/PgDn, Space or a double-click
+// to tag files, and mouse selection of files
+Listing.prototype.list_pages = function (layout)
+{
 	var cur = 0;			// index of the current file
 	var tagged = {};		// tagged filenames
 	var last_click = null;	// { file: index, time: system.timer } of the last click
@@ -682,16 +880,14 @@ Listing.prototype.list_pages = function ()
 	var heights;			// screen lines of each file
 	var rows;				// screen lines for files
 	var list_row;			// screen row of the first file
-	var shown_prompt = null;	// the prompt as displayed (with its hotspots)
-	var prompt_end;			// screen column after the displayed prompt
+	var file_rows = [];		// screen row of each file on the screen
+	var file_heights = [];	// and its lines drawn
 
 	function measure()
 	{
 		heights = [];
-		for (var i = 0; i < listing.files.length; i++) {
-			var ext = listing.extdesc(listing.files[i]);
-			heights.push(ext === null ? 1 : listfiles_extdesc_lines(ext).length);
-		}
+		for (var i = 0; i < listing.files.length; i++)
+			heights.push(layout.height(i));
 	}
 
 	// The number of files on the screen, and the index of the last one
@@ -704,135 +900,61 @@ Listing.prototype.list_pages = function ()
 		return top + visible() - 1;
 	}
 
-	// File i's line, highlighted when it's the current file
-	function line(i)
-	{
-		var f = listing.files[i];
-		var overrides = { tag: tagged[f.name] ? opts.tagged_marker : opts.untagged_marker };
-		if (i === cur && !opts.lightbar)
-			overrides.name_attr = opts.selected_item_attr;
-		var text = listing.file_line(f, "", opts.line_fmt_interactive, overrides);
-		if (i === cur && opts.lightbar)
-			text = "\x01n" + opts.selected_item_attr + strip_ctrl(text);
-		return text;
-	}
-
-	// Draw file i at screen row 'row' (0-based): its line and any extended
-	// description beside it, at most 'max_lines' lines, each cleared to its
-	// end. Returns the number of lines drawn.
-	function draw_entry(i, row, max_lines)
-	{
-		console.gotoxy(1, row + 1);
-		console.print(line(i), P_TRUNCATE);
-		var lines = 1;
-		var ext = listing.extdesc(listing.files[i]);
-		if (ext !== null) {
-			var col = console.current_column;
-			var ext_lines = listfiles_extdesc_lines(ext);
-			if (ext_lines.length > max_lines)
-				ext_lines.length = Math.max(1, max_lines);
-			for (var k = 0; k < ext_lines.length; k++) {
-				if (k) {	// blank the line up to the description column too
-					clear_to_eol();
-					console.gotoxy(1, row + k + 1);
-					var attr = console.attributes;
-					console.print("\x01n" + format("%*s", col, ""));
-					console.attributes = attr;
-				}
-				console.putmsg(ext_lines[k], P_NOATCODES | P_CPM_EOF | P_TRUNCATE | P_AUTO_UTF8);
-			}
-			lines = ext_lines.length;
-		}
-		clear_to_eol();
-		return lines;
-	}
-
-	// Clear the rest of the line in the normal attribute, keeping the
-	// current one for what follows
-	function clear_to_eol()
-	{
-		var attr = console.attributes;
-		console.print("\x01n");
-		console.cleartoeol();
-		console.attributes = attr;
-	}
+	layout.engine = {
+		cur: function () { return cur; },
+		top: function () { return top; },
+		bottom: bottom,
+		count: function () { return listing.files.length; },
+		tagged: function (i) { return tagged[listing.files[i].name] ? true : false; },
+		redraw: function (full) { draw_page(full); },
+		relayout: function () { rows = undefined; draw_page(/* full: */ true); }
+	};
 
 	// Redraw file i in place
 	function draw(i)
 	{
 		var k = i - top;
-		draw_entry(i, listing.file_rows[k], listing.file_heights[k]);
+		layout.draw_file(i, file_rows[k], file_heights[k], i === cur, tagged[listing.files[i].name]);
 	}
 
 	// Draw the files on the screen: 'full' to clear the screen and display
-	// the header first, otherwise (scrolling) each file's lines are redrawn
-	// in place, without the flash of a cleared screen
+	// what's above the list first, otherwise (scrolling) each file's lines
+	// are redrawn in place, without the flash of a cleared screen
 	function draw_page(full)
 	{
 		console.clear_hotspots();
-		shown_prompt = null;	// its hotspots are gone too
-		if (full || list_row === undefined) {
-			console.line_counter = 0;	// as the built-in's "\x01q" does: clear without a pause
-			console.clear();
-			listing.show_header();
-			console.cond_newline();
-			list_row = console.current_row;
+		full = full || list_row === undefined;
+		layout.hotspots_cleared(full);
+		if (full) {
+			var shape = layout.begin();
+			list_row = shape.list_row;
 			if (rows === undefined) {
-				rows = Math.max(1, console.screen_rows - list_row - 2);	// a blank line, then the prompt
+				rows = shape.rows;
 				measure();
 			}
-			full = true;
-		} else if (listing.bar_row !== undefined && opts.interactive_commands) {
-			// clearing the hotspots dropped the command keys' too
-			console.gotoxy(1, listing.bar_row + 1);
-			console.print(opts.interactive_commands);
 		}
-		if (!listing.files.length) {	// all removed or moved: leave() from here
-			listing.list_end_row = list_row;
-			listing.prompt_row = list_row;
+		if (!listing.files.length) {
+			layout.after_list(list_row, full, /* empty: */ true);
 			return;
 		}
 		if (cur < top)
 			top = cur;
 		else if (cur > bottom())
 			top = listfiles_window_top(heights, cur, rows);
-		listing.file_rows = [];
-		listing.file_heights = [];
+		file_rows = [];
+		file_heights = [];
 		var row = list_row;
 		for (var i = top; i <= bottom(); i++) {
-			var drawn = draw_entry(i, row, rows - (row - list_row));
-			listing.file_rows.push(row);
-			listing.file_heights.push(drawn);
+			var drawn = layout.draw_file(i, row, rows - (row - list_row), i === cur
+				, tagged[listing.files[i].name]);
+			file_rows.push(row);
+			file_heights.push(drawn);
 			console.add_hotspot(HOTSPOT_PREFIX + String.fromCharCode(65 + i - top), false
 				, 0, console.screen_columns - 1, row);
 			row += drawn;
 		}
-		if (!full) {	// what's left of a longer list, and its prompt
-			for (var r = row; r <= listing.prompt_row; r++) {
-				console.gotoxy(1, r + 1);
-				console.cleartoeol();
-			}
-		}
-		listing.list_end_row = row;
-		listing.prompt_row = Math.min(row + 1, console.screen_rows - 1);
+		layout.after_list(row, full, /* empty: */ false);
 		console.line_counter = 0;
-	}
-
-	// The current file's position, right-justified on the (blank) line
-	// above the prompt
-	function draw_position()
-	{
-		var row = listing.prompt_row - 1;
-		if (!opts.position_fmt || row < listing.list_end_row)
-			return;
-		var text = format(opts.position_fmt, cur + 1, listing.files.length);
-		var col = console.screen_columns - console.strlen(text);	// clear of the last column
-		console.gotoxy(1, row + 1);
-		console.cleartoeol();
-		if (col > 0) {
-			console.gotoxy(col, row + 1);
-			console.print(text + "\x01n");
-		}
 	}
 
 	function toggle_tag(i)
@@ -843,19 +965,6 @@ Listing.prototype.list_pages = function ()
 		else
 			tagged[name] = true;
 		draw(i);
-	}
-
-	// Done with this directory: clear the position and prompt lines, leaving
-	// the cursor where they were (for a footer, or the next directory)
-	function leave()
-	{
-		console.clear_hotspots();
-		var row = Math.max(listing.list_end_row, listing.prompt_row - 1);
-		for (var r = row; r <= listing.prompt_row; r++) {
-			console.gotoxy(1, r + 1);
-			console.cleartoeol();
-		}
-		console.gotoxy(1, row + 1);
 	}
 
 	// The files to act on: the tagged ones, if any, otherwise the current one
@@ -915,37 +1024,13 @@ Listing.prototype.list_pages = function ()
 	draw_page(/* full: */ true);
 	while (bbs.online) {
 		if (!this.files.length) {
-			leave();
+			layout.leave();
 			return total;
 		}
-		draw_position();
-		var up = top > 0 ? opts.more_above : opts.no_more;
-		var down = bottom() < this.files.length - 1 ? opts.more_below : opts.no_more;
-		// Long library/directory names are shortened so the end of the prompt
-		// fits; the prompt is still truncated, never wrapped (which would
-		// scroll the screen), if even that isn't enough
-		var prompt = listfiles_shorten_to_fit([this.lib.name, this.dir.name]
-			, function (names) {
-				return format(opts.interactive_prompt, up, down
-					, listing.dir.lib_index + 1, names[0]
-					, listing.dir.index + 1, names[1]
-					, listing.files.length);
-			}
-			, function (text) { return console.strlen(text); }
-			, console.screen_columns - 1);
-		// Print the prompt (adding its mouse hotspots) only when it changed or
-		// the hotspots were cleared; otherwise just return to its end
-		if (prompt !== shown_prompt) {
-			console.gotoxy(1, this.prompt_row + 1);
-			console.cleartoeol();
-			console.print(prompt, P_TRUNCATE);
-			shown_prompt = prompt;
-			prompt_end = console.current_column;
-		} else
-			console.gotoxy(prompt_end + 1, this.prompt_row + 1);
+		layout.draw_below();
 		var ch = console.getkey(K_UPPER | K_NOCRLF);
 		if (aborted()) {
-			leave();
+			layout.leave();
 			return -1;
 		}
 		if (ch === HOTSPOT_PREFIX) {	// a mouse click on a file
@@ -965,6 +1050,16 @@ Listing.prototype.list_pages = function ()
 			continue;
 		}
 		last_click = null;
+		var handled = layout.key(ch);
+		if (handled !== null) {
+			if (handled === "redraw")
+				draw_page(/* full: */ false);
+			else if (handled === "relayout") {
+				rows = undefined;
+				draw_page(/* full: */ true);
+			}
+			continue;
+		}
 		switch (ch) {
 			case KEY_UP:
 				move(cur - 1);
@@ -992,7 +1087,7 @@ Listing.prototype.list_pages = function ()
 		}
 		if (ch === "\r" || ch === "N") {
 			if (bottom() >= this.files.length - 1) {
-				leave();
+				layout.leave();
 				return total;
 			}
 			page_down();
@@ -1001,18 +1096,17 @@ Listing.prototype.list_pages = function ()
 		if (ch === KEY_DEL)	// as in msglist.js
 			ch = "R";
 		console.clear_hotspots();
-		console.clearline();
-		shown_prompt = null;	// cleared along with its hotspots
+		layout.before_command();
 		var result = this.command(ch, chooser);
 		if (result === null)
 			continue;
 		switch (result) {
 			case CMD_QUIT:
 				if (ch !== "E" && ch !== "V")	// (their file info replaced the list)
-					leave();
+					layout.leave();
 				return -1;
 			case CMD_SKIP:
-				leave();
+				layout.leave();
 				return total;
 			case CMD_PREV:
 				if (top > 0) {
