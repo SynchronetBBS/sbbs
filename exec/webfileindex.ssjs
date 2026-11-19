@@ -152,9 +152,9 @@ function dir_index(dir)
 		write("<td align=right>" + file_size_cell(f) + "</td>");
 		write("<td align=right>" + file_date_cell(f) + "</td>");
 		write('<td class="desc" onclick="showExtDesc(event)">');
-		write(utf8_encode(f.desc || ''));
+		write(desc_text(f.desc || ''));
 		if (f.extdesc !== undefined) {
-			write('<div class="extdesc invisible">' + utf8_encode(f.extdesc.replace(/\x01\//g, "\n").replace(/\x01./g, '')) + '</div>');
+			write('<div class="extdesc invisible">' + desc_text(f.extdesc.replace(/\x01\//g, "\n").replace(/\x01./g, '')) + '</div>');
 		}
 		write('</td>');
 		writeln("</tr>");
@@ -230,6 +230,13 @@ function file_type(filename)
 	if(ext)
 		ext = ext.toLowerCase().slice(1);
 	return ext;
+}
+
+/* A file's description is text its uploader typed: escape what HTML
+   requires, so markup in it is shown and not rendered. */
+function desc_text(str)
+{
+	return utf8_encode(html_encode(str, false, false, false, false));
 }
 
 function archive_file(filename)
