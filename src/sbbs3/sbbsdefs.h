@@ -640,7 +640,7 @@ typedef enum {                       // Values for xtrn_t.event
 #define GETNUM_NAVKEY   -2
 
 #define TERM_COLS_AUTO      0
-#define TERM_COLS_MIN       40
+#define TERM_COLS_MIN       32  // Tandy Color Computer 1/2 has a 32-column display
 #define TERM_COLS_MAX       999
 #define TERM_COLS_DEFAULT   80
 #define TERM_ROWS_AUTO      0

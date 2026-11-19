@@ -153,6 +153,8 @@
 - Sysop user editor: the `~`, `+`, `*`, `$` and `/` prompts no
   longer run on the same line as the "User edit" command prompt
 - More than 255 QWK network hubs are now supported
+- Minimum supported terminal width lowered from 40 to 32 columns
+  (e.g. Tandy Color Computer 1/2)
 - Removed unnecessary terminal color-change codes (regression
   from v3.21)
 - Batch uploads: the duplicate-file scan reads each directory's file
