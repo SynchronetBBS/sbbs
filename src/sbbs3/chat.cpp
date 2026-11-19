@@ -1525,7 +1525,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 	j = strlen(line);
 	k = 0;
 	for (i = 0; i < j; i++) {
-		if (line[i] < 0 || !IS_ALPHANUMERIC(line[i])) {
+		if ((uchar)line[i] > 0x7f || !IS_ALPHANUMERIC(line[i])) {
 			if (!k)  /* beginning non-alphanumeric */
 				continue;
 			if (line[i] == line[i + 1])  /* redundant non-alnum */

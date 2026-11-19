@@ -1360,7 +1360,7 @@ int sbbs_t::exec(csi_t *csi)
 				break;
 			case CS_GETCMD:
 				csi->cmd = (uchar)getkeys((char*)csi->ip, 0);
-				if ((char)csi->cmd == -1)
+				if (csi->cmd == 0xff)
 					csi->cmd = 3;
 				break;
 			case CS_CMDSTR:

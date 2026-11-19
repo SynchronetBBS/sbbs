@@ -762,7 +762,7 @@ size_t mime_encode_word(char* buf, size_t size, const char* src)
 	size_t len = snprintf(buf, size - 1, "=?utf-8?q?");
 	// RFC 2047: "An 'encoded-word' may not be more than 75 characters long"
 	for (const char* p = src; *p != '\0' && len < (size - 1) && len < 71; ++p) {
-		if (*p >= 0 && *p != '=' && *p != ' ') { // US-ASCII char, represented without Q-encoding
+		if ((uchar) * p <= 0x7f && *p != '=' && *p != ' ') { // US-ASCII char, represented without Q-encoding
 			buf[len++] = *p;
 			continue;
 		}
