@@ -91,7 +91,23 @@ Each server's polling loop also includes its INI file in the recycle list — so
 | FTP | `ctrl/sbbs.ini` | `ftpsrvr.cpp` |
 | Services | `ctrl/sbbs.ini`, `ctrl/services.ini` | `services.cpp` |
 
-Touching `ctrl/sbbs.ini` therefore recycles every server. That's intentional — sysop edits (SCFG saves, `text.dat` regen via `textgen`, etc.) become live without an explicit `touch ctrl/recycle`. **Side effect**: a backup tool, `rsync` without `-t`/`-a`, or any utility that touches mtime can accidentally trigger a recycle; tell backups to preserve mtime, or filter `ctrl/sbbs.ini`/`ctrl/text.dat`/`ctrl/*.ini` out of any mtime-modifying sync.
+Touching `ctrl/sbbs.ini` therefore recycles every server. That's intentional — edits to those files (including `text.dat` regen via `textgen`) become live without an explicit `touch ctrl/recycle`. (The "INI" watched is whichever startup file the server loaded: a host-specific `ctrl/sbbs.<hostname>.ini`, if one exists, instead of `ctrl/sbbs.ini`.) **Side effect**: a backup tool, `rsync` without `-t`/`-a`, or any utility that touches mtime can accidentally trigger a recycle; tell backups to preserve mtime, or filter `ctrl/sbbs.ini`/`ctrl/text.dat`/`ctrl/*.ini` out of any mtime-modifying sync.
+
+### Editing other config files by hand: touch the recycle semfile yourself
+
+**No server watches `ctrl/main.ini`, `ctrl/msgs.ini`, `ctrl/file.ini`, `ctrl/xtrn.ini` or `ctrl/chat.ini`** (the SCFG-managed configuration: system settings, message areas, file areas, external programs, chat). Editing one of those by hand, or with a script, changes nothing in a running server until it recycles. Symptom: a newly added sub-board or file directory is missing in a logged-in session (e.g. `file_area.dir["<code>"]` is undefined), while `jsexec` sees it right away, because `jsexec` loads the configuration fresh on every run.
+
+SCFG takes care of this itself: every save calls `refresh_cfg()` (`scfgsave.c`), which touches the global `ctrl/recycle` and sets the rerun flag on every node. A hand edit gets neither, so after one, touch the recycle semfile yourself, scoped as narrowly as the change allows:
+
+```
+touch ctrl/recycle.<hostname>.term    # e.g. after adding a file directory: this host's terminal server only
+touch ctrl/recycle.term               # the terminal server on every host sharing this ctrl/
+touch ctrl/recycle                    # every server on every host (what SCFG does)
+```
+
+The recycle still waits until that server's nodes are idle (see "Won't recycle while in use" below), so a sysop testing the change in a live session must log off first. Confirm it in the log: `Recycle semaphore file (.../ctrl/recycle.<hostname>.term) detected`, followed by the server listening again.
+
+Files that are read when used, not cached by a server, need no recycle: e.g. `ctrl/modopts.ini` (read by each JS module run) and display/menu files in `text/`.
 
 ### Event-trigger semfiles in `data/`
 
