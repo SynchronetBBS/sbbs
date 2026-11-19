@@ -1176,6 +1176,8 @@ void smb_freemsghdrmem(smbmsg_t* msg)
 		free(msg->hfield_dat);
 		msg->hfield_dat = NULL;
 	}
+	FREE_AND_NULL(msg->text_subtype);
+	FREE_AND_NULL(msg->text_charset);
 	clear_convenience_ptrs(msg);    /* don't leave pointers to freed memory */
 }
 
@@ -1189,8 +1191,6 @@ void smb_freemsgmem(smbmsg_t* msg)
 		msg->dfield = NULL;
 	}
 	msg->hdr.total_dfields = 0;
-	FREE_AND_NULL(msg->text_subtype);
-	FREE_AND_NULL(msg->text_charset);
 	smb_freemsghdrmem(msg);
 	if (msg->text != NULL) {
 		free(msg->text);
