@@ -1611,7 +1611,7 @@ int sbbs_t::exec(csi_t *csi)
 				errormsg(WHERE, ERR_CHK, "shell instruction", *(csi->ip - 1));
 				return 0;
 			case CS_SETLOGIC:
-				csi->logic = *csi->ip++;
+				csi->logic = (int8_t)*csi->ip++;
 				return 0;
 			case CS_CMDKEY:
 				if (((*csi->ip) == CS_DIGIT && IS_DIGIT(csi->cmd))
