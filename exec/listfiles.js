@@ -377,14 +377,16 @@ Listing.prototype.list = function ()
 			var result = bbs.view_file_info(this.code, f.name, (this.mode & FL_EXT) ? true : false);
 			if (result === 0)
 				return -1;
+			// Previous goes back a file: count each file once
+			found = Math.max(found, i + 1);
 			if (result === -2)
 				i = Math.max(i - 1, 0) - 1;
 		} else {
 			if (!found)
 				this.show_header();
 			this.show_file(f);
+			found++;
 		}
-		found++;
 		if (aborted())
 			return -1;
 		if (single)
@@ -641,12 +643,12 @@ Listing.prototype.list_letters = function ()
 			case CMD_SKIP:
 				return found;
 			case CMD_REDRAW:
-				found -= page.length;
 				i = Math.min(anchor, this.files.length);
+				found = i;	// the files before this screen's
 				break;
 			case CMD_PREV:
-				found -= page.length;
 				i = Math.max(0, anchor - page.length);
+				found = i;
 				break;
 			default:
 				if (single || i >= this.files.length)
@@ -791,8 +793,11 @@ Listing.prototype.list_pages = function ()
 			console.gotoxy(1, listing.bar_row + 1);
 			console.print(opts.interactive_commands);
 		}
-		if (!listing.files.length)
+		if (!listing.files.length) {	// all removed or moved: leave() from here
+			listing.list_end_row = list_row;
+			listing.prompt_row = list_row;
 			return;
+		}
 		if (cur < top)
 			top = cur;
 		else if (cur > bottom())
@@ -912,10 +917,13 @@ Listing.prototype.list_pages = function ()
 	}
 
 	this.interactive = true;
+	var total = this.files.length;	// the files listed, including any removed
 	draw_page(/* full: */ true);
 	while (bbs.online) {
-		if (!this.files.length)
-			return 0;
+		if (!this.files.length) {
+			leave();
+			return total;
+		}
 		draw_position();
 		var up = top > 0 ? opts.more_above : opts.no_more;
 		var down = bottom() < this.files.length - 1 ? opts.more_below : opts.no_more;
@@ -943,7 +951,7 @@ Listing.prototype.list_pages = function ()
 			console.gotoxy(prompt_end + 1, this.prompt_row + 1);
 		var ch = console.getkey(K_UPPER | K_NOCRLF);
 		if (aborted()) {
-			console.clear_hotspots();
+			leave();
 			return -1;
 		}
 		if (ch === HOTSPOT_PREFIX) {	// a mouse click on a file
@@ -991,7 +999,7 @@ Listing.prototype.list_pages = function ()
 		if (ch === "\r" || ch === "N") {
 			if (bottom() >= this.files.length - 1) {
 				leave();
-				return this.files.length;
+				return total;
 			}
 			page_down();
 			continue;
@@ -1006,10 +1014,12 @@ Listing.prototype.list_pages = function ()
 			continue;
 		switch (result) {
 			case CMD_QUIT:
+				if (ch !== "E" && ch !== "V")	// (their file info replaced the list)
+					leave();
 				return -1;
 			case CMD_SKIP:
 				leave();
-				return this.files.length;
+				return total;
 			case CMD_PREV:
 				if (top > 0) {
 					top = listfiles_window_top(heights, top - 1, rows);
@@ -1023,9 +1033,7 @@ Listing.prototype.list_pages = function ()
 		if (result === CMD_REDRAW && (ch === "B" || ch === "D"))
 			tagged = {};
 		rows = undefined;	// files or extended descriptions may have changed
-		if (!this.files.length)
-			return 0;
-		cur = Math.min(cur, this.files.length - 1);
+		cur = Math.max(0, Math.min(cur, this.files.length - 1));
 		top = Math.min(top, cur);
 		draw_page(/* full: */ true);
 	}
