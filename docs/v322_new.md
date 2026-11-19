@@ -58,6 +58,11 @@
   both fast-allocation and self-packing message bases. A base that
   reaches the new 4GB limit is now refused cleanly, rather than
   storing a message at an offset the base cannot address
+- Fix: a new message could be stored on top of an existing one when
+  the message base's allocation file read short or empty, as it can
+  over a stalled network share, overwriting that message's text. New
+  messages are now placed only in blocks the allocation file records
+  as free, or after the end of the data and header files
 - The system-wide message and file totals (`@TMSG@`, `@TFILE@`,
   `system.stats.total_messages`, `system.stats.total_files`) are now
   counted at most once per new `totals_interval` (default 10 minutes)
@@ -1174,6 +1179,10 @@
   `chksmb` now reports such blocks as "Misallocated Active Data
   Blocks", which `fixsmb` repairs; check self-packing bases (the mail
   base in particular) with `chksmb` after upgrading (issue #1253)
+- `chksmb` now reports data blocks whose reference count does not
+  match the messages using them ("Data Block Reference Mismatches"):
+  blocks shared by two messages (one overwrote the other) and blocks
+  allocated to no message (leaked space)
 
 ## sexyz (X/Y/ZMODEM file transfer)
 

@@ -1564,8 +1564,10 @@ void packmsgs(ulong packable)
 			/* allocate against the new header file, not the one being read */
 			FILE* old_shd = smb.shd_fp;
 			smb.shd_fp = tmp_shd;
-			offset = smb_fallochdr(&smb, (ulong)length) + smb.status.header_offset;
+			offset = smb_fallochdr(&smb, (ulong)length);
 			smb.shd_fp = old_shd;
+			if (offset >= 0)
+				offset += smb.status.header_offset;
 		}
 		if (offset < 0) {
 			fprintf(errfp, "\n%s!Header allocation failure %ld (%s) for message #%lu"
