@@ -93,6 +93,7 @@ Source: "text\*";   DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs 
 Source: "xtrn\*";   DestDir: "{app}\xtrn";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.obj,*.tds,*.o,*.d,smm,.gitignore,gcc.*,bcc.*"
 Source: "docs\*";   DestDir: "{app}\docs";  Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "webv4\*";                                            DestDir: "{app}\webv4";            Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "webmail\*";                                          DestDir: "{app}\webmail";          Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.xjs.ssjs,*.xjs.ssjs.*.tmp,.gitignore,\tests"
 Source: "xtrn\utopia\settings.example.ini";                   DestDir: "{app}\xtrn\utopia"; DestName: "settings.ini"; Flags: ignoreversion
 Source: "c:\bin\zip.exe";                                     DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "c:\bin\unzip.exe";                                   DestDir: "{app}\exec";  Flags: ignoreversion

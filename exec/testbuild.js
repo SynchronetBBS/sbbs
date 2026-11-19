@@ -55,6 +55,7 @@ var exclude_dirs = [
 	"text",
 	"web",
 	"webv4",
+	"webmail",
 	"xtrn",
 	"src/crt",
 	"src/doors",

@@ -93,6 +93,9 @@ Source: "text\*";   DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs 
 Source: "xtrn\*";   DestDir: "{app}\xtrn";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.obj,*.tds,*.o,*.d,smm,.gitignore,gcc.*,bcc.*"; Tasks: upgrade_xtrn
 Source: "docs\*";   DestDir: "{app}\docs";  Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "webv4\*";                                            DestDir: "{app}\webv4"; Flags: ignoreversion recursesubdirs createallsubdirs; Tasks: upgrade_webv4
+; The web mail client's files only: it stays off until the sysop adds its
+; /webmail/ line to ctrl\web_alias.ini
+Source: "webmail\*";                                          DestDir: "{app}\webmail"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.xjs.ssjs,*.xjs.ssjs.*.tmp,.gitignore,\tests"
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [INI]

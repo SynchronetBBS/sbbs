@@ -199,8 +199,8 @@ endif
 
 src: $(REPODIR)
 
-run: $(SBBSDIR)/ctrl $(SBBSDIR)/docs $(SBBSDIR)/exec $(SBBSDIR)/text $(SBBSDIR)/web $(SBBSDIR)/webv4 $(SBBSDIR)/xtrn \
-	$(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4
+run: $(SBBSDIR)/ctrl $(SBBSDIR)/docs $(SBBSDIR)/exec $(SBBSDIR)/text $(SBBSDIR)/web $(SBBSDIR)/webv4 $(SBBSDIR)/webmail \
+	$(SBBSDIR)/xtrn $(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4
 
 
 $(SBBSDIR)/ctrl: $(SBBSDIR) $(REPODIR)
@@ -232,6 +232,9 @@ $(SBBSDIR)/web: $(SBBSDIR) $(REPODIR)
 
 $(SBBSDIR)/webv4: $(SBBSDIR) $(REPODIR)
 	$(INSBIN) $(REPODIR)/webv4 $(SBBSDIR)
+
+$(SBBSDIR)/webmail: $(SBBSDIR) $(REPODIR)
+	$(INSBIN) $(REPODIR)/webmail $(SBBSDIR)
 
 $(SBBSDIR)/xtrn: $(SBBSDIR) $(REPODIR)
 	$(INSBIN) $(REPODIR)/xtrn $(SBBSDIR)
