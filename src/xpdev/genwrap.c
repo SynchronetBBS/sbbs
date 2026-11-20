@@ -221,8 +221,11 @@ char c_unescape_char_ptr(const char* str, char** endptr)
 			digits++;
 		}
 #endif
-	} else
-		ch = c_unescape_char(*(str++));
+	} else {
+		ch = c_unescape_char(*str);
+		if (*str != '\0')    /* a trailing backslash: never step past the terminator */
+			str++;
+	}
 
 	if (endptr != NULL)
 		*endptr = (char*)str;
