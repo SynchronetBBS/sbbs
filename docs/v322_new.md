@@ -389,6 +389,10 @@
 - Fix: a request whose body stopped arriving held its connection, and a
   client slot, for as long as the client stayed connected; it is now
   closed after `MaxInactivity` and its script is not run
+- Files downloaded from the file areas (the `FileVPathPrefix` path) are
+  now sent with `X-Content-Type-Options: nosniff` and, except PDFs,
+  `Content-Security-Policy: sandbox`, so an uploaded HTML or SVG file
+  opens as an isolated document and not as a page of the site
 
 ## FTP Server
 

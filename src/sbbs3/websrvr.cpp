@@ -390,6 +390,7 @@ enum {
 	, HEAD_UPGRADEINSECURE
 	, HEAD_VARY
 	, HEAD_CSP
+	, HEAD_CONTENT_TYPE_OPTIONS
 };
 
 static struct {
@@ -423,6 +424,7 @@ static struct {
 	{ HEAD_UPGRADEINSECURE,     "Upgrade-Insecure-Requests"     },
 	{ HEAD_VARY,            "Vary"                  },
 	{ HEAD_CSP,         "Content-Security-Policy"       },
+	{ HEAD_CONTENT_TYPE_OPTIONS,        "X-Content-Type-Options"        },
 	{ -1,                   NULL /* terminator */   },
 };
 
@@ -1594,6 +1596,16 @@ static bool send_headers(http_session_t *session, const char *status, int chunke
 			if (!ret && !session->req.dynamic)  {
 				safe_snprintf(header, sizeof(header), "%s: %s", get_header(HEAD_TYPE), session->req.mime_type);
 				safecat(headers, header, MAX_HEADERS_SIZE);
+				if (session->parsed_vpath == PARSED_VPATH_FULL) {
+					// An uploaded file must not run as a page of this site (#1363).
+					// Not for PDF: a browser's own viewer does not start in a sandbox.
+					safe_snprintf(header, sizeof(header), "%s: nosniff", get_header(HEAD_CONTENT_TYPE_OPTIONS));
+					safecat(headers, header, MAX_HEADERS_SIZE);
+					if (stricmp(session->req.mime_type, "application/pdf") != 0) {
+						safe_snprintf(header, sizeof(header), "%s: sandbox", get_header(HEAD_CSP));
+						safecat(headers, header, MAX_HEADERS_SIZE);
+					}
+				}
 				gmtime_r(&stats.st_mtime, &tm);
 				safe_snprintf(header, sizeof(header), "%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
 				              , get_header(HEAD_LASTMODIFIED)
