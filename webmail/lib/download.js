@@ -23,8 +23,11 @@
 //
 // There is no X-Webmail header test here: a download or an image is a
 // plain navigation or element request, which cannot carry one.  The
-// session cookie is SameSite=Strict, so a request started by another site
-// arrives without it, and every parameter is checked strictly.
+// session cookie is SameSite=Lax, so an image, frame or script element on
+// another site's page arrives without it.  A link there that takes the
+// user to a download URL does carry it: the file then goes to the user's
+// own browser under the headers below, and the other site reads nothing.
+// Every parameter is checked strictly.
 //
 // Response headers (Download.headers):
 //   Content-Type             image/png, image/jpeg, image/gif or image/webp

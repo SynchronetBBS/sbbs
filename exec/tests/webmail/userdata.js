@@ -61,6 +61,47 @@ try {
 	}, {});
 	Kit.eq(r, { n: 12 }, "empty options");
 
+	// locked: fn under the same lock as update(), nothing written
+	var ran_locked = ud.locked("counter", function () {
+		Kit.assert(file_exists(ud.files.lock_path("counter")), "locked: the update lock is held");
+		return "done";
+	});
+	Kit.eq([ran_locked, ud.read("counter", null)], ["done", { n: 12 }], "locked: result, file unchanged");
+	Kit.assert(file_mutex(lock, "held by test", 60), "take the counter lock again");
+	try {
+		Kit.throws(function () {
+			ud.locked("counter", function () {
+				return 1;
+			}, { timeout: 100 });
+		}, "conflict");
+		Kit.eq(ud.files.timeout, 5000, "locked: instance timeout unchanged");
+	} finally {
+		file_remove(lock);
+	}
+
+	// An older JsonFiles without locked(): locked() goes through update()
+	function OldJsonFiles(d, prefix) {
+		JsonFiles.call(this, d, prefix);
+	}
+	OldJsonFiles.prototype = Object.create(JsonFiles.prototype);
+	OldJsonFiles.prototype.locked = undefined;
+	// its update() takes the lock itself, as the older one did
+	OldJsonFiles.prototype.update = function (name, fallback, fn) {
+		var self = this;
+		return JsonFiles.prototype.locked.call(this, name, function () {
+			var o = fn(self.read(name, fallback));
+			self.write(name, o);
+			return o;
+		});
+	};
+	var old_ud = new UserData(dir, OldJsonFiles);
+	Kit.eq(typeof old_ud.files.locked, "undefined", "stub has no locked()");
+	Kit.eq(old_ud.locked("oldlock", function () {
+		Kit.assert(file_exists(old_ud.files.lock_path("oldlock")), "older JsonFiles: the update lock is held");
+		return 7;
+	}), 7, "older JsonFiles: fn's result");
+	Kit.eq(old_ud.read("oldlock", null), { v: 1 }, "older JsonFiles: through update()");
+
 	// Separate names are separate files; files carry the "webmail." prefix
 	ud.write("other", 5);
 	Kit.eq(ud.read("other", 0), 5);

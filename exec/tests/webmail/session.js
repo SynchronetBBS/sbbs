@@ -293,19 +293,19 @@ try {
 
 	// --- cookie_header
 	Kit.eq(Session.cookie_header(v1, { secure: true, keep: false, config: cfg, path: "/webmail/" }),
-		"; Path=/webmail/; HttpOnly; Secure; SameSite=Strict");
+		"; Path=/webmail/; HttpOnly; Secure; SameSite=Lax");
 	Kit.eq(Session.cookie_header(v1, { secure: false, keep: false, config: cfg, path: "/" }),
-		"; Path=/; HttpOnly; SameSite=Strict");
+		"; Path=/; HttpOnly; SameSite=Lax");
 	Kit.eq(Session.cookie_header(v1, { secure: true, keep: true, config: cfg, path: "/webmail/" }),
-		"; Path=/webmail/; HttpOnly; Secure; SameSite=Strict; Max-Age=" + (30 * DAY));
+		"; Path=/webmail/; HttpOnly; Secure; SameSite=Lax; Max-Age=" + (30 * DAY));
 	// Clearing the cookie (empty value): Max-Age=0
 	Kit.eq(Session.cookie_header("", { secure: true, keep: true, config: cfg, path: "/webmail/" }),
-		"; Path=/webmail/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");
+		"; Path=/webmail/; HttpOnly; Secure; SameSite=Lax; Max-Age=0");
 	// Invalid paths fall back to "/"
 	var bad_paths = ["webmail/", "/webmail", "/a b/", "/a;b/", "/a\r\nSet-Cookie: x/", "", null, undefined, 7, "/a\x7f/"];
 	for (i = 0; i < bad_paths.length; i++)
 		Kit.eq(Session.cookie_header(v1, { secure: true, keep: false, config: cfg, path: bad_paths[i] }),
-			"; Path=/; HttpOnly; Secure; SameSite=Strict", "bad path " + JSON.stringify(bad_paths[i]));
+			"; Path=/; HttpOnly; Secure; SameSite=Lax", "bad path " + JSON.stringify(bad_paths[i]));
 
 	// --- is_secure
 	var pcfg = Config.load({ tls_proxy_header: "X-Forwarded-Proto" });

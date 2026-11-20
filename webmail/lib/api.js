@@ -14,17 +14,19 @@
 // UTF-8 or invalid JSON give null, which dispatch answers with the
 // top-level "invalid".
 //
-// request: { calls: [[method, args, call_id], ...], background }
+// request: { calls: [[method, args, call_id], ...], background, as }
 //   at most 32 calls; each call an array of 1 to 3 elements.  args is an
 //   object of named arguments (absent or null: none).  call_id is echoed
 //   in the result when it is a number or a string of at most 40
 //   characters, each 0x20 to 0x7E; else null.  background: true marks a
 //   request the client made on its own, not for the user (see Session
 //   below); it can only withhold refreshing the session, any other value
-//   is ignored.
+//   is ignored.  as: the user number the page making the request was
+//   started for (a positive integer; absent: the page does not know one,
+//   e.g. at sign-in).  A request holding a write method must carry it.
 //
 // reply:
-//   { results: [[call_id, result], ...], state, signed_out }
+//   { results: [[call_id, result], ...], state, signed_out, usernum }
 //     one result per call, in order: {ok: true, ...method's fields} or
 //     {ok: false, error: <code>, message: <text>}.  state is the mailbox's
 //     change fingerprint (Store.state()) when a signed-in user's mailbox
@@ -34,15 +36,21 @@
 //     calls needing a user still get "auth", and the client can say "you
 //     were signed out" rather than show the wrong-password text.  It is
 //     false when the request ends signed in (a session.login or webv4
-//     sign-in in the same request).
-//   { error: "invalid", message, results: [], state: "" }
+//     sign-in in the same request).  usernum is the user the request ended
+//     signed in as (0: none), in every reply, so a page started by another
+//     user can tell.
+//   { error: "invalid", message, results: [], state: "", usernum: 0 }
 //     the top-level error, when request is not an object with a "calls"
-//     array of at most 32 arrays of 1 to 3 elements; no call runs.  Also
+//     array of at most 32 arrays of 1 to 3 elements, or "as" is present
+//     and not a positive integer; no call runs.  "toolarge" likewise when
+//     dispatch(env, request, {length}) is told the body was longer than
+//     256 KB and the request is not exactly one draft.attach or draft.save
+//     call within that method's allowance (body_allowance()).  Also
 //     { error: "internal", ... } if the dispatcher itself fails.
 //
 // Error codes: notfound, forbidden, invalid, quota, toolarge, conflict,
-// failed, expired, auth, https (the mailbox library's codes and this
-// file's) and internal.  message is the text for the code from the
+// failed, expired, auth, https, stale (the mailbox library's codes and
+// this file's) and internal.  message is the text for the code from the
 // request's locale strings ("errors.<code>"; in the "https" text {name} is
 // the request's product name), or a built-in English text
 // if the locale files cannot be read.  A thrown object whose code is one of
@@ -59,12 +67,23 @@
 //   3. env.secure is not true while config.require_tls
 //                                      "https"
 //   then the session cookie is checked (see Session below); if that throws,
-//   every call is "internal".  Then for each call:
+//   every call is "internal".  Then, for the request as a whole:
+//   3a. "as" present, a user signed in, and as is not that user
+//                                      "stale" (the page was started for
+//                                      another user: someone else signed
+//                                      in in this browser since; the
+//                                      client reloads)
+//   3b. a user signed in, a write method in the request and no "as"
+//                                      "invalid" (signed out, the calls
+//                                      that need a user get "auth")
+//   Then for each call:
 //   4. unknown method                  "invalid"
 //   5. the method needs a signed-in user and there is none
 //                                      "auth"
-//   6. an argument check fails         "invalid"
-//   7. the method runs.
+//   6. a write method (one that changes mail) in a request with
+//      background: true                "forbidden"
+//   7. an argument check fails         "invalid"
+//   8. the method runs.
 //
 // env, supplied by the caller (api.ssjs, or a test):
 //   config         Config.load()
@@ -98,6 +117,13 @@
 //   set_cookie(value, keep)
 //                  called to set the session cookie (value "" clears it);
 //                  the last call of a dispatch is the one that counts
+//   data_dir       optional (tests): the data directory MailSig uses
+//                  (system.data_dir otherwise)
+//   sys            optional (tests): fields over the system values the
+//                  settings use (see sys_of())
+//   lib_ctx        optional (tests): fields added to the context the
+//                  drafts, send and contacts libraries get (domains,
+//                  resolvers, sys, now, user; see lib_ctx())
 //
 // Session: before the calls run, each cookie value (at most 8) is
 // checked in turn with Session.parse -> env.userdata ->
@@ -133,14 +159,19 @@
 // reply is the same "auth" text in every case.
 //
 // Methods (Api.methods, a plain object that more methods are added to):
-// each entry is { auth, ctx, args, run }.  auth: needs a signed-in user.  ctx
-// (default: auth): needs the mailbox, so make_ctx is called first.  args:
-// { <name>: { type: "string"|"int"|"boolean", required, max, min, test } };
-// arguments not listed are invalid, "__proto__" included; strings are
-// byte strings (no character above 0xFF) of at most max characters
-// (default 1000); ints are finite whole numbers from min (default 0) to
-// max; test(value) may refuse
-// a string.  run(ctx, args, rq): ctx is the make_ctx() context or null;
+// each entry is { auth, ctx, write, args, check, run }.  auth: needs a
+// signed-in user.  ctx (default: auth): needs the mailbox, so make_ctx is
+// called first.  write: changes mail (refused in a background request).
+// args: { <name>: { type: "string"|"int"|"boolean"|"list", required, max,
+// min, test, of, unique } }; arguments not listed are invalid,
+// "__proto__" included; strings are byte strings (no character above
+// 0xFF) of at most max characters (default 1000); ints are finite whole
+// numbers from min (default 0) to max; test(value) may refuse a string;
+// a list is an array of min (default 1) to max (default 100) elements,
+// each checked by the spec "of" (not a list), no element twice when
+// unique.  check(args), when present, may refuse the checked arguments
+// as a whole ("invalid", before the mailbox is opened).
+// run(ctx, args, rq): ctx is the make_ctx() context or null;
 // rq is this request's state ({ env, config, usernum, user, ... }); it
 // returns an object whose fields go into the result beside ok: true.
 //
@@ -150,9 +181,14 @@
 //                       are neither ASCII nor valid UTF-8; avatar see
 //                       Avatars below), insecure,
 //                       locale, strings (the locale strings, in the first
-//                       session.get result of a request only), domains,
-//                       limits {max_attachment_bytes, max_text_part_bytes,
-//                       max_drafts}, poll_ms, powered_by (the system's
+//                       session.get result of a request only), domains
+//                       (Api.sending_domains of the signed-in user; [] when
+//                       signed out), limits (client_limits(): max_attachment_bytes,
+//                       max_text_part_bytes, max_drafts, max_draft_bytes,
+//                       max_body_bytes, max_attachments, max_chunk,
+//                       max_recipients, max_message_bytes, max_attach_total:
+//                       the attachment bytes a message may carry, see
+//                       attach_total()), poll_ms, powered_by (the system's
 //                       version notice, "Synchronet BBS for Linux Version
 //                       3.22": Api.powered_by(system.version_notice), white
 //                       space runs made one space), product_name, brand,
@@ -181,24 +217,187 @@
 //   session.logout   -> { webv4 }: true when the user is still signed in
 //                       to webv4 (webv4_login on and env.webv4_user() is
 //                       this user), so the next visit signs in again
-//   folder.list      -> { folders, usage, purged, trash_days }:
+//   folder.list      -> { folders, usage, purged, trash_days, inbox_days,
+//                       drafts }:  drafts is the number of drafts
+//                       (Drafts.count; 0 when it cannot be counted), beside
+//                       the folders so the folder list itself is unchanged;
+//                       when a draft is claimed by a send and the request
+//                       is not a background one, first the recovery of
+//                       draft.list (sweep_sends(): an interrupted send is
+//                       completed, given back or returned maybe_sent; a
+//                       failure is logged, the list still returned);
 //                       purge_expired() (at most once a day; purged is the
 //                       number of messages it removed, 0 when nothing ran,
 //                       nothing was due or it failed), then folders() and
 //                       usage(), one Store; trash_days is the number of
 //                       days a message stays in Trash (the Store's option,
 //                       system.max_trash_age by default; 0: until removed
-//                       by hand).  The spam age limit is not reported:
-//                       scripts cannot read it.
+//                       by hand).  inbox_days: the mail base's age limit
+//                       in days (Store.inbox_max_age(): the mail base's
+//                       max_age, which SCFG writes into the base when the
+//                       setting is saved; 0: none, or it cannot be read).  The spam age
+//                       limit is not reported: scripts cannot read it.
 //   message.list {folder, offset, limit, search}
-//                    -> { total, items } (Store.list)
-//   message.get {id, mark_read, head}
-//                    -> { message } (Store.get, plus avatar: the sender's
-//                       avatar, see Avatars below); with head true
-//                       { item }: only the list item (Store.get with
-//                       head), for marking a message read that the client
-//                       already holds: no bodies, parts or avatar
+//                    -> { total, items } (Store.list, items as it gives
+//                       them; in Sent a failed delivery carries notice:
+//                       the failure notice's id while it exists)
+//   message.get {id, mark_read, head, avatar}
+//                    -> { message } (Store.get, plus, with avatar true,
+//                       avatar: the sender's avatar, see Avatars below;
+//                       without it no avatar field: computing one costs
+//                       hundreds of file operations, so the client keeps
+//                       each sender's for the page's life and asks only on
+//                       a miss); with head true { item [, avatar] }: only
+//                       the list item (Store.get with head), for marking a
+//                       message read that the client already holds: no
+//                       bodies or parts
 //   changes {state}  -> { changed, state }: state is Store.state() now
+//   message.original {id}
+//                    -> { original: {rfc822, stored, external_files} }
+//                       (Store.original); a read
+//
+// Write methods (write: true), each a thin call of the Store, refused in a
+// request with background: true ("forbidden", gate 6).  ids is 1 to 200
+// message ids (the pattern below), 1 to 50 for message.move, delete and
+// undelete (each of those can move mail between the bases, which is
+// costly), no id twice; anything else is "invalid" for the whole call
+// before the mailbox is opened.  Each
+// returns its per-id results in Store order and the state after it (also
+// the reply's state):
+//   results: [{id, ok: true, new_id [, folder: "archive"] [, expired:
+//            true]} or {id, error: <code>}], new_id the id after the call
+//            (null once removed); folder and expired as Store.restore()
+//            gives them; a code other than the ones above is "failed"
+//   message.set {ids, read, starred, spam}
+//                    -> { results, state } (Store.set; at least one of the
+//                       three; spam only for Inbox and Spam messages, so
+//                       spam false is "Not spam": back to the Inbox)
+//   message.move {ids, folder}       -> { results, state } (Store.move;
+//                                       folder: inbox, archive or a "u:"
+//                                       folder id, else "invalid")
+//   message.delete {ids}             -> { results, state } (Store.remove)
+//   message.undelete {ids}           -> { results, state } (Store.restore)
+//   trash.empty                      -> { results, state }
+//   folder.create {name}             -> { folder: {id, name}, state }
+//   folder.rename {id, name}         -> { folder: {id, name}, results
+//                                       (messages not retagged), state }
+//   folder.delete {id}               -> { results (its messages, to Trash),
+//                                       state }
+//   (folder.rename / folder.delete take a "u:" folder id; a name argument
+//   is at most 4096 bytes, so an overlong name reaches the Store and comes
+//   back with reason "toolong".)  A failure of
+//   the whole call keeps the error shape above; a refused folder name is
+//   "invalid" with reason one of empty, invalid, toolong, reserved,
+//   duplicate (the Store's; nothing else passes through).
+//
+// Drafts, sending, contacts and settings (webmail/lib/drafts.js, send.js,
+// contacts.js, exec/load/mailsig.js; each loaded on first use).  None
+// opens the mailbox except where stated; the writes (all but draft.get,
+// draft.list, contact.list, contact.suggest and settings.get) need "as"
+// and are refused in a background request like the others.  A library
+// error keeps its code; its reason passes when it is one of PASS_REASONS
+// (then the message is errors.<code>_<reason> when that text exists),
+// with rev, received, index, entry and count (see coded_failure()).  A
+// request body refused before it is parsed gets the top-level shape
+// (large_gate()), and a cookie that is no session is cleared there too.
+//   draft.create {mode, source_id}
+//                    -> { draft, usage [, dropped_recipients] } (Drafts.create;
+//                       mode new (no source_id), reply, replyall or forward
+//                       (source_id: a message id; opens the mailbox);
+//                       dropped_recipients, from a reply, the number of the
+//                       source's recipients left out; usage: Drafts.usage,
+//                       {drafts, bytes} the user's drafts take now)
+//   draft.get {id}   -> { draft, usage }; draft.get and draft.save of a
+//                       draft that was sent: notfound, reason "sent"; of
+//                       one a send has claimed: notfound, reason "sending"
+//                       (or "stalled" when the claim's heartbeat is
+//                       Send.LIVE seconds old or more), with age (seconds)
+//   draft.list       -> { drafts (Drafts.list rows, maybe_sent where set),
+//                       swept, recovered (claims resolved: sweep's returned
+//                       claims, and sends completed, given back or returned
+//                       maybe_sent) }.  When the mailbox cannot be opened
+//                       the recovery is skipped (logged) and the list is
+//                       still returned.  First Drafts.sweep, then
+//                       Send.recover for the stale sends it reports (claims
+//                       whose heartbeat is Send.LIVE old; at most
+//                       MAX_RECOVER per request, none started RECOVER_SECONDS
+//                       after the first; opens the mailbox only then); in a
+//                       background request neither, only the list.  Safe
+//                       to repeat: what it removes or completes is done once.
+//                       draft.list and folder.list are reads (no `as`, retried
+//                       by rpc.js) that may nonetheless complete an
+//                       interrupted send: save copies and charge credits.
+//                       That is the user's own send finishing, and recovery
+//                       is idempotent (the claim's record decides; a second
+//                       run finds the send done), so a retry or a stale tab
+//                       cannot deliver or charge twice.
+//   draft.save {id, rev, to, cc, bcc, subject, body, from_domain, priority}
+//                    -> { draft } (Drafts.save; conflict "stale" carries rev)
+//   draft.delete {id}  -> {}
+//   draft.attach {id, upload, name, type, offset, total, b64}
+//                    -> { attachment: {id, received, complete} }
+//                       (conflict "offset" carries received)
+//   draft.detach {id, attachment}  -> { draft }
+//   draft.send {id, key, confirm_resend}
+//                    -> { id (the Sent copy's, or null), message_id
+//                       [, warning: nocopy, longlist or recovered] }
+//                       (Send.send; opens the mailbox; key: 16 to 64 of
+//                       A-Z a-z 0-9 _ -, new for each press of Send; the
+//                       same key returns the recorded outcome; conflict
+//                       reasons sending, unknown, partial, key, taken, busy,
+//                       incomplete, stale, maybe_sent; forbidden recipient
+//                       and invalid unknown carry index and entry)
+//   contact.list     -> { contacts }
+//   contact.set {id, name, addrs, note}  -> { contact } (addrs: 1 to 10)
+//   contact.delete {id}  -> {}
+//   contact.suggest {q, limit}  -> { suggestions } (the user's own
+//                       contacts only, limit 1 to 50, default 10)
+//   settings.get     -> { display_name, from_domain, theme, images_always,
+//                       from_domains (Address.domains_for: the domains the
+//                       user may send from), from_address_local (the part
+//                       of the address the system assigns the user before
+//                       "@"; from_domain "" is the system's address),
+//                       signature, signature_source, signature_enabled
+//                       (MailSig.get, MailSig.enabled), forward: {allowed,
+//                       enabled, address, keeps_copy [, reason: off or
+//                       restricted]} }.  Stored in webmail.settings.json:
+//                       display_name (Address.clean, 64 bytes),
+//                       from_domain ("" or an allowed domain, lowercased),
+//                       theme (system, light or dark), images_always (at
+//                       most 200 Internet addresses, ASCII lowercased).
+//                       Forwarding is the user record's: user.netmail and
+//                       the USER_NETMAIL bit; allowed unless the system
+//                       does not forward (SYS_FWDTONET) or the user has the
+//                       forward-mail restriction ('F'); keeps_copy is the
+//                       MM_FWDKEEP bit of msg_area.settings when sbbsdefs.js
+//                       defines that name, else false.  The netmail address
+//                       has other uses: the mail server exempts mail FROM
+//                       any user's netmail address from DNSBL refusal,
+//                       login.js can mail the password there, emailval.js
+//                       sends its validation code there.
+//   settings.set {display_name, from_domain, theme, images_always,
+//                images_add, images_remove, forward_enabled,
+//                forward_address, signature}
+//                    -> what settings.get returns.  At least one;
+//                       images_always (the whole list) not with images_add
+//                       or images_remove (one address each, applied under
+//                       the settings file's lock, so two tabs do not undo
+//                       each other).  signature: text, "" (none on mail) or
+//                       null (back to the general signature): MailSig.set.
+//                       forward_address, and the stored address when
+//                       forward_enabled true turns forwarding on: at most
+//                       60 characters, a plain Internet address, not at
+//                       one of the system's domains
+//                       (system.inet_domain_list), one the system can send
+//                       to (system.check_netmail_addr), not in email.can,
+//                       not another user's when duplicates are not allowed
+//                       (UQ_DUPNETMAIL); "" is refused (forward_enabled
+//                       false turns forwarding off and keeps the address).
+//                       Everything is checked before anything is written
+//                       (the order is at settings_set()).
+//
+// Request body size: see body_check(); 256 KB for every request,
+// more only for a request of exactly one draft.attach or draft.save call.
 //
 // Avatars: the base64 data of a Synchronet avatar (10 x 6 character
 // cells, two bytes each: a CP437 character and a PC text attribute),
@@ -216,9 +415,10 @@
 // CR, LF, FF, VT) that does not start with "$" (any tag Store.folders()
 // can list, foreign ones included).
 //
-// Sending domains: Api.sending_domains() is the ONE place the list of
-// domains a user may send from comes from.  For now it is the system's
-// Internet address alone, until the sysop can configure a list.
+// Sending domains: Api.sending_domains(usernum) is the ONE place the list
+// of domains a user may send from comes from (Address.domains_for);
+// session.get's domains (none when signed out) and settings.get's
+// from_domains are that list.
 
 "use strict";
 
@@ -238,19 +438,40 @@ var Api = (function () {
 	}
 
 	var Session = sibling("session.js");
-	var Locale = sibling("locale.js");
-	var UD = {};
-	load(UD, "userdefs.js");
+	// locale.js on first use: a request that needs no text (the poll, a
+	// call that succeeds) does not load it
+	var locale_lib = null;
+	function Locale()
+	{
+		if (locale_lib === null)
+			locale_lib = sibling("locale.js");
+		return locale_lib;
+	}
+	// The user record bits used here, as userdefs.js defines them (pinned
+	// to it by the api.js test): not loaded for every request
+	var UD = { USER_DELETED: 1 << 0, USER_INACTIVE: 1 << 6, USER_NETMAIL: 1 << 12,
+		UFLAG_G: 1 << 6, UREST_FORWARD_MAIL: 1 << 5 };
 	var MAX_COOKIES = 8;		// cookie values tried per request
 	var MAX_DEPTH = 32;		// nesting of a request body
 
 	var MAX_CALLS = 32;
 	var MAX_CALL_ID = 40;
 	var MAX_STRING = 1000;
-	var MAX_CREDENTIAL = 262144;	// the request body limit; longer is "auth" below
+	// A user name or password argument: longer is "invalid"; from 65 (user)
+	// or 129 (password) up to this it is "auth" without asking login()
+	var MAX_CREDENTIAL = 8192;
 	var MAX_USER = 64;
 	var MAX_PASSWORD = 128;
 	var MAX_TAG = 200;
+	var MAX_IDS = 200;		// message ids per write call
+	// ... per move, delete and undelete: a move between the bases costs
+	// some 230 file operations under the user's summary lock
+	var MAX_MOVE_IDS = 50;
+	var MAX_NAME = 4096;		// a folder name argument: longer ones reach
+					// the mailbox (and come back "toolong")
+	var MOVE_TARGETS = ["inbox", "archive"];
+	// The reasons a folder name is refused (the mailbox library's)
+	var REASONS = ["empty", "invalid", "toolong", "reserved", "duplicate"];
 	var MSG_ID_RE = /^[sp][1-9][0-9]{0,9}$/;
 	var METHOD_RE = /^[a-z][a-z0-9_]{0,31}(\.[a-z][a-z0-9_]{0,31}){0,3}$/;
 	var WS_RE = /[ \t\r\n\f\v]/;
@@ -258,7 +479,84 @@ var Api = (function () {
 	// "__proto__" on every object
 	var FOLDERS = ["inbox", "starred", "sent", "spam", "trash", "archive", "all"];
 	var CODES = ["notfound", "forbidden", "invalid", "quota", "toolarge", "conflict", "failed",
-		"expired", "auth", "https"];
+		"expired", "auth", "https", "stale"];
+	// The reasons a call's error may carry (the libraries'; anything else is
+	// dropped): the folder-name ones above, then drafts, sending, contacts
+	// and settings.  A reason with a text of its own (errors.<code>_<reason>
+	// in the locale, REASON_FALLBACK below) gets it as the message.
+	var PASS_REASONS = REASONS.concat([
+		// Drafts
+		"stale", "offset", "busy", "incomplete", "sending", "stalled", "exists", "unreadable", "drafts", "sent",
+		"bytes", "total", "count", "beyond", "maybe_sent", "chunk", "upload", "mode", "to", "cc",
+		"bcc", "subject", "body", "from_domain", "priority", "rev",
+		"attachment", "fields", "send", "token", "source_id",
+		// Address (parse_list, resolve, from_for)
+		"syntax", "control", "utf8", "unbalanced", "group", "route", "kind",
+		// Send
+		"key", "unknown", "partial", "taken", "norecipients", "toomany", "qwk", "fido", "fidoname",
+		"recipient", "attachments", "credits", "domain",
+		// Contacts
+		"name", "addrs", "note", "id", "contacts",
+		// Settings
+		"display_name", "theme", "images", "signature", "forward_off", "forward_restricted",
+		"forward_address", "forward_toolong", "forward_own", "forward_empty", "forward_blocked",
+		"forward_duplicate", "forward_unsupported"]);
+	var REASON_FALLBACK = {
+		conflict_stale: "This draft was changed in another window.",
+		conflict_offset: "Part of the file was not received. The upload continues from where it stopped.",
+		conflict_busy: "The server is busy with your drafts. Please try again in a moment.",
+		conflict_sending: "This message is being sent. Please wait a moment.",
+		conflict_unknown: "It is not known whether this message was sent. Check your Sent folder before sending it again.",
+		conflict_partial: "This message was sent to some of its recipients only. The rest are tried again when you next open a folder, ten minutes from now or later.",
+		conflict_key: "This send request was already used for another message. Please try again.",
+		conflict_taken: "This message is being sent. Please wait a moment.",
+		conflict_incomplete: "An attachment has not finished uploading.",
+		conflict_maybe_sent: "This message may have been sent already. Check your Sent folder, then confirm to send it again.",
+		notfound_unreadable: "This draft cannot be read.",
+		notfound_sent: "This message has already been sent.",
+		notfound_sending: "This message is being sent.",
+		notfound_stalled: "Sending this message did not finish. Look in your Sent folder, then open Drafts.",
+		quota_drafts: "You have as many drafts as allowed. Send or delete some first.",
+		quota_bytes: "Your drafts take all the space allowed. Delete some drafts or attachments first.",
+		toolarge_total: "The attachments of this message are larger than allowed.",
+		toolarge_count: "This message has as many attachments as allowed.",
+		toolarge_body: "The message text is longer than allowed.",
+		toolarge_contacts: "Your address book is full.",
+		toolarge_images: "The list of senders whose images are always shown is full.",
+		invalid_norecipients: "Add at least one recipient.",
+		invalid_syntax: "One of the addresses is not written correctly.",
+		invalid_control: "One of the addresses contains a character that is not allowed.",
+		invalid_utf8: "One of the addresses contains text that cannot be read.",
+		invalid_unbalanced: "One of the addresses has a quote, bracket or parenthesis that is not closed.",
+		invalid_group: "Address groups cannot be used. Enter the addresses one by one.",
+		invalid_route: "Routed addresses cannot be used.",
+		invalid_toolong: "That is too long.",
+		invalid_unknown: "One of the recipients is not a known user or address.",
+		invalid_domain: "You cannot send from that address.",
+		invalid_key: "The send request was not valid. Please try again.",
+		invalid_toomany: "A message can have at most {count} recipients.",
+		invalid_toomany_one: "A message can have only one recipient.",
+		invalid_fidoname: "A FidoNet recipient needs a name, as in Name@1:2/3.",
+		invalid_attachments: "Attachments cannot be sent to FidoNet or QWK addresses.",
+		invalid_addrs: "One of the addresses is not valid.",
+		invalid_from_domain: "You cannot send from that address.",
+		invalid_images: "That is not a valid e-mail address.",
+		invalid_signature: "The signature is too long or not valid.",
+		invalid_forward_address: "Mail can only be forwarded to an Internet e-mail address.",
+		invalid_forward_toolong: "The forwarding address can be at most 60 characters long.",
+		invalid_forward_own: "Mail cannot be forwarded to an address on this system.",
+		invalid_forward_empty: "Enter the address to forward your mail to.",
+		invalid_forward_blocked: "That forwarding address is not allowed.",
+		invalid_forward_duplicate: "That forwarding address is in use by another user.",
+		invalid_forward_unsupported: "This system cannot forward mail to that address.",
+		forbidden_qwk: "Mail cannot be sent to that QWK address.",
+		forbidden_fido: "This system does not send FidoNet mail.",
+		forbidden_recipient: "You are not allowed to send mail to one of the recipients.",
+		forbidden_credits: "You do not have enough credits to send this message.",
+		forbidden_domain: "You cannot send from that address.",
+		forbidden_forward_off: "This system does not forward mail.",
+		forbidden_forward_restricted: "You are not allowed to forward your mail."
+	};
 	// Only when the locale files cannot be read (the same as en_us.ini)
 	var FALLBACK = {
 		notfound: "That item could not be found. It may have been deleted.",
@@ -268,9 +566,10 @@ var Api = (function () {
 		toolarge: "That is too large to send or save.",
 		conflict: "Someone or something else changed this first. Please reload and try again.",
 		failed: "That did not work. Please try again.",
-		expired: "Your session has ended. Please sign in again.",
+		expired: "That message is too old to go back to the Inbox.",
 		auth: "The user name or password is not correct.",
 		https: "{name} needs a secure connection. Please use the https address of this site.",
+		stale: "Someone else signed in in this browser. The page is loading again.",
 		internal: "Something went wrong on the server. Please try again in a moment."
 	};
 	var BRAND_KEYS = ["product_name", "brand", "login_text", "footer_links", "fallback_url"];
@@ -453,14 +752,14 @@ var Api = (function () {
 		if (rq.available === null) {
 			var dirs = locale_dirs(rq.config);
 			try {
-				rq.available = Locale.available(dirs.dir, dirs.mods);
+				rq.available = Locale().available(dirs.dir, dirs.mods);
 			} catch (e) {
 				Api.log(LOG_ERR, "webmail api: listing locales: " + describe(e));
 				rq.available = [];
 			}
 		}
 		var lang = rq.user && typeof rq.user.lang === "string" ? rq.user.lang : undefined;
-		return Locale.pick(lang, rq.env.accept_language, rq.config.locale, rq.available);
+		return Locale().pick(lang, rq.env.accept_language, rq.config.locale, rq.available);
 	}
 
 	// The strings of the request's locale, or null if they cannot be read
@@ -470,7 +769,7 @@ var Api = (function () {
 		if (!own(rq.loaded, name)) {
 			var dirs = locale_dirs(rq.config);
 			try {
-				rq.loaded[name] = Locale.load(dirs.dir, dirs.mods, name);
+				rq.loaded[name] = Locale().load(dirs.dir, dirs.mods, name);
 			} catch (e) {
 				Api.log(LOG_ERR, "webmail api: loading locale " + name + ": " + describe(e));
 				rq.loaded[name] = null;
@@ -508,12 +807,80 @@ var Api = (function () {
 		return { ok: false, error: code, message: text(rq, code) };
 	}
 
+	// The text for a reason of a code (errors.<code>_<reason>, the "_one"
+	// form when count is 1), or null when the reason has none; {count} is
+	// replaced by count
+	function reason_text(rq, code, reason, count)
+	{
+		var key = code + "_" + reason;
+		if (typeof count !== "number")
+			count = null;
+		else if (count === 1 && (own(REASON_FALLBACK, key + "_one")))
+			key += "_one";
+		var s = null;
+		try {
+			s = strings(rq);
+		} catch (e) {
+			Api.log(LOG_ERR, "webmail api: locale: " + describe(e));
+		}
+		var t = null;
+		if (s !== null && typeof s === "object" && own(s, "errors." + key) && typeof s["errors." + key] === "string")
+			t = s["errors." + key];
+		else if (own(REASON_FALLBACK, key))
+			t = REASON_FALLBACK[key];
+		if (t !== null && count !== null)
+			t = t.split("{count}").join(String(count));
+		return t;
+	}
+
+	// The error reply for a thrown coded error: the code's text, or the
+	// reason's when it has one; a whitelisted reason, and the numbers rev
+	// (a draft's current revision), received (bytes of an upload so far)
+	// and index (a recipient's position), and entry (that recipient as the
+	// user typed it, cleaned by the library: at most 64 bytes, no control
+	// characters); nothing else of the error
+	//
+	// count, for "too many recipients" (invalid, toomany): the limit that
+	// refused, the address parser's MAX_ENTRIES (its error carries the
+	// entry's index) or config.max_recipients (the send step's, which has
+	// no index; 0 there means no limit, so it never refuses).
+	// A folder method's reason keeps the code's text (the folder dialogs
+	// have texts of their own).
+	function coded_failure(rq, e, method)
+	{
+		var f = failure(rq, e.code);
+		if (typeof e.reason === "string" && PASS_REASONS.indexOf(e.reason) >= 0) {
+			f.reason = e.reason;
+			if (e.code === "invalid" && e.reason === "toomany") {
+				var max = rq.config.max_recipients;
+				f.count = typeof e.index === "number" || !(typeof max === "number" && max > 0)
+					? lib("address").MAX_ENTRIES : max;
+			}
+			var t = typeof method === "string" && method.substr(0, 7) === "folder."
+				? null : reason_text(rq, e.code, e.reason, f.count);
+			if (t !== null)
+				f.message = t;
+		}
+		var nums = ["rev", "received", "index", "age"];
+		for (var i = 0; i < nums.length; i++) {
+			var v = e[nums[i]];
+			if (typeof v === "number" && isFinite(v) && Math.floor(v) === v && v >= 0)
+				f[nums[i]] = v;
+		}
+		if (f.index !== undefined && typeof e.entry === "string" && e.entry.length <= 64
+			&& !/[\x00-\x1f\x7f]/.test(e.entry) && !BYTES_ONLY.test(e.entry))
+			f.entry = e.entry;
+		return f;
+	}
+
 	// ---- Arguments ----
 
 	var BYTES_ONLY = /[^\x00-\xff]/;
 
 	function check_value(d, v)
 	{
+		if (v === null && d.nullable === true)
+			return true;
 		switch (d.type) {
 			case "string":
 				return typeof v === "string"
@@ -526,8 +893,32 @@ var Api = (function () {
 					&& v <= (d.max === undefined ? 0x7fffffff : d.max);
 			case "boolean":
 				return typeof v === "boolean";
+			case "list":
+				return check_list(d, v);
 		}
 		return false;
+	}
+
+	// A list: an array of min (default 1) to max (default 100) elements,
+	// each passing d.of; unique: no element twice (strings and numbers)
+	function check_list(d, v)
+	{
+		if (!(v instanceof Array) || v.length < (d.min === undefined ? 1 : d.min)
+			|| v.length > (d.max === undefined ? 100 : d.max))
+			return false;
+		var seen = {};
+		for (var i = 0; i < v.length; i++) {
+			if (d.of.type === "list" || !check_value(d.of, v[i]))
+				return false;
+			if (d.unique) {
+				// a prefix: no key is "__proto__"
+				var key = "k" + typeof v[i] + ":" + v[i];
+				if (own(seen, key))
+					return false;
+				seen[key] = true;
+			}
+		}
+		return true;
 	}
 
 	// The checked arguments (a new object), or null if they are invalid
@@ -576,6 +967,17 @@ var Api = (function () {
 	function valid_msg_id(v)
 	{
 		return MSG_ID_RE.test(v);
+	}
+
+	function valid_user_folder(v)
+	{
+		return v.substr(0, 2) === "u:" && valid_folder(v);
+	}
+
+	// Where message.move can put mail: the Inbox, Archive, a user folder
+	function valid_move_target(v)
+	{
+		return MOVE_TARGETS.indexOf(v) >= 0 || valid_user_folder(v);
 	}
 
 	// ---- Sessions ----
@@ -761,15 +1163,13 @@ var Api = (function () {
 			? notice.replace(/[ \t\r\n\f\v]+/g, " ").replace(/^ | $/g, "") : "";
 	}
 
-	function sending_domains()
+	// THE single source of the domains user usernum may send from:
+	// Address.domains_for (system.inet_domain_list, filtered by
+	// User.can_send_from_domain).  session.get, settings.get and
+	// settings.set use it through from_domains().
+	function sending_domains(usernum)
 	{
-		// THE single source of the domains a user may send from.  To be
-		// replaced by the sysop's configured list (and the user's own
-		// choice among them).  Until then: the system's Internet address
-		// only.
-		var a = typeof system.inet_addr === "string"
-			? system.inet_addr.replace(/^[ \t]+|[ \t]+$/g, "") : "";
-		return a === "" ? [] : [ascii_lower(a)];
+		return lib("address").domains_for(usernum);
 	}
 
 	function session_get(ctx, args, rq)
@@ -786,9 +1186,8 @@ var Api = (function () {
 			out.strings = s;
 			rq.strings_sent = true;
 		}
-		out.domains = Api.sending_domains();
-		out.limits = { max_attachment_bytes: config.max_attachment_bytes,
-			max_text_part_bytes: config.max_text_part_bytes, max_drafts: config.max_drafts };
+		out.domains = rq.usernum > 0 ? from_domains(rq) : [];
+		out.limits = client_limits(config);
 		out.poll_ms = config.poll_interval * 1000;
 		out.powered_by = powered_by(system.version_notice);
 		for (var i = 0; i < BRAND_KEYS.length; i++) {
@@ -853,8 +1252,83 @@ var Api = (function () {
 		} catch (e) {
 			Api.log(LOG_WARNING, "webmail api: user " + rq.usernum + ": purge_expired: " + describe(e));
 		}
+		var drafts = drafts_count(rq);
+		// A claimed draft whose send record (else the claim) was last
+		// written SEND_LIVE seconds ago or more: an interrupted send, which
+		// is completed or given back (sweep_sends(); not in a background
+		// request; a failure is logged and the list still returned).  A
+		// send under way rewrites its record more often than that, so it
+		// costs no sweep and no drafts lock here.
+		if (drafts.stale > 0 && !rq.background) {
+			try {
+				var r = sweep_sends(rq);
+				if (r.swept > 0 || r.recovered > 0)
+					drafts = drafts_count(rq);
+			} catch (e) {
+				Api.log(LOG_WARNING, "webmail api: user " + rq.usernum + ": recovering sends: " + describe(e));
+			}
+		}
 		return { folders: ctx.store.folders(), usage: ctx.store.usage(), purged: purged,
-			trash_days: ctx.store.options.trash_days };
+			trash_days: ctx.store.options.trash_days, inbox_days: inbox_days(ctx, rq),
+			drafts: drafts.count };
+	}
+
+	// The number of the user's drafts, for display: the directories in
+	// the user's drafts directory named by a draft id (Drafts' layout: a
+	// claimed one, "<id>.sending", is not counted, but is in claims), read
+	// with no lock and no write (Drafts.count would take the drafts lock,
+	// which writes a file).  An unreadable draft.json still counts here.
+	// {count, claims, stale}: stale counts the claims whose send.json (else
+	// the claimed directory) is dated SEND_LIVE seconds ago or more, by the
+	// file dates alone (no lock, nothing parsed); 0s when it cannot be
+	// counted (logged), so the folder list never fails for it.
+	function drafts_count(rq)
+	{
+		var out = { count: 0, claims: 0, stale: 0 };
+		// the drafts library's clock (lib_ctx(): env.lib_ctx.now in tests)
+		var lc = rq.env.lib_ctx;
+		var old = (lc && typeof lc.now === "function" ? lc.now() : now_of(rq.env)) - SEND_LIVE;
+		try {
+			var root = rq.env.userdata(rq.usernum).dir + "drafts/";
+			if (!file_isdir(root))
+				return out;
+			var list = directory(root + "*") || [];	// marked: a directory ends with a slash
+			for (var i = 0; i < list.length; i++) {
+				var p = String(list[i]);
+				var c = p.charAt(p.length - 1);
+				if (c !== "/" && c !== "\\")
+					continue;	// not a directory
+				p = p.substr(0, p.length - 1);
+				var name = p.substr(Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\")) + 1);
+				if (DRAFT_ID_RE.test(name))
+					out.count++;
+				else if (name.length === 24 && name.substr(16) === ".sending" && DRAFT_ID_RE.test(name.substr(0, 16))) {
+					out.claims++;
+					var rec = p + "/send.json";
+					var t = file_exists(rec) ? file_date(rec) : file_date(p);
+					if (t <= old)
+						out.stale++;
+				}
+			}
+			return out;
+		} catch (e) {
+			Api.log(LOG_WARNING, "webmail api: user " + rq.usernum + ": counting drafts: " + describe(e));
+			return { count: 0, claims: 0, stale: 0 };
+		}
+	}
+
+	// The mail base's age limit in days (0: none): the max_age of the
+	// opened shared base, which SCFG writes into the base's status when the
+	// setting is saved.  0 when it cannot be read.
+	function inbox_days(ctx, rq)
+	{
+		try {
+			var n = ctx.store.inbox_max_age();
+			return typeof n === "number" && n > 0 && Math.floor(n) === n ? n : 0;
+		} catch (e) {
+			Api.log(LOG_WARNING, "webmail api: user " + rq.usernum + ": inbox age: " + describe(e));
+			return 0;
+		}
 	}
 
 	function message_list(ctx, args, rq)
@@ -872,11 +1346,117 @@ var Api = (function () {
 
 	function message_get(ctx, args, rq)
 	{
-		if (args.head === true)
-			return { item: ctx.store.get(args.id, { mark_read: args.mark_read === true, head: true }) };
+		if (args.head === true) {
+			var out = { item: ctx.store.get(args.id, { mark_read: args.mark_read === true, head: true }) };
+			if (args.avatar === true)
+				out.avatar = sender_avatar(ctx, rq, args.id);
+			return out;
+		}
 		var msg = ctx.store.get(args.id, { mark_read: args.mark_read === true });
-		msg.avatar = sender_avatar(ctx, rq, args.id);
+		if (args.avatar === true)
+			msg.avatar = sender_avatar(ctx, rq, args.id);
 		return { message: msg };
+	}
+
+	// ---- Writes ----
+
+	// The Store's per-id results in the reply's shape: {id, ok: true,
+	// new_id [, folder, expired]} or {id, error} (a code the API does not
+	// know is "failed"); nothing else the Store put in them
+	function per_id(list)
+	{
+		var out = [];
+		if (!(list instanceof Array))
+			return out;
+		for (var i = 0; i < list.length; i++) {
+			var r = list[i];
+			if (r === null || typeof r !== "object")
+				continue;
+			if (r.ok === true) {
+				var o = { id: r.id, ok: true, new_id: r.new_id === undefined ? r.id : r.new_id };
+				if (r.folder === "archive")
+					o.folder = r.folder;
+				if (r.expired === true)
+					o.expired = true;
+				out.push(o);
+			} else
+				out.push({ id: r.id, error: typeof r.error === "string" && CODES.indexOf(r.error) >= 0
+					? r.error : "failed" });
+		}
+		return out;
+	}
+
+	// The state after a write: also the reply's state (computed once)
+	function after_write(ctx, rq, out)
+	{
+		var s = ctx.store.state();
+		rq.state = s;
+		rq.state_fresh = true;
+		out.state = s;
+		return out;
+	}
+
+	function message_set(ctx, args, rq)
+	{
+		var ch = {};
+		var keys = ["read", "starred", "spam"];
+		for (var i = 0; i < keys.length; i++)
+			if (args[keys[i]] !== undefined)
+				ch[keys[i]] = args[keys[i]];
+		return after_write(ctx, rq, { results: per_id(ctx.store.set(args.ids, ch)) });
+	}
+
+	// At least one of read, starred and spam
+	function set_check(args)
+	{
+		return args.read !== undefined || args.starred !== undefined || args.spam !== undefined;
+	}
+
+	function message_move(ctx, args, rq)
+	{
+		return after_write(ctx, rq, { results: per_id(ctx.store.move(args.ids, args.folder)) });
+	}
+
+	function message_delete(ctx, args, rq)
+	{
+		return after_write(ctx, rq, { results: per_id(ctx.store.remove(args.ids)) });
+	}
+
+	function message_undelete(ctx, args, rq)
+	{
+		return after_write(ctx, rq, { results: per_id(ctx.store.restore(args.ids)) });
+	}
+
+	function trash_empty(ctx, args, rq)
+	{
+		return after_write(ctx, rq, { results: per_id(ctx.store.empty_trash()) });
+	}
+
+	function folder_of(f)
+	{
+		return { id: f.id, name: f.name };
+	}
+
+	function folder_create(ctx, args, rq)
+	{
+		return after_write(ctx, rq, { folder: folder_of(ctx.store.folder_create(args.name)) });
+	}
+
+	function folder_rename(ctx, args, rq)
+	{
+		var f = ctx.store.folder_rename(args.id, args.name);
+		return after_write(ctx, rq, { folder: folder_of(f), results: per_id(f.errors) });
+	}
+
+	function folder_delete(ctx, args, rq)
+	{
+		return after_write(ctx, rq, { results: per_id(ctx.store.folder_delete(args.id)) });
+	}
+
+	function message_original(ctx, args, rq)
+	{
+		var o = ctx.store.original(args.id);
+		return { original: { rfc822: o.rfc822, stored: o.stored, external_files: o.external_files } };
 	}
 
 	function changes(ctx, args, rq)
@@ -886,6 +1466,783 @@ var Api = (function () {
 		rq.state_fresh = true;
 		return { changed: s !== args.state, state: s };
 	}
+
+	// ---- Drafts, sending, contacts and settings ----
+
+	// The libraries these methods use, each loaded on first use (once per
+	// load of this file): drafts, send, contacts and address from beside
+	// this file, mailsig and sbbsdefs from exec/load/ of this install (as
+	// userdata.js finds mailbox_files.js), else through load()'s search
+	var LIBS = {};
+	var LIB_FILES = { drafts: "drafts.js", send: "send.js", contacts: "contacts.js",
+		address: "address.js", config: "config.js" };
+	var LOAD_FILES = { mailsig: "mailsig.js", sbbsdefs: "sbbsdefs.js" };
+
+	function lib(name)
+	{
+		if (!own(LIBS, name)) {
+			if (own(LIB_FILES, name))
+				LIBS[name] = sibling(LIB_FILES[name]);
+			else {
+				var path = HERE + "../../exec/load/" + LOAD_FILES[name];
+				if (HERE === "" || !file_exists(path))
+					path = LOAD_FILES[name];
+				LIBS[name] = load({}, path);
+			}
+		}
+		return LIBS[name];
+	}
+
+	// The context the drafts, send and contacts libraries take: the
+	// user, the user's UserData and the settings; with need_store also
+	// the opened mailbox (make_ctx, once per request).  env.lib_ctx (tests
+	// only) is an object whose fields are added (domains, resolvers, sys,
+	// now, user, ...).
+	function lib_ctx(rq, need_store)
+	{
+		var base = need_store ? get_ctx(rq) : null;
+		if (base !== null)
+			rq.state_fresh = false;
+		var u = base !== null && base.user ? base.user : rq.user;
+		var c = { usernum: rq.usernum, alias: u.alias, name: u.name, user: u,
+			userdata: base !== null && base.userdata ? base.userdata : rq.env.userdata(rq.usernum),
+			config: rq.config };
+		if (base !== null)
+			c.store = base.store;
+		var extra = rq.env.lib_ctx;
+		if (extra !== null && typeof extra === "object") {
+			for (var k in extra)
+				if (own(extra, k))
+					c[k] = extra[k];
+		}
+		return c;
+	}
+
+	// The limits the client works with, sent once in session.get: the
+	// attachment, text, draft and message limits of the settings, and the
+	// drafts library's fixed ones (Drafts.limits; ATTACH_CHUNK and
+	// MAX_ATTACHMENTS are pinned to the library's by a test, so session.get
+	// need not load it)
+	function client_limits(config)
+	{
+		return { max_attachment_bytes: config.max_attachment_bytes,
+			max_text_part_bytes: config.max_text_part_bytes, max_drafts: config.max_drafts,
+			max_draft_bytes: config.max_draft_bytes, max_body_bytes: config.max_body_bytes,
+			max_attachments: MAX_ATTACHMENTS, max_chunk: ATTACH_CHUNK,
+			max_recipients: config.max_recipients, max_message_bytes: config.max_message_bytes,
+			max_attach_total: attach_total(config) };
+	}
+
+	// The most attachment bytes a message may carry: max_attachment_bytes,
+	// and what fits max_message_bytes with no text (Config's
+	// attachment_allowance: MimeWrite.estimate()'s arithmetic); 0 = no limit
+	function attach_total(config)
+	{
+		var a = config.max_attachment_bytes > 0 ? config.max_attachment_bytes : 0;
+		var m = config.max_message_bytes > 0 ? lib("config").attachment_allowance(config.max_message_bytes) : 0;
+		return a > 0 && m > 0 ? Math.min(a, m) : Math.max(a, m);
+	}
+
+	// The From domains the user may use: ctx.domains when the context has
+	// them (tests), else Address.domains_for(usernum)
+	function from_domains(rq)
+	{
+		var extra = rq.env.lib_ctx;
+		if (extra && extra.domains instanceof Array)
+			return extra.domains;
+		return sending_domains(rq.usernum);
+	}
+
+	// ---- Request body sizes ----
+
+	// Every request may be BASE_BODY bytes; a request of exactly one
+	// draft.attach or one draft.save call may be larger, up to what that
+	// call can need (body_allowance), never more than HOST_MAX_POST: the
+	// web server gives a script no post_data at all for a longer body
+	// (MAX_POST_LEN in src/sbbs3/websrvr.cpp, 4 MiB; it then spools the
+	// body to a file).  The web server reads the whole body before the
+	// script runs, so the size cannot stop the reading, only the work.
+	var BASE_BODY = 262144;
+	var HOST_MAX_POST = 4 * 1048576;
+	var ATTACH_CHUNK = 1500000;	// Drafts.MAX_CHUNK: decoded bytes per draft.attach
+	var MAX_ATTACHMENTS = 100;	// Drafts.MAX_ATTACHMENTS
+	var MAX_ADDR_FIELD = 16384;	// Drafts.MAX_ADDR_FIELD: to, cc, bcc bytes
+	var MAX_SUBJECT_IN = 4096;	// a draft subject as received (stored: 255)
+	var MAX_UPLOAD_NAME = 1024;	// draft.attach name as received (stored: 128)
+	var MAX_UPLOAD_TYPE = 255;
+	var BODY_OVERHEAD = 16384;	// the request's other parts: method, ids, as, numbers
+	var LARGE_METHODS = ["draft.attach", "draft.save"];
+	var LARGE_HEAD_RE = /^[ \t\r\n]*\{[ \t\r\n]*"calls"[ \t\r\n]*:[ \t\r\n]*\[[ \t\r\n]*\[[ \t\r\n]*"(draft\.attach|draft\.save)"[ \t\r\n]*,/;
+	var AS_TAIL_RE = /,[ \t\r\n]*"as"[ \t\r\n]*:[ \t\r\n]*([0-9]{1,10})[ \t\r\n]*\}[ \t\r\n]*$/;
+
+	// The largest body a request of this one method may have.
+	//   draft.attach: the chunk's base64 (4 characters per 3 bytes), the
+	//     name and type in the worst JSON form (a \u escape, 6 characters,
+	//     per byte), plus BODY_OVERHEAD: 2,024,058 bytes.
+	//   draft.save: the text fields twice over (JSON writes a quote, a
+	//     backslash and a line break as two characters; every other control
+	//     character is refused, and other text goes as UTF-8, a byte per
+	//     byte; that is how a browser's JSON.stringify writes text, the
+	//     client this allowance is for): max_body_bytes, three address fields, the subject as
+	//     received, a domain and a priority; plus BODY_OVERHEAD: 2,220,546
+	//     bytes with the default max_body_bytes (1 MiB).
+	// Never less than BASE_BODY, never more than HOST_MAX_POST.
+	function body_allowance(config, method)
+	{
+		var n = BASE_BODY;
+		if (method === "draft.attach")
+			n = 4 * Math.ceil(ATTACH_CHUNK / 3) + 6 * (MAX_UPLOAD_NAME + MAX_UPLOAD_TYPE) + BODY_OVERHEAD;
+		else if (method === "draft.save") {
+			var body = config && typeof config.max_body_bytes === "number" ? config.max_body_bytes : 0;
+			n = 2 * (body + 3 * MAX_ADDR_FIELD + MAX_SUBJECT_IN + 253 + 4) + BODY_OVERHEAD;
+		}
+		return Math.min(Math.max(n, BASE_BODY), HOST_MAX_POST);
+	}
+
+	// The largest body any request may have
+	function max_body(config)
+	{
+		var n = BASE_BODY;
+		for (var i = 0; i < LARGE_METHODS.length; i++)
+			n = Math.max(n, body_allowance(config, LARGE_METHODS[i]));
+		return n;
+	}
+
+	// The size rule BEFORE the body is parsed (api.ssjs): declared is the
+	// Content-Length header (a number, NaN when absent), body the post data
+	// (a string, or not one when the web server kept a long body to
+	// itself).  Returns { ok: false } (refuse: 413) or { ok: true, method }:
+	// method null for a body of at most BASE_BODY, else the one large
+	// method the body starts with ({"calls":[["draft.attach", ... as the
+	// client writes it; a request written in another order is held to
+	// BASE_BODY).  Nothing is copied but the body's first 256 characters
+	// (and its last 64, see large_gate()).
+	function body_check(config, declared, body)
+	{
+		var limit = max_body(config);
+		if (typeof declared === "number" && declared > limit)
+			return { ok: false };
+		if (typeof body !== "string")
+			return { ok: !(declared > 0), method: null };
+		if (body.length > limit)
+			return { ok: false };
+		if (body.length <= BASE_BODY)
+			return { ok: true, method: null };
+		var m = LARGE_HEAD_RE.exec(body.substr(0, 256));
+		if (m === null || body.length > body_allowance(config, m[1]))
+			return { ok: false };
+		return { ok: true, method: m[1] };
+	}
+
+	// The gates for a large body, BEFORE it is parsed (api.ssjs, after
+	// body_check() gave a method): the X-Webmail header, HTTPS, a signed-in
+	// user (the session cookie, checked without refreshing the session),
+	// and "as" when the body ends with it (the client writes it last) and
+	// names another user.  null to go on; else the reply (the top-level
+	// error shape: forbidden, https, auth or stale), and the body is never
+	// parsed.  dispatch() checks everything again on the parsed request.
+	function large_gate(env, body)
+	{
+		var rq = new_request(env);
+		var gate = null;
+		var usernum = 0;
+		var signed_out = false;
+		try {
+			if (env.has_header !== true)
+				gate = "forbidden";
+			else if (env.secure !== true && rq.config.require_tls !== false)
+				gate = "https";
+			else {
+				var s = session_user(env, false);
+				usernum = s.usernum;
+				signed_out = s.clear;
+				// as dispatch does: a cookie that is no session is cleared
+				if (s.clear && typeof env.set_cookie === "function")
+					env.set_cookie("", false);
+				if (usernum === 0)
+					gate = "auth";
+				else if (typeof body === "string") {
+					var m = AS_TAIL_RE.exec(body.substr(Math.max(0, body.length - 64)));
+					if (m !== null && parseInt(m[1], 10) !== usernum)
+						gate = "stale";
+				}
+			}
+		} catch (e) {
+			Api.log(LOG_ERR, "webmail api: checking a large request: " + describe(e));
+			gate = "internal";
+		}
+		if (gate === null)
+			return null;
+		return { error: gate, message: text(rq, gate), results: [], state: "", signed_out: signed_out,
+			usernum: gate === "stale" ? usernum : 0 };
+	}
+
+	// After parsing: a body over BASE_BODY must hold exactly one call, of
+	// a large method whose allowance covers it
+	function body_fits(config, length, calls)
+	{
+		if (typeof length !== "number" || length <= BASE_BODY)
+			return true;
+		return calls.length === 1 && typeof calls[0][0] === "string"
+			&& LARGE_METHODS.indexOf(calls[0][0]) >= 0 && length <= body_allowance(config, calls[0][0]);
+	}
+
+	// ---- Drafts ----
+
+	var DRAFT_ID_RE = /^[0-9a-f]{16}$/;
+	var ATT_ID_RE = /^a[1-9][0-9]{0,8}$/;
+	var UPLOAD_RE = /^[A-Za-z0-9_-]{8,64}$/;
+	var SEND_KEY_RE = /^[A-Za-z0-9_-]{16,64}$/;	// Send.KEY_RE
+	var CONTACT_ID_RE = /^c[1-9][0-9]{0,8}$/;
+	var MODES = ["new", "reply", "replyall", "forward"];
+	var PRIORITIES = ["", "high", "low"];
+	var WARNINGS = ["nocopy", "longlist", "recovered"];
+	var MAX_RECOVER = 2;		// stale sends draft.list completes per request
+	var SEND_LIVE = 600;		// Send.LIVE (pinned by a test): folder.list does not load send.js
+	var RECOVER_SECONDS = 5;	// ... and no new one after this long
+
+	function valid_draft_id(v)
+	{
+		return DRAFT_ID_RE.test(v);
+	}
+
+	function valid_mode(v)
+	{
+		return MODES.indexOf(v) >= 0;
+	}
+
+	// mode "new" takes no source; the others need one
+	function create_check(args)
+	{
+		return args.mode === "new" ? args.source_id === undefined : args.source_id !== undefined;
+	}
+
+	// The reply's draft, without dropped_recipients (which goes beside it)
+	function draft_create(ctx, args, rq)
+	{
+		var opts = { mode: args.mode };
+		if (args.source_id !== undefined)
+			opts.source_id = args.source_id;
+		var c = lib_ctx(rq, args.mode !== "new");
+		var d = lib("drafts").create(c, opts);
+		var out = { usage: lib("drafts").usage(c) };
+		if (d !== null && typeof d === "object" && d.dropped_recipients !== undefined) {
+			if (typeof d.dropped_recipients === "number")
+				out.dropped_recipients = d.dropped_recipients;
+			delete d.dropped_recipients;
+		}
+		out.draft = d;
+		return out;
+	}
+
+	// A draft that is not found because a send has claimed it (another
+	// window is sending it: reason "sending", with age, the seconds since
+	// the claim's heartbeat; "stalled" when that is Send.LIVE or more: the
+	// send did not finish, and a non-background draft.list completes or
+	// gives it back) or because it was sent
+	// (Send's index of completed sends names it: reason "sent"), so the
+	// page says so and does not save the text again as if it were lost
+	function why_gone(c, id, e)
+	{
+		if (is_coded(e) && e.code === "notfound" && e.reason === undefined) {
+			try {
+				var age = lib("drafts").claim_age(c, id);
+				if (age !== null) {
+					e.reason = age >= lib("send").LIVE ? "stalled" : "sending";
+					e.age = age;
+				} else if (lib("send").sent(c, id))
+					e.reason = "sent";
+			} catch (x) {
+				// the index cannot be read: plain notfound
+			}
+		}
+		return e;
+	}
+
+	function draft_get(ctx, args, rq)
+	{
+		var c = lib_ctx(rq, false);
+		try {
+			return { draft: lib("drafts").get(c, args.id), usage: lib("drafts").usage(c) };
+		} catch (e) {
+			throw why_gone(c, args.id, e);
+		}
+	}
+
+	// Drafts.sweep, then the stale sends it reports (claims whose heartbeat
+	// is Send.LIVE old: an interrupted send) are completed, given back or
+	// returned marked maybe_sent by Send.recover, after the drafts lock is
+	// released: at most MAX_RECOVER per request, none started
+	// RECOVER_SECONDS after the first, starting at a rotating place so a
+	// claim that keeps failing does not hold the others back.  The rest
+	// wait for a later request.  Run by a draft.list and a folder.list that
+	// are not background requests (a request the client made on its own
+	// changes nothing), so an open mailbox finishes an interrupted send at
+	// the next folder or Drafts visit.  Recovery is idempotent: repeating
+	// it (rpc.js retries these reads) completes nothing twice.
+	// Returns {swept, recovered}.
+	function sweep_sends(rq)
+	{
+		var c = lib_ctx(rq, false);
+		var out = lib("drafts").sweep(c, undefined, { live: lib("send").LIVE });
+		var swept = (out.drafts || 0) + (out.files || 0);
+		var recovered = out.recovered || 0;
+		var stale = out.stale_sends instanceof Array ? out.stale_sends : [];
+		var sc = null;
+		if (stale.length > 0) {
+			// The mailbox, for the recovery only: when it cannot be
+			// opened the list is still returned (the sends wait)
+			try {
+				sc = lib_ctx(rq, true);
+			} catch (e) {
+				Api.log(LOG_WARNING, "webmail api: user " + rq.usernum
+					+ ": no mailbox to recover sends: " + describe(e));
+			}
+		}
+		if (sc !== null) {
+			var start = time() % stale.length;
+			var began = time();
+			for (var i = 0; i < stale.length && i < MAX_RECOVER; i++) {
+				if (i > 0 && time() - began >= RECOVER_SECONDS)
+					break;
+				var id = stale[(start + i) % stale.length];
+				// Counted when the claim was resolved: the send
+				// completed (its outcome), given back (null) or
+				// returned marked maybe_sent (conflict "unknown");
+				// not when it is still claimed (sending, partial, ...)
+				try {
+					lib("send").recover(sc, id);
+					recovered++;
+				} catch (e) {
+					if (is_coded(e) && e.code === "conflict" && e.reason === "unknown")
+						recovered++;
+					else
+						Api.log(LOG_WARNING, "webmail api: user " + rq.usernum + ": recovering send "
+							+ id + ": " + describe(e));
+				}
+			}
+		}
+		return { swept: swept, recovered: recovered };
+	}
+
+	// sweep_sends() (not in a background request), then the list (rows
+	// carry maybe_sent)
+	function draft_list(ctx, args, rq)
+	{
+		var r = rq.background ? { swept: 0, recovered: 0 } : sweep_sends(rq);
+		return { drafts: lib("drafts").list(lib_ctx(rq, false)), swept: r.swept, recovered: r.recovered };
+	}
+
+	function draft_save(ctx, args, rq)
+	{
+		var fields = {};
+		for (var k in args)
+			if (own(args, k) && k !== "id")
+				fields[k] = args[k];
+		var c = lib_ctx(rq, false);
+		try {
+			return { draft: lib("drafts").save(c, args.id, fields) };
+		} catch (e) {
+			throw why_gone(c, args.id, e);
+		}
+	}
+
+	function draft_delete(ctx, args, rq)
+	{
+		lib("drafts").remove(lib_ctx(rq, false), args.id);
+		return {};
+	}
+
+	function draft_attach(ctx, args, rq)
+	{
+		var r = lib("drafts").attach(lib_ctx(rq, false), args.id, { upload: args.upload,
+			name: args.name, type: args.type === undefined ? "" : args.type, offset: args.offset,
+			total: args.total, b64: args.b64 });
+		return { attachment: { id: r.id, received: r.received, complete: r.complete === true } };
+	}
+
+	function draft_detach(ctx, args, rq)
+	{
+		return { draft: lib("drafts").detach(lib_ctx(rq, false), args.id, args.attachment) };
+	}
+
+	// Send.send's outcome: {id, message_id [, warning]}; its errors with
+	// their fixed reasons (coded_failure)
+	function draft_send(ctx, args, rq)
+	{
+		var c = lib_ctx(rq, true);
+		if (c.settings === undefined)
+			c.settings = settings_of(c.userdata);
+		var r = lib("send").send(c, args.id, args.key,
+			{ confirm_resend: args.confirm_resend === true });
+		var out = { id: typeof r.id === "string" ? r.id : null,
+			message_id: typeof r.message_id === "string" ? r.message_id : "" };
+		if (typeof r.warning === "string" && WARNINGS.indexOf(r.warning) >= 0)
+			out.warning = r.warning;
+		return out;
+	}
+
+	// ---- Contacts ----
+
+	function contact_list(ctx, args, rq)
+	{
+		return { contacts: lib("contacts").list(rq.env.userdata(rq.usernum)) };
+	}
+
+	function contact_set(ctx, args, rq)
+	{
+		var f = { addrs: args.addrs };
+		if (args.id !== undefined)
+			f.id = args.id;
+		if (args.name !== undefined)
+			f.name = args.name;
+		if (args.note !== undefined)
+			f.note = args.note;
+		return { contact: lib("contacts").set(rq.env.userdata(rq.usernum), f) };
+	}
+
+	function contact_delete(ctx, args, rq)
+	{
+		lib("contacts").remove(rq.env.userdata(rq.usernum), args.id);
+		return {};
+	}
+
+	// The user's own contacts only (Contacts.suggest never looks up the
+	// system's users)
+	function contact_suggest(ctx, args, rq)
+	{
+		return { suggestions: lib("contacts").suggest(rq.env.userdata(rq.usernum), args.q,
+			args.limit === undefined ? 10 : args.limit) };
+	}
+
+	// ---- Settings ----
+
+	var SETTINGS = "settings";	// webmail.settings.json
+	var THEMES = ["system", "light", "dark"];
+	var MAX_IMAGES = 200;
+	var MAX_DISPLAY_NAME = 64;
+	var MAX_SIGNATURE_IN = 16384;	// bytes of the argument
+	var MAX_SIGNATURE_CHARS = 2000;	// MailSig's MAX_LENGTH (a test pins it)
+	var LEN_NETMAIL = 60;		// sbbsdefs.js: the user record's field
+	var NET_INTERNET = 5;		// smbdefs.js
+
+	// The stored settings, each field checked (a bad or missing one gets
+	// its default): {display_name, from_domain, theme, images_always}
+	function settings_of(ud)
+	{
+		var s = null;
+		try {
+			s = ud.read(SETTINGS, null);
+		} catch (e) {
+			s = null;
+		}
+		if (s === null || typeof s !== "object" || s instanceof Array)
+			s = {};
+		var out = { display_name: "", from_domain: "", theme: "system", images_always: [] };
+		if (typeof s.display_name === "string")
+			out.display_name = s.display_name;
+		if (typeof s.from_domain === "string")
+			out.from_domain = s.from_domain;
+		if (typeof s.theme === "string" && THEMES.indexOf(s.theme) >= 0)
+			out.theme = s.theme;
+		if (s.images_always instanceof Array) {
+			for (var i = 0; i < s.images_always.length && out.images_always.length < MAX_IMAGES; i++)
+				if (typeof s.images_always[i] === "string")
+					out.images_always.push(s.images_always[i]);
+		}
+		return out;
+	}
+
+	// The system values the settings use: env.sys's fields (tests) over
+	// the system's own
+	function sys_of(rq)
+	{
+		if (rq.sys)
+			return rq.sys;
+		var defs = lib("sbbsdefs");
+		var s = {
+			settings: system.settings,
+			newuser_questions: system.newuser_questions,
+			inet_domain_list: system.inet_domain_list,
+			msg_settings: msg_area.settings,
+			MM_FWDKEEP: defs.MM_FWDKEEP,
+			findstr: function (list, str) {
+				return system.findstr(list, str);
+			},
+			trashcan: function (base, str) {
+				return system.trashcan(base, str);
+			},
+			matchuserdata: function (field, data) {
+				return system.matchuserdata(field, data);
+			},
+			check_netmail_addr: function (a) {
+				return system.check_netmail_addr(a);
+			},
+			netaddr_type: function (a) {
+				return netaddr_type(a);
+			}
+		};
+		var extra = rq.env.sys;
+		if (extra !== null && typeof extra === "object") {
+			for (var k in extra)
+				if (own(extra, k))
+					s[k] = extra[k];
+		}
+		s.defs = defs;
+		rq.sys = s;
+		return s;
+	}
+
+	// A plain Internet e-mail address by the address library's rules: one
+	// entry, no display name, a plain host name, and netaddr_type()
+	// Internet
+	function internet_address(sys, a)
+	{
+		try {
+			var Address = lib("address");
+			var l = Address.parse_list(a);
+			if (l.length !== 1 || l[0].addr !== a || l[0].name !== "")
+				return false;
+			Address.format("", a);
+			return sys.netaddr_type(a) === NET_INTERNET;
+		} catch (e) {
+			return false;
+		}
+	}
+
+	// Forwarding: allowed unless the system does not forward mail
+	// (SYS_FWDTONET off: reason "off") or the user has the forward-mail
+	// restriction ('F': "restricted")
+	function forward_refusal(rq, sys)
+	{
+		if (!(sys.settings & sys.defs.SYS_FWDTONET))
+			return "off";
+		var u = rq.user;
+		if (u.security && (u.security.restrictions & UD.UREST_FORWARD_MAIL))
+			return "restricted";
+		return null;
+	}
+
+	function forward_info(rq, sys)
+	{
+		var u = rq.user;
+		var why = forward_refusal(rq, sys);
+		var bit = sys.MM_FWDKEEP;
+		var out = { allowed: why === null, enabled: (u.settings & UD.USER_NETMAIL) !== 0,
+			address: utf8_of(u.netmail),
+			keeps_copy: typeof bit === "number" && bit !== 0 && (sys.msg_settings & bit) !== 0 };
+		if (why !== null)
+			out.reason = why;
+		return out;
+	}
+
+	function settings_get(ctx, args, rq)
+	{
+		var ud = rq.env.userdata(rq.usernum);
+		var s = settings_of(ud);
+		var domains = from_domains(rq);
+		var out = { display_name: s.display_name, from_domain: s.from_domain, theme: s.theme,
+			images_always: s.images_always, from_domains: domains, from_address_local: "" };
+		// A stored domain the user may no longer use: the system address
+		if (out.from_domain !== "" && domains.indexOf(out.from_domain) < 0)
+			out.from_domain = "";
+		var email = utf8_of(rq.user.email);
+		var at = email.lastIndexOf("@");
+		if (at > 0)
+			out.from_address_local = email.substr(0, at);
+		var MailSig = lib("mailsig");
+		var sig = MailSig.get(rq.usernum, rq.env.data_dir);
+		out.signature = sig.text;
+		out.signature_source = sig.source;
+		out.signature_enabled = MailSig.enabled() === true;
+		out.forward = forward_info(rq, sys_of(rq));
+		return out;
+	}
+
+	function invalid(reason)
+	{
+		return { code: "invalid", message: "invalid setting", reason: reason };
+	}
+
+	// images_always, images_add, images_remove: an address, ASCII
+	// lowercased, or invalid
+	function image_sender(sys, a)
+	{
+		if (!internet_address(sys, a))
+			throw invalid("images");
+		return ascii_lower(a);
+	}
+
+	// Whether address may be forwarded to; throws invalid with the reason
+	// when not.  The same rules for a new address and for the stored one
+	// when forwarding is turned on: a plain Internet address of at most 60
+	// characters; not at one of the system's own domains (the mail server
+	// would not forward there: it would loop; system.inet_domain_list
+	// starts with the system's address); one the system can send to
+	// (system.check_netmail_addr, the terminal's netmail_supported());
+	// not in email.can; with duplicates not allowed (UQ_DUPNETMAIL), not
+	// another user's (as the terminal's prompt, get_netmail in
+	// user_info_prompts.js)
+	function check_forward_address(rq, sys, address)
+	{
+		if (address === "")
+			throw invalid("forward_empty");
+		if (address.length > LEN_NETMAIL)
+			throw invalid("forward_toolong");
+		if (!internet_address(sys, address))
+			throw invalid("forward_address");
+		var domain = address.substr(address.lastIndexOf("@") + 1);
+		if (sys.findstr(sys.inet_domain_list, domain) === true)
+			throw invalid("forward_own");
+		if (sys.check_netmail_addr(address) !== true)
+			throw invalid("forward_unsupported");
+		if (sys.trashcan("email", address) === true)
+			throw invalid("forward_blocked");
+		if (sys.newuser_questions & sys.defs.UQ_DUPNETMAIL) {
+			var other = sys.matchuserdata(sys.defs.U_NETMAIL, address);
+			if (typeof other === "number" && other > 0 && other !== rq.usernum)
+				throw invalid("forward_duplicate");
+		}
+	}
+
+	// The forwarding change, checked: {address, enabled} or null for none.
+	// An empty forward_address is refused (forward_empty): the terminal
+	// never stores one, and the address has other uses (see the header);
+	// forward_enabled false turns forwarding off and keeps the address.
+	function forward_change(rq, sys, args)
+	{
+		if (args.forward_enabled === undefined && args.forward_address === undefined)
+			return null;
+		var why = forward_refusal(rq, sys);
+		if (why !== null)
+			throw { code: "forbidden", message: "forwarding not allowed", reason: "forward_" + why };
+		var u = rq.user;
+		var address = args.forward_address !== undefined ? args.forward_address : String(u.netmail || "");
+		var enabled = args.forward_enabled !== undefined ? args.forward_enabled
+			: (u.settings & UD.USER_NETMAIL) !== 0;
+		if (args.forward_address !== undefined || args.forward_enabled === true)
+			check_forward_address(rq, sys, address);
+		return { address: address, enabled: enabled };
+	}
+
+	// What MailSig.set checks, checked first (so a refused signature is
+	// known before anything is written): null, or well-formed UTF-8 of at
+	// most 2000 characters (bytes that are not continuation bytes)
+	function signature_ok(text)
+	{
+		if (text === null)
+			return true;
+		if (!str_is_ascii(text) && !str_is_utf8(text))
+			return false;
+		return text.replace(/[\x80-\xbf]/g, "").length <= MAX_SIGNATURE_CHARS;
+	}
+
+	// At least one setting; images_always (the whole list) not together
+	// with images_add or images_remove
+	function settings_check(args)
+	{
+		if (Object.keys(args).length === 0)
+			return false;
+		return args.images_always === undefined
+			|| (args.images_add === undefined && args.images_remove === undefined);
+	}
+
+	// Order (settings.set):
+	//   1. every argument is checked: names, domains, addresses, the
+	//      signature (signature_ok: what MailSig.set refuses), forwarding;
+	//      a refusal writes nothing
+	//   2. the settings file, one locked read-modify-write, where the
+	//      200-sender cap of images_add is decided (toolarge: nothing
+	//      written); two tabs' images_add and images_remove both apply
+	//   3. the signature (MailSig.set); it can then fail only to write
+	//      ("failed"), leaving step 2's change
+	//   4. the user record's forwarding fields, through the User object as
+	//      the terminal changes them (user.netmail, then the USER_NETMAIL
+	//      bit of user.settings); steps 2 and 3 stay if it fails
+	// Returns what settings.get returns.
+	function settings_set(ctx, args, rq)
+	{
+		var sys = sys_of(rq);
+		var Address = lib("address");
+		var change = {};
+		if (args.display_name !== undefined)
+			change.display_name = Address.clean(args.display_name, MAX_DISPLAY_NAME);
+		if (args.from_domain !== undefined) {
+			var d = ascii_lower(args.from_domain);
+			if (d !== "" && from_domains(rq).indexOf(d) < 0)
+				throw invalid("from_domain");
+			change.from_domain = d;
+		}
+		if (args.theme !== undefined)
+			change.theme = args.theme;
+		var images = null;
+		var i;
+		if (args.images_always !== undefined) {
+			images = [];
+			for (i = 0; i < args.images_always.length; i++) {
+				var a = image_sender(sys, args.images_always[i]);
+				if (images.indexOf(a) < 0)
+					images.push(a);
+			}
+		}
+		var add = args.images_add !== undefined ? image_sender(sys, args.images_add) : null;
+		var remove = args.images_remove !== undefined ? image_sender(sys, args.images_remove) : null;
+		if (args.signature !== undefined && !signature_ok(args.signature))
+			throw invalid("signature");
+		var fwd = forward_change(rq, sys, args);
+		var ud = rq.env.userdata(rq.usernum);
+		if (images !== null || add !== null || remove !== null || Object.keys(change).length > 0) {
+			ud.update(SETTINGS, {}, function (stored) {
+				if (stored === null || typeof stored !== "object" || stored instanceof Array)
+					stored = {};
+				var cur = settings_of({ read: function () {
+					return stored;
+				} });
+				for (var k in change)
+					if (own(change, k))
+						cur[k] = change[k];
+				var list = images !== null ? images : cur.images_always;
+				if (remove !== null && list.indexOf(remove) >= 0)
+					list.splice(list.indexOf(remove), 1);
+				if (add !== null && list.indexOf(add) < 0) {
+					if (list.length >= MAX_IMAGES)
+						throw { code: "toolarge", message: "too many senders", reason: "images" };
+					list.push(add);
+				}
+				cur.images_always = list;
+				cur.v = 1;
+				return cur;
+			});
+		}
+		if (args.signature !== undefined) {
+			try {
+				lib("mailsig").set(rq.usernum, args.signature, rq.env.data_dir);
+			} catch (e) {
+				if (e !== null && typeof e === "object" && e.code === "invalid")
+					throw invalid("signature");	// not reached: signature_ok
+				throw e;
+			}
+		}
+		if (fwd !== null) {
+			var u = rq.user;
+			if (String(u.netmail || "") !== fwd.address)
+				u.netmail = fwd.address;
+			if (fwd.enabled)
+				u.settings |= UD.USER_NETMAIL;
+			else
+				u.settings &= ~UD.USER_NETMAIL;
+		}
+		return settings_get(ctx, {}, rq);
+	}
+
+	var DRAFT_ID = { type: "string", required: true, max: 16, test: valid_draft_id };
+	var EMAIL_ARG = { type: "string", max: 254 };
+
+	// Message ids for the write calls: 1 to MAX_IDS, no duplicates
+	var IDS ={ type: "list", required: true, min: 1, max: MAX_IDS, unique: true,
+		of: { type: "string", max: 11, test: valid_msg_id } };
+	var MOVE_IDS = { type: "list", required: true, min: 1, max: MAX_MOVE_IDS, unique: true,
+		of: IDS.of };
 
 	var methods = {
 		"session.get": { auth: false, args: {
@@ -907,11 +2264,118 @@ var Api = (function () {
 		"message.get": { auth: true, args: {
 			id: { type: "string", required: true, max: 11, test: valid_msg_id },
 			mark_read: { type: "boolean" },
-			head: { type: "boolean" }
+			head: { type: "boolean" },
+			avatar: { type: "boolean" }
 		}, run: message_get },
 		"changes": { auth: true, args: {
 			state: { type: "string", required: true }
-		}, run: changes }
+		}, run: changes },
+		"message.set": { auth: true, write: true, args: {
+			ids: IDS,
+			read: { type: "boolean" },
+			starred: { type: "boolean" },
+			spam: { type: "boolean" }
+		}, check: set_check, run: message_set },
+		"message.move": { auth: true, write: true, args: {
+			ids: MOVE_IDS,
+			folder: { type: "string", required: true, max: MAX_TAG + 2, test: valid_move_target }
+		}, run: message_move },
+		"message.delete": { auth: true, write: true, args: { ids: MOVE_IDS }, run: message_delete },
+		"message.undelete": { auth: true, write: true, args: { ids: MOVE_IDS }, run: message_undelete },
+		"trash.empty": { auth: true, write: true, args: {}, run: trash_empty },
+		"folder.create": { auth: true, write: true, args: {
+			name: { type: "string", required: true, max: MAX_NAME }
+		}, run: folder_create },
+		"folder.rename": { auth: true, write: true, args: {
+			id: { type: "string", required: true, max: MAX_TAG + 2, test: valid_user_folder },
+			name: { type: "string", required: true, max: MAX_NAME }
+		}, run: folder_rename },
+		"folder.delete": { auth: true, write: true, args: {
+			id: { type: "string", required: true, max: MAX_TAG + 2, test: valid_user_folder }
+		}, run: folder_delete },
+		"message.original": { auth: true, args: {
+			id: { type: "string", required: true, max: 11, test: valid_msg_id }
+		}, run: message_original },
+		// Drafts, sending, contacts and settings: no mailbox is opened
+		// unless the call needs one (lib_ctx)
+		"draft.create": { auth: true, ctx: false, write: true, args: {
+			mode: { type: "string", required: true, max: 8, test: valid_mode },
+			source_id: { type: "string", max: 11, test: valid_msg_id }
+		}, check: create_check, run: draft_create },
+		"draft.get": { auth: true, ctx: false, args: { id: DRAFT_ID }, run: draft_get },
+		"draft.list": { auth: true, ctx: false, args: {}, run: draft_list },
+		"draft.save": { auth: true, ctx: false, write: true, args: {
+			id: DRAFT_ID,
+			rev: { type: "int", required: true, min: 0 },
+			to: { type: "string", max: MAX_ADDR_FIELD },
+			cc: { type: "string", max: MAX_ADDR_FIELD },
+			bcc: { type: "string", max: MAX_ADDR_FIELD },
+			subject: { type: "string", max: MAX_SUBJECT_IN },
+			// the body's limit is max_body_bytes, which the library checks
+			// (toolarge, reason "body"); the request size bounds it here
+			body: { type: "string", max: HOST_MAX_POST },
+			from_domain: { type: "string", max: 253 },
+			priority: { type: "string", max: 4, test: function (v) {
+				return PRIORITIES.indexOf(v) >= 0;
+			} }
+		}, run: draft_save },
+		"draft.delete": { auth: true, ctx: false, write: true, args: { id: DRAFT_ID }, run: draft_delete },
+		"draft.attach": { auth: true, ctx: false, write: true, args: {
+			id: DRAFT_ID,
+			upload: { type: "string", required: true, max: 64, test: function (v) {
+				return UPLOAD_RE.test(v);
+			} },
+			name: { type: "string", required: true, max: MAX_UPLOAD_NAME },
+			type: { type: "string", max: MAX_UPLOAD_TYPE },
+			offset: { type: "int", required: true, min: 0 },
+			total: { type: "int", required: true, min: 0 },
+			b64: { type: "string", required: true, max: 4 * Math.ceil(ATTACH_CHUNK / 3) }
+		}, run: draft_attach },
+		"draft.detach": { auth: true, ctx: false, write: true, args: {
+			id: DRAFT_ID,
+			attachment: { type: "string", required: true, max: 10, test: function (v) {
+				return ATT_ID_RE.test(v);
+			} }
+		}, run: draft_detach },
+		"draft.send": { auth: true, ctx: false, write: true, args: {
+			id: DRAFT_ID,
+			key: { type: "string", required: true, max: 64, test: function (v) {
+				return SEND_KEY_RE.test(v);
+			} },
+			confirm_resend: { type: "boolean" }
+		}, run: draft_send },
+		"contact.list": { auth: true, ctx: false, args: {}, run: contact_list },
+		"contact.set": { auth: true, ctx: false, write: true, args: {
+			id: { type: "string", max: 10, test: function (v) {
+				return CONTACT_ID_RE.test(v);
+			} },
+			name: { type: "string", max: 1024 },
+			addrs: { type: "list", required: true, min: 1, max: 10, of: { type: "string", max: 1024 } },
+			note: { type: "string", max: 4096 }
+		}, run: contact_set },
+		"contact.delete": { auth: true, ctx: false, write: true, args: {
+			id: { type: "string", required: true, max: 10, test: function (v) {
+				return CONTACT_ID_RE.test(v);
+			} }
+		}, run: contact_delete },
+		"contact.suggest": { auth: true, ctx: false, args: {
+			q: { type: "string", required: true, max: 254 },
+			limit: { type: "int", min: 1, max: 50 }
+		}, run: contact_suggest },
+		"settings.get": { auth: true, ctx: false, args: {}, run: settings_get },
+		"settings.set": { auth: true, ctx: false, write: true, args: {
+			display_name: { type: "string", max: 1024 },
+			from_domain: { type: "string", max: 253 },
+			theme: { type: "string", max: 6, test: function (v) {
+				return THEMES.indexOf(v) >= 0;
+			} },
+			images_always: { type: "list", min: 0, max: MAX_IMAGES, of: EMAIL_ARG },
+			images_add: EMAIL_ARG,
+			images_remove: EMAIL_ARG,
+			forward_enabled: { type: "boolean" },
+			forward_address: { type: "string", max: 254 },
+			signature: { type: "string", max: MAX_SIGNATURE_IN, nullable: true }
+		}, check: settings_check, run: settings_set }
 	};
 
 	// ---- The request body ----
@@ -991,7 +2455,25 @@ var Api = (function () {
 			if (!(calls[i] instanceof Array) || calls[i].length < 1 || calls[i].length > 3)
 				return false;
 		}
+		if (request.as !== undefined && !valid_as(request.as))
+			return false;
 		return true;
+	}
+
+	function valid_as(v)
+	{
+		return typeof v === "number" && v >= 1 && v <= 0x7fffffff && Math.floor(v) === v;
+	}
+
+	// The request holds a call of a write method
+	function has_write(calls)
+	{
+		for (var i = 0; i < calls.length; i++) {
+			var name = calls[i][0];
+			if (typeof name === "string" && own(methods, name) && methods[name].write === true)
+				return true;
+		}
+		return false;
 	}
 
 	function call_id(v)
@@ -1034,8 +2516,11 @@ var Api = (function () {
 			return failure(rq, "invalid");
 		if (m.auth && rq.usernum === 0)
 			return failure(rq, "auth");
+		// A request the client made on its own never changes mail
+		if (m.write && rq.background)
+			return failure(rq, "forbidden");
 		var args = check_args(m.args || {}, call.length > 1 ? call[1] : undefined);
-		if (args === null)
+		if (args === null || (typeof m.check === "function" && m.check(args) !== true))
 			return failure(rq, "invalid");
 		try {
 			var ctx = null;
@@ -1057,7 +2542,7 @@ var Api = (function () {
 				if (e.code === "failed" || e.code === "conflict")
 					Api.log(LOG_WARNING, "webmail api: user " + rq.usernum + ": " + name + ": "
 						+ describe(e));
-				return failure(rq, e.code);
+				return coded_failure(rq, e, name);
 			}
 			Api.log(LOG_ERR, "webmail api: user " + rq.usernum + ": " + name + ": " + describe(e));
 			return failure(rq, "internal");
@@ -1067,10 +2552,10 @@ var Api = (function () {
 	function new_request(env)
 	{
 		return { env: env, config: env && env.config ? env.config : {}, usernum: 0, user: null,
-			cookie: null, via: null, webv4: null, signed_out: false, logged_out: false,
+			cookie: null, via: null, webv4: null, signed_out: false, logged_out: false, background: false,
 			ctx: null, ctx_tried: false, ctx_error: null,
 			available: null, loaded: {}, strings_sent: false, state: null, state_fresh: false,
-			avatar_lib: undefined };
+			avatar_lib: undefined, sys: null };
 	}
 
 	function only_changes(calls)
@@ -1083,13 +2568,16 @@ var Api = (function () {
 		return true;
 	}
 
-	function dispatch(env, request)
+	function dispatch(env, request, meta)
 	{
 		var rq = null;
 		try {
 			rq = new_request(env);
 			if (!well_formed(request))
-				return { error: "invalid", message: text(rq, "invalid"), results: [], state: "" };
+				return { error: "invalid", message: text(rq, "invalid"), results: [], state: "", usernum: 0 };
+			if (meta && !body_fits(rq.config, meta.length, request.calls))
+				return { error: "toolarge", message: text(rq, "toolarge"), results: [], state: "", usernum: 0 };
+			rq.background = request.background === true;
 			var calls = request.calls;
 			var results = [];
 			var i;
@@ -1113,6 +2601,12 @@ var Api = (function () {
 					gate = "internal";
 				}
 			}
+			if (gate === null) {
+				if (request.as !== undefined && rq.usernum !== 0 && request.as !== rq.usernum)
+					gate = "stale";
+				else if (request.as === undefined && rq.usernum !== 0 && has_write(calls))
+					gate = "invalid";
+			}
 			for (i = 0; i < calls.length; i++) {
 				var id = call_id(calls[i].length > 2 ? calls[i][2] : null);
 				results.push([id, gate !== null ? failure(rq, gate) : run_call(rq, calls[i])]);
@@ -1132,7 +2626,8 @@ var Api = (function () {
 			}
 			// signed_out only when the request did not end signed in (a
 			// sign-in later in the same request cancels it)
-			return { results: results, state: state, signed_out: rq.signed_out && rq.usernum === 0 };
+			return { results: results, state: state, signed_out: rq.signed_out && rq.usernum === 0,
+				usernum: rq.usernum };
 		} catch (e) {
 			Api.log(LOG_ERR, "webmail api: dispatch: " + describe(e));
 			var msg = FALLBACK.internal;
@@ -1140,7 +2635,7 @@ var Api = (function () {
 				msg = text(rq || new_request({}), "internal");
 			} catch (x) {
 			}
-			return { error: "internal", message: msg, results: [], state: "" };
+			return { error: "internal", message: msg, results: [], state: "", usernum: 0 };
 		} finally {
 			if (rq !== null && rq.ctx !== null) {
 				try {
@@ -1205,9 +2700,9 @@ var Api = (function () {
 	}
 
 	var Api = {
+		UD: UD,		// for the test that pins it to userdefs.js
 		// The libraries this one loaded, for callers that need them too
 		Session: Session,
-		Locale: Locale,
 		methods: methods,
 		dispatch: dispatch,
 		parse_body: parse_body,
@@ -1216,12 +2711,26 @@ var Api = (function () {
 		sending_domains: sending_domains,
 		powered_by: powered_by,
 		context_factory: context_factory,
+		body_check: body_check,
+		body_allowance: body_allowance,
+		max_body: max_body,
+		large_gate: large_gate,
+		client_limits: client_limits,
+		lib: lib,
+		BASE_BODY: BASE_BODY,
+		HOST_MAX_POST: HOST_MAX_POST,
+		ATTACH_CHUNK: ATTACH_CHUNK,
+		MAX_ATTACHMENTS: MAX_ATTACHMENTS,
+		MAX_ADDR_FIELD: MAX_ADDR_FIELD,
+		SEND_LIVE: SEND_LIVE,
 		userdata_dir: userdata_dir,
 		base_path: base_path,
 		log: function (level, text) {
 			log(level, text);
 		}
 	};
+	// The locale library, loaded when first asked for
+	Object.defineProperty(Api, "Locale", { get: Locale, enumerable: true });
 
 	return Api;
 })();

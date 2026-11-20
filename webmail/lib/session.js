@@ -428,13 +428,23 @@ var Session = (function () {
 		return removed;
 	}
 
-	// "; Path=<path>; HttpOnly; Secure; SameSite=Strict", without
+	// "; Path=<path>; HttpOnly; Secure; SameSite=Lax", without
 	// "; Secure" when opts.secure is not true, followed by
 	// "; Max-Age=<remember_days in seconds>" when opts.keep is true.  An
 	// empty value (clearing the cookie at sign-out) gets "; Max-Age=0"
 	// instead.  path is the app's base path; it must start and end with
 	// "/" and hold only printable ASCII other than space and ";",
 	// otherwise "/" is used.
+	//
+	// Lax, not Strict: with Strict a browser leaves the cookie out of a
+	// page load it does not count as started by this site, so the user
+	// has to sign in again although the session is still good.  Seen with
+	// Safari on iOS: the reload of the page itself came without the
+	// cookie one second after an API request that carried it.  A link to
+	// the page from elsewhere (a bookmark page, another app) is the same
+	// case.  Lax still keeps the cookie out of every request another
+	// site makes from its own page (forms that POST, images, frames,
+	// scripts); it is sent only when the user is taken to a page here.
 	function cookie_header(value, opts)
 	{
 		opts = opts || {};
@@ -445,7 +455,7 @@ var Session = (function () {
 		var s = "; Path=" + path + "; HttpOnly";
 		if (opts.secure === true)
 			s += "; Secure";
-		s += "; SameSite=Strict";
+		s += "; SameSite=Lax";
 		if (value === "")
 			s += "; Max-Age=0";
 		else if (opts.keep === true && opts.config)

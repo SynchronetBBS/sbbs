@@ -22,6 +22,10 @@
 //                                returns undefined.  options.timeout (ms)
 //                                replaces the lock timeout for this call
 //                                only (JsonFiles' default is 5000).
+//   ud.locked(name, fn [, options])
+//                                fn() under the same lock as update(name),
+//                                with no file read or written; returns its
+//                                result.  Throws as update() does.
 //
 // Finding JsonFiles: the optional second argument is the JsonFiles
 // constructor, for a caller (a test) that must use a particular copy.
@@ -85,6 +89,34 @@ var UserData = (function () {
 			return this.files.update(name, fallback, fn);
 		} finally {
 			this.files.timeout = saved;
+		}
+	};
+
+	// locked(name, fn [, options]): fn() under name's lock, as update()
+	// takes it, with no file read or written; returns fn's result.  With
+	// a JsonFiles that has no locked() (an older exec/load/mailbox_files.js)
+	// the lock is taken through update(), which also rewrites name's file.
+	UserData.prototype.locked = function (name, fn, options)
+	{
+		var files = this.files;
+		var take = function () {
+			if (typeof files.locked === "function")
+				return files.locked(name, fn);
+			var result;
+			files.update(name, { v: 1 }, function () {
+				result = fn();
+				return { v: 1 };
+			});
+			return result;
+		};
+		if (!options || options.timeout === undefined)
+			return take();
+		var saved = files.timeout;
+		files.timeout = options.timeout;
+		try {
+			return take();
+		} finally {
+			files.timeout = saved;
 		}
 	};
 

@@ -295,3 +295,26 @@ var keys = [];
 for (var k in Shell.headers(hsts, true))
 	keys.push(k);
 Kit.eq(keys.length, 5, "exactly five headers with HSTS");
+
+// ---- Shell.theme: the signed-in user's stored theme for <html
+// data-theme>: only "light" or "dark" can ever come out ("" otherwise)
+function ud_with(v, fail)
+{
+	return { read: function (name, fallback) {
+		if (fail)
+			throw new Error("unreadable");
+		return name === "settings" ? v : fallback;
+	} };
+}
+Kit.eq(Shell.theme(ud_with({ theme: "light" })), "light", "light");
+Kit.eq(Shell.theme(ud_with({ theme: "dark" })), "dark", "dark");
+Kit.eq(Shell.theme(ud_with({ theme: "system" })), "", "system: nothing written");
+var odd = ["Dark", "dark\" onload=\"x", "<b>", "light ", "", 1, null, true, ["dark"], { toString: function () {
+	return "dark";
+} }];
+for (var oi = 0; oi < odd.length; oi++)
+	Kit.eq(Shell.theme(ud_with({ theme: odd[oi] })), "", "not one of the values: " + oi);
+Kit.eq(Shell.theme(ud_with(null)), "", "no settings file");
+Kit.eq(Shell.theme(ud_with("dark")), "", "settings not an object");
+Kit.eq(Shell.theme(ud_with({ theme: "dark" }, true)), "", "unreadable");
+Kit.eq(Shell.theme(null), "", "no user data");

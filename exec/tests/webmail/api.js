@@ -466,6 +466,12 @@ try {
 	Kit.eq([hd.item.headers, hd.item.text, hd.item.html, hd.item.parts, hd.item.avatar],
 		[undefined, undefined, undefined, undefined, undefined], "head: nothing but the item");
 	Kit.eq(avatar_reads, 0, "head: no avatar lookup");
+	// without avatar: true no avatar is computed, and none is in the reply
+	var plain = call(make_env({ cookie: alice, avatar_lib: counting_avatars }), "message.get",
+		{ id: "s" + A2, mark_read: false });
+	Kit.eq([plain.ok, plain.message.avatar, avatar_reads], [true, undefined, 0], "not asked: no avatar lookup");
+	err(call(make_env({ cookie: alice }), "message.get", { id: "s" + A2, avatar: 1 }), "invalid",
+		"avatar must be a boolean");
 	err(call(make_env({ cookie: alice }), "message.get", { id: "s" + A2, head: "yes" }), "invalid",
 		"head must be a boolean");
 
@@ -818,9 +824,19 @@ try {
 	ev = make_env({ cookie: alice });
 	r = Api.dispatch(ev, { calls: [["session.get", {}, 1], ["session.get", {}, 2]] });
 	g = r.results[0][1];
-	Kit.eq(g.domains, [system.inet_addr.toLowerCase()], "domains: the system's address");
+	Kit.eq(g.domains, Kit.wlib("address").domains_for(ALICE), "domains: Address.domains_for of the user");
+	ev = make_env({ cookie: alice });
+	ev.lib_ctx = { domains: ["vert.example", "family.example"] };
+	Kit.eq(call(ev, "session.get", {}).domains, ["vert.example", "family.example"],
+		"domains: the same source as settings.get's from_domains");
+	Kit.eq(call(make_env(), "session.get", {}).domains, [], "domains: none when signed out");
 	Kit.eq(g.limits, { max_attachment_bytes: cfg.max_attachment_bytes,
-		max_text_part_bytes: cfg.max_text_part_bytes, max_drafts: 7 }, "limits");
+		max_text_part_bytes: cfg.max_text_part_bytes, max_drafts: 7,
+		max_draft_bytes: cfg.max_draft_bytes, max_body_bytes: cfg.max_body_bytes,
+		max_attachments: 100, max_chunk: 1500000, max_recipients: cfg.max_recipients,
+		max_message_bytes: cfg.max_message_bytes,
+		max_attach_total: Math.min(cfg.max_attachment_bytes, Kit.wlib("config").attachment_allowance(cfg.max_message_bytes)) },
+		"limits");
 	Kit.eq(g.poll_ms, 30000, "poll_ms");
 	Kit.eq([g.product_name, g.brand, g.login_text, g.footer_links, g.fallback_url],
 		["Mail <b>", "<i>B</i>", "Hello", "<a href=x>x</a>", "/old"], "brand keys as given");
@@ -843,7 +859,7 @@ try {
 		"no access requirement");
 	Kit.assert(text.indexOf("tls_proxy_header") < 0 && text.indexOf("directory") < 0,
 		"no security settings");
-	Kit.eq(Api.sending_domains(), [system.inet_addr.toLowerCase()]);
+	Kit.eq(Api.sending_domains(1), Kit.wlib("address").domains_for(1), "sending_domains: Address.domains_for");
 
 	// --- localized errors: the request's locale
 	var LS = Kit.scratch();
@@ -1097,8 +1113,12 @@ try {
 	var M_ANON = save({ to: "alice", to_ext: String(ALICE), from: "bob", from_ext: String(BOB),
 		attr: 1 << 5, subject: "anonymous" });
 	function sender_avatar(lib, id) {
-		var g = call(make_env({ cookie: alice, avatar_lib: lib }), "message.get", { id: "s" + id });
+		var g = call(make_env({ cookie: alice, avatar_lib: lib }), "message.get", { id: "s" + id, avatar: true });
 		Kit.eq(g.ok, true, "message.get with avatars: " + JSON.stringify(g).substr(0, 200));
+		// the same through head (marking a kept message read)
+		var hg = call(make_env({ cookie: alice, avatar_lib: lib }), "message.get",
+			{ id: "s" + id, head: true, avatar: true });
+		Kit.eq(hg.avatar, g.message.avatar, "head with avatar: the same avatar");
 		return g.message.avatar;
 	}
 	var lib = avatar_lib();
@@ -1226,6 +1246,11 @@ try {
 	Kit.eq(loads, 1, "load_store called once");
 	Kit.eq([typeof Api.Session.check, typeof Api.Locale.load], ["function", "function"],
 		"Api passes on Session and Locale");
+	// the user record bits Api uses without loading userdefs.js
+	var UDEFS = {};
+	load(UDEFS, "userdefs.js");
+	for (var udk in Api.UD)
+		Kit.eq(Api.UD[udk], UDEFS[udk], "Api.UD." + udk + " as userdefs.js defines it");
 } finally {
 	Api.log = real_log;
 	if (shared)

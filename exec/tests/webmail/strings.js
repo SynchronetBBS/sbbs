@@ -2,7 +2,8 @@
 // (en_us.ini): each "section.key" string literal, in any quotes, in
 // webmail/root/js/*.js and webmail/root/index.xjs whose section is one of
 // the locale's sections (so method names such as "session.get" and file
-// names are not taken for keys); and every error code the API can return
+// names are not taken for keys), and that is not one of the API's method
+// names (settings.get); and every error code the API can return
 // has its errors.<code> text.
 
 load(js.exec_dir + "kit.js");
@@ -33,6 +34,16 @@ for (var k in strings) {
 }
 Kit.assert(sections.main && sections.errors, "locale sections read");
 
+// The API's method names ("settings.get" has the form of a key of the
+// settings section): read from api.js's method table, never taken for keys
+var api_text = read(WEBMAIL_DIR + "lib/api.js");
+var method_names = {};
+var mre = /^\t\t"([a-z][a-z0-9_.]*)": \{ auth:/gm;
+var mm;
+while ((mm = mre.exec(api_text)) !== null)
+	method_names[mm[1]] = true;
+Kit.assert(method_names["settings.get"] && method_names["message.list"], "API method names read");
+
 var files = directory(ROOT + "js/*.js");
 Kit.assert(files.length > 0, "no .js files in " + ROOT + "js/");
 files.push(ROOT + "index.xjs");
@@ -44,7 +55,8 @@ for (var i = 0; i < files.length; i++) {
 	var re = /(["'])([a-z0-9_]+)\.([a-z0-9_]+)\1/g;
 	var m;
 	while ((m = re.exec(text)) !== null) {
-		if (!Object.prototype.hasOwnProperty.call(sections, m[2]))
+		if (!Object.prototype.hasOwnProperty.call(sections, m[2])
+			|| Object.prototype.hasOwnProperty.call(method_names, m[2] + "." + m[3]))
 			continue;
 		used++;
 		if (!has(m[2] + "." + m[3]))

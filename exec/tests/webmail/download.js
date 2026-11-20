@@ -312,6 +312,14 @@ try {
 	Kit.assert(r.headers["Content-Disposition"].indexOf("Pictures.eml") > 0, "eml name");
 	Kit.eq(r.headers["Content-Length"], String(r.body.length));
 	Kit.assert(!file_exists(r.tracked[0]), "raw temp removed");
+	Kit.eq([r.headers["X-Content-Type-Options"], r.headers["Content-Security-Policy"],
+		r.headers["Cross-Origin-Resource-Policy"], r.headers["Cache-Control"]],
+		["nosniff", "sandbox", "same-origin", "no-store"], "raw: the safe headers");
+	Kit.assert(r.body.indexOf("Subject: ") >= 0 && r.body.indexOf("\r\n\r\n") > 0, "raw: header block and body");
+	// raw of another user's message: refused, nothing sent
+	r = serve(make_env({ cookie: alice }), { id: [BOBS], pid: ["raw"] });
+	Kit.eq(r.st, "403 Forbidden", "raw of another user's message");
+	Kit.eq(r.headers["Content-Type"], "text/plain; charset=utf-8", "raw refused: a plain error");
 
 	// a large part goes out in 64 KB writes
 	var big_pid = big_msg.parts.length > 0 ? big_msg.parts[0].pid : null;

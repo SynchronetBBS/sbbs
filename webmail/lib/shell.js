@@ -96,6 +96,14 @@
 //   upgrade keeps working.  root_dir ends with a path separator; rel_path
 //   uses "/".
 //
+// Shell.theme(ud)
+//   the theme to write on the page's <html data-theme> for a signed-in
+//   user: "light" or "dark" from the user's stored settings
+//   (webmail.settings.json through ud, the user's UserData), else "" (the
+//   "system" theme, no settings, or anything else: nothing is written).
+//   So a browser that has never stored a theme does not draw the page in
+//   the other one first.  Only those two values can ever be returned.
+//
 // Shell.headers(config, secure)
 //   the response headers of the shell page: Content-Security-Policy,
 //   X-Content-Type-Options, Referrer-Policy, Cache-Control, and
@@ -339,6 +347,17 @@ var Shell = (function () {
 		return h;
 	}
 
+	function theme(ud)
+	{
+		try {
+			var s = ud ? ud.read("settings", null) : null;
+			var v = s !== null && typeof s === "object" ? s.theme : null;
+			return v === "light" || v === "dark" ? v : "";
+		} catch (e) {
+			return "";
+		}
+	}
+
 	return {
 		boot: boot,
 		needs_https: needs_https,
@@ -351,7 +370,8 @@ var Shell = (function () {
 		embed: embed,
 		version: version,
 		asset: asset,
-		headers: headers
+		headers: headers,
+		theme: theme
 	};
 })();
 

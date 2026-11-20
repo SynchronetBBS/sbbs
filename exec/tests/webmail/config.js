@@ -12,10 +12,13 @@ var DEFAULTS = {
 	session_timeout: 7200,
 	remember_days: 30,
 	poll_interval: 60,
-	max_attachment_bytes: 26214400,
+	max_attachment_bytes: 15323844,	// Config.attachment_allowance(20971520)
 	max_text_part_bytes: 1048576,
 	max_drafts: 50,
 	max_draft_bytes: 104857600,
+	max_body_bytes: 1048576,
+	max_recipients: 50,
+	max_message_bytes: 20971520,
 	access_requirements: "",
 	webv4_login: false,
 	require_tls: true,
@@ -29,9 +32,10 @@ var DEFAULTS = {
 	fallback_url: ""
 };
 
-// Nothing configured: modopts returns null or undefined
+// Nothing configured: modopts returns null or undefined (and no web server
+// idle limit, whatever server object the tests run under)
 [undefined, null, {}].forEach(function (raw) {
-	var c = Config.load(raw);
+	var c = Config.load(raw, undefined);
 	for (var k in DEFAULTS) {
 		Kit.assert(typeof c[k] === typeof DEFAULTS[k], k + " type " + typeof c[k]);
 		Kit.assert(c[k] === DEFAULTS[k], k + " default " + JSON.stringify(c[k]));
@@ -40,7 +44,7 @@ var DEFAULTS = {
 	var n = 0;
 	for (var kk in c)
 		n++;
-	Kit.eq(n, 19, "key count");
+	Kit.eq(n, 22, "key count");
 });
 
 // No argument: reads this install's real options; the stock file changes
@@ -180,6 +184,34 @@ var DEFAULTS = {
 	Kit.assert(warnings[0].indexOf("remember_days") >= 0, "names remember_days");
 })();
 
+// poll_interval defaults to half the web server's idle limit (at least
+// 15, at most 60), 60 when the limit is unknown; a configured value always wins
+(function () {
+	var cases = [
+		[60, 30], [120, 60], [20, 15], [31, 15], [33, 16], [300, 60], [3600, 60], [7200, 60],
+		[0, 60], [undefined, 60], [null, 60], [NaN, 60], [Infinity, 60],
+		[-120, 60], ["120", 60], [{}, 60]
+	];
+	warnings.length = 0;
+	cases.forEach(function (c) {
+		var what = "max_inactivity " + String(c[0]);
+		Kit.eq(Config.load({}, c[0]).poll_interval, c[1], what);
+		Kit.eq(Config.load(null, c[0]).poll_interval, c[1], what + ", nothing configured");
+		Kit.eq(Config.load({ poll_interval: 45 }, c[0]).poll_interval, 45, what + ", configured");
+		Kit.eq(Config.load({ poll_interval: "90" }, c[0]).poll_interval, 90, what + ", configured text");
+		Kit.eq(Config.load({ poll_interval: 5 }, c[0]).poll_interval, 15, what + ", configured below minimum");
+		Kit.eq(Config.load({ poll_interval: "soon" }, c[0]).poll_interval, c[1], what + ", unusable configured");
+	});
+	Kit.eq(warnings.length, 2 * cases.length, "a warning for each configured value below minimum or unusable");
+	warnings.length = 0;
+	// Not passed: read from the server object, which jsexec does not have
+	if (js.global.server === undefined)
+		Kit.eq(Config.load({}).poll_interval, 60, "no server object");
+	else
+		Kit.eq(Config.load({}).poll_interval, Config.load({}, js.global.server.max_inactivity).poll_interval,
+			"server.max_inactivity");
+})();
+
 // webv4_login
 (function () {
 	Kit.assert(Config.load({}).webv4_login === false);
@@ -205,4 +237,24 @@ var DEFAULTS = {
 	warnings.length = 0;
 	Config.load({ poll_interval: 60, require_tls: "no", locale: 5 });
 	Kit.eq(warnings.length, 0, "valid values are silent");
+})();
+
+// attachment_allowance: the largest file whose message (no text) fits,
+// by MimeWrite.estimate() itself, over a table of limits
+(function () {
+	var MimeWrite = Kit.wlib("mimewrite");
+	var table = [2049, 3000, 4096, 100000, 1048576, 10485760, 20971520, 52428800];
+	for (var i = 0; i < table.length; i++) {
+		var max = table[i];
+		var n = Config.attachment_allowance(max);
+		Kit.assert(MimeWrite.estimate("", [{ size: n }]) <= max, max + ": " + n + " fits");
+		Kit.assert(MimeWrite.estimate("", [{ size: n + 1 }]) > max, max + ": " + (n + 1) + " does not");
+	}
+	Kit.eq(Config.attachment_allowance(20971520), 15323844, "the stock figure");
+	Kit.eq(Config.attachment_allowance(0), 0, "no limit");
+	// set: as given; not set with no message limit: the old default
+	Kit.eq(Config.load({ max_attachment_bytes: 1000 }).max_attachment_bytes, 1000, "explicit");
+	Kit.eq(Config.load({ max_message_bytes: 0 }).max_attachment_bytes, 26214400, "no message limit");
+	Kit.eq(Config.load({ max_message_bytes: 1048576 }).max_attachment_bytes, Config.attachment_allowance(1048576),
+		"derived from max_message_bytes");
 })();
