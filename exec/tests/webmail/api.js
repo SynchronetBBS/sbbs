@@ -1026,8 +1026,12 @@ try {
 
 	// --- forged cookie values never load a user record
 	var user_reads = 0;
+	// the real key with its first character changed (to "e" when it is "f")
+	var real_key = Session.parse(tmp).key;
+	var forged_key = (real_key.charAt(0) == "f" ? "e" : "f") + real_key.substr(1);
+	Kit.assert(forged_key !== real_key, "the forged key differs");
 	ev = make_env({ cookie: ["60001.0123456789abcdef0123456789abcdef01234567",
-		"60002." + Session.parse(tmp).key.replace(/^./, "f") + "", "70000.0123456789abcdef0123456789abcdef01234567"],
+		"60002." + forged_key, "70000.0123456789abcdef0123456789abcdef01234567"],
 		get_user: function (n) {
 			user_reads++;
 			return USERS.hasOwnProperty(n) ? USERS[n] : null;
