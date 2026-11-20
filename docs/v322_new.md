@@ -881,9 +881,9 @@
   PgUp/PgDn navigation and pages lists longer than the screen. New
   `ctrl/modopts.ini` `[shell]` options: `selected_item_prefix` and
   `unselected_item_prefix` replace the `*` marker, `selected_item_attr`
-  highlights the default area's name (e.g. `"\x01V"`, or
-  `"\x01n\x017\x01k"` for a reverse-video bar), and `more_fmt` formats
-  the `[x-y of n]` indicator. The stock `modopts.ini` uses `->` and a
+  highlights the default area's name, in attribute letters as in
+  `attr.ini` (e.g. `V`, or `K7` for a reverse-video bar), and
+  `more_fmt` formats the `[x-y of n]` indicator. The stock `modopts.ini` uses `->` and a
   highlighted name; an existing one keeps the v3.21 look (`*`)
 - New `load/select_item.js` library: the numbered-list selector (paging,
   arrow keys, in-place repainting) behind `uselect.js`, `text_sec.js`,
@@ -897,7 +897,7 @@
   name; an existing one keeps the v3.21 look
 - The external program section and program lists (`xtrn_sec.js`) get the
   same paging, navigation (plus Left/Right between two columns) and
-  `modopts.ini` `[xtrn_sec]` options, plus `lightbar` to
+  `modopts.ini` `[xtrn_sec]` options, plus `highlight_line` to
   highlight the whole item as a lightbar
 - A menu file displayed in place of one of those lists (e.g. `xtrn_sec`,
   `xtrn<n>`, `text_sec`) is a lightbar menu when it has `@BAR` items

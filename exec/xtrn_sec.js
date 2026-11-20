@@ -32,6 +32,8 @@ if((options=load("modopts.js","xtrn_sec")) == null)
 
 if(options.multicolumn === undefined)
 	options.multicolumn = true;
+require("attr_option.js", "attr_options");
+options = attr_options(options);
 
 if(options.multicolumn_separator === undefined)
 	options.multicolumn_separator = " ";
@@ -105,11 +107,12 @@ function digits(n)
 
 // modopts.ini [xtrn_sec] selected_item_prefix, unselected_item_prefix and
 // selected_item_attr options: what marks the default item of a list (and what
-// takes its place before the other items) and the attributes of its
-// highlighted name. Without any of them, no default item is marked and the
-// navigation keys only page through a list that doesn't fit on the screen.
-// With lightbar set to true, selected_item_attr highlights the whole
-// item (its number too) as a bar the width of the list's widest item.
+// takes its place before the other items) and the colors of its highlighted
+// name (attribute letters, e.g. "WH4"). Without any of them, no default item
+// is marked and the navigation keys only page through a list that doesn't
+// fit on the screen. With highlight_line set to true, selected_item_attr
+// highlights the whole item (its number too) as a bar the width of the
+// list's widest item.
 var marked = options.selected_item_prefix !== undefined
 	|| options.unselected_item_prefix !== undefined
 	|| Boolean(options.selected_item_attr);
@@ -186,7 +189,7 @@ function select_from(list, cur, lst)
 	if(pw && multicolumn && ((widest_item + pw) * 2)
 		+ strip_ctrl(options.multicolumn_separator).length >= console.screen_columns)
 		pw = 0;
-	var bar = Boolean(options.lightbar && options.selected_item_attr);
+	var bar = Boolean(options.highlight_line && options.selected_item_attr);
 	var has_default = marked && !lst.has_menu && Boolean(pw || bar || (options.selected_item_attr && field));
 
 	// Center on the widest row's DISPLAYED width

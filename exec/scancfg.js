@@ -9,8 +9,9 @@
 // Customizable via modopts/scancfg options:
 // - selected_item_prefix, unselected_item_prefix: what marks the default item
 //   of a list and what takes its place before the other items
-// - selected_item_attr: attributes of the default item's highlighted name
-// - lightbar: true for selected_item_attr to highlight the whole item
+// - selected_item_attr: the default item's highlighted name's colors, as
+//   attribute letters (e.g. "WH4")
+// - highlight_line: true for selected_item_attr to highlight the whole item
 // - more_fmt: the indicator shown when a list doesn't fit on the screen
 // Without the first three, no default item is marked and the navigation keys
 // only page through a list that doesn't fit on the screen.
@@ -18,8 +19,9 @@
 require("sbbsdefs.js", "SCAN_CFG_NEW");
 require("userdefs.js", "UREST_QWK_NODE");
 require("select_item.js", "select_item");
+require("attr_option.js", "attr_options");
 
-var options = load("modopts.js", "scancfg", {});
+var options = attr_options(load("modopts.js", "scancfg", {}));
 
 var marked = options.selected_item_prefix !== undefined
 	|| options.unselected_item_prefix !== undefined
@@ -77,7 +79,7 @@ function select_from(list, lst)
 {
 	var field = name_field(lst.fmt);
 	var pw = marked ? prefix_width() : 0;
-	var bar = Boolean(options.lightbar && options.selected_item_attr);
+	var bar = Boolean(options.highlight_line && options.selected_item_attr);
 	var has_default = marked && Boolean(pw || bar || (options.selected_item_attr && field));
 	var name_max = (field && field.width) ? field.width
 		: Math.max(console.screen_columns - pw - 6, 1);

@@ -9,15 +9,17 @@ require("nodedefs.js", 'NODE_RTXT');
 require("cga_defs.js", 'LIGHTGRAY');
 require("sbbsdefs.js", 'P_CPM_EOF');
 require("select_item.js", "select_item");
+require("attr_option.js", "attr_options");
 
 // modopts.ini [text_sec] options:
 // - selected_item_prefix, unselected_item_prefix: what marks the default item
 //   of a list (and what takes its place before the other items)
-// - selected_item_attr: attributes of the default item's highlighted name
+// - selected_item_attr: the default item's highlighted name's colors, as
+//   attribute letters (e.g. "WH4")
 // - more_fmt: the indicator shown when a list doesn't fit on the screen
 // Without any of the first three, no default item is marked and the
 // navigation keys only scroll a list that is longer than the screen.
-var options = load("modopts.js", "text_sec", {});
+var options = attr_options(load("modopts.js", "text_sec", {}));
 var marked = options.selected_item_prefix !== undefined
 	|| options.unselected_item_prefix !== undefined
 	|| Boolean(options.selected_item_attr);

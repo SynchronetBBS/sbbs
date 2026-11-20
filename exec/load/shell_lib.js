@@ -13,6 +13,8 @@ require("select_item.js", "select_item");
 var options = load("modopts.js", "shell");
 if(!options)
 	options = {};
+require("attr_option.js", "attr_options");
+options = attr_options(options);	// (selected_item_attr: attribute letters)
 
 // modopts.ini [shell] key prefixes for the <prefix>_sound, <prefix>_music and
 // <prefix>_enter options acted upon when entering a section of the BBS
