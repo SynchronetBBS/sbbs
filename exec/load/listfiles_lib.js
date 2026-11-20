@@ -5,17 +5,22 @@
 
 // Usage: load("listfiles_lib.js");
 
+require("attr_option.js", "attr_option");
+
 // The [listfiles] options and their defaults, which reproduce the built-in
-// file lister's output. An empty color (*_attr) option means the attr.ini color.
+// file lister's output (except for the colors of the extended description
+// marker and the tagged marker). The color (*_attr) options are attribute
+// letters, as in attr.ini (e.g. "WH4": bright white on blue; converted by
+// attr_options()); an empty one means the attr.ini color.
 function listfiles_defaults()
 {
 	return {
 		// One file's line, for users with batch flagging enabled and without
-		line_fmt: "@NAME_ATTR@@NAME@@FLAGS@@LETTER_ATTR@@LETTER@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
-		line_fmt_nobatch: "@NAME_ATTR@@NAME@@FLAGS@@SIZE_ATTR@@SIZE-R7@@MISSING@@DESC_ATTR@@DESC@",
+		line_fmt: "@NAME_ATTR@@NAME@@FLAGS_ATTR@@FLAGS@@LETTER_ATTR@@LETTER@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
+		line_fmt_nobatch: "@NAME_ATTR@@NAME@@FLAGS_ATTR@@FLAGS@@SIZE_ATTR@@SIZE-R7@@MISSING@@DESC_ATTR@@DESC@",
 		// For batch flagging on terminals that position the cursor (lightbar):
 		// the tagged/untagged marker in place of the letter
-		line_fmt_interactive: "@NAME_ATTR@@NAME@@FLAGS@@TAG_ATTR@@TAG@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
+		line_fmt_interactive: "@NAME_ATTR@@NAME@@FLAGS_ATTR@@FLAGS@@TAG_ATTR@@TAG@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
 		// The command keys shown above the files in the interactive mode, below
 		// any header ("" for none, e.g. when a custom header shows them)
 		interactive_commands: "\x01n\x01>\x01q\x014 \x01h\x01y[\x01w\x01~D\x01y]ownload  [\x01w\x01~B\x01y]atch  [\x01wSpace\x01y] Tag  [\x01w\x01~V\x01y]iew  [\x01w\x01~E\x01y]xt Info  [\x01w\x01~T\x01y]oggle Desc  [\x01w\x01~Q\x01y]uit\x01>\x01n\r\n",
@@ -34,12 +39,14 @@ function listfiles_defaults()
 		extdesc_marker: "+",
 		missing_marker: "-",
 		tagged_marker: "\xfb",	// CP437 check mark, as msglist.js uses
+		queued_marker: "\x19",	// a down arrow: a file in the batch download queue (interactive styles)
 		untagged_marker: " ",
 		name_attr: "",
 		size_attr: "",
 		desc_attr: "",
 		letter_attr: "",
-		tag_attr: "\x01n\x01h\x01w",	// the tagged marker's color ("": the filename color)
+		tag_attr: "WH",	// the tagged marker's color ("": the filename color)
+		flags_attr: "KH",	// the extended description marker's color ("": the filename color)
 		free_attr: "",
 		hdr_box_attr: "",
 		hdr_line_attr: "",
@@ -50,57 +57,90 @@ function listfiles_defaults()
 		box_horizontal: "\xcd",
 		box_vertical: "\xba",
 		short_hdr_underline: "\xc4",
-		selected_item_attr: "\x01V",
-		lightbar: true,
+		selected_item_attr: "V",	// the current file's colors, in the classic style
+		highlight_line: true,	// the current file's whole line, or (false) only its name, in the classic style
 		// The interactive style: "classic" (like the built-in lister) or
 		// "lightbar" (an area line on top, key tips on the bottom row, a
 		// preview pane)
 		style: "classic",
 		// The lightbar style's file line, area line (arguments: library name,
-		// directory name), position (current file number, number of files),
-		// column headings (true: from the file line and the heading_* titles,
+		// directory's long name), position (current file number, number of
+		// files), column headings (true: from the file line and the heading_* titles,
 		// in lightbar_headings_attr; false for none; or text; the area line's
 		// and headings' last color fills the rest of their rows, as in
 		// msglist.js) and key tips:
 		// a mnemonics string, ~ before each key letter (the second for users
 		// who may remove files)
-		line_fmt_lightbar: "@NAME_ATTR@@NAME@@FLAGS@@TAG_ATTR@@TAG@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
-		lightbar_area_fmt: "\x01n\x01k\x017%s / %s\x01h",
+		line_fmt_lightbar: "@NAME_ATTR@@NAME@@FLAGS_ATTR@@FLAGS@@TAG_ATTR@@TAG@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
+		lightbar_area_fmt: "\x01n\x01k\x017 %s / %s\x01h",
 		lightbar_position_fmt: "[file %u of %u]",
 		lightbar_headings: true,	// true: from line_fmt_lightbar and the heading_* titles
-		lightbar_headings_attr: "\x01n\x01h\x01k\x017",
+		lightbar_headings_attr: "KH7",
 		heading_name: "Name",
 		heading_size: "Size",
 		heading_desc: "Description",
-		lightbar_keys: "~Download, ~Batch, ~View, ~Ext, Space=Tag, ~Quit or ~?",
-		lightbar_keys_operator: "~Download, ~Batch, ~View, ~Ext, ~Remove, ~Move, Space=Tag, ~Quit or ~?",
-		lightbar_attr: "\x01n\x01h\x01w\x014",
-		// The preview pane: the info view's details (@FILE_*@ codes; the
-		// extended description follows), whether to show contents, which
-		// extensions are text files, and limits on reading contents
-		preview_info_fmt: "\x01n\x01cUploaded by \x01h@FILE_UPLOADER@\x01n\x01c on \x01h@FILE_DATE_ULED@\x01n\x01c, \x01h@FILE_SIZE@\x01n\x01c bytes\r\n"
-			+ "Downloaded \x01h@FILE_TIMES_DLED@\x01n\x01c times, last on \x01h@FILE_DATE_DLED@\x01n\x01c, cost \x01h@FILE_COST@\x01n\r\n",
-		preview_contents: true,
-		preview_text_exts: "txt,nfo,diz,doc,md,me,1st,asc",
-		preview_max_size: 52428800,
-		preview_max_lines: 500,
-		preview_delay: 0.5,	// seconds the bar rests on a file before its contents are read
-		// The pane's separator line: its fill, view labels, line range
-		// (first line, last line, number of lines) and colors (with and
-		// without the focus)
+		// (printed before the key tips: Ctrl-A codes in the tips themselves
+		// would turn off console.mnemonics()' coloring of the keys)
+		lightbar_keys_prefix: "\x01n\x01c\xfe ",
+		lightbar_keys: "~Download, ~Batch, ~View, ~Extended, ~Info, Space=Tag, ~Quit or ~?",
+		lightbar_keys_operator: "~Download, ~Batch, ~View, ~Extended, ~Info, ~Remove, ~Move, Space=Tag, ~Quit or ~?",
+		lightbar_attr: "WH4",
+		// The key tips row's colors ("" for attr.ini's mnemonic colors, the
+		// row not filled) and its key letters' colors (e.g. K6 and WH6)
+		lightbar_keys_attr: "",
+		lightbar_key_attr: "",
+		// The preview pane: the file's details (@FILE_*@ codes; the extended
+		// description follows)
+		preview_info_fmt: "\x01n\x01cSize \x01h@FILE_BYTES-T@\x01n\x01c bytes, uploaded \x01h@FILE_DATE_ULED@\x01n\x01c by \x01h@FILE_UPLOADER@\r\n"
+			+ "\x01n\x01cDownloaded \x01h@FILE_TIMES_DLED-T@\x01n\x01c times, last on \x01h@FILE_DATE_DLED@\x01n\x01c, cost \x01h@FILE_COST@\x01n\r\n",
+		// The pane's separator line: its fill, label, line range (first
+		// line, last line, number of lines) and colors (without and with the
+		// focus)
 		preview_separator: "\xc4",
 		preview_info_label: "\xb4 Info \xc3",
-		preview_contents_label: "\xb4 Contents \xc3",
 		preview_lines_fmt: "\xb4 Lines %u-%u of %u \xc3",
-		preview_attr: "\x01n\x01c",
-		preview_focus_attr: "\x01n\x01h\x01w",
-		// The pane's notes in place of contents (the error format's argument:
-		// the error)
-		preview_offline_note: "\x01n\x01y(this file is offline)",
-		preview_unviewable_note: "\x01n\x01y(this file's contents can't be viewed)",
-		preview_use_viewer_note: "\x01n\x01y(press V to view this file)",
-		preview_error_fmt: "\x01n\x01r(%s)"
+		preview_extdesc_attr: "WH",	// the extended description's color (before its own codes)
+		preview_attr: "C",
+		preview_focus_attr: "WH"
 	};
+}
+
+// Key tips (a mnemonics string, ~ before each key letter) in the colors
+// 'bar_attr', with each key letter in 'key_attr' (Ctrl-A codes), pushing and
+// popping the colors around it; unchanged when 'bar_attr' is empty (for
+// console.mnemonics()' own colors)
+function listfiles_key_tips(keys, bar_attr, key_attr)
+{
+	if (!bar_attr)
+		return keys;
+	return bar_attr + keys.replace(/~(.)/g, function (match, key) {
+		return "\x01+" + key_attr + "~" + key + "\x01-";
+	});
+}
+
+// Text without its Ctrl-A codes, keeping any other control-range characters
+// (unlike strip_ctrl(), which removes the CP437 graphics there, e.g. the down
+// arrow, \x19)
+function listfiles_strip_colors(text)
+{
+	return text.replace(/\x01./g, "");
+}
+
+// The lowercase names of the files in the batch download queue from the
+// directory with internal code 'code', as keys of an object: 'entries' as
+// bbs.batch_dnload_list() returns them (each with the filename, "name", and
+// the directory's internal code, "dir")
+function listfiles_queued(entries, code)
+{
+	var result = {};
+	if (!entries)
+		return result;
+	code = code.toLowerCase();
+	for (var i = 0; i < entries.length; i++) {
+		if (entries[i].dir && String(entries[i].dir).toLowerCase() === code)
+			result[String(entries[i].name).toLowerCase()] = true;
+	}
+	return result;
 }
 
 // Merge option objects, later ones overriding earlier ones (null or
@@ -207,7 +247,7 @@ function listfiles_attr_str(attr)
 // property of the 'values' passed to listfiles_local_codes())
 var LISTFILES_LOCAL_CODES = [
 	"LETTER", "TAG", "FLAGS", "MISSING", "SIZE", "NAME", "DESC",
-	"NAME_ATTR", "LETTER_ATTR", "TAG_ATTR", "SIZE_ATTR", "DESC_ATTR"
+	"NAME_ATTR", "FLAGS_ATTR", "LETTER_ATTR", "TAG_ATTR", "SIZE_ATTR", "DESC_ATTR"
 ];
 
 // Expand the module-local @-codes in 'str', with the same width/alignment
@@ -328,16 +368,19 @@ function listfiles_style(style, batch, cursor)
 	return style === "lightbar" ? "lightbar" : "classic";
 }
 
+// The fewest screen rows with room for the lightbar style's preview pane
+var LISTFILES_PANE_MIN_ROWS = 20;
+
 // The lightbar style's screen rows (0-based): the area line on row 0, any
 // column headings on row 1, the key tips on the last row, and between them
-// the list and, if 'pane' and there's room for both, a separator and the
-// preview pane
+// the list and, if 'pane' and the screen has at least
+// LISTFILES_PANE_MIN_ROWS rows, a separator and the preview pane
 function listfiles_lightbar_rows(screen_rows, headings, pane)
 {
 	var top = headings ? 2 : 1;
 	var avail = screen_rows - top - 1;
 	var rows = { list_top: top, list_rows: avail, pane_top: 0, pane_rows: 0 };
-	if (!pane)
+	if (!pane || screen_rows < LISTFILES_PANE_MIN_ROWS)
 		return rows;
 	var list_rows = Math.ceil(avail / 2);
 	var pane_rows = avail - list_rows - 1;
@@ -349,82 +392,25 @@ function listfiles_lightbar_rows(screen_rows, headings, pane)
 	return rows;
 }
 
-// The preview pane's state after the E (info) or V (contents) key: the
-// key of a view not showing shows it; the key of the view showing hides the
-// pane. Other keys change nothing.
-function listfiles_pane_key(key, shown, view)
+// The preview pane's first line shown after a scrolling key ("up", "down",
+// "pgup", "pgdn", "home" or "end"), for 'total' lines in 'rows' rows
+function listfiles_pane_scroll(scroll, key, total, rows)
 {
-	var want = { E: "info", V: "contents" }[key];
-	if (!want)
-		return { shown: shown, view: view };
-	if (shown && view === want)
-		return { shown: false, view: view };
-	return { shown: true, view: want };
-}
-
-// Whether the preview pane may show files' contents at all: the option is
-// on and the BBS has can_view_file (bbs.can_view_file, new in v3.22)
-function listfiles_contents_allowed(can_view_file, opts)
-{
-	return opts.preview_contents !== false && typeof can_view_file === "function";
-}
-
-// Up to 'max_lines' lines of a text file's text for display, each cut to
-// 'width' printable columns: ANSI escape sequences and control characters
-// (except Ctrl-A codes) removed, tabs as spaces
-function listfiles_text_lines(text, max_lines, width)
-{
-	var lines = text.split(/\r?\n/);
-	var result = [];
-	for (var i = 0; i < lines.length && result.length < max_lines; i++) {
-		var line = lines[i].replace(/\x1b\[[0-9;?]*[A-Za-z]/g, "").replace(/\t/g, " ")
-			.replace(/[\x00\x02-\x1f\x7f]/g, "");
-		var out = "";
-		var cols = 0;
-		for (var k = 0; k < line.length && cols < width; k++) {
-			out += line.charAt(k);
-			if (line.charAt(k) === "\x01" && k + 1 < line.length)
-				out += line.charAt(++k);
-			else
-				cols++;
-		}
-		result.push(out);
+	var last = Math.max(0, total - rows);
+	switch (key) {
+		case "up":		scroll--; break;
+		case "down":	scroll++; break;
+		case "pgup":	scroll -= rows; break;
+		case "pgdn":	scroll += rows; break;
+		case "home":	scroll = 0; break;
+		case "end":		scroll = last; break;
 	}
-	return result;
-}
-
-// Up to 'max_lines' lines listing an archive's files (entries as
-// Archive.list() returns them; directories skipped): name, size and date,
-// in 'width' columns
-function listfiles_archive_lines(entries, max_lines, width)
-{
-	var name_width = Math.max(1, width - 30);
-	var result = [];
-	for (var i = 0; i < entries.length && result.length < max_lines; i++) {
-		var e = entries[i];
-		if (e.type === "directory")
-			continue;
-		result.push(format("%-*.*s %10u %s", name_width, name_width, e.name, e.size
-			, system.datestr(e.time)));
-	}
-	return result;
-}
-
-// The lines reader() returns (e.g. a file's contents), or, if it throws,
-// no lines and the error as a note
-function listfiles_contents_lines(reader)
-{
-	try {
-		var lines = reader();
-		return { lines: lines || [], note: "" };
-	} catch (e) {
-		return { lines: [], note: String(e.message || e) };
-	}
+	return Math.max(0, Math.min(last, scroll));
 }
 
 // Column headings for a file line template 'fmt': the template with the
-// titles (name, size, desc) in place of the filename (padded to 'namelen'
-// columns, as filenames are), size and description, blanks of the same
+// titles (name, size, desc) in place of the filename (centered in 'namelen'
+// columns, the filenames' width), size and description, blanks of the same
 // widths in place of other @-codes (a modifier without a width meaning the
 // code's own width; empty with no modifier), and no colors
 function listfiles_headings(fmt, titles, namelen)
@@ -433,7 +419,8 @@ function listfiles_headings(fmt, titles, namelen)
 	for (var i = 0; i < LISTFILES_LOCAL_CODES.length; i++)
 		values[LISTFILES_LOCAL_CODES[i].toLowerCase()] = "";
 	values.flags = values.tag = values.letter = values.missing = " ";
-	values.name = format("%-*s", namelen, titles.name);
+	var left = Math.max(0, Math.floor((namelen - titles.name.length) / 2));	// centered
+	values.name = format("%-*s", namelen, format("%*s", left, "") + titles.name);
 	values.size = titles.size;
 	values.desc = titles.desc;
 	var text = listfiles_local_codes(fmt, values);

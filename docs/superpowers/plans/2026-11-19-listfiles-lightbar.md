@@ -332,7 +332,11 @@ intersection), Synchronet C++ (`src/sbbs3/js_bbs.cpp`).
 - [ ] **Step 5: Commit** `exec/listfiles.js`, subject
   "listfiles.js: the lightbar style's preview pane".
 
-### Task 6: Preview pane, contents view
+### Task 6: Preview pane, contents view (DROPPED)
+
+> Dropped 2026-11-19: the sysop decided the pane shows no file contents
+> (spec decision 9, revised). `bbs.can_view_file()` (Task 1) stays for
+> other modules' use.
 
 **Files:**
 - Modify: `exec/listfiles.js` (`LightbarLayout`)

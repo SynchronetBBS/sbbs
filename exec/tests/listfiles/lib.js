@@ -125,42 +125,9 @@ check("rows: pane", listfiles_lightbar_rows(24, true, true)
 check("rows: too short for the pane", listfiles_lightbar_rows(10, true, true)
 	, {list_top:2, list_rows:7, pane_top:0, pane_rows:0});
 check("rows: no headings", listfiles_lightbar_rows(24, false, true).list_top, 1);
+check("rows: 19-row screen, no pane", listfiles_lightbar_rows(19, true, true).pane_rows, 0);
+check("rows: 20-row screen, a pane", listfiles_lightbar_rows(20, true, true).pane_rows > 0, true);
 check("rows: no headings, all rows used", listfiles_lightbar_rows(24, false, false).list_rows, 22);
-
-check("E hidden", listfiles_pane_key("E", false, "contents"), {shown:true, view:"info"});
-check("E info", listfiles_pane_key("E", true, "info"), {shown:false, view:"info"});
-check("E contents", listfiles_pane_key("E", true, "contents"), {shown:true, view:"info"});
-check("V hidden", listfiles_pane_key("V", false, "info"), {shown:true, view:"contents"});
-check("V info", listfiles_pane_key("V", true, "info"), {shown:true, view:"contents"});
-check("V contents", listfiles_pane_key("V", true, "contents"), {shown:false, view:"contents"});
-check("other key", listfiles_pane_key("X", true, "info"), {shown:true, view:"info"});
-
-check("contents: no method", listfiles_contents_allowed(undefined, {preview_contents:true}), false);
-check("contents: turned off", listfiles_contents_allowed(function () {}, {preview_contents:false}), false);
-check("contents: allowed", listfiles_contents_allowed(function () {}, {preview_contents:true}), true);
-
-check("text: ANSI and control characters removed"
-	, listfiles_text_lines("a\x1b[1;31mb\r\nc\x07d", 10, 79), ["ab", "cd"]);
-check("text: lone ESC removed", listfiles_text_lines("a\x1bb", 10, 79), ["ab"]);
-check("text: tab to a space", listfiles_text_lines("a\tb", 10, 79), ["a b"]);
-check("text: Ctrl-A codes kept", listfiles_text_lines("\x01hbold", 10, 79), ["\x01hbold"]);
-check("text: cut to width", listfiles_text_lines("abcdefghij", 10, 4), ["abcd"]);
-check("text: width counts printable characters", listfiles_text_lines("\x01habcdef", 10, 3), ["\x01habc"]);
-check("text: max lines", listfiles_text_lines("1\n2\n3\n4", 2, 79), ["1", "2"]);
-
-var entries = [{type:"directory", name:"d/", size:0, time:0}
-	, {type:"file", name:"a.txt", size:12, time:0}
-	, {type:"file", name:format("%0200d", 0), size:5, time:0}];
-var alines = listfiles_archive_lines(entries, 10, 79);
-check("archive: directories skipped", alines.length, 2);
-check("archive: name first", alines[0].substr(0, 5), "a.txt");
-check("archive: long name cut to fit", alines[1].length <= 79, true);
-check("archive: max lines", listfiles_archive_lines(entries, 1, 79).length, 1);
-
-check("contents: a reader that throws"
-	, listfiles_contents_lines(function () { throw new Error("bad zip"); }), {lines:[], note:"bad zip"});
-check("contents: a reader with no result", listfiles_contents_lines(function () { return null; }).lines, []);
-check("contents: a reader's lines", listfiles_contents_lines(function () { return ["x"]; }), {lines:["x"], note:""});
 
 check("mnemonics: fits", listfiles_mnemonics_cut("~Download ~Quit", 79), "~Download ~Quit");
 check("mnemonics: cut, ~ not counted", listfiles_mnemonics_cut("~Download ~Quit", 9), "~Download ");
@@ -169,9 +136,9 @@ check("mnemonics: Ctrl-A codes not counted", listfiles_mnemonics_cut("\x01hab", 
 
 var titles = { name: "Name", size: "Size", desc: "Description" };
 check("headings: default line", listfiles_headings(listfiles_defaults().line_fmt_lightbar, titles, 12)
-	, "Name            Size Description");
-check("headings: wider name column", listfiles_headings("@NAME@ @DESC@", titles, 20)
-	, "Name                 Description");
+	, "    Name        Size Description");
+check("headings: wider name column, the name centered", listfiles_headings("@NAME@ @DESC@", titles, 20)
+	, "        Name         Description");
 check("headings: other codes are blank, their width kept"
 	, listfiles_headings("@NAME@@FILE_DATE-R8@|@FILE_UPLOADER@|@TAG@|", titles, 4), "Name        || |");
 check("headings: colors and attribute codes dropped"
@@ -180,7 +147,47 @@ check("headings: a modifier without a width is the code's width"
 	, listfiles_headings("@FILE_DATE-L@|", titles, 4), "             |");
 check("headings: text kept", listfiles_headings("[@NAME@]", titles, 4), "[Name]");
 
+check("pane scroll: down", listfiles_pane_scroll(0, "down", 20, 5), 1);
+check("pane scroll: up at the top", listfiles_pane_scroll(0, "up", 20, 5), 0);
+check("pane scroll: page down", listfiles_pane_scroll(0, "pgdn", 20, 5), 5);
+check("pane scroll: page down stops at the last page", listfiles_pane_scroll(13, "pgdn", 20, 5), 15);
+check("pane scroll: page up", listfiles_pane_scroll(7, "pgup", 20, 5), 2);
+check("pane scroll: home", listfiles_pane_scroll(7, "home", 20, 5), 0);
+check("pane scroll: end", listfiles_pane_scroll(0, "end", 20, 5), 15);
+check("pane scroll: everything fits", listfiles_pane_scroll(0, "down", 3, 5), 0);
+check("pane scroll: unknown", listfiles_pane_scroll(4, "x", 20, 5), 4);
+
+var queue = listfiles_queued([{ name: "A.ZIP", dir: "MAIN" }, { name: "b.txt", dir: "other" }
+	, { name: "c.txt" }], "main");
+check("queued: this directory's", queue["a.zip"], true);
+check("queued: another directory's", queue["b.txt"], undefined);
+check("queued: no directory", queue["c.txt"], undefined);
+check("queued: none", listfiles_queued(null, "main"), {});
+
+check("strip colors: Ctrl-A codes removed", listfiles_strip_colors("\x01h\x01wab\x01nc"), "abc");
+check("strip colors: CP437 control-range characters kept", listfiles_strip_colors("\x01ha\x19\xfbb"), "a\x19\xfbb");
+
+check("key tips: no bar color, unchanged", listfiles_key_tips("~Download, ~Quit", "", "<k>"), "~Download, ~Quit");
+check("key tips: bar and key colors", listfiles_key_tips("~Download, ~Quit", "<b>", "<k>")
+	, "<b>\x01+<k>~D\x01-ownload, \x01+<k>~Q\x01-uit");
+check("key tips: no key color", listfiles_key_tips("~Dl", "<b>", ""), "<b>\x01+~D\x01-l");
+
 var d = listfiles_defaults();
+check("key tips bar default (off)", d.lightbar_keys_attr, "");
+check("queued_marker default (down arrow)", d.queued_marker, "\x19");
+check("preview_extdesc_attr default (bright white)", d.preview_extdesc_attr, "WH");
+check("every preview info line sets its own color"
+	, d.preview_info_fmt.split("\r\n").filter(function (l) { return l !== "" && l.indexOf("\x01n") !== 0; }), []);
+check("highlight_line default", d.highlight_line, true);
+check("no lightbar option (renamed highlight_line)", d.lightbar, undefined);
+check("selected_item_attr default (the mnemonic color)", d.selected_item_attr, "V");
+check("lightbar_attr default (bright white on blue)", d.lightbar_attr, "WH4");
+var attr_keys = [];
+for (var k in d) {
+	if (/_attr$/.test(k) && d[k] !== "" && d[k].indexOf("\x01") >= 0)
+		attr_keys.push(k);
+}
+check("attr defaults are attribute letters", attr_keys, []);
 check("headings default: generated", d.lightbar_headings, true);
 check("heading titles", [d.heading_name, d.heading_size, d.heading_desc], ["Name", "Size", "Description"]);
 check("default style", d.style, "classic");
@@ -188,9 +195,9 @@ check("lightbar keys fit", strip_ctrl(d.lightbar_keys.replace(/~/g, "")).length 
 check("operator keys fit", strip_ctrl(d.lightbar_keys_operator.replace(/~/g, "")).length <= 79, true);
 check("operator keys add Remove", d.lightbar_keys_operator.indexOf("~Remove") >= 0, true);
 check("lightbar keys end with help", d.lightbar_keys.substr(-2), "~?");
+check("key tips prefix: a low-intensity cyan block", d.lightbar_keys_prefix, "\x01n\x01c\xfe ");
+check("key tips have no Ctrl-A codes (mnemonics coloring)", d.lightbar_keys.indexOf("\x01"), -1);
 check("lightbar line has no letter", d.line_fmt_lightbar.indexOf("@LETTER@"), -1);
-check("preview size limit", d.preview_max_size, 52428800);
-check("preview delay", d.preview_delay, 0.5);
 check("interactive line has no letter", d.line_fmt_interactive.indexOf("@LETTER@"), -1);
 check("tagged marker is the CP437 check mark", d.tagged_marker, "\xfb");
 check("interactive commands name Space", strip_ctrl(d.interactive_commands || "").indexOf("[Space] Tag") >= 0, true);
@@ -209,12 +216,18 @@ check("interactive prompt"
 check("interactive line has the tag", d.line_fmt_interactive.indexOf("@TAG@") >= 0, true);
 check("interactive flag column has its own color", d.line_fmt_interactive.indexOf("@TAG_ATTR@@TAG@") >= 0, true);
 check("lightbar flag column has its own color", d.line_fmt_lightbar.indexOf("@TAG_ATTR@@TAG@") >= 0, true);
-check("tag_attr default (bright white)", d.tag_attr, "\x01n\x01h\x01w");
+check("interactive + marker has its own color", d.line_fmt_interactive.indexOf("@FLAGS_ATTR@@FLAGS@") >= 0, true);
+check("lightbar + marker has its own color", d.line_fmt_lightbar.indexOf("@FLAGS_ATTR@@FLAGS@") >= 0, true);
+check("letter flow + marker has its own color", d.line_fmt.indexOf("@FLAGS_ATTR@@FLAGS@") >= 0, true);
+check("plain list + marker has its own color", d.line_fmt_nobatch.indexOf("@FLAGS_ATTR@@FLAGS@") >= 0, true);
+check("flags_attr default (dark grey)", d.flags_attr, "KH");
+check("local FLAGS_ATTR", listfiles_local_codes("@FLAGS_ATTR@@FLAGS@", {flags_attr:"<f>", flags:"+"}), "<f>+");
+check("tag_attr default (bright white)", d.tag_attr, "WH");
 check("local TAG_ATTR", listfiles_local_codes("@TAG_ATTR@@TAG@", {tag_attr:"<t>", tag:"x"}), "<t>x");
 var keys = ["line_fmt", "line_fmt_nobatch", "line_fmt_interactive", "extdesc_marker", "missing_marker"
 	, "tagged_marker", "untagged_marker", "box_top_left", "box_top_right"
 	, "box_bottom_left", "box_bottom_right", "box_horizontal", "box_vertical"
-	, "short_hdr_underline", "selected_item_attr", "lightbar"];
+	, "short_hdr_underline", "selected_item_attr", "highlight_line"];
 for (var i = 0; i < keys.length; i++) {
 	if (d[keys[i]] === undefined)
 		failures.push("listfiles_defaults() lacks " + keys[i]);

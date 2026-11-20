@@ -14,7 +14,7 @@ file lines like the built-in's, a prompt under the list. It's a good
 The sysop wants a second personality that resembles `exec/msglist.js`:
 area details on the top line, command/key tips on the bottom line, a true
 full-width lightbar on the current file, and msglist's preview pane, here
-showing the current file's extended information or its contents. A sysop
+showing the current file's extended information. A sysop
 chooses either style through documented modopts settings.
 
 ## Goals
@@ -22,8 +22,8 @@ chooses either style through documented modopts settings.
 - A `lightbar` style, chosen with one `[listfiles]` modopts key, overridable
   per library and per directory like every other option.
 - The classic interactive style unchanged in look and behavior.
-- A preview pane showing the current file's information or its contents
-  (archive file list, or the start of a text file), switchable with a key.
+- A preview pane showing the current file's information and extended
+  description.
 - Everything visible in the new style customizable with modopts format
   strings (as the classic style's commands bar and prompt are), and
   documented on the wiki page `module:listfiles`.
@@ -34,16 +34,15 @@ chooses either style through documented modopts settings.
 - No preview pane in the classic style.
 - No replacement of the V command's full-screen viewer, which runs the
   sysop's configured viewers.
-- No new C++ beyond one small `bbs` method (see "Who may see contents");
-  otherwise the module uses existing JS classes (`FileBase`, `Archive`,
-  `File`) and the `bbs` methods added for #1353.
+- No file contents (archive listings, text) in the preview pane (decision
+  9); V remains the full-screen viewer.
+- No new C++ beyond one small `bbs` method, `bbs.can_view_file()` (kept for
+  other modules; see decision 9); otherwise the module uses existing JS
+  classes and the `bbs` methods added for #1353.
 
 ## Anti-goals
 
 - Any visible or behavioral change to the classic style.
-- Holding a key down in the list (or scanning many directories) opening every
-  archive passed over: the preview's contents must cost nothing until the
-  user rests on a file with the contents view showing.
 - Output that scrolls the screen or wraps lines in the lightbar layout
   (everything is positioned and truncated, as in classic).
 
@@ -54,8 +53,6 @@ chooses either style through documented modopts settings.
 - ANSI and PETSCII terminals (the existing `cursor_capable()` test).
   Screens narrower than 80 columns and shorter than 24 rows must still work.
 - Mouse: hotspots as in classic (click selects, double-click tags).
-- Opening archives costs CPU and memory (the web file index's `?view=` is a
-  known expensive path); see "Preview contents".
 
 ## Approaches considered
 
@@ -90,31 +87,24 @@ The sysop chose A.
    pane. Showing the pane with Tab turns `USER_EXTDESC` on (saved), as T and
    P do, so the pane's visibility and the saved setting never disagree
    (proposed by Claude in the conversation, not objected to).
-5. **V and E select the pane's view**, and the key of the view already
-   showing hides the pane:
-
-   | | Pane hidden | Pane shows info | Pane shows contents |
-   |---|---|---|---|
-   | E | show pane, info view | hide pane | info view |
-   | V | show pane, contents view | contents view | hide pane |
-
-   Showing or hiding the pane with E or V saves `USER_EXTDESC` (decision 3).
-   The lightbar style has no full-screen extended information screen, so
-   tags don't apply to E (classic's E steps through each tagged file
-   full-screen). When the user may view a file (decision
-   9) but the pane can't show its contents (not an archive the `Archive`
-   class reads, nor a text file), V runs the configured viewer full-screen,
-   as today's V does, instead of a note in the pane.
+5. **E shows or hides the pane**, as T does (P is the previous page, as in
+   classic) (saving `USER_EXTDESC`,
+   decision 3). **I** is the full-screen extended information (with the
+   uploader's avatar) for the tagged files or the current file: the classic
+   style's E. **V** is the full-screen viewer, as in classic.
 6. **Enter** is next page, then the next directory (as in classic, which scan
    users are used to). **N** is a non-control-key alternative to PgDn.
 7. Custom header/footer menu files are not shown in the lightbar style; the
    area line and key-tips line take their place.
 8. In multi-directory scans each directory with files gets a fresh screen.
-9. **The contents view follows the V command's rule:** a file's contents are
-   shown only when V would show them, i.e. a file viewer is configured (in
-   SCFG) for its extension and the user passes that viewer's access
-   requirements, checked with the file's directory current. Otherwise the
-   pane shows the "not viewable" note in place of contents.
+9. **No contents in the pane** (revised during the build, 2026-11-19): an
+   archive's file list is what V already shows full-screen, so the pane
+   would mostly duplicate it, at the cost of reading archives as the bar
+   moves. The pane shows only the file's information. An earlier version of
+   this decision (contents only where V could show them) added
+   `bbs.can_view_file(dir_code, filename)`: whether the file exists and a
+   configured file viewer for it is available to the user (V's rule). The
+   sysop kept the method for future use by other modules.
 
 ## Design
 
@@ -181,14 +171,13 @@ and the plain list. An unknown `style` value falls back to classic.
   for users who may remove files from the directory, adding Remove and
   Move), a mnemonics string displayed with `console.mnemonics()`: `~` marks
   each key letter within its word (`~Download`), highlighted in the
-  mnemonic colors (or `(D)ownload` without color), each a mouse hotspot.
-  That saves the brackets' columns; the default is about 70 columns:
-  `~Download ~Batch ~View ~Ext ~Remove ~Move ~Help ~Quit  Space:Tag Tab:Pane`.
-  Truncated to the screen width, never wrapped (Claude's calls: the
-  operator variant and the truncation).
+  mnemonic colors, each a mouse hotspot, comma-separated and ending at the
+  cursor like msglist's: `~Download, ~Batch, ~View, ~Ext, ~Info, Space=Tag,
+  ~Quit or ~?` (the operator variant adds `~Remove, ~Move`). Truncated to
+  the screen width, never wrapped.
 - **Pane** (when shown): the list gets the upper half of the rows between
   the headings and the key-tips line; then a separator line; then the pane.
-  The separator shows the view's label (Info / Contents), the line range
+  The separator shows its label (Info), the line range
   (`Lines %u-%u of %u`) and is highlighted while the pane has the focus
   (formats and colors as options, modeled on msglist's `preview_*` options).
 - Scrolling redraws rows in place, as classic does; the screen is cleared
@@ -196,54 +185,11 @@ and the plain list. An unknown `style` value falls back to classic.
 
 ### Preview pane
 
-Two views, selected with E and V (decision 5). The current one is kept
-while moving between files and, through `bbs.mods` (one small value), from
-one directory to the next in a scan and
-for the rest of the logon session (Claude's call: the Terminal Server starts
-the module afresh for each directory, so anything held only in the module
-would reset per directory):
-
-- **Info** (the default view): `preview_info_fmt`, a template expanded with
-  `bbs.expand_atcodes(fmt, file, dir_code)` (the `@FILE_*@` codes added for
-  #1353), followed by the extended description split by
-  `listfiles_extdesc_lines()`. The default template gives what the E screen
-  gives: uploader, upload date, size, downloads, last download, cost.
-- **Contents:**
-  - archives (anything `Archive(path).list()` reads): one line per entry,
-    name, size and date;
-  - text files (extensions in `preview_text_exts`, default
-    `txt,nfo,diz,doc,md,me,1st,asc`): the first `preview_max_lines` lines,
-    with ANSI escape sequences removed and Ctrl-A codes displayed;
-  - a file the user may view (decision 9) that is neither: a one-line note
-    that V views it (full-screen, as decision 5 says);
-  - a file the user may not view, an offline file, or
-    `preview_contents = false`: a one-line note (formats as options).
-
-Who may see contents (decision 9): a new method
-`bbs.can_view_file(dir_code, filename)` in `src/sbbs3/js_bbs.cpp`, next to
-the #1353 file methods, returns whether `viewfile()` would find a viewer for
-the file that the user may use: the same loop over the configured file
-viewers (`file_type_match()` on the extension, `chk_ar()` on the viewer's
-requirements) with `curdirnum` set to the file's directory, as
-`viewfilecontents()` does. It runs no viewer and prints nothing. It
-returns false for a file that doesn't exist. The module calls it before
-reading contents (and caches the answer with the listing). The method gets
-a bridge test in `exec/tests/listfiles_bridges` and needs a `libsbbs.so` /
-`sbbs.dll` rebuild; on an older build (no such method) the contents view is
-unavailable, as if `preview_contents` were false.
-
-Cost controls (anti-goal above):
-
-- contents are read only while the contents view is showing, and only after
-  the bar has rested on the file for `preview_delay` (default 0.5 s;
-  implemented by waiting for a key with that timeout before reading);
-- each file's listing is cached while the module lists its directory (a
-  plain object in the module, discarded when the module exits; keyed by name
-  and file modification time). Claude's call: a cache across directories
-  would need `bbs.mods` plus a size limit and eviction for long scans, for
-  little gain, since a scan rarely returns to a directory;
-- files larger than `preview_max_size` (default 50 MB) aren't opened;
-- listings are capped at `preview_max_lines` lines.
+The current file's information: `preview_info_fmt`, a template expanded with
+`bbs.expand_atcodes(fmt, file, dir_code)` (the `@FILE_*@` codes added for
+#1353), followed by the extended description split by
+`listfiles_extdesc_lines()`. The default template gives what the E screen
+gives: uploader, upload date, size, downloads, last download, cost.
 
 ### Keys (lightbar)
 
@@ -255,11 +201,11 @@ Cost controls (anti-goal above):
 | Enter | next page, then next directory | same |
 | Space | tag and move down | (ignored) |
 | Tab | show pane (saved setting), focus pane | focus list |
-| T, P | toggle pane (saved setting) | hide pane, focus list |
-| E | info view; hides the pane if info is showing (see decision 5) | same |
+| T, E | toggle pane (saved setting) | hide pane, focus list |
+| P | previous page (as in classic) | same |
 | I | full-screen extended information (with the uploader's avatar), for the tagged files or the current file: the classic style's E | same |
-| V | contents view; hides the pane if contents are showing; full-screen viewer for files the pane can't show | same |
-| B D R M Del S Q ? | as in classic | as in classic |
+| Ctrl-A | tag all files, or none if the first is tagged (both styles) | same |
+| B D V R M Del S Q ? H | as in classic (H: help) | as in classic |
 
 Mouse: click selects a row, double-click tags (as classic); the wheel scrolls
 whichever has the focus (msglist sets `CON_MOUSE_SCROLL`).
@@ -270,9 +216,8 @@ Help: `?` shows `text/menu/listfiles_lightbar_help.msg` (a new file, like
 ### Options (new, in `listfiles_defaults()`)
 
 `style`, `line_fmt_lightbar`, `lightbar_area_fmt`, `lightbar_position_fmt`,
-`lightbar_headings`, `lightbar_keys`, `lightbar_keys_operator`, `lightbar_attr`, `preview_info_fmt`,
-`preview_contents`, `preview_text_exts`, `preview_max_size`,
-`preview_max_lines`, `preview_delay`, and the separator's label/format/color
+`lightbar_headings`, `lightbar_keys`, `lightbar_keys_operator`,
+`lightbar_attr`, `preview_info_fmt`, and the separator's label/format/color
 options. Names may be refined by the builder; defaults must reproduce the
 screen above. The stock `ctrl/modopts.ini` `[listfiles]` section lists
 `style` (commented, with both values).
@@ -280,8 +225,7 @@ screen above. The stock `ctrl/modopts.ini` `[listfiles]` section lists
 ## Testing
 
 - Lib tests (`exec/tests/listfiles/lib.js`) for every pure function added:
-  style selection, pane/list row split, contents formatting (archive entries,
-  text lines with ANSI removed), cache keying, option defaults.
+  style selection, pane/list row split, pane scrolling, option defaults.
 - The sysop at a terminal: classic re-verified after the engine split (the
   same checks as for #1353: scrolling, tags, commands, scans, Delete, exits);
   lightbar checked in the throwaway directory `TEST_RM` and the `test`

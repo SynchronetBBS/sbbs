@@ -40,10 +40,10 @@ function dir_options(dir)
 			return null;
 		}
 	}
-	return listfiles_options(listfiles_defaults()
+	return attr_options(listfiles_options(listfiles_defaults()
 		, section("listfiles")
 		, section("listfiles:lib" + (dir.lib_number + 1))
-		, section("listfiles:" + dir.code.toLowerCase()));
+		, section("listfiles:" + dir.code.toLowerCase())));
 }
 
 // Context of one directory's listing
@@ -256,6 +256,26 @@ Listing.prototype.extdesc = function (f)
 	return f.extdesc;
 };
 
+// Read which of the directory's files are in the user's batch download queue
+// (none known on a BBS without bbs.batch_dnload_list(), new in v3.22)
+Listing.prototype.load_queue = function ()
+{
+	var entries = (typeof bbs.batch_dnload_list === "function") ? bbs.batch_dnload_list() : null;
+	this.queued = listfiles_queued(entries, this.code);
+};
+
+// The interactive styles' tag column for file f: tagged, in the batch
+// download queue, or neither
+Listing.prototype.tag_marker = function (f, tagged)
+{
+	var opts = this.opts;
+	if (tagged)
+		return opts.tagged_marker;
+	if (this.queued && this.queued[f.name.toLowerCase()])
+		return opts.queued_marker;
+	return opts.untagged_marker;
+};
+
 // The filename column's width: 12, or on screens of 132 columns or more the
 // longest filename (up to 64)
 Listing.prototype.name_width = function ()
@@ -289,6 +309,7 @@ Listing.prototype.file_line = function (f, letter, fmt, overrides)
 		letter: letter || "",
 		letter_attr: opts.letter_attr || listfiles_attr_str(name_attr_num ^ HIGH),
 		tag_attr: opts.tag_attr || opt_attr(opts, "name_attr", ATTR_FILENAME),
+		flags_attr: opts.flags_attr || opt_attr(opts, "name_attr", ATTR_FILENAME),
 		size_attr: exists ? opt_attr(opts, "size_attr", ATTR_FILECDT) : listfiles_attr_str(size_attr_num),
 		size: listfiles_size_str(cost),
 		missing: exists ? " " : opts.missing_marker,
@@ -474,6 +495,7 @@ Listing.prototype.command = function (ch, choose)
 		case "D":
 			if (user.security.restrictions & UFLAG_D) {
 				console.print(bbs.text(R_Download));
+				console.pause();	// (before the redraw)
 				return CMD_REDRAW;
 			}
 			if ((files = choose()) === null)
@@ -482,11 +504,10 @@ Listing.prototype.command = function (ch, choose)
 				if (!bbs.batch_add_file(code, files[i].name))
 					this.report_vanished(files[i]);
 			}
-			if (ch === "D") {
+			if (ch === "D")
 				bbs.batch_download();
-				if (console.line_counter)
-					console.pause();
-			}
+			if (console.line_counter)	// (what was added, or why not, before the redraw)
+				console.pause();
 			console.newline();
 			return CMD_REDRAW;
 		case "E":
@@ -718,12 +739,12 @@ ClassicLayout.prototype.line = function (i, current, tagged)
 {
 	var opts = this.opts;
 	var f = this.listing.files[i];
-	var overrides = { tag: tagged ? opts.tagged_marker : opts.untagged_marker };
-	if (current && !opts.lightbar)
+	var overrides = { tag: this.listing.tag_marker(f, tagged) };
+	if (current && !opts.highlight_line)
 		overrides.name_attr = opts.selected_item_attr;
 	var text = this.listing.file_line(f, "", opts.line_fmt_interactive, overrides);
-	if (current && opts.lightbar)
-		text = "\x01n" + opts.selected_item_attr + strip_ctrl(text);
+	if (current && opts.highlight_line)
+		text = "\x01n" + opts.selected_item_attr + listfiles_strip_colors(text);
 	return text;
 };
 
@@ -754,6 +775,7 @@ ClassicLayout.prototype.draw_file = function (i, row, max_lines, current, tagged
 		lines = ext_lines.length;
 	}
 	clear_to_eol();
+	console.attributes = LIGHTGRAY;	// (the current file's background mustn't fill what's cleared next)
 	return lines;
 };
 
@@ -878,25 +900,43 @@ function LightbarLayout(listing)
 	this.opts = listing.opts;
 	this.engine = null;
 	this.shape = null;		// listfiles_lightbar_rows()
-	this.mouse_status = console.status & CON_MOUSE_SCROLL;
+	// The wheel moves the bar while listing: restored however the module
+	// exits (e.g. quitting from a full-screen command), as msglist.js does
+	if (!(console.status & CON_MOUSE_SCROLL))
+		js.on_exit("console.status &= ~" + CON_MOUSE_SCROLL);
+	this.n_is_pgdn = true;	// N is PgDn (not "next directory", as Enter is)
+	this.area_pos = null;	// the position displayed on the top row
 	this.keys_end = 0;		// screen column after the key tips
 	this.list_end = 0;		// screen row after the last file
+	// The preview pane (of the current file's information): shown with the
+	// extended descriptions setting
+	this.pane_shown = (user.settings & USER_EXTDESC) ? true : false;
+	this.focus = "list";	// or "pane": where the navigation keys go
+	this.pane_scroll = 0;	// the pane's first line shown
+	this.pane_file = -1;	// the file the pane shows
+	this.pane_drawn = null;	// what the pane last displayed (file, scroll, focus)
+	this.lines = [];		// the pane's lines
 }
 
 LightbarLayout.prototype.begin = function ()
 {
 	console.line_counter = 0;	// clear without a pause
-	console.print("\x01n");	// (the screen is cleared in the current attribute)
+	console.attributes = LIGHTGRAY;	// (the screen is cleared in the current attribute)
 	console.clear();
 	console.status |= CON_MOUSE_SCROLL;	// the wheel moves the bar
 	var headings = this.headings();
-	this.shape = listfiles_lightbar_rows(console.screen_rows, headings !== "", false);
+	this.shape = listfiles_lightbar_rows(console.screen_rows, headings !== "", this.pane_shown);
+	if (!this.shape.pane_rows)
+		this.focus = "list";
+	this.pane_file = -1;	// (to be drawn)
+	this.pane_drawn = null;
+	this.area_pos = null;
 	this.draw_area();
 	if (headings !== "") {
 		console.gotoxy(1, 2);
 		console.print(headings, P_TRUNCATE);
 		console.cleartoeol();	// in the headings' color
-		console.print("\x01n");
+		console.attributes = LIGHTGRAY;
 	}
 	this.draw_keys();
 	return { list_row: this.shape.list_top, rows: this.shape.list_rows };
@@ -922,9 +962,12 @@ LightbarLayout.prototype.draw_area = function ()
 	var opts = this.opts;
 	var width = console.screen_columns - 1;	// clear of the last column
 	var pos = "";
-	if (this.engine && console.screen_columns >= 80 && opts.lightbar_position_fmt)
+	if (this.engine && listing.files.length && console.screen_columns >= 80 && opts.lightbar_position_fmt)
 		pos = format(opts.lightbar_position_fmt, this.engine.cur() + 1, listing.files.length);
-	var left = listfiles_shorten_to_fit([listing.lib.name, listing.dir.name]
+	if (pos === this.area_pos)
+		return;	// (unchanged)
+	this.area_pos = pos;
+	var left = listfiles_shorten_to_fit([listing.lib.name, listing.dir.description]
 		, function (names) { return format(opts.lightbar_area_fmt, names[0], names[1]); }
 		, function (text) { return console.strlen(text); }
 		, width - pos.length - 1);
@@ -932,7 +975,7 @@ LightbarLayout.prototype.draw_area = function ()
 	console.gotoxy(1, 1);
 	console.print(left + format("%*s", Math.max(0, fill), "") + pos, P_TRUNCATE);
 	console.cleartoeol();	// in the area line's color, as msglist.js does
-	console.print("\x01n");
+	console.attributes = LIGHTGRAY;
 };
 
 // The bottom row: the key tips (with their mouse hotspots), never in the
@@ -941,11 +984,17 @@ LightbarLayout.prototype.draw_keys = function ()
 {
 	var keys = this.listing.can_remove() ? this.opts.lightbar_keys_operator : this.opts.lightbar_keys;
 	console.gotoxy(1, console.screen_rows);
-	console.print("\x01n");
+	console.attributes = LIGHTGRAY;
 	console.cleartoeol();
-	console.mnemonics(listfiles_mnemonics_cut(keys, console.screen_columns - 1));
-	console.print("\x01n");
+	var prefix = this.opts.lightbar_keys_prefix || "";
+	console.print(prefix, P_TRUNCATE);
+	// (cut after expanding any @-codes, which console.mnemonics() would expand)
+	keys = listfiles_mnemonics_cut(bbs.expand_atcodes(keys), console.screen_columns - 1 - console.strlen(prefix));
+	console.mnemonics(listfiles_key_tips(keys, this.opts.lightbar_keys_attr, this.opts.lightbar_key_attr));
 	this.keys_end = console.current_column;
+	if (this.opts.lightbar_keys_attr)
+		console.cleartoeol();	// the rest of the row in its color
+	console.attributes = LIGHTGRAY;
 };
 
 LightbarLayout.prototype.height = function (i)
@@ -957,12 +1006,12 @@ LightbarLayout.prototype.height = function (i)
 LightbarLayout.prototype.draw_file = function (i, row, max_lines, current, tagged)
 {
 	var opts = this.opts;
-	var text = this.listing.file_line(this.listing.files[i], "", opts.line_fmt_lightbar
-		, { tag: tagged ? opts.tagged_marker : opts.untagged_marker });
+	var f = this.listing.files[i];
+	var text = this.listing.file_line(f, "", opts.line_fmt_lightbar, { tag: this.listing.tag_marker(f, tagged) });
 	console.gotoxy(1, row + 1);
 	if (current) {
 		var width = console.screen_columns - 1;
-		var plain = strip_ctrl(text).substr(0, width);
+		var plain = listfiles_strip_colors(text).substr(0, width);
 		console.print("\x01n" + opts.lightbar_attr + plain + format("%*s", width - plain.length, "") + "\x01n");
 	} else {
 		console.print(text, P_TRUNCATE);
@@ -986,26 +1035,146 @@ LightbarLayout.prototype.after_list = function (end_row, full, empty)
 		return;
 	for (var r = end_row; r < this.shape.list_top + this.shape.list_rows; r++) {
 		console.gotoxy(1, r + 1);
-		console.print("\x01n");
+		console.attributes = LIGHTGRAY;
 		console.cleartoeol();
 	}
 };
 
-// Update the position on the top row, leaving the cursor at the end of the
-// key tips (as at a prompt)
+// Update the position on the top row and the preview pane, leaving the
+// cursor at the end of the key tips (as at a prompt)
 LightbarLayout.prototype.draw_below = function ()
 {
 	this.draw_area();
+	if (this.shape.pane_rows)
+		this.draw_pane();
 	console.gotoxy(this.keys_end + 1, console.screen_rows);
 };
 
-// The layout's own keys: help
+// The preview pane's lines for file i: its details and extended description
+LightbarLayout.prototype.pane_lines = function (i)
+{
+	var listing = this.listing;
+	var f = listing.files[i];
+	var lines = bbs.expand_atcodes(this.opts.preview_info_fmt, f, listing.code)
+		.replace(/(\r?\n)+$/, "").split(/\r?\n/);
+	if (f.extdesc && strip_ctrl(f.extdesc).replace(/\s+$/, "") !== "") {
+		var attr = this.opts.preview_extdesc_attr;
+		lines = lines.concat(listfiles_extdesc_lines(f.extdesc).map(function (line) { return attr + line; }));
+	}
+	return lines;
+};
+
+// Draw the preview pane: its separator line (the lines shown, and whether it
+// has the focus) and the current file's lines
+LightbarLayout.prototype.draw_pane = function ()
+{
+	var opts = this.opts;
+	var shape = this.shape;
+	var cur = this.engine.cur();
+	if (cur !== this.pane_file) {
+		this.pane_file = cur;
+		this.pane_scroll = 0;
+		this.lines = this.pane_lines(cur);
+	}
+	var drawn = [cur, this.pane_scroll, this.focus].join("\t");
+	if (drawn === this.pane_drawn)
+		return;
+	this.pane_drawn = drawn;
+	var lines = this.lines;
+	var shown = Math.min(shape.pane_rows, lines.length - this.pane_scroll);
+	var width = console.screen_columns - 1;
+	var label = opts.preview_info_label;
+	var range = format(opts.preview_lines_fmt, this.pane_scroll + 1, this.pane_scroll + shown, lines.length);
+	var fill = width - 2 - console.strlen(label) - console.strlen(range);
+	var sep = "";
+	for (var k = 0; k < fill; k++)
+		sep += opts.preview_separator;
+	console.gotoxy(1, shape.pane_top);
+	console.print((this.focus === "pane" ? opts.preview_focus_attr : opts.preview_attr)
+		+ opts.preview_separator + label + sep + range + opts.preview_separator, P_TRUNCATE);
+	clear_to_eol();
+	for (var r = 0; r < shape.pane_rows; r++) {
+		console.gotoxy(1, shape.pane_top + r + 1);
+		console.attributes = LIGHTGRAY;
+		if (r < shown)
+			console.putmsg(lines[this.pane_scroll + r], P_NOATCODES | P_CPM_EOF | P_TRUNCATE | P_AUTO_UTF8);
+		clear_to_eol();
+	}
+	console.attributes = LIGHTGRAY;
+};
+
+// Show or hide the preview pane, saving it as the extended descriptions
+// setting. Returns whether the screen must be laid out again.
+LightbarLayout.prototype.set_pane = function (show)
+{
+	if (show && !listfiles_lightbar_rows(console.screen_rows, this.headings() !== "", true).pane_rows)
+		return false;	// no room for it on this screen
+	if (show !== ((user.settings & USER_EXTDESC) ? true : false))
+		user.settings ^= USER_EXTDESC;
+	if (!show)
+		this.focus = "list";
+	if (show === this.pane_shown)
+		return false;
+	this.pane_shown = show;
+	return true;
+};
+
+// Navigation keys, as listfiles_pane_scroll() names them
+var LISTFILES_SCROLL_KEYS = {};
+LISTFILES_SCROLL_KEYS[KEY_UP] = "up";
+LISTFILES_SCROLL_KEYS[KEY_DOWN] = "down";
+LISTFILES_SCROLL_KEYS[KEY_PAGEUP] = "pgup";
+LISTFILES_SCROLL_KEYS["\b"] = "pgup";
+LISTFILES_SCROLL_KEYS[KEY_PAGEDN] = "pgdn";
+LISTFILES_SCROLL_KEYS["N"] = "pgdn";
+LISTFILES_SCROLL_KEYS[KEY_HOME] = "home";
+LISTFILES_SCROLL_KEYS[KEY_END] = "end";
+
+// The layout's own keys: the preview pane's (T and E to show or hide it,
+// Tab, and the navigation keys while it has the focus), I (the full-screen
+// extended information: the E command), and help. Returns null for other
+// keys.
 LightbarLayout.prototype.key = function (ch)
 {
+	// On a screen too short for the pane, its keys do nothing (and leave the
+	// saved setting alone)
+	var room = listfiles_lightbar_rows(console.screen_rows, this.headings() !== "", true).pane_rows > 0;
+	switch (ch) {
+		case "T":
+		case "E":
+			if (!room)
+				return "done";
+			return this.set_pane(!this.pane_shown) ? "relayout" : "done";
+		case "\t":
+			if (!room)
+				return "done";
+			if (!this.pane_shown) {
+				if (!this.set_pane(true))
+					return "done";
+				this.focus = "pane";
+				return "relayout";
+			}
+			if (this.shape.pane_rows)
+				this.focus = (this.focus === "pane") ? "list" : "pane";
+			return "done";
+		case "I":
+			return { command: "E" };
+	}
+	if (this.focus === "pane") {
+		if (ch === " ")
+			return "done";
+		var scroll_key = LISTFILES_SCROLL_KEYS[ch];
+		if (scroll_key) {
+			this.pane_scroll = listfiles_pane_scroll(this.pane_scroll, scroll_key
+				, this.lines.length, this.shape.pane_rows);
+			return "done";
+		}
+	}
 	if (ch !== "?" && ch !== "H")
 		return null;
 	console.clear_hotspots();
-	console.print("\x01n");
+	console.attributes = LIGHTGRAY;
+	console.line_counter = 0;	// clear without a pause
 	console.clear();
 	if (!bbs.menu("listfiles_lightbar_help", P_NOERROR))
 		bbs.menu("batflag");
@@ -1014,28 +1183,44 @@ LightbarLayout.prototype.key = function (ch)
 	return "relayout";
 };
 
-// Before a command's output: on the bottom row, cleared (the screen is
-// redrawn after any output)
-LightbarLayout.prototype.before_command = function ()
+// Before command 'ch's output: the full-screen ones (V, E: the I key, and
+// the batch queue's B and D) on a cleared screen, others on the bottom row,
+// cleared (the screen is redrawn after any output). Returns whether the
+// screen was cleared.
+LightbarLayout.prototype.before_command = function (ch)
 {
+	console.attributes = LIGHTGRAY;
+	if (ch === "V" || ch === "E" || ch === "B" || ch === "D") {
+		console.line_counter = 0;	// clear without a pause
+		console.clear();
+		return true;
+	}
 	console.gotoxy(1, console.screen_rows);
-	console.print("\x01n");
 	console.cleartoeol();
+	return false;
 };
 
-// Done with this directory: the key tips cleared, and the cursor below a
-// blank line after the last file (for whatever follows, e.g. the number of
-// files listed)
+// Done with this directory: everything below the list (the preview pane and
+// the key tips) cleared, and the cursor on the row after the last file (for
+// whatever follows, e.g. the number of files listed)
 LightbarLayout.prototype.leave = function ()
 {
 	console.clear_hotspots();
-	if (!this.mouse_status)
-		console.status &= ~CON_MOUSE_SCROLL;
-	console.gotoxy(1, console.screen_rows);
-	console.print("\x01n");
-	console.cleartoeol();
-	console.gotoxy(1, this.list_end + 1);
-	console.newline();
+	console.attributes = LIGHTGRAY;
+	if (!this.listing.files.length) {	// all removed or moved: nothing to keep on the screen
+		console.line_counter = 0;	// clear without a pause
+		console.clear();
+		return;
+	}
+	for (var r = this.list_end; r < console.screen_rows; r++) {
+		console.gotoxy(1, r + 1);
+		console.cleartoeol();
+	}
+	// To the start of the row after the last file by a carriage return from
+	// the last file's row (no new line: one blank line follows the list
+	// whether what follows starts with a new line or a conditional blank line)
+	console.gotoxy(2, this.list_end);
+	console.crlf();
 };
 
 // Clear the rest of the line in the normal attribute, keeping the
@@ -1043,7 +1228,7 @@ LightbarLayout.prototype.leave = function ()
 function clear_to_eol()
 {
 	var attr = console.attributes;
-	console.print("\x01n");
+	console.attributes = LIGHTGRAY;
 	console.cleartoeol();
 	console.attributes = attr;
 }
@@ -1086,10 +1271,7 @@ Listing.prototype.list_pages = function (layout)
 		cur: function () { return cur; },
 		top: function () { return top; },
 		bottom: bottom,
-		count: function () { return listing.files.length; },
-		tagged: function (i) { return tagged[listing.files[i].name] ? true : false; },
-		redraw: function (full) { draw_page(full); },
-		relayout: function () { rows = undefined; draw_page(/* full: */ true); }
+		count: function () { return listing.files.length; }
 	};
 
 	// Redraw file i in place
@@ -1137,6 +1319,19 @@ Listing.prototype.list_pages = function (layout)
 		}
 		layout.after_list(row, full, /* empty: */ false);
 		console.line_counter = 0;
+	}
+
+	// Done with this directory: the files on the screen redrawn without the
+	// highlight or tagged markers (a record of what was listed), then the
+	// layout's tidying up
+	function leave()
+	{
+		if (listing.files.length) {
+			for (var i = top; i <= bottom(); i++)
+				layout.draw_file(i, file_rows[i - top], file_heights[i - top]
+					, /* current: */ false, /* tagged: */ false);
+		}
+		layout.leave();
 	}
 
 	function toggle_tag(i)
@@ -1202,17 +1397,18 @@ Listing.prototype.list_pages = function (layout)
 	}
 
 	this.interactive = true;
+	this.load_queue();
 	var total = this.files.length;	// the files listed, including any removed
 	draw_page(/* full: */ true);
 	while (bbs.online) {
 		if (!this.files.length) {
-			layout.leave();
+			leave();
 			return total;
 		}
 		layout.draw_below();
 		var ch = console.getkey(K_UPPER | K_NOCRLF);
 		if (aborted()) {
-			layout.leave();
+			leave();
 			return -1;
 		}
 		if (ch === HOTSPOT_PREFIX) {	// a mouse click on a file
@@ -1233,7 +1429,9 @@ Listing.prototype.list_pages = function (layout)
 		}
 		last_click = null;
 		var handled = layout.key(ch);
-		if (handled !== null) {
+		if (handled !== null && typeof handled === "object")	// another command's key
+			ch = handled.command;
+		else if (handled !== null) {
 			if (handled === "redraw")
 				draw_page(/* full: */ false);
 			else if (handled === "relayout") {
@@ -1276,9 +1474,13 @@ Listing.prototype.list_pages = function (layout)
 				draw_page(/* full: */ false);
 				continue;
 		}
+		if (ch === "N" && layout.n_is_pgdn) {
+			page_down();
+			continue;
+		}
 		if (ch === "\r" || ch === "N") {
 			if (bottom() >= this.files.length - 1) {
-				layout.leave();
+				leave();
 				return total;
 			}
 			page_down();
@@ -1287,17 +1489,18 @@ Listing.prototype.list_pages = function (layout)
 		if (ch === KEY_DEL)	// as in msglist.js
 			ch = "R";
 		console.clear_hotspots();
-		layout.before_command();
+		var cleared = layout.before_command(ch);	// (true: the screen was cleared)
 		var result = this.command(ch, chooser);
 		if (result === null)
 			continue;
+		this.load_queue();	// (e.g. files added to it)
 		switch (result) {
 			case CMD_QUIT:
 				if (ch !== "E" && ch !== "V")	// (their file info replaced the list)
-					layout.leave();
+					leave();
 				return -1;
 			case CMD_SKIP:
-				layout.leave();
+				leave();
 				return total;
 			case CMD_PREV:
 				if (top > 0) {
@@ -1306,7 +1509,7 @@ Listing.prototype.list_pages = function (layout)
 				}
 				break;
 			case CMD_NEXT:	// nothing done: restore the hotspots cleared above
-				draw_page(/* full: */ false);
+				draw_page(/* full: */ cleared ? true : false);
 				continue;
 		}
 		if (result === CMD_REDRAW && (ch === "B" || ch === "D"))
