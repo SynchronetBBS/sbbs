@@ -179,7 +179,17 @@ try {
 		"sent membership (hidden extra and copied ones excluded)");
 	Kit.eq(item(sent, "p" + P_q).delivery, { state: "queued", waiting: 2, attempts: 3 }, "queued");
 	Kit.eq(item(sent, "p" + P_s).delivery, { state: "sent" }, "sent (Bob's notice ignored)");
-	Kit.eq(item(sent, "p" + P_f).delivery, { state: "failed" }, "failed by notice");
+	Kit.eq(item(sent, "p" + P_f).delivery, { state: "failed", notice: "s" + notice }, "failed by notice");
+	// the notice's id costs no header read: a warm Sent page re-reads only
+	// the outbound copies still queued (P_q's two)
+	var sent_reads = 0;
+	st.shared_header = function (num) {
+		sent_reads++;
+		return Store.prototype.shared_header.call(this, num);
+	};
+	Kit.eq(item(st.list("sent"), "p" + P_f).delivery.notice, "s" + notice, "warm: the notice id");
+	Kit.eq(sent_reads, 2, "warm Sent page: only the two queued copies re-read");
+	delete st.shared_header;
 	Kit.eq(item(sent, "p" + P_u).delivery, { state: "unsent" }, "unsent");
 	Kit.eq([item(sent, "s" + E_extra).extra, item(sent, "s" + E_extra).delivery.state], [true, "sent"],
 		"extra");
@@ -354,13 +364,17 @@ try {
 	priv.close();
 	priv = null;
 	Kit.eq(item(st.list("sent"), "p" + P_g).delivery, { state: "sent" }, "g before notice");
-	save(shared, { to_ext: String(ALICE), from: "Mail Delivery Subsystem", subject: "bounce g",
-		attr: D.MSG_NOREPLY, reply_id: "<g@test>" });
+	var notice_g0 = save(shared, { to_ext: String(ALICE), from: "Mail Delivery Subsystem",
+		subject: "bounce g", attr: D.MSG_NOREPLY, reply_id: "<g@test>" });
+	var notice_g = save(shared, { to_ext: String(ALICE), from: "Mail Delivery Subsystem",
+		subject: "bounce g again", attr: D.MSG_NOREPLY, reply_id: "<g@test>" });
+	Kit.assert(notice_g > notice_g0, "the second notice is newer");
 	var lock = st.jf.lock_path("summary");
 	Kit.assert(file_mutex(lock, "held by test", 60), "take summary lock");
 	st.jf.timeout = 200;
 	try {
-		Kit.eq(item(st.list("sent"), "p" + P_g).delivery, { state: "failed" }, "failed while locked");
+		Kit.eq(item(st.list("sent"), "p" + P_g).delivery, { state: "failed", notice: "s" + notice_g },
+			"failed while locked: the newest notice");
 	} finally {
 		file_remove(lock);
 	}
@@ -368,7 +382,12 @@ try {
 	Kit.assert(!Tags.parse(priv.get_msg_header(false, P_g, false).tags).failed, "not tagged while locked");
 	priv.close();
 	priv = null;
-	Kit.eq(item(st.list("sent"), "p" + P_g).delivery, { state: "failed" }, "failed after unlock");
+	Kit.eq(item(st.list("sent"), "p" + P_g).delivery, { state: "failed", notice: "s" + notice_g },
+		"failed after unlock");
+	if (!shared.remove_msg(notice_g))
+		throw new Error("remove notice g: " + shared.last_error);
+	Kit.eq(item(st.list("sent"), "p" + P_g).delivery, { state: "failed", notice: "s" + notice_g0 },
+		"the newest notice deleted: the older one");
 	priv = Kit.email_base(adir + "mailbox");
 	Kit.assert(Tags.parse(priv.get_msg_header(false, P_g, false).tags).failed, "tagged after unlock");
 	priv.close();

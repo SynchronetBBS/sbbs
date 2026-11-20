@@ -45,9 +45,28 @@
 // store.folder_rename(folder_id, name);	// {id, name, errors}
 // store.folder_delete(folder_id);		// results: messages put in Trash
 // store.usage();				// {bytes, quota}
+// store.inbox_max_age();			// days the Inbox keeps mail, 0: no limit
+//
+// Sent copies, for a client that sends mail (each throws { code } like the
+// rest; see their definitions for the details):
+// store.save_sent(header, body_path [, {unsent}]);	// "p<n>": tagged $Sent $Unsent
+// store.mark_sent(id);			// true: $Unsent (and $Unknown) removed (delivered)
+// store.mark_unknown(id);			// true: $Unknown added to an unsent copy
+// store.remove_sent(id);			// true: an unsent copy removed for real
+// store.set_replied(id);			// true: the user's message marked replied
+// store.find_sent(message_id);		// ["p<n>"]: $Sent copies with that Message-ID
+// save_sent() stores a header and a body file as a Sent copy in the
+// private base (created when absent) inside one Summary.modify(), after
+// the journal is reconciled and under the quota rule of moves into the
+// private base (oldest Trash removed to make room; "quota" when it cannot
+// fit). The copy's from_ext is the user and it has no to_ext. A Sent copy
+// may keep its BCC list as an RFC822HEADER field "Bcc: <list>": get()
+// returns it as headers.bcc (private messages tagged $Sent only, also in
+// Trash from Sent; "" otherwise).
 //
 // A bad folder name throws { code: "invalid", reason } with reason one of
-// "empty", "invalid" (a character above 0xFF or a control character),
+// "empty", "invalid" (a character above 0xFF, a control character, or a
+// C1 or bidirectional control character as UTF-8: see Tags.validate()),
 // "toolong" (over 64 characters), "reserved" (a built-in folder's name)
 // or "duplicate" (the same as another folder's, ASCII case ignored).
 //
@@ -57,12 +76,27 @@
 // store.raw_file(id);			// {path, name, size, temp:true}
 // store.part_file(id, pid);		// {path, name, type, size, temp}
 //
-// get(): headers is {from, from_addr, to, cc, reply_to, date, message_id,
-// reply_id, net_type ("local", "internet", "fido", "qwk" or "other"),
-// to_domain}, all UTF-8. from is the display name of the stored original
-// From line when there is one, else the from field; to and cc are the
-// stored recipient lists when present (RFC 2047 words decoded), else the
-// to field; reply_to the reply-to list, else the reply-to address;
+// get(): headers is {from, from_addr, from_addr_bad, to, cc, reply_to,
+// to_list, cc_list, reply_to_list, date, message_id, reply_id, net_type
+// ("local", "internet", "fido", "qwk" or "other"), to_domain}, all UTF-8.
+// from is
+// the display name of the stored original From line when there is one
+// (RFC 2047 words decoded as text: controls removed), else the from field
+// (bidirectional controls removed). from_addr is shown without control
+// characters; from_addr_bad is true when it held one (a malformed address
+// that must never be taken for the one it now reads as; list items carry
+// from_addr_bad: true too).
+// (An entry without <> is shown as stored, not decoded.)
+// to_list, cc_list and reply_to_list are the stored recipient lists as
+// entries [{name, addr}] whose STRUCTURE (which entries, which addresses)
+// comes from the raw header field only; each name is decoded afterwards
+// as text and can never add an entry or change an address (an encoded
+// word that decodes to "A <a@x>, B" stays one name).  Consumers that act
+// on recipients (a reply) use these.  to, cc and reply_to are the same
+// entries written as one display line ("name <addr>", the name quoted when
+// needed), so they show the same addresses; to is the to field when there
+// is no stored list (to_list then []); reply_to the reply-to list, else
+// the reply-to address;
 // to_domain the domain of the SMTP forward path (or of an Internet
 // recipient address), "" for local mail. comment is the header's comment
 // fields (SMB_COMMENT), one per line, or "". text and html are {b64,
@@ -235,7 +269,8 @@
 //
 // Loading: the sibling libraries (mailbox_files.js, mailbox_tags.js,
 // mailbox_summary.js, mailbox_mime.js, smbdefs.js, 822header.js) are
-// loaded from the directory this file was loaded from, found with
+// loaded, each on first use (mailbox_files.js at once), from the
+// directory this file was loaded from, found with
 // Error().fileName. js.exec_dir cannot be used: it is the directory of the
 // top-level script, not of this file.
 // If a sibling is not beside this file (this file was copied to mods/,
@@ -342,7 +377,10 @@
 // yet sent are in the shared base; else "failed" if it has $Failed or a
 // delivery-failure notice (to the user, no-reply attribute, reply_id equal
 // to its Message-ID) is found, which also adds $Failed to a private copy;
-// else "unsent" if it has $Unsent; else "sent".
+// else "unknown" if it has $Unknown (a sending client could not tell
+// whether it went out); else "unsent" if it has $Unsent; else "sent". A failed item whose notice
+// is still in the shared base carries notice: the notice's id ("s<n>",
+// the newest when there are several); absent once the notice is gone.
 //
 // Cost: one get_index() pass over the shared base per call. Headers of the
 // user's shared records are read once each and the facts needed for
@@ -386,14 +424,55 @@ var Store = (function () {
 	}
 
 	var JsonFiles = sibling("mailbox_files.js");
-	var Tags = sibling("mailbox_tags.js");
-	var Summary = sibling("mailbox_summary.js");
-	var MimeRead = sibling("mailbox_mime.js");
-	var D = {};
-	sibling("smbdefs.js", D);
-	// Adds get_rfc822_header() to MsgBase.HeaderPrototype (as for the IMAP
-	// service); it resolves its own dependencies in this scope
-	sibling("822header.js");
+
+	// The other siblings are loaded on first use, so a call that needs
+	// none of them (state(), as the web client's poll asks) loads none:
+	// each load is a series of file operations on what may be a network
+	// mount
+	var siblings = {};
+
+	// smbdefs.js's constants
+	var smbdefs = null;
+	function defs()
+	{
+		if (smbdefs === null) {
+			smbdefs = {};
+			sibling("smbdefs.js", smbdefs);
+		}
+		return smbdefs;
+	}
+
+	function once(file)
+	{
+		if (!siblings.hasOwnProperty(file))
+			siblings[file] = sibling(file);
+		return siblings[file];
+	}
+
+	function tags_lib()
+	{
+		return once("mailbox_tags.js");
+	}
+
+	function summary_lib()
+	{
+		return once("mailbox_summary.js");
+	}
+
+	function mime_lib()
+	{
+		return once("mailbox_mime.js");
+	}
+
+	// 822header.js adds get_rfc822_header() to MsgBase.HeaderPrototype (as
+	// for the IMAP service); it resolves its own dependencies in this scope
+	function rfc822_lib()
+	{
+		if (!siblings.hasOwnProperty("822header.js")) {
+			sibling("822header.js");
+			siblings["822header.js"] = true;
+		}
+	}
 
 	var MAX_LIMIT = 100;
 	var SLICE_SIZE = 200;	// messages per summary lock in a long call
@@ -484,17 +563,17 @@ var Store = (function () {
 
 	function folder_name(tag)
 	{
-		return Tags.canonical(tag) ? Tags.decode(tag) : tag;
+		return tags_lib().canonical(tag) ? tags_lib().decode(tag) : tag;
 	}
 
 	// The folder id of a private message, from its parsed tags
 	function private_folder(p)
 	{
-		if (p.folder == Tags.SENT)
+		if (p.folder == tags_lib().SENT)
 			return "sent";
-		if (p.folder == Tags.TRASH)
+		if (p.folder == tags_lib().TRASH)
 			return "trash";
-		if (p.folder == Tags.ARCHIVE || p.folder === "")
+		if (p.folder == tags_lib().ARCHIVE || p.folder === "")
 			return "archive";
 		return "u:" + p.folder;
 	}
@@ -503,7 +582,7 @@ var Store = (function () {
 	// the index or the summary)
 	function is_starred(attr)
 	{
-		return (attr & D.MSG_VALIDATED) != 0;
+		return (attr & defs().MSG_VALIDATED) != 0;
 	}
 
 	function Store(o)
@@ -540,6 +619,7 @@ var Store = (function () {
 		if (this.smb !== null)
 			return;
 		this.open_shared();
+		this.smb_unused = true;	// the first call need not reopen it
 	};
 
 	Store.prototype.open_shared = function ()
@@ -548,6 +628,7 @@ var Store = (function () {
 		if (!mb.open())
 			throw new Error("cannot open " + (this.shared_path || "mail") + ": " + mb.last_error);
 		this.smb = mb;
+		this.smb_unused = false;
 	};
 
 	Store.prototype.close = function ()
@@ -582,10 +663,21 @@ var Store = (function () {
 	// handle kept open misses changes made through other handles, as
 	// observed with get_index() and get_msg_index().) Objects returned by
 	// resolve() are valid until the next public call.
+	// The shared handle open() made is used as it is by the first call
+	// (nothing can be stale yet), once; every later call reopens it, even
+	// one an earlier call reopened and did not use: its header bytes are
+	// buffered as of that open.  The private base is closed either way.
 	Store.prototype.refresh = function ()
 	{
 		if (this.smb === null)
 			throw new Error("Store is not open");
+		if (this.smb_unused === true) {
+			this.smb_unused = false;
+			if (this.pmb !== null)
+				this.pmb.close();
+			this.pmb = null;
+			return;
+		}
 		this.close();
 		this.open_shared();
 	};
@@ -594,6 +686,7 @@ var Store = (function () {
 	{
 		if (this.smb === null)
 			throw new Error("Store is not open");
+		this.smb_unused = false;
 		return this.smb;
 	};
 
@@ -603,7 +696,7 @@ var Store = (function () {
 		var pmb = this.private_base(false);
 		if (pmb === null)
 			return [];
-		return Summary.get(pmb, this.jf, { data_dir: this.data_dir });
+		return summary_lib().get(pmb, this.jf, { data_dir: this.data_dir });
 	};
 
 	// One get_index() pass: this user's live (not deleted) shared records
@@ -614,7 +707,7 @@ var Store = (function () {
 		var r = { to: [], from: [], all: [] };
 		for (var i = 0; i < idx.length; i++) {
 			var x = idx[i];
-			if (x.attr & (D.MSG_DELETE | D.MSG_VOTE))
+			if (x.attr & (defs().MSG_DELETE | defs().MSG_VOTE))
 				continue;
 			var to = x.to == u16;
 			var from = x.from == u16;
@@ -634,7 +727,7 @@ var Store = (function () {
 		var h = this.shared_base().get_msg_header(false, num, false);
 		if (h === null || h === undefined)
 			return null;
-		if (h.number != num || (h.attr & (D.MSG_DELETE | D.MSG_VOTE)))
+		if (h.number != num || (h.attr & (defs().MSG_DELETE | defs().MSG_VOTE)))
 			return null;
 		return h;
 	};
@@ -652,7 +745,7 @@ var Store = (function () {
 		// The list fields only of the user's own records: another user's
 		// subject and sender never go into this user's cache file
 		return [rec.time, own, h.id || "", h.reply_id || "",
-			h.to_net_type || 0, (h.netattr & D.NETMSG_SENT) ? 1 : 0, h.delivery_attempts || 0,
+			h.to_net_type || 0, (h.netattr & defs().NETMSG_SENT) ? 1 : 0, h.delivery_attempts || 0,
 			own ? row_fields(summarize_shared(this.shared_base(), h)) : null];
 	};
 
@@ -772,7 +865,7 @@ var Store = (function () {
 		}
 		var extra = [];
 		for (i = 0; i < rows.length; i++) {
-			var p = Tags.parse(rows[i].tags);
+			var p = tags_lib().parse(rows[i].tags);
 			var f = p.folder;
 			if (f !== "" && f.charAt(0) != '$' && !seen[f]) {
 				seen[f] = true;
@@ -797,12 +890,12 @@ var Store = (function () {
 
 		for (i = 0; i < rows.length; i++) {
 			var row = rows[i];
-			var p = Tags.parse(row.tags);
+			var p = tags_lib().parse(row.tags);
 			var folder = private_folder(p);
 			if (row.msgid)
 				pids[row.msgid] = true;
 			cands.push({ kind: "p", num: row.num, arrived: row.arrived, folder: folder,
-				starred: is_starred(row.attr) && folder != "trash", unread: !(row.attr & D.MSG_READ),
+				starred: is_starred(row.attr) && folder != "trash", unread: !(row.attr & defs().MSG_READ),
 				extra: false, msgid: row.msgid, row: row, parsed: p });
 		}
 		for (i = 0; i < scan.to.length; i++) {
@@ -811,9 +904,9 @@ var Store = (function () {
 			if (f === undefined || !(f[F_OWN] & OWN_TO))
 				continue;
 			cands.push({ kind: "s", num: rec.number, arrived: rec.time,
-				folder: (rec.attr & D.MSG_SPAM) ? "spam" : "inbox",
+				folder: (rec.attr & defs().MSG_SPAM) ? "spam" : "inbox",
 				starred: is_starred(rec.attr),
-				unread: !(rec.attr & D.MSG_READ),
+				unread: !(rec.attr & defs().MSG_READ),
 				extra: false, msgid: f[F_ID], rec: rec, fact: f });
 		}
 		var info = { scan: scan, facts: facts, rows: rows, pids: pids };
@@ -906,7 +999,7 @@ var Store = (function () {
 	{
 		var num = hdr.number;	// a non-NULL field first (lazy fields)
 		var auxattr = hdr.auxattr;
-		var utf8 = (auxattr & D.MSG_HFIELDS_UTF8) != 0;
+		var utf8 = (auxattr & defs().MSG_HFIELDS_UTF8) != 0;
 		function str(s) {
 			if (s === undefined || s === null)
 				return "";
@@ -918,7 +1011,7 @@ var Store = (function () {
 			num: num, tags: hdr.tags || "", from: str(hdr.from), from_addr: str(hdr.from_net_addr),
 			to: str(hdr.to), subject: str(hdr.subject), date: hdr.when_written_time,
 			attr: hdr.attr, size: blocks(header_length(msgbase, hdr)) + blocks(hdr.data_length || 0),
-			attach: (auxattr & (D.MSG_FILEATTACH | D.MSG_MIMEATTACH)) != 0
+			attach: (auxattr & (defs().MSG_FILEATTACH | defs().MSG_MIMEATTACH)) != 0
 				|| /^multipart\/mixed\b/i.test(ctype),
 			arrived: hdr.when_imported_time, zone: hdr.when_written_zone_offset,
 			priority: hdr.priority || 0, msgid: hdr.id || ""
@@ -975,21 +1068,25 @@ var Store = (function () {
 	function to_item(c, s)
 	{
 		var it = {
-			id: c.kind + c.num, from: s.from, from_addr: s.from_addr, to: s.to,
-			subject: s.subject, date: s.date, zone: s.zone, arrived: s.arrived, size: s.size,
-			read: c.extra ? true : (s.attr & D.MSG_READ) != 0,
-			replied: (s.attr & D.MSG_REPLIED) != 0,
+			id: c.kind + c.num, from: shown_text(s.from), from_addr: shown_addr(s.from_addr), to: shown_text(s.to),
+			subject: shown_text(s.subject), date: s.date, zone: s.zone, arrived: s.arrived, size: s.size,
+			read: c.extra ? true : (s.attr & defs().MSG_READ) != 0,
+			replied: (s.attr & defs().MSG_REPLIED) != 0,
 			starred: c.extra ? false : (is_starred(s.attr) && c.folder != "trash"),
 			attach: s.attach, priority: priority(s.priority), folder: c.folder
 		};
 		if (c.extra)
 			it.extra = true;
+		if (it.from_addr !== s.from_addr)
+			it.from_addr_bad = true;
 		return it;
 	}
 
 	// Delivery facts for this user's sent mail: queued copies by
-	// Message-ID and the reply_ids of delivery-failure notices. Re-reads
-	// the headers of outbound network records not yet seen sent.
+	// Message-ID and, by reply_id, the number of the newest live
+	// delivery-failure notice to the user (from the facts already read: no
+	// header read). Re-reads the headers of outbound network records not
+	// yet seen sent.
 	Store.prototype.delivery_facts = function (info)
 	{
 		var queued = {};
@@ -1001,14 +1098,14 @@ var Store = (function () {
 		for (i = 0; i < scan.from.length; i++) {
 			var rec = scan.from[i];
 			var f = facts[rec.number];
-			if (f === undefined || !(f[F_OWN] & OWN_FROM) || f[F_NET] == D.NET_NONE
+			if (f === undefined || !(f[F_OWN] & OWN_FROM) || f[F_NET] == defs().NET_NONE
 				|| f[F_DONE] || f[F_ID] === "")
 				continue;
 			if (!f.fresh) {
 				var h = this.shared_header(rec.number);
 				if (h === null)
 					continue;
-				var done = (h.netattr & D.NETMSG_SENT) ? 1 : 0;
+				var done = (h.netattr & defs().NETMSG_SENT) ? 1 : 0;
 				var tries = h.delivery_attempts || 0;
 				if (done != f[F_DONE] || tries != f[F_TRIES]) {
 					f[F_DONE] = done;
@@ -1030,8 +1127,9 @@ var Store = (function () {
 			f = facts[rec.number];
 			// When the mail server starts setting reply_id on its failure
 			// notices, also require evidence that the notice is from the system
-			if (f !== undefined && (f[F_OWN] & OWN_TO) && (rec.attr & D.MSG_NOREPLY) && f[F_RID] !== "")
-				failed[f[F_RID]] = true;
+			if (f !== undefined && (f[F_OWN] & OWN_TO) && (rec.attr & defs().MSG_NOREPLY) && f[F_RID] !== ""
+				&& !(failed[f[F_RID]] > rec.number))
+				failed[f[F_RID]] = rec.number;	// the newest notice wins
 		}
 		if (changed)
 			this.save_facts(facts, facts.gen);
@@ -1058,18 +1156,18 @@ var Store = (function () {
 	Store.prototype.modify_failed = function (pmb, nums)
 	{
 		var self = this;
-		Summary.modify(pmb, this.jf, function () {
+		summary_lib().modify(pmb, this.jf, function () {
 			var changed = [];
 			for (var i = 0; i < nums.length; i++) {
 				try {
 					var h = pmb.get_msg_header(false, nums[i], false);
 					if (!live(h, nums[i]))
 						continue;
-					var p = Tags.parse(h.tags);
+					var p = tags_lib().parse(h.tags);
 					if (p.failed)
 						continue;
 					p.failed = true;
-					h.tags = Tags.format(p);
+					h.tags = tags_lib().format(p);
 					self.put_header(pmb, nums[i], h);
 					changed.push(nums[i]);
 				} catch (e) {
@@ -1095,8 +1193,13 @@ var Store = (function () {
 			var q = c.msgid !== "" ? d.queued[c.msgid] : undefined;
 			if (q !== undefined)
 				c.delivery = { state: "queued", waiting: q.waiting, attempts: q.attempts };
-			else if (failed)
+			else if (failed) {
 				c.delivery = { state: "failed" };
+				if (c.msgid !== "" && d.failed[c.msgid])
+					c.delivery.notice = "s" + d.failed[c.msgid];
+			}
+			else if (c.kind == "p" && c.parsed.unknown)
+				c.delivery = { state: "unknown" };
 			else if (c.kind == "p" && c.parsed.unsent)
 				c.delivery = { state: "unsent" };
 			else
@@ -1232,7 +1335,7 @@ var Store = (function () {
 		if (mb === null)
 			throw error("notfound", "no such message");
 		var h = mb.get_msg_header(false, num, false);
-		if (h === null || h === undefined || h.number != num || (h.attr & (D.MSG_DELETE | D.MSG_VOTE)))
+		if (h === null || h === undefined || h.number != num || (h.attr & (defs().MSG_DELETE | defs().MSG_VOTE)))
 			throw error("notfound", "no such message");
 		var role = "owner";
 		if (kind == "s") {
@@ -1257,7 +1360,7 @@ var Store = (function () {
 		var sum = 0;
 		for (var i = 0; i < idx.length; i++) {
 			var x = idx[i];
-			if ((x.attr & D.MSG_VOTE) || (x.to != u16 && x.from != u16))
+			if ((x.attr & defs().MSG_VOTE) || (x.to != u16 && x.from != u16))
 				continue;
 			count++;
 			if (x.number > max)
@@ -1397,12 +1500,12 @@ var Store = (function () {
 
 	function live(h, num)
 	{
-		return h !== null && h !== undefined && h.number == num && !(h.attr & (D.MSG_DELETE | D.MSG_VOTE));
+		return h !== null && h !== undefined && h.number == num && !(h.attr & (defs().MSG_DELETE | defs().MSG_VOTE));
 	}
 
 	function folder_of(row)
 	{
-		return Tags.parse(row.tags).folder;
+		return tags_lib().parse(row.tags).folder;
 	}
 
 	// The tags of mailbox.folders.json as a clean array
@@ -1471,7 +1574,7 @@ var Store = (function () {
 		this.refresh();
 		var opts = { data_dir: this.data_dir };
 		var pmb = this.private_base(typeof create == "function" ? create.call(this) : create);
-		var ctx = new_ctx(pmb === null ? [] : Summary.get(pmb, this.jf, opts), pmb, this.now());
+		var ctx = new_ctx(pmb === null ? [] : summary_lib().get(pmb, this.jf, opts), pmb, this.now());
 		if (typeof ids == "function")
 			ids = ids.call(this, ctx);
 		var results = [];
@@ -1502,7 +1605,7 @@ var Store = (function () {
 			body();
 		else {
 			try {
-				Summary.modify(pmb, this.jf, body, opts);
+				summary_lib().modify(pmb, this.jf, body, opts);
 			} catch (e) {
 				if (!is_conflict(e) || results.length > 0 || strict)
 					throw e;
@@ -1572,7 +1675,7 @@ var Store = (function () {
 			var pmb = this.private_base(false);
 			if (pmb === null)
 				return;
-			Summary.modify(pmb, this.jf, function () {
+			summary_lib().modify(pmb, this.jf, function () {
 				if (pmb.purge() === false)
 					log(LOG_WARNING, "mailbox: purge of " + pmb.file + ": " + pmb.last_error);
 				return { added: [], removed: [], changed: [] };	// no message changed
@@ -1737,7 +1840,7 @@ var Store = (function () {
 	// Rewrite a private message's tags from parsed tags p
 	Store.prototype.retag = function (r, ctx, p)
 	{
-		var tags = Tags.format(p);
+		var tags = tags_lib().format(p);
 		if (tags === (r.header.tags || ""))
 			return;
 		r.header.tags = tags;
@@ -1751,11 +1854,11 @@ var Store = (function () {
 	Store.prototype.incoming_size = function (mb, h, tags)
 	{
 		var size = blocks(header_length(mb, h) + tags.length + 4) + blocks(h.data_length || 0);
-		if (h.auxattr & D.MSG_FILEATTACH) {
+		if (h.auxattr & defs().MSG_FILEATTACH) {
 			var to = parseInt(h.to_ext, 10);
 			if (to > 0) {
 				var dir = this.data_dir + format("file/%04u.in/", to);
-				var names = Summary.attach_names(h.subject || "");
+				var names = summary_lib().attach_names(h.subject || "");
 				for (var i = 0; i < names.length; i++) {
 					var n = file_size(dir + names[i]);
 					if (n > 0)
@@ -1779,7 +1882,7 @@ var Store = (function () {
 		if (ctx.trash_order === null) {
 			ctx.trash_order = [];
 			for (i = ctx.rows.length - 1; i >= 0; i--)	// rows are newest first
-				if (folder_of(ctx.rows[i]) == Tags.TRASH)
+				if (folder_of(ctx.rows[i]) == tags_lib().TRASH)
 					ctx.trash_order.push(ctx.rows[i]);
 		}
 		var trash_bytes = 0;
@@ -1798,7 +1901,7 @@ var Store = (function () {
 			if (row === null)
 				throw error("quota", "the mailbox is full");
 			var h = ctx.pmb.get_msg_header(false, row.num, false);
-			if (!live(h, row.num) || Tags.parse(h.tags).folder != Tags.TRASH) {
+			if (!live(h, row.num) || tags_lib().parse(h.tags).folder != tags_lib().TRASH) {
 				ctx.gone[row.num] = true;	// gone or moved meanwhile: not counted
 				ctx.bytes -= row.size;
 				continue;
@@ -1822,14 +1925,14 @@ var Store = (function () {
 	// follows at the end of the call
 	Store.prototype.destroy = function (ctx, num, h)
 	{
-		var attached = (h.auxattr & D.MSG_FILEATTACH) != 0;
-		var p = Tags.parse(h.tags);
+		var attached = (h.auxattr & defs().MSG_FILEATTACH) != 0;
+		var p = tags_lib().parse(h.tags);
 		var msgid = h.id || "";
 		if (!ctx.pmb.remove_msg(false, num))
 			throw this.base_failure("remove_msg #" + num, ctx.pmb);
 		// A Sent copy gone for real: keep the recipients' copies of it from
 		// showing in Sent as extras
-		if (msgid !== "" && (p.folder == Tags.SENT || p.was == Tags.SENT))
+		if (msgid !== "" && (p.folder == tags_lib().SENT || p.was == tags_lib().SENT))
 			ctx.hidden.push({ id: null, key: "m:" + msgid });
 		ctx.removed.push(num);
 		ctx.gone[num] = true;
@@ -1847,7 +1950,7 @@ var Store = (function () {
 		if (parseInt(h.to_ext, 10) !== this.usernum)
 			return;	// not the user's files
 		var dir = this.data_dir + format("file/%04u.in/", this.usernum);
-		var names = Summary.attach_names(h.subject || "");
+		var names = summary_lib().attach_names(h.subject || "");
 		for (var i = 0; i < names.length; i++) {
 			var path = dir + names[i];
 			if (file_exists(path) && !file_remove(path))
@@ -1955,7 +2058,7 @@ var Store = (function () {
 			for (var i = 0; i < idx.length && copy === null; i++) {
 				var x = idx[i];
 				if (x.number > e.after && !taken[x.number] && x.to == u16 && x.time === e.imported
-					&& !(x.attr & (D.MSG_DELETE | D.MSG_VOTE))
+					&& !(x.attr & (defs().MSG_DELETE | defs().MSG_VOTE))
 					&& this.copy_header(ctx, e, false, x.number) !== null)
 					copy = x.number;
 			}
@@ -2118,7 +2221,7 @@ var Store = (function () {
 	Store.prototype.move_in = function (r, ctx, tags, check_quota)
 	{
 		var h = r.header;
-		var attr = h.attr & ~D.MSG_SPAM;
+		var attr = h.attr & ~defs().MSG_SPAM;
 		var pmb = ctx.pmb;
 		var key = "s" + r.number;
 		var ph = this.journal_copy(ctx, key, h, true);
@@ -2153,7 +2256,9 @@ var Store = (function () {
 	};
 
 	// The shared base's age limit in days (0: none), which mail maintenance
-	// applies to the index (import) time of every message in it
+	// applies to the index (import) time of every message in it. Public:
+	// read from the open shared base's status (max_age, which SCFG writes
+	// into the mail base when the setting is saved); no reopen.
 	Store.prototype.inbox_max_age = function ()
 	{
 		var n = this.shared_base().max_age;
@@ -2168,7 +2273,7 @@ var Store = (function () {
 	// The spam age limit, which scripts cannot read, is not checked.
 	Store.prototype.inbox_refusal = function (h, now)
 	{
-		if (parseInt(h.to_ext, 10) !== this.usernum || (h.to_net_type || D.NET_NONE) != D.NET_NONE)
+		if (parseInt(h.to_ext, 10) !== this.usernum || (h.to_net_type || defs().NET_NONE) != defs().NET_NONE)
 			return error("invalid", "only mail received by the user can go to the Inbox");
 		var days = this.inbox_max_age();
 		var t = h.when_imported_time;
@@ -2214,8 +2319,8 @@ var Store = (function () {
 			throw why;
 		var sh = this.journal_copy(ctx, key, h, false);
 		var smb = this.shared_base();
-		var attr = spam ? (h.attr | D.MSG_SPAM) : (h.attr & ~D.MSG_SPAM);
-		var tags = Tags.format({ other: p.other });
+		var attr = spam ? (h.attr | defs().MSG_SPAM) : (h.attr & ~defs().MSG_SPAM);
+		var tags = tags_lib().format({ other: p.other });
 		var s;
 		if (sh !== null) {	// finish an interrupted move
 			s = sh.number;
@@ -2252,11 +2357,11 @@ var Store = (function () {
 		var h = r.header;
 		var attr = h.attr;
 		if (ch.read !== undefined)
-			attr = ch.read ? (attr | D.MSG_READ) : (attr & ~D.MSG_READ);
+			attr = ch.read ? (attr | defs().MSG_READ) : (attr & ~defs().MSG_READ);
 		if (ch.spam !== undefined)
-			attr = ch.spam ? (attr | D.MSG_SPAM) : (attr & ~D.MSG_SPAM);
+			attr = ch.spam ? (attr | defs().MSG_SPAM) : (attr & ~defs().MSG_SPAM);
 		if (ch.starred !== undefined)
-			attr = ch.starred ? (attr | D.MSG_VALIDATED) : (attr & ~D.MSG_VALIDATED);
+			attr = ch.starred ? (attr | defs().MSG_VALIDATED) : (attr & ~defs().MSG_VALIDATED);
 		if (attr === h.attr)
 			return done(id);
 		h.attr = attr;
@@ -2275,22 +2380,22 @@ var Store = (function () {
 		if (r.role == "from")
 			throw error("forbidden", "a sent message is read-only");
 		var h = r.header;
-		var p = Tags.parse(h.tags, { shared: r.kind == "s" });
+		var p = tags_lib().parse(h.tags, { shared: r.kind == "s" });
 		if (r.kind == "s") {
 			if (tag === null) {	// Spam to Inbox: not spam
-				if (h.attr & D.MSG_SPAM) {
-					h.attr &= ~D.MSG_SPAM;
+				if (h.attr & defs().MSG_SPAM) {
+					h.attr &= ~defs().MSG_SPAM;
 					this.put_header(r.base, r.number, h);
 					ctx.forget.push(r.number);
 				}
 				return done(id);
 			}
-			var n = this.move_in(r, ctx, Tags.format({ folder: tag, other: p.other }), true);
+			var n = this.move_in(r, ctx, tags_lib().format({ folder: tag, other: p.other }), true);
 			return done(id, "p" + n);
 		}
 		if (tag === null)
 			return this.move_out(id, r, ctx, p, false);
-		if (p.folder == Tags.TRASH)
+		if (p.folder == tags_lib().TRASH)
 			set_trash(ctx, r.number, null);
 		p.folder = tag;
 		p.was = "";
@@ -2307,19 +2412,19 @@ var Store = (function () {
 			return done(id, null);
 		}
 		var h = r.header;
-		var p = Tags.parse(h.tags, { shared: r.kind == "s" });
+		var p = tags_lib().parse(h.tags, { shared: r.kind == "s" });
 		if (r.kind == "s") {
-			var was = (h.attr & D.MSG_SPAM) ? WAS_SPAM : WAS_INBOX;
-			var n = this.move_in(r, ctx, Tags.format({ folder: Tags.TRASH, was: was, other: p.other }), false);
+			var was = (h.attr & defs().MSG_SPAM) ? WAS_SPAM : WAS_INBOX;
+			var n = this.move_in(r, ctx, tags_lib().format({ folder: tags_lib().TRASH, was: was, other: p.other }), false);
 			set_trash(ctx, n, ctx.now);
 			return done(id, "p" + n);
 		}
-		if (p.folder == Tags.TRASH) {
+		if (p.folder == tags_lib().TRASH) {
 			this.destroy(ctx, r.number, h);
 			return done(id, null);
 		}
-		p.was = p.folder === "" ? Tags.ARCHIVE : p.folder;
-		p.folder = Tags.TRASH;
+		p.was = p.folder === "" ? tags_lib().ARCHIVE : p.folder;
+		p.folder = tags_lib().TRASH;
 		this.retag(r, ctx, p);
 		set_trash(ctx, r.number, ctx.now);
 		return done(id);
@@ -2328,8 +2433,8 @@ var Store = (function () {
 	Store.prototype.op_restore = function (id, ctx)
 	{
 		var r = this.resolve_now(id);
-		var p = r.kind == "p" ? Tags.parse(r.header.tags) : null;
-		if (p === null || p.folder != Tags.TRASH)
+		var p = r.kind == "p" ? tags_lib().parse(r.header.tags) : null;
+		if (p === null || p.folder != tags_lib().TRASH)
 			throw error("invalid", "not in Trash");
 		var was = p.was;
 		var why = null;
@@ -2338,12 +2443,12 @@ var Store = (function () {
 			why = this.out_refusal(r, ctx);
 			if (why === null)
 				return this.move_out(id, r, ctx, p, was == WAS_SPAM);
-			was = Tags.ARCHIVE;
+			was = tags_lib().ARCHIVE;
 		}
 		if (valid_user_tag(was))
 			ctx.folders.push(was);	// recreated if it was deleted
-		else if (was != Tags.SENT)
-			was = Tags.ARCHIVE;
+		else if (was != tags_lib().SENT)
+			was = tags_lib().ARCHIVE;
 		p.folder = was;
 		p.was = "";
 		this.retag(r, ctx, p);
@@ -2361,7 +2466,7 @@ var Store = (function () {
 	Store.prototype.op_destroy_trash = function (id, ctx)
 	{
 		var r = this.resolve_now(id);
-		if (r.kind != "p" || Tags.parse(r.header.tags).folder != Tags.TRASH)
+		if (r.kind != "p" || tags_lib().parse(r.header.tags).folder != tags_lib().TRASH)
 			throw error("invalid", "not in Trash");
 		this.destroy(ctx, r.number, r.header);
 		return done(id, null);
@@ -2371,7 +2476,7 @@ var Store = (function () {
 	{
 		var out = [];
 		for (var i = 0; i < rows.length; i++)
-			if (folder_of(rows[i]) == Tags.TRASH)
+			if (folder_of(rows[i]) == tags_lib().TRASH)
 				out.push("p" + rows[i].num);
 		return out;
 	}
@@ -2398,11 +2503,11 @@ var Store = (function () {
 			throw error("invalid", "folder id is not a string");
 		var tag = null;
 		if (folder_id == "archive")
-			tag = Tags.ARCHIVE;
+			tag = tags_lib().ARCHIVE;
 		else if (folder_id != "inbox")
 			tag = user_folder_tag(folder_id);
 		return this.run(function (ctx) {
-			if (tag !== null && tag != Tags.ARCHIVE && this.user_tags(ctx.rows).indexOf(tag) < 0)
+			if (tag !== null && tag != tags_lib().ARCHIVE && this.user_tags(ctx.rows).indexOf(tag) < 0)
 				throw error("notfound", "no such folder");
 			return ids;
 		}, tag !== null, function (id, ctx) {
@@ -2466,7 +2571,7 @@ var Store = (function () {
 			ctx.keep = {};
 			for (var i = 0; i < ctx.rows.length; i++) {
 				var num = ctx.rows[i].num;
-				if (folder_of(ctx.rows[i]) != Tags.TRASH)
+				if (folder_of(ctx.rows[i]) != tags_lib().TRASH)
 					continue;
 				ctx.keep[num] = true;
 				var when = t[num];
@@ -2505,10 +2610,10 @@ var Store = (function () {
 	// Check a new folder name against the others; returns its tag
 	function new_folder_tag(name, names)
 	{
-		var reason = Tags.validate(name, names);
+		var reason = tags_lib().validate(name, names);
 		if (reason !== null)
 			throw name_error(reason);
-		return Tags.encode(String(name).replace(TRIM_RE, ""));
+		return tags_lib().encode(String(name).replace(TRIM_RE, ""));
 	}
 
 	Store.prototype.folder_create = function (name)
@@ -2534,7 +2639,7 @@ var Store = (function () {
 		this.refresh();
 		var opts = { data_dir: this.data_dir };
 		var pmb = this.private_base(false);
-		var rows = pmb === null ? [] : Summary.get(pmb, this.jf, opts);
+		var rows = pmb === null ? [] : summary_lib().get(pmb, this.jf, opts);
 		var tags = this.user_tags(rows);
 		if (tags.indexOf(tag) < 0)
 			throw error("notfound", "no such folder");
@@ -2545,8 +2650,8 @@ var Store = (function () {
 			throw name_error("duplicate");
 		var nums = [];
 		for (var i = 0; i < rows.length; i++) {
-			var p = Tags.parse(rows[i].tags);
-			if (p.folder === tag || (p.folder == Tags.TRASH && p.was === tag))
+			var p = tags_lib().parse(rows[i].tags);
+			if (p.folder === tag || (p.folder == tags_lib().TRASH && p.was === tag))
 				nums.push(rows[i].num);
 		}
 		var self = this;
@@ -2565,14 +2670,14 @@ var Store = (function () {
 					var h = pmb.get_msg_header(false, part[j], false);
 					if (!live(h, part[j]))
 						continue;
-					var q = Tags.parse(h.tags);
+					var q = tags_lib().parse(h.tags);
 					if (q.folder === tag)
 						q.folder = newtag;
-					else if (q.folder == Tags.TRASH && q.was === tag)
+					else if (q.folder == tags_lib().TRASH && q.was === tag)
 						q.was = newtag;
 					else
 						continue;
-					h.tags = Tags.format(q);
+					h.tags = tags_lib().format(q);
 					self.put_header(pmb, part[j], h);
 					changed.push(part[j]);
 				} catch (e) {
@@ -2592,7 +2697,7 @@ var Store = (function () {
 					if (pmb === null)
 						throw error("notfound", "no such message");
 				}
-				Summary.modify(pmb, this.jf, function () {
+				summary_lib().modify(pmb, this.jf, function () {
 					return retag_slice(part);
 				}, opts);
 			} catch (e) {
@@ -2660,10 +2765,10 @@ var Store = (function () {
 			return out;
 		}, function (id, ctx) {
 			var r = this.resolve_now(id);
-			var p = Tags.parse(r.header.tags);
+			var p = tags_lib().parse(r.header.tags);
 			if (p.folder !== tag)
 				throw error("notfound", "no longer in the folder");
-			p.folder = Tags.TRASH;
+			p.folder = tags_lib().TRASH;
 			p.was = tag;
 			this.retag(r, ctx, p);
 			set_trash(ctx, r.number, ctx.now);
@@ -2695,7 +2800,7 @@ var Store = (function () {
 	{
 		this.refresh();
 		var pmb = this.private_base(false);
-		return { bytes: pmb === null ? 0 : Summary.usage(pmb, this.jf, { data_dir: this.data_dir }).bytes,
+		return { bytes: pmb === null ? 0 : summary_lib().usage(pmb, this.jf, { data_dir: this.data_dir }).bytes,
 			quota: this.options.quota_bytes };
 	};
 
@@ -2709,7 +2814,7 @@ var Store = (function () {
 	// has MSG_HFIELDS_UTF8, else from CP437
 	function hstr(h)
 	{
-		var utf8 = (h.auxattr & D.MSG_HFIELDS_UTF8) != 0;
+		var utf8 = (h.auxattr & defs().MSG_HFIELDS_UTF8) != 0;
 		return function (s) {
 			if (s === undefined || s === null)
 				return "";
@@ -2727,14 +2832,14 @@ var Store = (function () {
 
 	function net_name(type)
 	{
-		switch (type || D.NET_NONE) {
-			case D.NET_NONE:
+		switch (type || defs().NET_NONE) {
+			case defs().NET_NONE:
 				return "local";
-			case D.NET_INTERNET:
+			case defs().NET_INTERNET:
 				return "internet";
-			case D.NET_FIDO:
+			case defs().NET_FIDO:
 				return "fido";
-			case D.NET_QWK:
+			case defs().NET_QWK:
 				return "qwk";
 		}
 		return "other";
@@ -2745,7 +2850,7 @@ var Store = (function () {
 	{
 		var list = h.field_list || [];
 		for (var i = 0; i < list.length; i++) {
-			if (list[i].type != D.RFC822FROM)
+			if (list[i].type != defs().RFC822FROM)
 				continue;
 			var m = String(list[i].data).match(/^[ \t]*(.*?)[ \t]*<[^<>]*>[ \t]*$/);
 			if (!m || m[1] === "")
@@ -2753,7 +2858,7 @@ var Store = (function () {
 			var name = m[1];
 			if (name.length >= 2 && name.charAt(0) == '"' && name.charAt(name.length - 1) == '"')
 				name = name.substr(1, name.length - 2).replace(/\\(.)/g, "$1");
-			return MimeRead.decode_words(name, str).replace(/^[ \t]+|[ \t]+$/g, "");
+			return name_text(name, str);
 		}
 		return "";
 	}
@@ -2763,7 +2868,7 @@ var Store = (function () {
 	function to_domain(h)
 	{
 		var addr = h.forward_path || "";
-		if (addr === "" && (h.to_net_type || D.NET_NONE) == D.NET_INTERNET)
+		if (addr === "" && (h.to_net_type || defs().NET_NONE) == defs().NET_INTERNET)
 			addr = h.to_net_addr || "";
 		addr = String(addr).replace(/^[ \t<]+|[ \t>]+$/g, "");
 		var at = addr.lastIndexOf('@');
@@ -2773,14 +2878,178 @@ var Store = (function () {
 		return /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/.test(dom) ? dom : "";
 	}
 
+	// The BCC list a Sent copy keeps in its header (an RFC822HEADER field
+	// "Bcc: <list>", written by the sending client into the private copy
+	// only), RFC 2047 words decoded; "" when there is none
+	function bcc_of(h, str)
+	{
+		var list = h.field_list || [];
+		for (var i = 0; i < list.length; i++) {
+			if (list[i].type != defs().RFC822HEADER)
+				continue;
+			var m = String(list[i].data).match(/^Bcc:[ \t]*([^\r\n]*)$/i);
+			if (m)
+				return mime_lib().decode_words(m[1], str);
+		}
+		return "";
+	}
+
 	function comment_of(h, str)
 	{
 		var list = h.field_list || [];
 		var out = [];
 		for (var i = 0; i < list.length; i++)
-			if (list[i].type == D.SMB_COMMENT)
+			if (list[i].type == defs().SMB_COMMENT)
 				out.push(str(list[i].data));
 		return out.join("\r\n");
+	}
+
+	// A display name as text: RFC 2047 words decoded, control characters
+	// (C0, DEL) made spaces, white space squeezed, trimmed
+	function name_text(name, str)
+	{
+		return shown_text(mime_lib().decode_words(name, str).replace(/[\x00-\x1f\x7f]+/g, " ")
+			.replace(/[ \t]+/g, " ").replace(/^ | $/g, ""));
+	}
+
+	// Text that is shown (names, subjects) without the bidirectional
+	// controls (Tags.BIDI_UTF8, the set folder names refuse): a
+	// right-to-left override could make a name read as an address or a
+	// file name as another
+	// (made on first use: tags_lib() is not loaded with this file)
+	var BIDI_RE = null;
+	function shown_text(s)
+	{
+		if (BIDI_RE === null)
+			BIDI_RE = new RegExp(tags_lib().BIDI_UTF8, "g");
+		return String(s).replace(BIDI_RE, "");
+	}
+
+	// An address as shown: without control characters (C0, DEL, C1 and
+	// the bidirectional ones).  An address that held one is malformed:
+	// the caller marks it (from_addr_bad), so it is shown but never taken
+	// for the address it now looks like
+	var ADDR_CONTROL_RE = null;
+	function shown_addr(s)
+	{
+		if (ADDR_CONTROL_RE === null)
+			ADDR_CONTROL_RE = new RegExp("[\\x00-\\x1f\\x7f]|\\xC2[\\x80-\\x9F]|" + tags_lib().BIDI_UTF8, "g");
+		return String(s).replace(ADDR_CONTROL_RE, "");
+	}
+
+	// An address list header field (to_list, cc_list, replyto_list) as
+	// entries [{name, addr}].  The structure comes from the RAW field only:
+	// entries split at commas and semicolons outside quoted strings,
+	// comments and angle brackets; the address is the text inside <> (else
+	// the entry without its comments), never decoded; the name is the
+	// phrase or quoted string before <> (else a comment), and only then
+	// decoded, as text (name_text).  So an encoded word can never add an
+	// entry or change an address: "=?UTF-8?Q?A_<a@x>,_M?= <m@evil>" is ONE
+	// entry, address m@evil, name "A <a@x>, M".  Empty entries are left out.
+	function as_is(x)
+	{
+		return x;
+	}
+
+	function address_list(raw, str)
+	{
+		var out = [];
+		var shown = [];
+		var s = str(raw);
+		var start = 0;
+		var cur = { name: "", addr: "", angle: null, comment: "", any: false };
+		var quote = false, paren = 0, angle = false;
+		function flush(end) {
+			var addr, name;
+			var whole = s.substring(start, end).replace(/^[ \t]+|[ \t]+$/g, "");
+			start = end + 1;
+			if (cur.angle !== null) {
+				addr = cur.angle;
+				name = cur.name;
+			} else {
+				addr = cur.name;
+				name = cur.comment;
+			}
+			addr = addr.replace(/^[ \t]+|[ \t]+$/g, "");
+			name = name.replace(/^[ \t]+|[ \t]+$/g, "");
+			if (cur.angle === null)
+				addr = addr.replace(/"/g, "");
+			if (addr !== "" || name !== "") {
+				var e = { name: name_text(name, as_is), addr: addr };
+				out.push(e);
+				// shown: with <>, the decoded name (quoted when needed) and
+				// the address; without, the entry as stored (not decoded)
+				shown.push(cur.angle !== null ? list_text([e]) : whole);
+			}
+			cur = { name: "", addr: "", angle: null, comment: "", any: false };
+		}
+		for (var i = 0; i < s.length; i++) {
+			var ch = s.charAt(i);
+			if (quote) {
+				if (ch == "\\" && i + 1 < s.length)
+					cur.name += s.charAt(++i);
+				else if (ch == '"')
+					quote = false;
+				else
+					cur.name += ch;
+				continue;
+			}
+			if (paren) {
+				if (ch == "\\" && i + 1 < s.length)
+					cur.comment += s.charAt(++i);
+				else if (ch == "(") {
+					paren++;
+					cur.comment += ch;
+				} else if (ch == ")") {
+					if (--paren > 0)
+						cur.comment += ch;
+				} else
+					cur.comment += ch;
+				continue;
+			}
+			if (angle) {
+				if (ch == ">")
+					angle = false;
+				else
+					cur.angle += ch;
+				continue;
+			}
+			if (ch == '"')
+				quote = true;
+			else if (ch == "(") {
+				paren = 1;
+				if (cur.comment !== "")
+					cur.comment += " ";
+			} else if (ch == "<") {
+				angle = true;
+				cur.angle = "";
+			} else if (ch == "," || ch == ";")
+				flush(i);
+			else if (cur.angle === null)
+				cur.name += ch;
+		}
+		flush(s.length);
+		return { list: out, line: shown.join(", ") };
+	}
+
+	// Entries as one display line: "name <addr>" (the name quoted when it
+	// holds a character that means something in an address list), the
+	// address alone without a name, joined with ", ".  Built from the same
+	// entries the structured lists hold, so what is shown names the same
+	// addresses.
+	function list_text(list)
+	{
+		var parts = [];
+		for (var i = 0; i < list.length; i++) {
+			var e = list[i];
+			if (e.name === "" || e.name === e.addr)
+				parts.push(e.addr);
+			else if (/[",;<>()@:\\\[\]]/.test(e.name))
+				parts.push('"' + e.name.replace(/[\\"]/g, "\\$&") + '" <' + e.addr + ">");
+			else
+				parts.push(e.name + " <" + e.addr + ">");
+		}
+		return parts.join(", ");
 	}
 
 	function header_values(h)
@@ -2788,17 +3057,25 @@ var Store = (function () {
 		var str = hstr(h);
 		var from = h.from;	// a non-NULL field first (lazy fields)
 		var shown = from_display(h, str);
-		var reply_to = "";
+		var none = { list: [], line: "" };
+		var rt = none;
 		if (h.replyto_list)
-			reply_to = MimeRead.decode_words(h.replyto_list, str);
+			rt = address_list(h.replyto_list, str);
 		else if (h.replyto_net_addr)
-			reply_to = str(h.replyto_net_addr);
+			rt = { list: [{ name: "", addr: str(h.replyto_net_addr) }], line: str(h.replyto_net_addr) };
+		var to = h.to_list ? address_list(h.to_list, str) : null;
+		var cc = h.cc_list ? address_list(h.cc_list, str) : none;
+		var addr = h.from_net_type ? str(h.from_net_addr) : "";
 		return {
-			from: shown !== "" ? shown : str(from),
-			from_addr: h.from_net_type ? str(h.from_net_addr) : "",
-			to: h.to_list ? MimeRead.decode_words(h.to_list, str) : str(h.to),
-			cc: h.cc_list ? MimeRead.decode_words(h.cc_list, str) : "",
-			reply_to: reply_to,
+			from: shown !== "" ? shown : shown_text(str(from)),
+			from_addr: shown_addr(addr),
+			from_addr_bad: shown_addr(addr) !== addr,
+			to: to !== null ? to.line : shown_text(str(h.to)),
+			cc: cc.line,
+			reply_to: rt.line,
+			to_list: to !== null ? to.list : [],
+			cc_list: cc.list,
+			reply_to_list: rt.list,
 			date: str(h.date),
 			message_id: str(h.id),
 			reply_id: str(h.reply_id),
@@ -2813,7 +3090,7 @@ var Store = (function () {
 	{
 		var s = String(subject).replace(/[^A-Za-z0-9 ._-]+/g, "_").replace(/_+/g, "_");
 		s = s.replace(/^[ _.]+|[ _]+$/g, "").substr(0, 100).replace(/[ _.]+$/, "");
-		return MimeRead.safe_name((s === "" ? "message" : s) + ".eml", "message/rfc822");
+		return mime_lib().safe_name((s === "" ? "message" : s) + ".eml", "message/rfc822");
 	}
 
 	var LINE_BREAK_RE = /[ \t]*(\r\n|\r|\n)[ \t]*/g;
@@ -2847,6 +3124,7 @@ var Store = (function () {
 		copy.field_list = [];
 		for (var i = 0; i < list.length; i++)
 			copy.field_list.push({ type: list[i].type, data: one_line(String(list[i].data)) });
+		rfc822_lib();
 		var block = MsgBase.HeaderPrototype.get_rfc822_header.call(copy);
 		var lines = String(block).split(/\r\n|\r|\n/);
 		var out = [];
@@ -2905,23 +3183,23 @@ var Store = (function () {
 	// message unread (logged).
 	Store.prototype.mark_read = function (r)
 	{
-		if (r.role == "from" || (r.header.attr & D.MSG_READ))
+		if (r.role == "from" || (r.header.attr & defs().MSG_READ))
 			return;
 		var self = this;
 		try {
 			if (r.kind == "s") {
-				r.header.attr |= D.MSG_READ;
+				r.header.attr |= defs().MSG_READ;
 				this.put_header(r.base, r.number, r.header);
 				this.forget_written([r.number]);
 				return;
 			}
 			var pmb = r.base;
 			var num = r.number;
-			Summary.modify(pmb, this.jf, function () {
+			summary_lib().modify(pmb, this.jf, function () {
 				var h = pmb.get_msg_header(false, num, false);
-				if (!live(h, num) || (h.attr & D.MSG_READ))
+				if (!live(h, num) || (h.attr & defs().MSG_READ))
 					return { changed: [] };
-				h.attr |= D.MSG_READ;
+				h.attr |= defs().MSG_READ;
 				self.put_header(pmb, num, h);
 				return { changed: [num] };
 			}, { data_dir: this.data_dir });
@@ -2945,12 +3223,12 @@ var Store = (function () {
 					s = rows[i];
 			if (s === null)
 				s = summarize_shared(r.base, r.header);
-			var p = Tags.parse(s.tags);
+			var p = tags_lib().parse(s.tags);
 			c = { kind: "p", num: r.number, extra: false, folder: private_folder(p), parsed: p };
 		} else {
 			s = summarize_shared(r.base, r.header);
 			c = { kind: "s", num: r.number, extra: r.role == "from",
-				folder: r.role == "from" ? "sent" : ((s.attr & D.MSG_SPAM) ? "spam" : "inbox") };
+				folder: r.role == "from" ? "sent" : ((s.attr & defs().MSG_SPAM) ? "spam" : "inbox") };
 		}
 		return to_item(c, s);
 	};
@@ -2976,7 +3254,7 @@ var Store = (function () {
 	// this user may not be served
 	Store.prototype.file_parts = function (h)
 	{
-		var list = MimeRead.file_parts(h, this.data_dir);
+		var list = mime_lib().file_parts(h, this.data_dir);
 		var dir = this.file_dir(h);
 		var root = dir === null ? null : fullpath(dir);
 		for (var i = 0; i < list.length; i++) {
@@ -3002,7 +3280,7 @@ var Store = (function () {
 	function part_entry(part)
 	{
 		var cid = typeof part.content_id == "string" ? part.content_id : "";
-		return { pid: part.id, name: MimeRead.part_name(part), type: MimeRead.safe_type(part.content_type),
+		return { pid: part.id, name: mime_lib().part_name(part), type: mime_lib().safe_type(part.content_type),
 			size: part.size, cid: cid, inline: cid !== "" };
 	}
 
@@ -3055,6 +3333,8 @@ var Store = (function () {
 		var out = this.item_of(r);
 		var str = hstr(h);
 		out.headers = header_values(h);
+		var tp = r.kind == "p" ? tags_lib().parse(h.tags) : null;
+		out.headers.bcc = tp !== null && (tp.folder == tags_lib().SENT || tp.was == tags_lib().SENT) ? bcc_of(h, str) : "";
 		out.comment = comment_of(h, str);
 
 		var parts = r.base.get_msg_parts(r.number);
@@ -3063,7 +3343,7 @@ var Store = (function () {
 			parts = [];
 		}
 		var plain = !(h.mime_version && h.content_type);
-		var m = MimeRead.model(parts);
+		var m = mime_lib().model(parts);
 		var by_id = {};
 		for (var i = 0; i < parts.length; i++)
 			by_id[parts[i].id] = parts[i];
@@ -3088,7 +3368,7 @@ var Store = (function () {
 		for (var i = 0; i < stored.length; i++)	// each one line: no stored CR/LF
 			lines.push(line_utf8(one_line(stored[i])));
 		return { rfc822: line_utf8(rfc822_block(h)), stored: lines,
-			external_files: (h.auxattr & D.MSG_FILEATTACH) != 0 };
+			external_files: (h.auxattr & defs().MSG_FILEATTACH) != 0 };
 	};
 
 	// The message as an RFC 822 file: {path, name, size, temp:true}; the
@@ -3165,15 +3445,210 @@ var Store = (function () {
 			file_remove(path);
 			throw this.read_failure("save_msg_part #" + r.number + " part " + part.id, r.base);
 		}
-		return { path: path, name: MimeRead.part_name(part), type: MimeRead.safe_type(part.content_type),
+		return { path: path, name: mime_lib().part_name(part), type: mime_lib().safe_type(part.content_type),
 			size: file_size(path), temp: true };
+	};
+
+	// ---- Sent copies (for a sending client) ----
+
+	// The size a new message from header h and the body file at body_path
+	// will hold in the private base, as Summary counts it (an estimate: the
+	// header's string fields plus one block for the fixed part and the
+	// field headers, rounded up to blocks, plus the body in blocks)
+	function new_message_size(h, body_path)
+	{
+		var len = BLOCK;
+		for (var k in h) {
+			if (typeof h[k] == "string")
+				len += h[k].length + 8;
+		}
+		if (h.field_list instanceof Array)
+			for (var i = 0; i < h.field_list.length; i++)
+				len += String(h.field_list[i].data).length + 8;
+		return blocks(len) + blocks(Math.max(0, file_size(body_path)));
+	}
+
+	// The result of a one-id run(): its new_id, or its error thrown
+	function only_result(results)
+	{
+		var r = results[0];
+		if (!r.ok)
+			throw error(r.error, r.message);
+		return r.new_id;
+	}
+
+	// Save a Sent copy into the private base (created when absent): the
+	// header h (as for MsgBase.save_msg(); "to" is required) with the body
+	// read from the file at body_path (save_msg_from_file(), never a
+	// JavaScript string). The copy is the user's own record of mail the
+	// user is sending: its tags are "$Sent $Unsent" (unsent: false gives
+	// "$Sent" alone), from_ext is the user, to_ext is dropped (so it can
+	// never count as mail received by the user, and cannot be moved to the
+	// Inbox), and it is marked read. Everything else in h is stored as
+	// given (h itself is not changed). Made inside one Summary.modify(),
+	// after the move journal is reconciled (nothing is added to the base
+	// while a move into it is unsettled), under the quota rule of moves
+	// into the private base: the oldest Trash is removed to make room;
+	// "quota" when it cannot fit even with all of Trash gone (nothing
+	// saved). Returns the new message's id ("p<n>"). Throws conflict when
+	// the summary lock or the journal is busy, failed when the base
+	// cannot be written (logged; no copy is left behind).
+	Store.prototype.save_sent = function (h, body_path, opts)
+	{
+		if (h === null || typeof h != "object" || h instanceof Array)
+			throw error("invalid", "header is not an object");
+		if (typeof body_path != "string" || !file_exists(body_path) || file_isdir(body_path))
+			throw error("invalid", "no body file");
+		opts = opts || {};
+		var hdr = {};
+		for (var k in h)
+			hdr[k] = h[k];
+		delete hdr.to_ext;
+		delete hdr.number;
+		hdr.from_ext = String(this.usernum);
+		hdr.tags = tags_lib().format({ folder: tags_lib().SENT, unsent: opts.unsent !== false });
+		hdr.attr = ((hdr.attr || 0) | defs().MSG_READ) & ~(defs().MSG_DELETE | defs().MSG_SPAM | defs().MSG_VOTE);
+		var size = new_message_size(hdr, body_path);
+		return only_result(this.run(["new"], true, function (id, ctx) {
+			if (!ctx.journal_ok)
+				throw error("conflict", "the move journal could not be saved");
+			this.settle_dest(ctx, "p", null);
+			this.make_room(ctx, size);
+			var pmb = ctx.pmb;
+			var before = pmb.last_msg;
+			var saved = pmb.save_msg_from_file(hdr, body_path);
+			var n = pmb.last_msg;
+			if (!saved) {
+				var why = this.base_failure("save_msg_from_file", pmb);
+				if (n > before) {	// a partial copy: removed, and the summary rebuilt
+					ctx.unknown = true;
+					for (var m = before + 1; m <= n; m++)
+						pmb.remove_msg(false, m);
+				}
+				throw why;
+			}
+			ctx.added.push(n);
+			ctx.used[n] = true;
+			ctx.bytes += size;
+			return done(id, "p" + n);
+		}, true));
+	};
+
+	// The user's private messages tagged $Sent (in Sent, or in Trash from
+	// Sent) whose Message-ID is message_id: their ids, newest first ([]
+	// for none or no private base). Read from the summary: no header read.
+	// A sending client finds the Sent copy of a send this way when it
+	// could not record the copy's id (a Message-ID unique to the send).
+	Store.prototype.find_sent = function (message_id)
+	{
+		if (typeof message_id != "string" || message_id === "")
+			throw error("invalid", "no Message-ID");
+		this.refresh();
+		var rows = this.private_rows();
+		var out = [];
+		for (var i = 0; i < rows.length; i++) {
+			if (rows[i].msgid !== message_id)
+				continue;
+			var p = tags_lib().parse(rows[i].tags);
+			if (p.folder == tags_lib().SENT || p.was == tags_lib().SENT)
+				out.push("p" + rows[i].num);
+		}
+		return out;
+	};
+
+	// A private message of the user's for the Sent-copy calls: resolved,
+	// and with its parsed tags; invalid for a shared id
+	Store.prototype.sent_copy = function (id)
+	{
+		var r = this.resolve_now(id);
+		if (r.kind != "p")
+			throw error("invalid", "not a Sent copy");
+		return { r: r, p: tags_lib().parse(r.header.tags) };
+	};
+
+	// The Sent copy 'id' was delivered: remove $Unsent from it (wherever
+	// the user has filed it since). Returns true (also when it had no
+	// $Unsent); throws notfound, invalid (a shared id), conflict, failed.
+	Store.prototype.mark_sent = function (id)
+	{
+		check_id(id);
+		only_result(this.run([id], false, function (id, ctx) {
+			var x = this.sent_copy(id);
+			if (!x.p.unsent && !x.p.unknown)
+				return done(id);
+			x.p.unsent = false;
+			x.p.unknown = false;
+			this.retag(x.r, ctx, x.p);
+			return done(id);
+		}, true));
+		return true;
+	};
+
+	// Whether the mail of Sent copy 'id' went out could not be determined:
+	// add $Unknown (only to a copy that still has $Unsent; else invalid).
+	// list() then reports its delivery as "unknown". Returns true.
+	Store.prototype.mark_unknown = function (id)
+	{
+		check_id(id);
+		only_result(this.run([id], false, function (id, ctx) {
+			var x = this.sent_copy(id);
+			if (!x.p.unsent)
+				throw error("invalid", "not an unsent copy");
+			if (x.p.unknown)
+				return done(id);
+			x.p.unknown = true;
+			this.retag(x.r, ctx, x.p);
+			return done(id);
+		}, true));
+		return true;
+	};
+
+	// The mail of Sent copy 'id' was not sent after all: remove the copy
+	// for real (as removing from Trash does). Only a copy that still has
+	// $Unsent can be removed this way (else invalid), so a delivered
+	// record is never lost through this call. Returns true.
+	Store.prototype.remove_sent = function (id)
+	{
+		check_id(id);
+		only_result(this.run([id], false, function (id, ctx) {
+			var x = this.sent_copy(id);
+			if (!x.p.unsent)
+				throw error("invalid", "not an unsent copy");
+			this.destroy(ctx, x.r.number, x.r.header);
+			return done(id, null);
+		}, true));
+		return true;
+	};
+
+	// Set the replied attribute on message 'id', which must be the user's
+	// own: a shared message to the user or a private one (a sent extra is
+	// read-only: forbidden; another user's mail: forbidden). Returns true.
+	Store.prototype.set_replied = function (id)
+	{
+		check_id(id);
+		only_result(this.run([id], false, function (id, ctx) {
+			var r = this.resolve_now(id);
+			if (r.role == "from")
+				throw error("forbidden", "a sent message is read-only");
+			var h = r.header;
+			if (h.attr & defs().MSG_REPLIED)
+				return done(id);
+			h.attr |= defs().MSG_REPLIED;
+			this.put_header(r.base, r.number, h);
+			if (r.kind == "p")
+				ctx.changed.push(r.number);
+			else
+				ctx.touched = true;	// attributes come from the index
+			return done(id);
+		}, true));
+		return true;
 	};
 
 	// Every public method: what it throws leaves through outgoing()
 	var PUBLIC = ["open", "close", "private_base", "folders", "list", "state", "resolve",
 		"forget_shared", "set", "move", "remove", "restore", "empty_trash", "purge_expired",
-		"folder_create", "folder_rename", "folder_delete", "usage", "get", "original", "raw_file",
-		"part_file"];
+		"folder_create", "folder_rename", "folder_delete", "usage", "inbox_max_age", "get", "original",
+		"raw_file", "part_file", "save_sent", "mark_sent", "remove_sent", "set_replied", "find_sent", "mark_unknown"];
 	for (var pi = 0; pi < PUBLIC.length; pi++) {
 		(function (name) {
 			var fn = Store.prototype[name];

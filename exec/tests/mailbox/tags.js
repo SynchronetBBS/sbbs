@@ -108,9 +108,28 @@ Kit.eq(Tags.validate("a\x07", []), "invalid", "BEL");
 Kit.eq(Tags.validate("a\x7Fb", []), "invalid", "DEL");
 Kit.eq(Tags.validate("\x00", []), "invalid", "NUL");
 Kit.eq(Tags.validate(" a b\t", []), null, "ASCII whitespace at the edges is trimmed, not invalid");
+// C1 controls (U+0080-U+009F) and bidirectional controls, as UTF-8
+var odd = [["\xC2\x80", "U+0080"], ["\xC2\x85", "U+0085 NEL"], ["\xC2\x9F", "U+009F"],
+	["\xD8\x9C", "U+061C"], ["\xE2\x80\x8E", "U+200E"], ["\xE2\x80\x8F", "U+200F"],
+	["\xE2\x80\xAA", "U+202A"], ["\xE2\x80\xAE", "U+202E"], ["\xE2\x81\xA6", "U+2066"],
+	["\xE2\x81\xA9", "U+2069"]];
+for (var oi = 0; oi < odd.length; oi++) {
+	Kit.eq(Tags.validate("a" + odd[oi][0] + "b", []), "invalid", odd[oi][1] + " inside a name");
+	Kit.eq(Tags.validate(odd[oi][0], []), "invalid", odd[oi][1] + " alone");
+}
+// neighbors that are ordinary characters
+Kit.eq(Tags.validate("\xC2\xA0x", []), null, "U+00A0 (no-break space) is not a control");
+Kit.eq(Tags.validate("\xC2\xA9", []), null, "U+00A9");
+Kit.eq(Tags.validate("\xD8\x9B", []), null, "U+061B");
+Kit.eq(Tags.validate("\xE2\x80\x8D", []), null, "U+200D (joiner, used in emoji)");
+Kit.eq(Tags.validate("\xE2\x80\x90", []), null, "U+2010");
+Kit.eq(Tags.validate("\xE2\x80\xAF", []), null, "U+202F");
+Kit.eq(Tags.validate("\xE2\x81\xA5", []), null, "U+2065");
+Kit.eq(Tags.validate("\xE2\x81\xAA", []), null, "U+206A");
+Kit.eq(Tags.validate("\x80\x85", []), null, "lone continuation bytes are not U+0085");
 // The tags of a shared message have no folder
 Kit.eq(Tags.parse("work urgent $Failed", { shared: true }),
-	{ folder: "", was: "", failed: true, unsent: false, other: ["work", "urgent"] },
+	{ folder: "", was: "", failed: true, unsent: false, unknown: false, other: ["work", "urgent"] },
 	"shared: every tag but the flags is other");
 Kit.eq(Tags.parse("work urgent").folder, "work", "private: the first tag is the folder");
 Kit.eq(Tags.validate("  family ", ["Family"]), "duplicate");
@@ -139,7 +158,7 @@ Kit.eq(Tags.format(P), "Receipts $Was:$Inbox foreign");
 Kit.eq(Tags.parse(Tags.format(P)), P, "round-trips");
 Kit.eq(Tags.format({ folder: "Receipts", starred: true }), "Receipts", "format never writes a star");
 
-Kit.eq(Tags.parse(""), { folder: "", was: "", failed: false, unsent: false, other: [] });
+Kit.eq(Tags.parse(""), { folder: "", was: "", failed: false, unsent: false, unknown: false, other: [] });
 Kit.eq(Tags.parse(undefined), Tags.parse(""));
 Kit.eq(Tags.parse(null), Tags.parse(""));
 Kit.eq(Tags.parse("   \t "), Tags.parse(""));
@@ -147,8 +166,10 @@ Kit.eq(Tags.parse("  $Sent   $Failed  ").folder, "$Sent");
 Kit.assert(Tags.parse("  $Sent   $Failed  ").failed);
 Kit.eq(Tags.parse("$Trash $Was:Receipts").was, "Receipts");
 Kit.eq(Tags.parse("$Sent $Unsent").unsent, true);
+Kit.eq(Tags.parse("$Sent $Unsent $Unknown").unknown, true);
+Kit.eq(Tags.format({ folder: "$Sent", unsent: true, unknown: true }), "$Sent $Unsent $Unknown");
 Kit.eq(Tags.parse("$Weird mine $Other more"), { folder: "mine", was: "", failed: false,
-	unsent: false, other: ["$Weird", "$Other", "more"] });
+	unsent: false, unknown: false, other: ["$Weird", "$Other", "more"] });
 Kit.eq(Tags.parse("$Weird").other, ["$Weird"], "unknown $ tag is not a folder");
 Kit.eq(Tags.parse("$Archive Receipts").other, ["Receipts"], "first folder wins");
 
@@ -168,7 +189,7 @@ var objs = [
 	Tags.parse(""),
 	Tags.parse("$Sent $Failed"),
 	Tags.parse("$Trash $Was:" + Tags.encode(utf8) + " zzz $Qq"),
-	{ folder: Tags.encode(utf8), was: "$Inbox", failed: false, unsent: true, other: ["o1", "$o2"] }
+	{ folder: Tags.encode(utf8), was: "$Inbox", failed: false, unsent: true, unknown: true, other: ["o1", "$o2"] }
 ];
 for (i = 0; i < objs.length; i++)
 	Kit.eq(Tags.parse(Tags.format(objs[i])), objs[i], "format round trip " + i);

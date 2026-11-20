@@ -5,7 +5,8 @@
 // A message's tags are one string (the header's "tags" field), tags
 // separated by single spaces. Reserved tags start with '$' and are matched
 // case-sensitively: $Sent $Archive $Trash (folders), $Was:<tag> (the folder
-// a Trash message came from), $Failed and $Unsent (Sent copies).
+// a Trash message came from), $Failed, $Unsent and $Unknown (Sent copies;
+// $Unknown: whether the mail went out could not be determined).
 // A user folder's tag is its name's UTF-8 bytes with every byte except
 // A-Z a-z 0-9 . _ - and bytes >= 0x80 written as %XX (uppercase hex), so a
 // user tag never contains a space and never begins with '$'.
@@ -31,6 +32,7 @@ var Tags = (function () {
 		WAS: "$Was:",
 		FAILED: "$Failed",
 		UNSENT: "$Unsent",
+		UNKNOWN: "$Unknown",
 		MAX_NAME_LENGTH: 64
 	};
 	var BUILTIN = ["inbox", "starred", "sent", "drafts", "spam", "trash", "archive", "all"];
@@ -109,15 +111,25 @@ var Tags = (function () {
 		return T.encode(T.decode(tag)) === tag;
 	};
 
+	// C1 controls (U+0080-U+009F) and the bidirectional controls U+061C,
+	// U+200E, U+200F, U+202A-U+202E and U+2066-U+2069, as UTF-8 bytes
+	var BIDI = "\\xD8\\x9C|\\xE2\\x80[\\x8E\\x8F\\xAA-\\xAE]|\\xE2\\x81[\\xA6-\\xA9]";
+	var CONTROL_UTF8 = new RegExp("\\xC2[\\x80-\\x9F]|" + BIDI);
+	// The bidirectional controls alone (the source of a regular
+	// expression), for removing them from text that is shown
+	T.BIDI_UTF8 = BIDI;
+
 	// Returns null or "empty", "invalid" (a char code above 0xFF, or a
-	// control character: below 0x20 or 0x7F, after the ASCII whitespace at
-	// the edges is trimmed), "toolong", "reserved", "duplicate"
+	// control character: below 0x20 or 0x7F, a C1 control U+0080-U+009F or
+	// a bidirectional control U+061C, U+200E, U+200F, U+202A-U+202E,
+	// U+2066-U+2069 as UTF-8; after the ASCII whitespace at the edges is
+	// trimmed), "toolong", "reserved", "duplicate"
 	T.validate = function (name, existing_names)
 	{
 		name = trim(String(name));
 		if (name.length < 1)
 			return "empty";
-		if (has_wide(name))
+		if (has_wide(name) || CONTROL_UTF8.test(name))
 			return "invalid";
 		var chars = 0;
 		for (var i = 0; i < name.length; i++) {
@@ -150,7 +162,7 @@ var Tags = (function () {
 	T.parse = function (tags_string, opts)
 	{
 		var shared = !!(opts && opts.shared);
-		var r = { folder: "", was: "", failed: false, unsent: false, other: [] };
+		var r = { folder: "", was: "", failed: false, unsent: false, unknown: false, other: [] };
 		if (tags_string === undefined || tags_string === null)
 			return r;
 		var list = String(tags_string).split(WS_RUN);
@@ -162,6 +174,8 @@ var Tags = (function () {
 				r.failed = true;
 			else if (t == T.UNSENT && !r.unsent)
 				r.unsent = true;
+			else if (t == T.UNKNOWN && !r.unknown)
+				r.unknown = true;
 			else if (t.substr(0, T.WAS.length) == T.WAS && t.length > T.WAS.length && r.was === "")
 				r.was = t.substr(T.WAS.length);
 			else if (!shared && r.folder === "" && is_folder_tag(t))
@@ -185,6 +199,8 @@ var Tags = (function () {
 			list.push(T.FAILED);
 		if (obj.unsent)
 			list.push(T.UNSENT);
+		if (obj.unknown)
+			list.push(T.UNKNOWN);
 		if (obj.other)
 			for (var i = 0; i < obj.other.length; i++)
 				list.push(obj.other[i]);

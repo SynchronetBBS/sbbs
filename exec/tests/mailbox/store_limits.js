@@ -199,6 +199,25 @@ try {
 		save(mb, { to_ext: String(ALICE), subject: "filed", tags: Tags.ARCHIVE });
 	});
 	var st = open_store(ALICE, { trash_days: 30, quota_bytes: 0 });
+	// --- inbox_max_age(): the shared base's max_age in days, 0 for none
+	Kit.eq(st.inbox_max_age(), 0, "a scratch base has no age limit");
+	var real_shared = st.shared_base;
+	st.shared_base = function () { return { max_age: 45 }; };
+	Kit.eq(st.inbox_max_age(), 45, "the base's max_age");
+	st.shared_base = function () { return { max_age: undefined }; };
+	Kit.eq(st.inbox_max_age(), 0, "no number: no limit");
+	st.shared_base = function () { throw new Error("/secret/path"); };
+	var age_err = null;
+	try {
+		st.inbox_max_age();
+	} catch (e) {
+		age_err = e;
+	}
+	Kit.assert(age_err instanceof Error && age_err.message.indexOf("/secret") < 0,
+		"a failure leaves as the generic error: " + age_err);
+	delete st.shared_base;	// the prototype's again
+	Kit.eq(st.shared_base, real_shared, "restored");
+
 	var max_age = 90;
 	st.inbox_max_age = function () { return max_age; };
 
@@ -388,7 +407,8 @@ try {
 		PF = save(mb, { from_ext: String(ALICE), from: "Alice", to: "x@example.com", subject: "bounced",
 			tags: Tags.SENT, id: "<bounced@test>" });
 	});
-	to_alice("delivery failure", "<notice@test>", { attr: D.MSG_NOREPLY, reply_id: "<bounced@test>" });
+	var NOTICE = to_alice("delivery failure", "<notice@test>", { attr: D.MSG_NOREPLY,
+		reply_id: "<bounced@test>" });
 	hooks.put = function () { throw new TypeError("simulated failure"); };
 	var sl;
 	try {
@@ -400,7 +420,8 @@ try {
 	for (var i = 0; i < sl.items.length; i++)
 		if (sl.items[i].id == "p" + PF)
 			item = sl.items[i];
-	Kit.eq(item.delivery, { state: "failed" }, "failed shown although $Failed was not written");
+	Kit.eq(item.delivery, { state: "failed", notice: "s" + NOTICE },
+		"failed shown although $Failed was not written");
 
 	// --- Long calls run in slices, one summary lock per slice
 	ok(st.empty_trash(), "start with an empty Trash");

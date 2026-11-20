@@ -307,6 +307,60 @@ try {
 	Kit.eq(g.headers.to_domain, "bbs.example", "to_domain");
 	Kit.eq(g.comment, "Forwarded by Carol", "comment");
 	Kit.eq(g.text.charset, "windows-1252", "internet non-MIME charset");
+	Kit.eq(g.headers.to_list, [{ name: "Alice", addr: "alice@bbs.example" }, { name: "Carol", addr: "c@x.example" }],
+		"to_list entries");
+	Kit.eq(g.headers.cc_list, [{ name: "", addr: "dave@y.example" }], "cc_list entries");
+	Kit.eq(g.headers.reply_to_list, [{ name: "", addr: "list@z.example" }], "reply_to_list entries");
+
+	// ---- an encoded word can never add a recipient or change an address:
+	// structure from the raw field, the name decoded as text afterwards
+	// (B encoding: in Q form the "<" and "," would be in the raw field,
+	// which then really names two mailboxes, as any parser reads it)
+	var CRAFT = "=?UTF-8?B?" + base64_encode("Alice <alice@x.example>, Mallory") + "?= <mallory@evil.example>";
+	var n_craft = save(shared, to_alice({ from: "m", from_net_type: D.NET_INTERNET, from_net_addr: "m@evil.example",
+		to_list: CRAFT, cc_list: '"Q, \\"x\\"" <q@q.example>, (c (n) \\) m) r@r.example; =?UTF-8?B?' + base64_encode("Bob <b@b.example>; Eve <e@e.example>") + '?= <z@z.example>',
+		replyto_list: CRAFT, field_list: [{ type: D.RFC822FROM,
+			data: "=?UTF-8?B?" + base64_encode("Bank <service@bank.example>") + "?= <m@evil.example>" }] }), "x\r\n");
+	g = alice.get("s" + n_craft);
+	var MAL = [{ name: "Alice <alice@x.example>, Mallory", addr: "mallory@evil.example" }];
+	Kit.eq(g.headers.to_list, MAL, "crafted To: one entry, the real address, the name as text");
+	Kit.eq(g.headers.reply_to_list, MAL, "crafted Reply-To: the same");
+	Kit.eq(g.headers.cc_list, [{ name: 'Q, "x"', addr: "q@q.example" }, { name: "c (n) ) m", addr: "r@r.example" },
+		{ name: "Bob <b@b.example>; Eve <e@e.example>", addr: "z@z.example" }], "cc: quoted, comment, encoded");
+	Kit.eq(g.headers.to, '"Alice <alice@x.example>, Mallory" <mallory@evil.example>', "displayed To names one address");
+	Kit.eq(g.headers.from, "Bank <service@bank.example>", "a From name is text");
+	Kit.eq(g.headers.from_addr, "m@evil.example", "beside the real address");
+
+	// bidirectional controls (a right-to-left override can make a name or
+	// subject read as something else) are removed from names and subjects
+	var RLO = "\xE2\x80\xAE", LRI = "\xE2\x81\xA6", ALM = "\xD8\x9C", LRM = "\xE2\x80\x8E";
+	var n_bidi = save(shared, to_alice({ from: "Ev" + RLO + "il", from_net_type: D.NET_INTERNET, from_net_addr: "e@evil.example",
+		auxattr: D.MSG_HFIELDS_UTF8, subject: "Invoice" + RLO + "fdp.exe" + LRI + ALM + LRM,
+		to_list: "=?UTF-8?B?" + base64_encode("Bo" + RLO + "b") + "?= <b@b.example>",
+		field_list: [{ type: D.RFC822FROM, data: "=?UTF-8?B?" + base64_encode("Ma" + RLO + "llory") + "?= <e@evil.example>" }] }), "x\r\n");
+	g = alice.get("s" + n_bidi);
+	Kit.eq(g.headers.from, "Mallory", "no bidi control in a From name");
+	Kit.eq(g.headers.to_list, [{ name: "Bob", addr: "b@b.example" }], "none in a recipient name");
+	Kit.eq(g.subject, "Invoicefdp.exe", "none in the subject (reader)");
+	var bl = alice.list("inbox", { offset: 0, limit: 500 }).items.filter(function (x) { return x.id === "s" + n_bidi; })[0];
+	Kit.eq([bl.from, bl.subject], ["Evil", "Invoicefdp.exe"], "none in a list row");
+	Kit.eq(g.headers.from_addr_bad, false, "a clean sender address is not marked");
+	// the same in the fallbacks: no RFC822 From field, no to_list; and an
+	// ADDRESS holding a control character is shown stripped and marked
+	// malformed (it can never match anything the user listed)
+	var n_bidi2 = save(shared, to_alice({ from: "Ev" + RLO + "e", from_net_type: D.NET_INTERNET,
+		from_net_addr: "photos@pics" + RLO + ".example", auxattr: D.MSG_HFIELDS_UTF8, to: "Al" + LRI + "ice",
+		subject: "plain" }), "x\r\n");
+	g = alice.get("s" + n_bidi2);
+	Kit.eq([g.headers.from, g.headers.to], ["Eve", "Alice"], "no bidi control in the fallback from and to");
+	Kit.eq(g.headers.from_addr, "photos@pics.example", "the address shown stripped");
+	Kit.eq(g.headers.from_addr_bad, true, "and marked malformed");
+	bl = alice.list("inbox", { offset: 0, limit: 500 }).items.filter(function (x) { return x.id === "s" + n_bidi2; })[0];
+	Kit.eq([bl.from, bl.from_addr, bl.from_addr_bad], ["Eve", "photos@pics.example", true], "a list row: stripped, marked");
+	var n_c0 = save(shared, to_alice({ from: "Tab", from_net_type: D.NET_INTERNET, from_net_addr: "a\tb@x.example",
+		subject: "c0" }), "x\r\n");
+	g = alice.get("s" + n_c0);
+	Kit.eq([g.headers.from_addr, g.headers.from_addr_bad], ["ab@x.example", true], "a C0 control in an address: malformed");
 
 	// ---- show original and the raw message ----
 	var o = alice.original("s" + n_mixed);

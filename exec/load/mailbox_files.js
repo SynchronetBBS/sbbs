@@ -114,17 +114,17 @@ JsonFiles.prototype.unlock = function (lock, token)
 		file_remove(lock);
 };
 
-// Lock, read (fallback if absent), obj = fn(obj), write obj, unlock.
-// Returns the written object.  Throws { code: "conflict" } if the lock
-// cannot be taken within the timeout, and a TypeError (before anything is
-// written) if fn returns undefined.
+// Lock name's lock file, run fn(), unlock; returns what fn returned.  The
+// file name.json itself is neither read nor written: for a lock that
+// guards other files.  Throws { code: "conflict" } if the lock cannot be
+// taken within the timeout.
 //
 // The lock file's text is a unique token, and the lock is released only if
 // the file still holds that token.  A holder that takes longer than max_age
 // can still have its lock taken over (both then run concurrently, and the
-// slow one's release leaves the new holder's lock alone), so update() is for
-// short read-modify-writes only.
-JsonFiles.prototype.update = function (name, fallback, fn)
+// slow one's release leaves the new holder's lock alone), so locked() and
+// update() are for short work only.
+JsonFiles.prototype.locked = function (name, fn)
 {
 	var lock = this.lock_path(name);
 	var deadline = system.timer + this.timeout / 1000;
@@ -137,14 +137,26 @@ JsonFiles.prototype.update = function (name, fallback, fn)
 		mswait(50);
 	}
 	try {
-		var obj = fn(this.read(name, fallback));
-		if (obj === undefined)
-			throw new TypeError("update function returned undefined for " + this.path(name));
-		this.write(name, obj);
-		return obj;
+		return fn();
 	} finally {
 		this.unlock(lock, token);
 	}
+};
+
+// Lock, read (fallback if absent), obj = fn(obj), write obj, unlock (as
+// locked()).  Returns the written object.  Throws { code: "conflict" } if
+// the lock cannot be taken within the timeout, and a TypeError (before
+// anything is written) if fn returns undefined.
+JsonFiles.prototype.update = function (name, fallback, fn)
+{
+	var self = this;
+	return this.locked(name, function () {
+		var obj = fn(self.read(name, fallback));
+		if (obj === undefined)
+			throw new TypeError("update function returned undefined for " + self.path(name));
+		self.write(name, obj);
+		return obj;
+	});
 };
 
 JsonFiles;

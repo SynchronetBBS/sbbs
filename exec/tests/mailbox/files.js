@@ -121,6 +121,45 @@ try {
 	Kit.eq(lf.read(), "other-holder", "new holder's token intact");
 	lf.close();
 
+	// locked(): fn runs holding the lock (the lock file holds a token),
+	// its result is returned, the JSON file is neither created nor
+	// rewritten, and the lock is released, also when fn throws; a held
+	// lock is a conflict
+	var seen_lock = null;
+	var lr = jf.locked("lk", function () {
+		var lkf = new File(jf.lock_path("lk"));
+		if (lkf.open("r")) {
+			seen_lock = lkf.read();
+			lkf.close();
+		}
+		return 42;
+	});
+	Kit.eq(lr, 42, "locked: fn's result");
+	Kit.assert(typeof seen_lock === "string" && seen_lock.length > 0, "locked: the lock held while fn ran");
+	Kit.eq([file_exists(jf.path("lk")), file_exists(jf.lock_path("lk"))], [false, false],
+		"locked: no JSON file, lock released");
+	jf.write("lk", { keep: 1 });
+	var lk_date = file_date(jf.path("lk"));
+	var lk_size = file_size(jf.path("lk"));
+	Kit.throws(function () {
+		jf.locked("lk", function () {
+			throw new Error("inside");
+		});
+	});
+	Kit.eq([file_exists(jf.lock_path("lk")), jf.read("lk", null), file_size(jf.path("lk")), file_date(jf.path("lk"))],
+		[false, { keep: 1 }, lk_size, lk_date], "locked: released after a throw, the file untouched");
+	Kit.assert(file_mutex(jf.lock_path("lk"), "held by test", 60), "hold the lock");
+	try {
+		var jf_quick = new JsonFiles(dir, "t_", { timeout: 100 });
+		Kit.throws(function () {
+			jf_quick.locked("lk", function () {
+				return 1;
+			});
+		}, "conflict");
+	} finally {
+		file_remove(jf.lock_path("lk"));
+	}
+
 	// a rename that fails a few times (as when a reader on Windows has the
 	// file open) is retried; one that keeps failing gives up in bounded
 	// time, and leaves no temp file

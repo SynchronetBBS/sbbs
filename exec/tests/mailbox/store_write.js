@@ -254,6 +254,9 @@ try {
 				return real.apply(mb, arguments);
 			};
 		};
+		// the next refresh() reopens through the hook (an unused handle
+		// is not reopened)
+		st.smb_unused = false;
 	}
 	// A journal entry as Store writes one before a move between bases
 	function journal(source_id, h, after, tags) {
