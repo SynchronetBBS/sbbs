@@ -1,6 +1,13 @@
 // listfiles_lib.js: options merging, header/footer menu lookup order,
 // filespec widening, module-local @-codes and pagination
 
+// Loaded by path first: jsdoor has no exec dir to resolve the library's own
+// bare require("attr_option.js") against, and require() skips a file whose
+// symbol is already defined on this scope object. jsdoor's VAROBJFIX option
+// binds the loaded file's functions to the global object instead, so the
+// symbol is put on this scope by hand.
+load(js.exec_dir + "../../load/attr_option.js");
+this.attr_option = attr_option;
 load(js.exec_dir + "../../load/listfiles_lib.js");
 
 var failures = [];
