@@ -216,7 +216,7 @@ The code name is **always uppercase** (e.g. `@SYSOP@`, not `@Sysop@`). Exception
 
 ### Format modifiers
 
-Append after the code name with `-` (one modifier, no params) or `|` (multiple modifiers OK, params via `:` OK):
+Append after the code name with `-` (one modifier) or `|` (several):
 
 | Modifier | Effect                                                                  |
 |----------|-------------------------------------------------------------------------|
@@ -225,11 +225,20 @@ Append after the code name with `-` (one modifier, no params) or `|` (multiple m
 | `C`      | Pad/center (v3.17b+)                                                    |
 | `W`      | Display double-wide (Unicode fullwidth or padded)                       |
 | `Z`      | Zero-pad and right-justify (v3.17b+)                                    |
-| `T`      | Thousands-separated number (v3.17c+)                                    |
+| `T`      | Thousands-separated number, e.g. `@FILE_BYTES-T@` → `8,964,697` (v3.17c+) |
 | `U`      | Force uppercase (v3.18a+)                                               |
+| `D`      | Force lowercase                                                         |
 | `>`      | Allow terminal-wrap (don't truncate) overly-long expansions             |
 
-Width comes after the modifier as a decimal number (`@NODE|L2@`) or as a string of non-numeric non-space placeholder characters (`@ALIAS|R##############@` for a 14-wide right-justified alias).
+With `|`, `T`, `U` and `D` combine freely with each other and with **one** of `L`/`R`/`C`/`W`/`Z`/`>` — the parser takes only the first of those six it finds (`@FILE_BYTES|TR12@`: thousands-separated, right-justified in 12 columns).
+
+Width comes after the modifier letters as a decimal number (`@NODE|L2@`) or as a string of non-numeric non-space placeholder characters (`@ALIAS|R##############@` for a 14-wide right-justified alias). How wide the result is:
+- **Width given:** padded and truncated to it.
+- **Alignment modifier (`L`/`R`/`C`/`W`/`Z`) without a width:** the width of the @-code itself, as written — `@NAME-L@` is 8 columns. That's what makes placeholder widths work.
+- **Only `T`, `U` or `D`, no width:** no padding at all, just the transformed value.
+- Expansions are also cut at the right edge of the screen unless `>` is given.
+
+The same modifiers work wherever @-codes are expanded: display files, `text.dat` strings, `console.putmsg()`, and the string-expanding `bbs.expand_atcodes()` (e.g. a JS module's own templates).
 
 ### Param-bearing codes (use `:` after the code)
 
@@ -426,7 +435,7 @@ If a running BBS doesn't pick up a text.dat edit, restart sbbsctrl or call `bbs.
 - **`mods/text/` precedence**: an old stale file in `mods/text/menu/` will silently shadow a freshly-pulled stock file. When stock files change in an update, audit `mods/text/menu/`.
 - **`text.dat` line drift**: adding/removing a record without regenerating `text.h` produces a `total_text != TOTAL_TEXT` startup error.
 - **@-codes don't expand in non-sysop messages**: posted text shows the raw `@SYSOP@` to readers. Use the JS `bbs.atcode()` API at message-render time if you need expansion in user content.
-- **Hyphen-modifier + colon-param doesn't work**: `@FOO-L:bar@` is invalid; use the pipe form (`@FOO|L:bar@`).
+- **Param + modifier: param first, then `|`**: a code with a `:` param ignores `-` modifiers (`@FOO:bar-L@` gets no modifier), and in `@FOO|L:bar@` the parser cuts the code at the `|`, losing `:bar`. Write `@FOO:bar|L@` (e.g. `@FILE_BYTES:V|R8@`).
 - **Width modifier truncates from the right**: `@ALIAS|L8@` on a 12-char alias keeps the first 8 chars. Use `>` if you'd rather wrap.
 - **`^AZ` is sticky-fatal**: a `^AZ` byte in the middle of a file stops rendering at that point, no further bytes are seen. Useful, but easy to misplace.
 - **Ctrl-A operand `A`** is overloaded (security flag A vs literal-Ctrl-A) — prefer `@SHOW:FLAG1A@` for flag-based gating instead of relying on `^AA`.
