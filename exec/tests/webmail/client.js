@@ -10,7 +10,7 @@ load(js.exec_dir + "kit.js");
 // against a changed copy); the runner passes none
 var ROOT = typeof argv !== "undefined" && argv.length > 0 ? argv[0] : Kit.exec_root() + "../webmail/root/";
 
-function read(path)
+function read_text(path)
 {
 	var f = new File(path);
 	Kit.assert(f.open("r"), "open " + path);
@@ -25,10 +25,10 @@ var src = {};
 var all = [];
 for (var i = 0; i < modules.length; i++) {
 	var name = file_getname(modules[i]);
-	src[name] = read(modules[i]);
+	src[name] = read_text(modules[i]);
 	all.push(name);
 }
-var INDEX = read(ROOT + "index.xjs");
+var INDEX = read_text(ROOT + "index.xjs");
 Kit.assert(src["reader.js"] && src["body.js"] && src["rpc.js"] && src["app.js"], "the modules read");
 
 // Every match of re (global) in text: [match arrays]
@@ -331,7 +331,7 @@ Kit.assert(/import \{ entryOf \} from "\.\/compose\.js"/.test(src["contacts.js"]
 // splitList (Address.split_entries) and estimateBytes (MimeWrite.estimate)
 (function () {
 	var WEBMAIL = Kit.exec_root() + "../webmail/lib/";
-	var addr_src = read(WEBMAIL + "address.js");
+	var addr_src = read_text(WEBMAIL + "address.js");
 	var server_split = eval("(" + function_text(addr_src, "split_entries") + ")");
 	var client_split = eval("(" + function_text(compose, "splitList") + ")");
 	var lists = ["", "a@b.c", "a@b.c, d@e.f", "a@b.c; d@e.f,,", '"Doe, John" <j@d.org>, x@y.z',

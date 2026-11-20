@@ -13,7 +13,7 @@ function check(desc, got, expect)
 		failures.push(desc + " = " + JSON.stringify(got) + ", expected " + JSON.stringify(expect));
 }
 
-function write(name, text)
+function write_text(name, text)
 {
 	var f = new File(name);
 	if (!f.open("wb"))
@@ -24,7 +24,7 @@ function write(name, text)
 
 mkpath(system.temp_dir);
 try {
-	write(path + ".ini", "[s]\nplain : abc\\x41\ntrailing : abc\\\nquoted : \"x\\ty\\\"\nkey\\:value\nlast : end\\");
+	write_text(path + ".ini", "[s]\nplain : abc\\x41\ntrailing : abc\\\nquoted : \"x\\ty\\\"\nkey\\:value\nlast : end\\");
 	var f = new File(path + ".ini");
 	if (!f.open("r"))
 		throw new Error("Error " + f.error + " opening " + f.name);
@@ -37,7 +37,7 @@ try {
 	check("trailing backslash at end of file", f.iniGetValue("s", "last"), "end");
 	f.close();
 
-	write(path + ".can", "example.com\nexa\\");
+	write_text(path + ".can", "example.com\nexa\\");
 	check("findstr: entry before", system.findstr(path + ".can", "example.com"), true);
 	check("findstr: line ending in a backslash", system.findstr(path + ".can", "exa"), true);
 	check("findstr: no other match", system.findstr(path + ".can", "other.test"), false);

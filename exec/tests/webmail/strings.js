@@ -18,7 +18,7 @@ function has(key)
 	return Object.prototype.hasOwnProperty.call(strings, key) && typeof strings[key] === "string";
 }
 
-function read(path)
+function read_text(path)
 {
 	var f = new File(path);
 	Kit.assert(f.open("r"), "open " + path);
@@ -36,7 +36,7 @@ Kit.assert(sections.main && sections.errors, "locale sections read");
 
 // The API's method names ("settings.get" has the form of a key of the
 // settings section): read from api.js's method table, never taken for keys
-var api_text = read(WEBMAIL_DIR + "lib/api.js");
+var api_text = read_text(WEBMAIL_DIR + "lib/api.js");
 var method_names = {};
 var mre = /^\t\t"([a-z][a-z0-9_.]*)": \{ auth:/gm;
 var mm;
@@ -51,7 +51,7 @@ files.push(ROOT + "index.xjs");
 var used = 0;
 var missing = [];
 for (var i = 0; i < files.length; i++) {
-	var text = read(files[i]);
+	var text = read_text(files[i]);
 	var re = /(["'])([a-z0-9_]+)\.([a-z0-9_]+)\1/g;
 	var m;
 	while ((m = re.exec(text)) !== null) {
@@ -67,7 +67,7 @@ Kit.assert(used > 0, "no string keys found");
 Kit.eq(missing, [], "string keys missing from en_us.ini");
 
 // The API's error codes: its CODES list plus "internal"
-var api = read(WEBMAIL_DIR + "lib/api.js");
+var api = read_text(WEBMAIL_DIR + "lib/api.js");
 var cm = /var CODES = \[([^\]]*)\]/.exec(api);
 Kit.assert(cm !== null, "CODES list found in api.js");
 var codes = cm[1].match(/"[a-z]+"/g).map(function (q) {

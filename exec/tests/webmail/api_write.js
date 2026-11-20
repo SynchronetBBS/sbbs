@@ -56,7 +56,7 @@ function written(reply, what)
 	return r;
 }
 
-function write(ev, method, args, what)
+function write_call(ev, method, args, what)
 {
 	return written(Api.dispatch(ev, { calls: [[method, args, 1]], as: W.as_of(ev) }), what || method);
 }
@@ -155,7 +155,7 @@ try {
 		ev = make_env({ cookie: alice });
 		err(call(ev, capped[i], cargs(fifty_one)), "invalid", capped[i] + ": 51 ids");
 		Kit.eq(ev.made, 0, capped[i] + ": 51 ids: the mailbox is not opened");
-		r = write(make_env({ cookie: alice }), capped[i], cargs(fifty), capped[i] + ": 50 ids");
+		r = write_call(make_env({ cookie: alice }), capped[i], cargs(fifty), capped[i] + ": 50 ids");
 		Kit.eq(r.results.length, 50, capped[i] + ": 50 results");
 		Kit.eq(r.results[0], { id: many[0], error: "notfound" }, capped[i] + ": 50 ids, each notfound");
 	}
@@ -167,9 +167,9 @@ try {
 			"move to " + not_targets[i]);
 		Kit.eq(ev.made, 0, "move to " + not_targets[i] + ": the mailbox is not opened");
 	}
-	r = write(make_env({ cookie: alice }), "message.move", { ids: ["s999999"], folder: "inbox" }, "move to inbox");
+	r = write_call(make_env({ cookie: alice }), "message.move", { ids: ["s999999"], folder: "inbox" }, "move to inbox");
 	Kit.eq(r.results, [{ id: "s999999", error: "notfound" }], "inbox is a target");
-	r = write(make_env({ cookie: alice }), "message.move", { ids: ["s999999"], folder: "archive" }, "to archive");
+	r = write_call(make_env({ cookie: alice }), "message.move", { ids: ["s999999"], folder: "archive" }, "to archive");
 	Kit.eq(r.results, [{ id: "s999999", error: "notfound" }], "archive is a target");
 	err(call(make_env({ cookie: alice }), "message.move", { ids: ["s999999"], folder: "u:nonesuch" }), "notfound",
 		"a user folder id is a target (this one does not exist)");
@@ -186,7 +186,7 @@ try {
 	err(call(ev, "trash.empty", { x: 1 }), "invalid", "trash.empty takes no arguments");
 	Kit.eq(ev.made, 0, "invalid arguments: the mailbox is not opened");
 	// 200 ids are accepted: each one that does not exist is notfound
-	r = write(make_env({ cookie: alice }), "message.set", { ids: many.slice(0, 200), read: true }, "200 ids");
+	r = write_call(make_env({ cookie: alice }), "message.set", { ids: many.slice(0, 200), read: true }, "200 ids");
 	Kit.eq(r.results.length, 200, "200 results");
 	for (i = 0; i < 200; i++)
 		Kit.eq(r.results[i], { id: many[i], error: "notfound" }, "200 ids: #" + i);
@@ -230,39 +230,39 @@ try {
 
 	// --- message.set: read, starred, spam
 	ev = make_env({ cookie: alice });
-	r = write(ev, "message.set", { ids: [A1, A2], read: true }, "set read");
+	r = write_call(ev, "message.set", { ids: [A1, A2], read: true }, "set read");
 	Kit.eq(r.results, [{ id: A1, ok: true, new_id: A1 }, { id: A2, ok: true, new_id: A2 }], "set read results");
 	Kit.eq(shdr(A1).attr & D.MSG_READ, D.MSG_READ, "A1 read");
 	Kit.eq(ev.made, 1, "one mailbox per request");
-	r = write(make_env({ cookie: alice }), "message.set", { ids: [A1], read: false, starred: true }, "set star");
+	r = write_call(make_env({ cookie: alice }), "message.set", { ids: [A1], read: false, starred: true }, "set star");
 	Kit.eq([shdr(A1).attr & D.MSG_READ, shdr(A1).attr & D.MSG_VALIDATED], [0, D.MSG_VALIDATED], "A1 unread, starred");
 	// "Not spam": a Spam message goes back to the Inbox listing
 	ev = make_env({ cookie: alice });
 	Kit.eq(ids_of(ev, "spam"), [AS], "AS in Spam");
-	r = write(ev, "message.set", { ids: [AS], spam: false }, "not spam");
+	r = write_call(ev, "message.set", { ids: [AS], spam: false }, "not spam");
 	Kit.eq(r.results, [{ id: AS, ok: true, new_id: AS }], "not spam result");
 	Kit.eq(ids_of(ev, "spam"), [], "Spam empty");
 	Kit.eq(ids_of(ev, "inbox"), [A1, A2, A3, A4, AS].sort(), "AS in the Inbox");
-	write(ev, "message.set", { ids: [AS], spam: true }, "mark as spam");
+	write_call(ev, "message.set", { ids: [AS], spam: true }, "mark as spam");
 	Kit.eq(ids_of(ev, "spam"), [AS], "AS back in Spam");
 
 	// --- delete: one stale id and one valid id
 	ev = make_env({ cookie: alice });
-	r = write(ev, "message.delete", { ids: [A2] }, "delete A2");
+	r = write_call(ev, "message.delete", { ids: [A2] }, "delete A2");
 	var P2 = r.results[0].new_id;
 	Kit.assert(/^p[0-9]+$/.test(P2), "A2 now private: " + P2);
-	r = write(make_env({ cookie: alice }), "message.delete", { ids: [A2, A3] }, "delete stale + valid");
+	r = write_call(make_env({ cookie: alice }), "message.delete", { ids: [A2, A3] }, "delete stale + valid");
 	Kit.eq(r.results[0], { id: A2, error: "notfound" }, "the stale id: notfound");
 	Kit.eq(r.results[1].id, A3, "the valid id");
 	Kit.eq(r.results[1].ok, true, "the valid id: ok");
 	var P3 = r.results[1].new_id;
 	Kit.eq(ids_of(make_env({ cookie: alice }), "trash"), [P2, P3].sort(), "both in Trash");
 	// another user's id in a selection: forbidden for that one only
-	r = write(make_env({ cookie: alice }), "message.delete", { ids: [B1] }, "delete bob's");
+	r = write_call(make_env({ cookie: alice }), "message.delete", { ids: [B1] }, "delete bob's");
 	Kit.eq(r.results, [{ id: B1, error: "forbidden" }], "bob's message: forbidden");
 
 	// --- undelete: back to the Inbox
-	r = write(make_env({ cookie: alice }), "message.undelete", { ids: [P3] }, "undelete");
+	r = write_call(make_env({ cookie: alice }), "message.undelete", { ids: [P3] }, "undelete");
 	Kit.eq(r.results[0].ok, true, "undeleted");
 	var A3b = r.results[0].new_id;
 	Kit.assert(/^s[0-9]+$/.test(A3b), "back in the shared base: " + A3b);
@@ -272,7 +272,7 @@ try {
 	// rename, delete
 	ev = make_env({ cookie: alice });
 	var NAME = "Tax 100% \\ done";
-	r = write(ev, "folder.create", { name: NAME }, "folder.create");
+	r = write_call(ev, "folder.create", { name: NAME }, "folder.create");
 	Kit.eq(r.folder.name, NAME, "the folder's name");
 	var F = r.folder.id;
 	Kit.assert(/^u:/.test(F), "a user folder id: " + F);
@@ -298,21 +298,21 @@ try {
 	r = call(ev, "message.move", { ids: [A4], folder: "u:nonesuch" });
 	err(r, "notfound", "move to a folder that does not exist");
 	Kit.eq(r.reason, undefined, "no reason on other errors");
-	r = write(ev, "message.move", { ids: [A4], folder: F }, "move to the folder");
+	r = write_call(ev, "message.move", { ids: [A4], folder: F }, "move to the folder");
 	var P4 = r.results[0].new_id;
 	Kit.assert(/^p[0-9]+$/.test(P4), "A4 now private: " + P4);
 	Kit.eq(ids_of(ev, F), [P4], "A4 in the folder");
 	Kit.assert(ids_of(ev, "inbox").indexOf(A4) < 0, "A4 left the Inbox");
-	r = write(ev, "folder.rename", { id: F, name: "Renamed" }, "folder.rename");
+	r = write_call(ev, "folder.rename", { id: F, name: "Renamed" }, "folder.rename");
 	Kit.eq(r.folder.name, "Renamed", "renamed");
 	Kit.eq(r.results, [], "no per-message errors");
 	var F2 = r.folder.id;
 	Kit.eq(ids_of(ev, F2), [P4], "the message went with it");
-	write(ev, "folder.create", { name: "Other" }, "a second folder");
+	write_call(ev, "folder.create", { name: "Other" }, "a second folder");
 	r = call(ev, "folder.rename", { id: F2, name: "other" });
 	err(r, "invalid", "rename to a duplicate");
 	Kit.eq(r.reason, "duplicate", "rename: duplicate");
-	r = write(ev, "folder.delete", { id: F2 }, "folder.delete");
+	r = write_call(ev, "folder.delete", { id: F2 }, "folder.delete");
 	Kit.eq(r.results, [{ id: P4, ok: true, new_id: P4 }], "folder.delete: its message to Trash");
 	Kit.assert(ids_of(ev, "trash").indexOf(P4) >= 0, "P4 in Trash");
 	err(call(ev, "folder.delete", { id: F2 }), "notfound", "the folder is gone");
@@ -321,7 +321,7 @@ try {
 	ev = make_env({ cookie: alice });
 	var before = ids_of(ev, "trash");
 	Kit.assert(before.length >= 2, "something in Trash");
-	r = write(ev, "trash.empty", {}, "trash.empty");
+	r = write_call(ev, "trash.empty", {}, "trash.empty");
 	var emptied = [];
 	for (i = 0; i < r.results.length; i++) {
 		Kit.eq(r.results[i].ok, true, "emptied #" + i);
@@ -394,7 +394,7 @@ try {
 	ev = make_env({ cookie: alice, make_ctx: function () {
 		return fake;
 	} });
-	r = write(ev, "message.set", { ids: [A1, A2], read: true }, "fake set");
+	r = write_call(ev, "message.set", { ids: [A1, A2], read: true }, "fake set");
 	Kit.eq(r.results, [{ id: A1, error: "failed" }, { id: A2, ok: true, new_id: A2 }],
 		"unknown code made failed; only known fields kept");
 	err(call(ev, "message.delete", { ids: [A1] }), "conflict", "a thrown conflict");

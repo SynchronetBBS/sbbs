@@ -91,14 +91,25 @@ function scratch_ctrl(name)
 			node_ini = (is_absolute(node1) ? node1 : system.ctrl_dir + node1);
 			node_ini = backslash(node_ini) + "node.ini";
 			f.iniRemoveSection("node_dir");
-			f.iniSetValue("node_dir", "1", sc.node);
+			// relative to the ctrl directory: a node directory path is cut
+			// at 100 characters, which a deep temp directory exceeds
+			f.iniSetValue("node_dir", "1", "../node1/");
 			f.iniSetValue("dir", "data", sc.data);
 			f.iniSetValue("dir", "logs", sc.data);
 			f.iniSetValue("dir", "exec", system.exec_dir);
 			f.iniSetValue("dir", "mods", system.mods_dir);
 		});
-		if (!file_copy(node_ini, sc.node + "node.ini"))
-			throw new Error("Error copying " + node_ini);
+		// A tree without node directories (the CI test tree has only ctrl
+		// and exec): an empty node.ini, filled in below
+		if (file_exists(node_ini)) {
+			if (!file_copy(node_ini, sc.node + "node.ini"))
+				throw new Error("Error copying " + node_ini);
+		} else {
+			var nf = new File(sc.node + "node.ini");
+			if (!nf.open("w"))
+				throw new Error("Error " + nf.error + " creating " + nf.name);
+			nf.close();
+		}
 		ini_edit(sc.node + "node.ini", function (f) {
 			f.iniSetValue(null, "text_dir", system.text_dir);
 			f.iniSetValue(null, "temp_dir", sc.temp);
