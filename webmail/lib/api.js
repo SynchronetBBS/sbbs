@@ -331,7 +331,8 @@
 //                       is idempotent (the claim's record decides; a second
 //                       run finds the send done), so a retry or a stale tab
 //                       cannot deliver or charge twice.
-//   draft.save {id, rev, to, cc, bcc, subject, body, from_domain, priority}
+//   draft.save {id, rev, to, cc, bcc, subject, body, from_domain, from_local,
+//               priority}
 //                    -> { draft } (Drafts.save; conflict "stale" carries rev)
 //   draft.delete {id}  -> {}
 //   draft.attach {id, upload, name, type, offset, total, b64}
@@ -357,6 +358,12 @@
 //                       user may send from), from_address_local (the part
 //                       of the address the system assigns the user before
 //                       "@"; from_domain "" is the system's address),
+//                       from_local (the chosen name before "@"; "" is
+//                       from_address_local), from_addresses (the addresses
+//                       offered as From, the default first:
+//                       Address.addresses_for; from_local with from_domain
+//                       is one of them or another address the mail server
+//                       delivers to the user, Address.own_address),
 //                       signature, signature_source, signature_enabled
 //                       (MailSig.get, MailSig.enabled), forward: {allowed,
 //                       enabled, address, keeps_copy [, reason: off or
@@ -375,7 +382,7 @@
 //                       any user's netmail address from DNSBL refusal,
 //                       login.js can mail the password there, emailval.js
 //                       sends its validation code there.
-//   settings.set {display_name, from_domain, theme, images_always,
+//   settings.set {display_name, from_domain, from_local, theme, images_always,
 //                images_add, images_remove, forward_enabled,
 //                forward_address, signature}
 //                    -> what settings.get returns.  At least one;
@@ -488,7 +495,7 @@ var Api = (function () {
 		// Drafts
 		"stale", "offset", "busy", "incomplete", "sending", "stalled", "exists", "unreadable", "drafts", "sent",
 		"bytes", "total", "count", "beyond", "maybe_sent", "chunk", "upload", "mode", "to", "cc",
-		"bcc", "subject", "body", "from_domain", "priority", "rev",
+		"bcc", "subject", "body", "from_domain", "from_local", "priority", "rev",
 		"attachment", "fields", "send", "token", "source_id",
 		// Address (parse_list, resolve, from_for)
 		"syntax", "control", "utf8", "unbalanced", "group", "route", "kind",
@@ -540,6 +547,7 @@ var Api = (function () {
 		invalid_attachments: "Attachments cannot be sent to FidoNet or QWK addresses.",
 		invalid_addrs: "One of the addresses is not valid.",
 		invalid_from_domain: "You cannot send from that address.",
+		invalid_from_local: "You cannot send from that address.",
 		invalid_images: "That is not a valid e-mail address.",
 		invalid_signature: "The signature is too long or not valid.",
 		invalid_forward_address: "Mail can only be forwarded to an Internet e-mail address.",
@@ -1553,6 +1561,29 @@ var Api = (function () {
 		return sending_domains(rq.usernum);
 	}
 
+	// Every address the user may send from, the default first: ctx.addresses
+	// when the context has them (tests), else Address.addresses_for() over
+	// from_domains()
+	function from_addresses(rq)
+	{
+		var extra = rq.env.lib_ctx;
+		if (extra && extra.addresses instanceof Array)
+			return extra.addresses;
+		return lib("address").addresses_for(rq.usernum, { domains: from_domains(rq) });
+	}
+
+	// For Address.from_pick: may the user send from an address that is not
+	// in from_addresses() (a name alias.cfg points at them)
+	function own_check(rq)
+	{
+		return function (addr) {
+			var extra = rq.env.lib_ctx;
+			if (extra && typeof extra.own_address === "function")
+				return extra.own_address(addr) === true;
+			return lib("address").own_address(rq.usernum, addr, { domains: from_domains(rq) });
+		};
+	}
+
 	// ---- Request body sizes ----
 
 	// Every request may be BASE_BODY bytes; a request of exactly one
@@ -1938,11 +1969,13 @@ var Api = (function () {
 		}
 		if (s === null || typeof s !== "object" || s instanceof Array)
 			s = {};
-		var out = { display_name: "", from_domain: "", theme: "system", images_always: [] };
+		var out = { display_name: "", from_domain: "", from_local: "", theme: "system", images_always: [] };
 		if (typeof s.display_name === "string")
 			out.display_name = s.display_name;
 		if (typeof s.from_domain === "string")
 			out.from_domain = s.from_domain;
+		if (typeof s.from_local === "string")
+			out.from_local = s.from_local;
 		if (typeof s.theme === "string" && THEMES.indexOf(s.theme) >= 0)
 			out.theme = s.theme;
 		if (s.images_always instanceof Array) {
@@ -2041,11 +2074,18 @@ var Api = (function () {
 		var ud = rq.env.userdata(rq.usernum);
 		var s = settings_of(ud);
 		var domains = from_domains(rq);
-		var out = { display_name: s.display_name, from_domain: s.from_domain, theme: s.theme,
-			images_always: s.images_always, from_domains: domains, from_address_local: "" };
+		var addresses = from_addresses(rq);
+		var out = { display_name: s.display_name, from_domain: s.from_domain, from_local: s.from_local,
+			theme: s.theme, images_always: s.images_always, from_domains: domains,
+			from_addresses: addresses, from_address_local: "" };
 		// A stored domain the user may no longer use: the system address
 		if (out.from_domain !== "" && domains.indexOf(out.from_domain) < 0)
 			out.from_domain = "";
+		// A stored name that is no longer one of the user's addresses at
+		// that domain: the default name
+		if (out.from_local !== ""
+			&& lib("address").from_pick(out.from_local, out.from_domain, addresses, own_check(rq)) === null)
+			out.from_local = "";
 		var email = utf8_of(rq.user.email);
 		var at = email.lastIndexOf("@");
 		if (at > 0)
@@ -2173,6 +2213,16 @@ var Api = (function () {
 				throw invalid("from_domain");
 			change.from_domain = d;
 		}
+		if (args.from_local !== undefined) {
+			// with the domain of this call, else the stored one
+			var fd = change.from_domain !== undefined ? change.from_domain
+				: settings_of(rq.env.userdata(rq.usernum)).from_domain;
+			if (args.from_local !== ""
+				&& Address.from_pick(args.from_local, fd, from_addresses(rq), own_check(rq)) === null)
+				throw invalid("from_local");
+			change.from_local = args.from_local;
+		} else if (change.from_domain !== undefined)
+			change.from_local = "";	// another domain alone: its default name
 		if (args.theme !== undefined)
 			change.theme = args.theme;
 		var images = null;
@@ -2315,6 +2365,7 @@ var Api = (function () {
 			// (toolarge, reason "body"); the request size bounds it here
 			body: { type: "string", max: HOST_MAX_POST },
 			from_domain: { type: "string", max: 253 },
+			from_local: { type: "string", max: 64 },
 			priority: { type: "string", max: 4, test: function (v) {
 				return PRIORITIES.indexOf(v) >= 0;
 			} }
@@ -2366,6 +2417,7 @@ var Api = (function () {
 		"settings.set": { auth: true, ctx: false, write: true, args: {
 			display_name: { type: "string", max: 1024 },
 			from_domain: { type: "string", max: 253 },
+			from_local: { type: "string", max: 64 },
 			theme: { type: "string", max: 6, test: function (v) {
 				return THEMES.indexOf(v) >= 0;
 			} },

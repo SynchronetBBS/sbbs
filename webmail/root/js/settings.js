@@ -19,8 +19,8 @@
 // beside its field.  The choices that are one click (From address,
 // theme) are saved when made; the text fields have a Save button.
 //   Your name         display_name: used on Internet mail only
-//   From address      from_domain, as the full addresses
-//                     (from_address_local@domain); hidden with only one
+//   From address      from_local and from_domain, chosen as one of the
+//                     full addresses (from_addresses); hidden with only one
 //   Signature         signature: text, "" (no signature on mail) or null
 //                     ("Use my BBS signature": the general signature
 //                     again); disabled when the system adds none
@@ -41,7 +41,7 @@ import { t } from "./i18n.js";
 import { rpc } from "./rpc.js";
 import { busy } from "./notice.js";
 import { prefs } from "./prefs.js";
-import { size } from "./format.js";
+import { size, fromChoices, fromIndex } from "./format.js";
 import { poweredBy } from "./powered.js";
 
 let seq = 0;
@@ -154,22 +154,19 @@ export function createSettings(o) {
 	}
 
 	function fromSection(r) {
-		const domains = Array.isArray(r.from_domains) ? r.from_domains.filter((d) => typeof d === "string") : [];
-		if (domains.length < 2)
+		const choices = fromChoices(r);
+		if (choices.length < 2)
 			return null;
 		const sec = section("from", t("settings.label_default_from"));
 		const id = uid + "-from";
-		const local = typeof r.from_address_local === "string" ? r.from_address_local : "";
 		const sel = h("select", { id, "aria-describedby": id + "-hint " + sec.statusId });
-		domains.forEach((d, i) => {
-			sel.append(h("option", { value: i === 0 ? "" : d, text: local !== "" ? local + "@" + d : d }));
+		choices.forEach((c, i) => {
+			sel.append(h("option", { value: String(i), text: c.addr }));
 		});
-		const show = (from) => {
-			const want = String(from || "").toLowerCase();
-			const hit = domains.find((d, i) => i > 0 && d.toLowerCase() === want);
-			sel.value = hit || "";
+		const show = (r1) => {
+			sel.selectedIndex = fromIndex(choices, r1.from_local, r1.from_domain);
 		};
-		show(r.from_domain);
+		show(r);
 		// Saved when a choice is made: with the pointer at once; with the
 		// keys (arrows step through a closed select, each a "change") on
 		// Enter or when focus leaves.  A reply to an earlier choice than
@@ -186,11 +183,12 @@ export function createSettings(o) {
 			const my = ++seqF;
 			last = v;
 			saving(sec);
-			save({ from_domain: v }).then((r2) => {
+			const c = choices[sel.selectedIndex] || choices[0];
+			save({ from_domain: c.domain, from_local: c.local }).then((r2) => {
 				if (my !== seqF)
 					return;
 				if (sel.value === v)
-					show(r2.from_domain);
+					show(r2);
 				stored = last = sel.value === v ? sel.value : v;
 				saved(sec, sel);
 			}, (e) => {

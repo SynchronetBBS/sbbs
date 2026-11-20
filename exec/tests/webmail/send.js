@@ -128,6 +128,18 @@ try {
 			Kit.assert(JSON.stringify(c2[i].h).indexOf("zed@") < 0, "BCC not mentioned");
 	}
 
+	// --- A chosen From name: the address, when it is one of the user's
+	var CN = context();
+	CN.addresses = ["alice@vert.example", "alice@family.example", "ally@family.example"];
+	var idn = new_draft(CN, { to: "ext@example.org", body: "x", from_domain: "family.example", from_local: "ally" });
+	Send.send(CN, idn, key());
+	var cn = shared();
+	Kit.eq(cn[cn.length - 1].h.from_net_addr, "ally@family.example", "the chosen From name and domain");
+	// ... and not once it no longer is (alias.cfg changed since the save)
+	var idn2 = new_draft(CN, { to: "ext@example.org", body: "x", from_domain: "family.example", from_local: "ally" });
+	CN.addresses = ["alice@vert.example", "alice@family.example"];
+	nothing_saved(CN, function () { Send.send(CN, idn2, key()); }, "forbidden", "domain");
+
 	// --- From domain outside the allowed list: forbidden, nothing saved
 	var C = context({ domains: DOMAINS.concat(["evil.example"]) });
 	var id3 = new_draft(C, { to: "ext@example.org", body: "x", from_domain: "evil.example" });

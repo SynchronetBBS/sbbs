@@ -4,9 +4,10 @@
 // var Address = load("address.js");
 //
 // A pure library: no web or session globals, nothing written.  Only
-// system_resolvers(), domains_for() and identity() without its last
-// argument read the system's objects (system, msg_area, User), and each
-// takes them as an argument so a test can pass fakes.
+// system_resolvers(), domains_for(), addresses_for() and identity()
+// without its last argument read the system's objects (system, msg_area,
+// User) and ctrl/alias.cfg, and each takes them as an argument so a test
+// can pass fakes.
 //
 // String contract: text is UTF-8 BYTE strings (char codes 0-255), the form
 // the web server and the mailbox library use.  Nothing here uses \s,
@@ -57,7 +58,12 @@
 //   Address.format_list(entries)        mailboxes joined with ", "
 //   Address.domains(list, can_send_fn)  the From domains a user may use
 //   Address.domains_for(usernum [, env])  the same from the system objects
+//   Address.addresses_for(usernum [, env])  the addresses offered as From,
+//                                         the default first
+//   Address.own_address(usernum, address [, env])  may the user send from
+//                                         this address
 //   Address.from_for(local_part, domain, allowed)  the From address
+//   Address.alias_table(text)             the entries of an alias.cfg
 //   Address.reply_domain(to_domain, default_domain, allowed)
 //   Address.is_me(addr, alias, allowed)
 //   Address.identity(user, kind, settings [, sys])  {from, from_ext}
@@ -687,6 +693,20 @@ var Address = (function () {
 	// own.is_own_domain(host): system.findstr(system.inet_domain_list,
 	// host) (the system's Internet address and its additional domains).
 	// own.username(usernum): system.username(), "" for no usable user.
+	// own.realnames(): the system takes mail addressed to a real name.
+	// own.deliver_user(address): the user the mail server delivers mail
+	// for this address (at one of the system's domains) to, following
+	// alias.cfg as the server does (mailsrvr.cpp RCPT TO): the whole
+	// address is looked up in alias.cfg, then the name before the '@',
+	// and what is left is a user number (only when an alias gave it), an
+	// alias, the sysop's name or, with MM_REALNAME, a real name.  0 when
+	// that is not one user for certain: an alias.cfg entry that forwards
+	// to an address at another system or to a sub-board, QWK routing
+	// ('!'), a sysop alias, or a name no user has.  A tag (name#tag) goes
+	// to the user of the name unless that user blocked the tag.  Mail
+	// processors, which can take a message before any of this, are not
+	// seen.  alias.cfg is read once per call of system_resolvers(), from
+	// env.alias_text when a test gives it, else from system.ctrl_dir.
 	A.system_resolvers = function (env)
 	{
 		env = env || {};
@@ -770,6 +790,103 @@ var Address = (function () {
 			return 0;
 		}
 
+		var table = null;
+		function aliases()
+		{
+			if (table !== null)
+				return table;
+			var text = "";
+			if (typeof env.alias_text === "string")
+				text = env.alias_text;
+			else if (typeof sys.ctrl_dir === "string" && sys.ctrl_dir !== "") {
+				try {
+					var F = env.File || File;
+					var f = new F(sys.ctrl_dir + "alias.cfg");
+					if (f.open("rb")) {
+						text = str(f.read());
+						f.close();
+					}
+				} catch (e) {
+					text = "";
+				}
+			}
+			table = A.alias_table(text);
+			return table;
+		}
+
+		var named = {};		// name, lowercased -> user number (0: none)
+		// tagged: the name came with a "#tag", which the server takes off
+		// only where it looks for an alias or a real name, so the sysop's
+		// name does not match
+		function name_user(name, tagged)
+		{
+			var key = (tagged ? "t:" : "n:") + lower(name);
+			if (named.hasOwnProperty(key))
+				return named[key];
+			var n = sys.matchuser(name, false);
+			if (!(n > 0)) {
+				var spaced = name.replace(/\./g, " ");
+				var op = lower(str(sys.operator));
+				if (!tagged && op !== "" && (lower(name) === op || lower(spaced) === op))
+					n = 1;
+				else if (realnames()) {
+					n = sys.matchuserdata(A.U_NAME, name, false);
+					if (!(n > 0))
+						n = sys.matchuserdata(A.U_NAME, spaced, false);
+				}
+			}
+			named[key] = checked(n);
+			return named[key];
+		}
+
+		function deliver_user(address)
+		{
+			var addr = str(address);
+			var at = addr.lastIndexOf("@");
+			if (at <= 0)
+				return 0;
+			if (!/^[A-Za-z0-9]/.test(addr) || /[!"]/.test(addr.substr(0, at)))
+				return 0;
+			var t = aliases();
+			var p = table_alias(t, addr);
+			var aliased = p !== addr;
+			at = p.lastIndexOf("@");
+			if (at >= 0) {
+				if (!sys.findstr(sys.inet_domain_list, p.substr(at + 1)))
+					return 0;
+				p = p.substr(0, at);
+			}
+			p = p.replace(/^[^A-Za-z0-9]+/, "");
+			if (p.indexOf('"') >= 0)
+				p = p.substr(0, p.indexOf('"'));
+			if (p === "" || p.indexOf("!") >= 0)
+				return 0;
+			var n = table_alias(t, p);
+			if (n !== p) {
+				aliased = true;
+				p = n;
+			}
+			if (/[@:!]/.test(p))
+				return 0;
+			if (aliased && /^[0-9]/.test(p))
+				return checked(parseInt(p, 10));
+			// name#tag: the tag is cut off where the server looks for the
+			// user, who can have blocked it (data/user/NNNN.smtpblock)
+			var tag = null;
+			var hash = p.indexOf("#");
+			if (hash >= 0) {
+				tag = p.substr(hash + 1);
+				p = p.substr(0, hash);
+			}
+			if (p === "" || is_sysop_alias(p))
+				return 0;
+			var num = name_user(p, tag !== null);
+			if (num > 0 && tag !== null && tag !== "" && typeof sys.data_dir === "string" && sys.data_dir !== ""
+				&& sys.findstr(sys.data_dir + "user/" + format("%04d", num) + ".smtpblock", tag))
+				return 0;
+			return num;
+		}
+
 		return {
 			matchuser: matchuser,
 			netaddr_type: netaddr_type,
@@ -778,10 +895,65 @@ var Address = (function () {
 					return !!sys.findstr(sys.inet_domain_list, str(host));
 				},
 				local_user: local_user,
-				username: username
+				username: username,
+				realnames: realnames,
+				deliver_user: deliver_user,
+				aliases: aliases
 			}
 		};
 	};
+
+	// alias_table(text): the entries of an alias.cfg, [{name, value}] in
+	// file order, as userdat.c alias() reads the file: 127 bytes at a
+	// time (a longer line is read as several), leading white space
+	// skipped, a line starting with ';' or without white space after its
+	// first word ignored, the value without the white space around it
+	// (a line with no value ignored).
+	A.alias_table = function (text)
+	{
+		var out = [];
+		text = str(text);
+		var pos = 0;
+		while (pos < text.length) {
+			var end = text.indexOf("\n", pos);
+			end = end < 0 ? text.length : end + 1;
+			if (end - pos > 127)
+				end = pos + 127;
+			var line = text.substring(pos, end);
+			pos = end;
+			var m = /^[ \t\n\v\f\r]*([^ \t\n\v\f\r]+)[ \t\n\v\f\r]([\x00-\xff]*)$/.exec(line);
+			if (!m || m[1].charAt(0) === ";")
+				continue;
+			var value = m[2].replace(/^[ \t\n\v\f\r]+|[ \t\n\v\f\r]+$/g, "");
+			if (value !== "")
+				out.push({ name: m[1], value: value });
+		}
+		return out;
+	};
+
+	// What userdat.c alias() returns for name: the value of the first
+	// entry whose name is name (ASCII case ignored), or whose name starts
+	// with '*' and whose rest is the end of name; a value starting with
+	// '*' then keeps the beginning of name.  name itself when no entry
+	// matches.
+	function table_alias(table, name)
+	{
+		for (var i = 0; i < table.length; i++) {
+			var e = table[i];
+			if (e.name.charAt(0) === "*") {
+				var tail = e.name.substr(1);
+				if (name.length < tail.length
+					|| lower(name.substr(name.length - tail.length)) !== lower(tail))
+					continue;
+				if (e.value.charAt(0) === "*")
+					return name.substr(0, name.length - tail.length) + e.value.substr(1);
+				return e.value;
+			}
+			if (lower(e.name) === lower(name))
+				return e.value;
+		}
+		return name;
+	}
 
 	// ---------------------------------------------------------------
 	// Header lines
@@ -896,6 +1068,132 @@ var Address = (function () {
 		} catch (e) {
 			return [];
 		}
+	};
+
+	// addresses_for(usernum [, env]): the addresses offered to the user as
+	// From, lowercase domains, the default first:
+	//   1. the address the system assigns (the part before '@' of
+	//      user.email) at each domain of domains_for();
+	//   2. the user's own Internet address (user.netmail), when it is at
+	//      one of those domains;
+	//   3. the real name with '.' for each space, at each of those
+	//      domains, when the system takes mail for real names.
+	// 2 and 3 are listed only when the mail server would deliver mail for
+	// that address to this user (own.deliver_user of system_resolvers), so
+	// a reply to it comes back to the sender: a user can type any address
+	// into user.netmail.  The names of alias.cfg are not listed (a sysop
+	// can have dozens); own_address() accepts them, so a reply can be
+	// from the one its message was sent to.  env = { system, msg_area,
+	// User, File, alias_text, domains } for tests (domains: the list to
+	// use in place of domains_for()).  [] on any failure; never throws.
+	A.addresses_for = function (usernum, env)
+	{
+		try {
+			env = env || {};
+			var domains = env.domains instanceof Array ? env.domains : A.domains_for(usernum, env);
+			if (domains.length === 0)
+				return [];
+			var U = env.User || User;
+			var rec = new U(usernum);
+			var email = str(rec.email);
+			var out = [];
+			var seen = {};
+			var add = function (local, domain) {
+				var key = "a:" + lower(local) + "@" + lower(domain);
+				if (seen.hasOwnProperty(key))
+					return;
+				seen[key] = true;
+				out.push(local + "@" + lower(domain));
+			};
+			var at = email.lastIndexOf("@");
+			var i;
+			if (at > 0)
+				for (i = 0; i < domains.length; i++)
+					add(email.substr(0, at), domains[i]);
+			var own = A.system_resolvers(env).own;
+			var mine = function (local, domain) {
+				if (sendable_local(local) && own.deliver_user(local + "@" + domain) === usernum)
+					add(local, domain);
+			};
+			var net = str(rec.netmail);
+			at = net.lastIndexOf("@");
+			if (at > 0 && in_allowed(lower(net.substr(at + 1)), domains))
+				mine(net.substr(0, at), lower(net.substr(at + 1)));
+			if (own.realnames()) {
+				var real = squeeze(str(rec.name)).replace(/ /g, ".");
+				for (i = 0; i < domains.length; i++)
+					mine(real, domains[i]);
+			}
+			return out;
+		} catch (e) {
+			return [];
+		}
+	};
+
+	// The part before '@' of an address a user can send from: plain atext
+	// that the mail server reads as a name (it skips a leading character
+	// that is no letter or digit, and takes '!' for routing); with a
+	// "#tag" only where tags is true
+	function sendable_local(local, tags)
+	{
+		return local !== "" && local.length <= A.MAX_LOCAL && LOCAL_RE.test(local)
+			&& /^[A-Za-z0-9]/.test(local) && local.indexOf("!") < 0
+			&& (tags === true || local.indexOf("#") < 0);
+	}
+
+	// own_address(usernum, address [, env]): address with its domain
+	// lowercased when the user may send from it: its domain is one of
+	// domains_for() and the mail server delivers mail for it to this user
+	// (the alias, a real name, a name alias.cfg points at the user, or one
+	// of the first two with a "#tag").
+	// null otherwise; never throws.  env as for addresses_for(), and
+	// env.own (system_resolvers().own) to reuse one over several calls.
+	A.own_address = function (usernum, address, env)
+	{
+		try {
+			env = env || {};
+			var addr = str(address);
+			var at = addr.lastIndexOf("@");
+			if (at <= 0 || typeof usernum !== "number")
+				return null;
+			var local = addr.substr(0, at);
+			var domain = lower(addr.substr(at + 1));
+			var domains = env.domains instanceof Array ? env.domains : A.domains_for(usernum, env);
+			if (!sendable_local(local, true) || !in_allowed(domain, domains))
+				return null;
+			var own = env.own || A.system_resolvers(env).own;
+			return own.deliver_user(local + "@" + domain) === usernum ? local + "@" + domain : null;
+		} catch (e) {
+			return null;
+		}
+	};
+
+	// from_pick(local, domain, addresses [, check]): the address for a
+	// stored choice: local "" is the default name and domain "" the
+	// default domain (those of addresses[0], from addresses_for).  ASCII
+	// case ignored.  An entry of addresses, else the address itself when
+	// check(address) says the user may send from it (own_address).  null
+	// when neither, or the list is empty.
+	A.from_pick = function (local, domain, addresses, check)
+	{
+		if (!(addresses instanceof Array) || addresses.length === 0)
+			return null;
+		var first = str(addresses[0]);
+		var fat = first.lastIndexOf("@");
+		var addr = (str(local) === "" ? first.substr(0, fat) : str(local)) + "@"
+			+ lower(str(domain) === "" ? first.substr(fat + 1) : str(domain));
+		var want = lower(addr);
+		for (var i = 0; i < addresses.length; i++)
+			if (lower(str(addresses[i])) === want)
+				return str(addresses[i]);
+		if (typeof check === "function") {
+			var ok = check(addr);
+			if (typeof ok === "string")
+				return ok;
+			if (ok === true)
+				return addr;
+		}
+		return null;
 	};
 
 	function in_allowed(domain, allowed)

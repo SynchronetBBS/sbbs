@@ -281,6 +281,7 @@ try {
 	Kit.eq(g.html, null, "no html");
 	Kit.eq(g.headers.net_type, "local", "local net_type");
 	Kit.eq(g.headers.to_domain, "", "local to_domain");
+	Kit.eq(g.headers.to_addr, "", "local to_addr");
 
 	// a non-MIME message flagged UTF-8
 	var n_u8 = save(shared, to_alice({ ftn_charset: "UTF-8 4" }), "caf\xc3\xa9 \x01hbold\r\n");
@@ -305,6 +306,7 @@ try {
 	Kit.eq(g.headers.reply_id, "<orig@test>", "reply_id");
 	Kit.eq(g.headers.net_type, "internet", "internet net_type");
 	Kit.eq(g.headers.to_domain, "bbs.example", "to_domain");
+	Kit.eq(g.headers.to_addr, "alice@bbs.example", "to_addr: the address it was delivered to");
 	Kit.eq(g.comment, "Forwarded by Carol", "comment");
 	Kit.eq(g.text.charset, "windows-1252", "internet non-MIME charset");
 	Kit.eq(g.headers.to_list, [{ name: "Alice", addr: "alice@bbs.example" }, { name: "Carol", addr: "c@x.example" }],

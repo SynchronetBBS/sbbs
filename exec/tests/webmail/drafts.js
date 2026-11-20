@@ -799,6 +799,53 @@ try {
 		"reply to a crafted Reply-To: its one real address");
 	// a name that only looks like an encoded word stays literal (quoted)
 	Kit.eq(AddrLib.format("=?UTF-8?B?QWRtaW4=?=", "x@y.org"), '"=?UTF-8?B?QWRtaW4=?=" <x@y.org>', "literal stays literal");
+	// mail sent to another of the user's own addresses: the reply is from
+	// it, and reply all leaves it out
+	A.addresses = ["alice@vert.example", "alice@family.example", "Alice.Smith@vert.example",
+		"ally@family.example"];
+	Kit.eq(rp.from_local, "", "sent to the default name: from_local empty");
+	var n_ally = W.save(to_alice({ from: "Bob Jones", from_net_type: D.NET_INTERNET, from_net_addr: "bob@x.org",
+		forward_path: "<Ally@Family.Example>", to_list: "ally@family.example, carol@y.org" }), "x\r\n");
+	rp = Drafts.create(A, { mode: "reply", source_id: "s" + n_ally });
+	Kit.eq([rp.from_local, rp.from_domain], ["Ally", "family.example"], "reply from the address it was sent to");
+	ra = Drafts.create(A, { mode: "replyall", source_id: "s" + n_ally });
+	Kit.eq([ra.to, ra.cc], ["Bob Jones <bob@x.org>", "carol@y.org"], "reply all without the user's other address");
+	var n_real = W.save(to_alice({ from: "Bob Jones", from_net_type: D.NET_INTERNET, from_net_addr: "bob@x.org",
+		forward_path: "<alice.smith@vert.example>" }), "x\r\n");
+	rp = Drafts.create(A, { mode: "reply", source_id: "s" + n_real });
+	Kit.eq([rp.from_local, rp.from_domain], ["alice.smith", ""], "a name at the default domain");
+	var n_else = W.save(to_alice({ from: "Bob Jones", from_net_type: D.NET_INTERNET, from_net_addr: "bob@x.org",
+		forward_path: "<list@family.example>" }), "x\r\n");
+	rp = Drafts.create(A, { mode: "reply", source_id: "s" + n_else });
+	Kit.eq([rp.from_local, rp.from_domain], ["", "family.example"], "not the user's address: only its domain");
+	// ... or to one the list does not offer but the server delivers to them
+	A.own_address = function (a) {
+		return a.toLowerCase() === "alice#shop@family.example";
+	};
+	var n_tag = W.save(to_alice({ from: "Shop", from_net_type: D.NET_INTERNET, from_net_addr: "shop@x.org",
+		forward_path: "<alice#shop@family.example>", to_list: "alice#shop@family.example, carol@y.org" }), "x\r\n");
+	var rt = Drafts.create(A, { mode: "replyall", source_id: "s" + n_tag });
+	Kit.eq([rt.from_local, rt.from_domain, rt.cc], ["alice#shop", "family.example", "carol@y.org"],
+		"reply from a tagged address of the user's, which reply all leaves out");
+	rt = Drafts.save(A, rt.id, { rev: rt.rev, body: "kept" });
+	Kit.eq(rt.from_local, "alice#shop", "kept by a save of something else");
+	Kit.throws(function () {
+		Drafts.save(A, rt.id, { rev: rt.rev, from_local: "alice#other" });
+	}, "invalid");
+	delete A.own_address;
+	// saving a name: with the draft's domain it must be one of the addresses
+	var sv = Drafts.save(A, rp.id, { rev: rp.rev, from_local: "ally" });
+	Kit.eq([sv.from_local, sv.from_domain], ["ally", "family.example"], "a name saved");
+	// ally is not at the default domain; mallory is not the user's name
+	Kit.throws(function () {
+		Drafts.save(A, sv.id, { rev: sv.rev, from_domain: "" });
+	}, "invalid");
+	Kit.throws(function () {
+		Drafts.save(A, sv.id, { rev: sv.rev, from_local: "mallory" });
+	}, "invalid");
+	sv = Drafts.save(A, sv.id, { rev: sv.rev, from_local: "", from_domain: "" });
+	Kit.eq([sv.from_local, sv.from_domain], ["", ""], "back to the default");
+	delete A.addresses;
 	// reply-to wins; mail sent to the default domain gives from_domain ""
 	var n_rt = W.save(to_alice({ from: "List", from_net_type: D.NET_INTERNET, from_net_addr: "list@l.org",
 		replyto_list: "list-reply@l.org", forward_path: "<alice@vert.example>" }), "x\r\n");

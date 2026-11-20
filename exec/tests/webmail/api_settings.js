@@ -19,6 +19,7 @@ load(DEFS, Kit.exec_root() + "load/sbbsdefs.js");
 Api.log = function () {};
 
 var DOMAINS = ["vert.example", "family.example"];
+var ADDRESSES = ["alice@vert.example", "alice@family.example", "ally@family.example"];
 var USERS = W.USERS;
 USERS[ALICE].email = "alice@vert.example";
 USERS[ALICE].netmail = "";
@@ -51,7 +52,7 @@ function env(cookie, o)
 	var ev = W.make_env({ cookie: cookie });
 	ev.data_dir = W.S.data_dir;
 	ev.sys = SYS;
-	ev.lib_ctx = { domains: DOMAINS };
+	ev.lib_ctx = { domains: DOMAINS, addresses: ADDRESSES };
 	return ev;
 }
 
@@ -155,6 +156,19 @@ try {
 	g = set(alice, { from_domain: "" });
 	Kit.eq(g.from_domain, "", "back to the system address");
 	set(alice, { from_domain: "family.example" });
+
+	// --- From name: with the domain, one of the user's addresses
+	Kit.eq(g.from_addresses, ADDRESSES, "from_addresses: Address.addresses_for (ctx.addresses here)");
+	refused(alice, { from_local: "mallory" }, "invalid", "from_local", "not one of the user's names");
+	g = set(alice, { from_local: "ally" });
+	Kit.eq([g.from_local, g.from_domain], ["ally", "family.example"], "a name at the stored domain");
+	g = set(alice, { from_domain: "" });
+	Kit.eq([g.from_local, g.from_domain], ["", ""], "another domain alone: its default name");
+	refused(alice, { from_local: "ally" }, "invalid", "from_local", "ally is not at the default domain");
+	g = set(alice, { from_domain: "family.example", from_local: "ally" });
+	Kit.eq([g.from_local, g.from_domain], ["ally", "family.example"], "both at once");
+	g = set(alice, { from_local: "" });
+	Kit.eq([g.from_local, g.from_domain], ["", "family.example"], "the default name, the domain kept");
 
 	// --- theme: system, light or dark
 	err(call(env(alice), "settings.set", { theme: "auto" }), "invalid", "theme auto");

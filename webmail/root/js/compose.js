@@ -47,7 +47,7 @@
 // the list; a comma, semicolon, Enter or leaving the field makes the text
 // typed an entry; Backspace in an empty input takes the last entry back
 // into the input.  The From address is chosen from settings.get's
-// from_domains (hidden with only one); importance (Normal, High, Low) is
+// from_addresses (hidden with only one); importance (Normal, High, Low) is
 // in the options menu; the body is a plain-text field, with the
 // signature (settings.get, when signature_enabled) put in once when a
 // draft is made.
@@ -83,7 +83,7 @@ import { t } from "./i18n.js";
 import { rpc } from "./rpc.js";
 import { notice, dismissNotice } from "./notice.js";
 import { confirmDialog, openDialog, openMenu } from "./dialog.js";
-import { size, fullDate, senderText } from "./format.js";
+import { size, fullDate, senderText, fromChoices, fromIndex, fromChoicesWith } from "./format.js";
 import { decode } from "./body.js";
 import { avatarBadge } from "./avatar.js";
 import { prefs } from "./prefs.js";
@@ -440,7 +440,8 @@ export function createCompose(o) {
 
 	function blank(mode) {
 		return { id: null, rev: 0, mode, sourceId: null, entries: { to: [], cc: [], bcc: [] },
-			subject: "", body: "", from_domain: "", priority: "", atts: [], saved: null, maybeSent: false,
+			subject: "", body: "", from_domain: "", from_local: "", priority: "", atts: [], saved: null,
+			maybeSent: false,
 			chain: Promise.resolve(), created: null, stale: false, uploading: null, closed: false,
 			key: newKey(), usage: null, added: 0, fresh: false, touched: false };
 	}
@@ -451,6 +452,7 @@ export function createCompose(o) {
 		s.subject = typeof d.subject === "string" ? d.subject : "";
 		s.body = typeof d.body === "string" ? d.body : "";
 		s.from_domain = typeof d.from_domain === "string" ? d.from_domain : "";
+		s.from_local = typeof d.from_local === "string" ? d.from_local : "";
 		s.priority = PRIORITIES.includes(d.priority) ? d.priority : "";
 		if (typeof d.rev === "number")
 			s.rev = d.rev;
@@ -501,7 +503,7 @@ export function createCompose(o) {
 			s.body = v.body.value;
 		}
 		return { to: fieldText(s, "to"), cc: fieldText(s, "cc"), bcc: fieldText(s, "bcc"), subject: s.subject,
-			body: s.body, from_domain: s.from_domain, priority: s.priority };
+			body: s.body, from_domain: s.from_domain, from_local: s.from_local, priority: s.priority };
 	}
 
 	function hasContent(s) {
@@ -569,8 +571,11 @@ export function createCompose(o) {
 				if (s.entries[f].length === 0 && typed === "" && typeof d[f] === "string" && d[f] !== "")
 					s.entries[f] = splitEntries(d[f]);
 			}
-			if (s.mode !== "new" && typeof d.from_domain === "string")
+			if (s.mode !== "new" && typeof d.from_domain === "string") {
+				// a reply is from the address the message was sent to
 				s.from_domain = d.from_domain;
+				s.from_local = typeof d.from_local === "string" ? d.from_local : "";
+			}
 			attsFromDraft(s, d);
 			if (typeof r.dropped_recipients === "number" && r.dropped_recipients > 0 && s === st)
 				banner(t("compose.label_dropped_recipients", { count: r.dropped_recipients }), "info");
@@ -676,7 +681,7 @@ export function createCompose(o) {
 		} catch (err) {
 			d = null;
 		}
-		if (d && FIELDS.concat(["subject", "body", "from_domain", "priority"]).every((k) => d[k] === f[k])) {
+		if (d && FIELDS.concat(["subject", "body", "from_domain", "from_local", "priority"]).every((k) => d[k] === f[k])) {
 			s.rev = d.rev;
 			s.saved = snap;
 			if (s === st)
@@ -706,7 +711,7 @@ export function createCompose(o) {
 				attsFromDraft(s, d);
 				s.stale = false;
 				s.saved = JSON.stringify({ to: d.to, cc: d.cc, bcc: d.bcc, subject: d.subject, body: d.body,
-					from_domain: d.from_domain, priority: d.priority });
+					from_domain: d.from_domain, from_local: d.from_local, priority: d.priority });
 				v.subject.value = s.subject;
 				v.body.value = s.body;
 				banner(null);
@@ -820,7 +825,7 @@ export function createCompose(o) {
 			const d = r.draft || {};
 			s.gone = null;
 			const f = fields(s);
-			if (FIELDS.concat(["subject", "body", "from_domain", "priority"]).every((k) => d[k] === f[k])) {
+			if (FIELDS.concat(["subject", "body", "from_domain", "from_local", "priority"]).every((k) => d[k] === f[k])) {
 				s.rev = d.rev;
 				s.saved = JSON.stringify(f);
 			} else {
@@ -955,7 +960,11 @@ export function createCompose(o) {
 		const bannerEl = h("div", { class: "cbanner", hidden: true });
 
 		const fromSel = h("select", { id: "wm-c-from", onchange: () => {
-			st.from_domain = fromSel.value;
+			const c = fromList[fromSel.selectedIndex];
+			if (!c)
+				return;
+			st.from_domain = c.domain;
+			st.from_local = c.local;
 			changed();
 		} });
 		const fromRow = h("div", { class: "cf", hidden: true },
@@ -1299,23 +1308,23 @@ export function createCompose(o) {
 
 	// ---- From and options ----
 
+	let fromList = [];	// the choices in the From menu, in its order
+
 	function renderFrom() {
 		const s = st;
-		const domains = settings && Array.isArray(settings.from_domains) ? settings.from_domains.filter((d) => typeof d === "string") : [];
+		// the addresses offered, and the draft's own when it is another
+		// (a reply from the address its message was sent to)
+		const choices = fromChoicesWith(fromChoices(settings), s.from_local, s.from_domain);
+		fromList = choices;
 		clear(v.fromSel);
-		v.fromRow.hidden = domains.length < 2;
-		if (domains.length < 2)
+		v.fromRow.hidden = choices.length < 2;
+		if (choices.length < 2)
 			return;
-		const local = settings.from_address_local || "";
 		const name = settings.display_name || (o.user && (o.user.name || o.user.alias)) || "";
-		domains.forEach((d, i) => {
-			const addr = local !== "" ? local + "@" + d : d;
-			const opt = h("option", { value: i === 0 ? "" : d, text: name ? name + " <" + addr + ">" : addr });
-			v.fromSel.append(opt);
+		choices.forEach((c, i) => {
+			v.fromSel.append(h("option", { value: String(i), text: name ? name + " <" + c.addr + ">" : c.addr }));
 		});
-		const want = s.from_domain.toLowerCase();
-		v.fromSel.value = domains.slice(1).some((d) => d.toLowerCase() === want)
-			? domains.find((d, i) => i > 0 && d.toLowerCase() === want) : "";
+		v.fromSel.selectedIndex = fromIndex(choices, s.from_local, s.from_domain);
 	}
 
 	function optionsMenu(anchor) {
@@ -1706,8 +1715,10 @@ export function createCompose(o) {
 					if (Array.isArray(opts.to))
 						s.entries.to = opts.to.filter((x) => typeof x === "string" && x.trim() !== "");
 					s.body = signatureFor("new");
-					if (settings && typeof settings.from_domain === "string")
+					if (settings && typeof settings.from_domain === "string") {
 						s.from_domain = settings.from_domain;
+						s.from_local = typeof settings.from_local === "string" ? settings.from_local : "";
+					}
 				} else {
 					s.subject = prefixed(msg.subject || item.subject, mode);
 					const quote = mode === "forward" ? forwardBody(item, msg) : replyBody(item, msg);
@@ -1766,7 +1777,7 @@ export function createCompose(o) {
 
 	function snapshotOf(d) {
 		return JSON.stringify({ to: d.to, cc: d.cc, bcc: d.bcc, subject: d.subject, body: d.body,
-			from_domain: d.from_domain, priority: d.priority });
+			from_domain: d.from_domain, from_local: d.from_local, priority: d.priority });
 	}
 
 	function focusFirst() {
@@ -2428,6 +2439,7 @@ export function createCompose(o) {
 		s.subject = typeof f.subject === "string" ? f.subject : "";
 		s.body = typeof f.body === "string" ? f.body : "";
 		s.from_domain = typeof f.from_domain === "string" ? f.from_domain : "";
+		s.from_local = typeof f.from_local === "string" ? f.from_local : "";
 		s.priority = PRIORITIES.includes(f.priority) ? f.priority : "";
 		s.stashKey = k;
 		const shown = () => replace(() => {

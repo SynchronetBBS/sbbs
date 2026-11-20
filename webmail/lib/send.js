@@ -853,7 +853,23 @@ var Send = (function () {
 		if (want !== "" && !ok)
 			throw error("forbidden", "domain");
 		var address = "";
-		if (n.internet > 0) {
+		var local = String(draft.from_local || "");
+		if (local !== "") {
+			// a chosen name: with the domain it must be one of the user's
+			// addresses now, whatever it was when the draft was saved
+			var mine = ctx.addresses instanceof Array ? ctx.addresses
+				: Address.addresses_for(ctx.usernum, { domains: allowed });
+			var pick = Address.from_pick(local, want, mine, function (addr) {
+				if (typeof ctx.own_address === "function")
+					return ctx.own_address(addr) === true;
+				return Address.own_address(ctx.usernum, addr, { domains: allowed });
+			});
+			if (pick === null)
+				throw error("forbidden", "domain");
+			domain = lower(pick.substr(pick.lastIndexOf("@") + 1));
+			if (n.internet > 0)
+				address = pick;
+		} else if (n.internet > 0) {
 			var email = String(ctx.user.email || "");
 			var at = email.lastIndexOf("@");
 			try {

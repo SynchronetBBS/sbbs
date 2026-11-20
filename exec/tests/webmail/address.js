@@ -621,6 +621,151 @@ Kit.eq(Address.domains_for(-1, fake_env), [], "domains_for -1");
 Kit.eq(Address.domains_for(1.5, fake_env), [], "domains_for 1.5");
 Kit.eq(Address.domains_for("1", fake_env), [], "domains_for a string");
 Kit.eq(Address.domains_for(null, fake_env), [], "domains_for null");
+
+// ---------------------------------------------------------------------
+// alias_table(), own.deliver_user(), addresses_for(), from_pick(): the
+// addresses the mail server delivers to a user are the ones the user may
+// send from
+
+var long_name = "";
+for (i = 0; i < 130; i++)
+	long_name += "n";
+var tbl = Address.alias_table("; a comment\r\n\r\n  rob\t1  \r\nnovalue\r\nnovalue2   \r\n;x y\r\n"
+	+ "*@old.example   *@new.example\n" + long_name + " 5\nlast  Jane Doe");
+Kit.eq(tbl.slice(0, 2), [{ name: "rob", value: "1" }, { name: "*@old.example", value: "*@new.example" }],
+	"alias_table: comments, lines without a value, a pattern");
+// a line over 127 bytes is read in pieces, as the mail server reads it
+Kit.eq(tbl[2], { name: long_name.substr(127), value: "5" }, "alias_table: the tail of a long line");
+Kit.eq(tbl[3], { name: "last", value: "Jane Doe" }, "alias_table: no final line break, a value with a space");
+Kit.eq(Address.alias_table(""), [], "alias_table: empty");
+Kit.eq(Address.alias_table(undefined), [], "alias_table: undefined");
+
+var ALIAS_TEXT = "; test aliases\n"
+	+ "rob        1\n"
+	+ "info       jane\n"
+	+ "jane@family.example   rob@outside.org\n"
+	+ "janey      jane\n"
+	+ "fwd        x@elsewhere.org\n"
+	+ "news       sub:news\n"
+	+ "*@old.example   1\n"
+	+ "boss@family.example  Rob\n"
+	+ "rs@mybbs.com   Rob Swindell\n"
+	+ "num        7\n"
+	+ "moved@mybbs.com   jane@mybbs.com\n"
+	+ "nobody     ghost\n";
+function MailUser(n)
+{
+	if (!FAKE_USERS[n])
+		throw new Error("Invalid user number: " + n);
+	this.number = n;
+	this.settings = FAKE_USERS[n].settings || 0;
+	this.name = FAKE_USERS[n].name;
+	this.email = FAKE_USERS[n].alias + "@mybbs.com";
+	this.netmail = FAKE_USERS[n].netmail || "";
+	this.can_send_from_domain = function (d) {
+		return n === 1 || d === "mybbs.com";
+	};
+}
+var real_area = { settings: Address.MM_REALNAME, inet_netmail_settings: 0, fido_netmail_settings: 0 };
+var mail_env = { system: fake_system, msg_area: real_area, User: MailUser, alias_text: ALIAS_TEXT };
+var RD = Address.system_resolvers(mail_env).own;
+Kit.eq(RD.deliver_user("jane@mybbs.com"), 7, "deliver: an alias");
+Kit.eq(RD.deliver_user("Jane.Doe@mybbs.com"), 7, "deliver: a real name, dotted");
+Kit.eq(RD.deliver_user("rob@mybbs.com"), 1, "deliver: alias.cfg gives a user number");
+Kit.eq(RD.deliver_user("num@mybbs.com"), 7, "deliver: another number");
+Kit.eq(RD.deliver_user("7@mybbs.com"), 0, "deliver: a number that no alias gave is a name");
+Kit.eq(RD.deliver_user("info@mybbs.com"), 7, "deliver: alias.cfg gives an alias");
+Kit.eq(RD.deliver_user("INFO@mybbs.com"), 7, "deliver: alias.cfg names ignore case");
+Kit.eq(RD.deliver_user("boss@family.example"), 1, "deliver: a whole-address entry");
+Kit.eq(RD.deliver_user("boss@mybbs.com"), 0, "deliver: that entry is for its domain only");
+Kit.eq(RD.deliver_user("rs@mybbs.com"), 1, "deliver: alias.cfg gives a real name");
+Kit.eq(RD.deliver_user("moved@mybbs.com"), 7, "deliver: alias.cfg gives an address here");
+Kit.eq(RD.deliver_user("jane@family.example"), 0, "deliver: forwarded to another system");
+Kit.eq(RD.deliver_user("fwd@mybbs.com"), 0, "deliver: a name forwarded elsewhere");
+Kit.eq(RD.deliver_user("news@mybbs.com"), 0, "deliver: a sub-board");
+Kit.eq(RD.deliver_user("x@old.example"), 1, "deliver: a pattern entry, as the server reads it");
+Kit.eq(RD.deliver_user("jane@other.example"), 0, "deliver: a domain that is not the system's");
+Kit.eq(RD.deliver_user("nobody@mybbs.com"), 0, "deliver: an alias to no user");
+Kit.eq(RD.deliver_user("sysop@mybbs.com"), 0, "deliver: a sysop alias is not certain");
+Kit.eq(RD.deliver_user("qwk!jane@mybbs.com"), 0, "deliver: QWK routing");
+Kit.eq(RD.deliver_user("jane#tag@mybbs.com"), 7, "deliver: a tag goes to the user of the name");
+Kit.eq(RD.deliver_user("Jane.Doe#shop@mybbs.com"), 7, "deliver: a tag on a real name");
+Kit.eq(RD.deliver_user("info#tag@mybbs.com"), 0, "deliver: no tag on an alias.cfg name");
+Kit.eq(RD.deliver_user("The.Op#tag@mybbs.com"), 0, "deliver: no tag on the sysop's name");
+Kit.eq(RD.deliver_user("#tag@mybbs.com"), 0, "deliver: a tag alone");
+// a tag the user blocked is refused by the server
+var blocking = { lastuser: 10, operator: "", qwk_id: "MYBBS", inet_domain_list: fake_system.inet_domain_list,
+	data_dir: "/data/", username: fake_system.username, calls: [],
+	matchuser: fake_system.matchuser, matchuserdata: fake_system.matchuserdata,
+	findstr: function (list, text) {
+		if (typeof list === "string")
+			return list === "/data/user/0007.smtpblock" && text === "spam";
+		return fake_system.findstr(list, text);
+	} };
+var RB = Address.system_resolvers({ system: blocking, msg_area: real_area, User: MailUser, alias_text: "" }).own;
+Kit.eq(RB.deliver_user("jane#shop@mybbs.com"), 7, "deliver: a tag that is not blocked");
+Kit.eq(RB.deliver_user("jane#spam@mybbs.com"), 0, "deliver: a blocked tag");
+Kit.eq(RD.deliver_user(".jane@mybbs.com"), 0, "deliver: not starting with a letter or digit");
+Kit.eq(RD.deliver_user("idle@mybbs.com"), 0, "deliver: an inactive user");
+Kit.eq(RD.deliver_user("jane"), 0, "deliver: no domain");
+Kit.eq(RD.deliver_user(undefined), 0, "deliver: undefined");
+
+// addresses_for(): the alias, the user's own Internet address when the
+// server delivers it to them, the real name; never the alias.cfg names
+FAKE_USERS[1].netmail = "boss@family.example";
+FAKE_USERS[7].netmail = "rob@mybbs.com";		// someone else's
+FAKE_USERS[9].netmail = "al@elsewhere.org";	// not here
+Kit.eq(Address.addresses_for(1, mail_env), ["Rob@mybbs.com", "Rob@family.example", "boss@family.example",
+	"Rob.Swindell@mybbs.com", "Rob.Swindell@family.example"],
+	"addresses_for: the alias, the Internet address, the real name");
+Kit.eq(Address.addresses_for(7, mail_env), ["jane@mybbs.com", "Jane.Doe@mybbs.com"],
+	"addresses_for: an Internet address that is another user's is not offered");
+var no_real = { system: fake_system, msg_area: fake_msg_area, User: MailUser, alias_text: ALIAS_TEXT };
+Kit.eq(Address.addresses_for(1, no_real), ["Rob@mybbs.com", "Rob@family.example", "boss@family.example"],
+	"addresses_for: no real names when the system takes no mail for them");
+Kit.eq(Address.addresses_for(9, mail_env), ["Al@mybbs.com"], "addresses_for: a blank real name, an outside address");
+Kit.eq(Address.addresses_for(7, { system: fake_system, msg_area: real_area, User: MailUser, alias_text: ALIAS_TEXT,
+	domains: [] }), [], "addresses_for: no domain, no address");
+Kit.eq(Address.addresses_for(99, mail_env), [], "addresses_for: past the last user");
+Kit.eq(Address.addresses_for("1", mail_env), [], "addresses_for: a string");
+FAKE_USERS[7].netmail = "";
+
+// own_address(): any address the server delivers to the user, at a domain
+// the user may send from
+Kit.eq(Address.own_address(7, "info@MYBBS.com", mail_env), "info@mybbs.com", "own_address: an alias.cfg name");
+Kit.eq(Address.own_address(7, "jane#shop@mybbs.com", mail_env), "jane#shop@mybbs.com", "own_address: a tag");
+Kit.eq(Address.own_address(7, "Jane.Doe@mybbs.com", mail_env), "Jane.Doe@mybbs.com", "own_address: the real name");
+Kit.eq(Address.own_address(7, "rob@mybbs.com", mail_env), null, "own_address: another user's");
+Kit.eq(Address.own_address(7, "jane@family.example", mail_env), null, "own_address: a domain the user may not use");
+Kit.eq(Address.own_address(1, "boss@family.example", mail_env), "boss@family.example", "own_address: a whole-address entry");
+Kit.eq(Address.own_address(1, "x@old.example", mail_env), null, "own_address: a domain that is not the system's");
+Kit.eq(Address.own_address(7, "qwk!jane@mybbs.com", mail_env), null, "own_address: QWK routing");
+Kit.eq(Address.own_address(7, "jane", mail_env), null, "own_address: no domain");
+Kit.eq(Address.own_address(99, "jane@mybbs.com", mail_env), null, "own_address: past the last user");
+Kit.eq(Address.own_address("7", "jane@mybbs.com", mail_env), null, "own_address: a string for the number");
+Kit.eq(Address.own_address(7, undefined, mail_env), null, "own_address: undefined");
+
+var MINE = ["Rob@mybbs.com", "Rob@family.example", "boss@family.example", "rs@mybbs.com"];
+Kit.eq(Address.from_pick("", "", MINE), "Rob@mybbs.com", "from_pick: the default");
+Kit.eq(Address.from_pick("", "FAMILY.example", MINE), "Rob@family.example", "from_pick: default name, a domain");
+Kit.eq(Address.from_pick("BOSS", "family.example", MINE), "boss@family.example", "from_pick: a name and a domain");
+Kit.eq(Address.from_pick("rs", "", MINE), "rs@mybbs.com", "from_pick: a name at the default domain");
+Kit.eq(Address.from_pick("boss", "", MINE), null, "from_pick: a name that is not at that domain");
+Kit.eq(Address.from_pick("eve", "family.example", MINE), null, "from_pick: not the user's");
+Kit.eq(Address.from_pick("", "", []), null, "from_pick: no addresses");
+Kit.eq(Address.from_pick("", "", undefined), null, "from_pick: no list");
+// not in the list: the address itself when the check allows it
+var asked = [];
+var allow = function (a) {
+	asked.push(a);
+	return a === "rob#shop@family.example";
+};
+Kit.eq(Address.from_pick("rob#shop", "Family.Example", MINE, allow), "rob#shop@family.example", "from_pick: allowed by the check");
+Kit.eq(Address.from_pick("eve", "", MINE, allow), null, "from_pick: refused by the check");
+Kit.eq(asked, ["rob#shop@family.example", "eve@mybbs.com"], "from_pick: the check gets the whole address");
+Kit.eq(Address.from_pick("boss", "family.example", MINE, function () {
+	throw new Error("not asked");
+}), "boss@family.example", "from_pick: an entry of the list needs no check");
 Kit.eq(Address.domains(undefined, function () {
 	return true;
 }), [], "domains: no list");

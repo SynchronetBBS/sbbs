@@ -166,7 +166,7 @@ var Drafts = (function () {
 	var OCTET = "application/octet-stream";
 	var B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	var FIELDS = { to: true, cc: true, bcc: true, subject: true, body: true, from_domain: true,
-		priority: true, rev: true };
+		from_local: true, priority: true, rev: true };
 	var MODES = { "new": true, reply: true, replyall: true, forward: true };
 	var MESSAGES = {
 		invalid: "invalid draft request",
@@ -400,8 +400,8 @@ var Drafts = (function () {
 		return o !== null && typeof o === "object" && !(o instanceof Array);
 	}
 
-	var TEXT_KEYS = ["id", "mode", "to", "cc", "bcc", "subject", "body", "from_domain", "priority",
-		"in_reply_to", "reply_message_id"];
+	var TEXT_KEYS = ["id", "mode", "to", "cc", "bcc", "subject", "body", "from_domain", "from_local",
+		"priority", "in_reply_to", "reply_message_id"];
 	var INT_KEYS = ["rev", "next", "created", "updated"];
 
 	function att_ok(a)
@@ -425,6 +425,8 @@ var Drafts = (function () {
 		var i;
 		if (!is_obj(d) || d.v !== 1)
 			return false;
+		if (d.from_local === undefined)	// a draft saved before the field existed
+			d.from_local = "";
 		for (i = 0; i < TEXT_KEYS.length; i++)
 			if (typeof d[TEXT_KEYS[i]] !== "string")
 				return false;
@@ -653,7 +655,8 @@ var Drafts = (function () {
 		for (var i = 0; i < d.attachments.length; i++)
 			atts.push(public_att(dir, d.attachments[i]));
 		var out = { id: d.id, rev: d.rev, mode: d.mode, to: d.to, cc: d.cc, bcc: d.bcc, subject: d.subject,
-			body: d.body, from_domain: d.from_domain, priority: d.priority, in_reply_to: d.in_reply_to,
+			body: d.body, from_domain: d.from_domain, from_local: d.from_local, priority: d.priority,
+			in_reply_to: d.in_reply_to,
 			reply_message_id: d.reply_message_id, created: d.created, updated: d.updated,
 			attachments: atts };
 		if (d.maybe_sent) {
@@ -667,7 +670,8 @@ var Drafts = (function () {
 	function blank_draft(id, mode, now)
 	{
 		return { v: 1, id: id, rev: 1, mode: mode, created: now, updated: now, to: "", cc: "", bcc: "",
-			subject: "", body: "", from_domain: "", priority: "", in_reply_to: "", reply_message_id: "",
+			subject: "", body: "", from_domain: "", from_local: "", priority: "", in_reply_to: "",
+			reply_message_id: "",
 			next: 1, attachments: [] };
 	}
 
@@ -676,6 +680,46 @@ var Drafts = (function () {
 		if (ctx.domains instanceof Array)
 			return ctx.domains;
 		return Address.domains_for(ctx.usernum);
+	}
+
+	// Every address the user may send from, the default first:
+	// ctx.addresses when the context has them (tests), else
+	// Address.addresses_for() over allowed_domains()
+	function own_addresses(ctx)
+	{
+		if (ctx.addresses instanceof Array)
+			return ctx.addresses;
+		return Address.addresses_for(ctx.usernum, { domains: allowed_domains(ctx) });
+	}
+
+	// May the user send from addr: in own_addresses(), or an address the
+	// mail server delivers to the user (Address.own_address; ctx.own_address
+	// when the context has one, for tests).  One alias.cfg read per context.
+	function is_own(ctx, addr)
+	{
+		if (in_list(addr, own_addresses(ctx)))
+			return true;
+		if (typeof ctx.own_address === "function")
+			return ctx.own_address(addr) === true;
+		if (ctx.own_cache === undefined)
+			ctx.own_cache = Address.system_resolvers().own;
+		return Address.own_address(ctx.usernum, addr, { domains: allowed_domains(ctx), own: ctx.own_cache }) !== null;
+	}
+
+	function own_check(ctx)
+	{
+		return function (addr) {
+			return is_own(ctx, addr);
+		};
+	}
+
+	function in_list(addr, list)
+	{
+		addr = lower(addr);
+		for (var i = 0; i < list.length; i++)
+			if (typeof list[i] === "string" && lower(list[i]) === addr)
+				return true;
+		return false;
 	}
 
 	// ---------------------------------------------------------------
@@ -861,7 +905,7 @@ var Drafts = (function () {
 	{
 		var addr = entry.addr !== undefined ? entry.addr : entry.key;
 		if (addr.indexOf("@") >= 0)
-			return Address.is_me(addr, ctx.alias, allowed);
+			return Address.is_me(addr, ctx.alias, allowed) || is_own(ctx, addr);
 		return alnum_key(addr) !== "" && alnum_key(addr) === alnum_key(ctx.alias);
 	}
 
@@ -956,6 +1000,18 @@ var Drafts = (function () {
 		if (allowed.length > 0) {
 			var dom = Address.reply_domain(h.to_domain || "", allowed[0], allowed);
 			d.from_domain = dom === lower(allowed[0]) ? "" : dom;
+			// sent to one of the user's own addresses: the reply is from it
+			var mine = own_addresses(ctx);
+			var sent_to = String(h.to_addr || "");
+			if (sent_to !== "" && mine.length > 0 && is_own(ctx, sent_to)) {
+				var sat = sent_to.lastIndexOf("@");
+				var first = String(mine[0]);
+				var fat = first.lastIndexOf("@");
+				d.from_local = lower(sent_to.substr(0, sat)) === lower(first.substr(0, fat))
+					? "" : sent_to.substr(0, sat);
+				d.from_domain = lower(sent_to.substr(sat + 1)) === lower(first.substr(fat + 1))
+					? "" : lower(sent_to.substr(sat + 1));
+			}
 		}
 		d.in_reply_to = msg.id;
 		d.reply_message_id = Address.clean(String(h.message_id || ""), 998);
@@ -1190,6 +1246,11 @@ var Drafts = (function () {
 			}
 			ch.from_domain = fd;
 		}
+		if (fields.from_local !== undefined) {
+			if (typeof fields.from_local !== "string" || fields.from_local.length > Address.MAX_LOCAL)
+				throw error("invalid", "from_local");
+			ch.from_local = fields.from_local;
+		}
 		return locked(ctx, function () {
 			var x = load_draft(ctx, id);
 			var d = x.draft;
@@ -1197,6 +1258,11 @@ var Drafts = (function () {
 				throw error("conflict", "stale", { rev: d.rev });
 			for (var key in ch)
 				d[key] = ch[key];
+			// a name other than the default: with the draft's domain it
+			// must be one of the user's addresses
+			if ((ch.from_local !== undefined || ch.from_domain !== undefined) && d.from_local !== ""
+				&& Address.from_pick(d.from_local, d.from_domain, own_addresses(ctx), own_check(ctx)) === null)
+				throw error("invalid", "from_local");
 			d.rev++;
 			d.updated = now_of(ctx);
 			var old_size = Math.max(0, file_size(x.dir + "draft.json"));

@@ -111,3 +111,53 @@ export function size(bytes) {
 	const v = n / u[1];
 	return t(u[0], { n: (v < 10 ? f.n1 : f.n0).format(v) });
 }
+
+// The addresses the user may send from (settings.get) as choices:
+// [{ addr, local, domain }], the default first.  local and domain are what
+// is stored for the choice: "" where it is the default's (the first
+// address's) name or domain.
+export function fromChoices(r) {
+	let list = r && Array.isArray(r.from_addresses)
+		? r.from_addresses.filter((a) => typeof a === "string" && a.lastIndexOf("@") > 0) : [];
+	if (list.length === 0 && r && Array.isArray(r.from_domains)) {
+		const local = typeof r.from_address_local === "string" ? r.from_address_local : "";
+		if (local !== "")
+			list = r.from_domains.filter((d) => typeof d === "string" && d !== "").map((d) => local + "@" + d);
+	}
+	if (list.length === 0)
+		return [];
+	const split = (a) => {
+		const i = a.lastIndexOf("@");
+		return [a.slice(0, i), a.slice(i + 1).toLowerCase()];
+	};
+	const first = split(list[0]);
+	return list.map((a) => {
+		const [l, d] = split(a);
+		return { addr: a, local: l.toLowerCase() === first[0].toLowerCase() ? "" : l, domain: d === first[1] ? "" : d };
+	});
+}
+
+// The index in choices (fromChoices) of a stored choice; 0, the default,
+// when it is not among them
+export function fromIndex(choices, local, domain) {
+	const l = String(local || "").toLowerCase();
+	const d = String(domain || "").toLowerCase();
+	const i = choices.findIndex((c) => c.local.toLowerCase() === l && c.domain === d);
+	return i < 0 ? 0 : i;
+}
+
+// choices with one more for a stored choice that is not among them: a
+// reply is from the address its message was sent to, which can be one of
+// the user's that the list does not offer (an alias the sysop set up, a
+// name#tag)
+export function fromChoicesWith(choices, local, domain) {
+	if (choices.length === 0)
+		return choices;
+	const l = String(local || "");
+	const d = String(domain || "").toLowerCase();
+	if (choices.some((c) => c.local.toLowerCase() === l.toLowerCase() && c.domain === d))
+		return choices;
+	const at = choices[0].addr.lastIndexOf("@");
+	const addr = (l === "" ? choices[0].addr.slice(0, at) : l) + "@" + (d === "" ? choices[0].addr.slice(at + 1) : d);
+	return choices.concat([{ addr, local: l, domain: d }]);
+}

@@ -98,7 +98,8 @@
 // is no stored list (to_list then []); reply_to the reply-to list, else
 // the reply-to address;
 // to_domain the domain of the SMTP forward path (or of an Internet
-// recipient address), "" for local mail. comment is the header's comment
+// recipient address), "" for local mail; to_addr that whole address
+// (domain lowercased), "" when it is not a plain address. comment is the header's comment
 // fields (SMB_COMMENT), one per line, or "". text and html are {b64,
 // charset} or null (see MimeRead.model() for which parts they are); the
 // bytes are written by save_msg_part() to a temp file and base64 encoded,
@@ -2863,8 +2864,28 @@ var Store = (function () {
 		return "";
 	}
 
-	// The domain of the address the message was delivered to (the SMTP
-	// forward path, else the recipient's network address), "" if none
+	// The address the message was delivered to (the SMTP forward path,
+	// else the recipient's network address) with its domain lowercased,
+	// "" if there is none or it is not a plain address
+	function to_addr(h)
+	{
+		var addr = h.forward_path || "";
+		if (addr === "" && (h.to_net_type || defs().NET_NONE) == defs().NET_INTERNET)
+			addr = h.to_net_addr || "";
+		addr = String(addr).replace(/^[ \t<]+|[ \t>]+$/g, "");
+		var at = addr.lastIndexOf('@');
+		if (at < 1)
+			return "";
+		var dom = addr.substr(at + 1).toLowerCase();
+		if (!/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/.test(dom))
+			return "";
+		var local = addr.substr(0, at);
+		if (local.length > 64 || !/^[A-Za-z0-9!#$%&'*+\-\/=?\^_`{|}~.]+$/.test(local))
+			return "";
+		return local + "@" + dom;
+	}
+
+	// The domain of the address the message was delivered to, "" if none
 	function to_domain(h)
 	{
 		var addr = h.forward_path || "";
@@ -3080,7 +3101,8 @@ var Store = (function () {
 			message_id: str(h.id),
 			reply_id: str(h.reply_id),
 			net_type: net_name(h.from_net_type),
-			to_domain: to_domain(h)
+			to_domain: to_domain(h),
+			to_addr: to_addr(h)
 		};
 	}
 
