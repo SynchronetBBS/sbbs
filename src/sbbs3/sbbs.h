@@ -1490,6 +1490,7 @@ extern "C" {
 
 	/* postmsg.cpp */
 	DLLEXPORT int		savemsg(scfg_t*, smb_t*, smbmsg_t*, client_t*, const char* server, char* msgbuf, smbmsg_t* remsg);
+	DLLEXPORT void		announce_saved_msg(scfg_t*, smb_t*, smbmsg_t*, client_t*);
 	DLLEXPORT int		votemsg(scfg_t*, smb_t*, smbmsg_t*, const char* msgfmt, const char* votefmt);
 	DLLEXPORT int		postpoll(scfg_t*, smb_t*, smbmsg_t*);
 	DLLEXPORT int		closepoll(scfg_t*, smb_t*, uint32_t msgnum, const char* username);

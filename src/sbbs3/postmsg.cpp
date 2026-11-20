@@ -430,6 +430,53 @@ extern "C" int msg_client_hfields(smbmsg_t* msg, client_t* client)
 	return SMB_SUCCESS;
 }
 
+/* After a message with a recipient was added to 'smb': signal the semaphore
+ * files and leave the recipient (a local user) a short message.
+ * Called by savemsg() and for each recipient of a message saved to a list */
+extern "C" void announce_saved_msg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client)
+{
+	if (msg->to == NULL)  /* no recipient means no header created */
+		return;
+
+	if (smb->subnum == INVALID_SUB) {
+		if (msg->to_net.type == NET_FIDO && cfg->netmail_sem[0]) {
+			char tmp[MAX_PATH + 1];
+			ftouch(cmdstr(cfg, NULL, cfg->netmail_sem, nulstr, nulstr, tmp, sizeof(tmp)));
+		}
+	} else
+		signal_sub_sem(cfg, smb->subnum);
+
+	if (msg->to_net.type == NET_NONE && !(msg->hdr.attr & MSG_ANONYMOUS) && cfg->text != NULL) {
+		int usernum = 0;
+		if (msg->to_ext != NULL)
+			usernum = atoi(msg->to_ext);
+		else if (subnum_is_valid(cfg, smb->subnum) && (cfg->sub[smb->subnum]->misc & SUB_NAME))
+			usernum = finduserstr(cfg, 0, USER_NAME, msg->to, /* del: */ FALSE, /* next: */ FALSE, NULL, NULL);
+		else
+			usernum = matchuser(cfg, msg->to, TRUE /* sysop_alias */);
+		if (usernum > 0 && (client == NULL || usernum != (int)client->usernum)) {
+			char str[256];
+			if (smb->subnum == INVALID_SUB) {
+				safe_snprintf(str, sizeof(str), cfg->text[UserSentYouMail], msg->from);
+				putsmsg(cfg, usernum, str);
+			} else if (subnum_is_valid(cfg, smb->subnum)) {
+				char        fido_buf[64];
+				const char* via = smb_netaddrstr(&msg->from_net, fido_buf);
+				if (via == NULL)
+					via = (client == NULL) ? "" : client->protocol;
+				safe_snprintf(str, sizeof(str), cfg->text[MsgPostedToYouVia]
+				              , msg->from
+				              , via
+				              , cfg->grp[cfg->sub[smb->subnum]->grp]->sname, cfg->sub[smb->subnum]->lname);
+				putsmsg(cfg, usernum, str);
+			}
+			/* else: ad-hoc msgbase (e.g. is_path MsgBase) — no sub/grp metadata to format the
+			 * standard "posted to you" notification, and the caller didn't ask for sub-board
+			 * side effects, so skip the putsmsg notification entirely. */
+		}
+	}
+}
+
 /* Note: finds signature delimiter automatically and (if applicable) separates msgbuf into body and tail */
 /* Adds/generates Message-IDs when needed */
 /* Auto-sets the UTF-8 indicators for UTF-8 encoded header fields and body text */
@@ -520,46 +567,8 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 	msgbuf = strdup(msgbuf);
 	if (msgbuf == NULL)
 		return SMB_FAILURE;
-	if ((i = smb_addmsg(smb, msg, smb_storage_mode(cfg, smb), dupechk_hashes, xlat, (uchar*)msgbuf, findsig(msgbuf))) == SMB_SUCCESS
-	    && msg->to != NULL /* no recipient means no header created at this stage */) {
-		if (smb->subnum == INVALID_SUB) {
-			if (msg->to_net.type == NET_FIDO && cfg->netmail_sem[0]) {
-				char tmp[MAX_PATH + 1];
-				ftouch(cmdstr(cfg, NULL, cfg->netmail_sem, nulstr, nulstr, tmp, sizeof(tmp)));
-			}
-		} else
-			signal_sub_sem(cfg, smb->subnum);
-
-		if (msg->to_net.type == NET_NONE && !(msg->hdr.attr & MSG_ANONYMOUS) && cfg->text != NULL) {
-			int usernum = 0;
-			if (msg->to_ext != NULL)
-				usernum = atoi(msg->to_ext);
-			else if (subnum_is_valid(cfg, smb->subnum) && (cfg->sub[smb->subnum]->misc & SUB_NAME))
-				usernum = finduserstr(cfg, 0, USER_NAME, msg->to, /* del: */ FALSE, /* next: */ FALSE, NULL, NULL);
-			else
-				usernum = matchuser(cfg, msg->to, TRUE /* sysop_alias */);
-			if (usernum > 0 && (client == NULL || usernum != (int)client->usernum)) {
-				char str[256];
-				if (smb->subnum == INVALID_SUB) {
-					safe_snprintf(str, sizeof(str), cfg->text[UserSentYouMail], msg->from);
-					putsmsg(cfg, usernum, str);
-				} else if (subnum_is_valid(cfg, smb->subnum)) {
-					char        fido_buf[64];
-					const char* via = smb_netaddrstr(&msg->from_net, fido_buf);
-					if (via == NULL)
-						via = (client == NULL) ? "" : client->protocol;
-					safe_snprintf(str, sizeof(str), cfg->text[MsgPostedToYouVia]
-					              , msg->from
-					              , via
-					              , cfg->grp[cfg->sub[smb->subnum]->grp]->sname, cfg->sub[smb->subnum]->lname);
-					putsmsg(cfg, usernum, str);
-				}
-				/* else: ad-hoc msgbase (e.g. is_path MsgBase) — no sub/grp metadata to format the
-				 * standard "posted to you" notification, and the caller didn't ask for sub-board
-				 * side effects, so skip the putsmsg notification entirely. */
-			}
-		}
-	}
+	if ((i = smb_addmsg(smb, msg, smb_storage_mode(cfg, smb), dupechk_hashes, xlat, (uchar*)msgbuf, findsig(msgbuf))) == SMB_SUCCESS)
+		announce_saved_msg(cfg, smb, msg, client);
 	free(msgbuf);
 	return i;
 }

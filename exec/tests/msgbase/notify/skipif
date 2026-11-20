@@ -1,0 +1,2 @@
+// The child jsexec is located through /proc (Linux), and putenv() is jsexec's
+typeof MsgBase === 'undefined' || typeof putenv !== 'function' || !file_exists("/proc/self/stat")

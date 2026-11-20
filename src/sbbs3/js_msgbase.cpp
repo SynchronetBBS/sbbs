@@ -2707,6 +2707,7 @@ save_msg_common(JSContext *cx, jsval *arglist, private_t* p, JSObject* hdr
 						JS_RESUMEREQUEST(cx, rc);
 						break;
 					}
+					announce_saved_msg(scfg, &(p->smb), &rcpt_msg, client);
 
 					smb_freemsgmem(&rcpt_msg);
 					JS_RESUMEREQUEST(cx, rc);
