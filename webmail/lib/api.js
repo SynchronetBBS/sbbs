@@ -804,7 +804,7 @@ var Api = (function () {
 		// (taken literally)
 		if (code === "https") {
 			var name = rq.config && typeof rq.config.product_name === "string"
-				&& rq.config.product_name !== "" ? rq.config.product_name : "Webmail";
+				&& rq.config.product_name !== "" ? rq.config.product_name : "WebMail";
 			t = t.split("{name}").join(name);
 		}
 		return t;

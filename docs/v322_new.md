@@ -372,14 +372,14 @@
   the web root at a request path (e.g. `/webmail/ = ../webmail/root/`),
   without a link or a copy; requests stay confined to that directory and
   its own `webctrl.ini` files apply
-- New **web mail client** (`webmail/`): users read, search, star, file and
+- New **WebMail** client (`webmail/`): users read, search, star, file and
   delete their mail, and write, reply and forward with attachments, in a
   browser on a desktop or a phone, with contacts, signatures, mail
   forwarding, a Spam folder and blocked remote images. Off until the
   sysop adds `/webmail/ = ../webmail/root/` to the `[dir]` section of
   `ctrl/web_alias.ini` (an upgrade does not add it); HTTPS only by
   default; options in `ctrl/modopts/webmail.ini`
-- New **per-user mailbox** behind the web mail client: the Inbox is the
+- New **per-user mailbox** behind WebMail: the Inbox is the
   system's mail base, and each user's own folders, Sent copies and Trash
   are kept in a private mail base in `data/user/<number>/`, limited by the
   new Trash age and mailbox quota settings (see SCFG)
@@ -583,7 +583,7 @@
 
 - New **Purge Mailbox Trash by Age** (default 30 days) and **Mailbox
   Quota (per user)** (default 1 GB) options under Message Options, for
-  the web mail client's per-user mailbox
+  WebMail's per-user mailbox
 - New **Ctrl-F option search**: type a substring at the main
   Configure menu and see every matching option label, with its
   menu path rendered as a CP437 box-drawing tree

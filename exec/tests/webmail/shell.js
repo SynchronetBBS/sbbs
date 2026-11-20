@@ -171,10 +171,10 @@ Kit.eq(Shell.host(new Array(254).join("a"), SYS), new Array(254).join("a"), "253
 Kit.eq(Shell.host(new Array(255).join("a"), SYS), "bbs.example.org", "254 characters refused");
 Kit.eq(Shell.host(new Array(64).join("a") + ".com", SYS), new Array(64).join("a") + ".com", "long label kept");
 
-Kit.eq(Shell.product_name("{system} Webmail", "x.example", SYS), "Scratch BBS Webmail", "the default");
-Kit.eq(Shell.product_name(cfg_default().product_name, "", SYS), "Scratch BBS Webmail", "the stock default");
-Kit.eq(Shell.product_name("{host} Webmail", "Mail.Example.com:8443", SYS), "mail.example.com Webmail", "{host}");
-Kit.eq(Shell.product_name("{host} Webmail", "<script>", SYS), "bbs.example.org Webmail", "{host} hostile");
+Kit.eq(Shell.product_name("{system} WebMail", "x.example", SYS), "Scratch BBS WebMail", "the default");
+Kit.eq(Shell.product_name(cfg_default().product_name, "", SYS), "Scratch BBS WebMail", "the stock default");
+Kit.eq(Shell.product_name("{host} WebMail", "Mail.Example.com:8443", SYS), "mail.example.com WebMail", "{host}");
+Kit.eq(Shell.product_name("{host} WebMail", "<script>", SYS), "bbs.example.org WebMail", "{host} hostile");
 Kit.eq(Shell.product_name("Family Mail", "<script>", SYS), "Family Mail", "no placeholder: unchanged");
 Kit.eq(Shell.product_name("Mail {other} {Host} {system", "h.example", SYS), "Mail {other} {Host} {system",
 	"other braces kept literally");

@@ -25,7 +25,7 @@ var DEFAULTS = {
 	tls_proxy_header: "",
 	hsts_max_age: 0,
 	locale: "en_us",
-	product_name: "{system} Webmail",
+	product_name: "{system} WebMail",
 	brand: "",
 	login_text: "",
 	footer_links: "",
@@ -100,9 +100,9 @@ var DEFAULTS = {
 	Kit.eq(c.fallback_url, "https://e.example/");
 	Kit.eq(c.tls_proxy_header, "X-Forwarded-Proto");
 	Kit.eq(c.access_requirements, "LEVEL 20");
-	Kit.eq(Config.load({ product_name: {} }).product_name, "{system} Webmail");
+	Kit.eq(Config.load({ product_name: {} }).product_name, "{system} WebMail");
 	// The raw setting is kept: the placeholders are filled per request
-	Kit.eq(Config.load({ product_name: "{host} Webmail" }).product_name, "{host} Webmail");
+	Kit.eq(Config.load({ product_name: "{host} WebMail" }).product_name, "{host} WebMail");
 })();
 
 // Unknown keys are ignored

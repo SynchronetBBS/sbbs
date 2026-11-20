@@ -91,7 +91,7 @@ var Config = (function () {
 		access_requirements: "",
 		tls_proxy_header: "",
 		locale: "en_us",
-		product_name: "{system} Webmail",	// {system} and {host}: see Shell.product_name
+		product_name: "{system} WebMail",	// {system} and {host}: see Shell.product_name
 		brand: "",
 		login_text: "",
 		footer_links: ""

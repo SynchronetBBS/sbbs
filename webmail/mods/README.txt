@@ -1,4 +1,4 @@
-Webmail mods directory
+WebMail mods directory
 ======================
 Put your own changes to the web client here. Your files in this directory
 are never replaced or removed when Synchronet is updated (this README is).
