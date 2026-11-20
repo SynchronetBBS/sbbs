@@ -722,7 +722,8 @@ static bool session_check(http_session_t *session, bool *rd, bool *wr, unsigned 
 				session->tls_pending  = true;
 				return true;                    // application data -> connected
 			}
-			if (status == CRYPT_ERROR_TIMEOUT)
+			// A non-blocking read of a partial record returns CRYPT_OK, 0 bytes
+			if (status == CRYPT_ERROR_TIMEOUT || cryptStatusOK(status))
 				return true;                    // partial record, no app data yet
 			*rd_ptr = false;
 			return false;                       // CRYPT_ERROR_COMPLETE / error -> closed
@@ -2419,13 +2420,18 @@ static int sess_recv(http_session_t *session, char *buf, size_t length, int flag
 				session->peeked_valid = false;
 				return 1;
 			}
-			if (HANDLE_CRYPT_CALL_EXCEPT2(cryptPopData(session->tls_sess, buf, length, &len), session, "popping data", CRYPT_ERROR_TIMEOUT, CRYPT_ERROR_COMPLETE)) {
+			int status = cryptPopData(session->tls_sess, buf, length, &len);
+			if (HANDLE_CRYPT_CALL_EXCEPT2(status, session, "popping data", CRYPT_ERROR_TIMEOUT, CRYPT_ERROR_COMPLETE)) {
 				if (len == 0) {
 					session->tls_pending = false;
 					len = -1;
 				}
 				return len;
 			}
+			// No (complete) record has arrived yet: not an error, the caller
+			// waits on the socket again (tls_pending == false)
+			if (status == CRYPT_ERROR_TIMEOUT)
+				session->tls_pending = false;
 			return -1;
 		}
 	}
@@ -2458,6 +2464,10 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 
 		switch (sess_recv(session, &ch, 1, 0)) {
 			case -1:
+				// TLS with no data decrypted yet: wait for more (up to
+				// max_inactivity), as for a plain socket, instead of closing
+				if (session->is_tls && !session->tls_pending)
+					continue;
 				if (session->is_tls || SOCKET_ERRNO != EAGAIN) {
 					if (!session->is_tls) {
 						if (startup->options & WEB_OPT_DEBUG_RX)
@@ -2584,6 +2594,8 @@ static int recvbufsocket(http_session_t *session, char *buf, long count)
 		i = sess_recv(session, buf + rd, count - rd, 0);
 		switch (i) {
 			case -1:
+				if (session->is_tls && !session->tls_pending)
+					continue;   // no TLS data decrypted yet: wait for more
 				if (SOCKET_ERRNO == EAGAIN && !session->is_tls)
 					break;
 			// Fall-through...
