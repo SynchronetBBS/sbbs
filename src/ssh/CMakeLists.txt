@@ -351,6 +351,18 @@ set(DEUCESSH_PUBLIC_HEADERS
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/DeuceSSHOptions.cmake")
 dssh_configure_options()
 
+if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+	# Visual Studio evaluates target-wide COMPILE_LANGUAGE options as CXX
+	# for mixed C/C++ targets. Keep C11 atomics enabled on the C sources
+	# when the Botan backend adds C++ sources to either library.
+	foreach(source IN LISTS DEUCESSH_SOURCES)
+		if(source MATCHES "\\.c$")
+			set_property(SOURCE "${source}" APPEND PROPERTY COMPILE_OPTIONS
+				/experimental:c11atomics)
+		endif()
+	endforeach()
+endif()
+
 include(GNUInstallDirs)
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/DeuceSSHABI.cmake")
 dssh_prepare_abi()
