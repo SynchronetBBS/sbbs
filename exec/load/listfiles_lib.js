@@ -91,6 +91,8 @@ function listfiles_defaults()
 		lightbar_key_attr: "",
 		// The preview pane: the file's details (@FILE_*@ codes; the extended
 		// description follows)
+		// The full filename, first in the pane when the list shows it cut short
+		preview_name_fmt: "\x01n\x01cName \x01h@FILE_NAME@\x01n\r\n",
 		preview_info_fmt: "\x01n\x01cSize \x01h@FILE_BYTES-T@\x01n\x01c bytes, uploaded \x01h@FILE_DATE_ULED@\x01n\x01c by \x01h@FILE_UPLOADER@\r\n"
 			+ "\x01n\x01cDownloaded \x01h@FILE_TIMES_DLED-T@\x01n\x01c times, last on \x01h@FILE_DATE_DLED@\x01n\x01c, cost \x01h@FILE_COST@\x01n\r\n",
 		// The pane's separator line: its fill, label, line range (first
@@ -203,6 +205,16 @@ function listfiles_format_filename(name, size)
 	while (result.length < size)
 		result += " ";
 	return result;
+}
+
+// Whether the preview pane should show the full filename 'name': when its
+// column of 'size' characters cuts it short (see listfiles_format_filename())
+// and the description 'desc' doesn't already show it (an empty description
+// is listed as the filename)
+function listfiles_pane_shows_name(name, desc, size)
+{
+	desc = (desc || "").replace(/^\s+|\s+$/g, "");
+	return name.length > size && desc !== "" && desc !== name;
 }
 
 // A byte count estimated in at most 6 characters (e.g. "1023", "1.5K",

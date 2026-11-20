@@ -64,6 +64,11 @@ check("fname no ext", listfiles_format_filename("noextensionlongname", 12), "noe
 check("fname no ext short", listfiles_format_filename("noext", 12), "noext       ");
 check("fname long ext", listfiles_format_filename("x.verylongextension", 12), "x.verylongex");
 check("fname exact", listfiles_format_filename("abcdefgh.zip", 12), "abcdefgh.zip");
+check("pane name fits", listfiles_pane_shows_name("abcdefgh.zip", "A file", 12), false);
+check("pane name cut", listfiles_pane_shows_name("abcdefghi.zip", "A file", 12), true);
+check("pane name cut, no desc", listfiles_pane_shows_name("MysticDraw-1.5.tgz", " ", 12), false);
+check("pane name cut, undefined desc", listfiles_pane_shows_name("MysticDraw-1.5.tgz", undefined, 12), false);
+check("pane name cut, desc is name", listfiles_pane_shows_name("MysticDraw-1.5.tgz", "MysticDraw-1.5.tgz", 12), false);
 
 check("size 0", listfiles_size_str(0), "0");
 check("size 1023", listfiles_size_str(1023), "1023");

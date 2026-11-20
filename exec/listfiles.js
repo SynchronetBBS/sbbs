@@ -1050,12 +1050,16 @@ LightbarLayout.prototype.draw_below = function ()
 	console.gotoxy(this.keys_end + 1, console.screen_rows);
 };
 
-// The preview pane's lines for file i: its details and extended description
+// The preview pane's lines for file i: its details (with its full name when
+// neither its name nor its description shows it) and extended description
 LightbarLayout.prototype.pane_lines = function (i)
 {
 	var listing = this.listing;
 	var f = listing.files[i];
-	var lines = bbs.expand_atcodes(this.opts.preview_info_fmt, f, listing.code)
+	var fmt = this.opts.preview_info_fmt;
+	if (listfiles_pane_shows_name(f.name, f.desc, listing.name_width()))
+		fmt = this.opts.preview_name_fmt + fmt;
+	var lines = bbs.expand_atcodes(fmt, f, listing.code)
 		.replace(/(\r?\n)+$/, "").split(/\r?\n/);
 	if (f.extdesc && strip_ctrl(f.extdesc).replace(/\s+$/, "") !== "") {
 		var attr = this.opts.preview_extdesc_attr;
