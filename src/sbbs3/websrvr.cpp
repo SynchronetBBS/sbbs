@@ -7873,6 +7873,7 @@ void web_server(void* arg)
 			SAFECOPY(startup->default_cgi_content, WEB_DEFAULT_CGI_CONTENT);
 		if (startup->max_inactivity == 0)
 			startup->max_inactivity = WEB_DEFAULT_MAX_INACTIVITY;                                        /* seconds */
+		js_server_props.max_inactivity = startup->max_inactivity;
 		if (startup->max_cgi_inactivity == 0)
 			startup->max_cgi_inactivity = WEB_DEFAULT_MAX_CGI_INACTIVITY;                                        /* seconds */
 		if (startup->sem_chk_freq == 0)

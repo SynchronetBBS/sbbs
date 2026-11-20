@@ -28,6 +28,7 @@ enum {
 	, SERVER_PROP_INTERFACE
 	, SERVER_PROP_OPTIONS
 	, SERVER_PROP_CLIENTS
+	, SERVER_PROP_MAX_INACTIVITY
 };
 
 static JSBool js_server_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
@@ -74,6 +75,9 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if (p->clients != NULL)
 				*vp = UINT_TO_JSVAL(protected_uint32_value(*p->clients));
 			break;
+		case SERVER_PROP_MAX_INACTIVITY:
+			*vp = UINT_TO_JSVAL(p->max_inactivity);
+			break;
 	}
 
 	return JS_TRUE;
@@ -114,6 +118,7 @@ static jsSyncPropertySpec js_server_properties[] = {
 	{   "interface_ip_address",     SERVER_PROP_INTERFACE,  PROP_FLAGS,         311 },
 	{   "options",                  SERVER_PROP_OPTIONS,    JSPROP_ENUMERATE,   311 },
 	{   "clients",                  SERVER_PROP_CLIENTS,    PROP_FLAGS,         311 },
+	{   "max_inactivity",           SERVER_PROP_MAX_INACTIVITY, PROP_FLAGS,     322 },
 	{0}
 };
 
@@ -125,6 +130,9 @@ static const char* server_prop_desc[] = {
 	, "First bound IPv4 address (<tt>0.0.0.0</tt> = <i>ANY</i>) (obsolete since 3.17, see interface_ip_addr_list)"
 	, "Bit-field of server-specific startup options"
 	, "Number of active clients (if available)"
+	, "Maximum client inactivity, in seconds, before the server disconnects the client "
+	"(Terminal Server: the session limit, <i>MaxSessionInactivity</i>, see <tt>console.max_socket_inactivity</tt> "
+	"for the limit in force at the moment; <tt>0</tt> = the server has no single inactivity limit)"
 	, "Array of IP addresses of bound network interface (<tt>0.0.0.0</tt> = <i>ANY</i>)"
 	, NULL
 };

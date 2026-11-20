@@ -1550,6 +1550,7 @@ extern "C" {
 		str_list_t*	interfaces;
 		uint32_t*	options;
 		protected_uint32_t*	clients;
+		uint		max_inactivity;	/* seconds, 0 = no single limit */
 	} js_server_props_t;
 
 	enum {

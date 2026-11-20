@@ -994,6 +994,8 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 				&service_client->service->interfaces;
 			service_client->service->js_server_props.options =
 				&service_client->service->options;
+			// No single inactivity limit: each service script sets its own
+			service_client->service->js_server_props.max_inactivity = 0;
 		}
 
 		if ((server = js_CreateServerObject(js_cx, *glob

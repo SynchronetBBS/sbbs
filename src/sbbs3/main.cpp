@@ -5271,6 +5271,8 @@ void bbs_thread(void* arg)
 			startup->sem_chk_freq = DEFAULT_SEM_CHK_FREQ;
 		if (startup->temp_dir[0])
 			backslash(startup->temp_dir);
+		// The session (post-logon) limit; console.max_socket_inactivity is the one in force
+		js_server_props.max_inactivity = startup->max_session_inactivity;
 
 		protected_uint32_init(&node_threads_running, 0);
 		protected_uint32_init(&ssh_sessions, 0);

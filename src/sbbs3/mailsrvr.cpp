@@ -6595,6 +6595,7 @@ void mail_server(void* arg)
 			startup->max_delivery_attempts = MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS;
 		if (startup->max_inactivity == 0)
 			startup->max_inactivity = MAIL_DEFAULT_MAX_INACTIVITY;                                        /* seconds */
+		js_server_props.max_inactivity = startup->max_inactivity;
 		if (startup->sem_chk_freq == 0)
 			startup->sem_chk_freq = DEFAULT_SEM_CHK_FREQ;
 		if (startup->js.max_bytes == 0)
