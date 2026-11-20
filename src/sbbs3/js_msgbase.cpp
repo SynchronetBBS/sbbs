@@ -1579,8 +1579,10 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 		if (name)
 			free(name);
 		if (p->expand_fields || (p->msg).id != NULL) {
-			get_msgid(scfg, p->p->smb.subnum, &(p->msg), msg_id, sizeof(msg_id));
-			val = msg_id;
+			val = get_msgid(scfg, p->p->smb.subnum, &(p->msg), msg_id, sizeof(msg_id));
+			// val is the message's own id field when it has one, so truncsp()
+			// trims p->msg in place: harmless, the header object is never
+			// written back from p->msg
 			if ((js_str = JS_NewStringCopyZ(cx, truncsp(val))) != NULL) {
 				JS_DefineProperty(cx, obj, "id"
 				                  , STRING_TO_JSVAL(js_str)

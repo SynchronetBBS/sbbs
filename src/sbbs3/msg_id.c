@@ -92,13 +92,15 @@ char* ftn_msgid(sub_t *sub, smbmsg_t* msg, char* msgid, size_t maxlen)
 
 /****************************************************************************/
 /* Return a general purpose (RFC-822) message-ID							*/
+/* A message's own ID is returned in full and copied to 'msgid' (always		*/
+/* terminated, truncated to fit): use the return value for the whole ID		*/
 /****************************************************************************/
 char* get_msgid(scfg_t* cfg, int subnum, smbmsg_t* msg, char* msgid, size_t maxlen)
 {
 	char* host;
 
 	if (msg->id != NULL && *msg->id != 0) {
-		strncpy(msgid, msg->id, maxlen);
+		strlcpy(msgid, msg->id, maxlen);
 		return msg->id;
 	}
 
