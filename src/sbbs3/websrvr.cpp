@@ -6963,8 +6963,13 @@ int read_post_data(http_session_t * session)
 			}
 			else {
 				/* FREE()d in close_request()  */
-				if (s < (MAX_POST_LEN + 1) && (session->req.post_data = static_cast<char *>(malloc((size_t)(s + 1)))) != NULL)
+				if (s < (MAX_POST_LEN + 1) && (session->req.post_data = static_cast<char *>(malloc((size_t)(s + 1)))) != NULL) {
 					session->req.post_len = recvbufsocket(session, session->req.post_data, s);
+					// Nothing read: the body never came (timeout or peer close)
+					// and the session socket is closed: no request to answer
+					if (session->req.post_len < 1)
+						return false;
+				}
 				else  {
 					errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] !ERROR Allocating %lu bytes of memory"
 						, session->socket, session->client.protocol, session->host_ip, (ulong)s);
