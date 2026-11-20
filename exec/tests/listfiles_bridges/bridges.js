@@ -1,8 +1,8 @@
-// bbs.batch_add_file(), bbs.can_view_file(), bbs.remove_file() and
-// bbs.move_file() against a throwaway file base directory with the internal
-// code TEST_RM (the tests are skipped when there's no such directory), and
-// file objects with a property that throws. bbs.view_file_info() is
-// interactive and isn't tested here.
+// bbs.batch_add_file(), bbs.batch_dnload_list(), bbs.can_view_file(),
+// bbs.remove_file() and bbs.move_file() against a throwaway file base
+// directory with the internal code TEST_RM (the tests are skipped when
+// there's no such directory), and file objects with a property that throws.
+// bbs.view_file_info() is interactive and isn't tested here.
 
 var CODE = "test_rm";
 var failures = [];
@@ -43,6 +43,15 @@ try {
 	var queued = bbs.batch_dnload_total;
 	check("batch_add_file()", bbs.batch_add_file(CODE, name), true);
 	check("batch_dnload_total", bbs.batch_dnload_total, queued + 1);
+	var listed = bbs.batch_dnload_list();
+	check("batch_dnload_list() length", listed.length, queued + 1);
+	var entry = null;
+	for (var e = 0; e < listed.length; e++) {
+		if (listed[e].name === name)
+			entry = listed[e];
+	}
+	check("batch_dnload_list() has the file", entry !== null, true);
+	check("batch_dnload_list() directory", entry && entry.dir.toLowerCase(), CODE);
 	bbs.batch_remove(false, name);
 
 	check("batch_add_file() nonexistent", bbs.batch_add_file(CODE, "nonexistent.zzz"), false);

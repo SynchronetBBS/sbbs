@@ -2716,6 +2716,54 @@ js_batch_remove(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_batch_dnload_list(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*   sbbs;
+	JSObject* array;
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+	if ((array = JS_NewArrayObject(cx, 0, NULL)) == NULL)
+		return JS_FALSE;
+
+	jsrefcount rc = JS_SUSPENDREQUEST(cx);
+	str_list_t ini = batch_list_read(&sbbs->cfg, sbbs->useron.number, XFER_BATCH_DOWNLOAD);
+	str_list_t names = iniGetSectionList(ini, /* prefix: */ NULL);
+	JS_RESUMEREQUEST(cx, rc);
+
+	bool success = true;
+	for (jsint i = 0; names != NULL && names[i] != NULL; i++) {
+		JSObject* obj = JS_NewObject(cx, NULL, NULL, array);
+		JSString* name = JS_NewStringCopyZ(cx, names[i]);
+		if (obj == NULL || name == NULL
+		    || !JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(name), NULL, NULL, JSPROP_ENUMERATE)) {
+			success = false;
+			break;
+		}
+		int dirnum = batch_file_dir(&sbbs->cfg, ini, names[i]);
+		if (dirnum_is_valid(&sbbs->cfg, dirnum)) {
+			JSString* code = JS_NewStringCopyZ(cx, sbbs->cfg.dir[dirnum]->code);
+			if (code == NULL
+			    || !JS_DefineProperty(cx, obj, "dir", STRING_TO_JSVAL(code), NULL, NULL, JSPROP_ENUMERATE)) {
+				success = false;
+				break;
+			}
+		}
+		jsval val = OBJECT_TO_JSVAL(obj);
+		if (!JS_SetElement(cx, array, i, &val)) {
+			success = false;
+			break;
+		}
+	}
+	iniFreeStringList(names);
+	iniFreeStringList(ini);
+	if (!success) /* out of memory: propagate the pending exception rather than return a partial list */
+		return JS_FALSE;
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
+	return JS_TRUE;
+}
+
+static JSBool
 js_batch_sort(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *        argv = JS_ARGV(cx, arglist);
@@ -5280,6 +5328,12 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"can_view_file",   js_can_view_file,   2,  JSTYPE_BOOLEAN, JSDOCSTR("dir_code, filename")
 	 , JSDOCSTR("Whether the current user may view the file's contents (a file viewer is configured for it that the "
 		        "user may use)")
+	 , 322
+	},
+	{"batch_dnload_list", js_batch_dnload_list, 0, JSTYPE_ARRAY, JSDOCSTR("")
+	 , JSDOCSTR("Get the files in the current user's batch download queue: an array of objects with "
+		        "<tt>name</tt> (the filename) and <tt>dir</tt> (the directory's internal code, when the "
+		        "directory still exists) properties")
 	 , 322
 	},
 	{"batch_sort",      js_batch_sort,      1,  JSTYPE_BOOLEAN, JSDOCSTR("[upload_queue=false]")
