@@ -4,7 +4,7 @@
  * Covers gaps left by OpenSSL-specific injection tests:
  * - AES-256-CTR and HMAC-SHA-256/512 round-trip verification
  * - NULL ctx handling
- * - Enc/MAC through registered function pointers
+ * - Direct C-linkage native callbacks (registered vectors are tested separately)
  */
 
 #include <cstdlib>
@@ -108,7 +108,7 @@ static int
 test_aes256_ctr_multiple_blocks(void)
 {
 	uint8_t key[32], iv[16];
-	dssh_random(key, sizeof(key));
+	ASSERT_EQ(dssh_random(key, sizeof(key)), 0);
 	memset(iv, 0, sizeof(iv));
 
 	dssh_enc_ctx *ctx = nullptr;

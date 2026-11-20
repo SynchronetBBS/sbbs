@@ -4,39 +4,6 @@
 #include <stdint.h>
 #include <string.h>
 
-/* Detect big-endian across compiler families:
- * __BYTE_ORDER__ / __ORDER_BIG_ENDIAN__  — GCC, Clang
- * __BIG_ENDIAN__                         — some embedded compilers
- * _BIG_ENDIAN                            — Solaris (sys/isa_defs.h), AIX
- * __BYTE_ORDER / __BIG_ENDIAN            — glibc/BSD (endian.h)
- */
-#if (defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) \
- || defined(__BIG_ENDIAN__) \
- || defined(_BIG_ENDIAN) \
- || (defined(__BYTE_ORDER) && defined(__BIG_ENDIAN) \
-     && __BYTE_ORDER == __BIG_ENDIAN)
-static inline uint64_t
-lcx_bswap64(uint64_t x)
-{
-	return (x & 0xFF) << 56 | (x >> 8 & 0xFF) << 48 | (x >> 16 & 0xFF) << 40 | (x >> 24 & 0xFF) << 32
-	       | (x >> 32 & 0xFF) << 24 | (x >> 40 & 0xFF) << 16 | (x >> 48 & 0xFF) << 8 | (x >> 56 & 0xFF);
-}
-
-static inline uint32_t
-lcx_bswap32(uint32_t x)
-{
-	return (x & 0xFF) << 24 | (x >> 8 & 0xFF) << 16 | (x >> 16 & 0xFF) << 8 | (x >> 24 & 0xFF);
-}
-
- #define lcx_htole64(x) lcx_bswap64(x)
- #define lcx_le64toh(x) lcx_bswap64(x)
- #define lcx_le32toh(x) lcx_bswap32(x)
-#else
- #define lcx_htole64(x) (x)
- #define lcx_le64toh(x) (x)
- #define lcx_le32toh(x) (x)
-#endif
-
 #include "deucessh-crypto.h"
 #include "deucessh.h"
 #include "mlkem768.h"
@@ -51,10 +18,13 @@ crypto_kem_mlkem768_keypair(unsigned char *pk, unsigned char *sk)
 {
 	uint8_t rnd[LIBCRUX_ML_KEM_KEY_PAIR_PRNG_LEN];
 
-	if (dssh_random(rnd, sizeof(rnd)) != 0)
+	if (dssh_random(rnd, sizeof(rnd)) != 0) {
+		dssh_cleanse(rnd, sizeof(rnd));
 		return -1;
+	}
 
-	libcrux_ml_kem_mlkem768_MlKem768KeyPair kp = libcrux_ml_kem_mlkem768_portable_generate_key_pair(rnd);
+	libcrux_ml_kem_mlkem768_MlKem768KeyPair kp;
+	libcrux_ml_kem_mlkem768_portable_generate_key_pair(rnd, &kp);
 
 	memcpy(pk, kp.pk.value, crypto_kem_mlkem768_PUBLICKEYBYTES);
 	memcpy(sk, kp.sk.value, crypto_kem_mlkem768_SECRETKEYBYTES);
@@ -76,10 +46,13 @@ crypto_kem_mlkem768_enc(unsigned char *ct, unsigned char *ss, const unsigned cha
 
 	uint8_t rnd[LIBCRUX_ML_KEM_ENC_PRNG_LEN];
 
-	if (dssh_random(rnd, sizeof(rnd)) != 0)
+	if (dssh_random(rnd, sizeof(rnd)) != 0) {
+		dssh_cleanse(rnd, sizeof(rnd));
 		return -1;
+	}
 
-	tuple_3c enc = libcrux_ml_kem_mlkem768_portable_encapsulate(&mlkem_pk, rnd);
+	tuple_3c enc;
+	libcrux_ml_kem_mlkem768_portable_encapsulate(&mlkem_pk, rnd, &enc);
 
 	memcpy(ct, enc.fst.value, crypto_kem_mlkem768_CIPHERTEXTBYTES);
 	memcpy(ss, enc.snd, crypto_kem_mlkem768_BYTES);

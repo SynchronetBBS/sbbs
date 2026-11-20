@@ -11,6 +11,9 @@
 #include <memory>
 
 #include "deucessh.h"
+#ifdef DSSH_TESTING
+ #include "test/dssh_test_botan_cipher.h"
+#endif
 
 #define AES256_CTR_BLOCK_SIZE 16
 #define AES256_CTR_KEY_SIZE   32
@@ -25,7 +28,11 @@ dssh_botan_aes256ctr_init(const uint8_t *key, const uint8_t *iv, bool encrypt_di
 	(void)encrypt_dir;
 
 	try {
+#ifdef DSSH_TESTING
+		auto cipher = dssh_test_botan_cipher_create("AES-256/CTR-BE", Botan::Cipher_Dir::Encryption);
+#else
 		auto cipher = Botan::Cipher_Mode::create_or_throw("AES-256/CTR-BE", Botan::Cipher_Dir::Encryption);
+#endif
 		cipher->set_key(key, AES256_CTR_KEY_SIZE);
 		cipher->start(iv, AES256_CTR_BLOCK_SIZE);
 

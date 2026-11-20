@@ -8,8 +8,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "deucessh-algorithms.h"
 #include "deucessh-enc.h"
 #include "deucessh.h"
+#ifdef DSSH_TESTING
+ #include "ssh-internal.h"
+#endif
 
 #define AES128_CBC_BLOCK_SIZE 16
 #define AES128_CBC_KEY_SIZE   16
@@ -38,5 +42,8 @@ dssh_register_aes128_cbc(void)
 	enc->blocksize     = AES128_CBC_BLOCK_SIZE;
 	enc->key_size      = AES128_CBC_KEY_SIZE;
 	memcpy(enc->name, name, sizeof(name));
-	return dssh_transport_register_enc(enc);
+	int ret = dssh_transport_register_enc(enc);
+	if (ret < 0)
+		free(enc);
+	return ret;
 }

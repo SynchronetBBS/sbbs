@@ -36,7 +36,7 @@
 #include "wren_bind_xfer.h"
 
 #ifndef WITHOUT_DEUCESSH
-#include "deucessh-algorithms.h"   /* dssh_ed25519_get_pub_str */
+#include "ssh.h"
 #endif
 
 #if !defined(_WIN32)
@@ -698,7 +698,7 @@ fn_Host_defaultThemeData(WrenVM *vm)
 
 /* ----- Host.sshPublicKey ----------------------------------------- */
 
-/* Host.sshPublicKey - first locally-configured SSH public key, as a
+/* Host.sshPublicKey - current session's SSH public key, as a
  * Map { "algo": String, "blob": String }, or null when no key is
  * available (no SSH backend, key not loaded, OOM).  Used by Wren
  * scripts (sftp_pubkey.wren) to upload the user's authorized_keys
@@ -713,17 +713,24 @@ fn_Host_sshPublicKey(WrenVM *vm)
 #ifdef WITHOUT_DEUCESSH
 	wrenSetSlotNull(vm, 0);
 #else
-	int64_t sz = dssh_ed25519_get_pub_str(NULL, 0);
+	int64_t sz = ssh_get_public_key(NULL, 0);
 	if (sz <= 0) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	char *line = malloc((size_t)sz + 1);
+#if SIZE_MAX < INT64_MAX
+	if (sz > SIZE_MAX) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+#endif
+	size_t capacity = (size_t)sz;
+	char *line = malloc(capacity);
 	if (line == NULL) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	if (dssh_ed25519_get_pub_str(line, (size_t)sz + 1) <= 0) {
+	if (ssh_get_public_key(line, capacity) <= 0) {
 		free(line);
 		wrenSetSlotNull(vm, 0);
 		return;

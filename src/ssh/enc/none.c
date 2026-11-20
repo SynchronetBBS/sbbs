@@ -1,8 +1,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "deucessh-algorithms.h"
 #include "deucessh-enc.h"
 #include "deucessh.h"
+#ifdef DSSH_TESTING
+ #include "ssh-internal.h"
+#endif
 
 static int
 encrypt(uint8_t *buf, size_t bufsz, dssh_enc_ctx *ctx)
@@ -39,5 +43,8 @@ dssh_register_none_enc(void)
 	enc->blocksize     = 1;
 	enc->key_size      = 0;
 	memcpy(enc->name, name, sizeof(name));
-	return dssh_transport_register_enc(enc);
+	int ret = dssh_transport_register_enc(enc);
+	if (ret < 0)
+		free(enc);
+	return ret;
 }

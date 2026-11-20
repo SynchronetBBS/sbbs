@@ -11,6 +11,9 @@
 #include <memory>
 
 #include "deucessh.h"
+#ifdef DSSH_TESTING
+ #include "test/dssh_test_botan_cipher.h"
+#endif
 
 #define AES128_CBC_BLOCK_SIZE 16
 #define AES128_CBC_KEY_SIZE   16
@@ -25,7 +28,11 @@ dssh_botan_aes128cbc_init(const uint8_t *key, const uint8_t *iv, bool encrypt_di
 	try {
 		Botan::Cipher_Dir dir = encrypt_dir ? Botan::Cipher_Dir::Encryption
 		                                    : Botan::Cipher_Dir::Decryption;
+#ifdef DSSH_TESTING
+		auto cipher = dssh_test_botan_cipher_create("AES-128/CBC/NoPadding", dir);
+#else
 		auto cipher = Botan::Cipher_Mode::create_or_throw("AES-128/CBC/NoPadding", dir);
+#endif
 		cipher->set_key(key, AES128_CBC_KEY_SIZE);
 		cipher->start(iv, AES128_CBC_BLOCK_SIZE);
 

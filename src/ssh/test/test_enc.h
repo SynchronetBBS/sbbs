@@ -9,6 +9,8 @@
 #ifndef DSSH_TEST_ENC_H
 #define DSSH_TEST_ENC_H
 
+#include <stdbool.h>
+
 /* Register the test enc module.  Call INSTEAD of dssh_register_aes256_ctr(). */
 int register_test_enc(void);
 
@@ -17,6 +19,7 @@ void test_enc_reset(void);
 
 /* Fail the Nth init/encrypt/decrypt call (0-based) */
 void test_enc_fail_init_at(int n);
+bool test_enc_init_failure_seen(void);
 void test_enc_fail_encrypt_at(int n);
 void test_enc_fail_decrypt_at(int n);
 

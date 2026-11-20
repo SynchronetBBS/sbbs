@@ -1,8 +1,4 @@
-// RFC 8731: curve25519-sha256 Key Exchange -- Shared Protocol Logic
-//
-// Backend-neutral protocol implementation.  Crypto operations are
-// provided by the backend-specific ops struct (OpenSSL or Botan).
-
+// RFC 8731: curve25519-sha256 -- shared protocol and retained session storage.
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,463 +7,427 @@
 #include "deucessh-crypto.h"
 #include "deucessh-kex.h"
 #include "deucessh.h"
+#include "workspace.h"
 #ifdef DSSH_TESTING
  #include "ssh-internal.h"
 #endif
 
-/*
- * Compute the exchange hash:
- * H = SHA256(V_C || V_S || I_C || I_S || K_S || Q_C || Q_S || K_mpint)
- *
- * All string values are encoded with uint32 length prefix.
- */
-DSSH_TESTABLE int
-compute_exchange_hash_c25519(const char *v_c, size_t v_c_len, const char *v_s, size_t v_s_len, const uint8_t *i_c,
-    size_t i_c_len, const uint8_t *i_s, size_t i_s_len, const uint8_t *k_s, size_t k_s_len, const uint8_t *q_c,
-    size_t q_c_len, const uint8_t *q_s, size_t q_s_len, const uint8_t *k_mpint, size_t k_mpint_len,
-    uint8_t *hash_out)
+enum curve_slot { CURVE_MPINT, CURVE_REPLY, CURVE_HOSTKEY, CURVE_SLOTS };
+#define CURVE_MPINT_CAPACITY (4 + 1 + DSSH_X25519_LEN)
+
+struct curve_state {
+	struct dssh_kex_workspace *workspace;
+	dssh_hash_ctx *hash;
+	const struct dssh_x25519_ops *ops;
+	void *backend;
+	bool backend_active;
+	bool backend_dirty;
+	bool hash_dirty;
+	bool client;
+};
+
+DSSH_PRIVATE void
+curve25519_cleanup(void *opaque)
 {
-	if (v_c_len > UINT32_MAX || v_s_len > UINT32_MAX || i_c_len > UINT32_MAX || i_s_len > UINT32_MAX
-	    || k_s_len > UINT32_MAX || q_c_len > UINT32_MAX || q_s_len > UINT32_MAX)
-		return DSSH_ERROR_INVALID;
-
-	dssh_hash_ctx *hctx = NULL;
-	size_t         digest_len;
-	int            ret;
-
-	ret = dssh_hash_init(&hctx, "SHA-256", &digest_len);
-	if (ret < 0)
-		return ret;
-
-	uint8_t lenbuf[4];
-	size_t  lp;
-	int     ok = 1;
-
-#define HASH_U32(val, data, len)                                                  \
-	do {                                                                      \
-		lp = 0;                                                           \
-		if (dssh_serialize_uint32((val), lenbuf, 4, &lp) < 0) {           \
-			ok = 0;                                                   \
-			break;                                                    \
-		}                                                                 \
-		if (dssh_hash_update(hctx, lenbuf, 4) < 0) {                      \
-			ok = 0;                                                   \
-			break;                                                    \
-		}                                                                 \
-		if (dssh_hash_update(hctx, (const uint8_t *)(data), (len)) < 0) { \
-			ok = 0;                                                   \
-			break;                                                    \
-		}                                                                 \
-	} while (0)
-
-	HASH_U32((uint32_t)v_c_len, v_c, v_c_len);
-	HASH_U32((uint32_t)v_s_len, v_s, v_s_len);
-	HASH_U32((uint32_t)i_c_len, i_c, i_c_len);
-	HASH_U32((uint32_t)i_s_len, i_s, i_s_len);
-	HASH_U32((uint32_t)k_s_len, k_s, k_s_len);
-	HASH_U32((uint32_t)q_c_len, q_c, q_c_len);
-	HASH_U32((uint32_t)q_s_len, q_s, q_s_len);
-
-#undef HASH_U32
-
-	if (ok)
-		ok = (dssh_hash_update(hctx, k_mpint, k_mpint_len) == 0);
-
-	if (ok)
-		ok = (dssh_hash_final(hctx, hash_out, SHA256_DIGEST_LEN) == 0);
-
-	dssh_hash_free(hctx);
-	return ok ? 0 : DSSH_ERROR_INIT;
+	struct curve_state *state = opaque;
+	if (state == NULL)
+		return;
+	dssh_kex_workspace_destroy(state->workspace);
+	dssh_hash_free(state->hash);
+	if (state->backend_active)
+		state->ops->cleanup(state->backend);
+	dssh_cleanse(state, sizeof(*state));
+	free(state);
 }
 
-/*
- * Encode raw shared secret bytes as SSH mpint, stripping leading zeros.
- * Caller must free *mpint_out.
- */
-DSSH_TESTABLE int
-encode_shared_secret(uint8_t *raw, size_t raw_len, uint8_t **ss_out, size_t *ss_len, uint8_t **mpint_out,
-    size_t *mpint_len)
+DSSH_PRIVATE int
+curve25519_init_impl(bool client, void *config, void **opaque, const struct dssh_x25519_ops *ops)
 {
-	uint8_t *start = raw;
+	(void)config;
+	if (opaque == NULL || ops == NULL || ops->init == NULL || ops->cleanup == NULL
+	    || ops->keygen == NULL || ops->derive == NULL || ops->free_priv == NULL)
+		return DSSH_ERROR_INVALID;
+	struct curve_state *state = *opaque;
+	bool fresh = state == NULL;
+	int ret;
+	if (fresh) {
+		state = malloc(sizeof(*state));
+		if (state == NULL)
+			return DSSH_ERROR_ALLOC;
+		*state = (struct curve_state){.ops = ops, .client = client};
+		ret = dssh_kex_workspace_create(CURVE_SLOTS, &state->workspace);
+		if (ret < 0)
+			goto failed;
+	}
+	else {
+		if (state->ops != ops || state->client != client)
+			return DSSH_ERROR_INVALID;
+		ret = dssh_kex_workspace_reset(state->workspace);
+		if (ret < 0)
+			return ret;
+	}
+	/* A successful final resets the hash for reuse. Rebuild only after an
+	 * interrupted/failed hash; never mix the next transcript with its prefix. */
+	if (state->hash == NULL || state->hash_dirty) {
+		dssh_hash_free(state->hash);
+		state->hash = NULL;
+		size_t digest_len;
+		ret = dssh_hash_init(&state->hash, "SHA-256", &digest_len);
+		if (ret < 0)
+			goto failed;
+		if (digest_len != SHA256_DIGEST_LEN) {
+			ret = DSSH_ERROR_INIT;
+			goto failed;
+		}
+		state->hash_dirty = false;
+	}
+	if (fresh || state->backend_dirty) {
+		if (state->backend_active)
+			ops->cleanup(state->backend);
+		state->backend = NULL;
+		state->backend_active = false;
+		ret = ops->init(&state->backend);
+		state->backend_active = ret == 0 || state->backend != NULL;
+		if (ret > 0)
+			ret = DSSH_ERROR_INVALID;
+		if (ret < 0)
+			goto failed;
+		state->backend_dirty = false;
+	}
+	if (fresh)
+		*opaque = state;
+	return 0;
+failed:
+	if (fresh)
+		curve25519_cleanup(state);
+	return ret;
+}
 
-	while (raw_len > 1 && start[0] == 0) {
-		start++;
+/* Borrow the significant raw bytes and encode their SSH mpint into independent
+ * caller-owned storage. X25519 fixes the raw bound at 32 and encoded bound at 37.
+ * No shared-secret allocation or copy is needed, including leading-zero cases. */
+DSSH_TESTABLE int
+encode_shared_secret(const uint8_t *raw, size_t raw_len, struct dssh_bytes *secret,
+    uint8_t *mpint, size_t capacity, size_t *mpint_len)
+{
+	if (secret == NULL || mpint_len == NULL)
+		return DSSH_ERROR_INVALID;
+	*secret = (struct dssh_bytes){0};
+	*mpint_len = 0;
+	if (raw == NULL || raw_len == 0 || raw_len > DSSH_X25519_LEN || mpint == NULL)
+		return DSSH_ERROR_INVALID;
+	uint8_t nonzero = 0;
+	for (size_t i = 0; i < raw_len; i++)
+		nonzero |= raw[i];
+	if (nonzero == 0)
+		return DSSH_ERROR_INVALID;
+	while (raw_len > 1 && raw[0] == 0) {
+		raw++;
 		raw_len--;
 	}
-	*ss_out = malloc(raw_len);
-	if (*ss_out == NULL)
-		return DSSH_ERROR_ALLOC;
-	memcpy(*ss_out, start, raw_len);
-	*ss_len = raw_len;
-
-	bool   need_pad       = (start[0] & DSSH_MPINT_SIGN_BIT) != 0;
-	size_t mpint_data_len = raw_len + (need_pad ? 1 : 0);
-
-	*mpint_len = 4 + mpint_data_len;
-	*mpint_out = malloc(*mpint_len);
-	if (*mpint_out == NULL) {
-		free(*ss_out);
-		*ss_out = NULL;
-		return DSSH_ERROR_ALLOC;
-	}
-
-	size_t kp = 0;
-
-	int ret = dssh_serialize_uint32((uint32_t)mpint_data_len, *mpint_out, *mpint_len, &kp);
-	if (ret < 0) {
-		free(*mpint_out);
-		*mpint_out = NULL;
-		free(*ss_out);
-		*ss_out = NULL;
+	bool pad = (raw[0] & DSSH_MPINT_SIGN_BIT) != 0;
+	size_t data_len = raw_len + (pad ? 1U : 0U);
+	size_t size = 4 + data_len; /* Checked fixed bound: at most 37. */
+	if (capacity < size)
+		return DSSH_ERROR_TOOLONG;
+	uint32_t wire_len = (uint32_t)data_len;
+	size_t pos = 0;
+	int ret = dssh_serialize_uint32(wire_len, mpint, capacity, &pos);
+	if (ret < 0)
 		return ret;
+	if (pad)
+		mpint[pos++] = 0;
+	memcpy(&mpint[pos], raw, raw_len);
+	*secret = (struct dssh_bytes){raw, raw_len};
+	*mpint_len = size;
+	return 0;
+}
+
+static int
+hash_string(dssh_hash_ctx *hash, struct dssh_bytes bytes)
+{
+	if (bytes.len > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+	uint32_t wire_len = (uint32_t)bytes.len;
+	uint8_t prefix[4];
+	size_t pos = 0;
+	int ret = dssh_serialize_uint32(wire_len, prefix, sizeof(prefix), &pos);
+	if (ret < 0)
+		return ret;
+	ret = dssh_hash_update(hash, prefix, sizeof(prefix));
+	if (ret < 0)
+		return ret;
+	return dssh_hash_update(hash, bytes.data, bytes.len);
+}
+
+static int
+compute_exchange_hash(struct curve_state *state, const struct dssh_kex_context *ctx,
+    struct dssh_bytes hostkey, const uint8_t *q_c, const uint8_t *q_s,
+    const uint8_t *mpint, size_t mpint_len, uint8_t *out)
+{
+	const uint8_t *v_c = (const uint8_t *)ctx->v_c;
+	const uint8_t *v_s = (const uint8_t *)ctx->v_s;
+	const struct dssh_bytes inputs[] = {
+		{v_c, ctx->v_c_len}, {v_s, ctx->v_s_len},
+		{ctx->i_c, ctx->i_c_len}, {ctx->i_s, ctx->i_s_len}, hostkey,
+		{q_c, DSSH_X25519_LEN}, {q_s, DSSH_X25519_LEN},
+	};
+	state->hash_dirty = true;
+	int ret;
+	for (size_t i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++) {
+		ret = hash_string(state->hash, inputs[i]);
+		if (ret < 0)
+			return ret;
 	}
-	if (need_pad)
-		(*mpint_out)[kp++] = 0;
-	memcpy(&(*mpint_out)[kp], start, raw_len);
+	ret = dssh_hash_update(state->hash, mpint, mpint_len);
+	if (ret < 0)
+		return ret;
+	ret = dssh_hash_final(state->hash, out, SHA256_DIGEST_LEN);
+	if (ret == 0)
+		state->hash_dirty = false;
+	return ret;
+}
+
+static int
+parse_string(const uint8_t *payload, size_t length, size_t *pos, struct dssh_bytes *out)
+{
+	uint32_t length_u32;
+	if (payload == NULL || !dssh_buffer_has(length, *pos, 4)
+	    || dssh_parse_uint32(&payload[*pos], length - *pos, &length_u32) < 4)
+		return DSSH_ERROR_PARSE;
+	*pos += 4;
+#if SIZE_MAX < UINT32_MAX
+	if (length_u32 > SIZE_MAX)
+		return DSSH_ERROR_PARSE;
+#endif
+	size_t string_len = (size_t)length_u32;
+	if (!dssh_buffer_has(length, *pos, string_len))
+		return DSSH_ERROR_PARSE;
+	*out = (struct dssh_bytes){&payload[*pos], string_len};
+	*pos += string_len;
+	return 0;
+}
+
+static int
+serialize_string(struct dssh_bytes bytes, uint8_t *payload, size_t capacity, size_t *pos)
+{
+	if (bytes.len > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+	uint32_t wire_len = (uint32_t)bytes.len;
+	int ret = dssh_serialize_uint32(wire_len, payload, capacity, pos);
+	if (ret < 0)
+		return ret;
+	if (!dssh_buffer_has(capacity, *pos, bytes.len))
+		return DSSH_ERROR_TOOLONG;
+	memcpy(&payload[*pos], bytes.data, bytes.len);
+	*pos += bytes.len;
 	return 0;
 }
 
 DSSH_PRIVATE int
-curve25519_handler_impl(struct dssh_kex_context *kctx, const struct dssh_c25519_ops *ops)
+curve25519_handler_impl(const struct dssh_kex_context *ctx, struct dssh_kex_result *out,
+    const struct dssh_x25519_ops *ops)
 {
-	int           res;
-	dssh_key_algo ka = kctx->key_algo;
-
-	uint8_t  q_c[X25519_KEY_LEN], q_s[X25519_KEY_LEN];
-	uint8_t *raw_secret = NULL;
-	size_t   raw_secret_len;
-	uint8_t *ss_copy = NULL;
-	size_t   ss_len;
-	uint8_t *k_mpint = NULL;
-	size_t   k_mpint_len;
-
-	/* Get host key blob (server signs, client verifies) */
-	const uint8_t *k_s_buf = NULL;
-	size_t         k_s_len = 0;
-
-	if (kctx->client) {
-		/* Client: send ECDH_INIT, receive ECDH_REPLY */
-		void *priv_ctx = NULL;
-
-		/* Generate keypair and send Q_C */
-		res = ops->keygen(q_c, &priv_ctx);
-		if (res < 0)
-			return res;
-
-		uint8_t init_msg[1 + 4 + X25519_KEY_LEN];
-		size_t  pos = 0;
-
-		init_msg[pos++] = SSH_MSG_KEX_ECDH_INIT;
-		res             = dssh_serialize_uint32(X25519_KEY_LEN, init_msg, sizeof(init_msg), &pos);
-		if (res < 0) {
-			ops->free_priv(priv_ctx);
-			return res;
+	if (ctx == NULL || ctx->state == NULL || out == NULL
+	    || out->shared_secret.data != NULL || out->shared_secret.len != 0
+	    || out->exchange_hash.data != NULL || out->exchange_hash.len != 0
+	    || out->lease.release != NULL || out->lease.owner != NULL)
+		return DSSH_ERROR_INVALID;
+	struct curve_state *state = ctx->state;
+	if (state->ops != ops || state->client != ctx->client || state->hash_dirty || state->backend_dirty)
+		return DSSH_ERROR_INVALID;
+	dssh_key_algo ka = ctx->key_algo;
+	void *priv = NULL;
+	struct dssh_bytes_result signature = {0};
+	struct dssh_bytes hostkey = {0}, peer = {0}, peer_signature = {0}, secret = {0};
+	uint8_t our_public[DSSH_X25519_LEN];
+	uint8_t *raw = NULL, *hash = NULL, *mpint = NULL, *reply = NULL;
+	uint8_t *payload = NULL;
+	size_t length = 0, pos = 1, mpint_len = 0;
+	uint8_t type;
+	int ret, drop;
+	if (ctx->client) {
+		ret = ops->keygen(state->backend, our_public, &priv);
+		state->backend_dirty = ret != 0;
+		if (ret != 0)
+			goto done;
+		uint8_t init[1 + 4 + DSSH_X25519_LEN];
+		init[0] = SSH_MSG_KEX_ECDH_INIT;
+		struct dssh_bytes public_key = {our_public, sizeof(our_public)};
+		ret = serialize_string(public_key, init, sizeof(init), &pos);
+		if (ret < 0)
+			goto done;
+		ret = ctx->send(init, pos, ctx->io_ctx);
+		if (ret != 0)
+			goto done;
+		ret = ctx->recv(&type, &payload, &length, ctx->io_ctx);
+		if (ret != 0)
+			goto done;
+		if (type != SSH_MSG_KEX_ECDH_REPLY) {
+			ret = DSSH_ERROR_PARSE;
+			goto done;
 		}
-		memcpy(&init_msg[pos], q_c, X25519_KEY_LEN);
-		pos += X25519_KEY_LEN;
-		res = kctx->send(init_msg, pos, kctx->io_ctx);
-		if (res < 0) {
-			ops->free_priv(priv_ctx);
-			return res;
-		}
-
-		/* Receive ECDH_REPLY */
-		uint8_t  msg_type;
-		uint8_t *reply;
-		size_t   reply_len;
-
-		res = kctx->recv(&msg_type, &reply, &reply_len, kctx->io_ctx);
-		if (res < 0) {
-			ops->free_priv(priv_ctx);
-			return res;
-		}
-		if (msg_type != SSH_MSG_KEX_ECDH_REPLY) {
-			ops->free_priv(priv_ctx);
-			return DSSH_ERROR_PARSE;
-		}
-
-		/* Parse K_S, Q_S, sig */
-		size_t   rpos = 1;
-		uint32_t ks_len;
-
-		if (!dssh_buffer_has(reply_len, rpos, 4)
-		    || dssh_parse_uint32(&reply[rpos], reply_len - rpos, &ks_len) < 4
-		    || !dssh_buffer_has(reply_len, rpos + 4, ks_len)) {
-			ops->free_priv(priv_ctx);
-			return DSSH_ERROR_PARSE;
-		}
-		rpos += 4;
-
-		uint8_t *k_s = &reply[rpos];
-
-		k_s_len = ks_len;
-		rpos += ks_len;
-
-		uint32_t qs_len;
-
-		if (!dssh_buffer_has(reply_len, rpos, 4)) {
-			ops->free_priv(priv_ctx);
-			return DSSH_ERROR_PARSE;
-		}
-		if (dssh_parse_uint32(&reply[rpos], reply_len - rpos, &qs_len) < 4) {
-			ops->free_priv(priv_ctx);
-			return DSSH_ERROR_PARSE;
-		}
-		if ((qs_len != X25519_KEY_LEN) || !dssh_buffer_has(reply_len, rpos + 4, qs_len)) {
-			ops->free_priv(priv_ctx);
-			return DSSH_ERROR_PARSE;
-		}
-		rpos += 4;
-		memcpy(q_s, &reply[rpos], X25519_KEY_LEN);
-		rpos += qs_len;
-
-		uint32_t sig_len;
-
-		if (!dssh_buffer_has(reply_len, rpos, 4)) {
-			ops->free_priv(priv_ctx);
-			return DSSH_ERROR_PARSE;
-		}
-		if (dssh_parse_uint32(&reply[rpos], reply_len - rpos, &sig_len) < 4) {
-			ops->free_priv(priv_ctx);
-			return DSSH_ERROR_PARSE;
-		}
-		if (!dssh_buffer_has(reply_len, rpos + 4, sig_len)) {
-			ops->free_priv(priv_ctx);
-			return DSSH_ERROR_PARSE;
-		}
-		rpos += 4;
-
-		uint8_t *sig_h = &reply[rpos];
-
-		/* Compute shared secret using our private key + Q_S */
-		res = ops->derive(priv_ctx, q_s, X25519_KEY_LEN, &raw_secret, &raw_secret_len);
-		ops->free_priv(priv_ctx);
-		if (res < 0)
-			return res;
-
-		res = encode_shared_secret(raw_secret, raw_secret_len, &ss_copy, &ss_len, &k_mpint, &k_mpint_len);
-		dssh_cleanse(raw_secret, raw_secret_len);
-		free(raw_secret);
-		if (res < 0)
-			return res;
-
-		/* Compute exchange hash */
-		uint8_t hash[SHA256_DIGEST_LEN];
-
-		res = compute_exchange_hash_c25519(kctx->v_c, kctx->v_c_len, kctx->v_s, kctx->v_s_len, kctx->i_c,
-		    kctx->i_c_len, kctx->i_s, kctx->i_s_len, k_s, k_s_len, q_c, X25519_KEY_LEN, q_s,
-		    X25519_KEY_LEN, k_mpint, k_mpint_len, hash);
-		dssh_cleanse(k_mpint, k_mpint_len);
-		free(k_mpint);
-		if (res < 0) {
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return res;
-		}
-
-		/* Verify key algorithm and host key */
-		if ((ka == NULL) || (ka->verify == NULL)) {
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return DSSH_ERROR_INIT;
-		}
-
-		if (kctx->hostkey_verify) {
-			uint8_t fp[32];
-
-			if (dssh_hash_oneshot("SHA-256", k_s, k_s_len, fp, sizeof(fp)) < 0) {
-				dssh_cleanse(ss_copy, ss_len);
-				free(ss_copy);
-				return DSSH_ERROR_INIT;
-			}
-			unsigned int bits = ka->key_bits ? ka->key_bits(k_s, k_s_len) : 0;
-
-			if (kctx->hostkey_verify(ka->name, bits, fp, k_s, k_s_len,
-			        kctx->hostkey_verify_cbdata) != DSSH_HOSTKEY_ACCEPT) {
-				dssh_cleanse(ss_copy, ss_len);
-				free(ss_copy);
-				return DSSH_ERROR_INVALID;
-			}
-		}
-
-		/* Verify server signature */
-		res = ka->verify(k_s, k_s_len, sig_h, sig_len, hash, SHA256_DIGEST_LEN);
-		if (res < 0) {
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return res;
-		}
-
-		/* Store results */
-		kctx->shared_secret    = ss_copy;
-		kctx->shared_secret_sz = ss_len;
-		kctx->exchange_hash    = malloc(SHA256_DIGEST_LEN);
-		if (kctx->exchange_hash == NULL) {
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			kctx->shared_secret    = NULL;
-			kctx->shared_secret_sz = 0;
-			return DSSH_ERROR_ALLOC;
-		}
-		memcpy(kctx->exchange_hash, hash, SHA256_DIGEST_LEN);
-		kctx->exchange_hash_sz = SHA256_DIGEST_LEN;
+		pos = 1;
+		ret = parse_string(payload, length, &pos, &hostkey);
+		if (ret < 0)
+			goto done;
+		ret = parse_string(payload, length, &pos, &peer);
+		if (ret < 0)
+			goto done;
+		ret = parse_string(payload, length, &pos, &peer_signature);
+		if (ret < 0)
+			goto done;
 	}
 	else {
-		if ((ka == NULL) || (ka->pubkey == NULL) || (ka->sign == NULL))
-			return DSSH_ERROR_INIT;
-
-		/* Get our host key blob */
-		res = ka->pubkey(&k_s_buf, &k_s_len, ka->ctx);
-		if (res < 0)
-			return res;
-
-		/* Receive ECDH_INIT(Q_C) */
-		uint8_t  msg_type;
-		uint8_t *init_payload;
-		size_t   init_len;
-
-		res = kctx->recv(&msg_type, &init_payload, &init_len, kctx->io_ctx);
-		if (res < 0)
-			return res;
-		if (msg_type != SSH_MSG_KEX_ECDH_INIT)
-			return DSSH_ERROR_PARSE;
-
-		size_t   rpos = 1;
-		uint32_t qc_len;
-
-		if (!dssh_buffer_has(init_len, rpos, 4)
-		    || dssh_parse_uint32(&init_payload[rpos], init_len - rpos, &qc_len) < 4
-		    || (qc_len != X25519_KEY_LEN) || !dssh_buffer_has(init_len, rpos + 4, qc_len))
-			return DSSH_ERROR_PARSE;
-		rpos += 4;
-		memcpy(q_c, &init_payload[rpos], X25519_KEY_LEN);
-
-		/* Generate our ephemeral keypair and compute shared secret */
-		res = ops->exchange(q_c, X25519_KEY_LEN, q_s, &raw_secret, &raw_secret_len);
-		if (res < 0)
-			return res;
-
-		res = encode_shared_secret(raw_secret, raw_secret_len, &ss_copy, &ss_len, &k_mpint, &k_mpint_len);
-		dssh_cleanse(raw_secret, raw_secret_len);
-		free(raw_secret);
-		if (res < 0)
-			return res;
-
-		/* Compute exchange hash */
-		uint8_t hash[SHA256_DIGEST_LEN];
-
-		res = compute_exchange_hash_c25519(kctx->v_c, kctx->v_c_len, kctx->v_s, kctx->v_s_len, kctx->i_c,
-		    kctx->i_c_len, kctx->i_s, kctx->i_s_len, k_s_buf, k_s_len, q_c, X25519_KEY_LEN, q_s,
-		    X25519_KEY_LEN, k_mpint, k_mpint_len, hash);
-		dssh_cleanse(k_mpint, k_mpint_len);
-		free(k_mpint);
-		if (res < 0) {
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return res;
+		if (ka == NULL || ka->pubkey == NULL || ka->sign == NULL) {
+			ret = DSSH_ERROR_INIT;
+			goto done;
 		}
-
-		/* Sign exchange hash */
-		uint8_t *sig_buf = NULL;
-		size_t   sig_len;
-
-		res = ka->sign(&sig_buf, &sig_len, hash, SHA256_DIGEST_LEN, ka->ctx);
-		if (res < 0) {
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return res;
+		ret = ka->pubkey(&hostkey.data, &hostkey.len, ka->ctx);
+		if (ret != 0)
+			goto done;
+		if (hostkey.data == NULL || hostkey.len == 0 || hostkey.len > UINT32_MAX) {
+			ret = DSSH_ERROR_INVALID;
+			goto done;
 		}
-
-		/* Send ECDH_REPLY(K_S, Q_S, sig) */
-		if (k_s_len > UINT32_MAX || sig_len > UINT32_MAX) {
-			free(sig_buf);
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return DSSH_ERROR_INVALID;
+		/* Capture a non-leased producer view before any later callback.
+		 * Reuse the session's retained slot on subsequent exchanges. */
+		uint8_t *saved_hostkey = NULL;
+		ret = dssh_kex_workspace_get(state->workspace, CURVE_HOSTKEY, hostkey.len, &saved_hostkey);
+		if (ret < 0)
+			goto done;
+		memcpy(saved_hostkey, hostkey.data, hostkey.len);
+		hostkey.data = saved_hostkey;
+		ret = ctx->recv(&type, &payload, &length, ctx->io_ctx);
+		if (ret != 0)
+			goto done;
+		if (type != SSH_MSG_KEX_ECDH_INIT) {
+			ret = DSSH_ERROR_PARSE;
+			goto done;
 		}
-		/* 1 (msg) + 4 (k_s len) + k_s + 4 (Q_S len) + Q_S + 4 (sig len) + sig */
-		size_t reply_sz = 1 + 4 + 4 + X25519_KEY_LEN + 4;
-		if (k_s_len > SIZE_MAX - reply_sz) {
-			free(sig_buf);
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return DSSH_ERROR_INVALID;
-		}
-		reply_sz += k_s_len;
-		if (sig_len > SIZE_MAX - reply_sz) {
-			free(sig_buf);
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return DSSH_ERROR_INVALID;
-		}
-		reply_sz += sig_len;
-
-		uint8_t *reply_msg = malloc(reply_sz);
-		if (reply_msg == NULL) {
-			free(sig_buf);
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return DSSH_ERROR_ALLOC;
-		}
-
-		size_t   pos         = 0;
-		uint32_t k_s_len_u32 = (uint32_t)k_s_len;
-		uint32_t sig_len_u32 = (uint32_t)sig_len;
-
-		reply_msg[pos++] = SSH_MSG_KEX_ECDH_REPLY;
-		res              = dssh_serialize_uint32(k_s_len_u32, reply_msg, reply_sz, &pos);
-		if (res < 0) {
-			free(reply_msg);
-			free(sig_buf);
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return res;
-		}
-		memcpy(&reply_msg[pos], k_s_buf, k_s_len);
-		pos += k_s_len;
-		res = dssh_serialize_uint32(X25519_KEY_LEN, reply_msg, reply_sz, &pos);
-		if (res < 0) {
-			free(reply_msg);
-			free(sig_buf);
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return res;
-		}
-		memcpy(&reply_msg[pos], q_s, X25519_KEY_LEN);
-		pos += X25519_KEY_LEN;
-		res = dssh_serialize_uint32(sig_len_u32, reply_msg, reply_sz, &pos);
-		if (res < 0) {
-			free(reply_msg);
-			free(sig_buf);
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return res;
-		}
-		memcpy(&reply_msg[pos], sig_buf, sig_len);
-		pos += sig_len;
-		free(sig_buf);
-		res = kctx->send(reply_msg, pos, kctx->io_ctx);
-		free(reply_msg);
-		if (res < 0) {
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			return res;
-		}
-
-		/* Store results */
-		kctx->shared_secret    = ss_copy;
-		kctx->shared_secret_sz = ss_len;
-		kctx->exchange_hash    = malloc(SHA256_DIGEST_LEN);
-		if (kctx->exchange_hash == NULL) {
-			dssh_cleanse(ss_copy, ss_len);
-			free(ss_copy);
-			kctx->shared_secret    = NULL;
-			kctx->shared_secret_sz = 0;
-			return DSSH_ERROR_ALLOC;
-		}
-		memcpy(kctx->exchange_hash, hash, SHA256_DIGEST_LEN);
-		kctx->exchange_hash_sz = SHA256_DIGEST_LEN;
+		pos = 1;
+		ret = parse_string(payload, length, &pos, &peer);
+		if (ret < 0)
+			goto done;
 	}
-
-	return 0;
+	if (peer.len != DSSH_X25519_LEN || pos != length) {
+		ret = DSSH_ERROR_PARSE;
+		goto done;
+	}
+	if (!ctx->client) {
+		ret = ops->keygen(state->backend, our_public, &priv);
+		state->backend_dirty = ret != 0;
+		if (ret != 0)
+			goto done;
+	}
+	ret = dssh_kex_workspace_result(state->workspace, DSSH_X25519_LEN, SHA256_DIGEST_LEN,
+	    &out->lease, &raw, &hash);
+	if (ret < 0)
+		goto done;
+	ret = ops->derive(priv, peer.data, peer.len, raw);
+	if (ret != 0)
+		goto done;
+	ops->free_priv(priv);
+	priv = NULL;
+	ret = dssh_kex_workspace_get(state->workspace, CURVE_MPINT, CURVE_MPINT_CAPACITY, &mpint);
+	if (ret < 0)
+		goto done;
+	ret = encode_shared_secret(raw, DSSH_X25519_LEN, &secret, mpint, CURVE_MPINT_CAPACITY, &mpint_len);
+	if (ret < 0)
+		goto done;
+	ret = compute_exchange_hash(state, ctx, hostkey,
+	    ctx->client ? our_public : peer.data, ctx->client ? peer.data : our_public, mpint, mpint_len, hash);
+	if (ret < 0)
+		goto done;
+	ret = dssh_kex_workspace_drop(state->workspace, CURVE_MPINT);
+	if (ret < 0)
+		goto done;
+	if (ctx->client) {
+		if (ka == NULL || ka->verify == NULL) {
+			ret = DSSH_ERROR_INIT;
+			goto done;
+		}
+		if (ctx->hostkey_verify != NULL) {
+			uint8_t fingerprint[SHA256_DIGEST_LEN];
+			state->hash_dirty = true;
+			ret = dssh_hash_update(state->hash, hostkey.data, hostkey.len);
+			if (ret < 0)
+				goto done;
+			ret = dssh_hash_final(state->hash, fingerprint, sizeof(fingerprint));
+			if (ret < 0)
+				goto done;
+			state->hash_dirty = false;
+			unsigned int bits = ka->key_bits != NULL ? ka->key_bits(hostkey.data, hostkey.len) : 0;
+			if (ctx->hostkey_verify(ka->name, bits, fingerprint, hostkey.data, hostkey.len,
+			        ctx->hostkey_verify_cbdata) != DSSH_HOSTKEY_ACCEPT) {
+				ret = DSSH_ERROR_INVALID;
+				goto done;
+			}
+		}
+		ret = ka->verify(hostkey.data, hostkey.len, peer_signature.data, peer_signature.len, hash, SHA256_DIGEST_LEN);
+		if (ret != 0)
+			goto done;
+	}
+	else {
+		ret = ka->sign(&signature, hash, SHA256_DIGEST_LEN, ka->ctx);
+		if (ret != 0)
+			goto done;
+		if (signature.lease.release == NULL || signature.bytes.data == NULL || signature.bytes.len == 0
+		    || signature.bytes.len > UINT32_MAX) {
+			ret = DSSH_ERROR_INVALID;
+			goto done;
+		}
+		size_t size = 1 + 4 + 4 + DSSH_X25519_LEN + 4;
+		if (hostkey.len > SIZE_MAX - size) {
+			ret = DSSH_ERROR_INVALID;
+			goto done;
+		}
+		size += hostkey.len;
+		if (signature.bytes.len > SIZE_MAX - size) {
+			ret = DSSH_ERROR_INVALID;
+			goto done;
+		}
+		size += signature.bytes.len;
+		ret = dssh_kex_workspace_get(state->workspace, CURVE_REPLY, size, &reply);
+		if (ret < 0)
+			goto done;
+		pos = 1;
+		reply[0] = SSH_MSG_KEX_ECDH_REPLY;
+		ret = serialize_string(hostkey, reply, size, &pos);
+		if (ret < 0)
+			goto done;
+		struct dssh_bytes public_key = {our_public, sizeof(our_public)};
+		ret = serialize_string(public_key, reply, size, &pos);
+		if (ret < 0)
+			goto done;
+		ret = serialize_string(signature.bytes, reply, size, &pos);
+		if (ret < 0)
+			goto done;
+		dssh_result_release(&signature.lease);
+		ret = ctx->send(reply, pos, ctx->io_ctx);
+		if (ret != 0)
+			goto done;
+	}
+	ret = 0;
+done:
+	ops->free_priv(priv);
+	dssh_result_release(&signature.lease);
+	drop = dssh_kex_workspace_drop(state->workspace, CURVE_MPINT);
+	if (drop < 0 && ret == 0)
+		ret = drop;
+	drop = dssh_kex_workspace_drop(state->workspace, CURVE_REPLY);
+	if (drop < 0 && ret == 0)
+		ret = drop;
+	drop = dssh_kex_workspace_drop(state->workspace, CURVE_HOSTKEY);
+	if (drop < 0 && ret == 0)
+		ret = drop;
+	if (ret > 0)
+		ret = DSSH_ERROR_INVALID;
+	if (ret < 0)
+		dssh_result_release(&out->lease);
+	else {
+		out->shared_secret = secret;
+		out->exchange_hash = (struct dssh_bytes){hash, SHA256_DIGEST_LEN};
+	}
+	return ret;
 }

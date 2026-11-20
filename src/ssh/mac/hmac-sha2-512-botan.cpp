@@ -8,6 +8,9 @@
 #include <memory>
 
 #include "deucessh.h"
+#ifdef DSSH_TESTING
+ #include "test/dssh_test_botan_mac.h"
+#endif
 
 #define HMAC_SHA2_512_KEY_SIZE 64
 
@@ -19,7 +22,11 @@ extern "C" int
 dssh_botan_hmac512_init(const uint8_t *key, dssh_mac_ctx **out)
 {
 	try {
+#ifdef DSSH_TESTING
+		auto mac = dssh_test_botan_mac_create("HMAC(SHA-512)");
+#else
 		auto mac = Botan::MessageAuthenticationCode::create_or_throw("HMAC(SHA-512)");
+#endif
 		mac->set_key(key, HMAC_SHA2_512_KEY_SIZE);
 
 		dssh_mac_ctx *cbd = new (std::nothrow) dssh_mac_ctx;

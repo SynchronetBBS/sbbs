@@ -452,31 +452,65 @@ prompt_is_password(const char *p, size_t len)
 	return len == expected_len && memcmp(p, expected, expected_len) == 0;
 }
 
+struct kbi_result {
+	uint32_t count;
+	struct dssh_bytes items[];
+};
+
+static void
+kbi_result_release(void *owner)
+{
+	struct kbi_result *result = owner;
+	uint8_t *answers = (uint8_t *)(result->items + result->count);
+	dssh_cleanse(answers, (size_t)result->count * (MAX_PASSWD_LEN + 1));
+	free(result);
+}
+
 static int
 kbi_prompt_cb(const uint8_t *name, size_t name_len,
               const uint8_t *instruction, size_t instruction_len,
               uint32_t num_prompts, const uint8_t **prompts,
               const size_t *prompt_lens, const bool *echo,
-              uint8_t **responses, size_t *response_lens, void *cbdata)
+              struct dssh_auth_responses *out, void *cbdata)
 {
 	struct kbi_ctx *ctx = cbdata;
+	struct kbi_result *result;
+	uint8_t *answers;
 	(void)name;
 	(void)name_len;
 
-	/* Show the server's instruction (if any) as a popup. */
 	if (instruction_len > 0) {
+		if (instruction_len == SIZE_MAX)
+			return DSSH_ERROR_TOOLONG;
 		char *msg = malloc(instruction_len + 1);
-		if (msg != NULL) {
-			memcpy(msg, instruction, instruction_len);
-			msg[instruction_len] = 0;
-			host_ui_alert("SSH Keyboard-Interactive", msg);
-			free(msg);
-		}
+		if (msg == NULL)
+			return DSSH_ERROR_ALLOC;
+		memcpy(msg, instruction, instruction_len);
+		msg[instruction_len] = 0;
+		host_ui_alert("SSH Keyboard-Interactive", msg);
+		free(msg);
 	}
+	if (num_prompts == 0)
+		return 0;
+	size_t max_prompts = (SIZE_MAX - sizeof(*result)) /
+	    (sizeof(*result->items) + MAX_PASSWD_LEN + 1);
+	if (num_prompts > max_prompts)
+		return DSSH_ERROR_TOOLONG;
+	size_t count = (size_t)num_prompts;
+	result = calloc(1, sizeof(*result) + count *
+	    (sizeof(*result->items) + MAX_PASSWD_LEN + 1));
+	if (result == NULL)
+		return DSSH_ERROR_ALLOC;
+	result->count = num_prompts;
+	answers = (uint8_t *)(result->items + count);
+	out->items = result->items;
+	out->count = num_prompts;
+	out->lease.release = kbi_result_release;
+	out->lease.owner = result;
 
 	for (uint32_t i = 0; i < num_prompts; i++) {
-		char   promptstr[256];
-		char   answer[MAX_PASSWD_LEN + 1] = {0};
+		char promptstr[256];
+		char *answer = (char *)(answers + (size_t)i * (MAX_PASSWD_LEN + 1));
 		size_t pl = prompt_lens[i] < sizeof(promptstr) - 1 ?
 		    prompt_lens[i] : sizeof(promptstr) - 1;
 		memcpy(promptstr, prompts[i], pl);
@@ -487,41 +521,69 @@ kbi_prompt_cb(const uint8_t *name, size_t name_len,
 		    && num_prompts == 1
 		    && ctx->bbs != NULL && ctx->bbs->password[0]
 		    && prompt_is_password(promptstr, pl)) {
-			SAFECOPY(answer, ctx->bbs->password);
+			snprintf(answer, MAX_PASSWD_LEN + 1, "%s", ctx->bbs->password);
 			ctx->used_saved_pw = true;
 			autofill = true;
 		}
 
-		if (!autofill) {
-			if (host_ui_prompt("SSH Keyboard-Interactive", promptstr,
-			    answer, sizeof(answer), MAX_PASSWD_LEN, !echo[i]) < 0) {
-				dssh_cleanse(answer, sizeof(answer));
-				for (uint32_t j = 0; j < i; j++) {
-					dssh_cleanse(responses[j], response_lens[j]);
-					free(responses[j]);
-					responses[j] = NULL;
-					response_lens[j] = 0;
-				}
-				return -1;
-			}
-		}
-
-		size_t alen = strlen(answer);
-		responses[i] = malloc(alen);
-		if (responses[i] == NULL) {
-			dssh_cleanse(answer, sizeof(answer));
-			return -1;
-		}
-		memcpy(responses[i], answer, alen);
-		response_lens[i] = alen;
-		dssh_cleanse(answer, sizeof(answer));
+		if (!autofill && host_ui_prompt("SSH Keyboard-Interactive", promptstr,
+		    answer, MAX_PASSWD_LEN + 1, MAX_PASSWD_LEN, !echo[i]) < 0)
+			return DSSH_ERROR_TERMINATED;
+		result->items[i].data = (const uint8_t *)answer;
+		result->items[i].len = strlen(answer);
 	}
 	return 0;
+}
+
+static bool
+auth_offers_method(int *auth_rc, const char *method)
+{
+	if (*auth_rc != DSSH_AUTH_CONTINUE && *auth_rc != DSSH_AUTH_PARTIAL)
+		return false;
+	int64_t needed = dssh_auth_get_methods(ssh_session, NULL, 0);
+	if (needed < 0) {
+		*auth_rc = (int)needed;
+		return false;
+	}
+#if SIZE_MAX < INT64_MAX
+	if (needed > SIZE_MAX) {
+		*auth_rc = DSSH_ERROR_TOOLONG;
+		return false;
+	}
+#endif
+	size_t size = (size_t)needed;
+	char *methods = malloc(size);
+	if (methods == NULL) {
+		*auth_rc = DSSH_ERROR_ALLOC;
+		return false;
+	}
+	int64_t rc = dssh_auth_get_methods(ssh_session, methods, size);
+	bool found = false;
+	if (rc < 0)
+		*auth_rc = (int)rc;
+	else {
+		size_t len = strlen(method);
+		const char *next = methods;
+		while (*next) {
+			const char *end = strchr(next, ',');
+			size_t part = end == NULL ? strlen(next) : (size_t)(end - next);
+			if (part == len && memcmp(next, method, len) == 0) {
+				found = true;
+				break;
+			}
+			if (end == NULL)
+				break;
+			next = end + 1;
+		}
+	}
+	free(methods);
+	return found;
 }
 
 /* ----------------------------------------------------- algorithm setup */
 
 static bool crypt_initialized = false;
+static bool crypt_ready = false;
 
 /* Static lifetime so dssh_transport_set_version() can keep the pointer
    for the life of the global config (it does not copy). */
@@ -551,6 +613,9 @@ build_ssh_software_version(void)
 			joined = true;
 			c = '_';
 		}
+		else if (c == '-') {
+			c = '_';
+		}
 		else if (c < 0x21 || c > 0x7E) {
 			continue;
 		}
@@ -576,28 +641,22 @@ init_crypt(void)
 	/* Identify ourselves in the SSH version banner so server admins
 	   can pick us out of their logs.  Must precede session_init(). */
 	build_ssh_software_version();
-	if (ssh_software_version[0])
-		dssh_transport_set_version(ssh_software_version, NULL);
-
-	/* Registration order is preference order (first = highest priority).
-	   The set here mirrors what the test variants exercise in DeuceSSH;
-	   it's a conservative "modern defaults" line-up. */
-	dssh_register_mlkem768x25519_sha256();
-	dssh_register_sntrup761x25519_sha512();
-	dssh_register_curve25519_sha256();
-	dssh_register_dh_gex_sha256();
-
-	dssh_register_aes256_ctr();
-	dssh_register_aes128_cbc();
-	dssh_register_hmac_sha2_256();
-	dssh_register_hmac_sha2_512();
-	dssh_register_none_comp();
-
-	dssh_register_ssh_ed25519();
-	dssh_register_rsa_sha2_256();
-	dssh_register_rsa_sha2_512();
-
-	dssh_transport_set_callbacks(transport_tx_cb, transport_rx_cb, NULL, NULL);
+	if (dssh_transport_set_version(ssh_software_version, NULL) != 0 ||
+	    dssh_register_mlkem768x25519_sha256() != 0 ||
+	    dssh_register_sntrup761x25519_sha512() != 0 ||
+	    dssh_register_curve25519_sha256() != 0 ||
+	    dssh_register_dh_gex_sha256() != 0 ||
+	    dssh_register_aes256_ctr() != 0 ||
+	    dssh_register_aes128_cbc() != 0 ||
+	    dssh_register_hmac_sha2_256() != 0 ||
+	    dssh_register_hmac_sha2_512() != 0 ||
+	    dssh_register_none_comp() != 0 ||
+	    dssh_register_ssh_ed25519() != 0 ||
+	    dssh_register_rsa_sha2_256() != 0 ||
+	    dssh_register_rsa_sha2_512() != 0 ||
+	    dssh_transport_set_callbacks(transport_tx_cb, transport_rx_cb, NULL, NULL) != 0)
+		return;
+	crypt_ready = true;
 
 	atexit(exit_crypt);
 }
@@ -614,18 +673,22 @@ ensure_client_key(void)
 {
 	char path[MAX_PATH + 1];
 	get_syncterm_filename(path, sizeof(path), SYNCTERM_PATH_KEYS, false);
-	if (dssh_ed25519_load_key_file(path, NULL, NULL) == 0)
+	if (dssh_session_load_client_key_file(ssh_session, "ssh-ed25519", path, NULL, NULL) == 0)
 		return true;
-	if (dssh_ed25519_generate_key() != 0)
+	if (dssh_session_generate_client_key(ssh_session, "ssh-ed25519", 256) != 0)
 		return false;
-	/* Save unencrypted — matches the Cryptlib-era posture where the
-	   key file was encrypted with a hardcoded password (i.e. no real
-	   protection at rest).  An OS-keychain option can follow later. */
-	if (dssh_ed25519_save_key_file(path, NULL, NULL) != 0) {
-		/* Can't persist, but the in-memory key still works for this
-		   session. */
+	if (dssh_session_save_client_key_file(ssh_session, "ssh-ed25519", path, NULL, NULL) != 0) {
+		/* The session can use its key even if persistence fails. */
 	}
 	return true;
+}
+
+int64_t
+ssh_get_public_key(char *buf, size_t bufsz)
+{
+	if (ssh_session == NULL)
+		return DSSH_ERROR_INIT;
+	return dssh_session_get_client_key_pub_str(ssh_session, "ssh-ed25519", buf, bufsz);
 }
 
 /* ------------------------------------------------------- I/O threads */
@@ -648,6 +711,8 @@ ssh_input_thread(void *args)
 			continue;
 		if (events & DSSH_POLL_READ) {
 			int64_t n = dssh_chan_read(ssh_chan, 0, conn_api.rd_buf, conn_api.rd_buf_size);
+			if (n == DSSH_ERROR_NOMORE)
+				continue;
 			if (n < 0)
 				break;
 			if (n == 0)
@@ -665,7 +730,7 @@ ssh_input_thread(void *args)
 			   surface stderr separately; an EOF on stderr alone
 			   is not a connection-ending event. */
 			int64_t n = dssh_chan_read(ssh_chan, 1, stderr_sink, stderr_sink_sz);
-			if (n < 0)
+			if (n < 0 && n != DSSH_ERROR_NOMORE)
 				break;
 		}
 	}
@@ -695,6 +760,10 @@ ssh_output_thread(void *args)
 			size_t sent = 0;
 			while (sent < wr && !conn_api.terminate && sftp_shell_alive) {
 				int64_t n = dssh_chan_write(ssh_chan, 0, conn_api.wr_buf + sent, wr - sent);
+				if (n == DSSH_ERROR_NOMORE) {
+					if (dssh_chan_poll(ssh_chan, DSSH_POLL_WRITE, 100) >= 0)
+						continue;
+				}
 				if (n < 0) {
 					sftp_shell_alive = false;
 					break;
@@ -743,6 +812,8 @@ sftp_recv_thread(void *args)
 			break;
 		if (events & DSSH_POLL_READ) {
 			int64_t n = dssh_chan_read(sftp_chan, 0, buf, sizeof(buf));
+			if (n == DSSH_ERROR_NOMORE)
+				continue;
 			if (n <= 0)
 				break;
 			if (!sftpc_recv(sftp_state, buf, (uint32_t)n))
@@ -790,9 +861,9 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 	size_t sent = 0;
 	while (sent < sz && !conn_api.terminate && sftp_chan != NULL) {
 		int64_t n = dssh_chan_write(sftp_chan, 0, buf + sent, sz - sent);
-		if (n < 0)
+		if (n < 0 && n != DSSH_ERROR_NOMORE)
 			return false;
-		if (n == 0) {
+		if (n == DSSH_ERROR_NOMORE) {
 			/* Server's window-to-us is full; instead of busy-spinning
 			 * on tx_mtx waiting for a WINDOW_ADJUST, park on the
 			 * channel's poll cv until POLL_WRITE goes ready (or the
@@ -1032,8 +1103,8 @@ error_popup_rc(struct bbslist *bbs, const char *what, int rc)
 	const char *remote = ssh_session ? dssh_transport_get_remote_version(ssh_session) : NULL;
 	const char *kex    = ssh_session ? dssh_transport_get_kex_name(ssh_session) : NULL;
 	const char *hk     = ssh_session ? dssh_transport_get_hostkey_name(ssh_session) : NULL;
-	const char *enc    = ssh_session ? dssh_transport_get_enc_name(ssh_session) : NULL;
-	const char *mac    = ssh_session ? dssh_transport_get_mac_name(ssh_session) : NULL;
+	const char *enc    = ssh_session ? dssh_transport_get_enc_name(ssh_session, DSSH_CLIENT_TO_SERVER) : NULL;
+	const char *mac    = ssh_session ? dssh_transport_get_mac_name(ssh_session, DSSH_CLIENT_TO_SERVER) : NULL;
 	char io_line[128] = "";
 	if (io_fail_op != NULL) {
 		if (io_fail_peer_closed)
@@ -1050,8 +1121,8 @@ error_popup_rc(struct bbslist *bbs, const char *what, int rc)
 	    "Remote:   %s\r\n"
 	    "KEX:      %s\r\n"
 	    "Host key: %s\r\n"
-	    "Cipher:   %s\r\n"
-	    "MAC:      %s\r\n"
+	    "TX cipher: %s\r\n"
+	    "TX MAC:    %s\r\n"
 	    "%s",
 	    what, rc,
 	    remote && remote[0] ? remote : "(no version received)",
@@ -1099,8 +1170,8 @@ ssh_connect(struct bbslist *bbs)
 	assert(ssh_sock == INVALID_SOCKET);
 
 	init_crypt();
-	if (!ensure_client_key()) {
-		error_popup(bbs, "loading or generating SSH key");
+	if (!crypt_ready) {
+		error_popup(bbs, "initializing SSH algorithms");
 		return -1;
 	}
 
@@ -1120,6 +1191,10 @@ ssh_connect(struct bbslist *bbs)
 	ssh_session = dssh_session_init(true, 0);
 	if (ssh_session == NULL) {
 		error_popup(bbs, "creating session");
+		return -1;
+	}
+	if (!ensure_client_key()) {
+		error_popup(bbs, "loading or generating SSH key");
 		return -1;
 	}
 	/* Bound peer-response waits at 60s.  Slightly tighter than the
@@ -1190,24 +1265,12 @@ ssh_connect(struct bbslist *bbs)
 	 * advertise so users aren't prompted for credentials the server
 	 * would reject regardless. */
 	struct kbi_ctx kctx = { .bbs = bbs, .used_saved_pw = false };
-	auth_rc = -1;
-	char methods[128] = "";
-	int  probe_rc     = dssh_auth_get_methods(ssh_session, username, methods, sizeof(methods));
-	if (probe_rc < 0) {
-		error_popup(bbs, "auth method probe failed");
-		return -1;
-	}
-	if (probe_rc == DSSH_AUTH_NONE_ACCEPTED)
-		auth_rc = 0;
-	bool offers_pw  = strstr(methods, "password") != NULL;
-	bool offers_pk  = strstr(methods, "publickey") != NULL;
-	bool offers_kbi = strstr(methods, "keyboard-interactive") != NULL;
-
-	if (auth_rc != 0 && offers_pk)
+	auth_rc = dssh_auth_begin(ssh_session, username);
+	if (auth_offers_method(&auth_rc, "publickey"))
 		auth_rc = dssh_auth_publickey(ssh_session, username, "ssh-ed25519");
-	if (auth_rc != 0 && offers_pw && password[0])
+	if (password[0] && auth_offers_method(&auth_rc, "password"))
 		auth_rc = dssh_auth_password(ssh_session, username, password, NULL, NULL);
-	for (int tries = 0; auth_rc != 0 && offers_pw && tries < 3; tries++) {
+	for (int tries = 0; tries < 3 && auth_offers_method(&auth_rc, "password"); tries++) {
 		password[0] = 0;
 		if (host_ui_prompt("SSH Password",
 		    tries == 0 ? "Enter password." : "Incorrect password. Try again.",
@@ -1215,14 +1278,14 @@ ssh_connect(struct bbslist *bbs)
 			break;
 		auth_rc = dssh_auth_password(ssh_session, username, password, NULL, NULL);
 	}
-	if (auth_rc != 0 && offers_kbi)
+	if (auth_offers_method(&auth_rc, "keyboard-interactive"))
 		auth_rc = dssh_auth_keyboard_interactive(ssh_session, username, kbi_prompt_cb, &kctx);
 	/* Wipe the local password copy now that auth has finished — even
 	   if it lingers in conn_api, in stack slots, or in optimizer-
 	   reordered storage, dssh_cleanse() prevents the compiler from
 	   eliminating the clear. */
 	dssh_cleanse(password, sizeof(password));
-	if (auth_rc != 0) {
+	if (auth_rc != DSSH_AUTH_SUCCESS) {
 		error_popup(bbs, "authentication failed");
 		return -1;
 	}

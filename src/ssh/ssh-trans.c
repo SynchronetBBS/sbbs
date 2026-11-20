@@ -3,11 +3,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <threads.h>
+#ifdef DSSH_TESTING
+ #include <limits.h>
+#endif
 
 #include "deucessh-algorithms.h"
 #include "deucessh-auth.h"
 #include "deucessh-crypto.h"
 #include "ssh-internal.h"
+#include "ssh-window.h"
+#include "ssh-packet.h"
+#include "key_algo/private-key-file.h"
 
 /* DSSH_TESTABLE is defined in ssh-internal.h */
 
@@ -15,9 +21,17 @@
  * but called before their definitions. */
 static int        transport_init(struct dssh_session_s *sess, size_t max_packet_size);
 static void       transport_cleanup(struct dssh_session_s *sess);
+static void kex_release_result(struct dssh_session_s *sess);
+static void kex_cleanup_state(struct dssh_session_s *sess);
+static int send_packet_inner(struct dssh_session_s *sess, const uint8_t *payload,
+    size_t payload_len, uint32_t *seq_out);
 DSSH_TESTABLE int kexinit(struct dssh_session_s *sess);
+static int finish_kexinit(struct dssh_session_s *sess);
+static int prepare_kexinit(struct dssh_session_s *sess);
 DSSH_TESTABLE int kex(struct dssh_session_s *sess);
+static int kex_exchange(struct dssh_session_s *sess);
 DSSH_TESTABLE int newkeys(struct dssh_session_s *sess);
+static int send_server_ext_info(struct dssh_session_s *sess);
 
 /* Scrub and free security-sensitive heap buffers. */
 static void
@@ -34,19 +48,66 @@ cleanse_free(void *ptr, size_t len)
 #ifndef DSSH_VERSION_STRING
  #define DSSH_VERSION_STRING "0.0"
 #endif
-static const char sw_ver[]             = "DeuceSSH-" DSSH_VERSION_STRING;
+static const char sw_ver[]             = "DeuceSSH_" DSSH_VERSION_STRING;
 static const char ssh_version_prefix[] = "SSH-2.0-";
 
-DSSH_TESTABLE struct dssh_transport_global_config gconf;
+DSSH_TESTABLE struct dssh_transport_global_config gconf = {
+	.software_version = sw_ver,
+};
 
 static _Thread_local struct dssh_session_s *io_callback_session;
 static _Thread_local struct dssh_session_s *tx_owned_session;
 
+/* Only the packet-engine owner stages a batch. Queued slot buffers can be
+ * reused by producers as soon as they are retired, so retain their wire bytes
+ * separately. The caller's final packet needs no copy. */
+#define DSSH_TX_BATCH_PACKETS 16
+struct dssh_tx_batch {
+	struct dssh_session_s *sess;
+	size_t offsets[DSSH_TX_BATCH_PACKETS];
+	size_t lengths[DSSH_TX_BATCH_PACKETS];
+	size_t count;
+	size_t bytes;
+};
+static _Thread_local struct dssh_tx_batch *tx_batch;
+
+static dssh_enc
+enc_c2s_module(struct dssh_session_s *sess)
+{
+	if (sess->trans.enc_c2s_active != NULL)
+		return sess->trans.enc_c2s_active;
+	return sess->trans.enc_c2s_ctx != NULL ? sess->trans.enc_c2s_selected : NULL;
+}
+
+static dssh_enc
+enc_s2c_module(struct dssh_session_s *sess)
+{
+	if (sess->trans.enc_s2c_active != NULL)
+		return sess->trans.enc_s2c_active;
+	return sess->trans.enc_s2c_ctx != NULL ? sess->trans.enc_s2c_selected : NULL;
+}
+
+static dssh_mac
+mac_c2s_module(struct dssh_session_s *sess)
+{
+	if (sess->trans.mac_c2s_active != NULL)
+		return sess->trans.mac_c2s_active;
+	return sess->trans.mac_c2s_ctx != NULL ? sess->trans.mac_c2s_selected : NULL;
+}
+
+static dssh_mac
+mac_s2c_module(struct dssh_session_s *sess)
+{
+	if (sess->trans.mac_s2c_active != NULL)
+		return sess->trans.mac_s2c_active;
+	return sess->trans.mac_s2c_ctx != NULL ? sess->trans.mac_s2c_selected : NULL;
+}
+
 DSSH_PRIVATE bool
 dssh_io_callback_active(struct dssh_session_s *sess)
 {
-	(void)sess;
-	return io_callback_session != NULL;
+	return io_callback_session != NULL || dssh_result_callback_active()
+	    || session_termination_callback_active(sess);
 }
 
 static int
@@ -57,6 +118,58 @@ call_io(struct dssh_session_s *sess, dssh_transport_io_cb cb, uint8_t *buf, size
 	io_callback_session = sess;
 	int ret = cb(buf, bufsz, sess, cbdata);
 	io_callback_session = previous;
+	return ret > 0 ? DSSH_ERROR_INVALID : ret;
+}
+
+static bool
+compression_enabled(dssh_comp comp)
+{
+	return comp != NULL && strcmp(comp->name, "none") != 0;
+}
+
+static int
+call_comp_init(struct dssh_session_s *sess, dssh_comp comp, bool compress, dssh_comp_ctx **ctx)
+{
+	struct dssh_session_s *previous = io_callback_session;
+	io_callback_session = sess;
+	int ret = comp->init(compress, ctx);
+	io_callback_session = previous;
+	return ret > 0 ? DSSH_ERROR_INVALID : ret;
+}
+
+static void
+call_comp_cleanup(struct dssh_session_s *sess, dssh_comp comp, dssh_comp_ctx *ctx)
+{
+	struct dssh_session_s *previous = io_callback_session;
+	io_callback_session = sess;
+	comp->cleanup(ctx);
+	io_callback_session = previous;
+}
+
+static int
+call_comp_bound(struct dssh_session_s *sess, dssh_comp comp, size_t input_len,
+    size_t *output_bound, dssh_comp_ctx *ctx)
+{
+	struct dssh_session_s *previous = io_callback_session;
+	*output_bound = SIZE_MAX;
+	io_callback_session = sess;
+	int ret = comp->bound(input_len, output_bound, ctx);
+	io_callback_session = previous;
+	return ret > 0 ? DSSH_ERROR_INVALID : ret;
+}
+
+static int
+call_comp_transform(struct dssh_session_s *sess, dssh_comp_transform transform,
+    const uint8_t *input, size_t input_len, uint8_t *output, size_t output_capacity,
+    size_t *output_len, dssh_comp_ctx *ctx)
+{
+	struct dssh_session_s *previous = io_callback_session;
+	*output_len = SIZE_MAX;
+	io_callback_session = sess;
+	int ret = transform(input, input_len, output, output_capacity, output_len, ctx);
+	io_callback_session = previous;
+	if (ret > 0 || (ret == 0 && *output_len > output_capacity))
+		return DSSH_ERROR_INVALID;
 	return ret;
 }
 
@@ -68,7 +181,7 @@ call_rx_line(struct dssh_session_s *sess, uint8_t *buf, size_t bufsz, size_t *re
 	io_callback_session = sess;
 	int ret = gconf.rx_line(buf, bufsz, received, sess, sess->rx_line_cbdata);
 	io_callback_session = previous;
-	return ret;
+	return ret > 0 ? DSSH_ERROR_INVALID : ret;
 }
 
 static int
@@ -79,7 +192,7 @@ call_extra_line(struct dssh_session_s *sess, uint8_t *buf, size_t bufsz)
 	io_callback_session = sess;
 	int ret = gconf.extra_line_cb(buf, bufsz, sess->extra_line_cbdata);
 	io_callback_session = previous;
-	return ret;
+	return ret > 0 ? DSSH_ERROR_INVALID : ret;
 }
 
 static int
@@ -90,7 +203,7 @@ call_tx_gather(struct dssh_session_s *sess, const struct dssh_tx_iov *iov, size_
 	io_callback_session = sess;
 	int ret = gconf.tx_gather(iov, iovcnt, sess, sess->tx_cbdata);
 	io_callback_session = previous;
-	return ret;
+	return ret > 0 ? DSSH_ERROR_INVALID : ret;
 }
 
 #ifdef DSSH_TESTING
@@ -105,6 +218,26 @@ dssh_test_arm_rx_bytes_before_count(struct dssh_session_s *sess,
 	    memory_order_relaxed);
 	atomic_store_explicit(&dssh_test_rx_count_sess, sess,
 	    memory_order_release);
+}
+
+DSSH_TESTABLE unsigned
+dssh_test_rekeys_completed(struct dssh_session_s *sess)
+{
+	return atomic_load_explicit(&sess->trans.test_rekeys_completed,
+	    memory_order_acquire);
+}
+
+/* Compare actual library layout with a consumer compiled without injector
+ * redirections. Keep this observation out of production builds and exports. */
+DSSH_TESTABLE void
+dssh_test_session_layout(size_t out[6])
+{
+	out[0] = sizeof(struct dssh_transport_state_s);
+	out[1] = sizeof(struct dssh_session_s);
+	out[2] = offsetof(struct dssh_transport_state_s, id_str);
+	out[3] = offsetof(struct dssh_transport_state_s, remote_id_str);
+	out[4] = offsetof(struct dssh_session_s, initialized);
+	out[5] = offsetof(struct dssh_session_s, timeout_ms);
 }
 #endif
 
@@ -134,15 +267,8 @@ is_version_line(uint8_t *buf, size_t buflen)
 	return buf[0] == 'S' && buf[1] == 'S' && buf[2] == 'H' && buf[3] == '-';
 }
 
-/*
- * RFC 4253 s4.2: protoversion and softwareversion MUST consist of
- * printable US-ASCII characters, excluding whitespace and minus sign.
- * (minus is allowed as separator but not "excluded" -- re-reading the
- * RFC, the constraint is "printable US-ASCII" which is 0x20--0x7E,
- * but 0x20 (space) is only allowed before comments).
- * We validate that the entire version line (before CR-LF) contains
- * only bytes in 0x20--0x7E (printable ASCII).
- */
+/* Whole-line character validation is separate from software-token grammar.
+ * Spaces delimit the optional comment, which may contain minus. */
 DSSH_TESTABLE inline bool
 has_non_ascii(uint8_t *buf, size_t buflen)
 {
@@ -170,23 +296,55 @@ is_20(uint8_t *buf, size_t buflen)
 	return false;
 }
 
+/* RFC 4253 s4.2: printable non-space US-ASCII, excluding minus. */
+static bool
+is_valid_sw_version(const char *s, size_t len)
+{
+	for (size_t i = 0; i < len; i++) {
+		if (s[i] < 0x21 || s[i] > 0x7E || s[i] == '-')
+			return false;
+	}
+	return true;
+}
+
+static bool
+version_identification_valid(uint8_t *buf, size_t length)
+{
+	if (length > DSSH_VERSION_STRING_MAX || has_nulls(buf, length)
+	    || missing_crlf(buf, length) || has_non_ascii(buf, length - 2)
+	    || !is_20(buf, length))
+		return false;
+	/* is_20 established one of the complete supported protocol prefixes.
+	 * The first space starts comments; it cannot replace the software token. */
+	size_t software_pos = buf[4] == '1' ? 9 : 8;
+	if (length - 2 <= software_pos)
+		return false;
+	size_t end = software_pos;
+	while (end < length - 2 && buf[end] != ' ')
+		end++;
+	const char *software = (const char *)&buf[software_pos];
+	return end > software_pos && is_valid_sw_version(software, end - software_pos);
+}
+
 static int
 version_rx(struct dssh_session_s *sess)
 {
-	size_t received;
+	size_t received = 0;
 	int    res;
 
 	while (!sess->terminate) {
+		received = 0;
 		res = call_rx_line(sess, sess->trans.rx_packet, sess->trans.packet_buf_sz - 1, &received);
 		if (res < 0) {
 			session_set_terminate(sess);
 			return res;
 		}
+		if (res != 0 || received == 0 || received > sess->trans.packet_buf_sz - 1) {
+			session_set_terminate(sess);
+			return DSSH_ERROR_INVALID;
+		}
 		if (is_version_line(sess->trans.rx_packet, received)) {
-			if ((received > DSSH_VERSION_STRING_MAX) || has_nulls(sess->trans.rx_packet, received)
-			    || missing_crlf(sess->trans.rx_packet, received)
-			    || has_non_ascii(sess->trans.rx_packet, received - 2)
-			    || !is_20(sess->trans.rx_packet, received)) {
+			if (!version_identification_valid(sess->trans.rx_packet, received)) {
 				session_set_terminate(sess);
 				return DSSH_ERROR_INVALID;
 			}
@@ -217,6 +375,8 @@ version_tx(struct dssh_session_s *sess)
 	sz += DSSH_STRLEN(ssh_version_prefix);
 
 	size_t asz = strlen(gconf.software_version);
+	if (asz == 0 || !is_valid_sw_version(gconf.software_version, asz))
+		return DSSH_ERROR_INVALID;
 
 	if (!dssh_buffer_has(DSSH_VERSION_STRING_MAX, sz, asz)
 	    || !dssh_buffer_has(DSSH_VERSION_STRING_MAX, sz + asz, 2))
@@ -279,7 +439,8 @@ dssh_transport_get_kex_name(struct dssh_session_s *sess)
 {
 	if (sess == NULL || dssh_io_callback_active(sess))
 		return NULL;
-	return sess->trans.kex_selected ? sess->trans.kex_selected->name : NULL;
+	dssh_kex selected = sess->trans.kex_selected;
+	return selected != NULL ? selected->name : NULL;
 }
 
 DSSH_PUBLIC const char *
@@ -287,23 +448,41 @@ dssh_transport_get_hostkey_name(struct dssh_session_s *sess)
 {
 	if (sess == NULL || dssh_io_callback_active(sess))
 		return NULL;
-	return sess->trans.key_algo_selected ? sess->trans.key_algo_selected->name : NULL;
+	dssh_key_algo selected = sess->trans.key_algo_selected;
+	return selected != NULL ? selected->name : NULL;
 }
 
 DSSH_PUBLIC const char *
-dssh_transport_get_enc_name(struct dssh_session_s *sess)
+dssh_transport_get_enc_name(struct dssh_session_s *sess, enum dssh_direction direction)
 {
-	if (sess == NULL || dssh_io_callback_active(sess))
+	if (sess == NULL || (direction != DSSH_CLIENT_TO_SERVER && direction != DSSH_SERVER_TO_CLIENT)
+	    || dssh_io_callback_active(sess))
 		return NULL;
-	return sess->trans.enc_c2s_selected ? sess->trans.enc_c2s_selected->name : NULL;
+	dssh_enc selected = direction == DSSH_CLIENT_TO_SERVER ? sess->trans.enc_c2s_selected
+	    : sess->trans.enc_s2c_selected;
+	return selected != NULL ? selected->name : NULL;
 }
 
 DSSH_PUBLIC const char *
-dssh_transport_get_mac_name(struct dssh_session_s *sess)
+dssh_transport_get_mac_name(struct dssh_session_s *sess, enum dssh_direction direction)
 {
-	if (sess == NULL || dssh_io_callback_active(sess))
+	if (sess == NULL || (direction != DSSH_CLIENT_TO_SERVER && direction != DSSH_SERVER_TO_CLIENT)
+	    || dssh_io_callback_active(sess))
 		return NULL;
-	return sess->trans.mac_c2s_selected ? sess->trans.mac_c2s_selected->name : NULL;
+	dssh_mac selected = direction == DSSH_CLIENT_TO_SERVER ? sess->trans.mac_c2s_selected
+	    : sess->trans.mac_s2c_selected;
+	return selected != NULL ? selected->name : NULL;
+}
+
+DSSH_PUBLIC const char *
+dssh_transport_get_comp_name(struct dssh_session_s *sess, enum dssh_direction direction)
+{
+	if (sess == NULL || (direction != DSSH_CLIENT_TO_SERVER && direction != DSSH_SERVER_TO_CLIENT)
+	    || dssh_io_callback_active(sess))
+		return NULL;
+	dssh_comp selected = direction == DSSH_CLIENT_TO_SERVER ? sess->trans.comp_c2s_selected
+	    : sess->trans.comp_s2c_selected;
+	return selected != NULL ? selected->name : NULL;
 }
 
 DSSH_TESTABLE int
@@ -316,13 +495,9 @@ version_exchange(struct dssh_session_s *sess)
 	return version_rx(sess);
 }
 
-DSSH_PUBLIC int
-dssh_transport_handshake(struct dssh_session_s *sess)
+static int
+transport_handshake_inner(struct dssh_session_s *sess)
 {
-	if (sess == NULL)
-		return DSSH_ERROR_INVALID;
-	if (dssh_io_callback_active(sess))
-		return DSSH_ERROR_INVALID;
 	if (sess->trans.client && sess->hostkey_verify_cb == NULL) {
 		DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_INIT,
 		    "Client handshake requires a host-key verification callback");
@@ -335,7 +510,7 @@ dssh_transport_handshake(struct dssh_session_s *sess)
 	res = kexinit(sess);
 	if (res < 0)
 		goto fail;
-	res = kex(sess);
+	res = kex_exchange(sess);
 	if (res < 0)
 		goto fail;
 	res = newkeys(sess);
@@ -354,46 +529,82 @@ fail:
 	return res;
 }
 
+DSSH_PUBLIC int
+dssh_transport_handshake(struct dssh_session_s *sess)
+{
+	if (sess == NULL)
+		return DSSH_ERROR_INVALID;
+	if (dssh_io_callback_active(sess) || dssh_setup_callback_active(sess))
+		return DSSH_ERROR_INVALID;
+	if (session_receive_api_conflict(sess))
+		return DSSH_ERROR_INVALID;
+	if (sess->terminate)
+		return DSSH_ERROR_TERMINATED;
+	if (sess->handshake_complete)
+		return DSSH_ERROR_INVALID;
+	struct dssh_session_scope scope;
+
+	session_scope_enter(&scope, sess);
+	int ret = transport_handshake_inner(sess);
+
+	if (ret == 0)
+		sess->handshake_complete = true;
+	session_scope_leave(&scope);
+	return ret;
+}
+
 /* ================================================================
  * Rekeying (RFC 4253 s9)
  * ================================================================ */
 
+/* TX counters and selected descriptors can be read by either owner. */
+static bool
+rekey_transmit_needed(struct dssh_session_s *sess, uint_fast32_t packets)
+{
+	if (packets >= DSSH_REKEY_SOFT_LIMIT)
+		return true;
+	dssh_enc enc = sess->trans.client ? atomic_load(&sess->trans.enc_c2s_selected)
+	                                 : atomic_load(&sess->trans.enc_s2c_selected);
+	return enc != NULL && enc->bytes_per_key != UINT64_MAX
+	    && atomic_load(&sess->trans.tx_bytes_since_rekey) >= enc->bytes_per_key;
+}
+
+static bool
+rekey_transmit_due(struct dssh_session_s *sess)
+{
+	uint_fast32_t packets = atomic_load(&sess->trans.tx_since_rekey);
+	/* KEXINIT itself still uses the active key and its hard packet guard. */
+	return packets < DSSH_REKEY_HARD_LIMIT && rekey_transmit_needed(sess, packets);
+}
+
 DSSH_TESTABLE bool
 rekey_needed(struct dssh_session_s *sess)
 {
-	/* tx counters are atomic.  RX counters are owned by the sole receive
-	 * thread (handshake caller before start, demux afterward).
-	 * Match the atomic's fast-type; atomic_uint_fast32_t is 64-bit on
-	 * glibc x86_64, and -Werror=conversion balks at the narrowing. */
-	uint_fast32_t tx_pkts = atomic_load(&sess->trans.tx_since_rekey);
-	if ((tx_pkts >= DSSH_REKEY_SOFT_LIMIT) || (sess->trans.rx_since_rekey >= DSSH_REKEY_SOFT_LIMIT))
+	if (rekey_transmit_needed(sess, atomic_load(&sess->trans.tx_since_rekey))
+	    || sess->trans.rx_since_rekey >= DSSH_REKEY_SOFT_LIMIT)
 		return true;
-
-	/* Per-direction byte threshold: each direction is encrypted with
-	 * its own key, so compare each counter against the negotiated
-	 * cipher's bytes_per_key (RFC 4344 s3.2: 2^(L/4) blocks for
-	 * L-bit block ciphers).  Pre-handshake, enc_*_selected is NULL
-	 * and the byte check is skipped. */
-	dssh_enc enc_c2s  = atomic_load(&sess->trans.enc_c2s_selected);
-	dssh_enc enc_s2c  = atomic_load(&sess->trans.enc_s2c_selected);
-	uint64_t tx_bytes = atomic_load(&sess->trans.tx_bytes_since_rekey);
-	uint64_t rx_bytes = sess->trans.rx_bytes_since_rekey;
-	if (enc_c2s != NULL && tx_bytes >= enc_c2s->bytes_per_key)
+	dssh_enc enc = sess->trans.client ? atomic_load(&sess->trans.enc_s2c_selected)
+	                                 : atomic_load(&sess->trans.enc_c2s_selected);
+	if (enc != NULL && enc->bytes_per_key != UINT64_MAX
+	    && sess->trans.rx_bytes_since_rekey >= enc->bytes_per_key)
 		return true;
-	if (enc_s2c != NULL && rx_bytes >= enc_s2c->bytes_per_key)
-		return true;
-	if (sess->trans.rekey_time == 0)
-		return false;
 	/* Time threshold has no cryptographic justification (the byte
 	 * and packet thresholds do), so apps that need to interop with
 	 * peers that refuse mid-stream KEXINIT (e.g. Cryptlib-based
 	 * servers like Mystic BBS) can override or disable it via
 	 * dssh_session_set_rekey_seconds(). */
-	if (sess->trans.rekey_seconds == 0)
+	uint_least32_t seconds = atomic_load_explicit(&sess->trans.rekey_seconds, memory_order_relaxed);
+	if (seconds == 0)
 		return false;
-	if ((uint64_t)(time(NULL) - sess->trans.rekey_time) >= sess->trans.rekey_seconds)
-		return true;
-	return false;
+	struct timespec now;
+	if (dssh_clock_read(&now) < 0) {
+		session_set_terminate(sess);
+		return false;
+	}
+	/* A clock adjustment backwards has not reached the requested interval. */
+	/* The setter's uint32_t input is the only writer. */
+	uint32_t interval = (uint32_t)seconds;
+	return dssh_time_interval_reached(now.tv_sec, sess->trans.rekey_time, interval);
 }
 
 DSSH_TESTABLE int
@@ -404,15 +615,10 @@ rekey(struct dssh_session_s *sess)
          * Do NOT free cipher/MAC contexts here -- they are needed for
          * the kexinit/kex packets.  newkeys() will replace them.
          *
-         * Free old KEX outputs (shared_secret, exchange_hash) but NOT
-         * session_id -- it persists across rekeys per RFC 4253 s7.2.
+         * Release any prior KEX result. Retain initialized method state and
+         * session_id -- the latter persists across rekeys per RFC 4253 s7.2.
          */
-	cleanse_free(sess->trans.shared_secret, sess->trans.shared_secret_sz);
-	sess->trans.shared_secret    = NULL;
-	sess->trans.shared_secret_sz = 0;
-	cleanse_free(sess->trans.exchange_hash, sess->trans.exchange_hash_sz);
-	sess->trans.exchange_hash    = NULL;
-	sess->trans.exchange_hash_sz = 0;
+	kex_release_result(sess);
 
 	/* Drain work that was queued before rekey, then publish the rekey
 	 * predicate while ownership prevents another application sender from
@@ -421,7 +627,15 @@ rekey(struct dssh_session_s *sess)
 
 	if (res < 0)
 		return res;
-	drain_tx_slots(sess);
+	/* Synchronize with any transmitter that claimed the read boundary.
+	 * Its offer and transcript are complete before the engine is free. */
+	bool offered = sess->trans.rekey_offer_sent;
+	sess->trans.rekey_offer_sent = false;
+	if (!offered) {
+		res = drain_tx_slots(sess);
+		if (res < 0)
+			return tx_unlock_with_result(sess, res);
+	}
 	if (atomic_load_explicit(&sess->terminate, memory_order_acquire)) {
 		tx_unlock_with_slots(sess);
 		return DSSH_ERROR_TERMINATED;
@@ -434,7 +648,7 @@ rekey(struct dssh_session_s *sess)
 		return DSSH_ERROR_TERMINATED;
 	}
 	atomic_store_explicit(&sess->trans.rekey_in_progress, true, memory_order_release);
-	int state_ur = mtx_unlock(&sess->trans.tx_mtx);
+	int state_ur = dssh_mtx_unlock(&sess->trans.tx_mtx);
 
 	if (state_ur != thrd_success) {
 		dssh_thrd_check_unlock(sess, state_ur);
@@ -443,44 +657,60 @@ rekey(struct dssh_session_s *sess)
 	}
 	tx_unlock_with_slots(sess);
 
-	/* Re-negotiate algorithms */
-	res = kexinit(sess);
+	res = offered ? finish_kexinit(sess) : kexinit(sess);
 
 	if (res == 0)
-		res = kex(sess);
+		res = kex_exchange(sess);
 	if (res == 0)
 		res = newkeys(sess);
 
-	/* Clear the flag and wake any blocked senders */
+	/* An offer may already be on the wire. Publish failure before
+	 * removing the send gate so old-key application traffic cannot resume. */
+	if (res < 0)
+		session_set_terminate_no_wake(sess);
 	state_lr = mtx_lock(&sess->trans.tx_mtx);
 	if (state_lr == thrd_success) {
 		atomic_store_explicit(&sess->trans.rekey_in_progress, false, memory_order_release);
 		int br = cnd_broadcast(&sess->trans.rekey_cnd);
-		state_ur = mtx_unlock(&sess->trans.tx_mtx);
-		if (state_ur != thrd_success) {
-			dssh_thrd_check_unlock(sess, state_ur);
+		if (br != thrd_success) {
+			session_set_terminate_no_wake(sess);
 			res = DSSH_ERROR_TERMINATED;
 		}
-		else if (br != thrd_success) {
-			dssh_thrd_check(sess, br);
-			res = DSSH_ERROR_TERMINATED;
-		}
+		dssh_mtx_unlock(&sess->trans.tx_mtx);
 	}
 	else {
-		dssh_thrd_check(sess, state_lr);
+		session_set_terminate_no_wake(sess);
 		res = DSSH_ERROR_TERMINATED;
 	}
 	/* Claim and release once to drain connection work accumulated during
 	 * rekey before application senders resume. */
 	if (res == 0) {
-		if (tx_owner_is_current(sess))
-			tx_unlock_with_slots(sess);
-		else if (tx_acquire(sess, SSH_MSG_IGNORE) == 0)
-			tx_unlock_with_slots(sess);
+		if (!tx_owner_is_current(sess))
+			res = tx_acquire(sess, SSH_MSG_IGNORE);
+		if (res == 0) {
+			res = drain_tx_slots(sess);
+			res = tx_unlock_with_result(sess, res);
+		}
 	}
 
-	if (res < 0)
-		session_set_terminate(sess);
+	if (res < 0) {
+		if (tx_owner_is_current(sess))
+			tx_unlock_with_slots(sess);
+		else
+			session_set_terminate(sess);
+	}
+#ifdef DSSH_TESTING
+	if (res == 0) {
+		unsigned before = atomic_load_explicit(&sess->trans.test_rekeys_completed,
+		    memory_order_relaxed);
+
+		/* The sole receive owner records completion; saturate so a wrap
+		 * cannot look like a new exchange to an integration observer. */
+		if (before < UINT_MAX)
+			atomic_store_explicit(&sess->trans.test_rekeys_completed,
+			    before + 1, memory_order_release);
+	}
+#endif
 	return res;
 }
 
@@ -503,12 +733,10 @@ send_unimplemented(struct dssh_session_s *sess, uint32_t rejected_seq)
  * SSH_MSG_DISCONNECT (RFC 4253 s11.1)
  * ================================================================ */
 
-DSSH_PUBLIC int
-dssh_transport_disconnect(struct dssh_session_s *sess, uint32_t reason, const char *desc)
+DSSH_PRIVATE int
+transport_disconnect_inner(struct dssh_session_s *sess, uint32_t reason, const char *desc)
 {
-	if (sess == NULL || desc == NULL)
-		return DSSH_ERROR_INVALID;
-	if (dssh_io_callback_active(sess))
+	if (reason == 0)
 		return DSSH_ERROR_INVALID;
 	size_t dlen = strlen(desc);
 
@@ -525,9 +753,35 @@ dssh_transport_disconnect(struct dssh_session_s *sess, uint32_t reason, const ch
 	pos += dlen;
 	DSSH_PUT_U32(0, msg, &pos);
 
-	send_packet(sess, msg, pos, NULL); /* best-effort */
+	int ret = tx_acquire(sess, SSH_MSG_DISCONNECT);
+	bool acquired = ret == 0;
+	if (acquired)
+		ret = send_packet_inner(sess, msg, pos, NULL);
+	/* Publish termination before releasing the packet engine: its normal
+	 * release path must not send queued messages after DISCONNECT. */
 	session_set_terminate(sess);
-	return 0;
+	if (acquired)
+		tx_unlock_with_slots(sess);
+	return ret;
+}
+
+/* Preserve the caller's protocol result after a successful disconnect send,
+ * while still reporting a failed attempt. Termination occurs in either case. */
+DSSH_PRIVATE int
+transport_disconnect_result(struct dssh_session_s *sess, uint32_t reason, const char *desc, int result)
+{
+	int ret = transport_disconnect_inner(sess, reason, desc);
+	return ret < 0 ? ret : result;
+}
+
+DSSH_PUBLIC int
+dssh_transport_disconnect(struct dssh_session_s *sess, uint32_t reason, const char *desc)
+{
+	if (sess == NULL || desc == NULL)
+		return DSSH_ERROR_INVALID;
+	if (dssh_io_callback_active(sess) || dssh_setup_callback_active(sess))
+		return DSSH_ERROR_INVALID;
+	return transport_disconnect_inner(sess, reason, desc);
 }
 
 /* Forward declarations for slot helpers */
@@ -560,25 +814,51 @@ parse_log_string(const uint8_t *payload, size_t payload_len, size_t *pos, const 
  * TX slot helpers
  * ================================================================ */
 
+/* Zero denotes padding that cannot be encoded in the one-byte wire field. */
+static size_t
+packet_padding(size_t payload, size_t block)
+{
+	if (block < 8)
+		block = 8;
+	if (payload > SIZE_MAX - 5)
+		return 0;
+	size_t pad = block - ((5 + payload) % block);
+	if (pad < 4) {
+		if (block > UINT8_MAX - pad)
+			return 0;
+		pad += block;
+	}
+	return pad <= UINT8_MAX ? pad : 0;
+}
+
 /*
  * Compute the exact buffer size for a TX slot holding a packet with
  * the given max_payload, block_size, and MAC digest size.  Layout:
  *   [seq(4)][pkt_length(4)][pad_len(1)][payload][padding][MAC]
+ * Returns zero if the packet or its allocation size is not representable.
  */
 DSSH_PRIVATE size_t
 tx_slot_buf_size(size_t max_payload, size_t block_size, uint16_t mac_digest)
 {
-	if (block_size < 8)
-		block_size = 8;
-	size_t pad = block_size - ((5 + max_payload) % block_size);
-	if (pad < 4)
-		pad += block_size;
-	return 4 + 4 + 1 + max_payload + pad + mac_digest;
+	size_t pad = packet_padding(max_payload, block_size);
+	if (pad == 0)
+		return 0;
+	size_t total = 5 + max_payload;
+	if (!dssh_buffer_has(SIZE_MAX, total, pad))
+		return 0;
+	total += pad;
+	if (total - 4 > UINT32_MAX || !dssh_buffer_has(SIZE_MAX, total, 4))
+		return 0;
+	total += 4;
+	if (!dssh_buffer_has(SIZE_MAX, total, mac_digest))
+		return 0;
+	return total + mac_digest;
 }
 
 /*
  * Allocate (or reallocate) a TX slot buffer sized for the negotiated
- * algorithms.  Returns 0 on success, DSSH_ERROR_ALLOC on failure.
+ * algorithms. Returns 0 on success, INVALID for an unrepresentable size,
+ * or ALLOC on allocation failure.
  * If the existing allocation is already the right size, this is a no-op.
  */
 DSSH_PRIVATE int
@@ -586,14 +866,19 @@ alloc_tx_slot(struct dssh_tx_slot *slot, size_t max_payload, size_t block_size, 
 {
 	size_t need = tx_slot_buf_size(max_payload, block_size, mac_digest);
 
-	if (slot->buf != NULL && slot->buf_sz == need)
+	if (need == 0)
+		return DSSH_ERROR_INVALID;
+	if (slot->buf != NULL && slot->buf_sz == need) {
+		slot->payload_capacity = max_payload;
 		return 0;
+	}
 	uint8_t *nb = realloc(slot->buf, need);
 
 	if (nb == NULL)
 		return DSSH_ERROR_ALLOC;
 	slot->buf    = nb;
 	slot->buf_sz = need;
+	slot->payload_capacity = max_payload;
 	return 0;
 }
 
@@ -603,20 +888,23 @@ free_tx_slot(struct dssh_tx_slot *slot)
 	free(slot->buf);
 	slot->buf    = NULL;
 	slot->buf_sz = 0;
+	slot->payload_capacity = 0;
 	atomic_store(&slot->ready, false);
 	slot->payload_len = 0;
 }
 
-/* Resize a live slot without allocating under tx_queue_mtx.  A producer may
- * fill the old buffer while the replacement is being allocated; the mutex
- * serializes the final payload copy and pointer swap. */
-static int
+/* The packet engine excludes other resizers and drainers. A producer may
+ * fill the old buffer while the replacement is allocated, so the queue
+ * mutex serializes the final payload copy and storage publication. */
+DSSH_TESTABLE int
 resize_tx_slot_live(struct dssh_session_s *sess, struct dssh_tx_slot *slot, size_t max_payload,
     size_t block_size, uint16_t mac_digest)
 {
 	size_t need = tx_slot_buf_size(max_payload, block_size, mac_digest);
 
-	if (slot->buf != NULL && slot->buf_sz == need)
+	if (need == 0)
+		return DSSH_ERROR_INVALID;
+	if (slot->buf != NULL && slot->buf_sz == need && slot->payload_capacity == max_payload)
 		return 0;
 	uint8_t *replacement = malloc(need);
 
@@ -631,15 +919,19 @@ resize_tx_slot_live(struct dssh_session_s *sess, struct dssh_tx_slot *slot, size
 	}
 	uint8_t *old = slot->buf;
 
-	if (old != NULL && atomic_load_explicit(&slot->ready, memory_order_acquire))
+	if (old != NULL && atomic_load_explicit(&slot->ready, memory_order_acquire)) {
+		if (slot->payload_len > max_payload
+		    || !dssh_buffer_has(slot->buf_sz, 9, slot->payload_len)) {
+			dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
+			free(replacement);
+			return DSSH_ERROR_INVALID;
+		}
 		memcpy(&replacement[9], &old[9], slot->payload_len);
+	}
 	slot->buf = replacement;
 	slot->buf_sz = need;
-	ret = mtx_unlock(&sess->trans.tx_queue_mtx);
-	if (ret != thrd_success) {
-		dssh_thrd_check_unlock(sess, ret);
-		return DSSH_ERROR_TERMINATED;
-	}
+	slot->payload_capacity = max_payload;
+	dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
 	free(old);
 	return 0;
 }
@@ -659,7 +951,7 @@ alloc_session_slots(struct dssh_session_s *sess)
 	ret = resize_tx_slot_live(sess, &sess->trans.global_reply_slot, 1, bs, mac);
 	if (ret < 0)
 		return ret;
-	ret = resize_tx_slot_live(sess, &sess->trans.open_fail_slot, 16, bs, mac);
+	ret = resize_tx_slot_live(sess, &sess->trans.open_fail_slot, 17, bs, mac);
 	return ret;
 }
 
@@ -685,9 +977,9 @@ alloc_channel_slots(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 
 	ret = alloc_tx_slot(&ch->wa_slot, 9, bs, mac);
 	if (ret == 0)
-		ret = alloc_tx_slot(&ch->chan_fail_slot, 8, bs, mac);
+		ret = alloc_tx_slot(&ch->chan_reply_slot, 8, bs, mac);
 	if (acquired)
-		tx_unlock_with_slots(sess);
+		return tx_unlock_with_result(sess, ret);
 	return ret;
 }
 
@@ -718,7 +1010,7 @@ resize_channel_slots(struct dssh_session_s *sess)
 				channels[i] = sess->channels[i];
 				atomic_fetch_add_explicit(&channels[i]->tx_refs, 1, memory_order_acq_rel);
 			}
-			ret = mtx_unlock(&sess->channel_mtx);
+			ret = dssh_mtx_unlock(&sess->channel_mtx);
 			if (ret != thrd_success) {
 				for (size_t i = 0; i < count; i++)
 					atomic_fetch_sub_explicit(&channels[i]->tx_refs, 1, memory_order_acq_rel);
@@ -728,7 +1020,7 @@ resize_channel_slots(struct dssh_session_s *sess)
 			}
 			break;
 		}
-		ret = mtx_unlock(&sess->channel_mtx);
+		ret = dssh_mtx_unlock(&sess->channel_mtx);
 		if (ret != thrd_success) {
 			dssh_thrd_check_unlock(sess, ret);
 			free(channels);
@@ -755,7 +1047,7 @@ resize_channel_slots(struct dssh_session_s *sess)
 
 		alloc_ret = resize_tx_slot_live(sess, &ch->wa_slot, 9, bs, mac);
 		if (alloc_ret == 0)
-			alloc_ret = resize_tx_slot_live(sess, &ch->chan_fail_slot, 8, bs, mac);
+			alloc_ret = resize_tx_slot_live(sess, &ch->chan_reply_slot, 8, bs, mac);
 		if (ret == 0 && alloc_ret < 0)
 			ret = alloc_ret;
 	}
@@ -773,17 +1065,14 @@ DSSH_TESTABLE size_t
 tx_block_size(struct dssh_session_s *sess)
 {
 	dssh_enc enc;
-	void    *cbd;
 
 	if (sess->trans.client) {
-		enc = sess->trans.enc_c2s_selected;
-		cbd = sess->trans.enc_c2s_ctx;
+		enc = enc_c2s_module(sess);
 	}
 	else {
-		enc = sess->trans.enc_s2c_selected;
-		cbd = sess->trans.enc_s2c_ctx;
+		enc = enc_s2c_module(sess);
 	}
-	if ((enc == NULL) || (cbd == NULL))
+	if (enc == NULL)
 		return 8;
 	if (enc->blocksize < 8)
 		return 8;
@@ -794,17 +1083,14 @@ DSSH_TESTABLE size_t
 rx_block_size(struct dssh_session_s *sess)
 {
 	dssh_enc enc;
-	void    *cbd;
 
 	if (sess->trans.client) {
-		enc = sess->trans.enc_s2c_selected;
-		cbd = sess->trans.enc_s2c_ctx;
+		enc = enc_s2c_module(sess);
 	}
 	else {
-		enc = sess->trans.enc_c2s_selected;
-		cbd = sess->trans.enc_c2s_ctx;
+		enc = enc_c2s_module(sess);
 	}
-	if ((enc == NULL) || (cbd == NULL))
+	if (enc == NULL)
 		return 8;
 
 	/* No enc module registers with blocksize < 8; SSH minimum is 8. */
@@ -817,17 +1103,14 @@ static uint16_t
 tx_mac_size(struct dssh_session_s *sess)
 {
 	dssh_mac mac;
-	void    *cbd;
 
 	if (sess->trans.client) {
-		mac = sess->trans.mac_c2s_selected;
-		cbd = sess->trans.mac_c2s_ctx;
+		mac = mac_c2s_module(sess);
 	}
 	else {
-		mac = sess->trans.mac_s2c_selected;
-		cbd = sess->trans.mac_s2c_ctx;
+		mac = mac_s2c_module(sess);
 	}
-	if ((mac == NULL) || (cbd == NULL))
+	if (mac == NULL)
 		return 0;
 	return mac->digest_size;
 }
@@ -836,19 +1119,42 @@ static uint16_t
 rx_mac_size(struct dssh_session_s *sess)
 {
 	dssh_mac mac;
-	void    *cbd;
 
 	if (sess->trans.client) {
-		mac = sess->trans.mac_s2c_selected;
-		cbd = sess->trans.mac_s2c_ctx;
+		mac = mac_s2c_module(sess);
 	}
 	else {
-		mac = sess->trans.mac_c2s_selected;
-		cbd = sess->trans.mac_c2s_ctx;
+		mac = mac_c2s_module(sess);
 	}
-	if ((mac == NULL) || (cbd == NULL))
+	if (mac == NULL)
 		return 0;
 	return mac->digest_size;
+}
+
+/* Largest wire payload whose complete packet, padding, and MAC fit. */
+static size_t
+tx_wire_payload_capacity(struct dssh_session_s *sess)
+{
+	size_t block = tx_block_size(sess);
+	size_t mac = tx_mac_size(sess);
+	if (mac > sess->trans.packet_buf_sz)
+		return 0;
+	size_t total = sess->trans.packet_buf_sz - mac;
+	total -= total % block;
+	/* Four length bytes, one padding-length byte, four padding bytes. */
+	return total > 9 ? total - 9 : 0;
+}
+
+/* Writable uncompressed input capacity. The cached compression bound includes
+ * worst-case growth; it is installed with the directional key epoch. */
+DSSH_PRIVATE size_t
+tx_payload_capacity(struct dssh_session_s *sess)
+{
+	size_t capacity = tx_wire_payload_capacity(sess);
+	dssh_comp comp = sess->trans.client ? sess->trans.comp_c2s_active : sess->trans.comp_s2c_active;
+	if (compression_enabled(comp) && sess->trans.comp_tx_payload_limit < capacity)
+		capacity = sess->trans.comp_tx_payload_limit;
+	return capacity;
 }
 
 /*
@@ -879,21 +1185,52 @@ tx_finalize_prepare(struct dssh_session_s *sess, uint8_t *buf, size_t payload_le
     size_t *wire_len_out)
 {
 	int ret;
+	bool transformed = false;
+	bool crypto_called = false;
+	if (sess->terminate)
+		return DSSH_ERROR_TERMINATED;
+	/* A recoverable key-limit refusal must not advance cipher/compressor state. */
+	if (sess->trans.tx_since_rekey >= DSSH_REKEY_HARD_LIMIT)
+		return DSSH_ERROR_REKEY_NEEDED;
+	if (payload_len > tx_payload_capacity(sess))
+		return DSSH_ERROR_TOOLONG;
 
 	/* Single trace point for every packet about to hit the wire,
 	 * regardless of which code path led here (send_packet,
 	 * zc_send_inner, drain_one_slot, gather_prepare_one). */
-	DSSH_TRACE_W("tx msg_type=%u len=%zu", buf[9], payload_len);
+	DSSH_TRACE_W(sess, "tx msg_type=%d len=%zu", buf[9], payload_len);
 
+	dssh_comp comp = sess->trans.client ? sess->trans.comp_c2s_active : sess->trans.comp_s2c_active;
+	if (compression_enabled(comp)) {
+		dssh_comp_ctx *ctx = sess->trans.client ? sess->trans.comp_c2s_ctx : sess->trans.comp_s2c_ctx;
+		size_t compressed_len;
+		transformed = true;
+		ret = call_comp_transform(sess, comp->compress, &buf[9], payload_len,
+		    &sess->trans.comp_tx_packet[9], tx_wire_payload_capacity(sess), &compressed_len, ctx);
+		if (ret < 0)
+			goto done;
+		if (sess->terminate) {
+			ret = DSSH_ERROR_TERMINATED;
+			goto done;
+		}
+		buf = sess->trans.comp_tx_packet;
+		payload_len = compressed_len;
+	}
 	size_t bs = tx_block_size(sess);
 
 	if (payload_len > SIZE_MAX - 5) {
 		ret = DSSH_ERROR_TOOLONG;
 		goto done;
 	}
-	size_t padding_len = bs - ((5 + payload_len) % bs);
-	if (padding_len < 4)
-		padding_len += bs;
+	size_t padding_len = packet_padding(payload_len, bs);
+	if (padding_len == 0) {
+		ret = DSSH_ERROR_INVALID;
+		goto done;
+	}
+	if (!dssh_buffer_has(SIZE_MAX, 1 + payload_len, padding_len)) {
+		ret = DSSH_ERROR_TOOLONG;
+		goto done;
+	}
 
 	size_t pkt_sz = 1 + payload_len + padding_len;
 
@@ -903,13 +1240,12 @@ tx_finalize_prepare(struct dssh_session_s *sess, uint8_t *buf, size_t payload_le
 	}
 	uint32_t packet_length = (uint32_t)pkt_sz;
 
-#if UINT32_MAX > SIZE_MAX - 4
-	if (packet_length > SIZE_MAX - 4) {
+	size_t total;
+	size_t mac_input;
+	if (!dssh_packet_extents(packet_length, sess->trans.packet_buf_sz, &total, &mac_input)) {
 		ret = DSSH_ERROR_TOOLONG;
 		goto done;
 	}
-#endif
-	size_t   total   = 4 + packet_length;
 	uint16_t mac_len = tx_mac_size(sess);
 
 	if (!dssh_buffer_has(sess->trans.packet_buf_sz, total, mac_len)) {
@@ -939,14 +1275,17 @@ tx_finalize_prepare(struct dssh_session_s *sess, uint8_t *buf, size_t payload_le
 		dssh_mac_ctx *mac_ctx;
 
 		if (sess->trans.client) {
-			mac     = sess->trans.mac_c2s_selected;
+			mac     = mac_c2s_module(sess);
 			mac_ctx = sess->trans.mac_c2s_ctx;
 		}
 		else {
-			mac     = sess->trans.mac_s2c_selected;
+			mac     = mac_s2c_module(sess);
 			mac_ctx = sess->trans.mac_s2c_ctx;
 		}
-		ret = mac->generate(buf, 4 + total, &buf[4 + total], mac_ctx);
+		crypto_called = true;
+		ret = mac->generate(buf, mac_input, &buf[mac_input], mac_ctx);
+		if (ret > 0)
+			ret = DSSH_ERROR_INVALID;
 		if (ret < 0) {
 			goto done;
 		}
@@ -958,26 +1297,23 @@ tx_finalize_prepare(struct dssh_session_s *sess, uint8_t *buf, size_t payload_le
 		dssh_enc      enc;
 
 		if (sess->trans.client) {
-			enc     = sess->trans.enc_c2s_selected;
+			enc     = enc_c2s_module(sess);
 			enc_ctx = sess->trans.enc_c2s_ctx;
 		}
 		else {
-			enc     = sess->trans.enc_s2c_selected;
+			enc     = enc_s2c_module(sess);
 			enc_ctx = sess->trans.enc_s2c_ctx;
 		}
 
-		if ((enc != NULL) && (enc->encrypt != NULL) && (enc_ctx != NULL)) {
+		if ((enc != NULL) && (enc->encrypt != NULL)) {
+			crypto_called = true;
 			ret = enc->encrypt(&buf[4], total, enc_ctx);
+			if (ret > 0)
+				ret = DSSH_ERROR_INVALID;
 			if (ret < 0) {
 				goto done;
 			}
 		}
-	}
-
-	/* Refuse to send if per-key packet count would exceed hard limit */
-	if (sess->trans.tx_since_rekey >= DSSH_REKEY_HARD_LIMIT) {
-		ret = DSSH_ERROR_REKEY_NEEDED;
-		goto done;
 	}
 
 	sess->trans.tx_seq++;
@@ -986,11 +1322,21 @@ tx_finalize_prepare(struct dssh_session_s *sess, uint8_t *buf, size_t payload_le
 	return 0;
 
 done:
+	if (transformed) {
+		dssh_cleanse(sess->trans.comp_tx_packet, 4);
+		dssh_cleanse(&sess->trans.comp_tx_packet[4], sess->trans.packet_buf_sz);
+	}
+	/* A failed module may already have changed its stream state. Notification
+	 * waits until sensitive caller storage is cleared and ownership released. */
+	if (transformed || crypto_called)
+		session_set_terminate_no_wake(sess);
 	return ret;
 }
 
 /*
- * Update TX counters after a successful send.  Caller owns the packet engine.
+ * Account for a sent packet or reserve its key budget while its complete wire
+ * bytes await a gathered callback. A failed callback terminates the session;
+ * staged packets are never prepared again or counted twice.
  */
 static void
 tx_update_counters(struct dssh_session_s *sess, size_t wire_len)
@@ -1005,20 +1351,75 @@ tx_update_counters(struct dssh_session_s *sess, size_t wire_len)
 	}
 }
 
-/*
- * Batch counter update for gather sends.  Caller owns the packet engine.
- */
-static void
-tx_update_counters_batch(struct dssh_session_s *sess, size_t count, size_t total_bytes)
+/* Flush retained controls and an optional last packet without lending live
+ * slot storage. No mutex is held and the caller owns the packet engine. */
+static int
+tx_batch_flush(struct dssh_tx_batch *batch, const uint8_t *tail, size_t tail_len)
 {
-	atomic_fetch_add(&sess->trans.tx_since_rekey, (uint_fast32_t)count);
-	{
-		uint64_t old_tb = atomic_load(&sess->trans.tx_bytes_since_rekey);
-		if (total_bytes > UINT64_MAX - old_tb)
-			atomic_store(&sess->trans.tx_bytes_since_rekey, UINT64_MAX);
-		else
-			atomic_store(&sess->trans.tx_bytes_since_rekey, old_tb + total_bytes);
+	struct dssh_session_s *sess = batch->sess;
+	struct dssh_tx_iov iov[DSSH_TX_BATCH_PACKETS + 1];
+	size_t count = batch->count;
+	int ret = 0;
+	for (size_t i = 0; i < count; i++) {
+		iov[i].base = &sess->trans.tx_gather_buf[batch->offsets[i]];
+		iov[i].len = batch->lengths[i];
 	}
+	if (tail != NULL) {
+		iov[count].base = tail;
+		iov[count].len = tail_len;
+		count++;
+	}
+	if (count != 0) {
+		ret = sess->terminate ? DSSH_ERROR_TERMINATED : call_tx_gather(sess, iov, count);
+		if (ret < 0)
+			session_set_terminate_no_wake(sess);
+	}
+	if (batch->bytes != 0)
+		dssh_cleanse(sess->trans.tx_gather_buf, batch->bytes);
+	batch->count = 0;
+	batch->bytes = 0;
+	return ret;
+}
+
+/* The fixed packet count bounds retained control storage. Grow its allocation
+ * only when required and keep offsets rather than pointers across realloc. */
+static int
+tx_batch_append(struct dssh_tx_batch *batch, const uint8_t *wire, size_t wire_len)
+{
+	struct dssh_session_s *sess = batch->sess;
+	int ret;
+	if (batch->count == DSSH_TX_BATCH_PACKETS || wire_len > SIZE_MAX - batch->bytes) {
+		ret = tx_batch_flush(batch, NULL, 0);
+		if (ret < 0)
+			return ret;
+	}
+	size_t needed = batch->bytes + wire_len;
+	if (needed > sess->trans.tx_gather_capacity) {
+		size_t capacity = sess->trans.tx_gather_capacity;
+		if (capacity < 1024)
+			capacity = 1024;
+		while (capacity < needed) {
+			if (capacity > SIZE_MAX / 2) {
+				capacity = needed;
+				break;
+			}
+			capacity *= 2;
+		}
+		uint8_t *storage = realloc(sess->trans.tx_gather_buf, capacity);
+		if (storage == NULL) {
+			session_set_terminate_no_wake(sess);
+			return DSSH_ERROR_ALLOC;
+		}
+		sess->trans.tx_gather_buf = storage;
+		sess->trans.tx_gather_capacity = capacity;
+	}
+	memcpy(&sess->trans.tx_gather_buf[batch->bytes], wire, wire_len);
+	batch->offsets[batch->count] = batch->bytes;
+	batch->lengths[batch->count] = wire_len;
+	batch->count++;
+	batch->bytes = needed;
+	tx_update_counters(sess, wire_len);
+	return 0;
 }
 
 /*
@@ -1035,9 +1436,17 @@ tx_finalize(struct dssh_session_s *sess, uint8_t *buf, size_t payload_len)
 
 	if (ret < 0)
 		return ret;
-	ret = call_io(sess, gconf.tx, wire, wire_len, sess->tx_cbdata);
-	if (ret == 0)
+	bool staged = tx_batch != NULL && tx_batch->sess == sess;
+	ret = staged ? tx_batch_append(tx_batch, wire, wire_len)
+	    : call_io(sess, gconf.tx, wire, wire_len, sess->tx_cbdata);
+	if (sess->trans.comp_tx_packet != NULL) {
+		dssh_cleanse(sess->trans.comp_tx_packet, 4);
+		dssh_cleanse(&sess->trans.comp_tx_packet[4], sess->trans.packet_buf_sz);
+	}
+	if (ret == 0 && !staged)
 		tx_update_counters(sess, wire_len);
+	else if (ret < 0)
+		session_set_terminate_no_wake(sess);
 	return ret;
 }
 
@@ -1063,7 +1472,7 @@ send_packet_inner(struct dssh_session_s *sess, const uint8_t *payload, size_t pa
 
 /* Drain callback-approved SSH_MSG_DEBUG records.  Caller owns the packet engine.
  * The queue lock is held only while copying one fixed-size entry. */
-static int
+DSSH_TESTABLE int
 drain_log_forwards(struct dssh_session_s *sess)
 {
 	struct dssh_log_forward_queue *queue = sess->log_forward;
@@ -1074,14 +1483,14 @@ drain_log_forwards(struct dssh_session_s *sess)
 		if (mtx_trylock(&queue->mtx) != thrd_success)
 			return 0;
 		if (queue->count == 0) {
-			mtx_unlock(&queue->mtx);
+			dssh_mtx_unlock(&queue->mtx);
 			return 0;
 		}
 		struct dssh_log_forward_entry entry = queue->entries[queue->head];
 
 		queue->head = (queue->head + 1) % DSSH_LOG_FORWARD_MAX;
 		queue->count--;
-		mtx_unlock(&queue->mtx);
+		dssh_mtx_unlock(&queue->mtx);
 
 		uint8_t  payload[1 + 1 + 4 + DSSH_LOG_MESSAGE_MAX + 4];
 		size_t   pos = 0;
@@ -1108,186 +1517,167 @@ drain_log_forwards(struct dssh_session_s *sess)
  * Slot-based TX queue
  * ================================================================ */
 
-static uint32_t
-window_add(uint32_t current, uint32_t bytes)
+/* A transform or I/O callback can return a normally recoverable code after
+ * changing stream state. Such a result is terminal, not a retry opportunity. */
+static bool
+tx_drain_refused(struct dssh_session_s *sess, int result)
 {
-	if (bytes > UINT32_MAX - current)
-		return UINT32_MAX;
-	return current + bytes;
+	return !sess->terminate && (result == DSSH_ERROR_TOOLONG || result == DSSH_ERROR_REKEY_NEEDED);
 }
 
-/*
- * Send a single ready slot.  Caller owns the packet engine.
- * Returns true if the slot was ready and processed.
- */
-static bool
-drain_one_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, bool *fatal)
+/* Caller owns the packet engine. Set progress only after retiring this entry;
+ * a recoverable refusal preserves its bytes, length and ready publication. */
+static int
+drain_one_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, bool *progress, bool discard)
 {
 	if (!atomic_load(&slot->ready))
-		return false;
-	int ret = tx_finalize(sess, slot->buf, slot->payload_len);
-
+		return 0;
+	int ret = discard ? 0 : tx_finalize(sess, slot->buf, slot->payload_len);
+	if (tx_drain_refused(sess, ret))
+		return ret;
 	atomic_store(&slot->ready, false);
-	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
-		*fatal = true;
-	return true;
+	*progress = true;
+	return sess->terminate ? DSSH_ERROR_TERMINATED : ret;
 }
 
-/* Send one queued receive-window adjustment.  Producers only update the
- * counters and ready flag under buf_mtx; the packet-engine owner has exclusive
- * use of wa_slot.buf. */
-static bool
-drain_one_wa_slot(struct dssh_session_s *sess, struct dssh_channel_s *ch, bool *fatal)
+/* Producers can queue more credit while the old grant is in flight. On a
+ * pre-wire refusal, move that grant back under BUF without replacing new work.
+ * The packet-engine owner exclusively uses wa_slot.buf; no mutex spans I/O. */
+DSSH_TESTABLE int
+drain_one_wa_slot(struct dssh_session_s *sess, struct dssh_channel_s *ch, bool *progress, bool discard)
 {
 	int lr = mtx_lock(&ch->buf_mtx);
-
 	if (lr != thrd_success) {
-		*fatal = true;
-		return false;
+		channel_defer_read_error(sess, ch, DSSH_ERROR_TERMINATED);
+		return DSSH_ERROR_TERMINATED;
 	}
 	if (!atomic_load(&ch->wa_slot.ready)) {
-		if (mtx_unlock(&ch->buf_mtx) != thrd_success)
-			*fatal = true;
-		return false;
+		dssh_mtx_unlock(&ch->buf_mtx);
+		return 0;
 	}
-	uint32_t bytes = ch->window_adjust_pending;
+	uint32_t bytes = discard ? 0 : ch->window_adjust_pending;
 	uint32_t remote_id = ch->remote_id;
-
 	ch->window_adjust_pending = 0;
 	atomic_store(&ch->wa_slot.ready, false);
 	if (bytes > 0)
 		ch->window_adjust_inflight = window_add(ch->window_adjust_inflight, bytes);
-	if (mtx_unlock(&ch->buf_mtx) != thrd_success) {
-		*fatal = true;
-		return true;
+	dssh_mtx_unlock(&ch->buf_mtx);
+	if (bytes == 0) {
+		*progress = true;
+		return 0;
 	}
 
-	if (bytes == 0)
-		return true;
-
 	uint8_t *buf = ch->wa_slot.buf;
-
-	buf[9]    = SSH_MSG_CHANNEL_WINDOW_ADJUST;
+	buf[9] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
 	size_t wp = 10;
 	DSSH_PUT_U32(remote_id, buf, &wp);
 	DSSH_PUT_U32(bytes, buf, &wp);
 	ch->wa_slot.payload_len = 9;
-
 	int ret = tx_finalize(sess, buf, 9);
-	bool send_fatal = (ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED);
+	int read_error = ret;
+	bool refused = tx_drain_refused(sess, ret);
+	bool fatal = ret < 0 && !refused;
 
 	lr = mtx_lock(&ch->buf_mtx);
 	if (lr != thrd_success) {
-		*fatal = true;
-		return true;
+		channel_defer_read_error(sess, ch, read_error < 0 ? read_error : DSSH_ERROR_TERMINATED);
+		return DSSH_ERROR_TERMINATED;
 	}
 	if (ret == 0)
 		ch->local_window = window_add(ch->local_window, bytes);
-	if (!send_fatal) {
+	if (!fatal) {
 		if (bytes <= ch->window_adjust_inflight)
 			ch->window_adjust_inflight -= bytes;
 		else
 			ch->window_adjust_inflight = 0;
-		if (cnd_broadcast(&ch->poll_cnd) != thrd_success)
-			*fatal = true;
+		if (refused) {
+			ch->window_adjust_pending = window_add(ch->window_adjust_pending, bytes);
+			atomic_store(&ch->wa_slot.ready, true);
+		}
+		int br = cnd_broadcast(&ch->poll_cnd);
+		dssh_mtx_unlock(&ch->buf_mtx);
+		if (br != thrd_success)
+			ret = DSSH_ERROR_TERMINATED;
 	}
-	if (mtx_unlock(&ch->buf_mtx) != thrd_success)
-		*fatal = true;
-
-	if (send_fatal)
-		*fatal = true;
-	return true;
+	else
+		dssh_mtx_unlock(&ch->buf_mtx);
+	if (ret < 0)
+		channel_defer_read_error(sess, ch, read_error < 0 ? read_error : ret);
+	if (!refused)
+		*progress = true;
+	return sess->terminate ? DSSH_ERROR_TERMINATED : ret;
 }
 
-/*
- * Drain all pre-allocated TX slots.  Caller owns the packet engine.
- * Session-level slots drain first (protocol-critical).  Channel
- * slots drain in round-robin order starting from drain_next_ch
- * to ensure fair scheduling across channels.  Signals tx_slot_cnd
- * if any slot was cleared to wake a stalled demux thread.
- */
-DSSH_PRIVATE void
+/* Drain in protocol priority order. Stop at the first refusal so the owner
+ * cannot repeatedly select an unchanged ready entry or send later work first.
+ * Pins and physical locks are released before notification or transport I/O. */
+DSSH_PRIVATE int
 drain_tx_slots(struct dssh_session_s *sess)
 {
-	bool any   = false;
-	bool fatal = false;
+	if (sess->terminate)
+		return DSSH_ERROR_TERMINATED;
+	if (atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire))
+		return 0;
+	bool progress = false;
+	int result = drain_one_slot(sess, &sess->trans.global_reply_slot, &progress, false);
+	if (result == 0)
+		result = drain_one_slot(sess, &sess->trans.open_fail_slot, &progress, false);
 
-	/* Session-level slots — always first (protocol-critical) */
-	any |= drain_one_slot(sess, &sess->trans.global_reply_slot, &fatal);
-	any |= drain_one_slot(sess, &sess->trans.open_fail_slot, &fatal);
-
-	/* Pin one ready channel at a time, then drop channel_mtx before
-	 * taking buf_mtx or invoking a transport callback. */
-	if (sess->conn_initialized) {
+	if (result == 0 && sess->conn_initialized) {
 		for (;;) {
 			struct dssh_channel_s *ch = NULL;
-			int channel_lr = mtx_lock(&sess->channel_mtx);
-
-			if (channel_lr != thrd_success) {
-				dssh_thrd_check(sess, channel_lr);
-				fatal = true;
+			bool discard = false;
+			int lr = mtx_lock(&sess->channel_mtx);
+			if (lr != thrd_success) {
+				result = DSSH_ERROR_TERMINATED;
 				break;
 			}
 			size_t n = sess->channel_count;
-
 			if (n > 0) {
-				size_t start = sess->trans.drain_next_ch % n;
-
+				size_t idx = sess->trans.drain_next_ch % n;
 				for (size_t j = 0; j < n; j++) {
-					size_t idx = (start + j) % n;
 					struct dssh_channel_s *candidate = sess->channels[idx];
-
 					if (atomic_load(&candidate->wa_slot.ready)
-					    || atomic_load(&candidate->chan_fail_slot.ready)) {
+					    || atomic_load(&candidate->chan_reply_slot.ready)) {
 						atomic_fetch_add_explicit(&candidate->tx_refs, 1, memory_order_acq_rel);
 						ch = candidate;
-						sess->trans.drain_next_ch = (idx + 1) % n;
+						discard = candidate->protocol_id->close_ordered;
+						sess->trans.drain_next_ch = idx == n - 1 ? 0 : idx + 1;
 						break;
 					}
+					idx = idx == n - 1 ? 0 : idx + 1;
 				}
 			}
-			int channel_ur = mtx_unlock(&sess->channel_mtx);
-
-			if (channel_ur != thrd_success) {
-				dssh_thrd_check_unlock(sess, channel_ur);
-				fatal = true;
-				if (ch != NULL)
-					atomic_fetch_sub_explicit(&ch->tx_refs, 1, memory_order_acq_rel);
-				break;
-			}
+			dssh_mtx_unlock(&sess->channel_mtx);
 			if (ch == NULL)
 				break;
-			any |= drain_one_wa_slot(sess, ch, &fatal);
-			any |= drain_one_slot(sess, &ch->chan_fail_slot, &fatal);
+			result = drain_one_wa_slot(sess, ch, &progress, discard);
+			if (result == 0)
+				result = drain_one_slot(sess, &ch->chan_reply_slot, &progress, discard);
 			atomic_fetch_sub_explicit(&ch->tx_refs, 1, memory_order_acq_rel);
-			if (fatal)
+			if (result < 0)
 				break;
 		}
 	}
-
-	/* session_set_terminate() acquires channel_mtx to wake channel
-	 * waiters, so it must not run from a per-channel slot helper. */
-	if (fatal)
+	if (result < 0 && !tx_drain_refused(sess, result))
 		session_set_terminate(sess);
-
-	if (any) {
-		int queue_lr = mtx_lock(&sess->trans.tx_queue_mtx);
-
-		if (queue_lr == thrd_success) {
-			int br = cnd_broadcast(&sess->trans.tx_slot_cnd);
-			int ur = mtx_unlock(&sess->trans.tx_queue_mtx);
-
-			if (ur != thrd_success)
-				dssh_thrd_check_unlock(sess, ur);
-			else if (br != thrd_success)
-				session_set_terminate(sess);
-		}
-		else
+	if (progress) {
+		int lr = mtx_lock(&sess->trans.tx_queue_mtx);
+		if (lr != thrd_success) {
 			session_set_terminate(sess);
+			return DSSH_ERROR_TERMINATED;
+		}
+		int br = cnd_broadcast(&sess->trans.tx_slot_cnd);
+		dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
+		if (br != thrd_success) {
+			session_set_terminate(sess);
+			return DSSH_ERROR_TERMINATED;
+		}
 	}
+	return sess->terminate ? DSSH_ERROR_TERMINATED : result;
 }
 
-static void
+DSSH_TESTABLE void
 tx_wake_owners(struct dssh_session_s *sess)
 {
 	int lr = mtx_lock(&sess->trans.tx_mtx);
@@ -1297,7 +1687,7 @@ tx_wake_owners(struct dssh_session_s *sess)
 		return;
 	}
 	int br = cnd_broadcast(&sess->trans.rekey_cnd);
-	int ur = mtx_unlock(&sess->trans.tx_mtx);
+	int ur = dssh_mtx_unlock(&sess->trans.tx_mtx);
 
 	if (ur != thrd_success)
 		dssh_thrd_check_unlock(sess, ur);
@@ -1310,17 +1700,24 @@ tx_wake_owners(struct dssh_session_s *sess)
 DSSH_PRIVATE int
 tx_acquire(struct dssh_session_s *sess, uint8_t msg_type)
 {
-	if (dssh_io_callback_active(sess))
+	if (dssh_channel_rx_active() || dssh_io_callback_active(sess) || dssh_setup_callback_active(sess))
 		return DSSH_ERROR_INVALID;
+	if (tx_owned_session != NULL)
+		return DSSH_ERROR_INVALID;
+	struct timespec ts;
+	if (sess->timeout_ms > 0) {
+		int ret = dssh_deadline_from_ms(&ts, sess->timeout_ms);
+		if (ret < 0) {
+			session_set_terminate(sess);
+			return DSSH_ERROR_TERMINATED;
+		}
+	}
 	int lr = mtx_lock(&sess->trans.tx_mtx);
 
 	if (lr != thrd_success) {
 		dssh_thrd_check(sess, lr);
 		return DSSH_ERROR_TERMINATED;
 	}
-	struct timespec ts;
-	if (sess->timeout_ms > 0)
-		dssh_deadline_from_ms(&ts, sess->timeout_ms);
 	while ((atomic_load_explicit(&sess->trans.tx_owner_active, memory_order_acquire)
 	           || (msg_type >= SSH_MSG_USERAUTH_REQUEST
 	               && atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire)))
@@ -1332,7 +1729,7 @@ tx_acquire(struct dssh_session_s *sess, uint8_t msg_type)
 		else
 			wr = cnd_timedwait(&sess->trans.rekey_cnd, &sess->trans.tx_mtx, &ts);
 		if (wr == thrd_timedout) {
-			int ur = mtx_unlock(&sess->trans.tx_mtx);
+			int ur = dssh_mtx_unlock(&sess->trans.tx_mtx);
 
 			if (ur != thrd_success) {
 				dssh_thrd_check_unlock(sess, ur);
@@ -1342,7 +1739,7 @@ tx_acquire(struct dssh_session_s *sess, uint8_t msg_type)
 			return DSSH_ERROR_TERMINATED;
 		}
 		if (wr != thrd_success) {
-			int ur = mtx_unlock(&sess->trans.tx_mtx);
+			int ur = dssh_mtx_unlock(&sess->trans.tx_mtx);
 
 			if (ur != thrd_success) {
 				dssh_thrd_check_unlock(sess, ur);
@@ -1353,7 +1750,7 @@ tx_acquire(struct dssh_session_s *sess, uint8_t msg_type)
 		}
 	}
 	if (sess->terminate) {
-		int ur = mtx_unlock(&sess->trans.tx_mtx);
+		int ur = dssh_mtx_unlock(&sess->trans.tx_mtx);
 
 		if (ur != thrd_success)
 			dssh_thrd_check_unlock(sess, ur);
@@ -1361,7 +1758,7 @@ tx_acquire(struct dssh_session_s *sess, uint8_t msg_type)
 	}
 	tx_owned_session = sess;
 	atomic_store_explicit(&sess->trans.tx_owner_active, true, memory_order_release);
-	int ur = mtx_unlock(&sess->trans.tx_mtx);
+	int ur = dssh_mtx_unlock(&sess->trans.tx_mtx);
 
 	if (ur != thrd_success) {
 		tx_owned_session = NULL;
@@ -1372,13 +1769,23 @@ tx_acquire(struct dssh_session_s *sess, uint8_t msg_type)
 	return 0;
 }
 
+DSSH_PRIVATE bool
+tx_slot_context_allowed(struct dssh_session_s *sess)
+{
+	return (tx_owned_session == NULL || tx_owned_session == sess)
+	    && !dssh_channel_rx_active() && !dssh_io_callback_active(sess)
+	    && !dssh_setup_callback_active(sess);
+}
+
+/* Try the engine predicate without waiting for ownership. Acquire the short
+ * state mutex normally so transient mutex contention cannot strand a slot
+ * with no engine owner to drain it. Caller holds no physical lock. */
 static int
 tx_try_acquire(struct dssh_session_s *sess, uint8_t msg_type)
 {
-	if (dssh_io_callback_active(sess))
-		return thrd_error;
-	int lr = mtx_trylock(&sess->trans.tx_mtx);
-
+	if (tx_owned_session == sess)
+		return thrd_busy;
+	int lr = mtx_lock(&sess->trans.tx_mtx);
 	if (lr != thrd_success)
 		return lr;
 	int ret = thrd_busy;
@@ -1390,16 +1797,7 @@ tx_try_acquire(struct dssh_session_s *sess, uint8_t msg_type)
 		atomic_store_explicit(&sess->trans.tx_owner_active, true, memory_order_release);
 		ret = thrd_success;
 	}
-	int ur = mtx_unlock(&sess->trans.tx_mtx);
-
-	if (ur != thrd_success) {
-		if (ret == thrd_success)
-			tx_owned_session = NULL;
-		if (ret == thrd_success)
-			atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
-		dssh_thrd_check_unlock(sess, ur);
-		return thrd_error;
-	}
+	dssh_mtx_unlock(&sess->trans.tx_mtx);
 	return ret;
 }
 
@@ -1407,6 +1805,45 @@ DSSH_PRIVATE bool
 tx_owner_is_current(struct dssh_session_s *sess)
 {
 	return tx_owned_session == sess;
+}
+
+/* Called after the final slot drain, with queue mutex and engine owned.
+ * Claiming the read boundary prevents dispatch of a second occupied-slot
+ * reply while the receive owner must finish this exchange. */
+static bool
+claim_rekey_read(struct dssh_session_s *sess)
+{
+	if (session_on_demux_thread(sess)
+	    || atomic_load(&sess->trans.rekey_read) != DSSH_REKEY_READ_AVAILABLE
+	    || !rekey_transmit_due(sess))
+		return false;
+	enum dssh_rekey_read_state expected = DSSH_REKEY_READ_AVAILABLE;
+	if (!atomic_compare_exchange_strong(&sess->trans.rekey_read, &expected,
+	    DSSH_REKEY_READ_CLAIMED))
+		return false;
+	atomic_store(&sess->trans.rekey_in_progress, true);
+	return true;
+}
+
+static void
+send_claimed_rekey_offer(struct dssh_session_s *sess)
+{
+	int ret = prepare_kexinit(sess);
+	if (ret == 0)
+		ret = send_packet_inner(sess, sess->trans.our_kexinit, sess->trans.our_kexinit_sz, NULL);
+	if (ret == 0)
+		sess->trans.rekey_offer_sent = true;
+	else
+		session_set_terminate_no_wake(sess);
+	tx_owned_session = NULL;
+	atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+	if (ret < 0) {
+		DSSH_LOGF(sess, DSSH_LOG_ERROR, ret, "Failed to start transmit rekey: %s",
+		    dssh_strerror(ret));
+	}
+	if (sess->terminate)
+		session_set_terminate(sess);
+	tx_wake_owners(sess);
 }
 
 /* Drain slots queued while a TX callback was active, then publish the
@@ -1420,6 +1857,9 @@ tx_unlock_with_slots(struct dssh_session_s *sess)
 	if (sess->terminate) {
 		tx_owned_session = NULL;
 		atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+		/* A stateful transform may have failed with a normally recoverable
+		 * error. Complete deferred notification after caller storage is clear. */
+		session_set_terminate(sess);
 		tx_wake_owners(sess);
 		return;
 	}
@@ -1443,7 +1883,7 @@ tx_unlock_with_slots(struct dssh_session_s *sess)
 			return;
 		}
 		sess->trans.tx_slots_pending = false;
-		int ur = mtx_unlock(&sess->trans.tx_queue_mtx);
+		int ur = dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
 
 		if (ur != thrd_success) {
 			tx_owned_session = NULL;
@@ -1453,10 +1893,11 @@ tx_unlock_with_slots(struct dssh_session_s *sess)
 			return;
 		}
 
-		drain_tx_slots(sess);
+		int drain_ret = drain_tx_slots(sess);
 		if (sess->terminate) {
 			tx_owned_session = NULL;
 			atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
+			session_set_terminate(sess);
 			tx_wake_owners(sess);
 			return;
 		}
@@ -1469,8 +1910,10 @@ tx_unlock_with_slots(struct dssh_session_s *sess)
 			tx_wake_owners(sess);
 			return;
 		}
-		if (sess->trans.tx_slots_pending) {
-			ur = mtx_unlock(&sess->trans.tx_queue_mtx);
+		if (drain_ret < 0)
+			sess->trans.tx_slots_pending = true;
+		if (drain_ret == 0 && sess->trans.tx_slots_pending) {
+			ur = dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
 			if (ur != thrd_success) {
 				tx_owned_session = NULL;
 				atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
@@ -1480,51 +1923,100 @@ tx_unlock_with_slots(struct dssh_session_s *sess)
 			}
 			continue;
 		}
+		sess->trans.tx_slot_refusal = drain_ret;
+		if (drain_ret == 0 && claim_rekey_read(sess)) {
+			dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
+			send_claimed_rekey_offer(sess);
+			return;
+		}
 		tx_owned_session = NULL;
 		atomic_store_explicit(&sess->trans.tx_owner_active, false, memory_order_release);
-		ur = mtx_unlock(&sess->trans.tx_queue_mtx);
-		if (ur != thrd_success)
-			dssh_thrd_check_unlock(sess, ur);
+		/* The occupied predicate stayed true. Wake producers so they can
+		 * observe the refusal instead of waiting for an idle engine. */
+		int br = drain_ret < 0 ? cnd_broadcast(&sess->trans.tx_slot_cnd) : thrd_success;
+		dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
+		if (br != thrd_success)
+			dssh_thrd_check(sess, br);
 		tx_wake_owners(sess);
 		return;
 	}
 }
 
-/*
- * Send a gathered iov via tx_gather callback, update counters.
- * Caller MUST own the packet engine.  No mutex is held.  Returns 0 on success.
- */
-static int
-tx_send_gathered(struct dssh_session_s *sess, struct dssh_tx_iov *iov, size_t iovcnt, size_t total_bytes)
+/* Report failures that occur while releasing ownership or draining replies. */
+DSSH_PRIVATE int
+tx_unlock_with_result(struct dssh_session_s *sess, int result)
 {
-	int ret = call_tx_gather(sess, iov, iovcnt);
-
-	if (ret == 0)
-		tx_update_counters_batch(sess, iovcnt, total_bytes);
-	return ret;
+	tx_unlock_with_slots(sess);
+	if (result == 0 && sess->terminate)
+		return DSSH_ERROR_TERMINATED;
+	return result;
 }
 
 /*
- * Drain control slots to completion, then send the caller's packet through
- * tx_gather.  Slot buffers cannot safely remain referenced by an iovec after
- * ready is cleared because the demux may immediately reuse them.
+ * Gather queued control packets with the caller's packet. Each retired slot
+ * has an independently retained wire copy, including compressed output, and
+ * reserves its packet budget before the next packet is prepared. Bounded full
+ * batches are sent before collecting further controls. The final caller packet
+ * remains in its original wire buffer until callback return.
  * Caller MUST own the packet engine.
  */
 DSSH_PRIVATE int
 tx_gather_with_packet(struct dssh_session_s *sess, uint8_t *buf, size_t payload_len)
 {
-	if (!atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire))
-		drain_tx_slots(sess);
+	if (tx_batch != NULL)
+		return DSSH_ERROR_INVALID;
+	struct dssh_tx_batch batch = {.sess = sess};
+	tx_batch = &batch;
+	int ret = 0;
+	if (!atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire)) {
+		ret = drain_tx_slots(sess);
+		if (ret < 0) {
+			/* Earlier controls may already be prepared when a later slot is
+			 * refused before touching stream state. Send that valid prefix. */
+			if (tx_drain_refused(sess, ret)) {
+				int flush_ret = tx_batch_flush(&batch, NULL, 0);
+				if (flush_ret < 0)
+					ret = flush_ret;
+			}
+			goto done;
+		}
+	}
+	if (sess->terminate) {
+		ret = DSSH_ERROR_TERMINATED;
+		goto done;
+	}
 
 	uint8_t *wire;
 	size_t   wire_len;
-	int      ret = tx_finalize_prepare(sess, buf, payload_len, &wire, &wire_len);
+	ret = tx_finalize_prepare(sess, buf, payload_len, &wire, &wire_len);
 
-	if (ret < 0)
-		return ret;
-	struct dssh_tx_iov iov = { .base = wire, .len = wire_len };
+	if (ret < 0) {
+		if (tx_drain_refused(sess, ret)) {
+			int flush_ret = tx_batch_flush(&batch, NULL, 0);
+			if (flush_ret < 0)
+				ret = flush_ret;
+		}
+		goto done;
+	}
+	/* The complete vector's byte sum must also fit size_t. A narrow platform
+	 * may need to send its valid control prefix separately from a large tail. */
+	if (wire_len > SIZE_MAX - batch.bytes) {
+		ret = tx_batch_flush(&batch, NULL, 0);
+		if (ret < 0)
+			goto done;
+	}
+	ret = tx_batch_flush(&batch, wire, wire_len);
+	if (ret == 0)
+		tx_update_counters(sess, wire_len);
 
-	ret = tx_send_gathered(sess, &iov, 1, wire_len);
+done:
+	if (batch.bytes != 0)
+		dssh_cleanse(sess->trans.tx_gather_buf, batch.bytes);
+	tx_batch = NULL;
+	if (sess->trans.comp_tx_packet != NULL) {
+		dssh_cleanse(sess->trans.comp_tx_packet, 4);
+		dssh_cleanse(&sess->trans.comp_tx_packet[4], sess->trans.packet_buf_sz);
+	}
 	return ret;
 }
 
@@ -1537,31 +2029,15 @@ tx_gather_with_packet(struct dssh_session_s *sess, uint8_t *buf, size_t payload_
  * thread stops reading packets until the slot is drained by the next
  * send_packet() caller.
  */
-DSSH_PRIVATE int
-send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8_t *payload, size_t payload_len)
+static int
+send_to_slot_inner(struct dssh_session_s *sess, struct dssh_tx_slot *slot,
+    const uint8_t *payload, size_t payload_len, struct dssh_channel_s *channel)
 {
-	if (payload_len > UINT8_MAX)
+	if (payload == NULL || payload_len == 0 || payload_len > UINT8_MAX
+	    || !tx_slot_context_allowed(sess))
 		return DSSH_ERROR_INVALID;
-
 	if (sess->terminate)
 		return DSSH_ERROR_TERMINATED;
-
-	/* Pre-KEX: slot buffer not yet allocated.  Fall back to
-	 * send_packet_inner via tx_packet (always available). */
-	if (slot->buf == NULL) {
-		int tr = tx_try_acquire(sess, payload[0]);
-		if (tr == thrd_success) {
-			int ret = send_packet_inner(sess, payload, payload_len, NULL);
-			if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
-				session_set_terminate(sess);
-			tx_unlock_with_slots(sess);
-			return ret;
-		}
-		/* A busy packet engine pre-KEX should not happen — single
-		 * thread at this point.  Terminate as a safeguard. */
-		session_set_terminate(sess);
-		return DSSH_ERROR_TERMINATED;
-	}
 
 	/* Fast path: try to reserve the packet engine immediately */
 	int tr = tx_try_acquire(sess, payload[0]);
@@ -1570,60 +2046,106 @@ send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8
 		/* Drain any prior slow-path payload, then use tx_packet for this
 		 * fast send.  A new slow producer may be filling slot->buf under
 		 * tx_queue_mtx, so the fast path must not write slot storage. */
-		drain_tx_slots(sess);
-		memcpy(&sess->trans.tx_packet[9], payload, payload_len);
-		int ret = tx_finalize(sess, sess->trans.tx_packet, payload_len);
+		int drain_ret = drain_tx_slots(sess);
+		if (drain_ret < 0)
+			return tx_unlock_with_result(sess, drain_ret);
+		if (sess->terminate) {
+			tx_unlock_with_slots(sess);
+			return DSSH_ERROR_TERMINATED;
+		}
+		/* A channel failure prepared before CLOSE can acquire the engine
+		 * after it. The queued path checks the same state in the drainer. */
+		if (channel != NULL) {
+			int lr = mtx_lock(&sess->channel_mtx);
+			if (lr != thrd_success) {
+				session_set_terminate_no_wake(sess);
+				return tx_unlock_with_result(sess, DSSH_ERROR_TERMINATED);
+			}
+			bool closed = channel->protocol_id->close_ordered;
+			dssh_mtx_unlock(&sess->channel_mtx);
+			if (closed)
+				return tx_unlock_with_result(sess, 0);
+		}
+		int ret = send_packet_inner(sess, payload, payload_len, NULL);
 
 		if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
 			session_set_terminate(sess);
-		tx_unlock_with_slots(sess);
-		return ret;
+		return tx_unlock_with_result(sess, ret);
 	}
 	if (tr != thrd_busy) {
 		dssh_thrd_check(sess, tr);
 		return DSSH_ERROR_TERMINATED;
 	}
 
-	/* Slow path: stall until slot is free */
+	/* Only the queue lock exposes live slot storage to a producer. Recheck
+	 * the buffer and occupancy after each native condition wait. */
 	if (dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx)) != thrd_success)
 		return DSSH_ERROR_TERMINATED;
-	bool wait_failed = false;
-
-	while (atomic_load(&slot->ready) && !sess->terminate) {
-		if (cnd_wait(&sess->trans.tx_slot_cnd, &sess->trans.tx_queue_mtx) != thrd_success) {
-			wait_failed = true;
-			break;
+	for (;;) {
+		if (sess->terminate) {
+			dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
+			return DSSH_ERROR_TERMINATED;
 		}
-	}
-	if (wait_failed) {
-		int ur = mtx_unlock(&sess->trans.tx_queue_mtx);
-
-		if (ur == thrd_success)
+		if (slot->buf == NULL) {
+			/* An unallocated slot can only be sent on the direct path. */
+			dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
 			session_set_terminate(sess);
-		else
-			dssh_thrd_check_unlock(sess, ur);
-		return DSSH_ERROR_TERMINATED;
-	}
-	if (sess->terminate) {
-		dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_queue_mtx));
-		return DSSH_ERROR_TERMINATED;
+			return DSSH_ERROR_TERMINATED;
+		}
+		if (payload_len > slot->payload_capacity
+		    || !dssh_buffer_has(slot->buf_sz, 9, payload_len)) {
+			dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
+			return DSSH_ERROR_TOOLONG;
+		}
+		if (!atomic_load(&slot->ready))
+			break;
+		if (tx_owned_session == sess) {
+			dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
+			return DSSH_ERROR_INVALID;
+		}
+		if (sess->trans.tx_slot_refusal < 0
+		    && !atomic_load(&sess->trans.tx_owner_active)
+		    && !atomic_load(&sess->trans.rekey_in_progress)) {
+			int refusal = sess->trans.tx_slot_refusal;
+			dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
+			return refusal;
+		}
+		if (cnd_wait(&sess->trans.tx_slot_cnd, &sess->trans.tx_queue_mtx) != thrd_success) {
+			dssh_mtx_unlock(&sess->trans.tx_queue_mtx);
+			session_set_terminate(sess);
+			return DSSH_ERROR_TERMINATED;
+		}
 	}
 
 	memcpy(&slot->buf[9], payload, payload_len);
 	slot->payload_len = (uint8_t)payload_len;
 	atomic_store(&slot->ready, true);
 	sess->trans.tx_slots_pending = true;
-	if (dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_queue_mtx)) != thrd_success)
+	if (dssh_thrd_check_unlock(sess, dssh_mtx_unlock(&sess->trans.tx_queue_mtx)) != thrd_success)
 		return DSSH_ERROR_TERMINATED;
 
 	tr = tx_try_acquire(sess, payload[0]);
 	if (tr == thrd_success)
-		tx_unlock_with_slots(sess);
+		return tx_unlock_with_result(sess, 0);
 	else if (tr != thrd_busy) {
 		dssh_thrd_check(sess, tr);
 		return DSSH_ERROR_TERMINATED;
 	}
 	return 0;
+}
+
+DSSH_PRIVATE int
+send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8_t *payload,
+    size_t payload_len)
+{
+	return send_to_slot_inner(sess, slot, payload, payload_len, NULL);
+}
+
+DSSH_PRIVATE int
+send_channel_reply(struct dssh_session_s *sess, struct dssh_channel_s *ch,
+    const uint8_t *payload, size_t payload_len)
+{
+	return send_to_slot_inner(sess, &ch->chan_reply_slot, payload, payload_len, ch);
 }
 
 /*
@@ -1633,19 +2155,21 @@ send_to_slot(struct dssh_session_s *sess, struct dssh_tx_slot *slot, const uint8
 DSSH_PRIVATE int
 schedule_wa_slot(struct dssh_session_s *sess)
 {
+	if (!tx_slot_context_allowed(sess))
+		return DSSH_ERROR_INVALID;
 	if (sess->terminate)
 		return DSSH_ERROR_TERMINATED;
 
 	if (dssh_thrd_check(sess, mtx_lock(&sess->trans.tx_queue_mtx)) != thrd_success)
 		return DSSH_ERROR_TERMINATED;
 	sess->trans.tx_slots_pending = true;
-	if (dssh_thrd_check_unlock(sess, mtx_unlock(&sess->trans.tx_queue_mtx)) != thrd_success)
+	if (dssh_thrd_check_unlock(sess, dssh_mtx_unlock(&sess->trans.tx_queue_mtx)) != thrd_success)
 		return DSSH_ERROR_TERMINATED;
 
 	int tr = tx_try_acquire(sess, SSH_MSG_CHANNEL_WINDOW_ADJUST);
 
 	if (tr == thrd_success)
-		tx_unlock_with_slots(sess);
+		return tx_unlock_with_result(sess, 0);
 	else if (tr != thrd_busy) {
 		dssh_thrd_check(sess, tr);
 		return DSSH_ERROR_TERMINATED;
@@ -1678,6 +2202,8 @@ send_packet(struct dssh_session_s *sess, const uint8_t *payload, size_t payload_
  * caller serializes the payload directly.  *max_len is the maximum
  * payload the caller may write.  Caller MUST call send_commit(),
  * send_commit_sensitive(), or send_cancel() to release the reservation.
+ * A sender publishing packet-dependent state may instead use send_commit_held()
+ * and finish with tx_unlock_with_result() after that publication.
  *
  * Returns NULL on error (timeout, terminate); *err_out is set.
  */
@@ -1692,8 +2218,18 @@ send_begin(struct dssh_session_s *sess, uint8_t msg_type, size_t *max_len, int *
 	}
 
 	if (!tx_gather_enabled()
-	    && !atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire))
-		drain_tx_slots(sess);
+	    && !atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire)) {
+		int drain_ret = drain_tx_slots(sess);
+		if (drain_ret < 0) {
+			*err_out = tx_unlock_with_result(sess, drain_ret);
+			return NULL;
+		}
+	}
+	if (sess->terminate) {
+		tx_unlock_with_slots(sess);
+		*err_out = DSSH_ERROR_TERMINATED;
+		return NULL;
+	}
 	int log_ret = drain_log_forwards(sess);
 
 	if (log_ret < 0 && log_ret != DSSH_ERROR_TOOLONG && log_ret != DSSH_ERROR_REKEY_NEEDED) {
@@ -1706,20 +2242,21 @@ send_begin(struct dssh_session_s *sess, uint8_t msg_type, size_t *max_len, int *
 		return NULL;
 	}
 
-	*max_len = sess->trans.packet_buf_sz - 9;
+	*max_len = tx_payload_capacity(sess);
 	return &sess->trans.tx_packet[9];
 }
 
-/* Finalize and send the payload already at tx_packet[9].  When
- * sensitive is true, scrub the payload before invoking a termination
- * callback or releasing packet-engine ownership. */
+/* Finalize and send the payload already at tx_packet[9], retaining the
+ * packet engine for caller state publication. When sensitive is true, scrub
+ * the payload before invoking a termination callback. */
 static int
-send_commit_inner(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out, bool sensitive)
+send_commit_inner(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out,
+    bool sensitive, bool required)
 {
 	if (!tx_owner_is_current(sess))
 		return DSSH_ERROR_INVALID;
 	int ret;
-	size_t max_payload = sess->trans.packet_buf_sz - 9;
+	size_t max_payload = tx_payload_capacity(sess);
 
 	if (payload_len > max_payload) {
 		ret = DSSH_ERROR_TOOLONG;
@@ -1727,11 +2264,9 @@ send_commit_inner(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq
 	}
 
 	if (tx_gather_enabled()) {
-		uint32_t caller_seq = sess->trans.tx_seq;
-
 		ret = tx_gather_with_packet(sess, sess->trans.tx_packet, payload_len);
 		if (ret == 0 && seq_out != NULL)
-			*seq_out = caller_seq;
+			*seq_out = sess->trans.tx_seq - 1;
 	}
 	else {
 		ret = tx_finalize(sess, sess->trans.tx_packet, payload_len);
@@ -1745,10 +2280,17 @@ done:
 
 		dssh_cleanse(&sess->trans.tx_packet[9], cleanse_len);
 	}
-	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
+	if (ret < 0 && (required || (ret != DSSH_ERROR_TOOLONG && ret != DSSH_ERROR_REKEY_NEEDED)))
 		session_set_terminate(sess);
-	tx_unlock_with_slots(sess);
 	return ret;
+}
+
+/* Retain the engine until the caller has published its packet-dependent
+ * state. The caller must finish with tx_unlock_with_result(). */
+DSSH_PRIVATE int
+send_commit_held(struct dssh_session_s *sess, size_t payload_len)
+{
+	return send_commit_inner(sess, payload_len, NULL, false, false);
 }
 
 /*
@@ -1758,7 +2300,17 @@ done:
 DSSH_PRIVATE int
 send_commit(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out)
 {
-	return send_commit_inner(sess, payload_len, seq_out, false);
+	int ret = send_commit_inner(sess, payload_len, seq_out, false, false);
+	return tx_unlock_with_result(sess, ret);
+}
+
+/* A protocol ownership transition already orders this packet ahead of later
+ * traffic. Terminate on pre-wire refusal before relinquishing the engine. */
+DSSH_PRIVATE int
+send_commit_required(struct dssh_session_s *sess, size_t payload_len)
+{
+	int ret = send_commit_inner(sess, payload_len, NULL, false, true);
+	return tx_unlock_with_result(sess, ret);
 }
 
 /*
@@ -1768,7 +2320,8 @@ send_commit(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out)
 DSSH_PRIVATE int
 send_commit_sensitive(struct dssh_session_s *sess, size_t payload_len, uint32_t *seq_out)
 {
-	return send_commit_inner(sess, payload_len, seq_out, true);
+	int ret = send_commit_inner(sess, payload_len, seq_out, true, false);
+	return tx_unlock_with_result(sess, ret);
 }
 
 /*
@@ -1788,7 +2341,7 @@ send_cancel(struct dssh_session_s *sess)
  * (IGNORE, DEBUG, UNIMPLEMENTED, DISCONNECT) -- that's done by the
  * public recv_packet wrapper below.
  */
-static int
+DSSH_TESTABLE int
 recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
 {
 	int ret;
@@ -1800,6 +2353,10 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 
 	size_t bs = rx_block_size(sess);
 
+	if (bs > sess->trans.packet_buf_sz) {
+		ret = DSSH_ERROR_INVALID;
+		goto rx_done;
+	}
 	/* Receive into rx_packet[4..], leaving [0..4) for seq prefix */
 	ret = call_io(sess, gconf.rx, &sess->trans.rx_packet[4], bs, sess->rx_cbdata);
 	if (ret < 0)
@@ -1810,16 +2367,18 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 	dssh_enc_ctx *enc_ctx;
 
 	if (sess->trans.client) {
-		enc     = sess->trans.enc_s2c_selected;
+		enc     = enc_s2c_module(sess);
 		enc_ctx = sess->trans.enc_s2c_ctx;
 	}
 	else {
-		enc     = sess->trans.enc_c2s_selected;
+		enc     = enc_c2s_module(sess);
 		enc_ctx = sess->trans.enc_c2s_ctx;
 	}
 
-	if ((enc != NULL) && (enc->decrypt != NULL) && (enc_ctx != NULL)) {
+	if ((enc != NULL) && (enc->decrypt != NULL)) {
 		ret = enc->decrypt(&sess->trans.rx_packet[4], bs, enc_ctx);
+		if (ret > 0)
+			ret = DSSH_ERROR_INVALID;
 		if (ret < 0)
 			goto rx_done;
 	}
@@ -1831,13 +2390,13 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 		ret = DSSH_ERROR_PARSE;
 		goto rx_done;
 	}
-	if (!dssh_buffer_has(sess->trans.packet_buf_sz, 4, packet_length)) {
+	size_t packet_total;
+	size_t mac_input;
+	if (!dssh_packet_extents(packet_length, sess->trans.packet_buf_sz, &packet_total, &mac_input)) {
 		ret = DSSH_ERROR_TOOLONG;
 		goto rx_done;
 	}
-	size_t packet_total = 4 + (size_t)packet_length;
-
-	if (packet_total < bs) {
+	if (packet_total < bs || packet_total % bs != 0) {
 		ret = DSSH_ERROR_PARSE;
 		goto rx_done;
 	}
@@ -1847,8 +2406,10 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 		ret = call_io(sess, gconf.rx, &sess->trans.rx_packet[4 + bs], remaining, sess->rx_cbdata);
 		if (ret < 0)
 			goto rx_done;
-		if ((enc != NULL) && (enc->decrypt != NULL) && (enc_ctx != NULL)) {
+		if ((enc != NULL) && (enc->decrypt != NULL)) {
 			ret = enc->decrypt(&sess->trans.rx_packet[4 + bs], remaining, enc_ctx);
+			if (ret > 0)
+				ret = DSSH_ERROR_INVALID;
 			if (ret < 0)
 				goto rx_done;
 		}
@@ -1870,34 +2431,59 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 		dssh_mac_ctx *mac_ctx;
 
 		if (sess->trans.client) {
-			mac     = sess->trans.mac_s2c_selected;
+			mac     = mac_s2c_module(sess);
 			mac_ctx = sess->trans.mac_s2c_ctx;
 		}
 		else {
-			mac     = sess->trans.mac_c2s_selected;
+			mac     = mac_c2s_module(sess);
 			mac_ctx = sess->trans.mac_c2s_ctx;
 		}
-		ret = mac->generate(sess->trans.rx_packet, 4 + packet_length + 4, sess->trans.rx_mac_computed,
+		ret = mac->generate(sess->trans.rx_packet, mac_input, sess->trans.rx_mac_computed,
 		    mac_ctx);
+		if (ret > 0)
+			ret = DSSH_ERROR_INVALID;
 		if (ret < 0)
 			goto rx_done;
 		if (dssh_crypto_memcmp(sess->trans.rx_mac_buf, sess->trans.rx_mac_computed, mac_len) != 0) {
-			dssh_transport_disconnect(sess, SSH_DISCONNECT_MAC_ERROR, "MAC verification failed");
-			ret = DSSH_ERROR_INVALID;
+			ret = transport_disconnect_result(sess, SSH_DISCONNECT_MAC_ERROR,
+			    "MAC verification failed", DSSH_ERROR_INVALID);
 			goto rx_done;
 		}
 	}
 
 	uint8_t padding_length = sess->trans.rx_packet[8];
-	if (padding_length + 1 >= packet_length) {
+	if (padding_length < 4 || padding_length + 1 > packet_length) {
 		ret = DSSH_ERROR_PARSE;
 		goto rx_done;
 	}
 	*payload     = &sess->trans.rx_packet[9];
-	*payload_len = packet_length - padding_length - 1;
+	*payload_len = packet_total - padding_length - 5;
+	dssh_comp comp = sess->trans.client ? sess->trans.comp_s2c_active : sess->trans.comp_c2s_active;
+	if (compression_enabled(comp)) {
+		dssh_comp_ctx *ctx = sess->trans.client ? sess->trans.comp_s2c_ctx : sess->trans.comp_c2s_ctx;
+		memcpy(sess->trans.comp_rx_input, *payload, *payload_len);
+		size_t decoded_len;
+		ret = call_comp_transform(sess, comp->uncompress, sess->trans.comp_rx_input, *payload_len,
+		    *payload, sess->trans.packet_buf_sz - 9, &decoded_len, ctx);
+		dssh_cleanse(sess->trans.comp_rx_input, sess->trans.packet_buf_sz);
+		if (ret < 0 || decoded_len == 0 || sess->terminate) {
+			if (ret == 0)
+				ret = sess->terminate ? DSSH_ERROR_TERMINATED : DSSH_ERROR_PARSE;
+			dssh_cleanse(*payload, sess->trans.packet_buf_sz - 9);
+			/* Every transform failure is final, including error codes that
+			 * normally request a retry before packet processing starts. */
+			session_set_terminate(sess);
+			goto rx_done;
+		}
+		*payload_len = decoded_len;
+	}
+	else if (*payload_len == 0) {
+		ret = DSSH_ERROR_PARSE;
+		goto rx_done;
+	}
 	*msg_type    = sess->trans.rx_packet[9];
 
-	DSSH_TRACE_W("rx msg_type=%u len=%zu", *msg_type, *payload_len);
+	DSSH_TRACE_W(sess, "rx msg_type=%d len=%zu", *msg_type, *payload_len);
 
 #ifdef DSSH_TESTING
 	struct dssh_session_s *count_sess = sess;
@@ -1912,7 +2498,7 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 	sess->trans.rx_seq++;
 	sess->trans.rx_since_rekey++;
 	{
-		size_t rx_bytes = (size_t)packet_length + 4 + mac_len;
+		uint64_t rx_bytes = dssh_packet_wire_bytes(packet_length, mac_len);
 
 		if (rx_bytes > UINT64_MAX - sess->trans.rx_bytes_since_rekey)
 			sess->trans.rx_bytes_since_rekey = UINT64_MAX;
@@ -1923,13 +2509,155 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 
 rx_done:
 
-	/* REKEY_NEEDED (hard limit) is recoverable -- the session is
-         * still usable.  All other recv errors (I/O failure, oversized
-         * packet, bad padding, MAC mismatch, decrypt failure) mean the
-         * connection is broken. */
-	if ((ret < 0) && (ret != DSSH_ERROR_REKEY_NEEDED))
+	/* The recoverable hard-limit refusal returns before any I/O. Every error
+	 * reaching here follows packet processing, whose stream state is final. */
+	if (ret < 0) {
+		dssh_cleanse(sess->trans.rx_packet, 4 + sess->trans.packet_buf_sz);
 		session_set_terminate(sess);
+	}
 	return ret;
+}
+
+/* Apply the same authentication phase rule to new packets and packets
+ * replayed after a key exchange. */
+static int
+check_auth_receive_phase(struct dssh_session_s *sess, uint8_t msg_type)
+{
+	if (sess->server_auth_active && msg_type >= SSH_MSG_GLOBAL_REQUEST)
+		return transport_disconnect_result(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+		    "unexpected message during authentication", DSSH_ERROR_PARSE);
+	return 0;
+}
+
+/* The public auth API takes an explicit algorithm, so no peer hint needs to
+ * be retained. Validate recognized server values, and ignore all other binary
+ * values without allocating or imposing a smaller bound than the packet. */
+DSSH_TESTABLE int
+parse_ext_info(const uint8_t *payload, size_t length, bool client)
+{
+	if (length < 5 || payload[0] != SSH_MSG_EXT_INFO)
+		return DSSH_ERROR_PARSE;
+	uint32_t count = DSSH_GET_U32(&payload[1]);
+	size_t pos = 5;
+	if (count > (length - pos) / 8)
+		return DSSH_ERROR_PARSE;
+	for (uint32_t i = 0; i < count; i++) {
+		const uint8_t *name;
+		const uint8_t *value;
+		size_t name_length, value_length;
+		if (!parse_log_string(payload, length, &pos, &name, &name_length)
+		    || name_length == 0 || name_length > DSSH_ALGO_NAME_MAX
+		    || !parse_log_string(payload, length, &pos, &value, &value_length))
+			return DSSH_ERROR_PARSE;
+		for (size_t j = 0; j < name_length; j++) {
+			if (name[j] <= ' ' || name[j] >= DSSH_ASCII_DEL || name[j] == ',')
+				return DSSH_ERROR_PARSE;
+		}
+		if (!client || name_length != DSSH_STRLEN("server-sig-algs")
+		    || memcmp(name, "server-sig-algs", name_length) != 0)
+			continue;
+		size_t token_length = 0;
+		for (size_t j = 0; j < value_length; j++) {
+			if (value[j] == ',') {
+				if (token_length == 0)
+					return DSSH_ERROR_PARSE;
+				token_length = 0;
+			}
+			else {
+				if (value[j] <= ' ' || value[j] >= DSSH_ASCII_DEL
+				    || token_length == DSSH_ALGO_NAME_MAX)
+					return DSSH_ERROR_PARSE;
+				token_length++;
+			}
+		}
+		if (value_length != 0 && token_length == 0)
+			return DSSH_ERROR_PARSE;
+	}
+	return pos == length ? 0 : DSSH_ERROR_PARSE;
+}
+
+/* Apply exactly once in physical receive order, before dispatch/rekey replay.
+ * Optional extension packets do not leak into service/auth/channel receivers. */
+static int
+check_ext_info_position(struct dssh_session_s *sess, uint8_t type,
+    const uint8_t *payload, size_t length)
+{
+	int ret;
+	enum dssh_ext_info_state state = sess->trans.ext_info_state;
+	/* Disconnect is permitted at every protocol position, including while
+	 * authentication success would otherwise have to follow an extension. */
+	if (type == SSH_MSG_DISCONNECT)
+		return 0;
+	if (state == DSSH_EXT_INFO_BEFORE_SUCCESS) {
+		if (type != SSH_MSG_USERAUTH_SUCCESS || length != 1)
+			return DSSH_ERROR_PARSE;
+		sess->trans.ext_info_state = DSSH_EXT_INFO_CLOSED;
+		return 0;
+	}
+	if (type == SSH_MSG_EXT_INFO) {
+		bool first = state == DSSH_EXT_INFO_INITIAL;
+		bool second = state == DSSH_EXT_INFO_AUTH && sess->trans.client
+		    && sess->auth_service_requested && !sess->conn_initialized;
+		if (!first && !second)
+			return DSSH_ERROR_PARSE;
+		ret = parse_ext_info(payload, length, sess->trans.client);
+		if (ret < 0)
+			return ret;
+		sess->trans.ext_info_state = second ? DSSH_EXT_INFO_BEFORE_SUCCESS :
+		    sess->trans.client ? DSSH_EXT_INFO_AUTH : DSSH_EXT_INFO_CLOSED;
+		return 0;
+	}
+	if (state == DSSH_EXT_INFO_INITIAL)
+		sess->trans.ext_info_state = sess->trans.client ? DSSH_EXT_INFO_AUTH : DSSH_EXT_INFO_CLOSED;
+	if (sess->trans.client && (type == SSH_MSG_USERAUTH_SUCCESS || sess->conn_initialized))
+		sess->trans.ext_info_state = DSSH_EXT_INFO_CLOSED;
+	return 0;
+}
+
+/* The receive owner retains at most one bounded transcript per exchange. */
+static int
+retain_peer_kexinit(struct dssh_session_s *sess, const uint8_t *payload, size_t len)
+{
+	uint8_t *copy = malloc(len);
+	if (copy == NULL)
+		return DSSH_ERROR_ALLOC;
+	memcpy(copy, payload, len);
+	free(sess->trans.peer_kexinit);
+	sess->trans.peer_kexinit = copy;
+	sess->trans.peer_kexinit_sz = len;
+	return 0;
+}
+
+static int
+queue_rekey_packet(struct dssh_session_s *sess, uint8_t msg_type, const uint8_t *payload, size_t len)
+{
+	if (sess->trans.rekey_queue_count >= DSSH_REKEY_QUEUE_MAX_MESSAGES)
+		return DSSH_ERROR_TOOLONG;
+	if (len > SIZE_MAX - sizeof(struct dssh_rekey_msg))
+		return DSSH_ERROR_TOOLONG;
+	size_t alloc_size = sizeof(struct dssh_rekey_msg) + len;
+	if (alloc_size > DSSH_REKEY_QUEUE_MAX_BYTES
+	    || alloc_size > SIZE_MAX - sess->trans.rekey_queue_bytes
+	    || sess->trans.rekey_queue_bytes > DSSH_REKEY_QUEUE_MAX_BYTES - alloc_size)
+		return DSSH_ERROR_TOOLONG;
+
+	/* Buffer for replay after rekey completes */
+	struct dssh_rekey_msg *rmsg = malloc(alloc_size);
+	if (rmsg == NULL)
+		return DSSH_ERROR_ALLOC;
+	rmsg->next     = NULL;
+	rmsg->msg_type = msg_type;
+	rmsg->sequence = sess->trans.last_rx_seq;
+	rmsg->len      = len;
+	memcpy(rmsg->data, payload, len);
+	if (sess->trans.rekey_queue_tail != NULL)
+		sess->trans.rekey_queue_tail->next = rmsg;
+	else
+		sess->trans.rekey_queue_head = rmsg;
+	sess->trans.rekey_queue_tail = rmsg;
+	sess->trans.rekey_queue_count++;
+	sess->trans.rekey_queue_bytes += alloc_size;
+	return 0;
 }
 
 /*
@@ -1940,46 +2668,90 @@ rx_done:
  *   SSH_MSG_UNIMPLEMENTED (3) -- silently discarded (see TODO.md item 44)
  *   SSH_MSG_DISCONNECT (1)    -- sets terminate, returns error
  */
-DSSH_PRIVATE int
-recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
+static int
+recv_packet_inner(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
 {
-	/* Handle deferred auto-rekey before reading new data.
-        * Safe here because no payload pointer is live yet. */
-	if (sess->trans.rekey_pending) {
-		sess->trans.rekey_pending = false;
-
-		int rk = rekey(sess);
-
-		if (rk < 0)
-			return rk;
-	}
-
-	/* Replay messages buffered during kexinit wait loop.
-         * These were valid connection-layer messages sent by the
-         * peer before it saw our KEXINIT (RFC 4253 s7.1).
-         * Skip during rekey itself (rekey_in_progress) to avoid
-         * re-buffering messages that the kexinit loop is filling. */
-	if (!sess->trans.rekey_in_progress && sess->trans.rekey_queue_head != NULL) {
-		struct dssh_rekey_msg *rmsg = sess->trans.rekey_queue_head;
-
-		sess->trans.rekey_queue_head = rmsg->next;
-		if (sess->trans.rekey_queue_head == NULL)
-			sess->trans.rekey_queue_tail = NULL;
-		memcpy(&sess->trans.rx_packet[5], rmsg->data, rmsg->len);
-		*payload     = &sess->trans.rx_packet[5];
-		*payload_len = rmsg->len;
-		*msg_type    = rmsg->msg_type;
-		free(rmsg);
-		return 0;
-	}
-
+	int res;
+	bool consumed_packet = false;
+	bool finish_transmit_rekey = false;
 	for (;;) {
-		int res = recv_packet_raw(sess, msg_type, payload, payload_len);
+		if (atomic_load_explicit(&sess->terminate, memory_order_acquire))
+			return DSSH_ERROR_TERMINATED;
+		/* Control messages have finished their callbacks before continuing
+		 * here. No borrowed payload is live, so they share the same deferred
+		 * threshold check as messages returned to the application below. */
+		if (consumed_packet && sess->trans.session_id != NULL
+		    && !sess->trans.rekey_in_progress && rekey_needed(sess))
+			sess->trans.rekey_pending = true;
+		if (sess->terminate)
+			return DSSH_ERROR_TERMINATED;
+		if (finish_transmit_rekey
+		    || (sess->trans.rekey_pending && !sess->trans.rekey_in_progress)) {
+			finish_transmit_rekey = false;
+			sess->trans.rekey_pending = false;
+			res = rekey(sess);
+			if (res < 0)
+				return res;
+		}
 
+		bool replayed = false;
+		/* A rekey completed inside this receive loop may have buffered
+		 * application messages. Replay them before another physical read,
+		 * preserving their original receive sequence and authentication gate. */
+		if (!sess->trans.rekey_in_progress && sess->trans.rekey_queue_head != NULL) {
+			struct dssh_rekey_msg *rmsg = sess->trans.rekey_queue_head;
+
+			sess->trans.rekey_queue_head = rmsg->next;
+			if (sess->trans.rekey_queue_head == NULL)
+				sess->trans.rekey_queue_tail = NULL;
+			sess->trans.rekey_queue_count--;
+			sess->trans.rekey_queue_bytes -= sizeof(*rmsg) + rmsg->len;
+			memcpy(&sess->trans.rx_packet[5], rmsg->data, rmsg->len);
+			*payload = &sess->trans.rx_packet[5];
+			*payload_len = rmsg->len;
+			*msg_type = rmsg->msg_type;
+			sess->trans.last_rx_seq = rmsg->sequence;
+			cleanse_free(rmsg, sizeof(*rmsg) + rmsg->len);
+			replayed = true;
+		}
+		else {
+			bool advertise_read = session_on_demux_thread(sess)
+			    && sess->trans.session_id != NULL && !sess->trans.rekey_in_progress;
+			if (advertise_read) {
+				atomic_store(&sess->trans.rekey_read, DSSH_REKEY_READ_AVAILABLE);
+				/* Close the race with a send finishing just before the
+				 * receive boundary was published. */
+				if (rekey_transmit_due(sess)) {
+					atomic_store(&sess->trans.rekey_read, DSSH_REKEY_READ_IDLE);
+					finish_transmit_rekey = true;
+					continue;
+				}
+			}
+			res = recv_packet_raw(sess, msg_type, payload, payload_len);
+			if (advertise_read)
+				finish_transmit_rekey = atomic_exchange(&sess->trans.rekey_read,
+				    DSSH_REKEY_READ_IDLE) == DSSH_REKEY_READ_CLAIMED;
+			if (res < 0)
+				return res;
+			res = check_ext_info_position(sess, *msg_type, *payload, *payload_len);
+			if (res < 0)
+				return transport_disconnect_result(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+				    "unexpected or malformed SSH_MSG_EXT_INFO", res);
+		}
+		/* Include globals intercepted below in the authentication gate. */
+		res = check_auth_receive_phase(sess, *msg_type);
 		if (res < 0)
 			return res;
+		/* An intercepted KEXINIT completes its own exchange below. */
+		consumed_packet = !replayed && *msg_type != SSH_MSG_KEXINIT;
+		/* A diagnostic callback may itself try to send. Keep it behind
+		 * the exchange when this receive owner must finish rekey. */
+		bool defer_callbacks = finish_transmit_rekey
+		    || (sess->trans.session_id != NULL && sess->trans.rekey_in_progress);
 
 		switch (*msg_type) {
+			case SSH_MSG_EXT_INFO:
+				continue;
 			case SSH_MSG_DISCONNECT:
 			{
 				size_t         pos = 1;
@@ -1993,8 +2765,8 @@ recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, s
 				if (valid) {
 					reason = DSSH_GET_U32(&(*payload)[pos]);
 					pos += 4;
-					valid = parse_log_string(*payload, *payload_len, &pos, &description,
-					    &description_len);
+					valid = reason != 0 && parse_log_string(*payload, *payload_len, &pos,
+					    &description, &description_len);
 				}
 				if (valid)
 					valid = parse_log_string(*payload, *payload_len, &pos, &language, &language_len);
@@ -2016,45 +2788,24 @@ recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, s
 			case SSH_MSG_IGNORE:
 				continue;
 			case SSH_MSG_KEXINIT:
-				/*
-                                 * During initial handshake (session_id not yet set),
-                                 * return KEXINIT to the caller (kexinit()).
-                                 *
-                                 * During a self-initiated rekey (rekey_in_progress
-                                 * is true), kexinit() called us to receive the
-                                 * peer's response -- return KEXINIT to the caller
-                                 * so kexinit() can save it and proceed.
-                                 *
-                                 * Otherwise this is a peer-initiated rekey -- save
-                                 * the peer's KEXINIT and run the rekey cycle.
-                                 */
-				if ((sess->trans.session_id == NULL) || sess->trans.rekey_in_progress)
+				/* Initial and nested receives return the offer to their
+				 * current exchange. The outer receiver takes over a
+				 * transmit-started exchange or starts a peer-initiated one. */
+				if (sess->trans.session_id == NULL
+				    || (sess->trans.rekey_in_progress && !finish_transmit_rekey))
 					return 0;
-				{
-					free(sess->trans.peer_kexinit);
-					sess->trans.peer_kexinit = malloc(*payload_len);
-					if (sess->trans.peer_kexinit == NULL)
-						return DSSH_ERROR_ALLOC;
-					memcpy(sess->trans.peer_kexinit, *payload, *payload_len);
-					sess->trans.peer_kexinit_sz = *payload_len;
-
-					/* rekey() handles the rest: sends our
-                                         * KEXINIT, runs KEX, exchanges NEWKEYS,
-                                         * and installs new keys. */
-					int rk = rekey(sess);
-
-					if (rk < 0)
-						return rk;
-				}
+				res = retain_peer_kexinit(sess, *payload, *payload_len);
+				if (res < 0)
+					return res;
+				finish_transmit_rekey = true;
 				continue;
 			case SSH_MSG_DEBUG:
 			{
 				if (*payload_len < 2) {
 					DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_PARSE,
 					    "Malformed SSH_MSG_DEBUG received from peer");
-					dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
-					    "malformed SSH_MSG_DEBUG");
-					return DSSH_ERROR_PARSE;
+					return transport_disconnect_result(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+					    "malformed SSH_MSG_DEBUG", DSSH_ERROR_PARSE);
 				}
 				bool           always_display = (*payload)[1] != 0;
 				size_t         pos = 2;
@@ -2071,9 +2822,14 @@ recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, s
 				if (!valid) {
 					DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_PARSE,
 					    "Malformed SSH_MSG_DEBUG received from peer");
-					dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
-					    "malformed SSH_MSG_DEBUG");
-					return DSSH_ERROR_PARSE;
+					return transport_disconnect_result(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+					    "malformed SSH_MSG_DEBUG", DSSH_ERROR_PARSE);
+				}
+				if (defer_callbacks) {
+					res = queue_rekey_packet(sess, *msg_type, *payload, *payload_len);
+					if (res < 0)
+						return res;
+					continue;
 				}
 				dssh_debug_cb dcb = sess->debug_cb;
 
@@ -2085,6 +2841,12 @@ recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, s
 			}
 			case SSH_MSG_UNIMPLEMENTED:
 			{
+				if (defer_callbacks && *payload_len >= 5) {
+					res = queue_rekey_packet(sess, *msg_type, *payload, *payload_len);
+					if (res < 0)
+						return res;
+					continue;
+				}
 				dssh_unimplemented_cb ucb = sess->unimplemented_cb;
 
 				if ((ucb != NULL) && (*payload_len >= 5)) {
@@ -2095,57 +2857,59 @@ recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, s
 				continue;
 			}
 			case SSH_MSG_GLOBAL_REQUEST:
-				/*
-                                 * RFC 4254 s4: receiver MUST respond appropriately.
-                                 * Parse the request name and want_reply flag.
-                                 */
-				{
-					size_t   gpos = 1;
-					uint32_t gname_len;
-
-					if (!dssh_buffer_has(*payload_len, gpos, 4)) {
-						uint8_t fail = SSH_MSG_REQUEST_FAILURE;
-						send_to_slot(sess, &sess->trans.global_reply_slot, &fail, 1);
-						dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
-						    "malformed GLOBAL_REQUEST");
-						return DSSH_ERROR_PARSE;
-					}
-					gname_len = DSSH_GET_U32(&(*payload)[gpos]);
-					gpos += 4;
-					if (!dssh_buffer_has(*payload_len, gpos, gname_len)
-					    || !dssh_buffer_has(*payload_len, gpos + gname_len, 1)) {
-						uint8_t fail = SSH_MSG_REQUEST_FAILURE;
-						send_to_slot(sess, &sess->trans.global_reply_slot, &fail, 1);
-						dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
-						    "malformed GLOBAL_REQUEST");
-						return DSSH_ERROR_PARSE;
-					}
-
-					const uint8_t *gname = &(*payload)[gpos];
-
-					gpos += gname_len;
-
-					bool want_reply = ((*payload)[gpos] != 0);
-
-					gpos++;
-
-					int                    gr_res = -1;
-					dssh_global_request_cb grcb   = sess->global_request_cb;
-
-					if (grcb != NULL) {
-						gr_res = grcb(gname, gname_len, want_reply, &(*payload)[gpos],
-						    *payload_len - gpos, sess->global_request_cbdata);
-					}
-
-					if (want_reply) {
-						uint8_t reply = (gr_res >= 0) ? SSH_MSG_REQUEST_SUCCESS
-						                              : SSH_MSG_REQUEST_FAILURE;
-
-						send_to_slot(sess, &sess->trans.global_reply_slot, &reply, 1);
+			{
+				size_t pos = 1;
+				const uint8_t *name;
+				size_t name_len;
+				bool valid = parse_log_string(*payload, *payload_len, &pos, &name, &name_len)
+				    && name_len > 0 && name_len <= DSSH_ALGO_NAME_MAX
+				    && dssh_buffer_has(*payload_len, pos, 1);
+				for (size_t i = 0; valid && i < name_len; i++) {
+					if (name[i] <= ' ' || name[i] >= DSSH_ASCII_DEL || name[i] == ',')
+						valid = false;
+				}
+				if (!valid)
+					return transport_disconnect_result(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+					    "malformed GLOBAL_REQUEST", DSSH_ERROR_PARSE);
+				/* Initial negotiation rejects higher-layer messages. Before
+				 * the peer's rekey KEXINIT, the negotiation receiver queues
+				 * in-flight higher-layer messages. Dispatch their callbacks
+				 * and replies through this same path when replayed afterward.
+				 * During the method exchange an unexpected message instead
+				 * reaches the method's normal type validation. */
+				if (finish_transmit_rekey) {
+					res = queue_rekey_packet(sess, *msg_type, *payload, *payload_len);
+					if (res < 0)
+						return res;
+					continue;
+				}
+				if (sess->trans.session_id == NULL || sess->trans.rekey_in_progress)
+					return 0;
+				bool want_reply = (*payload)[pos] != 0;
+				pos++;
+				int result = DSSH_ERROR_REJECTED;
+				if (sess->global_request_cb != NULL)
+					result = sess->global_request_cb(name, name_len, want_reply,
+					    &(*payload)[pos], *payload_len - pos, sess->global_request_cbdata);
+				if (sess->terminate)
+					return DSSH_ERROR_TERMINATED;
+				if (want_reply) {
+					uint8_t reply = result >= 0 ? SSH_MSG_REQUEST_SUCCESS : SSH_MSG_REQUEST_FAILURE;
+					res = send_to_slot(sess, &sess->trans.global_reply_slot, &reply, 1);
+					if (res < 0) {
+						session_set_terminate(sess);
+						return res;
 					}
 				}
 				continue;
+			}
 			default:
+				if (finish_transmit_rekey) {
+					res = queue_rekey_packet(sess, *msg_type, *payload, *payload_len);
+					if (res < 0)
+						return res;
+					continue;
+				}
 				/*
                                  * Auto-rekey: if any threshold (packet count,
                                  * bytes, or time) has been exceeded, note it.
@@ -2157,9 +2921,23 @@ recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, s
 				if ((sess->trans.session_id != NULL) && !sess->trans.rekey_in_progress
 				    && rekey_needed(sess))
 					sess->trans.rekey_pending = true;
+				if (sess->terminate)
+					return DSSH_ERROR_TERMINATED;
 				return 0;
 		}
 	}
+}
+
+DSSH_PRIVATE int
+recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, size_t *payload_len)
+{
+	struct dssh_session_scope scope;
+
+	session_scope_enter(&scope, sess);
+	int ret = recv_packet_inner(sess, msg_type, payload, payload_len);
+
+	session_scope_leave(&scope);
+	return ret;
 }
 
 /* ================================================================
@@ -2195,298 +2973,368 @@ name_in_filter(const char *name, size_t nlen, const char *filter)
 	return false;
 }
 
+/* Read each link with its declared pointer type, then convert its value.
+ * Generic name operations must not copy pointer representations between types. */
+#define DEFINE_REGISTRY_NEXT(suffix, type) \
+	DSSH_TESTABLE void *registry_next_##suffix(void *node) \
+	{ \
+		type entry = node; \
+		return entry->next; \
+	}
+DEFINE_REGISTRY_NEXT(kex, dssh_kex)
+DEFINE_REGISTRY_NEXT(key_algo, dssh_key_algo)
+DEFINE_REGISTRY_NEXT(enc, dssh_enc)
+DEFINE_REGISTRY_NEXT(mac, dssh_mac)
+DEFINE_REGISTRY_NEXT(comp, dssh_comp)
+#undef DEFINE_REGISTRY_NEXT
+
 /*
  * Look up a node in `head` by exact-length name match.  Returns
  * the node pointer or NULL.  Used by build_namelist when iterating
  * the filter (filter order, not registration order).
  */
 static void *
-find_node_by_name(void *head, size_t name_offset, const char *name, size_t nlen)
+find_node_by_name(void *head, size_t name_offset, dssh_registry_next next,
+    const char *name, size_t nlen)
 {
-	for (uint8_t *node = head; node != NULL;) {
-		const char *nm = (const char *)(node + name_offset);
+	for (void *node = head; node != NULL; node = next(node)) {
+		const unsigned char *entry = node;
+		const char *nm = (const char *)(entry + name_offset);
 
 		if ((strlen(nm) == nlen) && (memcmp(nm, name, nlen) == 0))
 			return node;
-		memcpy(&node, node, sizeof(void *));
 	}
 	return NULL;
 }
 
-DSSH_TESTABLE size_t
-build_namelist(void *head, size_t name_offset, char *buf, size_t bufsz, const char *filter)
+static bool
+next_name(struct dssh_name_list list, size_t *pos, struct dssh_name_list *name)
 {
-	size_t pos   = 0;
-	bool   first = true;
+	if (*pos >= list.len)
+		return false;
+	size_t end = *pos;
+	while (end < list.len && list.data[end] != ',')
+		end++;
+	name->data = &list.data[*pos];
+	name->len = end - *pos;
+	*pos = end < list.len ? end + 1 : end;
+	return true;
+}
 
+static bool
+list_has_name(struct dssh_name_list list, struct dssh_name_list wanted)
+{
+	size_t pos = 0;
+	struct dssh_name_list name;
+	while (next_name(list, &pos, &name)) {
+		if (name.len == wanted.len && memcmp(name.data, wanted.data, name.len) == 0)
+			return true;
+	}
+	return false;
+}
+
+static bool
+list_has_text(struct dssh_name_list list, const char *text)
+{
+	const uint8_t *bytes = (const uint8_t *)text;
+	struct dssh_name_list wanted = { bytes, strlen(text) };
+	return list_has_name(list, wanted);
+}
+
+static int
+append_registered_name(void *node, size_t name_offset, char *buf, size_t bufsz,
+    size_t *pos, bool hostkeys)
+{
+	if (hostkeys) {
+		dssh_key_algo key = node;
+		if (key->haskey == NULL)
+			return 0;
+		int available = key->haskey(key->ctx);
+		if (available < 0)
+			return available;
+		if (available == 0)
+			return 0;
+	}
+	const unsigned char *entry = node;
+	const char *name = (const char *)&entry[name_offset];
+	size_t len = strlen(name);
+	if (len == 0 || len > DSSH_ALGO_NAME_MAX)
+		return DSSH_ERROR_INVALID;
+	size_t comma = *pos > 0 ? 1 : 0;
+	if (!dssh_buffer_has(bufsz, *pos, comma + len + 1))
+		return DSSH_ERROR_TOOLONG;
+	if (comma != 0)
+		buf[(*pos)++] = ',';
+	memcpy(&buf[*pos], name, len);
+	*pos += len;
+	buf[*pos] = 0;
+	return 0;
+}
+
+static int64_t
+build_namelist_inner(void *head, size_t name_offset, dssh_registry_next next,
+    char *buf, size_t bufsz,
+    const char *filter, bool hostkeys)
+{
+	if (bufsz == 0)
+		return DSSH_ERROR_TOOLONG;
+	buf[0] = 0;
+	size_t pos = 0;
+	int ret;
 	if (filter == NULL) {
-		for (uint8_t *node = head; node != NULL;) {
-			const char *name = (const char *)(node + name_offset);
-			size_t      nlen = strlen(name);
-
-			if (!first) {
-				if (pos >= bufsz || nlen >= bufsz - pos - 1)
-					break;
-				buf[pos++] = ',';
-			}
-			else if (pos >= bufsz || nlen >= bufsz - pos)
-				break;
-			memcpy(&buf[pos], name, nlen);
-			pos += nlen;
-			first = false;
-			memcpy(&node, node, sizeof(void *));
+		for (void *node = head; node != NULL; node = next(node)) {
+			ret = append_registered_name(node, name_offset, buf, bufsz, &pos, hostkeys);
+			if (ret < 0)
+				return ret;
 		}
 	}
 	else {
-		/* Walk the filter in order; emit each name that is
-		 * actually registered.  Names in the filter that
-		 * aren't registered are silently skipped. */
-		const char *fp = filter;
-
-		while (*fp) {
-			const char *fc   = strchr(fp, ',');
-			size_t      flen = fc ? (size_t)(fc - fp) : strlen(fp);
-
-			if (find_node_by_name(head, name_offset, fp, flen) != NULL) {
-				if (!first) {
-					if (pos >= bufsz || flen >= bufsz - pos - 1)
-						break;
-					buf[pos++] = ',';
-				}
-				else if (pos >= bufsz || flen >= bufsz - pos)
-					break;
-				memcpy(&buf[pos], fp, flen);
-				pos += flen;
-				first = false;
-			}
-			fp += flen;
-			if (fc)
-				fp++;
-			else
-				break;
+		struct dssh_name_list names = { (const uint8_t *)filter, strlen(filter) };
+		struct dssh_name_list name;
+		size_t offset = 0;
+		while (next_name(names, &offset, &name)) {
+			const char *text = (const char *)name.data;
+			void *node = find_node_by_name(head, name_offset, next, text, name.len);
+			if (node == NULL)
+				continue;
+			ret = append_registered_name(node, name_offset, buf, bufsz, &pos, hostkeys);
+			if (ret < 0)
+				return ret;
 		}
 	}
-	buf[pos] = 0;
-	return pos;
+#if SIZE_MAX > INT64_MAX
+	if (pos > INT64_MAX)
+		return DSSH_ERROR_TOOLONG;
+#endif
+	int64_t len = (int64_t)pos;
+	return len;
 }
 
-/*
- * Extract the first name from a comma-separated list into buf.
- * Returns the length of the name.
- */
-DSSH_TESTABLE size_t
-first_name(const char *list, char *buf, size_t bufsz)
+DSSH_TESTABLE int64_t
+build_namelist(void *head, size_t name_offset, dssh_registry_next next,
+    char *buf, size_t bufsz, const char *filter)
 {
-	const char *comma = strchr(list, ',');
-	size_t      len   = comma ? (size_t)(comma - list) : strlen(list);
+	return build_namelist_inner(head, name_offset, next, buf, bufsz, filter, false);
+}
 
-	if (len >= bufsz)
-		len = bufsz - 1;
-	memcpy(buf, list, len);
+DSSH_TESTABLE size_t
+first_name(struct dssh_name_list list, char *buf, size_t bufsz)
+{
+	if (bufsz == 0)
+		return 0;
+	struct dssh_name_list name = { NULL, 0 };
+	size_t pos = 0;
+	next_name(list, &pos, &name);
+	size_t len = name.len < bufsz ? name.len : bufsz - 1;
+	if (len != 0)
+		memcpy(buf, name.data, len);
 	buf[len] = 0;
 	return len;
 }
 
 DSSH_TESTABLE void *
-negotiate_algo(const char *client_list, const char *server_list, void *head, size_t name_offset,
-    const char *filter)
+negotiate_algo(struct dssh_name_list client, struct dssh_name_list server,
+    void *head, size_t name_offset, dssh_registry_next next, const char *filter)
 {
-	const char *cp = client_list;
-
-	while (*cp) {
-		const char *comma = strchr(cp, ',');
-		size_t      clen  = comma ? (size_t)(comma - cp) : strlen(cp);
-
-		const char *sp = server_list;
-
-		while (*sp) {
-			const char *sc   = strchr(sp, ',');
-			size_t      slen = sc ? (size_t)(sc - sp) : strlen(sp);
-
-			/* Defense in depth: a correctly-built KEXINIT can't
-			 * let the peer pick a filtered name, but enforce
-			 * it here too in case our offer leaks somehow. */
-			bool filter_ok = (filter == NULL) || name_in_filter(cp, clen, filter);
-
-			if (filter_ok && (clen == slen) && (memcmp(cp, sp, clen) == 0)) {
-				for (uint8_t *node = head; node != NULL;) {
-					const char *name = (const char *)(node + name_offset);
-
-					if ((strlen(name) == clen) && (memcmp(name, cp, clen) == 0))
-						return node;
-					memcpy(&node, node, sizeof(void *));
-				}
-			}
-			sp += slen;
-			if (sc)
-				sp++;
-			else
-				break;
-		}
-
-		cp += clen;
-		if (comma)
-			cp++;
-		else
-			break;
+	size_t pos = 0;
+	struct dssh_name_list name;
+	while (next_name(client, &pos, &name)) {
+		const char *text = (const char *)name.data;
+		if (filter != NULL && !name_in_filter(text, name.len, filter))
+			continue;
+		void *node = find_node_by_name(head, name_offset, next, text, name.len);
+		if (node != NULL && list_has_name(server, name))
+			return node;
 	}
 	return NULL;
 }
 
 static int
-serialize_namelist_from_str(const char *str, uint8_t *buf, size_t bufsz, size_t *pos)
+append_registry_namelist(uint8_t *buf, size_t bufsz,
+    size_t *pos, void *head, size_t name_offset, dssh_registry_next next,
+    const char *filter, bool hostkeys)
 {
-	size_t slen = strlen(str);
-
-#if SIZE_MAX > UINT32_MAX
-	if (slen > UINT32_MAX)
+	if (!dssh_buffer_has(bufsz, *pos, 4))
+		return DSSH_ERROR_TOOLONG;
+	size_t prefix = *pos;
+	*pos += 4;
+	char *names = (char *)&buf[*pos];
+	int64_t length = hostkeys
+	    ? build_namelist_inner(head, name_offset, next, names, bufsz - *pos, filter, true)
+	    : build_namelist(head, name_offset, next, names, bufsz - *pos, filter);
+	if (length < 0) {
+		int ret = (int)length;
+		return ret;
+	}
+	if (length == 0)
+		return DSSH_ERROR_INIT;
+	if (length > UINT32_MAX)
+		return DSSH_ERROR_TOOLONG;
+#if SIZE_MAX < INT64_MAX
+	if (length > SIZE_MAX)
 		return DSSH_ERROR_TOOLONG;
 #endif
-
-	uint32_t len = (uint32_t)slen;
-
-	if (!dssh_buffer_has(bufsz, *pos, 4)
-	    || !dssh_buffer_has(bufsz, *pos + 4, len))
-		return DSSH_ERROR_TOOLONG;
-	DSSH_PUT_U32(len, buf, pos);
-	memcpy(&buf[*pos], str, len);
-	*pos += len;
+	uint32_t wire_length = (uint32_t)length;
+	DSSH_PUT_U32(wire_length, buf, &prefix);
+	size_t name_length = (size_t)length;
+	*pos += name_length;
 	return 0;
 }
 
-/*
- * Build our KEXINIT packet: msg_type, cookie, 10 name-lists,
- * first_kex_packet_follows, reserved.  On success, *buf_out
- * is the caller-owned packet and *pos_out is its length.
- */
+/* Capture both configured fields together in the retained local transcript. */
+static int
+append_language_fields(struct dssh_session_s *sess, uint8_t *buf, size_t capacity, size_t *pos)
+{
+	int lr = mtx_lock(&sess->mtx);
+	if (lr != thrd_success) {
+		session_set_terminate(sess);
+		return DSSH_ERROR_TERMINATED;
+	}
+	size_t first = sess->local_languages[0].len;
+	size_t second = sess->local_languages[1].len;
+	/* Reserve both length prefixes and the KEXINIT Boolean/reserved tail. */
+	if (!dssh_buffer_has(capacity, *pos, 13)
+	    || first > capacity - *pos - 13
+	    || second > capacity - *pos - 13 - first) {
+		dssh_mtx_unlock(&sess->mtx);
+		return DSSH_ERROR_TOOLONG;
+	}
+	for (size_t i = 0; i < 2; i++) {
+		struct dssh_language_field *field = &sess->local_languages[i];
+		/* The checked packet capacity is at most 64 MiB. */
+		uint32_t length = (uint32_t)field->len;
+		DSSH_PUT_U32(length, buf, pos);
+		if (field->len != 0)
+			memcpy(&buf[*pos], field->data, field->len);
+		*pos += field->len;
+	}
+	dssh_mtx_unlock(&sess->mtx);
+	return 0;
+}
+
+/* Both views belong to the validated retained peer transcript. Store one
+ * reusable, bounded string pair for public queries after transcript release. */
+static int
+publish_peer_languages(struct dssh_session_s *sess, const struct dssh_name_list lists[10])
+{
+	size_t first = lists[8].len;
+	size_t second = lists[9].len;
+	if (first > SIZE_MAX - 2 || second > SIZE_MAX - 2 - first)
+		return DSSH_ERROR_TOOLONG;
+	size_t needed = first + second + 2;
+	if (needed > sess->trans.packet_buf_sz)
+		return DSSH_ERROR_TOOLONG;
+	if (first == 0 && second == 0)
+		needed = 0;
+	char *candidate = NULL;
+	char *old = NULL;
+	int lr = mtx_lock(&sess->mtx);
+	if (lr != thrd_success) {
+		session_set_terminate(sess);
+		return DSSH_ERROR_TERMINATED;
+	}
+	if (needed > sess->peer_languages_capacity) {
+		dssh_mtx_unlock(&sess->mtx);
+		candidate = malloc(needed);
+		if (candidate == NULL)
+			return DSSH_ERROR_ALLOC;
+		lr = mtx_lock(&sess->mtx);
+		if (lr != thrd_success) {
+			free(candidate);
+			session_set_terminate(sess);
+			return DSSH_ERROR_TERMINATED;
+		}
+	}
+	if (needed > sess->peer_languages_capacity) {
+		old = sess->peer_languages;
+		sess->peer_languages = candidate;
+		sess->peer_languages_capacity = needed;
+		candidate = NULL;
+	}
+	char *data = sess->peer_languages;
+	if (data != NULL) {
+		if (first != 0)
+			memcpy(data, lists[8].data, first);
+		data[first] = 0;
+		if (second != 0)
+			memcpy(&data[first + 1], lists[9].data, second);
+		data[first + 1 + second] = 0;
+	}
+	sess->peer_languages_len[0] = first;
+	sess->peer_languages_len[1] = second;
+	sess->peer_languages_available = true;
+	dssh_mtx_unlock(&sess->mtx);
+	free(old);
+	free(candidate);
+	return 0;
+}
+
+/* Build the complete offer directly in its retained transcript buffer. */
 static int
 build_kexinit_packet(struct dssh_session_s *sess, uint8_t **buf_out, size_t *pos_out)
 {
-	size_t   bufsz = sess->trans.packet_buf_sz;
-	uint8_t *buf   = malloc(bufsz);
-
+	size_t bufsz = tx_payload_capacity(sess);
+	uint8_t *buf = malloc(bufsz);
 	if (buf == NULL)
 		return DSSH_ERROR_ALLOC;
-
 	size_t pos = 0;
-	int    ret;
-
-	buf[pos++] = SSH_MSG_KEXINIT;
-
-	int rret = dssh_random(&buf[pos], DSSH_KEXINIT_COOKIE_SIZE);
-
-	if (rret < 0) {
+	int ret;
+	if (!dssh_buffer_has(bufsz, 0, 1 + DSSH_KEXINIT_COOKIE_SIZE)) {
 		free(buf);
-		return rret;
+		return DSSH_ERROR_TOOLONG;
+	}
+	buf[pos++] = SSH_MSG_KEXINIT;
+	ret = dssh_random(&buf[pos], DSSH_KEXINIT_COOKIE_SIZE);
+	if (ret < 0) {
+		free(buf);
+		return ret;
 	}
 	pos += DSSH_KEXINIT_COOKIE_SIZE;
-
-	char   namelist[DSSH_NAMELIST_BUF_SIZE];
-	size_t noff;
-
-	/* KEX algorithms */
-	noff = offsetof(struct dssh_kex_s, name);
-	build_namelist(gconf.kex_head, noff, namelist, sizeof(namelist), sess->kex_filter);
-	ret = serialize_namelist_from_str(namelist, buf, bufsz, &pos);
-	if (ret < 0) {
-		free(buf);
-		return ret;
-	}
-
-	/* Host key algorithms (server filters by haskey) */
-	if (sess->trans.client) {
-		noff = offsetof(struct dssh_key_algo_s, name);
-		build_namelist(gconf.key_algo_head, noff, namelist, sizeof(namelist), sess->key_algo_filter);
-	}
-	else {
-		size_t nlpos   = 0;
-		bool   nlfirst = true;
-
-		for (dssh_key_algo ka = gconf.key_algo_head; ka != NULL; ka = ka->next) {
-			if ((ka->haskey == NULL) || !ka->haskey(ka->ctx))
-				continue;
-
-			size_t nlen = strlen(ka->name);
-
-			if ((sess->key_algo_filter != NULL)
-			    && !name_in_filter(ka->name, nlen, sess->key_algo_filter))
-				continue;
-
-			if (!nlfirst && nlpos < sizeof(namelist) - 1)
-				namelist[nlpos++] = ',';
-			if (dssh_buffer_has(sizeof(namelist) - 1, nlpos, nlen)) {
-				memcpy(&namelist[nlpos], ka->name, nlen);
-				nlpos += nlen;
-			}
-			nlfirst = false;
+#define OFFER(head, type, suffix, filter, hostkeys) \
+	do { \
+		ret = append_registry_namelist(buf, bufsz, &pos, (head), offsetof(type, name), registry_next_##suffix, (filter), (hostkeys)); \
+		if (ret < 0) { \
+			free(buf); \
+			return ret; \
+		} \
+	} while (0)
+	OFFER(gconf.kex_head, struct dssh_kex_s, kex, sess->kex_filter, false);
+	if (sess->trans.session_id == NULL) {
+		const char *indicator = sess->trans.client ? "ext-info-c" : "ext-info-s";
+		size_t length = strlen(indicator);
+		if (!dssh_buffer_has(bufsz, pos, 1 + length)) {
+			free(buf);
+			return DSSH_ERROR_TOOLONG;
 		}
-		namelist[nlpos] = 0;
+		buf[pos++] = ',';
+		memcpy(&buf[pos], indicator, length);
+		pos += length;
+		/* The KEX list immediately follows the fixed cookie/header. Its
+		 * nonempty registered prefix was already checked by OFFER. */
+		size_t prefix = 1 + DSSH_KEXINIT_COOKIE_SIZE;
+		size_t list_length = pos - prefix - 4;
+		if (list_length > UINT32_MAX) {
+			free(buf);
+			return DSSH_ERROR_TOOLONG;
+		}
+		uint32_t wire_length = (uint32_t)list_length;
+		DSSH_PUT_U32(wire_length, buf, &prefix);
 	}
-
-	/* Host key, enc (c2s, s2c), mac (c2s, s2c), comp (c2s, s2c) */
-	ret = serialize_namelist_from_str(namelist, buf, bufsz, &pos);
+	OFFER(gconf.key_algo_head, struct dssh_key_algo_s, key_algo, sess->key_algo_filter, !sess->trans.client);
+	OFFER(gconf.enc_head, struct dssh_enc_s, enc, sess->enc_filter, false);
+	OFFER(gconf.enc_head, struct dssh_enc_s, enc, sess->enc_filter, false);
+	OFFER(gconf.mac_head, struct dssh_mac_s, mac, sess->mac_filter, false);
+	OFFER(gconf.mac_head, struct dssh_mac_s, mac, sess->mac_filter, false);
+	OFFER(gconf.comp_head, struct dssh_comp_s, comp, sess->comp_filter, false);
+	OFFER(gconf.comp_head, struct dssh_comp_s, comp, sess->comp_filter, false);
+#undef OFFER
+	ret = append_language_fields(sess, buf, bufsz, &pos);
 	if (ret < 0) {
 		free(buf);
 		return ret;
 	}
-
-	noff = offsetof(struct dssh_enc_s, name);
-	build_namelist(gconf.enc_head, noff, namelist, sizeof(namelist), sess->enc_filter);
-	ret = serialize_namelist_from_str(namelist, buf, bufsz, &pos);
-	if (ret < 0) {
-		free(buf);
-		return ret;
-	}
-	ret = serialize_namelist_from_str(namelist, buf, bufsz, &pos);
-	if (ret < 0) {
-		free(buf);
-		return ret;
-	}
-
-	noff = offsetof(struct dssh_mac_s, name);
-	build_namelist(gconf.mac_head, noff, namelist, sizeof(namelist), sess->mac_filter);
-	ret = serialize_namelist_from_str(namelist, buf, bufsz, &pos);
-	if (ret < 0) {
-		free(buf);
-		return ret;
-	}
-	ret = serialize_namelist_from_str(namelist, buf, bufsz, &pos);
-	if (ret < 0) {
-		free(buf);
-		return ret;
-	}
-
-	noff = offsetof(struct dssh_comp_s, name);
-	build_namelist(gconf.comp_head, noff, namelist, sizeof(namelist), sess->comp_filter);
-	ret = serialize_namelist_from_str(namelist, buf, bufsz, &pos);
-	if (ret < 0) {
-		free(buf);
-		return ret;
-	}
-	ret = serialize_namelist_from_str(namelist, buf, bufsz, &pos);
-	if (ret < 0) {
-		free(buf);
-		return ret;
-	}
-
-	/* Languages (empty) */
-	ret = serialize_namelist_from_str("", buf, bufsz, &pos);
-	if (ret < 0) {
-		free(buf);
-		return ret;
-	}
-	ret = serialize_namelist_from_str("", buf, bufsz, &pos);
-	if (ret < 0) {
-		free(buf);
-		return ret;
-	}
-
-	/* first_kex_packet_follows = false */
 	buf[pos++] = 0;
-
-	/* reserved */
 	DSSH_PUT_U32(0, buf, &pos);
-
 	*buf_out = buf;
 	*pos_out = pos;
 	return 0;
@@ -2514,215 +3362,176 @@ receive_peer_kexinit(struct dssh_session_s *sess)
 			return res;
 		if (msg_type == SSH_MSG_KEXINIT)
 			break;
-
-		/* Buffer for replay after rekey completes */
-		struct dssh_rekey_msg *rmsg = malloc(sizeof(struct dssh_rekey_msg) + peer_len);
-		if (rmsg == NULL)
-			return DSSH_ERROR_ALLOC;
-		rmsg->next     = NULL;
-		rmsg->msg_type = msg_type;
-		rmsg->len      = peer_len;
-		memcpy(rmsg->data, peer_payload, peer_len);
-		if (sess->trans.rekey_queue_tail != NULL)
-			sess->trans.rekey_queue_tail->next = rmsg;
-		else
-			sess->trans.rekey_queue_head = rmsg;
-		sess->trans.rekey_queue_tail = rmsg;
+		/* Only an established session can have in-flight messages from
+		 * before a rekey. Initial KEX must not populate the replay queue. */
+		if (sess->trans.session_id == NULL)
+			return DSSH_ERROR_PARSE;
+		res = queue_rekey_packet(sess, msg_type, peer_payload, peer_len);
+		if (res < 0)
+			return res;
 	}
 
-	sess->trans.peer_kexinit = malloc(peer_len);
-	if (sess->trans.peer_kexinit == NULL)
-		return DSSH_ERROR_ALLOC;
-	memcpy(sess->trans.peer_kexinit, peer_payload, peer_len);
-	sess->trans.peer_kexinit_sz = peer_len;
-	return 0;
+	return retain_peer_kexinit(sess, peer_payload, peer_len);
 }
 
-/*
- * Parse a raw KEXINIT packet into 10 name-lists and the
- * first_kex_packet_follows flag.  Pure function -- no session
- * state, suitable for unit testing.
- *
- * buf/bufsz is the raw KEXINIT payload (starting with msg_type byte).
- * lists must have room for DSSH_KEXINIT_NAMELIST_COUNT entries of
- * DSSH_NAMELIST_BUF_SIZE each.
- *
- * Validates: control characters, individual name lengths, buffer bounds.
- */
+/* Views remain valid while their saved KEXINIT buffer is retained. */
 DSSH_TESTABLE int
-parse_peer_kexinit(const uint8_t *buf, size_t bufsz, char lists[][DSSH_NAMELIST_BUF_SIZE], bool *first_kex_follows)
+parse_peer_kexinit(const uint8_t *buf, size_t bufsz,
+    struct dssh_name_list lists[DSSH_KEXINIT_NAMELIST_COUNT], bool *first_kex_follows)
 {
-	if (bufsz < 1 + DSSH_KEXINIT_COOKIE_SIZE)
+	if (bufsz < 1 + DSSH_KEXINIT_COOKIE_SIZE || buf[0] != SSH_MSG_KEXINIT)
 		return DSSH_ERROR_PARSE;
-
-	size_t ppos = 1 + DSSH_KEXINIT_COOKIE_SIZE;
-
-	for (int i = 0; i < DSSH_KEXINIT_NAMELIST_COUNT; i++) {
-		if (bufsz - ppos < 4)
+	size_t pos = 1 + DSSH_KEXINIT_COOKIE_SIZE;
+	for (size_t i = 0; i < DSSH_KEXINIT_NAMELIST_COUNT; i++) {
+		if (!dssh_buffer_has(bufsz, pos, 4))
 			return DSSH_ERROR_PARSE;
-		uint32_t nlen = DSSH_GET_U32(&buf[ppos]);
-		ppos += 4;
-
-		if (!dssh_buffer_has(bufsz, ppos, nlen))
+		uint32_t wire_len = DSSH_GET_U32(&buf[pos]);
+		pos += 4;
+		if (wire_len > bufsz - pos)
 			return DSSH_ERROR_PARSE;
-
-		/* RFC 4251 s6: reject control characters and DEL */
-		for (uint32_t j = 0; j < nlen; j++) {
-			uint8_t ch = buf[ppos + j];
-
-			if ((ch <= ' ') || (ch >= DSSH_ASCII_DEL))
-				return DSSH_ERROR_PARSE;
-		}
-
-		/* RFC 4251 s6: individual names MUST NOT exceed
-		 * DSSH_ALGO_NAME_MAX */
-		{
-			uint32_t name_start = 0;
-
-			for (uint32_t j = 0;; j++) {
-				if ((j == nlen) || (buf[ppos + j] == ',')) {
-					if (j - name_start > DSSH_ALGO_NAME_MAX)
-						return DSSH_ERROR_PARSE;
-					if (j == nlen)
-						break;
-					name_start = j + 1;
-				}
+		size_t len = (size_t)wire_len;
+		if (len == 0 && i < 8)
+			return DSSH_ERROR_PARSE;
+		size_t name_len = 0;
+		for (size_t j = 0; j < len; j++) {
+			uint8_t ch = buf[pos + j];
+			if (ch == ',') {
+				if (name_len == 0)
+					return DSSH_ERROR_PARSE;
+				name_len = 0;
+			}
+			else {
+				if (ch <= ' ' || ch >= DSSH_ASCII_DEL)
+					return DSSH_ERROR_PARSE;
+				name_len++;
+				if (i < 8 && name_len > DSSH_ALGO_NAME_MAX)
+					return DSSH_ERROR_PARSE;
 			}
 		}
-
-		size_t copylen = nlen < sizeof(lists[i]) - 1 ? nlen : sizeof(lists[i]) - 1;
-		memcpy(lists[i], &buf[ppos], copylen);
-		lists[i][copylen] = 0;
-		ppos += nlen;
+		if (len != 0 && name_len == 0)
+			return DSSH_ERROR_PARSE;
+		lists[i].data = &buf[pos];
+		lists[i].len = len;
+		pos += len;
 	}
-
-	*first_kex_follows = false;
-	if (ppos < bufsz)
-		*first_kex_follows = (buf[ppos] != 0);
-
+	if (bufsz - pos != 5)
+		return DSSH_ERROR_PARSE;
+	*first_kex_follows = buf[pos] != 0;
+	/* The reserved uint32 is ignored, as required by RFC 4253. */
 	return 0;
 }
 
-/*
- * Negotiate all 8 algorithm categories using the parsed peer
- * name-lists and our global registry.  On success, all 8
- * _selected pointers are set on sess->trans.  Handles the
- * first_kex_packet_follows discard if the peer guessed wrong.
- */
-static int
-negotiate_algorithms(struct dssh_session_s *sess, char peer_lists[][DSSH_NAMELIST_BUF_SIZE],
-    bool peer_first_kex_follows)
+static dssh_key_algo
+negotiate_key(struct dssh_name_list client, struct dssh_name_list server,
+    uint32_t required, const char *filter)
 {
-	const char *client_kex, *server_kex;
-	const char *client_hostkey, *server_hostkey;
-	const char *client_enc_c2s, *server_enc_c2s;
-	const char *client_enc_s2c, *server_enc_s2c;
-	const char *client_mac_c2s, *server_mac_c2s;
-	const char *client_mac_s2c, *server_mac_s2c;
-	const char *client_comp_c2s, *server_comp_c2s;
-	const char *client_comp_s2c, *server_comp_s2c;
-	char        our_lists[5][DSSH_NAMELIST_BUF_SIZE];
-
-	build_namelist(gconf.kex_head, offsetof(struct dssh_kex_s, name), our_lists[0], sizeof(our_lists[0]),
-	    sess->kex_filter);
-	build_namelist(gconf.key_algo_head, offsetof(struct dssh_key_algo_s, name), our_lists[1],
-	    sizeof(our_lists[1]), sess->key_algo_filter);
-	build_namelist(gconf.enc_head, offsetof(struct dssh_enc_s, name), our_lists[2], sizeof(our_lists[2]),
-	    sess->enc_filter);
-	build_namelist(gconf.mac_head, offsetof(struct dssh_mac_s, name), our_lists[3], sizeof(our_lists[3]),
-	    sess->mac_filter);
-	build_namelist(gconf.comp_head, offsetof(struct dssh_comp_s, name), our_lists[4], sizeof(our_lists[4]),
-	    sess->comp_filter);
-
-	if (sess->trans.client) {
-		client_kex      = our_lists[0];
-		server_kex      = peer_lists[0];
-		client_hostkey  = our_lists[1];
-		server_hostkey  = peer_lists[1];
-		client_enc_c2s  = our_lists[2];
-		server_enc_c2s  = peer_lists[2];
-		client_enc_s2c  = our_lists[2];
-		server_enc_s2c  = peer_lists[3];
-		client_mac_c2s  = our_lists[3];
-		server_mac_c2s  = peer_lists[4];
-		client_mac_s2c  = our_lists[3];
-		server_mac_s2c  = peer_lists[5];
-		client_comp_c2s = our_lists[4];
-		server_comp_c2s = peer_lists[6];
-		client_comp_s2c = our_lists[4];
-		server_comp_s2c = peer_lists[7];
+	size_t pos = 0;
+	struct dssh_name_list name;
+	while (next_name(client, &pos, &name)) {
+		const char *text = (const char *)name.data;
+		if (filter != NULL && !name_in_filter(text, name.len, filter))
+			continue;
+		dssh_key_algo key = find_node_by_name(gconf.key_algo_head,
+		    offsetof(struct dssh_key_algo_s, name), registry_next_key_algo, text, name.len);
+		if (key != NULL && (key->flags & required) == required && list_has_name(server, name))
+			return key;
 	}
-	else {
-		client_kex      = peer_lists[0];
-		server_kex      = our_lists[0];
-		client_hostkey  = peer_lists[1];
-		server_hostkey  = our_lists[1];
-		client_enc_c2s  = peer_lists[2];
-		server_enc_c2s  = our_lists[2];
-		client_enc_s2c  = peer_lists[3];
-		server_enc_s2c  = our_lists[2];
-		client_mac_c2s  = peer_lists[4];
-		server_mac_c2s  = our_lists[3];
-		client_mac_s2c  = peer_lists[5];
-		server_mac_s2c  = our_lists[3];
-		client_comp_c2s = peer_lists[6];
-		server_comp_c2s = our_lists[4];
-		client_comp_s2c = peer_lists[7];
-		server_comp_s2c = our_lists[4];
+	return NULL;
+}
+
+static int
+negotiate_algorithms(struct dssh_session_s *sess,
+    const struct dssh_name_list peer[DSSH_KEXINIT_NAMELIST_COUNT], bool peer_first_kex_follows)
+{
+	struct dssh_name_list ours[DSSH_KEXINIT_NAMELIST_COUNT];
+	bool unused;
+	int ret = parse_peer_kexinit(sess->trans.our_kexinit, sess->trans.our_kexinit_sz, ours, &unused);
+	if (ret < 0)
+		return ret;
+	const struct dssh_name_list *client = sess->trans.client ? ours : peer;
+	const struct dssh_name_list *server = sess->trans.client ? peer : ours;
+	if (list_has_text(peer[0], sess->trans.client ? "ext-info-c" : "ext-info-s"))
+		return DSSH_ERROR_PARSE;
+	if (sess->trans.session_id == NULL) {
+		sess->trans.ext_info_receive = list_has_text(ours[0],
+		    sess->trans.client ? "ext-info-c" : "ext-info-s");
+		sess->trans.ext_info_peer = list_has_text(peer[0],
+		    sess->trans.client ? "ext-info-s" : "ext-info-c");
 	}
-
-	sess->trans.kex_selected = negotiate_algo(client_kex, server_kex, gconf.kex_head,
-	    offsetof(struct dssh_kex_s, name), sess->kex_filter);
-	sess->trans.key_algo_selected = negotiate_algo(client_hostkey, server_hostkey, gconf.key_algo_head,
-	    offsetof(struct dssh_key_algo_s, name), sess->key_algo_filter);
-	sess->trans.enc_c2s_selected = negotiate_algo(client_enc_c2s, server_enc_c2s, gconf.enc_head,
-	    offsetof(struct dssh_enc_s, name), sess->enc_filter);
-	sess->trans.enc_s2c_selected = negotiate_algo(client_enc_s2c, server_enc_s2c, gconf.enc_head,
-	    offsetof(struct dssh_enc_s, name), sess->enc_filter);
-	sess->trans.mac_c2s_selected = negotiate_algo(client_mac_c2s, server_mac_c2s, gconf.mac_head,
-	    offsetof(struct dssh_mac_s, name), sess->mac_filter);
-	sess->trans.mac_s2c_selected = negotiate_algo(client_mac_s2c, server_mac_s2c, gconf.mac_head,
-	    offsetof(struct dssh_mac_s, name), sess->mac_filter);
-	sess->trans.comp_c2s_selected = negotiate_algo(client_comp_c2s, server_comp_c2s, gconf.comp_head,
-	    offsetof(struct dssh_comp_s, name), sess->comp_filter);
-	sess->trans.comp_s2c_selected = negotiate_algo(client_comp_s2c, server_comp_s2c, gconf.comp_head,
-	    offsetof(struct dssh_comp_s, name), sess->comp_filter);
-
-	if ((sess->trans.kex_selected == NULL) || (sess->trans.key_algo_selected == NULL)
-	    || (sess->trans.enc_c2s_selected == NULL) || (sess->trans.enc_s2c_selected == NULL)
-	    || (sess->trans.mac_c2s_selected == NULL) || (sess->trans.mac_s2c_selected == NULL)
-	    || (sess->trans.comp_c2s_selected == NULL) || (sess->trans.comp_s2c_selected == NULL)) {
-		dssh_transport_disconnect(sess, SSH_DISCONNECT_KEY_EXCHANGE_FAILED, "no common algorithm");
-		return DSSH_ERROR_INVALID;
-	}
-
-	/* Handle first_kex_packet_follows (RFC 4253 s7.1):
-	 * If the peer sent a guessed KEX packet and the guess was
-	 * wrong (negotiated != peer's first choice), discard it. */
-	if (peer_first_kex_follows) {
-		char peer_guess_kex[DSSH_ALGO_NAME_MAX + 1];
-		char peer_guess_hostkey[DSSH_ALGO_NAME_MAX + 1];
-
-		first_name(peer_lists[0], peer_guess_kex, sizeof(peer_guess_kex));
-		first_name(peer_lists[1], peer_guess_hostkey, sizeof(peer_guess_hostkey));
-
-		if ((strcmp(sess->trans.kex_selected->name, peer_guess_kex) != 0)
-		    || (strcmp(sess->trans.key_algo_selected->name, peer_guess_hostkey) != 0)) {
-			uint8_t  discard_type;
-			uint8_t *discard_payload;
-			size_t   discard_len;
-			int      res = recv_packet_raw(sess, &discard_type, &discard_payload, &discard_len);
-
-			if (res < 0)
-				return res;
+	sess->trans.kex_selected = NULL;
+	sess->trans.key_algo_selected = NULL;
+	struct dssh_name_list kex_client = client[0];
+	struct dssh_name_list client_guess, server_guess;
+	size_t client_pos = 0, server_pos = 0;
+	if (!next_name(client[0], &client_pos, &client_guess)
+	    || !next_name(server[0], &server_pos, &server_guess))
+		return DSSH_ERROR_PARSE;
+	if (client_guess.len == server_guess.len
+	    && memcmp(client_guess.data, server_guess.data, client_guess.len) == 0)
+		kex_client.len = client_guess.len;
+	size_t pos = 0;
+	struct dssh_name_list name;
+	while (next_name(kex_client, &pos, &name)) {
+		const char *text = (const char *)name.data;
+		if ((name.len == DSSH_STRLEN("ext-info-c") && memcmp(text, "ext-info-c", name.len) == 0)
+		    || (name.len == DSSH_STRLEN("ext-info-s") && memcmp(text, "ext-info-s", name.len) == 0)) {
+			if (list_has_name(server[0], name))
+				return DSSH_ERROR_PARSE;
+			continue;
+		}
+		if (sess->kex_filter != NULL && !name_in_filter(text, name.len, sess->kex_filter))
+			continue;
+		dssh_kex kex = find_node_by_name(gconf.kex_head, offsetof(struct dssh_kex_s, name), registry_next_kex, text, name.len);
+		if (kex == NULL || !list_has_name(server[0], name))
+			continue;
+		uint32_t required = 0;
+		if ((kex->flags & DSSH_KEX_FLAG_NEEDS_ENCRYPTION_CAPABLE) != 0)
+			required |= DSSH_KEY_ALGO_FLAG_ENCRYPTION_CAPABLE;
+		if ((kex->flags & DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE) != 0)
+			required |= DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
+		dssh_key_algo key = negotiate_key(client[1], server[1], required, sess->key_algo_filter);
+		if (key != NULL) {
+			sess->trans.kex_selected = kex;
+			sess->trans.key_algo_selected = key;
+			break;
 		}
 	}
-
+#define SELECT(field, index, head, type, suffix, filter) \
+	sess->trans.field = negotiate_algo(client[index], server[index], (head), offsetof(type, name), registry_next_##suffix, (filter))
+	SELECT(enc_c2s_selected, 2, gconf.enc_head, struct dssh_enc_s, enc, sess->enc_filter);
+	SELECT(enc_s2c_selected, 3, gconf.enc_head, struct dssh_enc_s, enc, sess->enc_filter);
+	SELECT(mac_c2s_selected, 4, gconf.mac_head, struct dssh_mac_s, mac, sess->mac_filter);
+	SELECT(mac_s2c_selected, 5, gconf.mac_head, struct dssh_mac_s, mac, sess->mac_filter);
+	SELECT(comp_c2s_selected, 6, gconf.comp_head, struct dssh_comp_s, comp, sess->comp_filter);
+	SELECT(comp_s2c_selected, 7, gconf.comp_head, struct dssh_comp_s, comp, sess->comp_filter);
+#undef SELECT
+	if (sess->trans.kex_selected == NULL || sess->trans.key_algo_selected == NULL
+	    || sess->trans.enc_c2s_selected == NULL || sess->trans.enc_s2c_selected == NULL
+	    || sess->trans.mac_c2s_selected == NULL || sess->trans.mac_s2c_selected == NULL
+	    || sess->trans.comp_c2s_selected == NULL || sess->trans.comp_s2c_selected == NULL) {
+		ret = transport_disconnect_inner(sess, SSH_DISCONNECT_KEY_EXCHANGE_FAILED, "no common algorithm");
+		return ret < 0 ? ret : DSSH_ERROR_INVALID;
+	}
+	if (peer_first_kex_follows) {
+		char kex_guess[DSSH_ALGO_NAME_MAX + 1];
+		char key_guess[DSSH_ALGO_NAME_MAX + 1];
+		first_name(peer[0], kex_guess, sizeof(kex_guess));
+		first_name(peer[1], key_guess, sizeof(key_guess));
+		if (strcmp(sess->trans.kex_selected->name, kex_guess) != 0
+		    || strcmp(sess->trans.key_algo_selected->name, key_guess) != 0) {
+			uint8_t type;
+			uint8_t *payload;
+			size_t len;
+			ret = recv_packet_raw(sess, &type, &payload, &len);
+			if (ret < 0)
+				return ret;
+		}
+	}
 	return 0;
 }
 
-DSSH_TESTABLE int
-kexinit(struct dssh_session_s *sess)
+static int
+prepare_kexinit(struct dssh_session_s *sess)
 {
 	uint8_t *kexinit;
 	size_t   kexinit_sz;
@@ -2736,15 +3545,17 @@ kexinit(struct dssh_session_s *sess)
 	sess->trans.our_kexinit    = kexinit;
 	sess->trans.our_kexinit_sz = kexinit_sz;
 
-	res = send_packet(sess, kexinit, kexinit_sz, NULL);
+	return 0;
+}
+
+static int
+finish_kexinit(struct dssh_session_s *sess)
+{
+	int res = receive_peer_kexinit(sess);
 	if (res < 0)
 		return res;
 
-	res = receive_peer_kexinit(sess);
-	if (res < 0)
-		return res;
-
-	char peer_lists[DSSH_KEXINIT_NAMELIST_COUNT][DSSH_NAMELIST_BUF_SIZE];
+	struct dssh_name_list peer_lists[DSSH_KEXINIT_NAMELIST_COUNT];
 	bool peer_first_kex_follows;
 
 	res = parse_peer_kexinit(sess->trans.peer_kexinit, sess->trans.peer_kexinit_sz, peer_lists,
@@ -2752,7 +3563,21 @@ kexinit(struct dssh_session_s *sess)
 	if (res < 0)
 		return res;
 
+	res = publish_peer_languages(sess, peer_lists);
+	if (res < 0)
+		return res;
+
 	return negotiate_algorithms(sess, peer_lists, peer_first_kex_follows);
+}
+
+DSSH_TESTABLE int
+kexinit(struct dssh_session_s *sess)
+{
+	int res = prepare_kexinit(sess);
+	if (res < 0)
+		return res;
+	res = send_packet(sess, sess->trans.our_kexinit, sess->trans.our_kexinit_sz, NULL);
+	return res < 0 ? res : finish_kexinit(sess);
 }
 
 /* ================================================================
@@ -2762,22 +3587,79 @@ kexinit(struct dssh_session_s *sess)
 static int
 kex_send_wrapper(const uint8_t *payload, size_t len, void *io_ctx)
 {
-	return send_packet((struct dssh_session_s *)io_ctx, payload, len, NULL);
+	if (io_ctx == NULL || payload == NULL || len == 0)
+		return DSSH_ERROR_INVALID;
+	struct dssh_session_s *sess = io_ctx;
+	return send_packet(sess, payload, len, NULL);
 }
 
 static int
 kex_recv_wrapper(uint8_t *msg_type, uint8_t **payload, size_t *payload_len, void *io_ctx)
 {
-	return recv_packet((struct dssh_session_s *)io_ctx, msg_type, payload, payload_len);
+	if (io_ctx == NULL || msg_type == NULL || payload == NULL || payload_len == NULL)
+		return DSSH_ERROR_INVALID;
+	struct dssh_session_s *sess = io_ctx;
+	return recv_packet(sess, msg_type, payload, payload_len);
+}
+
+static void
+kex_release_result(struct dssh_session_s *sess)
+{
+	/* Keep the lease record at the address given to its producer. Clear views
+	 * before release so a callback cannot observe stale consumer metadata. */
+	sess->trans.kex_result.shared_secret = (struct dssh_bytes){0};
+	sess->trans.kex_result.exchange_hash = (struct dssh_bytes){0};
+	dssh_result_release(&sess->trans.kex_result.lease);
+}
+
+static void
+kex_cleanup_state(struct dssh_session_s *sess)
+{
+	kex_release_result(sess);
+	dssh_kex creator = sess->trans.kex_active;
+	void *state = sess->trans.kex_state;
+	sess->trans.kex_active = NULL;
+	sess->trans.kex_state = NULL;
+	if (creator != NULL) {
+		struct dssh_session_s *previous = io_callback_session;
+		io_callback_session = sess;
+		creator->cleanup(state);
+		io_callback_session = previous;
+	}
 }
 
 DSSH_TESTABLE int
 kex(struct dssh_session_s *sess)
 {
-	if ((sess->trans.kex_selected == NULL) || (sess->trans.kex_selected->handler == NULL))
+	kex_release_result(sess);
+	dssh_kex selected = sess->trans.kex_selected;
+	if (selected == NULL || selected->init == NULL || selected->handler == NULL
+	    || selected->cleanup == NULL) {
+		kex_cleanup_state(sess);
 		return DSSH_ERROR_INIT;
-
-	struct dssh_kex_context kctx = {
+	}
+	if (sess->trans.kex_active != selected)
+		kex_cleanup_state(sess);
+	bool initialized = sess->trans.kex_active == selected;
+	struct dssh_session_s *previous = io_callback_session;
+	io_callback_session = sess;
+	int res = selected->init(sess->trans.client, selected->config, &sess->trans.kex_state);
+	io_callback_session = previous;
+	/* A NULL success still has an initialized creator. A failed fresh
+	 * candidate owns nothing unless it published cleanup-valid state. */
+	if (res == 0 || initialized || sess->trans.kex_state != NULL)
+		sess->trans.kex_active = selected;
+	if (res > 0)
+		res = DSSH_ERROR_INVALID;
+	if (res < 0) {
+		kex_cleanup_state(sess);
+		return res;
+	}
+	if (atomic_load_explicit(&sess->terminate, memory_order_acquire)) {
+		kex_cleanup_state(sess);
+		return DSSH_ERROR_TERMINATED;
+	}
+	const struct dssh_kex_context kctx = {
 	    .client   = sess->trans.client,
 	    .v_c      = sess->trans.client ? sess->trans.id_str : sess->trans.remote_id_str,
 	    .v_c_len  = sess->trans.client ? sess->trans.id_str_sz : sess->trans.remote_id_str_sz,
@@ -2788,27 +3670,49 @@ kex(struct dssh_session_s *sess)
 	    .i_s      = sess->trans.client ? sess->trans.peer_kexinit : sess->trans.our_kexinit,
 	    .i_s_len  = sess->trans.client ? sess->trans.peer_kexinit_sz : sess->trans.our_kexinit_sz,
 	    .key_algo = sess->trans.key_algo_selected,
-	    .kex_data = sess->trans.kex_selected->ctx,
+	    .config   = selected->config,
+	    .state    = sess->trans.kex_state,
 	    .send     = kex_send_wrapper,
 	    .recv     = kex_recv_wrapper,
 	    .io_ctx   = sess,
 	    .hostkey_verify        = sess->hostkey_verify_cb,
 	    .hostkey_verify_cbdata = sess->hostkey_verify_cbdata,
 	};
-
-	int res = sess->trans.kex_selected->handler(&kctx);
-
+	struct dssh_kex_result *out = &sess->trans.kex_result;
+	res = selected->handler(&kctx, out);
+	if (res > 0)
+		res = DSSH_ERROR_INVALID;
+	if (res == 0 && (out->lease.release == NULL || out->shared_secret.data == NULL
+	    || out->shared_secret.len == 0 || out->shared_secret.len > UINT32_MAX
+	    || out->exchange_hash.data == NULL || out->exchange_hash.len == 0
+	    || out->exchange_hash.len > UINT32_MAX))
+		res = DSSH_ERROR_INVALID;
 	if (res == 0) {
-		sess->trans.shared_secret    = kctx.shared_secret;
-		sess->trans.shared_secret_sz = kctx.shared_secret_sz;
-		sess->trans.exchange_hash    = kctx.exchange_hash;
-		sess->trans.exchange_hash_sz = kctx.exchange_hash_sz;
+		dssh_hash_ctx *hash_ctx = NULL;
+		size_t digest_len;
+		res = dssh_hash_init(&hash_ctx, selected->hash_name, &digest_len);
+		if (res == 0 && out->exchange_hash.len != digest_len)
+			res = DSSH_ERROR_INVALID;
+		dssh_hash_free(hash_ctx);
 	}
-	else {
-		free(kctx.shared_secret);
-		free(kctx.exchange_hash);
-	}
+	if (res == 0 && atomic_load_explicit(&sess->terminate, memory_order_acquire))
+		res = DSSH_ERROR_TERMINATED;
+	if (res < 0)
+		kex_cleanup_state(sess);
+	return res;
+}
 
+/* Method rejection is a wire disconnect in both the initial exchange and
+ * rekey. kex() has already retired the result and method state. A transport
+ * failure, peer disconnect or application cancellation may have terminated
+ * the session first; do not attempt further output in that case. */
+static int
+kex_exchange(struct dssh_session_s *sess)
+{
+	int res = kex(sess);
+	if (res < 0 && !atomic_load_explicit(&sess->terminate, memory_order_acquire))
+		return transport_disconnect_result(sess, SSH_DISCONNECT_KEY_EXCHANGE_FAILED,
+		    "key exchange failed", res);
 	return res;
 }
 
@@ -2820,6 +3724,10 @@ DSSH_TESTABLE int
 derive_key(const char *hash_name, const uint8_t *shared_secret, size_t shared_secret_sz, const uint8_t *hash,
     size_t hash_sz, uint8_t letter, const uint8_t *session_id, size_t session_id_sz, uint8_t *out, size_t needed)
 {
+	/* Stateless algorithms request no output. Do not allocate/hash or require
+	 * an output address for an empty derived key. */
+	if (needed == 0)
+		return 0;
 	dssh_hash_ctx *ctx = NULL;
 	size_t         md_len;
 	int            res = dssh_hash_init(&ctx, hash_name, &md_len);
@@ -2883,23 +3791,35 @@ cleanup:
  *
  * Most KEX methods encode K as mpint (RFC 4253 s7):
  *   uint32 length, sign-padded big-endian integer.
- * Hybrid post-quantum methods encode K as string (fixed-length,
- * no sign padding) per draft-josefsson-ntruprime-ssh-02.
+ * Hybrid methods opt into opaque string encoding through their registration.
  *
  * On success, *out is a malloc'd buffer and *out_sz is its size.
  */
 DSSH_TESTABLE int
 encode_k_wire(const uint8_t *raw, size_t raw_sz, bool k_as_string, uint8_t **out, size_t *out_sz)
 {
-	size_t k_data_len;
-
-	if (k_as_string) {
-		k_data_len = raw_sz;
+	/* kex() enforces the same raw result bound. Check before inspecting its
+	 * bytes; only integer K may discard redundant leading zeroes. */
+#if SIZE_MAX > UINT32_MAX
+	if (raw_sz > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+#endif
+	if (!k_as_string) {
+		while (raw_sz > 0 && raw[0] == 0) {
+			raw++;
+			raw_sz--;
+		}
 	}
-	else {
-		bool need_pad = (raw_sz > 0 && (raw[0] & DSSH_MPINT_SIGN_BIT));
-		k_data_len    = raw_sz + (need_pad ? 1 : 0);
-	}
+	bool need_pad = !k_as_string && raw_sz > 0 && (raw[0] & DSSH_MPINT_SIGN_BIT) != 0;
+	size_t padding = need_pad ? 1 : 0;
+	if (raw_sz > SIZE_MAX - 4 - padding)
+		return DSSH_ERROR_INVALID;
+	size_t k_data_len = raw_sz + padding;
+#if SIZE_MAX > UINT32_MAX
+	if (k_data_len > UINT32_MAX)
+		return DSSH_ERROR_INVALID;
+#endif
+	uint32_t wire_data_len = (uint32_t)k_data_len;
 
 	size_t   k_wire_len = 4 + k_data_len;
 	uint8_t *buf        = malloc(k_wire_len);
@@ -2909,10 +3829,11 @@ encode_k_wire(const uint8_t *raw, size_t raw_sz, bool k_as_string, uint8_t **out
 
 	size_t pos = 0;
 
-	DSSH_PUT_U32((uint32_t)k_data_len, buf, &pos);
-	if (!k_as_string && k_data_len > raw_sz)
+	DSSH_PUT_U32(wire_data_len, buf, &pos);
+	if (need_pad)
 		buf[pos++] = 0; /* mpint sign-bit padding */
-	memcpy(&buf[pos], raw, raw_sz);
+	if (raw_sz > 0)
+		memcpy(&buf[pos], raw, raw_sz);
 
 	*out    = buf;
 	*out_sz = k_wire_len;
@@ -2925,10 +3846,178 @@ encode_k_wire(const uint8_t *raw, size_t raw_sz, bool k_as_string, uint8_t **out
  * counters, and free KEXINIT buffers.  Key material is local and
  * cleansed on exit.
  */
+/* Determine a safe input size once per epoch. The module's nondecreasing bound
+ * includes worst-case expansion and remains valid for all future stream states. */
 static int
+compression_input_limit(struct dssh_session_s *sess, dssh_comp comp, dssh_comp_ctx *ctx,
+    size_t *limit)
+{
+	size_t low = 0;
+	size_t high = tx_wire_payload_capacity(sess);
+	size_t capacity = high;
+	while (low < high) {
+		size_t middle = low + (high - low) / 2 + (high - low) % 2;
+		size_t bound;
+		int ret = call_comp_bound(sess, comp, middle, &bound, ctx);
+		if (ret < 0 && ret != DSSH_ERROR_TOOLONG)
+			return ret;
+		if (ret == 0 && bound < middle)
+			return DSSH_ERROR_INVALID;
+		if (ret == 0 && bound <= capacity)
+			low = middle;
+		else
+			high = middle - 1;
+	}
+	if (low == 0)
+		return DSSH_ERROR_TOOLONG;
+	*limit = low;
+	return 0;
+}
+
+static int
+apply_compression(struct dssh_session_s *sess)
+{
+	dssh_comp c2s = sess->trans.comp_c2s_selected;
+	dssh_comp s2c = sess->trans.comp_s2c_selected;
+	if (c2s == NULL || s2c == NULL)
+		return DSSH_ERROR_INIT;
+	dssh_comp tx = sess->trans.client ? c2s : s2c;
+	dssh_comp rx = sess->trans.client ? s2c : c2s;
+	dssh_comp_ctx *c2s_ctx = NULL;
+	dssh_comp_ctx *s2c_ctx = NULL;
+	bool c2s_initialized = false;
+	bool s2c_initialized = false;
+	size_t input_limit = tx_wire_payload_capacity(sess);
+	int ret = DSSH_ERROR_ALLOC;
+	if (compression_enabled(tx) && sess->trans.comp_tx_packet == NULL) {
+		sess->trans.comp_tx_packet = malloc(4 + sess->trans.packet_buf_sz);
+		if (sess->trans.comp_tx_packet == NULL)
+			goto done;
+	}
+	if (compression_enabled(rx) && sess->trans.comp_rx_input == NULL) {
+		sess->trans.comp_rx_input = malloc(sess->trans.packet_buf_sz);
+		if (sess->trans.comp_rx_input == NULL)
+			goto done;
+	}
+	/* Transfer existing same-module contexts to the reset callback. The module
+	 * may reuse or replace the allocation, so its old pointer must not remain
+	 * separately owned by failure/teardown cleanup. */
+	if (sess->trans.comp_c2s_active == c2s) {
+		c2s_ctx = sess->trans.comp_c2s_ctx;
+		sess->trans.comp_c2s_ctx = NULL;
+		sess->trans.comp_c2s_active = NULL;
+	}
+	ret = call_comp_init(sess, c2s, sess->trans.client, &c2s_ctx);
+	if (ret < 0)
+		goto done;
+	c2s_initialized = true;
+	if (sess->trans.comp_s2c_active == s2c) {
+		s2c_ctx = sess->trans.comp_s2c_ctx;
+		sess->trans.comp_s2c_ctx = NULL;
+		sess->trans.comp_s2c_active = NULL;
+	}
+	ret = call_comp_init(sess, s2c, !sess->trans.client, &s2c_ctx);
+	if (ret < 0)
+		goto done;
+	s2c_initialized = true;
+	if (compression_enabled(tx)) {
+		dssh_comp_ctx *tx_ctx = sess->trans.client ? c2s_ctx : s2c_ctx;
+		ret = compression_input_limit(sess, tx, tx_ctx, &input_limit);
+		if (ret < 0)
+			goto done;
+	}
+	if (sess->terminate) {
+		ret = DSSH_ERROR_TERMINATED;
+		goto done;
+	}
+	if (sess->trans.comp_c2s_active != NULL)
+		call_comp_cleanup(sess, sess->trans.comp_c2s_active, sess->trans.comp_c2s_ctx);
+	if (sess->trans.comp_s2c_active != NULL)
+		call_comp_cleanup(sess, sess->trans.comp_s2c_active, sess->trans.comp_s2c_ctx);
+	sess->trans.comp_c2s_active = c2s;
+	sess->trans.comp_c2s_ctx = c2s_ctx;
+	sess->trans.comp_s2c_active = s2c;
+	sess->trans.comp_s2c_ctx = s2c_ctx;
+	sess->trans.comp_tx_payload_limit = input_limit;
+	return sess->terminate ? DSSH_ERROR_TERMINATED : 0;
+
+done:
+	if (c2s_initialized || c2s_ctx != NULL)
+		call_comp_cleanup(sess, c2s, c2s_ctx);
+	if (s2c_initialized || s2c_ctx != NULL)
+		call_comp_cleanup(sess, s2c, s2c_ctx);
+	return ret;
+}
+
+/* Keep the verification pair across key changes. Grow both before replacing
+ * either, so an allocation failure leaves their old ownership intact. */
+DSSH_TESTABLE int
+reserve_mac_buffers(struct dssh_session_s *sess, uint16_t needed)
+{
+	if (needed > sess->trans.rx_mac_capacity) {
+		uint8_t *received = malloc(needed);
+		if (received == NULL)
+			return DSSH_ERROR_ALLOC;
+		uint8_t *computed = malloc(needed);
+		if (computed == NULL) {
+			cleanse_free(received, needed);
+			return DSSH_ERROR_ALLOC;
+		}
+		cleanse_free(sess->trans.rx_mac_buf, sess->trans.rx_mac_capacity);
+		cleanse_free(sess->trans.rx_mac_computed, sess->trans.rx_mac_capacity);
+		sess->trans.rx_mac_buf = received;
+		sess->trans.rx_mac_computed = computed;
+		sess->trans.rx_mac_capacity = needed;
+	}
+	if (sess->trans.rx_mac_capacity > 0) {
+		dssh_cleanse(sess->trans.rx_mac_buf, sess->trans.rx_mac_capacity);
+		dssh_cleanse(sess->trans.rx_mac_computed, sess->trans.rx_mac_capacity);
+	}
+	return 0;
+}
+
+/* An active stateless module may have a NULL context. A failed initializer
+ * owns cleanup work only when it actually returned a partial context. */
+static int
+initialize_enc(dssh_enc module, const uint8_t *key, const uint8_t *iv, bool encrypt,
+    dssh_enc_ctx **ctx, dssh_enc *active)
+{
+	int ret = 0;
+	if (module->init != NULL) {
+		ret = module->init(key, iv, encrypt, ctx);
+		if (ret > 0)
+			ret = DSSH_ERROR_INVALID;
+	}
+	if (ret == 0 || *ctx != NULL)
+		*active = module;
+	return ret;
+}
+
+static int
+initialize_mac(dssh_mac module, const uint8_t *key, dssh_mac_ctx **ctx, dssh_mac *active)
+{
+	int ret = 0;
+	if (module->init != NULL) {
+		ret = module->init(key, ctx);
+		if (ret > 0)
+			ret = DSSH_ERROR_INVALID;
+	}
+	if (ret == 0 || *ctx != NULL)
+		*active = module;
+	return ret;
+}
+
+DSSH_TESTABLE int
 derive_and_apply_keys(struct dssh_session_s *sess, const uint8_t *k_mpint, size_t k_mpint_sz, dssh_enc old_enc_c2s,
     dssh_enc old_enc_s2c, dssh_mac old_mac_c2s, dssh_mac old_mac_s2c)
 {
+	struct timespec key_time;
+	int clock_ret = dssh_clock_read(&key_time);
+	if (clock_ret < 0) {
+		kex_release_result(sess);
+		return clock_ret;
+	}
+
 	const char *hash_name   = sess->trans.kex_selected->hash_name;
 	uint16_t    enc_key_c2s = sess->trans.enc_c2s_selected->key_size;
 	uint16_t    enc_key_s2c = sess->trans.enc_s2c_selected->key_size;
@@ -2944,10 +4033,10 @@ derive_and_apply_keys(struct dssh_session_s *sess, const uint8_t *k_mpint, size_
 	uint8_t    *integ_s2c   = NULL;
 	int         res;
 
-	iv_c2s    = malloc(enc_bs_c2s);
-	iv_s2c    = malloc(enc_bs_s2c);
-	key_c2s   = malloc(enc_key_c2s);
-	key_s2c   = malloc(enc_key_s2c);
+	iv_c2s    = malloc(enc_bs_c2s > 0 ? enc_bs_c2s : 1);
+	iv_s2c    = malloc(enc_bs_s2c > 0 ? enc_bs_s2c : 1);
+	key_c2s   = malloc(enc_key_c2s > 0 ? enc_key_c2s : 1);
+	key_s2c   = malloc(enc_key_s2c > 0 ? enc_key_s2c : 1);
 	integ_c2s = calloc(1, mac_key_c2s > 0 ? mac_key_c2s : 1);
 	integ_s2c = calloc(1, mac_key_s2c > 0 ? mac_key_s2c : 1);
 
@@ -2957,8 +4046,8 @@ derive_and_apply_keys(struct dssh_session_s *sess, const uint8_t *k_mpint, size_
 	}
 
 	/* Derive keys A-F (RFC 4253 s7.2) */
-	const uint8_t *H      = sess->trans.exchange_hash;
-	size_t         H_sz   = sess->trans.exchange_hash_sz;
+	const uint8_t *H      = sess->trans.kex_result.exchange_hash.data;
+	size_t         H_sz   = sess->trans.kex_result.exchange_hash.len;
 	const uint8_t *sid    = sess->trans.session_id;
 	size_t         sid_sz = sess->trans.session_id_sz;
 
@@ -2976,87 +4065,76 @@ derive_and_apply_keys(struct dssh_session_s *sess, const uint8_t *k_mpint, size_
 		res =
 		    derive_key(hash_name, k_mpint, k_mpint_sz, H, H_sz, 'F', sid, sid_sz, integ_s2c, mac_key_s2c);
 
+	kex_release_result(sess);
 	if (res < 0)
 		goto keys_cleanup;
 
-	/* Free old cipher/MAC contexts (rekey case -- during initial
-	 * key exchange these are NULL so the cleanup calls are no-ops). */
-	if ((sess->trans.enc_c2s_ctx != NULL) && (old_enc_c2s != NULL)) {
+	/* Release each old active module, including its stateless NULL context. */
+	if (old_enc_c2s != NULL) {
 		if (old_enc_c2s->cleanup != NULL)
 			old_enc_c2s->cleanup(sess->trans.enc_c2s_ctx);
 		sess->trans.enc_c2s_ctx = NULL;
 	}
-	if ((sess->trans.enc_s2c_ctx != NULL) && (old_enc_s2c != NULL)) {
+	if (old_enc_s2c != NULL) {
 		if (old_enc_s2c->cleanup != NULL)
 			old_enc_s2c->cleanup(sess->trans.enc_s2c_ctx);
 		sess->trans.enc_s2c_ctx = NULL;
 	}
-	if ((sess->trans.mac_c2s_ctx != NULL) && (old_mac_c2s != NULL)) {
+	if (old_mac_c2s != NULL) {
 		if (old_mac_c2s->cleanup != NULL)
 			old_mac_c2s->cleanup(sess->trans.mac_c2s_ctx);
 		sess->trans.mac_c2s_ctx = NULL;
 	}
-	if ((sess->trans.mac_s2c_ctx != NULL) && (old_mac_s2c != NULL)) {
+	if (old_mac_s2c != NULL) {
 		if (old_mac_s2c->cleanup != NULL)
 			old_mac_s2c->cleanup(sess->trans.mac_s2c_ctx);
 		sess->trans.mac_s2c_ctx = NULL;
 	}
 
+	/* Do not publish ownership for a direction whose initializer has not run. */
+	sess->trans.enc_c2s_active = NULL;
+	sess->trans.enc_s2c_active = NULL;
+	sess->trans.mac_c2s_active = NULL;
+	sess->trans.mac_s2c_active = NULL;
+
 	/* Initialize new encryption contexts */
 	dssh_enc enc_c2s = sess->trans.enc_c2s_selected;
 	dssh_enc enc_s2c = sess->trans.enc_s2c_selected;
 
-	if (enc_c2s->init != NULL) {
-		res = enc_c2s->init(key_c2s, iv_c2s, sess->trans.client, &sess->trans.enc_c2s_ctx);
-		if (res < 0)
-			goto keys_cleanup;
-	}
-	if (enc_s2c->init != NULL) {
-		res = enc_s2c->init(key_s2c, iv_s2c, !sess->trans.client, &sess->trans.enc_s2c_ctx);
-		if (res < 0)
-			goto keys_cleanup;
-	}
+	res = initialize_enc(enc_c2s, key_c2s, iv_c2s, sess->trans.client,
+	    &sess->trans.enc_c2s_ctx, &sess->trans.enc_c2s_active);
+	if (res < 0)
+		goto keys_cleanup;
+	res = initialize_enc(enc_s2c, key_s2c, iv_s2c, !sess->trans.client,
+	    &sess->trans.enc_s2c_ctx, &sess->trans.enc_s2c_active);
+	if (res < 0)
+		goto keys_cleanup;
 
 	/* Initialize MAC contexts */
-	if ((mac_key_c2s > 0) && (sess->trans.mac_c2s_selected->init != NULL)) {
-		res = sess->trans.mac_c2s_selected->init(integ_c2s, &sess->trans.mac_c2s_ctx);
-		if (res < 0)
-			goto keys_cleanup;
-	}
-	if ((mac_key_s2c > 0) && (sess->trans.mac_s2c_selected->init != NULL)) {
-		res = sess->trans.mac_s2c_selected->init(integ_s2c, &sess->trans.mac_s2c_ctx);
-		if (res < 0)
-			goto keys_cleanup;
-	}
+	res = initialize_mac(sess->trans.mac_c2s_selected, integ_c2s,
+	    &sess->trans.mac_c2s_ctx, &sess->trans.mac_c2s_active);
+	if (res < 0)
+		goto keys_cleanup;
+	res = initialize_mac(sess->trans.mac_s2c_selected, integ_s2c,
+	    &sess->trans.mac_s2c_ctx, &sess->trans.mac_s2c_active);
+	if (res < 0)
+		goto keys_cleanup;
 
 	/* Allocate MAC verification buffers.
 	 * rx direction is s2c for clients, c2s for servers. */
 	uint16_t mac_digest_rx = sess->trans.client ? sess->trans.mac_s2c_selected->digest_size
 	                                            : sess->trans.mac_c2s_selected->digest_size;
 
-	if (mac_digest_rx > 0) {
-		free(sess->trans.rx_mac_buf);
-		sess->trans.rx_mac_buf = NULL;
-		free(sess->trans.rx_mac_computed);
-		sess->trans.rx_mac_computed = NULL;
-		sess->trans.rx_mac_buf      = malloc(mac_digest_rx);
-		if (sess->trans.rx_mac_buf == NULL) {
-			res = DSSH_ERROR_ALLOC;
-			goto keys_cleanup;
-		}
-		sess->trans.rx_mac_computed = malloc(mac_digest_rx);
-		if (sess->trans.rx_mac_computed == NULL) {
-			res = DSSH_ERROR_ALLOC;
-			goto keys_cleanup;
-		}
-	}
+	res = reserve_mac_buffers(sess, mac_digest_rx);
+	if (res < 0)
+		goto keys_cleanup;
 
 	/* Reset per-key counters */
 	atomic_store(&sess->trans.tx_since_rekey, 0);
 	atomic_store(&sess->trans.tx_bytes_since_rekey, (uint64_t)0);
 	sess->trans.rx_since_rekey       = 0;
 	sess->trans.rx_bytes_since_rekey = 0;
-	sess->trans.rekey_time           = time(NULL);
+	sess->trans.rekey_time           = key_time.tv_sec;
 
 	free(sess->trans.our_kexinit);
 	sess->trans.our_kexinit    = NULL;
@@ -3066,6 +4144,7 @@ derive_and_apply_keys(struct dssh_session_s *sess, const uint8_t *k_mpint, size_
 	sess->trans.peer_kexinit_sz = 0;
 
 keys_cleanup:
+	kex_release_result(sess);
 	cleanse_free(iv_c2s, enc_bs_c2s);
 	cleanse_free(iv_s2c, enc_bs_s2c);
 	cleanse_free(key_c2s, enc_key_c2s);
@@ -3079,16 +4158,19 @@ DSSH_TESTABLE int
 newkeys(struct dssh_session_s *sess)
 {
 	/* Save references to OLD modules for cleanup after rekey */
-	dssh_enc old_enc_c2s = sess->trans.enc_c2s_selected;
-	dssh_enc old_enc_s2c = sess->trans.enc_s2c_selected;
-	dssh_mac old_mac_c2s = sess->trans.mac_c2s_selected;
-	dssh_mac old_mac_s2c = sess->trans.mac_s2c_selected;
+	dssh_enc old_enc_c2s = enc_c2s_module(sess);
+	dssh_enc old_enc_s2c = enc_s2c_module(sess);
+	dssh_mac old_mac_c2s = mac_c2s_module(sess);
+	dssh_mac old_mac_s2c = mac_s2c_module(sess);
 
+	bool initial = sess->trans.session_id == NULL;
 	bool keep_owner = atomic_load_explicit(&sess->trans.rekey_in_progress, memory_order_acquire);
 	int  res        = tx_acquire(sess, SSH_MSG_NEWKEYS);
 
-	if (res < 0)
+	if (res < 0) {
+		kex_cleanup_state(sess);
 		return res;
+	}
 	uint8_t newkeys_msg = SSH_MSG_NEWKEYS;
 
 	res = send_packet_inner(sess, &newkeys_msg, 1, NULL);
@@ -3102,20 +4184,20 @@ newkeys(struct dssh_session_s *sess)
 	res = recv_packet(sess, &msg_type, &payload, &payload_len);
 	if (res < 0)
 		goto newkeys_done;
-	if (msg_type != SSH_MSG_NEWKEYS) {
+	if (msg_type != SSH_MSG_NEWKEYS || payload_len != 1) {
 		res = DSSH_ERROR_PARSE;
 		goto newkeys_done;
 	}
 
 	/* Save session ID on first KEX */
 	if (sess->trans.session_id == NULL) {
-		sess->trans.session_id = malloc(sess->trans.exchange_hash_sz);
+		sess->trans.session_id = malloc(sess->trans.kex_result.exchange_hash.len);
 		if (sess->trans.session_id == NULL) {
 			res = DSSH_ERROR_ALLOC;
 			goto newkeys_done;
 		}
-		memcpy(sess->trans.session_id, sess->trans.exchange_hash, sess->trans.exchange_hash_sz);
-		sess->trans.session_id_sz = sess->trans.exchange_hash_sz;
+		memcpy(sess->trans.session_id, sess->trans.kex_result.exchange_hash.data, sess->trans.kex_result.exchange_hash.len);
+		sess->trans.session_id_sz = sess->trans.kex_result.exchange_hash.len;
 	}
 
 	/* Encode shared secret K for key derivation */
@@ -3123,14 +4205,17 @@ newkeys(struct dssh_session_s *sess)
 	uint8_t *k_mpint;
 	size_t   k_mpint_sz;
 
-	res = encode_k_wire(sess->trans.shared_secret, sess->trans.shared_secret_sz, k_as_string, &k_mpint,
+	res = encode_k_wire(sess->trans.kex_result.shared_secret.data, sess->trans.kex_result.shared_secret.len, k_as_string, &k_mpint,
 	    &k_mpint_sz);
 	if (res < 0)
 		goto newkeys_done;
 
 	/* Derive keys, init contexts, reset counters */
 	res = derive_and_apply_keys(sess, k_mpint, k_mpint_sz, old_enc_c2s, old_enc_s2c, old_mac_c2s, old_mac_s2c);
-	free(k_mpint);
+	cleanse_free(k_mpint, k_mpint_sz);
+	if (res < 0)
+		goto newkeys_done;
+	res = apply_compression(sess);
 	if (res < 0)
 		goto newkeys_done;
 
@@ -3147,13 +4232,76 @@ newkeys(struct dssh_session_s *sess)
 	if (sess->conn_initialized) {
 		res = resize_channel_slots(sess);
 	}
+	if (res == 0 && initial) {
+		sess->trans.ext_info_state = sess->trans.ext_info_receive
+		    ? DSSH_EXT_INFO_INITIAL : DSSH_EXT_INFO_DISABLED;
+		/* Keep exclusive packet-engine ownership: EXT_INFO is the first
+		 * new-key packet, before diagnostics, queued slots or other senders. */
+		if (!sess->trans.client && sess->trans.ext_info_peer)
+			res = send_server_ext_info(sess);
+	}
 
 newkeys_done:
+	kex_release_result(sess);
+	if (res < 0)
+		kex_cleanup_state(sess);
 	/* During rekey the caller clears rekey_in_progress before releasing
 	 * ownership, so no old-key connection packet can follow NEWKEYS. */
+	if (res < 0)
+		session_set_terminate_no_wake(sess);
 	if (res < 0 || !keep_owner)
 		tx_unlock_with_slots(sess);
 	return res;
+}
+
+DSSH_TESTABLE int
+build_server_ext_info(uint8_t *buf, size_t capacity, size_t *out_length)
+{
+	size_t fixed = 13 + DSSH_STRLEN("server-sig-algs");
+	if (capacity < fixed)
+		return DSSH_ERROR_TOOLONG;
+	size_t pos = 0;
+	buf[pos++] = SSH_MSG_EXT_INFO;
+	DSSH_PUT_U32(1, buf, &pos);
+	DSSH_PUT_U32(DSSH_STRLEN("server-sig-algs"), buf, &pos);
+	memcpy(&buf[pos], "server-sig-algs", DSSH_STRLEN("server-sig-algs"));
+	pos += DSSH_STRLEN("server-sig-algs");
+	size_t prefix = pos;
+	pos += 4;
+	size_t start = pos;
+	/* Auth finds every registered verifier independently of host-key filter,
+	 * capability flags, loaded private keys or per-user authorization. */
+	for (dssh_key_algo key = gconf.key_algo_head; key != NULL; key = key->next) {
+		if (key->verify == NULL)
+			continue;
+		size_t length = strlen(key->name);
+		if (length == 0 || length > DSSH_ALGO_NAME_MAX)
+			return DSSH_ERROR_INVALID;
+		size_t comma = pos > start ? 1 : 0;
+		if (!dssh_buffer_has(capacity, pos, comma + length))
+			return DSSH_ERROR_TOOLONG;
+		if (comma != 0)
+			buf[pos++] = ',';
+		memcpy(&buf[pos], key->name, length);
+		pos += length;
+	}
+	size_t length = pos - start;
+	if (length > UINT32_MAX)
+		return DSSH_ERROR_TOOLONG;
+	uint32_t wire_length = (uint32_t)length;
+	DSSH_PUT_U32(wire_length, buf, &prefix);
+	*out_length = pos;
+	return 0;
+}
+
+static int
+send_server_ext_info(struct dssh_session_s *sess)
+{
+	size_t length;
+	int ret = build_server_ext_info(&sess->trans.tx_packet[9], tx_payload_capacity(sess), &length);
+	if (ret < 0)
+		return ret;
+	return tx_finalize(sess, sess->trans.tx_packet, length);
 }
 
 /* ================================================================
@@ -3163,14 +4311,20 @@ newkeys_done:
 static int
 transport_init(struct dssh_session_s *sess, size_t max_packet_size)
 {
-	gconf.used = true;
-	if (gconf.software_version == NULL)
-		gconf.software_version = sw_ver;
+	struct timespec key_time;
+	int clock_ret = dssh_clock_read(&key_time);
+	if (clock_ret < 0)
+		return clock_ret;
 
 	if (max_packet_size < SSH_BPP_PACKET_SIZE_MIN)
 		max_packet_size = SSH_BPP_PACKET_SIZE_MIN;
+#if SIZE_MAX < SSH_BPP_PACKET_SIZE_MAX
+	if (max_packet_size > SIZE_MAX - 4)
+		max_packet_size = SIZE_MAX - 4;
+#else
 	if (max_packet_size > SSH_BPP_PACKET_SIZE_MAX)
 		max_packet_size = SSH_BPP_PACKET_SIZE_MAX;
+#endif
 
 	int  ret             = DSSH_ERROR_ALLOC;
 	bool tx_mtx_ok       = false;
@@ -3198,34 +4352,20 @@ transport_init(struct dssh_session_s *sess, size_t max_packet_size)
 	if (cnd_init(&sess->trans.rekey_cnd) != thrd_success)
 		goto init_cleanup;
 
-	sess->trans.rekey_in_progress = false;
-	atomic_init(&sess->trans.tx_owner_active, false);
 	sess->trans.rekey_pending     = false;
 
-	sess->trans.kex_selected      = NULL;
-	sess->trans.key_algo_selected = NULL;
-	sess->trans.enc_c2s_selected  = NULL;
-	sess->trans.enc_s2c_selected  = NULL;
-	sess->trans.mac_c2s_selected  = NULL;
-	sess->trans.mac_s2c_selected  = NULL;
-	sess->trans.comp_c2s_selected = NULL;
-	sess->trans.comp_s2c_selected = NULL;
-	/* TX slots start empty; buffers allocated in newkeys() after KEX */
-	memset(&sess->trans.global_reply_slot, 0, sizeof(sess->trans.global_reply_slot));
-	memset(&sess->trans.open_fail_slot, 0, sizeof(sess->trans.open_fail_slot));
 	sess->trans.session_id    = NULL;
 	sess->trans.our_kexinit   = NULL;
 	sess->trans.peer_kexinit  = NULL;
-	sess->trans.shared_secret = NULL;
-	sess->trans.exchange_hash = NULL;
+	sess->trans.kex_active = NULL;
+	sess->trans.kex_state = NULL;
+	sess->trans.kex_result = (struct dssh_kex_result){0};
 	sess->trans.tx_seq        = 0;
 	sess->trans.rx_seq        = 0;
 	sess->trans.drain_next_ch = 0;
-	atomic_init(&sess->trans.tx_since_rekey, 0);
 	sess->trans.rx_since_rekey = 0;
-	atomic_init(&sess->trans.tx_bytes_since_rekey, (uint64_t)0);
 	sess->trans.rx_bytes_since_rekey = 0;
-	sess->trans.rekey_time           = time(NULL);
+	sess->trans.rekey_time           = key_time.tv_sec;
 
 	return 0;
 
@@ -3246,46 +4386,49 @@ init_cleanup:
 static void
 transport_cleanup(struct dssh_session_s *sess)
 {
+	kex_cleanup_state(sess);
 	if (sess->trans.kex_selected)
 		sess->trans.kex_selected = NULL;
 	if (sess->trans.key_algo_selected)
 		sess->trans.key_algo_selected = NULL;
-	if (sess->trans.enc_c2s_selected) {
-		if (sess->trans.enc_c2s_selected->cleanup != NULL)
-			sess->trans.enc_c2s_selected->cleanup(sess->trans.enc_c2s_ctx);
+	if (enc_c2s_module(sess) != NULL) {
+		if (enc_c2s_module(sess)->cleanup != NULL)
+			enc_c2s_module(sess)->cleanup(sess->trans.enc_c2s_ctx);
 		sess->trans.enc_c2s_ctx      = NULL;
 		sess->trans.enc_c2s_selected = NULL;
+		sess->trans.enc_c2s_active = NULL;
 	}
-	if (sess->trans.enc_s2c_selected) {
-		if (sess->trans.enc_s2c_selected->cleanup != NULL)
-			sess->trans.enc_s2c_selected->cleanup(sess->trans.enc_s2c_ctx);
+	if (enc_s2c_module(sess) != NULL) {
+		if (enc_s2c_module(sess)->cleanup != NULL)
+			enc_s2c_module(sess)->cleanup(sess->trans.enc_s2c_ctx);
 		sess->trans.enc_s2c_ctx      = NULL;
 		sess->trans.enc_s2c_selected = NULL;
+		sess->trans.enc_s2c_active = NULL;
 	}
-	if (sess->trans.mac_c2s_selected) {
-		if (sess->trans.mac_c2s_selected->cleanup != NULL)
-			sess->trans.mac_c2s_selected->cleanup(sess->trans.mac_c2s_ctx);
+	if (mac_c2s_module(sess) != NULL) {
+		if (mac_c2s_module(sess)->cleanup != NULL)
+			mac_c2s_module(sess)->cleanup(sess->trans.mac_c2s_ctx);
 		sess->trans.mac_c2s_ctx      = NULL;
 		sess->trans.mac_c2s_selected = NULL;
+		sess->trans.mac_c2s_active = NULL;
 	}
-	if (sess->trans.mac_s2c_selected) {
-		if (sess->trans.mac_s2c_selected->cleanup != NULL)
-			sess->trans.mac_s2c_selected->cleanup(sess->trans.mac_s2c_ctx);
+	if (mac_s2c_module(sess) != NULL) {
+		if (mac_s2c_module(sess)->cleanup != NULL)
+			mac_s2c_module(sess)->cleanup(sess->trans.mac_s2c_ctx);
 		sess->trans.mac_s2c_ctx      = NULL;
 		sess->trans.mac_s2c_selected = NULL;
+		sess->trans.mac_s2c_active = NULL;
 	}
-	if (sess->trans.comp_c2s_selected) {
-		if (sess->trans.comp_c2s_selected->cleanup != NULL)
-			sess->trans.comp_c2s_selected->cleanup(sess->trans.comp_c2s_ctx);
-		sess->trans.comp_c2s_ctx      = NULL;
-		sess->trans.comp_c2s_selected = NULL;
-	}
-	if (sess->trans.comp_s2c_selected) {
-		if (sess->trans.comp_s2c_selected->cleanup != NULL)
-			sess->trans.comp_s2c_selected->cleanup(sess->trans.comp_s2c_ctx);
-		sess->trans.comp_s2c_ctx      = NULL;
-		sess->trans.comp_s2c_selected = NULL;
-	}
+	if (sess->trans.comp_c2s_active != NULL)
+		call_comp_cleanup(sess, sess->trans.comp_c2s_active, sess->trans.comp_c2s_ctx);
+	if (sess->trans.comp_s2c_active != NULL)
+		call_comp_cleanup(sess, sess->trans.comp_s2c_active, sess->trans.comp_s2c_ctx);
+	sess->trans.comp_c2s_ctx = NULL;
+	sess->trans.comp_c2s_active = NULL;
+	sess->trans.comp_c2s_selected = NULL;
+	sess->trans.comp_s2c_ctx = NULL;
+	sess->trans.comp_s2c_active = NULL;
+	sess->trans.comp_s2c_selected = NULL;
 
 	cnd_destroy(&sess->trans.rekey_cnd);
 	cnd_destroy(&sess->trans.tx_slot_cnd);
@@ -3303,21 +4446,29 @@ transport_cleanup(struct dssh_session_s *sess)
 		while (rmsg != NULL) {
 			struct dssh_rekey_msg *next = rmsg->next;
 
-			free(rmsg);
+			cleanse_free(rmsg, sizeof(*rmsg) + rmsg->len);
 			rmsg = next;
 		}
 		sess->trans.rekey_queue_head = NULL;
 		sess->trans.rekey_queue_tail = NULL;
 	}
 
-	free(sess->trans.tx_packet);
+	cleanse_free(sess->trans.comp_tx_packet, 4 + sess->trans.packet_buf_sz);
+	sess->trans.comp_tx_packet = NULL;
+	cleanse_free(sess->trans.comp_rx_input, sess->trans.packet_buf_sz);
+	sess->trans.comp_rx_input = NULL;
+	cleanse_free(sess->trans.tx_gather_buf, sess->trans.tx_gather_capacity);
+	sess->trans.tx_gather_buf = NULL;
+	sess->trans.tx_gather_capacity = 0;
+	cleanse_free(sess->trans.tx_packet, 4 + sess->trans.packet_buf_sz);
 	sess->trans.tx_packet = NULL;
-	free(sess->trans.rx_packet);
+	cleanse_free(sess->trans.rx_packet, 4 + sess->trans.packet_buf_sz);
 	sess->trans.rx_packet = NULL;
-	free(sess->trans.rx_mac_buf);
+	cleanse_free(sess->trans.rx_mac_buf, sess->trans.rx_mac_capacity);
 	sess->trans.rx_mac_buf = NULL;
-	free(sess->trans.rx_mac_computed);
+	cleanse_free(sess->trans.rx_mac_computed, sess->trans.rx_mac_capacity);
 	sess->trans.rx_mac_computed = NULL;
+	sess->trans.rx_mac_capacity = 0;
 	sess->trans.packet_buf_sz   = 0;
 
 	cleanse_free(sess->trans.session_id, sess->trans.session_id_sz);
@@ -3326,19 +4477,20 @@ transport_cleanup(struct dssh_session_s *sess)
 	sess->trans.our_kexinit = NULL;
 	free(sess->trans.peer_kexinit);
 	sess->trans.peer_kexinit = NULL;
-	cleanse_free(sess->trans.shared_secret, sess->trans.shared_secret_sz);
-	sess->trans.shared_secret = NULL;
-	cleanse_free(sess->trans.exchange_hash, sess->trans.exchange_hash_sz);
-	sess->trans.exchange_hash = NULL;
 
 	sess->trans.remote_id_str_sz = 0;
 	sess->trans.remote_id_str[0] = 0;
-	if (sess->trans.remote_languages) {
-		for (size_t i = 0; sess->trans.remote_languages[i]; i++)
-			free(sess->trans.remote_languages[i]);
-		free(sess->trans.remote_languages);
-		sess->trans.remote_languages = NULL;
+	for (size_t i = 0; i < 2; i++) {
+		free(sess->local_languages[i].data);
+		sess->local_languages[i].data = NULL;
+		sess->local_languages[i].len = 0;
+		sess->local_languages[i].capacity = 0;
+		sess->peer_languages_len[i] = 0;
 	}
+	free(sess->peer_languages);
+	sess->peer_languages = NULL;
+	sess->peer_languages_capacity = 0;
+	sess->peer_languages_available = false;
 }
 
 /* ================================================================
@@ -3348,19 +4500,57 @@ transport_cleanup(struct dssh_session_s *sess)
 DSSH_PUBLIC struct dssh_session_s *
 dssh_session_init(bool client, size_t max_packet_size)
 {
-	struct dssh_session_s *sess = calloc(1, sizeof(*sess));
+	if (dssh_result_callback_active())
+		return NULL;
+	/* Application-serialized mutable setup is complete before this entry.
+	 * Freeze every accepted attempt before its first fallible allocation. */
+	gconf.used = true;
+	struct dssh_session_s *sess = malloc(sizeof(*sess));
 
 	if (sess == NULL)
 		return NULL;
 
-	sess->trans.client = client;
+	/* This unpublished object needs C pointer/scalar values, not a byte
+	 * pattern. Initialize each atomic's additional implementation state
+	 * before any atomic operation, native construction or publication. */
+	*sess = (struct dssh_session_s){.trans = {.client = client},
+	    .timeout_ms = DSSH_DEFAULT_TIMEOUT_MS, .default_max_events = DSSH_DEFAULT_MAX_EVENTS};
+	atomic_init(&sess->initialized, false);
+	atomic_init(&sess->terminate, false);
+	atomic_init(&sess->demux_running, false);
+	atomic_init(&sess->conn_initialized, false);
+	atomic_init(&sess->log_level, DSSH_LOG_ERROR);
+	atomic_init(&sess->termination_logged, false);
+	atomic_init(&sess->terminate_notified, false);
+	atomic_init(&sess->terminate_wake_started, false);
+	atomic_init(&sess->lifecycle_busy, false);
+	atomic_init(&sess->log_mirror_suppressed, false);
+	atomic_init(&sess->trans.kex_selected, NULL);
+	atomic_init(&sess->trans.key_algo_selected, NULL);
+	atomic_init(&sess->trans.enc_c2s_selected, NULL);
+	atomic_init(&sess->trans.enc_s2c_selected, NULL);
+	atomic_init(&sess->trans.mac_c2s_selected, NULL);
+	atomic_init(&sess->trans.mac_s2c_selected, NULL);
+	atomic_init(&sess->trans.comp_c2s_selected, NULL);
+	atomic_init(&sess->trans.comp_s2c_selected, NULL);
+	atomic_init(&sess->trans.tx_since_rekey, 0);
+	atomic_init(&sess->trans.tx_bytes_since_rekey, 0);
+	atomic_init(&sess->trans.rekey_in_progress, false);
+#ifdef DSSH_TESTING
+	atomic_init(&sess->trans.test_rekeys_completed, 0);
+#endif
+	atomic_init(&sess->trans.rekey_read, DSSH_REKEY_READ_IDLE);
+	atomic_init(&sess->trans.tx_owner_active, false);
+	/* TX slots remain empty until newkeys allocates their byte buffers. */
+	atomic_init(&sess->trans.global_reply_slot.ready, false);
+	atomic_init(&sess->trans.open_fail_slot.ready, false);
 	/* Time-based rekey is OFF by default: the byte and packet
 	 * thresholds cover key-material wear, and some peers (Cryptlib-
 	 * based servers like Mystic BBS) refuse mid-stream KEXINIT
 	 * outright.  RFC 4253 s9 calls time rekey RECOMMENDED, not
 	 * required.  Apps that need it can opt in via
 	 * dssh_session_set_rekey_seconds(). */
-	sess->trans.rekey_seconds = 0;
+	atomic_init(&sess->trans.rekey_seconds, 0);
 
 	int res = mtx_init(&sess->mtx, mtx_plain);
 
@@ -3375,15 +4565,6 @@ dssh_session_init(bool client, size_t max_packet_size)
 		free(sess);
 		return NULL;
 	}
-
-	sess->timeout_ms         = 75000;
-	sess->default_max_events = DSSH_DEFAULT_MAX_EVENTS;
-	atomic_init(&sess->log_level, DSSH_LOG_ERROR);
-	atomic_init(&sess->termination_logged, false);
-	atomic_init(&sess->terminate_notified, false);
-	atomic_init(&sess->terminate_wake_started, false);
-	atomic_init(&sess->lock_ownership_failed, false);
-	atomic_init(&sess->log_mirror_suppressed, false);
 	sess->initialized        = true;
 	return sess;
 }
@@ -3423,12 +4604,18 @@ dssh_session_cleanup(struct dssh_session_s *sess)
 		return;
 	if (dssh_io_callback_active(sess))
 		return;
+	if (!session_lifecycle_begin(sess))
+		return;
 	dssh_session_terminate(sess);
-	dssh_session_stop(sess);
+	session_stop_inner(sess);
 	dssh_log_cleanup(sess);
+	dssh_client_keys_cleanup(sess);
 	transport_cleanup(sess);
 	free(sess->pending_banner);
 	free(sess->pending_banner_lang);
+	free(sess->auth_methods);
+	dssh_cleanse(sess->server_auth_user, sess->server_auth_user_capacity);
+	free(sess->server_auth_user);
 	free(sess->kex_filter);
 	free(sess->key_algo_filter);
 	free(sess->enc_filter);
@@ -3438,19 +4625,38 @@ dssh_session_cleanup(struct dssh_session_s *sess)
 	free(sess);
 }
 
+/* Called only with a known nonnull name. Eligibility checks do not publish. */
+static int
+key_algo_setup_inner(const char *name, dssh_key_algo *out)
+{
+	if (dssh_result_callback_active())
+		return DSSH_ERROR_INVALID;
+	/* Refuse after first accepted session-init attempt, including failure. */
+	if (gconf.used)
+		return DSSH_ERROR_TOOLATE;
+	dssh_key_algo ka = find_key_algo(name);
+	if (ka == NULL)
+		return DSSH_ERROR_INIT;
+	*out = ka;
+	return 0;
+}
+
+DSSH_PRIVATE int
+dssh_key_algo_setup_check(const char *name)
+{
+	dssh_key_algo ka;
+	return key_algo_setup_inner(name, &ka);
+}
+
 DSSH_PUBLIC int
 dssh_key_algo_set_ctx(const char *name, void *ctx)
 {
 	if (name == NULL)
 		return DSSH_ERROR_INVALID;
-	/* Refuse after first session init -- the global registry is
-	 * read concurrently by active sessions during KEX. */
-	if (gconf.used)
-		return DSSH_ERROR_TOOLATE;
-	dssh_key_algo ka = find_key_algo(name);
-
-	if (ka == NULL)
-		return DSSH_ERROR_INIT;
+	dssh_key_algo ka;
+	int ret = key_algo_setup_inner(name, &ka);
+	if (ret < 0)
+		return ret;
 	ka->ctx = (dssh_key_algo_ctx *)ctx;
 	return 0;
 }
@@ -3458,6 +4664,8 @@ dssh_key_algo_set_ctx(const char *name, void *ctx)
 DSSH_PUBLIC int
 dssh_kex_set_ctx(const char *name, void *ctx)
 {
+	if (dssh_result_callback_active())
+		return DSSH_ERROR_INVALID;
 	if (name == NULL)
 		return DSSH_ERROR_INVALID;
 	/* Refuse after first session init -- the global registry is
@@ -3468,56 +4676,62 @@ dssh_kex_set_ctx(const char *name, void *ctx)
 
 	if (k == NULL)
 		return DSSH_ERROR_INIT;
-	k->ctx = ctx;
+	k->config = ctx;
 	return 0;
 }
 
-#define DEFINE_REGISTER(func_name, param_type, head, tail, entries) \
-	DSSH_PUBLIC int func_name(param_type item)                  \
-	{                                                           \
-		if (item == NULL)                                   \
-			return DSSH_ERROR_INVALID;                  \
-		if (gconf.used)                                     \
-			return DSSH_ERROR_TOOLATE;                  \
-		if (strlen(item->name) == 0)                        \
-			return DSSH_ERROR_INVALID;                  \
-		if (strlen(item->name) > 64)                        \
-			return DSSH_ERROR_TOOLONG;                  \
-		if (item->next)                                     \
-			return DSSH_ERROR_MUST_BE_NULL;             \
-		if (gconf.entries + 1 == SIZE_MAX)                  \
-			return DSSH_ERROR_TOOMANY;                  \
-		if (gconf.head == NULL)                             \
-			gconf.head = item;                          \
-		if (gconf.tail != NULL)                             \
-			gconf.tail->next = item;                    \
-		gconf.tail = item;                                  \
-		gconf.entries++;                                    \
-		return 0;                                           \
+#define DEFINE_REGISTER(func_name, param_type, head, tail, entries, valid) \
+	DSSH_PUBLIC int func_name(param_type item) \
+	{ \
+		if (dssh_result_callback_active()) \
+			return DSSH_ERROR_INVALID; \
+		if (item == NULL) \
+			return DSSH_ERROR_INVALID; \
+		if (gconf.used) \
+			return DSSH_ERROR_TOOLATE; \
+		size_t name_len = 0; \
+		while (name_len <= DSSH_ALGO_NAME_MAX && item->name[name_len] != 0) \
+			name_len++; \
+		if (name_len == 0) \
+			return DSSH_ERROR_INVALID; \
+		if (name_len > DSSH_ALGO_NAME_MAX) \
+			return DSSH_ERROR_TOOLONG; \
+		for (size_t i = 0; i < name_len; i++) { \
+			unsigned char ch = (unsigned char)item->name[i]; \
+			if (ch <= ' ' || ch >= DSSH_ASCII_DEL || ch == ',') \
+				return DSSH_ERROR_INVALID; \
+		} \
+		if (item->next != NULL) \
+			return DSSH_ERROR_MUST_BE_NULL; \
+		if (gconf.entries >= SIZE_MAX - 1) \
+			return DSSH_ERROR_TOOMANY; \
+		for (param_type current = gconf.head; current != NULL; current = current->next) { \
+			if (current == item || strcmp(current->name, item->name) == 0) \
+				return DSSH_ERROR_INVALID; \
+		} \
+		if (!(valid)) \
+			return DSSH_ERROR_INVALID; \
+		if (gconf.head == NULL) \
+			gconf.head = item; \
+		if (gconf.tail != NULL) \
+			gconf.tail->next = item; \
+		gconf.tail = item; \
+		gconf.entries++; \
+		return 0; \
 	}
 
-DEFINE_REGISTER(dssh_transport_register_kex, dssh_kex, kex_head, kex_tail, kex_entries)
-DEFINE_REGISTER(dssh_transport_register_key_algo, dssh_key_algo, key_algo_head, key_algo_tail, key_algo_entries)
-DEFINE_REGISTER(dssh_transport_register_enc, dssh_enc, enc_head, enc_tail, enc_entries)
-DEFINE_REGISTER(dssh_transport_register_mac, dssh_mac, mac_head, mac_tail, mac_entries)
-DEFINE_REGISTER(dssh_transport_register_comp, dssh_comp, comp_head, comp_tail, comp_entries)
-DEFINE_REGISTER(dssh_transport_register_lang, dssh_language, lang_head, lang_tail, lang_entries)
+DEFINE_REGISTER(dssh_transport_register_kex, dssh_kex, kex_head, kex_tail, kex_entries,
+    item->init != NULL && item->handler != NULL && item->cleanup != NULL && item->hash_name != NULL
+        && strcmp(item->name, "ext-info-c") != 0 && strcmp(item->name, "ext-info-s") != 0)
+DEFINE_REGISTER(dssh_transport_register_key_algo, dssh_key_algo, key_algo_head, key_algo_tail, key_algo_entries, true)
+DEFINE_REGISTER(dssh_transport_register_enc, dssh_enc, enc_head, enc_tail, enc_entries,
+    item->key_size == 0 || (item->init != NULL && item->encrypt != NULL && item->decrypt != NULL))
+DEFINE_REGISTER(dssh_transport_register_mac, dssh_mac, mac_head, mac_tail, mac_entries,
+    (item->key_size == 0 || item->init != NULL) && (item->digest_size == 0 || item->generate != NULL))
+DEFINE_REGISTER(dssh_transport_register_comp, dssh_comp, comp_head, comp_tail, comp_entries,
+    item->init != NULL && item->bound != NULL && item->compress != NULL
+        && item->uncompress != NULL && item->cleanup != NULL)
 #undef DEFINE_REGISTER
-
-/*
- * Validate a softwareversion string per RFC 4253 s4.2:
- * printable US-ASCII (0x21--0x7E), no spaces (space is the
- * delimiter between softwareversion and comments).
- */
-static bool
-is_valid_sw_version(const char *s, size_t len)
-{
-	for (size_t i = 0; i < len; i++) {
-		if ((s[i] < 0x21) || (s[i] > 0x7E))
-			return false;
-	}
-	return true;
-}
 
 /*
  * Validate a comment string per RFC 4253 s4.2:
@@ -3537,6 +4751,8 @@ is_valid_comment(const char *s, size_t len)
 DSSH_PUBLIC int
 dssh_transport_set_version(const char *software_version, const char *comment)
 {
+	if (dssh_result_callback_active())
+		return DSSH_ERROR_INVALID;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
 
@@ -3617,6 +4833,8 @@ DSSH_PUBLIC int
 dssh_transport_set_callbacks(dssh_transport_io_cb tx, dssh_transport_io_cb rx, dssh_transport_rxline_cb rx_line,
     dssh_transport_extra_line_cb extra_line_cb)
 {
+	if (dssh_result_callback_active())
+		return DSSH_ERROR_INVALID;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
 	if (tx == NULL || rx == NULL)
@@ -3631,6 +4849,8 @@ dssh_transport_set_callbacks(dssh_transport_io_cb tx, dssh_transport_io_cb rx, d
 DSSH_PUBLIC int
 dssh_transport_set_tx_gather(dssh_transport_tx_gather_cb cb)
 {
+	if (dssh_result_callback_active())
+		return DSSH_ERROR_INVALID;
 	if (gconf.used)
 		return DSSH_ERROR_TOOLATE;
 	gconf.tx_gather = cb;
@@ -3647,7 +4867,7 @@ tx_gather_enabled(void)
 
 /*
  * Reset the global configuration for test isolation.
- * Frees all registered algorithm entries, zeros the config,
+ * Frees all registered algorithm entries, restores typed defaults,
  * and unlocks registration.
  */
 DSSH_PRIVATE void
@@ -3673,11 +4893,10 @@ dssh_test_reset_global_config(void)
 	FREE_LIST(dssh_enc, gconf.enc_head);
 	FREE_LIST(dssh_mac, gconf.mac_head);
 	FREE_LIST(dssh_comp, gconf.comp_head);
-	FREE_LIST(dssh_language, gconf.lang_head);
  #undef FREE_LIST
 
-	memset(&gconf, 0, sizeof(gconf));
-	gconf.used = false;
+	gconf = (struct dssh_transport_global_config){.software_version = sw_ver};
+	atomic_init(&gconf.used, false);
 	atomic_store(&dssh_test_rx_count_sess, NULL);
 }
 

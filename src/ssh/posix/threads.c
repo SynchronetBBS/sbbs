@@ -5,7 +5,6 @@
 
 #include <errno.h>
 #include <sched.h>	/* sched_yield */
-#include <stdint.h>	/* intptr_t */
 #include <stdlib.h>	/* malloc / free */
 
 #include "threads.h"
@@ -13,30 +12,31 @@
 /* ------------------------------------------------------------- mutexes */
 
 int
-mtx_init(mtx_t *mtx, int type)
+dssh_thread_mtx_init(mtx_t *mtx, int type)
 {
-	/* DeuceSSH only uses mtx_plain; the other C11 attributes (timed,
-	 * recursive) aren't exercised.  Accept any combination silently —
-	 * pthread's default mutex already covers mtx_plain. */
-	(void)type;
-	return pthread_mutex_init(mtx, NULL) == 0
-	    ? thrd_success : thrd_error;
+	if (type != mtx_plain)
+		return thrd_error;
+	int rc = pthread_mutex_init(mtx, NULL);
+	if (rc == ENOMEM)
+		return thrd_nomem;
+	return rc == 0 ? thrd_success : thrd_error;
 }
 
 void
-mtx_destroy(mtx_t *mtx)
+dssh_thread_mtx_destroy(mtx_t *mtx)
 {
-	pthread_mutex_destroy(mtx);
+	if (pthread_mutex_destroy(mtx) != 0)
+		abort();
 }
 
 int
-mtx_lock(mtx_t *mtx)
+dssh_thread_mtx_lock(mtx_t *mtx)
 {
 	return pthread_mutex_lock(mtx) == 0 ? thrd_success : thrd_error;
 }
 
 int
-mtx_trylock(mtx_t *mtx)
+dssh_thread_mtx_trylock(mtx_t *mtx)
 {
 	int rc = pthread_mutex_trylock(mtx);
 	if (rc == 0)
@@ -47,7 +47,7 @@ mtx_trylock(mtx_t *mtx)
 }
 
 int
-mtx_unlock(mtx_t *mtx)
+dssh_thread_mtx_unlock(mtx_t *mtx)
 {
 	return pthread_mutex_unlock(mtx) == 0 ? thrd_success : thrd_error;
 }
@@ -55,41 +55,44 @@ mtx_unlock(mtx_t *mtx)
 /* ----------------------------------------------------- condition vars */
 
 int
-cnd_init(cnd_t *cnd)
+dssh_thread_cnd_init(cnd_t *cnd)
 {
-	return pthread_cond_init(cnd, NULL) == 0
-	    ? thrd_success : thrd_error;
+	int rc = pthread_cond_init(cnd, NULL);
+	if (rc == ENOMEM)
+		return thrd_nomem;
+	return rc == 0 ? thrd_success : thrd_error;
 }
 
 void
-cnd_destroy(cnd_t *cnd)
+dssh_thread_cnd_destroy(cnd_t *cnd)
 {
-	pthread_cond_destroy(cnd);
+	if (pthread_cond_destroy(cnd) != 0)
+		abort();
 }
 
 int
-cnd_signal(cnd_t *cnd)
+dssh_thread_cnd_signal(cnd_t *cnd)
 {
 	return pthread_cond_signal(cnd) == 0
 	    ? thrd_success : thrd_error;
 }
 
 int
-cnd_broadcast(cnd_t *cnd)
+dssh_thread_cnd_broadcast(cnd_t *cnd)
 {
 	return pthread_cond_broadcast(cnd) == 0
 	    ? thrd_success : thrd_error;
 }
 
 int
-cnd_wait(cnd_t *cnd, mtx_t *mtx)
+dssh_thread_cnd_wait(cnd_t *cnd, mtx_t *mtx)
 {
 	return pthread_cond_wait(cnd, mtx) == 0
 	    ? thrd_success : thrd_error;
 }
 
 int
-cnd_timedwait(cnd_t *cnd, mtx_t *mtx, const struct timespec *ts)
+dssh_thread_cnd_timedwait(cnd_t *cnd, mtx_t *mtx, const struct timespec *ts)
 {
 	int rc = pthread_cond_timedwait(cnd, mtx, ts);
 	if (rc == 0)
@@ -101,62 +104,67 @@ cnd_timedwait(cnd_t *cnd, mtx_t *mtx, const struct timespec *ts)
 
 /* ------------------------------------------------------------ threads */
 
-/*
- * C11 `thrd_start_t` is `int(*)(void *)`; pthread_create wants
- * `void *(*)(void *)`.  Funnel through a small context struct so we
- * can convert the return type at the edge.
- */
-struct dssh_thrd_ctx {
+/* One context adapts the callback and retains its full int result until join.
+ * No integer is encoded in a pointer, and a failed join retains the owner. */
+struct dssh_thread_context {
 	thrd_start_t func;
-	void        *arg;
+	void *arg;
+	int result;
 };
 
 static void *
 dssh_thrd_trampoline(void *arg)
 {
-	struct dssh_thrd_ctx *ctx = arg;
-	int rc = ctx->func(ctx->arg);
-	free(ctx);
-	/* Stuff the int return into the void* return so thrd_join can
-	 * recover it via pthread_join's retval.  intptr_t round-trip is
-	 * lossless for any int that fits in a pointer. */
-	return (void *)(intptr_t)rc;
+	struct dssh_thread_context *ctx = arg;
+	ctx->result = ctx->func(ctx->arg);
+	return NULL;
 }
 
 int
-thrd_create(thrd_t *thr, thrd_start_t func, void *arg)
+dssh_thread_thrd_create(thrd_t *thr, thrd_start_t func, void *arg)
 {
-	struct dssh_thrd_ctx *ctx = malloc(sizeof(*ctx));
+	struct dssh_thread_context *ctx = malloc(sizeof(*ctx));
 	if (ctx == NULL)
 		return thrd_nomem;
 	ctx->func = func;
-	ctx->arg  = arg;
-	if (pthread_create(thr, NULL, dssh_thrd_trampoline, ctx) != 0) {
+	ctx->arg = arg;
+	pthread_t native;
+	int rc = pthread_create(&native, NULL, dssh_thrd_trampoline, ctx);
+	if (rc != 0) {
 		free(ctx);
-		return thrd_error;
+		return rc == ENOMEM ? thrd_nomem : thrd_error;
 	}
+	*thr = (thrd_t){ .native = native, .context = ctx };
 	return thrd_success;
 }
 
 int
-thrd_join(thrd_t thr, int *res)
+dssh_thread_thrd_join(thrd_t thr, int *res)
 {
-	void *retval;
-	if (pthread_join(thr, &retval) != 0)
+	if (pthread_join(thr.native, NULL) != 0)
 		return thrd_error;
+	int result = thr.context->result;
+	free(thr.context);
 	if (res != NULL)
-		*res = (int)(intptr_t)retval;
+		*res = result;
 	return thrd_success;
 }
 
 int
-thrd_sleep(const struct timespec *duration, struct timespec *remaining)
+dssh_thread_thrd_sleep(const struct timespec *duration, struct timespec *remaining)
 {
-	return nanosleep(duration, remaining);
+	if (duration == NULL || duration->tv_sec < 0
+	    || duration->tv_nsec < 0 || duration->tv_nsec >= 1000000000L)
+		return -2;
+	if (nanosleep(duration, remaining) == 0)
+		return 0;
+	return errno == EINTR ? -1 : -2;
 }
 
 void
-thrd_yield(void)
+dssh_thread_thrd_yield(void)
 {
-	sched_yield();
+	/* A failed scheduling hint owns no resources; yielding is best effort. */
+	if (sched_yield() != 0)
+		return;
 }

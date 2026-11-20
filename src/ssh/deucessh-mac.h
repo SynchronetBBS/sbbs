@@ -21,7 +21,7 @@ typedef int  (*dssh_mac_generate)(const uint8_t *buf, size_t bufsz, uint8_t *out
 typedef void (*dssh_mac_cleanup)(dssh_mac_ctx *ctx);
 
 typedef struct dssh_mac_s {
-	struct dssh_mac_s *next; /* must be first -- generic traversal assumes offsetof(next) == 0 */
+	struct dssh_mac_s *next; /* Registry link; must be NULL at registration. */
 	dssh_mac_init      init;
 	dssh_mac_generate  generate;
 	dssh_mac_cleanup   cleanup;
@@ -30,7 +30,9 @@ typedef struct dssh_mac_s {
 	char               name[];
 } *dssh_mac;
 
-DSSH_PUBLIC int dssh_transport_register_mac(dssh_mac mac);
+/* Application-serialized global setup; finish before the first session-init
+ * attempt. Descriptor/name/code stay borrowed for process lifetime. */
+DSSH_PUBLIC int dssh_transport_register_mac(dssh_mac mac) DSSH_ABI(dssh_transport_register_mac);
 
 #ifdef __cplusplus
 }

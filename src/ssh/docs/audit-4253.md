@@ -341,7 +341,13 @@ register it by default.  The application must explicitly opt in.
 > To implement CBC mode, outer chaining **MUST** be used (i.e., there
 > is only one initialization vector).
 
-**N/A** — No CBC ciphers are implemented.
+**Verified in the native audit scope** — AES-128-CBC uses one persistent CBC
+context per direction on OpenSSL and Botan. NIST F.2.1/F.2.2 checks cover all
+eight partitions of four consecutive blocks, with interleaved encrypt/decrypt
+contexts. Production client/OpenSSH exchanges verify CBC data and rekey for
+both library forms and backends. See the
+[CBC review](release-1.0-evidence/cbc-review.md) for commands, scope and remaining
+platform/module obligations.
 
 ---
 
@@ -420,19 +426,14 @@ considered cryptographically weak.
 > Two **REQUIRED** key exchange methods have been defined:
 > `diffie-hellman-group1-sha1`, `diffie-hellman-group14-sha1`.
 
-**NONCONFORMANT** — Neither `diffie-hellman-group1-sha1` nor
-`diffie-hellman-group14-sha1` is implemented.  The library provides
-`curve25519-sha256` (RFC 8731) and
-`diffie-hellman-group-exchange-sha256` (RFC 4419).
-
-`diffie-hellman-group1-sha1` uses a 1024-bit group (insecure by modern
-standards) and SHA-1 (deprecated).
-`diffie-hellman-group14-sha1` uses a 2048-bit group but still uses
-SHA-1.
-
-Both are widely deprecated.  OpenSSH 8.2+ disabled group1 by default,
-and group14-sha1 is being phased out.  All modern implementations
-support `curve25519-sha256` which is preferred.
+**UPDATED REQUIREMENT** — RFC 9142 section3.2.2 replaces the old mandatory
+fixed-group baseline with `diffie-hellman-group14-sha256` and recommends
+`diffie-hellman-group16-sha512`. Both are now implemented through application-
+controlled constructors, alongside the existing Curve25519, DH-GEX and hybrid
+methods. SHA-1 methods remain intentionally excluded under RULES.md. Current
+implementation and precisely scoped acceptance are tracked in
+[the fixed-group release decision](release-1.0-evidence/fixed-group-kex-design.md);
+whole-platform/conformance review is not inferred from registration alone.
 
 ### 6.5-2
 > Additional methods **MAY** be defined as specified in [SSH-NUMBERS].
@@ -619,21 +620,24 @@ application.
 ### 7.1-14
 > Both parties **MAY** ignore this name-list [languages].
 
-**CONFORMS** — Language name-lists are sent as empty strings.  Received
-language lists are parsed but not used.
+**CONFORMS** — R032 exposes both peer lists to the application without
+selecting a language. The application may ignore them. See
+[the selected contract](release-1.0-evidence/language-preference-design.md).
 
 ### 7.1-15
 > If there are no language preferences, this name-list **SHOULD** be
 > empty.
 
-**CONFORMS** — KEXINIT sends empty language name-lists
-(`serialize_namelist_from_str("")`).
+**CONFORMS** — Both per-session fields default to empty. NULL or zero-count
+setters clear a configured field. KEXINIT captures the configured fields.
 
 ### 7.1-16
 > Language tags **SHOULD NOT** be present unless they are known to be
 > needed by the sending party.
 
-**CONFORMS** — No language tags are sent.
+**APPLICATION** — Empty fields are the default. Applications explicitly set
+known preferences through `dssh_session_set_languages()`. The README example
+places configuration in an application with known preferences.
 
 ### 7.1-17
 > If a guessed packet will be sent, [first_kex_packet_follows] **MUST**
@@ -762,13 +766,14 @@ receive-direction cipher/MAC contexts.  All subsequent
 > Values of 'e' or 'f' that are not in the range [1, p-1] **MUST NOT**
 > be sent or accepted by either side.
 
-**CONFORMS** — The DH-GEX implementation (`kex/dh-gex-sha256-openssl.c`)
-validates received values using `dh_value_valid()`, which checks that
-the value is not zero, not negative, and less than p.  This is done
-for both `f` (client side, after receiving GEX_REPLY) and `e` (server
-side, after receiving GEX_INIT).
-
-For `curve25519-sha256`, the X25519 function has built-in validation.
+**UPDATED REQUIREMENT** — RFC 8268 section4 corrects the interval to
+`1 < e < p-1` and `1 < f < p-1`. The common DH protocol checks local generated
+and received values before sending/deriving for both DH-GEX and the two fixed
+methods. Canonical positive mpint parsing precedes range checks; a retained
+modulus borrow survives producer release and receive-buffer reuse. The fixed-
+method native fixtures exercise both directions and boundary/malformed values.
+Backend, complete framing and platform acceptance retain their recorded scopes.
+Curve25519 follows its separate RFC 8731 validation, rather than these MODP bounds.
 
 ### 8-2
 > The exchange hash **SHOULD** be kept secret.

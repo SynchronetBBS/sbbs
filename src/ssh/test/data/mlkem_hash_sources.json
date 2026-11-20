@@ -1,0 +1,113 @@
+{
+  "authority": "NIST CAVP CAVS19.0 byte-oriented SHA3/SHAKE response files, generated2016-01-28",
+  "retrieved": "2026-11-16",
+  "discovery_page": "https://csrc.nist.gov/Projects/Cryptographic-Algorithm-Validation-Program/Secure-Hashing",
+  "archives": [
+    {
+      "url": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/sha-3bytetestvectors.zip",
+      "sha256": "cd07701af2e47f5cc889d642528b4bf11f8b6eb55797c7307a96828ed8d8fc8c",
+      "bytes": 2801880,
+      "retained_path": "build-audit-logs/mlkem-hash-r115-sha3-byte.zip"
+    },
+    {
+      "url": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/shakebytetestvectors.zip",
+      "sha256": "debfebc3157b3ceea002b84ca38476420389a3bf7e97dc5f53ea4689a16de4c7",
+      "bytes": 2116268,
+      "retained_path": "build-audit-logs/mlkem-hash-r115-shake-byte.zip"
+    }
+  ],
+  "selected_files": [
+    {
+      "path": "test/vectors/sha3-cavp/SHA3_256LongMsg.rsp",
+      "member": "SHA3_256LongMsg.rsp",
+      "archive": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/sha-3bytetestvectors.zip",
+      "bytes": 1420540,
+      "sha256": "741b75d093aeb1de3536681b5e7e65090a5eca8015eb75c5f9be0feda47660d5",
+      "cases": 100,
+      "maximum_input_bytes": 13836
+    },
+    {
+      "path": "test/vectors/sha3-cavp/SHA3_256ShortMsg.rsp",
+      "member": "SHA3_256ShortMsg.rsp",
+      "archive": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/sha-3bytetestvectors.zip",
+      "bytes": 31406,
+      "sha256": "e75b1ded16e9862eaaef9ad9b89402b9832f86fe818292634b2e54dc6b3540ff",
+      "cases": 137,
+      "maximum_input_bytes": 136
+    },
+    {
+      "path": "test/vectors/sha3-cavp/SHA3_512LongMsg.rsp",
+      "member": "SHA3_512LongMsg.rsp",
+      "archive": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/sha-3bytetestvectors.zip",
+      "bytes": 767722,
+      "sha256": "142aab2fc0fd41809b1efdf48819e4f863985fb8d5cb30694acf7c8e7080d20e",
+      "cases": 100,
+      "maximum_input_bytes": 7372
+    },
+    {
+      "path": "test/vectors/sha3-cavp/SHA3_512ShortMsg.rsp",
+      "member": "SHA3_512ShortMsg.rsp",
+      "archive": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/sha-3bytetestvectors.zip",
+      "bytes": 16802,
+      "sha256": "f73a39d8091d58c9225cfad8e6d8cfa3e8d67532c7029bf376baef0d0d86d5b6",
+      "cases": 73,
+      "maximum_input_bytes": 72
+    },
+    {
+      "path": "test/vectors/sha3-cavp/SHAKE128LongMsg.rsp",
+      "member": "SHAKE128LongMsg.rsp",
+      "archive": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/shakebytetestvectors.zip",
+      "bytes": 1747365,
+      "sha256": "826b319c265448f5268c7e36f432de31315dd8155eaa038ba76d1acd0d03736f",
+      "cases": 100,
+      "maximum_input_bytes": 17068
+    },
+    {
+      "path": "test/vectors/sha3-cavp/SHAKE128ShortMsg.rsp",
+      "member": "SHAKE128ShortMsg.rsp",
+      "archive": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/shakebytetestvectors.zip",
+      "bytes": 135243,
+      "sha256": "c7384e3f84247d90e6b0af9ac618a968bb65f5dcbe9c2ee7e8a66475c551764b",
+      "cases": 337,
+      "maximum_input_bytes": 336
+    },
+    {
+      "path": "test/vectors/sha3-cavp/SHAKE128VariableOut.rsp",
+      "member": "SHAKE128VariableOut.rsp",
+      "archive": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/shakebytetestvectors.zip",
+      "bytes": 269703,
+      "sha256": "56ac04dd47c8063bdd08fd7744aef55c22c22946d722012460703bcae0b2583f",
+      "cases": 1126,
+      "maximum_input_bytes": 16
+    },
+    {
+      "path": "test/vectors/sha3-cavp/SHAKE256LongMsg.rsp",
+      "member": "SHAKE256LongMsg.rsp",
+      "archive": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/shakebytetestvectors.zip",
+      "bytes": 1420945,
+      "sha256": "f7881838fa013853993bf7e0814de0ab53ee93a4dbc2b7bce5bed7cc81e6985f",
+      "cases": 100,
+      "maximum_input_bytes": 13836
+    },
+    {
+      "path": "test/vectors/sha3-cavp/SHAKE256ShortMsg.rsp",
+      "member": "SHAKE256ShortMsg.rsp",
+      "archive": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/shakebytetestvectors.zip",
+      "bytes": 100843,
+      "sha256": "a21dd9180a0f0139fa8d4056919f8194ddaca2f36dc5aafa70723682099d64f5",
+      "cases": 273,
+      "maximum_input_bytes": 272
+    },
+    {
+      "path": "test/vectors/sha3-cavp/SHAKE256VariableOut.rsp",
+      "member": "SHAKE256VariableOut.rsp",
+      "archive": "https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Algorithm-Validation-Program/documents/sha3/shakebytetestvectors.zip",
+      "bytes": 458545,
+      "sha256": "90fb72336900b22284477b76d0868fc2822ae42a114079c6c8a7fbda12eb52ca",
+      "cases": 1246,
+      "maximum_input_bytes": 32
+    }
+  ],
+  "total_cases": 3592,
+  "scope": "Every short-message, long-message and variable-output record for the four SHA3/SHAKE functions used by bundled ML-KEM. Original bytes and full CAVS headers preserved. Monte Carlo files, bit-oriented inputs and SHA3-224/384 are not selected by this corpus; this is not certification."
+}

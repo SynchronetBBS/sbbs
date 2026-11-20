@@ -1,5 +1,10 @@
 # Design Conformance Audit: design-channel-io-api.md
 
+> Release audit reconciliation is in progress. These historical PASS labels
+> are leads, not current verification of the complete API, callback and
+> lifetime behavior. See [the release tracker](release-1.0-audit.md) and
+> [the current channel requirement ledger](release-1.0-evidence/rfc4254-ledger.md).
+
 Fresh re-audit of implementation against every design claim.
 Previous items 1-5, 7-10 fixed; 6, 11 resolved; 12 noted.
 

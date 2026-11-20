@@ -28,6 +28,10 @@
 #include "ssh-trans.h"
 #include "ssh-internal.h"
 #include "test/dssh_test_internal.h"
+#include "kex/workspace.h"
+#include "kex/curve25519-sha256-ops.h"
+#include "kex/dh-gex-sha256-ops.h"
+#include "kex/hybrid-pq-kex-ops.h"
 
 /* ================================================================
  * Helpers
@@ -38,6 +42,8 @@
  * Avoids repeated RSA keygen (~400ms each) in tests that just need
  * a key present.  Falls back to generate if env var is not set.
  */
+#include "signature_copy_fixture.h"
+
 static int
 load_rsa_test_key(void)
 {
@@ -109,6 +115,8 @@ test_ed25519_no_key_before_generate(void)
 static int
 test_ed25519_sign_verify_roundtrip(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
@@ -122,7 +130,7 @@ test_ed25519_sign_verify_roundtrip(void)
 	/* Sign */
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, data_len, ka->ctx), 0);
 	ASSERT_TRUE(sig_len > 0);
 
@@ -135,12 +143,14 @@ test_ed25519_sign_verify_roundtrip(void)
 	/* Verify */
 	ASSERT_EQ(ka->verify(pub_buf, pub_len, sig_buf, sig_len,
 	    data, data_len), 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_ed25519_verify_corrupted_sig(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
@@ -153,7 +163,7 @@ test_ed25519_verify_corrupted_sig(void)
 
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, data_len, ka->ctx), 0);
 
 	const uint8_t *pub_buf = NULL;
@@ -166,12 +176,14 @@ test_ed25519_verify_corrupted_sig(void)
 	int rc = ka->verify(pub_buf, pub_len, sig_buf, sig_len,
 	    data, data_len);
 	ASSERT_TRUE(rc < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_ed25519_verify_different_data(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
@@ -184,7 +196,7 @@ test_ed25519_verify_different_data(void)
 
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	const uint8_t *pub_buf = NULL;
@@ -194,7 +206,7 @@ test_ed25519_verify_different_data(void)
 	int rc = ka->verify(pub_buf, pub_len, sig_buf, sig_len,
 	    other, sizeof(other) - 1);
 	ASSERT_TRUE(rc < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
@@ -273,6 +285,8 @@ test_ed25519_pubkey_blob_format(void)
 static int
 test_ed25519_sig_blob_format(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
@@ -283,7 +297,7 @@ test_ed25519_sig_blob_format(void)
 	const uint8_t data[] = "signing test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	/* Expected: 4-byte length + "ssh-ed25519" + 4-byte length + 64-byte sig */
@@ -299,7 +313,7 @@ test_ed25519_sig_blob_format(void)
 	ASSERT_EQ_U(raw_sig_len, 64);
 	pos += 64;
 	ASSERT_EQ_U(pos, sig_len);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
@@ -430,6 +444,8 @@ test_ed25519_save_pub_file(void)
 static int
 test_ed25519_sign_verify_after_load(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
@@ -454,7 +470,7 @@ test_ed25519_sign_verify_after_load(void)
 	const uint8_t data[] = "loaded key signing test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	const uint8_t *pub_buf = NULL;
@@ -463,7 +479,7 @@ test_ed25519_sign_verify_after_load(void)
 
 	ASSERT_EQ(ka->verify(pub_buf, pub_len, sig_buf, sig_len,
 	    data, sizeof(data) - 1), 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 /* ================================================================
@@ -515,6 +531,8 @@ test_rsa_no_key_before_generate(void)
 static int
 test_rsa_sign_verify_roundtrip(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(load_rsa_test_key(), 0);
@@ -527,7 +545,7 @@ test_rsa_sign_verify_roundtrip(void)
 
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, data_len, ka->ctx), 0);
 	ASSERT_TRUE(sig_len > 0);
 
@@ -538,12 +556,14 @@ test_rsa_sign_verify_roundtrip(void)
 
 	ASSERT_EQ(ka->verify(pub_buf, pub_len, sig_buf, sig_len,
 	    data, data_len), 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_rsa_verify_corrupted_sig(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(load_rsa_test_key(), 0);
@@ -554,7 +574,7 @@ test_rsa_verify_corrupted_sig(void)
 	const uint8_t data[] = "RSA corruption test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	const uint8_t *pub_buf = NULL;
@@ -567,12 +587,14 @@ test_rsa_verify_corrupted_sig(void)
 	int rc = ka->verify(pub_buf, pub_len, sig_buf, sig_len,
 	    data, sizeof(data) - 1);
 	ASSERT_TRUE(rc < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_rsa_verify_different_data(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(load_rsa_test_key(), 0);
@@ -585,7 +607,7 @@ test_rsa_verify_different_data(void)
 
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	const uint8_t *pub_buf = NULL;
@@ -595,7 +617,7 @@ test_rsa_verify_different_data(void)
 	int rc = ka->verify(pub_buf, pub_len, sig_buf, sig_len,
 	    other, sizeof(other) - 1);
 	ASSERT_TRUE(rc < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
@@ -688,6 +710,8 @@ test_rsa_pubkey_blob_format(void)
 static int
 test_rsa_sig_blob_format(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(load_rsa_test_key(), 0);
@@ -698,7 +722,7 @@ test_rsa_sig_blob_format(void)
 	const uint8_t data[] = "RSA sig format test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	/*
@@ -717,7 +741,7 @@ test_rsa_sig_blob_format(void)
 	ASSERT_EQ_U(raw_sig_len, 256);
 	pos += raw_sig_len;
 	ASSERT_EQ_U(pos, sig_len);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
@@ -795,6 +819,8 @@ test_rsa_save_pub_file(void)
 static int
 test_rsa_generate_4096(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(4096), 0);
@@ -807,7 +833,7 @@ test_rsa_generate_4096(void)
 	const uint8_t data[] = "4096-bit key test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	const uint8_t *pub_buf = NULL;
@@ -823,12 +849,14 @@ test_rsa_generate_4096(void)
 	pos += 12;                           /* skip "rsa-sha2-256" */
 	uint32_t raw_sig_len = parse_u32(sig_buf, sig_len, &pos);
 	ASSERT_EQ_U(raw_sig_len, 512);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_rsa_sign_verify_after_load(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
@@ -852,7 +880,7 @@ test_rsa_sign_verify_after_load(void)
 	const uint8_t data[] = "loaded RSA key signing test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	const uint8_t *pub_buf = NULL;
@@ -861,7 +889,7 @@ test_rsa_sign_verify_after_load(void)
 
 	ASSERT_EQ(ka->verify(pub_buf, pub_len, sig_buf, sig_len,
 	    data, sizeof(data) - 1), 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 /* ================================================================
@@ -871,6 +899,8 @@ test_rsa_sign_verify_after_load(void)
 static int
 test_both_algorithms_coexist(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
@@ -889,7 +919,7 @@ test_both_algorithms_coexist(void)
 
 	uint8_t *ed_sig = NULL;
 	size_t ed_sig_len;
-	ASSERT_EQ(ed_ka->sign(&ed_sig, &ed_sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ed_ka->sign, &ed_sig, &ed_sig_len,
 	    data, sizeof(data) - 1, ed_ka->ctx), 0);
 	const uint8_t *ed_pub = NULL;
 	size_t ed_pub_len;
@@ -900,7 +930,7 @@ test_both_algorithms_coexist(void)
 
 	uint8_t *rsa_sig = NULL;
 	size_t rsa_sig_len;
-	ASSERT_EQ(rsa_ka->sign(&rsa_sig, &rsa_sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, rsa_ka->sign, &rsa_sig, &rsa_sig_len,
 	    data, sizeof(data) - 1, rsa_ka->ctx), 0);
 	const uint8_t *rsa_pub = NULL;
 	size_t rsa_pub_len;
@@ -908,12 +938,14 @@ test_both_algorithms_coexist(void)
 	    rsa_ka->ctx), 0);
 	ASSERT_EQ(rsa_ka->verify(rsa_pub, rsa_pub_len, rsa_sig, rsa_sig_len,
 	    data, sizeof(data) - 1), 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_ed25519_sig_fails_rsa_verify(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
@@ -930,7 +962,7 @@ test_ed25519_sig_fails_rsa_verify(void)
 	/* Sign with Ed25519 */
 	uint8_t *ed_sig = NULL;
 	size_t ed_sig_len;
-	ASSERT_EQ(ed_ka->sign(&ed_sig, &ed_sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ed_ka->sign, &ed_sig, &ed_sig_len,
 	    data, sizeof(data) - 1, ed_ka->ctx), 0);
 
 	/* Try to verify with RSA pubkey -- must fail */
@@ -942,7 +974,7 @@ test_ed25519_sig_fails_rsa_verify(void)
 	int rc = rsa_ka->verify(rsa_pub, rsa_pub_len, ed_sig, ed_sig_len,
 	    data, sizeof(data) - 1);
 	ASSERT_TRUE(rc < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
@@ -985,6 +1017,8 @@ test_rsa_load_nonexistent(void)
 static int
 test_ed25519_sign_without_key(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 
@@ -995,15 +1029,17 @@ test_ed25519_sign_without_key(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	int res = ka->sign(&sig_buf, &sig_len,
+	int res = test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx);
 	ASSERT_TRUE(res < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_rsa_sign_without_key(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 
@@ -1014,10 +1050,10 @@ test_rsa_sign_without_key(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	int res = ka->sign(&sig_buf, &sig_len,
+	int res = test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx);
 	ASSERT_TRUE(res < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
@@ -1100,6 +1136,8 @@ test_rsa_verify_short_sig(void)
 static int
 test_ed25519_verify_wrong_algo(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
 	ASSERT_EQ(dssh_ed25519_generate_key(), 0);
@@ -1110,7 +1148,7 @@ test_ed25519_verify_wrong_algo(void)
 	const uint8_t data[] = "test data";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	const uint8_t *pub_buf = NULL;
@@ -1125,7 +1163,7 @@ test_ed25519_verify_wrong_algo(void)
 	int res = ka->verify(pub_buf, pub_len, sig_buf, sig_len,
 	    data, sizeof(data) - 1);
 	ASSERT_TRUE(res < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 /* ================================================================
@@ -1324,6 +1362,60 @@ test_ed25519_generate_twice(void)
 }
 
 static int
+test_key_setup_freeze(void)
+{
+	const char *names[] = { "ssh-ed25519", "rsa-sha2-256", "rsa-sha2-512" };
+	for (size_t i = 0; i < 3; i++) {
+		dssh_test_reset_global_config();
+		if (i == 0) {
+			ASSERT_OK(dssh_register_ssh_ed25519());
+			ASSERT_OK(dssh_ed25519_generate_key());
+		}
+		else if (i == 1) {
+			ASSERT_OK(dssh_register_rsa_sha2_256());
+			ASSERT_OK(load_rsa_test_key());
+		}
+		else {
+			ASSERT_OK(dssh_register_rsa_sha2_512());
+			const char *path = getenv("DSSH_TEST_RSA_KEY");
+			if (path != NULL)
+				ASSERT_OK(dssh_rsa_sha2_512_load_key_file(path, NULL, NULL));
+			else
+				ASSERT_OK(dssh_rsa_sha2_512_generate_key(2048));
+		}
+		dssh_key_algo ka = find_key_algo(names[i]);
+		ASSERT_NOT_NULL(ka);
+		dssh_key_algo_ctx *original = ka->ctx;
+		const uint8_t *before;
+		size_t before_len;
+		ASSERT_OK(ka->pubkey(&before, &before_len, ka->ctx));
+		dssh_session sess = dssh_session_init(true, 0);
+		ASSERT_NOT_NULL(sess);
+		if (i == 0) {
+			ASSERT_ERR(dssh_ed25519_generate_key(), DSSH_ERROR_TOOLATE);
+			ASSERT_ERR(dssh_ed25519_load_key_file("unused", NULL, NULL), DSSH_ERROR_TOOLATE);
+		}
+		else if (i == 1) {
+			ASSERT_ERR(dssh_rsa_sha2_256_generate_key(2048), DSSH_ERROR_TOOLATE);
+			ASSERT_ERR(dssh_rsa_sha2_256_load_key_file("unused", NULL, NULL), DSSH_ERROR_TOOLATE);
+		}
+		else {
+			ASSERT_ERR(dssh_rsa_sha2_512_generate_key(2048), DSSH_ERROR_TOOLATE);
+			ASSERT_ERR(dssh_rsa_sha2_512_load_key_file("unused", NULL, NULL), DSSH_ERROR_TOOLATE);
+		}
+		const uint8_t *after;
+		size_t after_len;
+		ASSERT_TRUE(ka->ctx == original);
+		ASSERT_OK(ka->pubkey(&after, &after_len, ka->ctx));
+		ASSERT_TRUE(before == after);
+		ASSERT_EQ_U(before_len, after_len);
+		dssh_session_cleanup(sess);
+	}
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+static int
 test_rsa_generate_twice(void)
 {
 	dssh_test_reset_global_config();
@@ -1412,6 +1504,8 @@ test_ed25519_verify_truncated_key(void)
 static int
 test_ed25519_verify_wrong_key_algo_name(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	/* Key blob with wrong algo name */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
@@ -1432,17 +1526,19 @@ test_ed25519_verify_wrong_key_algo_name(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	ASSERT_TRUE(ka->verify(key, kp, sig_buf, sig_len,
 	    data, sizeof(data) - 1) < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_ed25519_verify_wrong_key_length(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	/* Key blob with correct name but wrong raw key length (not 32) */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
@@ -1463,17 +1559,19 @@ test_ed25519_verify_wrong_key_length(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	ASSERT_TRUE(ka->verify(key, kp, sig_buf, sig_len,
 	    data, sizeof(data) - 1) < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_ed25519_verify_key_trailing_garbage(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	/* Valid key blob + extra trailing bytes */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
@@ -1494,13 +1592,13 @@ test_ed25519_verify_key_trailing_garbage(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	ASSERT_TRUE(ka->verify(pub_copy, pub_len + 2, sig_buf, sig_len,
 	    data, sizeof(data) - 1) < 0);
-	free(sig_buf);
-	return TEST_PASS;
+	test_signature_copy_free(&fixture_copies, sig_buf);
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
@@ -1536,6 +1634,8 @@ test_ed25519_verify_sig_wrong_raw_len(void)
 static int
 test_ed25519_verify_sig_trailing_garbage(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	/* Valid sig blob + trailing bytes */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
@@ -1550,17 +1650,17 @@ test_ed25519_verify_sig_trailing_garbage(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	/* Append garbage to sig -- need room for one extra byte */
-	uint8_t *sig2 = realloc(sig, sig_len + 1);
+	uint8_t *sig2 = test_signature_copy_resize(&fixture_copies, sig, sig_len + 1);
 	ASSERT_NOT_NULL(sig2);
 	sig2[sig_len] = 0xFF;
 	ASSERT_TRUE(ka->verify(pub, pub_len, sig2, sig_len + 1,
 	    data, sizeof(data) - 1) < 0);
-	free(sig2);
-	return TEST_PASS;
+	test_signature_copy_free(&fixture_copies, sig2);
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
@@ -1583,6 +1683,8 @@ test_rsa_verify_truncated_key(void)
 static int
 test_rsa_verify_wrong_key_algo_name(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	/* Key blob with wrong algo name */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
@@ -1604,17 +1706,19 @@ test_rsa_verify_wrong_key_algo_name(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	ASSERT_TRUE(ka->verify(key, kp, sig_buf, sig_len,
 	    data, sizeof(data) - 1) < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_rsa_verify_key_trailing_garbage(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(load_rsa_test_key(), 0);
@@ -1633,18 +1737,20 @@ test_rsa_verify_key_trailing_garbage(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	ASSERT_TRUE(ka->verify(pub_copy, pub_len + 1, sig_buf, sig_len,
 	    data, sizeof(data) - 1) < 0);
-	free(sig_buf);
-	return TEST_PASS;
+	test_signature_copy_free(&fixture_copies, sig_buf);
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_rsa_verify_sig_trailing_garbage(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
 	ASSERT_EQ(load_rsa_test_key(), 0);
@@ -1658,17 +1764,17 @@ test_rsa_verify_sig_trailing_garbage(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	/* Append garbage -- need room for one extra byte */
-	uint8_t *sig2 = realloc(sig, sig_len + 1);
+	uint8_t *sig2 = test_signature_copy_resize(&fixture_copies, sig, sig_len + 1);
 	ASSERT_NOT_NULL(sig2);
 	sig2[sig_len] = 0xFF;
 	ASSERT_TRUE(ka->verify(pub, pub_len, sig2, sig_len + 1,
 	    data, sizeof(data) - 1) < 0);
-	free(sig2);
-	return TEST_PASS;
+	test_signature_copy_free(&fixture_copies, sig2);
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 /* ================================================================
@@ -1678,6 +1784,8 @@ test_rsa_verify_sig_trailing_garbage(void)
 static int
 test_ed25519_verify_key_truncated_after_name(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	/* Key blob: correct algo name, but truncated before raw key length */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
@@ -1695,12 +1803,12 @@ test_ed25519_verify_key_truncated_after_name(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	ASSERT_TRUE(ka->verify(key, kp, sig_buf, sig_len,
 	    data, sizeof(data) - 1) < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
@@ -1733,6 +1841,8 @@ test_ed25519_verify_sig_truncated_after_name(void)
 static int
 test_ed25519_verify_bad_signature(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	/* Valid format but cryptographically wrong signature */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_ssh_ed25519(), 0);
@@ -1747,19 +1857,21 @@ test_ed25519_verify_bad_signature(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	/* Verify against different data -- signature is valid format but wrong */
 	const uint8_t wrong_data[] = "wrong";
 	ASSERT_TRUE(ka->verify(pub, pub_len, sig, sig_len,
 	    wrong_data, sizeof(wrong_data) - 1) < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_rsa_verify_key_truncated_after_name(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	/* Key blob: correct algo name, truncated before e field */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
@@ -1777,17 +1889,19 @@ test_rsa_verify_key_truncated_after_name(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	ASSERT_TRUE(ka->verify(key, kp, sig_buf, sig_len,
 	    data, sizeof(data) - 1) < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
 test_rsa_verify_key_truncated_after_e(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	/* Key blob: correct name + e field, truncated before n */
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
@@ -1807,12 +1921,12 @@ test_rsa_verify_key_truncated_after_e(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	ASSERT_TRUE(ka->verify(key, kp, sig_buf, sig_len,
 	    data, sizeof(data) - 1) < 0);
-	return TEST_PASS;
+	return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 }
 
 static int
@@ -2632,25 +2746,7 @@ test_rsa_haskey_wrong_key_type(void)
  * haskey with cbdata allocated but pkey == NULL
  * ================================================================ */
 
-#ifdef DSSH_CRYPTO_OPENSSL
-struct key_cbdata {
-	EVP_PKEY *pkey;
-	uint8_t  *pub_blob;
-	size_t    pub_blob_len;
-};
-#elif defined(DSSH_CRYPTO_BOTAN)
-/*
- * The real Botan cbdata has std::unique_ptr<Botan::Private_Key> as the
- * first member.  We can't spell that from C, but all we need is a
- * struct whose first pointer-sized member is NULL so haskey/sign/pubkey
- * see a null key.  A void* at offset 0 matches unique_ptr's layout.
- */
-struct key_cbdata {
-	void     *privkey;
-	uint8_t  *pub_blob;
-	size_t    pub_blob_len;
-};
-#endif
+#include "key_context_fixture.h"
 
 static int
 test_ed25519_haskey_null_pkey(void)
@@ -2661,8 +2757,11 @@ test_ed25519_haskey_null_pkey(void)
 	dssh_key_algo ka = find_key_algo("ssh-ed25519");
 	ASSERT_NOT_NULL(ka);
 
-	struct key_cbdata cbd = { 0 };
-	ASSERT_FALSE(ka->haskey((dssh_key_algo_ctx *)&cbd));
+	dssh_key_algo_ctx *context = test_empty_key_context();
+	ASSERT_NOT_NULL(context);
+	int present = ka->haskey(context);
+	ka->cleanup(context);
+	ASSERT_FALSE(present);
 	return TEST_PASS;
 }
 
@@ -2675,8 +2774,11 @@ test_rsa_haskey_null_pkey(void)
 	dssh_key_algo ka = find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
-	struct key_cbdata cbd = { 0 };
-	ASSERT_FALSE(ka->haskey((dssh_key_algo_ctx *)&cbd));
+	dssh_key_algo_ctx *context = test_empty_key_context();
+	ASSERT_NOT_NULL(context);
+	int present = ka->haskey(context);
+	ka->cleanup(context);
+	ASSERT_FALSE(present);
 	return TEST_PASS;
 }
 
@@ -2800,7 +2902,7 @@ test_rsa_pubkey_e_pad(void)
 	dssh_key_algo ka = find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
 
-	struct key_cbdata *cbd = calloc(1, sizeof(*cbd));
+	struct dssh_openssl_key_context *cbd = calloc(1, sizeof(*cbd));
 	ASSERT_NOT_NULL(cbd);
 	cbd->pkey = pkey;
 	ka->ctx = (dssh_key_algo_ctx *)cbd;
@@ -2881,7 +2983,7 @@ test_rsa_pubkey_n_no_pad(void)
 	/* Stuff into RSA algo ctx */
 	dssh_key_algo ka = find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
-	struct key_cbdata *cbd = calloc(1, sizeof(*cbd));
+	struct dssh_openssl_key_context *cbd = calloc(1, sizeof(*cbd));
 	ASSERT_NOT_NULL(cbd);
 	cbd->pkey = pkey;
 	ka->ctx = (dssh_key_algo_ctx *)cbd;
@@ -2948,7 +3050,7 @@ test_rsa_pubkey_n_zero(void)
 
 	dssh_key_algo ka = find_key_algo("rsa-sha2-256");
 	ASSERT_NOT_NULL(ka);
-	struct key_cbdata *cbd = calloc(1, sizeof(*cbd));
+	struct dssh_openssl_key_context *cbd = calloc(1, sizeof(*cbd));
 	ASSERT_NOT_NULL(cbd);
 	cbd->pkey = pkey;
 	ka->ctx = (dssh_key_algo_ctx *)cbd;
@@ -2956,8 +3058,10 @@ test_rsa_pubkey_n_zero(void)
 	const uint8_t *blob = NULL;
 	size_t blob_len;
 	int res = ka->pubkey(&blob, &blob_len, ka->ctx);
-	/* Either succeeds with n_bytes=0 or fails -- both are fine */
-	(void)res;
+	ASSERT_EQ(res, DSSH_ERROR_INVALID);
+	ASSERT_NULL(blob);
+	ASSERT_NULL(cbd->pub_blob);
+	ASSERT_EQ(cbd->pub_blob_len, 0);
 
 	dssh_test_reset_global_config();
 	return TEST_PASS;
@@ -3113,36 +3217,56 @@ test_rsa_load_calloc_fail(void)
 }
 
 /* ================================================================
- * RSA save_pub_file alloc failure (malloc for str buffer)
+ * Cached RSA public export needs no library-owned temporary allocation.
  * ================================================================ */
 
 static int
-test_rsa_save_pub_alloc_fail(void)
+test_rsa_save_pub_reuse(void)
 {
 	dssh_test_reset_global_config();
 	dssh_test_alloc_reset();
-	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
-	ASSERT_EQ(dssh_rsa_sha2_256_generate_key(2048), 0);
-
-	char tmppath[] = "/tmp/dssh_test_rsa_pub_af_XXXXXX";
-	int fd = mkstemp(tmppath);
-	ASSERT_TRUE(fd >= 0);
-	close(fd);
-
-	for (int n = 0; n < 100; n++) {
-		dssh_test_alloc_fail_after(n);
-		int res = dssh_rsa_sha2_256_save_pub_file(tmppath);
-		dssh_test_alloc_reset();
-		if (res == 0) {
-			unlink(tmppath);
-			dssh_test_reset_global_config();
-			ASSERT_TRUE(n > 0);
-			return TEST_PASS;
-		}
+	bool valid = dssh_register_rsa_sha2_256() == 0 && load_rsa_test_key() == 0;
+	char path[] = "/tmp/dssh_test_rsa_pub_af_XXXXXX";
+	bool created = false;
+	FILE *fp = NULL;
+	char expected[1024], actual[1024];
+	int64_t length = valid ? dssh_rsa_sha2_256_get_pub_str(expected, sizeof(expected)) : -1;
+	valid = length > 0 && length <= 1024 && valid;
+	if (!valid)
+		goto done;
+	size_t count = (size_t)length;
+	int fd = mkstemp(path);
+	if (fd < 0) {
+		valid = false;
+		goto done;
 	}
-	unlink(tmppath);
+	created = true;
+	if (close(fd) != 0) {
+		valid = false;
+		goto done;
+	}
+	dssh_test_alloc_fail_after(0);
+	int ret = dssh_rsa_sha2_256_save_pub_file(path);
+	int allocations = dssh_test_alloc_count();
+	dssh_test_alloc_reset();
+	valid = ret == 0 && allocations == 0;
+	fp = fopen(path, "rb");
+	if (fp == NULL) {
+		valid = false;
+		goto done;
+	}
+	size_t got = fread(actual, 1, sizeof(actual), fp);
+	valid = got == count && ferror(fp) == 0 && memcmp(actual, expected, count - 1) == 0
+	    && actual[count - 1] == '\n' && valid;
+done:
+	if (fp != NULL && fclose(fp) != 0)
+		valid = false;
+	if (created && unlink(path) != 0)
+		valid = false;
+	dssh_test_alloc_reset();
 	dssh_test_reset_global_config();
-	return TEST_FAIL;
+	ASSERT_TRUE(valid);
+	return TEST_PASS;
 }
 #endif /* DSSH_CRYPTO_OPENSSL -- alloc failure tests */
 
@@ -3157,6 +3281,8 @@ test_rsa_save_pub_alloc_fail(void)
 static int
 test_rsa_sign_padding_fail(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	dssh_test_ossl_reset();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
@@ -3172,23 +3298,25 @@ test_rsa_sign_padding_fail(void)
 	/* Iterate ossl failures to hit set_rsa_padding in sign */
 	for (int n = 0; n < 100; n++) {
 		dssh_test_ossl_fail_after(n);
-		int res = ka->sign(&sig_buf, &sig_len,
+		int res = test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 		    data, sizeof(data) - 1, ka->ctx);
 		(void)dssh_test_ossl_count();
 		dssh_test_ossl_reset();
 		if (res == 0) {
 			dssh_test_reset_global_config();
 			ASSERT_TRUE(n > 0);
-			return TEST_PASS;
+			return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 		}
 	}
 	dssh_test_reset_global_config();
-	return TEST_FAIL;
+	return test_signature_copies_finish(&fixture_copies, TEST_FAIL);
 }
 
 static int
 test_rsa_verify_padding_fail(void)
 {
+	struct test_signature_copies fixture_copies = {0};
+
 	dssh_test_reset_global_config();
 	dssh_test_ossl_reset();
 	ASSERT_EQ(dssh_register_rsa_sha2_256(), 0);
@@ -3200,7 +3328,7 @@ test_rsa_verify_padding_fail(void)
 	const uint8_t data[] = "test";
 	uint8_t *sig_buf = NULL;
 	size_t sig_len;
-	ASSERT_EQ(ka->sign(&sig_buf, &sig_len,
+	ASSERT_EQ(test_signature_copy(&fixture_copies, ka->sign, &sig_buf, &sig_len,
 	    data, sizeof(data) - 1, ka->ctx), 0);
 
 	const uint8_t *pub_buf = NULL;
@@ -3216,11 +3344,11 @@ test_rsa_verify_padding_fail(void)
 		if (res == 0) {
 			dssh_test_reset_global_config();
 			ASSERT_TRUE(n > 0);
-			return TEST_PASS;
+			return test_signature_copies_finish(&fixture_copies, TEST_PASS);
 		}
 	}
 	dssh_test_reset_global_config();
-	return TEST_FAIL;
+	return test_signature_copies_finish(&fixture_copies, TEST_FAIL);
 }
 #endif /* DSSH_CRYPTO_OPENSSL -- ossl injection tests */
 
@@ -3238,7 +3366,13 @@ test_c25519_handler_null_ka(void)
 	kctx.client = false;
 	kctx.key_algo = NULL;
 
-	int res = curve25519_handler(&kctx);
+	void *state = NULL;
+	ASSERT_OK(curve25519_init(false, NULL, &state));
+	kctx.state = state;
+	struct dssh_kex_result result = {0};
+	int res = curve25519_handler(&kctx, &result);
+	dssh_result_release(&result.lease);
+	curve25519_cleanup(state);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -3253,7 +3387,13 @@ test_dhgex_handler_null_ka(void)
 	kctx.client = false;
 	kctx.key_algo = NULL;
 
-	int res = dhgex_handler(&kctx);
+	void *state = NULL;
+	ASSERT_OK(dhgex_init(false, NULL, &state));
+	kctx.state = state;
+	struct dssh_kex_result result = {0};
+	int res = dhgex_handler(&kctx, &result);
+	dssh_result_release(&result.lease);
+	dhgex_cleanup(state);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -3268,7 +3408,13 @@ test_sntrup761_handler_null_ka(void)
 	kctx.client = false;
 	kctx.key_algo = NULL;
 
-	int res = sntrup761x25519_handler(&kctx);
+	void *state = NULL;
+	ASSERT_OK(sntrup761x25519_init(false, NULL, &state));
+	kctx.state = state;
+	struct dssh_kex_result result = {0};
+	int res = sntrup761x25519_handler(&kctx, &result);
+	dssh_result_release(&result.lease);
+	hybrid_pq_cleanup(state);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -3283,7 +3429,13 @@ test_mlkem768_handler_null_ka(void)
 	kctx.client = false;
 	kctx.key_algo = NULL;
 
-	int res = mlkem768x25519_handler(&kctx);
+	void *state = NULL;
+	ASSERT_OK(mlkem768x25519_init(false, NULL, &state));
+	kctx.state = state;
+	struct dssh_kex_result result = {0};
+	int res = mlkem768x25519_handler(&kctx, &result);
+	dssh_result_release(&result.lease);
+	hybrid_pq_cleanup(state);
 	ASSERT_TRUE(res < 0);
 	return TEST_PASS;
 }
@@ -3292,7 +3444,13 @@ test_mlkem768_handler_null_ka(void)
  * Test table
  * ================================================================ */
 
+#include "signature_result_cases.h"
+
 static struct dssh_test_entry tests[] = {
+	{ "result/ed25519", test_signature_result_ed25519 },
+	{ "result/rsa256", test_signature_result_rsa256 },
+	{ "result/rsa512", test_signature_result_rsa512 },
+	{ "result/concurrent", test_signature_result_concurrent },
 	/* Ed25519 */
 	{ "ed25519_register",              test_ed25519_register },
 	{ "ed25519_generate_key",          test_ed25519_generate_key },
@@ -3357,6 +3515,7 @@ static struct dssh_test_entry tests[] = {
 	{ "ed25519_save_pub_bad_path",       test_ed25519_save_pub_bad_path },
 	{ "rsa_save_pub_bad_path",           test_rsa_save_pub_bad_path },
 	{ "ed25519_generate_twice",          test_ed25519_generate_twice },
+	{ "key_setup_freeze",                test_key_setup_freeze },
 	{ "rsa_generate_twice",              test_rsa_generate_twice },
 	{ "ed25519_load_twice",              test_ed25519_load_twice },
 	{ "rsa_load_twice",                  test_rsa_load_twice },
@@ -3457,7 +3616,7 @@ static struct dssh_test_entry tests[] = {
 	{ "rsa_generate_calloc_fail",         test_rsa_generate_calloc_fail },
 	{ "ed25519_load_calloc_fail",         test_ed25519_load_calloc_fail },
 	{ "rsa_load_calloc_fail",             test_rsa_load_calloc_fail },
-	{ "rsa_save_pub_alloc_fail",          test_rsa_save_pub_alloc_fail },
+	{ "rsa_save_pub_reuse",          test_rsa_save_pub_reuse },
 #endif
 
 	/* RSA set_rsa_padding ossl failures */

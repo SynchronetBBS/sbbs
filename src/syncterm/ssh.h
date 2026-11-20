@@ -1,9 +1,11 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-#ifndef _SSH_H_
-#define _SSH_H_
+#ifndef SYNCTERM_SSH_H
+#define SYNCTERM_SSH_H
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include "sockwrap.h"  /* SOCKET */
 
@@ -28,6 +30,7 @@ void ssh_set_sftp_buffer_mode(bool active);
 extern SOCKET ssh_sock;
 
 #ifndef WITHOUT_DEUCESSH
+int64_t ssh_get_public_key(char *buf, size_t bufsz);
 #ifdef _MSC_VER
 /* MSVC keeps __STDC_NO_ATOMICS__ defined even with /experimental:c11atomics
  * because its atomic support is incomplete (no generic _Atomic with locks),
@@ -52,4 +55,4 @@ extern sftpc_state_t  sftp_state;
 extern _Atomic bool   sftp_available;
 #endif
 
-#endif	// ifndef _SSH_H_
+#endif	// ifndef SYNCTERM_SSH_H

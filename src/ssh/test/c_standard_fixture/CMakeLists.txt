@@ -13,3 +13,7 @@ target_include_directories(c_standard PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../..")
 target_compile_definitions(c_standard PRIVATE EXPECTED_STANDARD=${DEUCESSH_C_STANDARD})
 set_target_properties(c_standard PROPERTIES C_STANDARD ${DEUCESSH_C_STANDARD}
 	C_STANDARD_REQUIRED YES C_EXTENSIONS NO)
+
+if(OPTION_CASE)
+	include("${CMAKE_CURRENT_LIST_DIR}/../build_options_fixture.cmake")
+endif()

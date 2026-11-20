@@ -1,11 +1,13 @@
 /* kex/dh-gex-groups.c -- RFC 3526 DH group tables for DH-GEX. */
 
-#include <stdlib.h>
 #include <string.h>
 
 #include "deucessh.h"
 #include "kex/dh-gex-groups.h"
 #include "kex/dh-gex-sha256.h"
+#ifdef DSSH_TESTING
+ #include "ssh-internal.h"
+#endif
 
 /* RFC 3526 s3 -- 2048-bit MODP Group (group 14), g = 2 */
 const uint8_t rfc3526_grp14_p[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xC9, 0x0F, 0xDA, 0xA2, 0x21,
@@ -193,52 +195,70 @@ const struct rfc3526_group rfc3526_groups[] = {
     {8192, rfc3526_grp18_p, sizeof(rfc3526_grp18_p)},
 };
 
+DSSH_PRIVATE bool
+dssh_dhgex_group_known(const uint8_t *p, size_t p_len, const uint8_t *g, size_t g_len)
+{
+	while (p_len > 0 && *p == 0) {
+		p++;
+		p_len--;
+	}
+	while (g_len > 0 && *g == 0) {
+		g++;
+		g_len--;
+	}
+	if (g_len != 1 || *g != 2)
+		return false;
+	for (size_t i = 0; i < RFC3526_NGROUPS; i++) {
+		if (p_len == rfc3526_groups[i].p_len
+		    && memcmp(p, rfc3526_groups[i].p, p_len) == 0)
+			return true;
+	}
+	return false;
+}
+
+static void
+release_static_group(void *owner)
+{
+	(void)owner;
+}
+
 /*
- * Built-in group selector: pick the largest RFC 3526 group whose
- * bit size is within [min, max], preferring the one closest to
- * preferred.  All groups use generator g = 2.
+ * Built-in group selector: choose the smallest supported group at least
+ * as large as preferred, or the largest smaller group, within [min, max].
+ * All groups use generator g = 2 (RFC 4419 section 3).
  */
 int
-default_select_group(uint32_t min, uint32_t preferred, uint32_t max, uint8_t **p_out, size_t *p_len,
-    uint8_t **g_out, size_t *g_len, void *cbdata)
+default_select_group(uint32_t min, uint32_t preferred, uint32_t max,
+    struct dssh_dh_gex_group_result *out, void *cbdata)
 {
 	(void)cbdata;
 
-	/* Find the best group: closest to preferred, within [min, max]. */
-	const uint8_t *best_p    = NULL;
-	size_t         best_len  = 0;
-	uint32_t       best_bits = 0;
-	uint32_t       best_dist = UINT32_MAX;
-
+	if (out == NULL || out->p.data != NULL || out->p.len != 0
+	    || out->g.data != NULL || out->g.len != 0
+	    || out->lease.release != NULL || out->lease.owner != NULL
+	    || min > preferred || preferred > max)
+		return DSSH_ERROR_INVALID;
+	const uint8_t *best_p = NULL;
+	size_t best_len = 0;
+	/* The built-in table is ordered by increasing modulus size. */
 	for (size_t i = 0; i < RFC3526_NGROUPS; i++) {
 		uint32_t bits = rfc3526_groups[i].bits;
-
 		if (bits < min || bits > max)
 			continue;
-		uint32_t dist = (bits >= preferred) ? bits - preferred : preferred - bits;
-		if (dist < best_dist || (dist == best_dist && bits > best_bits)) {
-			best_p    = rfc3526_groups[i].p;
-			best_len  = rfc3526_groups[i].p_len;
-			best_bits = bits;
-			best_dist = dist;
-		}
+		best_p = rfc3526_groups[i].p;
+		best_len = rfc3526_groups[i].p_len;
+		if (bits >= preferred)
+			break;
 	}
 	if (best_p == NULL)
 		return DSSH_ERROR_INIT;
 
-	*p_out = malloc(best_len);
-	if (*p_out == NULL)
-		return DSSH_ERROR_ALLOC;
-	memcpy(*p_out, best_p, best_len);
-	*p_len = best_len;
-
-	*g_out = malloc(1);
-	if (*g_out == NULL) {
-		free(*p_out);
-		return DSSH_ERROR_ALLOC;
-	}
-	(*g_out)[0] = 2;
-	*g_len      = 1;
+	static const uint8_t generator = 2;
+	out->p.data = best_p;
+	out->p.len = best_len;
+	out->g.data = &generator;
+	out->g.len = 1;
+	out->lease.release = release_static_group;
 
 	return 0;
 }

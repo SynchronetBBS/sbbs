@@ -1,551 +1,221 @@
-// RFC 4419: Diffie-Hellman Group Exchange with SHA-256 — OpenSSL backend
-
+/* RFC 4419: retained native DH containers; fresh exponent for every exchange. */
 #include <openssl/bn.h>
-#include <openssl/crypto.h>
-#include <openssl/evp.h>
-
+#include <openssl/rand.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include "deucessh-algorithms.h"
 #include "deucessh-crypto.h"
 #include "deucessh-kex.h"
 #include "deucessh.h"
-#include "kex/dh-gex-groups.h"
-#include "kex/dh-gex-sha256-ops.h"
-#include "kex/dh-gex-sha256.h"
+#include "dh-gex-groups.h"
+#include "dh-gex-sha256-ops.h"
 #ifdef DSSH_TESTING
  #include "ssh-internal.h"
 #endif
 
-/* ----------------------------------------------------------------
- * Internal helpers
- * ---------------------------------------------------------------- */
-
-static int64_t
-parse_bn_mpint(const uint8_t *buf, size_t bufsz, BIGNUM **bn)
+DSSH_TESTABLE int
+dhgex_validate_group(const BIGNUM *p, const BIGNUM *g, BN_CTX *bnctx,
+    const uint8_t *p_raw, size_t p_len, const uint8_t *g_raw, size_t g_len)
 {
-	if (bufsz < 4)
-		return DSSH_ERROR_PARSE;
-
-	uint32_t len;
-
-	if (dssh_parse_uint32(buf, bufsz, &len) < 4)
-		return DSSH_ERROR_PARSE;
-	if (len > bufsz - 4)
-		return DSSH_ERROR_PARSE;
-	if (len > INT_MAX)
+	int bits = BN_num_bits(p);
+	if (bits < GEX_MIN || bits > GEX_MAX || !BN_is_odd(p)
+	    || BN_cmp(g, BN_value_one()) <= 0)
 		return DSSH_ERROR_INVALID;
-	int ilen = (int)len;
-
-	*bn = BN_bin2bn(&buf[4], ilen, NULL);
-	if (*bn == NULL)
+	BIGNUM *limit = BN_dup(p);
+	if (limit == NULL)
 		return DSSH_ERROR_ALLOC;
-	return 4 + len;
+	int ret = DSSH_ERROR_INVALID;
+	if (BN_sub_word(limit, 1) != 1) {
+		ret = DSSH_ERROR_INIT;
+		goto done;
+	}
+	if (BN_cmp(g, limit) >= 0)
+		goto done;
+	if (dssh_dhgex_group_known(p_raw, p_len, g_raw, g_len)) {
+		ret = 0;
+		goto done;
+	}
+	if (BN_rshift1(limit, limit) != 1) {
+		ret = DSSH_ERROR_INIT;
+		goto done;
+	}
+	if (BN_check_prime(p, bnctx, NULL) != 1 || BN_check_prime(limit, bnctx, NULL) != 1)
+		goto done;
+	ret = 0;
+done:
+	BN_free(limit);
+	return ret;
 }
-
-/*
- * RFC 4253 s8: Values of e or f not in [1, p-1] MUST NOT be
- * sent or accepted.
- */
-static bool
-dh_value_valid(const BIGNUM *val, const BIGNUM *p)
-{
-	if (BN_is_zero(val) || BN_is_negative(val))
-		return false;
-	if (BN_cmp(val, p) >= 0)
-		return false;
-	return true;
-}
-
-/* ----------------------------------------------------------------
- * Internal DH context for the ops vtable
- * ---------------------------------------------------------------- */
 
 struct ossl_dhgex_ctx {
 	BIGNUM *p;
 	BIGNUM *g;
-	BIGNUM *x;       /* secret exponent (client or server) */
-	BIGNUM *our_pub; /* e (client) or f (server) */
-	BN_CTX *bnctx;
+	BIGNUM *exponent;
+	BIGNUM *public_key;
+	BIGNUM *peer;
+	BIGNUM *secret;
+	BIGNUM *range;
+	bool ready;
 };
 
-/* ----------------------------------------------------------------
- * Internal helpers
- * ---------------------------------------------------------------- */
-
-/*
- * Serialize a BIGNUM to a malloc'd SSH mpint byte array
- * (4-byte length prefix + data with sign-bit padding).
- * Returns 0 on success, negative DSSH_ERROR_* on failure.
- */
-static int
-serialize_bn_to_mpint(const BIGNUM *bn, uint8_t **out, size_t *out_len)
+static void
+ossl_reset(void *opaque)
 {
-	int bn_bytes = BN_num_bytes(bn);
-
-	if (bn_bytes < 0)
-		return DSSH_ERROR_PARSE;
-#if INT_MAX > SIZE_MAX
-	if (bn_bytes > SIZE_MAX)
-		return DSSH_ERROR_INVALID;
-#endif
-	size_t   bn_sz = (size_t)bn_bytes;
-	uint8_t *tmp   = malloc(bn_sz);
-
-	if (tmp == NULL)
-		return DSSH_ERROR_ALLOC;
-	BN_bn2bin(bn, tmp);
-
-	bool need_pad = (bn_bytes > 0 && (tmp[0] & DSSH_MPINT_SIGN_BIT));
-
-	if (bn_sz > UINT32_MAX - 1) {
-		OPENSSL_cleanse(tmp, bn_sz);
-		free(tmp);
-		return DSSH_ERROR_INVALID;
-	}
-	uint32_t bn_u32    = (uint32_t)bn_sz;
-	uint32_t mpint_len = bn_u32 + (need_pad ? 1 : 0);
-
-	/* Total wire size: 4-byte length prefix + mpint_len */
-#if SIZE_MAX < UINT32_MAX
-	if (mpint_len > SIZE_MAX - 4) {
-		OPENSSL_cleanse(tmp, bn_sz);
-		free(tmp);
-		return DSSH_ERROR_INVALID;
-	}
-#endif
-	size_t total = 4 + (size_t)mpint_len;
-
-	uint8_t *buf = malloc(total);
-	if (buf == NULL) {
-		OPENSSL_cleanse(tmp, bn_sz);
-		free(tmp);
-		return DSSH_ERROR_ALLOC;
-	}
-
-	size_t pos = 0;
-	int    ret = dssh_serialize_uint32(mpint_len, buf, total, &pos);
-
-	if (ret < 0) {
-		OPENSSL_cleanse(tmp, bn_sz);
-		free(tmp);
-		free(buf);
-		return ret;
-	}
-	if (need_pad)
-		buf[pos++] = 0;
-	memcpy(&buf[pos], tmp, bn_sz);
-	pos += bn_sz;
-
-	OPENSSL_cleanse(tmp, bn_sz);
-	free(tmp);
-
-	*out     = buf;
-	*out_len = pos;
-	return 0;
-}
-
-/*
- * Extract raw big-endian bytes from a BIGNUM (for shared_secret).
- * Returns 0 on success.  Output is malloc'd; caller frees.
- */
-static int
-bn_to_raw(const BIGNUM *bn, uint8_t **out, size_t *out_len)
-{
-	int bn_bytes = BN_num_bytes(bn);
-
-	if (bn_bytes < 0)
-		return DSSH_ERROR_PARSE;
-#if INT_MAX > SIZE_MAX
-	if (bn_bytes > SIZE_MAX)
-		return DSSH_ERROR_INVALID;
-#endif
-	size_t bn_sz = (size_t)bn_bytes;
-
-	uint8_t *buf = malloc(bn_sz);
-	if (buf == NULL)
-		return DSSH_ERROR_ALLOC;
-	BN_bn2bin(bn, buf);
-
-	*out     = buf;
-	*out_len = bn_sz;
-	return 0;
-}
-
-/* ----------------------------------------------------------------
- * Ops vtable implementations
- * ---------------------------------------------------------------- */
-
-static int
-ossl_client_keygen(const uint8_t *group_payload, size_t group_len, size_t *consumed, uint8_t **e_mpint,
-    size_t *e_mpint_len, void **dh_ctx)
-{
-	BIGNUM *p     = NULL;
-	BIGNUM *g     = NULL;
-	BIGNUM *x     = NULL;
-	BIGNUM *e     = NULL;
-	BN_CTX *bnctx = NULL;
-	int     ret;
-
-	/* Parse p from group payload */
-	int64_t pv = parse_bn_mpint(group_payload, group_len, &p);
-	if (pv < 0) {
-		ret = (int)pv;
-		return ret;
-	}
-#if SIZE_MAX < INT64_MAX
-	if (pv > SIZE_MAX) {
-		BN_free(p);
-		return DSSH_ERROR_INVALID;
-	}
-#endif
-	size_t p_sz = (size_t)pv;
-
-	if (p_sz >= group_len) {
-		BN_free(p);
-		return DSSH_ERROR_PARSE;
-	}
-
-	/* Parse g from group payload */
-	pv = parse_bn_mpint(&group_payload[p_sz], group_len - p_sz, &g);
-	if (pv < 0) {
-		BN_free(p);
-		ret = (int)pv;
-		return ret;
-	}
-#if SIZE_MAX < INT64_MAX
-	if (pv > SIZE_MAX) {
-		BN_free(p);
-		BN_free(g);
-		return DSSH_ERROR_INVALID;
-	}
-#endif
-	size_t g_sz = (size_t)pv;
-
-	if (g_sz > SIZE_MAX - p_sz) {
-		BN_free(p);
-		BN_free(g);
-		return DSSH_ERROR_INVALID;
-	}
-	*consumed = p_sz + g_sz;
-
-	/* Generate x, compute e = g^x mod p */
-	bnctx = BN_CTX_new();
-	if (bnctx == NULL) {
-		ret = DSSH_ERROR_ALLOC;
-		goto fail;
-	}
-	e = BN_new();
-	if (e == NULL) {
-		ret = DSSH_ERROR_ALLOC;
-		goto fail;
-	}
-	x = BN_new();
-	if (x == NULL) {
-		ret = DSSH_ERROR_ALLOC;
-		goto fail;
-	}
-	if (BN_rand(x, BN_num_bits(p) - 1, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ANY) != 1) {
-		ret = DSSH_ERROR_INIT;
-		goto fail;
-	}
-	if (BN_mod_exp(e, g, x, p, bnctx) != 1) {
-		ret = DSSH_ERROR_INIT;
-		goto fail;
-	}
-
-	/* Serialize e to mpint */
-	ret = serialize_bn_to_mpint(e, e_mpint, e_mpint_len);
-	if (ret < 0)
-		goto fail;
-
-	/* Build context for client_derive */
-	struct ossl_dhgex_ctx *ctx = malloc(sizeof(*ctx));
-	if (ctx == NULL) {
-		free(*e_mpint);
-		*e_mpint = NULL;
-		ret      = DSSH_ERROR_ALLOC;
-		goto fail;
-	}
-	ctx->p       = p;
-	ctx->g       = g;
-	ctx->x       = x;
-	ctx->our_pub = e;
-	ctx->bnctx   = bnctx;
-	*dh_ctx      = ctx;
-	return 0;
-
-fail:
-	BN_clear_free(x);
-	BN_free(e);
-	BN_free(p);
-	BN_free(g);
-	BN_CTX_free(bnctx);
-	return ret;
-}
-
-static int
-ossl_client_derive(void *dh_ctx, const uint8_t *f_buf, size_t f_bufsz, int64_t *f_consumed, uint8_t **k_raw,
-    size_t *k_raw_len, uint8_t **k_mpint, size_t *k_mpint_len)
-{
-	struct ossl_dhgex_ctx *ctx = dh_ctx;
-	BIGNUM                *f   = NULL;
-	BIGNUM                *k   = NULL;
-	int                    ret;
-
-	/* Parse f */
-	int64_t pv = parse_bn_mpint(f_buf, f_bufsz, &f);
-	if (pv < 0) {
-		ret = (int)pv;
-		return ret;
-	}
-	*f_consumed = pv;
-
-	/* Validate f in [1, p-1] */
-	if (!dh_value_valid(f, ctx->p)) {
-		BN_free(f);
-		return DSSH_ERROR_INVALID;
-	}
-
-	/* Compute K = f^x mod p */
-	k = BN_new();
-	if (k == NULL) {
-		BN_free(f);
-		return DSSH_ERROR_ALLOC;
-	}
-	if (BN_mod_exp(k, f, ctx->x, ctx->p, ctx->bnctx) != 1) {
-		BN_free(f);
-		BN_clear_free(k);
-		return DSSH_ERROR_INIT;
-	}
-	BN_free(f);
-
-	/* Clear secret exponent */
-	BN_clear_free(ctx->x);
-	ctx->x = NULL;
-
-	/* Extract raw K for shared_secret */
-	ret = bn_to_raw(k, k_raw, k_raw_len);
-	if (ret < 0) {
-		BN_clear_free(k);
-		return ret;
-	}
-
-	/* Serialize K to mpint for hash */
-	ret = serialize_bn_to_mpint(k, k_mpint, k_mpint_len);
-	BN_clear_free(k);
-	if (ret < 0) {
-		OPENSSL_cleanse(*k_raw, *k_raw_len);
-		free(*k_raw);
-		*k_raw = NULL;
-		return ret;
-	}
-
-	return 0;
-}
-
-static int
-ossl_server_keygen(const uint8_t *p_bytes, size_t p_len, const uint8_t *g_bytes, size_t g_len, uint8_t **p_mpint,
-    size_t *p_mpint_len, uint8_t **g_mpint, size_t *g_mpint_len, uint8_t **f_mpint, size_t *f_mpint_len,
-    void **dh_ctx)
-{
-	BIGNUM *p     = NULL;
-	BIGNUM *g     = NULL;
-	BIGNUM *y     = NULL;
-	BIGNUM *f     = NULL;
-	BN_CTX *bnctx = NULL;
-	int     ret;
-
-	if (p_len > INT_MAX || g_len > INT_MAX)
-		return DSSH_ERROR_INVALID;
-	int p_ilen = (int)p_len;
-	int g_ilen = (int)g_len;
-
-	p = BN_bin2bn(p_bytes, p_ilen, NULL);
-	if (p == NULL)
-		return DSSH_ERROR_ALLOC;
-	g = BN_bin2bn(g_bytes, g_ilen, NULL);
-	if (g == NULL) {
-		BN_free(p);
-		return DSSH_ERROR_ALLOC;
-	}
-
-	bnctx = BN_CTX_new();
-	if (bnctx == NULL) {
-		ret = DSSH_ERROR_ALLOC;
-		goto fail;
-	}
-	f = BN_new();
-	if (f == NULL) {
-		ret = DSSH_ERROR_ALLOC;
-		goto fail;
-	}
-	y = BN_new();
-	if (y == NULL) {
-		ret = DSSH_ERROR_ALLOC;
-		goto fail;
-	}
-
-	/* Generate y, compute f = g^y mod p */
-	if (BN_rand(y, BN_num_bits(p) - 1, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ANY) != 1) {
-		ret = DSSH_ERROR_INIT;
-		goto fail;
-	}
-	if (BN_mod_exp(f, g, y, p, bnctx) != 1) {
-		ret = DSSH_ERROR_INIT;
-		goto fail;
-	}
-
-	/* Serialize p, g, f to mpint */
-	ret = serialize_bn_to_mpint(p, p_mpint, p_mpint_len);
-	if (ret < 0)
-		goto fail;
-	ret = serialize_bn_to_mpint(g, g_mpint, g_mpint_len);
-	if (ret < 0) {
-		free(*p_mpint);
-		*p_mpint = NULL;
-		goto fail;
-	}
-	ret = serialize_bn_to_mpint(f, f_mpint, f_mpint_len);
-	if (ret < 0) {
-		free(*p_mpint);
-		*p_mpint = NULL;
-		free(*g_mpint);
-		*g_mpint = NULL;
-		goto fail;
-	}
-
-	/* Build context for server_derive: store y as x */
-	struct ossl_dhgex_ctx *ctx = malloc(sizeof(*ctx));
-	if (ctx == NULL) {
-		free(*p_mpint);
-		*p_mpint = NULL;
-		free(*g_mpint);
-		*g_mpint = NULL;
-		free(*f_mpint);
-		*f_mpint = NULL;
-		ret      = DSSH_ERROR_ALLOC;
-		goto fail;
-	}
-	ctx->p       = p;
-	ctx->g       = g;
-	ctx->x       = y;
-	ctx->our_pub = f;
-	ctx->bnctx   = bnctx;
-	*dh_ctx      = ctx;
-	return 0;
-
-fail:
-	BN_clear_free(y);
-	BN_free(f);
-	BN_free(p);
-	BN_free(g);
-	BN_CTX_free(bnctx);
-	return ret;
-}
-
-static int
-ossl_server_derive(void *dh_ctx, const uint8_t *e_buf, size_t e_bufsz, int64_t *e_consumed, uint8_t **k_raw,
-    size_t *k_raw_len, uint8_t **k_mpint, size_t *k_mpint_len)
-{
-	struct ossl_dhgex_ctx *ctx = dh_ctx;
-	BIGNUM                *e   = NULL;
-	BIGNUM                *k   = NULL;
-	int                    ret;
-
-	/* Parse e */
-	int64_t pv = parse_bn_mpint(e_buf, e_bufsz, &e);
-	if (pv < 0) {
-		ret = (int)pv;
-		return ret;
-	}
-	*e_consumed = pv;
-
-	/* Validate e in [1, p-1] */
-	if (!dh_value_valid(e, ctx->p)) {
-		BN_free(e);
-		return DSSH_ERROR_INVALID;
-	}
-
-	/* Compute K = e^y mod p */
-	k = BN_new();
-	if (k == NULL) {
-		BN_free(e);
-		return DSSH_ERROR_ALLOC;
-	}
-	if (BN_mod_exp(k, e, ctx->x, ctx->p, ctx->bnctx) != 1) {
-		BN_free(e);
-		BN_clear_free(k);
-		return DSSH_ERROR_INIT;
-	}
-	BN_free(e);
-
-	/* Clear secret exponent */
-	BN_clear_free(ctx->x);
-	ctx->x = NULL;
-
-	/* Extract raw K for shared_secret */
-	ret = bn_to_raw(k, k_raw, k_raw_len);
-	if (ret < 0) {
-		BN_clear_free(k);
-		return ret;
-	}
-
-	/* Serialize K to mpint for hash */
-	ret = serialize_bn_to_mpint(k, k_mpint, k_mpint_len);
-	BN_clear_free(k);
-	if (ret < 0) {
-		OPENSSL_cleanse(*k_raw, *k_raw_len);
-		free(*k_raw);
-		*k_raw = NULL;
-		return ret;
-	}
-
-	return 0;
+	struct ossl_dhgex_ctx *state = opaque;
+	if (state == NULL)
+		return;
+	/* BN_clear erases the owned native capacity while retaining its allocation. */
+	BN_clear(state->exponent);
+	BN_clear(state->secret);
+	state->ready = false;
 }
 
 static void
-ossl_free_ctx(void *dh_ctx)
+ossl_cleanup(void *opaque)
 {
-	if (dh_ctx == NULL)
+	struct ossl_dhgex_ctx *state = opaque;
+	if (state == NULL)
 		return;
-
-	struct ossl_dhgex_ctx *ctx = dh_ctx;
-
-	BN_free(ctx->p);
-	BN_free(ctx->g);
-	BN_free(ctx->our_pub);
-	BN_clear_free(ctx->x);
-	BN_CTX_free(ctx->bnctx);
-	free(ctx);
+	BN_free(state->p);
+	BN_free(state->g);
+	BN_free(state->public_key);
+	BN_free(state->peer);
+	BN_free(state->range);
+	BN_clear_free(state->exponent);
+	BN_clear_free(state->secret);
+	dssh_cleanse(state, sizeof(*state));
+	free(state);
 }
 
-/* ----------------------------------------------------------------
- * Static ops struct
- * ---------------------------------------------------------------- */
+static int
+ossl_init(void **out)
+{
+	struct ossl_dhgex_ctx *state = malloc(sizeof(*state));
+	if (state == NULL)
+		return DSSH_ERROR_ALLOC;
+	*state = (struct ossl_dhgex_ctx){0};
+	state->p = BN_new();
+	state->g = BN_new();
+	state->exponent = BN_new();
+	state->public_key = BN_new();
+	state->peer = BN_new();
+	state->secret = BN_new();
+	state->range = BN_new();
+	if (state->p == NULL || state->g == NULL || state->exponent == NULL
+	    || state->public_key == NULL || state->peer == NULL || state->secret == NULL || state->range == NULL) {
+		ossl_cleanup(state);
+		return DSSH_ERROR_ALLOC;
+	}
+	BN_set_flags(state->exponent, BN_FLG_CONSTTIME);
+	*out = state;
+	return 0;
+}
 
-static const struct dhgex_ops ossl_dhgex_ops = {
-    .client_keygen = ossl_client_keygen,
-    .client_derive = ossl_client_derive,
-    .server_keygen = ossl_server_keygen,
-    .server_derive = ossl_server_derive,
-    .free_ctx      = ossl_free_ctx,
+static int
+write_raw(const BIGNUM *value, uint8_t *out, size_t capacity, size_t *length)
+{
+	int count = BN_num_bytes(value);
+	if (count <= 0 || count > DHGEX_RAW_MAX)
+		return DSSH_ERROR_INVALID;
+	size_t size = (size_t)count; /* Positive and capped at 1024. */
+	if (size > capacity)
+		return DSSH_ERROR_TOOLONG;
+	if (BN_bn2bin(value, out) != count)
+		return DSSH_ERROR_INIT;
+	*length = size;
+	return 0;
+}
+
+static int
+ossl_keygen(void *opaque, const uint8_t *p, size_t plen, const uint8_t *g, size_t glen,
+    uint8_t *public_key, size_t capacity, size_t *length)
+{
+	struct ossl_dhgex_ctx *state = opaque;
+	if (state == NULL || p == NULL || g == NULL || public_key == NULL || length == NULL
+	    || plen == 0 || glen == 0 || plen > DHGEX_RAW_MAX || glen > DHGEX_RAW_MAX)
+		return DSSH_ERROR_INVALID;
+	ossl_reset(state);
+	int psize = (int)plen; /* At most 1024, fits the smallest C17 int. */
+	int gsize = (int)glen;
+	if (BN_bin2bn(p, psize, state->p) == NULL || BN_bin2bn(g, gsize, state->g) == NULL)
+		return DSSH_ERROR_ALLOC;
+	/* Per-operation arithmetic scratch is retired through its native owner.
+	 * BN_CTX_end alone does not erase all cached intermediate bignums. */
+	BN_CTX *scratch = BN_CTX_new();
+	if (scratch == NULL)
+		return DSSH_ERROR_ALLOC;
+	int ret = dhgex_validate_group(state->p, state->g, scratch, p, plen, g, glen);
+	if (ret < 0)
+		goto done;
+	/* OpenSSL 3.0 releases ignore the requested strength on one range-
+	 * sampling path. Check the same default private DRBG used by scratch
+	 * before accepting any exponent from BN_priv_rand_range_ex. */
+	EVP_RAND_CTX *random = RAND_get0_private(NULL);
+	if (random == NULL || EVP_RAND_get_strength(random) < 256) {
+		ret = DSSH_ERROR_INIT;
+		goto done;
+	}
+	if (BN_rshift1(state->range, state->p) != 1 || BN_sub_word(state->range, 2) != 1
+	    || BN_priv_rand_range_ex(state->exponent, state->range, 256, scratch) != 1
+	    || BN_add_word(state->exponent, 2) != 1) {
+		ret = DSSH_ERROR_INIT;
+		goto done;
+	}
+	if (BN_mod_exp(state->public_key, state->g, state->exponent, state->p, scratch) != 1) {
+		ret = DSSH_ERROR_INIT;
+		goto done;
+	}
+	ret = write_raw(state->public_key, public_key, capacity, length);
+	if (ret == 0)
+		state->ready = true;
+done:
+	BN_CTX_free(scratch);
+	if (ret < 0)
+		ossl_reset(state);
+	return ret;
+}
+
+static int
+ossl_derive(void *opaque, const uint8_t *peer, size_t peerlen,
+    uint8_t *secret, size_t capacity, size_t *length)
+{
+	struct ossl_dhgex_ctx *state = opaque;
+	if (state == NULL || !state->ready || peer == NULL || secret == NULL || length == NULL
+	    || peerlen == 0 || peerlen > DHGEX_RAW_MAX)
+		return DSSH_ERROR_INVALID;
+	int count = (int)peerlen; /* At most 1024. */
+	int ret = DSSH_ERROR_ALLOC;
+	BN_CTX *scratch = NULL;
+	if (BN_bin2bn(peer, count, state->peer) == NULL)
+		goto done;
+	if (BN_is_zero(state->peer) || BN_is_negative(state->peer) || BN_cmp(state->peer, state->p) >= 0) {
+		ret = DSSH_ERROR_INVALID;
+		goto done;
+	}
+	scratch = BN_CTX_new();
+	if (scratch == NULL)
+		goto done;
+	if (BN_mod_exp(state->secret, state->peer, state->exponent, state->p, scratch) != 1) {
+		ret = DSSH_ERROR_INIT;
+		goto done;
+	}
+	/* The shared protocol validates the raw K range before hashing/publication. */
+	ret = write_raw(state->secret, secret, capacity, length);
+done:
+	BN_CTX_free(scratch);
+	ossl_reset(state);
+	return ret;
+}
+
+DSSH_PRIVATE const struct dhgex_ops dssh_dhgex_backend = {
+	.init = ossl_init, .reset = ossl_reset, .cleanup = ossl_cleanup,
+	.keygen = ossl_keygen, .derive = ossl_derive,
 };
-
-/* ----------------------------------------------------------------
- * KEX handler wrapper and registration
- * ---------------------------------------------------------------- */
 
 DSSH_TESTABLE int
-dhgex_handler(struct dssh_kex_context *kctx)
+dhgex_handler(const struct dssh_kex_context *ctx, struct dssh_kex_result *out)
 {
-	return dhgex_handler_impl(kctx, &ossl_dhgex_ops);
-}
-
-static void
-kex_cleanup(void *kex_data)
-{
-	(void)kex_data;
+	return dhgex_handler_impl(ctx, out, &dssh_dhgex_backend);
 }
 
 DSSH_PUBLIC int
@@ -556,11 +226,15 @@ dssh_register_dh_gex_sha256(void)
 	if (kex == NULL)
 		return DSSH_ERROR_ALLOC;
 	kex->next      = NULL;
+	kex->init      = dhgex_init;
 	kex->handler   = dhgex_handler;
-	kex->cleanup   = kex_cleanup;
+	kex->cleanup   = dhgex_cleanup;
 	kex->flags     = DSSH_KEX_FLAG_NEEDS_SIGNATURE_CAPABLE;
 	kex->hash_name = "SHA-256";
-	kex->ctx       = &default_provider;
+	kex->config       = &default_provider;
 	memcpy(kex->name, DHGEX_KEX_NAME, DHGEX_KEX_NAME_LEN + 1);
-	return dssh_transport_register_kex(kex);
+	int ret = dssh_transport_register_kex(kex);
+	if (ret < 0)
+		free(kex);
+	return ret;
 }

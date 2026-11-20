@@ -1,0 +1,199 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux tests (${{ matrix.crypto }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        crypto:
+          - Botan
+          - OpenSSL
+    env:
+      BOTAN_VERSION: 3.13.0
+      BOTAN_SHA256: 12f5a8358890bbee82edfe9d2e7769b0a610b6dd0e0698aea13d20a675d84620
+      BOTAN_PREFIX: /tmp/botan-3.13.0
+      PKG_CONFIG_PATH: /tmp/botan-3.13.0/lib/pkgconfig
+      LD_LIBRARY_PATH: /tmp/botan-3.13.0/lib
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            ca-certificates curl g++ libssl-dev make ninja-build \
+            pkg-config python3 xz-utils
+
+      - name: Restore Botan
+        if: matrix.crypto == 'Botan'
+        id: cache-botan
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.BOTAN_PREFIX }}
+          key: botan-${{ runner.os }}-24.04-${{ runner.arch }}-${{ env.BOTAN_VERSION }}-shared
+
+      - name: Build Botan
+        if: matrix.crypto == 'Botan' && steps.cache-botan.outputs.cache-hit != 'true'
+        run: |
+          cd "${RUNNER_TEMP}"
+          archive="Botan-${BOTAN_VERSION}.tar.xz"
+          curl --fail --location --silent --show-error \
+            --output "${archive}" \
+            "https://botan.randombit.net/releases/${archive}"
+          echo "${BOTAN_SHA256}  ${archive}" | sha256sum --check
+          tar -xf "${archive}"
+          cd "Botan-${BOTAN_VERSION}"
+          python3 configure.py \
+            --build-targets=shared \
+            --prefix="${BOTAN_PREFIX}"
+          make --jobs="$(nproc)"
+          make install
+
+      - name: Save Botan
+        if: matrix.crypto == 'Botan' && steps.cache-botan.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.BOTAN_PREFIX }}
+          key: botan-${{ runner.os }}-24.04-${{ runner.arch }}-${{ env.BOTAN_VERSION }}-shared
+
+      - name: Verify Botan
+        if: matrix.crypto == 'Botan'
+        run: pkg-config --modversion botan-3
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DDEUCESSH_BUILD_TESTS=ON \
+            -DDEUCESSH_CRYPTO_BACKEND=${{ matrix.crypto }} \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Warm test key cache
+        run: |
+          ctest --test-dir build \
+            --tests-regex '^dssh_transport(_rsa)?$' \
+            --parallel 1 --timeout 120 \
+            --output-on-failure --no-tests=error
+
+      - name: Test
+        run: |
+          ctest --test-dir build --parallel 1 --timeout 120 \
+            --output-on-failure --no-tests=error
+
+  macos:
+    name: macOS tests (OpenSSL)
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Install build dependencies
+        run: brew install ninja openssl@3
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DDEUCESSH_BUILD_TESTS=ON \
+            -DDEUCESSH_CRYPTO_BACKEND=OpenSSL \
+            -DOPENSSL_ROOT_DIR="$(brew --prefix openssl@3)" \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Warm test key cache
+        run: |
+          ctest --test-dir build \
+            --tests-regex '^dssh_transport(_rsa)?$' \
+            --parallel 1 --timeout 120 \
+            --output-on-failure --no-tests=error
+
+      - name: Test
+        run: |
+          ctest --test-dir build --parallel 1 --timeout 120 \
+            --output-on-failure --no-tests=error
+
+  windows:
+    name: Windows tests (OpenSSL)
+    runs-on: windows-2022
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Detect vcpkg revision
+        id: vcpkg-version
+        run: >-
+          "commit=$(git -C $env:VCPKG_INSTALLATION_ROOT rev-parse HEAD)" |
+          Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Restore vcpkg binary cache
+        id: cache-vcpkg
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ runner.temp }}\vcpkg-cache
+          key: vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ steps.vcpkg-version.outputs.commit }}-openssl-x64-windows
+
+      - name: Install OpenSSL
+        env:
+          VCPKG_BINARY_SOURCES: 'clear;files,${{ runner.temp }}\vcpkg-cache,readwrite'
+        run: |
+          vcpkg install openssl:x64-windows
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin" |
+            Out-File -FilePath $env:GITHUB_PATH -Append
+
+      - name: Save vcpkg binary cache
+        if: steps.cache-vcpkg.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ runner.temp }}\vcpkg-cache
+          key: vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ steps.vcpkg-version.outputs.commit }}-openssl-x64-windows
+
+      - name: Configure
+        run: >-
+          cmake -S . -B build -A x64
+          -DDEUCESSH_BUILD_TESTS=ON
+          -DDEUCESSH_CRYPTO_BACKEND=OpenSSL
+          -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        run: >-
+          ctest --test-dir build --build-config Release --parallel 1
+          --timeout 120 --output-on-failure --no-tests=error
+          --output-junit "${{ runner.temp }}/windows-tests.xml"
+
+      - name: Preserve Windows test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-test-results
+          path: |
+            ${{ runner.temp }}/windows-tests.xml
+            build/Testing/Temporary/LastTest.log
+          if-no-files-found: ignore

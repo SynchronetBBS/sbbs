@@ -11,9 +11,13 @@
 #include "deucessh-algorithms.h"
 #include "ssh-trans.h"
 #include "test/dssh_test_internal.h"
+#include "test/dssh_test_alloc.h"
+#include "test_mac.h"
 
 #ifdef DSSH_CRYPTO_OPENSSL
+#include "dssh_test_ossl.h"
 #include <openssl/core_names.h>
+#include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/params.h>
 #elif defined(DSSH_CRYPTO_BOTAN)
@@ -34,7 +38,7 @@ extern bool has_non_ascii(uint8_t *buf, size_t buflen);
 extern bool is_20(uint8_t *buf, size_t buflen);
 
 /* ----------------------------------------------------------------
- * Helper: compute HMAC-SHA-256 via an independent crypto implementation.
+ * Helper: compute HMAC-SHA-256 by calling the selected native provider directly.
  * Returns 0 on success, fills outbuf with 32-byte digest.
  * ---------------------------------------------------------------- */
 #ifdef DSSH_CRYPTO_OPENSSL
@@ -64,7 +68,7 @@ hmac_sha256(const uint8_t *key, size_t key_len,
 		goto out_ctx;
 
 	size_t outlen = 0;
-	if (EVP_MAC_final(ctx, outbuf, &outlen, 32) != 1)
+	if (EVP_MAC_final(ctx, outbuf, &outlen, 32) != 1 || outlen != 32)
 		goto out_ctx;
 
 	ret = 0;
@@ -81,12 +85,15 @@ hmac_sha256(const uint8_t *key, size_t key_len,
     const uint8_t *data, size_t data_len,
     uint8_t *outbuf)
 {
-	botan_mac_t mac;
+	botan_mac_t mac = NULL;
 
-	if (botan_mac_init(&mac, "HMAC(SHA-256)", 0) != 0)
+	if (botan_mac_init(&mac, "HMAC(SHA-256)", 0) != 0 || mac == NULL)
 		return -1;
 
 	int ret = -1;
+	size_t output_length = 0;
+	if (botan_mac_output_length(mac, &output_length) != 0 || output_length != 32)
+		goto out;
 	if (botan_mac_set_key(mac, key, key_len) != 0)
 		goto out;
 	if (botan_mac_update(mac, data, data_len) != 0)
@@ -96,7 +103,8 @@ hmac_sha256(const uint8_t *key, size_t key_len,
 	ret = 0;
 
 out:
-	botan_mac_destroy(mac);
+	if (botan_mac_destroy(mac) != 0)
+		ret = -1;
 	return ret;
 }
 #endif
@@ -197,9 +205,8 @@ test_register_hmac_after_lock(void)
 	ASSERT_NOT_NULL(sess);
 
 	int ret = dssh_register_hmac_sha2_256();
-	ASSERT_EQ(ret, DSSH_ERROR_TOOLATE);
-
 	dssh_session_cleanup(sess);
+	ASSERT_EQ(ret, DSSH_ERROR_TOOLATE);
 	return TEST_PASS;
 }
 
@@ -218,9 +225,8 @@ test_register_none_mac_after_lock(void)
 	ASSERT_NOT_NULL(sess);
 
 	int ret = dssh_register_none_mac();
-	ASSERT_EQ(ret, DSSH_ERROR_TOOLATE);
-
 	dssh_session_cleanup(sess);
+	ASSERT_EQ(ret, DSSH_ERROR_TOOLATE);
 	return TEST_PASS;
 }
 
@@ -344,12 +350,16 @@ test_hmac_sha256_empty_data(void)
 	memset(key, 0x01, 32);
 	uint8_t digest[32];
 
-	ASSERT_EQ(hmac_sha256(key, 32, (const uint8_t *)"", 0, digest), 0);
+	const uint8_t empty[] = {0};
+	ASSERT_EQ(hmac_sha256(key, 32, empty, 0, digest), 0);
 
-	/* Verify it produced a non-zero digest */
-	uint8_t zeros[32];
-	memset(zeros, 0, 32);
-	ASSERT_TRUE(memcmp(digest, zeros, 32) != 0);
+	static const uint8_t expected[32] = {
+		0x2e, 0x72, 0xeb, 0x66, 0x26, 0xe1, 0xd4, 0xf7,
+		0xfc, 0x6d, 0xff, 0x11, 0x15, 0x85, 0x89, 0x8f,
+		0x2e, 0x37, 0xc4, 0x71, 0xa6, 0x88, 0x62, 0xf0,
+		0x7f, 0x10, 0xaa, 0x28, 0x24, 0xd5, 0x7c, 0x75,
+	};
+	ASSERT_MEM_EQ(digest, expected, sizeof(expected));
 	return TEST_PASS;
 }
 
@@ -378,11 +388,17 @@ test_hmac_sha256_large_data(void)
 	return TEST_PASS;
 }
 
+static const uint8_t tc2_under_tc1[32] = {
+	0x6a, 0x05, 0x5a, 0xfb, 0x12, 0x95, 0xef, 0x9d,
+	0xe3, 0x56, 0x05, 0x91, 0x9c, 0xbb, 0x8f, 0x86,
+	0xf5, 0x1e, 0xe1, 0x83, 0x90, 0x1f, 0x00, 0x1e,
+	0x6d, 0xc5, 0x3e, 0xc3, 0xd2, 0x48, 0x0b, 0xa9,
+};
+
 /* ================================================================
- * HMAC-SHA-256: Persistent context (re-init without key)
- *
- * This mirrors how hmac-sha2-256-openssl.c works: init once with key,
- * then call EVP_MAC_init(ctx, NULL, 0, NULL) before each generate.
+ * HMAC-SHA-256: Persistent native context with fixed answers.
+ * OpenSSL reuses one context with an explicit key; Botan final retains the key.
+ * Registered-module key/reset behavior is tested separately below.
  * ================================================================ */
 
 #ifdef DSSH_CRYPTO_OPENSSL
@@ -390,84 +406,55 @@ static int
 test_hmac_sha256_persistent_ctx(void)
 {
 	EVP_MAC *mac = EVP_MAC_fetch(NULL, "HMAC", NULL);
-	ASSERT_NOT_NULL(mac);
-
-	EVP_MAC_CTX *ctx = EVP_MAC_CTX_new(mac);
-	ASSERT_NOT_NULL(ctx);
-
+	EVP_MAC_CTX *ctx = mac == NULL ? NULL : EVP_MAC_CTX_new(mac);
 	OSSL_PARAM params[] = {
-		OSSL_PARAM_construct_utf8_string(
-		    OSSL_MAC_PARAM_DIGEST, "SHA256", 0),
+		OSSL_PARAM_construct_utf8_string(OSSL_MAC_PARAM_DIGEST, "SHA256", 0),
 		OSSL_PARAM_construct_end(),
 	};
-
-	/* Init with TC1 key */
-	ASSERT_TRUE(EVP_MAC_init(ctx, rfc4231_tc1_key,
-	    sizeof(rfc4231_tc1_key), params) == 1);
-
-	/* First generate */
-	ASSERT_TRUE(EVP_MAC_init(ctx, NULL, 0, NULL) == 1);
-	ASSERT_TRUE(EVP_MAC_update(ctx, rfc4231_tc1_data,
-	    rfc4231_tc1_data_len) == 1);
-	uint8_t d1[32];
-	size_t outlen = 0;
-	ASSERT_TRUE(EVP_MAC_final(ctx, d1, &outlen, 32) == 1);
-	ASSERT_MEM_EQ(d1, rfc4231_tc1_hmac, 32);
-
-	/* Second generate on same context (re-init without key) */
-	ASSERT_TRUE(EVP_MAC_init(ctx, NULL, 0, NULL) == 1);
-	ASSERT_TRUE(EVP_MAC_update(ctx, rfc4231_tc2_data,
-	    rfc4231_tc2_data_len) == 1);
-	uint8_t d2[32];
-	outlen = 0;
-	ASSERT_TRUE(EVP_MAC_final(ctx, d2, &outlen, 32) == 1);
-
-	/* TC2 uses a different key ("Jefe"), so this will NOT match
-	 * rfc4231_tc2_hmac.  But it MUST be a valid HMAC of TC2 data
-	 * under TC1's key.  Verify deterministic by repeating. */
-	uint8_t d3[32];
-	ASSERT_TRUE(EVP_MAC_init(ctx, NULL, 0, NULL) == 1);
-	ASSERT_TRUE(EVP_MAC_update(ctx, rfc4231_tc2_data,
-	    rfc4231_tc2_data_len) == 1);
-	outlen = 0;
-	ASSERT_TRUE(EVP_MAC_final(ctx, d3, &outlen, 32) == 1);
-	ASSERT_MEM_EQ(d2, d3, 32);
-
+	uint8_t output[3][32];
+	size_t length = 0;
+	bool valid = ctx != NULL
+	    && EVP_MAC_init(ctx, rfc4231_tc1_key, sizeof(rfc4231_tc1_key), params) == 1;
+	for (unsigned round = 0; round < 3 && valid; round++) {
+		const uint8_t *data = round == 0 ? rfc4231_tc1_data : rfc4231_tc2_data;
+		size_t count = round == 0 ? rfc4231_tc1_data_len : rfc4231_tc2_data_len;
+		const uint8_t *expected = round == 0 ? rfc4231_tc1_hmac : tc2_under_tc1;
+		length = 0;
+		valid = EVP_MAC_init(ctx, rfc4231_tc1_key, sizeof(rfc4231_tc1_key), NULL) == 1
+		    && EVP_MAC_update(ctx, data, count) == 1
+		    && EVP_MAC_final(ctx, output[round], &length, sizeof(output[round])) == 1
+		    && length == sizeof(output[round])
+		    && memcmp(output[round], expected, sizeof(output[round])) == 0;
+	}
 	EVP_MAC_CTX_free(ctx);
 	EVP_MAC_free(mac);
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 #elif defined(DSSH_CRYPTO_BOTAN)
 static int
 test_hmac_sha256_persistent_ctx(void)
 {
-	/* Botan: botan_mac_final resets state for reuse with same key */
-	botan_mac_t mac;
-	ASSERT_EQ(botan_mac_init(&mac, "HMAC(SHA-256)", 0), 0);
-	ASSERT_EQ(botan_mac_set_key(mac, rfc4231_tc1_key,
-	    sizeof(rfc4231_tc1_key)), 0);
-
-	/* First generate: TC1 data under TC1 key */
-	ASSERT_EQ(botan_mac_update(mac, rfc4231_tc1_data,
-	    rfc4231_tc1_data_len), 0);
-	uint8_t d1[32];
-	ASSERT_EQ(botan_mac_final(mac, d1), 0);
-	ASSERT_MEM_EQ(d1, rfc4231_tc1_hmac, 32);
-
-	/* Second generate: TC2 data under TC1 key (auto-reset by final) */
-	ASSERT_EQ(botan_mac_update(mac, rfc4231_tc2_data,
-	    rfc4231_tc2_data_len), 0);
-	uint8_t d2[32];
-	ASSERT_EQ(botan_mac_final(mac, d2), 0);
-
-	/* Repeat to verify deterministic */
-	ASSERT_EQ(botan_mac_update(mac, rfc4231_tc2_data,
-	    rfc4231_tc2_data_len), 0);
-	uint8_t d3[32];
-	ASSERT_EQ(botan_mac_final(mac, d3), 0);
-	ASSERT_MEM_EQ(d2, d3, 32);
-
-	botan_mac_destroy(mac);
+	botan_mac_t mac = NULL;
+	int ret = botan_mac_init(&mac, "HMAC(SHA-256)", 0);
+	bool created = ret == 0 && mac != NULL;
+	size_t length = 0;
+	bool valid = created && botan_mac_output_length(mac, &length) == 0 && length == 32
+	    && botan_mac_set_key(mac, rfc4231_tc1_key, sizeof(rfc4231_tc1_key)) == 0;
+	uint8_t output[3][32];
+	for (unsigned round = 0; round < 3 && valid; round++) {
+		const uint8_t *data = round == 0 ? rfc4231_tc1_data : rfc4231_tc2_data;
+		size_t count = round == 0 ? rfc4231_tc1_data_len : rfc4231_tc2_data_len;
+		const uint8_t *expected = round == 0 ? rfc4231_tc1_hmac : tc2_under_tc1;
+		valid = botan_mac_update(mac, data, count) == 0
+		    && botan_mac_final(mac, output[round]) == 0
+		    && memcmp(output[round], expected, sizeof(output[round])) == 0;
+	}
+	if (created) {
+		int released = botan_mac_destroy(mac);
+		valid = released == 0 && valid;
+	}
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 #endif
@@ -519,9 +506,8 @@ test_register_hmac_after_lock_512(void)
 	ASSERT_NOT_NULL(sess);
 
 	int ret = dssh_register_hmac_sha2_512();
-	ASSERT_EQ(ret, DSSH_ERROR_TOOLATE);
-
 	dssh_session_cleanup(sess);
+	ASSERT_EQ(ret, DSSH_ERROR_TOOLATE);
 	return TEST_PASS;
 }
 
@@ -619,7 +605,7 @@ hmac_sha512(const uint8_t *key, size_t key_len,
 		goto out_ctx;
 
 	size_t outlen = 0;
-	if (EVP_MAC_final(ctx, outbuf, &outlen, 64) != 1)
+	if (EVP_MAC_final(ctx, outbuf, &outlen, 64) != 1 || outlen != 64)
 		goto out_ctx;
 
 	ret = 0;
@@ -636,12 +622,15 @@ hmac_sha512(const uint8_t *key, size_t key_len,
     const uint8_t *data, size_t data_len,
     uint8_t *outbuf)
 {
-	botan_mac_t mac;
+	botan_mac_t mac = NULL;
 
-	if (botan_mac_init(&mac, "HMAC(SHA-512)", 0) != 0)
+	if (botan_mac_init(&mac, "HMAC(SHA-512)", 0) != 0 || mac == NULL)
 		return -1;
 
 	int ret = -1;
+	size_t output_length = 0;
+	if (botan_mac_output_length(mac, &output_length) != 0 || output_length != 64)
+		goto out;
 	if (botan_mac_set_key(mac, key, key_len) != 0)
 		goto out;
 	if (botan_mac_update(mac, data, data_len) != 0)
@@ -651,7 +640,8 @@ hmac_sha512(const uint8_t *key, size_t key_len,
 	ret = 0;
 
 out:
-	botan_mac_destroy(mac);
+	if (botan_mac_destroy(mac) != 0)
+		ret = -1;
 	return ret;
 }
 #endif
@@ -727,9 +717,210 @@ test_none_mac_passthrough(void)
 {
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_none_mac(), 0);
-	/* The none MAC has digest_size=0, key_size=0, init=NULL.
-	 * Its generate function returns 0 without writing any output.
-	 * Registration success confirms proper initialization. */
+	dssh_mac mac = gconf.mac_head;
+	ASSERT_NOT_NULL(mac);
+	ASSERT_EQ(mac->digest_size, 0);
+	ASSERT_EQ(mac->key_size, 0);
+	ASSERT_NULL(mac->init);
+	ASSERT_NOT_NULL(mac->generate);
+	ASSERT_NOT_NULL(mac->cleanup);
+	uint8_t output[3] = {0x5a, 0x5a, 0x5a};
+	ASSERT_EQ(mac->generate(NULL, 0, &output[1], NULL), 0);
+	ASSERT_EQ(output[0], 0x5a);
+	ASSERT_EQ(output[1], 0x5a);
+	ASSERT_EQ(output[2], 0x5a);
+	mac->cleanup(NULL);
+	return TEST_PASS;
+}
+
+static int
+mac_contract_generate(const uint8_t *buf, size_t bufsz, uint8_t *out, dssh_mac_ctx *ctx)
+{
+	(void)buf;
+	(void)bufsz;
+	(void)ctx;
+	memset(out, 0, 32);
+	return 0;
+}
+
+static int
+test_mac_registration_contract(void)
+{
+	bool valid = true;
+	for (unsigned variant = 0; variant < 4; variant++) {
+		dssh_test_reset_global_config();
+		if (dssh_register_hmac_sha2_256() != 0) {
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+		dssh_mac head = gconf.mac_head;
+		ASSERT_NOT_NULL(head);
+		if (sizeof(struct dssh_mac_s) > SIZE_MAX - sizeof("contract-mac")) {
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+		dssh_mac mac = calloc(1, sizeof(*mac) + sizeof("contract-mac"));
+		if (mac == NULL) {
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+		memcpy(mac->name, "contract-mac", sizeof("contract-mac"));
+		mac->digest_size = variant < 2 ? 32 : 0;
+		mac->generate = variant % 2 == 0 ? NULL : mac_contract_generate;
+		int ret = dssh_transport_register_mac(mac);
+		int expected = variant == 0 ? DSSH_ERROR_INVALID : 0;
+		valid = valid && ret == expected && gconf.mac_head == head;
+		if (expected != 0)
+			valid = valid && head->next == NULL && gconf.mac_tail == head
+			    && gconf.mac_entries == 1 && mac->next == NULL;
+		else
+			valid = valid && head->next == mac && gconf.mac_tail == mac
+			    && gconf.mac_entries == 2;
+		bool published = head->next == mac;
+		if (!published)
+			free(mac);
+		dssh_test_reset_global_config();
+	}
+	ASSERT_TRUE(valid);
+	return TEST_PASS;
+}
+
+static void
+test_mac_observe_free(const void *ptr, void *data)
+{
+	(void)ptr;
+	unsigned *count = data;
+	if (*count == UINT_MAX)
+		abort();
+	(*count)++;
+}
+
+static int
+test_mac_test_module_ownership(void)
+{
+	bool valid = true;
+	for (unsigned oversized = 0; oversized < 2; oversized++) {
+		dssh_test_reset_global_config();
+		test_mac_reset();
+		int ret = oversized != 0 ? register_test_mac_oversized() : register_test_mac();
+		if (ret != 0) {
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+		dssh_mac mac = gconf.mac_head;
+		ASSERT_NOT_NULL(mac);
+		ASSERT_NOT_NULL(mac->init);
+		ASSERT_NOT_NULL(mac->generate);
+		ASSERT_NOT_NULL(mac->cleanup);
+		ASSERT_EQ_U(mac->digest_size, oversized == 0 ? 32 : 128);
+		ASSERT_EQ_U(mac->key_size, 32);
+		unsigned duplicate_frees = 0;
+		dssh_test_alloc_observe_frees(test_mac_observe_free, &duplicate_frees);
+		ret = oversized != 0 ? register_test_mac() : register_test_mac_oversized();
+		dssh_test_alloc_observe_frees(NULL, NULL);
+		valid = valid && ret == DSSH_ERROR_INVALID && gconf.mac_head == mac
+		    && mac->next == NULL && duplicate_frees == 1;
+		dssh_session sess = dssh_session_init(true, 0);
+		if (sess == NULL) {
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+		unsigned late_frees = 0;
+		dssh_test_alloc_observe_frees(test_mac_observe_free, &late_frees);
+		ret = oversized != 0 ? register_test_mac() : register_test_mac_oversized();
+		dssh_test_alloc_observe_frees(NULL, NULL);
+		valid = valid && ret == DSSH_ERROR_TOOLATE && late_frees == 1;
+		uint8_t key[32] = {0};
+		const uint8_t data[] = {0};
+		uint8_t output[130];
+		memset(output, 0x5a, sizeof(output));
+		dssh_mac_ctx *ctx = NULL;
+		ret = mac->init(key, &ctx);
+		if (ret == 0 && ctx == NULL)
+			ret = DSSH_ERROR_INIT;
+		if (ret == 0)
+			ret = mac->generate(data, sizeof(data), &output[1], ctx);
+		valid = valid && ret == 0 && output[0] == 0x5a;
+		for (size_t i = 1; i < sizeof(output); i++)
+			valid = valid && output[i] == (i <= mac->digest_size ? 0 : 0x5a);
+		/* The fixture's key is the first 32-byte member of its owned context. */
+		dssh_test_alloc_watch_free(ctx, sizeof(key));
+		mac->cleanup(ctx);
+		bool cleared = false;
+		bool released = dssh_test_alloc_watched_free(&cleared);
+		dssh_test_alloc_watch_free(NULL, 0);
+		valid = valid && released && cleared;
+		dssh_session_cleanup(sess);
+		dssh_test_reset_global_config();
+	}
+	ASSERT_TRUE(valid);
+	return TEST_PASS;
+}
+
+static int
+test_mac_test_module_failures(void)
+{
+	bool valid = true;
+	for (unsigned oversized = 0; oversized < 2; oversized++) {
+		dssh_test_reset_global_config();
+		test_mac_reset();
+		dssh_test_alloc_fail_after(0);
+		int ret = oversized != 0 ? register_test_mac_oversized() : register_test_mac();
+		int calls = dssh_test_alloc_count();
+		dssh_test_alloc_reset();
+		valid = valid && ret == DSSH_ERROR_ALLOC && calls == 1 && gconf.mac_head == NULL;
+		ret = oversized != 0 ? register_test_mac_oversized() : register_test_mac();
+		if (ret != 0) {
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
+		dssh_mac mac = gconf.mac_head;
+		ASSERT_NOT_NULL(mac);
+		ASSERT_NOT_NULL(mac->init);
+		ASSERT_NOT_NULL(mac->generate);
+		ASSERT_NOT_NULL(mac->cleanup);
+		ASSERT_EQ_U(mac->digest_size, oversized == 0 ? 32 : 128);
+		ASSERT_EQ_U(mac->key_size, 32);
+		uint8_t key[32] = {0};
+		dssh_mac_ctx *ctx = NULL;
+		dssh_test_alloc_fail_after(0);
+		ret = mac->init(key, &ctx);
+		calls = dssh_test_alloc_count();
+		dssh_test_alloc_reset();
+		valid = valid && ret == DSSH_ERROR_ALLOC && calls == 1 && ctx == NULL;
+		mac->cleanup(ctx);
+		ctx = NULL;
+		test_mac_fail_init_at(0);
+		dssh_test_alloc_fail_after(0);
+		ret = mac->init(key, &ctx);
+		calls = dssh_test_alloc_count();
+		dssh_test_alloc_reset();
+		valid = valid && ret == DSSH_ERROR_INIT && calls == 0 && ctx == NULL
+		    && test_mac_init_failure_seen();
+		mac->cleanup(ctx);
+		ctx = NULL;
+		test_mac_reset();
+		ret = mac->init(key, &ctx);
+		uint8_t output[130];
+		memset(output, 0x5a, sizeof(output));
+		valid = ret == 0 && ctx != NULL && valid;
+		if (ret == 0 && ctx != NULL) {
+			const uint8_t data[] = {0};
+			test_mac_fail_generate_at(0);
+			ret = mac->generate(data, sizeof(data), &output[1], ctx);
+			valid = valid && ret == DSSH_ERROR_INIT;
+			for (size_t i = 0; i < sizeof(output); i++)
+				valid = valid && output[i] == 0x5a;
+			test_mac_reset();
+			ret = mac->generate(data, sizeof(data), &output[1], ctx);
+		}
+		valid = valid && ret == 0 && output[0] == 0x5a
+		    && output[mac->digest_size + 1U] == 0x5a;
+		mac->cleanup(ctx);
+		dssh_test_reset_global_config();
+		test_mac_reset();
+	}
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 
@@ -738,7 +929,11 @@ test_none_mac_no_init(void)
 {
 	dssh_test_reset_global_config();
 	ASSERT_EQ(dssh_register_none_mac(), 0);
-	/* init is NULL for none MAC -- no key setup needed */
+	dssh_mac mac = gconf.mac_head;
+	ASSERT_NOT_NULL(mac);
+	ASSERT_NULL(mac->init);
+	ASSERT_EQ(mac->key_size, 0);
+	ASSERT_EQ(mac->digest_size, 0);
 	return TEST_PASS;
 }
 
@@ -763,11 +958,210 @@ test_mac_session_creation(void)
 	return TEST_PASS;
 }
 
+#ifdef DSSH_CRYPTO_OPENSSL
+struct mac_context_allocation {
+	size_t size;
+	unsigned calls;
+};
+
+static void
+observe_mac_context(size_t count, size_t size, void *data)
+{
+	struct mac_context_allocation *allocation = data;
+	if (count != 1 || allocation->calls == UINT_MAX)
+		abort();
+	allocation->calls++;
+	allocation->size = size;
+}
+#endif
+
+/* Exercise the registered module callbacks, rather than only provider helpers.
+ * RFC 4231's short keys can be zero-padded to SSH's fixed key lengths without
+ * changing HMAC: both lengths are below the hash's key-padding block size. */
+static int
+test_mac_module_rfc4231_vectors(void)
+{
+	int (*registrations[])(void) = {
+		dssh_register_hmac_sha2_256,
+		dssh_register_hmac_sha2_512,
+	};
+	for (size_t algorithm = 0; algorithm < 2; algorithm++) {
+		dssh_test_reset_global_config();
+		ASSERT_EQ(registrations[algorithm](), 0);
+		dssh_mac mac = gconf.mac_head;
+		ASSERT_NOT_NULL(mac);
+		ASSERT_NOT_NULL(mac->init);
+		ASSERT_NOT_NULL(mac->generate);
+		ASSERT_NOT_NULL(mac->cleanup);
+		size_t digest_len = 32;
+		if (algorithm == 1)
+			digest_len = 64;
+		ASSERT_EQ_U(mac->key_size, digest_len);
+		ASSERT_EQ_U(mac->digest_size, digest_len);
+		ASSERT_STR_EQ(mac->name, algorithm == 0 ? "hmac-sha2-256" : "hmac-sha2-512");
+		const uint8_t *expected[] = {
+			algorithm == 0 ? rfc4231_tc1_hmac : rfc4231_tc1_hmac512,
+			algorithm == 0 ? rfc4231_tc2_hmac : rfc4231_tc2_hmac512,
+			algorithm == 0 ? rfc4231_tc3_hmac : rfc4231_tc3_hmac512,
+		};
+		uint8_t data3[50];
+		memset(data3, 0xdd, sizeof(data3));
+		const uint8_t *data[] = { rfc4231_tc1_data, rfc4231_tc2_data, data3 };
+		const size_t data_len[] = { rfc4231_tc1_data_len, rfc4231_tc2_data_len, sizeof(data3) };
+		for (size_t vector = 0; vector < 3; vector++) {
+			uint8_t key[64] = { 0 };
+			if (vector == 0)
+				memcpy(key, rfc4231_tc1_key, sizeof(rfc4231_tc1_key));
+			else if (vector == 1)
+				memcpy(key, rfc4231_tc2_key, rfc4231_tc2_key_len);
+			else
+				memset(key, 0xaa, 20);
+			dssh_mac_ctx *ctx = NULL;
+#ifdef DSSH_CRYPTO_OPENSSL
+			struct mac_context_allocation allocation = {0};
+			dssh_test_alloc_observe_allocations(observe_mac_context, &allocation);
+			int init_result = mac->init(key, &ctx);
+			dssh_test_alloc_observe_allocations(NULL, NULL);
+#else
+			int init_result = mac->init(key, &ctx);
+#endif
+			bool initialized = init_result == 0 && ctx != NULL;
+			uint8_t output[2][66];
+			memset(output, 0x5a, sizeof(output));
+#ifdef DSSH_CRYPTO_OPENSSL
+			dssh_test_alloc_fail_after(0);
+#endif
+			int first = initialized ? mac->generate(data[vector], data_len[vector], &output[0][1], ctx)
+			    : DSSH_ERROR_INIT;
+			int second = first == 0
+			    ? mac->generate(data[vector], data_len[vector], &output[1][1], ctx) : first;
+#ifdef DSSH_CRYPTO_OPENSSL
+			int generation_allocations = dssh_test_alloc_count();
+			dssh_test_alloc_reset();
+			if (allocation.calls == 1 && ctx != NULL)
+				dssh_test_alloc_watch_free(ctx, allocation.size);
+#endif
+			mac->cleanup(ctx);
+#ifdef DSSH_CRYPTO_OPENSSL
+			bool cleared = false;
+			bool released = dssh_test_alloc_watched_free(&cleared);
+			dssh_test_alloc_watch_free(NULL, 0);
+			ASSERT_EQ(allocation.calls, 1);
+			ASSERT_EQ(generation_allocations, 0);
+			ASSERT_TRUE(released && cleared);
+#endif
+			ASSERT_EQ(init_result, 0);
+			ASSERT_TRUE(initialized);
+			ASSERT_EQ(first, 0);
+			ASSERT_EQ(second, 0);
+			for (size_t round = 0; round < 2; round++) {
+				ASSERT_EQ(output[round][0], 0x5a);
+				ASSERT_EQ(output[round][digest_len + 1], 0x5a);
+				ASSERT_MEM_EQ(&output[round][1], expected[vector], digest_len);
+			}
+		}
+	}
+	dssh_test_reset_global_config();
+	return TEST_PASS;
+}
+
+#ifdef DSSH_CRYPTO_OPENSSL
+static int
+test_mac_native_failures(void)
+{
+	int (*registrations[])(void) = {
+		dssh_register_hmac_sha2_256, dssh_register_hmac_sha2_512,
+	};
+	bool valid = true;
+	for (size_t algorithm = 0; algorithm < 2; algorithm++) {
+		dssh_test_reset_global_config();
+		ASSERT_EQ(registrations[algorithm](), 0);
+		dssh_mac mac = gconf.mac_head;
+		ASSERT_NOT_NULL(mac);
+		ASSERT_NOT_NULL(mac->init);
+		ASSERT_NOT_NULL(mac->generate);
+		ASSERT_NOT_NULL(mac->cleanup);
+		ASSERT_EQ_U(mac->digest_size, algorithm == 0 ? 32 : 64);
+		ASSERT_EQ_U(mac->key_size, algorithm == 0 ? 32 : 64);
+		uint8_t key[64] = {0};
+		memcpy(key, rfc4231_tc1_key, sizeof(rfc4231_tc1_key));
+		const uint8_t *expected = algorithm == 0 ? rfc4231_tc1_hmac : rfc4231_tc1_hmac512;
+		for (int fail = 0; fail < 4; fail++) {
+			dssh_mac_ctx *ctx = NULL;
+			if (fail == 0)
+				dssh_test_alloc_fail_after(0);
+			else
+				dssh_test_ossl_fail_after(fail - 1);
+			int ret = mac->init(key, &ctx);
+			int calls = dssh_test_ossl_count();
+			dssh_test_alloc_reset();
+			dssh_test_ossl_reset();
+			int error = fail == 0 || fail == 2 ? DSSH_ERROR_ALLOC : DSSH_ERROR_INIT;
+			valid = valid && ret == error && ctx == NULL && (fail == 0 || calls == fail);
+			mac->cleanup(ctx);
+		}
+		for (int fail = 0; fail < 3; fail++) {
+			dssh_mac_ctx *ctx = NULL;
+			int ret = mac->init(key, &ctx);
+			uint8_t output[66];
+			memset(output, 0x5a, sizeof(output));
+			valid = ret == 0 && ctx != NULL && valid;
+			if (ret == 0 && ctx != NULL) {
+				dssh_test_ossl_fail_after(fail);
+				ret = mac->generate(rfc4231_tc1_data, rfc4231_tc1_data_len, &output[1], ctx);
+				valid = valid && dssh_test_ossl_count() == fail + 1;
+			}
+			dssh_test_ossl_reset();
+			valid = valid && ret == DSSH_ERROR_INIT;
+			for (size_t i = 0; i < sizeof(output); i++)
+				valid = valid && output[i] == 0x5a;
+			mac->cleanup(ctx);
+		}
+		const size_t lengths[] = {0, mac->digest_size - 1U, mac->digest_size + 1U, SIZE_MAX};
+		for (size_t i = 0; i < sizeof(lengths) / sizeof(lengths[0]); i++) {
+			dssh_mac_ctx *ctx = NULL;
+			int ret = mac->init(key, &ctx);
+			uint8_t output[66];
+			memset(output, 0x5a, sizeof(output));
+			size_t actual = 0;
+			valid = ret == 0 && ctx != NULL && valid;
+			if (ret == 0 && ctx != NULL) {
+				dssh_test_ossl_mac_length(lengths[i]);
+				ret = mac->generate(rfc4231_tc1_data, rfc4231_tc1_data_len, &output[1], ctx);
+				valid = valid && dssh_test_ossl_mac_observed(&actual) && actual == mac->digest_size;
+			}
+			dssh_test_ossl_reset();
+			valid = valid && ret == DSSH_ERROR_INIT && output[0] == 0x5a
+			    && output[mac->digest_size + 1U] == 0x5a
+			    && memcmp(&output[1], expected, mac->digest_size) == 0;
+			mac->cleanup(ctx);
+		}
+		int configured = EVP_set_default_properties(NULL, "provider=deucessh_missing_provider");
+		dssh_mac_ctx *ctx = NULL;
+		int ret = configured == 1 ? mac->init(key, &ctx) : 0;
+		int restored = EVP_set_default_properties(NULL, "");
+		ERR_clear_error();
+		valid = valid && configured == 1 && restored == 1 && ret == DSSH_ERROR_INIT && ctx == NULL;
+		mac->cleanup(ctx);
+	}
+	dssh_test_reset_global_config();
+	ASSERT_TRUE(valid);
+	return TEST_PASS;
+}
+#endif
+
 /* ================================================================
  * Test table
  * ================================================================ */
 
 static struct dssh_test_entry tests[] = {
+	{ "mac/registration_contract",       test_mac_registration_contract },
+	{ "mac/test_module_ownership",       test_mac_test_module_ownership },
+	{ "mac/test_module_failures",        test_mac_test_module_failures },
+#ifdef DSSH_CRYPTO_OPENSSL
+	{ "mac/native_failures",             test_mac_native_failures },
+#endif
+	{ "mac/module_rfc4231_vectors",       test_mac_module_rfc4231_vectors },
 	/* Registration */
 	{ "mac/dssh_register_hmac_sha2_256",      test_register_hmac_sha2_256 },
 	{ "mac/dssh_register_none_mac",           test_register_none_mac },
@@ -808,5 +1202,15 @@ static struct dssh_test_entry tests[] = {
 	{ "mac/none/no_init",                test_none_mac_no_init },
 };
 
-DSSH_TEST_NO_CLEANUP
+/* Native handles, sessions and module contexts are retired before assertions. */
+void
+dssh_test_failure_cleanup(void)
+{
+	dssh_test_alloc_reset();
+#ifdef DSSH_CRYPTO_OPENSSL
+	dssh_test_ossl_reset();
+#endif
+	test_mac_reset();
+	dssh_test_reset_global_config();
+}
 DSSH_TEST_MAIN(tests)

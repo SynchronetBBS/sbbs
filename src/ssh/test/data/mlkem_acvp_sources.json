@@ -1,0 +1,71 @@
+{
+  "source": "NIST ACVP-Server reference corpus",
+  "commit": "975de31eb83d87039ec88934fdc47d8c312b892d",
+  "commit_url": "https://github.com/usnistgov/ACVP-Server/commit/975de31eb83d87039ec88934fdc47d8c312b892d",
+  "selection": "Every ML-KEM-768 case in the keyGen-FIPS203 and encapDecap FIPS203/FIPS203-tr1 directories; other parameter sets are outside the implemented method.",
+  "inputs": {
+    "ML-KEM-encapDecap-FIPS203-expectedResults.json": {
+      "url": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files/ML-KEM-encapDecap-FIPS203/expectedResults.json",
+      "bytes": 190940,
+      "sha256": "9089ec6ff2424da9f2782b89b2f831a329a3e28d6e5e24b802b78ff36ac61cdf"
+    },
+    "ML-KEM-encapDecap-FIPS203-internalProjection.json": {
+      "url": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files/ML-KEM-encapDecap-FIPS203/internalProjection.json",
+      "bytes": 1465634,
+      "sha256": "a556952ce869bb89c3a3196a701dad89647c193a34c86eafb61a9d710d5b810f"
+    },
+    "ML-KEM-encapDecap-FIPS203-prompt.json": {
+      "url": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files/ML-KEM-encapDecap-FIPS203/prompt.json",
+      "bytes": 624189,
+      "sha256": "998e22dfb12efb14ce9fdff911ca634b13612819a1806f25da69adba7e16db91"
+    },
+    "ML-KEM-encapDecap-FIPS203-registration.json": {
+      "url": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files/ML-KEM-encapDecap-FIPS203/registration.json",
+      "bytes": 311,
+      "sha256": "757a5c1f79c1204fe9caaf88f3effc978f89f985cdae67450eeddc9b4fdd6975"
+    },
+    "ML-KEM-encapDecap-FIPS203-tr1-expectedResults.json": {
+      "url": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files/ML-KEM-encapDecap-FIPS203-tr1/expectedResults.json",
+      "bytes": 194889,
+      "sha256": "aa846067d30bebcfe4e839b076b1df5cdeb14332912b3e02dfe8d00c614098b4"
+    },
+    "ML-KEM-encapDecap-FIPS203-tr1-internalProjection.json": {
+      "url": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files/ML-KEM-encapDecap-FIPS203-tr1/internalProjection.json",
+      "bytes": 1767711,
+      "sha256": "5e88fbd351dc2915b2ab399f5dffd269e1cdbdd0186103ab0e90b374cf592187"
+    },
+    "ML-KEM-encapDecap-FIPS203-tr1-prompt.json": {
+      "url": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files/ML-KEM-encapDecap-FIPS203-tr1/prompt.json",
+      "bytes": 700234,
+      "sha256": "a25430d886a8212a21ed0d4015eb91aa30d555588465d47da04ffb45236d27fd"
+    },
+    "ML-KEM-encapDecap-FIPS203-tr1-registration.json": {
+      "url": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files/ML-KEM-encapDecap-FIPS203-tr1/registration.json",
+      "bytes": 365,
+      "sha256": "687a6e678406d85eacb38a7db00d6dd5bea809231b884eba481c8f79923d84ec"
+    },
+    "ML-KEM-keyGen-FIPS203-expectedResults.json": {
+      "url": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files/ML-KEM-keyGen-FIPS203/expectedResults.json",
+      "bytes": 544032,
+      "sha256": "a253d0ad91c95ebea5b409673defef0aa49d65d4ed72286399e2e798ddf073a4"
+    },
+    "ML-KEM-keyGen-FIPS203-prompt.json": {
+      "url": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files/ML-KEM-keyGen-FIPS203/prompt.json",
+      "bytes": 16066,
+      "sha256": "3f9ce34f6c836c77958bad2729e837c3b213f44ac36c3065976e7acca6389523"
+    },
+    "ML-KEM-keyGen-FIPS203-registration.json": {
+      "url": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/gen-val/json-files/ML-KEM-keyGen-FIPS203/registration.json",
+      "bytes": 187,
+      "sha256": "a8f94edf439d1fcb31e8e65e27426eb86ef8335b3a569b2be1cfe9f75460d271"
+    },
+    "README.md": {
+      "url": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/README.md",
+      "bytes": 21473,
+      "sha256": "d5a569884ee83bd1c4737042d0a2cc7d68c6950690f75a73ef14f505a9aa3555"
+    }
+  },
+  "expected_cases": 145,
+  "expected_implicit_rejections": 15,
+  "license_source": "https://raw.githubusercontent.com/usnistgov/ACVP-Server/975de31eb83d87039ec88934fdc47d8c312b892d/README.md"
+}

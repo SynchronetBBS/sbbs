@@ -1,5 +1,11 @@
 # RFC 4252 Conformance Audit — DeuceSSH
 
+> Historical report: its blanket conformance and APPLICATION classifications
+> are not current release evidence. The complete current review and outstanding
+> library/application requirements are tracked in
+> [the release ledger](release-1.0-evidence/rfc4252-ledger.md) and
+> [the release audit](release-1.0-audit.md).
+
 Systematic audit of every MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT,
 SHOULD, SHOULD NOT, RECOMMENDED, MAY, and OPTIONAL keyword in RFC 4252
 (SSH Authentication Protocol) against the DeuceSSH library code.
@@ -33,7 +39,7 @@ responsibility to not include `"none"` in this string.
 ### 4-2
 > However, it [the "none" method] **MAY** be sent by the client.
 
-**CONFORMS** — `dssh_auth_get_methods()` sends a "none" auth
+**CONFORMS** — `dssh_auth_begin()` sends a "none" auth
 request to query available methods.
 
 ### 4-3
@@ -79,7 +85,7 @@ delegated to the application callback.
 > [byte SSH_MSG_USERAUTH_REQUEST, string user name, string service name,
 > string method name, ...]
 
-**CONFORMS** — `dssh_auth_get_methods()`, `dssh_auth_password()`,
+**CONFORMS** — `dssh_auth_begin()`, `dssh_auth_password()`,
 and `dssh_auth_keyboard_interactive()` all build messages with
 this exact format: msg type (50), username string, service name
 (`"ssh-connection"`), method name, then method-specific fields.
@@ -89,30 +95,41 @@ this exact format: msg type (50), username string, service name
 > service name] in every message, and **MUST** flush any accumulated
 > authentication states if they change.
 
-**APPLICATION** — Server-side responsibility.
+**CONFORMS / APPLICATION** — The library validates the common prefix and
+compares complete username bytes on every USERAUTH_REQUEST. Without a request
+hook, a username change disconnects. With `request_cb`, `new_identity` identifies
+the first username and every change; the application must clear its accumulated
+factors before returning zero. The service must be `ssh-connection`; a complete
+prefix requesting another service disconnects before callback dispatch.
 
 ### 5-3
 > If [the server] is unable to flush an authentication state, it
 > **MUST** disconnect if the 'user name' or 'service name' changes.
 
-**APPLICATION** — Server-side responsibility.
+**CONFORMS** — A username change without `request_cb`, a nonzero hook result,
+or an unavailable service ends the session. An installed hook's zero return
+asserts that the application completed the required identity-state reset.
 
 ### 5-4
 > If the requested service is not available, the server **MAY**
 > disconnect immediately or at any later time.
 
-**APPLICATION** — Server-side responsibility.
+**CONFORMS** — A complete request for any service other than `ssh-connection`
+disconnects with SSH_DISCONNECT_SERVICE_NOT_AVAILABLE.
 
 ### 5-5
 > Sending a proper disconnect message is **RECOMMENDED**.
 
-**APPLICATION** — Server-side responsibility.
+**CONFORMS** — The unavailable-service path sends a disconnect before
+terminating. An I/O failure still terminates the session.
 
 ### 5-6
 > In any case, if the service does not exist, authentication **MUST
 > NOT** be accepted.
 
-**APPLICATION** — Server-side responsibility.
+**CONFORMS** — Unavailable services never reach a credential callback or
+USERAUTH_SUCCESS. See `auth/server/request_identity` for an actual exchange
+that changes service after partial authentication.
 
 ### 5-7
 > If the requested 'user name' does not exist, the server **MAY**

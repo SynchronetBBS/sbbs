@@ -5,6 +5,17 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "deucessh-abi.h"
+
+#define DSSH_ABI_STRING_INNER(value) #value
+#define DSSH_ABI_STRING(value) DSSH_ABI_STRING_INNER(value)
+#ifdef __APPLE__
+/* Mach-O declaration aliases also apply to definitions and function pointers. */
+#define DSSH_ABI(name) __asm("_" DSSH_ABI_STRING(DSSH_ABI_SYMBOL_ ## name))
+#else
+#define DSSH_ABI(name)
+#endif
+
 /* Overflow-safe bounds check for a field within a buffer. */
 static inline bool
 dssh_buffer_has(size_t buffer_len, size_t offset, size_t field_len)
@@ -37,12 +48,12 @@ dssh_buffer_has(size_t buffer_len, size_t offset, size_t field_len)
  * are no-ops.
  */
 #if defined(DSSH_SHARED)
- #if defined(__GNUC__) || defined(__clang__)
-  #define DSSH_PUBLIC  __attribute__((visibility("default")))
-  #define DSSH_PRIVATE __attribute__((visibility("hidden")))
- #elif defined(_MSC_VER)
+ #if defined(_WIN32) && (defined(_MSC_VER) || defined(__GNUC__) || defined(__clang__))
   #define DSSH_PUBLIC __declspec(dllexport)
   #define DSSH_PRIVATE
+ #elif defined(__GNUC__) || defined(__clang__)
+  #define DSSH_PUBLIC  __attribute__((visibility("default")))
+  #define DSSH_PRIVATE __attribute__((visibility("hidden")))
  #else
   #define DSSH_PUBLIC
   #define DSSH_PRIVATE
@@ -50,7 +61,7 @@ dssh_buffer_has(size_t buffer_len, size_t offset, size_t field_len)
 #elif defined(DSSH_SHARED_IMPORT)
 
 	/* Consumer of the shared library on Windows */
- #if defined(_MSC_VER)
+ #if defined(_WIN32) && (defined(_MSC_VER) || defined(__GNUC__) || defined(__clang__))
   #define DSSH_PUBLIC __declspec(dllimport)
   #define DSSH_PRIVATE
  #else
@@ -87,8 +98,10 @@ static inline void
 dssh_secure_zero(void *p, size_t n)
 {
 	volatile unsigned char *vp = (volatile unsigned char *)p;
-	while (n--)
+	while (n > 0) {
 		*vp++ = 0;
+		n--;
+	}
 }
 
 #endif   // ifndef DSSH_PORTABLE_H

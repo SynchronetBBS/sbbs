@@ -1,438 +1,381 @@
-/*
- * test_asymmetric_mac.c -- Verify correct key derivation when c2s and
- * s2c negotiate different MAC algorithms.
- *
- * Uses fork() after socketpair() so client and server have separate
- * global algorithm registries.  The server registers hmac-sha2-256
- * first (preferred), the client registers hmac-sha2-512 first.
- * RFC 4253 s7.1 uses the client's preference, so:
- *   mac_c2s = hmac-sha2-512 (client's first choice, server has it)
- *   mac_s2c = hmac-sha2-256 (client's first choice for s2c... )
- *
- * Actually, SSH sends the SAME preference list for both c2s and s2c
- * from each side.  So with client preferring 512 and server preferring
- * 256, negotiation (client preference wins) yields:
- *   mac_c2s = hmac-sha2-512
- *   mac_s2c = hmac-sha2-512
- *
- * To get truly asymmetric negotiation, the SERVER must offer different
- * lists for c2s vs s2c -- but the library builds one list for both.
- * Instead, we use a simpler approach: the server registers ONLY
- * hmac-sha2-256, the client registers ONLY hmac-sha2-512.  This
- * forces the only mutually-supported algorithm for BOTH directions
- * to... fail negotiation.
- *
- * REVISED APPROACH: We cannot get asymmetric MAC negotiation from the
- * standard SSH protocol when both sides use this library (it sends the
- * same preference list for c2s and s2c).  Instead, this test verifies
- * that the full stack works correctly with each MAC algorithm, and that
- * the per-direction key derivation code handles the sizes correctly by
- * running client and server in separate processes with different MAC
- * preference orders -- ensuring both hmac-sha2-512 and hmac-sha2-256
- * get exercised as the negotiated MAC depending on who "wins".
- *
- * Test 1: Client prefers 512, server prefers 256 → negotiates 512
- *         (client preference wins per RFC 4253 s7.1)
- * Test 2: Client prefers 256, server prefers 512 → negotiates 256
- *
- * Both tests do a full handshake, auth, channel open, data roundtrip,
- * and close -- exercising the complete key derivation path.
- */
-
+/* Client-preference tests over separate process registries. Both directions
+ * choose the client's first MAC. Actual asymmetric peer coverage is separate. */
 #include <errno.h>
+#include <poll.h>
 #include <signal.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <string.h>
 
 #include "dssh_test.h"
-#include "deucessh.h"
 #include "deucessh-auth.h"
 #include "deucessh-conn.h"
 #include "deucessh-algorithms.h"
 #include "ssh-trans.h"
-#include "ssh-internal.h"
 #include "dssh_test_internal.h"
-
-/* ================================================================
- * Socket I/O callbacks (same as test_selftest.c)
- * ================================================================ */
+#include "dssh_test_alloc.h"
 
 static int
-sock_tx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
+sock_tx(uint8_t *buf, size_t length, dssh_session sess, void *data)
 {
-	int fd = *(int *)cbdata;
-	size_t sent = 0;
-	while (sent < bufsz) {
+	int fd = *(int *)data;
+	size_t offset = 0;
+	while (offset < length) {
 		if (dssh_session_is_terminated(sess))
-			return -1;
-		ssize_t n = send(fd, buf + sent, bufsz - sent, 0);
-		if (n < 0 && errno == EINTR)
+			return DSSH_ERROR_TERMINATED;
+		ssize_t amount = send(fd, &buf[offset], length - offset, 0);
+		if (amount < 0 && errno == EINTR)
 			continue;
-		if (n <= 0)
-			return -1;
-		sent += (size_t)n;
+		if (amount <= 0)
+			return DSSH_ERROR_INIT;
+		size_t advanced = (size_t)amount;
+		if (advanced > length - offset)
+			return DSSH_ERROR_INVALID;
+		offset += advanced;
 	}
 	return 0;
 }
 
 static int
-sock_rx(uint8_t *buf, size_t bufsz, dssh_session sess, void *cbdata)
+sock_rx(uint8_t *buf, size_t length, dssh_session sess, void *data)
 {
-	int fd = *(int *)cbdata;
-	size_t got = 0;
-	while (got < bufsz) {
+	int fd = *(int *)data;
+	size_t offset = 0;
+	while (offset < length) {
 		if (dssh_session_is_terminated(sess))
-			return -1;
-		ssize_t n = recv(fd, buf + got, bufsz - got, 0);
-		if (n < 0 && errno == EINTR)
+			return DSSH_ERROR_TERMINATED;
+		ssize_t amount = recv(fd, &buf[offset], length - offset, 0);
+		if (amount < 0 && errno == EINTR)
 			continue;
-		if (n <= 0)
-			return -1;
-		got += (size_t)n;
+		if (amount <= 0)
+			return DSSH_ERROR_INIT;
+		size_t advanced = (size_t)amount;
+		if (advanced > length - offset)
+			return DSSH_ERROR_INVALID;
+		offset += advanced;
 	}
 	return 0;
 }
 
 static int
-sock_rxline(uint8_t *buf, size_t bufsz, size_t *bytes_received,
-    dssh_session sess, void *cbdata)
+register_algorithms(bool prefer_512, bool server)
 {
-	int fd = *(int *)cbdata;
-	size_t have = 0;
-	while (have < bufsz) {
-		if (dssh_session_is_terminated(sess))
-			return -1;
-		ssize_t n = recv(fd, &buf[have], 1, 0);
-		if (n < 0 && errno == EINTR)
-			continue;
-		if (n <= 0)
-			return -1;
-		have++;
-		if (buf[have - 1] == '\n') {
-			*bytes_received = have;
-			return 0;
-		}
-	}
-	return -1;
+	int ret = dssh_register_curve25519_sha256();
+	if (ret == 0)
+		ret = dssh_register_ssh_ed25519();
+	if (ret == 0)
+		ret = dssh_register_aes256_ctr();
+	if (ret == 0)
+		ret = prefer_512 ? dssh_register_hmac_sha2_512() : dssh_register_hmac_sha2_256();
+	if (ret == 0)
+		ret = prefer_512 ? dssh_register_hmac_sha2_256() : dssh_register_hmac_sha2_512();
+	if (ret == 0)
+		ret = dssh_register_none_comp();
+	if (ret == 0 && server)
+		ret = dssh_ed25519_generate_key();
+	if (ret == 0)
+		ret = dssh_transport_set_callbacks(sock_tx, sock_rx, NULL, NULL);
+	return ret;
 }
 
-/* ================================================================
- * Auth callbacks
- * ================================================================ */
+static int
+finish_session(dssh_session sess, int fd, int result)
+{
+	if (sess != NULL)
+		dssh_session_terminate(sess);
+	if (shutdown(fd, SHUT_RDWR) < 0 && errno != ENOTCONN)
+		result = 1;
+	dssh_session_cleanup(sess);
+	if (close(fd) < 0)
+		result = 1;
+	dssh_test_reset_global_config();
+	return result;
+}
 
 static int
-auth_pw_cb(const uint8_t *username, size_t username_len,
-    const uint8_t *password, size_t password_len,
-    uint8_t **change_prompt, size_t *change_prompt_len,
-    void *cbdata)
+auth_pw_cb(const uint8_t *user, size_t user_len, const uint8_t *password,
+    size_t password_len, struct dssh_bytes_result *output, void *data)
 {
-	(void)username; (void)username_len;
-	(void)password; (void)password_len;
-	(void)change_prompt; (void)change_prompt_len;
-	(void)cbdata;
-	return DSSH_AUTH_SUCCESS;
+	(void)output;
+	(void)data;
+	return user_len == 8 && memcmp(user, "testuser", 8) == 0
+	    && password_len == 8 && memcmp(password, "testpass", 8) == 0
+	    ? DSSH_AUTH_SUCCESS : DSSH_AUTH_FAILURE;
 }
 
 static int
 accept_exec_cb(dssh_channel ch, const struct dssh_chan_params *p,
-    struct dssh_chan_accept_result *result, void *cbdata)
+    struct dssh_chan_accept_result *result, void *data)
 {
-	(void)ch; (void)p; (void)result; (void)cbdata;
+	(void)ch;
+	(void)result;
+	(void)data;
+	return p->command != NULL && strcmp(p->command, "echo") == 0 ? 0 : -1;
+}
+
+static int
+transfer(dssh_channel ch, uint8_t *buffer, size_t length, bool write_data)
+{
+	size_t offset = 0;
+	while (offset < length) {
+		int wanted = write_data ? DSSH_POLL_WRITE : DSSH_POLL_READ;
+		int ready = dssh_chan_poll(ch, wanted, 5000);
+		if (ready <= 0 || (ready & wanted) == 0)
+			return 1;
+		int64_t amount = write_data ? dssh_chan_write(ch, 0, &buffer[offset], length - offset)
+		    : dssh_chan_read(ch, 0, &buffer[offset], length - offset);
+		if (amount <= 0 || amount > length - offset)
+			return 1;
+		size_t advanced = (size_t)amount;
+		offset += advanced;
+	}
 	return 0;
 }
 
-/*
- * Shut down a session cleanly: terminate the session (unblocks demux),
- * close the socket (unblocks any I/O), then free everything.
- */
-static void
-session_teardown(dssh_session sess, int fd)
+static int
+expect_event(dssh_channel ch, int type)
 {
-	if (sess != NULL)
-		dssh_session_terminate(sess);
-	shutdown(fd, SHUT_RDWR);
-	if (sess != NULL)
-		dssh_session_cleanup(sess);
-	close(fd);
+	int ready = dssh_chan_poll(ch, DSSH_POLL_EVENT, 5000);
+	if (ready <= 0 || (ready & DSSH_POLL_EVENT) == 0)
+		return 1;
+	struct dssh_chan_event event;
+	int ret = dssh_chan_read_event(ch, &event);
+	return ret == 0 && event.type == type
+	    && (type != DSSH_EVENT_EXIT_STATUS || event.exit_status.exit_code == 0) ? 0 : 1;
 }
 
-/* ================================================================
- * Server process: handshake, auth, echo one channel, exit.
- * Returns 0 on success, 1 on failure.
- * ================================================================ */
+static int
+wait_for_disconnect(dssh_session sess, int fd)
+{
+	for (unsigned attempt = 0; attempt < 150; attempt++) {
+		if (dssh_session_is_terminated(sess))
+			return 0;
+		struct pollfd item = {.fd = fd};
+		int ready = poll(&item, 1, 100);
+		if (ready < 0) {
+			if (errno == EINTR)
+				continue;
+			return 1;
+		}
+		if (ready > 0) {
+			if ((item.revents & POLLNVAL) != 0)
+				return 1;
+			if ((item.revents & (POLLHUP | POLLERR)) != 0)
+				return 0;
+		}
+	}
+	return 1;
+}
+
+static const uint8_t message[] = "mac-preference-test";
 
 static int
 run_server(int fd, bool prefer_512)
 {
 	dssh_test_reset_global_config();
-
-	/* Register algorithms -- MAC order depends on prefer_512 */
-	if (dssh_register_curve25519_sha256() < 0)
-		return 1;
-	if (dssh_register_ssh_ed25519() < 0)
-		return 1;
-	if (dssh_register_aes256_ctr() < 0)
-		return 1;
-	if (prefer_512) {
-		if (dssh_register_hmac_sha2_512() < 0)
-			return 1;
-		if (dssh_register_hmac_sha2_256() < 0)
-			return 1;
-	}
-	else {
-		if (dssh_register_hmac_sha2_256() < 0)
-			return 1;
-		if (dssh_register_hmac_sha2_512() < 0)
-			return 1;
-	}
-	if (dssh_register_none_comp() < 0)
-		return 1;
-	if (dssh_ed25519_generate_key() < 0)
-		return 1;
-
-	dssh_transport_set_callbacks(sock_tx, sock_rx, sock_rxline, NULL);
-
-	dssh_session sess = dssh_session_init(false, 0);
-	if (sess == NULL)
-		return 1;
-	dssh_session_set_cbdata(sess, &fd, &fd, &fd, &fd);
-
-	int rc = 1;
-
-	if (dssh_transport_handshake(sess) != 0)
-		goto out;
-
-	/* Server auth */
-	struct dssh_auth_server_cbs cbs = {
-		.methods_str = "password",
-		.password_cb = auth_pw_cb,
-	};
-	uint8_t username[64];
-	size_t ulen = sizeof(username);
-	if (dssh_auth_server(sess, &cbs, username, &ulen) != 0)
-		goto out;
-
-	/* Start demux, accept channel */
-	if (dssh_session_start(sess) != 0)
-		goto out;
-
-	struct dssh_chan_accept_cbs acbs = {
-		.exec = accept_exec_cb,
-	};
-	dssh_channel ch = dssh_chan_accept(sess, &acbs, 5000);
+	dssh_session sess = NULL;
+	int result = 1;
+	if (register_algorithms(prefer_512, true) != 0)
+		goto done;
+	sess = dssh_session_init(false, 0);
+	if (sess == NULL || dssh_session_set_cbdata(sess, &fd, &fd, &fd, &fd) != 0
+	    || dssh_transport_handshake(sess) != 0)
+		goto done;
+	struct dssh_auth_server_cbs auth = {.methods_str = "password", .password_cb = auth_pw_cb};
+	if (dssh_auth_server(sess, &auth, NULL, NULL) != 0 || dssh_session_start(sess) != 0)
+		goto done;
+	struct dssh_chan_accept_cbs accept = {.exec = accept_exec_cb};
+	dssh_channel ch = dssh_chan_accept(sess, &accept, 5000);
 	if (ch == NULL)
-		goto out;
-
-	/* Echo: read data, write it back */
-	uint8_t buf[256];
-	int pr = dssh_chan_poll(ch, DSSH_POLL_READ, 5000);
-	if (pr <= 0)
-		goto out;
-	int64_t nr = dssh_chan_read(ch, 0, buf, sizeof(buf));
-	if (nr <= 0)
-		goto out;
-	int64_t nw = dssh_chan_write(ch, 0, buf, (size_t)nr);
-	if (nw != nr)
-		goto out;
-
-	/* Wait for client to close */
-	while (dssh_chan_poll(ch, DSSH_POLL_EVENT, 2000) > 0) {
-		struct dssh_chan_event ev;
-		if (dssh_chan_read_event(ch, &ev) == 0 &&
-		    ev.type == DSSH_EVENT_EOF)
-			break;
-	}
-	dssh_chan_close(ch, 0);
-	rc = 0;
-
-out:
-	session_teardown(sess, fd);
-	return rc;
+		goto done;
+	uint8_t buffer[sizeof(message)];
+	if (transfer(ch, buffer, sizeof(buffer), false) != 0
+	    || memcmp(buffer, message, sizeof(buffer)) != 0
+	    || transfer(ch, buffer, sizeof(buffer), true) != 0
+	    || expect_event(ch, DSSH_EVENT_EOF) != 0)
+		goto done;
+	if (dssh_chan_close(ch, 0) != 0)
+		goto done;
+	result = wait_for_disconnect(sess, fd);
+done:
+	return finish_session(sess, fd, result);
 }
-
-/* ================================================================
- * Client process: handshake, auth, send data, verify echo, close.
- * Returns 0 on success, 1 on failure.
- * ================================================================ */
 
 static int
 run_client(int fd, bool prefer_512, uint16_t expected_digest)
 {
 	dssh_test_reset_global_config();
-
-	if (dssh_register_curve25519_sha256() < 0)
-		return 1;
-	if (dssh_register_ssh_ed25519() < 0)
-		return 1;
-	if (dssh_register_aes256_ctr() < 0)
-		return 1;
-	if (prefer_512) {
-		if (dssh_register_hmac_sha2_512() < 0)
-			return 1;
-		if (dssh_register_hmac_sha2_256() < 0)
-			return 1;
-	}
-	else {
-		if (dssh_register_hmac_sha2_256() < 0)
-			return 1;
-		if (dssh_register_hmac_sha2_512() < 0)
-			return 1;
-	}
-	if (dssh_register_none_comp() < 0)
-		return 1;
-
-	dssh_transport_set_callbacks(sock_tx, sock_rx, sock_rxline, NULL);
-
-	dssh_session sess = dssh_session_init(true, 0);
-	if (sess == NULL)
-		return 1;
-	dssh_session_set_cbdata(sess, &fd, &fd, &fd, &fd);
-	dssh_session_set_hostkey_verify_cb(sess, dssh_test_accept_hostkey, NULL);
-
-	int rc = 1;
-
-	if (dssh_transport_handshake(sess) != 0)
-		goto out;
-
-	/* Verify negotiated MAC digest size */
-	if (sess->trans.mac_c2s_selected->digest_size != expected_digest ||
-	    sess->trans.mac_s2c_selected->digest_size != expected_digest) {
-		fprintf(stderr, "MAC digest mismatch: c2s=%u s2c=%u expected=%u\n",
-		    sess->trans.mac_c2s_selected->digest_size,
-		    sess->trans.mac_s2c_selected->digest_size,
-		    expected_digest);
-		goto out;
-	}
-
-	/* Client auth */
-	if (dssh_auth_password(sess, "testuser", "testpass",
-	    NULL, NULL) != 0)
-		goto out;
-
-	/* Start demux, open channel */
-	if (dssh_session_start(sess) != 0)
-		goto out;
-
+	dssh_session sess = NULL;
+	int result = 1;
+	if (register_algorithms(prefer_512, false) != 0)
+		goto done;
+	sess = dssh_session_init(true, 0);
+	if (sess == NULL || dssh_session_set_cbdata(sess, &fd, &fd, &fd, &fd) != 0
+	    || dssh_session_set_hostkey_verify_cb(sess, dssh_test_accept_hostkey, NULL) != 0
+	    || dssh_transport_handshake(sess) != 0)
+		goto done;
+	if (sess->trans.mac_c2s_selected->digest_size != expected_digest
+	    || sess->trans.mac_s2c_selected->digest_size != expected_digest)
+		goto done;
+	if (dssh_auth_password(sess, "testuser", "testpass", NULL, NULL) != 0
+	    || dssh_session_start(sess) != 0)
+		goto done;
 	struct dssh_chan_params params;
 	dssh_chan_params_init(&params, DSSH_CHAN_SESSION);
-	dssh_chan_params_set_command(&params, "echo");
-	dssh_channel ch = dssh_chan_open(sess, &params);
+	int ret = dssh_chan_params_set_command(&params, "echo");
+	dssh_channel ch = ret == 0 ? dssh_chan_open(sess, &params) : NULL;
 	dssh_chan_params_free(&params);
 	if (ch == NULL)
-		goto out;
-
-	/* Send test data */
-	const uint8_t test_data[] = "asymmetric-mac-test";
-	if (dssh_chan_poll(ch, DSSH_POLL_WRITE, 5000) <= 0)
-		goto out;
-	int64_t nw = dssh_chan_write(ch, 0, test_data, sizeof(test_data));
-	if (nw != (int64_t)sizeof(test_data))
-		goto out;
-
-	/* Read echo back */
-	uint8_t buf[256];
-	if (dssh_chan_poll(ch, DSSH_POLL_READ, 5000) <= 0)
-		goto out;
-	int64_t nr = dssh_chan_read(ch, 0, buf, sizeof(buf));
-	if (nr != (int64_t)sizeof(test_data) ||
-	    memcmp(buf, test_data, sizeof(test_data)) != 0)
-		goto out;
-
-	dssh_chan_close(ch, 0);
-	rc = 0;
-
-out:
-	session_teardown(sess, fd);
-	return rc;
+		goto done;
+	uint8_t buffer[sizeof(message)];
+	memcpy(buffer, message, sizeof(buffer));
+	if (transfer(ch, buffer, sizeof(buffer), true) != 0
+	    || transfer(ch, buffer, sizeof(buffer), false) != 0
+	    || memcmp(buffer, message, sizeof(buffer)) != 0
+	    || dssh_chan_shutwr(ch) != 0
+	    || expect_event(ch, DSSH_EVENT_EXIT_STATUS) != 0
+	    || expect_event(ch, DSSH_EVENT_EOF) != 0
+	    || expect_event(ch, DSSH_EVENT_CLOSE) != 0
+	    || dssh_chan_close(ch, -1) != 0)
+		goto done;
+	result = 0;
+done:
+	return finish_session(sess, fd, result);
 }
 
-/* ================================================================
- * Fork-based test runner
- *
- * Creates a socketpair, forks.  Child runs the server, parent runs
- * the client.  Each process has its own global algorithm registry.
- * ================================================================ */
+static void
+close_failed_pair(int descriptors[2])
+{
+	for (size_t i = 0; i < 2; i++) {
+		if (close(descriptors[i]) < 0)
+			perror("close fixture socket");
+	}
+}
+
+static pid_t
+wait_child(pid_t child, int *status, bool inject_interrupt)
+{
+	pid_t waited;
+	do {
+		if (inject_interrupt) {
+			inject_interrupt = false;
+			errno = EINTR;
+			waited = -1;
+		}
+		else
+			waited = waitpid(child, status, 0);
+	} while (waited < 0 && errno == EINTR);
+	return waited;
+}
 
 static int
 fork_test(bool client_prefer_512, bool server_prefer_512,
-    uint16_t expected_digest)
+    uint16_t expected_digest, bool fail_client)
 {
-	int sv[2];
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) < 0)
+	int descriptors[2];
+	if (socketpair(AF_UNIX, SOCK_STREAM, 0, descriptors) < 0)
 		return TEST_FAIL;
-
-	pid_t pid = fork();
-	if (pid < 0) {
-		close(sv[0]);
-		close(sv[1]);
+	const struct timeval timeout = {.tv_sec = 10};
+	for (size_t i = 0; i < 2; i++) {
+		if (setsockopt(descriptors[i], SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0
+		    || setsockopt(descriptors[i], SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0) {
+			close_failed_pair(descriptors);
+			return TEST_FAIL;
+		}
+	}
+	pid_t child = fork();
+	if (child < 0) {
+		close_failed_pair(descriptors);
 		return TEST_FAIL;
 	}
-
-	if (pid == 0) {
-		/* Child: server on sv[1].
-		 * alarm() ensures we don't hang forever on failure. */
-		close(sv[0]);
+	if (child == 0) {
+		if (close(descriptors[0]) < 0)
+			_exit(1);
 		alarm(30);
-		_exit(run_server(sv[1], server_prefer_512));
+		_exit(run_server(descriptors[1], server_prefer_512));
 	}
-
-	/* Parent: client on sv[0].
-	 * run_client calls session_teardown which closes the fd. */
-	close(sv[1]);
-	int client_result = run_client(sv[0], client_prefer_512,
-	    expected_digest);
-
-	/* Wait for child */
-	int status;
-	waitpid(pid, &status, 0);
-	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-		fprintf(stderr, "  server process failed (status=%d)\n",
-		    WIFEXITED(status) ? WEXITSTATUS(status) : -1);
+	if (close(descriptors[1]) < 0) {
+		if (shutdown(descriptors[0], SHUT_RDWR) < 0)
+			perror("shutdown fixture socket");
+		if (close(descriptors[0]) < 0)
+			perror("close fixture socket");
+		if (kill(child, SIGTERM) < 0 && errno != ESRCH)
+			perror("kill fixture child");
+		int status = 0;
+		if (wait_child(child, &status, false) != child)
+			perror("wait fixture child");
 		return TEST_FAIL;
 	}
-	if (client_result != 0)
+	if (fail_client)
+		dssh_test_alloc_fail_after(0);
+	int result = run_client(descriptors[0], client_prefer_512, expected_digest);
+	int allocations = fail_client ? dssh_test_alloc_count() : 0;
+	dssh_test_alloc_reset();
+	if (result != 0 && kill(child, SIGTERM) < 0 && errno != ESRCH)
+		perror("kill fixture child");
+	int status = 0;
+	pid_t waited = wait_child(child, &status, false);
+	bool success = waited == child && WIFEXITED(status) && WEXITSTATUS(status) == 0;
+	if (!success && !fail_client) {
+		intmax_t waited_count = (intmax_t)waited;
+		intmax_t child_count = (intmax_t)child;
+		fprintf(stderr, "fixture child wait=%jd expected=%jd status=%d\n",
+		    waited_count, child_count, status);
+	}
+	if (fail_client) {
+		int child_exit = waited == child && WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+		int child_signal = waited == child && WIFSIGNALED(status) ? WTERMSIG(status) : 0;
+		printf("preference_setup_failure client=%d allocations=%d reaped=%u child-exit=%d child-signal=%d\n",
+		    result, allocations, waited == child ? 1U : 0U, child_exit, child_signal);
+		return result == 1 && allocations == 1 && waited == child ? TEST_PASS : TEST_FAIL;
+	}
+	return result == 0 && success ? TEST_PASS : TEST_FAIL;
+}
+
+static int
+test_child_status(void)
+{
+	pid_t child = fork();
+	if (child < 0)
 		return TEST_FAIL;
+	if (child == 0)
+		_exit(7);
+	int status = 0;
+	pid_t waited = wait_child(child, &status, true);
+	bool valid = waited == child && WIFEXITED(status) && WEXITSTATUS(status) == 7;
+	waited = wait_child(child, &status, false);
+	valid = valid && waited < 0 && errno == ECHILD;
+	printf("preference_child_status exit-seven=1 interrupted-wait=1 repeated-echild=1 valid=%u\n",
+	    valid ? 1U : 0U);
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 
-/* ================================================================
- * Test cases
- * ================================================================ */
-
-/*
- * Client prefers hmac-sha2-512, server prefers hmac-sha2-256.
- * RFC 4253 s7.1: client preference wins → negotiates hmac-sha2-512.
- * Full echo roundtrip exercises key derivation with 64-byte MAC keys.
- */
 static int
 test_client_512_server_256(void)
 {
-	return fork_test(true, false, 64);
+	return fork_test(true, false, 64, false);
 }
 
-/*
- * Client prefers hmac-sha2-256, server prefers hmac-sha2-512.
- * Client preference wins → negotiates hmac-sha2-256.
- * Full echo roundtrip exercises key derivation with 32-byte MAC keys.
- */
 static int
 test_client_256_server_512(void)
 {
-	return fork_test(false, true, 32);
+	return fork_test(false, true, 32, false);
 }
 
-/* ================================================================
- * Test table
- * ================================================================ */
+static int
+test_client_setup_failure(void)
+{
+	return fork_test(false, true, 32, true);
+}
 
 static struct dssh_test_entry tests[] = {
-	{ "asymmetric_mac/client_512_server_256",
-	    test_client_512_server_256 },
-	{ "asymmetric_mac/client_256_server_512",
-	    test_client_256_server_512 },
+	{"asymmetric_mac/child_status", test_child_status},
+	{"asymmetric_mac/client_setup_failure", test_client_setup_failure},
+	{"asymmetric_mac/client_512_server_256", test_client_512_server_256},
+	{"asymmetric_mac/client_256_server_512", test_client_256_server_512},
 };
-
 DSSH_TEST_NO_CLEANUP
 DSSH_TEST_MAIN(tests)

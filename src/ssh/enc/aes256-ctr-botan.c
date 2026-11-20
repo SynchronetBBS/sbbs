@@ -8,8 +8,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "deucessh-algorithms.h"
 #include "deucessh-enc.h"
 #include "deucessh.h"
+#ifdef DSSH_TESTING
+ #include "ssh-internal.h"
+#endif
 
 #define AES256_CTR_BLOCK_SIZE 16
 #define AES256_CTR_KEY_SIZE   32
@@ -39,5 +43,8 @@ dssh_register_aes256_ctr(void)
 	enc->blocksize     = AES256_CTR_BLOCK_SIZE;
 	enc->key_size      = AES256_CTR_KEY_SIZE;
 	memcpy(enc->name, name, sizeof(name));
-	return dssh_transport_register_enc(enc);
+	int ret = dssh_transport_register_enc(enc);
+	if (ret < 0)
+		free(enc);
+	return ret;
 }

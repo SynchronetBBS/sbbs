@@ -7,6 +7,7 @@
 #include "deucessh-crypto.h"
 
 #include <string.h>
+#include <limits.h>
 
 /* SHA-256("") = e3b0c44298fc1c14... */
 static const uint8_t sha256_empty[32] = {
@@ -43,18 +44,13 @@ test_hash_sha256(void)
 {
 	dssh_hash_ctx *ctx = NULL;
 	size_t digest_len = 0;
-
-	ASSERT_OK(dssh_hash_init(&ctx, "SHA-256", &digest_len));
-	ASSERT_NOT_NULL(ctx);
-	ASSERT_EQ_U(digest_len, 32);
-
-	/* Hash empty string. */
 	uint8_t out[32];
-
-	ASSERT_OK(dssh_hash_final(ctx, out, sizeof(out)));
-	ASSERT_MEM_EQ(out, sha256_empty, 32);
-
+	bool valid = dssh_hash_init(&ctx, "SHA-256", &digest_len) == 0
+	    && ctx != NULL && digest_len == sizeof(out)
+	    && dssh_hash_final(ctx, out, sizeof(out)) == 0
+	    && memcmp(out, sha256_empty, sizeof(out)) == 0;
 	dssh_hash_free(ctx);
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 
@@ -63,19 +59,15 @@ test_hash_sha256_data(void)
 {
 	dssh_hash_ctx *ctx = NULL;
 	size_t digest_len = 0;
-
-	ASSERT_OK(dssh_hash_init(&ctx, "SHA-256", &digest_len));
-
 	const uint8_t abc[] = { 'a', 'b', 'c' };
-
-	ASSERT_OK(dssh_hash_update(ctx, abc, 3));
-
 	uint8_t out[32];
-
-	ASSERT_OK(dssh_hash_final(ctx, out, sizeof(out)));
-	ASSERT_MEM_EQ(out, sha256_abc, 32);
-
+	bool valid = dssh_hash_init(&ctx, "SHA-256", &digest_len) == 0
+	    && ctx != NULL && digest_len == sizeof(out)
+	    && dssh_hash_update(ctx, abc, sizeof(abc)) == 0
+	    && dssh_hash_final(ctx, out, sizeof(out)) == 0
+	    && memcmp(out, sha256_abc, sizeof(out)) == 0;
 	dssh_hash_free(ctx);
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 
@@ -84,15 +76,16 @@ test_hash_final_short_buf(void)
 {
 	dssh_hash_ctx *ctx = NULL;
 	size_t digest_len = 0;
-
-	ASSERT_OK(dssh_hash_init(&ctx, "SHA-256", &digest_len));
-
-	/* outlen (1) < digest_len (32) should fail. */
-	uint8_t out[1];
-
-	ASSERT_ERR(dssh_hash_final(ctx, out, 1), DSSH_ERROR_INVALID);
-
+	uint8_t short_out[] = {0xa5};
+	uint8_t out[32];
+	bool valid = dssh_hash_init(&ctx, "SHA-256", &digest_len) == 0
+	    && ctx != NULL && digest_len == sizeof(out)
+	    && dssh_hash_final(ctx, short_out, sizeof(short_out)) == DSSH_ERROR_INVALID
+	    && short_out[0] == 0xa5
+	    && dssh_hash_final(ctx, out, sizeof(out)) == 0
+	    && memcmp(out, sha256_empty, sizeof(out)) == 0;
 	dssh_hash_free(ctx);
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 
@@ -101,33 +94,19 @@ test_hash_null_params(void)
 {
 	dssh_hash_ctx *ctx = NULL;
 	size_t digest_len = 0;
-
-	/* NULL ctx pointer. */
-	ASSERT_ERR(dssh_hash_init(NULL, "SHA-256", &digest_len),
-	    DSSH_ERROR_INVALID);
-
-	/* NULL name. */
-	ASSERT_ERR(dssh_hash_init(&ctx, NULL, &digest_len),
-	    DSSH_ERROR_INVALID);
-
-	/* NULL digest_len output. */
-	ASSERT_ERR(dssh_hash_init(&ctx, "SHA-256", NULL),
-	    DSSH_ERROR_INVALID);
-
-	/* NULL ctx to update. */
-	uint8_t data = 0;
-
-	ASSERT_ERR(dssh_hash_update(NULL, &data, 1), DSSH_ERROR_INVALID);
-
-	/* NULL ctx to final. */
+	const uint8_t data = 0;
 	uint8_t out[32];
-
-	ASSERT_ERR(dssh_hash_final(NULL, out, sizeof(out)),
-	    DSSH_ERROR_INVALID);
-
-	/* Free NULL is safe (no crash). */
+	bool valid = dssh_hash_init(NULL, "SHA-256", &digest_len) == DSSH_ERROR_INVALID
+	    && digest_len == 0
+	    && dssh_hash_init(&ctx, NULL, &digest_len) == DSSH_ERROR_INVALID
+	    && ctx == NULL && digest_len == 0
+	    && dssh_hash_init(&ctx, "SHA-256", NULL) == DSSH_ERROR_INVALID
+	    && ctx == NULL
+	    && dssh_hash_update(NULL, &data, 1) == DSSH_ERROR_INVALID
+	    && dssh_hash_final(NULL, out, sizeof(out)) == DSSH_ERROR_INVALID;
+	dssh_hash_free(ctx);
 	dssh_hash_free(NULL);
-
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 
@@ -136,14 +115,14 @@ test_hash_final_null_out(void)
 {
 	dssh_hash_ctx *ctx = NULL;
 	size_t digest_len = 0;
-
-	ASSERT_OK(dssh_hash_init(&ctx, "SHA-256", &digest_len));
-
-	/* NULL output buffer should return DSSH_ERROR_INVALID. */
-	ASSERT_ERR(dssh_hash_final(ctx, NULL, digest_len),
-	    DSSH_ERROR_INVALID);
-
+	uint8_t out[32];
+	bool valid = dssh_hash_init(&ctx, "SHA-256", &digest_len) == 0
+	    && ctx != NULL && digest_len == sizeof(out)
+	    && dssh_hash_final(ctx, NULL, digest_len) == DSSH_ERROR_INVALID
+	    && dssh_hash_final(ctx, out, sizeof(out)) == 0
+	    && memcmp(out, sha256_empty, sizeof(out)) == 0;
 	dssh_hash_free(ctx);
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 
@@ -152,11 +131,10 @@ test_hash_unknown_algo(void)
 {
 	dssh_hash_ctx *ctx = NULL;
 	size_t digest_len = 0;
-
-	ASSERT_ERR(dssh_hash_init(&ctx, "NONSENSE", &digest_len),
-	    DSSH_ERROR_INIT);
-	ASSERT_NULL(ctx);
-
+	bool valid = dssh_hash_init(&ctx, "NONSENSE", &digest_len) == DSSH_ERROR_INIT
+	    && ctx == NULL && digest_len == 0;
+	dssh_hash_free(ctx);
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 
@@ -165,26 +143,17 @@ test_hash_reuse(void)
 {
 	dssh_hash_ctx *ctx = NULL;
 	size_t digest_len = 0;
-
-	ASSERT_OK(dssh_hash_init(&ctx, "SHA-256", &digest_len));
-
-	/* First hash: empty → sha256_empty. */
-	uint8_t out1[32];
-
-	ASSERT_OK(dssh_hash_final(ctx, out1, sizeof(out1)));
-	ASSERT_MEM_EQ(out1, sha256_empty, 32);
-
-	/* Context should be reset — hash "abc" next. */
+	uint8_t out[32];
 	const uint8_t abc[] = { 'a', 'b', 'c' };
-
-	ASSERT_OK(dssh_hash_update(ctx, abc, 3));
-
-	uint8_t out2[32];
-
-	ASSERT_OK(dssh_hash_final(ctx, out2, sizeof(out2)));
-	ASSERT_MEM_EQ(out2, sha256_abc, 32);
-
+	bool valid = dssh_hash_init(&ctx, "SHA-256", &digest_len) == 0
+	    && ctx != NULL && digest_len == sizeof(out)
+	    && dssh_hash_final(ctx, out, sizeof(out)) == 0
+	    && memcmp(out, sha256_empty, sizeof(out)) == 0
+	    && dssh_hash_update(ctx, abc, sizeof(abc)) == 0
+	    && dssh_hash_final(ctx, out, sizeof(out)) == 0
+	    && memcmp(out, sha256_abc, sizeof(out)) == 0;
 	dssh_hash_free(ctx);
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 
@@ -193,16 +162,13 @@ test_hash_sha512(void)
 {
 	dssh_hash_ctx *ctx = NULL;
 	size_t digest_len = 0;
-
-	ASSERT_OK(dssh_hash_init(&ctx, "SHA-512", &digest_len));
-	ASSERT_EQ_U(digest_len, 64);
-
-	/* Just verify init/final/free lifecycle works for SHA-512. */
 	uint8_t out[64];
-
-	ASSERT_OK(dssh_hash_final(ctx, out, sizeof(out)));
-
+	bool valid = dssh_hash_init(&ctx, "SHA-512", &digest_len) == 0
+	    && ctx != NULL && digest_len == sizeof(out)
+	    && dssh_hash_final(ctx, out, sizeof(out)) == 0
+	    && memcmp(out, sha512_empty, sizeof(out)) == 0;
 	dssh_hash_free(ctx);
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 
@@ -211,22 +177,12 @@ test_hash_sha512(void)
 static int
 test_random_basic(void)
 {
-	uint8_t buf[32];
-
-	memset(buf, 0, sizeof(buf));
-	ASSERT_OK(dssh_random(buf, sizeof(buf)));
-
-	/* At least one byte should be non-zero (probability of all-zero
-	 * from a CSPRNG is astronomically low). */
-	int any_nonzero = 0;
-
-	for (size_t i = 0; i < sizeof(buf); i++) {
-		if (buf[i] != 0) {
-			any_nonzero = 1;
-			break;
-		}
-	}
-	ASSERT_TRUE(any_nonzero);
+	uint8_t frame[34];
+	memset(frame, 0xa5, sizeof(frame));
+	ASSERT_EQ(dssh_random(frame + 1, sizeof(frame) - 2), 0);
+	ASSERT_EQ(frame[0], 0xa5);
+	ASSERT_EQ(frame[sizeof(frame) - 1], 0xa5);
+	/* This is a bounded native-call smoke test, not an entropy test. */
 	return TEST_PASS;
 }
 
@@ -240,14 +196,11 @@ test_random_null(void)
 static int
 test_random_zero_len(void)
 {
-	uint8_t buf[4] = { 0xAA, 0xBB, 0xCC, 0xDD };
-
-	ASSERT_OK(dssh_random(buf, 0));
-
-	/* Buffer should be untouched. */
-	ASSERT_EQ(buf[0], 0xAA);
-	ASSERT_EQ(buf[1], 0xBB);
-
+	const uint8_t expected[] = {0xAA, 0xBB, 0xCC, 0xDD};
+	uint8_t buf[sizeof(expected)];
+	memcpy(buf, expected, sizeof(buf));
+	ASSERT_EQ(dssh_random(buf, 0), 0);
+	ASSERT_MEM_EQ(buf, expected, sizeof(buf));
 	return TEST_PASS;
 }
 
@@ -256,16 +209,17 @@ test_random_zero_len(void)
 static int
 test_base64_basic(void)
 {
-	/* Base64("Hello") = "SGVsbG8=" */
 	const uint8_t input[] = { 'H', 'e', 'l', 'l', 'o' };
 	char out[16];
-
+	char untouched[sizeof(out) - sizeof("SGVsbG8=")];
+	memset(out, 0x5a, sizeof(out));
+	memset(untouched, 0x5a, sizeof(untouched));
 	int ret = dssh_base64_encode(input, sizeof(input), out, sizeof(out));
-
-	ASSERT_TRUE(ret > 0);
-	ASSERT_STR_EQ(out, "SGVsbG8=");
 	ASSERT_EQ(ret, 8);
-
+	/* Compare the terminator with a fixed extent, without trusting output
+	 * termination before inspecting it. The unused capacity stays intact. */
+	ASSERT_MEM_EQ(out, "SGVsbG8=", sizeof("SGVsbG8="));
+	ASSERT_MEM_EQ(out + sizeof("SGVsbG8="), untouched, sizeof(untouched));
 	return TEST_PASS;
 }
 
@@ -291,8 +245,23 @@ test_base64_small_buf(void)
 	int ret = dssh_base64_encode(input, sizeof(input), out, sizeof(out));
 
 	/* Should fail — output buffer too small. */
-	ASSERT_TRUE(ret < 0);
+	ASSERT_ERR(ret, DSSH_ERROR_TOOLONG);
 
+	return TEST_PASS;
+}
+
+static int
+test_base64_result_range(void)
+{
+	const uint8_t input[] = { 0 };
+	char output[] = { 'x' };
+	/* These lengths must be rejected before any buffer access. */
+	ASSERT_ERR(dssh_base64_encode(input, SIZE_MAX, output, SIZE_MAX), DSSH_ERROR_TOOLONG);
+#if SIZE_MAX > INT_MAX
+	size_t length = ((size_t)INT_MAX / 4) * 3 + 1;
+	ASSERT_ERR(dssh_base64_encode(input, length, output, SIZE_MAX), DSSH_ERROR_TOOLONG);
+#endif
+	ASSERT_EQ(output[0], 'x');
 	return TEST_PASS;
 }
 
@@ -353,10 +322,11 @@ test_cleanse(void)
 static int
 test_hash_oneshot_sha256(void)
 {
+	const uint8_t *input = (const uint8_t *)"abc";
 	uint8_t out[32];
 
-	ASSERT_OK(dssh_hash_oneshot("SHA-256",
-	    (const uint8_t *)"abc", 3, out, sizeof(out)));
+	ASSERT_EQ(dssh_hash_oneshot("SHA-256",
+	    input, 3, out, sizeof(out)), 0);
 	ASSERT_MEM_EQ(out, sha256_abc, 32);
 
 	return TEST_PASS;
@@ -365,10 +335,11 @@ test_hash_oneshot_sha256(void)
 static int
 test_hash_oneshot_sha512(void)
 {
+	const uint8_t *input = (const uint8_t *)"";
 	uint8_t out[64];
 
-	ASSERT_OK(dssh_hash_oneshot("SHA-512",
-	    (const uint8_t *)"", 0, out, sizeof(out)));
+	ASSERT_EQ(dssh_hash_oneshot("SHA-512",
+	    input, 0, out, sizeof(out)), 0);
 	ASSERT_MEM_EQ(out, sha512_empty, 64);
 
 	return TEST_PASS;
@@ -377,10 +348,11 @@ test_hash_oneshot_sha512(void)
 static int
 test_hash_oneshot_empty(void)
 {
+	const uint8_t *input = (const uint8_t *)"";
 	uint8_t out[32];
 
-	ASSERT_OK(dssh_hash_oneshot("SHA-256",
-	    (const uint8_t *)"", 0, out, sizeof(out)));
+	ASSERT_EQ(dssh_hash_oneshot("SHA-256",
+	    input, 0, out, sizeof(out)), 0);
 	ASSERT_MEM_EQ(out, sha256_empty, 32);
 
 	return TEST_PASS;
@@ -405,7 +377,7 @@ test_hash_oneshot_null_params(void)
 	    DSSH_ERROR_INVALID);
 
 	/* NULL data with zero len is OK. */
-	ASSERT_OK(dssh_hash_oneshot("SHA-256", NULL, 0, out, sizeof(out)));
+	ASSERT_EQ(dssh_hash_oneshot("SHA-256", NULL, 0, out, sizeof(out)), 0);
 	ASSERT_MEM_EQ(out, sha256_empty, 32);
 
 	return TEST_PASS;
@@ -414,10 +386,11 @@ test_hash_oneshot_null_params(void)
 static int
 test_hash_oneshot_small_buf(void)
 {
+	const uint8_t *input = (const uint8_t *)"abc";
 	uint8_t out[16]; /* Too small for SHA-256 (32 bytes). */
 
 	ASSERT_ERR(dssh_hash_oneshot("SHA-256",
-	    (const uint8_t *)"abc", 3, out, sizeof(out)),
+	    input, 3, out, sizeof(out)),
 	    DSSH_ERROR_INVALID);
 
 	return TEST_PASS;
@@ -426,10 +399,11 @@ test_hash_oneshot_small_buf(void)
 static int
 test_hash_oneshot_unknown_algo(void)
 {
+	const uint8_t *input = (const uint8_t *)"abc";
 	uint8_t out[32];
 
 	ASSERT_ERR(dssh_hash_oneshot("NONSENSE",
-	    (const uint8_t *)"abc", 3, out, sizeof(out)),
+	    input, 3, out, sizeof(out)),
 	    DSSH_ERROR_INIT);
 
 	return TEST_PASS;
@@ -442,22 +416,15 @@ test_hash_update_null_data(void)
 {
 	dssh_hash_ctx *ctx = NULL;
 	size_t digest_len = 0;
-
-	ASSERT_OK(dssh_hash_init(&ctx, "SHA-256", &digest_len));
-
-	/* NULL data with non-zero len must fail. */
-	ASSERT_ERR(dssh_hash_update(ctx, NULL, 32), DSSH_ERROR_INVALID);
-
-	/* NULL data with zero len is OK (no-op). */
-	ASSERT_OK(dssh_hash_update(ctx, NULL, 0));
-
-	/* Context still usable after the failed update. */
 	uint8_t out[32];
-
-	ASSERT_OK(dssh_hash_final(ctx, out, sizeof(out)));
-	ASSERT_MEM_EQ(out, sha256_empty, 32);
-
+	bool valid = dssh_hash_init(&ctx, "SHA-256", &digest_len) == 0
+	    && ctx != NULL && digest_len == sizeof(out)
+	    && dssh_hash_update(ctx, NULL, 32) == DSSH_ERROR_INVALID
+	    && dssh_hash_update(ctx, NULL, 0) == 0
+	    && dssh_hash_final(ctx, out, sizeof(out)) == 0
+	    && memcmp(out, sha256_empty, sizeof(out)) == 0;
 	dssh_hash_free(ctx);
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 
@@ -483,9 +450,24 @@ test_memcmp_null_inputs(void)
 	return TEST_PASS;
 }
 
+#include "crypto_contract_cases.h"
+
 /* ---- Test table ---- */
 
 static struct dssh_test_entry tests[] = {
+	{ "contract/hash_binary", test_contract_hash_binary },
+	{ "contract/hash_million", test_contract_hash_million },
+	{ "contract/hash_rejections", test_contract_hash_rejections },
+	{ "contract/base64_vectors", test_contract_base64 },
+	{ "contract/zero_lengths", test_contract_zero_lengths },
+#ifdef DSSH_CRYPTO_OPENSSL
+	{ "contract/encoded_lengths", test_contract_encoded_lengths },
+	{ "contract/hash_failures", test_contract_hash_failures },
+	{ "contract/hash_reported_lengths", test_contract_hash_reported_lengths },
+	{ "contract/hash_publication", test_contract_hash_publication },
+	{ "contract/oneshot_rng_errors", test_contract_oneshot_rng_errors },
+	{ "contract/rng_request", test_contract_rng_request },
+#endif
 	{ "hash/sha256",           test_hash_sha256 },
 	{ "hash/sha256_data",      test_hash_sha256_data },
 	{ "hash/final_short_buf",  test_hash_final_short_buf },
@@ -500,6 +482,7 @@ static struct dssh_test_entry tests[] = {
 	{ "base64/basic",          test_base64_basic },
 	{ "base64/null",           test_base64_null },
 	{ "base64/small_buf",      test_base64_small_buf },
+	{ "base64/result_range",   test_base64_result_range },
 	{ "memcmp/equal",          test_memcmp_equal },
 	{ "memcmp/differ",         test_memcmp_differ },
 	{ "cleanse",               test_cleanse },

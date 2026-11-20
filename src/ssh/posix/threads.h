@@ -25,7 +25,11 @@ extern "C" {
 
 typedef pthread_mutex_t  mtx_t;
 typedef pthread_cond_t   cnd_t;
-typedef pthread_t        thrd_t;
+struct dssh_thread_context;
+typedef struct {
+	pthread_t native;
+	struct dssh_thread_context *context;
+} thrd_t;
 typedef int            (*thrd_start_t)(void *);
 
 enum {
@@ -42,23 +46,7 @@ enum {
 	thrd_timedout  = 4,
 };
 
-int  mtx_init(mtx_t *mtx, int type);
-void mtx_destroy(mtx_t *mtx);
-int  mtx_lock(mtx_t *mtx);
-int  mtx_trylock(mtx_t *mtx);
-int  mtx_unlock(mtx_t *mtx);
-
-int  cnd_init(cnd_t *cnd);
-void cnd_destroy(cnd_t *cnd);
-int  cnd_signal(cnd_t *cnd);
-int  cnd_broadcast(cnd_t *cnd);
-int  cnd_wait(cnd_t *cnd, mtx_t *mtx);
-int  cnd_timedwait(cnd_t *cnd, mtx_t *mtx, const struct timespec *ts);
-
-int  thrd_create(thrd_t *thr, thrd_start_t func, void *arg);
-int  thrd_join(thrd_t thr, int *res);
-int  thrd_sleep(const struct timespec *duration, struct timespec *remaining);
-void thrd_yield(void);
+#include "../ssh-thread-shim.h"
 
 #ifdef __cplusplus
 }

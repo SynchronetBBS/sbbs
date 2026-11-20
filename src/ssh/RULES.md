@@ -20,6 +20,11 @@ Internal code calls the inner function directly, skipping the outer validation.
 
 Code must use only C17 standard functions and must not rely on any platform-specific APIs.
 
+The private `timespec_get` compatibility shim may use POSIX
+`clock_gettime(CLOCK_REALTIME)` when the build's feature namespace does not
+provide `timespec_get` / `TIME_UTC`. Core code continues to use the C11 interface;
+the shim does not expose platform APIs in public headers.
+
 Code must be correct on any conforming platform, from 16-bit to 64-bit. `size_t`, `int`, and enum
 widths vary across platforms; code must handle all valid widths.
 
@@ -60,6 +65,13 @@ memory copies; do more work up front to avoid needing intermediate buffers.
 The library must never perform I/O directly (no read/write/send/recv or equivalent). All I/O goes
 through application-provided callbacks. This ensures the library is transport-agnostic and the
 application retains full control over its I/O model.
+
+An explicit exception applies only to the builtin public key-file convenience
+functions: they may perform application-requested key-file I/O and use
+platform-specific file/permission/descriptor APIs behind their private module
+boundary. They must never prompt through a provider default. This exception
+does not apply to transport, authentication, connection, module callbacks or
+any other library I/O, and does not expose native types in public headers.
 
 ## Opaque Public API
 

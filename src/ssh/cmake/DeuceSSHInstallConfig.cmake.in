@@ -1,0 +1,15 @@
+# Reject an unsupported install configuration before publishing any artifacts.
+cmake_policy(PUSH)
+cmake_policy(VERSION 3.22)
+set(dssh_install_configurations "@DSSH_INSTALL_CONFIGURATIONS@")
+string(TOUPPER "${dssh_install_configurations}" dssh_available_configs)
+string(TOUPPER "${CMAKE_INSTALL_CONFIG_NAME}" dssh_requested_config)
+set(dssh_install_config_valid FALSE)
+if(dssh_requested_config IN_LIST dssh_available_configs)
+	set(dssh_install_config_valid TRUE)
+endif()
+cmake_policy(POP)
+if(NOT dssh_install_config_valid)
+	message(FATAL_ERROR
+		"DeuceSSH was configured for ${dssh_install_configurations}; cannot install configuration '${CMAKE_INSTALL_CONFIG_NAME}'")
+endif()

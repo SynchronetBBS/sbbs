@@ -9,6 +9,7 @@
  */
 
 #include "mock_alloc.h"
+#include "dssh_test_counter.h"
 
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -50,7 +51,7 @@ should_fail(void)
 	int fa = atomic_load(&fail_at);
 	if (fa < 0)
 		return false;
-	int n = atomic_fetch_add(&alloc_num, 1);
+	int n = dssh_test_counter_next(&alloc_num);
 	return (n == fa);
 }
 

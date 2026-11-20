@@ -3,8 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "deucessh-auth.h"
 #include "deucessh-conn.h"
 #include "ssh-internal.h"
+#include "ssh-window.h"
+#include "ssh-ring.h"
 
 #ifdef DSSH_TESTING
  #include "dssh_test_alloc.h"
@@ -16,17 +19,121 @@
  * prevent deadlock (demux thread calling TX while holding no mutex,
  * but TX needs tx_mtx which may wait on rekey which needs demux). */
 static _Thread_local bool in_zc_rx;
+static _Thread_local struct dssh_channel_s *zc_reserved_channel;
+static _Thread_local size_t zc_reserved_capacity;
+
+#ifdef DSSH_TESTING
+static _Thread_local atomic_bool *detach_wait_observer;
+
+DSSH_TESTABLE void
+dssh_test_detach_observe(atomic_bool *waiting)
+{
+	detach_wait_observer = waiting;
+}
+#endif
+
+static uint32_t stream_zc_cb(struct dssh_channel_s *ch, int stream, const uint8_t *data, size_t len, void *cbdata);
+
+DSSH_PRIVATE bool
+dssh_channel_rx_active(void)
+{
+	return in_zc_rx;
+}
+
+/* Setup callbacks borrow a channel on the accept caller thread. A linked
+ * stack scope supports independent nested sessions without allocation. */
+struct setup_callback_scope {
+	struct dssh_session_s *sess;
+	struct dssh_channel_s *ch;
+	const struct dssh_chan_params *params;
+	struct setup_callback_scope *previous;
+	bool cancelled;
+};
+
+static _Thread_local struct setup_callback_scope *active_setup_callback;
+
+DSSH_PRIVATE bool
+dssh_setup_callback_active(struct dssh_session_s *sess)
+{
+	if (sess == NULL)
+		return false;
+	for (struct setup_callback_scope *scope = active_setup_callback; scope != NULL;
+	    scope = scope->previous) {
+		if (scope->sess == sess)
+			return true;
+	}
+	return false;
+}
+
+static struct setup_callback_scope *
+setup_scope_for_channel(struct dssh_channel_s *ch)
+{
+	for (struct setup_callback_scope *scope = active_setup_callback; scope != NULL;
+	    scope = scope->previous) {
+		if (scope->ch == ch)
+			return scope;
+	}
+	return NULL;
+}
+
+static const struct dssh_chan_params *
+channel_params_view(struct dssh_channel_s *ch)
+{
+	struct setup_callback_scope *scope = setup_scope_for_channel(ch);
+	return scope != NULL ? scope->params : &ch->params;
+}
+
+typedef int (*setup_request_callback)(dssh_channel, const struct dssh_chan_params *, void *);
+typedef int (*setup_terminal_callback)(dssh_channel, const struct dssh_chan_params *,
+    struct dssh_chan_accept_result *, void *);
+
+static int
+call_setup_request(struct dssh_channel_s *ch, const struct dssh_chan_params *params,
+    setup_request_callback callback, void *data, bool *cancelled)
+{
+	struct setup_callback_scope scope = {.sess = ch != NULL ? ch->sess : NULL,
+	    .ch = ch, .params = params, .previous = active_setup_callback};
+	active_setup_callback = &scope;
+	int ret = callback(ch, params, data);
+	active_setup_callback = scope.previous;
+	*cancelled = scope.cancelled;
+	return ret;
+}
+
+static int
+call_setup_terminal(struct dssh_channel_s *ch, const struct dssh_chan_params *params,
+    struct dssh_chan_accept_result *result, setup_terminal_callback callback,
+    void *data, bool *cancelled)
+{
+	struct setup_callback_scope scope = {.sess = ch->sess, .ch = ch,
+	    .params = params, .previous = active_setup_callback};
+	active_setup_callback = &scope;
+	int ret = callback(ch, params, result, data);
+	active_setup_callback = scope.previous;
+	*cancelled = scope.cancelled;
+	return ret;
+}
 
 static bool
 channel_api_forbidden(struct dssh_channel_s *ch)
 {
-	return ch != NULL && ch->sess != NULL && dssh_io_callback_active(ch->sess);
+	if (ch == NULL)
+		return false;
+	struct setup_callback_scope *scope = setup_scope_for_channel(ch);
+	return (scope != NULL && scope->cancelled)
+	    || (ch->sess != NULL && dssh_io_callback_active(ch->sess));
+}
+
+static bool
+channel_io_forbidden(struct dssh_channel_s *ch)
+{
+	return channel_api_forbidden(ch) || dssh_setup_callback_active(ch->sess);
 }
 
 static bool
 connection_api_forbidden(struct dssh_session_s *sess)
 {
-	return sess != NULL && dssh_io_callback_active(sess);
+	return sess != NULL && (dssh_io_callback_active(sess) || dssh_setup_callback_active(sess));
 }
 
 /* ================================================================
@@ -85,7 +192,7 @@ bytebuf_write(struct dssh_bytebuf *b, const uint8_t *data, size_t len)
 	if (len > first)
 		memcpy(b->data, &data[first], len - first);
 
-	b->tail = (b->tail + len) % b->capacity;
+	b->tail = dssh_ring_advance(b->tail, len, b->capacity);
 	b->used += len;
 	if (len > SIZE_MAX - b->total)
 		b->total = SIZE_MAX;
@@ -118,7 +225,7 @@ bytebuf_read(struct dssh_bytebuf *b, uint8_t *buf, size_t bufsz, size_t limit)
 	if (avail > first)
 		memcpy(&buf[first], b->data, avail - first);
 
-	b->head = (b->head + avail) % b->capacity;
+	b->head = dssh_ring_advance(b->head, avail, b->capacity);
 	b->used -= avail;
 	return avail;
 }
@@ -153,8 +260,8 @@ acceptqueue_free(struct dssh_accept_queue *q)
 
 /*
  * Push to the accept queue ring buffer.  Caller MUST hold accept_mtx.
- * If the queue is full, the caller should stall on accept_cnd before
- * calling this function (see demux_channel_open).
+ * A full queue returns TOOMANY; the demux rejects that new open without
+ * stalling dispatch to channels that already exist.
  */
 DSSH_TESTABLE int
 acceptqueue_push(struct dssh_accept_queue *q, uint32_t peer_channel, uint32_t peer_window,
@@ -166,6 +273,7 @@ acceptqueue_push(struct dssh_accept_queue *q, uint32_t peer_channel, uint32_t pe
 	size_t                     idx = (q->head + q->count) % DSSH_ACCEPT_QUEUE_CAP;
 	struct dssh_incoming_open *e   = &q->entries[idx];
 
+	e->protocol_id     = NULL;
 	e->peer_channel    = peer_channel;
 	e->peer_window     = peer_window;
 	e->peer_max_packet = peer_max_packet;
@@ -197,84 +305,320 @@ acceptqueue_pop(struct dssh_accept_queue *q, struct dssh_incoming_open *out)
 
 #define EVENT_QUEUE_INITIAL_CAPACITY 8
 
-DSSH_TESTABLE int
-event_queue_init(struct dssh_event_queue *q, size_t max_events)
+/* Reservation owns only new allocations. Retired storage is returned separately
+ * so the dispatch path can release every physical mutex before freeing it. */
+struct event_queue_reservation {
+	struct dssh_event_entry *entries;
+	uint8_t *text;
+	size_t capacity;
+	size_t text_capacity;
+};
+
+static size_t
+event_queue_memory_limit(const struct dssh_event_queue *q)
 {
-	q->entries = calloc(EVENT_QUEUE_INITIAL_CAPACITY, sizeof(struct dssh_event_entry));
+	size_t count = q->max_events != 0 ? q->max_events : DSSH_DEFAULT_MAX_EVENTS;
+	size_t slots = EVENT_QUEUE_INITIAL_CAPACITY;
+	while (slots < count) {
+		if (slots > SIZE_MAX / 2)
+			return SIZE_MAX;
+		slots *= 2;
+	}
+	/* One frozen allocation and one in-flight replacement. Include metadata
+	 * growth as well as text capacities, rather than just live text lengths. */
+	if (slots > SIZE_MAX - 2 || sizeof(struct dssh_event_entry) > SIZE_MAX / 2)
+		return SIZE_MAX;
+	slots += 2;
+	size_t overhead = 2 * sizeof(struct dssh_event_entry);
+	if (q->packet_limit > SIZE_MAX - overhead)
+		return SIZE_MAX;
+	size_t unit = q->packet_limit + overhead;
+	if (slots > SIZE_MAX / unit)
+		return SIZE_MAX;
+	return slots * unit;
+}
+
+static int
+event_entry_text_size(const struct dssh_event_queue *q,
+    const struct dssh_event_entry *e, size_t *size)
+{
+	if (e->text_a.len > q->packet_limit
+	    || e->text_b.len > q->packet_limit - e->text_a.len)
+		return DSSH_ERROR_TOOMANY;
+	size_t total = e->text_a.len + e->text_b.len;
+	if (e->language.len > q->packet_limit - total)
+		return DSSH_ERROR_TOOMANY;
+	*size = total + e->language.len;
+	return 0;
+}
+
+/* Called with the channel buffer mutex, or on an unshared unit-test queue.
+ * This stage only computes sizes; it never allocates or copies event text. */
+static int
+event_queue_plan(const struct dssh_event_queue *q, const struct dssh_event_entry *e,
+    struct event_queue_reservation *r)
+{
+	if (q->max_events != 0 && q->count >= q->max_events)
+		return DSSH_ERROR_TOOMANY;
+	size_t text_size = 0;
+	int ret = event_entry_text_size(q, e, &text_size);
+	if (ret < 0)
+		return ret;
+	if (q->count == q->capacity) {
+		if (q->capacity > SIZE_MAX / 2)
+			return DSSH_ERROR_TOOMANY;
+		r->capacity = q->capacity * 2;
+		if (r->capacity > SIZE_MAX / sizeof(*q->entries))
+			return DSSH_ERROR_TOOMANY;
+	}
+	size_t available = r->capacity != 0 ? 0 : q->entries[q->tail].storage_capacity;
+	if (text_size > available) {
+		r->text_capacity = available;
+		if (r->text_capacity == 0)
+			r->text_capacity = 64;
+		while (r->text_capacity < text_size) {
+			if (r->text_capacity > SIZE_MAX / 2) {
+				r->text_capacity = text_size;
+				break;
+			}
+			r->text_capacity *= 2;
+		}
+	}
+	if (r->text_capacity > q->packet_limit)
+		r->text_capacity = text_size;
+	size_t limit = event_queue_memory_limit(q);
+	size_t used = q->capacity * sizeof(*q->entries);
+	if (q->text_capacity > SIZE_MAX - used)
+		return DSSH_ERROR_TOOMANY;
+	used += q->text_capacity;
+	size_t metadata = r->capacity * sizeof(*q->entries);
+	if (metadata > SIZE_MAX - used)
+		return DSSH_ERROR_TOOMANY;
+	used += metadata;
+	if (r->capacity == 0 && r->text_capacity == 0)
+		return 0; /* Reuse remains possible after a limit is lowered. */
+	if (used > limit || text_size > limit - used)
+		return DSSH_ERROR_TOOMANY;
+	if (r->text_capacity > limit - used)
+		r->text_capacity = text_size;
+	return 0;
+}
+
+static int
+event_queue_allocate(struct event_queue_reservation *r)
+{
+	if (r->capacity != 0) {
+		r->entries = malloc(r->capacity * sizeof(*r->entries));
+		if (r->entries == NULL)
+			return DSSH_ERROR_ALLOC;
+		for (size_t i = 0; i < r->capacity; i++)
+			r->entries[i] = (struct dssh_event_entry){0};
+	}
+	if (r->text_capacity != 0) {
+		r->text = malloc(r->text_capacity);
+		if (r->text == NULL)
+			return DSSH_ERROR_ALLOC;
+	}
+	return 0;
+}
+
+static void
+event_queue_reservation_free(struct event_queue_reservation *r)
+{
+	free(r->entries);
+	free(r->text);
+	*r = (struct event_queue_reservation){0};
+}
+
+DSSH_TESTABLE int
+event_queue_init(struct dssh_event_queue *q, size_t max_events, size_t packet_limit)
+{
+	*q = (struct dssh_event_queue){.max_events = max_events, .packet_limit = packet_limit};
+	if (EVENT_QUEUE_INITIAL_CAPACITY > SIZE_MAX / sizeof(*q->entries))
+		return DSSH_ERROR_ALLOC;
+	q->entries = malloc(EVENT_QUEUE_INITIAL_CAPACITY * sizeof(*q->entries));
 	if (q->entries == NULL)
 		return DSSH_ERROR_ALLOC;
-	q->capacity   = EVENT_QUEUE_INITIAL_CAPACITY;
-	q->max_events = max_events;
-	q->head       = 0;
-	q->tail       = 0;
-	q->count      = 0;
-	q->has_frozen = false;
+	q->capacity = EVENT_QUEUE_INITIAL_CAPACITY;
+	for (size_t i = 0; i < q->capacity; i++)
+		q->entries[i] = (struct dssh_event_entry){0};
 	return 0;
 }
 
 DSSH_TESTABLE void
 event_queue_free(struct dssh_event_queue *q)
 {
+	for (size_t i = 0; i < q->capacity; i++)
+		free(q->entries[i].storage);
+	free(q->frozen.storage);
 	free(q->entries);
-	q->entries    = NULL;
-	q->capacity   = 0;
-	q->count      = 0;
-	q->has_frozen = false;
+	*q = (struct dssh_event_queue){0};
 }
 
-DSSH_TESTABLE int
-event_queue_push(struct dssh_event_queue *q, const struct dssh_event_entry *e)
+/* No allocation/free here. Consumer activity may have changed head/count or
+ * the frozen storage while a reservation was being allocated, so move every
+ * old slot (including unused retained buffers) from the CURRENT head. */
+static int
+event_queue_commit(struct dssh_event_queue *q, const struct dssh_event_entry *e,
+    struct event_queue_reservation *r, struct event_queue_reservation *retired)
 {
 	if (q->max_events != 0 && q->count >= q->max_events)
 		return DSSH_ERROR_TOOMANY;
-	if (q->count >= q->capacity) {
-		if (q->capacity > SIZE_MAX / 2)
-			return DSSH_ERROR_ALLOC;
-		size_t                   new_cap = q->capacity * 2;
-		struct dssh_event_entry *newbuf  = calloc(new_cap, sizeof(struct dssh_event_entry));
-
-		if (newbuf == NULL)
-			return DSSH_ERROR_ALLOC;
-		for (size_t i = 0; i < q->count; i++) {
-			size_t idx = (q->head + i) % q->capacity;
-
-			newbuf[i] = q->entries[idx];
-		}
-		free(q->entries);
-		q->entries  = newbuf;
-		q->head     = 0;
-		q->tail     = q->count;
-		q->capacity = new_cap;
+	size_t text_size = 0;
+	int ret = event_entry_text_size(q, e, &text_size);
+	if (ret < 0)
+		return ret;
+	/* A concurrent count-limit change cannot authorize a larger allocation
+	 * retroactively. Check the current envelope before transferring storage. */
+	size_t used = q->capacity * sizeof(*q->entries);
+	if (q->text_capacity > SIZE_MAX - used)
+		return DSSH_ERROR_TOOMANY;
+	used += q->text_capacity;
+	size_t extra = r->capacity * sizeof(*q->entries);
+	if (r->text_capacity > SIZE_MAX - extra)
+		return DSSH_ERROR_TOOMANY;
+	extra += r->text_capacity;
+	if (extra != 0) {
+		size_t limit = event_queue_memory_limit(q);
+		if (used > limit || extra > limit - used)
+			return DSSH_ERROR_TOOMANY;
 	}
-	q->entries[q->tail] = *e;
-	q->tail             = (q->tail + 1) % q->capacity;
+	if (r->entries != NULL) {
+		size_t idx = q->head;
+		for (size_t i = 0; i < q->capacity; i++) {
+			r->entries[i] = q->entries[idx];
+			idx = idx == q->capacity - 1 ? 0 : idx + 1;
+		}
+		retired->entries = q->entries;
+		q->entries = r->entries;
+		q->capacity = r->capacity;
+		q->head = 0;
+		q->tail = q->count;
+		r->entries = NULL;
+	}
+	struct dssh_event_entry *slot = &q->entries[q->tail];
+	if (text_size > slot->storage_capacity) {
+		if (r->text == NULL || r->text_capacity < text_size)
+			return DSSH_ERROR_INVALID;
+		retired->text = slot->storage;
+		q->text_capacity -= slot->storage_capacity;
+		q->text_capacity += r->text_capacity;
+		slot->storage = r->text;
+		slot->storage_capacity = r->text_capacity;
+		r->text = NULL;
+	}
+	uint8_t *storage = slot->storage;
+	size_t capacity = slot->storage_capacity;
+	*slot = *e;
+	slot->storage = storage;
+	slot->storage_capacity = capacity;
+	size_t off = 0;
+	struct dssh_bytes *views[] = {&slot->text_a, &slot->text_b, &slot->language};
+	for (size_t i = 0; i < sizeof(views) / sizeof(views[0]); i++) {
+		if (views[i]->len == 0)
+			views[i]->data = NULL;
+		else {
+			memcpy(storage + off, views[i]->data, views[i]->len);
+			views[i]->data = storage + off;
+			off += views[i]->len;
+		}
+	}
+	q->tail = q->tail == q->capacity - 1 ? 0 : q->tail + 1;
 	q->count++;
 	return 0;
 }
 
-static bool
+/* Unit-test convenience for an unshared queue. Production dispatch separates
+ * planning/commit under buf_mtx from allocation/free with no mutex held. */
+#ifdef DSSH_TESTING
+DSSH_TESTABLE int
+event_queue_push(struct dssh_event_queue *q, const struct dssh_event_entry *e)
+{
+	struct event_queue_reservation r = {0};
+	struct event_queue_reservation retired = {0};
+	int ret = event_queue_plan(q, e, &r);
+	if (ret == 0)
+		ret = event_queue_allocate(&r);
+	if (ret == 0)
+		ret = event_queue_commit(q, e, &r, &retired);
+	event_queue_reservation_free(&retired);
+	event_queue_reservation_free(&r);
+	return ret;
+}
+
+#endif
+
+DSSH_TESTABLE bool
 event_queue_freeze(struct dssh_event_queue *q)
 {
 	q->has_frozen = false;
 	if (q->count == 0)
 		return false;
+	struct dssh_event_entry old = q->frozen;
 	q->frozen = q->entries[q->head];
-	q->head   = (q->head + 1) % q->capacity;
+	q->entries[q->head] = old;
+	q->head = q->head == q->capacity - 1 ? 0 : q->head + 1;
 	q->count--;
 	q->has_frozen = true;
 	return true;
 }
 
+static void
+event_from_entry(const struct dssh_event_entry *e, struct dssh_chan_event *event)
+{
+	struct dssh_chan_event converted = {
+		.type = e->type, .stdout_pos = e->stdout_pos, .stderr_pos = e->stderr_pos,
+	};
+	switch (e->type) {
+		case DSSH_EVENT_SIGNAL:
+			converted.signal.name = e->text_a;
+			break;
+		case DSSH_EVENT_WINDOW_CHANGE:
+			converted.window_change.cols = e->u32_a;
+			converted.window_change.rows = e->u32_b;
+			converted.window_change.wpx  = e->u32_c;
+			converted.window_change.hpx  = e->u32_d;
+			break;
+		case DSSH_EVENT_EXIT_STATUS:
+			converted.exit_status.exit_code = e->u32_a;
+			break;
+		case DSSH_EVENT_EXIT_SIGNAL:
+			converted.exit_signal.signal_name   = e->text_a;
+			converted.exit_signal.core_dumped   = e->flag_a;
+			converted.exit_signal.error_message = e->text_b;
+			converted.exit_signal.language = e->language;
+			break;
+		default:
+			break;
+	}
+	*event = converted;
+}
+
 /* ---- Channel params builder ---- */
 
-DSSH_PUBLIC int
-dssh_chan_params_init(struct dssh_chan_params *p, enum dssh_chan_type type)
+/* Parameter strings use only C17 allocation/copy operations. The checked
+ * size is shared by allocation and copy, and participates in library fault
+ * injection rather than escaping through a host strdup implementation. */
+static char *
+copy_param_string(const char *text)
 {
-	if (p == NULL)
-		return DSSH_ERROR_INVALID;
-	memset(p, 0, sizeof(*p));
+	size_t len = strlen(text);
+	if (len == SIZE_MAX)
+		return NULL;
+	size_t size = len + 1;
+	char *copy = malloc(size);
+	if (copy != NULL)
+		memcpy(copy, text, size);
+	return copy;
+}
+
+
+static int
+params_init(struct dssh_chan_params *p, enum dssh_chan_type type)
+{
+	*p = (struct dssh_chan_params){0};
 	p->type = type;
-	p->term = strdup("dumb");
+	p->term = copy_param_string("dumb");
 	if (p->term == NULL)
 		return DSSH_ERROR_ALLOC;
 	if (type == DSSH_CHAN_SHELL)
@@ -282,11 +626,18 @@ dssh_chan_params_init(struct dssh_chan_params *p, enum dssh_chan_type type)
 	return 0;
 }
 
-DSSH_PUBLIC void
-dssh_chan_params_free(struct dssh_chan_params *p)
+DSSH_PUBLIC int
+dssh_chan_params_init(struct dssh_chan_params *p, enum dssh_chan_type type)
 {
-	if (p == NULL)
-		return;
+	if (p == NULL || (type != DSSH_CHAN_SHELL && type != DSSH_CHAN_EXEC
+	    && type != DSSH_CHAN_SUBSYSTEM))
+		return DSSH_ERROR_INVALID;
+	return params_init(p, type);
+}
+
+static void
+params_free(struct dssh_chan_params *p)
+{
 	free(p->term);
 	p->term = NULL;
 	free(p->command);
@@ -305,6 +656,13 @@ dssh_chan_params_free(struct dssh_chan_params *p)
 	p->modes         = NULL;
 	p->mode_count    = 0;
 	p->mode_capacity = 0;
+}
+
+DSSH_PUBLIC void
+dssh_chan_params_free(struct dssh_chan_params *p)
+{
+	if (p != NULL)
+		params_free(p);
 }
 
 DSSH_PUBLIC int
@@ -345,10 +703,11 @@ dssh_chan_params_set_term(struct dssh_chan_params *p, const char *term)
 {
 	if (p == NULL || term == NULL)
 		return DSSH_ERROR_INVALID;
-	free(p->term);
-	p->term = strdup(term);
-	if (p->term == NULL)
+	char *replacement = copy_param_string(term);
+	if (replacement == NULL)
 		return DSSH_ERROR_ALLOC;
+	free(p->term);
+	p->term = replacement;
 	return 0;
 }
 
@@ -364,16 +723,22 @@ dssh_chan_params_set_size(struct dssh_chan_params *p, uint32_t cols, uint32_t ro
 	return 0;
 }
 
-DSSH_PUBLIC int
-dssh_chan_params_set_mode(struct dssh_chan_params *p, uint8_t opcode, uint32_t value)
+static int
+params_set_mode(struct dssh_chan_params *p, uint8_t opcode, uint32_t value)
 {
-	if (p == NULL)
+	if (opcode == 0 || p->mode_count > p->mode_capacity
+	    || (p->mode_capacity != 0 && p->modes == NULL))
 		return DSSH_ERROR_INVALID;
+	size_t match = p->mode_count;
 	for (size_t i = 0; i < p->mode_count; i++) {
-		if (p->modes[i].opcode == opcode) {
-			p->modes[i].value = value;
-			return 0;
-		}
+		if (p->modes[i].opcode == 0)
+			return DSSH_ERROR_INVALID;
+		if (p->modes[i].opcode == opcode && match == p->mode_count)
+			match = i;
+	}
+	if (match < p->mode_count) {
+		p->modes[match].value = value;
+		return 0;
 	}
 	if (p->mode_count >= p->mode_capacity) {
 		if (p->mode_capacity > SIZE_MAX / 2)
@@ -395,14 +760,23 @@ dssh_chan_params_set_mode(struct dssh_chan_params *p, uint8_t opcode, uint32_t v
 }
 
 DSSH_PUBLIC int
+dssh_chan_params_set_mode(struct dssh_chan_params *p, uint8_t opcode, uint32_t value)
+{
+	if (p == NULL)
+		return DSSH_ERROR_INVALID;
+	return params_set_mode(p, opcode, value);
+}
+
+DSSH_PUBLIC int
 dssh_chan_params_set_command(struct dssh_chan_params *p, const char *command)
 {
 	if (p == NULL || command == NULL)
 		return DSSH_ERROR_INVALID;
-	free(p->command);
-	p->command = strdup(command);
-	if (p->command == NULL)
+	char *replacement = copy_param_string(command);
+	if (replacement == NULL)
 		return DSSH_ERROR_ALLOC;
+	free(p->command);
+	p->command = replacement;
 	return 0;
 }
 
@@ -411,10 +785,59 @@ dssh_chan_params_set_subsystem(struct dssh_chan_params *p, const char *name)
 {
 	if (p == NULL || name == NULL)
 		return DSSH_ERROR_INVALID;
-	free(p->subsystem);
-	p->subsystem = strdup(name);
-	if (p->subsystem == NULL)
+	char *replacement = copy_param_string(name);
+	if (replacement == NULL)
 		return DSSH_ERROR_ALLOC;
+	free(p->subsystem);
+	p->subsystem = replacement;
+	return 0;
+}
+
+static int
+params_add_env(struct dssh_chan_params *p, const uint8_t *name, size_t name_len,
+    const uint8_t *value, size_t value_len)
+{
+	if (p->env_count > p->env_capacity || (p->env_capacity != 0 && p->env == NULL))
+		return DSSH_ERROR_INVALID;
+	if (name_len == SIZE_MAX || value_len == SIZE_MAX)
+		return DSSH_ERROR_TOOLONG;
+	char *new_name = malloc(name_len + 1);
+	if (new_name == NULL)
+		return DSSH_ERROR_ALLOC;
+	memcpy(new_name, name, name_len);
+	new_name[name_len] = 0;
+	char *new_value = malloc(value_len + 1);
+	if (new_value == NULL) {
+		free(new_name);
+		return DSSH_ERROR_ALLOC;
+	}
+	memcpy(new_value, value, value_len);
+	new_value[value_len] = 0;
+	if (p->env_count == p->env_capacity) {
+		if (p->env_capacity > SIZE_MAX / 2) {
+			free(new_name);
+			free(new_value);
+			return DSSH_ERROR_ALLOC;
+		}
+		size_t                new_cap = p->env_capacity == 0 ? 4 : p->env_capacity * 2;
+		if (new_cap > SIZE_MAX / sizeof(*p->env)) {
+			free(new_name);
+			free(new_value);
+			return DSSH_ERROR_ALLOC;
+		}
+		struct dssh_chan_env *ne      = realloc(p->env, new_cap * sizeof(*ne));
+
+		if (ne == NULL) {
+			free(new_name);
+			free(new_value);
+			return DSSH_ERROR_ALLOC;
+		}
+		p->env          = ne;
+		p->env_capacity = new_cap;
+	}
+	p->env[p->env_count].name = new_name;
+	p->env[p->env_count].value = new_value;
+	p->env_count++;
 	return 0;
 }
 
@@ -423,29 +846,106 @@ dssh_chan_params_add_env(struct dssh_chan_params *p, const char *name, const cha
 {
 	if (p == NULL || name == NULL || value == NULL)
 		return DSSH_ERROR_INVALID;
-	if (p->env_count >= p->env_capacity) {
-		if (p->env_capacity > SIZE_MAX / 2)
-			return DSSH_ERROR_ALLOC;
-		size_t                new_cap = p->env_capacity == 0 ? 4 : p->env_capacity * 2;
-		if (new_cap > SIZE_MAX / sizeof(*p->env))
-			return DSSH_ERROR_ALLOC;
-		struct dssh_chan_env *ne      = realloc(p->env, new_cap * sizeof(*ne));
+	const uint8_t *name_bytes = (const uint8_t *)name;
+	const uint8_t *value_bytes = (const uint8_t *)value;
+	return params_add_env(p, name_bytes, strlen(name), value_bytes, strlen(value));
+}
 
-		if (ne == NULL)
-			return DSSH_ERROR_ALLOC;
-		p->env          = ne;
-		p->env_capacity = new_cap;
+/* Validate exposed builder metadata before any array/string access or
+ * channel publication. Object/string extents remain the caller's C contract. */
+static int
+params_validate(const struct dssh_chan_params *p)
+{
+	if (p->type != DSSH_CHAN_SHELL && p->type != DSSH_CHAN_EXEC
+	    && p->type != DSSH_CHAN_SUBSYSTEM)
+		return DSSH_ERROR_INVALID;
+	if ((p->flags & ~(uint32_t)(DSSH_PARAM_HAS_PTY | DSSH_PARAM_ACCEPT_EARLY_DATA)) != 0)
+		return DSSH_ERROR_INVALID;
+	if ((p->flags & DSSH_PARAM_ACCEPT_EARLY_DATA) && p->type == DSSH_CHAN_SUBSYSTEM)
+		return DSSH_ERROR_INVALID;
+	if ((p->flags & DSSH_PARAM_HAS_PTY) && p->term == NULL)
+		return DSSH_ERROR_INVALID;
+	if ((p->type == DSSH_CHAN_EXEC && p->command == NULL)
+	    || (p->type == DSSH_CHAN_SUBSYSTEM && p->subsystem == NULL))
+		return DSSH_ERROR_INVALID;
+	if (p->env_count > p->env_capacity || p->mode_count > p->mode_capacity
+	    || p->env_capacity > SIZE_MAX / sizeof(*p->env)
+	    || p->mode_capacity > SIZE_MAX / sizeof(*p->modes)
+	    || (p->env_capacity != 0 && p->env == NULL)
+	    || (p->mode_capacity != 0 && p->modes == NULL))
+		return DSSH_ERROR_INVALID;
+	for (size_t i = 0; i < p->env_count; i++) {
+		if (p->env[i].name == NULL || p->env[i].value == NULL)
+			return DSSH_ERROR_INVALID;
 	}
-	p->env[p->env_count].name = strdup(name);
-	if (p->env[p->env_count].name == NULL)
-		return DSSH_ERROR_ALLOC;
-	p->env[p->env_count].value = strdup(value);
-	if (p->env[p->env_count].value == NULL) {
-		free(p->env[p->env_count].name);
-		return DSSH_ERROR_ALLOC;
+	for (size_t i = 0; i < p->mode_count; i++) {
+		if (p->modes[i].opcode == 0)
+			return DSSH_ERROR_INVALID;
 	}
-	p->env_count++;
 	return 0;
+}
+
+/* Build a complete library-owned immutable snapshot before registry publication
+ * or wire I/O. The validated source stays borrowed and is never modified. */
+static int
+params_clone(struct dssh_chan_params *out, const struct dssh_chan_params *source, uint32_t window)
+{
+	struct dssh_chan_params copy = {
+		.type = source->type,
+		.flags = source->flags,
+		.max_window = window,
+		.cols = source->cols,
+		.rows = source->rows,
+		.wpx = source->wpx,
+		.hpx = source->hpx,
+	};
+	if (source->term != NULL) {
+		copy.term = copy_param_string(source->term);
+		if (copy.term == NULL)
+			goto fail;
+	}
+	if (source->command != NULL) {
+		copy.command = copy_param_string(source->command);
+		if (copy.command == NULL)
+			goto fail;
+	}
+	if (source->subsystem != NULL) {
+		copy.subsystem = copy_param_string(source->subsystem);
+		if (copy.subsystem == NULL)
+			goto fail;
+	}
+	if (source->mode_count != 0) {
+		size_t bytes = source->mode_count * sizeof(*source->modes);
+		copy.modes = malloc(bytes);
+		if (copy.modes == NULL)
+			goto fail;
+		for (size_t i = 0; i < source->mode_count; i++)
+			copy.modes[i] = source->modes[i];
+		copy.mode_count = source->mode_count;
+		copy.mode_capacity = source->mode_count;
+	}
+	if (source->env_count != 0) {
+		size_t bytes = source->env_count * sizeof(*source->env);
+		copy.env = malloc(bytes);
+		if (copy.env == NULL)
+			goto fail;
+		copy.env_capacity = source->env_count;
+		for (size_t i = 0; i < source->env_count; i++) {
+			copy.env[i] = (struct dssh_chan_env){0};
+			copy.env_count++;
+			copy.env[i].name = copy_param_string(source->env[i].name);
+			if (copy.env[i].name == NULL)
+				goto fail;
+			copy.env[i].value = copy_param_string(source->env[i].value);
+			if (copy.env[i].value == NULL)
+				goto fail;
+		}
+	}
+	*out = copy;
+	return 0;
+fail:
+	params_free(&copy);
+	return DSSH_ERROR_ALLOC;
 }
 
 /* ================================================================ */
@@ -486,22 +986,13 @@ static const char str_exit_signal[]     = "exit-signal";
 static const char str_break[]           = "break";
 
 /* ================================================================
- * Timeout helper -- thin wrapper around dssh_deadline_from_ms()
- * ================================================================ */
-
-static void
-deadline_from_ms(struct timespec *ts, int timeout_ms)
-{
-	dssh_deadline_from_ms(ts, timeout_ms);
-}
-
-/* ================================================================
  * Parse helpers for channel request payloads (internal)
  * ================================================================ */
 
 /* Internal PTY request struct -- pointers into wire data */
 struct pty_req {
 	const char    *term;
+	size_t         term_len;
 	const uint8_t *modes;
 	size_t         modes_len;
 	uint32_t       cols, rows;
@@ -518,33 +1009,30 @@ parse_pty_req_data(const uint8_t *data, size_t data_len, struct pty_req *pty)
 		return DSSH_ERROR_PARSE;
 	tlen = DSSH_GET_U32(&data[pos]);
 	pos += 4;
-	if (!dssh_buffer_has(data_len, pos, tlen)
-	    || !dssh_buffer_has(data_len, pos + tlen, 16))
+#if SIZE_MAX < UINT32_MAX
+	if (tlen > SIZE_MAX)
+		return DSSH_ERROR_PARSE;
+#endif
+	size_t term_len = (size_t)tlen;
+	if (!dssh_buffer_has(data_len, pos, term_len)
+	    || !dssh_buffer_has(data_len, pos + term_len, 16))
 		return DSSH_ERROR_PARSE;
 	pty->term = (const char *)&data[pos];
-	pos += tlen;
+	pty->term_len = term_len;
+	pos += term_len;
 	pty->cols = DSSH_GET_U32(&data[pos]);
 	pty->rows = DSSH_GET_U32(&data[pos + 4]);
 	pty->wpx  = DSSH_GET_U32(&data[pos + 8]);
 	pty->hpx  = DSSH_GET_U32(&data[pos + 12]);
 	pos += 16;
-	if (dssh_buffer_has(data_len, pos, 4)) {
-		uint32_t mlen = DSSH_GET_U32(&data[pos]);
-
-		pos += 4;
-		if (dssh_buffer_has(data_len, pos, mlen)) {
-			pty->modes     = &data[pos];
-			pty->modes_len = mlen;
-		}
-		else {
-			pty->modes     = NULL;
-			pty->modes_len = 0;
-		}
-	}
-	else {
-		pty->modes     = NULL;
-		pty->modes_len = 0;
-	}
+	if (!dssh_buffer_has(data_len, pos, 4))
+		return DSSH_ERROR_PARSE;
+	uint32_t mlen = DSSH_GET_U32(&data[pos]);
+	pos += 4;
+	if (mlen != data_len - pos)
+		return DSSH_ERROR_PARSE;
+	pty->modes     = &data[pos];
+	pty->modes_len = data_len - pos;
 	return 0;
 }
 
@@ -559,11 +1047,16 @@ parse_env_data(const uint8_t *data, size_t data_len, const uint8_t **name, size_
 		return DSSH_ERROR_PARSE;
 	nlen = DSSH_GET_U32(&data[pos]);
 	pos += 4;
-	if (!dssh_buffer_has(data_len, pos, nlen))
+#if SIZE_MAX < UINT32_MAX
+	if (nlen > SIZE_MAX)
+		return DSSH_ERROR_PARSE;
+#endif
+	size_t name_size = (size_t)nlen;
+	if (!dssh_buffer_has(data_len, pos, name_size))
 		return DSSH_ERROR_PARSE;
 	*name     = &data[pos];
-	*name_len = nlen;
-	pos += nlen;
+	*name_len = name_size;
+	pos += name_size;
 
 	uint32_t vlen;
 
@@ -571,10 +1064,15 @@ parse_env_data(const uint8_t *data, size_t data_len, const uint8_t **name, size_
 		return DSSH_ERROR_PARSE;
 	vlen = DSSH_GET_U32(&data[pos]);
 	pos += 4;
-	if (!dssh_buffer_has(data_len, pos, vlen))
+#if SIZE_MAX < UINT32_MAX
+	if (vlen > SIZE_MAX)
+		return DSSH_ERROR_PARSE;
+#endif
+	size_t value_size = (size_t)vlen;
+	if (!dssh_buffer_has(data_len, pos, value_size) || value_size != data_len - pos)
 		return DSSH_ERROR_PARSE;
 	*value     = &data[pos];
-	*value_len = vlen;
+	*value_len = value_size;
 	return 0;
 }
 
@@ -584,62 +1082,13 @@ parse_env_data(const uint8_t *data, size_t data_len, const uint8_t **name, size_
 #define SSH_OPEN_UNKNOWN_CHANNEL_TYPE        UINT32_C(3)
 #define SSH_OPEN_RESOURCE_SHORTAGE           UINT32_C(4)
 
-/*
- * Saturating add for window sizes -- clamp at UINT32_MAX per RFC 4254 s5.2.
- */
-static inline uint32_t
-window_add(uint32_t current, uint32_t bytes)
-{
-	uint32_t result = current + bytes;
-
-	if (result < current)
-		return UINT32_MAX;
-	return result;
-}
-
-/*
- * Atomic saturating add for remote_window.
- * Only the demux thread increments (WINDOW_ADJUST); only the app
- * thread decrements (zc_send).  CAS loop handles the rare concurrent
- * case where both happen simultaneously.
- */
-static inline void
-window_atomic_add(atomic_uint_least32_t *win, uint32_t bytes)
-{
-	uint32_t old = atomic_load_explicit(win, memory_order_relaxed);
-
-	for (;;) {
-		uint32_t nv = window_add(old, bytes);
-
-		if (atomic_compare_exchange_weak_explicit(win, &old, nv, memory_order_release,
-			memory_order_relaxed))
-			break;
-	}
-}
-
-/*
- * Atomic saturating subtract for remote_window.
- * Deducts up to `bytes` from the window, clamping at 0.
- */
-static inline void
-window_atomic_sub(atomic_uint_least32_t *win, uint32_t bytes)
-{
-	uint32_t old = atomic_load_explicit(win, memory_order_relaxed);
-
-	for (;;) {
-		uint32_t nv = (bytes <= old) ? old - bytes : 0;
-
-		if (atomic_compare_exchange_weak_explicit(win, &old, nv, memory_order_release,
-			memory_order_relaxed))
-			break;
-	}
-}
-
 /* Queue receive-window credit without advertising it yet.  Caller holds
  * buf_mtx.  Only the transport drainer moves this credit to local_window. */
 static uint32_t
 queue_window_adjust_locked(struct dssh_channel_s *ch, uint32_t bytes)
 {
+	if (ch->close_sent)
+		return 0;
 	uint32_t outstanding = window_add(ch->local_window, ch->window_adjust_pending);
 
 	outstanding = window_add(outstanding, ch->window_adjust_inflight);
@@ -653,6 +1102,309 @@ queue_window_adjust_locked(struct dssh_channel_s *ch, uint32_t bytes)
 	return queued;
 }
 
+/* Protocol records use only channel_mtx. No physical lock spans allocation,
+ * I/O or channel-dispatch quiescence. A channel owns one reference from its
+ * construction through final retirement; dispatch takes a temporary reference
+ * before looking up the application channel. */
+static int64_t
+channel_id_candidate_locked(struct dssh_session_s *sess)
+{
+	uint32_t start = sess->next_channel_id;
+	for (;;) {
+		uint32_t candidate = sess->next_channel_id;
+		sess->next_channel_id = candidate == UINT32_MAX ? 0 : candidate + 1;
+		bool in_use = false;
+		for (struct dssh_channel_id *id = sess->channel_ids; id != NULL; id = id->next) {
+			if (id->local_assigned && id->local == candidate) {
+				in_use = true;
+				break;
+			}
+		}
+		if (!in_use)
+			return candidate;
+		if (sess->next_channel_id == start)
+			return DSSH_ERROR_TOOMANY;
+	}
+}
+
+static void
+channel_id_put_locked(struct dssh_session_s *sess, struct dssh_channel_id *id)
+{
+	if (id->refs == 0)
+		abort();
+	id->refs--;
+	if (id->refs != 0 || (id->phase != DSSH_CHANNEL_ID_RESERVED
+	    && id->phase != DSSH_CHANNEL_ID_FAILED
+	    && !(id->close_sent && id->close_received)))
+		return;
+	struct dssh_channel_id **link = &sess->channel_ids;
+	while (*link != id) {
+		if (*link == NULL)
+			abort();
+		link = &(*link)->next;
+	}
+	*link = id->next;
+	if (id->retired) {
+		if (sess->retired_channel_ids == 0)
+			abort();
+		sess->retired_channel_ids--;
+	}
+	id->next = sess->free_channel_ids;
+	sess->free_channel_ids = id;
+}
+
+static int
+channel_id_put(struct dssh_session_s *sess, struct dssh_channel_id *id)
+{
+	int ret = mtx_lock(&sess->channel_mtx);
+	if (ret != thrd_success) {
+		/* Session cleanup owns the still-linked record on acquisition
+		 * failure. It contains no pointer to the retired channel. */
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	channel_id_put_locked(sess, id);
+	dssh_mtx_unlock(&sess->channel_mtx);
+	return 0;
+}
+
+static int
+channel_id_admit_locked(struct dssh_session_s *sess)
+{
+	if (sess->terminate)
+		return DSSH_ERROR_TERMINATED;
+	if (sess->retired_channel_ids >= DSSH_RETIRED_CHANNEL_ID_CAP)
+		return DSSH_ERROR_TOOMANY;
+	return 0;
+}
+
+static int
+channel_id_reserve(struct dssh_session_s *sess, enum dssh_channel_id_phase phase,
+    uint32_t remote, struct dssh_channel_id **out)
+{
+	int ret = mtx_lock(&sess->channel_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	ret = channel_id_admit_locked(sess);
+	if (ret < 0) {
+		dssh_mtx_unlock(&sess->channel_mtx);
+		return ret;
+	}
+	struct dssh_channel_id *id = sess->free_channel_ids;
+	if (id != NULL) {
+		sess->free_channel_ids = id->next;
+	}
+	else {
+		dssh_mtx_unlock(&sess->channel_mtx);
+		id = malloc(sizeof(*id));
+		if (id == NULL)
+			return DSSH_ERROR_ALLOC;
+		ret = mtx_lock(&sess->channel_mtx);
+		if (ret != thrd_success) {
+			free(id);
+			dssh_thrd_check(sess, ret);
+			return DSSH_ERROR_TERMINATED;
+		}
+		/* Another channel can retire while the allocation is in flight. */
+		ret = channel_id_admit_locked(sess);
+		if (ret < 0) {
+			dssh_mtx_unlock(&sess->channel_mtx);
+			free(id);
+			return ret;
+		}
+	}
+	int64_t candidate = phase == DSSH_CHANNEL_ID_QUEUED ? 0 : channel_id_candidate_locked(sess);
+	if (candidate < 0) {
+		dssh_mtx_unlock(&sess->channel_mtx);
+		free(id);
+		/* The only negative result is DSSH_ERROR_TOOMANY. */
+		return DSSH_ERROR_TOOMANY;
+	}
+	/* The candidate is nonnegative and was selected from uint32_t. */
+	uint32_t local = (uint32_t)candidate;
+	*id = (struct dssh_channel_id){.next = sess->channel_ids, .refs = 1,
+	    .local = local, .remote = remote, .phase = phase,
+	    .local_assigned = phase != DSSH_CHANNEL_ID_QUEUED};
+	sess->channel_ids = id;
+	*out = id;
+	dssh_mtx_unlock(&sess->channel_mtx);
+	return 0;
+}
+
+/* Caller holds channel_mtx. Reuse becomes possible after reciprocal CLOSE
+ * is ordered, even while the old transport callback is returning. */
+static bool
+channel_id_peer_owned_locked(struct dssh_session_s *sess, uint32_t remote)
+{
+	for (struct dssh_channel_id *id = sess->channel_ids; id != NULL; id = id->next) {
+		if (id->remote == remote && (id->phase == DSSH_CHANNEL_ID_QUEUED
+		    || id->phase == DSSH_CHANNEL_ID_ACCEPTING
+		    || (id->phase == DSSH_CHANNEL_ID_CONFIRMED
+		        && !(id->close_ordered && id->close_received))))
+			return true;
+	}
+	return false;
+}
+
+static int
+check_peer_channel_id(struct dssh_session_s *sess, uint32_t remote)
+{
+	int ret = mtx_lock(&sess->channel_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	bool owned = channel_id_peer_owned_locked(sess, remote);
+	dssh_mtx_unlock(&sess->channel_mtx);
+	return owned ? DSSH_ERROR_PARSE : 0;
+}
+
+/* Order the terminal response while holding the packet engine. If it cannot
+ * reach the wire, the required commit terminates before another sender can
+ * confirm a reuse of the number. */
+static int
+send_peer_channel_terminal(struct dssh_session_s *sess, struct dssh_channel_id *id,
+    const uint8_t *msg, size_t len)
+{
+	size_t capacity;
+	int ret;
+	uint8_t *packet = send_begin(sess, msg[0], &capacity, &ret);
+	if (packet == NULL)
+		return ret;
+	if (len > capacity) {
+		send_cancel(sess);
+		return DSSH_ERROR_TOOLONG;
+	}
+	/* Gather normally drains in send_commit(). Preserve the ordering of
+	 * already queued channel controls before publishing CLOSE. */
+	if (msg[0] == SSH_MSG_CHANNEL_CLOSE && tx_gather_enabled()) {
+		ret = drain_tx_slots(sess);
+		if (ret < 0) {
+			send_cancel(sess);
+			return ret;
+		}
+	}
+	ret = mtx_lock(&sess->channel_mtx);
+	if (ret != thrd_success) {
+		send_cancel(sess);
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	if (msg[0] == SSH_MSG_CHANNEL_CLOSE)
+		id->close_ordered = true;
+	else
+		id->phase = DSSH_CHANNEL_ID_FAILED;
+	dssh_mtx_unlock(&sess->channel_mtx);
+	memcpy(packet, msg, len);
+	return send_commit_required(sess, len);
+}
+
+/* The caller owns a channel or dispatch reference. The demux uses a
+ * session-owned control slot for a detached channel. The packet engine
+ * drains this slot before a later OPEN or confirmation can publish a reused
+ * number. Application retirement can wait for the regular send path. */
+static int
+channel_id_close(struct dssh_session_s *sess, struct dssh_channel_id *id, bool retired_only)
+{
+	int ret = mtx_lock(&sess->channel_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	if (id->phase != DSSH_CHANNEL_ID_CONFIRMED || id->close_started
+	    || (retired_only && !id->retired) || sess->terminate) {
+		dssh_mtx_unlock(&sess->channel_mtx);
+		return sess->terminate ? DSSH_ERROR_TERMINATED : 0;
+	}
+	id->close_started = true;
+	uint32_t remote = id->remote;
+	dssh_mtx_unlock(&sess->channel_mtx);
+	uint8_t msg[5];
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_CHANNEL_CLOSE;
+	DSSH_PUT_U32(remote, msg, &pos);
+	bool queue = retired_only && session_on_demux_thread(sess);
+	ret = queue ? send_to_slot(sess, &sess->trans.open_fail_slot, msg, pos)
+	    : send_peer_channel_terminal(sess, id, msg, pos);
+	if (ret < 0) {
+		/* CLOSE cannot be retried through the application handle. Keep the
+		 * number reserved until session cleanup on mandatory failure. */
+		session_set_terminate(sess);
+		return ret;
+	}
+	ret = mtx_lock(&sess->channel_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	id->close_ordered = true;
+	id->close_sent = true;
+	dssh_mtx_unlock(&sess->channel_mtx);
+	return 0;
+}
+
+static void
+free_channel(struct dssh_channel_s *ch)
+{
+	if (ch->protocol_id != NULL) {
+		int ret = channel_id_close(ch->sess, ch->protocol_id, true);
+		if (ret < 0)
+			session_set_terminate(ch->sess);
+		/* On acquisition failure, session cleanup still owns the record. */
+		(void)channel_id_put(ch->sess, ch->protocol_id);
+	}
+	free(ch);
+}
+
+/* Publish protocol intent only after the packet engine and payload capacity
+ * have been acquired. A recoverable pre-wire refusal restores the unused
+ * reservation if no dispatch observed the attempted publication. */
+static int
+send_channel_open(struct dssh_session_s *sess, struct dssh_channel_s *ch,
+    const uint8_t *msg, size_t len, enum dssh_channel_id_phase phase)
+{
+	size_t capacity;
+	int ret;
+	uint8_t *packet = send_begin(sess, msg[0], &capacity, &ret);
+	if (packet == NULL)
+		return ret;
+	if (len > capacity) {
+		send_cancel(sess);
+		return DSSH_ERROR_TOOLONG;
+	}
+	ret = mtx_lock(&sess->channel_mtx);
+	if (ret != thrd_success) {
+		send_cancel(sess);
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	enum dssh_channel_id_phase previous = ch->protocol_id->phase;
+	ch->protocol_id->phase = phase;
+	ch->protocol_id->remote = ch->remote_id;
+	dssh_mtx_unlock(&sess->channel_mtx);
+	memcpy(packet, msg, len);
+	ret = send_commit(sess, len, NULL);
+	if (ret >= 0 || sess->terminate)
+		return ret;
+	/* A nonterminal commit error is a pre-wire size or key-limit refusal.
+	 * A concurrent response that observed the publication prevents rollback. */
+	int lock_ret = mtx_lock(&sess->channel_mtx);
+	if (lock_ret != thrd_success) {
+		dssh_thrd_check(sess, lock_ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	struct dssh_channel_id *id = ch->protocol_id;
+	bool unused = id->refs == 1 && id->phase == phase && !id->close_received;
+	if (unused)
+		id->phase = previous;
+	dssh_mtx_unlock(&sess->channel_mtx);
+	if (!unused)
+		session_set_terminate(sess);
+	return ret;
+}
+
 /* ================================================================
  * Low-level wire functions -- internal only.
  * Used by the high-level API; not part of the public interface.
@@ -660,24 +1412,66 @@ queue_window_adjust_locked(struct dssh_channel_s *ch, uint32_t bytes)
 
 #define SSH_EXTENDED_DATA_STDERR UINT32_C(1)
 
+/* Success leaves BUF locked and the packet engine owned. A positive return
+ * means local CLOSE already owns this channel's send side. */
+static int
+begin_channel_packet(struct dssh_session_s *sess, struct dssh_channel_s *ch,
+    uint8_t type, size_t len, uint8_t **out)
+{
+	size_t capacity;
+	int ret;
+	uint8_t *packet = send_begin(sess, type, &capacity, &ret);
+	if (packet == NULL)
+		return ret;
+	if (len > capacity) {
+		send_cancel(sess);
+		return DSSH_ERROR_TOOLONG;
+	}
+	ret = mtx_lock(&ch->buf_mtx);
+	if (ret != thrd_success) {
+		session_set_terminate_no_wake(sess);
+		send_cancel(sess);
+		session_set_terminate(sess);
+		return DSSH_ERROR_TERMINATED;
+	}
+	if (ch->close_sent) {
+		dssh_mtx_unlock(&ch->buf_mtx);
+		send_cancel(sess);
+		return 1;
+	}
+	*out = packet;
+	return 0;
+}
+
+static int
+send_channel_packet(struct dssh_session_s *sess, struct dssh_channel_s *ch,
+    const uint8_t *msg, size_t len)
+{
+	uint8_t *packet;
+	int ret = begin_channel_packet(sess, ch, msg[0], len, &packet);
+	if (ret != 0)
+		return ret < 0 ? ret : DSSH_ERROR_TERMINATED;
+	dssh_mtx_unlock(&ch->buf_mtx);
+	memcpy(packet, msg, len);
+	return send_commit(sess, len, NULL);
+}
+
 DSSH_TESTABLE int
 send_window_adjust(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint32_t bytes)
 {
-	uint8_t msg[32];
-	size_t  pos = 0;
-	int     ret;
-
-	msg[pos++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
-	DSSH_PUT_U32(ch->remote_id, msg, &pos);
-	DSSH_PUT_U32(bytes, msg, &pos);
-
-	if (dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx)) != thrd_success)
-		return DSSH_ERROR_TERMINATED;
+	uint8_t *packet;
+	int ret = begin_channel_packet(sess, ch, SSH_MSG_CHANNEL_WINDOW_ADJUST, 9, &packet);
+	if (ret != 0)
+		return ret < 0 ? ret : DSSH_ERROR_TERMINATED;
 	ch->window_adjust_inflight = window_add(ch->window_adjust_inflight, bytes);
-	if (dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx)) != thrd_success)
-		return DSSH_ERROR_TERMINATED;
+	uint32_t remote = ch->remote_id;
+	dssh_mtx_unlock(&ch->buf_mtx);
 
-	ret = send_packet(sess, msg, pos, NULL);
+	size_t pos = 0;
+	packet[pos++] = SSH_MSG_CHANNEL_WINDOW_ADJUST;
+	DSSH_PUT_U32(remote, packet, &pos);
+	DSSH_PUT_U32(bytes, packet, &pos);
+	ret = send_commit(sess, pos, NULL);
 
 	if (dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx)) != thrd_success)
 		return DSSH_ERROR_TERMINATED;
@@ -688,7 +1482,7 @@ send_window_adjust(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint3
 	else
 		ch->window_adjust_inflight = 0;
 	int br = cnd_broadcast(&ch->poll_cnd);
-	int ur = mtx_unlock(&ch->buf_mtx);
+	int ur = dssh_mtx_unlock(&ch->buf_mtx);
 
 	if (ur != thrd_success) {
 		dssh_thrd_check_unlock(sess, ur);
@@ -718,7 +1512,7 @@ send_empty_channel_data_kick(struct dssh_session_s *sess, struct dssh_channel_s 
 	msg[pos++] = SSH_MSG_CHANNEL_DATA;
 	DSSH_PUT_U32(ch->remote_id, msg, &pos);
 	DSSH_PUT_U32(0, msg, &pos);
-	return send_packet(sess, msg, pos, NULL);
+	return send_channel_packet(sess, ch, msg, pos);
 }
 
 static int
@@ -734,57 +1528,70 @@ dssh_conn_send_exit_status(struct dssh_session_s *sess, struct dssh_channel_s *c
 	pos += DSSH_STRLEN(str_exit_status);
 	msg[pos++] = 0; /* want_reply = false */
 	DSSH_PUT_U32(exit_code, msg, &pos);
-	return send_packet(sess, msg, pos, NULL);
+	return send_channel_packet(sess, ch, msg, pos);
 }
 
 DSSH_TESTABLE int
 send_eof(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+	if (dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
+	bool done = ch->eof_sent || ch->close_sent;
+	dssh_mtx_unlock(&ch->buf_mtx);
+	if (done)
+		return 0;
+
+	uint8_t *packet;
+	int ret = begin_channel_packet(sess, ch, SSH_MSG_CHANNEL_EOF, 5, &packet);
+	if (ret != 0)
+		return ret < 0 ? ret : 0;
 	if (ch->eof_sent) {
-		dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+		dssh_mtx_unlock(&ch->buf_mtx);
+		send_cancel(sess);
 		return 0;
 	}
-	ch->eof_sent = true;
-	dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+	uint32_t remote = ch->remote_id;
+	dssh_mtx_unlock(&ch->buf_mtx);
 
-	uint8_t msg[8];
-	size_t  pos = 0;
-
-	msg[pos++] = SSH_MSG_CHANNEL_EOF;
-	DSSH_PUT_U32(ch->remote_id, msg, &pos);
-
-	return send_packet(sess, msg, pos, NULL);
+	size_t pos = 0;
+	packet[pos++] = SSH_MSG_CHANNEL_EOF;
+	DSSH_PUT_U32(remote, packet, &pos);
+	ret = send_commit_held(sess, pos);
+	if (ret == 0) {
+		if (dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx)) != thrd_success)
+			return tx_unlock_with_result(sess, DSSH_ERROR_TERMINATED);
+		ch->eof_sent = true;
+		dssh_mtx_unlock(&ch->buf_mtx);
+	}
+	return tx_unlock_with_result(sess, ret);
 }
 
 DSSH_TESTABLE int
 conn_close(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+	if (dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
 	if (ch->close_sent) {
-		dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+		if (dssh_thrd_check_unlock(sess, dssh_mtx_unlock(&ch->buf_mtx)) != thrd_success)
+			return DSSH_ERROR_TERMINATED;
 		return 0;
 	}
 	ch->close_sent = true;
 	ch->open       = false;
-	dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+	if (dssh_thrd_check_unlock(sess, dssh_mtx_unlock(&ch->buf_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
 
-	uint8_t msg[8];
-	size_t  pos = 0;
-
-	msg[pos++] = SSH_MSG_CHANNEL_CLOSE;
-	DSSH_PUT_U32(ch->remote_id, msg, &pos);
-
-	return send_packet(sess, msg, pos, NULL);
+	return channel_id_close(sess, ch->protocol_id, false);
 }
 
 /* ================================================================
  * Channel table helpers
  * ================================================================ */
 
-static int
-register_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
+DSSH_TESTABLE int
+register_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch, bool *registered)
 {
+	*registered = false;
 	bool acquired = false;
 	int  ret;
 
@@ -810,9 +1617,21 @@ register_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 			ret = DSSH_ERROR_TERMINATED;
 			break;
 		}
+		if (sess->terminate) {
+			dssh_thrd_check_unlock(sess, dssh_mtx_unlock(&sess->channel_mtx));
+			ret = DSSH_ERROR_TERMINATED;
+			break;
+		}
 		if (sess->channel_count < sess->channel_capacity) {
 			sess->channels[sess->channel_count++] = ch;
-			ret = mtx_unlock(&sess->channel_mtx);
+			if (ch->protocol_id->retired) {
+				if (sess->retired_channel_ids == 0)
+					abort();
+				sess->retired_channel_ids--;
+				ch->protocol_id->retired = false;
+			}
+			*registered = true;
+			ret = dssh_mtx_unlock(&sess->channel_mtx);
 			if (ret != thrd_success) {
 				dssh_thrd_check_unlock(sess, ret);
 				ret = DSSH_ERROR_TERMINATED;
@@ -823,17 +1642,19 @@ register_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 			break;
 		}
 
-		size_t newcap = sess->channel_capacity ? sess->channel_capacity * 2 : 8;
+		size_t newcap = 0;
+		if (sess->channel_capacity <= SIZE_MAX / 2)
+			newcap = sess->channel_capacity ? sess->channel_capacity * 2 : 8;
 
-		if (sess->channel_capacity > SIZE_MAX / 2 || newcap > SIZE_MAX / sizeof(*candidate)) {
-			int ur = mtx_unlock(&sess->channel_mtx);
+		if (newcap == 0 || newcap > SIZE_MAX / sizeof(*candidate)) {
+			int ur = dssh_mtx_unlock(&sess->channel_mtx);
 
 			if (ur != thrd_success)
 				dssh_thrd_check_unlock(sess, ur);
 			ret = DSSH_ERROR_ALLOC;
 			break;
 		}
-		int ur = mtx_unlock(&sess->channel_mtx);
+		int ur = dssh_mtx_unlock(&sess->channel_mtx);
 
 		if (ur != thrd_success) {
 			dssh_thrd_check_unlock(sess, ur);
@@ -868,7 +1689,7 @@ register_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 			candidate = old;
 			candidate_capacity = 0;
 		}
-		ur = mtx_unlock(&sess->channel_mtx);
+		ur = dssh_mtx_unlock(&sess->channel_mtx);
 		if (ur != thrd_success) {
 			dssh_thrd_check_unlock(sess, ur);
 			ret = DSSH_ERROR_TERMINATED;
@@ -879,7 +1700,7 @@ register_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 
 register_done:
 	if (acquired)
-		tx_unlock_with_slots(sess);
+		return tx_unlock_with_result(sess, ret);
 	return ret;
 }
 
@@ -899,11 +1720,15 @@ find_channel(struct dssh_session_s *sess, uint32_t local_id, struct dssh_channel
 	for (size_t i = 0; i < sess->channel_count; i++) {
 		if (sess->channels[i]->local_id == local_id) {
 			struct dssh_channel_s *ch = sess->channels[i];
+			if (ch->protocol_id->phase == DSSH_CHANNEL_ID_ACCEPTING) {
+				dssh_mtx_unlock(&sess->channel_mtx);
+				return DSSH_ERROR_PARSE;
+			}
 
 			atomic_fetch_add_explicit(&ch->tx_refs, 1, memory_order_acq_rel);
 			atomic_store_explicit(&ch->dispatch_state, DSSH_CHANNEL_DISPATCH_ACTIVE,
 			    memory_order_release);
-			ret = mtx_unlock(&sess->channel_mtx);
+			ret = dssh_mtx_unlock(&sess->channel_mtx);
 			if (ret != thrd_success) {
 				atomic_store_explicit(&ch->dispatch_state, DSSH_CHANNEL_DISPATCH_IDLE,
 				    memory_order_release);
@@ -924,7 +1749,7 @@ find_channel(struct dssh_session_s *sess, uint32_t local_id, struct dssh_channel
 			return 0; /* returned with buf_mtx held */
 		}
 	}
-	ret = mtx_unlock(&sess->channel_mtx);
+	ret = dssh_mtx_unlock(&sess->channel_mtx);
 	if (ret != thrd_success) {
 		dssh_thrd_check_unlock(sess, ret);
 		return DSSH_ERROR_TERMINATED;
@@ -932,23 +1757,15 @@ find_channel(struct dssh_session_s *sess, uint32_t local_id, struct dssh_channel
 	return DSSH_ERROR_NOMORE;
 }
 
-/* Release the active dispatch acquired by find_channel().  Publish IDLE
- * only after buf_mtx was successfully released.  If mutex ownership becomes
- * uncertain, teardown must leave the channel allocated. */
+/* Publish IDLE only after successfully releasing the active dispatch lock. */
 static int
 release_channel_locked(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
-	int ret = mtx_unlock(&ch->buf_mtx);
-
-	if (ret == thrd_success) {
-		atomic_store_explicit(&ch->dispatch_state, DSSH_CHANNEL_DISPATCH_IDLE,
-		    memory_order_release);
-		return 0;
-	}
-	atomic_store_explicit(&ch->dispatch_state, DSSH_CHANNEL_DISPATCH_LOCK_FAILED,
+	(void)sess;
+	dssh_mtx_unlock(&ch->buf_mtx);
+	atomic_store_explicit(&ch->dispatch_state, DSSH_CHANNEL_DISPATCH_IDLE,
 	    memory_order_release);
-	dssh_thrd_check_unlock(sess, ret);
-	return DSSH_ERROR_TERMINATED;
+	return 0;
 }
 
 static int
@@ -974,26 +1791,22 @@ release_channel_unlocked(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 	    memory_order_release);
 }
 
-/* A dispatch remains active while buf_mtx is temporarily dropped around an
- * application callback or packet send.  On failure, publish whether mutex
- * ownership is known before termination can let another thread tear down the
- * channel. */
+/* Dispatch remains active while buf_mtx is dropped around callbacks or I/O. */
 static int
 dispatch_unlock_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
-	int ret = mtx_unlock(&ch->buf_mtx);
-
-	if (ret == thrd_success)
-		return 0;
-	atomic_store_explicit(&ch->dispatch_state, DSSH_CHANNEL_DISPATCH_LOCK_FAILED,
-	    memory_order_release);
-	dssh_thrd_check_unlock(sess, ret);
-	return DSSH_ERROR_TERMINATED;
+	(void)sess;
+	dssh_mtx_unlock(&ch->buf_mtx);
+	return 0;
 }
 
 static int
 dispatch_lock_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
+	if (sess->terminate) {
+		release_channel_unlocked(sess, ch);
+		return DSSH_ERROR_TERMINATED;
+	}
 	int ret = mtx_lock(&ch->buf_mtx);
 
 	if (ret == thrd_success)
@@ -1004,17 +1817,181 @@ dispatch_lock_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 	return DSSH_ERROR_TERMINATED;
 }
 
+/* Called with buf_mtx and ACTIVE dispatch. Success returns 1 with the
+ * dispatch still active and no mutex held. Errors release dispatch ownership
+ * before reporting termination or propagating a failed mandatory CLOSE. */
+static int
+finish_event_overflow(struct dssh_session_s *sess, struct dssh_channel_s *ch)
+{
+	ch->open = false;
+	int broadcast_ret = cnd_broadcast(&ch->poll_cnd);
+	if (dispatch_unlock_channel(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	if (broadcast_ret != thrd_success) {
+		release_channel_unlocked(sess, ch);
+		session_set_terminate(sess);
+		return DSSH_ERROR_TERMINATED;
+	}
+	int ret = conn_close(sess, ch);
+	if (ret < 0) {
+		release_channel_unlocked(sess, ch);
+		return ret;
+	}
+	return 1;
+}
+
+static void
+apply_event_state(struct dssh_channel_s *ch, const struct dssh_event_entry *entry)
+{
+	switch (entry->type) {
+		case DSSH_EVENT_EOF:
+			ch->eof_received = true;
+			break;
+		case DSSH_EVENT_CLOSE:
+			ch->close_received = true;
+			break;
+		case DSSH_EVENT_EXIT_STATUS:
+			ch->exit_code = entry->u32_a;
+			ch->exit_code_received = true;
+			break;
+		default:
+			break;
+	}
+}
+
+/* Caller owns buf_mtx and ACTIVE. Allocation/free is separated from queue and
+ * state publication. Consumer freeze/read can run while allocation is in
+ * progress; commit rechecks limits and uses the current ring position. */
+static int
+publish_polled_event(struct dssh_session_s *sess, struct dssh_channel_s *ch,
+    const struct dssh_event_entry *entry)
+{
+	struct event_queue_reservation r = {0};
+	struct event_queue_reservation retired = {0};
+	int ret = event_queue_plan(&ch->events, entry, &r);
+	if (ret == DSSH_ERROR_TOOMANY) {
+		apply_event_state(ch, entry);
+		return ret;
+	}
+	if (ret < 0) {
+		if (release_channel_locked(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		return ret;
+	}
+	if (r.capacity != 0 || r.text_capacity != 0) {
+		if (dispatch_unlock_channel(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		ret = event_queue_allocate(&r);
+		if (ret < 0) {
+			event_queue_reservation_free(&r);
+			release_channel_unlocked(sess, ch);
+			return ret;
+		}
+		if (dispatch_lock_channel(sess, ch) < 0) {
+			event_queue_reservation_free(&r);
+			return DSSH_ERROR_TERMINATED;
+		}
+		if (atomic_load(&ch->closing) || sess->terminate) {
+			if (dispatch_unlock_channel(sess, ch) < 0) {
+				event_queue_reservation_free(&r);
+				return DSSH_ERROR_TERMINATED;
+			}
+			event_queue_reservation_free(&r);
+			return 1;
+		}
+	}
+	ret = event_queue_commit(&ch->events, entry, &r, &retired);
+	if (ret == 0 || ret == DSSH_ERROR_TOOMANY)
+		apply_event_state(ch, entry);
+	bool dispose = r.entries != NULL || r.text != NULL
+	    || retired.entries != NULL || retired.text != NULL;
+	if (dispose) {
+		if (dispatch_unlock_channel(sess, ch) < 0) {
+			event_queue_reservation_free(&retired);
+			event_queue_reservation_free(&r);
+			return DSSH_ERROR_TERMINATED;
+		}
+		event_queue_reservation_free(&retired);
+		event_queue_reservation_free(&r);
+		if (ret < 0 && ret != DSSH_ERROR_TOOMANY) {
+			release_channel_unlocked(sess, ch);
+			return ret;
+		}
+		if (dispatch_lock_channel(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		if (atomic_load(&ch->closing)) {
+			if (dispatch_unlock_channel(sess, ch) < 0)
+				return DSSH_ERROR_TERMINATED;
+			return 1;
+		}
+	}
+	if (ret < 0 && ret != DSSH_ERROR_TOOMANY) {
+		if (release_channel_locked(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+	}
+	return ret;
+}
+
+/* Route exactly this event using one coherent callback snapshot. Caller owns
+ * the active dispatch and buf_mtx. Return 0/TOOMANY with buf_mtx held, 1 with
+ * the dispatch still active but unlocked (closing), or another negative error
+ * after releasing the dispatch. Poll-visible state and queue insertion commit
+ * under the same buffer mutex. No physical mutex spans another acquisition
+ * or a callback. Existing queued/frozen poll events are not callback storage. */
+static int
+publish_channel_event(struct dssh_session_s *sess, struct dssh_channel_s *ch,
+    const struct dssh_event_entry *entry)
+{
+	if (dispatch_unlock_channel(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	int ret = mtx_lock(&ch->cb_mtx);
+	if (ret != thrd_success) {
+		release_channel_unlocked(sess, ch);
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	dssh_chan_event_cb cb = ch->event_cb;
+	void *cbdata = ch->event_cbdata;
+	dssh_mtx_unlock(&ch->cb_mtx);
+	if (dispatch_lock_channel(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	if (atomic_load(&ch->closing)) {
+		if (dispatch_unlock_channel(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		return 1;
+	}
+	if (cb == NULL)
+		return publish_polled_event(sess, ch, entry);
+	apply_event_state(ch, entry);
+	if (dispatch_unlock_channel(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	if (!sess->terminate && !atomic_load(&ch->closing)) {
+		struct dssh_chan_event event;
+		event_from_entry(entry, &event);
+		struct dssh_session_scope scope;
+		session_scope_enter(&scope, sess);
+		bool previous = in_zc_rx;
+		in_zc_rx = true;
+		cb(ch, &event, cbdata);
+		in_zc_rx = previous;
+		session_scope_leave(&scope);
+	}
+	if (dispatch_lock_channel(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	if (atomic_load(&ch->closing)) {
+		if (dispatch_unlock_channel(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		return 1;
+	}
+	return 0;
+}
+
 static int
 channel_unlock_lifecycle(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
-	int ret = mtx_unlock(&ch->buf_mtx);
-
-	if (ret == thrd_success)
-		return 0;
-	atomic_store_explicit(&ch->dispatch_state, DSSH_CHANNEL_DISPATCH_LOCK_FAILED,
-	    memory_order_release);
-	dssh_thrd_check_unlock(sess, ret);
-	return DSSH_ERROR_TERMINATED;
+	(void)sess;
+	dssh_mtx_unlock(&ch->buf_mtx);
+	return 0;
 }
 
 /* Remove a channel from demux lookup and wait for every dispatch that
@@ -1032,58 +2009,117 @@ detach_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 	for (size_t i = 0; i < sess->channel_count; i++) {
 		if (sess->channels[i] == ch) {
 			sess->channels[i] = sess->channels[--sess->channel_count];
+			ch->protocol_id->retired = true;
+			if (sess->retired_channel_ids == SIZE_MAX)
+				abort();
+			sess->retired_channel_ids++;
 			break;
 		}
 	}
-	ret = mtx_unlock(&sess->channel_mtx);
+	ret = dssh_mtx_unlock(&sess->channel_mtx);
 	if (ret != thrd_success)
 		dssh_thrd_check_unlock(sess, ret);
 
 	int state;
 	do {
 		state = atomic_load_explicit(&ch->dispatch_state, memory_order_acquire);
+#ifdef DSSH_TESTING
+		if (state == DSSH_CHANNEL_DISPATCH_ACTIVE && detach_wait_observer != NULL) {
+			atomic_store_explicit(detach_wait_observer, true, memory_order_release);
+			detach_wait_observer = NULL;
+		}
+#endif
 		if (state == DSSH_CHANNEL_DISPATCH_ACTIVE
 		    || atomic_load_explicit(&ch->tx_refs, memory_order_acquire) != 0)
 			thrd_yield();
 	} while (state == DSSH_CHANNEL_DISPATCH_ACTIVE
 	    || atomic_load_explicit(&ch->tx_refs, memory_order_acquire) != 0);
 
-	if (state == DSSH_CHANNEL_DISPATCH_LOCK_FAILED)
-		return DSSH_ERROR_TERMINATED;
 	return 0;
 }
 
-static int64_t
+#ifdef DSSH_TESTING
+DSSH_TESTABLE int64_t
 alloc_channel_id(struct dssh_session_s *sess)
 {
-	dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx));
-
-	uint32_t start = sess->next_channel_id;
-
-	for (;;) {
-		uint32_t candidate = sess->next_channel_id++;
-		bool     in_use    = false;
-
-		for (size_t i = 0; i < sess->channel_count; i++) {
-			if (sess->channels[i]->local_id == candidate) {
-				in_use = true;
-				break;
-			}
-		}
-		if (!in_use) {
-			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->channel_mtx));
-			return candidate;
-		}
-		if (sess->next_channel_id == start) {
-			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->channel_mtx));
-			return DSSH_ERROR_TOOMANY;
-		}
+	int ret = mtx_lock(&sess->channel_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
 	}
+	int64_t result = channel_id_candidate_locked(sess);
+	dssh_mtx_unlock(&sess->channel_mtx);
+	return result;
 }
+
+#endif
 
 /* ================================================================
  * Channel buffer initialization
  * ================================================================ */
+
+static int
+assign_incoming_channel_id(struct dssh_session_s *sess, struct dssh_channel_id *id)
+{
+	int ret = mtx_lock(&sess->channel_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	ret = channel_id_admit_locked(sess);
+	if (ret < 0) {
+		dssh_mtx_unlock(&sess->channel_mtx);
+		return ret;
+	}
+	if (id->phase != DSSH_CHANNEL_ID_QUEUED)
+		abort();
+	int64_t candidate = channel_id_candidate_locked(sess);
+	if (candidate < 0) {
+		dssh_mtx_unlock(&sess->channel_mtx);
+		return DSSH_ERROR_TOOMANY;
+	}
+	/* The candidate is nonnegative and came from uint32_t. */
+	uint32_t local = (uint32_t)candidate;
+	id->local = local;
+	id->local_assigned = true;
+	id->phase = DSSH_CHANNEL_ID_ACCEPTING;
+	dssh_mtx_unlock(&sess->channel_mtx);
+	return 0;
+}
+
+/* Only for a fresh, unpublished channel: native objects are constructed below
+ * and atomic initialization must precede every operation/publication. */
+static struct dssh_channel_s *
+new_channel(struct dssh_session_s *sess, struct dssh_channel_id *id)
+{
+	bool reserve = id == NULL;
+	int ret = reserve ? channel_id_reserve(sess, DSSH_CHANNEL_ID_RESERVED, 0, &id)
+	    : assign_incoming_channel_id(sess, id);
+	if (ret < 0)
+		return NULL;
+	struct dssh_channel_s *ch = malloc(sizeof(*ch));
+	if (ch == NULL) {
+		/* An incoming open still owns its record on constructor failure. */
+		if (reserve)
+			(void)channel_id_put(sess, id);
+		return NULL;
+	}
+	*ch = (struct dssh_channel_s){0};
+	atomic_init(&ch->closing, false);
+	atomic_init(&ch->terminate_woken, false);
+	atomic_init(&ch->tx_refs, 0);
+	atomic_init(&ch->dispatch_state, DSSH_CHANNEL_DISPATCH_IDLE);
+	atomic_init(&ch->read_error, 0);
+	atomic_init(&ch->read_error_terminal, false);
+	atomic_init(&ch->remote_window, 0);
+	atomic_init(&ch->setup_complete, false);
+	atomic_init(&ch->wa_slot.ready, false);
+	atomic_init(&ch->chan_reply_slot.ready, false);
+	ch->sess = sess;
+	ch->protocol_id = id;
+	ch->local_id = id->local;
+	return ch;
+}
 
 static int
 /*
@@ -1095,14 +2131,6 @@ init_channel_sync(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 	ch->chan_type          = DSSH_CHAN_SESSION;
 	ch->exit_code          = 0;
 	ch->exit_code_received = false;
-	atomic_store(&ch->closing, false);
-	atomic_init(&ch->terminate_woken, false);
-	atomic_init(&ch->dispatch_state, DSSH_CHANNEL_DISPATCH_IDLE);
-	atomic_init(&ch->tx_refs, 0);
-
-	/* TX slots start empty; allocated below */
-	memset(&ch->wa_slot, 0, sizeof(ch->wa_slot));
-	memset(&ch->chan_fail_slot, 0, sizeof(ch->chan_fail_slot));
 
 	if (mtx_init(&ch->buf_mtx, mtx_plain) != thrd_success)
 		return DSSH_ERROR_INIT;
@@ -1120,7 +2148,7 @@ init_channel_sync(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 
 	if (ret < 0) {
 		free_tx_slot(&ch->wa_slot);
-		free_tx_slot(&ch->chan_fail_slot);
+		free_tx_slot(&ch->chan_reply_slot);
 		cnd_destroy(&ch->poll_cnd);
 		mtx_destroy(&ch->cb_mtx);
 		mtx_destroy(&ch->buf_mtx);
@@ -1136,13 +2164,18 @@ init_channel_sync(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 static int
 init_channel_buffers(struct dssh_channel_s *ch, uint32_t window_max)
 {
+#if SIZE_MAX < UINT32_MAX
+	if (window_max > SIZE_MAX)
+		return DSSH_ERROR_INVALID;
+#endif
+	size_t buffer_size = (size_t)window_max;
 	ch->window_max = window_max;
 
-	int res = bytebuf_init(&ch->buf.stdout_buf, window_max);
+	int res = bytebuf_init(&ch->buf.stdout_buf, buffer_size);
 
 	if (res < 0)
 		return res;
-	res = bytebuf_init(&ch->buf.stderr_buf, window_max);
+	res = bytebuf_init(&ch->buf.stderr_buf, buffer_size);
 	if (res < 0) {
 		bytebuf_free(&ch->buf.stdout_buf);
 		return res;
@@ -1159,15 +2192,17 @@ cleanup_channel_buffers(struct dssh_channel_s *ch)
 	}
 	free(ch->setup_payload);
 	ch->setup_payload = NULL;
+	ch->setup_payload_len = 0;
+	ch->setup_payload_capacity = 0;
 	free_tx_slot(&ch->wa_slot);
-	free_tx_slot(&ch->chan_fail_slot);
+	free_tx_slot(&ch->chan_reply_slot);
 
-	if (ch->chan_type != 0) {
-		cnd_destroy(&ch->poll_cnd);
-		mtx_destroy(&ch->cb_mtx);
-		mtx_destroy(&ch->buf_mtx);
-		ch->chan_type = 0;
-	}
+	/* Every caller has completed sync initialization, including registered
+	 * setup channels whose terminal type has not been selected yet. */
+	cnd_destroy(&ch->poll_cnd);
+	mtx_destroy(&ch->cb_mtx);
+	mtx_destroy(&ch->buf_mtx);
+	ch->chan_type = 0;
 }
 
 /* ================================================================
@@ -1177,12 +2212,15 @@ cleanup_channel_buffers(struct dssh_channel_s *ch)
 DSSH_TESTABLE int
 maybe_replenish_window(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+	int ret = mtx_lock(&ch->buf_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
 
 	/* No point replenishing if peer is done sending */
-	if (ch->eof_received || ch->close_received) {
-		dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
-		return 0;
+	if (ch->eof_received || ch->close_received || sess->terminate) {
+		return channel_unlock_lifecycle(sess, ch);
 	}
 
 	/* Replenish when advertised + queued credit drops below half the target.
@@ -1210,12 +2248,12 @@ maybe_replenish_window(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 		add = queue_window_adjust_locked(ch, add);
 	}
 
-	dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+	if (channel_unlock_lifecycle(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
 
 	if (add > 0)
-		/* Schedule the pre-reserved wa_slot (try-lock + queued slow path)
-		 * so the WINDOW_ADJUST never has to wait for a bulk-data
-		 * sender to release packet-engine ownership — matters under heavy
+		/* Schedule the pre-reserved wa_slot without waiting for the engine,
+		 * so the WINDOW_ADJUST can follow a bulk-data sender — matters under heavy
 		 * bidirectional channel load.  Keeps stream-mode parity
 		 * with ZC mode, which has always used wa_slot. */
 		return schedule_wa_slot(sess);
@@ -1233,8 +2271,9 @@ maybe_replenish_window(struct dssh_session_s *sess, struct dssh_channel_s *ch)
  *   boolean want_reply
  *   ...     type-specific data
  *
- * Returns 0 on success, DSSH_ERROR_PARSE if the payload is truncated.
- * On success, *rtype points into payload (not a copy).
+ * Returns 0 on success, DSSH_ERROR_PARSE for invalid framing/name bytes.
+ * Name length/characters follow RFC 4250 section 4.6.1; unknown valid names
+ * remain unsupported requests. On success, *rtype borrows payload bytes.
  */
 DSSH_TESTABLE int
 parse_channel_request(const uint8_t *payload, size_t payload_len, const uint8_t **rtype, uint32_t *rtype_len,
@@ -1244,14 +2283,24 @@ parse_channel_request(const uint8_t *payload, size_t payload_len, const uint8_t 
 
 	if (!dssh_buffer_has(payload_len, rpos, 4))
 		return DSSH_ERROR_PARSE;
-	*rtype_len = DSSH_GET_U32(&payload[rpos]);
+	uint32_t name_wire = DSSH_GET_U32(payload + rpos);
 	rpos += 4;
-	if (!dssh_buffer_has(payload_len, rpos, *rtype_len)
-	    || !dssh_buffer_has(payload_len, rpos + *rtype_len, 1))
+	if (name_wire == 0 || name_wire > 64)
 		return DSSH_ERROR_PARSE;
+	/* The protocol name bound fits every conforming size_t. */
+	size_t name_len = (size_t)name_wire;
+	if (!dssh_buffer_has(payload_len, rpos, name_len)
+	    || !dssh_buffer_has(payload_len, rpos + name_len, 1))
+		return DSSH_ERROR_PARSE;
+	for (size_t i = 0; i < name_len; i++) {
+		uint8_t byte = payload[rpos + i];
+		if (byte <= ' ' || byte >= DSSH_ASCII_DEL || byte == ',')
+			return DSSH_ERROR_PARSE;
+	}
 
-	*rtype = &payload[rpos];
-	rpos += *rtype_len;
+	*rtype_len = name_wire;
+	*rtype = payload + rpos;
+	rpos += name_len;
 
 	*want_reply = (payload[rpos] != 0);
 	rpos++;
@@ -1259,6 +2308,133 @@ parse_channel_request(const uint8_t *payload, size_t payload_len, const uint8_t 
 	*req_data     = &payload[rpos];
 	*req_data_len = payload_len - rpos;
 	return 0;
+}
+
+/* Validate mandatory fields and notification reply flags before publication.
+ * Unsupported request types remain the generic request path's responsibility. */
+static bool
+event_request_valid(const uint8_t *type, uint32_t type_len,
+    const uint8_t *data, size_t length, bool want_reply)
+{
+	if (type_len == DSSH_STRLEN(str_break)
+	    && memcmp(type, str_break, DSSH_STRLEN(str_break)) == 0)
+		return length == 4;
+	if (type_len == DSSH_STRLEN(str_exit_status)
+	    && memcmp(type, str_exit_status, DSSH_STRLEN(str_exit_status)) == 0)
+		return !want_reply && length == 4;
+	if (type_len == DSSH_STRLEN(str_window_change)
+	    && memcmp(type, str_window_change, DSSH_STRLEN(str_window_change)) == 0)
+		return !want_reply && length == 16;
+	bool exit_signal = type_len == DSSH_STRLEN(str_exit_signal)
+	    && memcmp(type, str_exit_signal, DSSH_STRLEN(str_exit_signal)) == 0;
+	bool signal = type_len == DSSH_STRLEN(str_signal)
+	    && memcmp(type, str_signal, DSSH_STRLEN(str_signal)) == 0;
+	if (!exit_signal && !signal)
+		return true;
+	if (want_reply)
+		return false;
+	size_t pos = 0;
+	unsigned fields = exit_signal ? 3U : 1U;
+	for (unsigned field = 0; field < fields; field++) {
+		if (!dssh_buffer_has(length, pos, 4))
+			return false;
+		uint32_t wire_len = DSSH_GET_U32(data + pos);
+		pos += 4;
+#if SIZE_MAX < UINT32_MAX
+		if (wire_len > SIZE_MAX)
+			return false;
+#endif
+		size_t bytes = (size_t)wire_len;
+		if (!dssh_buffer_has(length, pos, bytes))
+			return false;
+		pos += bytes;
+		if (exit_signal && field == 0) {
+			if (!dssh_buffer_has(length, pos, 1))
+				return false;
+			pos++;
+		}
+	}
+	return pos == length;
+}
+
+/* Entry: BUF plus ACTIVE. A successful reply returns BUF held; a closing
+ * channel returns 1 unlocked. Errors release dispatch ownership as before. */
+static int
+channel_request_reply(struct dssh_session_s *sess, struct dssh_channel_s *ch, bool success)
+{
+	if (ch->close_sent)
+		return 0;
+	uint8_t reply[8];
+	size_t  pos = 0;
+
+	reply[pos++] = success ? SSH_MSG_CHANNEL_SUCCESS : SSH_MSG_CHANNEL_FAILURE;
+	DSSH_PUT_U32(ch->remote_id, reply, &pos);
+	if (dispatch_unlock_channel(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	int send_ret = send_channel_reply(sess, ch, reply, pos);
+
+	if (send_ret < 0) {
+		release_channel_unlocked(sess, ch);
+		return send_ret;
+	}
+	if (dispatch_lock_channel(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	if (atomic_load(&ch->closing)) {
+		if (dispatch_unlock_channel(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		return 1;
+	}
+	return 0;
+}
+
+/* Entry/return ownership follows channel_request_reply. BREAK is an action,
+ * never an event-queue publication. Reuse the existing channel reply slot. */
+static int
+handle_channel_break(struct dssh_session_s *sess, struct dssh_channel_s *ch,
+    uint32_t length, bool want_reply)
+{
+	struct dssh_chan_break_request request = {.stdout_pos = ch->buf.stdout_buf.total,
+	    .stderr_pos = ch->buf.stderr_buf.total, .length = length, .want_reply = want_reply};
+	if (dispatch_unlock_channel(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	int ret = mtx_lock(&ch->cb_mtx);
+	if (ret != thrd_success) {
+		release_channel_unlocked(sess, ch);
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	dssh_chan_break_cb cb = ch->break_cb;
+	void *cbdata = ch->break_cbdata;
+	dssh_mtx_unlock(&ch->cb_mtx);
+	if (dispatch_lock_channel(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	if (atomic_load(&ch->closing)) {
+		if (dispatch_unlock_channel(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		return 1;
+	}
+	bool performed = false;
+	if (cb != NULL) {
+		if (dispatch_unlock_channel(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		if (!sess->terminate && !atomic_load(&ch->closing)) {
+			struct dssh_session_scope scope;
+			session_scope_enter(&scope, sess);
+			bool previous = in_zc_rx;
+			in_zc_rx = true;
+			performed = cb(ch, &request, cbdata);
+			in_zc_rx = previous;
+			session_scope_leave(&scope);
+		}
+		if (dispatch_lock_channel(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		if (atomic_load(&ch->closing)) {
+			if (dispatch_unlock_channel(sess, ch) < 0)
+				return DSSH_ERROR_TERMINATED;
+			return 1;
+		}
+	}
+	return want_reply ? channel_request_reply(sess, ch, performed) : 0;
 }
 
 /*
@@ -1278,21 +2454,24 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch, c
 	size_t         rdata_len;
 
 	if (parse_channel_request(payload, payload_len, &rtype, &rtype_len, &want_reply, &rdata, &rdata_len) < 0) {
-		uint8_t fail[8];
-		size_t  fp = 0;
-
-		fail[fp++] = SSH_MSG_CHANNEL_FAILURE;
-		DSSH_PUT_U32(ch->remote_id, fail, &fp);
 		if (dispatch_unlock_channel(sess, ch) < 0)
 			return DSSH_ERROR_TERMINATED;
-		int send_ret = send_to_slot(sess, &ch->chan_fail_slot, fail, fp);
-
-		dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR, "malformed CHANNEL_REQUEST");
-		if (send_ret < 0) {
+		int disconnect_ret = transport_disconnect_inner(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+		    "malformed CHANNEL_REQUEST");
+		if (disconnect_ret < 0) {
 			release_channel_unlocked(sess, ch);
-			return send_ret;
+			return disconnect_ret;
 		}
 		return 1;
+	}
+
+	if (ch->chan_type == DSSH_CHAN_SESSION
+	    && !event_request_valid(rtype, rtype_len, rdata, rdata_len, want_reply)) {
+		if (want_reply)
+			return channel_request_reply(sess, ch, false);
+		if (release_channel_locked(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		return DSSH_ERROR_PARSE;
 	}
 
 	int push_ret = 0;
@@ -1302,31 +2481,27 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch, c
 		    && (memcmp(rtype, str_signal, DSSH_STRLEN(str_signal)) == 0)) {
 			if (rdata_len >= 4) {
 				uint32_t sname_len = DSSH_GET_U32(rdata);
+				/* event_request_valid checked the wire length's size_t bound. */
+				size_t sn = (size_t)sname_len;
 
-				if (dssh_buffer_has(rdata_len, 4, sname_len)) {
+				if (dssh_buffer_has(rdata_len, 4, sn)) {
 					struct dssh_event_entry ev = {.type = DSSH_EVENT_SIGNAL,
 					    .stdout_pos                     = ch->buf.stdout_buf.total,
 					    .stderr_pos                     = ch->buf.stderr_buf.total};
-					size_t                  sn =
-                                            sname_len < sizeof(ev.str_a) - 1 ? sname_len : sizeof(ev.str_a) - 1;
-
-					memcpy(ev.str_a, &rdata[4], sn);
-					ev.str_a[sn] = '\0';
-					push_ret     = event_queue_push(&ch->events, &ev);
+					ev.text_a = (struct dssh_bytes){.data = sn != 0 ? rdata + 4 : NULL, .len = sn};
+					push_ret     = publish_channel_event(sess, ch, &ev);
 				}
 			}
 		}
 		else if ((rtype_len == DSSH_STRLEN(str_exit_status))
 			 && (memcmp(rtype, str_exit_status, DSSH_STRLEN(str_exit_status)) == 0)) {
 			if (rdata_len >= 4) {
-				ch->exit_code              = DSSH_GET_U32(rdata);
-				ch->exit_code_received     = true;
 				struct dssh_event_entry ev = {.type = DSSH_EVENT_EXIT_STATUS,
 				    .stdout_pos                     = ch->buf.stdout_buf.total,
 				    .stderr_pos                     = ch->buf.stderr_buf.total,
-				    .u32_a                          = ch->exit_code};
+				    .u32_a                          = DSSH_GET_U32(rdata)};
 
-				push_ret = event_queue_push(&ch->events, &ev);
+				push_ret = publish_channel_event(sess, ch, &ev);
 			}
 		}
 		else if ((rtype_len == DSSH_STRLEN(str_window_change))
@@ -1345,170 +2520,129 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch, c
 				    .u32_c                          = wc_wpx,
 				    .u32_d                          = wc_hpx};
 
-				push_ret = event_queue_push(&ch->events, &ev);
+				push_ret = publish_channel_event(sess, ch, &ev);
 			}
 		}
 		else if ((rtype_len == DSSH_STRLEN(str_exit_signal))
-			 && (memcmp(rtype, str_exit_signal, DSSH_STRLEN(str_exit_signal)) == 0)) {
+		    && memcmp(rtype, str_exit_signal, DSSH_STRLEN(str_exit_signal)) == 0) {
 			struct dssh_event_entry ev = {.type = DSSH_EVENT_EXIT_SIGNAL,
-			    .stdout_pos                     = ch->buf.stdout_buf.total,
-			    .stderr_pos                     = ch->buf.stderr_buf.total};
-
-			if (rdata_len >= 4) {
-				uint32_t snlen = DSSH_GET_U32(rdata);
-				size_t   off   = 4;
-
-					if (dssh_buffer_has(rdata_len, off, snlen)) {
-					size_t cl = snlen < sizeof(ev.str_a) - 1 ? snlen : sizeof(ev.str_a) - 1;
-
-					memcpy(ev.str_a, &rdata[off], cl);
-					ev.str_a[cl] = '\0';
-					off += snlen;
-				}
-					if (dssh_buffer_has(rdata_len, off, 1)) {
-					ev.flag_a = rdata[off] != 0;
-					off++;
-				}
-					if (dssh_buffer_has(rdata_len, off, 4)) {
-					uint32_t emlen = DSSH_GET_U32(&rdata[off]);
-
-					off += 4;
-						if (dssh_buffer_has(rdata_len, off, emlen)) {
-						size_t cl =
-						    emlen < sizeof(ev.str_b) - 1 ? emlen : sizeof(ev.str_b) - 1;
-
-						memcpy(ev.str_b, &rdata[off], cl);
-						ev.str_b[cl] = '\0';
-					}
-				}
-			}
-			push_ret = event_queue_push(&ch->events, &ev);
+				.stdout_pos = ch->buf.stdout_buf.total,
+				.stderr_pos = ch->buf.stderr_buf.total};
+			/* The complete string/boolean/string/language layout and
+			 * all narrowing bounds were checked before changing state. */
+			uint32_t signal_wire = DSSH_GET_U32(rdata);
+			size_t signal_len = (size_t)signal_wire;
+			ev.text_a = (struct dssh_bytes){.data = signal_len != 0 ? rdata + 4 : NULL, .len = signal_len};
+			size_t off = 4 + signal_len;
+			ev.flag_a = rdata[off] != 0;
+			off++;
+			uint32_t error_wire = DSSH_GET_U32(rdata + off);
+			size_t error_len = (size_t)error_wire;
+			off += 4;
+			ev.text_b = (struct dssh_bytes){.data = error_len != 0 ? rdata + off : NULL, .len = error_len};
+			off += error_len;
+			uint32_t language_wire = DSSH_GET_U32(rdata + off);
+			size_t language_len = (size_t)language_wire;
+			off += 4;
+			ev.language = (struct dssh_bytes){.data = language_len != 0 ? rdata + off : NULL, .len = language_len};
+			push_ret = publish_channel_event(sess, ch, &ev);
 		}
 		else if ((rtype_len == DSSH_STRLEN(str_break))
 			 && (memcmp(rtype, str_break, DSSH_STRLEN(str_break)) == 0)) {
-			struct dssh_event_entry ev = {.type = DSSH_EVENT_BREAK,
-			    .stdout_pos                     = ch->buf.stdout_buf.total,
-			    .stderr_pos                     = ch->buf.stderr_buf.total};
-
-			if (rdata_len >= 4)
-				ev.u32_a = DSSH_GET_U32(rdata);
-			push_ret = event_queue_push(&ch->events, &ev);
+			return handle_channel_break(sess, ch, DSSH_GET_U32(rdata), want_reply);
 		}
 	}
 
-	/* Event queue overflow — close the channel */
-	if (push_ret == DSSH_ERROR_TOOMANY) {
-		ch->open = false;
-		int broadcast_ret = cnd_broadcast(&ch->poll_cnd);
+	if (push_ret > 0 || (push_ret < 0 && push_ret != DSSH_ERROR_TOOMANY))
+		return push_ret;
 
-		if (dispatch_unlock_channel(sess, ch) < 0)
-			return DSSH_ERROR_TERMINATED;
-		conn_close(sess, ch);
-		if (broadcast_ret != thrd_success) {
-			release_channel_unlocked(sess, ch);
-			dssh_thrd_check(sess, broadcast_ret);
-			return DSSH_ERROR_TERMINATED;
-		}
-		return 1;
-	}
+	/* Event queue overflow — close the channel only after notification
+	 * succeeds; otherwise complete termination before attempting TX. */
+	if (push_ret == DSSH_ERROR_TOOMANY)
+		return finish_event_overflow(sess, ch);
 
-	/* Send FAILURE for unhandled requests with want_reply */
-	if (want_reply) {
-		uint8_t fail[8];
-		size_t  fp = 0;
-
-		fail[fp++] = SSH_MSG_CHANNEL_FAILURE;
-		DSSH_PUT_U32(ch->remote_id, fail, &fp);
-		if (dispatch_unlock_channel(sess, ch) < 0)
-			return DSSH_ERROR_TERMINATED;
-		int send_ret = send_to_slot(sess, &ch->chan_fail_slot, fail, fp);
-
-		if (send_ret < 0) {
-			release_channel_unlocked(sess, ch);
-			return send_ret;
-		}
-		if (dispatch_lock_channel(sess, ch) < 0)
-			return DSSH_ERROR_TERMINATED;
-		if (atomic_load(&ch->closing)) {
-			if (dispatch_unlock_channel(sess, ch) < 0)
-				return DSSH_ERROR_TERMINATED;
-			return 1;
-		}
-	}
+	/* Unsupported and unperformed requests receive failure only if asked. */
+	if (want_reply)
+		return channel_request_reply(sess, ch, false);
 	return 0;
 }
 
-/*
- * Handle CHANNEL_DATA -- releases buf_mtx, calls the channel's zc_cb
- * with a direct pointer into rx_packet, then re-acquires buf_mtx and
- * debits local_window by the delivered length, and grants back only the
- * consumed amount returned by the callback.
- *
- * Called under buf_mtx.  Returns 1 if caller should return immediately
- * (channel closing), 0 otherwise.
- */
+/* Receive either data message using the same framing, window and lifetime
+ * rules. Unsupported nonzero extended types are discarded and credited as
+ * consumed; application callbacks receive only the two supported streams. */
 static int
 handle_channel_data(struct dssh_session_s *sess, struct dssh_channel_s *ch, const uint8_t *payload,
-    size_t payload_len)
+    size_t payload_len, bool extended)
 {
-	if (payload_len < 9)
-		return 0;
+	size_t fixed = extended ? 13 : 9;
+	if (payload_len < fixed)
+		goto malformed;
+	uint32_t data_type = extended ? DSSH_GET_U32(&payload[5]) : 0;
+	if (extended && data_type == 0)
+		goto malformed;
+	uint32_t wire_len = DSSH_GET_U32(&payload[fixed - 4]);
+	if (wire_len > MAX_PACKET_SIZE)
+		goto malformed;
+#if SIZE_MAX < UINT32_MAX
+	if (wire_len > SIZE_MAX)
+		goto malformed;
+#endif
+	size_t length = (size_t)wire_len;
+	if (length != payload_len - fixed)
+		goto malformed;
 	if (ch->eof_received || ch->close_received)
 		return 0;
 
-	uint32_t dlen = DSSH_GET_U32(&payload[5]);
-
-	if (!dssh_buffer_has(payload_len, 9, dlen))
-		return 0;
-
-	const uint8_t *data = &payload[9];
-
-	/* Universal rx-window enforcement: clip dlen to local_window so
-	 * a peer that ignores our advertised window can't drive us into
-	 * unbounded buffering.  The bypass branch -- DSSH_PARAM_ACCEPT_
-	 * EARLY_DATA + still in setup -- delivers anyway and refuses to
-	 * credit the over-budget bytes back to the peer. */
+	const uint8_t *data = &payload[fixed];
+	bool discard = extended && data_type != SSH_EXTENDED_DATA_STDERR;
 	bool bypass = ch->accept_pre_window_data
 	    && !atomic_load_explicit(&ch->setup_complete, memory_order_acquire);
-
-	if (!bypass && dlen > ch->local_window)
-		dlen = ch->local_window;
-
-	dssh_chan_zc_cb cb  = ch->zc_cb;
-	void           *cbd = ch->zc_cbdata;
-
-	if (dispatch_unlock_channel(sess, ch) < 0)
-		return DSSH_ERROR_TERMINATED;
-	in_zc_rx          = true;
-	uint32_t consumed = cb(ch, 0, data, dlen, cbd);
-	in_zc_rx          = false;
-	if (dispatch_lock_channel(sess, ch) < 0)
-		return DSSH_ERROR_TERMINATED;
-	if (atomic_load(&ch->closing)) {
+	uint32_t delivered = wire_len;
+	if (!bypass && delivered > ch->local_window)
+		delivered = ch->local_window;
+	/* Reserve receive credit before publishing bytes through the unlocked
+	 * callback. A stream reader may consume and replenish those bytes before
+	 * the callback returns; it must observe their debit at that point. */
+	if (!bypass)
+		ch->local_window -= delivered;
+	uint32_t consumed = delivered;
+	if (!discard) {
+		dssh_chan_zc_cb cb = ch->zc_cb;
+		void *cbdata = ch->zc_cbdata;
 		if (dispatch_unlock_channel(sess, ch) < 0)
 			return DSSH_ERROR_TERMINATED;
-		return 1;
+		in_zc_rx = true;
+		consumed = cb(ch, extended ? 1 : 0, data, delivered, cbdata);
+		in_zc_rx = false;
+		if (dispatch_lock_channel(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		if (atomic_load(&ch->closing)) {
+			if (dispatch_unlock_channel(sess, ch) < 0)
+				return DSSH_ERROR_TERMINATED;
+			return 1;
+		}
 	}
-
+	if (ch->io_model == DSSH_IO_ZC && !discard) {
+		struct dssh_bytebuf *counter = extended ? &ch->buf.stderr_buf : &ch->buf.stdout_buf;
+		/* delivered is bounded by the already size-checked wire length. */
+		size_t counted = (size_t)delivered;
+		if (counted > SIZE_MAX - counter->total)
+			counter->total = SIZE_MAX;
+		else
+			counter->total += counted;
+	}
 	if (bypass)
 		return 0;
-
-	uint32_t credit = consumed < dlen ? consumed : dlen;
-
-	if (dlen <= ch->local_window)
-		ch->local_window -= dlen;
-	else
-		ch->local_window = 0;
-
-	/* ZC mode only: send WINDOW_ADJUST for consumed bytes.
-	 * Stream mode uses maybe_replenish_window() after app reads. */
-	if (ch->io_model == DSSH_IO_ZC && credit > 0) {
+	uint32_t credit = consumed < delivered ? consumed : delivered;
+	/* Buffered stream bytes are replenished after reads. Discarded data
+	 * occupies no application buffer, so refund it for either I/O model. */
+	if ((discard || ch->io_model == DSSH_IO_ZC) && credit > 0) {
 		credit = queue_window_adjust_locked(ch, credit);
-
 		if (dispatch_unlock_channel(sess, ch) < 0)
 			return DSSH_ERROR_TERMINATED;
-		if (credit > 0)
-			schedule_wa_slot(sess);
+		int ret = credit > 0 ? schedule_wa_slot(sess) : 0;
+		if (ret < 0)
+			session_set_terminate(sess);
 		if (dispatch_lock_channel(sess, ch) < 0)
 			return DSSH_ERROR_TERMINATED;
 		if (atomic_load(&ch->closing)) {
@@ -1518,82 +2652,70 @@ handle_channel_data(struct dssh_session_s *sess, struct dssh_channel_s *ch, cons
 		}
 	}
 	return 0;
+
+malformed:
+	if (release_channel_locked(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	return DSSH_ERROR_PARSE;
 }
 
-/*
- * Handle CHANNEL_EXTENDED_DATA -- same pattern as handle_channel_data
- * but for stderr (data_type==1).
- * Called under buf_mtx.  Returns 1 if closing, 0 otherwise.
- */
+/* buf_mtx and ACTIVE are owned on entry. Zero means dispatch is released;
+ * one requests a fresh normal dispatch after setup ended during allocation.
+ * Every allocation/free runs unlocked; ACTIVE pins storage across the gap. */
 static int
-handle_channel_extended_data(struct dssh_session_s *sess, struct dssh_channel_s *ch, const uint8_t *payload,
-    size_t payload_len)
+publish_setup_packet(struct dssh_session_s *sess, struct dssh_channel_s *ch,
+    uint8_t msg_type, const uint8_t *payload, size_t payload_len)
 {
-	if (payload_len < 13)
-		return 0;
-	if (ch->eof_received || ch->close_received)
-		return 0;
-
-	uint32_t data_type = DSSH_GET_U32(&payload[5]);
-	uint32_t dlen      = DSSH_GET_U32(&payload[9]);
-
-	if (!dssh_buffer_has(payload_len, 13, dlen))
-		return 0;
-
-	const uint8_t *data = &payload[13];
-
-	/* See handle_channel_data for window-truncation rationale. */
-	bool bypass = ch->accept_pre_window_data
-	    && !atomic_load_explicit(&ch->setup_complete, memory_order_acquire);
-
-	if (!bypass && dlen > ch->local_window)
-		dlen = ch->local_window;
-
-	dssh_chan_zc_cb cb  = ch->zc_cb;
-	void           *cbd = ch->zc_cbdata;
-
-	if (dispatch_unlock_channel(sess, ch) < 0)
-		return DSSH_ERROR_TERMINATED;
-	in_zc_rx          = true;
-	int      stream   = (int)data_type;
-	uint32_t consumed = cb(ch, stream, data, dlen, cbd);
-	in_zc_rx          = false;
-	if (dispatch_lock_channel(sess, ch) < 0)
-		return DSSH_ERROR_TERMINATED;
-	if (atomic_load(&ch->closing)) {
-		if (dispatch_unlock_channel(sess, ch) < 0)
+	size_t limit = sess->trans.packet_buf_sz;
+	if (payload_len > limit) {
+		if (release_channel_locked(sess, ch) < 0)
 			return DSSH_ERROR_TERMINATED;
-		return 1;
+		return DSSH_ERROR_PARSE;
 	}
-
-	if (bypass)
-		return 0;
-
-	uint32_t credit = consumed < dlen ? consumed : dlen;
-
-	if (dlen <= ch->local_window)
-		ch->local_window -= dlen;
-	else
-		ch->local_window = 0;
-
-	/* ZC mode only: send WINDOW_ADJUST for consumed bytes.
-	 * Stream mode uses maybe_replenish_window() after app reads. */
-	if (ch->io_model == DSSH_IO_ZC && credit > 0) {
-		credit = queue_window_adjust_locked(ch, credit);
-
-		if (dispatch_unlock_channel(sess, ch) < 0)
-			return DSSH_ERROR_TERMINATED;
-		if (credit > 0)
-			schedule_wa_slot(sess);
-		if (dispatch_lock_channel(sess, ch) < 0)
-			return DSSH_ERROR_TERMINATED;
-		if (atomic_load(&ch->closing)) {
-			if (dispatch_unlock_channel(sess, ch) < 0)
-				return DSSH_ERROR_TERMINATED;
-			return 1;
+	uint8_t *retired = NULL;
+	if (payload_len > ch->setup_payload_capacity) {
+		size_t capacity = ch->setup_payload_capacity;
+		if (capacity < 128)
+			capacity = 128;
+		if (capacity > limit)
+			capacity = limit;
+		while (capacity < payload_len) {
+			if (capacity > limit / 2)
+				capacity = limit;
+			else
+				capacity *= 2;
 		}
+		if (dispatch_unlock_channel(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		uint8_t *candidate = malloc(capacity);
+		if (dispatch_lock_channel(sess, ch) < 0) {
+			free(candidate);
+			return DSSH_ERROR_TERMINATED;
+		}
+		if (atomic_load(&ch->closing) || !ch->setup_mode || sess->terminate) {
+			bool redispatch = !atomic_load(&ch->closing) && !sess->terminate;
+			int release_ret = release_channel_locked(sess, ch);
+			free(candidate);
+			if (release_ret < 0)
+				return DSSH_ERROR_TERMINATED;
+			return redispatch ? 1 : 0;
+		}
+		if (candidate == NULL) {
+			ch->setup_error = true;
+			return publish_and_release_channel(sess, ch);
+		}
+		retired = ch->setup_payload;
+		ch->setup_payload = candidate;
+		ch->setup_payload_capacity = capacity;
 	}
-	return 0;
+	memcpy(ch->setup_payload, payload, payload_len);
+	ch->setup_payload_len = payload_len;
+	ch->setup_msg_type = msg_type;
+	ch->setup_ready = true;
+	int ret = publish_and_release_channel(sess, ch);
+	if (retired != NULL)
+		free(retired);
+	return ret;
 }
 
 /*
@@ -1607,6 +2729,24 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type, uint8_t *payload, 
 	if (payload_len < 5)
 		return DSSH_ERROR_PARSE;
 
+	/* Reject fixed-layout controls before registry lookup, setup-mailbox
+	 * publication, state changes or application event delivery. */
+	switch (msg_type) {
+		case SSH_MSG_CHANNEL_WINDOW_ADJUST:
+			if (payload_len != 9)
+				return DSSH_ERROR_PARSE;
+			break;
+		case SSH_MSG_CHANNEL_EOF:
+		case SSH_MSG_CHANNEL_CLOSE:
+		case SSH_MSG_CHANNEL_SUCCESS:
+		case SSH_MSG_CHANNEL_FAILURE:
+			if (payload_len != 5)
+				return DSSH_ERROR_PARSE;
+			break;
+		default:
+			break;
+	}
+
 	uint32_t local_id = DSSH_GET_U32(&payload[1]);
 
 	struct dssh_channel_s *ch;
@@ -1618,6 +2758,23 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type, uint8_t *payload, 
 		return find_ret;
 
 			  /* find_channel() returns with buf_mtx held */
+
+	/* Framing and protocol phase have already been checked. */
+	if (msg_type == SSH_MSG_CHANNEL_OPEN_FAILURE) {
+		if (!ch->open_pending || ch->open || ch->close_sent || ch->close_received) {
+			if (release_channel_locked(sess, ch) < 0)
+				return DSSH_ERROR_TERMINATED;
+			return DSSH_ERROR_PARSE;
+		}
+		ch->open_pending = false;
+		ch->close_received = true;
+		return publish_and_release_channel(sess, ch);
+	}
+	if (ch->open_pending) {
+		if (release_channel_locked(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		return DSSH_ERROR_PARSE;
+	}
 
 	/*
          * Setup mode: during session_accept_channel, deliver messages
@@ -1651,20 +2808,10 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type, uint8_t *payload, 
 				return DSSH_ERROR_TERMINATED;
 			return demux_dispatch(sess, msg_type, payload, payload_len);
 		}
-		free(ch->setup_payload);
-		ch->setup_payload = malloc(payload_len);
-		if (ch->setup_payload != NULL) {
-			memcpy(ch->setup_payload, payload, payload_len);
-			ch->setup_payload_len = payload_len;
-			ch->setup_msg_type    = msg_type;
-			ch->setup_ready       = true;
-		}
-		else {
-			ch->setup_error = true;
-		}
-		if (publish_and_release_channel(sess, ch) < 0)
-			return DSSH_ERROR_TERMINATED;
-		return 0;
+		int setup_ret = publish_setup_packet(sess, ch, msg_type, payload, payload_len);
+		if (setup_ret == 1)
+			return demux_dispatch(sess, msg_type, payload, payload_len);
+		return setup_ret;
 	}
 
 	if (ch->chan_type == 0) {
@@ -1699,7 +2846,7 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type, uint8_t *payload, 
 	int handle_ret;
 	switch (msg_type) {
 		case SSH_MSG_CHANNEL_DATA:
-			handle_ret = handle_channel_data(sess, ch, payload, payload_len);
+			handle_ret = handle_channel_data(sess, ch, payload, payload_len, false);
 			if (handle_ret < 0)
 				return handle_ret;
 			if (handle_ret > 0) {
@@ -1709,7 +2856,7 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type, uint8_t *payload, 
 			break;
 
 		case SSH_MSG_CHANNEL_EXTENDED_DATA:
-			handle_ret = handle_channel_extended_data(sess, ch, payload, payload_len);
+			handle_ret = handle_channel_data(sess, ch, payload, payload_len, true);
 			if (handle_ret < 0)
 				return handle_ret;
 			if (handle_ret > 0) {
@@ -1719,58 +2866,50 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type, uint8_t *payload, 
 			break;
 
 		case SSH_MSG_CHANNEL_WINDOW_ADJUST:
-			if (payload_len >= 9) {
-				uint32_t bytes = DSSH_GET_U32(&payload[5]);
-
-				window_atomic_add(&ch->remote_window, bytes);
-			}
+			window_atomic_add(&ch->remote_window, DSSH_GET_U32(&payload[5]));
 			break;
 
 		case SSH_MSG_CHANNEL_EOF:
-			ch->eof_received = true;
 			{
 				struct dssh_event_entry ev  = {.type = DSSH_EVENT_EOF,
 				     .stdout_pos                     = ch->buf.stdout_buf.total,
 				     .stderr_pos                     = ch->buf.stderr_buf.total};
-				int                     ret = event_queue_push(&ch->events, &ev);
+				int                     ret = publish_channel_event(sess, ch, &ev);
 
-				if (ret == DSSH_ERROR_TOOMANY) {
-					ch->open = false;
-					int broadcast_ret = cnd_broadcast(&ch->poll_cnd);
-
-					if (dispatch_unlock_channel(sess, ch) < 0)
-						return DSSH_ERROR_TERMINATED;
-					conn_close(sess, ch);
+				if (ret > 0) {
 					release_channel_unlocked(sess, ch);
-					if (broadcast_ret != thrd_success) {
-						dssh_thrd_check(sess, broadcast_ret);
-						return DSSH_ERROR_TERMINATED;
-					}
+					return 0;
+				}
+				if (ret < 0 && ret != DSSH_ERROR_TOOMANY)
+					return ret;
+				if (ret == DSSH_ERROR_TOOMANY) {
+					ret = finish_event_overflow(sess, ch);
+					if (ret < 0)
+						return ret;
+					release_channel_unlocked(sess, ch);
 					return 0;
 				}
 			}
 			break;
 
 		case SSH_MSG_CHANNEL_CLOSE:
-			ch->close_received = true;
 			{
 				struct dssh_event_entry ev  = {.type = DSSH_EVENT_CLOSE,
 				     .stdout_pos                     = ch->buf.stdout_buf.total,
 				     .stderr_pos                     = ch->buf.stderr_buf.total};
-				int                     ret = event_queue_push(&ch->events, &ev);
+				int                     ret = publish_channel_event(sess, ch, &ev);
 
-				if (ret == DSSH_ERROR_TOOMANY) {
-					ch->open = false;
-					int broadcast_ret = cnd_broadcast(&ch->poll_cnd);
-
-					if (dispatch_unlock_channel(sess, ch) < 0)
-						return DSSH_ERROR_TERMINATED;
-					conn_close(sess, ch);
+				if (ret > 0) {
 					release_channel_unlocked(sess, ch);
-					if (broadcast_ret != thrd_success) {
-						dssh_thrd_check(sess, broadcast_ret);
-						return DSSH_ERROR_TERMINATED;
-					}
+					return 0;
+				}
+				if (ret < 0 && ret != DSSH_ERROR_TOOMANY)
+					return ret;
+				if (ret == DSSH_ERROR_TOOMANY) {
+					ret = finish_event_overflow(sess, ch);
+					if (ret < 0)
+						return ret;
+					release_channel_unlocked(sess, ch);
 					return 0;
 				}
 			}
@@ -1794,12 +2933,6 @@ demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type, uint8_t *payload, 
 				release_channel_unlocked(sess, ch);
 				return 0;
 			}
-			break;
-
-		case SSH_MSG_CHANNEL_OPEN_FAILURE:
-			/* Server rejected our CHANNEL_OPEN.  Mark the channel
-                         * so open_session_channel's wait loop exits. */
-			ch->close_received = true;
 			break;
 
 		case SSH_MSG_CHANNEL_SUCCESS:
@@ -1833,146 +2966,330 @@ test_dispatch_leave(void)
 	atomic_flag_clear_explicit(&test_dispatch_gate, memory_order_release);
 }
 
+#endif
+
+static bool
+channel_expects_confirmation(struct dssh_channel_s *ch)
+{
+	return ch->open_pending && !ch->open && !ch->close_sent && !ch->close_received;
+}
+
+/* Publish protocol ownership before the application can send to the new
+ * channel. The dispatch pin keeps the handle alive between the two locks. */
+static int
+demux_open_confirmation(struct dssh_session_s *sess, struct dssh_channel_id *id,
+    const uint8_t *payload, bool attached)
+{
+	struct dssh_channel_s *ch = NULL;
+	if (attached) {
+		int ret = find_channel(sess, id->local, &ch);
+		if (ret < 0 && ret != DSSH_ERROR_NOMORE)
+			return ret;
+		if (ch != NULL) {
+			if (!channel_expects_confirmation(ch)) {
+				release_channel_locked(sess, ch);
+				return DSSH_ERROR_PARSE;
+			}
+			dssh_mtx_unlock(&ch->buf_mtx);
+		}
+	}
+
+	uint32_t remote = DSSH_GET_U32(&payload[5]);
+	int ret = mtx_lock(&sess->channel_mtx);
+	if (ret != thrd_success) {
+		if (ch != NULL)
+			release_channel_unlocked(sess, ch);
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	id->remote = remote;
+	id->phase = DSSH_CHANNEL_ID_CONFIRMED;
+	dssh_mtx_unlock(&sess->channel_mtx);
+	if (ch == NULL)
+		return 0;
+
+	if (dispatch_lock_channel(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	if (atomic_load(&ch->closing))
+		return release_channel_locked(sess, ch);
+	if (!channel_expects_confirmation(ch)) {
+		release_channel_locked(sess, ch);
+		session_set_terminate(sess);
+		return DSSH_ERROR_TERMINATED;
+	}
+	ch->remote_id = remote;
+	atomic_store_explicit(&ch->remote_window, DSSH_GET_U32(&payload[9]), memory_order_release);
+	ch->remote_max_packet = DSSH_GET_U32(&payload[13]);
+	ch->open_pending      = false;
+	ch->open              = true;
+	return publish_and_release_channel(sess, ch);
+}
+
+/* Unadmitted opens use the preallocated reply slot. For a claimed open the
+ * application orders the rejection before releasing the claim. */
+static int
+send_open_failure(struct dssh_session_s *sess, uint32_t peer_channel, uint32_t reason,
+    struct dssh_channel_id *id)
+{
+	uint8_t fail[17];
+	size_t pos = 0;
+
+	fail[pos++] = SSH_MSG_CHANNEL_OPEN_FAILURE;
+	DSSH_PUT_U32(peer_channel, fail, &pos);
+	DSSH_PUT_U32(reason, fail, &pos);
+	DSSH_PUT_U32(0, fail, &pos); /* description */
+	DSSH_PUT_U32(0, fail, &pos); /* language */
+	if (id == NULL)
+		return send_to_slot(sess, &sess->trans.open_fail_slot, fail, pos);
+	int ret = send_peer_channel_terminal(sess, id, fail, pos);
+	int put_ret = channel_id_put(sess, id);
+	return ret < 0 ? ret : put_ret;
+}
+
+/* Handle incoming CHANNEL_OPEN -- only server-side session channels exist. */
+static int
+demux_channel_open(struct dssh_session_s *sess, uint8_t *payload, size_t payload_len)
+{
+	size_t pos = 1;
+	if (!dssh_buffer_has(payload_len, pos, 4)) {
+		return transport_disconnect_result(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+		    "malformed CHANNEL_OPEN", DSSH_ERROR_TERMINATED);
+	}
+	uint32_t wire_type_len = DSSH_GET_U32(&payload[pos]);
+	pos += 4;
+#if SIZE_MAX < UINT32_MAX
+	if (wire_type_len > SIZE_MAX) {
+		return transport_disconnect_result(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+		    "malformed CHANNEL_OPEN", DSSH_ERROR_TERMINATED);
+	}
+#endif
+	size_t type_len = (size_t)wire_type_len;
+	if (!dssh_buffer_has(payload_len, pos, type_len)) {
+		return transport_disconnect_result(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+		    "malformed CHANNEL_OPEN", DSSH_ERROR_TERMINATED);
+	}
+	const uint8_t *type = &payload[pos];
+	pos += type_len;
+	if (!dssh_buffer_has(payload_len, pos, 12)) {
+		int ret = 0;
+		if (dssh_buffer_has(payload_len, pos, 4)) {
+			uint32_t peer_channel = DSSH_GET_U32(&payload[pos]);
+			ret = check_peer_channel_id(sess, peer_channel);
+			if (ret == DSSH_ERROR_TERMINATED)
+				return ret;
+			if (ret == 0)
+				ret = send_open_failure(sess, peer_channel,
+				    SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, NULL);
+		}
+		int disconnect_ret = transport_disconnect_result(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+		    "malformed CHANNEL_OPEN", DSSH_ERROR_TERMINATED);
+		return ret < 0 ? ret : disconnect_ret;
+	}
+	uint32_t peer_channel = DSSH_GET_U32(&payload[pos]);
+	pos += 4;
+	uint32_t peer_window = DSSH_GET_U32(&payload[pos]);
+	pos += 4;
+	uint32_t peer_max_packet = DSSH_GET_U32(&payload[pos]);
+	pos += 4;
+	int ret = check_peer_channel_id(sess, peer_channel);
+	if (ret < 0)
+		return ret;
+
+	bool session_type = type_len == DSSH_STRLEN(str_session)
+	    && memcmp(type, str_session, DSSH_STRLEN(str_session)) == 0;
+	bool forbidden_type = session_type
+	    || (type_len == DSSH_STRLEN(str_x11) && memcmp(type, str_x11, type_len) == 0)
+	    || (type_len == DSSH_STRLEN(str_forwarded_tcpip)
+	        && memcmp(type, str_forwarded_tcpip, type_len) == 0)
+	    || (type_len == DSSH_STRLEN(str_direct_tcpip)
+	        && memcmp(type, str_direct_tcpip, type_len) == 0);
+	if (!session_type || sess->trans.client) {
+		uint32_t reason = forbidden_type ? SSH_OPEN_ADMINISTRATIVELY_PROHIBITED
+		    : SSH_OPEN_UNKNOWN_CHANNEL_TYPE;
+		return send_open_failure(sess, peer_channel, reason, NULL);
+	}
+	/* Session opens have no channel-specific fields. */
+	if (pos != payload_len) {
+		ret = send_open_failure(sess, peer_channel, SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, NULL);
+		int disconnect_ret = transport_disconnect_result(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+		    "malformed session CHANNEL_OPEN", DSSH_ERROR_TERMINATED);
+		return ret < 0 ? ret : disconnect_ret;
+	}
+
+	/* The sole demux producer can check the FIFO before reserving an ID.
+	 * Acceptors can only remove entries until this producer publishes. */
+	ret = mtx_lock(&sess->accept_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	bool full = sess->accept_queue.count >= DSSH_ACCEPT_QUEUE_CAP;
+	dssh_mtx_unlock(&sess->accept_mtx);
+	if (full)
+		return send_open_failure(sess, peer_channel, SSH_OPEN_RESOURCE_SHORTAGE, NULL);
+
+	struct dssh_channel_id *id;
+	ret = channel_id_reserve(sess, DSSH_CHANNEL_ID_QUEUED, peer_channel, &id);
+	if (ret == DSSH_ERROR_TOOMANY || ret == DSSH_ERROR_ALLOC)
+		return send_open_failure(sess, peer_channel, SSH_OPEN_RESOURCE_SHORTAGE, NULL);
+	if (ret < 0)
+		return ret;
+	ret = mtx_lock(&sess->accept_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	if (sess->terminate) {
+		dssh_mtx_unlock(&sess->accept_mtx);
+		return DSSH_ERROR_TERMINATED;
+	}
+	size_t tail = (sess->accept_queue.head + sess->accept_queue.count) % DSSH_ACCEPT_QUEUE_CAP;
+	ret = acceptqueue_push(&sess->accept_queue, peer_channel, peer_window,
+	    peer_max_packet, type, type_len);
+	if (ret != 0)
+		abort();
+	sess->accept_queue.entries[tail].protocol_id = id;
+	int signal_ret = cnd_signal(&sess->accept_cnd);
+	dssh_mtx_unlock(&sess->accept_mtx);
+	if (signal_ret != thrd_success) {
+		dssh_thrd_check(sess, signal_ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	return 0;
+}
+
+/* Complete framing is checked before a late reply can release an ID. */
+static bool
+channel_open_failure_valid(const uint8_t *payload, size_t payload_len)
+{
+	size_t pos = 9;
+	if (payload_len < pos || DSSH_GET_U32(&payload[5]) == 0)
+		return false;
+	for (int field = 0; field < 2; field++) {
+		if (!dssh_buffer_has(payload_len, pos, 4))
+			return false;
+		uint32_t len = DSSH_GET_U32(&payload[pos]);
+		pos += 4;
+#if SIZE_MAX < UINT32_MAX
+		if (len > SIZE_MAX)
+			return false;
+#endif
+		size_t field_len = (size_t)len;
+		if (!dssh_buffer_has(payload_len, pos, field_len))
+			return false;
+		pos += field_len;
+	}
+	return pos == payload_len;
+}
+
+/* Pin the protocol owner before looking up the application handle. Its ID
+ * cannot be recycled in the interval between detachment and this dispatch.
+ * There is one wire dispatcher; the test dispatcher has the same serialization. */
+static int
+channel_id_dispatch(struct dssh_session_s *sess, uint8_t msg_type,
+    uint8_t *payload, size_t payload_len)
+{
+	if ((msg_type == SSH_MSG_CHANNEL_OPEN_CONFIRMATION && payload_len != 17)
+	    || (msg_type == SSH_MSG_CHANNEL_CLOSE && payload_len != 5)
+	    || (msg_type == SSH_MSG_CHANNEL_OPEN_FAILURE
+	        && !channel_open_failure_valid(payload, payload_len)))
+		return DSSH_ERROR_PARSE;
+	uint32_t local = DSSH_GET_U32(&payload[1]);
+	int ret = mtx_lock(&sess->channel_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	struct dssh_channel_id *id = sess->channel_ids;
+	while (id != NULL && (!id->local_assigned || id->local != local))
+		id = id->next;
+	if (id == NULL) {
+		dssh_mtx_unlock(&sess->channel_mtx);
+		return 0;
+	}
+	bool valid = msg_type == SSH_MSG_CHANNEL_CLOSE
+	    ? id->phase == DSSH_CHANNEL_ID_CONFIRMED
+	    : id->phase == DSSH_CHANNEL_ID_OPENING;
+	if (!valid || id->refs == SIZE_MAX) {
+		dssh_mtx_unlock(&sess->channel_mtx);
+		return valid ? DSSH_ERROR_TOOMANY : DSSH_ERROR_PARSE;
+	}
+	if (msg_type == SSH_MSG_CHANNEL_OPEN_CONFIRMATION
+	    && channel_id_peer_owned_locked(sess, DSSH_GET_U32(&payload[5]))) {
+		dssh_mtx_unlock(&sess->channel_mtx);
+		return DSSH_ERROR_PARSE;
+	}
+	id->refs++;
+	bool attached = !id->retired;
+	dssh_mtx_unlock(&sess->channel_mtx);
+	if (msg_type == SSH_MSG_CHANNEL_OPEN_CONFIRMATION) {
+		ret = demux_open_confirmation(sess, id, payload, attached);
+	}
+	else {
+		ret = attached ? demux_dispatch(sess, msg_type, payload, payload_len) : 0;
+		if (ret == 0) {
+			int lock_ret = mtx_lock(&sess->channel_mtx);
+			if (lock_ret != thrd_success) {
+				dssh_thrd_check(sess, lock_ret);
+				ret = DSSH_ERROR_TERMINATED;
+			}
+			else {
+				if (msg_type == SSH_MSG_CHANNEL_OPEN_FAILURE)
+					id->phase = DSSH_CHANNEL_ID_FAILED;
+				else
+					id->close_received = true;
+				dssh_mtx_unlock(&sess->channel_mtx);
+			}
+		}
+	}
+	if (ret == 0)
+		ret = channel_id_close(sess, id, true);
+	int put_ret = channel_id_put(sess, id);
+	return ret < 0 ? ret : put_ret;
+}
+
+static int
+dispatch_connection_packet(struct dssh_session_s *sess, uint8_t msg_type,
+    uint8_t *payload, size_t payload_len)
+{
+	/* RFC 4252 s5.1: the completed server auth protocol no longer receives
+	 * requests. Keep later service traffic on the ordinary dispatch path. */
+	if (!sess->trans.client && sess->auth_complete
+	    && msg_type == SSH_MSG_USERAUTH_REQUEST) {
+		dssh_cleanse(payload, payload_len);
+		return 0;
+	}
+	if (msg_type == SSH_MSG_CHANNEL_OPEN)
+		return demux_channel_open(sess, payload, payload_len);
+	if (msg_type == SSH_MSG_CHANNEL_OPEN_CONFIRMATION
+	    || msg_type == SSH_MSG_CHANNEL_OPEN_FAILURE || msg_type == SSH_MSG_CHANNEL_CLOSE)
+		return channel_id_dispatch(sess, msg_type, payload, payload_len);
+	if (msg_type >= SSH_MSG_CHANNEL_WINDOW_ADJUST && msg_type <= SSH_MSG_CHANNEL_FAILURE)
+		return demux_dispatch(sess, msg_type, payload, payload_len);
+	return send_unimplemented(sess, sess->trans.last_rx_seq);
+}
+
+#ifdef DSSH_TESTING
 DSSH_TESTABLE int
 dssh_test_demux_dispatch(struct dssh_session_s *sess, uint8_t msg_type,
     uint8_t *payload, size_t payload_len)
 {
 	test_dispatch_enter();
-	int ret = demux_dispatch(sess, msg_type, payload, payload_len);
+	int ret = dispatch_connection_packet(sess, msg_type, payload, payload_len);
 	test_dispatch_leave();
 	return ret;
 }
 #endif
 
-/*
- * Handle CHANNEL_OPEN_CONFIRMATION -- recipient_channel is at offset 1.
- */
-static int
-demux_open_confirmation(struct dssh_session_s *sess, uint8_t *payload, size_t payload_len)
+static _Thread_local struct dssh_session_s *demux_session;
+
+DSSH_PRIVATE bool
+session_on_demux_thread(struct dssh_session_s *sess)
 {
-	if (payload_len < 1 + 16)
-		return DSSH_ERROR_PARSE;
-
-	uint32_t local_id = DSSH_GET_U32(&payload[1]);
-
-	struct dssh_channel_s *ch;
-	int find_ret = find_channel(sess, local_id, &ch);
-
-	if (find_ret == DSSH_ERROR_NOMORE)
-		return 0; /* late message for closed channel */
-	if (find_ret < 0)
-		return find_ret;
-
-	/* find_channel() returns with buf_mtx held */
-	ch->remote_id = DSSH_GET_U32(&payload[5]);
-	atomic_store_explicit(&ch->remote_window, DSSH_GET_U32(&payload[9]), memory_order_release);
-	ch->remote_max_packet = DSSH_GET_U32(&payload[13]);
-	ch->open              = true;
-	if (publish_and_release_channel(sess, ch) < 0)
-		return DSSH_ERROR_TERMINATED;
-	return 0;
+	return demux_session == sess;
 }
 
-/*
- * Handle incoming CHANNEL_OPEN -- either queue for accept or auto-reject.
- */
-static int
-demux_channel_open(struct dssh_session_s *sess, uint8_t *payload, size_t payload_len)
-{
-	/* Parse: string channel_type, uint32 sender_channel,
-         * uint32 initial_window, uint32 max_packet */
-	size_t   rpos = 1;
-	uint32_t type_len;
-
-	if (!dssh_buffer_has(payload_len, rpos, 4)) {
-		dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR, "malformed CHANNEL_OPEN");
-		return DSSH_ERROR_TERMINATED;
-	}
-	type_len = DSSH_GET_U32(&payload[rpos]);
-	rpos += 4;
-	if (!dssh_buffer_has(payload_len, rpos, type_len)) {
-		dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR, "malformed CHANNEL_OPEN");
-		return DSSH_ERROR_TERMINATED;
-	}
-
-	const uint8_t *ctype = &payload[rpos];
-
-	rpos += type_len;
-
-	if (!dssh_buffer_has(payload_len, rpos, 12)) {
-		if (dssh_buffer_has(payload_len, rpos, 4)) {
-			uint32_t pc = DSSH_GET_U32(&payload[rpos]);
-			uint8_t  fail[64];
-			size_t   fp = 0;
-
-			fail[fp++] = SSH_MSG_CHANNEL_OPEN_FAILURE;
-			DSSH_PUT_U32(pc, fail, &fp);
-			DSSH_PUT_U32(SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, fail, &fp);
-			DSSH_PUT_U32(0, fail, &fp);
-			DSSH_PUT_U32(0, fail, &fp);
-			send_to_slot(sess, &sess->trans.open_fail_slot, fail, fp);
-		}
-		dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR, "malformed CHANNEL_OPEN");
-		return DSSH_ERROR_TERMINATED;
-	}
-
-	uint32_t peer_channel = DSSH_GET_U32(&payload[rpos]);
-
-	rpos += 4;
-	uint32_t peer_window = DSSH_GET_U32(&payload[rpos]);
-
-	rpos += 4;
-	uint32_t peer_max_packet = DSSH_GET_U32(&payload[rpos]);
-
-	/* Auto-reject forbidden channel types */
-	bool reject = false;
-
-	if ((type_len == DSSH_STRLEN(str_x11)) && (memcmp(ctype, str_x11, DSSH_STRLEN(str_x11)) == 0))
-		reject = true;
-	if ((type_len == DSSH_STRLEN(str_forwarded_tcpip))
-	    && (memcmp(ctype, str_forwarded_tcpip, DSSH_STRLEN(str_forwarded_tcpip)) == 0))
-		reject = true;
-	if ((type_len == DSSH_STRLEN(str_direct_tcpip))
-	    && (memcmp(ctype, str_direct_tcpip, DSSH_STRLEN(str_direct_tcpip)) == 0))
-		reject = true;
-
-	/* Client rejects "session" opens from server (RFC 4254 s6.1) */
-	if (sess->trans.client && (type_len == DSSH_STRLEN(str_session))
-	    && (memcmp(ctype, str_session, DSSH_STRLEN(str_session)) == 0))
-		reject = true;
-
-	if (reject) {
-		/* Send CHANNEL_OPEN_FAILURE */
-		uint8_t fail[64];
-		size_t  fp = 0;
-
-		fail[fp++] = SSH_MSG_CHANNEL_OPEN_FAILURE;
-		DSSH_PUT_U32(peer_channel, fail, &fp);
-		DSSH_PUT_U32(SSH_OPEN_ADMINISTRATIVELY_PROHIBITED, fail, &fp);
-		DSSH_PUT_U32(0, fail, &fp);
-		DSSH_PUT_U32(0, fail, &fp);
-		send_to_slot(sess, &sess->trans.open_fail_slot, fail, fp);
-		return 0;
-	}
-
-	/* Queue for application's accept() call.
-         * Stall if the queue is full — this applies RX backpressure
-         * against a peer flooding CHANNEL_OPEN messages. */
-	dssh_thrd_check(sess, mtx_lock(&sess->accept_mtx));
-	while (sess->accept_queue.count >= DSSH_ACCEPT_QUEUE_CAP && !sess->terminate) {
-		dssh_thrd_check_locked(sess, cnd_wait(&sess->accept_cnd, &sess->accept_mtx));
-	}
-	if (sess->terminate) {
-		dssh_thrd_check_unlock(sess, mtx_unlock(&sess->accept_mtx));
-		return DSSH_ERROR_TERMINATED;
-	}
-	acceptqueue_push(&sess->accept_queue, peer_channel, peer_window, peer_max_packet, ctype, type_len);
-	dssh_thrd_check_locked(sess, cnd_signal(&sess->accept_cnd));
-	dssh_thrd_check_unlock(sess, mtx_unlock(&sess->accept_mtx));
-	return 0;
-}
-
-static int
+DSSH_TESTABLE int
 demux_thread_func(void *arg)
 {
 	struct dssh_session_s *sess = arg;
@@ -1980,6 +3297,7 @@ demux_thread_func(void *arg)
 	uint8_t               *payload;
 	size_t                 payload_len;
 
+	demux_session = sess;
 #ifdef DSSH_TESTING
 	dssh_test_ossl_exclude_thread();
 	if (dssh_test_alloc_new_threads_excluded())
@@ -2006,12 +3324,7 @@ demux_thread_func(void *arg)
 #ifdef DSSH_TESTING
 		test_dispatch_enter();
 #endif
-		if (msg_type == SSH_MSG_CHANNEL_OPEN)
-			dres = demux_channel_open(sess, payload, payload_len);
-		else if (msg_type == SSH_MSG_CHANNEL_OPEN_CONFIRMATION)
-			dres = demux_open_confirmation(sess, payload, payload_len);
-		else if ((msg_type >= SSH_MSG_CHANNEL_OPEN_FAILURE) && (msg_type <= SSH_MSG_CHANNEL_FAILURE))
-			dres = demux_dispatch(sess, msg_type, payload, payload_len);
+		dres = dispatch_connection_packet(sess, msg_type, payload, payload_len);
 #ifdef DSSH_TESTING
 		test_dispatch_leave();
 #endif
@@ -2033,42 +3346,12 @@ demux_thread_func(void *arg)
                  * are already handled by recv_packet transparently */
 	}
 
-	/* Wake any waiters so they see termination */
-	dssh_thrd_check(sess, mtx_lock(&sess->accept_mtx));
-	dssh_thrd_check_locked(sess, cnd_broadcast(&sess->accept_cnd));
-	dssh_thrd_check_unlock(sess, mtx_unlock(&sess->accept_mtx));
-
-	/* Wake registered channels one at a time.  Pin each channel under the
-	 * registry lock, then release that lock before acquiring buf_mtx. */
-	for (;;) {
-		struct dssh_channel_s *ch = NULL;
-		if (dssh_thrd_check(sess, mtx_lock(&sess->channel_mtx)) != thrd_success)
-			break;
-		for (size_t i = 0; i < sess->channel_count; i++) {
-			struct dssh_channel_s *candidate = sess->channels[i];
-
-			if (!atomic_exchange_explicit(&candidate->terminate_woken, true,
-			    memory_order_acq_rel)) {
-				atomic_fetch_add_explicit(&candidate->tx_refs, 1, memory_order_acq_rel);
-				ch = candidate;
-				break;
-			}
-		}
-		if (dssh_thrd_check_unlock(sess, mtx_unlock(&sess->channel_mtx)) != thrd_success) {
-			if (ch != NULL)
-				atomic_fetch_sub_explicit(&ch->tx_refs, 1, memory_order_acq_rel);
-			break;
-		}
-		if (ch == NULL)
-			break;
-		if (dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx)) == thrd_success) {
-			dssh_thrd_check_locked(sess, cnd_broadcast(&ch->poll_cnd));
-			dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
-		}
-		atomic_fetch_sub_explicit(&ch->tx_refs, 1, memory_order_acq_rel);
-	}
+	/* Complete deferred notification and every transport/connection wake
+	 * through the same one-shot termination path used by API callers. */
+	session_set_terminate(sess);
 
 	sess->demux_running = false;
+	demux_session = NULL;
 	return 0;
 }
 
@@ -2077,12 +3360,16 @@ dssh_session_start(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return DSSH_ERROR_INVALID;
-	if (connection_api_forbidden(sess))
+	if (connection_api_forbidden(sess) || session_scope_active(sess))
 		return DSSH_ERROR_INVALID;
 	if (sess->conn_initialized) {
 		DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_INIT, "Session connection layer is already started");
 		return DSSH_ERROR_INIT;
 	}
+	if (sess->terminate)
+		return DSSH_ERROR_TERMINATED;
+	if (!sess->handshake_complete || !sess->auth_complete)
+		return DSSH_ERROR_INVALID;
 
 	if (mtx_init(&sess->channel_mtx, mtx_plain) != thrd_success) {
 		DSSH_LOGF(sess, DSSH_LOG_ERROR, DSSH_ERROR_INIT, "Failed to initialize channel mutex");
@@ -2104,6 +3391,9 @@ dssh_session_start(struct dssh_session_s *sess)
 	sess->channel_count    = 0;
 	sess->channel_capacity = 0;
 	sess->next_channel_id  = 0;
+	sess->channel_ids = NULL;
+	sess->free_channel_ids = NULL;
+	sess->retired_channel_ids = 0;
 	acceptqueue_init(&sess->accept_queue);
 	sess->conn_initialized = true;
 
@@ -2122,13 +3412,9 @@ dssh_session_start(struct dssh_session_s *sess)
 	return 0;
 }
 
-DSSH_PUBLIC void
-dssh_session_stop(struct dssh_session_s *sess)
+DSSH_PRIVATE void
+session_stop_inner(struct dssh_session_s *sess)
 {
-	if (sess == NULL)
-		return;
-	if (connection_api_forbidden(sess))
-		return;
 	if (!sess->conn_initialized)
 		return;
 
@@ -2138,9 +3424,13 @@ dssh_session_stop(struct dssh_session_s *sess)
 	 * the worker has already stopped itself after an I/O error. */
 	session_set_terminate(sess);
 
-	int demux_res;
+	int ret = thrd_join(sess->demux_thread, NULL);
 
-	thrd_join(sess->demux_thread, &demux_res);
+	/* Under the serialized lifecycle preconditions this is a valid joinable
+	 * thread. Failure leaves its ownership/completion indeterminate; neither
+	 * callback diagnostics, cleanup nor caller retry is a recovery contract. */
+	if (ret != thrd_success)
+		abort();
 
 	/* Clean up registered channels */
 	if (sess->channels != NULL) {
@@ -2150,14 +3440,7 @@ dssh_session_stop(struct dssh_session_s *sess)
 			struct dssh_channel_s *ch = sess->channels[i];
 
 			if (ch != NULL) {
-				/* A failed buf_mtx unlock leaves ownership unspecified.
-				 * Destroying that mutex or its storage would be undefined;
-				 * the session is already terminal, so leak this unrecoverable
-				 * channel instead. */
-				if (atomic_load_explicit(&ch->dispatch_state, memory_order_acquire)
-				    == DSSH_CHANNEL_DISPATCH_LOCK_FAILED)
-					continue;
-				dssh_chan_params_free(&ch->params);
+				params_free(&ch->params);
 				event_queue_free(&ch->events);
 				cleanup_channel_buffers(ch);
 				free(ch);
@@ -2169,6 +3452,19 @@ dssh_session_stop(struct dssh_session_s *sess)
 		sess->channel_capacity = 0;
 	}
 
+	while (sess->channel_ids != NULL) {
+		struct dssh_channel_id *id = sess->channel_ids;
+		sess->channel_ids = id->next;
+		free(id);
+	}
+	while (sess->free_channel_ids != NULL) {
+		struct dssh_channel_id *id = sess->free_channel_ids;
+		sess->free_channel_ids = id->next;
+		free(id);
+	}
+
+	sess->retired_channel_ids = 0;
+
 	acceptqueue_free(&sess->accept_queue);
 	cnd_destroy(&sess->accept_cnd);
 	mtx_destroy(&sess->accept_mtx);
@@ -2176,47 +3472,65 @@ dssh_session_stop(struct dssh_session_s *sess)
 	sess->conn_initialized = false;
 }
 
+DSSH_PUBLIC void
+dssh_session_stop(struct dssh_session_s *sess)
+{
+	if (sess == NULL)
+		return;
+	if (dssh_io_callback_active(sess))
+		return;
+	if (!session_lifecycle_begin(sess))
+		return;
+	session_stop_inner(sess);
+	atomic_store_explicit(&sess->lifecycle_busy, false, memory_order_release);
+}
+
 /* ================================================================
  * Session accept -- wait for incoming CHANNEL_OPEN
  * ================================================================ */
 
-static int
+DSSH_TESTABLE int
 accept_incoming(struct dssh_session_s *sess, struct dssh_incoming_open *inc, int timeout_ms)
 {
 	struct timespec ts;
-
-	if (inc == NULL || sess == NULL)
-		return DSSH_ERROR_INVALID;
-	if (timeout_ms > 0)
-		deadline_from_ms(&ts, timeout_ms);
-	dssh_thrd_check(sess, mtx_lock(&sess->accept_mtx));
-
-	while (sess->accept_queue.count == 0) {
-		if (sess->terminate || !sess->demux_running) {
-			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->accept_mtx));
-			return DSSH_ERROR_TERMINATED;
-		}
-		if (timeout_ms == 0) {
-			dssh_thrd_check_unlock(sess, mtx_unlock(&sess->accept_mtx));
-			return DSSH_ERROR_NOMORE;
-		}
-		if (timeout_ms < 0) {
-			dssh_thrd_check_locked(sess, cnd_wait(&sess->accept_cnd, &sess->accept_mtx));
-		}
-		else {
-			if (dssh_thrd_check_locked(sess, cnd_timedwait(&sess->accept_cnd, &sess->accept_mtx, &ts))
-			    == thrd_timedout) {
-				dssh_thrd_check_unlock(sess, mtx_unlock(&sess->accept_mtx));
-				return DSSH_ERROR_NOMORE;
-			}
+	int ret = 0;
+	if (timeout_ms > 0) {
+		ret = dssh_deadline_from_ms(&ts, timeout_ms);
+		if (ret < 0) {
+			return ret;
 		}
 	}
-
-	acceptqueue_pop(&sess->accept_queue, inc);
-	/* Signal demux thread in case it's stalled on a full queue */
-	dssh_thrd_check_locked(sess, cnd_signal(&sess->accept_cnd));
-	dssh_thrd_check_unlock(sess, mtx_unlock(&sess->accept_mtx));
-	return 0;
+	ret = mtx_lock(&sess->accept_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	while (sess->accept_queue.count == 0 && !sess->terminate && sess->demux_running) {
+		if (timeout_ms == 0) {
+			if (dssh_thrd_check_unlock(sess, dssh_mtx_unlock(&sess->accept_mtx)) != thrd_success)
+				return DSSH_ERROR_TERMINATED;
+			return DSSH_ERROR_NOMORE;
+		}
+		ret = timeout_ms < 0 ? cnd_wait(&sess->accept_cnd, &sess->accept_mtx)
+		    : cnd_timedwait(&sess->accept_cnd, &sess->accept_mtx, &ts);
+		if (ret != thrd_success) {
+			int unlock_ret = dssh_mtx_unlock(&sess->accept_mtx);
+			if (unlock_ret != thrd_success) {
+				dssh_thrd_check_unlock(sess, unlock_ret);
+				return DSSH_ERROR_TERMINATED;
+			}
+			if (ret == thrd_timedout)
+				return DSSH_ERROR_NOMORE;
+			dssh_thrd_check(sess, ret);
+			return DSSH_ERROR_TERMINATED;
+		}
+	}
+	int result = DSSH_ERROR_TERMINATED;
+	if (!sess->terminate && sess->demux_running)
+		result = acceptqueue_pop(&sess->accept_queue, inc) == 0 ? 0 : DSSH_ERROR_NOMORE;
+	if (dssh_thrd_check_unlock(sess, dssh_mtx_unlock(&sess->accept_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
+	return result;
 }
 
 /*
@@ -2233,7 +3547,44 @@ send_open_confirmation(struct dssh_session_s *sess, struct dssh_channel_s *ch, u
 	DSSH_PUT_U32(ch->local_id, msg, &pos);
 	DSSH_PUT_U32(ch->local_window, msg, &pos);
 	DSSH_PUT_U32(MAX_PACKET_SIZE, msg, &pos);
-	return send_packet(sess, msg, pos, NULL);
+	return send_channel_open(sess, ch, msg, pos, DSSH_CHANNEL_ID_CONFIRMED);
+}
+
+/* Wait with only buf_mtx held; capture the final state before unlocking. */
+DSSH_TESTABLE int
+wait_open_response(struct dssh_session_s *sess, struct dssh_channel_s *ch)
+{
+	struct timespec ts;
+	int ret = 0;
+	if (sess->timeout_ms > 0) {
+		ret = dssh_deadline_from_ms(&ts, sess->timeout_ms);
+		if (ret < 0) {
+			session_set_terminate(sess);
+			return DSSH_ERROR_TERMINATED;
+		}
+	}
+	ret = mtx_lock(&ch->buf_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	while (ch->open_pending && !ch->close_received && !ch->close_sent && !sess->terminate) {
+		ret = sess->timeout_ms <= 0 ? cnd_wait(&ch->poll_cnd, &ch->buf_mtx)
+		    : cnd_timedwait(&ch->poll_cnd, &ch->buf_mtx, &ts);
+		if (ret != thrd_success) {
+			if (channel_unlock_lifecycle(sess, ch) < 0)
+				return DSSH_ERROR_TERMINATED;
+			if (ret == thrd_timedout)
+				return DSSH_ERROR_TIMEOUT;
+			dssh_thrd_check(sess, ret);
+			return DSSH_ERROR_TERMINATED;
+		}
+	}
+	int result = sess->terminate ? DSSH_ERROR_TERMINATED
+	    : ch->open ? 0 : DSSH_ERROR_REJECTED;
+	if (channel_unlock_lifecycle(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	return result;
 }
 
 /*
@@ -2247,12 +3598,9 @@ open_session_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch, boo
          * Send initial_window=0 per design -- no data flows until the
          * terminal request succeeds and we send WINDOW_ADJUST. */
 	*registered = false;
-	int64_t cid = alloc_channel_id(sess);
-	if (cid < 0)
-		return (int)cid;
-	ch->local_id       = (uint32_t)cid;
 	ch->local_window   = 0;
 	ch->open           = false;
+	ch->open_pending   = true;
 	ch->close_sent     = false;
 	ch->close_received = false;
 	ch->eof_sent       = false;
@@ -2272,121 +3620,123 @@ open_session_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch, boo
 	DSSH_PUT_U32(ch->local_window, msg, &pos);
 	DSSH_PUT_U32(MAX_PACKET_SIZE, msg, &pos);
 
-	int res = register_channel(sess, ch);
+	int res = register_channel(sess, ch, registered);
 
 	if (res < 0)
 		return res;
-	*registered = true;
-
-	res = send_packet(sess, msg, pos, NULL);
+	res = send_channel_open(sess, ch, msg, pos, DSSH_CHANNEL_ID_OPENING);
 	if (res < 0)
 		return res;
 
-	/* Wait for CONFIRMATION -- the demux thread handles it */
-	struct timespec ts;
-	if (sess->timeout_ms > 0)
-		deadline_from_ms(&ts, sess->timeout_ms);
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
-	while (!ch->open && !ch->close_received && !sess->terminate) {
-		if (sess->timeout_ms <= 0) {
-			dssh_thrd_check_locked(sess, cnd_wait(&ch->poll_cnd, &ch->buf_mtx));
-		}
-		else {
-			if (dssh_thrd_check_locked(sess, cnd_timedwait(&ch->poll_cnd, &ch->buf_mtx, &ts))
-			    == thrd_timedout) {
-				dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
-				return DSSH_ERROR_TIMEOUT;
-			}
-		}
-	}
-	dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
-
-	if (!ch->open)
-		return DSSH_ERROR_REJECTED;
-	return 0;
+	return DSSH_TEST_CHANNEL_RESULT(DSSH_TEST_CHANNEL_OPEN_WAIT, wait_open_response(sess, ch));
 }
 
-/*
- * Send a CHANNEL_REQUEST with want_reply=true and wait for the demux
- * thread to deliver SUCCESS or FAILURE.  Returns 0 on SUCCESS,
- * DSSH_ERROR_INIT on FAILURE.
- */
+/* Finish an outstanding request with only its associated mutex held. */
+DSSH_TESTABLE int
+wait_channel_request_response(struct dssh_session_s *sess, struct dssh_channel_s *ch)
+{
+	struct timespec ts;
+	int ret = 0;
+	if (sess->timeout_ms > 0) {
+		ret = dssh_deadline_from_ms(&ts, sess->timeout_ms);
+		if (ret < 0) {
+			session_set_terminate(sess);
+			return DSSH_ERROR_TERMINATED;
+		}
+	}
+	ret = mtx_lock(&ch->buf_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
+	while (!ch->request_responded && !sess->terminate && !ch->close_received && !ch->close_sent) {
+		ret = sess->timeout_ms <= 0 ? cnd_wait(&ch->poll_cnd, &ch->buf_mtx)
+		    : cnd_timedwait(&ch->poll_cnd, &ch->buf_mtx, &ts);
+		if (ret != thrd_success) {
+			ch->request_pending = false;
+			ch->request_responded = false;
+			if (channel_unlock_lifecycle(sess, ch) < 0)
+				return DSSH_ERROR_TERMINATED;
+			if (ret == thrd_timedout)
+				return DSSH_ERROR_TIMEOUT;
+			dssh_thrd_check(sess, ret);
+			return DSSH_ERROR_TERMINATED;
+		}
+	}
+	int result = sess->terminate || !ch->request_responded ? DSSH_ERROR_TERMINATED
+	    : ch->request_success ? 0 : DSSH_ERROR_REJECTED;
+	ch->request_pending = false;
+	ch->request_responded = false;
+	if (channel_unlock_lifecycle(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	return result;
+}
+
+/* Send one setup request, optionally waiting for SUCCESS/FAILURE. */
 static int
+send_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch, const char *req_type,
+    const uint8_t *extra, size_t extra_len, bool want_reply)
+{
+	size_t rtlen = strlen(req_type);
+	if (rtlen > UINT32_MAX || rtlen > SIZE_MAX - CHAN_REQUEST_FIXED
+	    || extra_len > SIZE_MAX - CHAN_REQUEST_FIXED - rtlen)
+		return DSSH_ERROR_INVALID;
+	size_t total = CHAN_REQUEST_FIXED + rtlen + extra_len;
+	uint8_t *msg;
+	int ret = begin_channel_packet(sess, ch, SSH_MSG_CHANNEL_REQUEST, total, &msg);
+	if (ret != 0)
+		return ret < 0 ? ret : DSSH_ERROR_TERMINATED;
+	if (!ch->open || ch->close_received || ch->request_pending) {
+		int result = ch->request_pending ? DSSH_ERROR_INVALID : DSSH_ERROR_TERMINATED;
+		if (channel_unlock_lifecycle(sess, ch) < 0)
+			result = DSSH_ERROR_TERMINATED;
+		send_cancel(sess);
+		return result;
+	}
+	if (want_reply) {
+		ch->request_pending = true;
+		ch->request_responded = false;
+		ch->request_success = false;
+	}
+	if (channel_unlock_lifecycle(sess, ch) < 0) {
+		send_cancel(sess);
+		return DSSH_ERROR_TERMINATED;
+	}
+
+	size_t pos = 0;
+	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
+	DSSH_PUT_U32(ch->remote_id, msg, &pos);
+	uint32_t wire_rtlen = (uint32_t)rtlen;
+	DSSH_PUT_U32(wire_rtlen, msg, &pos);
+	memcpy(&msg[pos], req_type, rtlen);
+	pos += rtlen;
+	msg[pos++] = want_reply ? 1 : 0;
+	if (extra_len > 0)
+		memcpy(&msg[pos], extra, extra_len);
+	ret = send_commit(sess, total, NULL);
+	if (!want_reply)
+		return ret;
+	if (ret < 0) {
+		int lock_ret = mtx_lock(&ch->buf_mtx);
+		if (lock_ret != thrd_success) {
+			dssh_thrd_check(sess, lock_ret);
+			return DSSH_ERROR_TERMINATED;
+		}
+		ch->request_pending = false;
+		ch->request_responded = false;
+		if (channel_unlock_lifecycle(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
+		return ret;
+	}
+	return wait_channel_request_response(sess, ch);
+}
+
+/* Send one setup request and wait for its SUCCESS/FAILURE response. */
+DSSH_TESTABLE int
 send_channel_request_wait(struct dssh_session_s *sess, struct dssh_channel_s *ch, const char *req_type,
     const uint8_t *extra, size_t extra_len)
 {
-	size_t rtlen = strlen(req_type);
-
-	if (rtlen > UINT32_MAX)
-		return DSSH_ERROR_INVALID;
-	if (extra_len > SIZE_MAX - CHAN_REQUEST_FIXED - rtlen)
-		return DSSH_ERROR_INVALID;
-
-	size_t   max;
-	int      err;
-	uint8_t *msg = send_begin(sess, SSH_MSG_CHANNEL_REQUEST, &max, &err);
-
-	if (msg == NULL)
-		return err;
-
-	size_t pos = 0;
-
-	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
-	DSSH_PUT_U32(ch->remote_id, msg, &pos);
-	DSSH_PUT_U32((uint32_t)rtlen, msg, &pos);
-	memcpy(&msg[pos], req_type, rtlen);
-	pos += rtlen;
-	msg[pos++] = 1; /* want_reply = TRUE */
-	if (extra_len > 0) {
-		memcpy(&msg[pos], extra, extra_len);
-		pos += extra_len;
-	}
-
-	/* Set up the pending response slot */
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
-	ch->request_pending   = true;
-	ch->request_responded = false;
-	ch->request_success   = false;
-	dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
-
-	int res = send_commit(sess, pos, NULL);
-	if (res < 0) {
-		dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
-		ch->request_pending = false;
-		dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
-		return res;
-	}
-
-	/* Wait for the demux thread to deliver the response */
-	struct timespec rts;
-	if (sess->timeout_ms > 0)
-		deadline_from_ms(&rts, sess->timeout_ms);
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
-	while (!ch->request_responded && !sess->terminate && !ch->close_received) {
-		if (sess->timeout_ms <= 0) {
-			dssh_thrd_check_locked(sess, cnd_wait(&ch->poll_cnd, &ch->buf_mtx));
-		}
-		else {
-			if (dssh_thrd_check_locked(sess, cnd_timedwait(&ch->poll_cnd, &ch->buf_mtx, &rts))
-			    == thrd_timedout) {
-				ch->request_pending   = false;
-				ch->request_responded = false;
-				dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
-				return DSSH_ERROR_TIMEOUT;
-			}
-		}
-	}
-
-	bool responded = ch->request_responded;
-	bool success   = ch->request_success;
-
-	ch->request_pending   = false;
-	ch->request_responded = false;
-	dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
-
-	if (!responded)
-		return DSSH_ERROR_TERMINATED;
-	return success ? 0 : DSSH_ERROR_REJECTED;
+	return send_channel_request(sess, ch, req_type, extra, extra_len, true);
 }
 
 /*
@@ -2396,12 +3746,10 @@ send_channel_request_wait(struct dssh_session_s *sess, struct dssh_channel_s *ch
  * is deciding whether the current request completes setup.
  */
 static int
-setup_recv(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint8_t *msg_type, uint8_t **payload,
-    size_t *payload_len)
+setup_recv_until(struct dssh_session_s *sess, struct dssh_channel_s *ch,
+    uint8_t *msg_type, uint8_t **payload, size_t *payload_len,
+    const struct timespec *deadline)
 {
-	struct timespec sts;
-	if (sess->timeout_ms > 0)
-		deadline_from_ms(&sts, sess->timeout_ms);
 	int ret = mtx_lock(&ch->buf_mtx);
 
 	if (ret != thrd_success) {
@@ -2409,7 +3757,7 @@ setup_recv(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint8_t *msg_
 		return DSSH_ERROR_TERMINATED;
 	}
 	while (!ch->setup_ready && !ch->setup_error && !sess->terminate && !ch->close_received) {
-		if (sess->timeout_ms <= 0) {
+		if (deadline == NULL) {
 			ret = cnd_wait(&ch->poll_cnd, &ch->buf_mtx);
 			if (ret != thrd_success) {
 				int unlock_ret = channel_unlock_lifecycle(sess, ch);
@@ -2420,7 +3768,7 @@ setup_recv(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint8_t *msg_
 			}
 		}
 		else {
-			ret = cnd_timedwait(&ch->poll_cnd, &ch->buf_mtx, &sts);
+			ret = cnd_timedwait(&ch->poll_cnd, &ch->buf_mtx, deadline);
 			if (ret == thrd_timedout) {
 				if (channel_unlock_lifecycle(sess, ch) < 0)
 					return DSSH_ERROR_TERMINATED;
@@ -2452,15 +3800,31 @@ setup_recv(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint8_t *msg_
 	*payload        = ch->setup_payload;
 	*payload_len    = ch->setup_payload_len;
 
-	/* Caller takes ownership of setup_payload and must free it */
-	ch->setup_payload     = NULL;
-	ch->setup_payload_len = 0;
+	/* Borrowed until setup_release or the final setup-mode transition.
+	 * Keeping the occupied mailbox protects the retained allocation. */
 	if (channel_unlock_lifecycle(sess, ch) < 0)
 		return DSSH_ERROR_TERMINATED;
 	return 0;
 }
 
-static int
+DSSH_TESTABLE int
+setup_recv(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint8_t *msg_type,
+    uint8_t **payload, size_t *payload_len)
+{
+	struct timespec deadline;
+	const struct timespec *until = NULL;
+	if (sess->timeout_ms > 0) {
+		int ret = dssh_deadline_from_ms(&deadline, sess->timeout_ms);
+		if (ret < 0) {
+			session_set_terminate(sess);
+			return DSSH_ERROR_TERMINATED;
+		}
+		until = &deadline;
+	}
+	return setup_recv_until(sess, ch, msg_type, payload, payload_len, until);
+}
+
+DSSH_TESTABLE int
 setup_release(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
 	int ret = mtx_lock(&ch->buf_mtx);
@@ -2469,7 +3833,15 @@ setup_release(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 		dssh_thrd_check(sess, ret);
 		return DSSH_ERROR_TERMINATED;
 	}
+	if (ch->setup_ready) {
+		if (ch->setup_msg_type == SSH_MSG_CHANNEL_CLOSE)
+			ch->close_received = true;
+		else if (ch->setup_msg_type == SSH_MSG_CHANNEL_EOF)
+			ch->eof_received = true;
+	}
 	ch->setup_ready = false;
+	ch->setup_error = false;
+	ch->setup_payload_len = 0;
 	ret = cnd_broadcast(&ch->poll_cnd);
 	int unlock_ret = channel_unlock_lifecycle(sess, ch);
 
@@ -2521,18 +3893,17 @@ setup_reply(struct dssh_session_s *sess, struct dssh_channel_s *ch, bool success
 
 	msg[pos++] = success ? SSH_MSG_CHANNEL_SUCCESS : SSH_MSG_CHANNEL_FAILURE;
 	DSSH_PUT_U32(ch->remote_id, msg, &pos);
-	return send_packet(sess, msg, pos, NULL);
+	return send_channel_packet(sess, ch, msg, pos);
 }
 
 static int
-setup_finish(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint8_t *payload,
+setup_finish(struct dssh_session_s *sess, struct dssh_channel_s *ch,
     bool want_reply, bool success)
 {
 	int ret = 0;
 
 	if (want_reply)
 		ret = setup_reply(sess, ch, success);
-	free(payload);
 	int release_ret = setup_release(sess, ch);
 
 	if (release_ret < 0)
@@ -2542,32 +3913,27 @@ setup_finish(struct dssh_session_s *sess, struct dssh_channel_s *ch, uint8_t *pa
 
 /*
  * Allocate a channel, init sync primitives, register with the session,
- * and send CHANNEL_OPEN_CONFIRMATION.  Frees `inc` on all paths.
- * Returns the channel or NULL on failure.
+ * and send CHANNEL_OPEN_CONFIRMATION. The channel takes over the incoming
+ * protocol record on success. On failure the accept operation keeps it.
  */
-static struct dssh_channel_s *
+DSSH_TESTABLE struct dssh_channel_s *
 accept_channel_init(struct dssh_session_s *sess, struct dssh_incoming_open *inc)
 {
-	struct dssh_channel_s *ch = calloc(1, sizeof(*ch));
+	struct dssh_channel_s *ch = new_channel(sess, inc->protocol_id);
 
 	if (ch == NULL)
 		return NULL;
-	int64_t cid = alloc_channel_id(sess);
-	if (cid < 0) {
-		free(ch);
-		return NULL;
-	}
-	ch->local_id     = (uint32_t)cid;
 	ch->local_window = 0; /* initial_window=0; WINDOW_ADJUST after setup */
 	ch->remote_id    = inc->peer_channel;
-	atomic_init(&ch->remote_window, inc->peer_window);
-	atomic_init(&ch->terminate_woken, false);
-	atomic_init(&ch->dispatch_state, DSSH_CHANNEL_DISPATCH_IDLE);
-	atomic_init(&ch->tx_refs, 0);
+	atomic_store(&ch->remote_window, inc->peer_window);
 	ch->remote_max_packet = inc->peer_max_packet;
-
-	memset(&ch->wa_slot, 0, sizeof(ch->wa_slot));
-	memset(&ch->chan_fail_slot, 0, sizeof(ch->chan_fail_slot));
+	ch->sess = sess;
+	ch->io_model = DSSH_IO_STREAM;
+	ch->zc_cb = stream_zc_cb;
+	ch->event_cb = sess->default_event_cb;
+	ch->event_cbdata = sess->default_event_cbdata;
+	ch->break_cb = sess->default_break_cb;
+	ch->break_cbdata = sess->default_break_cbdata;
 
 	if (mtx_init(&ch->buf_mtx, mtx_plain) != thrd_success) {
 		free(ch);
@@ -2584,9 +3950,18 @@ accept_channel_init(struct dssh_session_s *sess, struct dssh_incoming_open *inc)
 		free(ch);
 		return NULL;
 	}
+	int queue_ret = event_queue_init(&ch->events, sess->default_max_events, sess->trans.packet_buf_sz);
+	if (queue_ret < 0) {
+		cnd_destroy(&ch->poll_cnd);
+		mtx_destroy(&ch->cb_mtx);
+		mtx_destroy(&ch->buf_mtx);
+		free(ch);
+		return NULL;
+	}
 	if (alloc_channel_slots(sess, ch) < 0) {
+		event_queue_free(&ch->events);
 		free_tx_slot(&ch->wa_slot);
-		free_tx_slot(&ch->chan_fail_slot);
+		free_tx_slot(&ch->chan_reply_slot);
 		cnd_destroy(&ch->poll_cnd);
 		mtx_destroy(&ch->cb_mtx);
 		mtx_destroy(&ch->buf_mtx);
@@ -2594,12 +3969,18 @@ accept_channel_init(struct dssh_session_s *sess, struct dssh_incoming_open *inc)
 		return NULL;
 	}
 	ch->setup_mode = true;
+	ch->open = true;
 
-	int res = register_channel(sess, ch);
+	bool registered;
+	int res = register_channel(sess, ch, &registered);
 
 	if (res < 0) {
+		if (registered && detach_channel(sess, ch) < 0)
+			return NULL;
+		event_queue_free(&ch->events);
+		free(ch->setup_payload);
 		free_tx_slot(&ch->wa_slot);
-		free_tx_slot(&ch->chan_fail_slot);
+		free_tx_slot(&ch->chan_reply_slot);
 		cnd_destroy(&ch->poll_cnd);
 		mtx_destroy(&ch->cb_mtx);
 		mtx_destroy(&ch->buf_mtx);
@@ -2611,15 +3992,16 @@ accept_channel_init(struct dssh_session_s *sess, struct dssh_incoming_open *inc)
 	if (res < 0) {
 		if (detach_channel(sess, ch) < 0)
 			return NULL;
+		event_queue_free(&ch->events);
+		free(ch->setup_payload);
 		free_tx_slot(&ch->wa_slot);
-		free_tx_slot(&ch->chan_fail_slot);
+		free_tx_slot(&ch->chan_reply_slot);
 		cnd_destroy(&ch->poll_cnd);
 		mtx_destroy(&ch->cb_mtx);
 		mtx_destroy(&ch->buf_mtx);
 		free(ch);
 		return NULL;
 	}
-	ch->open = true;
 	return ch;
 }
 
@@ -2644,6 +4026,8 @@ static int
 zc_getbuf_inner(struct dssh_channel_s *ch, int stream, uint8_t **buf, size_t *max_len)
 {
 	struct dssh_session_s *sess = ch->sess;
+	if (in_zc_rx || stream < 0 || stream > 1)
+		return DSSH_ERROR_INVALID;
 
 	int acquire_ret = tx_acquire(sess, SSH_MSG_CHANNEL_DATA);
 
@@ -2652,25 +4036,44 @@ zc_getbuf_inner(struct dssh_channel_s *ch, int stream, uint8_t **buf, size_t *ma
 
 	/* Drain slots now (per-packet path) or defer to zc_send_inner
 	 * (gather path — slots will be batched with the data packet). */
-	if (!tx_gather_enabled())
-		drain_tx_slots(sess);
-
-	/* Check remote window under buf_mtx */
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
-	if (!ch->open || ch->eof_sent || ch->close_received) {
-		dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+	if (!tx_gather_enabled()) {
+		int drain_ret = drain_tx_slots(sess);
+		if (drain_ret < 0)
+			return tx_unlock_with_result(sess, drain_ret);
+	}
+	if (sess->terminate) {
 		tx_unlock_with_slots(sess);
 		return DSSH_ERROR_TERMINATED;
 	}
 
-	uint32_t window  = atomic_load_explicit(&ch->remote_window, memory_order_acquire);
+	/* Check remote window under buf_mtx */
+	int lock_ret = mtx_lock(&ch->buf_mtx);
+	if (lock_ret != thrd_success) {
+		session_set_terminate_no_wake(sess);
+		tx_unlock_with_slots(sess);
+		session_set_terminate(sess);
+		return DSSH_ERROR_TERMINATED;
+	}
+	if (!ch->open || ch->eof_sent || ch->close_received) {
+		int unlock_ret = channel_unlock_lifecycle(sess, ch);
+		tx_unlock_with_slots(sess);
+		return unlock_ret < 0 ? unlock_ret : DSSH_ERROR_TERMINATED;
+	}
+
+	uint_least32_t window = atomic_load_explicit(&ch->remote_window, memory_order_acquire);
 	uint32_t max_pkt = ch->remote_max_packet;
 
-	dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+	if (channel_unlock_lifecycle(sess, ch) < 0) {
+		tx_unlock_with_slots(sess);
+		return DSSH_ERROR_TERMINATED;
+	}
+	uint32_t credit = max_pkt;
+	if (window < max_pkt) {
+		uint32_t bounded = (uint32_t)window;
+		credit = bounded;
+	}
 
-	size_t avail = window < max_pkt ? window : max_pkt;
-
-	if (avail == 0) {
+	if (credit == 0) {
 		tx_unlock_with_slots(sess);
 		return DSSH_ERROR_NOMORE;
 	}
@@ -2681,36 +4084,51 @@ zc_getbuf_inner(struct dssh_channel_s *ch, int stream, uint8_t **buf, size_t *ma
 	/* Cap by transport buffer capacity:
 	 * tx_packet layout: [seq(4)][pkt_len(4)][pad_len(1)][payload][pad][mac]
 	 * payload = chan_hdr + data.  Need room for at least 4 bytes padding. */
-	size_t max_payload = sess->trans.packet_buf_sz - 4 - 32;
+	size_t max_payload = tx_payload_capacity(sess);
 
 	if (chan_hdr >= max_payload) {
 		tx_unlock_with_slots(sess);
 		return DSSH_ERROR_TOOLONG;
 	}
 	size_t max_data = max_payload - chan_hdr;
-
-	if (avail > max_data)
-		avail = max_data;
+	size_t avail = max_data;
+	if (credit < max_data) {
+		size_t credit_size = (size_t)credit;
+		avail = credit_size;
+	}
 
 	/* Data area starts after: seq(4) + pkt_len(4) + pad_len(1) + chan_hdr */
 	*buf          = &sess->trans.tx_packet[9 + chan_hdr];
 	*max_len      = avail;
 	ch->zc_stream = stream;
+	zc_reserved_channel = ch;
+	zc_reserved_capacity = avail;
 	return 0;
 }
 
 /*
- * Fill channel header, call tx_finalize, deduct window, release TX ownership.
+ * Fill the header, debit credit before I/O, refund errors and release TX ownership.
  * Caller MUST have called zc_getbuf_inner first.
  */
 static int
 zc_send_inner(struct dssh_channel_s *ch, size_t len)
 {
 	struct dssh_session_s *sess     = ch->sess;
-	if (!tx_owner_is_current(sess))
+	if (!tx_owner_is_current(sess) || zc_reserved_channel != ch)
 		return DSSH_ERROR_INVALID;
+	if (len > zc_reserved_capacity) {
+		zc_reserved_channel = NULL;
+		zc_reserved_capacity = 0;
+		tx_unlock_with_slots(sess);
+		return DSSH_ERROR_TOOLONG;
+	}
+	zc_reserved_channel = NULL;
+	zc_reserved_capacity = 0;
 	int                    stream   = ch->zc_stream;
 	size_t                 chan_hdr = (stream == 0) ? CHAN_DATA_FIXED : CHAN_EXT_DATA_FIXED;
+
+	/* The reservation capacity was bounded by uint32 peer credit. */
+	uint32_t len_u32 = (uint32_t)len;
 
 	/* Build channel header at tx_packet[9] */
 	size_t   hp  = 0;
@@ -2719,48 +4137,51 @@ zc_send_inner(struct dssh_channel_s *ch, size_t len)
 	if (stream == 0) {
 		hdr[hp++] = SSH_MSG_CHANNEL_DATA;
 		DSSH_PUT_U32(ch->remote_id, hdr, &hp);
-		uint32_t len_u32 = (uint32_t)len;
 		DSSH_PUT_U32(len_u32, hdr, &hp);
 	}
 	else {
 		hdr[hp++] = SSH_MSG_CHANNEL_EXTENDED_DATA;
 		DSSH_PUT_U32(ch->remote_id, hdr, &hp);
 		DSSH_PUT_U32(SSH_EXTENDED_DATA_STDERR, hdr, &hp);
-		uint32_t len_u32 = (uint32_t)len;
 		DSSH_PUT_U32(len_u32, hdr, &hp);
 	}
 
 	size_t payload_len = chan_hdr + len;
 	int    ret;
 
+	/* Commit the debit before the peer can observe this packet. A peer
+	 * may return credit while the I/O callback is still completing. */
+	window_atomic_sub(&ch->remote_window, len_u32);
 	if (tx_gather_enabled())
 		ret = tx_gather_with_packet(sess, sess->trans.tx_packet, payload_len);
 	else
 		ret = tx_finalize(sess, sess->trans.tx_packet, payload_len);
 
-	if (ret == 0) {
-		uint32_t len_u32 = (uint32_t)len;
-		window_atomic_sub(&ch->remote_window, len_u32);
-	}
+	/* A refused/failed send retains the caller's previous credit policy.
+	 * Fatal I/O/transform failures still terminate through the existing path. */
+	if (ret < 0)
+		window_atomic_add(&ch->remote_window, len_u32);
 
 	if ((ret < 0) && (ret != DSSH_ERROR_TOOLONG) && (ret != DSSH_ERROR_REKEY_NEEDED))
 		session_set_terminate(sess);
 
-	tx_unlock_with_slots(sess);
-	return ret;
+	return tx_unlock_with_result(sess, ret);
 }
 
 /*
  * Release the packet-engine reservation without sending.
  */
-static void
+static int
 zc_cancel_inner(struct dssh_channel_s *ch)
 {
 	struct dssh_session_s *sess = ch->sess;
 
-	if (!tx_owner_is_current(sess))
-		return;
+	if (!tx_owner_is_current(sess) || zc_reserved_channel != ch)
+		return DSSH_ERROR_INVALID;
+	zc_reserved_channel = NULL;
+	zc_reserved_capacity = 0;
 	tx_unlock_with_slots(sess);
+	return 0;
 }
 
 /* ---- Internal stream ZC callback (RX path) ---- */
@@ -2778,17 +4199,26 @@ stream_zc_cb(dssh_channel ch, int stream, const uint8_t *data, size_t len, void 
 
 	struct dssh_session_s *sess = ch->sess;
 
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+	int ret = mtx_lock(&ch->buf_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return 0;
+	}
 
 	struct dssh_bytebuf *bb      = (stream == 0) ? &ch->buf.stdout_buf : &ch->buf.stderr_buf;
 	size_t               written = bytebuf_write(bb, data, len);
 
-	dssh_thrd_check_locked(sess, cnd_broadcast(&ch->poll_cnd));
-	dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+	ret = cnd_broadcast(&ch->poll_cnd);
+	if (channel_unlock_lifecycle(sess, ch) < 0)
+		return 0;
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return 0;
+	}
 
-	uint32_t ret = (uint32_t)written;
+	uint32_t consumed = (uint32_t)written;
 
-	return ret;
+	return consumed;
 }
 
 static int
@@ -2899,10 +4329,10 @@ chan_send_env(struct dssh_session_s *sess, struct dssh_channel_s *ch, const stru
 		memcpy(&extra[ep], p->env[i].value, vlen);
 		ep += vlen;
 
-		int ret = send_channel_request_wait(sess, ch, "env", extra, ep);
+		int ret = send_channel_request(sess, ch, "env", extra, ep, false);
 
 		free(extra);
-		if (ret < 0 && ret != DSSH_ERROR_REJECTED)
+		if (ret < 0)
 			return ret;
 	}
 	return 0;
@@ -2918,7 +4348,11 @@ chan_send_terminal_request(struct dssh_session_s *sess, struct dssh_channel_s *c
 		case DSSH_CHAN_EXEC:
 		{
 			size_t clen = strlen(p->command);
-			if (clen > UINT32_MAX)
+#if SIZE_MAX >= UINT32_MAX
+			if (clen > UINT32_MAX || clen > SIZE_MAX - 4)
+#else
+			if (clen > SIZE_MAX - 4)
+#endif
 				return DSSH_ERROR_INVALID;
 			size_t   extra_len = 4 + clen;
 			uint8_t *extra     = malloc(extra_len);
@@ -2935,7 +4369,11 @@ chan_send_terminal_request(struct dssh_session_s *sess, struct dssh_channel_s *c
 		case DSSH_CHAN_SUBSYSTEM:
 		{
 			size_t slen = strlen(p->subsystem);
-			if (slen > UINT32_MAX)
+#if SIZE_MAX >= UINT32_MAX
+			if (slen > UINT32_MAX || slen > SIZE_MAX - 4)
+#else
+			if (slen > SIZE_MAX - 4)
+#endif
 				return DSSH_ERROR_INVALID;
 			size_t   extra_len = 4 + slen;
 			uint8_t *extra     = malloc(extra_len);
@@ -2959,30 +4397,42 @@ dssh_chan_open(struct dssh_session_s *sess, const struct dssh_chan_params *param
 {
 	if (sess == NULL || params == NULL)
 		return NULL;
-	if (connection_api_forbidden(sess))
+	if (in_zc_rx || connection_api_forbidden(sess))
+		return NULL;
+	if (!sess->conn_initialized || !sess->demux_running || sess->terminate)
+		return NULL;
+	if (params_validate(params) < 0)
 		return NULL;
 
-	/* DSSH_PARAM_ACCEPT_EARLY_DATA only makes sense for stream-shaped
-	 * channels: subsystem channels use a message queue and have no
-	 * coherent destination for bytes that arrive before the
-	 * subsystem-req response. */
+	/* Early-data delivery is a shell/exec workaround. Subsystem channels
+	 * keep ordinary zero-window setup in both I/O models. This is a
+	 * channel-type policy; this stream open still uses ring buffers
+	 * for all supported terminal request types. */
 	if ((params->flags & DSSH_PARAM_ACCEPT_EARLY_DATA)
 	    && params->type != DSSH_CHAN_SHELL && params->type != DSSH_CHAN_EXEC)
 		return NULL;
 
-	struct dssh_channel_s *ch = calloc(1, sizeof(*ch));
+	struct dssh_channel_s *ch = new_channel(sess, NULL);
 
 	if (ch == NULL)
 		return NULL;
 
 	uint32_t winsz = params->max_window != 0 ? params->max_window : INITIAL_WINDOW_SIZE;
 
+	int res = params_clone(&ch->params, params, winsz);
+	if (res < 0) {
+		free_channel(ch);
+		return NULL;
+	}
+	const struct dssh_chan_params *snapshot = &ch->params;
+
 	/* Phase 1: sync primitives only */
-	int  res = init_channel_sync(sess, ch);
+	res = init_channel_sync(sess, ch);
 	bool registered;
 
 	if (res < 0) {
-		free(ch);
+		params_free(&ch->params);
+		free_channel(ch);
 		return NULL;
 	}
 
@@ -2991,11 +4441,13 @@ dssh_chan_open(struct dssh_session_s *sess, const struct dssh_chan_params *param
 	ch->zc_cb                 = stream_zc_cb;
 	ch->event_cb              = sess->default_event_cb;
 	ch->event_cbdata          = sess->default_event_cbdata;
-	ch->accept_pre_window_data = (params->flags & DSSH_PARAM_ACCEPT_EARLY_DATA) != 0;
+	ch->break_cb              = sess->default_break_cb;
+	ch->break_cbdata          = sess->default_break_cbdata;
+	ch->accept_pre_window_data = (snapshot->flags & DSSH_PARAM_ACCEPT_EARLY_DATA) != 0;
 
 	/* Init event queue early — demux can dispatch EOF/CLOSE events
 	 * to this channel as soon as it's registered. */
-	res = event_queue_init(&ch->events, sess->default_max_events);
+	res = event_queue_init(&ch->events, sess->default_max_events, sess->trans.packet_buf_sz);
 	if (res < 0)
 		goto fail_sync;
 
@@ -3018,17 +4470,17 @@ dssh_chan_open(struct dssh_session_s *sess, const struct dssh_chan_params *param
 	}
 
 	/* Setup: env, pty-req, terminal request */
-	if (params->env_count > 0) {
-		res = chan_send_env(sess, ch, params);
+	if (snapshot->env_count > 0) {
+		res = chan_send_env(sess, ch, snapshot);
 		if (res < 0)
 			goto fail_close;
 	}
-	if (params->flags & DSSH_PARAM_HAS_PTY) {
-		res = chan_send_pty_req(sess, ch, params);
+	if (snapshot->flags & DSSH_PARAM_HAS_PTY) {
+		res = chan_send_pty_req(sess, ch, snapshot);
 		if (res < 0)
 			goto fail_close;
 	}
-	res = chan_send_terminal_request(sess, ch, params);
+	res = chan_send_terminal_request(sess, ch, snapshot);
 	if (res < 0)
 		goto fail_close;
 
@@ -3050,21 +4502,6 @@ dssh_chan_open(struct dssh_session_s *sess, const struct dssh_chan_params *param
 	 * load in handle_channel_*data sees this without buf_mtx. */
 	atomic_store_explicit(&ch->setup_complete, true, memory_order_release);
 
-	/* Copy params for getters */
-	res = dssh_chan_params_init(&ch->params, params->type);
-	if (res < 0)
-		goto fail_close;
-	ch->params.flags      = params->flags;
-	ch->params.max_window = winsz;
-	ch->params.cols       = params->cols;
-	ch->params.rows       = params->rows;
-	ch->params.wpx        = params->wpx;
-	ch->params.hpx        = params->hpx;
-	dssh_chan_params_set_term(&ch->params, params->term);
-	if (params->command != NULL)
-		dssh_chan_params_set_command(&ch->params, params->command);
-	if (params->subsystem != NULL)
-		dssh_chan_params_set_subsystem(&ch->params, params->subsystem);
 
 	return ch;
 
@@ -3078,34 +4515,100 @@ fail_buffers:
 fail_events:
 	event_queue_free(&ch->events);
 fail_sync:
+	params_free(&ch->params);
 	free_tx_slot(&ch->wa_slot);
-	free_tx_slot(&ch->chan_fail_slot);
+	free_tx_slot(&ch->chan_reply_slot);
 	cnd_destroy(&ch->poll_cnd);
 	mtx_destroy(&ch->cb_mtx);
 	mtx_destroy(&ch->buf_mtx);
-	free(ch);
+	free_channel(ch);
 	return NULL;
+}
+
+/* Store before attempting notification: a failed acquisition must not replace
+ * the first error or the count of bytes already delivered. No mutex is held
+ * on entry. The TX caller retains its channel reference through this call. */
+DSSH_PRIVATE void
+channel_defer_read_error(struct dssh_session_s *sess, struct dssh_channel_s *ch, int error)
+{
+	if (ch->io_model != DSSH_IO_STREAM || error >= 0)
+		return;
+	if ((error == DSSH_ERROR_TERMINATED || sess->terminate)
+	    && atomic_exchange(&ch->read_error_terminal, true))
+		return;
+	int expected = 0;
+	(void)atomic_compare_exchange_strong(&ch->read_error, &expected, error);
+	/* Termination already makes every requested read direction ready. */
+	if (sess->terminate)
+		return;
+	int ret = mtx_lock(&ch->buf_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return;
+	}
+	ret = cnd_broadcast(&ch->poll_cnd);
+	dssh_mtx_unlock(&ch->buf_mtx);
+	if (ret != thrd_success)
+		dssh_thrd_check(sess, ret);
 }
 
 DSSH_PUBLIC int64_t
 dssh_chan_read(struct dssh_channel_s *ch, int stream, uint8_t *buf, size_t bufsz)
 {
-	if (ch == NULL)
+	if (ch == NULL || stream < 0 || stream > 1)
 		return DSSH_ERROR_INVALID;
-	if (channel_api_forbidden(ch))
+	if (in_zc_rx || channel_io_forbidden(ch))
 		return DSSH_ERROR_INVALID;
 	if (ch->io_model != DSSH_IO_STREAM)
 		return DSSH_ERROR_INVALID;
 	if (buf == NULL && bufsz != 0)
 		return DSSH_ERROR_INVALID;
 	struct dssh_session_s *sess = ch->sess;
+	if (buf != NULL && bufsz != 0 && !tx_slot_context_allowed(sess))
+		return DSSH_ERROR_INVALID;
 	bool                   ext  = (stream != 0);
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+	int lock_ret = mtx_lock(&ch->buf_mtx);
+	if (lock_ret != thrd_success) {
+		dssh_thrd_check(sess, lock_ret);
+		return DSSH_ERROR_TERMINATED;
+	}
 	struct dssh_bytebuf *bb = ext ? &ch->buf.stderr_buf : &ch->buf.stdout_buf;
 	if (buf == NULL) {
 		size_t avail = bytebuf_available(bb);
-		dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+		if (channel_unlock_lifecycle(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
 		return (int64_t)avail;
+	}
+	if (bufsz != 0) {
+		int error = atomic_exchange(&ch->read_error, 0);
+		if (error < 0) {
+			if (channel_unlock_lifecycle(sess, ch) < 0)
+				return DSSH_ERROR_TERMINATED;
+			return error;
+		}
+		/* Retry already queued credit even if this stream is empty. A
+		 * resolved pre-wire refusal must not need another application send.
+		 * Reacquire and recheck before consuming any bytes or new error. */
+		bool retry = !sess->terminate && !ch->eof_received && !ch->close_received
+		    && ch->window_adjust_pending > 0 && atomic_load(&ch->wa_slot.ready);
+		if (retry) {
+			if (channel_unlock_lifecycle(sess, ch) < 0)
+				return DSSH_ERROR_TERMINATED;
+			int ret = schedule_wa_slot(sess);
+			if (ret < 0)
+				channel_defer_read_error(sess, ch, ret);
+			lock_ret = mtx_lock(&ch->buf_mtx);
+			if (lock_ret != thrd_success) {
+				dssh_thrd_check(sess, lock_ret);
+				return DSSH_ERROR_TERMINATED;
+			}
+			error = atomic_exchange(&ch->read_error, 0);
+			if (error < 0) {
+				if (channel_unlock_lifecycle(sess, ch) < 0)
+					return DSSH_ERROR_TERMINATED;
+				return error;
+			}
+		}
 	}
 	size_t n              = bytebuf_read(bb, buf, bufsz, 0);
 	/* Disambiguate empty-buffer from EOF: return 0 only when EOF
@@ -3114,13 +4617,14 @@ dssh_chan_read(struct dssh_channel_s *ch, int stream, uint8_t *buf, size_t bufsz
 	 * EOF".  Read under buf_mtx -- eof_received / close_received
 	 * are written under buf_mtx in the demux. */
 	bool nomore_not_eof = (n == 0) && !ch->eof_received && !ch->close_received && !sess->terminate;
-	dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+	if (channel_unlock_lifecycle(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
 	if (nomore_not_eof)
 		return DSSH_ERROR_NOMORE;
 	if (n > 0) {
 		int wret = maybe_replenish_window(sess, ch);
 		if (wret < 0)
-			return wret;
+			channel_defer_read_error(sess, ch, wret);
 	}
 	return (int64_t)n;
 }
@@ -3128,9 +4632,9 @@ dssh_chan_read(struct dssh_channel_s *ch, int stream, uint8_t *buf, size_t bufsz
 DSSH_PUBLIC int64_t
 dssh_chan_write(struct dssh_channel_s *ch, int stream, const uint8_t *buf, size_t bufsz)
 {
-	if (ch == NULL || buf == NULL)
+	if (ch == NULL || buf == NULL || stream < 0 || stream > 1)
 		return DSSH_ERROR_INVALID;
-	if (channel_api_forbidden(ch))
+	if (channel_io_forbidden(ch))
 		return DSSH_ERROR_INVALID;
 	if (ch->io_model != DSSH_IO_STREAM)
 		return DSSH_ERROR_INVALID;
@@ -3157,37 +4661,47 @@ dssh_chan_write(struct dssh_channel_s *ch, int stream, const uint8_t *buf, size_
 DSSH_PUBLIC int
 dssh_chan_poll(struct dssh_channel_s *ch, int events, int timeout_ms)
 {
-	if (ch == NULL)
+	if (ch == NULL || (events & ~(DSSH_POLL_READ | DSSH_POLL_READEXT | DSSH_POLL_WRITE | DSSH_POLL_EVENT)))
 		return DSSH_ERROR_INVALID;
-	if (channel_api_forbidden(ch))
+	if (in_zc_rx || channel_io_forbidden(ch))
 		return DSSH_ERROR_INVALID;
 	if (ch->io_model != DSSH_IO_STREAM)
 		return DSSH_ERROR_INVALID;
 	struct dssh_session_s *sess = ch->sess;
 	struct timespec        ts;
-	if (timeout_ms > 0)
-		dssh_deadline_from_ms(&ts, timeout_ms);
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+	int ret = 0;
+	if (timeout_ms > 0) {
+		ret = dssh_deadline_from_ms(&ts, timeout_ms);
+		if (ret < 0) {
+			return ret;
+		}
+	}
+	ret = mtx_lock(&ch->buf_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
 	for (;;) {
-		/* Session terminate behaves like POSIX POLLHUP: surface
-		 * every requested data flag so the caller wakes and the
-		 * subsequent dssh_chan_read returns 0 (EOF) or
-		 * dssh_chan_write returns a negative error.  Mirrors how
-		 * close_received already forces READ/READEXT ready. */
+		/* Termination makes every requested data direction ready.
+		 * Reads first report retained errors and drain buffered bytes,
+		 * then return EOF. Writes return a negative error. This mirrors
+		 * how close_received forces read readiness, and uses the same
+		 * ordinary poll predicates below. */
 		bool terminated = sess->terminate;
+		bool read_failed = atomic_load(&ch->read_error) < 0;
 		int ready = 0;
 		if ((events & DSSH_POLL_READ)
 		    && ((bytebuf_available(&ch->buf.stdout_buf) > 0) || ch->eof_received || ch->close_received
-		        || terminated))
+		        || terminated || read_failed))
 			ready |= DSSH_POLL_READ;
 		if ((events & DSSH_POLL_READEXT)
 		    && ((bytebuf_available(&ch->buf.stderr_buf) > 0) || ch->eof_received || ch->close_received
-		        || terminated))
+		        || terminated || read_failed))
 			ready |= DSSH_POLL_READEXT;
 		if ((events & DSSH_POLL_WRITE)
 		    && (terminated
 		        || ((atomic_load_explicit(&ch->remote_window, memory_order_acquire) > 0) && ch->open
-		            && !ch->close_received)))
+		            && !ch->close_received && !ch->eof_sent && ch->remote_max_packet > 0)))
 			ready |= DSSH_POLL_WRITE;
 		if ((events & DSSH_POLL_EVENT) && (ch->events.count > 0 || ch->events.has_frozen)) {
 			if (!ch->events.has_frozen) {
@@ -3203,22 +4717,24 @@ dssh_chan_poll(struct dssh_channel_s *ch, int events, int timeout_ms)
 				ready |= DSSH_POLL_EVENT;
 		}
 		if (ready || terminated) {
-			dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+			if (channel_unlock_lifecycle(sess, ch) < 0)
+				return DSSH_ERROR_TERMINATED;
 			return ready;
 		}
 		if (timeout_ms == 0) {
-			dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+			if (channel_unlock_lifecycle(sess, ch) < 0)
+				return DSSH_ERROR_TERMINATED;
 			return 0;
 		}
-		if (timeout_ms < 0) {
-			dssh_thrd_check_locked(sess, cnd_wait(&ch->poll_cnd, &ch->buf_mtx));
-		}
-		else {
-			if (dssh_thrd_check_locked(sess, cnd_timedwait(&ch->poll_cnd, &ch->buf_mtx, &ts))
-			    == thrd_timedout) {
-				dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+		ret = timeout_ms < 0 ? cnd_wait(&ch->poll_cnd, &ch->buf_mtx)
+		    : cnd_timedwait(&ch->poll_cnd, &ch->buf_mtx, &ts);
+		if (ret != thrd_success) {
+			if (channel_unlock_lifecycle(sess, ch) < 0)
+				return DSSH_ERROR_TERMINATED;
+			if (ret == thrd_timedout)
 				return 0;
-			}
+			dssh_thrd_check(sess, ret);
+			return DSSH_ERROR_TERMINATED;
 		}
 	}
 }
@@ -3228,45 +4744,23 @@ dssh_chan_read_event(struct dssh_channel_s *ch, struct dssh_chan_event *event)
 {
 	if (ch == NULL || event == NULL)
 		return DSSH_ERROR_INVALID;
-	if (channel_api_forbidden(ch))
+	if (in_zc_rx || channel_io_forbidden(ch))
 		return DSSH_ERROR_INVALID;
 	struct dssh_session_s *sess = ch->sess;
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+	int ret = mtx_lock(&ch->buf_mtx);
+	if (ret != thrd_success) {
+		dssh_thrd_check(sess, ret);
+		return DSSH_ERROR_TERMINATED;
+	}
 	if (!ch->events.has_frozen) {
-		dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+		if (channel_unlock_lifecycle(sess, ch) < 0)
+			return DSSH_ERROR_TERMINATED;
 		return DSSH_ERROR_NOMORE;
 	}
-	struct dssh_event_entry *e = &ch->events.frozen;
-	memset(event, 0, sizeof(*event));
-	event->type       = e->type;
-	event->stdout_pos = e->stdout_pos;
-	event->stderr_pos = e->stderr_pos;
-	switch (e->type) {
-		case DSSH_EVENT_SIGNAL:
-			event->signal.name = e->str_a;
-			break;
-		case DSSH_EVENT_WINDOW_CHANGE:
-			event->window_change.cols = e->u32_a;
-			event->window_change.rows = e->u32_b;
-			event->window_change.wpx  = e->u32_c;
-			event->window_change.hpx  = e->u32_d;
-			break;
-		case DSSH_EVENT_BREAK:
-			event->brk.length = e->u32_a;
-			break;
-		case DSSH_EVENT_EXIT_STATUS:
-			event->exit_status.exit_code = e->u32_a;
-			break;
-		case DSSH_EVENT_EXIT_SIGNAL:
-			event->exit_signal.signal_name   = e->str_a;
-			event->exit_signal.core_dumped   = e->flag_a;
-			event->exit_signal.error_message = e->str_b;
-			break;
-		default:
-			break;
-	}
+	event_from_entry(&ch->events.frozen, event);
 	ch->events.has_frozen = false;
-	dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+	if (channel_unlock_lifecycle(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
 	return 0;
 }
 
@@ -3275,11 +4769,22 @@ dssh_chan_shutwr(struct dssh_channel_s *ch)
 {
 	if (ch == NULL)
 		return DSSH_ERROR_INVALID;
-	if (channel_api_forbidden(ch))
+	if (channel_io_forbidden(ch))
 		return DSSH_ERROR_INVALID;
 	if (in_zc_rx)
 		return DSSH_ERROR_INVALID;
 	return send_eof(ch->sess, ch);
+}
+
+/* Status/EOF are best effort during disposal. Their helpers already apply
+ * transport failure policy. Retain recoverable pre-wire refusal and the
+ * channel-local already-closed result without terminating a healthy session. */
+static void
+close_optional_packet_result(struct dssh_session_s *sess, int result)
+{
+	if (result < 0 && result != DSSH_ERROR_TOOLONG && result != DSSH_ERROR_REKEY_NEEDED
+	    && result != DSSH_ERROR_TERMINATED)
+		session_set_terminate(sess);
 }
 
 DSSH_PUBLIC int
@@ -3292,18 +4797,32 @@ dssh_chan_close(struct dssh_channel_s *ch, int64_t exit_code)
 	if (in_zc_rx)
 		return DSSH_ERROR_INVALID;
 	struct dssh_session_s *sess = ch->sess;
-	if (exit_code >= 0 && exit_code <= UINT32_MAX) {
-		uint32_t ec = (uint32_t)exit_code;
-		dssh_conn_send_exit_status(sess, ch, ec);
+	if (tx_owner_is_current(sess))
+		return DSSH_ERROR_INVALID;
+	struct setup_callback_scope *scope = setup_scope_for_channel(ch);
+	if (scope != NULL) {
+		scope->cancelled = true;
+		return 0;
 	}
-	send_eof(sess, ch);
-	conn_close(sess, ch);
+	if (channel_io_forbidden(ch))
+		return DSSH_ERROR_INVALID;
+	int ret;
+	if (!sess->trans.client && exit_code >= 0 && exit_code <= UINT32_MAX) {
+		uint32_t ec = (uint32_t)exit_code;
+		ret = dssh_conn_send_exit_status(sess, ch, ec);
+		close_optional_packet_result(sess, ret);
+	}
+	ret = send_eof(sess, ch);
+	close_optional_packet_result(sess, ret);
+	ret = conn_close(sess, ch);
+	if (ret < 0)
+		session_set_terminate(sess);
 	if (detach_channel(sess, ch) < 0)
 		return DSSH_ERROR_TERMINATED;
-	dssh_chan_params_free(&ch->params);
+	params_free(&ch->params);
 	event_queue_free(&ch->events);
 	cleanup_channel_buffers(ch);
-	free(ch);
+	free_channel(ch);
 	return 0;
 }
 
@@ -3312,7 +4831,7 @@ dssh_chan_send_signal(struct dssh_channel_s *ch, const char *signal_name)
 {
 	if (ch == NULL || signal_name == NULL)
 		return DSSH_ERROR_INVALID;
-	if (channel_api_forbidden(ch))
+	if (channel_io_forbidden(ch))
 		return DSSH_ERROR_INVALID;
 	if (in_zc_rx)
 		return DSSH_ERROR_INVALID;
@@ -3322,11 +4841,11 @@ dssh_chan_send_signal(struct dssh_channel_s *ch, const char *signal_name)
 	size_t                 fixed = CHAN_REQUEST_FIXED + rtlen + 4;
 	if (slen > UINT32_MAX || slen > SIZE_MAX - fixed)
 		return DSSH_ERROR_INVALID;
-	size_t   max;
-	int      err;
-	uint8_t *msg = send_begin(sess, SSH_MSG_CHANNEL_REQUEST, &max, &err);
-	if (msg == NULL)
-		return err;
+	uint8_t *msg;
+	int ret = begin_channel_packet(sess, ch, SSH_MSG_CHANNEL_REQUEST, fixed + slen, &msg);
+	if (ret != 0)
+		return ret < 0 ? ret : DSSH_ERROR_TERMINATED;
+	dssh_mtx_unlock(&ch->buf_mtx);
 	size_t pos = 0;
 	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
 	DSSH_PUT_U32(ch->remote_id, msg, &pos);
@@ -3345,7 +4864,7 @@ dssh_chan_send_window_change(struct dssh_channel_s *ch, uint32_t cols, uint32_t 
 {
 	if (ch == NULL)
 		return DSSH_ERROR_INVALID;
-	if (channel_api_forbidden(ch))
+	if (channel_io_forbidden(ch))
 		return DSSH_ERROR_INVALID;
 	if (in_zc_rx)
 		return DSSH_ERROR_INVALID;
@@ -3356,22 +4875,23 @@ dssh_chan_send_window_change(struct dssh_channel_s *ch, uint32_t cols, uint32_t 
 	DSSH_PUT_U32(rows, extra, &ep);
 	DSSH_PUT_U32(wpx, extra, &ep);
 	DSSH_PUT_U32(hpx, extra, &ep);
-	size_t   rtlen = DSSH_STRLEN(str_window_change);
-	size_t   max;
-	int      err;
-	uint8_t *msg = send_begin(sess, SSH_MSG_CHANNEL_REQUEST, &max, &err);
-	if (msg == NULL)
-		return err;
+	size_t rtlen = sizeof(str_window_change) - 1;
+	size_t total = CHAN_REQUEST_FIXED + rtlen + sizeof(extra);
+	uint8_t *msg;
+	int ret = begin_channel_packet(sess, ch, SSH_MSG_CHANNEL_REQUEST, total, &msg);
+	if (ret != 0)
+		return ret < 0 ? ret : DSSH_ERROR_TERMINATED;
+	uint32_t remote = ch->remote_id;
+	dssh_mtx_unlock(&ch->buf_mtx);
 	size_t pos = 0;
 	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
-	DSSH_PUT_U32(ch->remote_id, msg, &pos);
-	DSSH_PUT_U32((uint32_t)rtlen, msg, &pos);
+	DSSH_PUT_U32(remote, msg, &pos);
+	DSSH_PUT_U32(DSSH_STRLEN(str_window_change), msg, &pos);
 	memcpy(&msg[pos], str_window_change, rtlen);
 	pos += rtlen;
 	msg[pos++] = 0;
 	memcpy(&msg[pos], extra, ep);
-	pos += ep;
-	return send_commit(sess, pos, NULL);
+	return send_commit(sess, total, NULL);
 }
 
 DSSH_PUBLIC int
@@ -3379,7 +4899,7 @@ dssh_chan_send_break(struct dssh_channel_s *ch, uint32_t length)
 {
 	if (ch == NULL)
 		return DSSH_ERROR_INVALID;
-	if (channel_api_forbidden(ch))
+	if (channel_io_forbidden(ch))
 		return DSSH_ERROR_INVALID;
 	if (in_zc_rx)
 		return DSSH_ERROR_INVALID;
@@ -3387,22 +4907,23 @@ dssh_chan_send_break(struct dssh_channel_s *ch, uint32_t length)
 	uint8_t                extra[4];
 	size_t                 ep = 0;
 	DSSH_PUT_U32(length, extra, &ep);
-	size_t   rtlen = 5;
-	size_t   max;
-	int      err;
-	uint8_t *msg = send_begin(sess, SSH_MSG_CHANNEL_REQUEST, &max, &err);
-	if (msg == NULL)
-		return err;
+	size_t rtlen = sizeof("break") - 1;
+	size_t total = CHAN_REQUEST_FIXED + rtlen + sizeof(extra);
+	uint8_t *msg;
+	int ret = begin_channel_packet(sess, ch, SSH_MSG_CHANNEL_REQUEST, total, &msg);
+	if (ret != 0)
+		return ret < 0 ? ret : DSSH_ERROR_TERMINATED;
+	uint32_t remote = ch->remote_id;
+	dssh_mtx_unlock(&ch->buf_mtx);
 	size_t pos = 0;
 	msg[pos++] = SSH_MSG_CHANNEL_REQUEST;
-	DSSH_PUT_U32(ch->remote_id, msg, &pos);
-	DSSH_PUT_U32((uint32_t)rtlen, msg, &pos);
+	DSSH_PUT_U32(remote, msg, &pos);
+	DSSH_PUT_U32(DSSH_STRLEN("break"), msg, &pos);
 	memcpy(&msg[pos], "break", rtlen);
 	pos += rtlen;
 	msg[pos++] = 0;
 	memcpy(&msg[pos], extra, ep);
-	pos += ep;
-	return send_commit(sess, pos, NULL);
+	return send_commit(sess, total, NULL);
 }
 
 DSSH_PUBLIC enum dssh_chan_type
@@ -3410,7 +4931,7 @@ dssh_chan_get_type(struct dssh_channel_s *ch)
 {
 	if (ch == NULL || channel_api_forbidden(ch))
 		return DSSH_CHAN_SHELL;
-	return ch->params.type;
+	return channel_params_view(ch)->type;
 }
 
 DSSH_PUBLIC const char *
@@ -3418,7 +4939,8 @@ dssh_chan_get_command(struct dssh_channel_s *ch)
 {
 	if (ch == NULL || channel_api_forbidden(ch))
 		return NULL;
-	return ch->params.type != DSSH_CHAN_EXEC ? NULL : ch->params.command;
+	const struct dssh_chan_params *params = channel_params_view(ch);
+	return params->type != DSSH_CHAN_EXEC ? NULL : params->command;
 }
 
 DSSH_PUBLIC const char *
@@ -3426,7 +4948,8 @@ dssh_chan_get_subsystem(struct dssh_channel_s *ch)
 {
 	if (ch == NULL || channel_api_forbidden(ch))
 		return NULL;
-	return ch->params.type != DSSH_CHAN_SUBSYSTEM ? NULL : ch->params.subsystem;
+	const struct dssh_chan_params *params = channel_params_view(ch);
+	return params->type != DSSH_CHAN_SUBSYSTEM ? NULL : params->subsystem;
 }
 
 DSSH_PUBLIC bool
@@ -3434,7 +4957,7 @@ dssh_chan_has_pty(struct dssh_channel_s *ch)
 {
 	if (ch == NULL || channel_api_forbidden(ch))
 		return false;
-	return (ch->params.flags & DSSH_PARAM_HAS_PTY) != 0;
+	return (channel_params_view(ch)->flags & DSSH_PARAM_HAS_PTY) != 0;
 }
 
 DSSH_PUBLIC const struct dssh_chan_params *
@@ -3442,9 +4965,10 @@ dssh_chan_get_pty(struct dssh_channel_s *ch)
 {
 	if (ch == NULL || channel_api_forbidden(ch))
 		return NULL;
-	if (!(ch->params.flags & DSSH_PARAM_HAS_PTY))
+	const struct dssh_chan_params *params = channel_params_view(ch);
+	if (!(params->flags & DSSH_PARAM_HAS_PTY))
 		return NULL;
-	return &ch->params;
+	return params;
 }
 
 /* ---- Public ZC API ---- */
@@ -3454,7 +4978,7 @@ dssh_chan_zc_getbuf(struct dssh_channel_s *ch, int stream, uint8_t **buf, size_t
 {
 	if (ch == NULL || buf == NULL || max_len == NULL)
 		return DSSH_ERROR_INVALID;
-	if (channel_api_forbidden(ch))
+	if (channel_io_forbidden(ch))
 		return DSSH_ERROR_INVALID;
 	if (ch->io_model != DSSH_IO_ZC)
 		return DSSH_ERROR_INVALID;
@@ -3468,7 +4992,7 @@ dssh_chan_zc_send(struct dssh_channel_s *ch, size_t len)
 {
 	if (ch == NULL)
 		return DSSH_ERROR_INVALID;
-	if (channel_api_forbidden(ch))
+	if (channel_io_forbidden(ch))
 		return DSSH_ERROR_INVALID;
 	if (in_zc_rx)
 		return DSSH_ERROR_INVALID;
@@ -3480,10 +5004,9 @@ dssh_chan_zc_cancel(struct dssh_channel_s *ch)
 {
 	if (ch == NULL)
 		return DSSH_ERROR_INVALID;
-	if (channel_api_forbidden(ch))
+	if (in_zc_rx || channel_io_forbidden(ch))
 		return DSSH_ERROR_INVALID;
-	zc_cancel_inner(ch);
-	return 0;
+	return zc_cancel_inner(ch);
 }
 
 DSSH_PUBLIC struct dssh_channel_s *
@@ -3492,28 +5015,40 @@ dssh_chan_zc_open(struct dssh_session_s *sess, const struct dssh_chan_params *pa
 {
 	if (sess == NULL || params == NULL || cb == NULL)
 		return NULL;
-	if (connection_api_forbidden(sess))
+	if (in_zc_rx || connection_api_forbidden(sess))
+		return NULL;
+	if (!sess->conn_initialized || !sess->demux_running || sess->terminate)
+		return NULL;
+	if (params_validate(params) < 0)
 		return NULL;
 
-	/* See dssh_chan_open: SUBSYSTEM channels have no coherent
-	 * destination for pre-setup data. */
+	/* See dssh_chan_open: the shell/exec early-data workaround excludes
+	 * subsystem channels in both stream and zero-copy mode. */
 	if ((params->flags & DSSH_PARAM_ACCEPT_EARLY_DATA)
 	    && params->type != DSSH_CHAN_SHELL && params->type != DSSH_CHAN_EXEC)
 		return NULL;
 
-	struct dssh_channel_s *ch = calloc(1, sizeof(*ch));
+	struct dssh_channel_s *ch = new_channel(sess, NULL);
 
 	if (ch == NULL)
 		return NULL;
 
 	uint32_t winsz = params->max_window != 0 ? params->max_window : INITIAL_WINDOW_SIZE;
 
+	int res = params_clone(&ch->params, params, winsz);
+	if (res < 0) {
+		free_channel(ch);
+		return NULL;
+	}
+	const struct dssh_chan_params *snapshot = &ch->params;
+
 	/* Phase 1: sync primitives only (ZC has no ring buffers) */
-	int  res = init_channel_sync(sess, ch);
+	res = init_channel_sync(sess, ch);
 	bool registered;
 
 	if (res < 0) {
-		free(ch);
+		params_free(&ch->params);
+		free_channel(ch);
 		return NULL;
 	}
 
@@ -3523,11 +5058,13 @@ dssh_chan_zc_open(struct dssh_session_s *sess, const struct dssh_chan_params *pa
 	ch->zc_cbdata             = cbdata;
 	ch->event_cb              = sess->default_event_cb;
 	ch->event_cbdata          = sess->default_event_cbdata;
-	ch->accept_pre_window_data = (params->flags & DSSH_PARAM_ACCEPT_EARLY_DATA) != 0;
+	ch->break_cb              = sess->default_break_cb;
+	ch->break_cbdata          = sess->default_break_cbdata;
+	ch->accept_pre_window_data = (snapshot->flags & DSSH_PARAM_ACCEPT_EARLY_DATA) != 0;
 
 	/* Init event queue early — demux can dispatch EOF/CLOSE events
 	 * to this channel as soon as it's registered. */
-	res = event_queue_init(&ch->events, sess->default_max_events);
+	res = event_queue_init(&ch->events, sess->default_max_events, sess->trans.packet_buf_sz);
 	if (res < 0)
 		goto fail_sync;
 
@@ -3540,17 +5077,17 @@ dssh_chan_zc_open(struct dssh_session_s *sess, const struct dssh_chan_params *pa
 	}
 
 	/* Setup: env, pty-req, terminal request */
-	if (params->env_count > 0) {
-		res = chan_send_env(sess, ch, params);
+	if (snapshot->env_count > 0) {
+		res = chan_send_env(sess, ch, snapshot);
 		if (res < 0)
 			goto fail_close;
 	}
-	if (params->flags & DSSH_PARAM_HAS_PTY) {
-		res = chan_send_pty_req(sess, ch, params);
+	if (snapshot->flags & DSSH_PARAM_HAS_PTY) {
+		res = chan_send_pty_req(sess, ch, snapshot);
 		if (res < 0)
 			goto fail_close;
 	}
-	res = chan_send_terminal_request(sess, ch, params);
+	res = chan_send_terminal_request(sess, ch, snapshot);
 	if (res < 0)
 		goto fail_close;
 
@@ -3571,21 +5108,6 @@ dssh_chan_zc_open(struct dssh_session_s *sess, const struct dssh_chan_params *pa
 	 * release-store rationale. */
 	atomic_store_explicit(&ch->setup_complete, true, memory_order_release);
 
-	/* Copy params for getters */
-	res = dssh_chan_params_init(&ch->params, params->type);
-	if (res < 0)
-		goto fail_close;
-	ch->params.flags      = params->flags;
-	ch->params.max_window = winsz;
-	ch->params.cols       = params->cols;
-	ch->params.rows       = params->rows;
-	ch->params.wpx        = params->wpx;
-	ch->params.hpx        = params->hpx;
-	dssh_chan_params_set_term(&ch->params, params->term);
-	if (params->command != NULL)
-		dssh_chan_params_set_command(&ch->params, params->command);
-	if (params->subsystem != NULL)
-		dssh_chan_params_set_subsystem(&ch->params, params->subsystem);
 
 	return ch;
 
@@ -3596,12 +5118,13 @@ fail_close:
 fail_events:
 	event_queue_free(&ch->events);
 fail_sync:
+	params_free(&ch->params);
 	free_tx_slot(&ch->wa_slot);
-	free_tx_slot(&ch->chan_fail_slot);
+	free_tx_slot(&ch->chan_reply_slot);
 	cnd_destroy(&ch->poll_cnd);
 	mtx_destroy(&ch->cb_mtx);
 	mtx_destroy(&ch->buf_mtx);
-	free(ch);
+	free_channel(ch);
 	return NULL;
 }
 
@@ -3616,10 +5139,12 @@ dssh_chan_set_event_cb(struct dssh_channel_s *ch, dssh_chan_event_cb cb, void *c
 		return DSSH_ERROR_INVALID;
 	struct dssh_session_s *sess = ch->sess;
 
-	dssh_thrd_check(sess, mtx_lock(&ch->cb_mtx));
+	if (dssh_thrd_check(sess, mtx_lock(&ch->cb_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
 	ch->event_cb     = cb;
 	ch->event_cbdata = cbdata;
-	dssh_thrd_check_unlock(sess, mtx_unlock(&ch->cb_mtx));
+	if (dssh_thrd_check_unlock(sess, dssh_mtx_unlock(&ch->cb_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
 	return 0;
 }
 
@@ -3634,6 +5159,33 @@ dssh_session_set_event_cb(struct dssh_session_s *sess, dssh_chan_event_cb cb, vo
 		return DSSH_ERROR_TOOLATE;
 	sess->default_event_cb     = cb;
 	sess->default_event_cbdata = cbdata;
+	return 0;
+}
+
+DSSH_PUBLIC int
+dssh_chan_set_break_cb(struct dssh_channel_s *ch, dssh_chan_break_cb cb, void *cbdata)
+{
+	if (ch == NULL || channel_api_forbidden(ch))
+		return DSSH_ERROR_INVALID;
+	struct dssh_session_s *sess = ch->sess;
+	if (dssh_thrd_check(sess, mtx_lock(&ch->cb_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
+	ch->break_cb = cb;
+	ch->break_cbdata = cbdata;
+	if (dssh_thrd_check_unlock(sess, dssh_mtx_unlock(&ch->cb_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
+	return 0;
+}
+
+DSSH_PUBLIC int
+dssh_session_set_break_cb(struct dssh_session_s *sess, dssh_chan_break_cb cb, void *cbdata)
+{
+	if (sess == NULL || connection_api_forbidden(sess))
+		return DSSH_ERROR_INVALID;
+	if (sess->demux_running)
+		return DSSH_ERROR_TOOLATE;
+	sess->default_break_cb = cb;
+	sess->default_break_cbdata = cbdata;
 	return 0;
 }
 
@@ -3659,13 +5211,16 @@ dssh_chan_set_max_events(struct dssh_channel_s *ch, size_t max_events)
 		return DSSH_ERROR_INVALID;
 	struct dssh_session_s *sess = ch->sess;
 
-	dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx));
+	if (dssh_thrd_check(sess, mtx_lock(&ch->buf_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
 	if (max_events != 0 && max_events < ch->events.count) {
-		dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+		if (dssh_thrd_check_unlock(sess, dssh_mtx_unlock(&ch->buf_mtx)) != thrd_success)
+			return DSSH_ERROR_TERMINATED;
 		return DSSH_ERROR_INVALID;
 	}
 	ch->events.max_events = max_events;
-	dssh_thrd_check_unlock(sess, mtx_unlock(&ch->buf_mtx));
+	if (dssh_thrd_check_unlock(sess, dssh_mtx_unlock(&ch->buf_mtx)) != thrd_success)
+		return DSSH_ERROR_TERMINATED;
 	return 0;
 }
 
@@ -3673,35 +5228,67 @@ dssh_chan_set_max_events(struct dssh_channel_s *ch, size_t max_events)
  * Server accept -- dssh_chan_accept
  * ================================================================ */
 
-static int
+DSSH_TESTABLE int
 accept_parse_pty(const uint8_t *data, size_t data_len, struct dssh_chan_params *p)
 {
 	struct pty_req pty;
 	int            ret = parse_pty_req_data(data, data_len, &pty);
 	if (ret < 0)
 		return ret;
+	if (pty.term_len == SIZE_MAX || memchr(pty.term, 0, pty.term_len) != NULL)
+		return DSSH_ERROR_PARSE;
+	/* Validate all opcode arguments before allocating or publishing state.
+	 * END and future opcodes stop parsing as specified by RFC 4254 s8. */
+	size_t mpos = 0;
+	while (mpos < pty.modes_len) {
+		uint8_t opcode = pty.modes[mpos++];
+		if (opcode == 0 || opcode >= 160)
+			break;
+		if (!dssh_buffer_has(pty.modes_len, mpos, 4))
+			return DSSH_ERROR_PARSE;
+		mpos += 4;
+		if (mpos == pty.modes_len)
+			return DSSH_ERROR_PARSE;
+	}
+	char *term = malloc(pty.term_len + 1);
+	if (term == NULL)
+		return DSSH_ERROR_ALLOC;
+	memcpy(term, pty.term, pty.term_len);
+	term[pty.term_len] = 0;
+	struct dssh_chan_params parsed = { 0 };
+	if (pty.modes_len > 0) {
+		mpos = 0;
+		while (mpos < pty.modes_len) {
+			uint8_t opcode = pty.modes[mpos++];
+			if (opcode == 0 || opcode >= 160)
+				break;
+			uint32_t val = DSSH_GET_U32(&pty.modes[mpos]);
+			mpos += 4;
+			ret = params_set_mode(&parsed, opcode, val);
+			if (ret < 0) {
+				free(term);
+				free(parsed.modes);
+				return ret;
+			}
+		}
+	}
+	free(p->term);
+	free(p->modes);
+	p->term = term;
+	p->modes = parsed.modes;
+	p->mode_count = parsed.mode_count;
+	p->mode_capacity = parsed.mode_capacity;
 	p->flags |= DSSH_PARAM_HAS_PTY;
-	dssh_chan_params_set_term(p, pty.term);
 	p->cols = pty.cols;
 	p->rows = pty.rows;
 	p->wpx  = pty.wpx;
 	p->hpx  = pty.hpx;
-	if (pty.modes != NULL && pty.modes_len > 0) {
-		size_t mpos = 0;
-		while (mpos < pty.modes_len) {
-			uint8_t opcode = pty.modes[mpos];
-			if (opcode == 0 || opcode >= 160)
-				break;
-			mpos++;
-			if (!dssh_buffer_has(pty.modes_len, mpos, 4))
-				break;
-			uint32_t val = DSSH_GET_U32(&pty.modes[mpos]);
-			mpos += 4;
-			dssh_chan_params_set_mode(p, opcode, val);
-		}
-	}
 	return 0;
 }
+
+/* Bound retained environment strings independently of the packet size limit. */
+#define ACCEPT_ENV_COUNT 128
+#define ACCEPT_ENV_BYTES UINT32_C(1048576)
 
 static int
 accept_parse_env(const uint8_t *data, size_t data_len, struct dssh_chan_params *p)
@@ -3711,58 +5298,83 @@ accept_parse_env(const uint8_t *data, size_t data_len, struct dssh_chan_params *
 	int            ret = parse_env_data(data, data_len, &name, &nlen, &value, &vlen);
 	if (ret < 0)
 		return ret;
-	char *nstr = malloc(nlen + 1);
-	if (nstr == NULL)
-		return DSSH_ERROR_ALLOC;
-	memcpy(nstr, name, nlen);
-	nstr[nlen] = '\0';
-	char *vstr = malloc(vlen + 1);
-	if (vstr == NULL) {
-		free(nstr);
-		return DSSH_ERROR_ALLOC;
+	if (memchr(name, 0, nlen) != NULL || memchr(value, 0, vlen) != NULL)
+		return DSSH_ERROR_PARSE;
+	if (p->env_count >= ACCEPT_ENV_COUNT)
+		return DSSH_ERROR_TOOMANY;
+#if SIZE_MAX < ACCEPT_ENV_BYTES
+	size_t remaining = SIZE_MAX;
+#else
+	size_t remaining = ACCEPT_ENV_BYTES;
+#endif
+	for (size_t i = 0; i < p->env_count; i++) {
+		size_t len = strlen(p->env[i].name);
+		if (len >= remaining)
+			return DSSH_ERROR_TOOLONG;
+		remaining -= len + 1;
+		len = strlen(p->env[i].value);
+		if (len >= remaining)
+			return DSSH_ERROR_TOOLONG;
+		remaining -= len + 1;
 	}
-	memcpy(vstr, value, vlen);
-	vstr[vlen] = '\0';
-	ret        = dssh_chan_params_add_env(p, nstr, vstr);
-	free(nstr);
-	free(vstr);
+	if (nlen >= remaining)
+		return DSSH_ERROR_TOOLONG;
+	remaining -= nlen + 1;
+	if (vlen >= remaining)
+		return DSSH_ERROR_TOOLONG;
+	return params_add_env(p, name, nlen, value, vlen);
+}
+
+DSSH_TESTABLE int
+accept_env_request(struct dssh_channel_s *ch, const uint8_t *data, size_t data_len,
+    struct dssh_chan_params *p, const struct dssh_chan_accept_cbs *cbs, bool *cancelled)
+{
+	*cancelled = false;
+	if (cbs->env == NULL)
+		return DSSH_ERROR_REJECTED;
+	int ret = accept_parse_env(data, data_len, p);
+	if (ret < 0)
+		return ret;
+	ret = call_setup_request(ch, p, cbs->env, cbs->cbdata, cancelled);
+	if (ret < 0) {
+		p->env_count--;
+		free(p->env[p->env_count].name);
+		free(p->env[p->env_count].value);
+		p->env[p->env_count].name = NULL;
+		p->env[p->env_count].value = NULL;
+	}
 	return ret;
 }
 
 static int
+accept_parse_string(const uint8_t *data, size_t data_len, char **dest)
+{
+	if (data_len < 4)
+		return DSSH_ERROR_PARSE;
+	uint32_t wire_len = DSSH_GET_U32(data);
+	if (wire_len != data_len - 4 || memchr(&data[4], 0, data_len - 4) != NULL)
+		return DSSH_ERROR_PARSE;
+	size_t len = data_len - 4;
+	char *replacement = malloc(len + 1);
+	if (replacement == NULL)
+		return DSSH_ERROR_ALLOC;
+	memcpy(replacement, &data[4], len);
+	replacement[len] = 0;
+	free(*dest);
+	*dest = replacement;
+	return 0;
+}
+
+DSSH_TESTABLE int
 accept_parse_exec(const uint8_t *data, size_t data_len, struct dssh_chan_params *p)
 {
-	if (data_len < 4)
-		return DSSH_ERROR_PARSE;
-	uint32_t cmdlen = DSSH_GET_U32(data);
-	if (!dssh_buffer_has(data_len, 4, cmdlen))
-		return DSSH_ERROR_PARSE;
-	char *cstr = malloc(cmdlen + 1);
-	if (cstr == NULL)
-		return DSSH_ERROR_ALLOC;
-	memcpy(cstr, &data[4], cmdlen);
-	cstr[cmdlen] = '\0';
-	int ret      = dssh_chan_params_set_command(p, cstr);
-	free(cstr);
-	return ret;
+	return accept_parse_string(data, data_len, &p->command);
 }
 
-static int
+DSSH_TESTABLE int
 accept_parse_subsystem(const uint8_t *data, size_t data_len, struct dssh_chan_params *p)
 {
-	if (data_len < 4)
-		return DSSH_ERROR_PARSE;
-	uint32_t namelen = DSSH_GET_U32(data);
-	if (!dssh_buffer_has(data_len, 4, namelen))
-		return DSSH_ERROR_PARSE;
-	char *nstr = malloc(namelen + 1);
-	if (nstr == NULL)
-		return DSSH_ERROR_ALLOC;
-	memcpy(nstr, &data[4], namelen);
-	nstr[namelen] = '\0';
-	int ret       = dssh_chan_params_set_subsystem(p, nstr);
-	free(nstr);
-	return ret;
+	return accept_parse_string(data, data_len, &p->subsystem);
 }
 
 /*
@@ -3771,23 +5383,93 @@ accept_parse_subsystem(const uint8_t *data, size_t data_len, struct dssh_chan_pa
  * on timeout or session termination we give up and let the channel be freed
  * (the demux will silently discard the late CLOSE via find_channel→NULL).
  */
-static int
+DSSH_TESTABLE int
 wait_for_close(struct dssh_session_s *sess, struct dssh_channel_s *ch)
 {
-	for (;;) {
-		uint8_t  msg_type;
-		uint8_t *payload;
-		size_t   payload_len;
-		int      ret = setup_recv(sess, ch, &msg_type, &payload, &payload_len);
-
+	struct timespec deadline;
+	const struct timespec *until = NULL;
+	if (sess->timeout_ms > 0) {
+		int ret = dssh_deadline_from_ms(&deadline, sess->timeout_ms);
 		if (ret < 0)
 			return ret;
-		ret = setup_finish(sess, ch, payload, false, false);
+		until = &deadline;
+	}
+	for (;;) {
+		int ret = mtx_lock(&ch->buf_mtx);
+		if (ret != thrd_success) {
+			dssh_thrd_check(sess, ret);
+			return DSSH_ERROR_TERMINATED;
+		}
+		bool closed = ch->close_received;
+		dssh_mtx_unlock(&ch->buf_mtx);
+		if (closed)
+			return 0;
+		if (until != NULL) {
+			struct timespec now;
+			ret = dssh_clock_read(&now);
+			if (ret < 0)
+				return ret;
+			if (now.tv_sec > until->tv_sec
+			    || (now.tv_sec == until->tv_sec && now.tv_nsec >= until->tv_nsec))
+				return DSSH_ERROR_TIMEOUT;
+		}
+		uint8_t msg_type;
+		uint8_t *payload;
+		size_t payload_len;
+		ret = setup_recv_until(sess, ch, &msg_type, &payload, &payload_len, until);
+		/* Normal-mode CLOSE wakes the same condition but has no mailbox.
+		 * Recheck its protected predicate rather than treating it as failure. */
+		if (ret == DSSH_ERROR_TERMINATED && !sess->terminate)
+			continue;
+		if (ret < 0)
+			return ret;
+		ret = setup_finish(sess, ch, false, false);
 		if (ret < 0)
 			return ret;
 		if (msg_type == SSH_MSG_CHANNEL_CLOSE)
 			return 0;
 	}
+}
+
+/* End the occupied request before waiting, so demux can publish reciprocal
+ * CLOSE. Every mandatory send is checked; failure never enters a futile wait. */
+static int
+close_setup_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch, bool want_reply)
+{
+	if (sess->terminate)
+		return DSSH_ERROR_TERMINATED;
+	int ret = setup_finish(sess, ch, want_reply, false);
+	if (ret < 0) {
+		session_set_terminate(sess);
+		return ret;
+	}
+	ret = conn_close(sess, ch);
+	if (ret < 0) {
+		session_set_terminate(sess);
+		return ret;
+	}
+	return wait_for_close(sess, ch);
+}
+
+static int
+discard_setup_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch)
+{
+	if (setup_disable(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	if (detach_channel(sess, ch) < 0)
+		return DSSH_ERROR_TERMINATED;
+	params_free(&ch->params);
+	event_queue_free(&ch->events);
+	cleanup_channel_buffers(ch);
+	free_channel(ch);
+	return 0;
+}
+
+static int
+cancel_setup_channel(struct dssh_session_s *sess, struct dssh_channel_s *ch, bool want_reply)
+{
+	int ret = close_setup_channel(sess, ch, want_reply);
+	return ret < 0 && ret != DSSH_ERROR_TIMEOUT ? ret : DSSH_ERROR_REJECTED;
 }
 
 static int
@@ -3800,19 +5482,23 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 		uint8_t  msg_type;
 		uint8_t *payload;
 		size_t   payload_len;
-		int      res = setup_recv(sess, ch, &msg_type, &payload, &payload_len);
+		int      res = DSSH_TEST_CHANNEL_RESULT(DSSH_TEST_CHANNEL_ACCEPT_WAIT, setup_recv(sess, ch, &msg_type, &payload, &payload_len));
 		if (res < 0)
 			return res;
+		if (msg_type == SSH_MSG_CHANNEL_CLOSE) {
+			res = close_setup_channel(sess, ch, false);
+			return res < 0 ? res : DSSH_ERROR_REJECTED;
+		}
 		if (msg_type == SSH_MSG_CHANNEL_WINDOW_ADJUST) {
-			if (payload_len >= 9)
-				window_atomic_add(&ch->remote_window, DSSH_GET_U32(&payload[5]));
-			res = setup_finish(sess, ch, payload, false, false);
+			/* Fixed layout was validated before publishing this mailbox. */
+			window_atomic_add(&ch->remote_window, DSSH_GET_U32(&payload[5]));
+			res = setup_finish(sess, ch, false, false);
 			if (res < 0)
 				return res;
 			continue;
 		}
 		if (msg_type != SSH_MSG_CHANNEL_REQUEST) {
-			res = setup_finish(sess, ch, payload, false, false);
+			res = setup_finish(sess, ch, false, false);
 			if (res < 0)
 				return res;
 			continue;
@@ -3825,69 +5511,64 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 		if (parse_channel_request(payload, payload_len, &rtype, &rtype_len, &want_reply, &req_data,
 			&req_data_len)
 		    < 0) {
-			res = setup_finish(sess, ch, payload, true, false);
-			dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
-			    "malformed CHANNEL_REQUEST");
-			if (res < 0)
-				return res;
-			return DSSH_ERROR_TERMINATED;
+			res = setup_finish(sess, ch, false, false);
+			int disconnect_ret = transport_disconnect_result(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+			    "malformed CHANNEL_REQUEST", DSSH_ERROR_TERMINATED);
+			return res < 0 ? res : disconnect_ret;
 		}
 
 		if (rtype_len == DSSH_STRLEN(str_pty_req)
 		    && memcmp(rtype, str_pty_req, DSSH_STRLEN(str_pty_req)) == 0) {
 			if (had_pty) {
-				res = setup_finish(sess, ch, payload, false, false);
-				dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
-				    "duplicate pty-req");
-				if (res < 0)
-					return res;
-				return DSSH_ERROR_TERMINATED;
+				res = setup_finish(sess, ch, false, false);
+				int disconnect_ret = transport_disconnect_result(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
+				    "duplicate pty-req", DSSH_ERROR_TERMINATED);
+				return res < 0 ? res : disconnect_ret;
 			}
 			had_pty = true;
 			res     = accept_parse_pty(req_data, req_data_len, p);
 			if (res < 0) {
-				res = setup_finish(sess, ch, payload, want_reply, false);
+				res = setup_finish(sess, ch, want_reply, false);
 				if (res < 0)
 					return res;
 				continue;
 			}
 			int cb_res = 0;
+			bool cancelled = false;
 			if (cbs->pty_req != NULL)
-				cb_res = cbs->pty_req(ch, p, cbs->cbdata);
+				cb_res = call_setup_request(ch, p, cbs->pty_req, cbs->cbdata, &cancelled);
+			if (cancelled)
+				return cancel_setup_channel(sess, ch, want_reply);
 			if (cb_res < 0)
 				p->flags &= ~(uint32_t)DSSH_PARAM_HAS_PTY;
-			res = setup_finish(sess, ch, payload, want_reply, cb_res >= 0);
+			res = setup_finish(sess, ch, want_reply, cb_res >= 0);
 			if (res < 0)
 				return res;
 			continue;
 		}
 		if (rtype_len == DSSH_STRLEN(str_env) && memcmp(rtype, str_env, DSSH_STRLEN(str_env)) == 0) {
-			int cb_res = -1;
-			if (cbs->env != NULL) {
-				res = accept_parse_env(req_data, req_data_len, p);
-				if (res >= 0)
-					cb_res = cbs->env(ch, p, cbs->cbdata);
-			}
-			res = setup_finish(sess, ch, payload, want_reply, cb_res >= 0);
+			bool cancelled = false;
+			int cb_res = accept_env_request(ch, req_data, req_data_len, p, cbs, &cancelled);
+			if (cancelled)
+				return cancel_setup_channel(sess, ch, want_reply);
+			res = setup_finish(sess, ch, want_reply, cb_res >= 0);
 			if (res < 0)
 				return res;
 			continue;
 		}
 		if (rtype_len == DSSH_STRLEN(str_shell) && memcmp(rtype, str_shell, DSSH_STRLEN(str_shell)) == 0) {
 			p->type      = DSSH_CHAN_SHELL;
+			bool cancelled = false;
 			int cb_res   = -1;
-			if (cbs->shell != NULL)
-				cb_res = cbs->shell(ch, p, result, cbs->cbdata);
+			if (req_data_len == 0 && cbs->shell != NULL)
+				cb_res = call_setup_terminal(ch, p, result, cbs->shell, cbs->cbdata, &cancelled);
+			if (cancelled)
+				return cancel_setup_channel(sess, ch, want_reply);
 			if (cb_res >= 0) {
-				free(payload);
 				*terminal_want_reply = want_reply;
 				return 0;
 			}
-			res = setup_finish(sess, ch, payload, want_reply, false);
-			if (res < 0)
-				return res;
-			conn_close(sess, ch);
-			res = wait_for_close(sess, ch);
+			res = close_setup_channel(sess, ch, want_reply);
 			if (res < 0 && res != DSSH_ERROR_TIMEOUT)
 				return res;
 			return DSSH_ERROR_REJECTED;
@@ -3895,19 +5576,17 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 		if (rtype_len == DSSH_STRLEN(str_exec) && memcmp(rtype, str_exec, DSSH_STRLEN(str_exec)) == 0) {
 			p->type      = DSSH_CHAN_EXEC;
 			res          = accept_parse_exec(req_data, req_data_len, p);
+			bool cancelled = false;
 			int cb_res   = -1;
 			if (res >= 0 && cbs->exec != NULL)
-				cb_res = cbs->exec(ch, p, result, cbs->cbdata);
+				cb_res = call_setup_terminal(ch, p, result, cbs->exec, cbs->cbdata, &cancelled);
+			if (cancelled)
+				return cancel_setup_channel(sess, ch, want_reply);
 			if (cb_res >= 0) {
-				free(payload);
 				*terminal_want_reply = want_reply;
 				return 0;
 			}
-			res = setup_finish(sess, ch, payload, want_reply, false);
-			if (res < 0)
-				return res;
-			conn_close(sess, ch);
-			res = wait_for_close(sess, ch);
+			res = close_setup_channel(sess, ch, want_reply);
 			if (res < 0 && res != DSSH_ERROR_TIMEOUT)
 				return res;
 			return DSSH_ERROR_REJECTED;
@@ -3916,35 +5595,31 @@ chan_accept_setup_loop(struct dssh_session_s *sess, struct dssh_channel_s *ch,
 		    && memcmp(rtype, str_subsystem, DSSH_STRLEN(str_subsystem)) == 0) {
 			p->type      = DSSH_CHAN_SUBSYSTEM;
 			res          = accept_parse_subsystem(req_data, req_data_len, p);
+			bool cancelled = false;
 			int cb_res   = -1;
 			if (res >= 0 && cbs->subsystem != NULL)
-				cb_res = cbs->subsystem(ch, p, result, cbs->cbdata);
+				cb_res = call_setup_terminal(ch, p, result, cbs->subsystem, cbs->cbdata, &cancelled);
+			if (cancelled)
+				return cancel_setup_channel(sess, ch, want_reply);
 			if (cb_res >= 0) {
-				free(payload);
 				*terminal_want_reply = want_reply;
 				return 0;
 			}
-			res = setup_finish(sess, ch, payload, want_reply, false);
-			if (res < 0)
-				return res;
-			conn_close(sess, ch);
-			res = wait_for_close(sess, ch);
+			res = close_setup_channel(sess, ch, want_reply);
 			if (res < 0 && res != DSSH_ERROR_TIMEOUT)
 				return res;
 			return DSSH_ERROR_REJECTED;
 		}
-		res = setup_finish(sess, ch, payload, want_reply, false);
+		res = setup_finish(sess, ch, want_reply, false);
 		if (res < 0)
 			return res;
 	}
 }
 
-DSSH_PUBLIC struct dssh_channel_s *
-dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs *cbs, int timeout_ms)
+static struct dssh_channel_s *
+chan_accept_inner(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs *cbs, int timeout_ms)
 {
-	if (sess == NULL || cbs == NULL)
-		return NULL;
-	if (connection_api_forbidden(sess))
+	if (!sess->conn_initialized || !sess->demux_running || sess->terminate)
 		return NULL;
 
 	for (;;) {
@@ -3956,36 +5631,19 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 
 		struct dssh_channel_s *ch = accept_channel_init(sess, &inc);
 
-		if (ch == NULL)
-			return NULL;
-
-		ch->sess         = sess;
-		ch->io_model     = DSSH_IO_STREAM;
-		ch->zc_cb        = stream_zc_cb;
-		ch->event_cb     = sess->default_event_cb;
-		ch->event_cbdata = sess->default_event_cbdata;
-
-		/* Init event queue before setup loop — demux can dispatch
-	 * EOF/CLOSE events to this channel during reject cleanup. */
-		res = event_queue_init(&ch->events, sess->default_max_events);
-		if (res < 0) {
-			if (setup_disable(sess, ch) < 0)
-				return NULL;
-			if (detach_channel(sess, ch) < 0)
-				return NULL;
-			free(ch->setup_payload);
-			free_tx_slot(&ch->wa_slot);
-			free_tx_slot(&ch->chan_fail_slot);
-			cnd_destroy(&ch->poll_cnd);
-			mtx_destroy(&ch->cb_mtx);
-			mtx_destroy(&ch->buf_mtx);
-			free(ch);
+		if (ch == NULL) {
+			if (!sess->terminate) {
+				res = send_open_failure(sess, inc.peer_channel, SSH_OPEN_RESOURCE_SHORTAGE,
+				    inc.protocol_id);
+				if (res < 0)
+					session_set_terminate(sess);
+			}
 			return NULL;
 		}
 
 		struct dssh_chan_params p;
 
-		dssh_chan_params_init(&p, DSSH_CHAN_SHELL);
+		res = params_init(&p, DSSH_CHAN_SHELL);
 		p.flags &= ~(uint32_t)DSSH_PARAM_HAS_PTY;
 
 		struct dssh_chan_accept_result result = {
@@ -3995,27 +5653,17 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 		};
 		bool terminal_want_reply = false;
 
-		res = chan_accept_setup_loop(sess, ch, cbs, &p, &result, &terminal_want_reply);
+		if (res >= 0)
+			res = chan_accept_setup_loop(sess, ch, cbs, &p, &result, &terminal_want_reply);
 		if (res < 0) {
-			dssh_chan_params_free(&p);
-
-			/* On reject, clean up this channel and loop back to
-		 * accept the next CHANNEL_OPEN (design lines 945-946).
-		 * wait_for_close() already drained the peer's reciprocal
-		 * CLOSE in chan_accept_setup_loop's reject path. */
-			if (setup_disable(sess, ch) < 0)
+			if (res != DSSH_ERROR_REJECTED && !sess->terminate) {
+				int close_ret = close_setup_channel(sess, ch, false);
+				if (close_ret < 0 && close_ret != DSSH_ERROR_TIMEOUT)
+					res = close_ret;
+			}
+			params_free(&p);
+			if (discard_setup_channel(sess, ch) < 0)
 				return NULL;
-			if (detach_channel(sess, ch) < 0)
-				return NULL;
-			event_queue_free(&ch->events);
-			free(ch->setup_payload);
-			free_tx_slot(&ch->wa_slot);
-			free_tx_slot(&ch->chan_fail_slot);
-			cnd_destroy(&ch->poll_cnd);
-			mtx_destroy(&ch->cb_mtx);
-			mtx_destroy(&ch->buf_mtx);
-			free(ch);
-
 			if (res == DSSH_ERROR_REJECTED)
 				continue;
 			return NULL;
@@ -4032,103 +5680,105 @@ dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs 
 		}
 		/* else: stream mode already set before setup loop */
 
+		int close_ret;
+		struct dssh_bytebuf stdout_buffer = {0};
+		struct dssh_bytebuf stderr_buffer = {0};
+		if (ch->io_model == DSSH_IO_STREAM) {
+#if SIZE_MAX < UINT32_MAX
+			if (winsz > SIZE_MAX)
+				goto accept_storage_failure;
+#endif
+			size_t buffer_size = (size_t)winsz;
+			res = bytebuf_init(&stdout_buffer, buffer_size);
+			if (res < 0)
+				goto accept_storage_failure;
+			res = bytebuf_init(&stderr_buffer, buffer_size);
+			if (res < 0)
+				goto accept_storage_failure;
+		}
 		res = mtx_lock(&ch->buf_mtx);
 		if (res != thrd_success) {
 			dssh_thrd_check(sess, res);
-			if (detach_channel(sess, ch) < 0)
-				return NULL;
-			dssh_chan_params_free(&p);
-			event_queue_free(&ch->events);
-			free(ch->setup_payload);
-			free_tx_slot(&ch->wa_slot);
-			free_tx_slot(&ch->chan_fail_slot);
-			cnd_destroy(&ch->poll_cnd);
-			mtx_destroy(&ch->cb_mtx);
-			mtx_destroy(&ch->buf_mtx);
-			free(ch);
-			return NULL;
+			goto accept_storage_failure;
 		}
-		ch->window_max         = winsz;
-		ch->chan_type          = DSSH_CHAN_SESSION;
-		ch->exit_code          = 0;
+		if (sess->terminate || atomic_load(&ch->closing)) {
+			dssh_mtx_unlock(&ch->buf_mtx);
+			goto accept_storage_failure;
+		}
+		ch->params = p;
+		p = (struct dssh_chan_params){0};
+		ch->window_max = winsz;
+		ch->chan_type = DSSH_CHAN_SESSION;
+		ch->exit_code = 0;
 		ch->exit_code_received = false;
 		if (ch->io_model == DSSH_IO_STREAM) {
-			res = bytebuf_init(&ch->buf.stdout_buf, winsz);
-			if (res < 0) {
-				ch->chan_type = 0;
-				ch->setup_mode = false;
-				if (setup_publish_and_unlock(sess, ch) < 0)
-					return NULL;
-				if (detach_channel(sess, ch) < 0)
-					return NULL;
-				dssh_chan_params_free(&p);
-				event_queue_free(&ch->events);
-				free(ch->setup_payload);
-				free_tx_slot(&ch->wa_slot);
-				free_tx_slot(&ch->chan_fail_slot);
-				cnd_destroy(&ch->poll_cnd);
-				mtx_destroy(&ch->cb_mtx);
-				mtx_destroy(&ch->buf_mtx);
-				free(ch);
-				return NULL;
-			}
-			res = bytebuf_init(&ch->buf.stderr_buf, winsz);
-			if (res < 0) {
-				bytebuf_free(&ch->buf.stdout_buf);
-				ch->chan_type = 0;
-				ch->setup_mode = false;
-				if (setup_publish_and_unlock(sess, ch) < 0)
-					return NULL;
-				if (detach_channel(sess, ch) < 0)
-					return NULL;
-				dssh_chan_params_free(&p);
-				event_queue_free(&ch->events);
-				free(ch->setup_payload);
-				free_tx_slot(&ch->wa_slot);
-				free_tx_slot(&ch->chan_fail_slot);
-				cnd_destroy(&ch->poll_cnd);
-				mtx_destroy(&ch->cb_mtx);
-				mtx_destroy(&ch->buf_mtx);
-				free(ch);
-				return NULL;
-			}
+			ch->buf.stdout_buf = stdout_buffer;
+			ch->buf.stderr_buf = stderr_buffer;
+			stdout_buffer = (struct dssh_bytebuf){0};
+			stderr_buffer = (struct dssh_bytebuf){0};
 		}
 		/* The accepted terminal request remains the occupied setup-mailbox
 		 * entry until initialization is complete.  Clear it and switch modes
 		 * atomically so a later packet either waits here or sees a fully
 		 * initialized normal channel. */
 		ch->setup_ready = false;
+		ch->setup_payload_len = 0;
 		ch->setup_mode = false;
 		if (setup_publish_and_unlock(sess, ch) < 0)
-			return NULL;
+			goto accept_committed_failure;
 
 		if (terminal_want_reply)
 			res = setup_reply(sess, ch, true);
 		else
 			res = 0;
-		if (res < 0) {
-			if (detach_channel(sess, ch) < 0)
-				return NULL;
-			event_queue_free(&ch->events);
-			dssh_chan_params_free(&p);
-			cleanup_channel_buffers(ch);
-			free(ch);
-			return NULL;
-		}
+		if (res < 0)
+			goto accept_committed_failure;
 
 		/* Open the window -- data can flow now */
 		res = send_window_adjust(sess, ch, winsz);
-		if (res < 0) {
-			if (detach_channel(sess, ch) < 0)
-				return NULL;
-			event_queue_free(&ch->events);
-			dssh_chan_params_free(&p);
-			cleanup_channel_buffers(ch);
-			free(ch);
-			return NULL;
-		}
+		if (res < 0)
+			goto accept_committed_failure;
 
-		ch->params = p;
 		return ch;
+
+accept_storage_failure:
+		bytebuf_free(&stdout_buffer);
+		bytebuf_free(&stderr_buffer);
+		/* A validated terminal request is still occupied and has not yet
+		 * received success. Reject it if requested, then exchange CLOSE. */
+		close_ret = close_setup_channel(sess, ch, terminal_want_reply);
+		goto accept_retire_failure;
+
+accept_committed_failure:
+		close_ret = DSSH_ERROR_TERMINATED;
+		if (!sess->terminate) {
+			close_ret = conn_close(sess, ch);
+			if (close_ret < 0)
+				session_set_terminate(sess);
+			else
+				close_ret = wait_for_close(sess, ch);
+		}
+accept_retire_failure:
+		params_free(&p);
+		if (close_ret < 0 && close_ret != DSSH_ERROR_TIMEOUT && !sess->terminate)
+			session_set_terminate(sess);
+		if (discard_setup_channel(sess, ch) < 0)
+			return NULL;
+		return NULL;
 	} /* accept loop */
+}
+
+DSSH_PUBLIC struct dssh_channel_s *
+dssh_chan_accept(struct dssh_session_s *sess, const struct dssh_chan_accept_cbs *cbs, int timeout_ms)
+{
+	if (sess == NULL || cbs == NULL)
+		return NULL;
+	if (in_zc_rx || connection_api_forbidden(sess))
+		return NULL;
+	struct dssh_session_scope scope;
+
+	session_scope_enter(&scope, sess);
+	struct dssh_channel_s *ch = chan_accept_inner(sess, cbs, timeout_ms);
+	session_scope_leave(&scope);
+	return ch;
 }

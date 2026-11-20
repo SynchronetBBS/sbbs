@@ -7,12 +7,17 @@
 
 #include "deucessh-key-algo.h"
 #include "deucessh.h"
+#include "key-wire.h"
+#include "client-key.h"
+#ifdef DSSH_TESTING
+ #include "ssh-internal.h"
+#endif
 
 #define ED25519_NAME     "ssh-ed25519"
 #define ED25519_NAME_LEN 11
 
 /* Implemented in ssh-ed25519-botan.cpp */
-extern int  dssh_botan_ed25519_sign(uint8_t **out, size_t *outlen, const uint8_t *data, size_t data_len,
+extern int  dssh_botan_ed25519_sign(struct dssh_bytes_result *out, const uint8_t *data, size_t data_len,
      dssh_key_algo_ctx *ctx);
 extern int  dssh_botan_ed25519_verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob,
      size_t sig_blob_len, const uint8_t *data, size_t data_len);
@@ -23,8 +28,9 @@ extern void dssh_botan_ed25519_cleanup(dssh_key_algo_ctx *ctx);
 static unsigned int
 key_bits(const uint8_t *key_blob, size_t key_blob_len)
 {
-	(void)key_blob;
-	(void)key_blob_len;
+	struct dssh_bytes key;
+	if (dssh_key_wire_ed25519(key_blob, key_blob_len, &key) < 0)
+		return 0;
 	return 256;
 }
 
@@ -44,5 +50,20 @@ dssh_register_ssh_ed25519(void)
 	ka->ctx      = NULL;
 	ka->flags    = DSSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE;
 	memcpy(ka->name, ED25519_NAME, ED25519_NAME_LEN + 1);
-	return dssh_transport_register_key_algo(ka);
+	int ret = dssh_transport_register_key_algo(ka);
+	if (ret < 0)
+		free(ka);
+	return ret;
+}
+
+extern const struct dssh_client_key_ops *dssh_botan_ed25519_client_ops(void);
+
+DSSH_PRIVATE const struct dssh_client_key_ops *
+dssh_ed25519_client_ops(struct dssh_key_algo_s *module)
+{
+	if (module->sign != dssh_botan_ed25519_sign
+	    || module->pubkey != dssh_botan_ed25519_pubkey
+	    || module->haskey != dssh_botan_ed25519_haskey)
+		return NULL;
+	return dssh_botan_ed25519_client_ops();
 }

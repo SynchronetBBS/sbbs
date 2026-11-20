@@ -1,3 +1,8 @@
+> Historical pre-release design discussion. Current channel contracts and
+> examples are in [the API guide](api-design-4254.md), [README](../README.md),
+> and [the public header](../deucessh-conn.h). Those sources include the approved
+> event byte views, BREAK handler, read completion and channel-close contracts.
+
 # Channel I/O API Redesign
 
 Replaces TODO items 95 and 98.  Pre-release — no backward compat needed.
@@ -363,11 +368,10 @@ int dssh_chan_set_event_cb(dssh_channel ch,
 /* Event types */
 #define DSSH_EVENT_SIGNAL       1
 #define DSSH_EVENT_WINDOW_CHANGE 2
-#define DSSH_EVENT_BREAK        3
-#define DSSH_EVENT_EOF          4
-#define DSSH_EVENT_CLOSE        5
-#define DSSH_EVENT_EXIT_STATUS  6
-#define DSSH_EVENT_EXIT_SIGNAL  7
+#define DSSH_EVENT_EOF          3
+#define DSSH_EVENT_CLOSE        4
+#define DSSH_EVENT_EXIT_STATUS  5
+#define DSSH_EVENT_EXIT_SIGNAL  6
 
 struct dssh_chan_event {
     int    type;
@@ -376,7 +380,6 @@ struct dssh_chan_event {
     union {
         struct { const char *name; } signal;
         struct { uint32_t cols, rows, wpx, hpx; } window_change;
-        struct { uint32_t length; } brk;
         struct { uint32_t exit_code; } exit_status;
         struct {
             const char *signal_name;
@@ -490,7 +493,7 @@ stream.
 **Data** arrives in two streams (stdout, stderr) via `dssh_chan_read`.
 Read never stops at event boundaries.  Data always flows freely.
 
-**Events** (signal, window-change, break, EOF, close, exit-status,
+**Events** (signal, window-change, EOF, close, exit-status,
 exit-signal) are queued separately.  `DSSH_POLL_EVENT` tells the app
 one is ready.  `dssh_chan_read_event()` pulls it off the queue.
 Each event carries advisory stream positions (bytes of unread
@@ -790,7 +793,7 @@ channels.  This callback copies data from `rx_packet` into the
 per-channel ring buffer and broadcasts `poll_cnd`.  The app's
 `dssh_chan_read` drains the ring buffer.
 
-Events (signal, window-change, break, EOF, close, exit-status,
+Events (signal, window-change, EOF, close, exit-status,
 exit-signal) are queued by the internal callback with the current
 ring buffer positions for both streams.  The app pulls them via
 `dssh_chan_read_event()`.
@@ -1017,7 +1020,7 @@ and remain valid for the lifetime of the channel.
 `dssh_chan_accept` also copies the session-level event callback
 default (set via `dssh_session_set_event_cb`) to the new channel,
 same as `dssh_chan_open` does.  After accept returns, post-setup
-events (window-change, break, signal, EOF, close, exit-status,
+events (window-change, signal, EOF, close, exit-status,
 exit-signal) arrive through the normal event queue / event callback,
 same as for client-opened channels.
 
@@ -1112,12 +1115,12 @@ None — all items resolved.
   Events carry advisory stream positions (bytes of unread
   stdout/stderr at poll time).  Data never stops at event boundaries.
   Optional event callback provides push notification but is never
-  required.  All event types (signal, window-change, break, EOF,
+  required.  All event types (signal, window-change, EOF,
   close, exit-status, exit-signal) go through the same queue.
   Eliminates the two-pointer problem (independent stdout/stderr
   read pointers can't support stream-position callbacks).
 
-- **Per-event-type callbacks eliminated**: replaced by unified
+- **Notification callbacks unified**: BREAK has a separate action/result handler; notifications use unified
   `dssh_chan_event_cb` (receives full event struct with positions)
   + `dssh_chan_read_event` (pulls typed event struct for poll-based
   path).  Simplifies callback surface from 7 setter pairs

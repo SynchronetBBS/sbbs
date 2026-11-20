@@ -5074,7 +5074,7 @@ if (Host.launchScript != null && Host.launchScript.endsWith("foo.wren")) {
   the default Alt+E path.
 
 | `Host.sshPublicKey`
-| The first locally-configured SSH public key, as a Map
+| The current SSH session's client public key, as a Map
   `{"algo": String, "blob": String}` (e.g. `algo: "ssh-ed25519",
   blob: "AAAA..."`), or `null` when none is available (no SSH
   backend, key not loaded, OOM).  Used by

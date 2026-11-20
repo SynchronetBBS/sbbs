@@ -1,5 +1,11 @@
 # RFC 4254 Conformance Audit — DeuceSSH
 
+> Release audit reconciliation is in progress. This historical report uses
+> earlier API names and architecture descriptions; its conformance totals
+> and completion statements are not current release evidence. See the
+> [current requirement ledger](release-1.0-evidence/rfc4254-ledger.md) for
+> traces, validation and outstanding verification.
+
 Systematic audit of every MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT,
 SHOULD, SHOULD NOT, RECOMMENDED, MAY, and OPTIONAL keyword in RFC 4254
 (SSH Connection Protocol) against the DeuceSSH library code.
@@ -160,28 +166,26 @@ by adding bytes to `remote_window` and waking poll waiters.
 > When a party will no longer send more data to a channel, it **SHOULD**
 > send SSH_MSG_CHANNEL_EOF.
 
-**CONFORMS** — `conn_send_eof()` (internal) sends CHANNEL_EOF.
-Tracks `eof_sent` to prevent double-send.
+**CONFORMS** — `send_eof()` tracks `eof_sent` and sends CHANNEL_EOF.
+`dssh_chan_shutwr()` exposes the half-close operation.
 
 ### 5.3-2
 > Upon receiving [SSH_MSG_CHANNEL_CLOSE], a party **MUST** send back an
 > SSH_MSG_CHANNEL_CLOSE unless it has already sent this message for the
 > channel.
 
-**CONFORMS** — `conn_close()` (internal) tracks `close_sent` and is a
-no-op if already sent (prevents double-close).  The demux thread sets
-`close_received` when the peer sends CLOSE and wakes poll waiters.
-The application cleans up its resources and then calls
-`dssh_session_close()` or `dssh_channel_close()` to send the
-reciprocal CLOSE (which the library skips if it already sent one).
-The channel struct tracks both `close_sent` and `close_received`.
+**APPLICATION** — A live channel's peer CLOSE wakes polling callers or
+reaches the event callback. The application calls `dssh_chan_close()` to
+finish the exchange. The library handles the protocol response during setup
+cancellation and after detachment. A private record retains the channel
+number until both CLOSE directions are complete. See [identifier review](release-1.0-evidence/channel-identifier-review.md).
 
 ### 5.3-3
 > A party **MAY** send SSH_MSG_CHANNEL_CLOSE without having sent or
 > received SSH_MSG_CHANNEL_EOF.
 
-**CONFORMS** — `dssh_session_close()` / `dssh_channel_close()`
-can be called at any time.
+**CONFORMS** — `conn_close()` can send CLOSE independently of EOF, including
+when closing a channel during setup.
 
 ### 5.3-4
 > It is **RECOMMENDED** that all data sent before this message be
@@ -199,8 +203,8 @@ final destination is the application's responsibility.
 **CONFORMS** — Library functions send CHANNEL_REQUEST with
 `want_reply=TRUE` for: pty-req (`session_open_shell`), shell
 (`session_open_shell`), exec (`session_open_exec`), subsystem
-(`channel_open_subsystem`), env (declared in header).  Window-change
-uses `want_reply=FALSE` per RFC.  All requests that use `want_reply=TRUE`
+(`channel_open_subsystem`). Environment requests and window-change
+use `want_reply=FALSE`. All requests that use `want_reply=TRUE`
 wait for SUCCESS/FAILURE via the `send_channel_request_wait()` mechanism.
 
 ### 5.4-2 (CHANNEL_SUCCESS/FAILURE handling)
@@ -272,10 +276,11 @@ pty requests.
 
 ## Section 6.4: Environment Variable Passing
 
-**CONFORMS** — Server-side env callback in
-`dssh_server_session_cbs` receives environment variables during
-`dssh_session_accept_channel()`.  Client-side env sending is
-available via `conn_request_env()` (internal).
+**CONFORMS** — The `env` callback in `dssh_chan_accept_cbs` receives
+environment variables during `dssh_chan_accept()`. Client-side builder
+entries are sent by `chan_send_env()` with `want_reply=FALSE`, without
+waiting for or reporting peer acceptance. Servers continue to honor the
+reply flag supplied by peers, including requests that ask for a response.
 
 ---
 
@@ -389,9 +394,12 @@ tcpip-forward.
 
 ## Section 8: Encoding of Terminal Modes
 
-**N/A** — Terminal mode encoding/decoding is an application-level
-concern.  The library could provide helpers but this is not a protocol
-conformance issue.
+The historical N/A classification is withdrawn: the current library encodes
+and parses terminal modes through its parameter builder and PTY requests.
+Application-selected terminal values and device configuration remain application
+responsibilities. See the [current section 8 trace](release-1.0-evidence/rfc4254-ledger.md)
+and [terminal-mode review](release-1.0-evidence/terminal-mode-review.md); the
+historical totals below are not release acceptance.
 
 ---
 
@@ -430,12 +438,12 @@ application's responsibility.
   now send the required reply (when constructible) then disconnect with
   PROTOCOL_ERROR.  Prevents reply-ordering corruption from speculative
   replies when `want_reply` is unknowable.
-- **CHANNEL_CLOSE reciprocal** (5.3-2) — `close_sent`/`close_received`
-  tracking, idempotent `conn_close()` (internal); application calls
-  `session_close()` / `channel_close()`.
+- **CHANNEL_CLOSE reciprocal** (5.3-2) — The application calls
+  `dssh_chan_close()` for a live channel. The protocol record keeps the number
+  reserved through the reciprocal exchange.
 - **Window overflow** (5.2-2) — saturating `window_add()`.
-- **CHANNEL_EOF sending** (5.3-1) — `conn_send_eof()` (internal) with
-  tracking; called automatically by `session_close()` / `channel_close()`.
+- **CHANNEL_EOF sending** (5.3-1) — `send_eof()` tracks the send. It is used by
+  `dssh_chan_shutwr()` and `dssh_chan_close()`.
 - **Channel request types** (5.4-1) — pty-req, shell, exec, subsystem,
   window-change all implemented with proper wait-for-response mechanism
   via `send_channel_request_wait()`.

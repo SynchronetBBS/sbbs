@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
-project(deucessh VERSION 0.1 LANGUAGES C)
+project(deucessh VERSION 1.0.0 LANGUAGES C)
+# Independent of the package/API release major; retain while published ABIs remain.
+set(DEUCESSH_ABI_MAJOR 1)
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/DeuceSSHCStandard.cmake")
 
 # Default to Release for single-config generators when the user hasn't
@@ -30,10 +32,10 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "")
 	# Auto-detect: try Botan first, then OpenSSL
 	find_package(PkgConfig QUIET)
 	if(PkgConfig_FOUND)
-		pkg_check_modules(BOTAN3 QUIET IMPORTED_TARGET
+		pkg_check_modules(DEUCESSH_BOTAN QUIET IMPORTED_TARGET
 			"botan-3>=${DEUCESSH_BOTAN_MIN_VERSION}")
 	endif()
-	if(BOTAN3_FOUND)
+	if(DEUCESSH_BOTAN_FOUND)
 		set(DEUCESSH_CRYPTO_BACKEND "Botan")
 		message(STATUS "Auto-detected crypto backend: Botan")
 	else()
@@ -54,7 +56,7 @@ elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 	# at configure time).  BOTAN3_VENDORED_TARGET is the cache hint.
 	if(NOT BOTAN3_VENDORED_TARGET)
 		find_package(PkgConfig REQUIRED)
-		pkg_check_modules(BOTAN3 REQUIRED IMPORTED_TARGET
+		pkg_check_modules(DEUCESSH_BOTAN REQUIRED IMPORTED_TARGET
 			"botan-3>=${DEUCESSH_BOTAN_MIN_VERSION}")
 	endif()
 elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
@@ -68,20 +70,26 @@ endif()
 if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 	if(BOTAN3_VENDORED_TARGET)
 		set(DSSH_CRYPTO_LIB_PRIVATE ${BOTAN3_VENDORED_TARGET})
-		set(DSSH_CRYPTO_LIB_INTERFACE "")
+		set(DSSH_CRYPTO_LIB_INTERFACE
+			$<BUILD_INTERFACE:${BOTAN3_VENDORED_TARGET}>
+			$<INSTALL_INTERFACE:PkgConfig::DEUCESSH_BOTAN_BINARY>)
 		get_target_property(DSSH_CRYPTO_INCLUDE
 		    ${BOTAN3_VENDORED_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
 	else()
-		set(DSSH_CRYPTO_LIB_PRIVATE PkgConfig::BOTAN3)
-		set(DSSH_CRYPTO_LIB_INTERFACE ${BOTAN3_LDFLAGS})
-		set(DSSH_CRYPTO_INCLUDE ${BOTAN3_INCLUDE_DIRS})
+		set(DSSH_CRYPTO_LIB_PRIVATE PkgConfig::DEUCESSH_BOTAN)
+		set(DSSH_CRYPTO_LIB_INTERFACE
+			$<BUILD_INTERFACE:PkgConfig::DEUCESSH_BOTAN>
+			$<INSTALL_INTERFACE:PkgConfig::DEUCESSH_BOTAN_BINARY>)
+		set(DSSH_CRYPTO_INCLUDE ${DEUCESSH_BOTAN_INCLUDE_DIRS})
 	endif()
 	set(DSSH_CRYPTO_IMPL crypto/botan.cpp)
-	set(DSSH_CONFIG_FIND_DEPENDENCY "find_dependency(PkgConfig)\npkg_check_modules(BOTAN3 REQUIRED IMPORTED_TARGET \"botan-3>=${DEUCESSH_BOTAN_MIN_VERSION}\")")
+	# Keep the API floor; compatible Botan releases need no exact version pin.
+	# Precompiled consumers still require a compatible provider ABI.
+	set(DSSH_CONFIG_FIND_DEPENDENCY "find_dependency(PkgConfig)\npkg_check_modules(DEUCESSH_BOTAN_BINARY REQUIRED IMPORTED_TARGET \"botan-3>=${DEUCESSH_BOTAN_MIN_VERSION}\")")
 	set(DSSH_PC_REQUIRES_PRIVATE "botan-3 >= ${DEUCESSH_BOTAN_MIN_VERSION}")
 elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
 	set(DSSH_CRYPTO_LIB_PRIVATE OpenSSL::Crypto)
-	set(DSSH_CRYPTO_LIB_INTERFACE ${OPENSSL_CRYPTO_LIBRARIES})
+	set(DSSH_CRYPTO_LIB_INTERFACE OpenSSL::Crypto)
 	set(DSSH_CRYPTO_INCLUDE ${OPENSSL_INCLUDE_DIR})
 	set(DSSH_CRYPTO_IMPL crypto/openssl.c)
 	set(DSSH_CONFIG_FIND_DEPENDENCY "find_dependency(OpenSSL 3.0)")
@@ -94,25 +102,76 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 endif()
 
 include(CheckCSourceCompiles)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/DeuceSSHCheckState.cmake")
 
-# Compiler language-mode support does not establish that the SDK/libc
-# ships the C11 functions <time.h> promises. Without this probe an
-# older macOS SDK (pre-10.15 lacks timespec_get / TIME_UTC) gets all
-# the way to "implicit declaration of function 'timespec_get'" at
-# real-target compile time while configure thinks everything's fine.
-# Fail configure up front so consumers' own build-time probes can
-# observe the failure and react.
-check_c_source_compiles("
-	#include <time.h>
-	int main(void) {
-		struct timespec ts;
-		return timespec_get(&ts, TIME_UTC) == TIME_UTC ? 0 : 1;
-	}
-" HAVE_TIMESPEC_GET)
-if(NOT HAVE_TIMESPEC_GET)
-	message(FATAL_ERROR
-	    "DeuceSSH requires C11's timespec_get / TIME_UTC in <time.h>.  "
-	    "This SDK/libc predates them — upgrade the platform toolchain.")
+# The deadline helpers classify long double values. Some C runtimes
+# implement isfinite for that type in a separate math library.
+function(dssh_find_math_link_library)
+	dssh_push_platform_check_state()
+	set(probe [[
+		#include <math.h>
+		int main(void) {
+			volatile long double value = 1.0L;
+			return isfinite(value) ? 0 : 1;
+		}
+	]])
+	check_c_source_compiles("${probe}" DSSH_LONG_DOUBLE_ISFINITE_IN_LIBC)
+	if(DSSH_LONG_DOUBLE_ISFINITE_IN_LIBC)
+		set(DSSH_MATH_LINK_LIB "" PARENT_SCOPE)
+	else()
+		set(CMAKE_REQUIRED_LIBRARIES m)
+		check_c_source_compiles("${probe}" DSSH_LONG_DOUBLE_ISFINITE_IN_LIBM)
+		if(NOT DSSH_LONG_DOUBLE_ISFINITE_IN_LIBM)
+			message(FATAL_ERROR "DeuceSSH requires isfinite for long double in <math.h>.")
+		endif()
+		set(DSSH_MATH_LINK_LIB m PARENT_SCOPE)
+	endif()
+	cmake_pop_check_state()
+endfunction()
+dssh_find_math_link_library()
+
+# Match the POSIX namespace used by library sources and tests. Older Apple
+# headers hide timespec_get / TIME_UTC in this namespace even in C11 mode.
+# The new cache key intentionally discards the old, unrestricted probe result.
+function(dssh_find_timespec_get)
+	dssh_push_platform_check_state()
+	if(NOT WIN32)
+		list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_POSIX_C_SOURCE=200809L)
+	endif()
+	check_c_source_compiles("
+		#include <time.h>
+		int main(void) {
+			struct timespec ts;
+			int (*get_time)(struct timespec *, int) = timespec_get;
+			return get_time(&ts, TIME_UTC) == TIME_UTC ? 0 : 1;
+		}
+	" DSSH_HAVE_TIMESPEC_GET)
+	if(NOT DSSH_HAVE_TIMESPEC_GET AND UNIX)
+		check_c_source_compiles("
+			#include <time.h>
+			int main(void) {
+				struct timespec ts;
+				int (*get_time)(clockid_t, struct timespec *) = clock_gettime;
+				return get_time(CLOCK_REALTIME, &ts);
+			}
+		" DSSH_HAVE_CLOCK_GETTIME)
+	endif()
+	cmake_pop_check_state()
+endfunction()
+dssh_find_timespec_get()
+
+set(DSSH_TIME_SHIM_SOURCES "")
+set(DSSH_TIME_SHIM_DEFINITIONS "")
+if(NOT DSSH_HAVE_TIMESPEC_GET)
+	if(UNIX AND DSSH_HAVE_CLOCK_GETTIME)
+		set(DSSH_TIME_SHIM_SOURCES posix/timespec.c)
+		set(DSSH_TIME_SHIM_DEFINITIONS DSSH_TIMESPEC_GET_SHIM)
+		message(STATUS "Using POSIX timespec_get compatibility shim")
+	else()
+		message(FATAL_ERROR
+			"DeuceSSH requires timespec_get / TIME_UTC in <time.h>, "
+			"or POSIX clock_gettime(CLOCK_REALTIME) for its compatibility shim.")
+	endif()
 endif()
 
 # C11 threads: glibc (2.28+), recent macOS SDKs, and FreeBSD 12+ have
@@ -120,13 +179,22 @@ endif()
 # macOS and NetBSD have pthread but no <threads.h>; MinGW-w64 has
 # neither.  Probe libc first, then libstdthreads, then fall back to a
 # platform shim.
-check_c_source_compiles("
-	#include <threads.h>
-	int main(void) { mtx_t m; mtx_init(&m, mtx_plain); return 0; }
-" HAVE_THREADS_IN_LIBC)
+function(dssh_find_threads_in_libc)
+	dssh_push_platform_check_state()
+	# Header availability alone does not establish a native implementation.
+	# A parent may use static-library try-compiles or unrelated probe libraries;
+	# neither may hide this executable's actual C11 thread link dependency.
+	check_c_source_compiles("
+		#include <threads.h>
+		int main(void) { mtx_t m; return mtx_init(&m, mtx_plain); }
+	" DSSH_THREADS_IN_LIBC_LINKS)
+	cmake_pop_check_state()
+endfunction()
+# Use a fresh result key rather than trust the former unrestricted probe cache.
+dssh_find_threads_in_libc()
 set(DSSH_THREADS_SHIM_SOURCES "")
 set(DSSH_THREADS_SHIM_INCLUDE "")
-if(NOT HAVE_THREADS_IN_LIBC)
+if(NOT DSSH_THREADS_IN_LIBC_LINKS)
 	find_library(STDTHREADS_LIB stdthreads)
 	if(STDTHREADS_LIB)
 		set(THREADS_LINK_LIB ${STDTHREADS_LIB})
@@ -149,6 +217,7 @@ if(NOT HAVE_THREADS_IN_LIBC)
 		    ${CMAKE_CURRENT_SOURCE_DIR}/posix)
 		find_package(Threads REQUIRED)
 		set(THREADS_LINK_LIB Threads::Threads)
+		string(APPEND DSSH_CONFIG_FIND_DEPENDENCY "\nfind_dependency(Threads)")
 	else()
 		message(FATAL_ERROR
 			"C11 <threads.h> not found in libc or libstdthreads, "
@@ -157,9 +226,6 @@ if(NOT HAVE_THREADS_IN_LIBC)
 else()
 	set(THREADS_LINK_LIB "")
 endif()
-# Backwards-compat alias: older code paths referenced the Win32-only
-# name.  Keep both pointing at whichever shim is active.
-set(DSSH_WIN32_THREADS_SOURCES ${DSSH_THREADS_SHIM_SOURCES})
 
 # Algorithm modules -- backend-specific
 if(WIN32)
@@ -171,7 +237,7 @@ else()
 	# Strict C modes do not implicitly expose strdup() or the POSIX APIs used
 	# by the file writer and the pthread-backed C11 threads shim.
 	set_source_files_properties(ssh-auth.c ssh-conn.c
-		key_algo/private-key-file-posix.c posix/threads.c
+		key_algo/private-key-file-posix.c posix/threads.c posix/timespec.c
 		PROPERTIES COMPILE_DEFINITIONS _POSIX_C_SOURCE=200809L)
 	# NetBSD declares fchmod() in its XSI namespace, not its POSIX namespace.
 	set_property(SOURCE key_algo/private-key-file-posix.c APPEND PROPERTY
@@ -180,9 +246,9 @@ else()
 	set(DSSH_PC_LIBS_PRIVATE "")
 endif()
 
-if(STDTHREADS_LIB)
+if(THREADS_LINK_LIB AND STDTHREADS_LIB)
 	string(APPEND DSSH_PC_LIBS_PRIVATE " ${STDTHREADS_LIB}")
-elseif(TARGET Threads::Threads AND CMAKE_THREAD_LIBS_INIT)
+elseif(THREADS_LINK_LIB STREQUAL "Threads::Threads" AND CMAKE_THREAD_LIBS_INIT)
 	string(REPLACE ";" " " DSSH_PC_THREAD_LIBS
 		"${CMAKE_THREAD_LIBS_INIT}")
 	string(APPEND DSSH_PC_LIBS_PRIVATE " ${DSSH_PC_THREAD_LIBS}")
@@ -194,6 +260,9 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 	foreach(lib IN LISTS CMAKE_C_IMPLICIT_LINK_LIBRARIES)
 		list(REMOVE_ITEM DSSH_PC_CXX_RUNTIME_LIBRARIES "${lib}")
 	endforeach()
+	if(DSSH_MATH_LINK_LIB)
+		list(REMOVE_ITEM DSSH_PC_CXX_RUNTIME_LIBRARIES "${DSSH_MATH_LINK_LIB}")
+	endif()
 	foreach(lib IN LISTS DSSH_PC_CXX_RUNTIME_LIBRARIES)
 		if(IS_ABSOLUTE "${lib}" OR "${lib}" MATCHES "^-")
 			string(APPEND DSSH_PC_LIBS_PRIVATE " ${lib}")
@@ -202,6 +271,9 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 		endif()
 	endforeach()
 endif()
+if(DSSH_MATH_LINK_LIB)
+	string(APPEND DSSH_PC_LIBS_PRIVATE " -l${DSSH_MATH_LINK_LIB}")
+endif()
 string(STRIP "${DSSH_PC_LIBS_PRIVATE}" DSSH_PC_LIBS_PRIVATE)
 
 if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
@@ -209,8 +281,6 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
 		kex/curve25519-sha256-openssl.c
 		kex/dh-gex-sha256-openssl.c
 		kex/sntrup761x25519-sha512-openssl.c
-		kex/mlkem768x25519-sha256-openssl.c
-		kex/mlkem768.c
 		key_algo/ssh-ed25519-openssl.c
 		key_algo/rsa-sha2-256-openssl.c
 		key_algo/rsa-sha2-512-openssl.c
@@ -227,14 +297,14 @@ elseif(DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
 		kex/dh-gex-sha256-botan.cpp
 		kex/sntrup761x25519-sha512-botan.c
 		kex/sntrup761x25519-sha512-botan.cpp
-		kex/mlkem768x25519-sha256-botan.c
-		kex/mlkem768x25519-sha256-botan.cpp
 		key_algo/ssh-ed25519-botan.c
 		key_algo/ssh-ed25519-botan.cpp
 		key_algo/rsa-sha2-256-botan.c
 		key_algo/rsa-sha2-256-botan.cpp
 		key_algo/rsa-sha2-512-botan.c
 		key_algo/rsa-sha2-512-botan.cpp
+		key_algo/native-key-pool.c
+		key_algo/native-key-botan.cpp
 		enc/aes256-ctr-botan.c
 		enc/aes256-ctr-botan.cpp
 		enc/aes128-cbc-botan.c
@@ -250,14 +320,21 @@ set(DEUCESSH_SOURCES
 	ssh-trans.c ssh.c ssh-auth.c ssh-conn.c
 	${DSSH_CRYPTO_IMPL}
 	${DSSH_PRIVATE_KEY_FILE_SOURCE}
+	key_algo/signature-result.c
+	key_algo/client-key.c
+	kex/workspace.c
 	kex/curve25519-sha256.c
 	kex/hybrid-pq-kex.c
+	kex/mlkem768x25519-sha256.c
+	kex/mlkem768.c
 	kex/dh-gex-sha256.c
+	kex/dh-fixed.c
 	kex/dh-gex-groups.c
 	kex/sntrup761.c
 	kex/sntrup761_optblocker.c
 	${DSSH_ALG_SOURCES}
-	${DSSH_WIN32_THREADS_SOURCES}
+	${DSSH_THREADS_SHIM_SOURCES}
+	${DSSH_TIME_SHIM_SOURCES}
 	enc/none.c
 	mac/none.c
 	comp/none.c
@@ -267,156 +344,16 @@ set(DEUCESSH_PUBLIC_HEADERS
 	deucessh.h deucessh-auth.h deucessh-conn.h
 	deucessh-algorithms.h deucessh-crypto.h deucessh-kex.h
 	deucessh-key-algo.h deucessh-enc.h deucessh-mac.h
-	deucessh-comp.h deucessh-portable.h
+	deucessh-comp.h deucessh-lang.h deucessh-portable.h deucessh-result.h
+	deucessh-abi.h
 )
 
-include(CheckCCompilerFlag)
-include(CheckLinkerFlag)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/DeuceSSHOptions.cmake")
+dssh_configure_options()
 
-# Probe for supported hardening flags (per OpenSSF Compiler Hardening Guide)
-set(DEUCESSH_COMPILE_OPTIONS "")
-set(DEUCESSH_LINK_OPTIONS "")
-
-if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
-	# Baseline warnings (GCC 2.95+, Clang 4+).  -Werror=implicit,
-	# -Werror=incompatible-pointer-types, -Werror=int-conversion are
-	# C-only diagnostics; g++ rejects them with "not valid for C++".
-	# Targeted -Werror=... stays on in all configs: those catch
-	# C-obsolete constructs and security-relevant misuse, not stylistic
-	# warnings that a future compiler might broaden.
-	list(APPEND DEUCESSH_COMPILE_OPTIONS
-		-Wall -Wpedantic -pedantic
-		-Wformat -Wformat=2
-		-Wimplicit-fallthrough
-		-Werror=format-security
-		$<$<COMPILE_LANGUAGE:C>:-Werror=implicit>
-		$<$<COMPILE_LANGUAGE:C>:-Werror=incompatible-pointer-types>
-		$<$<COMPILE_LANGUAGE:C>:-Werror=int-conversion>)
-
-	# Blanket -Werror is Debug-only.  Release/RelWithDebInfo/MinSizeRel
-	# must tolerate future compiler warnings — failing a packager's
-	# build on a new diagnostic is hostile.
-	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-		list(APPEND DEUCESSH_COMPILE_OPTIONS -Werror)
-		set(DEUCESSH_PROBE_WERROR "-Werror")
-	else()
-		set(DEUCESSH_PROBE_WERROR "")
-	endif()
-
-	# Strict probes: AppleClang accepts a number of GCC-style
-	# hardening flags (-fstack-clash-protection, -fstrict-flex-arrays,
-	# -ftrivial-auto-var-init, ...) but treats them as no-ops, emitting
-	# -Wunused-command-line-argument.  Plain check_c_compiler_flag
-	# would then return HAVE_X=YES even though the resulting binary
-	# gets none of the actual mitigation.  Gate the probe on the
-	# unused-arg warning so silently-discarded flags are correctly
-	# rejected.  In Debug builds we additionally inherit -Werror so
-	# the probe matches the real compile discipline. CMake selects the
-	# same C dialect for these probes and the real targets.
-	set(_dssh_saved_required_flags "${CMAKE_REQUIRED_FLAGS}")
-	string(APPEND CMAKE_REQUIRED_FLAGS
-	    " -Werror=unused-command-line-argument ${DEUCESSH_PROBE_WERROR}")
-
-	check_c_compiler_flag(-Wconversion HAVE_WCONVERSION)
-	if(HAVE_WCONVERSION)
-		list(APPEND DEUCESSH_COMPILE_OPTIONS -Wconversion)
-	endif()
-
-	# GCC-only warnings
-	if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-		check_c_compiler_flag(-Wtrampolines HAVE_WTRAMPOLINES)
-		if(HAVE_WTRAMPOLINES)
-			list(APPEND DEUCESSH_COMPILE_OPTIONS -Wtrampolines)
-		endif()
-		check_c_compiler_flag(-Wbidi-chars=any HAVE_WBIDI)
-		if(HAVE_WBIDI)
-			list(APPEND DEUCESSH_COMPILE_OPTIONS -Wbidi-chars=any)
-		endif()
-		check_c_compiler_flag(-fzero-init-padding-bits=all HAVE_ZERO_PADDING)
-		if(HAVE_ZERO_PADDING)
-			list(APPEND DEUCESSH_COMPILE_OPTIONS
-				-fzero-init-padding-bits=all)
-		endif()
-	endif()
-
-	# Runtime protection — probe each flag
-	check_c_compiler_flag(-fstack-protector-strong HAVE_STACK_PROTECTOR)
-	if(HAVE_STACK_PROTECTOR)
-		list(APPEND DEUCESSH_COMPILE_OPTIONS -fstack-protector-strong)
-	endif()
-
-	check_c_compiler_flag(-fstack-clash-protection HAVE_STACK_CLASH)
-	if(HAVE_STACK_CLASH)
-		list(APPEND DEUCESSH_COMPILE_OPTIONS -fstack-clash-protection)
-	endif()
-
-	check_c_compiler_flag(-fstrict-flex-arrays=3 HAVE_STRICT_FLEX)
-	if(HAVE_STRICT_FLEX)
-		list(APPEND DEUCESSH_COMPILE_OPTIONS -fstrict-flex-arrays=3)
-	endif()
-
-	check_c_compiler_flag(-ftrivial-auto-var-init=zero HAVE_TRIVIAL_INIT)
-	if(HAVE_TRIVIAL_INIT)
-		list(APPEND DEUCESSH_COMPILE_OPTIONS
-			-ftrivial-auto-var-init=zero)
-	endif()
-
-	# UB mitigations — probe each (older AppleClang rejects
-	# -fno-delete-null-pointer-checks with -Werror,-Wignored-optimization-argument).
-	check_c_compiler_flag(-fno-delete-null-pointer-checks HAVE_NO_DELETE_NULL)
-	if(HAVE_NO_DELETE_NULL)
-		list(APPEND DEUCESSH_COMPILE_OPTIONS -fno-delete-null-pointer-checks)
-	endif()
-	check_c_compiler_flag(-fno-strict-overflow HAVE_NO_STRICT_OVERFLOW)
-	if(HAVE_NO_STRICT_OVERFLOW)
-		list(APPEND DEUCESSH_COMPILE_OPTIONS -fno-strict-overflow)
-	endif()
-	check_c_compiler_flag(-fno-strict-aliasing HAVE_NO_STRICT_ALIASING)
-	if(HAVE_NO_STRICT_ALIASING)
-		list(APPEND DEUCESSH_COMPILE_OPTIONS -fno-strict-aliasing)
-	endif()
-
-	# FORTIFY_SOURCE (requires -O1+, incompatible with sanitizers)
-	if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-		list(APPEND DEUCESSH_COMPILE_OPTIONS
-			-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3)
-	endif()
-
-	# Architecture-specific control-flow protection
-	if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
-		check_c_compiler_flag(-fcf-protection=full HAVE_CF_PROTECTION)
-		if(HAVE_CF_PROTECTION)
-			list(APPEND DEUCESSH_COMPILE_OPTIONS
-				-fcf-protection=full)
-		endif()
-	elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|ARM64|arm64")
-		check_c_compiler_flag(-mbranch-protection=standard
-			HAVE_BRANCH_PROTECTION)
-		if(HAVE_BRANCH_PROTECTION)
-			list(APPEND DEUCESSH_COMPILE_OPTIONS
-				-mbranch-protection=standard)
-		endif()
-	endif()
-	set(CMAKE_REQUIRED_FLAGS "${_dssh_saved_required_flags}")
-elseif(MSVC)
-	list(APPEND DEUCESSH_COMPILE_OPTIONS /W4)
-	list(APPEND DEUCESSH_COMPILE_OPTIONS /experimental:c11atomics)
-endif()
-
-# Linker hardening flags (ELF only)
-if(UNIX AND NOT APPLE)
-	foreach(flag
-		"-Wl,-z,nodlopen"
-		"-Wl,-z,noexecstack"
-		"-Wl,--as-needed"
-		"-Wl,--no-copy-dt-needed-entries")
-		string(MAKE_C_IDENTIFIER "${flag}" flag_var)
-		check_linker_flag(C "${flag}" ${flag_var})
-		if(${flag_var})
-			list(APPEND DEUCESSH_LINK_OPTIONS "${flag}")
-		endif()
-	endforeach()
-endif()
+include(GNUInstallDirs)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/DeuceSSHABI.cmake")
+dssh_prepare_abi()
 
 set(DEUCESSH_INSTALL_TARGETS "")
 
@@ -431,12 +368,17 @@ if(DEUCESSH_BUILD_STATIC)
 		set_property(TARGET deucessh_static PROPERTY CXX_STANDARD 20)
 		set_property(TARGET deucessh_static PROPERTY CXX_STANDARD_REQUIRED ON)
 	endif()
-	set_property(TARGET deucessh_static PROPERTY OUTPUT_NAME deucessh)
+	set(DSSH_STATIC_OUTPUT_NAME deucessh)
+	if(MSVC)
+		# The DLL import library also uses deucessh.lib.
+		set(DSSH_STATIC_OUTPUT_NAME deucessh-static)
+	endif()
+	set_property(TARGET deucessh_static PROPERTY OUTPUT_NAME ${DSSH_STATIC_OUTPUT_NAME})
 	set_property(TARGET deucessh_static PROPERTY POSITION_INDEPENDENT_CODE ON)
 	target_include_directories(deucessh_static
 		PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-			$<INSTALL_INTERFACE:include/deucessh>)
+			$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/deucessh>)
 	if(DSSH_THREADS_SHIM_INCLUDE)
 		target_include_directories(deucessh_static BEFORE
 			PRIVATE ${DSSH_THREADS_SHIM_INCLUDE})
@@ -445,9 +387,10 @@ if(DEUCESSH_BUILD_STATIC)
 		PRIVATE ${DSSH_CRYPTO_INCLUDE})
 	target_link_libraries(deucessh_static
 		INTERFACE ${DSSH_CRYPTO_LIB_INTERFACE} ${THREADS_LINK_LIB}
-			${DSSH_PRIVATE_KEY_FILE_LIB})
+			${DSSH_PRIVATE_KEY_FILE_LIB} ${DSSH_PC_CXX_RUNTIME_LIBRARIES} ${DSSH_MATH_LINK_LIB})
 	target_compile_definitions(deucessh_static
 		PRIVATE DSSH_VERSION_STRING="${PROJECT_VERSION}"
+		${DSSH_TIME_SHIM_DEFINITIONS}
 		$<$<CONFIG:Release>:NDEBUG>)
 	target_compile_options(deucessh_static PRIVATE ${DEUCESSH_COMPILE_OPTIONS})
 	if(BOTAN3_VENDORED_BUILD_TARGET)
@@ -469,12 +412,13 @@ if(DEUCESSH_BUILD_SHARED)
 	endif()
 	set_property(TARGET deucessh_shared PROPERTY OUTPUT_NAME deucessh)
 	set_property(TARGET deucessh_shared PROPERTY POSITION_INDEPENDENT_CODE ON)
+	set_property(TARGET deucessh_shared PROPERTY WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 	set_property(TARGET deucessh_shared PROPERTY VERSION ${PROJECT_VERSION})
-	set_property(TARGET deucessh_shared PROPERTY SOVERSION ${PROJECT_VERSION_MAJOR})
+	set_property(TARGET deucessh_shared PROPERTY SOVERSION ${DEUCESSH_ABI_MAJOR})
 	target_include_directories(deucessh_shared
 		PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-			$<INSTALL_INTERFACE:include/deucessh>)
+			$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/deucessh>)
 	if(DSSH_THREADS_SHIM_INCLUDE)
 		target_include_directories(deucessh_shared BEFORE
 			PRIVATE ${DSSH_THREADS_SHIM_INCLUDE})
@@ -483,35 +427,41 @@ if(DEUCESSH_BUILD_SHARED)
 		PRIVATE ${DSSH_CRYPTO_INCLUDE})
 	target_link_libraries(deucessh_shared
 		PRIVATE ${DSSH_CRYPTO_LIB_PRIVATE} ${THREADS_LINK_LIB}
-			${DSSH_PRIVATE_KEY_FILE_LIB})
+			${DSSH_PRIVATE_KEY_FILE_LIB} ${DSSH_MATH_LINK_LIB})
 	target_compile_definitions(deucessh_shared
 		PRIVATE
 			DSSH_SHARED
+			${DSSH_TIME_SHIM_DEFINITIONS}
 			DSSH_VERSION_STRING="${PROJECT_VERSION}"
 			$<$<CONFIG:Release>:NDEBUG>)
 	target_compile_options(deucessh_shared PRIVATE
-		${DEUCESSH_COMPILE_OPTIONS}
-		$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>:
-			-fvisibility=hidden -fno-semantic-interposition>)
+		${DEUCESSH_COMPILE_OPTIONS} ${DEUCESSH_SHARED_COMPILE_OPTIONS})
 	if(BOTAN3_VENDORED_BUILD_TARGET)
 		add_dependencies(deucessh_shared ${BOTAN3_VENDORED_BUILD_TARGET})
 	endif()
 	# ELF shared library hardening and optimization (Linux, FreeBSD)
 	if(UNIX AND NOT APPLE)
 		target_link_options(deucessh_shared PRIVATE
-			-Wl,-z,relro,-z,now
-			-Wl,--hash-style=gnu
-			-Wl,-Bsymbolic-functions
-			-Wl,-O2
 			${DEUCESSH_LINK_OPTIONS})
+	endif()
+	dssh_apply_abi(deucessh_shared)
+	if(WIN32)
+		target_compile_definitions(deucessh_shared INTERFACE DSSH_SHARED_IMPORT)
 	endif()
 	list(APPEND DEUCESSH_INSTALL_TARGETS deucessh_shared)
 endif()
 
 # --- Install ---
 
-include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
+
+set(DSSH_INSTALL_CONFIGURATIONS "${CMAKE_CONFIGURATION_TYPES}")
+if(NOT DSSH_INSTALL_CONFIGURATIONS)
+	set(DSSH_INSTALL_CONFIGURATIONS "${CMAKE_BUILD_TYPE}")
+endif()
+configure_file(cmake/DeuceSSHInstallConfig.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/DeuceSSHInstallConfig.cmake @ONLY)
+install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/DeuceSSHInstallConfig.cmake)
 
 install(TARGETS ${DEUCESSH_INSTALL_TARGETS}
 	EXPORT deucesshTargets
@@ -521,6 +471,9 @@ install(TARGETS ${DEUCESSH_INSTALL_TARGETS}
 
 install(FILES ${DEUCESSH_PUBLIC_HEADERS}
 	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/deucessh)
+
+install(FILES LICENSE.md
+	DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/deucessh)
 
 install(EXPORT deucesshTargets
 	FILE deucesshTargets.cmake
@@ -561,7 +514,7 @@ endif()
 
 if(DEUCESSH_BUILD_STATIC)
 	set(DSSH_PC_STATIC_LIBRARY
-		"${CMAKE_STATIC_LIBRARY_PREFIX}deucessh${CMAKE_STATIC_LIBRARY_SUFFIX}")
+		"${CMAKE_STATIC_LIBRARY_PREFIX}${DSSH_STATIC_OUTPUT_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}")
 endif()
 
 if(DEUCESSH_BUILD_SHARED)
@@ -579,10 +532,13 @@ endif()
 configure_file(deucessh.pc.in
 	${CMAKE_CURRENT_BINARY_DIR}/deucessh.pc @ONLY)
 
-set(DEUCESSH_PC_FILES ${CMAKE_CURRENT_BINARY_DIR}/deucessh.pc)
 if(DEUCESSH_BUILD_STATIC)
 	configure_file(deucessh-static.pc.in
 		${CMAKE_CURRENT_BINARY_DIR}/deucessh-static.pc @ONLY)
+endif()
+
+set(DEUCESSH_PC_FILES ${CMAKE_CURRENT_BINARY_DIR}/deucessh.pc)
+if(DEUCESSH_BUILD_STATIC)
 	list(APPEND DEUCESSH_PC_FILES
 		${CMAKE_CURRENT_BINARY_DIR}/deucessh-static.pc)
 endif()
@@ -616,6 +572,21 @@ endif()
 
 # --- Test suite ---
 
+option(DEUCESSH_BUILD_ZLIB_EXAMPLE "Build optional external zlib module example" OFF)
+if(DEUCESSH_BUILD_ZLIB_EXAMPLE)
+	find_package(ZLIB REQUIRED)
+	add_library(dssh_example_zlib STATIC examples/zlib-comp.c)
+	set_property(TARGET dssh_example_zlib PROPERTY C_STANDARD 17)
+	set_property(TARGET dssh_example_zlib PROPERTY C_STANDARD_REQUIRED ON)
+	target_compile_options(dssh_example_zlib PRIVATE ${DEUCESSH_COMPILE_OPTIONS})
+	target_include_directories(dssh_example_zlib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/examples")
+	if(DEUCESSH_BUILD_STATIC)
+		target_link_libraries(dssh_example_zlib PRIVATE deucessh_static ZLIB::ZLIB)
+	else()
+		target_link_libraries(dssh_example_zlib PRIVATE deucessh_shared ZLIB::ZLIB)
+	endif()
+endif()
+
 option(DEUCESSH_BUILD_TESTS "Build test suite" OFF)
 option(DEUCESSH_TEST_OPENSSH "Build OpenSSH interop tests" OFF)
 option(DEUCESSH_TEST_SYNCHRONET "Build Synchronet interop tests" OFF)
@@ -624,6 +595,8 @@ if(DEUCESSH_BUILD_TESTS)
 	enable_testing()
 	add_subdirectory(test)
 
-	add_executable(kex_test EXCLUDE_FROM_ALL test/kex_test.c)
-	target_link_libraries(kex_test PRIVATE deucessh_test_lib)
+	if(TARGET deucessh_test_lib)
+		add_executable(kex_test EXCLUDE_FROM_ALL test/kex_test.c)
+		target_link_libraries(kex_test PRIVATE deucessh_test_lib)
+	endif()
 endif()

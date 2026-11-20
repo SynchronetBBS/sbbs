@@ -4,9 +4,17 @@
 #define DH_GEX_GROUPS_H
 
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdint.h>
 
+#include "deucessh-portable.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct dssh_dh_gex_provider;
+struct dssh_dh_gex_group_result;
 
 extern const uint8_t rfc3526_grp14_p[]; /* 2048-bit, 256 bytes */
 extern const uint8_t rfc3526_grp15_p[]; /* 3072-bit, 384 bytes */
@@ -23,9 +31,16 @@ struct rfc3526_group {
 extern const struct rfc3526_group rfc3526_groups[];
 #define RFC3526_NGROUPS 5
 
-int default_select_group(uint32_t min, uint32_t preferred, uint32_t max, uint8_t **p_out, size_t *p_len,
-    uint8_t **g_out, size_t *g_len, void *cbdata);
+int default_select_group(uint32_t min, uint32_t preferred, uint32_t max,
+    struct dssh_dh_gex_group_result *out, void *cbdata);
 
 extern struct dssh_dh_gex_provider default_provider;
+
+DSSH_PRIVATE bool dssh_dhgex_group_known(const uint8_t *p, size_t p_len,
+    const uint8_t *g, size_t g_len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DH_GEX_GROUPS_H */

@@ -1,5 +1,10 @@
 # DeuceSSH — OpenSSF Compiler Hardening Audit
 
+> Release audit reconciliation is in progress. This historical report
+> predates the C++20 Botan backend and is not a current compiler/platform
+> evidence matrix. Flag applicability and build/export behavior remain
+> tracked in [the release audit](release-1.0-audit.md).
+
 Audit against the OpenSSF "Compiler Options Hardening Guide for C and C++"
 (https://best.openssf.org/Compiler-Hardening-Guides/Compiler-Options-Hardening-Guide-for-C-and-C++.html).
 

@@ -3,8 +3,8 @@
  * test enc/mac modules with failure injection.
  *
  * These tests exercise error branches in send_packet, recv_packet,
- * and newkeys that are impossible to reach with real crypto modules
- * (which never fail under normal conditions).
+ * and newkeys using deterministic module failures. Native-provider failure
+ * injection and packet validation have separate fixtures.
  */
 
 #include <stddef.h>
@@ -21,6 +21,9 @@
 #include "mock_io.h"
 #include "test_enc.h"
 #include "test_mac.h"
+#include "dssh_test_alloc.h"
+#include "dssh_test_ossl.h"
+#include "session_pair_fixture.h"
 
 
 /* ================================================================
@@ -92,113 +95,75 @@ register_test_algorithms(void)
 	return 0;
 }
 
-struct handshake_ctx {
-	struct mock_io_state io;
-	dssh_session client;
-	dssh_session server;
-	int client_result;
-	int server_result;
-};
-
-static int handshake_client_thread(void *arg) {
-	struct handshake_ctx *ctx = arg;
-	ctx->client_result = dssh_transport_handshake(ctx->client);
-	if (ctx->client_result != 0) {
-		mock_io_close_c2s(&ctx->io);
-		mock_io_close_s2c(&ctx->io);
-	}
-	return 0;
-}
-static int handshake_server_thread(void *arg) {
-	struct handshake_ctx *ctx = arg;
-	ctx->server_result = dssh_transport_handshake(ctx->server);
-	if (ctx->server_result != 0) {
-		mock_io_close_c2s(&ctx->io);
-		mock_io_close_s2c(&ctx->io);
-	}
-	return 0;
-}
-
-static int
-handshake_setup_config(struct handshake_ctx *ctx, bool gather)
-{
-	memset(ctx, 0, sizeof(*ctx));
-	dssh_test_reset_global_config();
-	test_enc_reset();
-	test_mac_reset();
-
-	if (gather && dssh_transport_set_tx_gather(mock_tx_gather_dispatch) < 0)
-		return -1;
-	if (register_test_algorithms() < 0)
-		return -1;
-	if (dssh_ed25519_generate_key() < 0)
-		return -1;
-	if (mock_io_init(&ctx->io, 0) < 0)
-		return -1;
-
-	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
-	    mock_rxline_dispatch, mock_extra_line_cb);
-
-	ctx->client = dssh_session_init(true, 0);
-	if (ctx->client == NULL) {
-		mock_io_free(&ctx->io);
-		return -1;
-	}
-	dssh_session_set_cbdata(ctx->client, &ctx->io, &ctx->io,
-	    &ctx->io, &ctx->io);
-	dssh_session_set_hostkey_verify_cb(ctx->client, dssh_test_accept_hostkey, NULL);
-
-	ctx->server = dssh_session_init(false, 0);
-	if (ctx->server == NULL) {
-		dssh_session_cleanup(ctx->client);
-		mock_io_free(&ctx->io);
-		return -1;
-	}
-	dssh_session_set_cbdata(ctx->server, &ctx->io, &ctx->io,
-	    &ctx->io, &ctx->io);
-
-	thrd_t ct, st;
-	if (thrd_create(&ct, handshake_client_thread, ctx) != thrd_success) {
-		dssh_session_cleanup(ctx->server);
-		dssh_session_cleanup(ctx->client);
-		mock_io_free(&ctx->io);
-		return -1;
-	}
-	if (thrd_create(&st, handshake_server_thread, ctx) != thrd_success) {
-		dssh_session_terminate(ctx->client);
-		mock_io_close_c2s(&ctx->io);
-		mock_io_close_s2c(&ctx->io);
-		thrd_join(ct, NULL);
-		dssh_session_cleanup(ctx->server);
-		dssh_session_cleanup(ctx->client);
-		mock_io_free(&ctx->io);
-		return -1;
-	}
-	thrd_join(ct, NULL);
-	thrd_join(st, NULL);
-
-	if (ctx->client_result != 0 || ctx->server_result != 0)
-		return -1;
-	return 0;
-}
-
-static int
-handshake_setup(struct handshake_ctx *ctx)
-{
-	return handshake_setup_config(ctx, false);
-}
+static int register_oversized_algorithms(void);
 
 static void
-handshake_cleanup(struct handshake_ctx *ctx)
+handshake_cleanup(struct test_session_pair *ctx)
 {
+	dssh_test_alloc_reset();
+	dssh_test_ossl_reset();
+	test_pair_destroy(ctx);
 	test_enc_reset();
 	test_mac_reset();
-	if (ctx->server)
-		dssh_session_cleanup(ctx->server);
-	if (ctx->client)
-		dssh_session_cleanup(ctx->client);
-	mock_io_free(&ctx->io);
 	dssh_test_reset_global_config();
+}
+
+void
+dssh_test_failure_cleanup(void)
+{
+	dssh_test_alloc_reset();
+	dssh_test_ossl_reset();
+	test_pair_destroy_active();
+	test_enc_reset();
+	test_mac_reset();
+	dssh_test_reset_global_config();
+}
+
+static int
+handshake_prepare_observed(struct test_session_pair *ctx, bool gather, bool oversized, int *calls)
+{
+	test_pair_begin(ctx);
+	dssh_test_reset_global_config();
+	test_enc_reset();
+	test_mac_reset();
+	int ret = gather ? dssh_transport_set_tx_gather(mock_tx_gather_dispatch) : 0;
+	if (ret == 0)
+		ret = oversized ? register_oversized_algorithms() : register_test_algorithms();
+	if (ret == 0)
+		ret = dssh_ed25519_generate_key();
+	if (ret == 0)
+		ret = dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
+		    mock_rxline_dispatch, mock_extra_line_cb);
+	if (ret == 0)
+		ret = test_pair_open(ctx);
+	if (calls != NULL)
+		*calls = dssh_test_alloc_count();
+	if (ret < 0)
+		handshake_cleanup(ctx);
+	return ret;
+}
+
+static int
+handshake_prepare(struct test_session_pair *ctx, bool gather, bool oversized)
+{
+	return handshake_prepare_observed(ctx, gather, oversized, NULL);
+}
+
+static int
+handshake_setup_config(struct test_session_pair *ctx, bool gather)
+{
+	int ret = handshake_prepare(ctx, gather, false);
+	if (ret == 0)
+		ret = test_pair_run(ctx, dssh_transport_handshake);
+	if (ret < 0)
+		handshake_cleanup(ctx);
+	return ret;
+}
+
+static int
+handshake_setup(struct test_session_pair *ctx)
+{
+	return handshake_setup_config(ctx, false);
 }
 
 static bool
@@ -224,6 +189,7 @@ buffer_is_zero(const uint8_t *buf, size_t len)
 
 struct channel_slot_fixture {
 	struct dssh_channel_s  channel;
+	struct dssh_channel_id protocol_id;
 	struct dssh_channel_s *channels[1];
 };
 
@@ -266,7 +232,7 @@ channel_slot_fixture_setup(dssh_session sess, struct channel_slot_fixture *fixtu
 	}
 	if (alloc_channel_slots(sess, &fixture->channel) < 0) {
 		free_tx_slot(&fixture->channel.wa_slot);
-		free_tx_slot(&fixture->channel.chan_fail_slot);
+		free_tx_slot(&fixture->channel.chan_reply_slot);
 		cnd_destroy(&fixture->channel.poll_cnd);
 		mtx_destroy(&fixture->channel.cb_mtx);
 		mtx_destroy(&fixture->channel.buf_mtx);
@@ -276,11 +242,15 @@ channel_slot_fixture_setup(dssh_session sess, struct channel_slot_fixture *fixtu
 		return -1;
 	}
 
+	fixture->protocol_id = (struct dssh_channel_id){.refs = 1,
+	    .phase = DSSH_CHANNEL_ID_CONFIRMED, .local_assigned = true};
 	fixture->channel.sess = sess;
+	fixture->channel.protocol_id = &fixture->protocol_id;
 	atomic_init(&fixture->channel.tx_refs, 0);
 	atomic_init(&fixture->channel.terminate_woken, false);
 	fixture->channels[0]  = &fixture->channel;
 	sess->channels         = fixture->channels;
+	sess->channel_ids      = &fixture->protocol_id;
 	sess->channel_count    = 1;
 	sess->channel_capacity = 1;
 	atomic_store(&sess->conn_initialized, true);
@@ -292,11 +262,12 @@ channel_slot_fixture_cleanup(dssh_session sess, struct channel_slot_fixture *fix
 {
 	atomic_store(&sess->conn_initialized, false);
 	sess->channels         = NULL;
+	sess->channel_ids      = NULL;
 	sess->channel_count    = 0;
 	sess->channel_capacity = 0;
 
 	free_tx_slot(&fixture->channel.wa_slot);
-	free_tx_slot(&fixture->channel.chan_fail_slot);
+	free_tx_slot(&fixture->channel.chan_reply_slot);
 	cnd_destroy(&fixture->channel.poll_cnd);
 	mtx_destroy(&fixture->channel.cb_mtx);
 	mtx_destroy(&fixture->channel.buf_mtx);
@@ -321,7 +292,7 @@ arm_channel_wa_slot(struct dssh_channel_s *channel)
 static int
 test_channel_slot_drain_fatal(void)
 {
-	struct handshake_ctx ctx;
+	struct test_session_pair ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
@@ -342,7 +313,7 @@ test_channel_slot_drain_fatal(void)
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
 	}
-	drain_tx_slots(ctx.client);
+	int drain_result = drain_tx_slots(ctx.client);
 	tx_unlock_with_slots(ctx.client);
 
 	bool terminated = dssh_session_is_terminated(ctx.client);
@@ -358,6 +329,7 @@ test_channel_slot_drain_fatal(void)
 	handshake_cleanup(&ctx);
 
 	ASSERT_FALSE(initially_terminated);
+	ASSERT_EQ(drain_result, DSSH_ERROR_TERMINATED);
 	ASSERT_TRUE(terminated);
 	ASSERT_FALSE(ready);
 	ASSERT_EQ(lock_result, thrd_success);
@@ -368,7 +340,7 @@ test_channel_slot_drain_fatal(void)
 static int
 test_channel_slot_gather_fatal(void)
 {
-	struct handshake_ctx ctx;
+	struct test_session_pair ctx;
 	if (handshake_setup_config(&ctx, true) < 0) {
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
@@ -407,7 +379,7 @@ test_channel_slot_gather_fatal(void)
 	handshake_cleanup(&ctx);
 
 	ASSERT_FALSE(initially_terminated);
-	ASSERT_OK(gather_result);
+	ASSERT_EQ(gather_result, DSSH_ERROR_TERMINATED);
 	ASSERT_TRUE(terminated);
 	ASSERT_FALSE(ready);
 	ASSERT_EQ(lock_result, thrd_success);
@@ -422,7 +394,7 @@ test_channel_slot_gather_fatal(void)
 static int
 test_send_encrypt_error(void)
 {
-	struct handshake_ctx ctx;
+	struct test_session_pair ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
@@ -448,7 +420,7 @@ test_send_encrypt_error(void)
 static int
 test_send_mac_error(void)
 {
-	struct handshake_ctx ctx;
+	struct test_session_pair ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
@@ -474,7 +446,7 @@ test_send_mac_error(void)
 static int
 test_sensitive_commit_success_config(bool gather)
 {
-	struct handshake_ctx ctx;
+	struct test_session_pair ctx;
 	if (handshake_setup_config(&ctx, gather) < 0) {
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
@@ -542,7 +514,7 @@ observe_sensitive_terminate(dssh_session sess, void *cbdata)
 static int
 test_sensitive_commit_encrypt_error(void)
 {
-	struct handshake_ctx ctx;
+	struct test_session_pair ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
@@ -594,7 +566,7 @@ test_sensitive_commit_encrypt_error(void)
 static int
 test_sensitive_commit_too_long(void)
 {
-	struct handshake_ctx ctx;
+	struct test_session_pair ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
@@ -644,7 +616,7 @@ test_sensitive_commit_too_long(void)
 static int
 test_recv_decrypt_error_first_block(void)
 {
-	struct handshake_ctx ctx;
+	struct test_session_pair ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
@@ -677,7 +649,7 @@ test_recv_decrypt_error_first_block(void)
 static int
 test_recv_decrypt_error_remaining(void)
 {
-	struct handshake_ctx ctx;
+	struct test_session_pair ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
@@ -713,7 +685,7 @@ test_recv_decrypt_error_remaining(void)
 static int
 test_recv_mac_generate_error(void)
 {
-	struct handshake_ctx ctx;
+	struct test_session_pair ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
@@ -747,7 +719,7 @@ test_recv_mac_generate_error(void)
 static int
 test_recv_mac_mismatch(void)
 {
-	struct handshake_ctx ctx;
+	struct test_session_pair ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
@@ -777,35 +749,9 @@ test_recv_mac_mismatch(void)
 	return TEST_PASS;
 }
 
-/* ================================================================
- * recv_packet: padding_length >= packet_length (post-decrypt)
- *
- * After handshake, the test enc is active.  We craft a packet on
- * the client side where padding_length is too large.  Since the
- * test enc is a simple XOR, we can predict what the receiver will
- * see after decryption by manually constructing and encrypting.
- *
- * Actually, the simpler approach: send a valid packet, then
- * corrupt the padding_length byte in the pipe.  But with the test
- * enc active, the pipe data is encrypted and we'd need to know the
- * XOR key to target the right byte.
- *
- * Simplest: use send_packet normally (which encrypts correctly),
- * then on the receiver side, after the recv decrypts successfully,
- * the padding check should pass.  To make it fail, we'd need to
- * corrupt the decrypted data, which means corrupting before MAC
- * check... but MAC check happens first.
- *
- * This branch (L646-648) is actually guarded by the MAC -- if
- * padding is bad, the MAC would also fail.  So this branch is
- * only reachable with MAC disabled (none) or if the MAC somehow
- * passes despite bad padding.  With our test modules, the MAC
- * is a simple XOR that COULD pass despite bad padding if the
- * corruption cancels out.  But that's fragile.
- *
- * Skip this one -- it's a defense-in-depth check that can only
- * be reached if the MAC algorithm itself is broken.
- * ================================================================ */
+/* Packet framing must validate peer padding even with a valid MAC. Exact
+ * malformed-frame coverage lives in the transport/framing and module fixtures;
+ * it is not an impossible library-owned state or a reason to omit validation. */
 
 /* ================================================================
  * newkeys: enc init failure
@@ -819,62 +765,15 @@ test_recv_mac_mismatch(void)
 static int
 test_newkeys_enc_init_failure(void)
 {
-	dssh_test_reset_global_config();
-	test_enc_reset();
-	test_mac_reset();
-
-	if (register_test_algorithms() < 0)
+	struct test_session_pair ctx;
+	if (handshake_prepare(&ctx, false, false) < 0)
 		return TEST_FAIL;
-	if (dssh_ed25519_generate_key() < 0)
-		return TEST_FAIL;
-
-	struct mock_io_state io;
-	if (mock_io_init(&io, 0) < 0)
-		return TEST_FAIL;
-
-	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
-	    mock_rxline_dispatch, mock_extra_line_cb);
-
-	dssh_session client = dssh_session_init(true, 0);
-	dssh_session server = dssh_session_init(false, 0);
-	if (client == NULL || server == NULL) {
-		dssh_session_cleanup(client);
-		dssh_session_cleanup(server);
-		mock_io_free(&io);
-		dssh_test_reset_global_config();
-		return TEST_FAIL;
-	}
-	dssh_session_set_cbdata(client, &io, &io, &io, &io);
-	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
-	dssh_session_set_cbdata(server, &io, &io, &io, &io);
-
-	/* Fail the 3rd enc init call (0=client_c2s, 1=client_s2c,
-	 * 2=server_c2s -- or similar ordering).
-	 * Actually, both sides call init twice each (c2s + s2c),
-	 * so we have 4 init calls total.  Let's fail the first one.
-	 * The handshake runs in threads; the init calls happen in
-	 * newkeys which is the last step.  Fail at 0. */
 	test_enc_fail_init_at(0);
-
-	struct handshake_ctx ctx = { .io = io, .client = client, .server = server };
-	thrd_t ct, st;
-	ASSERT_THRD_CREATE(&ct, handshake_client_thread, &ctx);
-	ASSERT_THRD_CREATE(&st, handshake_server_thread, &ctx);
-	thrd_join(ct, NULL);
-
-	/* Close pipes to unblock the other side */
-	mock_io_close_c2s(&io);
-	mock_io_close_s2c(&io);
-	thrd_join(st, NULL);
-
-	/* At least one side should have failed */
-	ASSERT_TRUE(ctx.client_result != 0 || ctx.server_result != 0);
-
-	test_enc_reset();
-	dssh_session_cleanup(server);
-	dssh_session_cleanup(client);
-	mock_io_free(&io);
-	dssh_test_reset_global_config();
+	int ret = test_pair_run(&ctx, dssh_transport_handshake);
+	bool seen = test_enc_init_failure_seen();
+	bool rejected = ctx.client_result == DSSH_ERROR_INIT || ctx.server_result == DSSH_ERROR_INIT;
+	handshake_cleanup(&ctx);
+	ASSERT_TRUE(ret < 0 && seen && rejected);
 	return TEST_PASS;
 }
 
@@ -885,55 +784,15 @@ test_newkeys_enc_init_failure(void)
 static int
 test_newkeys_mac_init_failure(void)
 {
-	dssh_test_reset_global_config();
-	test_enc_reset();
-	test_mac_reset();
-
-	if (register_test_algorithms() < 0)
+	struct test_session_pair ctx;
+	if (handshake_prepare(&ctx, false, false) < 0)
 		return TEST_FAIL;
-	if (dssh_ed25519_generate_key() < 0)
-		return TEST_FAIL;
-
-	struct mock_io_state io;
-	if (mock_io_init(&io, 0) < 0)
-		return TEST_FAIL;
-
-	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
-	    mock_rxline_dispatch, mock_extra_line_cb);
-
-	dssh_session client = dssh_session_init(true, 0);
-	dssh_session server = dssh_session_init(false, 0);
-	if (client == NULL || server == NULL) {
-		dssh_session_cleanup(client);
-		dssh_session_cleanup(server);
-		mock_io_free(&io);
-		dssh_test_reset_global_config();
-		return TEST_FAIL;
-	}
-	dssh_session_set_cbdata(client, &io, &io, &io, &io);
-	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
-	dssh_session_set_cbdata(server, &io, &io, &io, &io);
-
-	/* Fail the first mac init call */
 	test_mac_fail_init_at(0);
-
-	struct handshake_ctx ctx = { .io = io, .client = client, .server = server };
-	thrd_t ct, st;
-	ASSERT_THRD_CREATE(&ct, handshake_client_thread, &ctx);
-	ASSERT_THRD_CREATE(&st, handshake_server_thread, &ctx);
-	thrd_join(ct, NULL);
-
-	mock_io_close_c2s(&io);
-	mock_io_close_s2c(&io);
-	thrd_join(st, NULL);
-
-	ASSERT_TRUE(ctx.client_result != 0 || ctx.server_result != 0);
-
-	test_mac_reset();
-	dssh_session_cleanup(server);
-	dssh_session_cleanup(client);
-	mock_io_free(&io);
-	dssh_test_reset_global_config();
+	int ret = test_pair_run(&ctx, dssh_transport_handshake);
+	bool seen = test_mac_init_failure_seen();
+	bool rejected = ctx.client_result == DSSH_ERROR_INIT || ctx.server_result == DSSH_ERROR_INIT;
+	handshake_cleanup(&ctx);
+	ASSERT_TRUE(ret < 0 && seen && rejected);
 	return TEST_PASS;
 }
 
@@ -944,7 +803,7 @@ test_newkeys_mac_init_failure(void)
 static int
 test_roundtrip_with_test_modules(void)
 {
-	struct handshake_ctx ctx;
+	struct test_session_pair ctx;
 	if (handshake_setup(&ctx) < 0) {
 		handshake_cleanup(&ctx);
 		return TEST_FAIL;
@@ -1000,78 +859,25 @@ register_oversized_algorithms(void)
 static int
 test_recv_mac_too_large(void)
 {
-	dssh_test_reset_global_config();
-	test_enc_reset();
-	test_mac_reset();
-
-	if (register_oversized_algorithms() < 0) {
-		dssh_test_reset_global_config();
+	struct test_session_pair ctx;
+	if (handshake_prepare(&ctx, false, true) < 0)
+		return TEST_FAIL;
+	int ret = test_pair_run(&ctx, dssh_transport_handshake);
+	if (ret < 0) {
+		handshake_cleanup(&ctx);
 		return TEST_FAIL;
 	}
-	if (dssh_ed25519_generate_key() < 0) {
-		dssh_test_reset_global_config();
-		return TEST_FAIL;
-	}
-
-	struct mock_io_state io;
-	if (mock_io_init(&io, 0) < 0) {
-		dssh_test_reset_global_config();
-		return TEST_FAIL;
-	}
-
-	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
-	    mock_rxline_dispatch, mock_extra_line_cb);
-
-	dssh_session client = dssh_session_init(true, 0);
-	dssh_session server = dssh_session_init(false, 0);
-	if (client == NULL || server == NULL) {
-		dssh_session_cleanup(client);
-		dssh_session_cleanup(server);
-		mock_io_free(&io);
-		dssh_test_reset_global_config();
-		return TEST_FAIL;
-	}
-	dssh_session_set_cbdata(client, &io, &io, &io, &io);
-	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
-	dssh_session_set_cbdata(server, &io, &io, &io, &io);
-
-	struct handshake_ctx ctx = {
-		.io = io, .client = client, .server = server
-	};
-	thrd_t ct, st;
-	ASSERT_THRD_CREATE(&ct, handshake_client_thread, &ctx);
-	ASSERT_THRD_CREATE(&st, handshake_server_thread, &ctx);
-	thrd_join(ct, NULL);
-	thrd_join(st, NULL);
-
-	if (ctx.client_result != 0 || ctx.server_result != 0) {
-		/* Handshake may fail if send_packet overflows -- that's
-		 * still a valid test result (exposes the bug). */
-		dssh_session_cleanup(server);
-		dssh_session_cleanup(client);
-		mock_io_free(&io);
-		dssh_test_reset_global_config();
-		return TEST_PASS;
-	}
-
-	/* Handshake succeeded -- send a small packet.  The sender
-	 * includes 128 bytes of MAC.  With dynamically allocated MAC
-	 * buffers, the receiver handles this correctly. */
 	uint8_t msg[] = { SSH_MSG_SERVICE_REQUEST, 0x42 };
-	ASSERT_OK(send_packet(client, msg,
-	    sizeof(msg), NULL));
-
-	uint8_t msg_type;
-	uint8_t *payload;
-	size_t payload_len;
-	int recv_res = recv_packet(server, &msg_type,
-	    &payload, &payload_len);
-	ASSERT_OK(recv_res);
-
-	dssh_session_cleanup(server);
-	dssh_session_cleanup(client);
-	mock_io_free(&io);
-	dssh_test_reset_global_config();
+	ret = send_packet(ctx.client, msg, sizeof(msg), NULL);
+	uint8_t type = 0;
+	uint8_t *payload = NULL;
+	size_t length = 0;
+	if (ret == 0)
+		ret = recv_packet(ctx.server, &type, &payload, &length);
+	bool valid = ret == 0 && type == SSH_MSG_SERVICE_REQUEST && length == sizeof(msg)
+	    && payload != NULL && memcmp(payload, msg, sizeof(msg)) == 0;
+	handshake_cleanup(&ctx);
+	ASSERT_TRUE(valid);
 	return TEST_PASS;
 }
 
@@ -1085,86 +891,123 @@ test_recv_mac_too_large(void)
 static int
 test_send_mac_overflow_rejected(void)
 {
-	dssh_test_reset_global_config();
-	test_enc_reset();
-	test_mac_reset();
-
-	if (register_oversized_algorithms() < 0) {
-		dssh_test_reset_global_config();
+	struct test_session_pair ctx;
+	if (handshake_prepare(&ctx, false, true) < 0)
+		return TEST_FAIL;
+	int ret = test_pair_run(&ctx, dssh_transport_handshake);
+	if (ret < 0) {
+		handshake_cleanup(&ctx);
 		return TEST_FAIL;
 	}
-	if (dssh_ed25519_generate_key() < 0) {
-		dssh_test_reset_global_config();
+	size_t length = ctx.client->trans.packet_buf_sz - 120;
+	uint8_t *payload = malloc(length);
+	if (payload == NULL) {
+		handshake_cleanup(&ctx);
 		return TEST_FAIL;
 	}
-
-	struct mock_io_state io;
-	if (mock_io_init(&io, 0) < 0) {
-		dssh_test_reset_global_config();
-		return TEST_FAIL;
-	}
-
-	dssh_transport_set_callbacks(mock_tx_dispatch, mock_rx_dispatch,
-	    mock_rxline_dispatch, mock_extra_line_cb);
-
-	dssh_session client = dssh_session_init(true, 0);
-	dssh_session server = dssh_session_init(false, 0);
-	if (client == NULL || server == NULL) {
-		dssh_session_cleanup(client);
-		dssh_session_cleanup(server);
-		mock_io_free(&io);
-		dssh_test_reset_global_config();
-		return TEST_FAIL;
-	}
-	dssh_session_set_cbdata(client, &io, &io, &io, &io);
-	dssh_session_set_hostkey_verify_cb(client, dssh_test_accept_hostkey, NULL);
-	dssh_session_set_cbdata(server, &io, &io, &io, &io);
-
-	struct handshake_ctx ctx = {
-		.io = io, .client = client, .server = server
-	};
-	thrd_t ct, st;
-	ASSERT_THRD_CREATE(&ct, handshake_client_thread, &ctx);
-	ASSERT_THRD_CREATE(&st, handshake_server_thread, &ctx);
-	thrd_join(ct, NULL);
-	thrd_join(st, NULL);
-
-	if (ctx.client_result != 0 || ctx.server_result != 0) {
-		dssh_session_cleanup(server);
-		dssh_session_cleanup(client);
-		mock_io_free(&io);
-		dssh_test_reset_global_config();
-		return TEST_FAIL;
-	}
-
-	/* Send a payload large enough that packet + 128-byte MAC
-	 * exceeds the buffer.  Buffer is 33280 bytes.  We need
-	 * total (4 + 1 + payload + padding) <= 33280 but
-	 * total + 128 > 33280.  payload ~= 33160 gives
-	 * total ~= 33180, + 128 = 33308 > 33280. */
-	size_t big_len = client->trans.packet_buf_sz - 120;
-	uint8_t *big = malloc(big_len);
-	if (big == NULL) {
-		dssh_session_cleanup(server);
-		dssh_session_cleanup(client);
-		mock_io_free(&io);
-		dssh_test_reset_global_config();
-		return TEST_FAIL;
-	}
-	big[0] = SSH_MSG_SERVICE_REQUEST;
-	memset(&big[1], 0x42, big_len - 1);
-
-	int res = send_packet(client, big, big_len, NULL);
-	free(big);
-	ASSERT_EQ(res, DSSH_ERROR_TOOLONG);
-
-	mock_io_close_c2s(&io);
-	mock_io_close_s2c(&io);
-	dssh_session_cleanup(server);
-	dssh_session_cleanup(client);
-	mock_io_free(&io);
-	dssh_test_reset_global_config();
+	payload[0] = SSH_MSG_SERVICE_REQUEST;
+	memset(&payload[1], 0x42, length - 1);
+	ret = send_packet(ctx.client, payload, length, NULL);
+	free(payload);
+	bool alive = !dssh_session_is_terminated(ctx.client);
+	handshake_cleanup(&ctx);
+	ASSERT_EQ(ret, DSSH_ERROR_TOOLONG);
+	ASSERT_TRUE(alive);
 	return TEST_PASS;
+}
+
+static bool
+fixture_retired(const struct test_session_pair *ctx)
+{
+	return !ctx->registered && !ctx->io_ready && ctx->client == NULL && ctx->server == NULL
+	    && !ctx->owned[0] && !ctx->owned[1] && ctx->created == ctx->joined
+	    && atomic_load(&ctx->io.c2s.rfd) == -1 && atomic_load(&ctx->io.c2s.wfd) == -1
+	    && atomic_load(&ctx->io.s2c.rfd) == -1 && atomic_load(&ctx->io.s2c.wfd) == -1
+	    && test_pair_active == NULL;
+}
+
+static int
+test_fixture_setup_allocations(void)
+{
+	bool fault_seen = false;
+	for (int point = 0; point < 200; point++) {
+		dssh_test_alloc_reset();
+		dssh_test_alloc_fail_after(point);
+		struct test_session_pair ctx;
+		int calls = 0;
+		int ret = handshake_prepare_observed(&ctx, false, false, &calls);
+		dssh_test_alloc_reset();
+		bool injected = calls > point;
+		bool valid = ret == 0 || injected;
+		if (ret == 0) {
+			ret = test_pair_run(&ctx, dssh_transport_handshake);
+			valid &= ret == 0 && ctx.created == 2 && ctx.joined == 2;
+		}
+		handshake_cleanup(&ctx);
+		handshake_cleanup(&ctx);
+		valid &= fixture_retired(&ctx);
+		fault_seen |= injected;
+		if (printf("fixture_setup_case point=%d calls=%d injected=%d operation=%d created=%u joined=%u retired=%d\n",
+		        point, calls, injected, ret, ctx.created, ctx.joined, fixture_retired(&ctx)) < 0)
+			return TEST_FAIL;
+		ASSERT_TRUE(valid);
+		if (ret == 0 && !injected) {
+			ASSERT_TRUE(fault_seen);
+			if (printf("fixture_setup_sweep cases=%d complete=1\n", point + 1) < 0)
+				return TEST_FAIL;
+			return TEST_PASS;
+		}
+	}
+	return TEST_FAIL;
+}
+
+static int
+test_fixture_ownership(void)
+{
+	const char *mode = getenv("DSSH_PEER_FAILURE");
+	bool plain = mode == NULL || strcmp(mode, "plain") == 0;
+	struct test_session_pair ctx;
+	int ret = handshake_setup(&ctx);
+	bool valid = plain ? ret == 0 : ret < 0;
+	handshake_cleanup(&ctx);
+	handshake_cleanup(&ctx);
+	valid &= fixture_retired(&ctx);
+	if (printf("fixture_owner=1 created=%u joined=%u valid=%d\n", ctx.created, ctx.joined, valid) < 0)
+		return TEST_FAIL;
+	ASSERT_TRUE(valid);
+	return TEST_PASS;
+}
+
+static int
+fixture_assertion_failure(void)
+{
+	ASSERT_TRUE(false);
+	return TEST_PASS;
+}
+
+/* Fresh-process assertion controls call the actual assertion hook while its
+ * owner and all worker arguments are still live on this stack. */
+static int
+fixture_assertion_control(unsigned phase)
+{
+	struct test_session_pair ctx;
+	if (handshake_prepare(&ctx, false, false) < 0)
+		return 2;
+	ctx.operation = dssh_transport_handshake;
+	for (unsigned i = 0; i < phase; i++) {
+		if (test_pair_start(&ctx, i) < 0) {
+			handshake_cleanup(&ctx);
+			return 2;
+		}
+	}
+	int result = fixture_assertion_failure();
+	bool valid = result == TEST_FAIL && fixture_retired(&ctx)
+	    && ctx.created == phase && ctx.joined == phase;
+	handshake_cleanup(&ctx);
+	if (printf("fixture_assertion=1 phase=%u created=%u joined=%u valid=%d\n",
+	        phase, ctx.created, ctx.joined, valid) < 0)
+		return 2;
+	return valid ? 1 : 2;
 }
 
 /* ================================================================
@@ -1172,6 +1015,8 @@ test_send_mac_overflow_rejected(void)
  * ================================================================ */
 
 static struct dssh_test_entry tests[] = {
+	{ "fixture/setup_allocations", test_fixture_setup_allocations },
+	{ "fixture/ownership", test_fixture_ownership },
 	/* Verify test modules work */
 	{ "test_modules/roundtrip",            test_roundtrip_with_test_modules },
 
@@ -1202,5 +1047,18 @@ static struct dssh_test_entry tests[] = {
 	{ "newkeys/mac_init_failure",          test_newkeys_mac_init_failure },
 };
 
-DSSH_TEST_NO_CLEANUP
+#define main transport_errors_main
 DSSH_TEST_MAIN(tests)
+#undef main
+
+int
+main(int argc, char **argv)
+{
+	if (argc == 3 && strcmp(argv[1], "--fixture-assert") == 0) {
+		if (strlen(argv[2]) != 1 || argv[2][0] < '0' || argv[2][0] > '2')
+			return 2;
+		unsigned phase = (unsigned)(argv[2][0] - '0');
+		return fixture_assertion_control(phase);
+	}
+	return transport_errors_main(argc, argv);
+}

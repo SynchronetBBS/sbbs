@@ -1,5 +1,10 @@
 # RFC 4250 Conformance Audit — DeuceSSH
 
+> Historical report. Current implementation and release evidence are tracked in
+> [the release audit](release-1.0-audit.md) and
+> [the RFC 4250 ledger](release-1.0-evidence/rfc4250-ledger.md).
+> Earlier N/A and conformance conclusions require current verification.
+
 Systematic audit of RFC 4250 (SSH Protocol Assigned Numbers) against
 DeuceSSH.  RFC 4250 is primarily an IANA registry document defining
 numeric constants and naming conventions.  Most of its requirements

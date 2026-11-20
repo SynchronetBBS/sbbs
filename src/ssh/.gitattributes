@@ -1,0 +1,2 @@
+# Keep the pinned NIST response files byte-for-byte, including original CRLF.
+test/vectors/sha3-cavp/*.rsp -text

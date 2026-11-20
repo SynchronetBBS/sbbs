@@ -5,8 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "deucessh-algorithms.h"
 #include "deucessh-mac.h"
 #include "deucessh.h"
+#ifdef DSSH_TESTING
+ #include "ssh-internal.h"
+#endif
 
 #define HMAC_SHA2_256_DIGEST_SIZE 32
 #define HMAC_SHA2_256_KEY_SIZE    32
@@ -32,5 +36,8 @@ dssh_register_hmac_sha2_256(void)
 	mac->digest_size = HMAC_SHA2_256_DIGEST_SIZE;
 	mac->key_size    = HMAC_SHA2_256_KEY_SIZE;
 	memcpy(mac->name, name, sizeof(name));
-	return dssh_transport_register_mac(mac);
+	int ret = dssh_transport_register_mac(mac);
+	if (ret < 0)
+		free(mac);
+	return ret;
 }

@@ -1,8 +1,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "deucessh-algorithms.h"
 #include "deucessh-mac.h"
 #include "deucessh.h"
+#ifdef DSSH_TESTING
+ #include "ssh-internal.h"
+#endif
 
 static int
 generate(const uint8_t *buf, size_t bufsz, uint8_t *outbuf, dssh_mac_ctx *ctx)
@@ -30,5 +34,8 @@ dssh_register_none_mac(void)
 	mac->digest_size = 0;
 	mac->key_size    = 0;
 	memcpy(mac->name, name, sizeof(name));
-	return dssh_transport_register_mac(mac);
+	int ret = dssh_transport_register_mac(mac);
+	if (ret < 0)
+		free(mac);
+	return ret;
 }

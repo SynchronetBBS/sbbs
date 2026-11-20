@@ -16,9 +16,9 @@
 int register_test_mac(void);
 
 /*
- * Register a test MAC with digest_size > 64, triggering the
- * DSSH_ERROR_TOOLONG branch in recv_packet_raw.  Uses the name
- * "hmac-sha2-256" so it's negotiated normally.
+ * Register a test MAC with a 128-byte tag. Verification storage supports
+ * this size; packet capacity/refusal controls choose their own bounds.
+ * Uses the name "hmac-sha2-256" so it participates in test negotiation.
  */
 int register_test_mac_oversized(void);
 
@@ -27,6 +27,7 @@ void test_mac_reset(void);
 
 /* Fail the Nth init/generate call (0-based) */
 void test_mac_fail_init_at(int n);
+bool test_mac_init_failure_seen(void);
 void test_mac_fail_generate_at(int n);
 
 /* Corrupt output: flip a bit so receiver's verify fails */

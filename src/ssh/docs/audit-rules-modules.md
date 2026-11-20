@@ -1,5 +1,10 @@
 # RULES.md Audit — Algorithm Modules
 
+> Release audit reconciliation is in progress. Module/backend interfaces
+> have changed since this report. Its conformance labels and vendor exclusions
+> are not adopted as current evidence or exemptions from RULES.md. The
+> [release audit](release-1.0-audit.md) includes both backends and all vendor code.
+
 Audit of all algorithm module code against the 12 rules in `RULES.md`.
 
 Module code uses the public module headers (`deucessh-kex.h`,
@@ -186,13 +191,17 @@ constant; `sig_len` is not checked.
 
 ## 11. Thread Safety
 
-**CONFORMS.**
+**UNDER REVIEW.**
 
-KEX modules are stateless or store per-session state in `kex_data`
-(freed by cleanup callback).  No global mutable state.  Key algorithm
-modules store per-registration context in `ka->ctx`.  Enc/MAC modules
-store per-session context in opaque handles.  No C11 thread primitives
-in module code.
+The approved KEX migration separates borrowed process-lifetime `config` from
+per-session `state`. Its initializer resets same-owner state; transport cleanup
+uses the initialized creator, separately from the next selected method. Retained
+K/H results have an independent producer release callback. The old assertion
+that `kex_data` held session state did not describe the prior global-context API.
+Current native lifecycle/reentry/mutex checks are tracked in the release audit;
+complete backend state/container reuse and cross-session concurrency review remain
+open. Key algorithm modules retain per-registration `ka->ctx`; cipher/MAC modules
+use opaque per-session handles. Those distinctions alone do not prove thread safety.
 
 ---
 

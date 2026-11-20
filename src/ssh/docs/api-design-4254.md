@@ -1,370 +1,182 @@
-# RFC 4254 Connection Layer — API Design
+# RFC 4254 connection API
 
-## Implementation Status
+The public connection interface is declared in [deucessh-conn.h](../deucessh-conn.h)
+and implemented in `ssh-conn.c`. The [README](../README.md) and the checked
+applications in [examples](../examples) show complete transport, authentication,
+connection and I/O setup.
 
-All items below are implemented in `ssh-conn.c` and `ssh-chan.c`
-unless noted otherwise.
+## Session and channel ownership
 
-- [x] Buffer primitives (bytebuf, msgqueue, signal queue, accept queue)
-- [x] Channel struct with session/raw union, buf_mtx, poll_cnd
-- [x] Demux thread (session_start, packet dispatch, channel table)
-- [x] Auto-reject forbidden channel types (x11, forwarding, session-from-server)
-- [x] Incoming CHANNEL_OPEN queued for session_accept()
-- [x] CHANNEL_OPEN_CONFIRMATION handling in demux
-- [x] Channel request response mechanism (request_pending/responded/success)
-- [x] Client: session_open_shell (CHANNEL_OPEN + pty-req + shell)
-- [x] Client: session_open_exec (CHANNEL_OPEN + exec)
-- [x] Client: channel_open_subsystem (CHANNEL_OPEN + subsystem, raw)
-- [x] Server: channel_accept_raw (CONFIRMATION + raw buffers)
-- [x] Session poll/read/read_ext/write with signal synchronization
-- [x] Raw channel poll/read(message-based)/write
-- [x] session_close (exit-status + EOF + CLOSE)
-- [x] channel_close (EOF + CLOSE)
-- [x] session_send_window_change
-- [x] Automatic window replenishment after reads
-- [x] send_exit_status (low-level, static)
-- [x] send_extended_data (low-level, static)
-- [x] session_write_ext (public, for server stderr)
-- [x] session_send_signal / session_read_signal (public)
-- [x] Server: session_accept_channel (pty/env/shell/exec callbacks, setup mailbox)
-- [x] Window-change callback delivery to server application (stored on channel, fired by demux)
-- [x] Channel close hardening (no auto-reciprocal, per-direction semantics)
-- [x] CHANNEL_OPEN_FAILURE handling in demux
-- [x] Low-level API made internal (static functions)
-- [x] Thread lifetime audit: all mtx/cnd/thrd properly init'd, joined, destroyed
-- [x] Static buffer elimination (per-channel storage)
+A `dssh_session` and a `dssh_channel` are opaque handles. Finish transport
+handshake and authentication before `dssh_session_start()`. The session's demux
+worker receives packets and dispatches channel traffic. Applications perform
+network I/O through the configured transport callbacks.
 
-Note: both `dssh_session_channel` and `dssh_raw_channel`
-use the same `struct dssh_channel_s` with `chan_type` discriminator.
+Open shell, exec and subsystem channels with a `dssh_chan_params` builder and
+`dssh_chan_open()` or `dssh_chan_zc_open()`. A terminal request determines the
+channel's purpose. `dssh_chan_accept()` performs server setup through
+`dssh_chan_accept_cbs` and returns the established channel.
 
-## Object Model
+Serialize lifecycle operations and stop application threads that use the handles
+before stopping or cleaning up the session. From a permitted calling context,
+`dssh_chan_close()` consumes its handle; follow the header
+restrictions for rejected callback/reservation contexts. `dssh_session_stop()` joins the
+worker and releases remaining channels. Callback and zero-copy reservation
+contexts have the deferred-cleanup restrictions in the public headers.
 
-```
-dssh_session
-  ├── owns the demux thread (reads all packets, dispatches to channels)
-  ├── channel listener (accept incoming CHANNEL_OPEN from peer)
-  ├── can open outgoing channels (session or raw)
-  │
-  ├── dssh_session_channel  ("popen" — shell/exec)
-  │     ├── read()      — stdout
-  │     ├── read_ext()  — stderr
-  │     ├── write()     — stdin
-  │     ├── poll()      — readiness for read/readext/write/signal
-  │     ├── read_signal()
-  │     └── close()     — sends exit-status + EOF + CLOSE
-  │
-  └── dssh_raw_channel  ("socket" — subsystem)
-        ├── read()
-        ├── write()
-        ├── poll()      — readiness for read/write
-        └── close()     — sends EOF + CLOSE
-```
+## Algorithm setup
 
-## Session Lifecycle
-
-### Client
+Register algorithms before session initialization, while application setup is
+serialized. Registration order determines preference. This example includes
+both standard fixed-group SHA-2 methods; their constructors are available on
+both cryptographic backends.
 
 ```c
-/* 1. Transport setup (unchanged) */
-dssh_transport_set_callbacks(tx, rx, rxline, NULL);
-dssh_register_curve25519_sha256();
-/* ... register algorithms ... */
+#include "deucessh-algorithms.h"
 
-dssh_session sess;
-sess.trans.client = true;
-dssh_session_init(sess);
-
-/* 2. Handshake + auth */
-dssh_transport_handshake(sess);
-dssh_auth_password(sess, user, pass, NULL, NULL);
-
-/* 3. Start the demux thread */
-dssh_session_start(sess);
-
-/* 4. Open a session channel (shell with pty) */
-struct dssh_pty_req pty = {
-    .term = "xterm-256color",
-    .cols = 80, .rows = 24,
-    .wpx = 0, .hpx = 0,
-};
-struct dssh_session_channel_s sch;
-dssh_session_open_shell(sess, sch, &pty);
-/* sch is now a "popen" — read/write/poll ready */
-
-/* 5. Open a raw channel (subsystem) */
-struct dssh_raw_channel_s rch;
-dssh_channel_open_subsystem(sess, rch, "sftp");
-/* rch is now a "socket" — read/write/poll ready */
-
-/* 6. Accept incoming channels from server */
-struct dssh_incoming_channel inc;
-while (dssh_session_accept(sess, inc, timeout_ms) == 0) {
-    /* inc.channel_type tells us what the server wants */
-    /* accept or reject, get a raw_channel back */
+int example_register_key_exchanges(void)
+{
+    int ret = dssh_register_mlkem768x25519_sha256();
+    if (ret == 0)
+        ret = dssh_register_sntrup761x25519_sha512();
+    if (ret == 0)
+        ret = dssh_register_curve25519_sha256();
+    if (ret == 0)
+        ret = dssh_register_dh_gex_sha256();
+    if (ret == 0)
+        ret = dssh_register_dh_group16_sha512();
+    if (ret == 0)
+        ret = dssh_register_dh_group14_sha256();
+    return ret;
 }
 ```
 
-### Server
+Check the result before continuing setup. Register the desired host-key,
+encryption, MAC and compression algorithms as shown in the applications.
+Host-key verification and authorization policies belong to the application.
+
+## Building an exec channel
+
+This helper expects an authenticated session whose demux worker is running.
+The builder copies the command. Opening snapshots the parameters, so the caller
+can free its builder after open returns. A successful returned handle belongs
+to the caller until close or session shutdown.
 
 ```c
-/* 1-2. Transport setup + handshake (unchanged, server mode) */
+#include "deucessh-conn.h"
 
-/* 3. Auth */
-dssh_auth_server(sess, &auth_cbs, user, &user_len);
-
-/* 4. Start the demux thread */
-dssh_session_start(sess);
-
-/* 5. Accept incoming channels from client */
-struct dssh_incoming_channel inc;
-while (dssh_session_accept(sess, inc, -1) == 0) {
-    if (inc is session) {
-        /* fires pty/env/shell/exec callbacks */
-        struct dssh_session_channel_s sch;
-        dssh_session_accept_channel(sess, inc, sch, &cbs);
-        /* hand sch off to worker thread */
-    }
-    else if (inc is subsystem) {
-        struct dssh_raw_channel_s rch;
-        dssh_channel_accept_raw(sess, inc, rch);
-        /* hand rch off to worker thread */
-    }
-    else {
-        dssh_channel_reject(sess, inc, reason);
-    }
-}
-
-/* 6. Server can also open channels TO the client */
-struct dssh_raw_channel_s upload_ch;
-dssh_channel_open_subsystem(sess, &upload_ch, "file-upload");
-```
-
-## Data Structures
-
-### PTY request (client → server)
-
-```c
-struct dssh_pty_req {
-    const char *term;
-    uint32_t cols, rows;
-    uint32_t wpx, hpx;
-    const uint8_t *modes;   /* raw encoded terminal modes, NULL for none */
-    size_t modes_len;
-};
-```
-
-### Incoming channel (from accept)
-
-```c
-struct dssh_incoming_channel {
-    uint32_t peer_channel;
-    uint32_t peer_window;
-    uint32_t peer_max_packet;
-    const char *channel_type;      /* "session", or subsystem-specific */
-    size_t channel_type_len;
-    /* raw payload for type-specific data */
-    uint8_t *type_data;
-    size_t type_data_len;
-};
-```
-
-### Server session callbacks
-
-```c
-struct dssh_server_session_cbs {
-    /* Called for "pty-req" — return 0 to accept */
-    int (*pty_req)(const struct dssh_pty_req *pty, void *cbdata);
-
-    /* Called for "env" — return 0 to accept this variable */
-    int (*env)(const uint8_t *name, size_t name_len,
-              const uint8_t *value, size_t value_len, void *cbdata);
-
-    /* Called for "window-change" */
-    void (*window_change)(uint32_t cols, uint32_t rows,
-                          uint32_t wpx, uint32_t hpx, void *cbdata);
-
-    void *cbdata;
-};
-```
-
-Note: shell/exec/subsystem determination happens at the accept
-level, not via callbacks — the incoming channel tells you what the
-client wants, and you call the appropriate accept function.
-
-## Poll Interface
-
-```c
-#define DSSH_POLL_READ    0x01  /* stdout data available (or EOF) */
-#define DSSH_POLL_READEXT 0x02  /* stderr data available (or EOF) */
-#define DSSH_POLL_WRITE   0x04  /* send window has space */
-#define DSSH_POLL_SIGNAL  0x08  /* signal ready (both streams drained to mark) */
-
-/* Session channel poll — all four events */
-int dssh_session_poll(dssh_session sess,
-    struct dssh_session_channel_s *ch,
-    int events, int timeout_ms);
-
-/* Raw channel poll — READ and WRITE only */
-int dssh_channel_poll(dssh_session sess,
-    struct dssh_raw_channel_s *ch,
-    int events, int timeout_ms);
-```
-
-Returns bitmask of ready events.  0 on timeout.  Negative on error.
-
-A read that returns 0 bytes means EOF or closed — the application
-checks `ch->close_received` or `ch->eof_received` to distinguish
-if it cares.
-
-## Read/Write Interface
-
-### Session channels
-
-```c
-/* Returns bytes read, 0 for EOF/closed, negative for error */
-int64_t dssh_session_read(dssh_session sess,
-    struct dssh_session_channel_s *ch,
-    uint8_t *buf, size_t bufsz);
-
-int64_t dssh_session_read_ext(dssh_session sess,
-    struct dssh_session_channel_s *ch,
-    uint8_t *buf, size_t bufsz);
-
-/* Returns bytes written (may be short), 0 if window full, negative for error.
- * Application should poll for WRITE before retrying. */
-int64_t dssh_session_write(dssh_session sess,
-    struct dssh_session_channel_s *ch,
-    const uint8_t *buf, size_t bufsz);
-
-/* Consume the next signal.  Only callable when POLL_SIGNAL is ready.
- * Returns signal name (e.g., "INT", "TERM") — valid until next call. */
-int dssh_session_read_signal(dssh_session sess,
-    struct dssh_session_channel_s *ch,
-    const char **signal_name);
-
-/* Graceful close: exit-status + EOF + CLOSE */
-int dssh_session_close(dssh_session sess,
-    struct dssh_session_channel_s *ch,
-    uint32_t exit_code);
-```
-
-### Raw channels (message-based)
-
-Raw channels are message-based, not stream-based.  Each SSH
-CHANNEL_DATA packet is one message, preserved as a discrete unit.
-No partial reads or writes.
-
-```c
-/* Returns message length, 0 for EOF/closed, negative for error.
- * Always returns a complete message.
- *
- * If bufsz is too small, returns DSSH_ERROR_TOOLONG — the
- * message remains queued and can be retried with a larger buffer.
- *
- * To query the size of the next message without consuming it,
- * pass buf=NULL, bufsz=0.  Returns the message length.
- *
- * POLL_READ means at least one complete message is queued. */
-int64_t dssh_channel_read(dssh_session sess,
-    struct dssh_raw_channel_s *ch,
-    uint8_t *buf, size_t bufsz);
-
-/* Sends a complete message.  Returns 0 on success, negative on
- * error.  If the message exceeds the remote window or max packet
- * size, returns DSSH_ERROR_TOOLONG — the application should
- * poll for WRITE and retry.  No partial sends.
- *
- * POLL_WRITE means the remote window is nonzero, but a write can
- * still fail if the specific message is larger than the available
- * window. */
-int dssh_channel_write(dssh_session sess,
-    struct dssh_raw_channel_s *ch,
-    const uint8_t *buf, size_t len);
-
-/* Close: EOF + CLOSE */
-int dssh_channel_close(dssh_session sess,
-    struct dssh_raw_channel_s *ch);
-```
-
-Typical peek-then-read pattern:
-
-```c
-int64_t len = dssh_channel_read(sess, ch, NULL, 0);
-if (len > 0) {
-    uint8_t *msg = malloc(len);
-    dssh_channel_read(sess, ch, msg, len);
-    process(msg, len);
-    free(msg);
+dssh_channel example_open_exec(dssh_session session, const char *command)
+{
+    struct dssh_chan_params params;
+    int ret = dssh_chan_params_init(&params, DSSH_CHAN_EXEC);
+    if (ret != 0)
+        return NULL;
+    ret = dssh_chan_params_set_command(&params, command);
+    dssh_channel channel = NULL;
+    if (ret == 0)
+        channel = dssh_chan_open(session, &params);
+    dssh_chan_params_free(&params);
+    return channel;
 }
 ```
 
-## Signal Synchronization
+Shell channels use `DSSH_CHAN_SHELL`; configure PTY, terminal size/modes and
+environment through the builder before open. Subsystems use
+`DSSH_CHAN_SUBSYSTEM` and `dssh_chan_params_set_subsystem()`.
 
-The demux thread maintains a byte counter for each buffer (stdout,
-stderr).  When a "signal" CHANNEL_REQUEST arrives:
+Terminal modes use `dssh_chan_params_set_mode()` with nonzero byte opcodes.
+The encoder supplies TTY_OP_END itself and puts future opcodes after known
+ones. Repeated setters update the existing entry without allocating storage.
+For RFC 8160 IUTF8, use opcode 42 with value 0 or 1 when the application knows
+its terminal state. The generic builder preserves raw uint32 values; device
+policy, terminal configuration and ignoring unsupported modes belong to the
+application. PTY callbacks/getters expose the accepted values; channel bytes
+remain binary data regardless of those values.
 
-1. Record current byte positions of stdout and stderr buffers
-   as a "signal mark"
-2. Queue the signal name
+## Stream I/O and events
 
-Poll/read behavior:
+Use `dssh_chan_poll()` for readiness and `dssh_chan_read()` /
+`dssh_chan_write()` for stream I/O. Stream0 carries ordinary data; stream1 is
+stderr. Reads and writes may be short. `DSSH_ERROR_NOMORE` means that an operation
+would block; a zero read means EOF after buffered data is drained. A zero write
+is successful only for an empty input. Check negative errors before converting
+an I/O result to `size_t`. Peeking with `dssh_chan_read(ch, stream, NULL, 0)`
+reports buffered bytes without consuming them.
 
-- `POLL_READ` / `POLL_READEXT` report data available only up to
-  the nearest signal mark
-- `session_read()` / `session_read_ext()` return data only up
-  to the nearest signal mark (may return short)
-- Once BOTH buffers are drained to the mark, `POLL_SIGNAL`
-  becomes set
-- `session_read_signal()` consumes the signal and unlocks the
-  next segment of data (up to the next mark, or end of buffer)
-- Multiple signals queue up with independent marks
+Shell, exec and subsystem channels support either stream or zero-copy I/O;
+the open function or terminal accept result selects the I/O model. The
+early-data workaround is limited to shell/exec channels in either model.
+Subsystem channels retain ordinary zero-window setup.
 
-## Windowing
+Once a read delivers bytes, it returns their count. The channel retains the
+first later receive-credit error. The next non-NULL positive-capacity read on
+either stream reports it once without copying or consuming bytes. Peeks and
+zero-capacity calls preserve that error. Requested read directions poll ready
+while it remains pending, including when their buffers are empty. A subsequent
+read can retry queued credit without another application data send. After
+termination, reads report a retained error and drain buffered data before EOF.
 
-- Application can set a max window size per channel at creation
-  (or use a sensible default)
-- The library sends WINDOW_ADJUST automatically when the
-  application drains the read buffer
-- The library tracks remote window for writes — `POLL_WRITE`
-  reflects available send window
-- Window arithmetic uses saturating add (clamped at 2^32-1)
-- The application never sees WINDOW_ADJUST messages
+Poll readiness is a snapshot. Another reader or writer may consume data or
+send-window credit before the next operation, which must still handle NOMORE.
 
-### Session channels vs. raw channels
+`DSSH_POLL_EVENT` exposes ordered events through `dssh_chan_read_event()`. Event
+text uses complete borrowed byte views, including exact lengths and peer
+language. It has no promised NUL terminator. Views remain valid until the next
+poll/read-event on that channel; callback views last only for the callback.
+Copy data needed afterward, and never free or release these borrowed views.
 
-Session channels (stream-based): the library sends WINDOW_ADJUST
-as the application drains the byte buffer.  Smooth flow.
+Poll positions describe unread bytes before an event. Event callbacks instead
+observe cumulative received positions and run on the demux thread. Follow the
+public callback restrictions and pass application work to an appropriate worker.
+Callbacks and queued delivery are alternative consumers of each event.
 
-Raw channels (message-based): the library sends WINDOW_ADJUST
-after each complete message is consumed by the application's
-`channel_read()`.  The internal buffer is a message queue; the
-window represents the total bytes available across all queued
-messages.
+## BREAK actions
 
-## Transparent Handling (demux thread)
+BREAK uses `dssh_chan_break_cb`, with defaults set before start through
+`dssh_session_set_break_cb()` and per-channel replacement through
+`dssh_chan_set_break_cb()`. It is not a general event. The borrowed request
+contains raw duration, cumulative stream positions and normalized reply flag.
+Return whether a BREAK of any kind was performed; the requested wire reply
+follows that result. An absent handler performs no action and fails a requested
+reply. The library performs no device I/O or duration clamping. Follow the
+public callback and captured-code/data lifetime restrictions. The handler runs
+on the demux thread after setup; waiting inside it stalls session receive work.
 
-These are consumed by the demux thread and never reach the
-application:
+## Zero-copy I/O
 
-- CHANNEL_WINDOW_ADJUST → updates send window, wakes POLL_WRITE
-- CHANNEL_EOF → sets flag, wakes POLL_READ (read returns 0)
-- CHANNEL_CLOSE → sends reciprocal CLOSE, sets flags, wakes poll
-- CHANNEL_REQUEST "window-change" → server callback
-- CHANNEL_REQUEST "xon-xoff" → ignored
-- CHANNEL_REQUEST "signal" → queued with stream position marks
-- CHANNEL_REQUEST "exit-status" → stored for retrieval
-- GLOBAL_REQUEST → auto-reply FAILURE (or callback)
-- SSH_MSG_KEXINIT → rekey
-- SSH_MSG_IGNORE/DEBUG/UNIMPLEMENTED → existing handling
+`dssh_chan_zc_open()` supplies a receive callback rather than buffered stream
+reads. A zero-length callback is a no-op, with EOF delivered as an event. The
+returned consumed count controls receive-window credit and cannot exceed the
+provided length.
 
-## What's NOT Supported
+For transmission, pair each successful `dssh_chan_zc_getbuf()` reservation with
+`dssh_chan_zc_send()` or `dssh_chan_zc_cancel()` on its owning thread. The buffer
+is a borrow from the packet engine; never free it or keep it after the
+reservation ends. See the public headers for operations prohibited while a TX
+reservation is owned.
 
-Rejected by the library:
-- X11 forwarding ("x11-req", "x11" channel opens)
-- TCP/IP port forwarding (global requests, "forwarded-tcpip",
-  "direct-tcpip" channel opens)
-- Local flow control ("xon-xoff")
+## Server setup and shutdown
 
-Not implemented:
-- Terminal mode interpretation (raw modes blob passed through)
-- Host-based authentication
+The acceptor invokes PTY/environment and terminal callbacks on the thread
+calling `dssh_chan_accept()`, with borrowed accumulated parameters and handle.
+Getters and the documented event/BREAK setters are available during setup. Do not
+retain those parameter views, hand the borrowed handle to another thread or
+perform same-session channel I/O/TX/nested accept there. A terminal callback
+fills `dssh_chan_accept_result` to select stream or zero-copy delivery.
+
+Calling `dssh_chan_close()` during setup records cancellation; the acceptor
+finishes rejection/retirement after the callback returns. Do not use the handle
+after recording cancellation. A successful accept transfers the established
+handle to the caller.
+
+`dssh_chan_shutwr()` sends EOF while retaining the read side. Close optionally
+sends an exit status, then EOF/CLOSE and consumes the handle. Keep application
+workers and in-flight callbacks within the lifetime rules before session cleanup.
+Library window adjustment, rekey and transport dispatch preserve the channel
+abstraction; the application still handles short I/O, errors and termination.
+
+X11 and TCP forwarding channels are outside the implemented channel set.
+Subsystem payload interpretation and terminal policy belong to the application.
+This overview does not establish complete protocol or release conformance;
+current evidence and remaining review are tracked in
+[the release audit](release-1.0-audit.md).

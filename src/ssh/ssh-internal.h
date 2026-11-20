@@ -6,39 +6,32 @@
 #define DSSH_INTERNAL_H
 
 #include <stdatomic.h>
+#include <stdlib.h>
 #include <threads.h>
-#include <time.h>        /* timespec_get / TIME_UTC — dssh_deadline_from_ms */
+#include "ssh-time.h"
+#include "ssh-timespec.h" /* timespec_get / TIME_UTC — dssh_deadline_from_ms */
 
 #include "deucessh-conn.h"
 #include "ssh-trans.h"
 
 /* DSSH_TESTABLE is now defined in deucessh-portable.h */
 
-/*
- * Wire-packet telemetry.  Build with -DDSSH_TRACE_WIRE to emit one
- * stderr line per SSH packet sent (after pad/encrypt prep) and per
- * SSH packet received (after decrypt/MAC verify).  Each line is
- * prefixed "[dssh-wire]" so it greps cleanly.  Default builds
- * compile the macro to a no-op.
- */
+/* Optional packet metadata uses the application's local diagnostic callback.
+ * No direct I/O or peer forwarding. Default builds do not evaluate arguments. */
 #ifdef DSSH_TRACE_WIRE
- #include <stdio.h>
- #define DSSH_TRACE_W(...)                                     \
-	 do {                                                  \
-		 fprintf(stderr, "[dssh-wire] " __VA_ARGS__);  \
-		 fputc('\n', stderr);                          \
-		 fflush(stderr);                               \
-	 } while (0)
+ #define DSSH_TRACE_W(sess, ...)                                      \
+	do {                                                          \
+		if (dssh_log_enabled((sess), DSSH_LOG_DEBUG))            \
+			dssh_log_emit_localf((sess), DSSH_LOG_DEBUG,     \
+			    DSSH_ERROR_NONE, "[dssh-wire] " __VA_ARGS__); \
+	} while (0)
 #else
- /* `if (0) fprintf(...)` references the args for type-checking and to
-  * suppress -Wunused-variable on locals only used in trace lines, but
-  * the optimizer drops the dead branch at -O0+. */
- #include <stdio.h>
- #define DSSH_TRACE_W(...)                            \
-	 do {                                         \
-		 if (0)                               \
-			 fprintf(stderr, __VA_ARGS__);  \
-	 } while (0)
+ #define DSSH_TRACE_W(sess, ...)                                      \
+	do {                                                          \
+		if (0)                                                 \
+			dssh_log_emit_localf((sess), DSSH_LOG_DEBUG,     \
+			    DSSH_ERROR_NONE, "[dssh-wire] " __VA_ARGS__); \
+	} while (0)
 #endif
 
 /* ================================================================
@@ -72,9 +65,12 @@ struct dssh_event_entry {
 	uint32_t u32_d; /* hpx */
 	/* 1-byte */
 	bool flag_a; /* core_dumped */
-	/* Char arrays */
-	char str_a[64];  /* signal name */
-	char str_b[256]; /* error message */
+	/* Borrowed packet views for callbacks; retained slot views for polling. */
+	struct dssh_bytes text_a;
+	struct dssh_bytes text_b;
+	struct dssh_bytes language;
+	uint8_t *storage;
+	size_t storage_capacity;
 };
 
 struct dssh_event_queue {
@@ -82,7 +78,9 @@ struct dssh_event_queue {
 	struct dssh_event_entry *entries;
 	/* Pointer-sized */
 	size_t capacity;
-	size_t max_events; /* 0 = no cap */
+	size_t max_events; /* 0 = no event-count cap; memory remains bounded */
+	size_t packet_limit;
+	size_t text_capacity; /* all slot/frozen retained allocations */
 	size_t head;
 	size_t tail;
 	size_t count;
@@ -92,13 +90,15 @@ struct dssh_event_queue {
 	bool has_frozen;
 };
 
-/* Incoming channel open queue (for session_accept).
- * Fixed-capacity ring buffer — no malloc.  Demux thread stalls on
- * accept_cnd when full, providing RX backpressure against a malicious
- * peer flooding CHANNEL_OPEN messages. */
+/* Incoming channel open queue (for dssh_chan_accept).
+ * Fixed-capacity ring buffer. Each admitted open owns a protocol record.
+ * The demux rejects new opens at capacity and continues dispatching channels. */
 #define DSSH_ACCEPT_QUEUE_CAP 8
+/* Stop admitting channels while this many detached IDs await retirement. */
+#define DSSH_RETIRED_CHANNEL_ID_CAP 1024
 
 struct dssh_incoming_open {
+	struct dssh_channel_id *protocol_id;
 	size_t   channel_type_len;
 	uint32_t peer_channel;
 	uint32_t peer_window;
@@ -134,10 +134,12 @@ struct dssh_accept_queue {
 
 /* Set terminate flag and wake all library-owned condvar waiters. */
 DSSH_PRIVATE void session_set_terminate(struct dssh_session_s *sess);
-/* Mark terminated without acquiring mutexes after an unlock error leaves
- * ownership uncertain. */
+/* Mark terminated while logical packet ownership or a held mutex requires
+ * notification to be deferred until the next lock-free boundary. */
 DSSH_PRIVATE void session_set_terminate_no_wake(struct dssh_session_s *sess);
 DSSH_PRIVATE bool dssh_io_callback_active(struct dssh_session_s *sess);
+DSSH_PRIVATE bool dssh_channel_rx_active(void);
+DSSH_PRIVATE bool dssh_setup_callback_active(struct dssh_session_s *sess);
 
 DSSH_PRIVATE bool dssh_log_enabled(struct dssh_session_s *sess, dssh_log_level level);
 DSSH_PRIVATE void dssh_log_emit(struct dssh_session_s *sess, dssh_log_level level, dssh_log_source source,
@@ -147,6 +149,11 @@ DSSH_PRIVATE void dssh_log_emit(struct dssh_session_s *sess, dssh_log_level leve
 __attribute__((format(printf, 4, 5)))
 #endif
 DSSH_PRIVATE void dssh_log_emitf(struct dssh_session_s *sess, dssh_log_level level, int error_code,
+    const char *format, ...);
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((format(printf, 4, 5)))
+#endif
+DSSH_PRIVATE void dssh_log_emit_localf(struct dssh_session_s *sess, dssh_log_level level, int error_code,
     const char *format, ...);
 DSSH_PRIVATE void dssh_log_cleanup(struct dssh_session_s *sess);
 DSSH_PRIVATE void dssh_log_termination(struct dssh_session_s *sess, int cause);
@@ -159,9 +166,20 @@ DSSH_PRIVATE void dssh_log_termination(struct dssh_session_s *sess, int cause);
 			dssh_log_emitf((sess), (level), (error_code), __VA_ARGS__); \
 	} while (0)
 
-/* Forward declaration of public function called from internal code
- * (ssh-trans.c cleanup path).  Avoids needing deucessh-conn.h. */
-DSSH_PUBLIC void dssh_session_stop(struct dssh_session_s *sess);
+/* Stack-owned operation scopes prevent destruction from a nested callback. */
+struct dssh_session_scope {
+	struct dssh_session_s *sess;
+	struct dssh_session_scope *previous;
+	bool termination_callback;
+};
+DSSH_PRIVATE void session_scope_enter(struct dssh_session_scope *scope, struct dssh_session_s *sess);
+DSSH_PRIVATE void session_scope_leave(struct dssh_session_scope *scope);
+DSSH_PRIVATE bool session_scope_active(struct dssh_session_s *sess);
+DSSH_PRIVATE bool session_termination_callback_active(struct dssh_session_s *sess);
+DSSH_PRIVATE bool session_receive_api_conflict(struct dssh_session_s *sess);
+DSSH_PRIVATE bool session_lifecycle_begin(struct dssh_session_s *sess);
+DSSH_PRIVATE void session_stop_inner(struct dssh_session_s *sess);
+DSSH_PRIVATE bool session_on_demux_thread(struct dssh_session_s *sess);
 
 /*
  * Test allocation redirection.  Under DSSH_TESTING, library code
@@ -169,17 +187,24 @@ DSSH_PUBLIC void dssh_session_stop(struct dssh_session_s *sess);
  * allocators.  Algorithm module files must include ssh-internal.h
  * to get these redirects.
  *
- * free() is NOT redirected -- real free() handles all pointers
- * since dssh_test_malloc returns real malloc'd memory.
+ * free() is observed for selected cleanup tests, then forwarded to real
+ * free(). The allocation countdown and external allocators are unchanged.
  */
 #ifdef DSSH_TESTING
 void *dssh_test_malloc(size_t sz);
 void *dssh_test_calloc(size_t nmemb, size_t sz);
 void *dssh_test_realloc(void *ptr, size_t sz);
+void dssh_test_free(void *ptr);
 
  #define malloc(x)     dssh_test_malloc(x)
  #define calloc(n, s)  dssh_test_calloc(n, s)
  #define realloc(p, s) dssh_test_realloc(p, s)
+ #define free(p)       dssh_test_free(p)
+
+/* Clock controls use their own thread-local state. */
+int dssh_test_timespec_get(struct timespec *ts, int base);
+ #undef timespec_get
+ #define timespec_get(t, b) dssh_test_timespec_get(t, b)
 
 /* C11 threads */
 int dssh_test_mtx_init(mtx_t *mtx, int type);
@@ -191,24 +216,43 @@ int dssh_test_thrd_create(thrd_t *thr, thrd_start_t func, void *arg);
  #define thrd_create(t, f, a) dssh_test_thrd_create(t, f, a)
 
 int dssh_test_mtx_lock(mtx_t *mtx);
+int dssh_test_mtx_trylock(mtx_t *mtx);
 int dssh_test_mtx_unlock(mtx_t *mtx);
 int dssh_test_cnd_wait(cnd_t *cond, mtx_t *mtx);
 int dssh_test_cnd_timedwait(cnd_t *cond, mtx_t *mtx, const struct timespec *ts);
 int dssh_test_cnd_broadcast(cnd_t *cond);
 int dssh_test_cnd_signal(cnd_t *cond);
+int dssh_test_thrd_join(thrd_t thr, int *res);
 
  #define mtx_lock(m)            dssh_test_mtx_lock(m)
+ #define mtx_trylock(m)         dssh_test_mtx_trylock(m)
  #define mtx_unlock(m)          dssh_test_mtx_unlock(m)
  #define cnd_wait(c, m)         dssh_test_cnd_wait(c, m)
  #define cnd_timedwait(c, m, t) dssh_test_cnd_timedwait(c, m, t)
  #define cnd_broadcast(c)       dssh_test_cnd_broadcast(c)
  #define cnd_signal(c)          dssh_test_cnd_signal(c)
+ #define thrd_join(t, r)        dssh_test_thrd_join(t, r)
 
 /* OpenSSL */
 int dssh_test_BN_rand(BIGNUM *rnd, int bits, int top, int bottom);
+int dssh_test_BN_rand_range(BIGNUM *rnd, const BIGNUM *range);
+int dssh_test_BN_priv_rand_range_ex(BIGNUM *rnd, const BIGNUM *range,
+    unsigned int strength, BN_CTX *ctx);
+BIGNUM *dssh_test_BN_dup(const BIGNUM *a);
+int dssh_test_BN_rshift1(BIGNUM *r, const BIGNUM *a);
+int dssh_test_BN_sub_word(BIGNUM *a, BN_ULONG word);
+int dssh_test_BN_add_word(BIGNUM *a, BN_ULONG word);
+int dssh_test_BN_check_prime(const BIGNUM *p, BN_CTX *ctx, BN_GENCB *cb);
 int dssh_test_EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int pad_mode);
 
  #define BN_rand(r, b, t, bo)               dssh_test_BN_rand(r, b, t, bo)
+ #define BN_rand_range(r, range)           dssh_test_BN_rand_range(r, range)
+ #define BN_priv_rand_range_ex(r, range, s, c) dssh_test_BN_priv_rand_range_ex(r, range, s, c)
+ #define BN_dup(a)                        dssh_test_BN_dup(a)
+ #define BN_rshift1(r, a)                  dssh_test_BN_rshift1(r, a)
+ #define BN_sub_word(a, w)                dssh_test_BN_sub_word(a, w)
+ #define BN_add_word(a, w)                dssh_test_BN_add_word(a, w)
+ #define BN_check_prime(p, c, cb)         dssh_test_BN_check_prime(p, c, cb)
  #define EVP_PKEY_CTX_set_rsa_padding(c, p) dssh_test_EVP_PKEY_CTX_set_rsa_padding(c, p)
 int dssh_test_EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *ctx, int pad);
  #define EVP_CIPHER_CTX_set_padding(c, p) dssh_test_EVP_CIPHER_CTX_set_padding(c, p)
@@ -287,18 +331,21 @@ struct dssh_log_forward_queue {
 enum dssh_channel_dispatch_state {
 	DSSH_CHANNEL_DISPATCH_IDLE = 0,
 	DSSH_CHANNEL_DISPATCH_ACTIVE,
-	DSSH_CHANNEL_DISPATCH_LOCK_FAILED,
 };
 
 struct dssh_channel_s {
 	/* Pointers and size_t (pointer-sized) */
 	struct dssh_session_s *sess; /* back-pointer (new API takes ch only) */
+	struct dssh_channel_id *protocol_id;
 	uint8_t               *setup_payload;
 	size_t                 setup_payload_len;
+	size_t                 setup_payload_capacity;
 	dssh_chan_zc_cb        zc_cb;    /* ZC data callback (or internal for stream) */
 	void                  *zc_cbdata;
 	dssh_chan_event_cb     event_cb; /* optional event push callback */
 	void                  *event_cbdata;
+	dssh_chan_break_cb     break_cb;
+	void                  *break_cbdata;
 
 	/* C11 synchronization (platform-dependent size).
 	 * TX slot draining uses tx_mtx -> channel_mtx -> buf_mtx.
@@ -312,9 +359,17 @@ struct dssh_channel_s {
 	 * without channel_mtx held. */
 	atomic_uint tx_refs;
 	/* A session has one demux thread, so at most one dispatch can own a
-	 * channel.  LOCK_FAILED prevents teardown when buf_mtx ownership became
-	 * uncertain after an unlock error. */
+	 * channel. ACTIVE keeps the channel alive while that dispatch drops
+	 * buf_mtx for callbacks or I/O. */
 	atomic_int dispatch_state;
+	/* First receive-credit failure, shared by both stream read directions.
+	 * Atomic publication also works after an acquisition failure; ordinary
+	 * publication pairs with buf_mtx/poll_cnd to avoid a lost wakeup. */
+	atomic_int read_error;
+	/* A terminal failure can propagate through several scheduler frames.
+	 * Publish it only once, even if another reader acknowledges it before
+	 * the original read finishes releasing packet-engine ownership. */
+	atomic_bool read_error_terminal;
 
 			     /* 4-byte */
 	uint32_t              local_id;
@@ -332,6 +387,7 @@ struct dssh_channel_s {
 
 					 /* 1-byte */
 	bool    open;
+	bool    open_pending; /* outbound OPEN has not received its one response */
 	bool    close_sent;
 	bool    close_received;
 	bool    eof_sent;
@@ -365,7 +421,7 @@ struct dssh_channel_s {
 
 	/* Pre-allocated TX slots for demux fire-and-forget responses */
 	struct dssh_tx_slot wa_slot;        /* CHANNEL_WINDOW_ADJUST (9 B) */
-	struct dssh_tx_slot chan_fail_slot; /* CHANNEL_FAILURE (8 B)       */
+	struct dssh_tx_slot chan_reply_slot; /* CHANNEL_SUCCESS/FAILURE (8 B) */
 
 					    /* Embedded structs (contain pointers, large) */
 	struct dssh_chan_params params; /* new API: getters after open/accept */
@@ -377,7 +433,61 @@ struct dssh_channel_s {
 	} buf;
 };
 
+DSSH_PRIVATE void channel_defer_read_error(struct dssh_session_s *sess,
+	struct dssh_channel_s *ch, int error);
+
+/* Private protocol ownership outlives an application channel when a peer
+ * response is still outstanding. The local number is immutable once
+ * assigned. All other fields are protected by channel_mtx. */
+enum dssh_channel_id_phase {
+	DSSH_CHANNEL_ID_RESERVED,
+	DSSH_CHANNEL_ID_QUEUED,
+	DSSH_CHANNEL_ID_ACCEPTING,
+	DSSH_CHANNEL_ID_OPENING,
+	DSSH_CHANNEL_ID_CONFIRMED,
+	DSSH_CHANNEL_ID_FAILED
+};
+
+struct dssh_channel_id {
+	struct dssh_channel_id *next;
+	size_t refs;
+	uint32_t local;
+	uint32_t remote;
+	enum dssh_channel_id_phase phase;
+	bool local_assigned;
+	bool retired;
+	bool close_started;
+	bool close_ordered;
+	bool close_sent;
+	bool close_received;
+};
+
+struct dssh_language_field {
+	char *data;
+	size_t len;
+	size_t capacity;
+};
+
+struct dssh_client_key_slot {
+	struct dssh_client_key_slot *next;
+	dssh_key_algo module;
+	dssh_key_algo_ctx *ctx;
+	struct dssh_result_lease lease;
+};
+
+/* Caller serializes client-key operations with synchronous session operations.
+ * A slot is retained after clearing for reuse; a present lease marks a key. */
+DSSH_PRIVATE dssh_key_algo_ctx *dssh_client_key_context(struct dssh_session_s *sess, dssh_key_algo module);
+DSSH_PRIVATE void dssh_client_keys_cleanup(struct dssh_session_s *sess);
+
 struct dssh_session_s {
+	struct dssh_client_key_slot *client_keys;
+	/* Language fields are protected by mtx. Peer fields share one allocation. */
+	struct dssh_language_field local_languages[2];
+	char *peer_languages;
+	size_t peer_languages_capacity;
+	size_t peer_languages_len[2];
+	bool peer_languages_available;
 	/* Pointers and size_t (pointer-sized) -- callbacks and cbdata */
 	void *tx_cbdata;
 	void *rx_cbdata;
@@ -412,10 +522,15 @@ struct dssh_session_s {
 	void                  *hostkey_verify_cbdata;
 	dssh_chan_event_cb      default_event_cb;
 	void                   *default_event_cbdata;
+	dssh_chan_break_cb      default_break_cb;
+	void                   *default_break_cbdata;
 	size_t                  default_max_events;
 	struct dssh_channel_s **channels;
 	size_t                  channel_count;
 	size_t                  channel_capacity;
+	struct dssh_channel_id *channel_ids;
+	struct dssh_channel_id *free_channel_ids;
+	size_t retired_channel_ids;
 
 	/* Embedded transport state (large, naturally aligned) */
 	struct dssh_transport_state_s trans;
@@ -431,9 +546,9 @@ struct dssh_session_s {
 	cnd_t  accept_cnd;
 	thrd_t demux_thread;
 
-	/* 4-byte */
+	/* Counters and millisecond intervals */
 	uint32_t next_channel_id;
-	int      timeout_ms;
+	intmax_t timeout_ms;
 
 	/* 1-byte */
 	atomic_bool initialized;
@@ -444,62 +559,95 @@ struct dssh_session_s {
 	atomic_bool termination_logged;
 	atomic_bool terminate_notified;
 	atomic_bool terminate_wake_started;
-	atomic_bool lock_ownership_failed;
+	atomic_bool lifecycle_busy;
 	atomic_bool log_mirror_suppressed;
+	/* Synchronous pre-start operations are serialized by the application.
+	 * Publish only after their complete public operation succeeds. Session
+	 * identifiers and installed keys can also exist on a failed handshake. */
+	bool        handshake_complete;
+	bool        auth_complete;
 	bool        auth_service_requested;
+	/* Client reply snapshots are mutable only during application-serialized
+	 * pre-start authentication, and immutable after successful startup. */
+	char       *auth_methods;
+	size_t      auth_methods_len;
+	size_t      auth_methods_capacity;
+	bool        auth_methods_available;
+	/* Owned by the synchronous server authentication receive operation. */
+	bool        server_auth_active;
+	/* Retained across server-operation errors; pre-start calls are serialized. */
+	uint8_t    *server_auth_user;
+	size_t      server_auth_user_len;
+	size_t      server_auth_user_capacity;
+	bool        server_auth_user_bound;
+	bool        server_auth_service_accepted;
 };
+
+/* A failed release of a valid owned mutex leaves no recoverable ownership or
+ * cleanup contract. Stop before callbacks, lifetime mutation or cleanup. */
+static inline int
+dssh_mtx_unlock(mtx_t *mutex)
+{
+	int ret = mtx_unlock(mutex);
+	if (ret != thrd_success)
+		abort();
+	return ret;
+}
 
 /*
  * Generic C11 thread-call checker.  Call the real function, check the
  * result.  thrd_success, thrd_busy, and thrd_timedout are non-errors;
  * anything else (thrd_error, thrd_nomem) triggers session termination.
  *
- * Library code ignores the return — the wrapper handles set_terminate.
- * Exception: set_terminate() itself checks returns to skip blocks whose
- * lock was not acquired.
+ * Callers must check the return before using state protected by the mutex
+ * or interpreting a wait result.  This helper does not establish ownership
+ * when the underlying operation failed. Call only after releasing all held
+ * locks, so termination callbacks run without locks. A deferred termination
+ * flag does not establish that notification and wakeups have completed.
  */
 static inline int
 dssh_thrd_check(struct dssh_session_s *sess, int ret)
 {
-	if (ret != thrd_success && ret != thrd_busy && ret != thrd_timedout && !sess->terminate)
+	if (ret != thrd_success && ret != thrd_busy && ret != thrd_timedout)
 		session_set_terminate(sess);
 	return ret;
 }
 
-/* Use while a mutex is held or its ownership is uncertain.  Marking the
- * session is lock-free; notification callbacks and wake-lock acquisition are
- * deferred until a lock-free boundary calls session_set_terminate(). */
-static inline int
-dssh_thrd_check_locked(struct dssh_session_s *sess, int ret)
+/* Failure during the required termination wake cannot safely return with
+ * hidden waiters or unknown mutex ownership. These objects are initialized
+ * and valid; ordinary resource/acquisition failures use normal error paths. */
+static inline void
+dssh_thrd_require(int ret)
 {
-	if (ret != thrd_success && ret != thrd_busy && ret != thrd_timedout && !sess->terminate)
-		session_set_terminate_no_wake(sess);
-	return ret;
+	if (ret != thrd_success)
+		abort();
 }
 
 static inline int
 dssh_thrd_check_unlock(struct dssh_session_s *sess, int ret)
 {
-	if (ret != thrd_success) {
-		atomic_store_explicit(&sess->lock_ownership_failed, true, memory_order_release);
-		if (!sess->terminate)
-			session_set_terminate_no_wake(sess);
-	}
+	(void)sess;
+	if (ret != thrd_success)
+		abort();
 	return ret;
 }
 
-/* Convert a millisecond timeout to an absolute deadline timespec.
- * Caller must ensure timeout_ms > 0. */
-static inline void
-dssh_deadline_from_ms(struct timespec *ts, int timeout_ms)
-{
-	timespec_get(ts, TIME_UTC);
-	ts->tv_sec += timeout_ms / 1000;
-	ts->tv_nsec += (timeout_ms % 1000) * 1000000L;
-	if (ts->tv_nsec >= 1000000000L) {
-		ts->tv_sec++;
-		ts->tv_nsec -= 1000000000L;
-	}
-}
+DSSH_PRIVATE int transport_disconnect_inner(struct dssh_session_s *sess, uint32_t reason,
+    const char *description);
+DSSH_PRIVATE int transport_disconnect_result(struct dssh_session_s *sess, uint32_t reason,
+    const char *description, int result);
+
+DSSH_PRIVATE int dssh_clock_read(struct timespec *ts);
+
+/* Convert a positive timeout, preserving the caller's output on failure. */
+DSSH_PRIVATE int dssh_deadline_from_ms(struct timespec *ts, intmax_t timeout_ms);
+
+/* Observe exact private results only in test builds. Release preprocessing
+ * leaves the original expression, with no added call or evaluation. */
+#ifdef DSSH_TESTING
+ #define DSSH_TEST_CHANNEL_RESULT(stage, value) dssh_test_channel_observe_result(stage, value)
+#else
+ #define DSSH_TEST_CHANNEL_RESULT(stage, value) value
+#endif
 
 #endif   // ifndef DSSH_INTERNAL_H

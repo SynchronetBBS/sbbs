@@ -411,11 +411,11 @@ auth_publickey(const uint8_t *username, size_t username_len, const char *algorit
 
 static int
 auth_password(const uint8_t *username, size_t username_len, const uint8_t *password,
-    size_t password_len, uint8_t **prompt, size_t *prompt_len, void *cbdata)
+    size_t password_len, struct dssh_bytes_result *prompt, void *cbdata)
 {
 	dg_auth_t *auth = cbdata;
 	char alias[DG_ALIAS_MAX];
-	(void)prompt; (void)prompt_len;
+	(void)prompt;
 	copy_username(alias, sizeof(alias), username, username_len);
 	if (list_contains(auth->client->config, "config/banned-users.txt", alias, false))
 		return auth_rejected(auth);

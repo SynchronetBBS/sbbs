@@ -10,6 +10,10 @@
 #include <netinet/in.h>
 
 #include <errno.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <stdarg.h>
+#include <stdatomic.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdio.h>
@@ -21,9 +25,48 @@
 #include "deucessh-auth.h"
 #include "deucessh-conn.h"
 #include "deucessh.h"
+#include "server-io.h"
+#include "server-output.h"
+#include "server-shell.h"
+#include "server-port.h"
 
 static int          conn_fd = -1;
 static dssh_session sess;
+static struct example_socket_io connection_io = { .descriptor = -1 };
+static atomic_bool diagnostic_failed = ATOMIC_VAR_INIT(false);
+
+static bool
+log_failure(void)
+{
+	atomic_store(&diagnostic_failed, true);
+	if (sess != NULL)
+		dssh_session_terminate(sess);
+	return false;
+}
+
+static bool log_message(const char *, ...) DSSH_EXAMPLE_PRINTF_LIKE(1, 2);
+
+static bool
+log_message(const char *format, ...)
+{
+	va_list arguments;
+	va_start(arguments, format);
+	int written = vfprintf(stderr, format, arguments);
+	va_end(arguments);
+	if (written < 0 || fflush(stderr) != 0)
+		return log_failure();
+	return true;
+}
+
+static bool
+log_bytes(const char *prefix, const uint8_t *bytes, size_t length)
+{
+	if (fputs(prefix, stderr) == EOF || example_write_text(stderr, bytes, length) < 0
+	    || fputc('\n', stderr) == EOF || fflush(stderr) != 0)
+		return log_failure();
+	return true;
+}
+
 
 /* ================================================================
  * Terminate callback -- unblock I/O callbacks
@@ -31,8 +74,10 @@ static dssh_session sess;
 static void
 on_terminate(dssh_session s, void *cbdata)
 {
-	if (conn_fd != -1)
-		shutdown(conn_fd, SHUT_RDWR);
+	(void)s;
+	(void)cbdata;
+	if (conn_fd >= 0 && shutdown(conn_fd, SHUT_RDWR) != 0 && errno != ENOTCONN)
+		atomic_store(&diagnostic_failed, true);
 }
 
 /* ================================================================
@@ -41,70 +86,22 @@ on_terminate(dssh_session s, void *cbdata)
 static int
 tx(uint8_t *buf, size_t bufsz, dssh_session s, void *cbdata)
 {
-	size_t sent = 0;
-
-	while (sent < bufsz && !dssh_session_is_terminated(s)) {
-		ssize_t n = send(conn_fd, &buf[sent], bufsz - sent, 0);
-
-		if (n > 0)
-			sent += n;
-		else if ((n < 0) && (errno != EAGAIN) && (errno != EINTR))
-			return DSSH_ERROR_INIT;
-	}
-	return 0;
+	(void)cbdata;
+	return example_socket_transfer(&connection_io, buf, bufsz, s, true);
 }
 
 static int
 rx(uint8_t *buf, size_t bufsz, dssh_session s, void *cbdata)
 {
-	size_t got = 0;
-
-	while (got < bufsz && !dssh_session_is_terminated(s)) {
-		struct pollfd fd = {.fd = conn_fd, .events = POLLIN};
-		int           pr = poll(&fd, 1, 5000);
-
-		if (pr < 0)
-			return DSSH_ERROR_INIT;
-		if (pr == 0)
-			continue;
-		if (fd.revents & (POLLHUP | POLLERR) && !(fd.revents & POLLIN))
-			return DSSH_ERROR_INIT;
-
-		ssize_t n = recv(conn_fd, &buf[got], bufsz - got, 0);
-
-		if (n > 0)
-			got += n;
-		else if (n == 0)
-			return DSSH_ERROR_INIT;
-		else if ((errno != EAGAIN) && (errno != EINTR))
-			return DSSH_ERROR_INIT;
-	}
-	return 0;
+	(void)cbdata;
+	return example_socket_transfer(&connection_io, buf, bufsz, s, false);
 }
 
 static int
 rxline(uint8_t *buf, size_t bufsz, size_t *bytes_received, dssh_session s, void *cbdata)
 {
-	size_t pos    = 0;
-	bool   lastcr = false;
-
-	while (!dssh_session_is_terminated(s)) {
-		int res = rx(&buf[pos], 1, s, cbdata);
-
-		if (res < 0)
-			return res;
-		if (buf[pos] == '\r')
-			lastcr = true;
-		if ((buf[pos] == '\n') && lastcr) {
-			*bytes_received = pos + 1;
-			return 0;
-		}
-		if (pos + 1 < bufsz)
-			pos++;
-		else
-			return DSSH_ERROR_TOOLONG;
-	}
-	return DSSH_ERROR_TERMINATED;
+	(void)cbdata;
+	return example_socket_line(&connection_io, buf, bufsz, bytes_received, s);
 }
 
 /* ================================================================
@@ -130,80 +127,98 @@ static const char *reject_quips[] = {
 };
 #define N_QUIPS (sizeof(reject_quips) / sizeof(reject_quips[0]))
 
-static void
-set_banner(const char *msg)
+static int
+publish_banner(const char *msg)
 {
-	fprintf(stderr, "  BANNER: %s", msg);
-	dssh_auth_set_banner(sess, msg, NULL);
+	int ret = dssh_auth_set_banner(sess, msg, NULL);
+	if (ret < 0)
+		return ret;
+	const uint8_t *bytes = (const uint8_t *)msg;
+	return log_bytes("  BANNER: ", bytes, strlen(msg)) ? 0 : DSSH_ERROR_INIT;
 }
+
+#define BANNER(message) do { \
+	if (publish_banner(message) < 0) \
+		return DSSH_AUTH_DISCONNECT; \
+} while (0)
+#define FORMAT(...) do { \
+	if (example_format(__VA_ARGS__) < 0) \
+		return DSSH_AUTH_DISCONNECT; \
+} while (0)
 
 static int
 auth_none(const uint8_t *username, size_t username_len, void *cbdata)
 {
+	(void)cbdata;
 	static bool tried;
-	char        buf[256];
-
+	char user[64], buf[256];
+	if (example_display_text(user, sizeof(user), username, username_len) < 0)
+		return DSSH_AUTH_DISCONNECT;
 	if (tried) {
-		set_banner("You already tried that. It didn't work then either.\r\n");
+		BANNER("You already tried that. It didn't work then either.\r\n");
 		return DSSH_AUTH_FAILURE;
 	}
 	tried = true;
-
 	if (arc4random_uniform(10) != 0) {
-		snprintf(buf, sizeof(buf), "Oh, '%.*s' wants in without even trying? %s", (int)username_len,
-		    username, reject_quips[arc4random_uniform(N_QUIPS)]);
-		set_banner(buf);
+		FORMAT(buf, sizeof(buf), "Oh, '%s' wants in without even trying? %s",
+		    user, reject_quips[arc4random_uniform(N_QUIPS)]);
+		BANNER(buf);
 		return DSSH_AUTH_FAILURE;
 	}
-	snprintf(buf, sizeof(buf),
-	    "Oh, '%.*s' wants in without even trying? "
-	    "1 in 10 chance and you hit it. Buy a lottery ticket!\r\n",
-	    (int)username_len, username);
-	set_banner(buf);
+	FORMAT(buf, sizeof(buf),
+	    "Oh, '%s' wants in without even trying? "
+	    "1 in 10 chance and you hit it. Buy a lottery ticket!\r\n", user);
+	BANNER(buf);
 	return DSSH_AUTH_SUCCESS;
+}
+
+static void
+static_prompt_release(void *owner)
+{
+	(void)owner;
 }
 
 static int
 auth_password(const uint8_t *username, size_t username_len, const uint8_t *password, size_t password_len,
-    uint8_t **change_prompt, size_t *change_prompt_len, void *cbdata)
+    struct dssh_bytes_result *change_prompt, void *cbdata)
 {
-	char buf[256];
-
+	(void)password;
+	(void)password_len;
+	(void)cbdata;
+	char user[64], buf[256];
+	if (example_display_text(user, sizeof(user), username, username_len) < 0)
+		return DSSH_AUTH_DISCONNECT;
 	if (arc4random_uniform(4) != 0) {
-		snprintf(buf, sizeof(buf),
-		    "'%.*s'/'%.*s'? Pfft. %s"
-		    "But I'll give you a chance to change it...\r\n",
-		    (int)username_len, username, (int)password_len, password,
-		    reject_quips[arc4random_uniform(N_QUIPS)]);
-		set_banner(buf);
+		FORMAT(buf, sizeof(buf),
+		    "'%s'? Pfft. %sBut I'll give you a chance to change it...\r\n",
+		    user, reject_quips[arc4random_uniform(N_QUIPS)]);
+		BANNER(buf);
 		static const char prompt[] = "Your password is terrible. Pick a new one.";
-		*change_prompt             = malloc(sizeof(prompt));
-		if (*change_prompt != NULL) {
-			memcpy(*change_prompt, prompt, sizeof(prompt));
-			*change_prompt_len = sizeof(prompt) - 1;
-		}
+		const uint8_t *bytes = (const uint8_t *)prompt;
+		change_prompt->bytes.data = bytes;
+		change_prompt->bytes.len = sizeof(prompt) - 1;
+		change_prompt->lease.release = static_prompt_release;
 		return DSSH_AUTH_CHANGE_PASSWORD;
 	}
-	snprintf(buf, sizeof(buf),
-	    "Wow, '%.*s' with password '%.*s'? "
-	    "Security at its finest. But you got lucky!\r\n",
-	    (int)username_len, username, (int)password_len, password);
-	set_banner(buf);
+	FORMAT(buf, sizeof(buf), "Wow, '%s'? You got lucky!\r\n", user);
+	BANNER(buf);
 	return DSSH_AUTH_SUCCESS;
 }
 
 static int
 auth_passwd_change(const uint8_t *username, size_t username_len, const uint8_t *old_password,
-    size_t old_password_len, const uint8_t *new_password, size_t new_password_len, uint8_t **change_prompt,
-    size_t *change_prompt_len, void *cbdata)
+    size_t old_password_len, const uint8_t *new_password, size_t new_password_len,
+    struct dssh_bytes_result *change_prompt, void *cbdata)
 {
-	char buf[256];
-
-	snprintf(buf, sizeof(buf),
-	    "Password changed from '%.*s' to '%.*s'? "
-	    "Sure, why not. Welcome in!\r\n",
-	    (int)old_password_len, old_password, (int)new_password_len, new_password);
-	set_banner(buf);
+	(void)username;
+	(void)username_len;
+	(void)old_password;
+	(void)old_password_len;
+	(void)new_password;
+	(void)new_password_len;
+	(void)change_prompt;
+	(void)cbdata;
+	BANNER("Password changed. Welcome in!\r\n");
 	return DSSH_AUTH_SUCCESS;
 }
 
@@ -211,23 +226,22 @@ static int
 auth_publickey(const uint8_t *username, size_t username_len, const char *algo_name, const uint8_t *pubkey_blob,
     size_t pubkey_blob_len, bool has_signature, void *cbdata)
 {
-	char buf[256];
-
-	if (!has_signature) {
-		/* PK_OK query -- just say yes so they send the real attempt */
+	(void)pubkey_blob;
+	(void)pubkey_blob_len;
+	(void)cbdata;
+	char user[64], buf[256];
+	if (!has_signature)
 		return DSSH_AUTH_SUCCESS;
-	}
+	if (example_display_text(user, sizeof(user), username, username_len) < 0 || algo_name == NULL)
+		return DSSH_AUTH_DISCONNECT;
 	if (arc4random_uniform(4) != 0) {
-		snprintf(buf, sizeof(buf), "Nice key, '%.*s'. Shame about the luck. %s", (int)username_len,
-		    username, reject_quips[arc4random_uniform(N_QUIPS)]);
-		set_banner(buf);
+		FORMAT(buf, sizeof(buf), "Nice key, '%s'. Shame about the luck. %s",
+		    user, reject_quips[arc4random_uniform(N_QUIPS)]);
+		BANNER(buf);
 		return DSSH_AUTH_FAILURE;
 	}
-	snprintf(buf, sizeof(buf),
-	    "Key auth from '%.*s' with %s? "
-	    "Fancy. And lucky!\r\n",
-	    (int)username_len, username, algo_name);
-	set_banner(buf);
+	FORMAT(buf, sizeof(buf), "Key auth from '%s' with %s? Fancy. And lucky!\r\n", user, algo_name);
+	BANNER(buf);
 	return DSSH_AUTH_SUCCESS;
 }
 
@@ -328,33 +342,50 @@ looking_at(const char *cmd, const char *obj)
 	return false;
 }
 
+/* These examples serve one connection per process. The request hook marks
+ * a new attempt; a zero-response continuation does not restart the game. */
+static bool kbi_initial_request;
+
+static int
+auth_request(const uint8_t *username, size_t username_len, const uint8_t *method,
+    size_t method_len, bool new_identity, void *cbdata)
+{
+	(void)username;
+	(void)username_len;
+	(void)new_identity;
+	(void)cbdata;
+	kbi_initial_request = method_len == sizeof("keyboard-interactive") - 1
+	    && memcmp(method, "keyboard-interactive", method_len) == 0;
+	return 0;
+}
+
 static int
 auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, const uint8_t **responses,
-    const size_t *response_lens, char **name_out, char **instruction_out, uint32_t *num_prompts_out,
-    char ***prompts_out, bool **echo_out, void *cbdata)
+    const size_t *response_lens, struct dssh_auth_challenge *out, void *cbdata)
 {
 	static struct game_state gs;
 	char                     banner[1024];
 
-	/* Reset session timeout on each KBI interaction */
-	alarm(60);
+	/* Reset the application deadline on each KBI interaction. */
+	if (example_socket_reset(&connection_io) != 0)
+		return DSSH_AUTH_DISCONNECT;
 
 	/* First call -- initialize game */
-	if (num_responses == 0 && responses == NULL) {
+	if (kbi_initial_request) {
+		kbi_initial_request = false;
 		memset(&gs, 0, sizeof(gs));
 		gs.room     = ROOM_GATE;
-		size_t nlen = username_len < sizeof(gs.username) - 1 ? username_len : sizeof(gs.username) - 1;
-		memcpy(gs.username, username, nlen);
-		gs.username[nlen] = '\0';
+		if (example_display_text(gs.username, sizeof(gs.username), username, username_len) < 0)
+			return DSSH_AUTH_DISCONNECT;
 
-		snprintf(banner, sizeof(banner),
+		FORMAT(banner, sizeof(banner),
 		    "\r\n--- The Gate of Authentication ---\r\n"
 		    "\r\n"
 		    "Welcome, %s. To prove your worth, you must find\r\n"
 		    "the key that unlocks the gate.\r\n"
 		    "%s",
 		    gs.username, gate_desc);
-		set_banner(banner);
+		BANNER(banner);
 		gs.looked = true;
 		goto prompt;
 	}
@@ -379,18 +410,18 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 
 	/* Universal commands */
 	if (cmd_eq(cmd, "quit") || cmd_eq(cmd, "exit")) {
-		set_banner("You walk away from the gate. Maybe next time.\r\n");
+		BANNER("You walk away from the gate. Maybe next time.\r\n");
 		return DSSH_AUTH_FAILURE;
 	}
 	if (cmd_eq(cmd, "help") || cmd_eq(cmd, "?")) {
-		set_banner(help_text);
+		BANNER(help_text);
 		goto prompt;
 	}
 	if (cmd_eq(cmd, "inventory") || cmd_eq(cmd, "inv") || cmd_eq(cmd, "i")) {
 		if (gs.has_key)
-			set_banner("You are carrying: a rusty iron key\r\n");
+			BANNER("You are carrying: a rusty iron key\r\n");
 		else
-			set_banner("You are carrying nothing.\r\n");
+			BANNER("You are carrying nothing.\r\n");
 		goto prompt;
 	}
 
@@ -398,12 +429,12 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 	switch (gs.room) {
 		case ROOM_GATE:
 			if (cmd_eq(cmd, "look") || cmd_eq(cmd, "l")) {
-				set_banner(gate_desc);
+				BANNER(gate_desc);
 				gs.looked = true;
 				goto prompt;
 			}
 			if (looking_at(cmd, "gate") || looking_at(cmd, "door")) {
-				set_banner(
+				BANNER(
 				    "\r\nThe gate is wrought from black iron, "
 				    "twisted into thorny spirals.\r\n"
 				    "It's cold to the touch and far too heavy "
@@ -412,12 +443,12 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 			}
 			if (looking_at(cmd, "padlock") || looking_at(cmd, "lock")) {
 				if (gs.has_key)
-					set_banner(
+					BANNER(
 					    "\r\nA heavy padlock. The keyhole looks "
 					    "like it might accept the key you're "
 					    "carrying.\r\n\r\n");
 				else
-					set_banner(
+					BANNER(
 					    "\r\nA heavy padlock, green with verdigris. "
 					    "The keyhole is shaped\r\n"
 					    "like an old-fashioned skeleton key. "
@@ -425,7 +456,7 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 				goto prompt;
 			}
 			if (looking_at(cmd, "bars")) {
-				set_banner(
+				BANNER(
 				    "\r\nThrough the bars you can see a softly "
 				    "glowing terminal prompt.\r\n"
 				    "It blinks patiently. It has all the time "
@@ -433,7 +464,7 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 				goto prompt;
 			}
 			if (looking_at(cmd, "path") || looking_at(cmd, "paths")) {
-				set_banner(
+				BANNER(
 				    "\r\nA cobblestone path branches north toward "
 				    "an overgrown garden,\r\n"
 				    "and west toward a crumbling stone "
@@ -441,14 +472,14 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 				goto prompt;
 			}
 			if (looking_at(cmd, "tower")) {
-				set_banner(
+				BANNER(
 				    "\r\nThe tower rises to the west, its upper "
 				    "stones crumbling.\r\n"
 				    "Something dark moves on the parapet.\r\n\r\n");
 				goto prompt;
 			}
 			if (looking_at(cmd, "garden")) {
-				set_banner(
+				BANNER(
 				    "\r\nTo the north, vines and wildflowers spill "
 				    "over what was once\r\n"
 				    "a formal garden. You can just make out a "
@@ -458,31 +489,31 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 			if (dir_match(cmd, "north", "n")) {
 				gs.room   = ROOM_GARDEN;
 				gs.looked = false;
-				set_banner(garden_desc);
+				BANNER(garden_desc);
 				gs.looked = true;
 				goto prompt;
 			}
 			if (dir_match(cmd, "west", "w")) {
 				gs.room   = ROOM_TOWER;
 				gs.looked = false;
-				set_banner(tower_desc);
+				BANNER(tower_desc);
 				gs.looked = true;
 				goto prompt;
 			}
 			if (dir_match(cmd, "east", "e") || dir_match(cmd, "south", "s")
 			    || dir_match(cmd, "up", "u") || dir_match(cmd, "down", "d")) {
-				set_banner("There is no path in that direction.\r\n");
+				BANNER("There is no path in that direction.\r\n");
 				goto prompt;
 			}
 			if (cmd_eq(cmd, "use key") || cmd_eq(cmd, "unlock gate") || cmd_eq(cmd, "unlock door")
 			    || cmd_eq(cmd, "open gate") || cmd_eq(cmd, "open door")) {
 				if (!gs.has_key) {
-					set_banner(
+					BANNER(
 					    "You rattle the padlock uselessly. "
 					    "You need a key.\r\n");
 					goto prompt;
 				}
-				snprintf(banner, sizeof(banner),
+				FORMAT(banner, sizeof(banner),
 				    "\r\nThe rusty key turns in the padlock with a "
 				    "satisfying click.\r\n"
 				    "The gate swings open with a groan.\r\n"
@@ -490,33 +521,33 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 				    "Welcome, %s. You have proven yourself worthy.\r\n"
 				    "\r\n",
 				    gs.username);
-				set_banner(banner);
+				BANNER(banner);
 				return DSSH_AUTH_SUCCESS;
 			}
-			set_banner("You can't do that here.\r\n");
+			BANNER("You can't do that here.\r\n");
 			goto prompt;
 
 		case ROOM_GARDEN:
 			if (cmd_eq(cmd, "look") || cmd_eq(cmd, "l") || cmd_eq(cmd, "examine")) {
 				if (gs.riddle_solved && !gs.has_key)
-					set_banner(
+					BANNER(
 					    "\r\n"
 					    "The overgrown garden. The fountain's "
 					    "symbols glow faintly.\r\n"
 					    "A rusty key glints beneath a loose "
 					    "stone.\r\n\r\n");
 				else if (gs.has_key)
-					set_banner(
+					BANNER(
 					    "\r\n"
 					    "The overgrown garden. The fountain is "
 					    "quiet now.\r\n\r\n");
 				else
-					set_banner(garden_desc);
+					BANNER(garden_desc);
 				gs.looked = true;
 				goto prompt;
 			}
 			if (looking_at(cmd, "fountain")) {
-				set_banner(
+				BANNER(
 				    "\r\nThe fountain is carved from a single block "
 				    "of grey stone.\r\n"
 				    "It hasn't held water in decades, but the "
@@ -526,7 +557,7 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 				goto prompt;
 			}
 			if (looking_at(cmd, "rim") || looking_at(cmd, "symbols") || looking_at(cmd, "carvings")) {
-				set_banner(
+				BANNER(
 				    "\r\nThe symbols look like an ancient script. "
 				    "They seem to form words,\r\n"
 				    "but you can't quite make them out from "
@@ -534,7 +565,7 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 				goto prompt;
 			}
 			if (looking_at(cmd, "stones") || looking_at(cmd, "stepping stones")) {
-				set_banner(
+				BANNER(
 				    "\r\nMoss-covered stepping stones form a path "
 				    "south toward the gate.\r\n"
 				    "They're slippery but solid.\r\n\r\n");
@@ -542,16 +573,16 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 			}
 			if (looking_at(cmd, "stone") || looking_at(cmd, "loose stone")) {
 				if (gs.riddle_solved && !gs.has_key)
-					set_banner(
+					BANNER(
 					    "\r\nA loose stone at the fountain's base "
 					    "has shifted, revealing\r\n"
 					    "a rusty iron key underneath.\r\n\r\n");
 				else if (gs.riddle_solved)
-					set_banner(
+					BANNER(
 					    "\r\nThe loose stone. The key is gone -- "
 					    "you have it.\r\n\r\n");
 				else
-					set_banner(
+					BANNER(
 					    "\r\nThe stones around the fountain's base "
 					    "are tightly fitted.\r\n"
 					    "Nothing seems loose.\r\n\r\n");
@@ -559,19 +590,19 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 			}
 			if (looking_at(cmd, "key")) {
 				if (gs.riddle_solved && !gs.has_key)
-					set_banner(
+					BANNER(
 					    "\r\nA rusty iron key, half-buried under "
 					    "the loose stone.\r\n"
 					    "It looks like it would fit an old "
 					    "padlock.\r\n\r\n");
 				else if (gs.has_key)
-					set_banner("You already picked it up.\r\n");
+					BANNER("You already picked it up.\r\n");
 				else
-					set_banner("You don't see a key here.\r\n");
+					BANNER("You don't see a key here.\r\n");
 				goto prompt;
 			}
 			if (looking_at(cmd, "leaves") || looking_at(cmd, "basin")) {
-				set_banner(
+				BANNER(
 				    "\r\nDead leaves fill the dry basin. Nothing "
 				    "useful, just the slow\r\n"
 				    "decay of a forgotten place.\r\n\r\n");
@@ -579,7 +610,7 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 			}
 			if (looking_at(cmd, "vines") || looking_at(cmd, "flowers")
 			    || looking_at(cmd, "wildflowers")) {
-				set_banner(
+				BANNER(
 				    "\r\nWild morning glories twist through the "
 				    "remains of a trellis.\r\n"
 				    "They're beautiful in a melancholy way.\r\n\r\n");
@@ -588,19 +619,19 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 			if (dir_match(cmd, "south", "s")) {
 				gs.room   = ROOM_GATE;
 				gs.looked = false;
-				set_banner(gate_desc);
+				BANNER(gate_desc);
 				gs.looked = true;
 				goto prompt;
 			}
 			if (dir_match(cmd, "north", "n") || dir_match(cmd, "east", "e")
 			    || dir_match(cmd, "west", "w") || dir_match(cmd, "up", "u")
 			    || dir_match(cmd, "down", "d")) {
-				set_banner("There is no path in that direction.\r\n");
+				BANNER("There is no path in that direction.\r\n");
 				goto prompt;
 			}
 			if (cmd_eq(cmd, "read fountain") || cmd_eq(cmd, "read") || cmd_eq(cmd, "read rim")
 			    || cmd_eq(cmd, "read symbols")) {
-				set_banner(
+				BANNER(
 				    "\r\nCarved into the fountain's rim:\r\n\r\n"
 				    "  \"I have cities, but no houses.\r\n"
 				    "   I have mountains, but no trees.\r\n"
@@ -614,44 +645,44 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 				const char *ans = cmd_arg(cmd, "answer");
 				if (strcasecmp(ans, "a map") == 0 || strcasecmp(ans, "map") == 0) {
 					gs.riddle_solved = true;
-					set_banner(
+					BANNER(
 					    "\r\nThe symbols on the fountain glow "
 					    "bright blue!\r\n"
 					    "A stone at the fountain's base shifts, "
 					    "revealing a rusty key.\r\n");
 					goto prompt;
 				}
-				set_banner(
+				BANNER(
 				    "The fountain remains silent. "
 				    "That is not the answer.\r\n");
 				goto prompt;
 			}
 			if (cmd_eq(cmd, "take key") || cmd_eq(cmd, "get key")) {
 				if (!gs.riddle_solved) {
-					set_banner("You don't see a key here.\r\n");
+					BANNER("You don't see a key here.\r\n");
 					goto prompt;
 				}
 				if (gs.has_key) {
-					set_banner("You already have the key.\r\n");
+					BANNER("You already have the key.\r\n");
 					goto prompt;
 				}
 				gs.has_key = true;
-				set_banner(
+				BANNER(
 				    "You pick up the rusty iron key. "
 				    "It's heavy and cold.\r\n");
 				goto prompt;
 			}
-			set_banner("You can't do that here.\r\n");
+			BANNER("You can't do that here.\r\n");
 			goto prompt;
 
 		case ROOM_TOWER:
 			if (cmd_eq(cmd, "look") || cmd_eq(cmd, "l")) {
-				set_banner(tower_desc);
+				BANNER(tower_desc);
 				gs.looked = true;
 				goto prompt;
 			}
 			if (looking_at(cmd, "tower") || looking_at(cmd, "walls")) {
-				set_banner(
+				BANNER(
 				    "\r\nThe tower is built from rough-hewn stone, "
 				    "crumbling at the edges.\r\n"
 				    "It must have been a watchtower once. Ivy "
@@ -659,7 +690,7 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 				goto prompt;
 			}
 			if (looking_at(cmd, "steps") || looking_at(cmd, "stairs")) {
-				set_banner(
+				BANNER(
 				    "\r\nNarrow stone steps spiral upward into "
 				    "shadow, worn smooth\r\n"
 				    "by centuries of footsteps. They look "
@@ -667,7 +698,7 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 				goto prompt;
 			}
 			if (looking_at(cmd, "ivy")) {
-				set_banner(
+				BANNER(
 				    "\r\nThick ivy clings to the stonework. "
 				    "Tiny spiders scurry away\r\n"
 				    "from your gaze.\r\n\r\n");
@@ -676,40 +707,40 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 			if (dir_match(cmd, "east", "e")) {
 				gs.room   = ROOM_GATE;
 				gs.looked = false;
-				set_banner(gate_desc);
+				BANNER(gate_desc);
 				gs.looked = true;
 				goto prompt;
 			}
 			if (dir_match(cmd, "up", "u")) {
 				gs.room   = ROOM_PARAPET;
 				gs.looked = false;
-				set_banner(parapet_desc);
+				BANNER(parapet_desc);
 				gs.looked = true;
 				goto prompt;
 			}
 			if (dir_match(cmd, "north", "n") || dir_match(cmd, "south", "s")
 			    || dir_match(cmd, "west", "w") || dir_match(cmd, "down", "d")) {
-				set_banner("There is no path in that direction.\r\n");
+				BANNER("There is no path in that direction.\r\n");
 				goto prompt;
 			}
-			set_banner("You can't do that here.\r\n");
+			BANNER("You can't do that here.\r\n");
 			goto prompt;
 
 		case ROOM_PARAPET:
 			if (cmd_eq(cmd, "look") || cmd_eq(cmd, "l")) {
-				set_banner(parapet_desc);
+				BANNER(parapet_desc);
 				gs.looked = true;
 				goto prompt;
 			}
 			if (looking_at(cmd, "raven") || looking_at(cmd, "bird")) {
 				if (gs.talked_raven)
-					set_banner(
+					BANNER(
 					    "\r\nThe raven watches you with one "
 					    "beady eye. It's already said\r\n"
 					    "its piece and seems smugly satisfied "
 					    "about it.\r\n\r\n");
 				else
-					set_banner(
+					BANNER(
 					    "\r\nA large raven, jet black with an "
 					    "iridescent sheen. It cocks\r\n"
 					    "its head as if waiting for you to "
@@ -718,7 +749,7 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 			}
 			if (looking_at(cmd, "battlement") || looking_at(cmd, "wall")
 			    || looking_at(cmd, "parapet")) {
-				set_banner(
+				BANNER(
 				    "\r\nThe battlement is crumbling badly. "
 				    "Several merlons have fallen\r\n"
 				    "away entirely, leaving gaps through which "
@@ -727,7 +758,7 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 			}
 			if (looking_at(cmd, "view") || looking_at(cmd, "horizon")
 			    || looking_at(cmd, "landscape")) {
-				set_banner(
+				BANNER(
 				    "\r\nFrom up here you can see the garden to "
 				    "the north-east, the locked\r\n"
 				    "gate below to the east, and beyond it... "
@@ -736,7 +767,7 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 				goto prompt;
 			}
 			if (looking_at(cmd, "stairs") || looking_at(cmd, "steps")) {
-				set_banner(
+				BANNER(
 				    "\r\nThe spiral stairs disappear into shadow "
 				    "below.\r\n\r\n");
 				goto prompt;
@@ -744,63 +775,67 @@ auth_kbi(const uint8_t *username, size_t username_len, uint32_t num_responses, c
 			if (dir_match(cmd, "down", "d")) {
 				gs.room   = ROOM_TOWER;
 				gs.looked = false;
-				set_banner(tower_desc);
+				BANNER(tower_desc);
 				gs.looked = true;
 				goto prompt;
 			}
 			if (dir_match(cmd, "north", "n") || dir_match(cmd, "south", "s")
 			    || dir_match(cmd, "east", "e") || dir_match(cmd, "west", "w")
 			    || dir_match(cmd, "up", "u")) {
-				set_banner("There is no path in that direction.\r\n");
+				BANNER("There is no path in that direction.\r\n");
 				goto prompt;
 			}
 			if (cmd_eq(cmd, "talk raven") || cmd_eq(cmd, "talk") || cmd_eq(cmd, "ask raven")) {
 				gs.talked_raven = true;
-				set_banner(
+				BANNER(
 				    "\r\nThe raven cocks its head and croaks:\r\n\r\n"
 				    "  \"Cartographers know the answer, traveler.\r\n"
 				    "   But you won't find it in any atlas.\"\r\n\r\n"
 				    "The raven ruffles its feathers smugly.\r\n");
 				goto prompt;
 			}
-			set_banner("You can't do that here.\r\n");
+			BANNER("You can't do that here.\r\n");
 			goto prompt;
 	}
 
 prompt:
-	/* Set up the prompt for this room */
-	*name_out        = strdup("The Gate of Authentication");
-	*instruction_out = strdup("");
-	*num_prompts_out = 1;
-	*prompts_out     = malloc(sizeof(char *));
-	*echo_out        = malloc(sizeof(bool));
-	if (*prompts_out == NULL || *echo_out == NULL)
-		return DSSH_AUTH_FAILURE;
+	{
+		static const uint8_t name[] = "The Gate of Authentication";
+		static struct dssh_auth_prompt item;
 
-	const char *prompt;
-	switch (gs.room) {
-		case ROOM_GATE:
-			prompt = gate_prompt;
-			break;
-		case ROOM_GARDEN:
-			prompt = garden_prompt;
-			break;
-		case ROOM_TOWER:
-			prompt = tower_prompt;
-			break;
-		case ROOM_PARAPET:
-			prompt = parapet_prompt;
-			break;
-		default:
-			prompt = "> ";
-			break;
+		const char *prompt;
+		switch (gs.room) {
+			case ROOM_GATE:
+				prompt = gate_prompt;
+				break;
+			case ROOM_GARDEN:
+				prompt = garden_prompt;
+				break;
+			case ROOM_TOWER:
+				prompt = tower_prompt;
+				break;
+			case ROOM_PARAPET:
+				prompt = parapet_prompt;
+				break;
+			default:
+				prompt = "> ";
+				break;
+		}
+		const uint8_t *text = (const uint8_t *)prompt;
+		item.text.data = text;
+		item.text.len = strlen(prompt);
+		item.echo = true;
+		out->name.data = name;
+		out->name.len = sizeof(name) - 1;
+		out->prompts = &item;
+		out->count = 1;
+		out->lease.release = static_prompt_release;
+		return DSSH_AUTH_KBI_PROMPT;
 	}
-	(*prompts_out)[0] = strdup(prompt);
-	(*echo_out)[0]    = true;
-	return DSSH_AUTH_KBI_PROMPT;
 }
 
 static struct dssh_auth_server_cbs auth_cbs = {
+    .request_cb              = auth_request,
     .methods_str             = "publickey,password,keyboard-interactive",
     .none_cb                 = auth_none,
     .password_cb             = auth_password,
@@ -809,22 +844,41 @@ static struct dssh_auth_server_cbs auth_cbs = {
     .keyboard_interactive_cb = auth_kbi,
 };
 
+#undef BANNER
+#undef FORMAT
+
 /* ================================================================
  * Channel accept callbacks (new dssh_chan_* API)
  * ================================================================ */
 static int
 accept_pty_cb(dssh_channel ch, const struct dssh_chan_params *p, void *cbdata)
 {
-	fprintf(stderr, "  PTY: %s %ux%u\n", p->term, p->cols, p->rows);
+	(void)ch;
+	(void)cbdata;
+	if (p == NULL)
+		return DSSH_ERROR_INVALID;
+	const uint8_t *term = (const uint8_t *)p->term;
+	size_t length = p->term == NULL ? 0 : strlen(p->term);
+	if (!log_bytes("  PTY: ", term, length)
+	    || !log_message("  SIZE: %" PRIu32 "x%" PRIu32 "\n", p->cols, p->rows))
+		return DSSH_ERROR_INIT;
 	return 0;
 }
 
 static int
 accept_env_cb(dssh_channel ch, const struct dssh_chan_params *p, void *cbdata)
 {
-	if (p->env_count > 0)
-		fprintf(stderr, "  ENV: %s=%s\n", p->env[p->env_count - 1].name, p->env[p->env_count - 1].value);
-	return 0;
+	(void)ch;
+	(void)cbdata;
+	if (p == NULL || (p->env_count > 0 && p->env == NULL))
+		return DSSH_ERROR_INVALID;
+	if (p->env_count == 0)
+		return 0;
+	const char *name = p->env[p->env_count - 1].name;
+	if (name == NULL)
+		return DSSH_ERROR_INVALID;
+	const uint8_t *bytes = (const uint8_t *)name;
+	return log_bytes("  ENV_NAME: ", bytes, strlen(name)) ? 0 : DSSH_ERROR_INIT;
 }
 
 static int
@@ -845,8 +899,8 @@ accept_exec_cb(dssh_channel ch, const struct dssh_chan_params *p, struct dssh_ch
 	(void)ch;
 	(void)result;
 	(void)cbdata;
-	fprintf(stderr, "  EXEC: %s\n", p->command ? p->command : "(null)");
-	return 0;
+	(void)p;
+	return log_message("  EXEC request\n") ? 0 : DSSH_ERROR_INIT;
 }
 
 static struct dssh_chan_accept_cbs accept_cbs = {
@@ -857,38 +911,33 @@ static struct dssh_chan_accept_cbs accept_cbs = {
 };
 
 /* ================================================================
- * Session timeout handler
- * ================================================================ */
-static void
-timeout_handler(int sig)
-{
-	(void)sig;
-	if (sess != NULL)
-		dssh_session_terminate(sess);
-}
-
-/* ================================================================
  * Debug and global request callbacks
  * ================================================================ */
 static void
 debug_cb(bool always_display, const uint8_t *message, size_t message_len, void *cbdata)
 {
-	fprintf(stderr, "  DEBUG(%s): %.*s\n", always_display ? "display" : "nodisplay", (int)message_len,
-	    message);
+	(void)cbdata;
+	if (!log_bytes(always_display ? "  DEBUG(display): " : "  DEBUG(nodisplay): ", message, message_len))
+		return;
 }
 
 static void
 unimplemented_cb(uint32_t rejected_seq, void *cbdata)
 {
-	fprintf(stderr, "  UNIMPLEMENTED: seq %u\n", rejected_seq);
+	(void)cbdata;
+	if (!log_message("  UNIMPLEMENTED: seq %" PRIu32 "\n", rejected_seq))
+		return;
 }
 
 static int
 global_request_cb(const uint8_t *name, size_t name_len, bool want_reply, const uint8_t *data, size_t data_len,
     void *cbdata)
 {
-	fprintf(stderr, "  GLOBAL_REQ: %.*s (want_reply=%d, data_len=%zu)\n", (int)name_len, name, want_reply,
-	    data_len);
+	(void)data;
+	(void)cbdata;
+	if (!log_message("  GLOBAL_REQ: want_reply=%d, data_len=%zu\n", want_reply, data_len)
+	    || !log_bytes("  REQUEST_NAME: ", name, name_len))
+		return -1;
 	return -1; /* reject all */
 }
 
@@ -898,172 +947,248 @@ global_request_cb(const uint8_t *name, size_t name_len, bool want_reply, const u
 static int
 handle_connection(void)
 {
-	/* 60-second session timeout */
-	signal(SIGALRM, timeout_handler);
-	alarm(60);
+	int status = 1;
+	dssh_channel ch = NULL;
+	atomic_store(&diagnostic_failed, false);
+	connection_io = (struct example_socket_io){ .descriptor = conn_fd };
+	/* Readiness alone does not make a blocking transfer bounded. */
+	int flags = fcntl(conn_fd, F_GETFL);
+	if (flags < 0 || fcntl(conn_fd, F_SETFL, flags | O_NONBLOCK) != 0) {
+		(void)log_message("socket configuration failed\n");
+		goto connection_done;
+	}
+	/* The deadline is immutable after authentication/connection startup. */
+	if (example_socket_reset(&connection_io) != 0) {
+		(void)log_message("clock initialization failed\n");
+		goto connection_done;
+	}
 
-	/* Initialize session */
 	sess = dssh_session_init(false, 0);
 	if (sess == NULL) {
-		fprintf(stderr, "session_init failed\n");
-		return 1;
+		(void)log_message("session_init failed\n");
+		goto connection_done;
 	}
-	dssh_session_set_terminate_cb(sess, on_terminate, NULL);
-	dssh_session_set_debug_cb(sess, debug_cb, NULL);
-	dssh_session_set_unimplemented_cb(sess, unimplemented_cb, NULL);
-	dssh_session_set_global_request_cb(sess, global_request_cb, NULL);
-	/* Handshake */
-	fprintf(stderr, "Handshake...\n");
+	if (dssh_session_set_terminate_cb(sess, on_terminate, NULL) != 0
+	    || dssh_session_set_debug_cb(sess, debug_cb, NULL) != 0
+	    || dssh_session_set_unimplemented_cb(sess, unimplemented_cb, NULL) != 0
+	    || dssh_session_set_global_request_cb(sess, global_request_cb, NULL) != 0) {
+		(void)log_message("callback setup failed\n");
+		goto connection_done;
+	}
+	if (!log_message("Handshake...\n"))
+		goto connection_done;
 	int res = dssh_transport_handshake(sess);
-	if (res < 0) {
-		fprintf(stderr, "handshake failed: %d\n", res);
-		return 1;
+	if (res != 0) {
+		(void)log_message("handshake failed: %d\n", res);
+		goto connection_done;
 	}
-	fprintf(stderr, "Remote: %s\n", dssh_transport_get_remote_version(sess));
-	fprintf(stderr, "KEX: %s, Host key: %s, Enc: %s, MAC: %s\n", dssh_transport_get_kex_name(sess),
-	    dssh_transport_get_hostkey_name(sess), dssh_transport_get_enc_name(sess),
-	    dssh_transport_get_mac_name(sess));
-
-	/* Auth */
-	fprintf(stderr, "Handling auth...\n");
-	set_banner("Welcome to the DeuceSSH test server, have fun!\r\n");
-
-	uint8_t auth_user[256];
-	size_t  auth_user_len = sizeof(auth_user);
-
-	res = dssh_auth_server(sess, &auth_cbs, auth_user, &auth_user_len);
-	if (res < 0) {
-		fprintf(stderr, "auth failed: %d\n", res);
-		return 1;
+	const char *remote = dssh_transport_get_remote_version(sess);
+	if (remote == NULL || !log_bytes("Remote: ", (const uint8_t *)remote, strlen(remote)))
+		goto connection_done;
+	const char *kex = dssh_transport_get_kex_name(sess);
+	if (kex == NULL)
+		goto connection_done;
+	const char *host = dssh_transport_get_hostkey_name(sess);
+	if (host == NULL || !log_message("KEX: %s, Host key: %s\n", kex, host))
+		goto connection_done;
+	const enum dssh_direction directions[] = {DSSH_CLIENT_TO_SERVER, DSSH_SERVER_TO_CLIENT};
+	const char *labels[] = {"Client to server", "Server to client"};
+	for (size_t i = 0; i < sizeof(directions) / sizeof(directions[0]); i++) {
+		const char *enc = dssh_transport_get_enc_name(sess, directions[i]);
+		if (enc == NULL)
+			goto connection_done;
+		const char *mac = dssh_transport_get_mac_name(sess, directions[i]);
+		if (mac == NULL)
+			goto connection_done;
+		const char *comp = dssh_transport_get_comp_name(sess, directions[i]);
+		if (comp == NULL || !log_message("%s: Enc: %s, MAC: %s, Compression: %s\n",
+		    labels[i], enc, mac, comp))
+			goto connection_done;
 	}
-	fprintf(stderr, "Client authenticated.\n");
 
-	/* Start demux thread */
+	if (!log_message("Handling auth...\n")
+	    || publish_banner("Welcome to the DeuceSSH test server, have fun!\r\n") < 0)
+		goto connection_done;
+	/* The application does not use a copy of the authenticated username. */
+	res = dssh_auth_server(sess, &auth_cbs, NULL, NULL);
+	if (res != DSSH_AUTH_SUCCESS) {
+		(void)log_message("auth failed: %d\n", res);
+		goto connection_done;
+	}
+	if (!log_message("Client authenticated.\n"))
+		goto connection_done;
 	res = dssh_session_start(sess);
-	if (res < 0) {
-		fprintf(stderr, "session_start failed: %d\n", res);
-		return 1;
+	if (res != 0) {
+		(void)log_message("session_start failed: %d\n", res);
+		goto connection_done;
 	}
-
-	/* Accept incoming channel */
-	fprintf(stderr, "Handling channel...\n");
-
-	dssh_channel ch = dssh_chan_accept(sess, &accept_cbs, -1);
-
+	if (!log_message("Handling channel...\n"))
+		goto connection_done;
+	ch = dssh_chan_accept(sess, &accept_cbs, -1);
 	if (ch == NULL) {
-		fprintf(stderr, "chan_accept failed\n");
-		return 1;
+		(void)log_message("chan_accept failed\n");
+		goto connection_done;
 	}
-
 	enum dssh_chan_type ctype = dssh_chan_get_type(ch);
-
-	fprintf(stderr, "  Type: %s\n",
-	    ctype == DSSH_CHAN_EXEC    ? "exec"
-	    : ctype == DSSH_CHAN_SHELL ? "shell"
-				       : "subsystem");
+	if (ctype != DSSH_CHAN_EXEC && ctype != DSSH_CHAN_SHELL && ctype != DSSH_CHAN_SUBSYSTEM)
+		goto connection_done;
+	if (!log_message("  Type: %s\n", ctype == DSSH_CHAN_EXEC ? "exec"
+	    : ctype == DSSH_CHAN_SHELL ? "shell" : "subsystem"))
+		goto connection_done;
+	status = 0;
+#define WRITE(stream, bytes, length) do { \
+	if (example_channel_write(ch, stream, bytes, length) < 0) { \
+		status = 1; \
+		goto connection_done; \
+	} \
+} while (0)
 
 	if (ctype == DSSH_CHAN_EXEC) {
 		/* Execute command -- respond and close */
 		const char *cmd = dssh_chan_get_command(ch);
 
 		if (cmd != NULL && strcmp(cmd, "ping") == 0) {
-			dssh_chan_write(ch, 0, (const uint8_t *)"pong\n", 5);
-			dssh_chan_write(ch, 1, (const uint8_t *)"gnop\n", 5);
+			WRITE(0, (const uint8_t *)"pong\n", 5);
+			WRITE(1, (const uint8_t *)"gnop\n", 5);
 		}
 		else {
-			dssh_chan_write(ch, 0, (const uint8_t *)"unknown command\n", 16);
+			WRITE(0, (const uint8_t *)"unknown command\n", 16);
 		}
 	}
 	else {
-		/* Shell mode -- simple line-based command parser */
-		uint8_t buf[4096];
-		size_t  line_len = 0;
-
-		dssh_chan_write(ch, 0, (const uint8_t *)"> ", 2);
-
+		uint8_t input[4096];
+		struct example_shell_line line = EXAMPLE_SHELL_INITIALIZER;
+		WRITE(0, (const uint8_t *)"> ", 2);
 		for (;;) {
-			int ev = dssh_chan_poll(ch, DSSH_POLL_READ, -1);
-
-			if (ev <= 0)
-				break;
-
-			ssize_t n = dssh_chan_read(ch, 0, &buf[line_len], sizeof(buf) - line_len - 1);
-
-			if (n <= 0)
-				break;
-
-			/* Echo input back, translating \r to \r\n */
-			for (ssize_t ei = 0; ei < n; ei++) {
-				if (buf[line_len + ei] == '\r')
-					dssh_chan_write(ch, 0, (const uint8_t *)"\r\n", 2);
-				else
-					dssh_chan_write(ch, 0, &buf[line_len + ei], 1);
+			int events = dssh_chan_poll(ch, DSSH_POLL_READ, -1);
+			if (events < 0) {
+				status = 1;
+				goto connection_done;
 			}
-
-			line_len += n;
-
-			/* Look for newline */
-			if (line_len == 0 || (buf[line_len - 1] != '\n' && buf[line_len - 1] != '\r'))
+			if ((events & DSSH_POLL_READ) == 0)
 				continue;
-
-			/* Strip trailing CR/LF */
-			while (line_len > 0 && (buf[line_len - 1] == '\n' || buf[line_len - 1] == '\r'))
-				line_len--;
-			buf[line_len] = '\0';
-
-			if (strcmp((char *)buf, "ping") == 0) {
-				dssh_chan_write(ch, 0, (const uint8_t *)"pong\r\n", 6);
-			}
-			else if (strcmp((char *)buf, "quit") == 0 || strcmp((char *)buf, "exit") == 0) {
-				dssh_chan_write(ch, 0, (const uint8_t *)"bye\r\n", 5);
+			int64_t received = dssh_chan_read(ch, 0, input, sizeof(input));
+			if (received == DSSH_ERROR_NOMORE)
+				continue;
+			if (received == 0)
 				break;
+			if (received < 0 || received > 4096) {
+				status = 1;
+				goto connection_done;
 			}
-			else if (strcmp((char *)buf, "diediedie") == 0) {
-				dssh_chan_write(ch, 0, (const uint8_t *)"dying...\r\n", 10);
-				kill(getppid(), SIGTERM);
-				break;
+			size_t count = (size_t)received;
+			size_t echo_from = 0;
+			for (size_t i = 0; i < count; i++) {
+				enum example_shell_event event = example_shell_byte(&line, input[i]);
+				if (event == EXAMPLE_SHELL_DATA)
+					continue;
+				/* Emit each contiguous span once, preserving binary input. */
+				if (i > echo_from)
+					WRITE(0, input + echo_from, i - echo_from);
+				echo_from = i + 1;
+				if (event == EXAMPLE_SHELL_SKIP_LF)
+					continue;
+				if (input[i] == '\r')
+					WRITE(0, (const uint8_t *)"\r\n", 2);
+				else
+					WRITE(0, input + i, 1);
+				if (event == EXAMPLE_SHELL_PING) {
+					WRITE(0, (const uint8_t *)"pong\r\n", 6);
+				}
+				else if (event == EXAMPLE_SHELL_QUIT) {
+					WRITE(0, (const uint8_t *)"bye\r\n", 5);
+					goto connection_done;
+				}
+				else if (event == EXAMPLE_SHELL_STOP_PARENT) {
+					WRITE(0, (const uint8_t *)"dying...\r\n", 10);
+					if (kill(getppid(), SIGTERM) != 0)
+						status = 1;
+					goto connection_done;
+				}
+				else if (event == EXAMPLE_SHELL_UNKNOWN) {
+					static const char help[] = "commands: ping, quit, exit\r\n";
+					WRITE(0, (const uint8_t *)help, sizeof(help) - 1);
+				}
+				WRITE(0, (const uint8_t *)"> ", 2);
 			}
-			else if (line_len > 0) {
-				static const char help[] = "commands: ping, quit, exit\r\n";
-				dssh_chan_write(ch, 0, (const uint8_t *)help, sizeof(help) - 1);
-			}
-
-			line_len = 0;
-			dssh_chan_write(ch, 0, (const uint8_t *)"> ", 2);
+			if (count > echo_from)
+				WRITE(0, input + echo_from, count - echo_from);
 		}
 	}
 
-	/* Clean shutdown */
-	alarm(0);
-	fprintf(stderr, "Channel closed.\n");
-	dssh_chan_close(ch, 0);
-	dssh_session_cleanup(sess);
-	close(conn_fd);
-	return 0;
+#undef WRITE
+connection_done:
+	/* Keep the socket available until cleanup has joined the reader. */
+	if (ch != NULL) {
+		if (!log_message("Channel closed.\n"))
+			status = 1;
+		int closed = dssh_chan_close(ch, status);
+		ch = NULL;
+		if (closed != 0)
+			status = 1;
+	}
+	if (sess != NULL) {
+		dssh_session_cleanup(sess);
+		sess = NULL;
+	}
+	if (conn_fd >= 0) {
+		/* A failed close does not authorize retrying a possibly reused fd. */
+		if (close(conn_fd) != 0) {
+			(void)log_message("socket close failed\n");
+			status = 1;
+		}
+		conn_fd = -1;
+	}
+	connection_io = (struct example_socket_io){ .descriptor = -1 };
+	if (atomic_load(&diagnostic_failed))
+		status = 1;
+	return status;
 }
 
 /* ================================================================
  * Main
  * ================================================================ */
+static volatile sig_atomic_t reap_failed;
+
 static void
 sigchld_handler(int sig)
 {
 	(void)sig;
-	while (waitpid(-1, NULL, WNOHANG) > 0)
-		;
+	int saved_errno = errno;
+	for (;;) {
+		pid_t child = waitpid(-1, NULL, WNOHANG);
+		if (child > 0)
+			continue;
+		if (child < 0 && errno == EINTR)
+			continue;
+		if (child < 0 && errno != ECHILD)
+			reap_failed = 1;
+		break;
+	}
+	errno = saved_errno;
 }
 
 int
 main(int argc, char **argv)
 {
-	int port = 2222;
-
-	if (argc > 1)
-		port = atoi(argv[1]);
-
+	int status = 1;
+	int listen_fd = -1;
+	uint16_t port = 2222;
+	reap_failed = 0;
+	atomic_store(&diagnostic_failed, false);
+	if (argc > 2 || (argc == 2 && !example_parse_port(argv[1], &port))) {
+		(void)log_message("expected zero or one decimal port argument (0..65535)\n");
+		return 1;
+	}
+	/* Socket write failures are reported through the callbacks. */
+	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
+		(void)log_message("SIGPIPE setup failed\n");
+		return 1;
+	}
 	/* Set version */
-	dssh_transport_set_version("Mozilla/5.0",
-	    "(Windows NT 12.0; Win32; x32) AppleWebKit/540.70 (KHTML, like Gecko) Chrome/153.0.6626.357 Safari/540.70");
+	if (dssh_transport_set_version("Mozilla/5.0",
+	    "(Windows NT 12.0; Win32; x32) AppleWebKit/540.70 (KHTML, like Gecko) Chrome/153.0.6626.357 Safari/540.70") != 0)
+		return 1;
 
 	/* Register algorithms */
 	if (dssh_transport_set_callbacks(tx, rx, rxline, NULL) != 0)
@@ -1075,6 +1200,10 @@ main(int argc, char **argv)
 	if (dssh_register_curve25519_sha256() != 0)
 		return 1;
 	if (dssh_register_dh_gex_sha256() != 0)
+		return 1;
+	if (dssh_register_dh_group16_sha512() != 0)
+		return 1;
+	if (dssh_register_dh_group14_sha256() != 0)
 		return 1;
 	if (dssh_register_ssh_ed25519() != 0)
 		return 1;
@@ -1090,27 +1219,36 @@ main(int argc, char **argv)
 	/* Generate host keys once (shared across all forks) */
 	int res = dssh_ed25519_generate_key();
 
-	if (res < 0) {
-		fprintf(stderr, "ed25519 key gen failed: %d\n", res);
+	if (res != 0) {
+		(void)log_message("ed25519 key gen failed: %d\n", res);
 		return 1;
 	}
 	res = dssh_rsa_sha2_256_generate_key(4096);
-	if (res < 0) {
-		fprintf(stderr, "rsa key gen failed: %d\n", res);
+	if (res != 0) {
+		(void)log_message("rsa key gen failed: %d\n", res);
 		return 1;
 	}
 
 	/* Listen */
-	int listen_fd = socket(PF_INET, SOCK_STREAM, 0);
+	listen_fd = socket(PF_INET, SOCK_STREAM, 0);
 
 	if (listen_fd == -1) {
-		perror("socket");
+		(void)log_message("socket creation failed\n");
 		return 1;
 	}
 
+	/* Bound observation of a reaper error even between its flag check and wait. */
+	int flags = fcntl(listen_fd, F_GETFL);
+	if (flags < 0 || fcntl(listen_fd, F_SETFL, flags | O_NONBLOCK) != 0) {
+		(void)log_message("listener configuration failed\n");
+		goto listener_done;
+	}
 	int opt = 1;
 
-	setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+	if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) != 0) {
+		(void)log_message("socket option failed\n");
+		goto listener_done;
+	}
 
 	struct sockaddr_in sa = {
 	    .sin_family = AF_INET,
@@ -1119,44 +1257,92 @@ main(int argc, char **argv)
 	};
 
 	if (bind(listen_fd, (struct sockaddr *)&sa, sizeof(sa)) == -1) {
-		perror("bind");
-		return 1;
+		(void)log_message("bind failed\n");
+		goto listener_done;
 	}
 	if (listen(listen_fd, 5) == -1) {
-		perror("listen");
-		return 1;
+		(void)log_message("listen failed\n");
+		goto listener_done;
 	}
 
-	signal(SIGCHLD, sigchld_handler);
-	fprintf(stderr, "Listening on port %d...\n", port);
+	/* Interrupt accept so a reaper failure reaches the ordinary owner path. */
+	struct sigaction action = { .sa_handler = sigchld_handler };
+	if (sigemptyset(&action.sa_mask) != 0 || sigaction(SIGCHLD, &action, NULL) != 0) {
+		(void)log_message("SIGCHLD setup failed\n");
+		goto listener_done;
+	}
+	unsigned displayed_port = port;
+	if (!log_message("Listening on port %u...\n", displayed_port))
+		goto listener_done;
 
-	/* Accept loop */
+	/* Accept loop: this process owns both descriptors until a successful fork. */
 	for (;;) {
-		conn_fd = accept(listen_fd, NULL, NULL);
-		if (conn_fd == -1) {
-			if (errno == EINTR)
-				continue;
-			perror("accept");
+		if (reap_failed) {
+			(void)log_message("child reaping failed\n");
 			break;
 		}
-		fprintf(stderr, "Connection accepted.\n");
-
-		pid_t pid = fork();
-
-		if (pid < 0) {
-			perror("fork");
-			close(conn_fd);
-			continue;
+		struct pollfd incoming = { .fd = listen_fd, .events = POLLIN };
+		int ready = poll(&incoming, 1, 1000);
+		if (ready < 0) {
+			if (errno == EINTR)
+				continue;
+			(void)log_message("listener wait failed\n");
+			break;
 		}
+		if (ready == 0)
+			continue;
+		if (ready != 1 || (incoming.revents & (POLLNVAL | POLLERR | POLLHUP)) != 0) {
+			(void)log_message("listener readiness failed\n");
+			break;
+		}
+		if ((incoming.revents & POLLIN) == 0)
+			continue;
+		conn_fd = accept(listen_fd, NULL, NULL);
+		if (conn_fd == -1) {
+			if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+				continue;
+			(void)log_message("accept failed\n");
+			break;
+		}
+		if (reap_failed || !log_message("Connection accepted.\n"))
+			break;
+		if (fflush(NULL) != 0) {
+			(void)log_message("pre-fork flush failed\n");
+			break;
+		}
+		pid_t pid = fork();
 		if (pid == 0) {
-			/* Child -- handle connection */
-			close(listen_fd);
+			/* The child must retire its listener before handling the connection. */
+			if (close(listen_fd) != 0) {
+				(void)log_message("child listener close failed\n");
+				if (close(conn_fd) != 0)
+					(void)log_message("child connection close failed\n");
+				conn_fd = -1;
+				_exit(1);
+			}
 			_exit(handle_connection());
 		}
-		/* Parent -- close child's fd, loop */
-		close(conn_fd);
+		bool fork_failed = pid < 0;
+		if (fork_failed && !log_message("fork failed\n"))
+			break;
+		int closed = close(conn_fd);
+		conn_fd = -1;
+		if (closed != 0) {
+			(void)log_message("parent connection close failed\n");
+			break;
+		}
+		/* A transient fork refusal leaves the listener usable after release. */
 	}
-
-	close(listen_fd);
-	return 0;
+listener_done:
+	if (conn_fd >= 0) {
+		if (close(conn_fd) != 0)
+			(void)log_message("connection close failed\n");
+		conn_fd = -1;
+	}
+	if (listen_fd >= 0) {
+		if (close(listen_fd) != 0)
+			(void)log_message("listener close failed\n");
+		listen_fd = -1;
+	}
+	return status;
 }

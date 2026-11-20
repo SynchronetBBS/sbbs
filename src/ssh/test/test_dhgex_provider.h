@@ -45,6 +45,40 @@ test_using_mlkem(void)
 	return (kex != NULL && strcmp(kex, "mlkem") == 0);
 }
 
+static inline const char *
+test_kex_algo_name(void)
+{
+	const char *kex = getenv("DSSH_TEST_KEX");
+	if (kex != NULL && strcmp(kex, "group14") == 0)
+		return "diffie-hellman-group14-sha256";
+	if (kex != NULL && strcmp(kex, "group16") == 0)
+		return "diffie-hellman-group16-sha512";
+	if (test_using_dhgex())
+		return "diffie-hellman-group-exchange-sha256";
+	if (test_using_sntrup())
+		return "sntrup761x25519-sha512";
+	if (test_using_mlkem())
+		return "mlkem768x25519-sha256";
+	return "curve25519-sha256";
+}
+
+static inline int
+test_register_kex(void)
+{
+	const char *kex = getenv("DSSH_TEST_KEX");
+	if (kex != NULL && strcmp(kex, "group14") == 0)
+		return dssh_register_dh_group14_sha256();
+	if (kex != NULL && strcmp(kex, "group16") == 0)
+		return dssh_register_dh_group16_sha512();
+	if (test_using_dhgex())
+		return dssh_register_dh_gex_sha256();
+	if (test_using_sntrup())
+		return dssh_register_sntrup761x25519_sha512();
+	if (test_using_mlkem())
+		return dssh_register_mlkem768x25519_sha256();
+	return dssh_register_curve25519_sha256();
+}
+
 /*
  * No-op: DH-GEX now uses the built-in RFC 3526 default provider.
  * Kept for call-site compatibility.
