@@ -267,6 +267,25 @@ printf("%d records updated\n", update_birthdates());
 upgrade_to_v320();
 upgrade_to_v319();
 
+require("domains_cfg_upgrade.js", "upgrade_domains_cfg");
+var domains_result = upgrade_domains_cfg(system.ctrl_dir, test);
+if(domains_result.status == "converted")
+	printf("%s %sdomains.cfg to [domain:] sections of msgs.ini: %u %s\n"
+		, test ? "Would convert" : "Converted"
+		, system.ctrl_dir, domains_result.domains.length
+		, domains_result.domains.length == 1 ? "entry" : "entries");
+else if(domains_result.status == "marked")
+	printf("%s msgs.ini as holding the additional domains: those of %sdomains.cfg"
+		+ " are already there\n"
+		, test ? "Would mark" : "Marked", system.ctrl_dir);
+if(domains_result.status == "converted" || domains_result.status == "marked")
+	printf("%sdomains.cfg is no longer used by this version of Synchronet: delete it"
+		+ " once every host sharing this ctrl directory runs this version\n"
+		, system.ctrl_dir);
+else if(domains_result.status == "error")
+	alert(domains_result.message);
+domains_result.warnings.forEach(function(w) { alert(w); });
+
 var sbbsecho_cfg = system.ctrl_dir + "sbbsecho.cfg";
 var sbbsecho_ini = system.ctrl_dir + "sbbsecho.ini";
 if(file_exists(sbbsecho_cfg) && !file_exists(sbbsecho_ini)) {

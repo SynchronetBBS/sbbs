@@ -650,6 +650,10 @@ static const char* sys_prop_desc[] = {
 	, "JavaScript engine version information"
 	, "Operating system version information"
 	, "Array of FidoNet Technology Network (FTN) addresses associated with this system"
+	, "Array of this system's Internet domain names and patterns (read-only): the first element is the "
+	"system's primary Internet address (<i>inet_addr</i>), followed by the configured additional domains in order; "
+	"use <tt>system.findstr(system.inet_domain_list, host)</tt> to check whether a host name is one of this system's "
+	"domains, and <tt>User.can_send_from_domain()</tt> to check whether a user may send from a domain"
 	, NULL
 };
 #endif
@@ -3154,6 +3158,49 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, smb_faddrtoa(&sys->cfg->faddr[i], str)));
 			JS_SetElement(cx, newobj, i, &val);
 		}
+		if (name)
+			return JS_TRUE;
+	}
+
+	/* inet_domain_list property */
+	if (name == NULL || strcmp(name, "inet_domain_list") == 0) {
+		if (name)
+			free(name);
+
+		js_system_private_t* sys;
+		if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
+			return JS_FALSE;
+
+		if ((newobj = JS_NewArrayObject(cx, 0, NULL)) == NULL)
+			return JS_FALSE;
+
+		if (!JS_SetParent(cx, newobj, obj))
+			return JS_FALSE;
+
+		if (!JS_DefineProperty(cx, obj, "inet_domain_list", OBJECT_TO_JSVAL(newobj)
+		                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+			return JS_FALSE;
+
+		/* The system's primary address first (as in fido_addr_list), then
+		 * every configured additional domain, unchanged and in order */
+		jsint     count = 0;
+		JSString* domain;
+		if (sys->cfg->sys_inetaddr[0] != '\0') {
+			if ((domain = JS_NewStringCopyZ(cx, sys->cfg->sys_inetaddr)) == NULL)
+				return JS_FALSE;
+			val = STRING_TO_JSVAL(domain);
+			if (!JS_SetElement(cx, newobj, count++, &val))
+				return JS_FALSE;
+		}
+		for (i = 0; i < sys->cfg->total_inet_domains; i++) {
+			if ((domain = JS_NewStringCopyZ(cx, sys->cfg->inet_domain[i]->name)) == NULL)
+				return JS_FALSE;
+			val = STRING_TO_JSVAL(domain);
+			if (!JS_SetElement(cx, newobj, count++, &val))
+				return JS_FALSE;
+		}
+		if (!JS_FreezeObject(cx, newobj))
+			return JS_FALSE;
 		if (name)
 			return JS_TRUE;
 	}

@@ -442,6 +442,252 @@ void mqtt_cfg()
 	}
 }
 
+static bool new_inet_domain(int new_num)
+{
+	inet_domain_t* domain = malloc(sizeof(inet_domain_t));
+	if (domain == NULL) {
+		errormsg(WHERE, ERR_ALLOC, "domain", sizeof(inet_domain_t));
+		return false;
+	}
+	memset(domain, 0, sizeof(*domain));
+
+	inet_domain_t** list = realloc(cfg.inet_domain, sizeof(inet_domain_t*) * (cfg.total_inet_domains + 1));
+	if (list == NULL) {
+		free(domain);
+		errormsg(WHERE, ERR_ALLOC, "domain list", cfg.total_inet_domains + 1);
+		return false;
+	}
+	cfg.inet_domain = list;
+
+	for (int u = cfg.total_inet_domains; u > new_num; u--)
+		cfg.inet_domain[u] = cfg.inet_domain[u - 1];
+
+	cfg.inet_domain[new_num] = domain;
+	cfg.total_inet_domains++;
+	return true;
+}
+
+static bool inet_domain_name_ok(const char* name, int skip)
+{
+	if (*name == '\0')
+		return false;
+	for (int i = 0; i < cfg.total_inet_domains; i++) {
+		if (i != skip && stricmp(cfg.inet_domain[i]->name, name) == 0) {
+			uifc.msg("Duplicate Domain Name");
+			return false;
+		}
+	}
+	return true;
+}
+
+static void inet_domain_edit(int num)
+{
+	static int     dflt;
+	inet_domain_t* domain = cfg.inet_domain[num];
+	char           str[sizeof(domain->name)];
+	int            i;
+
+	while (1) {
+		bool plain = inet_domain_is_plain(domain->name);
+		i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Domain Name", domain->name);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Allow Send From"
+		         , plain ? (domain->send_from ? "Yes" : "No") : "N/A (pattern)");
+		if (plain && domain->send_from)
+			snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Send Requirements", domain->send_arstr);
+		opt[i][0] = 0;
+		uifc.helpbuf =
+			"`Additional Domain:`\n"
+			"\n"
+			"Settings for one of the additional domains for which this system\n"
+			"accepts and delivers Internet e-mail.\n"
+			"\n"
+			"`Domain Name`: the domain name (e.g. `example.com`) or a pattern, as in\n"
+			"the filter files: a pattern may contain a `*` wildcard (e.g.\n"
+			"`*.example.com`).  Entries are checked in list order and the first\n"
+			"entry that matches a domain decides.  An entry beginning with `!`\n"
+			"makes an exception to a wildcard entry and must come before it (e.g.\n"
+			"`!test.example.com` above `*.example.com`).  Do not end the list with\n"
+			"a `!` entry: every domain that no entry matches would then be treated\n"
+			"as local.\n"
+			"\n"
+			"`Allow Send From`: when `Yes`, users may choose an address in this\n"
+			"domain as the sender (From) address of the e-mail they send, where\n"
+			"the mail client supports it.  Applies only to a plain domain name\n"
+			"(letters, digits, dots and hyphens), not to a pattern.  Default is\n"
+			"`No`.\n"
+			"\n"
+			"`Send Requirements`: access requirements a user must meet to send\n"
+			"from this domain.  Blank means any user allowed to send Internet\n"
+			"e-mail.  Shown only when `Allow Send From` is `Yes`.\n"
+		;
+		i = uifc.list(WIN_ACT | WIN_MID | WIN_SAV, 0, 0, 60, &dflt, 0
+		              , "Additional Domain", opt);
+		switch (i) {
+			case -1:
+				return;
+			case 0:
+				uifc.helpbuf =
+					"`Additional Domain Name:`\n"
+					"\n"
+					"The domain name (e.g. `example.com`) or pattern (e.g. `*.example.com`)\n"
+					"for which this system accepts and delivers Internet e-mail.\n"
+				;
+				SAFECOPY(str, domain->name);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Domain Name"
+				               , str, sizeof(str) - 1, K_EDIT | K_NOSPACE) < 1)
+					break;
+				if (!inet_domain_name_ok(str, num))
+					break;
+				if (strcmp(str, domain->name) != 0) {
+					SAFECOPY(domain->name, str);
+					uifc.changes = TRUE;
+				}
+				break;
+			case 1:
+				if (!plain) {
+					uifc.helpbuf = NULL;
+					uifc.msg("Not available for a domain name pattern");
+					break;
+				}
+				i = domain->send_from ? 0 : 1;
+				uifc.helpbuf =
+					"`Allow Send From This Domain:`\n"
+					"\n"
+					"When `Yes`, users who meet the `Send Requirements` may choose an\n"
+					"address in this domain as the sender (From) address of the e-mail\n"
+					"they send, where the mail client supports it.\n"
+				;
+				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
+				              , "Allow Send From This Domain", uifcYesNoOpts);
+				if (i == 0 && !domain->send_from) {
+					domain->send_from = true;
+					uifc.changes = TRUE;
+				}
+				else if (i == 1 && domain->send_from) {
+					domain->send_from = false;
+					uifc.changes = TRUE;
+				}
+				break;
+			case 2:
+				getar("Send From Domain", domain->send_arstr, /* helpbuf: */ NULL);
+				break;
+		}
+	}
+}
+
+static void inet_domain_cfg(void)
+{
+	static int  dflt, bar;
+	static bool cfg_file_notice;
+	char        str[sizeof(cfg.inet_domain[0]->name)];
+	int         i, mode;
+
+	if (cfg.inet_domains_from_cfg_file && !cfg_file_notice) {
+		cfg_file_notice = true;
+		uifc.helpbuf =
+			"`Domains Read from domains.cfg:`\n"
+			"\n"
+			"This system's configuration has no additional domains yet, so the\n"
+			"list was read from the old `domains.cfg` file in the control\n"
+			"directory.  When you save changes, the list is saved as part of the\n"
+			"message configuration and `domains.cfg` is no longer read.  The file\n"
+			"is left in place: delete it once every host sharing this control\n"
+			"directory runs this version or later.\n"
+		;
+		uifc.msg("Additional domains read from domains.cfg; saving copies them to msgs.ini");
+		uifc.helpbuf = NULL;
+	}
+	while (1) {
+		for (i = 0; i < cfg.total_inet_domains && i < MAX_OPTS; i++)
+			snprintf(opt[i], MAX_OPLN, "%-40.40s %s", cfg.inet_domain[i]->name
+			         , (cfg.inet_domain[i]->send_from && inet_domain_is_plain(cfg.inet_domain[i]->name))
+			         ? "Send From" : "");
+		opt[i][0] = 0;
+		mode = WIN_ACT | WIN_SAV | WIN_RHT;
+		if (cfg.total_inet_domains < MAX_OPTS)
+			mode |= WIN_INS | WIN_INSACT | WIN_XTR;
+		if (cfg.total_inet_domains)
+			mode |= WIN_DEL;
+		uifc.helpbuf =
+			"`Additional Domains:`\n"
+			"\n"
+			"Internet domains, in addition to the `System Address`, for which this\n"
+			"system accepts and delivers e-mail to its users.  Mail for these\n"
+			"domains is treated as local, and a message claiming to be from one of\n"
+			"them is treated as from this system.  Domains marked `Send From` may\n"
+			"be chosen as the sender address by users who meet the requirements.\n"
+			"\n"
+			"An entry beginning with `;` is a comment (kept from an old\n"
+			"`domains.cfg` where it decided the result for unlisted domains).\n"
+			"\n"
+			"Entries are checked in order and may be patterns (e.g.\n"
+			"`*.example.com`).  An entry beginning with `!` must come before the\n"
+			"wildcard entry it makes an exception to; the list should not end\n"
+			"with one.\n"
+			"\n"
+			"A change takes effect after the mail server is recycled.\n"
+			"\n"
+			"To add a domain, select the desired location and hit ~ INS ~.\n"
+			"\n"
+			"To delete a domain, select it and hit ~ DEL ~.\n"
+			"\n"
+			"To configure a domain, select it and hit ~ ENTER ~.\n"
+		;
+		i = uifc.list(mode, 0, 0, 60, &dflt, &bar, "Additional Domains", opt);
+		if (i == -1) {
+			if (inet_domain_list_ends_negated(&cfg)) {
+				uifc.helpbuf =
+					"`List Ends with a Negated Entry:`\n"
+					"\n"
+					"The last additional domain begins with `!`.  Every domain that no\n"
+					"earlier entry matches is then treated as one of this system's\n"
+					"domains: mail to it is delivered locally and a message claiming to\n"
+					"be from it is treated as from this system.  Move the `!` entry above\n"
+					"the wildcard entry it makes an exception to.\n"
+				;
+				uifc.msg("Warning: the list ends with a negated (!) entry");
+				uifc.helpbuf = NULL;
+			}
+			return;
+		}
+		int msk = i & MSK_ON;
+		i &= MSK_OFF;
+		if (msk == MSK_INS) {
+			uifc.helpbuf =
+				"`Additional Domain Name:`\n"
+				"\n"
+				"The domain name (e.g. `example.com`) or pattern (e.g. `*.example.com`)\n"
+				"for which this system accepts and delivers Internet e-mail.\n"
+			;
+			str[0] = '\0';
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Domain Name"
+			               , str, sizeof(str) - 1, K_NOSPACE) < 1)
+				continue;
+			if (!inet_domain_name_ok(str, -1))
+				continue;
+			if (!new_inet_domain(i))
+				continue;
+			SAFECOPY(cfg.inet_domain[i]->name, str);
+			uifc.changes = TRUE;
+			continue;
+		}
+		if (msk == MSK_DEL) {
+			free(cfg.inet_domain[i]);
+			cfg.total_inet_domains--;
+			while (i < cfg.total_inet_domains) {
+				cfg.inet_domain[i] = cfg.inet_domain[i + 1];
+				i++;
+			}
+			uifc.changes = TRUE;
+			continue;
+		}
+		if (msk != 0)
+			continue;
+		inet_domain_edit(i);
+	}
+}
+
 void net_cfg()
 {
 	static int net_dflt, qnet_dflt, fnet_dflt, inet_dflt
@@ -466,7 +712,8 @@ void net_cfg()
 			"opens a sub-menu with the specific knobs for that network technology.\n"
 			"\n"
 			"`Internet E-mail`: who may send Internet (SMTP) mail, what they may\n"
-			"attach, what name they appear as, system address, and credits charged.\n"
+			"attach, what name they appear as, system address, additional domains,\n"
+			"and credits charged.\n"
 			"Server-side delivery configuration lives separately under\n"
 			"`Servers > Mail Server`.\n"
 			"\n"
@@ -1041,6 +1288,8 @@ void net_cfg()
 				i = 0;
 				snprintf(opt[i++], MAX_OPLN, "%-27.27s%s"
 				         , "System Address", cfg.sys_inetaddr);
+				snprintf(opt[i++], MAX_OPLN, "%-27.27s%d"
+				         , "Additional Domains", cfg.total_inet_domains);
 				snprintf(opt[i++], MAX_OPLN, "%-27.27s%s"
 				         , "Inbound E-mail Semaphore", cfg.smtpmail_sem);
 				snprintf(opt[i++], MAX_OPLN, "%-27.27s%s"
@@ -1072,6 +1321,9 @@ void net_cfg()
 					"`System Address`: this system's Internet address (e.g. `bbs.example.com`).\n"
 					"Used as the host portion of outgoing addresses and in default e-mail\n"
 					"headers.\n"
+					"\n"
+					"`Additional Domains`: other Internet domains for which this system\n"
+					"accepts and delivers e-mail, and whether users may send from them.\n"
 					"\n"
 					"`Inbound E-mail Semaphore`: optional filename touched when new Internet\n"
 					"mail arrives, signalling an external processor to rescan.  Leave blank\n"
@@ -1115,6 +1367,9 @@ void net_cfg()
 						edit_sys_inetaddr(false, false);
 						break;
 					case 1:
+						inet_domain_cfg();
+						break;
+					case 2:
 						uifc.helpbuf =
 							"`Inbound Internet E-mail Semaphore File:`\n"
 							"\n"
@@ -1128,7 +1383,7 @@ void net_cfg()
 						uifc.input(WIN_MID | WIN_SAV, 0, 0, "Inbound Semaphore"
 						           , cfg.smtpmail_sem, sizeof(cfg.smtpmail_sem) - 1, K_EDIT);
 						break;
-					case 2:
+					case 3:
 						uifc.helpbuf =
 							"`Outbound Internet E-mail Semaphore File:`\n"
 							"\n"
@@ -1142,7 +1397,7 @@ void net_cfg()
 						uifc.input(WIN_MID | WIN_SAV, 0, 0, "Outbound Semaphore"
 						           , cfg.inetmail_sem, sizeof(cfg.inetmail_sem) - 1, K_EDIT);
 						break;
-					case 3:
+					case 4:
 						i = (cfg.inetmail_misc & NMAIL_ALLOW) ? 0 : 1;
 						uifc.helpbuf =
 							"`Allow Users to Send Internet E-mail:`\n"
@@ -1161,7 +1416,7 @@ void net_cfg()
 							cfg.inetmail_misc &= ~NMAIL_ALLOW;
 						}
 						break;
-					case 4:
+					case 5:
 						i = (cfg.inetmail_misc & NMAIL_FILE) ? 0 : 1;
 						uifc.helpbuf =
 							"`Allow Users to Send Internet E-mail File Attachments:`\n"
@@ -1180,7 +1435,7 @@ void net_cfg()
 							cfg.inetmail_misc &= ~NMAIL_FILE;
 						}
 						break;
-					case 5:
+					case 6:
 						i = (cfg.inetmail_misc & NMAIL_ALIAS) ? 0 : 1;
 						uifc.helpbuf =
 							"`Use Aliases in Internet E-mail:`\n"
@@ -1204,7 +1459,7 @@ void net_cfg()
 							cfg.inetmail_misc &= ~NMAIL_ALIAS;
 						}
 						break;
-					case 6:
+					case 7:
 						i = (cfg.inetmail_misc & NMAIL_KILL) ? 0 : 1;
 						uifc.helpbuf =
 							"`Kill Internet E-mail After it is Sent:`\n"
@@ -1223,7 +1478,7 @@ void net_cfg()
 							cfg.inetmail_misc &= ~NMAIL_KILL;
 						}
 						break;
-					case 7:
+					case 8:
 						ultoa(cfg.inetmail_cost, str, 10);
 						uifc.helpbuf =
 							"`Cost in Credits to Send Internet E-mail:`\n"

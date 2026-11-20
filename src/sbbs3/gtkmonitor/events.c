@@ -143,11 +143,6 @@ G_MODULE_EXPORT void on_alias_list1_activate(GtkWidget *wiggy, gpointer data)
 	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"alias.cfg");
 }
 
-G_MODULE_EXPORT void on_domain_list1_activate(GtkWidget *wiggy, gpointer data)
-{
-	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"domains.cfg");
-}
-
 G_MODULE_EXPORT void on_spam_bait_list1_activate(GtkWidget *wiggy, gpointer data)
 {
 	exec_cmdstr(gtkm_conf.edit_text_file,cfg.ctrl_dir,"spambait.cfg");

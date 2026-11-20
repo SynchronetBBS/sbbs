@@ -20,7 +20,6 @@ void on_new_user_password_failure1_activate(GtkWidget *wiggy, gpointer data);
 void on_new_user_feedbakc_instructions1_activate(GtkWidget *wiggy, gpointer data);
 void on_allowed_rlogin_list1_activate(GtkWidget *wiggy, gpointer data);
 void on_alias_list1_activate(GtkWidget *wiggy, gpointer data);
-void on_domain_list1_activate(GtkWidget *wiggy, gpointer data);
 void on_spam_bait_list1_activate(GtkWidget *wiggy, gpointer data);
 void on_spam_block_list1_activate(GtkWidget *wiggy, gpointer data);
 void on_allowed_relay_list1_activate(GtkWidget *wiggy, gpointer data);

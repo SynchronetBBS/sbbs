@@ -688,14 +688,6 @@
                               </object>
                             </child>
                             <child>
-                              <object class="GtkMenuItem" id="domain_list1">
-                                <property name="visible">1</property>
-                                <property name="label" translatable="yes">Domain List</property>
-                                <property name="use-underline">1</property>
-                                <signal name="activate" handler="on_domain_list1_activate" swapped="no"/>
-                              </object>
-                            </child>
-                            <child>
                               <object class="GtkMenuItem" id="spam_bait_list1">
                                 <property name="visible">1</property>
                                 <property name="label" translatable="yes">Spam Bait List</property>

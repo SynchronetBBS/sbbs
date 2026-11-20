@@ -622,6 +622,20 @@ bool write_msgs_cfg(scfg_t* cfg)
 		iniSetHexInt(&section, name, "netmail_settings", cfg->inetmail_misc, &ini_style);
 		iniSetUInteger(&section, name, "cost", cfg->inetmail_cost, &ini_style);
 		iniSetString(&section, name, "smtp_sem", cfg->smtpmail_sem, &ini_style);
+		/* The additional domains are kept here: domains.cfg is not read again */
+		iniSetBool(&section, name, "domains_converted", true, &ini_style);
+		strListMerge(&ini, section);
+		free(section);
+	}
+
+	/* Additional Internet domains */
+	for (int i = 0; i < cfg->total_inet_domains; i++) {
+		if (cfg->inet_domain[i]->name[0] == '\0')
+			continue;
+		SAFEPRINTF(name, "domain:%s", cfg->inet_domain[i]->name);
+		str_list_t section = strListInit();
+		iniSetBool(&section, name, "send_from", cfg->inet_domain[i]->send_from, &ini_style);
+		iniSetString(&section, name, "send_ars", cfg->inet_domain[i]->send_arstr, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}

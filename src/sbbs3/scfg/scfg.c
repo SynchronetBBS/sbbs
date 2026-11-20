@@ -1147,6 +1147,11 @@ bool save_msgs_cfg(scfg_t* cfg)
 	uifc.pop("Writing msgs.ini ...");
 	bool result = write_msgs_cfg(cfg);
 	uifc.pop(NULL);
+	/* msgs.ini now holds the additional domains (even an empty list) and	*/
+	/* says so: domains.cfg is left in place for a server that may still	*/
+	/* read it (an older binary, or another host sharing this ctrl dir)	*/
+	if (result)
+		cfg->inet_domains_from_cfg_file = false;
 	return result;
 }
 

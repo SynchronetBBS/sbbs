@@ -93,6 +93,9 @@ DLLEXPORT char *    sub_area_tag(scfg_t*, sub_t*, char*, size_t);
 DLLEXPORT char *    dir_area_tag(scfg_t*, dir_t*, char*, size_t);
 DLLEXPORT char *    dir_vpath(scfg_t*, dir_t* dir, char* path, size_t);
 DLLEXPORT bool      dir_is_locked(scfg_t*, int dirnum);
+DLLEXPORT bool      inet_domain_listed(scfg_t*, const char* host);
+DLLEXPORT bool      inet_domain_is_plain(const char* name);
+DLLEXPORT bool      inet_domain_list_ends_negated(scfg_t*);
 
 uint nearest_sysfaddr_index(scfg_t*, faddr_t*);
 faddr_t* nearest_sysfaddr(scfg_t*, faddr_t*);

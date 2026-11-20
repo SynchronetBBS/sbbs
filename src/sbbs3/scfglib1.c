@@ -498,6 +498,138 @@ void read_sub_ini_section(scfg_t* cfg, str_list_t ini, const char* section, sub_
 }
 
 /****************************************************************************/
+/* Transitional fallback: when msgs.ini has no [domain:] section and its	*/
+/* [Internet] section does not say domains_converted = true, read the		*/
+/* additional domains from the old ctrl/domains.cfg (until 'jsexec		*/
+/* update.js' converts it), so that the list matches every host exactly	*/
+/* as findstr() on the file did. exec/load/domains_cfg_upgrade.js converts	*/
+/* the file by the same rules (keep the two in agreement):					*/
+/* - a line is what fgets() reads into FINDSTR_MAX_LINE_LEN + 1 bytes (a	*/
+/*   longer line continues as the next "line"), as in find2strs();			*/
+/* - leading IS_WHITESPACE is skipped and an empty line is not evaluated;	*/
+/* - c_unescape_str() is applied, the text from the first tab is cut, and	*/
+/*   trailing IS_WHITESPACE is removed (truncsp);							*/
+/* - a line that is then empty or begins with ';' is inert (evaluates to	*/
+/*   "no match" and never ends the search), as is a later case-insensitive */
+/*   duplicate of an earlier line (it can only evaluate as that earlier		*/
+/*   line did, which did not end the search);								*/
+/* - an inert line is dropped, since for a host that no line decides the	*/
+/*   result is the value of the LAST line evaluated, unless it is the last	*/
+/*   line and its value ("no match" for a comment or a duplicate of a plain */
+/*   entry, "match" for a duplicate of a negated entry) differs from that	*/
+/*   of the entry that would otherwise be last; then it is kept (a comment	*/
+/*   as is, an empty line as ";");										*/
+/* - a name that cannot be a section name (255 characters or more,			*/
+/*   containing CR or LF, or beginning with white space after unescaping)	*/
+/*   is an inert ";" entry: exact only for host names without these.		*/
+/* Each entry gets send_from = false and a blank send_ars. At most			*/
+/* DOMAINS_CFG_MAX_LINES lines are read.									*/
+/****************************************************************************/
+#define DOMAINS_CFG_MAX_LINES 10000
+
+static bool domains_cfg_entry_negated(const char* name)
+{
+	return *name == '!';
+}
+
+static bool read_domains_cfg_file(scfg_t* cfg, char* error, size_t maxerrlen)
+{
+	const char* fname = "domains.cfg";
+	char        path[MAX_PATH + 1];
+	char        line[FINDSTR_MAX_LINE_LEN + 1];
+	char        last_line[FINDSTR_MAX_LINE_LEN + 1] = "";
+	bool        last_inert = false;
+	bool        last_dupe_negated = false;
+	bool        have_last = false;
+	str_list_t  names;
+	FILE*       fp;
+	int         lines = 0;
+
+	SAFEPRINTF2(path, "%s%s", cfg->ctrl_dir, fname);
+	if ((fp = fnopen(NULL, path, O_RDONLY)) == NULL)
+		return true;
+	if ((names = strListInit()) == NULL) {
+		fclose(fp);
+		return allocerr(error, maxerrlen, fname, "domain list", sizeof(char*));
+	}
+	while (fgets(line, sizeof line, fp) != NULL) {
+		if (++lines > DOMAINS_CFG_MAX_LINES) {
+			snprintf(error, maxerrlen, "%s: only the first %d lines were read", path, DOMAINS_CFG_MAX_LINES);
+			break;
+		}
+		char* p = line;
+		SKIP_WHITESPACE(p);
+		if (*p == '\0')
+			continue;
+		c_unescape_str(p);
+		char* tab = strchr(p, '\t');
+		if (tab != NULL)
+			*tab = '\0';
+		truncsp(p);
+		bool  inert = (*p == '\0' || *p == ';');
+		bool  dupe = false;
+		bool  dupe_negated = false;
+		/* A name that cannot be a section name (as update.js would convert	*/
+		/* it): an inert entry, exact for host names without such characters	*/
+		if (!inert && (strlen(p) > INET_DOMAIN_NAME_LEN || strpbrk(p, "\r\n") != NULL || IS_WHITESPACE(*p))) {
+			inert = true;
+			p = (char*)";";
+		}
+		if (!inert) {
+			for (size_t i = 0; names[i] != NULL; i++) {
+				if (stricmp(names[i], p) == 0) {
+					dupe = true;
+					dupe_negated = domains_cfg_entry_negated(names[i]);
+					break;
+				}
+			}
+		}
+		have_last = true;
+		last_inert = inert || dupe;
+		last_dupe_negated = dupe && dupe_negated;
+		if (*p == '\0' || strlen(p) > INET_DOMAIN_NAME_LEN || strpbrk(p, "\r\n") != NULL)
+			SAFECOPY(last_line, ";");
+		else
+			SAFECOPY(last_line, p);
+		if (!inert && !dupe)
+			strListPush(&names, p);
+	}
+	fclose(fp);
+
+	/* Keep a last inert line when its value differs from that of the last	*/
+	/* entry kept: an empty list or a plain entry evaluates to "no match",	*/
+	/* a negated entry to "match"											*/
+	if (have_last && last_inert) {
+		size_t count = strListCount(names);
+		bool   kept_value = count > 0 && domains_cfg_entry_negated(names[count - 1]);
+		if (kept_value != last_dupe_negated)
+			strListPush(&names, last_line);
+	}
+
+	int count = strListCount(names);
+	if (count > 0) {
+		if ((cfg->inet_domain = (inet_domain_t **)malloc(sizeof(inet_domain_t *) * count)) == NULL) {
+			strListFree(&names);
+			return allocerr(error, maxerrlen, fname, "domains", sizeof(inet_domain_t *) * count);
+		}
+		for (int i = 0; i < count; i++) {
+			inet_domain_t* domain;
+			if ((domain = (inet_domain_t *)malloc(sizeof(inet_domain_t))) == NULL) {
+				strListFree(&names);
+				return allocerr(error, maxerrlen, fname, "domain", sizeof(inet_domain_t));
+			}
+			memset(domain, 0, sizeof(*domain));
+			SAFECOPY(domain->name, names[i]);
+			arstr(NULL, domain->send_arstr, cfg, domain->send_ar);
+			cfg->inet_domain[cfg->total_inet_domains++] = domain;
+		}
+		cfg->inet_domains_from_cfg_file = true;
+	}
+	strListFree(&names);
+	return true;
+}
+
+/****************************************************************************/
 /* Reads in msgs.ini and initializes the associated variables				*/
 /****************************************************************************/
 bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
@@ -714,6 +846,53 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	INI_GET_STR(cfg->smtpmail_sem, section, NULL, "smtp_sem", "");
 	cfg->inetmail_misc = iniGetUInteger(section, NULL, "netmail_settings", 0);
 	cfg->inetmail_cost = iniGetUInt32(section, NULL, "cost", 0);
+	/* Set once the additional domains are kept in msgs.ini (by update.js	*/
+	/* or SCFG): domains.cfg is then never read, even for an empty list	*/
+	bool domains_converted = iniGetBool(section, NULL, "domains_converted", false);
+
+	/*******************************/
+	/* Additional Internet domains */
+	/*******************************/
+	str_list_t domain_list = iniGetParsedSectionList(sections, "domain:");
+	cfg->total_inet_domains = 0;
+	int        domain_count = strListCount(domain_list);
+	if (domain_count < 1)
+		cfg->inet_domain = NULL;
+	else if ((cfg->inet_domain = (inet_domain_t **)malloc(sizeof(inet_domain_t *) * domain_count)) == NULL) {
+		iniFreeStringList(domain_list);
+		iniFreeStringList(ini);
+		iniFreeParsedSections(sections);
+		return allocerr(error, maxerrlen, fname, "domains", sizeof(inet_domain_t *) * domain_count);
+	}
+	for (int i = 0; i < domain_count; i++) {
+		const char*    name = domain_list[i] + 7;
+		inet_domain_t* domain;
+		SKIP_WHITESPACE(name);
+		if (*name == '\0')
+			continue;
+		if ((domain = (inet_domain_t *)malloc(sizeof(inet_domain_t))) == NULL) {
+			iniFreeStringList(domain_list);
+			iniFreeStringList(ini);
+			iniFreeParsedSections(sections);
+			return allocerr(error, maxerrlen, fname, "domain", sizeof(inet_domain_t));
+		}
+		memset(domain, 0, sizeof(*domain));
+		section = iniGetParsedSection(sections, domain_list[i], /* cut: */ true);
+		SAFECOPY(domain->name, name);
+		domain->send_from = iniGetBool(section, NULL, "send_from", false);
+		INI_GET_STR(domain->send_arstr, section, NULL, "send_ars", "");
+		arstr(NULL, domain->send_arstr, cfg, domain->send_ar);
+		cfg->inet_domain[cfg->total_inet_domains++] = domain;
+	}
+	iniFreeStringList(domain_list);
+	cfg->inet_domains_from_cfg_file = false;
+	if (domain_count < 1 && !domains_converted) {
+		if (!read_domains_cfg_file(cfg, error, maxerrlen)) {
+			iniFreeStringList(ini);
+			iniFreeParsedSections(sections);
+			return false;
+		}
+	}
 
 	iniFreeStringList(ini);
 	iniFreeParsedSections(sections);
@@ -779,6 +958,75 @@ void free_msgs_cfg(scfg_t* cfg)
 		FREE_AND_NULL(cfg->phub);
 	}
 	cfg->total_phubs = 0;
+
+	if (cfg->inet_domain != NULL) {
+		for (i = 0; i < cfg->total_inet_domains; i++) {
+			FREE_AND_NULL(cfg->inet_domain[i]);
+		}
+		FREE_AND_NULL(cfg->inet_domain);
+	}
+	cfg->total_inet_domains = 0;
+	cfg->inet_domains_from_cfg_file = false;
+}
+
+/****************************************************************************/
+/* Is 'host' one of this system's additional Internet domains?				*/
+/* The configured names are matched in order as findstr() patterns (the	*/
+/* same rules as the lines of a filter file), so wildcards and negation	*/
+/* work. The system's own Internet address is not part of this list.		*/
+/****************************************************************************/
+bool inet_domain_listed(scfg_t* cfg, const char* host)
+{
+	bool   result;
+	char** list;
+
+	if (host == NULL || *host == '\0' || cfg->total_inet_domains < 1 || cfg->inet_domain == NULL)
+		return false;
+	if ((list = (char**)malloc(sizeof(char*) * (cfg->total_inet_domains + 1))) == NULL)
+		return false;
+	for (int i = 0; i < cfg->total_inet_domains; i++)
+		list[i] = cfg->inet_domain[i]->name;
+	list[cfg->total_inet_domains] = NULL;
+	result = findstr_in_list(host, list, NULL);
+	free(list);
+	return result;
+}
+
+/****************************************************************************/
+/* Is 'name' a plain domain name, i.e. one a user may send from? Only		*/
+/* letters, digits, dots and hyphens, with at least one dot that is not	*/
+/* the first or last character; anything else (a wildcard, negation,		*/
+/* sub-string, prefix or CIDR pattern, a comment) counts as a pattern.	*/
+/****************************************************************************/
+bool inet_domain_is_plain(const char* name)
+{
+	size_t len;
+	bool   dot = false;
+
+	if (name == NULL)
+		return false;
+	len = strlen(name);
+	if (len < 3 || name[0] == '.' || name[len - 1] == '.')
+		return false;
+	for (size_t i = 0; i < len; i++) {
+		if (name[i] == '.')
+			dot = true;
+		else if (!IS_ALPHANUMERIC(name[i]) && name[i] != '-')
+			return false;
+	}
+	return dot;
+}
+
+/****************************************************************************/
+/* Does the additional domain list end with a negated ('!') entry? Then	*/
+/* every host not matched by an earlier entry counts as one of the		*/
+/* domains (the filter-file matching rules), which is almost never meant.	*/
+/****************************************************************************/
+bool inet_domain_list_ends_negated(scfg_t* cfg)
+{
+	if (cfg->total_inet_domains < 1 || cfg->inet_domain == NULL)
+		return false;
+	return cfg->inet_domain[cfg->total_inet_domains - 1]->name[0] == '!';
 }
 
 /* Strip a trailing slash/backslash from path in-place. */

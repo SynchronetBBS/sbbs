@@ -358,6 +358,15 @@ typedef struct {							/* PCRelay/PostLink Hub */
 
 } phub_t;
 
+#define INET_DOMAIN_NAME_LEN 255
+
+typedef struct {							/* Additional Internet domain */
+	char		name[INET_DOMAIN_NAME_LEN+1],	/* Domain name or pattern */
+				send_arstr[LEN_ARSTR+1];	/* Requirements to send from it */
+	uchar		send_ar[LEN_ARSTR+1];
+	bool		send_from;					/* Users may send from this domain */
+
+} inet_domain_t;
 
 typedef struct {							/* Command Shells */
 	char		code[LEN_CODE+1];
@@ -448,6 +457,9 @@ typedef struct
 	int				total_qhubs;		/* Total qwk network hubs */
 	phub_t			**phub; 			/* PostLink/PCRelay network hubs */
 	int				total_phubs;		/* Total PostLink/PCRelay hubs */
+	inet_domain_t	**inet_domain;		/* Additional Internet domains */
+	int				total_inet_domains;	/* Total additional Internet domains */
+	bool			inet_domains_from_cfg_file; /* Read from old ctrl/domains.cfg (not yet converted) */
 	chan_t			**chan; 			/* Each chat channel */
 	int				total_chans;		/* Total number of chat channels */
 	chatact_t		**chatact;			/* Chat action commands */

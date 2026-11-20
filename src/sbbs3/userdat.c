@@ -4167,6 +4167,37 @@ bool user_can_send_netmail(user_t* user)
 }
 
 /****************************************************************************/
+/* May 'user' send e-mail from an address in 'domain'? The user must be an	*/
+/* active (not deleted or inactive), non-guest account allowed to send		*/
+/* Internet e-mail. The system's own Internet address then always			*/
+/* qualifies, whatever the additional domain list says. Any other domain	*/
+/* must be one of the additional domains: only a plain (not pattern)		*/
+/* entry with send_from enabled qualifies, the user must meet the entry's	*/
+/* send requirements (blank = any), and the domain must be local by the	*/
+/* whole list (e.g. not excluded by an earlier negated entry).			*/
+/****************************************************************************/
+bool user_can_send_from_inet_domain(scfg_t* cfg, user_t* user, const char* domain)
+{
+	if (domain == NULL || *domain == '\0')
+		return false;
+	if (!user_can_send_netmail(user) || !user_is_active(user) || user_is_guest(user))
+		return false;
+	if (!user_is_sysop(user) && !(cfg->inetmail_misc & NMAIL_ALLOW))
+		return false;
+	if (cfg->sys_inetaddr[0] != '\0' && stricmp(domain, cfg->sys_inetaddr) == 0)
+		return true;
+	if (!inet_domain_listed(cfg, domain))
+		return false;
+	for (int i = 0; i < cfg->total_inet_domains; i++) {
+		inet_domain_t* entry = cfg->inet_domain[i];
+		if (!inet_domain_is_plain(entry->name) || stricmp(entry->name, domain) != 0)
+			continue;
+		return entry->send_from && chk_ar(cfg, entry->send_ar, user, /* client: */ NULL);
+	}
+	return false;
+}
+
+/****************************************************************************/
 /* Determine if the specified user can or cannot send email					*/
 /* 'reason' is an (optional) pointer to a text.dat item number				*/
 /* usernumber==0 for netmail												*/

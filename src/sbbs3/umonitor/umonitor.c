@@ -731,7 +731,7 @@ int edit_cfg(scfg_t *cfg)
 	char	cmd[MAX_PATH + 1];
 	char	editcmd[1024];
 
-	const int num_opts = 16;
+	const int num_opts = 15;
 	if((opt=(char **)alloca(sizeof(char *)*(num_opts+1)))==NULL)
 		allocfail(sizeof(char *)*(num_opts+1));
 	for(i=0;i<(num_opts+1);i++)
@@ -745,7 +745,6 @@ int edit_cfg(scfg_t *cfg)
 	strcpy(opt[i++],"attr.ini");
 	strcpy(opt[i++],"dns_blacklist.cfg");
 	strcpy(opt[i++],"dnsbl_exempt.cfg");
-	strcpy(opt[i++],"domains.cfg");
 	strcpy(opt[i++],"mailproc.ini");
 	strcpy(opt[i++],"mime_types.ini");
 	strcpy(opt[i++],"relay.cfg");

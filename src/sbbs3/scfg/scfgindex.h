@@ -363,6 +363,21 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Security Options... > Quick-Validation Set > Additional Credits"
 	},
 	{
+		"Additional Domain",
+		"Additional Domains",
+		"Networks > Additional Domains > Additional Domain"
+	},
+	{
+		"Additional Domains",
+		"Internet E-mail",
+		"Networks > Internet E-mail > Additional Domains"
+	},
+	{
+		"Additional Domains",
+		"Networks",
+		"Networks > Additional Domains"
+	},
+	{
 		"Advanced Options",
 		"Directory",
 		"File Areas > Directories > Directory > Advanced Options"
@@ -481,6 +496,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Allow Quoting in E-mail",
 		"Message Options",
 		"Message Options > Allow Quoting in E-mail"
+	},
+	{
+		"Allow Send From",
+		"Additional Domain",
+		"Networks > Additional Domains > Additional Domain > Allow Send From"
 	},
 	{
 		"Allow Sending of E-mail",
@@ -1304,6 +1324,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Clear Requirements",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
 		"Sysop Chat Override",
 		"System > Advanced Options... > Sysop Chat Override > Clear Requirements"
 	},
@@ -1806,6 +1831,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"DNS-Blacklisted Servers",
 		"Mail Server",
 		"Servers > Mail Server > DNS-Blacklisted Servers"
+	},
+	{
+		"Domain Name",
+		"Additional Domain",
+		"Networks > Additional Domains > Additional Domain > Domain Name"
 	},
 	{
 		"DOS Program Support",
@@ -5038,6 +5068,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Networks > FidoNet EchoMail and NetMail > Send NetMail Using Alias"
 	},
 	{
+		"Send Requirements",
+		"Additional Domain",
+		"Networks > Additional Domains > Additional Domain > Send Requirements"
+	},
+	{
 		"SendMail Support...",
 		"Mail Server",
 		"Servers > Mail Server > SendMail Support..."
@@ -5394,6 +5429,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Set Required Age",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
 		"Sysop Chat Override",
 		"System > Advanced Options... > Sysop Chat Override > Set Required Age"
 	},
@@ -5736,6 +5776,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Day of Week",
 		"Requirements",
 		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required Day of Week"
 	},
 	{
 		"Set Required Day of Week",
@@ -6084,6 +6129,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Set Required Gender",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
 		"Sysop Chat Override",
 		"System > Advanced Options... > Sysop Chat Override > Set Required Gender"
 	},
@@ -6426,6 +6476,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Number of Credits",
 		"Requirements",
 		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required Number of Credits"
 	},
 	{
 		"Set Required Number of Credits",
@@ -6774,6 +6829,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Set Required Post/Call Ratio (percentage)",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
 		"Sysop Chat Override",
 		"System > Advanced Options... > Sysop Chat Override > Set Required Post/Call Ratio (percentage)"
 	},
@@ -7116,6 +7176,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Security Flag",
 		"Requirements",
 		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required Security Flag"
 	},
 	{
 		"Set Required Security Flag",
@@ -7464,6 +7529,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Set Required Security Level",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
 		"Sysop Chat Override",
 		"System > Advanced Options... > Sysop Chat Override > Set Required Security Level"
 	},
@@ -7806,6 +7876,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Terminal Type/Capability",
 		"Requirements",
 		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required Terminal Type/Capability"
 	},
 	{
 		"Set Required Terminal Type/Capability",
@@ -8154,6 +8229,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Set Required Time of Day",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
 		"Sysop Chat Override",
 		"System > Advanced Options... > Sysop Chat Override > Set Required Time of Day"
 	},
@@ -8496,6 +8576,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Time Remaining",
 		"Requirements",
 		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required Time Remaining"
 	},
 	{
 		"Set Required Time Remaining",
@@ -8844,6 +8929,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
 		"Sysop Chat Override",
 		"System > Advanced Options... > Sysop Chat Override > Set Required Upload/Download Byte Ratio (percentage)"
 	},
@@ -9186,6 +9276,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Upload/Download File Ratio (percentage)",
 		"Requirements",
 		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required Upload/Download File Ratio (percentage)"
 	},
 	{
 		"Set Required Upload/Download File Ratio (percentage)",
@@ -9534,6 +9629,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Set Required User Number",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
 		"Sysop Chat Override",
 		"System > Advanced Options... > Sysop Chat Override > Set Required User Number"
 	},
@@ -9876,6 +9976,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required User Type (e.g. Sysop, Guest)",
 		"Requirements",
 		"External Programs > Online Programs (Doors) > Online Programs... > Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Send Requirements",
+		"Networks > Additional Domains > Additional Domain > Send Requirements > Set Required User Type (e.g. Sysop, Guest)"
 	},
 	{
 		"Set Required User Type (e.g. Sysop, Guest)",

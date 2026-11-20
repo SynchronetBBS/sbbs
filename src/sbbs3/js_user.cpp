@@ -1508,6 +1508,41 @@ js_can_send_mail(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_can_send_from_domain(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *      obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *         argv = JS_ARGV(cx, arglist);
+	user_private_t* p;
+	char*           domain = nullptr;
+	jsrefcount      rc;
+	scfg_t*         scfg;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
+
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
+		return JS_FALSE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], domain, NULL);
+	HANDLE_PENDING(cx, domain);
+	if (domain == nullptr)
+		return JS_FALSE;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	p->getuserdat();
+	bool result = user_can_send_from_inet_domain(scfg, p->user, domain);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	JS_RESUMEREQUEST(cx, rc);
+	free(domain);
+
+	return JS_TRUE;
+}
+
+static JSBool
 js_can_access_sub(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
@@ -1647,6 +1682,14 @@ static jsSyncMethodSpec js_user_functions[] = {
 		        "<i>to_usernum</i> is the recipient's user number for local e-mail (1 is the sysop, which has its own restriction).<br>"
 		        "<i>count</i> is the number of recipients (default: 1, minimum: 1); "
 		        "the per-day limit is checked against the user's e-mails sent today plus <i>count</i>.")
+	 , 322},
+	{"can_send_from_domain", js_can_send_from_domain, 1,  JSTYPE_BOOLEAN,  JSDOCSTR("<i>string</i> domain")
+	 , JSDOCSTR("Return <tt>true</tt> if the user may send e-mail from an address in <i>domain</i>. "
+		        "The user must be an active, non-guest account allowed to send Internet e-mail. "
+		        "The system's own Internet address (<tt>system.inet_addr</tt>) is then always allowed; "
+		        "any other domain must be one of the additional Internet domains "
+		        "(see <tt>system.inet_domain_list</tt>) whose entry is a plain host name with "
+		        "<i>send_from</i> enabled and whose <i>send_ars</i> the user meets (blank = any such user).")
 	 , 322},
 	{"can_access_sub",  js_can_access_sub,  1,  JSTYPE_BOOLEAN,  JSDOCSTR("<i>string</i> sub_code or <i>number</i> sub_num, ['read', 'post', or 'operator']")
 	 , JSDOCSTR("Return <tt>true</tt> if the user has the specified access to the specified message sub-board. If no access string (second argument) is specified, <i>any access</i> is checked.")

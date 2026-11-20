@@ -15,8 +15,14 @@ if(user.number && !(user.security.restrictions&UREST_EDIT_DEFAULTS))
 
 var sender_host = sender_address.slice(sender_address.indexOf('@')+1);
 
+// This system's domains: system.inet_domain_list (v3.22 and later), else
+// the additional domains file read by older versions
+var domains = system.inet_domain_list;
+if(domains === undefined)
+	domains = system.ctrl_dir + "domains.cfg";
+
 if((sender_host == system.host_name
-		|| system.findstr(system.ctrl_dir + "domains.cfg", sender_host))
+		|| system.findstr(domains, sender_host))
 		&& client.ip_address!="127.0.0.1"
 		&& client.ip_address.substring(0, 7) != "192.168."
 		&& client.ip_address!=resolve_ip(sender_host)) {

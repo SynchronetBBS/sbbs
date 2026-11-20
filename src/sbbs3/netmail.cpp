@@ -1527,9 +1527,7 @@ extern "C" bool netmail_addr_is_supported(scfg_t* cfg, const char* addr)
 				return false;
 			if (stricmp(p, cfg->sys_inetaddr) == 0)
 				return false;
-			char domain_list[MAX_PATH + 1];
-			SAFEPRINTF(domain_list, "%sdomains.cfg", cfg->ctrl_dir);
-			return findstr(p, domain_list) == false;
+			return !inet_domain_listed(cfg, p);
 		case NET_QWK:
 		{
 			char fulladdr[256] = "";

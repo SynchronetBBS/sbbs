@@ -3066,11 +3066,26 @@ static int smtp_resolve_user(const char* name, bool aliased, char* matched, size
 }
 
 /****************************************************************************/
+/* Warn about additional-domain configurations that are probably mistakes	*/
+/****************************************************************************/
+static void check_inet_domain_cfg(void)
+{
+	if (inet_domain_list_ends_negated(&scfg))
+		lprintf(LOG_WARNING, "!WARNING the additional domain list ends with a negated entry (%s), "
+		        "so every other domain is treated as local"
+		        , scfg.inet_domain[scfg.total_inet_domains - 1]->name);
+	if (scfg.inet_domains_from_cfg_file)
+		lprintf(LOG_WARNING, "!WARNING the additional domain list (%d %s) was read from %sdomains.cfg: "
+		        "run 'jsexec update.js' to convert it to [domain:] sections of msgs.ini"
+		        , scfg.total_inet_domains, scfg.total_inet_domains == 1 ? "entry" : "entries", scfg.ctrl_dir);
+}
+
+/****************************************************************************/
 /* May authenticated 'user' send as 'addr' (a bare addr-spec)?              */
 /* The domain must be one of this system's and the address must deliver to  */
 /* that same user (RFC 6409 section 6.1).                                   */
 /****************************************************************************/
-static bool sender_addr_authorized(user_t* user, const char* addr, const char* domain_list)
+static bool sender_addr_authorized(user_t* user, const char* addr)
 {
 	char        name[128];
 	char        alias_buf[128];
@@ -3086,7 +3101,7 @@ static bool sender_addr_authorized(user_t* user, const char* addr, const char* d
 	domain++;
 	if (stricmp(domain, scfg.sys_inetaddr) != 0
 	    && stricmp(domain, startup->host_name) != 0
-	    && findstr(domain, domain_list) == false) {
+	    && !inet_domain_listed(&scfg, domain)) {
 		/* A sender address in a foreign domain is a relay, and a sysop who
 		 * allows authenticated users to relay via the transfer port allows
 		 * exactly this (e.g. a BBS sysop submitting as their own domain),
@@ -3166,7 +3181,6 @@ static bool smtp_client_thread(smtp_t* smtp)
 	char              hello_name[128];
 	char              user_name[128];
 	char              relay_list[MAX_PATH + 1];
-	char              domain_list[MAX_PATH + 1];
 	char              spam_bait[MAX_PATH + 1];
 	bool              spam_bait_result = false;
 	char              spam_block_exemptions[MAX_PATH + 1];
@@ -3275,7 +3289,6 @@ static bool smtp_client_thread(smtp_t* smtp)
 	if (startup->inbound_sound[0] && !sound_muted(&scfg))
 		PlaySound(startup->inbound_sound, NULL, SND_ASYNC | SND_FILENAME);
 #endif
-	SAFEPRINTF(domain_list, "%sdomains.cfg", scfg.ctrl_dir);
 
 	addr_len = sizeof(server_addr);
 
@@ -3811,7 +3824,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 							char from_addr[128];
 							parse_mail_address(p, /* name: */ NULL, 0, from_addr, sizeof(from_addr) - 1);
 							if (smtp->submission && relay_user.number != 0
-							    && !sender_addr_authorized(&relay_user, from_addr, domain_list)) {
+							    && !sender_addr_authorized(&relay_user, from_addr)) {
 								char user_addr[128];
 								lprintf(LOG_NOTICE, "%04d %-5s %s !UNAUTHORIZED mail header 'FROM' field (%s) for user #%u (%s)"
 								        , socket, client.protocol, client_id, from_addr
@@ -4812,7 +4825,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			if (smtp->submission && relay_user.number != 0) {
 				char sender_addr_buf[128];
 				parse_mail_address(reverse_path, /* name: */ NULL, 0, sender_addr_buf, sizeof(sender_addr_buf) - 1);
-				if (!sender_addr_authorized(&relay_user, sender_addr_buf, domain_list)) {
+				if (!sender_addr_authorized(&relay_user, sender_addr_buf)) {
 					char user_addr[128];
 					lprintf(LOG_NOTICE, "%04d %-5s %s !UNAUTHORIZED REVERSE PATH (%s) for user #%u (%s)"
 					        , socket, client.protocol, client_id, sender_addr_buf
@@ -5065,7 +5078,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				}
 				if ((stricmp(dest_host, scfg.sys_inetaddr) != 0
 				     && stricmp(dest_host, startup->host_name) != 0
-				     && findstr(dest_host, domain_list) == false)
+				     && !inet_domain_listed(&scfg, dest_host))
 				    || dest_port != inet_addrport(&server_addr)) {
 
 					SAFEPRINTF(relay_list, "%srelay.cfg", scfg.ctrl_dir);
@@ -5324,7 +5337,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			    && tp != NULL && smb_netaddr_type(user.netmail) == NET_INTERNET
 			    && stricmp(tp + 1, scfg.sys_inetaddr) != 0
 			    && stricmp(tp + 1, startup->host_name) != 0
-			    && findstr(tp + 1, domain_list) == false
+			    && !inet_domain_listed(&scfg, tp + 1)
 			    ) {
 				lprintf(LOG_INFO, "%04d %-5s %s Forwarding to: %s"
 				        , socket, client.protocol, client_id, user.netmail);
@@ -5899,7 +5912,6 @@ static void sendmail_thread(void* arg)
 	char          md5_data[384];
 	uchar         digest[MD5_DIGEST_SIZE];
 	char          numeric_ip[16];
-	char          domain_list[MAX_PATH + 1];
 	char          dns_server[128];
 	const char*   server;
 	char*         msgtxt = NULL;
@@ -6103,10 +6115,9 @@ static void sendmail_thread(void* arg)
 				continue;
 			}
 			p++;
-			SAFEPRINTF(domain_list, "%sdomains.cfg", scfg.ctrl_dir);
 			if (stricmp(p, scfg.sys_inetaddr) == 0
 			    || stricmp(p, startup->host_name) == 0
-			    || findstr(p, domain_list)) {
+			    || inet_domain_listed(&scfg, p)) {
 				/* This is a local message... no need to send to remote */
 				port = startup->smtp_port;
 				/* TODO: IPv6 */
@@ -6651,6 +6662,7 @@ void mail_server(void* arg)
 		}
 		if (error[0] != '\0')
 			lprintf(LOG_WARNING, "!WARNING loading configuration files: %s", error);
+		check_inet_domain_cfg();
 
 
 		mqtt_startup(&mqtt, &scfg, (struct startup*)startup, mail_ver(), lputs);
