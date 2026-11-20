@@ -102,6 +102,8 @@ else
  JSLIB := mozjs185
  JS_DEPS := js
  JS_LIBS += $(JSLIBDIR)$(DIRSEP)libmozjs185-1.0.a
+ # This build of SpiderMonkey has js-execute-script-in-scope.patch
+ JS_CFLAGS += -DSBBS_JS_EXECUTE_SCRIPT_IN_SCOPE
 endif
 JS_LIBS += $(NSPR_LIBS)
  

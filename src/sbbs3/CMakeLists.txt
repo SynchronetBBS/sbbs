@@ -204,6 +204,8 @@ else()
 	find_library(3RDP_MOZJS_LIB mozjs185-1.0 PATHS ${3RDP_DIR}/${LEGACY_3RDPDIR}/mozjs/lib NO_DEFAULT_PATH)
 	find_library(3RDP_CRYPTLIB_LIB cl PATHS ${3RDP_DIR}/${LEGACY_3RDPDIR}/cl NO_DEFAULT_PATH)
 	target_include_directories(sbbs PUBLIC ${3RDP_DIR}/${LEGACY_3RDPDIR}/mozjs/include/js)
+	# The SpiderMonkey built from 3rdp has js-execute-script-in-scope.patch
+	target_compile_definitions(sbbs PUBLIC SBBS_JS_EXECUTE_SCRIPT_IN_SCOPE)
 	add_dependencies(sbbs 3rdp)
 endif()
 target_link_libraries(sbbs ${3RDP_MOZJS_LIB})

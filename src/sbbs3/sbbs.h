@@ -103,6 +103,13 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #if __GNUC_ > 5
 	#pragma GCC diagnostic pop
 #endif
+#if !defined(SBBS_JS_EXECUTE_SCRIPT_IN_SCOPE)
+// Only the SpiderMonkey built from 3rdp (with its patches) has
+// JS_ExecuteScriptInScope().  With a stock library (the Windows builds, a
+// system or JSLIB= libmozjs185) scripts run in a scope as they did before
+// it existed (#1372 is not fixed there).
+	#define JS_ExecuteScriptInScope JS_ExecuteScript
+#endif
 #define JS_DestroyScript(cx,script)
 
 #define JSSTRING_TO_RASTRING(cx, str, ret, sizeptr, lenptr) \
