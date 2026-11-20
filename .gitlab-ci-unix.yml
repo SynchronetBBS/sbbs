@@ -1743,13 +1743,16 @@ spec:
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ctrl_exec${EXTRA_FILENAME}.tgz"
     - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
     # When jsexec crashes, print a backtrace from the core file it left
-    # here (jsexec.core, core or core.<pid>, by OS) before failing the job
+    # (jsexec.core, core or core.<pid>, by OS) before failing the job. The
+    # core is in the directory of the test that was running, so look below
+    # this one.
     - |
       rc=0
       SBBSCTRL=./ctrl src/sbbs3/*.exe.release/jsexec -U -S -f exec/tests/test.js || rc=$?
-      if [ "$rc" -ne 0 ]; then
-        for core in *.core core core.*; do
-          [ -f "$core" ] || continue
+      if [ "$rc" -gt 128 ]; then
+        cores=$(find . -type f \( -name '*.core' -o -name core -o -name 'core.[0-9]*' \) 2> /dev/null)
+        [ -n "$cores" ] || echo "=== jsexec exited with status $rc; no core file found below $(pwd)"
+        for core in $cores; do
           echo "=== jsexec exited with status $rc; backtrace from $core"
           if command -v gdb > /dev/null 2>&1; then
             gdb -batch -ex "thread apply all bt" src/sbbs3/*.exe.release/jsexec "$core" 2>&1 | tail -n 300
