@@ -806,7 +806,8 @@ js_require(JSContext *cx, uintN argc, jsval *arglist)
 
 	ret = js_load(cx, argc - 1, arglist);
 
-	if (!JS_IsExceptionPending(cx)) {
+	// Failure with no exception pending is an abort (e.g. client disconnect)
+	if (ret && !JS_IsExceptionPending(cx)) {
 		if (!JS_HasProperty(cx, exec_obj, property, &found) || !found) {
 			if (!js_IsTerminated(cx, exec_obj)) {
 				JSVALUE_TO_MSTRING(cx, argv[fnarg], filename, NULL);
