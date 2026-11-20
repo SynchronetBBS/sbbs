@@ -921,7 +921,8 @@
   for each file's line, and `modopts.ini` `[listfiles]` options (issue
   #1353). With batch flagging on an ANSI or PETSCII terminal, the listing
   is interactive: a lightbar that scrolls, PgUp/PgDn, and Space or a
-  double-click to tag files
+  double-click to tag files; `style = lightbar` lays it out like
+  msglist.js, with a preview pane of the current file's information
 - More strings in stock modules route through `gettext()` for
   `ctrl/text.ini` `[JS]`-section customization
 - Good Time Trivia gains a `useDoveNetSyncData` option that
