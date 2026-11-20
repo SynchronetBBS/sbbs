@@ -4,6 +4,7 @@
 nhb[nhcPgUpnhb/nhcPgDnnhb] @POS:25@ncMove to the previous/next page (Bksp = PgUp)
 nhb[nhcHomenhb/nhcEndnhb] @POS:25@ncMove to the first/last file
 nhb[nhcSpacenhb] @POS:25@ncTag/untag the file and move to the next (hûnc = tagged)
+nhb[nhcCtrl-Anhb] @POS:25@ncTag all files, or untag all if the first is tagged
 nhb[nhcEnternhb] @POS:25@ncNext page (or next directory)
 ncClick a file to select it, double-click to tag or untag it.
 ncA h+nc after a filename means it has an extended description,

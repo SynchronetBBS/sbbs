@@ -15,7 +15,7 @@ function listfiles_defaults()
 		line_fmt_nobatch: "@NAME_ATTR@@NAME@@FLAGS@@SIZE_ATTR@@SIZE-R7@@MISSING@@DESC_ATTR@@DESC@",
 		// For batch flagging on terminals that position the cursor (lightbar):
 		// the tagged/untagged marker in place of the letter
-		line_fmt_interactive: "@NAME_ATTR@@NAME@@FLAGS@@LETTER_ATTR@@TAG@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
+		line_fmt_interactive: "@NAME_ATTR@@NAME@@FLAGS@@TAG_ATTR@@TAG@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
 		// The command keys shown above the files in the interactive mode, below
 		// any header ("" for none, e.g. when a custom header shows them)
 		interactive_commands: "\x01n\x01>\x01q\x014 \x01h\x01y[\x01w\x01~D\x01y]ownload  [\x01w\x01~B\x01y]atch  [\x01wSpace\x01y] Tag  [\x01w\x01~V\x01y]iew  [\x01w\x01~E\x01y]xt Info  [\x01w\x01~T\x01y]oggle Desc  [\x01w\x01~Q\x01y]uit\x01>\x01n\r\n",
@@ -39,6 +39,7 @@ function listfiles_defaults()
 		size_attr: "",
 		desc_attr: "",
 		letter_attr: "",
+		tag_attr: "\x01n\x01h\x01w",	// the tagged marker's color ("": the filename color)
 		free_attr: "",
 		hdr_box_attr: "",
 		hdr_line_attr: "",
@@ -57,14 +58,22 @@ function listfiles_defaults()
 		style: "classic",
 		// The lightbar style's file line, area line (arguments: library name,
 		// directory name), position (current file number, number of files),
-		// column headings ("" for none) and key tips: a mnemonics string, ~
-		// before each key letter (the second for users who may remove files)
-		line_fmt_lightbar: "@NAME_ATTR@@NAME@@FLAGS@@LETTER_ATTR@@TAG@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
-		lightbar_area_fmt: "\x01n\x01k\x017 %s / %s",
-		lightbar_position_fmt: "[file %u of %u] ",
-		lightbar_headings: "\x01n\x01hName            Size Description",
-		lightbar_keys: "~Download ~Batch ~View ~Ext ~Help ~Quit  Space:Tag Tab:Pane",
-		lightbar_keys_operator: "~Download ~Batch ~View ~Ext ~Remove ~Move ~Help ~Quit  Space:Tag Tab:Pane",
+		// column headings (true: from the file line and the heading_* titles,
+		// in lightbar_headings_attr; false for none; or text; the area line's
+		// and headings' last color fills the rest of their rows, as in
+		// msglist.js) and key tips:
+		// a mnemonics string, ~ before each key letter (the second for users
+		// who may remove files)
+		line_fmt_lightbar: "@NAME_ATTR@@NAME@@FLAGS@@TAG_ATTR@@TAG@@SIZE_ATTR@@SIZE-R6@@MISSING@@DESC_ATTR@@DESC@",
+		lightbar_area_fmt: "\x01n\x01k\x017%s / %s\x01h",
+		lightbar_position_fmt: "[file %u of %u]",
+		lightbar_headings: true,	// true: from line_fmt_lightbar and the heading_* titles
+		lightbar_headings_attr: "\x01n\x01h\x01k\x017",
+		heading_name: "Name",
+		heading_size: "Size",
+		heading_desc: "Description",
+		lightbar_keys: "~Download, ~Batch, ~View, ~Ext, Space=Tag, ~Quit or ~?",
+		lightbar_keys_operator: "~Download, ~Batch, ~View, ~Ext, ~Remove, ~Move, Space=Tag, ~Quit or ~?",
 		lightbar_attr: "\x01n\x01h\x01w\x014",
 		// The preview pane: the info view's details (@FILE_*@ codes; the
 		// extended description follows), whether to show contents, which
@@ -198,7 +207,7 @@ function listfiles_attr_str(attr)
 // property of the 'values' passed to listfiles_local_codes())
 var LISTFILES_LOCAL_CODES = [
 	"LETTER", "TAG", "FLAGS", "MISSING", "SIZE", "NAME", "DESC",
-	"NAME_ATTR", "LETTER_ATTR", "SIZE_ATTR", "DESC_ATTR"
+	"NAME_ATTR", "LETTER_ATTR", "TAG_ATTR", "SIZE_ATTR", "DESC_ATTR"
 ];
 
 // Expand the module-local @-codes in 'str', with the same width/alignment
@@ -411,6 +420,56 @@ function listfiles_contents_lines(reader)
 	} catch (e) {
 		return { lines: [], note: String(e.message || e) };
 	}
+}
+
+// Column headings for a file line template 'fmt': the template with the
+// titles (name, size, desc) in place of the filename (padded to 'namelen'
+// columns, as filenames are), size and description, blanks of the same
+// widths in place of other @-codes (a modifier without a width meaning the
+// code's own width; empty with no modifier), and no colors
+function listfiles_headings(fmt, titles, namelen)
+{
+	var values = {};
+	for (var i = 0; i < LISTFILES_LOCAL_CODES.length; i++)
+		values[LISTFILES_LOCAL_CODES[i].toLowerCase()] = "";
+	values.flags = values.tag = values.letter = values.missing = " ";
+	values.name = format("%-*s", namelen, titles.name);
+	values.size = titles.size;
+	values.desc = titles.desc;
+	var text = listfiles_local_codes(fmt, values);
+	text = text.replace(/@[A-Za-z0-9_:]+(-[LRC]|\|[A-Z]*)?(\d*)@/g, function (match, modifier, width) {
+		var len = width ? parseInt(width, 10) : (modifier ? match.length : 0);
+		return format("%*s", len, "");
+	});
+	return strip_ctrl(text);
+}
+
+// A mnemonics string (~ before each key letter, as console.mnemonics()
+// displays) cut to 'width' displayed columns (the ~ and Ctrl-A codes take
+// none)
+function listfiles_mnemonics_cut(str, width)
+{
+	var out = "";
+	var cols = 0;
+	for (var i = 0; i < str.length; i++) {
+		var ch = str.charAt(i);
+		if (ch === "\x01" && i + 1 < str.length) {
+			out += ch + str.charAt(++i);
+			continue;
+		}
+		if (ch === "~" && i + 1 < str.length) {
+			if (cols + 1 > width)
+				break;
+			out += ch + str.charAt(++i);
+			cols++;
+			continue;
+		}
+		if (cols + 1 > width)
+			break;
+		out += ch;
+		cols++;
+	}
+	return out;
 }
 
 // A window of items (files) of the given screen-line heights, with at most

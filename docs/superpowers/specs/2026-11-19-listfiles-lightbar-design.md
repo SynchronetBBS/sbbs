@@ -257,6 +257,7 @@ Cost controls (anti-goal above):
 | Tab | show pane (saved setting), focus pane | focus list |
 | T, P | toggle pane (saved setting) | hide pane, focus list |
 | E | info view; hides the pane if info is showing (see decision 5) | same |
+| I | full-screen extended information (with the uploader's avatar), for the tagged files or the current file: the classic style's E | same |
 | V | contents view; hides the pane if contents are showing; full-screen viewer for files the pane can't show | same |
 | B D R M Del S Q ? | as in classic | as in classic |
 

@@ -162,11 +162,32 @@ check("contents: a reader that throws"
 check("contents: a reader with no result", listfiles_contents_lines(function () { return null; }).lines, []);
 check("contents: a reader's lines", listfiles_contents_lines(function () { return ["x"]; }), {lines:["x"], note:""});
 
+check("mnemonics: fits", listfiles_mnemonics_cut("~Download ~Quit", 79), "~Download ~Quit");
+check("mnemonics: cut, ~ not counted", listfiles_mnemonics_cut("~Download ~Quit", 9), "~Download ");
+check("mnemonics: no dangling ~", listfiles_mnemonics_cut("ab~Cd", 2), "ab");
+check("mnemonics: Ctrl-A codes not counted", listfiles_mnemonics_cut("\x01hab", 2), "\x01hab");
+
+var titles = { name: "Name", size: "Size", desc: "Description" };
+check("headings: default line", listfiles_headings(listfiles_defaults().line_fmt_lightbar, titles, 12)
+	, "Name            Size Description");
+check("headings: wider name column", listfiles_headings("@NAME@ @DESC@", titles, 20)
+	, "Name                 Description");
+check("headings: other codes are blank, their width kept"
+	, listfiles_headings("@NAME@@FILE_DATE-R8@|@FILE_UPLOADER@|@TAG@|", titles, 4), "Name        || |");
+check("headings: colors and attribute codes dropped"
+	, listfiles_headings("\x01h@NAME_ATTR@@NAME@\x01n@SIZE_ATTR@@SIZE-R6@", titles, 4), "Name  Size");
+check("headings: a modifier without a width is the code's width"
+	, listfiles_headings("@FILE_DATE-L@|", titles, 4), "             |");
+check("headings: text kept", listfiles_headings("[@NAME@]", titles, 4), "[Name]");
+
 var d = listfiles_defaults();
+check("headings default: generated", d.lightbar_headings, true);
+check("heading titles", [d.heading_name, d.heading_size, d.heading_desc], ["Name", "Size", "Description"]);
 check("default style", d.style, "classic");
 check("lightbar keys fit", strip_ctrl(d.lightbar_keys.replace(/~/g, "")).length <= 79, true);
 check("operator keys fit", strip_ctrl(d.lightbar_keys_operator.replace(/~/g, "")).length <= 79, true);
 check("operator keys add Remove", d.lightbar_keys_operator.indexOf("~Remove") >= 0, true);
+check("lightbar keys end with help", d.lightbar_keys.substr(-2), "~?");
 check("lightbar line has no letter", d.line_fmt_lightbar.indexOf("@LETTER@"), -1);
 check("preview size limit", d.preview_max_size, 52428800);
 check("preview delay", d.preview_delay, 0.5);
@@ -186,6 +207,10 @@ check("interactive prompt"
 	, strip_ctrl(format(d.interactive_prompt || "", "<", ">", 1, "Main", 2, "Synchronet", 99))
 	, "< Listing > (1) Main (2) Synchronet (?=Menu) (99 Files): ");
 check("interactive line has the tag", d.line_fmt_interactive.indexOf("@TAG@") >= 0, true);
+check("interactive flag column has its own color", d.line_fmt_interactive.indexOf("@TAG_ATTR@@TAG@") >= 0, true);
+check("lightbar flag column has its own color", d.line_fmt_lightbar.indexOf("@TAG_ATTR@@TAG@") >= 0, true);
+check("tag_attr default (bright white)", d.tag_attr, "\x01n\x01h\x01w");
+check("local TAG_ATTR", listfiles_local_codes("@TAG_ATTR@@TAG@", {tag_attr:"<t>", tag:"x"}), "<t>x");
 var keys = ["line_fmt", "line_fmt_nobatch", "line_fmt_interactive", "extdesc_marker", "missing_marker"
 	, "tagged_marker", "untagged_marker", "box_top_left", "box_top_right"
 	, "box_bottom_left", "box_bottom_right", "box_horizontal", "box_vertical"

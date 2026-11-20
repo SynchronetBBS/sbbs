@@ -249,11 +249,18 @@ function repeat(str, count)
 // The extended description to display under/beside a file's line, or null
 Listing.prototype.extdesc = function (f)
 {
-	if (!(user.settings & USER_EXTDESC) || !f.extdesc)
+	if (this.no_inline_extdesc || !(user.settings & USER_EXTDESC) || !f.extdesc)
 		return null;
 	if (strip_ctrl(f.extdesc).replace(/\s+$/, "") === "")
 		return null;
 	return f.extdesc;
+};
+
+// The filename column's width: 12, or on screens of 132 columns or more the
+// longest filename (up to 64)
+Listing.prototype.name_width = function ()
+{
+	return (this.longest < 12 || console.screen_columns < 132) ? 12 : Math.min(this.longest, 64);
 };
 
 // One file's line, as a string of text and Ctrl-A codes, from the template
@@ -263,7 +270,7 @@ Listing.prototype.file_line = function (f, letter, fmt, overrides)
 {
 	var opts = this.opts;
 	var settings = this.dir.settings;
-	var namelen = (this.longest < 12 || console.screen_columns < 132) ? 12 : Math.min(this.longest, 64);
+	var namelen = this.name_width();
 	var name_attr_num = console.color_list[ATTR_FILENAME];
 	var size_attr_num = console.color_list[ATTR_FILECDT];
 	var desc_attr_num = console.color_list[ATTR_FILEDESC];
@@ -277,9 +284,11 @@ Listing.prototype.file_line = function (f, letter, fmt, overrides)
 	var values = {
 		name: listfiles_format_filename(f.name, namelen),
 		name_attr: opt_attr(opts, "name_attr", ATTR_FILENAME),
-		flags: (f.extdesc && !(user.settings & USER_EXTDESC)) ? opts.extdesc_marker : " ",
+		flags: (f.extdesc && (this.no_inline_extdesc || !(user.settings & USER_EXTDESC)))
+			? opts.extdesc_marker : " ",
 		letter: letter || "",
 		letter_attr: opts.letter_attr || listfiles_attr_str(name_attr_num ^ HIGH),
+		tag_attr: opts.tag_attr || opt_attr(opts, "name_attr", ATTR_FILENAME),
 		size_attr: exists ? opt_attr(opts, "size_attr", ATTR_FILECDT) : listfiles_attr_str(size_attr_num),
 		size: listfiles_size_str(cost),
 		missing: exists ? " " : opts.missing_marker,
@@ -351,7 +360,10 @@ function aborted()
 Listing.prototype.list = function ()
 {
 	if (this.batch) {
-		var listed = cursor_capable() ? this.list_pages(new ClassicLayout(this)) : this.list_letters();
+		var style = listfiles_style(this.opts.style, true, cursor_capable());
+		if (style === "lightbar")	// (no header or footer files)
+			return this.list_pages(new LightbarLayout(this));
+		var listed = (style === "classic") ? this.list_pages(new ClassicLayout(this)) : this.list_letters();
 		if (listed > 0)
 			this.show_tail();
 		return listed;
@@ -856,6 +868,176 @@ ClassicLayout.prototype.leave = function ()
 	console.gotoxy(1, row + 1);
 };
 
+// The lightbar layout: the library and directory names and the current
+// file's position on the top row, any column headings, the files (one row
+// each, the current one a full-width bar) and the key tips on the bottom row
+function LightbarLayout(listing)
+{
+	listing.no_inline_extdesc = true;
+	this.listing = listing;
+	this.opts = listing.opts;
+	this.engine = null;
+	this.shape = null;		// listfiles_lightbar_rows()
+	this.mouse_status = console.status & CON_MOUSE_SCROLL;
+	this.keys_end = 0;		// screen column after the key tips
+	this.list_end = 0;		// screen row after the last file
+}
+
+LightbarLayout.prototype.begin = function ()
+{
+	console.line_counter = 0;	// clear without a pause
+	console.print("\x01n");	// (the screen is cleared in the current attribute)
+	console.clear();
+	console.status |= CON_MOUSE_SCROLL;	// the wheel moves the bar
+	var headings = this.headings();
+	this.shape = listfiles_lightbar_rows(console.screen_rows, headings !== "", false);
+	this.draw_area();
+	if (headings !== "") {
+		console.gotoxy(1, 2);
+		console.print(headings, P_TRUNCATE);
+		console.cleartoeol();	// in the headings' color
+		console.print("\x01n");
+	}
+	this.draw_keys();
+	return { list_row: this.shape.list_top, rows: this.shape.list_rows };
+};
+
+// The column headings row: generated from the file line (lightbar_headings
+// true), the sysop's text, or "" for none (false or "")
+LightbarLayout.prototype.headings = function ()
+{
+	var opts = this.opts;
+	if (opts.lightbar_headings === true)
+		return opts.lightbar_headings_attr + listfiles_headings(opts.line_fmt_lightbar
+			, { name: opts.heading_name, size: opts.heading_size, desc: opts.heading_desc }
+			, this.listing.name_width());
+	return opts.lightbar_headings ? String(opts.lightbar_headings) : "";
+};
+
+// The top row: the library and directory names (shortened to fit) and, on
+// screens of 80 columns or more, the current file's position
+LightbarLayout.prototype.draw_area = function ()
+{
+	var listing = this.listing;
+	var opts = this.opts;
+	var width = console.screen_columns - 1;	// clear of the last column
+	var pos = "";
+	if (this.engine && console.screen_columns >= 80 && opts.lightbar_position_fmt)
+		pos = format(opts.lightbar_position_fmt, this.engine.cur() + 1, listing.files.length);
+	var left = listfiles_shorten_to_fit([listing.lib.name, listing.dir.name]
+		, function (names) { return format(opts.lightbar_area_fmt, names[0], names[1]); }
+		, function (text) { return console.strlen(text); }
+		, width - pos.length - 1);
+	var fill = width - console.strlen(left) - pos.length;
+	console.gotoxy(1, 1);
+	console.print(left + format("%*s", Math.max(0, fill), "") + pos, P_TRUNCATE);
+	console.cleartoeol();	// in the area line's color, as msglist.js does
+	console.print("\x01n");
+};
+
+// The bottom row: the key tips (with their mouse hotspots), never in the
+// last column (which would scroll the screen)
+LightbarLayout.prototype.draw_keys = function ()
+{
+	var keys = this.listing.can_remove() ? this.opts.lightbar_keys_operator : this.opts.lightbar_keys;
+	console.gotoxy(1, console.screen_rows);
+	console.print("\x01n");
+	console.cleartoeol();
+	console.mnemonics(listfiles_mnemonics_cut(keys, console.screen_columns - 1));
+	console.print("\x01n");
+	this.keys_end = console.current_column;
+};
+
+LightbarLayout.prototype.height = function (i)
+{
+	return 1;
+};
+
+// Draw file i's row: the current file as a full-width bar
+LightbarLayout.prototype.draw_file = function (i, row, max_lines, current, tagged)
+{
+	var opts = this.opts;
+	var text = this.listing.file_line(this.listing.files[i], "", opts.line_fmt_lightbar
+		, { tag: tagged ? opts.tagged_marker : opts.untagged_marker });
+	console.gotoxy(1, row + 1);
+	if (current) {
+		var width = console.screen_columns - 1;
+		var plain = strip_ctrl(text).substr(0, width);
+		console.print("\x01n" + opts.lightbar_attr + plain + format("%*s", width - plain.length, "") + "\x01n");
+	} else {
+		console.print(text, P_TRUNCATE);
+		clear_to_eol();
+	}
+	return 1;
+};
+
+// The mouse hotspots were cleared: the key tips' must be added again
+LightbarLayout.prototype.hotspots_cleared = function (full)
+{
+	if (!full)
+		this.draw_keys();
+};
+
+// Clear the list's rows after its last file (left from a longer list)
+LightbarLayout.prototype.after_list = function (end_row, full, empty)
+{
+	this.list_end = end_row;
+	if (full)
+		return;
+	for (var r = end_row; r < this.shape.list_top + this.shape.list_rows; r++) {
+		console.gotoxy(1, r + 1);
+		console.print("\x01n");
+		console.cleartoeol();
+	}
+};
+
+// Update the position on the top row, leaving the cursor at the end of the
+// key tips (as at a prompt)
+LightbarLayout.prototype.draw_below = function ()
+{
+	this.draw_area();
+	console.gotoxy(this.keys_end + 1, console.screen_rows);
+};
+
+// The layout's own keys: help
+LightbarLayout.prototype.key = function (ch)
+{
+	if (ch !== "?" && ch !== "H")
+		return null;
+	console.clear_hotspots();
+	console.print("\x01n");
+	console.clear();
+	if (!bbs.menu("listfiles_lightbar_help", P_NOERROR))
+		bbs.menu("batflag");
+	if (console.line_counter)
+		console.pause();
+	return "relayout";
+};
+
+// Before a command's output: on the bottom row, cleared (the screen is
+// redrawn after any output)
+LightbarLayout.prototype.before_command = function ()
+{
+	console.gotoxy(1, console.screen_rows);
+	console.print("\x01n");
+	console.cleartoeol();
+};
+
+// Done with this directory: the key tips cleared, and the cursor below a
+// blank line after the last file (for whatever follows, e.g. the number of
+// files listed)
+LightbarLayout.prototype.leave = function ()
+{
+	console.clear_hotspots();
+	if (!this.mouse_status)
+		console.status &= ~CON_MOUSE_SCROLL;
+	console.gotoxy(1, console.screen_rows);
+	console.print("\x01n");
+	console.cleartoeol();
+	console.gotoxy(1, this.list_end + 1);
+	console.newline();
+};
+
 // Clear the rest of the line in the normal attribute, keeping the
 // current one for what follows
 function clear_to_eol()
@@ -1083,6 +1265,15 @@ Listing.prototype.list_pages = function (layout)
 			case " ":
 				toggle_tag(cur);
 				move(cur + 1);	// as in msglist.js
+				continue;
+			case CTRL_A:	// tag all files, or (if the first is tagged) none, as in msglist.js
+				var tag_all = !tagged[this.files[0].name];
+				tagged = {};
+				if (tag_all) {
+					for (var t = 0; t < this.files.length; t++)
+						tagged[this.files[t].name] = true;
+				}
+				draw_page(/* full: */ false);
 				continue;
 		}
 		if (ch === "\r" || ch === "N") {
