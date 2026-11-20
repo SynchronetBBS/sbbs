@@ -2585,7 +2585,17 @@ static int recvbufsocket(http_session_t *session, char *buf, long count)
 		// record/segment timing, so this can bite on any platform (reported on
 		// Windows and Linux v3.22a).  Mirrors the guard sockreadline() uses.
 		if ((!session->is_tls) || (!session->tls_pending)) {
-			if (!session_check(session, NULL, NULL, startup->max_inactivity * 1000)) {
+			bool readable = false;
+			if (!session_check(session, &readable, NULL, startup->max_inactivity * 1000)) {
+				close_session_socket(session);
+				*buf = 0;
+				return 0;
+			}
+			// session_check() returns true when the wait times out with
+			// nothing to read: the peer stopped sending, end the session
+			if (!readable) {
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] Session timeout due to inactivity (%d seconds)"
+				        , session->socket, session->client.protocol, session->host_ip, startup->max_inactivity);
 				close_session_socket(session);
 				*buf = 0;
 				return 0;
@@ -2597,7 +2607,7 @@ static int recvbufsocket(http_session_t *session, char *buf, long count)
 				if (session->is_tls && !session->tls_pending)
 					continue;   // no TLS data decrypted yet: wait for more
 				if (SOCKET_ERRNO == EAGAIN && !session->is_tls)
-					break;
+					continue;   // nothing read: wait for more
 			// Fall-through...
 			case 0:
 				close_session_socket(session);
