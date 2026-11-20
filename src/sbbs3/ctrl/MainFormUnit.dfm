@@ -14105,11 +14105,6 @@ object MainForm: TMainForm
           Hint = 'ALIAS.CFG'
           OnClick = CtrlMenuItemEditClick
         end
-        object DomainList: TMenuItem
-          Caption = 'Domain List'
-          Hint = 'DOMAINS.CFG'
-          OnClick = CtrlMenuItemEditClick
-        end
         object SpamBaitList: TMenuItem
           Caption = 'Spam Bait List'
           Hint = 'SPAMBAIT.CFG'

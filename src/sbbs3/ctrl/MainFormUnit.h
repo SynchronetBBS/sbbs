@@ -224,7 +224,6 @@ __published:	// IDE-managed Components
     TToolButton *ToolButton3;
     TToolButton *ReloadConfigButton;
     TMenuItem *MailViewSpamLog;
-    TMenuItem *DomainList;
     TMenuItem *BBSEditSubjectFilterMenuItem;
     TAction *ServicesStart;
     TAction *ServicesStop;
