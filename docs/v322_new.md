@@ -63,6 +63,9 @@
   over a stalled network share, overwriting that message's text. New
   messages are now placed only in blocks the allocation file records
   as free, or after the end of the data and header files
+- Fix: a `ctrl/*.ini` value written in the `key : value` (C string) form,
+  or a line of a filter file, that ended in a lone backslash was read past
+  its end, which could garble what followed it
 - The system-wide message and file totals (`@TMSG@`, `@TFILE@`,
   `system.stats.total_messages`, `system.stats.total_files`) are now
   counted at most once per new `totals_interval` (default 10 minutes)
@@ -369,6 +372,23 @@
   the web root at a request path (e.g. `/webmail/ = ../webmail/root/`),
   without a link or a copy; requests stay confined to that directory and
   its own `webctrl.ini` files apply
+- New **web mail client** (`webmail/`): users read, search, star, file and
+  delete their mail, and write, reply and forward with attachments, in a
+  browser on a desktop or a phone, with contacts, signatures, mail
+  forwarding, a Spam folder and blocked remote images. Off until the
+  sysop adds `/webmail/ = ../webmail/root/` to the `[dir]` section of
+  `ctrl/web_alias.ini` (an upgrade does not add it); HTTPS only by
+  default; options in `ctrl/modopts/webmail.ini`
+- New **per-user mailbox** behind the web mail client: the Inbox is the
+  system's mail base, and each user's own folders, Sent copies and Trash
+  are kept in a private mail base in `data/user/<number>/`, limited by the
+  new Trash age and mailbox quota settings (see SCFG)
+- Fix: over HTTPS, a kept-alive connection was closed as soon as the
+  server went back to wait for the next request, so a browser that reused
+  it after a pause lost that request (issue #1370)
+- Fix: a request whose body stopped arriving held its connection, and a
+  client slot, for as long as the client stayed connected; it is now
+  closed after `MaxInactivity` and its script is not run
 
 ## FTP Server
 
@@ -396,6 +416,14 @@
 
 ## Mail Server
 
+- Additional domains moved from `ctrl/domains.cfg` to `[domain:]` sections
+  of `ctrl/msgs.ini`, edited in SCFG (Networks -> Internet E-mail ->
+  Additional Domains), where a domain can also be offered to users as a
+  sender address (**Allow Send From**, with access requirements).
+  `jsexec update.js` converts the old file, which is read until then.
+  The file is left in place for older servers sharing the `ctrl`
+  directory: delete it once every host runs v3.22. Scripts that read
+  `ctrl/domains.cfg` should use `system.inet_domain_list` instead
 - Adopt the shared rate-limit auto-filter (see Servers)
 - Fix: POP3 passwords and SMTP AUTH credentials no longer appear in
   the mail server log (with the receive/response debug options on)
@@ -553,6 +581,9 @@
 
 ## SCFG
 
+- New **Purge Mailbox Trash by Age** (default 30 days) and **Mailbox
+  Quota (per user)** (default 1 GB) options under Message Options, for
+  the web mail client's per-user mailbox
 - New **Ctrl-F option search**: type a substring at the main
   Configure menu and see every matching option label, with its
   menu path rendered as a CP437 box-drawing tree
@@ -726,6 +757,9 @@
 
 ## Stock Modules
 
+- `mailauth.js` now also requires SMTP authentication of an outside
+  sender claiming the system's Internet address, as it did for the host
+  name and the additional domains
 - Fix: `msgutils.js` `getMessageThreads()` with a message limit threw an
   error on a missing message number and otherwise returned a single
   message; it now threads the newest messages up to the limit
@@ -1139,6 +1173,20 @@
 - New `User.can_send_mail()` method (the terminal server's sending
   rules), `msg_area.fido_netmail_cost` / `inet_netmail_cost` and
   `system.max_trash_age` / `mailbox_quota` properties
+- New `User.can_send_from_domain()` method and `system.inet_domain_list`
+  property (the system's Internet address, then the additional domains)
+- New read-only `server.max_inactivity` property: the server's idle
+  limit in seconds (the terminal server's session limit; 0 for Services)
+- Fix: `MsgBase.save_msg()` and `save_msg_from_file()` given a recipient
+  list (`rcpt_list`) left no "sent you e-mail" short message for a local
+  recipient and did not touch the FidoNet netmail semaphore, as saving to
+  a single recipient does. Scripts that mail a list of recipients
+  (`bulkmail.js`, `sendmail.js`, `listserver.js` among them) now leave
+  each local recipient that short message: a bulk mailing to every user
+  notifies every user
+- Fix: a message's `id` (Message-ID) of 256 characters or more was read
+  past its end; it is now returned in full (QWK packets and replies use a
+  safely shortened copy)
 - `MsgBase.save_msg()` now stores the header properties `mime_version`
   and `content_type` (previously ignored), unless its `field_list`
   already has `MIME-Version:` / `Content-Type:` lines
