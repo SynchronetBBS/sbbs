@@ -1,0 +1,79 @@
+--- js-1.8.5/js/src/jsapi.h.orig
++++ js-1.8.5/js/src/jsapi.h
+@@ -2801,6 +2801,15 @@
+ extern JS_PUBLIC_API(JSBool)
+ JS_ExecuteScript(JSContext *cx, JSObject *obj, JSObject *scriptObj, jsval *rval);
+ 
++/*
++ * Execute a script using obj for both its scope chain and declaration object.
++ * Unlike JS_ExecuteScript, this explicitly scoped host extension does not use
++ * JSOPTION_VAROBJFIX to choose the declaration object. Context options remain
++ * unchanged, including while script code and callbacks execute.
++ */
++extern JS_PUBLIC_API(JSBool)
++JS_ExecuteScriptInScope(JSContext *cx, JSObject *obj, JSObject *scriptObj, jsval *rval);
++
+ extern JS_PUBLIC_API(JSBool)
+ JS_ExecuteScriptVersion(JSContext *cx, JSObject *obj, JSObject *scriptObj, jsval *rval,
+                         JSVersion version);
+--- js-1.8.5/js/src/jsapi.cpp.orig
++++ js-1.8.5/js/src/jsapi.cpp
+@@ -5001,6 +5001,19 @@
+ }
+ 
+ JS_PUBLIC_API(JSBool)
++JS_ExecuteScriptInScope(JSContext *cx, JSObject *obj, JSObject *scriptObj, jsval *rval)
++{
++    JS_THREADSAFE_ASSERT(cx->compartment != cx->runtime->atomsCompartment);
++
++    CHECK_REQUEST(cx);
++    assertSameCompartment(cx, obj, scriptObj);
++
++    JSBool ok = Execute(cx, obj, scriptObj->getScript(), NULL, 0, Valueify(rval), true);
++    LAST_FRAME_CHECKS(cx, ok);
++    return ok;
++}
++
++JS_PUBLIC_API(JSBool)
+ JS_ExecuteScriptVersion(JSContext *cx, JSObject *obj, JSObject *scriptObj, jsval *rval,
+                         JSVersion version)
+ {
+--- js-1.8.5/js/src/jsinterp.h.orig
++++ js-1.8.5/js/src/jsinterp.h
+@@ -990,6 +990,10 @@
+ Execute(JSContext *cx, JSObject *chain, JSScript *script,
+         JSStackFrame *prev, uintN flags, Value *result);
+ 
++extern JS_FORCES_STACK bool
++Execute(JSContext *cx, JSObject *chain, JSScript *script,
++        JSStackFrame *prev, uintN flags, Value *result, bool scopedDeclarations);
++
+ /*
+  * Execute the caller-initialized frame for a user-defined script or function
+  * pointed to by cx->fp until completion or error.
+--- js-1.8.5/js/src/jsinterp.cpp.orig
++++ js-1.8.5/js/src/jsinterp.cpp
+@@ -907,6 +907,13 @@
+ Execute(JSContext *cx, JSObject *chain, JSScript *script,
+         JSStackFrame *prev, uintN flags, Value *result)
+ {
++    return Execute(cx, chain, script, prev, flags, result, false);
++}
++
++bool
++Execute(JSContext *cx, JSObject *chain, JSScript *script,
++        JSStackFrame *prev, uintN flags, Value *result, bool scopedDeclarations)
++{
+     JS_ASSERT(chain);
+     JS_ASSERT_IF(prev, !prev->isDummyFrame());
+ 
+@@ -968,7 +975,8 @@
+             return false;
+         frame.fp()->globalThis().setObject(*thisp);
+ 
+-        initialVarObj = cx->hasRunOption(JSOPTION_VAROBJFIX) ? chain->getGlobal() : chain;
++        initialVarObj = !scopedDeclarations && cx->hasRunOption(JSOPTION_VAROBJFIX)
++                        ? chain->getGlobal() : chain;
+     }
+ 
+     /*

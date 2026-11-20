@@ -534,7 +534,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	unsigned orig_bgcount = gptp->bg_count;
-	JS_ExecuteScript(cx, js_scope, js_script, &rval);
+	JS_ExecuteScriptInScope(cx, js_scope, js_script, &rval);
 	if (JS_IsExceptionPending(cx)) {
 		JS_GetPendingException(cx, &rval);
 	}
@@ -1717,7 +1717,7 @@ static void eval_on_exit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 
 	while ((p = strListPop(&list)) != NULL) {
 		if ((script = JS_CompileScript(cx, obj, p, strlen(p), NULL, 0)) != NULL) {
-			JS_ExecuteScript(cx, obj, script, &rval);
+			JS_ExecuteScriptInScope(cx, obj, script, &rval);
 		}
 		free(p);
 	}

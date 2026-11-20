@@ -2622,7 +2622,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 			break;
 
 		/* ToDo: Set operational callback */
-		success = JS_ExecuteScript(*js_cx, js_scope, js_script, &rval);
+		success = JS_ExecuteScriptInScope(*js_cx, js_scope, js_script, &rval);
 
 		if (JS_GetProperty(*js_cx, js_scope, "exit_code", &rval)
 		    && rval != JSVAL_VOID && JSVAL_IS_NUMBER(rval))

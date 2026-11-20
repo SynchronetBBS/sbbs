@@ -152,7 +152,7 @@ static void background_thread(void* arg)
 	msgQueueAttach(bg->msg_queue);
 	JS_SetContextThread(bg->cx);
 	JS_BEGINREQUEST(bg->cx);
-	if (!JS_ExecuteScript(bg->cx, bg->obj, bg->script, &result)
+	if (!JS_ExecuteScriptInScope(bg->cx, bg->obj, bg->script, &result)
 	    && JS_GetProperty(bg->cx, bg->obj, "exit_code", &exit_code))
 		result = exit_code;
 	js_EvalOnExit(bg->cx, bg->obj, &bg->cb);
@@ -724,7 +724,9 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	} else {
 		jsval rval;
 
-		success = JS_ExecuteScript(exec_cx, exec_obj, script, &rval);
+		// load() explicitly uses exec_obj for declarations as well as lookup.
+		// Keep the context's VAROBJFIX setting intact during script execution.
+		success = JS_ExecuteScriptInScope(exec_cx, exec_obj, script, &rval);
 		JS_SET_RVAL(cx, arglist, rval);
 		if (restore_args) {
 			if (old_js_argv == JSVAL_VOID) {
