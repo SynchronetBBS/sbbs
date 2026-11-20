@@ -1742,7 +1742,23 @@ spec:
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ctrl_exec${EXTRA_FILENAME}.tgz"
     - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
-    - "SBBSCTRL=./ctrl src/sbbs3/*.exe.release/jsexec -U -S -f exec/tests/test.js"
+    # When jsexec crashes, print a backtrace from the core file it left
+    # here (jsexec.core, core or core.<pid>, by OS) before failing the job
+    - |
+      rc=0
+      SBBSCTRL=./ctrl src/sbbs3/*.exe.release/jsexec -U -S -f exec/tests/test.js || rc=$?
+      if [ "$rc" -ne 0 ]; then
+        for core in *.core core core.*; do
+          [ -f "$core" ] || continue
+          echo "=== jsexec exited with status $rc; backtrace from $core"
+          if command -v gdb > /dev/null 2>&1; then
+            gdb -batch -ex "thread apply all bt" src/sbbs3/*.exe.release/jsexec "$core" 2>&1 | tail -n 300
+          else
+            echo "gdb is not installed on this runner"
+          fi
+        done
+      fi
+      [ "$rc" -eq 0 ]
     - cd ..
     - rm -rf ci-test
   variables:
