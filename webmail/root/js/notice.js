@@ -3,10 +3,16 @@
 //
 // initNotices(app, onRetry)   once, before the others: makes the live
 //                             region and the offline bar inside app
-// notice(text, {action_label, on_action, ms})
+// notice(text, {action_label, action_title, on_action, ms})
 //                             shows text with one optional action button
 //                             (Undo); it goes after ms (default 6000) or
-//                             when the next notice comes
+//                             when the next notice comes.  The time stops
+//                             while the notice has the keyboard focus or the
+//                             pointer is over it.
+// noticeAction()              runs the current notice's action (the Undo
+//                             key); false when there is none
+// setNoticeHome(fn)           fn() puts the focus back where it belongs
+//                             when a notice that had it goes away
 // dismissNotice()             hides the current notice
 // setOffline(on)              shows or hides the offline bar
 // busy(el, promise, make)     shows a placeholder in el only if promise has
@@ -27,6 +33,8 @@ let barText = null;
 let barButton = null;
 let timer = 0;
 let retry = null;
+let action = null;
+let home = null;
 
 export function initNotices(app, onRetry) {
 	retry = onRetry;
@@ -42,11 +50,29 @@ export function initNotices(app, onRetry) {
 	app.prepend(bar);
 }
 
+export function setNoticeHome(fn) {
+	home = typeof fn === "function" ? fn : null;
+}
+
 export function dismissNotice() {
 	clearTimeout(timer);
 	timer = 0;
-	if (region)
-		clear(region);
+	action = null;
+	if (!region)
+		return;
+	const had = region.contains(document.activeElement);
+	clear(region);
+	if (had && home)
+		home();
+}
+
+export function noticeAction() {
+	if (!action)
+		return false;
+	const f = action;
+	dismissNotice();
+	f();
+	return true;
 }
 
 export function notice(text, opts = {}) {
@@ -55,17 +81,35 @@ export function notice(text, opts = {}) {
 		return;
 	const box = h("div", { class: "toast" }, h("span", { text }));
 	if (opts.action_label && typeof opts.on_action === "function") {
+		action = opts.on_action;
 		box.append(h("button", {
 			type: "button",
 			text: opts.action_label,
-			onclick: () => {
-				dismissNotice();
-				opts.on_action();
-			}
+			title: opts.action_title || null,
+			onclick: () => noticeAction()
 		}));
 	}
 	region.append(box);
-	timer = setTimeout(dismissNotice, typeof opts.ms === "number" ? opts.ms : 6000);
+	const ms = typeof opts.ms === "number" ? opts.ms : 6000;
+	let over = false;
+	const run = () => {
+		clearTimeout(timer);
+		timer = over || box.contains(document.activeElement) ? 0 : setTimeout(dismissNotice, ms);
+	};
+	box.addEventListener("mouseenter", () => {
+		over = true;
+		run();
+	});
+	box.addEventListener("mouseleave", () => {
+		over = false;
+		run();
+	});
+	box.addEventListener("focusin", run);
+	box.addEventListener("focusout", () => setTimeout(() => {
+		if (box.isConnected)
+			run();
+	}, 0));
+	run();
 }
 
 export function setOffline(on) {

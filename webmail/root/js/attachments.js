@@ -3,7 +3,8 @@
 //
 // partUrl(id, pid, dl)    the relative part.ssjs URL of a part, or null when
 //                         id or pid is not a valid id (only the message id
-//                         and the part id ever go in the URL, never a name)
+//                         and the part id ever go in the URL, never a name);
+//                         pid "raw" is the whole message (an .eml download)
 // isImage(type)           one of the four types part.ssjs shows inline
 // attachmentList(id, parts, opener)
 //                         the chips for parts ({pid, name, type, size}).
@@ -41,7 +42,7 @@ const MAX_IMAGE = 5 * 1048576;
 const MAX_IMAGES = 20 * 1048576;
 const FETCH_TIMEOUT = 10000;
 const MSG_ID = /^[sp][1-9][0-9]{0,9}$/;
-const PART_ID = /^(?:f[1-9][0-9]{0,5}|[0-9]{1,6}(?:\.[0-9]{1,6}){0,19})$/;
+const PART_ID = /^(?:raw|f[1-9][0-9]{0,5}|[0-9]{1,6}(?:\.[0-9]{1,6}){0,19})$/;
 
 export function partUrl(id, pid, dl) {
 	if (!MSG_ID.test(String(id)) || !PART_ID.test(String(pid)))

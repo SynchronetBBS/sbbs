@@ -2,14 +2,18 @@
 // draggable dividers; one at a time below that, with the History API so the
 // phone's back gesture returns to the previous pane.
 //
-// const layout = createLayout(shell, { folders, list, reader })
+// const layout = createLayout(shell, { folders, list, reader, aux })
 //   shell: the element holding the panes (its data-pane names the pane
 //   shown on a phone; the width properties are set on it); the three
-//   panes, each with a heading marked data-pane-title.
+//   panes, each with a heading marked data-pane-title; aux (optional):
+//   a view shown in place of the list and the reader at every width
+//   (contacts, settings).
 // layout.show(name, { push, opener })
 //   shows a pane.  On a phone, push adds a history entry, so Back returns
 //   to the pane before it, and focus moves into the pane and back to
-//   opener (default: the focused element) when it closes.
+//   opener (default: the focused element) when it closes.  The aux view
+//   does this at every width: it always has its own history entry, and
+//   Back returns to the mail.
 // layout.back()     the previous pane (history.back() when it is ours)
 // layout.current()  the pane shown on a phone
 // layout.isPhone()
@@ -22,7 +26,9 @@ import { h, store } from "./dom.js";
 import { t } from "./i18n.js";
 
 const PHONE = "(max-width: 899.98px)";
-const PARENT = { folders: "list", list: "list", reader: "list" };
+const PARENT = { folders: "list", list: "list", reader: "list", aux: "list" };
+// Shown with a history entry and focus at every width, not on a phone only
+const FULL = { aux: true };
 const STORE_KEY = "webmail.panes";
 const STEP = 16;		// arrow key step, px
 const BIG_STEP = 64;		// with Shift
@@ -67,7 +73,7 @@ export function createLayout(shell, panes) {
 			return;
 		const from = current();
 		set(name);
-		if (!isPhone() || name === from)
+		if ((!isPhone() && !FULL[name]) || name === from)
 			return;
 		if (opts.push) {
 			openers[depth + 1] = opts.opener || document.activeElement;
@@ -83,7 +89,7 @@ export function createLayout(shell, panes) {
 
 	function back() {
 		const st = history.state;
-		if (isPhone() && st && st.webmail && st.depth > 0) {
+		if ((isPhone() || FULL[current()]) && st && st.webmail && st.depth > 0) {
 			history.back();
 			return;
 		}

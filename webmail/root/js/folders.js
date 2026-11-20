@@ -1,10 +1,14 @@
 // The folder pane's contents: the built-in folders, the user's folders and
 // the storage meter, from a folder.list result.
 //
-// const folders = createFolders(onOpen)
-//   onOpen(id) is called when a folder is chosen (click, Enter or Space).
+// const folders = createFolders(onOpen, { onNew })
+//   onOpen(id) is called when a folder is chosen (click, Enter or Space);
+//   onNew(button) when the New folder button beside "Your folders" is
+//   pressed (the heading and the button show only with onNew, or when
+//   there are user folders).
 // folders.el                 the element to put in the pane
-// folders.update(result)     a folder.list result {folders, usage}
+// folders.update(result)     a folder.list result {folders, usage}; an
+//                            entry of kind "drafts" shows its total
 // folders.setCurrent(id)     marks the open folder (null: none, e.g. while
 //                            searching all mail)
 // folders.focusCurrent()     focus on the open folder's button
@@ -19,7 +23,8 @@ import { icon } from "./icons.js";
 import { t } from "./i18n.js";
 import { size, number } from "./format.js";
 
-const ICONS = { inbox: "inbox", starred: "star", sent: "send", spam: "spam", trash: "trash", archive: "archive" };
+const ICONS = { inbox: "inbox", starred: "star", sent: "send", spam: "spam", trash: "trash", archive: "archive",
+	drafts: "file" };
 
 export function folderName(f) {
 	if (!f)
@@ -29,9 +34,13 @@ export function folderName(f) {
 	return t("folders." + f.id);
 }
 
-export function createFolders(onOpen) {
+export function createFolders(onOpen, opts) {
+	const onNew = opts && typeof opts.onNew === "function" ? opts.onNew : null;
 	const builtin = h("ul", { class: "fnav" });
-	const userHead = h("h3", { class: "fhead", id: "wm-user-folders", text: t("folders.label_your_folders"), hidden: true });
+	const newBtn = onNew ? h("button", { class: "ib", type: "button", "aria-label": t("folders.label_new_folder"),
+		title: t("folders.label_new_folder"), onclick: (e) => onNew(e.currentTarget) }, icon("plus")) : null;
+	const userHead = h("div", { class: "fhead", hidden: !onNew },
+		h("h3", { id: "wm-user-folders", text: t("folders.label_your_folders") }), newBtn);
 	const user = h("ul", { class: "fnav", "aria-labelledby": "wm-user-folders", hidden: true });
 	const meterText = h("span");
 	const meterFill = h("span", { class: "meter-fill" });
@@ -43,6 +52,17 @@ export function createFolders(onOpen) {
 
 	function button(f) {
 		const unread = typeof f.unread === "number" && f.unread > 0 ? f.unread : 0;
+		// Drafts: how many there are
+		if (f.kind === "drafts") {
+			const n = typeof f.total === "number" && f.total > 0 ? f.total : 0;
+			const b = h("button", { class: "fbtn", type: "button", "data-folder": f.id, onclick: () => onOpen(f.id) },
+				icon("file"), h("span", { class: "name ell", text: folderName(f) }),
+				n ? h("span", { class: "count muted", "aria-hidden": "true", text: number(n) }) : null,
+				n ? h("span", { class: "vh", text: ", " + t("compose.label_drafts_count", { n, count: number(n) }) }) : null);
+			if (f.id === current)
+				b.setAttribute("aria-current", "true");
+			return h("li", null, b);
+		}
 		const b = h("button", {
 			class: "fbtn", type: "button", "data-folder": f.id,
 			onclick: () => onOpen(f.id)
@@ -69,7 +89,8 @@ export function createFolders(onOpen) {
 			if (f && typeof f.id === "string")
 				(f.kind === "user" ? user : builtin).append(button(f));
 		}
-		user.hidden = userHead.hidden = user.childElementCount === 0;
+		user.hidden = user.childElementCount === 0;
+		userHead.hidden = user.hidden && !onNew;
 		const u = r && r.usage;
 		if (u && typeof u.bytes === "number") {
 			const quota = typeof u.quota === "number" && u.quota > 0 ? u.quota : 0;
@@ -125,5 +146,5 @@ export function createFolders(onOpen) {
 		all[j].focus();
 	}
 
-	return { el, update, setCurrent, focusCurrent };
+	return { el, update, setCurrent, focusCurrent, newButton: () => newBtn };
 }

@@ -4,7 +4,10 @@
 	// writes the HTML.  Every URL it writes is relative, so the app works at
 	// any alias and at the top of a virtual host.  No inline script: the
 	// page's policy forbids it.  The boot data goes in a JSON block that
-	// js/app.js reads.  The unsupported-browser block is shown when the app
+	// js/app.js reads.  The signed-in user's stored theme is written on
+	// <html data-theme> (Shell.theme), and js/theme.js, a small blocking
+	// script in the head, puts the theme this browser last used there
+	// before the page is first drawn.  The unsupported-browser block is shown when the app
 	// does not start (see js/check.js); with scripting off, the <noscript>
 	// text replaces it.  The web server compiles this file into
 	// index.xjs.ssjs beside it, so this directory must be writable by the
@@ -116,6 +119,10 @@
 		page.fallback = Shell.html(Shell.text(strings, "main.label_fallback"));
 		page.reload = Shell.html(Shell.text(strings, "main.button_reload"));
 		page.boot = Shell.embed(boot);
+		// the signed-in user's stored theme ("light", "dark" or "": see
+		// Shell.theme), so a browser that never stored one does not flash
+		page.theme_attr = boot.user && typeof boot.user.number === "number"
+			? Shell.theme(userdata(boot.user.number)) : "";
 		// One version, in the path, for every script and stylesheet (see
 		// Shell.asset and the Rewrite rule in webctrl.ini)
 		var v = Shell.version(root);
@@ -124,6 +131,7 @@
 		page.noscript = Shell.html(Shell.text(strings, "main.label_javascript_required", named));
 		page.noscript_css = Shell.asset(root, "css/noscript.css", v);
 		page.app = Shell.asset(root, "js/app.js", v);
+		page.theme = Shell.asset(root, "js/theme.js", v);
 		page.check = Shell.asset(root, "js/check.js", v);
 		return page;
 	})();
@@ -147,13 +155,14 @@
 	}
 ?>
 <!DOCTYPE html>
-<html lang="<? write(wm.lang); ?>">
+<html lang="<? write(wm.lang); ?>"<? if (wm.theme_attr !== "") { ?> data-theme="<? write(wm.theme_attr); ?>"<? } ?>>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title><? write(wm.title); ?></title>
 <link rel="stylesheet" href="css/base.css">
+<script src="<? write(wm.theme); ?>"></script>
 <link rel="stylesheet" href="<? write(wm.css); ?>">
 <? if (wm.custom !== "") { ?>
 <link rel="stylesheet" href="<? write(wm.custom); ?>">

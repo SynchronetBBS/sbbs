@@ -10,6 +10,12 @@
 //                         that is not a whole number within a day
 // size(bytes)             "312 KB", "1.2 MB" and so on
 // number(n)               a count, grouped as the language writes it
+// senderText(name, addr)  what a row shows for a sender: { text, title }.
+//                         A display name with '@', '<' or '>' could pass
+//                         for an address ("Bank <service@bank.example>",
+//                         "ceo@bank.example"): the REAL address is shown
+//                         and the name goes in the title; any other name
+//                         is shown, with the address as its title
 
 import { t } from "./i18n.js";
 
@@ -77,6 +83,14 @@ export function zonedDate(seconds, minutes) {
 	const zone = "UTC" + (minutes < 0 ? "-" : "+") + String(Math.floor(a / 60)).padStart(2, "0") + ":"
 		+ String(a % 60).padStart(2, "0");
 	return formats().utc.format(new Date((seconds + minutes * 60) * 1000)) + " " + zone;
+}
+
+export function senderText(name, addr) {
+	const n = typeof name === "string" ? name : "";
+	const a = typeof addr === "string" ? addr : "";
+	if (/[@<>]/.test(n) && a !== "" && n !== a)
+		return { text: a, title: n };
+	return { text: n !== "" ? n : a, title: a !== n ? a : "" };
 }
 
 export function number(n) {
