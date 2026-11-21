@@ -761,9 +761,9 @@ function send_netmail(addr, wm_mode)
 		wm_mode |= WM_FILE;
 	if(console.aborted)
 		return false;
+	var addr_list = userprops.get(ini_section, "address", []) || [];
 	if(!addr) {
 		console.putmsg(bbs.text(bbs.text.EnterNetMailAddress));
-		var addr_list = userprops.get(ini_section, "address", []) || [];
 		addr = console.getstr(256, K_LINE | K_TRIM, addr_list);
 		if(!addr || console.aborted)
 			return false;
