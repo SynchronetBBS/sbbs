@@ -4723,7 +4723,7 @@ static int fastcgi_read_wait_timeout(void *arg)
 				ret |= CGI_OUTPUT_READY;
 				break;
 			case FCGI_STDERR:
-				ret |= CGI_OUTPUT_READY;
+				ret |= CGI_ERROR_READY;
 				break;
 			case FCGI_END_REQUEST:
 				ret |= CGI_PROCESS_TERMINATED;
@@ -4793,9 +4793,12 @@ static int fastcgi_read(void *arg, char *buf, size_t sz)
 static int fastcgi_readln_out(void *arg, char *buf, size_t bufsz, char *fbuf, size_t fbufsz)
 {
 	size_t               inpos, outpos;
+	size_t               fulllen;
 	struct fastcgi_data *cd = (struct fastcgi_data *)arg;
 
 	outpos = 0;
+	if (fbuf != NULL && fbufsz > 0)
+		fbuf[0] = '\0';
 
 	if (cd->request_ended)
 		return -1;
@@ -4812,6 +4815,13 @@ static int fastcgi_readln_out(void *arg, char *buf, size_t bufsz, char *fbuf, si
 			break;
 		}
 		buf[outpos++] = cd->body->data[inpos];
+	}
+	if (fbuf != NULL && fbufsz > 0) {
+		fulllen = inpos - cd->used;
+		if (fulllen >= fbufsz)
+			fulllen = fbufsz - 1;
+		memcpy(fbuf, cd->body->data + cd->used, fulllen);
+		fbuf[fulllen] = '\0';
 	}
 	if (outpos > 0 && buf[outpos - 1] == '\r')
 		outpos--;
@@ -4989,7 +4999,7 @@ static int cgi_readln_out(void *arg, char *buf, size_t bufsz, char *fbuf, size_t
 {
 	struct cgi_data *cd = (struct cgi_data *)arg;
 
-	return pipereadline(cd->rdpipe, buf, bufsz, NULL, 0);
+	return pipereadline(cd->rdpipe, buf, bufsz, fbuf, fbufsz);
 }
 
 static int cgi_write_in(void *arg, char *buf, size_t bufsz)
@@ -5017,6 +5027,7 @@ struct cgi_api {
 	int (*write_in)(void *arg, char *buf, size_t bufsz);
 	int (*done_wait)(void *arg);
 	void *arg;
+	int stderr_log_level;
 };
 
 /*
@@ -5056,6 +5067,8 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, bool orig_
 
 	/* ToDo: Magically set done_parsing_headers for nph-* scripts */
 	cgi_status[0] = 0;
+	buf[0] = '\0';
+	fbuf[0] = '\0';
 	/* FREE()d following this block */
 	tmpbuf = strListInit();
 	while (!done_reading) {
@@ -5078,6 +5091,8 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, bool orig_
 					/* This is the tricky part */
 					i = cgi->readln_out(cgi->arg, buf, sizeof(buf), fbuf, sizeof(fbuf));
 					if (i == -1) {
+						buf[0] = '\0';
+						fbuf[0] = '\0';
 						done_reading = true;
 						ret |= CGI_STUFF_VALID_HEADERS;
 					}
@@ -5170,7 +5185,10 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, bool orig_
 							/* Add the content-type header (REQUIRED) */
 							SAFEPRINTF2(content_type, "%s: %s", get_header(HEAD_TYPE), startup->default_cgi_content);
 							strListPush(&session->req.dynamic_heads, content_type);
-							send_headers(session, cgi_status, false);
+							/* Any Content-Length the script sent was discarded above */
+							if (!set_chunked)
+								session->req.keep_alive = false;
+							send_headers(session, cgi_status, set_chunked);
 
 							/* Now send the tmpbuf */
 							for (i = 0; tmpbuf != NULL && tmpbuf[i] != NULL; i++) {
@@ -5197,7 +5215,7 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, bool orig_
 				i = cgi->read_err(cgi->arg, buf, sizeof(buf) - 1);
 				if (i > 0) {
 					buf[i] = 0;
-					errprintf(LOG_ERR, WHERE, "%04d CGI Error: %s", session->socket, buf);
+					errprintf(cgi->stderr_log_level, WHERE, "%04d CGI Error: %s", session->socket, buf);
 					start = time(NULL);
 				}
 			}
@@ -5249,6 +5267,7 @@ static bool exec_fastcgi(http_session_t *session)
 	cgi.readln_out = fastcgi_readln_out;
 	cgi.write_in = fastcgi_write_in;
 	cgi.done_wait = fastcgi_done_wait;
+	cgi.stderr_log_level = LOG_WARNING;
 	cgi.arg = &cd;
 
 	lprintf(LOG_DEBUG, "%04d %-5s [%s] Executing FastCGI: %s", session->socket, session->client.protocol, session->host_ip, session->req.physical_path);
@@ -5336,6 +5355,7 @@ static bool exec_cgi(http_session_t *session)
 	cgi.readln_out = cgi_readln_out;
 	cgi.write_in = cgi_write_in;
 	cgi.done_wait = cgi_done_wait;
+	cgi.stderr_log_level = LOG_ERR;
 	cgi.arg = &cd;
 #ifdef __unix__
 	char            cmdline[MAX_PATH + 256];
