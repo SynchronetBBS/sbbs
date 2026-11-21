@@ -1361,6 +1361,33 @@ var Api = (function () {
 		return { total: list.total, items: list.items };
 	}
 
+	// The tag of the address a message was delivered to (name#tag@host),
+	// lowercased, when the mail server delivers that address to this user
+	// and the tag is one settings.set tag_block takes; else "".  The
+	// reader offers to block it.  (A blocked tag is no longer delivered,
+	// so it is not reported.)
+	function delivered_tag(rq, addr)
+	{
+		try {
+			if (typeof addr !== "string")
+				return "";
+			var at = addr.lastIndexOf("@");
+			var local = at > 0 ? addr.substr(0, at) : "";
+			var hash = local.indexOf("#");
+			if (hash < 1)
+				return "";
+			var tag = local.substr(hash + 1);
+			if (!lib("blocktags").valid(tag))
+				return "";
+			var extra = rq.env.lib_ctx;
+			var who = extra && typeof extra.deliver_user === "function" ? extra.deliver_user(addr)
+				: lib("address").system_resolvers({}).own.deliver_user(addr);
+			return who === rq.usernum ? ascii_lower(tag) : "";
+		} catch (e) {
+			return "";
+		}
+	}
+
 	function message_get(ctx, args, rq)
 	{
 		if (args.head === true) {
@@ -1370,6 +1397,8 @@ var Api = (function () {
 			return out;
 		}
 		var msg = ctx.store.get(args.id, { mark_read: args.mark_read === true });
+		if (msg && msg.headers)
+			msg.headers.to_tag = delivered_tag(rq, msg.headers.to_addr);
 		if (args.avatar === true)
 			msg.avatar = sender_avatar(ctx, rq, args.id);
 		return { message: msg };

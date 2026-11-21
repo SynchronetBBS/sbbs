@@ -179,6 +179,24 @@ try {
 	g = set(alice, { tag_unblock: "news" });
 	Kit.eq(g.blocked_tags, [], "unblocked");
 
+	// --- message.get reports the tag of the address a message came to
+	// (headers.to_tag) when the mail server delivers that address to this
+	// user and the tag can be blocked here; the reader offers to block it
+	function tag_of(forward_path, deliver) {
+		var n = W.save({ to: "Alice", to_ext: String(ALICE), forward_path: forward_path });
+		var ev = env(alice);
+		ev.lib_ctx.deliver_user = deliver;
+		var r = call(ev, "message.get", { id: "s" + n });
+		Kit.eq(r.ok, true, "message.get: " + JSON.stringify(r).substr(0, 200));
+		return r.message.headers.to_tag;
+	}
+	var mine = function () { return ALICE; };
+	Kit.eq(tag_of("alice#Shop@vert.example", mine), "shop", "to_tag: the tag, lowercased");
+	Kit.eq(tag_of("alice#Shop@vert.example", function () { return 0; }), "", "no to_tag when the address is not delivered to the user (blocked, or another user's)");
+	Kit.eq(tag_of("alice@vert.example", mine), "", "no to_tag without a tag");
+	Kit.eq(tag_of("alice#a*b@vert.example", mine), "", "no to_tag for a tag that cannot be blocked here");
+	Kit.eq(tag_of("#shop@vert.example", mine), "", "no to_tag without a name");
+
 	// The live server gives no data_dir (only these tests do): the file
 	// is then looked for in the system's data directory
 	var api_src = new File(Kit.wpath ? Kit.wpath("lib/api.js") : js.exec_dir + "../../../webmail/lib/api.js");

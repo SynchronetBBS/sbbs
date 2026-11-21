@@ -64,6 +64,7 @@ import { openMenu, promptDialog, confirmDialog, openDialog } from "./dialog.js";
 import { partUrl } from "./attachments.js";
 import { createCompose } from "./compose.js";
 import { createDraftList } from "./draftlist.js";
+import { prefs } from "./prefs.js";
 
 const MIN_POLL = 15000;
 const DEFAULT_POLL = 60000;
@@ -397,8 +398,27 @@ export function createMail(o) {
 				items.push({ label: b.getAttribute("aria-label"), icon: b.getAttribute("data-act") === "spam" && it.folder === "spam"
 					? "inbox" : b.getAttribute("data-act"), disabled: b.disabled, onclick: () => b.click() });
 		}
+		// Mail that arrived at one of the user's tagged addresses
+		// (headers.to_tag): block that tag, unless it is blocked by now
+		const msg = reader.message();
+		const tag = msg && msg.headers && typeof msg.headers.to_tag === "string" ? msg.headers.to_tag : "";
+		const p = prefs.get();
+		const blocked = (p && Array.isArray(p.blocked_tags) ? p.blocked_tags : [])
+			.some((e) => e && e.pattern !== true && typeof e.text === "string" && e.text.toLowerCase() === tag);
+		if (tag !== "" && !blocked)
+			items.push({ label: t("reader.button_block_tag", { address: msg.headers.to_addr }), icon: "spam",
+				onclick: () => blockTag(tag) });
 		items.push({ label: t("reader.button_show_original"), icon: "code", onclick: () => showOriginal(it, anchor) });
 		openMenu(anchor, { label: t("main.button_more"), items });
+	}
+
+	// Blocks an address tag (settings.set tag_block): mail sent to it is
+	// refused from now on; it can be unblocked in Settings
+	function blockTag(tag) {
+		rpc.call("settings.set", { tag_block: tag }).then((r) => {
+			prefs.set(r);
+			notice(t("reader.label_tag_blocked", { tag }));
+		}, (e) => notice(e && e.message ? e.message : t("errors.failed")));
 	}
 
 	// The message as stored: its header block and the stored details, as
