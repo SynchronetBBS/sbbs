@@ -131,7 +131,7 @@
 "\r\nAre you sure"                                      096 AreYouSureQ
 "\r\n\r\nYou can't chat.\r\n"                           097 R_Chat
 "RE: Feedback\r\n\r\n"                                  098 ReFeedback
-"\r\n\1USystem Information:\r\n\r\n\1h"                 099 SiHdr
+"\1?\1USystem Information:\r\n\r\n\1h"                  099 SiHdr
 "\1b\1hSystem          : \1c%s\r\n"                        100 SiSysName
 "\1bQWK ID          : \1c%s\r\n"                          101 SiSysID
 "\1bFidoNet Address : \1c%s\r\n"                          102 SiSysFaddr
@@ -675,7 +675,7 @@
 "UNUSED544"                         			544 Unused544 /* Was LastFewCallers */
 "\r\n\1n\1h\1m%-2d \1n\1m%-6u \1w\1h%-25.25s \1m%-25.25s"\     545 LastFewCallersFmt
 	"\1n\1m%02u:%02u \1h%-8.8s \1n\1m%3d"
-"\r\n\1ULogons Today:\1u"                                      546 CallersToday
+"\1?\1ULogons Today:\1u"                                       546 CallersToday
 "Do you mean %s #%u "\                            547 DoYouMeanThisUserQ
 	"(~@Yes@, ~@No@, or ~@Quit@) ? "
 "UNKNOWN USER"                                          548 UNKNOWN_USER
@@ -750,7 +750,7 @@
 "\r\n\1_\1w\1hPosting Privately@ELLIPSIS@\r\n"            600 PostingPrivately
 "\r\n\1_\1w\1hPosting anonymously@ELLIPSIS@\r\n"          601 PostingAnonymously
 "\r\nCan't delete posts on this sub-board.\r\n"            602 CantDeletePosts
-"\r\n\1USub-board Information:\r\n\r\n\1n"                 603 SubInfoHdr
+"\1?\1USub-board Information:\r\n\r\n\1n"                  603 SubInfoHdr
 "\1n\1h\1bDescription \1n\1b:\1h \1c%s\r\n"                604 SubInfoLongName
 "\1n\1h\1bName        \1n\1b:\1h \1c%s\r\n"                605 SubInfoShortName
 "\1n\1h\1bQWK Name    \1n\1b:\1h \1c%s\r\n"                606 SubInfoQWKName
@@ -758,7 +758,7 @@
 "\1n\1h\1b\r\nQWK packet network conference using the tagline:\1n\r\n \254 %s\1n\r\n" 608 SubInfoTagLine
 "\1n\1h\1b\r\nFidoNet EchoMail conference using the origin line:\1n\r\n * Origin: %s (%s)\r\n"     609 SubInfoFidoNet
 ""                                                         610 SubInfoViewFileQ
-"\r\n\1UDirectory Information:\r\n\r\n\1n"                 611 DirInfoHdr
+"\1?\1UDirectory Information:\r\n\r\n\1n"                  611 DirInfoHdr
 "\1n\1h\1bDescription \1n\1b:\1h \1c%s\r\n"                612 DirInfoLongName
 "\1n\1h\1bName        \1n\1b:\1h \1c%s\r\n"                613 DirInfoShortName
 "\1n\1h\1bFile Types  \1n\1b:\1h \1c%s\r\n"                614 DirInfoAllowedExts
