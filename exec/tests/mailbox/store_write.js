@@ -644,36 +644,39 @@ try {
 	Kit.assert(st.usage().bytes < u_before, "usage dropped");
 	Kit.eq(st.empty_trash(), [], "empty trash again");
 
-	// --- Quota
+	// --- Quota: it counts the Inbox too, so no move is refused for it
+	// and none removes Trash
 	var q = st.usage();
 	Kit.eq(q.quota, 0, "quota option");
+	Kit.eq(q.full, false, "never full without a quota");
 	var Q1 = to_alice("quota trash old", "<q1@test>");
 	var Q2 = to_alice("quota trash new", "<q2@test>");
 	clock = T0 + 100 * DAY;
 	var qt1 = one(st.remove(["s" + Q1]), "trash q1");
 	var qt2 = one(st.remove(["s" + Q2]), "trash q2");
+	var without = st.usage().bytes;
 	var QM = to_alice("quota move", "<qm@test>");
-	var base = st.usage().bytes;	// includes the two Trash messages
-	var tsize = 512;	// a small message: one header block, one data block
-	// Room for the incoming message once the oldest Trash is removed
-	var qst = open_store(ALICE, { trash_days: 30, quota_bytes: base + tsize - 1 });
-	var qm = one(qst.move(["s" + QM], "archive"), "move with oldest Trash removed");
-	Kit.assert(phdr(num_of(qt1)) === null, "oldest Trash removed");
-	Kit.assert(phdr(num_of(qt2)) !== null, "newer Trash kept");
-	Kit.assert(qst.usage().bytes <= base + tsize - 1, "within quota");
-	// No room even with Trash empty: quota, Trash kept, message stays
+	var base = st.usage().bytes;	// the two Trash messages and the Inbox
+	Kit.eq(base - without, st.list("inbox").items[0].size, "usage counts a message in the Inbox");
+	// At the quota: the message moves, and all of Trash stays
+	var qst = open_store(ALICE, { trash_days: 30, quota_bytes: base });
+	Kit.eq(qst.usage(), { bytes: base, quota: base, full: true }, "full at the quota");
+	var qm = one(qst.move(["s" + QM], "archive"), "Inbox to a folder at the quota");
+	Kit.assert(phdr(num_of(qt1)) !== null && phdr(num_of(qt2)) !== null, "no Trash removed for a move");
+	var filed = qst.usage().bytes;
+	Kit.assert(filed >= base && filed - base <= 256, "a move changes the total by a header block at most: "
+		+ base + " to " + filed);
+	// Far over the quota: filing, deleting and moving back all work
 	var QN = to_alice("quota no room", "<qn@test>");
-	var qst2 = open_store(ALICE, { trash_days: 30, quota_bytes: qst.usage().bytes - tsize });
-	err(qst2.move(["s" + QN], "archive"), 0, "quota", "over quota");
-	Kit.assert(shdr(QN) !== null, "still in the Inbox");
-	Kit.eq(qst2.list("trash").total, 1, "Trash kept when emptying it would not be enough");
-	// Deleting is never refused for quota (it is how a user gets under it)
+	var qst2 = open_store(ALICE, { trash_days: 30, quota_bytes: 256 });
+	Kit.eq(qst2.usage().full, true, "over the quota");
+	one(qst2.move(["s" + QN], "archive"), "Inbox to a folder over the quota");
+	Kit.assert(shdr(QN) === null, "gone from the Inbox");
 	var QR = to_alice("quota delete", "<qr@test>");
 	var qr = one(qst2.remove(["s" + QR]), "delete over quota");
 	Kit.eq(ptags(num_of(qr)).folder, Tags.TRASH, "in Trash over quota");
-	// After room is made the same move succeeds
-	one(qst2.move([qm], "inbox"), "make room");
-	one(qst2.move(["s" + QN], "archive"), "same move succeeds");
+	one(qst2.move([qm], "inbox"), "back to the Inbox over the quota");
+	Kit.eq(qst2.list("trash").total, 3, "Trash kept over the quota");
 
 	// --- Summary lock held: conflict for every id, nothing written
 	var QC = to_alice("conflict", "<qc@test>");

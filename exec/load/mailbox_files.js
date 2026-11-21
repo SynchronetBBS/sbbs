@@ -57,7 +57,8 @@ JsonFiles.prototype.token = function ()
 };
 JsonFiles.seq = 0;
 
-// Writes to a uniquely named temp file beside the target, then renames it
+// Gives the file at path (in the directory) the contents text: writes
+// to a uniquely named temp file beside the target, then renames it
 // over the target.  The temp file is renamed only after it was written,
 // flushed and closed without error; otherwise it is removed and an Error
 // naming the path is thrown, and the target is left as it was.
@@ -71,11 +72,9 @@ JsonFiles.seq = 0;
 JsonFiles.RENAME_TRIES = 10;
 JsonFiles.RENAME_WAIT = 25;	// ms
 
-JsonFiles.prototype.write = function (name, obj)
+JsonFiles.prototype.replace = function (path, text)
 {
-	var path = this.path(name);
 	var tmp = path + "." + this.token() + ".tmp";
-	var text = JSON.stringify(obj);
 
 	mkpath(this.dir);
 	var f = new File(tmp);
@@ -99,6 +98,12 @@ JsonFiles.prototype.write = function (name, obj)
 	}
 	file_remove(tmp);
 	throw new Error("cannot rename " + tmp + " to " + path);
+};
+
+// Writes obj as name's file (see replace())
+JsonFiles.prototype.write = function (name, obj)
+{
+	this.replace(this.path(name), JSON.stringify(obj));
 };
 
 // Removes the lock file only if it still holds our token (it may have been

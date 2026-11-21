@@ -9,7 +9,8 @@
 // folders.el                 the element to put in the pane
 // folders.update(result)     a folder.list result {folders, usage,
 //                            inbox_limit}; an entry of kind "drafts"
-//                            shows its total; inbox_limit at level "near"
+//                            shows its total; usage.full adds a warning
+//                            under the meter; inbox_limit at level "near"
 //                            or "over" shows a line under the Inbox
 // folders.setCurrent(id)     marks the open folder (null: none, e.g. while
 //                            searching all mail)
@@ -47,8 +48,9 @@ export function createFolders(onOpen, opts) {
 	const meterText = h("span");
 	const meterFill = h("span", { class: "meter-fill" });
 	const meterBar = h("span", { class: "meter-bar", "aria-hidden": "true" }, meterFill);
+	const meterFull = h("span", { class: "meter-full", hidden: true, text: t("main.label_storage_full") });
 	const meter = h("div", { class: "meter", hidden: true },
-		h("span", { class: "vh", text: t("main.label_storage_heading") + ": " }), meterBar, meterText);
+		h("span", { class: "vh", text: t("main.label_storage_heading") + ": " }), meterBar, meterText, meterFull);
 	const el = h("div", { class: "fbody", onkeydown: onKey }, builtin, userHead, user, meter);
 	let current = null;
 
@@ -111,6 +113,7 @@ export function createFolders(onOpen, opts) {
 			meterBar.hidden = !quota;
 			if (quota)
 				meterFill.style.width = Math.min(100, Math.max(0, u.bytes * 100 / quota)).toFixed(1) + "%";
+			meterFull.hidden = !(quota && u.full === true);
 			meter.hidden = false;
 		} else
 			meter.hidden = true;

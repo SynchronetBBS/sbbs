@@ -5,11 +5,19 @@
 // var r = Summary.modify(msgbase, jsonfiles, fn [, {data_dir}]);	// {bytes, count, result}
 // var u = Summary.usage(msgbase, jsonfiles [, {data_dir}]);	// {bytes, count}
 // var names = Summary.attach_names(subject);	// file names of a file-attached message
+// var n = Summary.attach_bytes(header, data_dir);	// the size of those files
 //
 // msgbase is the open private base; jsonfiles is a JsonFiles object for the
 // user's directory with prefix "mailbox.", so the side files are
 // mailbox.summary.json and mailbox.state.json. data_dir (default
 // system.data_dir) locates file attachments: data_dir/file/<user>.in/.
+//
+// mailbox.usage.ini, beside them, holds one line, "bytes=<n>": the usage
+// total again, for the servers (user_mailbox_full() in getmail.c reads it
+// to apply the mailbox quota when mail is delivered).  It is written
+// whenever the state file's total is written with a different figure, and
+// by usage() when it is missing; a failed write is logged and nothing
+// else (without the file the servers count the base's file sizes).
 //
 // Each summary entry is {num, tags, from, from_addr, to, subject, date,
 // attr, size, attach, arrived, zone, priority, msgid}, one per message not
@@ -313,8 +321,29 @@ var Summary = (function () {
 		return valid_shape(cache) && current_stamps(cache.stamps, st);
 	}
 
+	function usage_path(jsonfiles)
+	{
+		return jsonfiles.dir + jsonfiles.prefix + "usage.ini";
+	}
+
+	// Write the total to mailbox.usage.ini (under the state lock)
+	function write_usage(jsonfiles, bytes)
+	{
+		try {
+			jsonfiles.replace(usage_path(jsonfiles), "bytes=" + bytes + "\n");
+			return true;
+		} catch (e) {
+			log(LOG_WARNING, "Summary: " + e);
+			// An old figure must not outlive a failed write: without
+			// the file the servers count the base's file sizes
+			file_remove(usage_path(jsonfiles));
+			return false;
+		}
+	}
+
 	// Rewrite the usage fields of mailbox.state.json, keeping its other
-	// fields. Skipped when the base changed since 'cache' was recorded, so
+	// fields, and mailbox.usage.ini when the total changed. Skipped when
+	// the base changed since 'cache' was recorded, so
 	// a late writer cannot replace newer figures with older ones.
 	// The state file is derived data: if its lock cannot be taken the write
 	// is skipped, and usage() recomputes because its stamps do not match.
@@ -326,7 +355,12 @@ var Summary = (function () {
 					s = {};
 				if (!current_stamps(cache.stamps, stamps(msgbase)))
 					return s;
-				s.bytes = total(cache.rows);
+				var bytes = total(cache.rows);
+				// A failed write is tried again by the next call: the total
+				// recorded then still differs
+				if ((s.bytes !== bytes || !file_exists(usage_path(jsonfiles))) && !write_usage(jsonfiles, bytes))
+					bytes = null;
+				s.bytes = bytes;
 				s.count = cache.rows.length;
 				s.stamps = cache.stamps;
 				return s;
@@ -416,6 +450,7 @@ var Summary = (function () {
 	// The file names in a file-attached message's subject (for mailbox.js
 	// and mailbox_mime.js, so there is one parser)
 	Summary.attach_names = attach_names;
+	Summary.attach_bytes = attach_bytes;
 
 	Summary.get = function (msgbase, jsonfiles, opts)
 	{
@@ -525,8 +560,24 @@ var Summary = (function () {
 		not_nested(jsonfiles);
 		var s = jsonfiles.read("state", null);
 		if (typeof s == "object" && s !== null && typeof s.bytes == "number"
-			&& typeof s.count == "number" && current_stamps(s.stamps, stamps(msgbase)))
+			&& typeof s.count == "number" && current_stamps(s.stamps, stamps(msgbase))) {
+			if (!file_exists(usage_path(jsonfiles))) {
+				try {
+					// Read again under the lock: a change made meanwhile has
+					// written a newer total
+					jsonfiles.locked("state", function () {
+						var now = jsonfiles.read("state", null);
+						if (typeof now == "object" && now !== null && typeof now.bytes == "number"
+							&& !file_exists(usage_path(jsonfiles)))
+							write_usage(jsonfiles, now.bytes);
+					});
+				} catch (e) {
+					if (e === null || typeof e != "object" || e.code !== "conflict")
+						throw e;
+				}
+			}
 			return { bytes: s.bytes, count: s.count };
+		}
 		var cur = current(msgbase, jsonfiles, opts);
 		if (!cur.state_done)
 			write_state(msgbase, jsonfiles, cur.cache);

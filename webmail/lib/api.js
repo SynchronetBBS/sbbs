@@ -239,8 +239,15 @@
 //                       failure is logged, the list still returned);
 //                       purge_expired() (at most once a day; purged is the
 //                       number of messages it removed, 0 when nothing ran,
-//                       nothing was due or it failed), then folders() and
-//                       usage(), one Store; trash_days is the number of
+//                       nothing was due or it failed), then the Store's
+//                       overview(): folders, and usage { bytes, quota,
+//                       full }: bytes is all of the user's mail (the Inbox
+//                       and Spam plus the folders, Sent copies and Trash),
+//                       quota the mailbox quota (system.mailbox_quota; 0:
+//                       none, and always 0 for a user with the W
+//                       exemption), full true when bytes has reached the
+//                       quota (new mail for the user is then refused, and
+//                       the client says so); trash_days is the number of
 //                       days a message stays in Trash (the Store's option,
 //                       system.max_trash_age by default; 0: until removed
 //                       by hand).  inbox_days: the mail base's age limit
@@ -591,7 +598,7 @@ var Api = (function () {
 		notfound: "That item could not be found. It may have been deleted.",
 		forbidden: "You are not allowed to do that.",
 		invalid: "Some of the information is not valid. Please check it and try again.",
-		quota: "Your mailbox is full. Delete some messages to make room.",
+		quota: "Your mailbox is full. Empty Trash or delete some messages to make room.",
 		toolarge: "That is too large to send or save.",
 		conflict: "Someone or something else changed this first. Please reload and try again.",
 		failed: "That did not work. Please try again.",
@@ -1297,7 +1304,8 @@ var Api = (function () {
 				Api.log(LOG_WARNING, "webmail api: user " + rq.usernum + ": recovering sends: " + describe(e));
 			}
 		}
-		return { folders: ctx.store.folders(), usage: ctx.store.usage(), purged: purged,
+		var ov = ctx.store.overview();
+		return { folders: ov.folders, usage: ov.usage, purged: purged,
 			trash_days: ctx.store.options.trash_days, inbox_days: inbox_days(ctx, rq),
 			inbox_limit: inbox_limit(ctx, rq), drafts: drafts.count };
 	}
@@ -2825,7 +2833,8 @@ var Api = (function () {
 	// Store (the constructor) or load_store() (returns it; called once, on
 	// the first make_ctx, so a request that opens no mailbox never loads
 	// the mailbox library), shared_path (tests; default the "mail" base),
-	// data_dir (tests; default system.data_dir) }
+	// data_dir (tests; default system.data_dir), quota_bytes (tests;
+	// default system.mailbox_quota) }
 	function context_factory(opts)
 	{
 		var Store = opts.Store || null;
@@ -2835,9 +2844,15 @@ var Api = (function () {
 				throw auth_error();
 			if (Store === null)
 				Store = opts.load_store();
+			var options = { max_text_part_bytes: opts.config.max_text_part_bytes };
+			// The W exemption lifts the mailbox quota (as it does Max
+			// Messages Waiting)
+			if (u.security && (u.security.exemptions & UD.UEXEMPT_MAIL_WAITING))
+				options.quota_bytes = 0;
+			else if (typeof opts.quota_bytes === "number")
+				options.quota_bytes = opts.quota_bytes;
 			var store = new Store({ usernum: usernum, alias: u.alias, name: u.name,
-				shared_path: opts.shared_path, data_dir: opts.data_dir,
-				options: { max_text_part_bytes: opts.config.max_text_part_bytes } });
+				shared_path: opts.shared_path, data_dir: opts.data_dir, options: options });
 			store.open();
 			return { usernum: usernum, alias: u.alias, name: u.name, user: u, store: store,
 				userdata: opts.userdata(usernum), config: opts.config,

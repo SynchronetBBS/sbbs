@@ -500,7 +500,7 @@ try {
 	Kit.eq(est.purge_expired(), [], "nothing to expire");
 	Kit.eq(directory(S.user_dir(CAROL) + "mailbox.*").length, 0, "no files for a user without a base");
 
-	// --- Quota: Trash is emptied to make room only when that is enough
+	// --- Quota: no move is refused for it, and none removes Trash
 	function body_of(n) {
 		return new Array(n + 1).join("x") + "\r\n";
 	}
@@ -508,28 +508,21 @@ try {
 	var Q2 = to_alice("quota trash 2", "<q2@test>");
 	ok(st.remove(["s" + Q1, "s" + Q2]), "two in Trash");
 	var used = st.usage().bytes;
-	var trash_bytes = 0;
-	var tl = st.list("trash").items;
-	for (i = 0; i < tl.length; i++)
-		trash_bytes += tl[i].size;
-	Kit.eq(tl.length, 2, "two in Trash");
+	Kit.eq(st.list("trash").total, 2, "two in Trash");
 	var BIG = save(fresh(), { to_ext: String(ALICE), to: "Alice", subject: "big", id: "<big@test>" },
 		body_of(20000));
 	var MID = save(fresh(), { to_ext: String(ALICE), to: "Alice", subject: "mid", id: "<mid@test>" },
 		body_of(4000));
 	var SMALL = to_alice("small", "<small@test>");
-	var mid_size = st.get("s" + MID).size;	// before its new tags (up to a block more)
+	var all = st.usage().bytes;	// the three in the Inbox count
+	Kit.assert(all - used >= 24000, "usage counts the Inbox: " + used + " to " + all);
 	var qst = open_store(ALICE, { quota_bytes: used + 256 });
-	err(qst.move(["s" + BIG], "archive"), 0, "quota", "cannot fit even with Trash empty");
+	Kit.eq(qst.usage(), { bytes: all, quota: used + 256, full: true }, "over the quota with the Inbox");
+	one(qst.move(["s" + BIG], "archive"), "a message larger than the room left is filed");
 	Kit.eq(trash_count(qst), 2, "Trash kept");
-	qst = open_store(ALICE, { quota_bytes: 256 });
-	err(qst.move(["s" + SMALL], "archive"), 0, "quota", "larger than the quota");
-	Kit.eq(trash_count(qst), 2, "Trash kept (larger than the quota)");
-	// MID needs room and fits once Trash is empty; SMALL fits as it is
-	var quota = used + mid_size - Math.floor(trash_bytes / 2);
-	Kit.assert(trash_bytes / 2 >= 256 && quota - used >= 1024, "sizes fit the scenario");
-	// The move journal cannot be written: a later id in the same call is
-	// refused before any Trash is removed for it
+	var quota = 256;
+	// The move journal cannot be written: both ids are refused, and Trash
+	// is as it was
 	qst = open_store(ALICE, { quota_bytes: quota });
 	var jlock = qst.jf.lock_path("moving");
 	Kit.assert(file_mutex(jlock, "held by test", 60), "take the journal lock");
@@ -541,13 +534,14 @@ try {
 		qst.jf.timeout = 5000;
 	}
 	err(res, 0, "conflict", "first: journal busy");
-	err(res, 1, "conflict", "second: refused before making room");
+	err(res, 1, "conflict", "second: journal busy");
 	Kit.eq(trash_count(qst), 2, "Trash kept after a journal refusal");
 	Kit.assert(shdr(SMALL) !== null && shdr(MID) !== null, "both still in the Inbox");
-	// Enough room once Trash is emptied: the oldest goes first
-	one(qst.move(["s" + MID], "archive"), "fits after removing Trash");
-	Kit.assert(trash_count(qst) < 2, "Trash used to make room");
-	Kit.assert(qst.usage().bytes <= quota, "within quota");
+	ok(qst.move(["s" + MID, "s" + SMALL], "archive"), "filed over the quota");
+	Kit.eq(trash_count(qst), 2, "no Trash removed for a move");
+	var after = qst.usage().bytes;
+	Kit.assert(after >= all && after - all <= 3 * 256, "the moves changed the total by header blocks only: "
+		+ all + " to " + after);
 } finally {
 	for (var k = 0; k < stores.length; k++)
 		stores[k].close();

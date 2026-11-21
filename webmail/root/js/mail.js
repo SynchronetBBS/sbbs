@@ -25,7 +25,7 @@
 // mail.start()     loads the folders and the Inbox and starts checking
 // mail.setAux(name) marks the Contacts or Settings entry as the view shown
 //                  ("contacts", "settings"; null: the mail again)
-// mail.usage()     folder.list's usage ({bytes, quota}), or null
+// mail.usage()     folder.list's usage ({bytes, quota, full}), or null
 // mail.destroy()
 //
 // Changes: a poll (rpc "changes", sent alone so the server does not count

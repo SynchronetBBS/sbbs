@@ -420,7 +420,10 @@ try {
 	Kit.eq(fl.ok, true, "folder.list ok");
 	Kit.eq(fl.folders[0].id, "inbox", "folders");
 	Kit.eq(fl.folders[0].total, 2, "inbox total");
-	Kit.eq(fl.usage, { bytes: 0, quota: system.mailbox_quota }, "usage");
+	var inbox_bytes = r.results[2][1].items[0].size + r.results[2][1].items[1].size;
+	Kit.assert(inbox_bytes >= 1024, "two messages of two blocks at least");
+	Kit.eq(fl.usage, { bytes: inbox_bytes, quota: system.mailbox_quota,
+		full: system.mailbox_quota > 0 && inbox_bytes >= system.mailbox_quota }, "usage: the Inbox counts");
 	Kit.eq(fl.purged, 0, "no private base: nothing purged");
 	Kit.eq(fl.purge, undefined, "no purge object");
 	Kit.eq(fl.trash_days, system.max_trash_age, "trash_days: the system's Trash age");
@@ -1261,6 +1264,56 @@ try {
 	err(r.results[1][1], "auth", "a stored session above 65535: not signed in");
 	Kit.eq([r.signed_out, ev.made], [true, 0], "signed out, no mailbox opened");
 	Kit.eq(ev.cookies, [["", false]], "the cookie cleared");
+
+	// --- folder.list usage: all of the user's mail against the mailbox
+	// quota, full once it is reached; no quota for a user with the W
+	// exemption; one pass over the mail index
+	var scans = 0;
+	var real_scan = Store.prototype.scan;
+	Store.prototype.scan = function () {
+		scans++;
+		return real_scan.apply(this, arguments);
+	};
+	var usage_of = function (quota, exemptions) {
+		var saved_exempt = USERS[ALICE].security.exemptions;
+		USERS[ALICE].security.exemptions = exemptions || 0;
+		try {
+			var uev = make_env({ cookie: alice });
+			uev.make_ctx = Api.context_factory({ config: cfg, get_user: uev.get_user, userdata: uev.userdata,
+				Store: Store, shared_path: S.shared_path, data_dir: S.data_dir, quota_bytes: quota });
+			scans = 0;
+			var ur = Api.dispatch(uev, { calls: [["folder.list", {}, 1]] }).results[0][1];
+			Kit.eq(ur.ok, true, "folder.list ok");
+			Kit.eq(scans, 1, "folder.list reads the mail index once");
+			return ur.usage;
+		} finally {
+			USERS[ALICE].security.exemptions = saved_exempt;
+		}
+	};
+	try {
+		var direct = new Store({ usernum: ALICE, shared_path: S.shared_path, data_dir: S.data_dir });
+		direct.open();
+		var all_bytes = direct.usage().bytes;
+		var kept_bytes = 0;
+		["sent", "trash", "archive"].forEach(function (id) {
+			direct.list(id, { limit: 100 }).items.forEach(function (it) { kept_bytes += it.size; });
+		});
+		direct.close();
+		Kit.assert(kept_bytes > 0 && all_bytes > kept_bytes, "mail in the private base and in the Inbox: "
+			+ kept_bytes + " of " + all_bytes);
+		Kit.eq(usage_of(undefined), { bytes: all_bytes, quota: system.mailbox_quota,
+			full: system.mailbox_quota > 0 && all_bytes >= system.mailbox_quota }, "the system's quota by default");
+		Kit.eq(usage_of(all_bytes + 1), { bytes: all_bytes, quota: all_bytes + 1, full: false }, "under the quota");
+		Kit.eq(usage_of(all_bytes), { bytes: all_bytes, quota: all_bytes, full: true }, "at the quota: full");
+		Kit.eq(usage_of(kept_bytes + 1), { bytes: all_bytes, quota: kept_bytes + 1, full: true },
+			"over the quota by the Inbox alone: full");
+		Kit.eq(usage_of(0), { bytes: all_bytes, quota: 0, full: false }, "no quota");
+		Kit.eq(usage_of(all_bytes, U.UEXEMPT_MAIL_WAITING), { bytes: all_bytes, quota: 0, full: false },
+			"the W exemption: usage without a limit");
+		Kit.eq(usage_of(all_bytes, U.UEXEMPT_MAIL_WAITING >> 1).full, true, "another exemption flag does not exempt");
+	} finally {
+		Store.prototype.scan = real_scan;
+	}
 
 	// --- context_factory with load_store: the mailbox library is loaded
 	// only by the first request that opens a mailbox, and once

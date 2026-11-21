@@ -15,7 +15,8 @@
 // shared base's path (default: the configured "mail" base), data_dir the
 // data directory (default system.data_dir), now a function returning a
 // time_t (default time(); tests inject a clock). options, each optional:
-// quota_bytes (default system.mailbox_quota; 0 = unlimited), trash_days
+// quota_bytes (default system.mailbox_quota; 0 = unlimited: the caller
+// passes 0 for a user the quota does not apply to), trash_days
 // (default system.max_trash_age; 0 = Trash never expires),
 // max_text_part_bytes (default 1048576) and slice_size (default 200: the
 // messages handled per summary lock by the calls that work in slices).
@@ -44,7 +45,8 @@
 // store.folder_create(name);			// {id, name}
 // store.folder_rename(folder_id, name);	// {id, name, errors}
 // store.folder_delete(folder_id);		// results: messages put in Trash
-// store.usage();				// {bytes, quota}
+// store.usage();				// {bytes, quota, full}
+// store.overview();				// {folders, usage}: both from one pass
 // store.inbox_max_age();			// days the Inbox keeps mail, 0: no limit
 //
 // Sent copies, for a client that sends mail (each throws { code } like the
@@ -57,12 +59,12 @@
 // store.find_sent(message_id);		// ["p<n>"]: $Sent copies with that Message-ID
 // save_sent() stores a header and a body file as a Sent copy in the
 // private base (created when absent) inside one Summary.modify(), after
-// the journal is reconciled and under the quota rule of moves into the
-// private base (oldest Trash removed to make room; "quota" when it cannot
-// fit). The copy's from_ext is the user and it has no to_ext. A Sent copy
-// may keep its BCC list as an RFC822HEADER field "Bcc: <list>": get()
-// returns it as headers.bcc (private messages tagged $Sent only, also in
-// Trash from Sent; "" otherwise).
+// the journal is reconciled and under the quota (oldest Trash removed to
+// make room; "quota" when it cannot fit). The copy's from_ext is the user
+// and it has no to_ext. A Sent copy may keep its BCC list as an
+// RFC822HEADER field "Bcc: <list>": get() returns it as headers.bcc
+// (private messages tagged $Sent only, also in Trash from Sent; ""
+// otherwise).
 //
 // A bad folder name throws { code: "invalid", reason } with reason one of
 // "empty", "invalid" (a character above 0xFF, a control character, or a
@@ -229,16 +231,15 @@
 //   (in Sent, or in Trash from Sent) removed for real adds its Message-ID
 //   to mailbox.hidden.json, so the recipients' copies do not reappear in
 //   Sent as extras.
-// - Quota (options.quota_bytes, 0 = unlimited) is checked for every move
-//   into the private base except a move to Trash (deleting is how a user
-//   gets back under quota), against the summary's total. If the message
-//   would not fit even with all of Trash removed, the id fails with
-//   "quota" and nothing is removed; otherwise the oldest Trash by arrival
-//   is removed, one message at a time, until it fits (should Trash run
-//   out anyway, "quota", and what was removed stays removed). A move the
-//   journal can no longer record (an earlier save failed in this call) is
-//   refused with "conflict" before Trash is touched. The incoming size is
-//   estimated as Summary counts it, with the header grown by its new tags.
+// - Quota (options.quota_bytes, 0 = unlimited) covers all of the user's
+//   mail: the private base (the summary's total) plus the user's mail in
+//   the shared base (Inbox and Spam; see usage()). A move between the
+//   bases or within the private base leaves that total as it is (to
+//   within a header block), so no move is ever refused for quota and
+//   none removes Trash; what adds to the total is new mail (the servers
+//   refuse it at the quota: user_mailbox_full() in getmail.c) and a Sent
+//   copy (see save_sent()). A move the journal can no longer record (an
+//   earlier save failed in this call) is refused with "conflict".
 // - folder_rename retags the folder's messages and the $Was: of Trash
 //   messages from it, from the summary taken at the start of the call (a
 //   message filed there meanwhile keeps the old tag and shows as a folder
@@ -337,6 +338,10 @@
 //   mailbox.state.json    shared: {stamps, fp}, serial, and expired (the
 //                         time_t purge_expired last ran), beside Summary's
 //                         {bytes, count, stamps}
+//   mailbox.usage.ini     not JSON: "bytes=<n>", the private base's total,
+//                         written by Summary for the servers, which add
+//                         the user's mail in the shared base to it to
+//                         apply the quota to new mail
 //   mailbox.trash.json    {"<private number>": time_t put in Trash}; set
 //                         when a message is put in Trash, dropped when it
 //                         leaves, pruned by purge_expired(). A Trash
@@ -480,7 +485,7 @@ var Store = (function () {
 	var MAX_LIMIT = 100;
 	var SLICE_SIZE = 200;	// messages per summary lock in a long call
 	var DEFAULT_LIMIT = 50;
-	var FACTS_VERSION = 3;
+	var FACTS_VERSION = 4;
 	var BLOCK = 256;	// SHD_BLOCK_LEN and SDT_BLOCK_LEN (smbdefs.h)
 	var ID_RE = /^[sp][1-9][0-9]{0,9}$/;
 	var WS_RE = /[ \t\r\n\f\v]/;
@@ -495,6 +500,7 @@ var Store = (function () {
 	var F_DONE = 5;		// NETMSG_SENT seen (never cleared by the mail server)
 	var F_TRIES = 6;	// delivery_attempts when last read
 	var F_ROW = 7;		// the list row's header fields (row_fields())
+	var F_ROW_SIZE = 9;	// size in that row
 	var OWN_TO = 1;
 	var OWN_FROM = 2;
 
@@ -749,7 +755,8 @@ var Store = (function () {
 		// subject and sender never go into this user's cache file
 		return [rec.time, own, h.id || "", h.reply_id || "",
 			h.to_net_type || 0, (h.netattr & defs().NETMSG_SENT) ? 1 : 0, h.delivery_attempts || 0,
-			own ? row_fields(summarize_shared(this.shared_base(), h)) : null];
+			own ? row_fields(summarize_shared(this.shared_base(), h,
+				(own & OWN_TO) ? this.data_dir : null)) : null];
 	};
 
 	// Facts for every record in scan.all, from mailbox.shared.json where
@@ -879,7 +886,7 @@ var Store = (function () {
 		return tags.concat(extra);
 	};
 
-	// Everything list() and folders() need, from one index pass:
+	// Everything list(), folders() and usage() need, from one index pass:
 	// cands: [{kind, num, arrived, folder, starred, unread, extra, msgid, row, rec}]
 	// (row: private summary entry; rec: shared index record)
 	Store.prototype.collect = function (want_sent)
@@ -890,6 +897,7 @@ var Store = (function () {
 		var cands = [];
 		var i;
 		var pids = {};
+		var shared = 0;	// bytes of the user's mail in the shared base
 
 		for (i = 0; i < rows.length; i++) {
 			var row = rows[i];
@@ -906,13 +914,14 @@ var Store = (function () {
 			var f = facts[rec.number];
 			if (f === undefined || !(f[F_OWN] & OWN_TO))
 				continue;
+			shared += f[F_ROW][F_ROW_SIZE];	// facts() returns own records with their row
 			cands.push({ kind: "s", num: rec.number, arrived: rec.time,
 				folder: (rec.attr & defs().MSG_SPAM) ? "spam" : "inbox",
 				starred: is_starred(rec.attr),
 				unread: !(rec.attr & defs().MSG_READ),
 				extra: false, msgid: f[F_ID], rec: rec, fact: f });
 		}
-		var info = { scan: scan, facts: facts, rows: rows, pids: pids };
+		var info = { scan: scan, facts: facts, rows: rows, pids: pids, shared_bytes: shared };
 		if (want_sent) {
 			// Hidden by Message-ID (every copy of the message), or by number
 			// (a message without one; an older list's entry for one with a
@@ -945,10 +954,35 @@ var Store = (function () {
 		return info;
 	};
 
+	// The stored size of the user's mail in the shared base (Inbox and
+	// Spam), from the facts of one scan
+	function shared_bytes(scan, facts)
+	{
+		var bytes = 0;
+		for (var i = 0; i < scan.to.length; i++) {
+			var f = facts[scan.to[i].number];
+			if (f !== undefined && (f[F_OWN] & OWN_TO) && valid_row(f))
+				bytes += f[F_ROW][F_ROW_SIZE];
+		}
+		return bytes;
+	}
+
 	Store.prototype.folders = function ()
 	{
 		this.refresh();
+		return this.folders_of(this.collect(true));
+	};
+
+	// folders() and usage() from one pass over the shared index
+	Store.prototype.overview = function ()
+	{
+		this.refresh();
 		var info = this.collect(true);
+		return { folders: this.folders_of(info), usage: this.usage_of(info.shared_bytes) };
+	};
+
+	Store.prototype.folders_of = function (info)
+	{
 		var counts = {};
 		var i;
 		function count(id, unread) {
@@ -997,8 +1031,11 @@ var Store = (function () {
 	}
 
 	// A summary entry (as Summary.get's) for a shared header. size is the
-	// header and data blocks; file attachments are not counted here.
-	function summarize_shared(msgbase, hdr)
+	// header and data blocks plus, given ddir (the data directory, for a
+	// message to the user), the files of a file-attached message, as
+	// Summary counts a private message: a move between the bases does not
+	// change a message's size.
+	function summarize_shared(msgbase, hdr, ddir)
 	{
 		var num = hdr.number;	// a non-NULL field first (lazy fields)
 		var auxattr = hdr.auxattr;
@@ -1010,10 +1047,13 @@ var Store = (function () {
 			return utf8 ? s : utf8_encode(s);
 		}
 		var ctype = hdr.content_type || "";
+		var size = blocks(header_length(msgbase, hdr)) + blocks(hdr.data_length || 0);
+		if (ddir && (auxattr & defs().MSG_FILEATTACH))
+			size += summary_lib().attach_bytes(hdr, ddir);
 		return {
 			num: num, tags: hdr.tags || "", from: str(hdr.from), from_addr: str(hdr.from_net_addr),
 			to: str(hdr.to), subject: str(hdr.subject), date: hdr.when_written_time,
-			attr: hdr.attr, size: blocks(header_length(msgbase, hdr)) + blocks(hdr.data_length || 0),
+			attr: hdr.attr, size: size,
 			attach: (auxattr & (defs().MSG_FILEATTACH | defs().MSG_MIMEATTACH)) != 0
 				|| /^multipart\/mixed\b/i.test(ctype),
 			arrived: hdr.when_imported_time, zone: hdr.when_written_zone_offset,
@@ -1064,7 +1104,7 @@ var Store = (function () {
 		var own = c.extra ? h.from_ext : h.to_ext;
 		if (parseInt(own, 10) !== this.usernum)
 			return null;
-		c.sum = summarize_shared(this.shared_base(), h);
+		c.sum = summarize_shared(this.shared_base(), h, c.extra ? null : this.data_dir);
 		return c.sum;
 	};
 
@@ -1547,7 +1587,7 @@ var Store = (function () {
 		var ctx = { rows: rows, pmb: pmb, now: now, by_num: {}, bytes: 0, added: [], removed: [],
 			changed: [], forget: [], trash: {}, hidden: [], folders: [], purge: false, gone: {},
 			used: {}, trash_order: null, journal: {}, journal_ok: false, keep: null, unknown: false,
-			touched: false };
+			touched: false, shared_bytes: 0 };
 		for (var i = 0; i < rows.length; i++) {
 			ctx.by_num[rows[i].num] = rows[i];
 			ctx.bytes += rows[i].size;
@@ -1875,10 +1915,13 @@ var Store = (function () {
 	// Make room for 'incoming' bytes under the quota by removing the oldest
 	// Trash (by arrival), one at a time. Throws quota, removing nothing,
 	// when the message could not fit even with all of Trash removed (by
-	// the summary's sizes); also if Trash runs out anyway.
+	// the summary's sizes); also if Trash runs out anyway. The quota
+	// covers the user's mail in the shared base too (ctx.shared_bytes,
+	// which the caller sets), none of which can be removed here.
 	Store.prototype.make_room = function (ctx, incoming)
 	{
 		var quota = this.options.quota_bytes;
+		incoming += ctx.shared_bytes;
 		if (!(quota > 0) || ctx.bytes + incoming <= quota)
 			return;
 		var i;
@@ -2219,9 +2262,9 @@ var Store = (function () {
 	};
 
 	// Move shared message r into the private base with these tags; returns
-	// the private number. check_quota is false for a move to Trash
-	// (deleting is how a user gets back under quota).
-	Store.prototype.move_in = function (r, ctx, tags, check_quota)
+	// the private number. Never refused for quota: the message counts
+	// against it in either base.
+	Store.prototype.move_in = function (r, ctx, tags)
 	{
 		var h = r.header;
 		var attr = h.attr & ~defs().MSG_SPAM;
@@ -2243,13 +2286,9 @@ var Store = (function () {
 			this.journal_clear(ctx, key);
 			return dup;
 		}
-		// A move the journal cannot record is refused before Trash is
-		// touched (cross_move would refuse it after make_room)
 		if (!ctx.journal_ok)
 			throw error("conflict", "the move journal could not be saved");
 		var size = this.incoming_size(r.base, h, tags);
-		if (check_quota)
-			this.make_room(ctx, size);
 		var n = this.cross_move(ctx, key, r, pmb, { tags: tags, attr: attr });
 		ctx.added.push(n);
 		ctx.used[n] = true;
@@ -2393,7 +2432,7 @@ var Store = (function () {
 				}
 				return done(id);
 			}
-			var n = this.move_in(r, ctx, tags_lib().format({ folder: tag, other: p.other }), true);
+			var n = this.move_in(r, ctx, tags_lib().format({ folder: tag, other: p.other }));
 			return done(id, "p" + n);
 		}
 		if (tag === null)
@@ -2418,7 +2457,7 @@ var Store = (function () {
 		var p = tags_lib().parse(h.tags, { shared: r.kind == "s" });
 		if (r.kind == "s") {
 			var was = (h.attr & defs().MSG_SPAM) ? WAS_SPAM : WAS_INBOX;
-			var n = this.move_in(r, ctx, tags_lib().format({ folder: tags_lib().TRASH, was: was, other: p.other }), false);
+			var n = this.move_in(r, ctx, tags_lib().format({ folder: tags_lib().TRASH, was: was, other: p.other }));
 			set_trash(ctx, n, ctx.now);
 			return done(id, "p" + n);
 		}
@@ -2798,13 +2837,33 @@ var Store = (function () {
 		return res;
 	};
 
-	// {bytes, quota}: the summed stored size of the private base's messages
+	// {bytes, quota, full}: bytes is the stored size (see Summary) of all
+	// of the user's mail: the private base's messages plus the user's
+	// messages in the shared base (Inbox and Spam); quota is
+	// options.quota_bytes (0: unlimited); full is true when there is a
+	// quota and bytes has reached it (the servers then refuse new mail for
+	// the user; their figure leaves out the files attached to shared
+	// messages, so with such mail it can be lower than this one).
 	Store.prototype.usage = function ()
 	{
 		this.refresh();
+		return this.usage_of(this.shared_now());
+	};
+
+	// The user's bytes in the shared base, from an index pass of its own
+	Store.prototype.shared_now = function ()
+	{
+		var scan = this.scan();
+		return shared_bytes(scan, this.facts(scan));
+	};
+
+	Store.prototype.usage_of = function (shared)
+	{
 		var pmb = this.private_base(false);
-		return { bytes: pmb === null ? 0 : summary_lib().usage(pmb, this.jf, { data_dir: this.data_dir }).bytes,
-			quota: this.options.quota_bytes };
+		var bytes = shared + (pmb === null ? 0
+			: summary_lib().usage(pmb, this.jf, { data_dir: this.data_dir }).bytes);
+		var quota = this.options.quota_bytes;
+		return { bytes: bytes, quota: quota, full: quota > 0 && bytes >= quota };
 	};
 
 	// ---- Reading one message ----
@@ -3533,12 +3592,13 @@ var Store = (function () {
 	// Inbox), and it is marked read. Everything else in h is stored as
 	// given (h itself is not changed). Made inside one Summary.modify(),
 	// after the move journal is reconciled (nothing is added to the base
-	// while a move into it is unsettled), under the quota rule of moves
-	// into the private base: the oldest Trash is removed to make room;
-	// "quota" when it cannot fit even with all of Trash gone (nothing
-	// saved). Returns the new message's id ("p<n>"). Throws conflict when
-	// the summary lock or the journal is busy, failed when the base
-	// cannot be written (logged; no copy is left behind).
+	// while a move into it is unsettled), under the quota, which counts
+	// the user's mail in both bases: the oldest Trash is removed to make
+	// room; "quota" when it cannot fit even with all of Trash gone
+	// (nothing saved, nothing removed). Returns the new message's id
+	// ("p<n>"). Throws conflict when the summary lock or the journal is
+	// busy, failed when the base cannot be written (logged; no copy is
+	// left behind).
 	Store.prototype.save_sent = function (h, body_path, opts)
 	{
 		if (h === null || typeof h != "object" || h instanceof Array)
@@ -3559,6 +3619,8 @@ var Store = (function () {
 			if (!ctx.journal_ok)
 				throw error("conflict", "the move journal could not be saved");
 			this.settle_dest(ctx, "p", null);
+			if (this.options.quota_bytes > 0)
+				ctx.shared_bytes = this.shared_now();
 			this.make_room(ctx, size);
 			var pmb = ctx.pmb;
 			var before = pmb.last_msg;
@@ -3693,7 +3755,7 @@ var Store = (function () {
 	// Every public method: what it throws leaves through outgoing()
 	var PUBLIC = ["open", "close", "private_base", "folders", "list", "state", "resolve",
 		"forget_shared", "set", "move", "remove", "restore", "empty_trash", "purge_expired",
-		"folder_create", "folder_rename", "folder_delete", "usage", "inbox_max_age", "get", "original",
+		"folder_create", "folder_rename", "folder_delete", "usage", "overview", "inbox_max_age", "get", "original",
 		"raw_file", "part_file", "save_sent", "mark_sent", "remove_sent", "set_replied", "find_sent", "mark_unknown"];
 	for (var pi = 0; pi < PUBLIC.length; pi++) {
 		(function (name) {

@@ -170,7 +170,7 @@ try {
 	c.v = 1;
 	jf.write("shared", c);
 	st.list("inbox");
-	Kit.eq(jf.read("shared", null).v, 3, "cache rebuilt at the current version");
+	Kit.eq(jf.read("shared", null).v, 4, "cache rebuilt at the current version");
 	Kit.eq(jf.read("shared", null).recs[A1].length, 8, "rebuilt facts hold the row");
 	Kit.eq(item(st.list("sent"), "s" + SENT).delivery, { state: "sent" }, "delivery");
 } finally {

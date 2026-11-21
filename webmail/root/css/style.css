@@ -293,6 +293,7 @@ a { color: var(--wm-accent); }
 .meter { display: grid; gap: 6px; margin: 18px 12px 0 20px; font-size: 13px; color: var(--wm-muted); }
 .meter-bar { display: block; height: 6px; border-radius: 3px; background: var(--wm-skel); overflow: hidden; }
 .meter-fill { display: block; height: 100%; width: 0; background: var(--wm-accent); }
+.meter-full { font-size: 12px; line-height: 1.4; color: var(--wm-danger); font-weight: 600; }
 .powered { margin: 14px 12px 0 20px; font-size: 12px; line-height: 1.4; color: var(--wm-muted); }
 .card .powered { margin: 0; text-align: center; }
 .powered a { color: inherit; }

@@ -211,7 +211,7 @@ try {
 	// --- The facts cache holds no star
 	var facts = Kit.lib("mailbox_files");
 	var cache = new facts(S.user_dir(ALICE), "mailbox.").read("shared", null);
-	Kit.assert(cache && cache.v === 3, "facts cache version 3");
+	Kit.assert(cache && cache.v === 4, "facts cache version 4");
 	for (var n in cache.recs)
 		Kit.eq(cache.recs[n].length, 8, "fact #" + n + ": no star element");
 } finally {

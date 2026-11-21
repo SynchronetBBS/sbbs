@@ -5,7 +5,7 @@
 // const view = createSettings({ user, productName, poweredBy, usage, theme, setTheme })
 //   user: session.get's user (the name used when no display name is set);
 //   productName, poweredBy: session.get's, for the About section;
-//   usage(): folder.list's usage ({bytes, quota}) or null;
+//   usage(): folder.list's usage ({bytes, quota, full}) or null;
 //   theme(): the theme in use ("system", "light", "dark");
 //   setTheme(name): applies a theme at once, keeps it in this browser and
 //   saves it on the server; a Promise of the settings.set result.
@@ -497,6 +497,8 @@ export function createSettings(o) {
 			items.push(h("p", { text: t("main.label_storage_heading") + ": " + (quota
 				? t("main.label_storage", { used: size(u.bytes), quota: size(quota) })
 				: t("main.label_storage_used", { used: size(u.bytes) })) }));
+			if (quota && u.full === true)
+				items.push(h("p", { class: "meter-full", text: t("main.label_storage_full") }));
 		}
 		const p = poweredBy(o.poweredBy);
 		if (p)

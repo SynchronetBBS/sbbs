@@ -3,6 +3,8 @@
 // system.mailbox_quota, system.max_msgs_waiting and what was built and
 // answered for every user as JSON to argv[0].  The quota must be QUOTA
 // (below) or 0: the mailboxes are built to exact sizes around QUOTA.
+// argv[1] "library" adds two users with a private base made by the
+// mailbox library (exec/load/mailbox.js).
 // Not a test on its own (the runner only runs *.js files).
 
 load("sbbsdefs.js");
@@ -195,6 +197,42 @@ make_user("files_no_key", function (u) {
 	return QUOTA;
 });
 
+// A real private base: a Sent copy saved by the mailbox library, which
+// records the base's size; the Inbox is then filled up to the quota
+function with_sent(short_by)
+{
+	return function (u) {
+		var body = system.temp_dir + "quota_child_body.txt";
+		write(body, "A sent message.\r\n");
+		var Store = load({}, js.exec_dir + "../../../load/mailbox.js");
+		var store = new Store({ usernum: u.number, options: { quota_bytes: 0 } });
+		store.open();
+		try {
+			store.save_sent({ to: "Someone", to_net_addr: "someone@example.com", from: u.alias,
+				subject: "sent" }, body);
+			var kept = store.usage().bytes;
+			var f = new File(user_dir(u) + "mailbox.usage.ini");
+			if (!f.open("r"))
+				throw new Error("the library wrote no mailbox.usage.ini");
+			var recorded = f.iniGetValue(null, "bytes", -1);
+			f.close();
+			if (recorded !== kept || !(kept > 0))
+				throw new Error("mailbox.usage.ini bytes " + recorded + ", usage() " + kept);
+			fill(u, QUOTA - kept - short_by);
+			var used = store.usage().bytes;
+			if (used !== QUOTA - short_by)
+				throw new Error("usage() " + used + " with the Inbox, expected " + (QUOTA - short_by));
+			return used;
+		} finally {
+			store.close();
+			file_remove(body);
+		}
+	};
+}
+if (argv[1] == "library") {
+	make_user("library_at", with_sent(0));
+	make_user("library_under", with_sent(BLOCK));
+}
 mb.close();
 
 var f = new File(argv[0]);
