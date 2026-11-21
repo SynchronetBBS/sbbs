@@ -3556,7 +3556,7 @@ static bool get_request_headers(http_session_t * session)
 			switch (i) {
 				case HEAD_HOST:
 					if (session->req.host[0] == 0) {
-						lprintf(LOG_DEBUG, "%04d %-5s [%s] Requested Host: %s", session->socket, session->client.protocol, session->host_ip, value);
+						lprintf(LOG_INFO, "%04d %-5s [%s] Requested Host: %s", session->socket, session->client.protocol, session->host_ip, value);
 						/* Lower-case for normalization */
 						strlwr(value);
 						SAFECOPY(session->req.host, value);
