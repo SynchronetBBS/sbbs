@@ -145,6 +145,15 @@ not an array, so `env[0]` and `env.length` are `undefined`; iterate with
 `for (var k in env)`. It is **jsexec-only**: a script under `bbs.exec()` or a
 logon flow gets a `ReferenceError`. See the `jsexec` skill.
 
+⚠️ **Don't name your own top-level variable `env` in a script jsexec runs.**
+The global is defined read-only, so `var env = { ... };` at the top level of a
+script (or of a file it `load()`s into the global scope) is **silently
+ignored**: no error, and `env` is still the process environment, so
+`env.my_setting` is `undefined`. This bit a test in `exec/tests/` whose
+`var env = {...}` fixture never took effect. Pick another name (`ctx`, `world`,
+`opts`), or declare it inside a function, where a local `var env` shadows the
+global normally.
+
 **For install paths, don't reach for the environment at all.** `system.ctrl_dir`,
 `system.data_dir`, `system.exec_dir`, `system.text_dir`, `system.mods_dir` exist
 in *both* contexts and name the install the script is actually running against —

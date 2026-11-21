@@ -35,6 +35,20 @@ The C and C++ standards reserve certain identifier forms for the implementation.
 
 This includes **header include guards**. Use the trailing-underscore form instead — e.g. `RATELIMIT_HPP_`, `SBBS_FOO_H_` — or any other form that doesn't start with an underscore or contain `__`. Much of the existing tree predates this rule and still uses leading-underscore guards; don't mass-rewrite, but never introduce a new one, and flip a header's guard to a conforming form whenever you're already editing it.
 
+## Don't prefix identifiers with a two-letter acronym
+
+A new module, library, or door prefixes its C identifiers with a **distinctive stem of at least four characters, derived from the thing's actual name** — `termgfx_idle_poll()`, `sland_world_t`, `SLAND_PALETTE_SKY`. Not `sl_`, `sr_`, `sm_`.
+
+Two letters is a tiny space and everyone reaches into the same part of it, so collisions are the default rather than the exception. This is not hypothetical: a door shipped `SL_*` macros while `SL_TABLE` and `SL_TABLE_SEED` already existed in this tree, and the overlap had to be undone across 27 files. Before choosing a prefix, grep for it:
+
+```bash
+grep -rhoE '\bXX_[A-Z0-9_]{2,}|\bxx_[a-z0-9_]{2,}' --include=*.c --include=*.h src/
+```
+
+Derive the stem from the real name rather than coining a variant, so nobody has to ask whether the prefix and the project are the same thing. Keep it to roughly 4–7 characters: long enough to be distinctive, short enough that `sland_world_t` still scans where `synchroland_world_t` would start wrapping lines.
+
+Existing practice is split — `termgfx_` and `syncduke_` get this right, while `syncretro`'s `sr_` and `syncmoo1`'s `sm_` have the problem. Don't copy whichever is nearest; don't mass-rename the ones that exist, but never introduce a new one.
+
 ## Write portable C/C++ — the project builds with MSVC, GCC, and Clang
 
 Synchronet's C/C++ sources have to compile cleanly under three main toolchains (MSVC on Windows, GCC and Clang on Unix-likes), plus to a lesser extent Borland C++ for the legacy `sbbsctrl` / `useredit` GUIs. MSVC tends to be the most permissive of the bunch; constructs MSVC accepts (with at most a warning) are often hard errors under GCC and Clang. A successful MSBuild compile on Windows is therefore **not** a full verification — it only proves the change isn't broken under the most lenient compiler.
