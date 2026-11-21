@@ -384,6 +384,11 @@
 //                       any user's netmail address from DNSBL refusal,
 //                       login.js can mail the password there, emailval.js
 //                       sends its validation code there.
+//   settings.get also returns blocked_tags: [{ text, pattern }], the
+//                       user's blocked address tags (lib/blocktags.js);
+//                       settings.set tag_block adds one (invalid "tag",
+//                       toolarge "tags"), tag_unblock removes the entry
+//                       that reads so
 //   settings.set {display_name, from_domain, from_local, theme, images_always,
 //                images_add, images_remove, forward_enabled,
 //                forward_address, signature}
@@ -507,7 +512,7 @@ var Api = (function () {
 		// Contacts
 		"name", "addrs", "note", "id", "contacts",
 		// Settings
-		"display_name", "theme", "images", "signature", "forward_off", "forward_restricted",
+		"display_name", "theme", "images", "signature", "tag", "tags", "forward_off", "forward_restricted",
 		"forward_address", "forward_toolong", "forward_own", "forward_empty", "forward_blocked",
 		"forward_duplicate", "forward_unsupported"]);
 	var REASON_FALLBACK = {
@@ -532,6 +537,7 @@ var Api = (function () {
 		toolarge_body: "The message text is longer than allowed.",
 		toolarge_contacts: "Your address book is full.",
 		toolarge_images: "The list of senders whose images are always shown is full.",
+		toolarge_tags: "The list of blocked tags is full.",
 		invalid_norecipients: "Add at least one recipient.",
 		invalid_syntax: "One of the addresses is not written correctly.",
 		invalid_control: "One of the addresses contains a character that is not allowed.",
@@ -551,6 +557,7 @@ var Api = (function () {
 		invalid_from_domain: "You cannot send from that address.",
 		invalid_from_local: "You cannot send from that address.",
 		invalid_images: "That is not a valid e-mail address.",
+		invalid_tag: "A tag can have letters, digits and . _ + = - only, 64 at most.",
 		invalid_signature: "The signature is too long or not valid.",
 		invalid_forward_address: "Mail can only be forwarded to an Internet e-mail address.",
 		invalid_forward_toolong: "The forwarding address can be at most 60 characters long.",
@@ -1485,7 +1492,7 @@ var Api = (function () {
 	// userdata.js finds mailbox_files.js), else through load()'s search
 	var LIBS = {};
 	var LIB_FILES = { drafts: "drafts.js", send: "send.js", contacts: "contacts.js",
-		address: "address.js", config: "config.js" };
+		address: "address.js", config: "config.js", blocktags: "blocktags.js" };
 	var LOAD_FILES = { mailsig: "mailsig.js", sbbsdefs: "sbbsdefs.js" };
 
 	function lib(name)
@@ -2072,6 +2079,21 @@ var Api = (function () {
 		return out;
 	}
 
+	// The user's blocked address tags: [{ text, pattern }] (BlockTags.list);
+	// [] when the file cannot be read (logged)
+	function blocked_tags(rq)
+	{
+		var BlockTags = lib("blocktags");
+		try {
+			return BlockTags.list(BlockTags.path(rq.env.data_dir || system.data_dir, rq.usernum)).map(function (e) {
+				return { text: utf8_of(e.text), pattern: e.pattern };
+			});
+		} catch (e) {
+			log(LOG_WARNING, "webmail: user #" + rq.usernum + " blocked tags: " + e);
+			return [];
+		}
+	}
+
 	function settings_get(ctx, args, rq)
 	{
 		var ud = rq.env.userdata(rq.usernum);
@@ -2089,6 +2111,8 @@ var Api = (function () {
 		if (out.from_local !== ""
 			&& lib("address").from_pick(out.from_local, out.from_domain, addresses, own_check(rq)) === null)
 			out.from_local = "";
+		// The blocked address tags (data/user/NNNN.smtpblock), as stored
+		out.blocked_tags = blocked_tags(rq);
 		// The name Internet mail carries when display_name is blank: the
 		// alias or the real name, as the system is set up (what send uses)
 		out.default_name = utf8_of(lib("address").identity(rq.user, "internet", null,
@@ -2246,8 +2270,29 @@ var Api = (function () {
 		var remove = args.images_remove !== undefined ? image_sender(sys, args.images_remove) : null;
 		if (args.signature !== undefined && !signature_ok(args.signature))
 			throw invalid("signature");
+		var BlockTags = lib("blocktags");
+		if (args.tag_block !== undefined && !BlockTags.valid(args.tag_block))
+			throw invalid("tag");
 		var fwd = forward_change(rq, sys, args);
 		var ud = rq.env.userdata(rq.usernum);
+		// The blocked tags file, under the settings lock (two requests of
+		// one user); tag_unblock names an entry as settings.get listed it
+		if (args.tag_block !== undefined || args.tag_unblock !== undefined) {
+			ud.locked(SETTINGS, function () {
+				var path = BlockTags.path(rq.env.data_dir || system.data_dir, rq.usernum);
+				if (args.tag_unblock !== undefined) {
+					var gone = null;
+					BlockTags.list(path).forEach(function (e) {
+						if (gone === null && utf8_of(e.text) === args.tag_unblock)
+							gone = e.text;
+					});
+					if (gone !== null)
+						BlockTags.unblock(path, gone);
+				}
+				if (args.tag_block !== undefined)
+					BlockTags.block(path, args.tag_block);
+			});
+		}
 		if (images !== null || add !== null || remove !== null || Object.keys(change).length > 0) {
 			ud.update(SETTINGS, {}, function (stored) {
 				if (stored === null || typeof stored !== "object" || stored instanceof Array)
@@ -2431,6 +2476,8 @@ var Api = (function () {
 			images_always: { type: "list", min: 0, max: MAX_IMAGES, of: EMAIL_ARG },
 			images_add: EMAIL_ARG,
 			images_remove: EMAIL_ARG,
+			tag_block: { type: "string", max: 254 },
+			tag_unblock: { type: "string", max: 1000 },
 			forward_enabled: { type: "boolean" },
 			forward_address: { type: "string", max: 254 },
 			signature: { type: "string", max: MAX_SIGNATURE_IN, nullable: true }

@@ -162,6 +162,32 @@ try {
 	Kit.eq(dn_alias, "alice", "default_name with aliases: the alias");
 	Kit.assert(dn_real !== dn_alias, "default_name without aliases: the real name, not the alias: " + dn_real);
 
+	// --- Blocked address tags: the user's data/user/NNNN.smtpblock
+	Kit.eq(g.blocked_tags, [], "no blocked tags to start with");
+	g = set(alice, { tag_block: "Shop" });
+	Kit.eq(g.blocked_tags, [{ text: "shop", pattern: false }], "tag_block: listed, lowercased");
+	g = set(alice, { tag_block: "shop" });
+	Kit.eq(g.blocked_tags.length, 1, "blocked twice: listed once");
+	refused(alice, { tag_block: "a b" }, "invalid", "tag", "a tag with a space");
+	refused(alice, { tag_block: "" }, "invalid", "tag", "an empty tag");
+	refused(alice, { tag_block: "x*", display_name: "Changed" }, "invalid", "tag", "a pattern cannot be added here");
+	Kit.eq(call(env(alice), "settings.get", {}).display_name, "Alice Smith", "a refused tag writes no other setting");
+	g = set(alice, { tag_block: "news", tag_unblock: "shop" });
+	Kit.eq(g.blocked_tags, [{ text: "news", pattern: false }], "tag_unblock and tag_block in one call");
+	g = set(alice, { tag_unblock: "nothere" });
+	Kit.eq(g.blocked_tags.length, 1, "unblocking a tag not listed changes nothing");
+	g = set(alice, { tag_unblock: "news" });
+	Kit.eq(g.blocked_tags, [], "unblocked");
+
+	// The live server gives no data_dir (only these tests do): the file
+	// is then looked for in the system's data directory
+	var api_src = new File(Kit.wpath ? Kit.wpath("lib/api.js") : js.exec_dir + "../../../webmail/lib/api.js");
+	Kit.assert(api_src.open("r"), "api.js readable");
+	var api_text = api_src.read();
+	api_src.close();
+	Kit.eq((api_text.match(/BlockTags\.path\(rq\.env\.data_dir \|\| system\.data_dir, rq\.usernum\)/g) || []).length, 2,
+		"the blocked tags file is addressed by env.data_dir, else system.data_dir (read and write)");
+
 	// --- From domain: one of the allowed, lowercased; "" is the system's
 	refused(alice, { from_domain: "evil.example" }, "invalid", "from_domain", "a domain outside the list");
 	g = set(alice, { from_domain: "Family.Example" });

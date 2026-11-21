@@ -27,6 +27,7 @@
 //                     (signature_enabled false)
 //   Theme             theme
 //   Images            images_always, by images_add and images_remove
+//   Address tags      blocked_tags, by tag_block and tag_unblock
 //   Mail forwarding   forward_enabled, forward_address: the BBS account's
 //                     own forwarding setting; disabled with the reason
 //                     when not allowed
@@ -353,6 +354,85 @@ export function createSettings(o) {
 		return sec.el;
 	}
 
+	// Blocked address tags (settings.get blocked_tags: the mail server
+	// refuses mail to name#tag@host for a tag listed).  An entry written by
+	// hand may be a pattern; it is listed as it is and can be removed.
+	function tagsSection(r) {
+		const sec = section("tags", t("settings.label_tags"));
+		const id = uid + "-tag";
+		const list = h("ul", { class: "set-list", "aria-labelledby": sec.el.getAttribute("aria-labelledby") });
+		const none = h("p", { class: "field-hint", text: t("settings.label_tags_none") });
+		const input = h("input", { id, type: "text", autocomplete: "off", spellcheck: "false", autocapitalize: "none",
+			maxlength: "254", placeholder: t("settings.placeholder_tag"), "aria-describedby": sec.statusId });
+		// An example with the user's own address: name#shopping@host
+		const own = (Array.isArray(r.from_addresses) ? r.from_addresses : []).find((a) => typeof a === "string" && a.lastIndexOf("@") > 0);
+		const at = own ? own.lastIndexOf("@") : -1;
+		const example = (own ? own.slice(0, at) : "you") + "#" + t("settings.placeholder_tag") + (own ? own.slice(at) : "");
+		function fill(x) {
+			clear(list);
+			const tags = (Array.isArray(x.blocked_tags) ? x.blocked_tags : []).filter((e) => e && typeof e.text === "string");
+			for (const e of tags) {
+				list.append(h("li", { class: "set-item" },
+					h("span", { class: "ell", text: e.text + (e.pattern === true ? " (" + t("settings.label_tags_pattern") + ")" : "") }),
+					h("button", { class: "linkbtn", type: "button", text: t("settings.button_unblock"),
+						"aria-label": t("settings.button_unblock_tag", { tag: e.text }), onclick: (ev) => removeOne(e.text, ev.currentTarget) })));
+			}
+			list.hidden = tags.length === 0;
+			none.hidden = tags.length > 0;
+		}
+		function removeOne(text, b) {
+			if (b.getAttribute("aria-disabled") === "true")
+				return;
+			b.setAttribute("aria-disabled", "true");
+			saving(sec);
+			save({ tag_unblock: text }).then((r2) => {
+				fill(r2);
+				saved(sec, null, t("settings.label_tag_unblocked", { tag: text }));
+				input.focus();
+			}, (e) => {
+				b.removeAttribute("aria-disabled");
+				refused(sec, null, e);
+			});
+		}
+		// What was typed, as a tag: a whole address (name#tag@host) or
+		// "#tag" is cut down to its tag
+		function typedTag() {
+			let v = input.value.trim();
+			const hash = v.indexOf("#");
+			if (hash >= 0) {
+				v = v.slice(hash + 1);
+				const host = v.lastIndexOf("@");
+				if (host >= 0)
+					v = v.slice(0, host);
+			}
+			return v;
+		}
+		const add = saveButton(t("settings.button_block"), () => {
+			const tag = typedTag();
+			if (tag === "") {
+				input.focus();
+				return null;
+			}
+			saving(sec);
+			return save({ tag_block: tag }).then((r2) => {
+				fill(r2);
+				input.value = "";
+				saved(sec, input, t("settings.label_tag_blocked", { tag: tag.toLowerCase() }));
+			}, (e) => refused(sec, input, e));
+		});
+		input.addEventListener("keydown", (e) => {
+			if (e.key === "Enter") {
+				e.preventDefault();
+				add.click();
+			}
+		});
+		fill(r);
+		sec.box.append(hint(t("settings.label_tags_help", { example })), list, none,
+			h("div", { class: "field" }, h("label", { for: id, text: t("settings.label_tags_add") }),
+				h("div", { class: "set-row" }, input, add)));
+		return sec.el;
+	}
+
 	function forwardSection(r) {
 		const sec = section("forward", t("settings.label_forwarding"));
 		const id = uid + "-fwd";
@@ -432,7 +512,7 @@ export function createSettings(o) {
 		clear(body);
 		clear(stateEl);
 		body.append(...[nameSection(r), fromSection(r), signatureSection(r), themeSection(), imagesSection(r),
-			forwardSection(r), aboutSection()].filter((x) => x !== null));
+			tagsSection(r), forwardSection(r), aboutSection()].filter((x) => x !== null));
 	}
 
 	function load() {
