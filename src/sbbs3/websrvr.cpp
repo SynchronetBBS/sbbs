@@ -2827,17 +2827,19 @@ static void js_parse_multipart(http_session_t * session, char *p)  {
 }
 #endif
 
-static void js_parse_query(http_session_t * session, char *p)  {
+static void js_parse_query(http_session_t * session, const char *p)  {
 	size_t key_len;
 	size_t value_len;
+	char * copy;
 	char * lp;
 	char * key;
 	char * value;
 
-	if (p == NULL)
+	// Tokenize a copy: the query is parsed again for each script run (#1381)
+	if (p == NULL || (copy = strdup(p)) == NULL)
 		return;
 
-	lp = p;
+	lp = copy;
 
 	while ((key_len = strcspn(lp, "=")) != 0)  {
 		key = lp;
@@ -2857,6 +2859,7 @@ static void js_parse_query(http_session_t * session, char *p)  {
 		unescape(key);
 		js_add_queryval(session, key, value);
 	}
+	free(copy);
 }
 
 static char *get_token_value(char **p)
@@ -3256,7 +3259,9 @@ static bool parse_js_headers(http_session_t * session)
 	size_t idx;
 
 	for (idx = 0; session->req.headers[idx] != NULL; idx++) {
-		head_line = session->req.headers[idx];
+		// Tokenize a copy: the headers are parsed again for each script run (#1381)
+		if ((head_line = strdup(session->req.headers[idx])) == NULL)
+			continue;
 		if ((strtok_r(head_line, ":", &last)) != NULL && (value = strtok_r(NULL, "", &last)) != NULL) {
 			i = get_header_type(head_line);
 			while (*value && *value <= ' ') value++;
@@ -3315,6 +3320,7 @@ static bool parse_js_headers(http_session_t * session)
 					break;
 			}
 		}
+		free(head_line);
 	}
 	return true;
 }
@@ -6661,6 +6667,13 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 	session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE] = strdup(path);
 
 	JS_BEGINREQUEST(session->js_cx);
+	// webctrl.ini scripts ran after js_setup() and parsed into these already
+	if (session->js_query != NULL)
+		JS_ClearScope(session->js_cx, session->js_query);
+	if (session->js_header != NULL)
+		JS_ClearScope(session->js_cx, session->js_header);
+	if (session->js_cookie != NULL)
+		JS_ClearScope(session->js_cx, session->js_cookie);
 	js_add_request_prop(session, "real_path", session->req.physical_path);
 	js_add_request_prop(session, "virtual_path", session->req.virtual_path);
 	js_add_request_prop(session, "ars", session->req.ars);
