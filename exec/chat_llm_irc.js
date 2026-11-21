@@ -1451,7 +1451,6 @@ function shutdown() {
     }
     sock = null;
 }
-js.on_exit("shutdown()");
 
 function main_loop() {
     /* Disable SpiderMonkey's infinite-loop detection for this daemon.
@@ -1538,6 +1537,10 @@ function main_loop() {
  * helpers can be unit-tested via jsexec without connecting a duplicate
  * bot.  Mirrors chat_llm.js's CHAT_LLM_NO_STANDALONE guard. */
 if (typeof CHAT_LLM_IRC_NO_MAIN == 'undefined') {
+    /* Registered only when running for real: shutdown() saves the
+     * ever-seen nicks, and a test that loads this file has an empty
+     * (never loaded) set that would overwrite the live file. */
+    js.on_exit("shutdown()");
     load_seen_members();
     main_loop();
 }
