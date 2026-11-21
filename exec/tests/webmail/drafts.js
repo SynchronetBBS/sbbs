@@ -603,9 +603,12 @@ try {
 	}
 	Kit.eq(Drafts.claimed(U, u2).send.phase, "delivering", "crash before the rename: the claim and record kept");
 	Kit.eq(draft_json(uroot + u2 + ".sending/").maybe_sent, NOW + 3, "crash before the rename: already marked");
-	// a sweep leaves it to the send step (it has a record), at the live window
+	// a sweep leaves it to the send step (it has a record), at the live window.
+	// The mark rewrote draft.json without its claim time, so the sweep goes by
+	// the claim's file dates (the real clock), not U's: measure from now.
 	var called = [];
-	var swu = Drafts.sweep(U, NOW + 700, { live: 600, recover: function (id) {
+	var T2 = time();
+	var swu = Drafts.sweep(U, T2 + 700, { live: 600, recover: function (id) {
 		called.push(id);
 	} });
 	Kit.eq([swu.recovered, swu.stale_sends, called], [0, [u2], [u2]], "crash before the rename: left to recovery");
