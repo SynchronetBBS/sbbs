@@ -779,6 +779,10 @@
 - `mailauth.js` now also requires SMTP authentication of an outside
   sender claiming the system's Internet address, as it did for the host
   name and the additional domains
+- Fix: the first `avatars import` on a system (as after `jsexec update.js`
+  installs the Avatars feature) imported every avatar message in the
+  sub twice; it now reads only the last 30 days (`first_import_days` in
+  `[avatars]` of `modopts.ini`, `0` for all), each message once
 - Fix: `msgutils.js` `getMessageThreads()` with a message limit threw an
   error on a missing message number and otherwise returned a single
   message; it now threads the newest messages up to the limit

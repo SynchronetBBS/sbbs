@@ -318,7 +318,7 @@ if(!file_exists(system.data_dir + "sbbslist.json")) {
 
 if (argv.indexOf("-noavatars") < 0) {
 	if(!xtrn_area.prog["avatchoo"] && !xtrn_area.event["avat-out"]) {
-		print("Installing Avatars feature");
+		print("Installing Avatars feature (use the -noavatars option to skip this)");
 		if(!test)
 			js.exec("avatars.js", {}, "install");
 	}

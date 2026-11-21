@@ -1,4 +1,4 @@
-var REVISION = "1.42";
+var REVISION = "1.43";
 
 load('sbbsdefs.js');
 load("lz-string.js");
@@ -8,6 +8,7 @@ var Graphic = load({}, 'graphic.js');
 var fidoaddr = load({}, 'fidoaddr.js');
 
 var export_freq = 7;	// minimum days between exports
+var first_import_days = 30;	// age (in days) of the oldest messages of a first import, 0 = all
 var verbosity = 0;
 
 var options=load("modopts.js", "avatars", {});
@@ -15,6 +16,8 @@ if(!options.sub)
     options.sub = load({}, "syncdata.js").find();
 if(options && options.export_freq > 0)
 	export_freq = options.export_freq;
+if(options && options.first_import_days !== undefined && parseInt(options.first_import_days, 10) >= 0)
+	first_import_days = parseInt(options.first_import_days, 10);
 
 var user_avatars = 'SBBS User Avatars';
 var shared_avatars = 'SBBS Shared Avatars';
@@ -234,6 +237,28 @@ function import_shared_file(hdr, body)
 	return result;
 }
 
+// Where a first import (no import pointer saved yet) begins: after the
+// newest message older than first_import_days.  Avatars are exported again
+// every export_freq days, so the recent messages hold those in use; the
+// whole history of a long-lived sub can be thousands of messages.
+function first_import_ptr(msgbase)
+{
+	if(!(first_import_days > 0))
+		return 0;
+	var cutoff = time() - first_import_days * 24 * 60 * 60;
+	for(var i = msgbase.total_msgs - 1; i >= 0 && !js.terminated; i--) {
+		var idx = msgbase.get_msg_index(/* by_offset: */true, i);
+		if(!idx)
+			continue;
+		if(idx.time < cutoff) {
+			printf("First import: skipping messages older than %u days (through msg #%u)\r\n"
+				, first_import_days, idx.number);
+			return idx.number;
+		}
+	}
+	return 0;
+}
+
 function import_from_msgbase(msgbase, import_ptr, limit, all)
 {
     var i = 0;
@@ -246,15 +271,21 @@ function import_from_msgbase(msgbase, import_ptr, limit, all)
 	if(import_ptr == undefined) {
 	    print("Opening " + ini.name);
 		if(ini.open("r")) {
-			import_ptr=ini.iniGetValue("avatars","import_ptr", 0);
+			import_ptr=ini.iniGetValue("avatars","import_ptr");
 			ini.close();
 		}
+		if(import_ptr === undefined)
+			import_ptr = first_import_ptr(msgbase);
+		else
+			import_ptr = parseInt(import_ptr, 10) || 0;
 	}
     highest=import_ptr;
     log(LOG_DEBUG, "import_ptr = " + import_ptr + " last_msg = " + msgbase.last_msg);
 	var total_msgs = msgbase.total_msgs;
 	if(msgbase.last_msg >= import_ptr)
 		i = total_msgs - (msgbase.last_msg - import_ptr);
+	if(i < 0)	// more message numbers than messages since the pointer: start at the first
+		i = 0;
     for(; i<total_msgs; i++) {
         if(js.terminated)
             break;
