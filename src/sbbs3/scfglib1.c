@@ -569,6 +569,7 @@ static bool read_domains_cfg_file(scfg_t* cfg, char* error, size_t maxerrlen)
 		return true;
 	if ((names = strListInit()) == NULL) {
 		fclose(fp);
+		// coverity[SIZEOF_MISMATCH:SUPPRESS] the size of the failed allocation (an empty list), not of error
 		return allocerr(error, maxerrlen, fname, "domain list", sizeof(char*));
 	}
 	while (fgets(line, sizeof line, fp) != NULL) {
