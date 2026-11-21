@@ -971,9 +971,11 @@ export function createCompose(o) {
 			h("label", { for: "wm-c-from", text: t("main.label_from") }), fromSel);
 
 		const fieldsEl = {};
-		const ccBtn = h("button", { class: "linkbtn", type: "button", text: t("main.label_cc"),
+		// Tab order: To, Subject, the body, then these two (tabOrder()),
+		// so reaching the body does not mean passing them
+		const ccBtn = h("button", { class: "linkbtn", type: "button", tabindex: "-1", text: t("main.label_cc"),
 			"aria-label": t("compose.label_show_cc"), onclick: () => reveal("cc") });
-		const bccBtn = h("button", { class: "linkbtn", type: "button", text: t("compose.label_bcc"),
+		const bccBtn = h("button", { class: "linkbtn", type: "button", tabindex: "-1", text: t("compose.label_bcc"),
 			"aria-label": t("compose.label_show_bcc"), onclick: () => reveal("bcc") });
 		const rows = {};
 		for (const f of FIELDS) {
@@ -1033,8 +1035,39 @@ export function createCompose(o) {
 				return;
 			addFiles(Array.from(e.dataTransfer.files));
 		});
+		el.addEventListener("keydown", (e) => tabOrder(e, body, [ccBtn, bccBtn], el));
 		return { el, title: titleEl, prio, banner: bannerEl, fromRow, fromSel, fields: fieldsEl, ccBtn, bccBtn,
 			subject, body, atts, send, sendHint, attach, options, status: statusEl, discard, timer: 0, opener: null };
+	}
+
+	// The Cc and Bcc buttons sit beside To but come after the body in the
+	// Tab order: Tab from the body goes to the first one shown, then the
+	// next, then on to what follows the body; Shift+Tab the same way back.
+	function tabOrder(e, body, btns, panel) {
+		if (e.key !== "Tab" || e.altKey || e.ctrlKey || e.metaKey || e.defaultPrevented)
+			return;
+		const shown = btns.filter((b) => !b.hidden && b.offsetParent !== null);
+		if (shown.length === 0)
+			return;
+		// the first control that follows the body in the Tab order
+		const after = Array.from(panel.querySelectorAll("button, input, select, textarea, a[href], [tabindex]"))
+			.find((x) => !x.disabled && x.tabIndex >= 0 && x.offsetParent !== null
+				&& (body.compareDocumentPosition(x) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0) || null;
+		const at = shown.indexOf(e.target);
+		let to = null;
+		if (!e.shiftKey) {
+			if (e.target === body)
+				to = shown[0];
+			else if (at >= 0)
+				to = at + 1 < shown.length ? shown[at + 1] : after;
+		} else if (at >= 0)
+			to = at > 0 ? shown[at - 1] : body;
+		else if (after !== null && e.target === after)
+			to = shown[shown.length - 1];
+		if (to === null)
+			return;
+		e.preventDefault();
+		to.focus();
 	}
 
 	function onDrag(e) {
