@@ -1007,6 +1007,7 @@ enum text {
 	,FileSentIn
 	,FileReceivedIn
 	,MailboxFull
+	,YourMailboxIsFull
 
 	,TOTAL_TEXT
 };

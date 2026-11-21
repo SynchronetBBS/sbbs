@@ -991,4 +991,5 @@ const char* const text_id[]={
 	,"FileSentIn"
 	,"FileReceivedIn"
 	,"MailboxFull"
+	,"YourMailboxIsFull"
 };

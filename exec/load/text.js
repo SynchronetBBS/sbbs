@@ -997,8 +997,9 @@ var QWKTransferInProgress=987;
 var FileSentIn=988;
 var FileReceivedIn=989;
 var MailboxFull=990;
+var YourMailboxIsFull=991;
 
-var TOTAL_TEXT=990;
+var TOTAL_TEXT=991;
 
 /* Former names of renamed strings */
 var NScanPmQ=406;

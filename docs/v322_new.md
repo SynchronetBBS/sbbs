@@ -98,7 +98,9 @@
   from the terminal, bulk mail and WebMail, not only SMTP (FidoNet, QWK
   and system mail are still delivered), and moved from the Mail Server
   settings to SCFG Message Options as **Maximum E-mail Messages Waiting**
-  (`jsexec update` carries a changed value over)
+  (`jsexec update` carries a changed value over). A sysop is told that
+  the mailbox is full and may write to it anyway, and a user whose
+  mailbox is full is told so at logon
 - **Mailbox Quota (per user)** now counts the user's Inbox (spam included)
   as well as their folders, Sent copies and Trash, and e-mail for a user
   who has reached it is refused like e-mail to a full Inbox (SMTP: try

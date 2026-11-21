@@ -477,6 +477,8 @@ bool sbbs_t::logon_process()
 		bprintf(text[UserXferForYou], i, i > 1 ? "s" : nulstr);
 	if ((i = getuserxfers(&cfg, useron.alias, /* to: */ 0)) != 0)
 		bprintf(text[UnreceivedUserXfer], i, i > 1 ? "s" : nulstr);
+	if (user_mailbox_full(&cfg, &useron, /* system_sender: */ false, NULL) != MAILBOX_NOT_FULL)
+		bputs(text[YourMailboxIsFull]);
 	sync();
 	sys_status &= ~SS_PAUSEON;    /* Turn off the pause override flag */
 	if (online == ON_REMOTE)
