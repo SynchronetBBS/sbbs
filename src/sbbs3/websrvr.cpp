@@ -7777,6 +7777,9 @@ void http_logging_thread(void* arg)
 			while (lock(fileno(logfile), 0, 1) && !terminate_http_logging_thread) {
 				SLEEP(10);
 			}
+			// Another host may share this log over SMB: append at its current
+			// end and finish writing before releasing the lock (#1380)
+			fseek(logfile, 0, SEEK_END);
 			if (startup->custom_log_fmt[0] != '\0') {
 				/* Custom log format */
 				char logline[2048];
@@ -7800,6 +7803,7 @@ void http_logging_thread(void* arg)
 						, clf_str(ld->agent)
 				);
 			}
+			fflush(logfile);
 			unlock(fileno(logfile), 0, 1);
 		}
 		FREE_AND_NULL(ld->hostname);
