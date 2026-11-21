@@ -344,7 +344,7 @@ int xp_globi(const char *p, int flags,
 		fname = getfname(p);
 		while (*p != '\0' && len < MAX_PATH) {
 			if (p >= fname && IS_ALPHA(*p))
-				len += sprintf(pattern + len, "[%c%c]", toupper(*p), tolower(*p));
+				len += sprintf(pattern + len, "[%c%c]", TO_UPPERCASE(*p), TO_LOWERCASE(*p));
 			else
 				pattern[len++] = *p;
 			p++;
@@ -669,7 +669,7 @@ static bool getfilecase(char *path, bool dir)
 	*p = 0;
 	for (i = 0; fname[i]; i++)  {
 		if (IS_ALPHA(fname[i]))
-			sprintf(tmp, "[%c%c]", toupper(fname[i]), tolower(fname[i]));
+			sprintf(tmp, "[%c%c]", TO_UPPERCASE(fname[i]), TO_LOWERCASE(fname[i]));
 		else
 			sprintf(tmp, "%c", fname[i]);
 		strncat(globme, tmp, MAX_PATH * 4);
@@ -807,7 +807,7 @@ int removecase(const char *path)
 	fname[0] = 0;
 	for (i = 0; p[i]; i++)  {
 		if (IS_ALPHA(p[i]))
-			sprintf(tmp, "[%c%c]", toupper(p[i]), tolower(p[i]));
+			sprintf(tmp, "[%c%c]", TO_UPPERCASE(p[i]), TO_LOWERCASE(p[i]));
 		else
 			sprintf(tmp, "%c", p[i]);
 		strncat(fname, tmp, MAX_PATH * 4);
@@ -1220,7 +1220,7 @@ bool wildmatch(const char *fname, const char *spec, bool path, bool case_sensiti
 			default:
 				if (case_sensitive && *specp != *fnamep)
 					return false;
-				if ((!case_sensitive) && toupper(*specp) != toupper(*fnamep))
+				if ((!case_sensitive) && TO_UPPERCASE(*specp) != TO_UPPERCASE(*fnamep))
 					return false;
 		}
 		if (!(*specp && *fnamep))
@@ -1230,7 +1230,7 @@ bool wildmatch(const char *fname, const char *spec, bool path, bool case_sensiti
 		specp++;
 	if (*specp == *fnamep)
 		return true;
-	if ((!case_sensitive) && toupper(*specp) == toupper(*fnamep))
+	if ((!case_sensitive) && TO_UPPERCASE(*specp) == TO_UPPERCASE(*fnamep))
 		return true;
 	return false;
 }

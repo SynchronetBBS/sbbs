@@ -519,6 +519,8 @@ typedef struct {
 #define IS_HEXDIGIT(c)					isxdigit((unsigned char)(c))
 #define IS_UPPERHEXDIGIT(c)				(((c) >= '0' && (c) <= '9') || ((c) >= 'A' && (c) <= 'F'))
 #define IS_OCTDIGIT(c)					((c) >= '0' && (c) <= '7')
+#define TO_UPPERCASE(c)					toupper((unsigned char)(c))
+#define TO_LOWERCASE(c)					tolower((unsigned char)(c))
 #define SKIP_WHITESPACE(p)              while((p) && *(p) && IS_WHITESPACE(*(p)))        (p)++;
 #define FIND_WHITESPACE(p)              while((p) && *(p) && !IS_WHITESPACE(*(p)))       (p)++;
 #define SKIP_CHAR(p,c)                  while((p) && *(p)==c)                            (p)++;

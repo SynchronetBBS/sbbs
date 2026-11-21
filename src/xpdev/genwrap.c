@@ -336,7 +336,7 @@ int64_t parse_byte_count(const char* str, uint64_t unit)
 	bytes = strtod(str, &p);
 	if (p != NULL) {
 		SKIP_WHITESPACE(p);
-		switch (toupper(*p)) {
+		switch (TO_UPPERCASE(*p)) {
 			case 'E':
 				bytes *= 1024;
 			/* fall-through */
@@ -432,7 +432,7 @@ double parse_duration(const char* str)
 	t = strtod(str, &p);
 	if (p != NULL) {
 		SKIP_WHITESPACE(p);
-		switch (toupper(*p)) {
+		switch (TO_UPPERCASE(*p)) {
 			case 'Y':   t *= one_year; break;
 			case 'W':   t *= one_week; break;
 			case 'D':   t *= one_day; break;
@@ -592,7 +592,7 @@ char* strupr(char* str)
 	char* p = str;
 
 	while (*p) {
-		*p = toupper(*p);
+		*p = TO_UPPERCASE(*p);
 		p++;
 	}
 	return str;
@@ -605,7 +605,7 @@ char* strlwr(char* str)
 	char* p = str;
 
 	while (*p) {
-		*p = tolower(*p);
+		*p = TO_LOWERCASE(*p);
 		p++;
 	}
 	return str;

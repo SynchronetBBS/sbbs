@@ -2550,7 +2550,7 @@ int partial_stricmp(const char* str1, const char* str2)
 	int result = 0;
 
 	while (result == 0 && *str1 != '\0' && *str2 != '\0') {
-		result = toupper(*str1) - toupper(*str2);
+		result = TO_UPPERCASE(*str1) - TO_UPPERCASE(*str2);
 		++str1;
 		++str2;
 	}
