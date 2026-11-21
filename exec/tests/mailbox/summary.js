@@ -171,11 +171,18 @@ try {
 	Kit.eq(list2, list, "warm get equals cold");
 
 	// --- an outside header change (a later second) forces a rebuild
-	next_second(file_date(mb.file + ".shd"));
+	// (the file's date and size and the clock, before and after, are in
+	// the message: the cache goes by them, and file systems differ in when
+	// a write shows in a file's date)
+	var shd = mb.file + ".shd";
+	var was = [file_date(shd), file_size(shd), time()];
+	next_second(was[0]);
 	retag(nums[10], "changed");
+	var now = [file_date(shd), file_size(shd), time()];
 	reads = 0;
 	list = Summary.get(mb, jf, opts);
-	Kit.eq(reads, 50, "outside change rebuilds");
+	Kit.eq(reads, 50, "outside change rebuilds (.shd date " + was[0] + " -> " + now[0] + ", size " + was[1]
+		+ " -> " + now[1] + ", clock " + was[2] + " -> " + now[2] + ", date after the get " + file_date(shd) + ")");
 	Kit.eq(find(list, nums[10]).tags, "changed", "rebuild shows new tag");
 
 	// --- a corrupt summary file is rebuilt, not thrown
