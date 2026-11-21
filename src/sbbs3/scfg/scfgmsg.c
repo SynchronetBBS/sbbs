@@ -1291,7 +1291,7 @@ void msg_opts()
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Allow Uploads in E-mail"
 		         , cfg.sys_misc & SM_FILE_EM ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Allow Forwarding to NetMail"
-		         , cfg.sys_misc & SM_FWDTONET ? "Yes" : "No");
+		         , !(cfg.sys_misc & SM_FWDTONET) ? "No" : cfg.msg_misc & MM_FWDKEEP ? "Both" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Kill Read E-mail"
 		         , cfg.sys_misc & SM_DELREADM ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Receive E-mail by Real Name"
@@ -1358,8 +1358,9 @@ void msg_opts()
 			"`Allow Uploads in E-mail`: allow users to attach files to outgoing\n"
 			"e-mail.\n"
 			"\n"
-			"`Allow Forwarding to NetMail`: allow forwarding of incoming e-mail to\n"
-			"NetMail addresses (e.g. FidoNet) via a user's auto-forward setting.\n"
+			"`Allow Forwarding to NetMail`: forward e-mail to a user's NetMail address\n"
+			"(e.g. FidoNet) when the user asks for it: `Yes`, `No`, or `Both` (forward\n"
+			"and also keep a copy in the user's mailbox).\n"
 			"\n"
 			"`Kill Read E-mail`: automatically mark read e-mail for deletion (per\n"
 			"the `Purge Deleted E-mail` policy above).\n"
@@ -1606,23 +1607,42 @@ void msg_opts()
 				}
 				break;
 			case 13:
-				i = cfg.sys_misc & SM_FWDTONET ? 0:1;
+				i = !(cfg.sys_misc & SM_FWDTONET) ? 1 : (cfg.msg_misc & MM_FWDKEEP) ? 2 : 0;
+				strcpy(opt[0], "Yes");
+				strcpy(opt[1], "No");
+				strcpy(opt[2], "Both");
+				opt[3][0] = 0;
 				uifc.helpbuf =
 					"`Allow Users to Have Their E-mail Forwarded to NetMail:`\n"
 					"\n"
-					"If you want your users to be able to have any e-mail sent to them\n"
-					"optionally (at the sender's discretion) forwarded to a NetMail address,\n"
-					"set this option to `Yes`.\n"
+					"Users may set a NetMail address (e.g. Internet or FidoNet) and have\n"
+					"their e-mail forwarded to it.  E-mail sent to them from the terminal\n"
+					"is forwarded only when the sender agrees to it.\n"
+					"\n"
+					"`Yes`: forward the e-mail.  No copy is kept in the user's mailbox.\n"
+					"\n"
+					"`No`: do not forward e-mail; it is all delivered to the user's mailbox.\n"
+					"\n"
+					"`Both`: forward the e-mail and also deliver a copy to the user's mailbox.\n"
+					"E-mail that the sender chooses to forward from the terminal is the\n"
+					"exception: it is forwarded only, as with `Yes`.\n"
 				;
 
 				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
-				              , "Allow Forwarding of E-mail to NetMail", uifcYesNoOpts);
-				if (!i && !(cfg.sys_misc & SM_FWDTONET)) {
+				              , "Allow Forwarding of E-mail to NetMail", opt);
+				if (i == 0 && (!(cfg.sys_misc & SM_FWDTONET) || (cfg.msg_misc & MM_FWDKEEP))) {
 					cfg.sys_misc |= SM_FWDTONET;
+					cfg.msg_misc &= ~MM_FWDKEEP;
 					uifc.changes = TRUE;
 				}
-				else if (i == 1 && cfg.sys_misc & SM_FWDTONET) {
+				else if (i == 1 && ((cfg.sys_misc & SM_FWDTONET) || (cfg.msg_misc & MM_FWDKEEP))) {
 					cfg.sys_misc &= ~SM_FWDTONET;
+					cfg.msg_misc &= ~MM_FWDKEEP;
+					uifc.changes = TRUE;
+				}
+				else if (i == 2 && (!(cfg.sys_misc & SM_FWDTONET) || !(cfg.msg_misc & MM_FWDKEEP))) {
+					cfg.sys_misc |= SM_FWDTONET;
+					cfg.msg_misc |= MM_FWDKEEP;
 					uifc.changes = TRUE;
 				}
 				break;

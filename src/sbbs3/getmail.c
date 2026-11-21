@@ -218,6 +218,56 @@ bool delfattach(scfg_t* cfg, smbmsg_t* msg)
 }
 
 /****************************************************************************/
+/* Adds a local copy of an e-mail message just saved for forwarding to a    */
+/* user's netmail address (when MM_FWDKEEP is set): a second header,        */
+/* addressed to local user 'usernumber', that shares the forwarded          */
+/* message's data (the data's reference count is raised by one).  The copy  */
+/* has all of the forwarded header's fields except the recipient's net type */
+/* and address.  Returns an SMB_* result code.                              */
+/****************************************************************************/
+int add_fwd_mail_copy(smb_t* smb, smbmsg_t* fwdmsg, uint usernumber, int storage)
+{
+	char     str[16];
+	int      i;
+	smbmsg_t msg;
+
+	memset(&msg, 0, sizeof msg);
+	msg.hdr = fwdmsg->hdr;
+	msg.flags = fwdmsg->flags;
+	if (msg.hdr.thread_id == fwdmsg->hdr.number)
+		msg.hdr.thread_id = 0;   /* the copy starts its own thread */
+	msg.hdr.thread_next = 0;
+	msg.hdr.thread_first = 0;
+	if (msg.hdr.total_dfields > 0) {
+		if ((msg.dfield = malloc(msg.hdr.total_dfields * sizeof(*msg.dfield))) == NULL)
+			return SMB_ERR_MEM;
+		memcpy(msg.dfield, fwdmsg->dfield, msg.hdr.total_dfields * sizeof(*msg.dfield));
+	}
+	for (i = 0; i < fwdmsg->total_hfields; i++) {
+		switch (fwdmsg->hfield[i].type) {
+			case RECIPIENTNETTYPE:
+			case RECIPIENTNETADDR:
+			case RECIPIENTEXT:
+				continue;
+		}
+		if (smb_hfield_add(&msg, fwdmsg->hfield[i].type, fwdmsg->hfield[i].length
+		                   , fwdmsg->hfield_dat[i], /* insert: */ false) != SMB_SUCCESS) {
+			smb_freemsgmem(&msg);
+			return SMB_ERR_MEM;
+		}
+	}
+	SAFEPRINTF(str, "%u", usernumber);
+	if ((i = smb_hfield_str(&msg, RECIPIENTEXT, str)) == SMB_SUCCESS
+	    && (i = smb_incmsg_dfields(smb, &msg, 1)) == SMB_SUCCESS) {
+		/* The reference is added first: a header must never outlive its data */
+		if ((i = smb_addmsghdr(smb, &msg, storage)) != SMB_SUCCESS)
+			smb_freemsg_dfields(smb, &msg, 1);
+	}
+	smb_freemsgmem(&msg);
+	return i;
+}
+
+/****************************************************************************/
 /* Loads mail waiting for user number 'usernumber' into the mail array of   */
 /* of pointers to mail_t (message numbers and attributes)                   */
 /* smb_open(&smb) must be called prior										*/

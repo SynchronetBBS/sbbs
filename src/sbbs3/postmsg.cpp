@@ -712,7 +712,8 @@ extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, bool st
 	smb_hfield(&msg, SENDERAGENT, sizeof(agent), &agent);
 	smb_hfield_str(&msg, SENDER, cfg->sys_name);
 	smb_hfield_str(&msg, RECIPIENT, user.alias);
-	if (cfg->sys_misc & SM_FWDTONET && user.misc & NETMAIL && user.netmail[0]) {
+	bool forward = cfg->sys_misc & SM_FWDTONET && user.misc & NETMAIL && user.netmail[0];
+	if (forward) {
 		smb_hfield_netaddr(&msg, RECIPIENTNETADDR, user.netmail, &nettype);
 		smb_hfield_bin(&msg, RECIPIENTNETTYPE, nettype);
 	} else {
@@ -726,7 +727,9 @@ extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, bool st
 	}
 	if (msgbase_open(cfg, &smb, INVALID_SUB, &storage, &dupechk_hashes, &xlat) == SMB_SUCCESS) {
 		add_msg_ids(cfg, &smb, &msg, /* remsg: */ NULL);
-		smb_addmsg(&smb, &msg, storage, dupechk_hashes, xlat, (uchar*)text, /* tail: */ NULL);
+		if (smb_addmsg(&smb, &msg, storage, dupechk_hashes, xlat, (uchar*)text, /* tail: */ NULL) == SMB_SUCCESS
+		    && forward && (cfg->msg_misc & MM_FWDKEEP))
+			add_fwd_mail_copy(&smb, &msg, usernumber, storage); // Keep a local copy too
 		smb_close(&smb);
 	}
 	smb_freemsgmem(&msg);

@@ -3754,6 +3754,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum, bool* f
 	char                msg_id[256], str[128], *p;
 	char                cmd[512];
 	bool                done, cr;
+	bool                keep_copy = false;  /* keep a local copy of forwarded mail */
 	int                 i;
 	ushort              xlat = XLAT_NONE, net;
 	ulong               l, m, length, bodylen, taillen;
@@ -3833,6 +3834,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum, bool* f
 			smb_hfield_bin(&msg, RECIPIENTNETTYPE, nettype);
 			if (forwarded != NULL)
 				*forwarded = true;
+			keep_copy = (scfg.msg_misc & MM_FWDKEEP) != 0;
 		} else {
 			snprintf(str, sizeof str, "%u", usernumber);
 			smb_hfield_str(&msg, RECIPIENTEXT, str);
@@ -4166,6 +4168,17 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum, bool* f
 
 	i = smb_addmsg(smbfile, &msg, smb_storage_mode(&scfg, smbfile), dupechk_hashes, xlat, sbody, stail);
 	if (i == SMB_SUCCESS) {
+		if (keep_copy) {
+			/* The local copy is another header for the same data */
+			int result = add_fwd_mail_copy(smbfile, &msg, usernumber, smb_storage_mode(&scfg, smbfile));
+			if (result == SMB_SUCCESS) {
+				lprintf(LOG_INFO, "Kept a local copy for user #%u", usernumber);
+				if (forwarded != NULL)
+					*forwarded = false;  /* notify as local mail, once */
+			} else
+				lprintf(LOG_ERR, "ERROR %d (%s) line %d keeping a local copy for user #%u"
+				        , result, smbfile->last_error, __LINE__, usernumber);
+		}
 		if (subnum != INVALID_SUB && scfg.sub[subnum]->post_sem[0])
 			ftouch(cmdstr(&scfg, /* user: */ NULL, scfg.sub[subnum]->post_sem, "", "", cmd, sizeof(cmd)));
 	} else {

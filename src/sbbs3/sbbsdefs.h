@@ -299,6 +299,8 @@
 #define FM_EXASCII      (1 << 3)      // Allow extended-ASCII (or UTF-8) in uploaded filenames
 
 // Bit values for cfg.msg_misc (upper 16-bits default to on)
+// Bits 16 and up default to on, so a new off-by-default option takes a low bit
+#define MM_FWDKEEP  (1 << 0)          // Keep a local copy of e-mail forwarded to netmail
 #define MM_REALNAME (1 << 16)         // Allow receipt of e-mail using real names
 #define MM_EMAILSIG (1 << 17)         // Include user signatures in e-mail msgs
 

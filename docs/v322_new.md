@@ -91,6 +91,9 @@
 - New DOVE-Net conferences in the stock message area configuration:
   AI Discussion, AI Playground, and Health (diet, fitness, medications,
   illness)
+- **Allow Forwarding to NetMail** (SCFG Message Options) can now be set to
+  `Both`: e-mail is forwarded and a copy is also kept in the user's mailbox
+  (issues #140, #593). Not for e-mail the sender forwards from the terminal
 
 ## Servers
 

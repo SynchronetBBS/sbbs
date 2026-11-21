@@ -62,6 +62,8 @@ static const char* server_abbrev = "mail";
 #define FORWARD         "forward:"
 #define NO_FORWARD      "local:"
 #define NO_SPAM         "#nospam"
+// Recipient list key: the forward-path of a local copy of forwarded mail
+static const char* rcptlst_local_copy = "LocalCopy";
 
 #define pop_error       "-ERR System Error: %s, try again later"
 #define pop_auth_error  "-ERR Authentication failure"
@@ -3171,6 +3173,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	char              name_alias_buf[128];
 	char              reverse_path[128];
 	char              forward_path[128];
+	char              local_copy_path[128];
 	char              date[64];
 	char              qwkid[32];
 	char              rcpt_to[128];
@@ -4205,6 +4208,9 @@ static bool smtp_client_thread(smtp_t* smtp)
 					SAFEPRINTF(str, "#%u", usernum);
 					SAFECOPY(rcpt_addr, iniReadString(rcptlst, section, smb_hfieldtype(RECIPIENTNETADDR), str, value));
 					SAFECOPY(forward_path, iniReadString(rcptlst, section, smb_hfieldtype(SMTPFORWARDPATH), "", value));
+					SAFECOPY(local_copy_path, iniReadString(rcptlst, section, rcptlst_local_copy, "", value));
+					if (usernum == 0 || nettype != NET_INTERNET)
+						local_copy_path[0] = 0;
 					if (compare_addrs(rcpt_to, rcpt_addr) == 0)
 						angle_bracket(rcpt_info, sizeof(rcpt_info), rcpt_addr);
 					else
@@ -4256,7 +4262,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 					         , server_name
 					         , VERSION, REVISION, PLATFORM_DESC
 					         , with_clauses[with_val]
-					         , forward_path, msgdate(when, date)
+					         , forward_path[0] ? forward_path : local_copy_path, msgdate(when, date)
 					         , reverse_path);
 					smb_hfield_add_str(&newmsg, SMTPRECEIVED, hdrfield, /* insert: */ true);
 
@@ -4307,6 +4313,31 @@ static bool smtp_client_thread(smtp_t* smtp)
 					}
 					lprintf(LOG_INFO, "%04d %-5s %s Added message header #%u from %s to %s"
 					        , socket, client.protocol, client_id, newmsg.hdr.number, sender_info, rcpt_info);
+					if (local_copy_path[0] != 0) { /* Forwarded: keep a local copy, another header for the same data */
+						smbmsg_t localmsg;
+						if ((i = smb_copymsgmem(&smb, &localmsg, &msg)) == SMB_SUCCESS) {
+							smb_hfield_add_str(&localmsg, SMTPRECEIVED, hdrfield, /* insert: */ true);
+							smb_hfield_str(&localmsg, RECIPIENT, rcpt_name);
+							smb_hfield_str(&localmsg, SMTPFORWARDPATH, local_copy_path);
+							SAFEPRINTF(str, "%u", usernum);
+							smb_hfield_str(&localmsg, RECIPIENTEXT, str);
+							if (agent != localmsg.to_agent)
+								smb_hfield(&localmsg, RECIPIENTAGENT, sizeof(agent), &agent);
+							add_msg_ids(&scfg, &smb, &localmsg, /* remsg: */ NULL);
+							// The reference is added first: a header must never outlive its data
+							if ((i = smb_incmsg_dfields(&smb, &msg, 1)) == SMB_SUCCESS
+							    && (i = smb_addmsghdr(&smb, &localmsg, smb_storage_mode(&scfg, &smb))) != SMB_SUCCESS)
+								smb_freemsg_dfields(&smb, &msg, 1);
+							smb_freemsgmem(&localmsg);
+						}
+						if (i == SMB_SUCCESS) {
+							lprintf(LOG_INFO, "%04d %-5s %s Added message header #%u (local copy) from %s to user #%u"
+							        , socket, client.protocol, client_id, localmsg.hdr.number, sender_info, usernum);
+							newmsg.idx.to = localmsg.idx.to; // Notify the user of local mail, not of forwarded mail
+						} else
+							errprintf(LOG_ERR, WHERE, "%04d %-5s %s !ERROR %d (%s) adding local copy header from %s to user #%u"
+							          , socket, client.protocol, client_id, i, smb.last_error, sender_info, usernum);
+					}
 					if (relay_user.number != 0) {
 						user_sent_email(&scfg, &relay_user, 1, usernum == 1);
 						lprintf(LOG_DEBUG, "%04d %-5s %s #%u sent %u email messages today (of %u max), %u total"
@@ -5343,6 +5374,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 				        , socket, client.protocol, client_id, user.netmail);
 				fprintf(rcptlst, "%s=%u\n", smb_hfieldtype(RECIPIENTNETTYPE), NET_INTERNET);
 				fprintf(rcptlst, "%s=%s\n", smb_hfieldtype(RECIPIENTNETADDR), user.netmail);
+				if (scfg.msg_misc & MM_FWDKEEP) // and keep a local copy (same recipient section)
+					fprintf(rcptlst, "%s=%s\n", rcptlst_local_copy, rcpt_to);
 				sockprintf(socket, client.protocol, session, ok_rsp);  // used to be a 251 response, changed per RFC2821
 			} else { /* Local (no-forward) */
 				if (routed) { /* QWKnet */

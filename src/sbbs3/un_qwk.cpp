@@ -217,8 +217,11 @@ bool sbbs_t::unpack_qwk(char *packet, uint hubnum)
 			misc = getusermisc(&cfg, usernum);
 			if (misc & NETMAIL && cfg.sys_misc & SM_FWDTONET) {
 				getuserstr(&cfg, usernum, USER_NETMAIL, str, sizeof(str));
+				off_t body = ftello(qwk);
 				qwktonetmail(qwk, (char*)block, str, hubnum + 1);
-				continue;
+				if (!(cfg.msg_misc & MM_FWDKEEP))
+					continue;
+				fseeko(qwk, body, SEEK_SET); // Keep a local copy too: import the body again
 			}
 
 			smb_stack(&smb, SMB_STACK_PUSH);

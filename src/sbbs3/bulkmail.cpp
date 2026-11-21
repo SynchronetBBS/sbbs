@@ -179,7 +179,8 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 	SAFECOPY(str, user.alias);
 	smb_hfield_str(&newmsg, RECIPIENT, str);
 
-	if (cfg.sys_misc & SM_FWDTONET && user.misc & NETMAIL && user.netmail[0]) {
+	bool forward = cfg.sys_misc & SM_FWDTONET && user.misc & NETMAIL && user.netmail[0];
+	if (forward) {
 		bprintf(text[UserNetMail], user.netmail);
 		smb_hfield_netaddr(&newmsg, RECIPIENTNETADDR, user.netmail, &nettype);
 		smb_hfield_bin(&newmsg, RECIPIENTNETTYPE, nettype);
@@ -189,6 +190,11 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 	}
 
 	j = smb_addmsghdr(smb, &newmsg, smb_storage_mode(&cfg, smb));
+	if (j == SMB_SUCCESS && forward && (cfg.msg_misc & MM_FWDKEEP)) {
+		/* Keep a local copy too: one more header for the same data */
+		if ((i = add_fwd_mail_copy(smb, &newmsg, usernum, smb_storage_mode(&cfg, smb))) != SMB_SUCCESS)
+			errormsg(WHERE, ERR_WRITE, smb->file, i, smb->last_error);
+	}
 	smb_freemsgmem(&newmsg);
 	if (j != SMB_SUCCESS)
 		return j;

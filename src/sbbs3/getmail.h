@@ -34,6 +34,7 @@ DLLEXPORT mail_t *  loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
 DLLEXPORT void      freemail(mail_t* mail);
 DLLEXPORT int       delusermail(scfg_t* cfg, uint usernumber);
 DLLEXPORT bool      delfattach(scfg_t*, smbmsg_t*);
+DLLEXPORT int       add_fwd_mail_copy(smb_t*, smbmsg_t* fwdmsg, uint usernumber, int storage);
 
 #ifdef __cplusplus
 }

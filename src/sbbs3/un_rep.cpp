@@ -276,10 +276,20 @@ bool sbbs_t::unpack_rep(char* repfile)
 				continue;
 			}
 
+			bool forwarded = false;
 			if ((getusermisc(&cfg, usernum) & NETMAIL) && (cfg.sys_misc & SM_FWDTONET)) {
 				getuserstr(&cfg, usernum, USER_NETMAIL, str, sizeof(str));
+				off_t body = ftello(rep);
+				uint  sent_today = useron.etoday;
 				qwktonetmail(rep, block, str, 0);
-				continue;
+				if (!(cfg.msg_misc & MM_FWDKEEP))
+					continue;
+				// qwktonetmail() counts (and announces) a message it sent
+				forwarded = useron.etoday != sent_today;
+				if (!forwarded)
+					llprintf(LOG_NOTICE, "E!", "QWK e-mail to %s #%d not forwarded to %s: kept locally only"
+					         , username(&cfg, usernum, tmp), usernum, str);
+				fseeko(rep, body, SEEK_SET); // Keep a local copy too: import the body again
 			}
 
 			SAFEPRINTF(smb.file, "%smail", cfg.data_dir);
@@ -329,16 +339,18 @@ bool sbbs_t::unpack_rep(char* repfile)
 			bool dupe = false;
 			if (qwk_import_msg(rep, block, blocks
 			                   , /* fromhub: */ 0, &smb, /* touser: */ usernum, &msg, &dupe)) {
-				if (usernum == 1) {
-					useron.fbacks = (uint)adjustuserval(&cfg, &useron, USER_FBACKS, 1);
-					logon_fbacks++;
+				if (!forwarded) { // a forwarded message was counted and announced when sent
+					if (usernum == 1) {
+						useron.fbacks = (uint)adjustuserval(&cfg, &useron, USER_FBACKS, 1);
+						logon_fbacks++;
+					}
+					else {
+						useron.emails = (uint)adjustuserval(&cfg, &useron, USER_EMAILS, 1);
+						logon_emails++;
+					}
+					useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, 1);
+					bprintf(P_REMOTE, text[Emailed], username(&cfg, usernum, tmp), usernum);
 				}
-				else {
-					useron.emails = (uint)adjustuserval(&cfg, &useron, USER_EMAILS, 1);
-					logon_emails++;
-				}
-				useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, 1);
-				bprintf(P_REMOTE, text[Emailed], username(&cfg, usernum, tmp), usernum);
 				llprintf("E+", "sent QWK e-mail to %s #%d"
 				            , username(&cfg, usernum, tmp), usernum);
 				if (cfg.node_num) {

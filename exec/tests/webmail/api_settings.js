@@ -346,8 +346,9 @@ try {
 	refused(alice, { forward_enabled: true }, "forbidden", "forward_restricted", "restricted user enabling");
 	USERS[ALICE].security.restrictions = 0;
 
-	// --- keeps_copy: MM_FWDKEEP undefined -> false; defined: its bit
-	Kit.eq(DEFS.MM_FWDKEEP, undefined, "MM_FWDKEEP is not defined in this tree's sbbsdefs.js");
+	// --- keeps_copy: MM_FWDKEEP undefined (an older sbbsdefs.js) -> false;
+	// defined: its bit
+	Kit.eq(DEFS.MM_FWDKEEP, 1, "MM_FWDKEEP in sbbsdefs.js: bit 0 of the message options");
 	SYS.msg_settings = -1;
 	Kit.eq(get(alice).forward.keeps_copy, false, "undefined: false, whatever the settings");
 	SYS.MM_FWDKEEP = 1 << 30;
