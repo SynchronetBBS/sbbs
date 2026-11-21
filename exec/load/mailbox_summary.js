@@ -94,6 +94,28 @@ var Summary = (function () {
 		return true;
 	}
 
+	// Whether the stamps recorded after this library's own write (rec) are
+	// those of the files now (now).  The sizes must match.  A file's date
+	// may be the same or up to DATE_SLACK seconds EARLIER than recorded: a
+	// network file system (SMB) can, when the file is closed, put the date
+	// back from the one date_files() set to the time of the write before
+	// it.  A later write by anyone moves the date forward, never back, so
+	// an earlier date does not hide one (#1374).
+	var DATE_SLACK = 2;
+	function current_stamps(rec, now)
+	{
+		if (!(rec instanceof Array) || rec.length != now.length)
+			return false;
+		for (var i = 0; i < now.length; i += 2) {
+			if (rec[i] !== now[i])
+				return false;
+			var d = rec[i + 1] - now[i + 1];
+			if (!(d >= 0 && d <= DATE_SLACK))
+				return false;
+		}
+		return true;
+	}
+
 	function blocks(len)
 	{
 		return Math.ceil(len / BLOCK) * BLOCK;
@@ -288,7 +310,7 @@ var Summary = (function () {
 
 	function valid(cache, st)
 	{
-		return valid_shape(cache) && same_stamps(cache.stamps, st);
+		return valid_shape(cache) && current_stamps(cache.stamps, st);
 	}
 
 	// Rewrite the usage fields of mailbox.state.json, keeping its other
@@ -302,7 +324,7 @@ var Summary = (function () {
 			jsonfiles.update("state", {}, function (s) {
 				if (typeof s != "object" || s === null || s instanceof Array)
 					s = {};
-				if (!same_stamps(cache.stamps, stamps(msgbase)))
+				if (!current_stamps(cache.stamps, stamps(msgbase)))
 					return s;
 				s.bytes = total(cache.rows);
 				s.count = cache.rows.length;
@@ -444,21 +466,23 @@ var Summary = (function () {
 				out = { bytes: null, count: null, result: result };
 				var reported = !(result === null || result === undefined);
 				var post = stamps(msgbase);
+				var wrote = reported || !same_stamps(pre, post);
+				// fn wrote: the files' dates are set at once (before the
+				// headers are read, so close to the write: DATE_SLACK),
+				// and those are the stamps kept.  Not when fn reported
+				// nothing and nothing changed: a new date would itself
+				// read as a change.
+				if (wrote) {
+					date_files(msgbase);
+					post = stamps(msgbase);
+				}
 				var rows;
 				if (!was_valid)
 					rows = build(msgbase, ddir);
 				else if (!reported)
-					rows = same_stamps(pre, post) ? c.rows : build(msgbase, ddir);
+					rows = wrote ? build(msgbase, ddir) : c.rows;
 				else
 					rows = patch(msgbase, c.rows, result, ddir);
-				// fn wrote: the files' dates are set, so the stamps kept
-				// are the ones the files will still have after the close.
-				// Not when fn reported nothing and nothing changed: a new
-				// date would itself read as a change.
-				if (reported || !same_stamps(pre, post)) {
-					date_files(msgbase);
-					post = stamps(msgbase);
-				}
 				var cache = { version: VERSION, stamps: post, rows: rows };
 				out.bytes = total(rows);
 				out.count = rows.length;
@@ -501,7 +525,7 @@ var Summary = (function () {
 		not_nested(jsonfiles);
 		var s = jsonfiles.read("state", null);
 		if (typeof s == "object" && s !== null && typeof s.bytes == "number"
-			&& typeof s.count == "number" && same_stamps(s.stamps, stamps(msgbase)))
+			&& typeof s.count == "number" && current_stamps(s.stamps, stamps(msgbase)))
 			return { bytes: s.bytes, count: s.count };
 		var cur = current(msgbase, jsonfiles, opts);
 		if (!cur.state_done)

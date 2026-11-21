@@ -255,6 +255,28 @@ try {
 	Summary.get(mb, jf, opts);
 	Kit.eq(reads, 0, "cache still valid after no-change modify");
 
+	// A file system may put a file's date back to the time of the write
+	// when the file is closed, a little before the date modify() set and
+	// recorded: the cache stays valid for a date up to 2 seconds earlier,
+	// not for one further back or for a later one
+	function redate(by) {
+		var shd = file_date(mb.file + ".shd"), sid = file_date(mb.file + ".sid");
+		mb.close();
+		Kit.assert(file_utime(mb.file + ".shd", shd + by, shd + by) && file_utime(mb.file + ".sid", sid + by, sid + by), "redate");
+		Kit.assert(mb.open(), "reopen");
+		reads = 0;
+		Summary.get(mb, jf, opts);
+		var n = reads;
+		Summary.get(mb, jf, opts);	// settle on the files as they are
+		return n;
+	}
+	Kit.eq(redate(-1), 0, "a date 1 second earlier than recorded: cache kept");
+	reads = 0;
+	Kit.eq(Summary.usage(mb, jf, opts).count, 50, "usage with the earlier date");
+	Kit.eq(reads, 0, "usage with the earlier date reads no headers");
+	Kit.eq(redate(-3), 50, "a date 3 seconds earlier: rebuilt");
+	Kit.eq(redate(1), 50, "a later date: rebuilt");
+
 	// usage drops by a removed message's size
 	var before = Summary.usage(mb, jf, opts).bytes;
 	var victim = find(fresh, nums[40]);
