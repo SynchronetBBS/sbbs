@@ -137,7 +137,7 @@ typedef struct {
 		struct startup_sound_settings sound; \
 		struct login_attempt_settings login_attempt; \
 		link_list_t*                  login_attempt_list; \
-		bool                          max_clients_notify; /* notify sysop when refusing clients at capacity */
+		bool                          max_clients_error; /* log an error when refusing clients at capacity */
 
 struct startup {
 	STARTUP_COMMON_ELEMENTS

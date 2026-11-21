@@ -1009,7 +1009,7 @@ static void termsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
 		snprintf(str, sizeof str, "%u-%u", startup.first_node, startup.last_node);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Serving Nodes", str);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Error When Full", startup.max_clients_error ? "Yes" : "No");
 		snprintf(str, sizeof str, "Port %u", startup.ssh_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Support...", startup.options & BBS_OPT_ALLOW_SSH ? str : strDisabled);
 		snprintf(str, sizeof str, "Port %u", startup.telnet_port);
@@ -1053,10 +1053,12 @@ static void termsrvr_cfg(void)
 			"\n"
 			"`Serving Nodes`: range of node numbers this server instance answers for.\n"
 			"\n"
-			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
-			"server starts turning callers away because no node is available.\n"
-			"Later refusals are only counted, and a summary is logged once none\n"
-			"have been refused for 5 minutes.\n"
+			"`Log Error When Full`: log an error when the server starts turning callers\n"
+			"away because no node is available.  Like any error, it goes to the error\n"
+			"log and, if `Error Level` under System > Notifications is `Error` (the\n"
+			"default, `Critical`, filters it out), notifies the sysop.  Later refusals\n"
+			"are only counted, and a summary is logged once none have been refused\n"
+			"for 5 minutes.\n"
 			"\n"
 			"`SSH Support`, `Telnet Support`, `RLogin Support`: enable each protocol\n"
 			"and set its TCP port and related options.\n"
@@ -1126,7 +1128,7 @@ static void termsrvr_cfg(void)
 					startup.last_node = atoi(str);
 				break;
 			case 3:
-				startup.max_clients_notify = !startup.max_clients_notify;
+				startup.max_clients_error = !startup.max_clients_error;
 				break;
 			case 4:
 				ssh_srvr_cfg(&startup);
@@ -1602,7 +1604,7 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Access Log Format"
 			, startup.options & WEB_OPT_HTTP_LOGGING ? (*startup.custom_log_fmt ? startup.custom_log_fmt : "<Combined Log Format>") : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Error When Full", startup.max_clients_error ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		str[0] = '\0';
@@ -1670,10 +1672,12 @@ static void websrvr_cfg(void)
 			"\n"
 			"`Max Clients`: limit on simultaneous clients.\n"
 			"\n"
-			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
-			"server starts refusing connections because it reached `Max Clients`.\n"
-			"Later refusals are only counted, and a summary is logged once none\n"
-			"have been refused for 5 minutes.\n"
+			"`Log Error When Full`: log an error when the server starts refusing\n"
+			"connections because it reached `Max Clients`.  Like any error, it goes to\n"
+			"the error log and, if `Error Level` under System > Notifications is `Error`\n"
+			"(the default, `Critical`, filters it out), notifies the sysop.  Later\n"
+			"refusals are only counted, and a summary is logged once none have been\n"
+			"refused for 5 minutes.\n"
 			"\n"
 			"`Max Inactivity`: disconnect a client idle this long.\n"
 			"\n"
@@ -1777,7 +1781,7 @@ static void websrvr_cfg(void)
 					startup.max_clients = atoi(str);
 				break;
 			case 12:
-				startup.max_clients_notify = !startup.max_clients_notify;
+				startup.max_clients_error = !startup.max_clients_error;
 				break;
 			case 13:
 				SAFECOPY(str, duration(startup.max_inactivity, false, strDefault));
@@ -1915,7 +1919,7 @@ static void ftpsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "QWK Message Packet Transfers", startup.options & FTP_OPT_ALLOW_QWK ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "QWK Message Packet Timeout", startup.options & FTP_OPT_ALLOW_QWK ? vduration(startup.qwk_timeout, strDefault) : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Error When Full", startup.max_clients_error ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s bytes", "Min Uploaded File Size", byte_count_to_str(startup.min_fsize, tmp, sizeof tmp));
@@ -1978,10 +1982,12 @@ static void ftpsrvr_cfg(void)
 			"\n"
 			"`Max Clients`: limit on simultaneous clients.\n"
 			"\n"
-			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
-			"server starts refusing connections because it reached `Max Clients`.\n"
-			"Later refusals are only counted, and a summary is logged once none\n"
-			"have been refused for 5 minutes.\n"
+			"`Log Error When Full`: log an error when the server starts refusing\n"
+			"connections because it reached `Max Clients`.  Like any error, it goes to\n"
+			"the error log and, if `Error Level` under System > Notifications is `Error`\n"
+			"(the default, `Critical`, filters it out), notifies the sysop.  Later\n"
+			"refusals are only counted, and a summary is logged once none have been\n"
+			"refused for 5 minutes.\n"
 			"\n"
 			"`Max Inactivity`: disconnect a client idle this long.\n"
 			"\n"
@@ -2083,7 +2089,7 @@ static void ftpsrvr_cfg(void)
 					startup.max_clients = atoi(str);
 				break;
 			case 10:
-				startup.max_clients_notify = !startup.max_clients_notify;
+				startup.max_clients_error = !startup.max_clients_error;
 				break;
 			case 11:
 				SAFECOPY(str, duration(startup.max_inactivity, false, strDefault));
@@ -2575,7 +2581,7 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3/TLS Support", startup.options & MAIL_OPT_TLS_POP3 ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Mark Retrieved Mail as Read", startup.options & MAIL_OPT_NO_READ_POP3 ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Error When Full", startup.max_clients_error ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Recipients Per Message", maximum(startup.max_recipients));
@@ -2649,10 +2655,12 @@ static void mailsrvr_cfg(void)
 			"\n"
 			"`Max Clients`: limit on simultaneous clients.\n"
 			"\n"
-			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
-			"server starts refusing connections because it reached `Max Clients`.\n"
-			"Later refusals are only counted, and a summary is logged once none\n"
-			"have been refused for 5 minutes.\n"
+			"`Log Error When Full`: log an error when the server starts refusing\n"
+			"connections because it reached `Max Clients`.  Like any error, it goes to\n"
+			"the error log and, if `Error Level` under System > Notifications is `Error`\n"
+			"(the default, `Critical`, filters it out), notifies the sysop.  Later\n"
+			"refusals are only counted, and a summary is logged once none have been\n"
+			"refused for 5 minutes.\n"
 			"\n"
 			"`Max Inactivity`: disconnect a client idle this long.\n"
 			"\n"
@@ -2767,7 +2775,7 @@ static void mailsrvr_cfg(void)
 					startup.max_clients = atoi(str);
 				break;
 			case 11:
-				startup.max_clients_notify = !startup.max_clients_notify;
+				startup.max_clients_error = !startup.max_clients_error;
 				break;
 			case 12:
 				SAFECOPY(str, duration(startup.max_inactivity, false, strDisabled));
@@ -2976,7 +2984,7 @@ static void services_cfg(void)
 		} else
 			SAFECOPY(str, strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Connections", str);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Error When Full", startup.max_clients_error ? "Yes" : "No");
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
@@ -3019,12 +3027,14 @@ static void services_cfg(void)
 			"and optionally auto-filter abusers.  See the Rate Limiting sub-menu\n"
 			"for per-knob help.\n"
 			"\n"
-			"`Notify Sysop When Full`: send the sysop an error notification when a\n"
-			"service starts refusing connections at its `MaxClients` limit (set in\n"
-			"the Services Configuration File).  Only services with the `FULL_ACCEPT`\n"
-			"option refuse; the others leave new connections waiting.\n"
-			"Later refusals are only counted, and a summary is logged once none\n"
-			"have been refused for 5 minutes.\n"
+			"`Log Error When Full`: log an error when a service starts refusing\n"
+			"connections at its `MaxClients` limit (set in the Services Configuration\n"
+			"File).  Only services with the `FULL_ACCEPT` option refuse; the others\n"
+			"leave new connections waiting.  Like any error, it goes to the error log\n"
+			"and, if `Error Level` under System > Notifications is `Error` (the default,\n"
+			"`Critical`, filters it out), notifies the sysop.  Later refusals are only\n"
+			"counted, and a summary is logged once none have been refused for 5\n"
+			"minutes.\n"
 			"\n"
 			"`JavaScript Settings...`: runtime tuning for JavaScript-based services\n"
 			"(heap, time limit, GC, yield, load path).  Overrides the global\n"
@@ -3068,7 +3078,7 @@ static void services_cfg(void)
 				services_rate_limit_cfg(&startup);
 				break;
 			case 8:
-				startup.max_clients_notify = !startup.max_clients_notify;
+				startup.max_clients_error = !startup.max_clients_error;
 				break;
 			case 9:
 				js_startup_cfg(&startup.js);

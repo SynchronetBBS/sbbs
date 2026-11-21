@@ -1,4 +1,4 @@
-// Sysop notification when a server refuses connections at its capacity,
+// Error logged when a server starts refusing connections at its capacity,
 // shared by the terminal, web, ftp, mail and services servers (#1384)
 // (kept header-only / static-inline so no shared .cpp needs to be added
 // to each server's project files).
@@ -22,8 +22,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef MAXCLIENTS_NOTIFY_HPP_
-#define MAXCLIENTS_NOTIFY_HPP_
+#ifndef MAXCLIENTS_ERROR_HPP_
+#define MAXCLIENTS_ERROR_HPP_
 
 #include <time.h>
 #include "genwrap.h"            // duration_to_vstr(), SAFECOPY
@@ -46,14 +46,14 @@ struct max_clients_episode {
 
 // Call for each connection refused because the server is at capacity.
 // The first refusal of an episode is logged at LOG_ERR, which reaches
-// error.log and the sysop's error notifications; later refusals are only
-// counted.  `reason` describes the limit, e.g. "MAXIMUM CLIENTS (200) reached".
+// error.log (and the sysop's error notifications, per the configured
+// error level); later refusals are only counted.  `reason` describes the limit, e.g. "MAXIMUM CLIENTS (200) reached".
 // `log` is the caller's lprintf (per-server file-static).
-static inline void max_clients_refused(struct max_clients_episode* ep, bool notify
+static inline void max_clients_refused(struct max_clients_episode* ep, bool enabled
                                        , const char* reason, const char* client
                                        , int (*log)(int, const char*, ...))
 {
-	if (!notify)
+	if (!enabled)
 		return;
 	time_t now = time(NULL);
 	if (ep->start == 0) {
@@ -83,4 +83,4 @@ static inline void max_clients_check(struct max_clients_episode* ep
 	ep->start = 0;
 }
 
-#endif // MAXCLIENTS_NOTIFY_HPP_
+#endif // MAXCLIENTS_ERROR_HPP_

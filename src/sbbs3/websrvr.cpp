@@ -73,7 +73,7 @@
 #include "xpprintf.h"
 #include "ratelimit.hpp"
 #include "ratelimit_filter.hpp"
-#include "maxclients_notify.hpp"
+#include "maxclients_error.hpp"
 #include "filterfile.hpp"
 #include <mutex>
 
@@ -643,7 +643,7 @@ static void web_max_clients_refused(const char* client)
 
 	SAFEPRINTF(reason, "MAXIMUM CLIENTS (%u) reached", startup->max_clients);
 	std::lock_guard<std::mutex> lock(capacity_mutex);
-	max_clients_refused(&capacity_episode, startup->max_clients_notify, reason, client, lprintf);
+	max_clients_refused(&capacity_episode, startup->max_clients_error, reason, client, lprintf);
 }
 
 /* TLS-PSK cannot be performed by this server (the supporting code is

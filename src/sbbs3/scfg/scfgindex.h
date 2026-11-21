@@ -3288,6 +3288,31 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Location"
 	},
 	{
+		"Log Error When Full",
+		"FTP Server",
+		"Servers > FTP Server > Log Error When Full"
+	},
+	{
+		"Log Error When Full",
+		"Mail Server",
+		"Servers > Mail Server > Log Error When Full"
+	},
+	{
+		"Log Error When Full",
+		"Services Server",
+		"Servers > Services Server > Log Error When Full"
+	},
+	{
+		"Log Error When Full",
+		"Terminal Server",
+		"Servers > Terminal Server > Log Error When Full"
+	},
+	{
+		"Log Error When Full",
+		"Web Server",
+		"Servers > Web Server > Log Error When Full"
+	},
+	{
 		"Log Level",
 		"FTP Server",
 		"Servers > FTP Server > Log Level"
@@ -4386,31 +4411,6 @@ static const scfg_option_t scfg_option_index[] = {
 		"Notify Offline Recipients",
 		"Mail Server",
 		"Servers > Mail Server > Notify Offline Recipients"
-	},
-	{
-		"Notify Sysop When Full",
-		"FTP Server",
-		"Servers > FTP Server > Notify Sysop When Full"
-	},
-	{
-		"Notify Sysop When Full",
-		"Mail Server",
-		"Servers > Mail Server > Notify Sysop When Full"
-	},
-	{
-		"Notify Sysop When Full",
-		"Services Server",
-		"Servers > Services Server > Notify Sysop When Full"
-	},
-	{
-		"Notify Sysop When Full",
-		"Terminal Server",
-		"Servers > Terminal Server > Notify Sysop When Full"
-	},
-	{
-		"Notify Sysop When Full",
-		"Web Server",
-		"Servers > Web Server > Notify Sysop When Full"
 	},
 	{
 		"Noumea",

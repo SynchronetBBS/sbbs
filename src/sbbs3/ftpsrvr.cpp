@@ -46,7 +46,7 @@
 #include "filterfile.hpp"
 #include "ratelimit.hpp"
 #include "ratelimit_filter.hpp"
-#include "maxclients_notify.hpp"
+#include "maxclients_error.hpp"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -5769,7 +5769,7 @@ void ftp_server(void* arg)
 				lprintf(LOG_WARNING, "%04d [%s] !MAXIMUM CLIENTS (%d) reached, access denied"
 				        , client_socket, client_ip, startup->max_clients);
 				SAFEPRINTF(str, "MAXIMUM CLIENTS (%u) reached", startup->max_clients);
-				max_clients_refused(&capacity_episode, startup->max_clients_notify, str, client_ip, lprintf);
+				max_clients_refused(&capacity_episode, startup->max_clients_error, str, client_ip, lprintf);
 				sockprintf(client_socket, -1, "421 Maximum active clients reached, please try again later.");
 				ftp_close_socket(&client_socket, &none, __LINE__);
 				continue;

@@ -125,10 +125,11 @@
 - The terminal, mail, FTP, and web servers now close their listening
   sockets as soon as a shutdown or recycle begins, so new connections
   are refused right away instead of hanging until active clients leave
-- Any server can now notify the sysop when it starts refusing
-  connections at capacity (`MaxClientsNotify`, SCFG "Notify Sysop When
-  Full", off by default): one error notification per episode, then a
-  logged summary once 5 minutes pass with no connection refused
+- Any server can now log an error (and so notify the sysop, per the
+  error notification level) when it starts refusing connections at
+  capacity (`MaxClientsError`, SCFG "Log Error When Full", off by
+  default): once per episode, then a logged summary once 5 minutes
+  pass with no connection refused
 
 ## Terminal Server
 

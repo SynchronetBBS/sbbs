@@ -32,7 +32,7 @@
 #include "ver.h"
 #include "eventwrap.h"
 #include "filterfile.hpp"
-#include "maxclients_notify.hpp"
+#include "maxclients_error.hpp"
 #include <multisock.h>
 #include <limits.h>     // HOST_NAME_MAX
 
@@ -6181,7 +6181,7 @@ NO_SSH:
 			if (node_num > last_node) {
 				lprintf(LOG_WARNING, "%04d %s [%s] !No nodes available for login.", client_socket, client.protocol, host_ip);
 				SAFEPRINTF2(str, "No nodes available (nodes %u-%u)", first_node, last_node);
-				max_clients_refused(&capacity_episode, startup->max_clients_notify, str, host_ip, lprintf);
+				max_clients_refused(&capacity_episode, startup->max_clients_error, str, host_ip, lprintf);
 				SAFEPRINTF(str, "%snonodes.txt", scfg.text_dir);
 				if (fexist(str))
 					sbbs->printfile(str, P_NOABORT | P_MODS);

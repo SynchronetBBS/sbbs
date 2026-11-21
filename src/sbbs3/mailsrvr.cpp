@@ -53,7 +53,7 @@
 #include "filterfile.hpp"
 #include "ratelimit.hpp"
 #include "ratelimit_filter.hpp"
-#include "maxclients_notify.hpp"
+#include "maxclients_error.hpp"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -7003,7 +7003,7 @@ void mail_server(void* arg)
 					lprintf(LOG_WARNING, "%04d %-5s [%s] !MAXIMUM CLIENTS (%u) reached, access denied (%lu total)"
 					        , client_socket, servprot, host_ip, startup->max_clients, ++stats.connections_refused);
 					SAFEPRINTF(str, "MAXIMUM CLIENTS (%u) reached", startup->max_clients);
-					max_clients_refused(&capacity_episode, startup->max_clients_notify, str, host_ip, lprintf);
+					max_clients_refused(&capacity_episode, startup->max_clients_error, str, host_ip, lprintf);
 					sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum active clients reached");
 					mail_close_socket(&client_socket, &session);
 					continue;
