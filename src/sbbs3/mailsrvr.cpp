@@ -5554,6 +5554,14 @@ bool bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, bool immediate)
 		return true;
 	}
 
+	/* The notice is a new message: it gets its own Message-ID and names the
+	 * failed message (if that has a Message-ID) as its reply-ID */
+	char* failed_id = (msg->id != NULL && *msg->id != 0) ? msg->id : NULL;
+	newmsg.id = NULL;
+	newmsg.reply_id = NULL;
+	newmsg.idx.number = 0;
+	newmsg.idx.time = 0;
+	newmsg.hdr.number = get_new_msg_number(smb);
 	newmsg.hfield = NULL;
 	newmsg.hfield_dat = NULL;
 	newmsg.total_hfields = 0;
@@ -5591,6 +5599,8 @@ bool bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, bool immediate)
 	smb_hfield_str(&newmsg, SENDER, str);
 	smb_hfield(&newmsg, SENDERAGENT, sizeof(agent), &agent);
 	smb_hfield_str(&newmsg, RFC822MSGID, get_msgid(&scfg, INVALID_SUB, &newmsg, msgid, sizeof(msgid)));
+	if (failed_id != NULL)
+		smb_hfield_str(&newmsg, RFC822REPLYID, failed_id);
 
 	/* Put error message in subject for now */
 	if (msg->hdr.delivery_attempts > 1)
