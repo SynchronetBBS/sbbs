@@ -68,6 +68,27 @@ int getmail(scfg_t* cfg, int usernumber, bool sent, int attr)
 	return i;
 }
 
+/****************************************************************************/
+/* Tells whether new mail for 'user' is to be refused, and why: with more   */
+/* than cfg->max_msgs_waiting (0 = no limit) messages in the Inbox (spam    */
+/* included, as counted by getmail()), unless the user has the W exemption. */
+/* Mail from the system itself (system_sender) is never refused.            */
+/* 'waiting' (may be NULL) gets the message count when it was taken, else 0 */
+/****************************************************************************/
+enum mailbox_full user_mailbox_full(scfg_t* cfg, const user_t* user, bool system_sender, uint* waiting)
+{
+	uint count;
+
+	if (waiting != NULL)
+		*waiting = 0;
+	if (system_sender || user->number == 0 || cfg->max_msgs_waiting == 0 || (user->exempt & UEXEMPT_MAIL_WAITING))
+		return MAILBOX_NOT_FULL;
+	count = getmail(cfg, user->number, /* sent: */ false, /* attr: */ 0);
+	if (waiting != NULL)
+		*waiting = count;
+	return count > cfg->max_msgs_waiting ? MAILBOX_FULL_MSGS : MAILBOX_NOT_FULL;
+}
+
 
 /****************************************************************************/
 /* Permanently removes all mail sent to or from 'usernumber'                */

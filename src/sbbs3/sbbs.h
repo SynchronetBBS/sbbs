@@ -1015,7 +1015,7 @@ public:
 
 	/* bulkmail.cpp */
 	bool	bulkmail(uchar *ar);
-	int		bulkmailhdr(smb_t*, smbmsg_t*, uint usernum);
+	int		bulkmailhdr(smb_t*, smbmsg_t*, uint usernum, bool* added);
 
 	/* con_out.cpp */
 	int		bputs(const char *str, int mode = 0);	/* BBS puts function */

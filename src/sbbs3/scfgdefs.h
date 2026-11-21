@@ -606,6 +606,8 @@ typedef struct
 	uint16_t		max_spamage;	/* Maximum age (in days) of SPAM-tagged messages */
 	uint16_t		max_trashage;	/* Maximum age (in days) of mailbox Trash messages (0=never purge) */
 	uint64_t		mailbox_quota;	/* Maximum per-user mailbox size in bytes (0=unlimited) */
+	uint32_t		max_msgs_waiting;	/* Maximum messages in a user's Inbox (0=unlimited) */
+	bool			max_msgs_waiting_from_sbbs_ini; /* Read from the old [Mail] MaxMsgsWaiting (not yet in msgs.ini) */
 	uint32_t		max_log_size;
 	uint16_t		max_logs_kept;
 	uint16_t		cdt_min_value;	/* Minutes per 100k credits */

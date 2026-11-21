@@ -17,8 +17,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef _GETMAIL_H_
-#define _GETMAIL_H_
+#ifndef GETMAIL_H_
+#define GETMAIL_H_
 
 #include "scfgdefs.h"
 #include "smblib.h"
@@ -28,7 +28,14 @@
 extern "C" {
 #endif
 
+/* Why a user's mailbox takes no more mail (see user_mailbox_full()) */
+enum mailbox_full {
+	MAILBOX_NOT_FULL = 0,
+	MAILBOX_FULL_MSGS       /* More than cfg->max_msgs_waiting messages in the Inbox */
+};
+
 DLLEXPORT int       getmail(scfg_t* cfg, int usernumber, bool sent, int attr);
+DLLEXPORT enum mailbox_full user_mailbox_full(scfg_t*, const user_t*, bool system_sender, uint* waiting);
 DLLEXPORT mail_t *  loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
                              , int which, long mode);
 DLLEXPORT void      freemail(mail_t* mail);

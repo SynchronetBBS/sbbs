@@ -5328,14 +5328,6 @@ static bool smtp_client_thread(smtp_t* smtp)
 					stats.msgs_refused++;
 					continue;
 				}
-				if (startup->max_msgs_waiting && !(user.exempt & UEXEMPT_MAIL_WAITING)
-				    && (waiting = getmail(&scfg, user.number, /* sent: */ false, /* spam: */ false)) > startup->max_msgs_waiting) {
-					lprintf(LOG_NOTICE, "%04d %-5s %s !User-recipient #%u (%s) mailbox (%lu msgs) exceeds the maximum (%u) msgs waiting"
-					        , socket, client.protocol, client_id, user.number, user.alias, waiting, startup->max_msgs_waiting);
-					sockprintf(socket, client.protocol, session, "450 Mailbox full: %s", rcpt_to);
-					stats.msgs_refused++;
-					continue;
-				}
 			}
 			else if (cmd == SMTP_CMD_SEND) { /* Check if user online */
 				for (i = 0; i < scfg.sys_nodes; i++) {
@@ -5354,27 +5346,42 @@ static bool smtp_client_thread(smtp_t* smtp)
 			if (cmd != SMTP_CMD_MAIL)
 				telegram = true;
 
+			tp = strrchr(user.netmail, '@');
+			bool fwd_to_net = !telegram
+			                  && !routed
+			                  && !no_forward
+			                  && scfg.sys_misc & SM_FWDTONET
+			                  && (user.misc & NETMAIL || forward)
+			                  && tp != NULL && smb_netaddr_type(user.netmail) == NET_INTERNET
+			                  && stricmp(tp + 1, scfg.sys_inetaddr) != 0
+			                  && stricmp(tp + 1, startup->host_name) != 0
+			                  && !inet_domain_listed(&scfg, tp + 1);
+			bool local_copy = !fwd_to_net || (scfg.msg_misc & MM_FWDKEEP);
+			uint inbox_msgs;
+			if (cmd == SMTP_CMD_MAIL && local_copy
+			    && user_mailbox_full(&scfg, &user, /* system_sender: */ false, &inbox_msgs) != MAILBOX_NOT_FULL) {
+				lprintf(LOG_NOTICE, "%04d %-5s %s !User-recipient #%u (%s) mailbox (%u msgs) exceeds the maximum (%u) msgs waiting%s"
+				        , socket, client.protocol, client_id, user.number, user.alias, inbox_msgs, scfg.max_msgs_waiting
+				        , fwd_to_net ? ": forwarding without a local copy" : "");
+				if (!fwd_to_net) {
+					sockprintf(socket, client.protocol, session, "450 Mailbox full: %s", rcpt_to);
+					stats.msgs_refused++;
+					continue;
+				}
+				local_copy = false;
+			}
+
 			fprintf(rcptlst, "[%u]\n", rcpt_count++);
 			fprintf(rcptlst, "%s=%s\n", smb_hfieldtype(RECIPIENT), rcpt_addr);
 			fprintf(rcptlst, "%s=%u\n", smb_hfieldtype(RECIPIENTEXT), user.number);
 
 			/* Forward to Internet */
-			tp = strrchr(user.netmail, '@');
-			if (!telegram
-			    && !routed
-			    && !no_forward
-			    && scfg.sys_misc & SM_FWDTONET
-			    && (user.misc & NETMAIL || forward)
-			    && tp != NULL && smb_netaddr_type(user.netmail) == NET_INTERNET
-			    && stricmp(tp + 1, scfg.sys_inetaddr) != 0
-			    && stricmp(tp + 1, startup->host_name) != 0
-			    && !inet_domain_listed(&scfg, tp + 1)
-			    ) {
+			if (fwd_to_net) {
 				lprintf(LOG_INFO, "%04d %-5s %s Forwarding to: %s"
 				        , socket, client.protocol, client_id, user.netmail);
 				fprintf(rcptlst, "%s=%u\n", smb_hfieldtype(RECIPIENTNETTYPE), NET_INTERNET);
 				fprintf(rcptlst, "%s=%s\n", smb_hfieldtype(RECIPIENTNETADDR), user.netmail);
-				if (scfg.msg_misc & MM_FWDKEEP) // and keep a local copy (same recipient section)
+				if (local_copy) // and keep a local copy (same recipient section)
 					fprintf(rcptlst, "%s=%s\n", rcptlst_local_copy, rcpt_to);
 				sockprintf(socket, client.protocol, session, ok_rsp);  // used to be a 251 response, changed per RFC2821
 			} else { /* Local (no-forward) */

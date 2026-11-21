@@ -498,6 +498,25 @@ void read_sub_ini_section(scfg_t* cfg, str_list_t ini, const char* section, sub_
 }
 
 /****************************************************************************/
+/* Transitional fallback: while msgs.ini has no max_msgs_waiting key, the	*/
+/* limit is the mail server's old MaxMsgsWaiting setting in sbbs.ini (until	*/
+/* 'jsexec update' or SCFG stores it in msgs.ini)							*/
+/****************************************************************************/
+static uint32_t sbbs_ini_max_msgs_waiting(scfg_t* cfg)
+{
+	char     path[MAX_PATH + 1];
+	uint32_t value = MAX_MSGS_WAITING_DEFAULT;
+	FILE*    fp;
+
+	iniFileName(path, sizeof path, cfg->ctrl_dir, "sbbs.ini");
+	if ((fp = iniOpenFile(path, /* for_modify: */ false)) != NULL) {
+		value = iniReadUInteger(fp, "Mail", "MaxMsgsWaiting", value);
+		iniCloseFile(fp);
+	}
+	return value;
+}
+
+/****************************************************************************/
 /* Transitional fallback: when msgs.ini has no [domain:] section and its	*/
 /* [Internet] section does not say domains_converted = true, read the		*/
 /* additional domains from the old ctrl/domains.cfg (until 'jsexec		*/
@@ -675,6 +694,11 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->max_spamage = iniGetInteger(section, NULL, "max_spam_age", 0);
 	cfg->max_trashage = iniGetInteger(section, NULL, "max_trash_age", 30);
 	cfg->mailbox_quota = iniGetBytes(section, NULL, "mailbox_quota", 1, 1073741824);
+	cfg->max_msgs_waiting_from_sbbs_ini = !iniKeyExists(section, NULL, "max_msgs_waiting");
+	if (cfg->max_msgs_waiting_from_sbbs_ini)
+		cfg->max_msgs_waiting = sbbs_ini_max_msgs_waiting(cfg);
+	else
+		cfg->max_msgs_waiting = iniGetUInteger(section, NULL, "max_msgs_waiting", MAX_MSGS_WAITING_DEFAULT);
 
 	/******************/
 	/* Message Groups */

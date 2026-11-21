@@ -456,6 +456,10 @@ bool write_msgs_cfg(scfg_t* cfg)
 		iniSetUInteger(&ini, name, "max_spam_age", cfg->max_spamage, &ini_style);
 		iniSetUInteger(&ini, name, "max_trash_age", cfg->max_trashage, &ini_style);
 		iniSetBytes(&ini, name, "mailbox_quota", 1, cfg->mailbox_quota, &ini_style);
+		/* A value that came from another file is not adopted by an unrelated save: */
+		/* the program saving may not see the sbbs.ini the mail server reads */
+		if (!cfg->max_msgs_waiting_from_sbbs_ini)
+			iniSetUInteger(&ini, name, "max_msgs_waiting", cfg->max_msgs_waiting, &ini_style);
 	}
 
 	{

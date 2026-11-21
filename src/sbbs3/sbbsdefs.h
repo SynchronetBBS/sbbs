@@ -304,6 +304,8 @@
 #define MM_REALNAME (1 << 16)         // Allow receipt of e-mail using real names
 #define MM_EMAILSIG (1 << 17)         // Include user signatures in e-mail msgs
 
+#define MAX_MSGS_WAITING_DEFAULT 100  // cfg.max_msgs_waiting when not configured
+
 // errormsg() codes
 #define ERR_OPEN    "opening"       // opening a file
 #define ERR_CLOSE   "closing"       // close a file

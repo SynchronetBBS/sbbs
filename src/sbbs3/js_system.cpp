@@ -63,6 +63,7 @@ enum {
 	, SYS_PROP_MAXPWLEN
 	, SYS_PROP_MAXTRASHAGE
 	, SYS_PROP_MAILBOXQUOTA
+	, SYS_PROP_MAXMSGSWAITING
 	, SYS_PROP_DELDAYS
 	, SYS_PROP_AUTODEL
 
@@ -229,6 +230,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SYS_PROP_MAILBOXQUOTA:
 			*vp = DOUBLE_TO_JSVAL((double)cfg->mailbox_quota);
+			break;
+		case SYS_PROP_MAXMSGSWAITING:
+			*vp = UINT_TO_JSVAL(cfg->max_msgs_waiting);
 			break;
 		case SYS_PROP_DELDAYS:
 			*vp = INT_TO_JSVAL(cfg->sys_deldays);
@@ -503,6 +507,9 @@ static jsSyncPropertySpec js_system_properties[] = {
 		, JSDOCSTR("Days that messages in a user's mailbox Trash folder are kept (<tt>0</tt>=<i>never purge</i>)")},
 	{   "mailbox_quota",            SYS_PROP_MAILBOXQUOTA, SYSOBJ_RO_FLAGS,    322
 		, JSDOCSTR("Maximum size of a user's mailbox, in bytes (<tt>0</tt>=<i>unlimited</i>)")},
+	{   "max_msgs_waiting",         SYS_PROP_MAXMSGSWAITING, SYSOBJ_RO_FLAGS,  322
+		, JSDOCSTR("Maximum number of messages in a user's Inbox before new mail for that user is refused "
+			       "(<tt>0</tt>=<i>unlimited</i>), see <tt>User.mailbox_full()</tt>")},
 	{   "deldays",                  SYS_PROP_DELDAYS,   SYSOBJ_RO_FLAGS,       310
 		, JSDOCSTR("Days to preserve deleted user records, record will not be reused/overwritten during this period")},
 	{   "autodel",                  SYS_PROP_AUTODEL,   SYSOBJ_RO_FLAGS,       31702

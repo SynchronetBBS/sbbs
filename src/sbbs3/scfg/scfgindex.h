@@ -3588,11 +3588,6 @@ static const scfg_option_t scfg_option_index[] = {
 		"Servers > Web Server > Max Inactivity"
 	},
 	{
-		"Max Messages Waiting",
-		"Mail Server",
-		"Servers > Mail Server > Max Messages Waiting"
-	},
-	{
 		"Max New User Inactivity",
 		"Terminal Server",
 		"Servers > Terminal Server > Max New User Inactivity"
@@ -3661,6 +3656,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Maximum Messages",
 		"Sub-board",
 		"Message Areas > Sub-boards > Sub-board > Maximum Messages"
+	},
+	{
+		"Maximum Messages Waiting",
+		"Message Options",
+		"Message Options > Maximum Messages Waiting"
 	},
 	{
 		"Maximum Number of Files",

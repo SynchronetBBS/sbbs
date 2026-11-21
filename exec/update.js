@@ -286,6 +286,15 @@ else if(domains_result.status == "error")
 	alert(domains_result.message);
 domains_result.warnings.forEach(function(w) { alert(w); });
 
+require("max_msgs_waiting_upgrade.js", "upgrade_max_msgs_waiting");
+var max_msgs_result = upgrade_max_msgs_waiting(system.ctrl_dir, test);
+if(max_msgs_result.status == "converted")
+	printf("%s Max Messages Waiting (%u) from the mail server settings to the"
+		+ " message options (%smsgs.ini)\n"
+		, test ? "Would move" : "Moved", max_msgs_result.value, system.ctrl_dir);
+else if(max_msgs_result.status == "error")
+	alert(max_msgs_result.message);
+
 var sbbsecho_cfg = system.ctrl_dir + "sbbsecho.cfg";
 var sbbsecho_ini = system.ctrl_dir + "sbbsecho.ini";
 if(file_exists(sbbsecho_cfg) && !file_exists(sbbsecho_ini)) {

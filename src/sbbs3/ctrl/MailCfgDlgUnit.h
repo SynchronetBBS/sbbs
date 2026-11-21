@@ -130,8 +130,6 @@ __published:
     TEdit *SubPortEdit;
     TCheckBox *DebugHeadersCheckBox;
     TCheckBox *UseSubPortCheckBox;
-    TLabel *MaxMsgsLabel;
-    TEdit *MaxMsgsWaitingEdit;
     TLabel *ConnectTimeoutLabel;
     TEdit *ConnectTimeoutEdit;
     TLabel *TLSSubPortLabel;

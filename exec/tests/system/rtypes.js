@@ -27,6 +27,7 @@ var type = {
 	'text("Email")'			: 'string',
 	'max_trash_age'			: 'number',
 	'mailbox_quota'			: 'number',
+	'max_msgs_waiting'		: 'number',
 };
 
 var prefix = "system.";

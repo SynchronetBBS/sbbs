@@ -1509,6 +1509,33 @@ js_can_send_mail(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_mailbox_full(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *      obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *         argv = JS_ARGV(cx, arglist);
+	user_private_t* p;
+	JSBool          system_sender = JS_FALSE;
+	jsrefcount      rc;
+	scfg_t*         scfg;
+
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
+
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
+		return JS_FALSE;
+
+	if (argc > 0 && !JS_ValueToBoolean(cx, argv[0], &system_sender))
+		return JS_FALSE;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	p->getuserdat();
+	int result = user_mailbox_full(scfg, p->user, system_sender == JS_TRUE, nullptr);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
+
+	return JS_TRUE;
+}
+
+static JSBool
 js_can_send_from_domain(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *      obj = JS_THIS_OBJECT(cx, arglist);
@@ -1687,6 +1714,14 @@ static jsSyncMethodSpec js_user_functions[] = {
 		        "except for a first message to the new user validation user.<br>"
 		        "<i>count</i> is the number of recipients (default: 1, minimum: 1); "
 		        "the per-day limit is checked against the user's e-mails sent today plus <i>count</i>.")
+	 , 322},
+	{"mailbox_full",    js_mailbox_full,    0,  JSTYPE_NUMBER,   JSDOCSTR("[<i>bool</i> system_sender=false]")
+	 , JSDOCSTR("Return non-zero if new mail for the user is to be refused, as the mail server and the terminal server decide it: "
+		        "<tt>1</tt> when the user's Inbox holds more than <tt>system.max_msgs_waiting</tt> messages "
+		        "(<tt>User.stats.mail_waiting</tt>, spam included) and the user does not have the <tt>W</tt> exemption; "
+		        "<tt>0</tt> otherwise (other non-zero values are reserved for other reasons).<br>"
+		        "Mail from the system itself (<i>system_sender</i> = <tt>true</tt>) is never refused.<br>"
+		        "<tt>MsgBase.save_msg()</tt> does not make this check: a script that delivers a user's mail calls this first.")
 	 , 322},
 	{"can_send_from_domain", js_can_send_from_domain, 1,  JSTYPE_BOOLEAN,  JSDOCSTR("<i>string</i> domain")
 	 , JSDOCSTR("Return <tt>true</tt> if the user may send e-mail from an address in <i>domain</i>. "

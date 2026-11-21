@@ -1274,6 +1274,11 @@ void msg_opts()
 		else
 			SAFECOPY(str, "Unlimited");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Mailbox Quota (per user)", str);
+		if (cfg.max_msgs_waiting)
+			SAFEPRINTF(str, "%" PRIu32, cfg.max_msgs_waiting);
+		else
+			SAFECOPY(str, "Unlimited");
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Maximum Messages Waiting", str);
 		if (cfg.sys_misc & SM_DELEMAIL)
 			SAFECOPY(str, "Immediately");
 		else
@@ -1340,6 +1345,10 @@ void msg_opts()
 			"`Mailbox Quota (per user)`: maximum size of each user's mailbox, in bytes\n"
 			"(a suffix of `K`, `M`, `G` or `T` may be used).  `Unlimited` if the value is `0`.\n"
 			"Default is `1G`.\n"
+			"\n"
+			"`Maximum Messages Waiting`: mail for a user whose Inbox already holds\n"
+			"more than this many messages is refused, unless the user has the `W`\n"
+			"exemption.  `Unlimited` if the value is `0`.  Default is `100`.\n"
 			"\n"
 			"`Purge Deleted E-mail`: `Immediately` removes deleted messages on the\n"
 			"spot; `Daily` defers physical removal to nightly maintenance (faster\n"
@@ -1505,6 +1514,28 @@ void msg_opts()
 				}
 				break;
 			case 8:
+				SAFEPRINTF(str, "%" PRIu32, cfg.max_msgs_waiting);
+				uifc.helpbuf =
+					"`Maximum Messages Waiting:`\n"
+					"\n"
+					"This value is the most messages a user's Inbox may hold before new mail\n"
+					"for that user is refused: by the mail server (the sending system tries\n"
+					"again later), at the terminal's e-mail and bulk mail prompts and in\n"
+					"WebMail (where the sender is told that the mailbox is full).\n"
+					"\n"
+					"SPAM-tagged messages count.  Mail from the system itself, FidoNet\n"
+					"netmail and QWK network mail are delivered anyway.  Users with the `W`\n"
+					"exemption are not limited.\n"
+					"\n"
+					"Use `0` for `unlimited`.  The default is `100`.\n"
+				;
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Maximum Messages Waiting per User (0=Unlimited)"
+				               , str, 10, K_EDIT | K_NUMBER) > 0) {
+					cfg.max_msgs_waiting = (uint32_t)strtoul(str, NULL, 10);
+					cfg.max_msgs_waiting_from_sbbs_ini = false;
+				}
+				break;
+			case 9:
 				strcpy(opt[0], "Daily");
 				strcpy(opt[1], "Immediately");
 				opt[2][0] = 0;
@@ -1533,7 +1564,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 9:
+			case 10:
 				sprintf(str, "%" PRIu32, cfg.mail_maxcrcs);
 				uifc.helpbuf =
 					"`Maximum Number of E-mail CRCs:`\n"
@@ -1546,7 +1577,7 @@ void msg_opts()
 				           "CRCs", str, 5, K_EDIT | K_NUMBER);
 				cfg.mail_maxcrcs = atol(str);
 				break;
-			case 10:
+			case 11:
 				i = cfg.sys_misc & SM_ANON_EM ? 0:1;
 				uifc.helpbuf =
 					"`Allow Anonymous E-mail:`\n"
@@ -1566,7 +1597,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 11:
+			case 12:
 				i = cfg.sys_misc & SM_QUOTE_EM ? 0:1;
 				uifc.helpbuf =
 					"`Allow Quoting in E-mail:`\n"
@@ -1586,7 +1617,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 12:
+			case 13:
 				i = cfg.sys_misc & SM_FILE_EM ? 0:1;
 				uifc.helpbuf =
 					"`Allow File Attachment Uploads in E-mail:`\n"
@@ -1606,7 +1637,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 13:
+			case 14:
 				i = !(cfg.sys_misc & SM_FWDTONET) ? 1 : (cfg.msg_misc & MM_FWDKEEP) ? 2 : 0;
 				strcpy(opt[0], "Yes");
 				strcpy(opt[1], "No");
@@ -1646,7 +1677,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 14:
+			case 15:
 				i = cfg.sys_misc & SM_DELREADM ? 0:1;
 				uifc.helpbuf =
 					"`Kill Read E-mail Automatically:`\n"
@@ -1666,7 +1697,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 15:
+			case 16:
 				i = cfg.msg_misc & MM_REALNAME ? 0:1;
 				uifc.helpbuf =
 					"`Receive E-mail by Real Name:`\n"
@@ -1686,7 +1717,7 @@ void msg_opts()
 					uifc.changes = TRUE;
 				}
 				break;
-			case 16:
+			case 17:
 				n = (cfg.msg_misc & MM_EMAILSIG) ? 0:1;
 				uifc.helpbuf =
 					"`Include User Signatures in E-mail:`\n"
@@ -1708,10 +1739,10 @@ void msg_opts()
 					cfg.msg_misc &= ~MM_EMAILSIG;
 				}
 				break;
-			case 17:
+			case 18:
 				edit_sys_delmsg_policy(false, false);
 				break;
-			case 18:
+			case 19:
 				n = (cfg.sys_misc & SM_FASTMAIL) ? 1:0;
 				strcpy(opt[0], "Self-packing");
 				strcpy(opt[1], "Fast Allocation");
@@ -1740,7 +1771,7 @@ void msg_opts()
 					cfg.sys_misc |= SM_FASTMAIL;
 				}
 				break;
-			case 19:
+			case 20:
 				uifc.helpbuf =
 					"`Days of New Messages for Guest:`\n"
 					"\n"

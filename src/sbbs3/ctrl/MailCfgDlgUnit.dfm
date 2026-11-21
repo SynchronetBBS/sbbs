@@ -90,19 +90,11 @@ object MailCfgDlg: TMailCfgDlg
       end
       object MaxConConLabel: TLabel
         Left = 7
-        Top = 140
-        Width = 85
-        Height = 19
-        AutoSize = False
-        Caption = 'Max Con-Conn'
-      end
-      object MaxMsgsLabel: TLabel
-        Left = 7
         Top = 114
         Width = 85
         Height = 19
         AutoSize = False
-        Caption = 'Max Msgs'
+        Caption = 'Max Con-Conn'
       end
       object AutoStartCheckBox: TCheckBox
         Left = 7
@@ -169,7 +161,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Log Transmissions'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
+        TabOrder = 6
       end
       object LogFileCheckBox: TCheckBox
         Left = 150
@@ -180,17 +172,17 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Log to Disk'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 10
+        TabOrder = 9
       end
       object MaxConConEdit: TEdit
         Left = 92
-        Top = 140
+        Top = 114
         Width = 39
         Height = 21
         Hint = 'Maximum Concurrent Connections from same IP (0=unlimited)'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 5
       end
       object DebugRXCheckBox: TCheckBox
         Left = 150
@@ -201,7 +193,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Log Responses'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 8
+        TabOrder = 7
       end
       object DebugHeadersCheckBox: TCheckBox
         Left = 150
@@ -212,17 +204,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Log RX Headers'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 9
-      end
-      object MaxMsgsWaitingEdit: TEdit
-        Left = 92
-        Top = 114
-        Width = 39
-        Height = 21
-        Hint = 'Maximum number of messages waiting per user (0=unlimited)'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 5
+        TabOrder = 8
       end
     end
     object SMTPTabSheet: TTabSheet

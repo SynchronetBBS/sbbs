@@ -1006,6 +1006,7 @@ enum text {
 	,QWKTransferInProgress
 	,FileSentIn
 	,FileReceivedIn
+	,MailboxFull
 
 	,TOTAL_TEXT
 };

@@ -754,8 +754,6 @@ bool sbbs_read_ini(
 		    = iniGetUInteger(list, section, "MaxRecipients", MAIL_DEFAULT_MAX_RECIPIENTS);
 		mail->max_msg_size
 		    = (DWORD)iniGetBytes(list, section, "MaxMsgSize", /* units: */ 1, MAIL_DEFAULT_MAX_MSG_SIZE);
-		mail->max_msgs_waiting
-		    = iniGetInteger(list, section, "MaxMsgsWaiting", MAIL_DEFAULT_MAX_MSGS_WAITING);
 		mail->connect_timeout
 		    = (uint32_t)iniGetDuration(list, section, "ConnectTimeout", MAIL_DEFAULT_CONNECT_TIMEOUT);
 
@@ -1327,8 +1325,6 @@ bool sbbs_write_ini(
 			if (!iniSetUInteger(lp, section, "MaxRecipients", mail->max_recipients, &style))
 				break;
 			if (!iniSetBytes(lp, section, "MaxMsgSize", /* unit: */ 1, mail->max_msg_size, &style))
-				break;
-			if (!iniSetInteger(lp, section, "MaxMsgsWaiting", mail->max_msgs_waiting, &style))
 				break;
 			if (!iniSetDuration(lp, section, "ConnectTimeout", mail->connect_timeout, &style))
 				break;

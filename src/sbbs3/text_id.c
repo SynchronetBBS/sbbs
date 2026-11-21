@@ -990,4 +990,5 @@ const char* const text_id[]={
 	,"QWKTransferInProgress"
 	,"FileSentIn"
 	,"FileReceivedIn"
+	,"MailboxFull"
 };

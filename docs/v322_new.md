@@ -94,6 +94,11 @@
 - **Allow Forwarding to NetMail** (SCFG Message Options) can now be set to
   `Both`: e-mail is forwarded and a copy is also kept in the user's mailbox
   (issues #140, #593). Not for e-mail the sender forwards from the terminal
+- **Maximum Messages Waiting** now also stops e-mail sent to a full
+  Inbox from the terminal, bulk mail and WebMail, not only SMTP (FidoNet,
+  QWK and system mail are still delivered), and moved from the Mail
+  Server settings to SCFG Message Options (`jsexec update` carries a
+  changed value over)
 
 ## Servers
 

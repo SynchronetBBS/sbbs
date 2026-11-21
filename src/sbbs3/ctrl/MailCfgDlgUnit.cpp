@@ -79,10 +79,6 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
         MaxMsgSizeEdit->Text="N/A";
     else
     	MaxMsgSizeEdit->Text=AnsiString(byte_count_to_str(MainForm->mail_startup.max_msg_size, str, sizeof(str)));
-    if(MainForm->mail_startup.max_msgs_waiting == 0)
-        MaxMsgsWaitingEdit->Text="N/A";
-    else
-        MaxMsgsWaitingEdit->Text=AnsiString(MainForm->mail_startup.max_msgs_waiting);
     if(MainForm->mail_startup.max_concurrent_connections == 0)
         MaxConConEdit->Text="N/A";
     else
@@ -214,7 +210,6 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->mail_startup.max_inactivity=parse_duration(MaxInactivityEdit->Text.c_str());
     MainForm->mail_startup.max_recipients=MaxRecipientsEdit->Text.ToIntDef(MAIL_DEFAULT_MAX_RECIPIENTS);
     MainForm->mail_startup.max_msg_size=parse_byte_count(MaxMsgSizeEdit->Text.c_str(), 1);
-    MainForm->mail_startup.max_msgs_waiting=MaxMsgsWaitingEdit->Text.ToIntDef(0);
     MainForm->mail_startup.max_delivery_attempts=DeliveryAttemptsEdit->Text.ToIntDef(MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS);
     MainForm->mail_startup.rescan_frequency = parse_duration(RescanFreqEdit->Text.c_str());
     MainForm->mail_startup.max_concurrent_connections=MaxConConEdit->Text.ToIntDef(0);

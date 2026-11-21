@@ -52,8 +52,7 @@ typedef struct {
 	str_list_t pop3_interfaces;
 	uint32_t max_msg_size;          /* Max msg size in bytes (0=unlimited) */
 #define MAIL_DEFAULT_MAX_MSG_SIZE           (20 * 1024 * 1024)  /* 20MB */
-	uint32_t max_msgs_waiting;      /* Max msgs in user's inbox (0=unlimited) */
-#define MAIL_DEFAULT_MAX_MSGS_WAITING       100
+	uint32_t max_msgs_waiting;      /* Unused: see scfg_t.max_msgs_waiting (kept for the struct's layout) */
 	uint32_t connect_timeout;       /* in seconds, for non-blocking connect (0=blocking socket) */
 #define MAIL_DEFAULT_CONNECT_TIMEOUT        30      /* seconds */
 

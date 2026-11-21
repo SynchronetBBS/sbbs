@@ -116,11 +116,13 @@ bool sbbs_t::bulkmail(uchar *ar)
 			if (user.misc & (DELETED | INACTIVE))
 				continue;
 			if (chk_ar(ar, &user, /* client: */ NULL)) {
-				if ((x = bulkmailhdr(&smb, &msg, i)) != SMB_SUCCESS) {
+				bool added;
+				if ((x = bulkmailhdr(&smb, &msg, i, &added)) != SMB_SUCCESS) {
 					errormsg(WHERE, ERR_WRITE, smb.file, x);
 					break;
 				}
-				msgs++;
+				if (added)
+					msgs++;
 			}
 		}
 	else
@@ -129,11 +131,13 @@ bool sbbs_t::bulkmail(uchar *ar)
 			if (!getstr(str, LEN_ALIAS, cfg.uq & UQ_NOUPRLWR ? K_NONE:K_UPRLWR))
 				break;
 			if ((i = finduser(str)) != 0) {
-				if ((x = bulkmailhdr(&smb, &msg, i)) != SMB_SUCCESS) {
+				bool added;
+				if ((x = bulkmailhdr(&smb, &msg, i, &added)) != SMB_SUCCESS) {
 					errormsg(WHERE, ERR_WRITE, smb.file, x);
 					break;
 				}
-				msgs++;
+				if (added)
+					msgs++;
 			}
 		}
 
@@ -160,7 +164,9 @@ bool sbbs_t::bulkmail(uchar *ar)
 }
 
 
-int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
+// '*added' is set to whether a message was stored for the user: not when the
+// user's mailbox is full (the sender is told) or the user cannot be read
+int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum, bool* added)
 {
 	char     str[256];
 	int      i, j;
@@ -169,9 +175,20 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 	user_t   user;
 	smbmsg_t newmsg;
 
+	*added = false;
 	user.number = usernum;
 	if (getuserdat(&cfg, &user) != 0)
 		return 0;
+
+	bool forward = cfg.sys_misc & SM_FWDTONET && user.misc & NETMAIL && user.netmail[0];
+	bool local_copy = !forward || (cfg.msg_misc & MM_FWDKEEP);
+	if (local_copy && user_mailbox_full(&cfg, &user, /* system_sender: */ false, NULL) != MAILBOX_NOT_FULL) {
+		if (!forward) {
+			bprintf(text[MailboxFull], user.alias);
+			return 0;
+		}
+		local_copy = false;
+	}
 
 	if ((i = smb_copymsgmem(NULL, &newmsg, msg)) != SMB_SUCCESS)
 		return i;
@@ -179,7 +196,6 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 	SAFECOPY(str, user.alias);
 	smb_hfield_str(&newmsg, RECIPIENT, str);
 
-	bool forward = cfg.sys_misc & SM_FWDTONET && user.misc & NETMAIL && user.netmail[0];
 	if (forward) {
 		bprintf(text[UserNetMail], user.netmail);
 		smb_hfield_netaddr(&newmsg, RECIPIENTNETADDR, user.netmail, &nettype);
@@ -190,7 +206,7 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 	}
 
 	j = smb_addmsghdr(smb, &newmsg, smb_storage_mode(&cfg, smb));
-	if (j == SMB_SUCCESS && forward && (cfg.msg_misc & MM_FWDKEEP)) {
+	if (j == SMB_SUCCESS && forward && local_copy) {
 		/* Keep a local copy too: one more header for the same data */
 		if ((i = add_fwd_mail_copy(smb, &newmsg, usernum, smb_storage_mode(&cfg, smb))) != SMB_SUCCESS)
 			errormsg(WHERE, ERR_WRITE, smb->file, i, smb->last_error);
@@ -198,6 +214,7 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 	smb_freemsgmem(&newmsg);
 	if (j != SMB_SUCCESS)
 		return j;
+	*added = true;
 
 	term->lncntr = 0;
 	bprintf(text[Emailing], user.alias, usernum);

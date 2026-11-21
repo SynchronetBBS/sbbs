@@ -2551,7 +2551,6 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Recipients Per Message", maximum(startup.max_recipients));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Messages Waiting", maximum(startup.max_msgs_waiting));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s bytes", "Max Receive Message Size", byte_count_to_str(startup.max_msg_size, tmp, sizeof(tmp)));
 		if (startup.max_requests_per_period > 0 && startup.request_rate_limit_period > 0) {
 			snprintf(str, sizeof str, "%u per %s", startup.max_requests_per_period
@@ -2628,9 +2627,6 @@ static void mailsrvr_cfg(void)
 			"connections from a single client IP address.\n"
 			"\n"
 			"`Max Recipients Per Message`: limit on recipients of one message.\n"
-			"\n"
-			"`Max Messages Waiting`: refuse mail for a user with more than this\n"
-			"many messages waiting, unless the user is exempt.\n"
 			"\n"
 			"`Max Receive Message Size`: largest message to accept.\n"
 			"\n"
@@ -2753,45 +2749,40 @@ static void mailsrvr_cfg(void)
 					startup.max_recipients = atoi(str);
 				break;
 			case 14:
-				SAFECOPY(str, maximum(startup.max_msgs_waiting));
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Messages Waiting per User", str, 10, K_EDIT) > 0)
-					startup.max_msgs_waiting = atoi(str);
-				break;
-			case 15:
 				byte_count_to_str(startup.max_msg_size, str, sizeof(str));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Received Message Size (in bytes)", str, 10, K_EDIT) > 0)
 					startup.max_msg_size = (uint32_t)parse_byte_count(str, 1);
 				break;
-			case 16:
+			case 15:
 				mail_rate_limit_cfg(&startup);
 				break;
-			case 17:
+			case 16:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Override Recipient of SMTP Posts"
 						   , startup.post_to, sizeof startup.post_to -1, K_EDIT);
 				break;
-			case 18:
+			case 17:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Default Recipient (user alias)"
 				           , startup.default_user, sizeof(startup.default_user) - 1, K_EDIT);
 				break;
-			case 19:
+			case 18:
 				startup.options ^= MAIL_OPT_ALLOW_SYSOP_ALIASES;
 				break;
-			case 20:
+			case 19:
 				startup.options ^= MAIL_OPT_NO_NOTIFY;
 				break;
-			case 21:
+			case 20:
 				startup.notify_offline_users = !startup.notify_offline_users;
 				break;
-			case 22:
+			case 21:
 				startup.options ^= MAIL_OPT_ALLOW_RELAY;
 				break;
-			case 23:
+			case 22:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 24:
+			case 23:
 				startup.options ^= MAIL_OPT_DNSBL_CHKRECVHDRS;
 				break;
-			case 25:
+			case 24:
 				i = 0;
 				strcpy(opt[i++], "Refuse Session");
 				strcpy(opt[i++], "Silently Ignore");
@@ -2827,30 +2818,30 @@ static void mailsrvr_cfg(void)
 				else
 					startup.options &= ~MAIL_OPT_DNSBL_THROTTLE;
 				break;
-			case 26:
+			case 25:
 				startup.options ^= MAIL_OPT_DNSBL_SPAMHASH;
 				break;
-			case 27:
+			case 26:
 				startup.options ^= MAIL_OPT_KILL_READ_SPAM;
 				break;
-			case 28:
+			case 27:
 				SAFECOPY(str, duration(startup.spam_block_duration, false, strInfinite));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Lifetime of ban of SPAM-bait taker IP", str, 8, K_EDIT) > 0)
 					startup.spam_block_duration = (uint)parse_duration(str);
 				break;
-			case 29:
+			case 28:
 				sendmail_cfg(&startup);
 				break;
-			case 30:
+			case 29:
 				getar("Mail Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
-			case 31:
+			case 30:
 				getar("Mail Archive", startup.archive_ars, /* helpbuf: */ NULL);
 				break;
-			case 32:
+			case 31:
 				js_startup_cfg(&startup.js);
 				break;
-			case 33:
+			case 32:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:

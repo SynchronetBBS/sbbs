@@ -79,6 +79,12 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 			bprintf(text[InvalidNetMailAddr], user.netmail);
 		}
 	}
+	// A new user's validation feedback is always delivered: losing it would lose the account
+	bool validation_feedback = usernumber == cfg.valuser && useron.fbacks == 0 && useron.emails == 0;
+	if (user_mailbox_full(&cfg, &user, /* system_sender: */ validation_feedback, NULL) != MAILBOX_NOT_FULL) {
+		bprintf(text[MailboxFull], user.alias);
+		return false;
+	}
 	if (sys_status & SS_ABORT) {
 		bputs(text[Aborted]);
 		return false;
