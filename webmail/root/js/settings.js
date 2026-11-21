@@ -126,11 +126,14 @@ export function createSettings(o) {
 	function nameSection(r) {
 		const sec = section("name", t("settings.label_name_heading"));
 		const id = uid + "-name";
+		// The name used when the field is left empty: the alias or the real
+		// name, as the system sends Internet mail (settings.get)
+		const fallback = typeof r.default_name === "string" && r.default_name !== "" ? r.default_name : userName;
 		// maxlength: the server keeps at most 64 bytes (and the page says
 		// "Saved as" when it cut), so a long paste never reaches its length
 		// refusal
 		const input = h("input", { id, type: "text", autocomplete: "name", spellcheck: "false", maxlength: "64",
-			placeholder: userName, "aria-describedby": id + "-hint " + sec.statusId });
+			placeholder: fallback, "aria-describedby": id + "-hint " + sec.statusId });
 		input.value = r.display_name || "";
 		const btn = saveButton(t("main.button_save"), () => {
 			const typed = input.value.trim();
@@ -148,7 +151,7 @@ export function createSettings(o) {
 		});
 		sec.box.append(h("div", { class: "field" },
 			h("label", { for: id, text: t("settings.label_display_name") }), input,
-			hint(t("settings.label_display_name_help", { name: userName }), id + "-hint")),
+			hint(t("settings.label_display_name_help", { name: fallback }), id + "-hint")),
 			h("div", { class: "set-actions" }, btn));
 		return sec.el;
 	}

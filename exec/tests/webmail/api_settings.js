@@ -149,6 +149,19 @@ try {
 	Kit.eq(g.display_name.length, 64, "cut to 64");
 	set(alice, { display_name: "Alice Smith" });
 
+	// --- default_name: what Internet mail carries with a blank display
+	// name: the real name, or the alias when the system sends with aliases
+	SYS.inet_alias = false;
+	var dn_real = call(env(alice), "settings.get", {}).default_name;
+	SYS.inet_alias = true;
+	var dn_alias = call(env(alice), "settings.get", {}).default_name;
+	delete SYS.inet_alias;
+	Kit.assert(typeof dn_real == "string" && dn_real !== "" && typeof dn_alias == "string" && dn_alias !== "",
+		"default_name is given: " + JSON.stringify([dn_real, dn_alias]));
+	Kit.assert(dn_real !== "Alice Smith" && dn_alias !== "Alice Smith", "default_name is not the stored display name");
+	Kit.eq(dn_alias, "alice", "default_name with aliases: the alias");
+	Kit.assert(dn_real !== dn_alias, "default_name without aliases: the real name, not the alias: " + dn_real);
+
 	// --- From domain: one of the allowed, lowercased; "" is the system's
 	refused(alice, { from_domain: "evil.example" }, "invalid", "from_domain", "a domain outside the list");
 	g = set(alice, { from_domain: "Family.Example" });

@@ -353,7 +353,9 @@
 //   contact.delete {id}  -> {}
 //   contact.suggest {q, limit}  -> { suggestions } (the user's own
 //                       contacts only, limit 1 to 50, default 10)
-//   settings.get     -> { display_name, from_domain, theme, images_always,
+//   settings.get     -> { display_name, default_name (the name Internet
+//                       mail carries when display_name is blank),
+//                       from_domain, theme, images_always,
 //                       from_domains (Address.domains_for: the domains the
 //                       user may send from), from_address_local (the part
 //                       of the address the system assigns the user before
@@ -1999,6 +2001,7 @@ var Api = (function () {
 			inet_domain_list: system.inet_domain_list,
 			msg_settings: msg_area.settings,
 			MM_FWDKEEP: defs.MM_FWDKEEP,
+			inet_alias: (msg_area.inet_netmail_settings & lib("address").NMAIL_ALIAS) != 0,
 			findstr: function (list, str) {
 				return system.findstr(list, str);
 			},
@@ -2086,6 +2089,10 @@ var Api = (function () {
 		if (out.from_local !== ""
 			&& lib("address").from_pick(out.from_local, out.from_domain, addresses, own_check(rq)) === null)
 			out.from_local = "";
+		// The name Internet mail carries when display_name is blank: the
+		// alias or the real name, as the system is set up (what send uses)
+		out.default_name = utf8_of(lib("address").identity(rq.user, "internet", null,
+			{ inet_alias: sys_of(rq).inet_alias === true, fido_alias: false }).from);
 		var email = utf8_of(rq.user.email);
 		var at = email.lastIndexOf("@");
 		if (at > 0)
