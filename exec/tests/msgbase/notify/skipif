@@ -1,2 +1,4 @@
-// The child jsexec is located through /proc (Linux), and putenv() is jsexec's
-typeof MsgBase === 'undefined' || typeof putenv !== 'function' || !file_exists("/proc/self/stat")
+// The child jsexec is located through /proc (Linux), and putenv() is jsexec's.
+// Skipped where that cannot work: /proc/self/stat cannot be read, or the
+// process it names is not jsexec (under valgrind it is valgrind's).
+typeof MsgBase === 'undefined' || typeof putenv !== 'function' || (function () { var f = new File("/proc/self/stat"); if (!f.open("r")) return true; var l = String(f.readln()); f.close(); return l.indexOf("(jsexec") < 0; })()
