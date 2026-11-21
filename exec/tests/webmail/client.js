@@ -290,7 +290,10 @@ Kit.eq(matches(/contenteditable/gi, INDEX).length, 0, "index.xjs: no contentedit
 		[[undefined, undefined], "photos@pics.example", I, L, false, "folder unknown"],
 		[[], "photos@pics.example", I, L, false, "no folder"],
 		["inbox", "photos@pics.example", I, L, false, "folders not a list"],
-		[["inbox"], "photos@pics.example", "local", L, false, "not Internet mail (local)"],
+		[["inbox"], "photos@pics.example", "local", L, true, "a listed local user (by that user's address)"],
+		[["inbox"], "", "local", L.concat([""]), false, "local mail from no user"],
+		[["spam"], "photos@pics.example", "local", L, false, "local mail, never in Spam"],
+		[["inbox"], "photos@pics.example", "qwk", L, false, "not Internet or local mail (QWK)"],
 		[["inbox"], "photos@pics.example", "fido", L, false, "not Internet mail (FidoNet)"],
 		[["inbox"], "photos@pics.example", undefined, L, false, "network unknown"],
 		[["inbox"], "other@pics.example", I, L, false, "sender not listed"],
@@ -312,6 +315,8 @@ Kit.eq(matches(/contenteditable/gi, INDEX).length, 0, "index.xjs: no contentedit
 	Kit.assert(/autoImages\(foldersOf\(\), senderOf\(\), netOf\(\),/.test(function_text(reader, "listed")),
 		"reader.js listed(): autoImages(foldersOf(), senderOf(), netOf(), ...)");
 	var so = function_text(reader, "senderOf");
+	Kit.assert(/hd\.net_type === "local"/.test(so) && /hd\.from_local_addr/.test(so),
+		"reader.js senderOf(): a local user's address for local mail: " + so);
 	Kit.assert(/hd\.from_addr_bad !== true/.test(so) && /hd\.from_addr\b/.test(so) && !/\.from\b(?!_)/.test(so),
 		"reader.js senderOf(): the structured address, not the display name, never a malformed one: " + so);
 	var fo = function_text(reader, "foldersOf");

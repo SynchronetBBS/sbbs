@@ -282,6 +282,12 @@ try {
 	Kit.eq(g.headers.net_type, "local", "local net_type");
 	Kit.eq(g.headers.to_domain, "", "local to_domain");
 	Kit.eq(g.headers.to_addr, "", "local to_addr");
+	Kit.eq(g.headers.from_local_addr, system.lastuser >= 1 && !(new User(1).settings & ((1 << 0) | (1 << 6)))
+		? new User(1).email : "", "a local sender's address is that user's");
+	g = alice.get("s" + save(shared, to_alice({ from: "Nobody", from_ext: String(system.lastuser + 1) }), "x\r\n"));
+	Kit.eq(g.headers.from_local_addr, "", "no address for a sender who is not a user");
+	g = alice.get("s" + save(shared, to_alice({ from: "Out", from_ext: "1", from_net_type: D.NET_INTERNET, from_net_addr: "out@far.example" }), "x\r\n"));
+	Kit.eq(g.headers.from_local_addr, "", "no local address for Internet mail");
 
 	// a non-MIME message flagged UTF-8
 	var n_u8 = save(shared, to_alice({ ftn_charset: "UTF-8 4" }), "caf\xc3\xa9 \x01hbold\r\n");

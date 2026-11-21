@@ -77,8 +77,10 @@ const MAX_KEPT = 20;
 // message's); none may be "spam" or "trash" (spam moved to Trash loses
 // its spam mark, so Trash counts as Spam here), and at least one must be
 // known.  addr: its sender's structured ADDRESS (headers.from_addr, never
-// the display name), "" when the server marked it malformed; netType:
-// headers.net_type, which must be "internet".  The address must be a
+// the display name), "" when the server marked it malformed; for mail
+// from a local user (who has no from_addr) that user's address
+// (headers.from_local_addr); netType: headers.net_type, which must be
+// "internet" or "local".  The address must be a
 // plain address with no control character (C0, DEL, C1 or a
 // bidirectional control).  senders: the user's images_always list (ASCII
 // lowercased by the server).  A sender's address can be faked: that is
@@ -94,7 +96,7 @@ export function autoImages(folders, addr, netType, senders) {
 		if (typeof folders[i] === "string" && folders[i] !== "")
 			known = true;
 	}
-	if (!known || netType !== "internet" || typeof addr !== "string" || !(senders instanceof Array))
+	if (!known || (netType !== "internet" && netType !== "local") || typeof addr !== "string" || !(senders instanceof Array))
 		return false;
 	if (/[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/.test(addr)
 		|| !/^[^@\s"<>()\[\],;:\\]+@[^@\s"<>()\[\],;:\\\/]+\.[^@\s"<>()\[\],;:\\\/]+$/.test(addr))
@@ -699,6 +701,8 @@ export function createReader(o) {
 	// "" when the server marked it malformed (from_addr_bad)
 	function senderOf() {
 		const hd = cur.msg && cur.msg.headers ? cur.msg.headers : null;
+		if (hd && hd.net_type === "local")
+			return typeof hd.from_local_addr === "string" ? hd.from_local_addr : "";
 		return hd && hd.from_addr_bad !== true && typeof hd.from_addr === "string" ? hd.from_addr : "";
 	}
 

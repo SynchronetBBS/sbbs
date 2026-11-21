@@ -78,7 +78,9 @@
 //
 // get(): headers is {from, from_addr, from_addr_bad, to, cc, reply_to,
 // to_list, cc_list, reply_to_list, date, message_id, reply_id, net_type
-// ("local", "internet", "fido", "qwk" or "other"), to_domain}, all UTF-8.
+// ("local", "internet", "fido", "qwk" or "other"), from_local_addr (the
+// Internet address of the local user it is from, else ""), to_domain}, all
+// UTF-8.
 // from is
 // the display name of the stored original From line when there is one
 // (RFC 2047 words decoded as text: controls removed), else the from field
@@ -3073,6 +3075,27 @@ var Store = (function () {
 		return parts.join(", ");
 	}
 
+	var USER_GONE = (1 << 0) | (1 << 6);	// USER_DELETED, USER_INACTIVE (userdefs.js)
+
+	// The Internet address of the local user a message is from (User.email),
+	// "" when it is not from a local user or that user is gone
+	function local_sender_addr(h)
+	{
+		if (h.from_net_type)
+			return "";
+		var n = parseInt(h.from_ext, 10);
+		if (!(n > 0) || n > system.lastuser)
+			return "";
+		try {
+			var u = new User(n);
+			if ((u.settings & USER_GONE) || typeof u.email != "string")
+				return "";
+			return shown_addr(u.email) === u.email ? u.email : "";
+		} catch (e) {
+			return "";
+		}
+	}
+
 	function header_values(h)
 	{
 		var str = hstr(h);
@@ -3101,6 +3124,7 @@ var Store = (function () {
 			message_id: str(h.id),
 			reply_id: str(h.reply_id),
 			net_type: net_name(h.from_net_type),
+			from_local_addr: local_sender_addr(h),
 			to_domain: to_domain(h),
 			to_addr: to_addr(h)
 		};
