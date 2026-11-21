@@ -196,7 +196,8 @@ try {
 	Kit.eq(recorded(ALICE), 1, "not rewritten for an unchanged total");
 	one(st.move([pat], "inbox"), "attached message back to the Inbox");
 	Kit.eq(recorded(ALICE), private_bytes(ALICE), "rewritten when the total changes");
-	Kit.eq(directory(S.user_dir(ALICE) + "mailbox.usage.ini.*").length, 0, "no temp files left");
+	// "*.tmp", not ".*": on Windows "mailbox.usage.ini.*" also matches the file itself
+	Kit.eq(directory(S.user_dir(ALICE) + "mailbox.usage.ini.*.tmp").length, 0, "no temp files left");
 
 	// --- Over the quota only because of the Inbox: deleting and filing
 	// work, nothing is removed from Trash
