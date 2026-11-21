@@ -1184,3 +1184,4 @@
 "\1_\1w\1h@FILE_NAME@ (@FILE_BYTES|T@ bytes) received in @XFER_TIME@ (@XFER_CPS|T@ cps).\r\n" 989 FileReceivedIn
 "\1r\1h\r\nThe mailbox of %s is full.\1n\r\n"              990 MailboxFull
 "\1r\1h\r\nYour mailbox is full: new e-mail for you is refused.\r\nDelete messages you do not need to make room.\1n\r\n" 991 YourMailboxIsFull
+"\1r\1hAborted\1n"                                      992 AbortedAnswer

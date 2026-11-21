@@ -998,8 +998,9 @@ var FileSentIn=988;
 var FileReceivedIn=989;
 var MailboxFull=990;
 var YourMailboxIsFull=991;
+var AbortedAnswer=992;
 
-var TOTAL_TEXT=991;
+var TOTAL_TEXT=992;
 
 /* Former names of renamed strings */
 var NScanPmQ=406;

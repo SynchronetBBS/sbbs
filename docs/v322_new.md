@@ -337,6 +337,8 @@
 - Fix: e-mail attachments sent "inline" with a filename (e.g. a photo sent
   from an iPhone) are now offered for download when reading the message;
   they were ignored (issue #485)
+- A Yes/No prompt aborted with Ctrl-C now shows "Aborted" instead of "No"
+  (new `AbortedAnswer` text string) (issue #1386)
 
 ## Web Server
 

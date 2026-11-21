@@ -277,7 +277,8 @@ bool sbbs_t::yesno(const char *str, int mode)
 	sync();
 	bprintf(mode, text[YesNoQuestion], str);
 	while (online) {
-		if (sys_status & SS_ABORT)
+		bool aborted = (sys_status & SS_ABORT) != 0;
+		if (aborted)
 			ch = no_key();
 		else
 			ch = getkey(K_UPPER | K_COLD);
@@ -290,7 +291,7 @@ bool sbbs_t::yesno(const char *str, int mode)
 			return true;
 		}
 		if (ch == no_key()) {
-			if (bputs(text[No], mode) && !(mode & P_NOCRLF))
+			if (bputs(text[aborted ? AbortedAnswer : No], mode) && !(mode & P_NOCRLF))
 				term->newline();
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
@@ -315,12 +316,13 @@ bool sbbs_t::noyes(const char *str, int mode)
 	sync();
 	bprintf(mode, text[NoYesQuestion], str);
 	while (online) {
-		if (sys_status & SS_ABORT)
+		bool aborted = (sys_status & SS_ABORT) != 0;
+		if (aborted)
 			ch = no_key();
 		else
 			ch = getkey(K_UPPER | K_COLD);
 		if (ch == no_key() || ch == CR) {
-			if (bputs(text[No], mode) && !(mode & P_NOCRLF))
+			if (bputs(text[aborted ? AbortedAnswer : No], mode) && !(mode & P_NOCRLF))
 				term->newline();
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);

@@ -1008,6 +1008,7 @@ enum text {
 	,FileReceivedIn
 	,MailboxFull
 	,YourMailboxIsFull
+	,AbortedAnswer
 
 	,TOTAL_TEXT
 };
