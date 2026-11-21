@@ -3428,15 +3428,39 @@ static void remove_port_part(char *host)
 	split_port_part(host);
 }
 
+// An absolute-form request-target ("http://host/path?query") names the host,
+// overriding any Host header; reduce it to origin-form ("/path?query").
+static void absolute_to_origin_form(http_session_t * session)
+{
+	char*       target = session->req.virtual_path;
+	const char* rest;
+	size_t      scheme_len;
+	size_t      host_len;
+	char        path[sizeof session->req.virtual_path];
+
+	if (strnicmp(target, http_scheme, http_scheme_len) == 0)
+		scheme_len = http_scheme_len;
+	else if (strnicmp(target, https_scheme, https_scheme_len) == 0)
+		scheme_len = https_scheme_len;
+	else
+		return;
+
+	host_len = strcspn(target + scheme_len, "/?");
+	safe_snprintf(session->req.host, sizeof session->req.host, "%.*s", (int)host_len, target + scheme_len);
+	strlwr(session->req.host);
+	SAFECOPY(session->req.vhost, session->req.host);
+	remove_port_part(session->req.vhost);
+
+	rest = target + scheme_len + host_len;
+	SAFEPRINTF2(path, "%s%s", *rest == '/' ? "" : "/", rest);
+	SAFECOPY(session->req.virtual_path, path);
+}
+
 static char *get_request(http_session_t * session, char *req_line)
 {
-	char*       p;
-	char*       query;
-	char*       retval;
-	char*       last;
-	int         offset;
-	const char* scheme = NULL;
-	size_t      scheme_len;
+	char* query;
+	char* retval;
+	char* last;
 
 	SKIP_WHITESPACE(req_line);
 	SAFECOPY(session->req.virtual_path, req_line);
@@ -3444,6 +3468,7 @@ static char *get_request(http_session_t * session, char *req_line)
 		retval = strtok_r(NULL, " \t", &last);
 	else
 		retval = NULL;
+	absolute_to_origin_form(session);
 	SAFECOPY(session->req.request_line, session->req.virtual_path);
 	if (!session->req.orig_request_line[0])
 		SAFECOPY(session->req.orig_request_line, session->req.virtual_path);
@@ -3456,50 +3481,6 @@ static char *get_request(http_session_t * session, char *req_line)
 	SAFECOPY(session->req.physical_path, session->req.virtual_path);
 	hex_decode('%', session->req.physical_path);
 
-	if (strnicmp(session->req.physical_path, http_scheme, http_scheme_len) == 0) {
-		scheme = http_scheme;
-		scheme_len = http_scheme_len;
-	}
-	else if (strnicmp(session->req.physical_path, https_scheme, https_scheme_len) == 0) {
-		scheme = https_scheme;
-		scheme_len = https_scheme_len;
-	}
-	if (scheme != NULL) {
-		/* Remove http:// from start of physical_path */
-		memmove(session->req.physical_path, session->req.physical_path + scheme_len, strlen(session->req.physical_path + scheme_len) + 1);
-
-		/* Set HOST value... ignore HOST header */
-		SAFECOPY(session->req.host, session->req.physical_path);
-
-		/* Remove path if present (everything after the first /) */
-		strtok_r(session->req.host, "/", &last);
-
-		/* Lower-case the host */
-		strlwr(session->req.host);
-
-		/* Set vhost value to host value */
-		SAFECOPY(session->req.vhost, session->req.host);
-
-		/* Remove port specification from vhost (if present) */
-		remove_port_part(session->req.vhost);
-
-		p = strchr(session->req.physical_path, '/');
-
-		/*
-		 * If we have a slash, make it the first char in the string.
-		 * otherwise, set path to "/"
-		 */
-		if (p == NULL) {
-			strcpy(session->req.physical_path, "/");
-		}
-		else {
-			offset = p - session->req.physical_path;
-			memmove(session->req.physical_path
-			        , session->req.physical_path + offset
-			        , strlen(session->req.physical_path + offset) + 1 /* move '\0' terminator too */
-			        );
-		}
-	}
 	if (query != NULL)
 		SAFECOPY(session->req.query_str, query);
 
