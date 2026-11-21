@@ -1373,12 +1373,14 @@ void sbbs_t::nodemsg()
 				if (!usernumber)
 					break;
 
-				if (usernumber == 1 && useron.rest & UREST_EMAIL_SYSOP) { /* ! val fback */
-					bprintf(text[R_Feedback], cfg.sys_op);
-					break;
-				}
-				if (usernumber != 1 && useron.rest & UREST_EMAIL) {
-					bputs(text[R_Email]);
+				uint reason;
+				if (!user_can_send_mail(&cfg, NET_NONE, usernumber, /* count: */ 1, &useron
+				                        , CANSEND_NO_LIMIT | CANSEND_NOT_FEEDBACK | (useron_is_sysop() ? CANSEND_SYSOP : 0)
+				                        , &reason)) {
+					if (reason == R_Feedback)
+						bprintf(text[R_Feedback], cfg.sys_op);
+					else
+						bputs(text[reason]);
 					break;
 				}
 				now = time(NULL);

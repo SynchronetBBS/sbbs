@@ -4064,12 +4064,14 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 	if (usernumber < 1)
 		return JS_TRUE;
 
-	if (usernumber == 1 && sbbs->useron.rest & UREST_EMAIL_SYSOP) { /* ! val fback */
-		sbbs->bprintf(sbbs->text[R_Feedback], sbbs->cfg.sys_op);
-		return JS_TRUE;
-	}
-	if (usernumber > 1 && sbbs->useron.rest & UREST_EMAIL) {
-		sbbs->bputs(sbbs->text[R_Email]);
+	uint reason;
+	if (!user_can_send_mail(&sbbs->cfg, NET_NONE, usernumber, /* count: */ 1, &sbbs->useron
+	                        , CANSEND_NO_LIMIT | CANSEND_NOT_FEEDBACK | (sbbs->useron_is_sysop() ? CANSEND_SYSOP : 0)
+	                        , &reason)) {
+		if (reason == R_Feedback)
+			sbbs->bprintf(sbbs->text[R_Feedback], sbbs->cfg.sys_op);
+		else
+			sbbs->bputs(sbbs->text[reason]);
 		return JS_TRUE;
 	}
 

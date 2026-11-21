@@ -1530,20 +1530,23 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 		return false;
 	}
 
-	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)) {
-		bputs(text[TooManyEmailsToday]);
-		return false;
-	}
 	if (useron.rest & UREST_FORWARD_MAIL) {
 		bputs(text[R_Forward]);
 		return false;
 	}
-	if (usernumber == 1 && useron.rest & UREST_EMAIL_SYSOP) {
-		bprintf(text[R_Feedback], cfg.sys_op);
-		return false;
-	}
-	if (usernumber != 1 && useron.rest & UREST_EMAIL) {
-		bputs(text[R_Email]);
+	if (net_type == NET_NONE) {
+		uint reason;
+		if (!user_can_send_mail(&cfg, NET_NONE, usernumber, /* count: */ 1, &useron
+		                        , CANSEND_NOT_FEEDBACK | (useron_is_sysop() ? CANSEND_SYSOP : 0), &reason)) {
+			if (reason == R_Feedback)
+				bprintf(text[R_Feedback], cfg.sys_op);
+			else
+				bputs(text[reason]);
+			return false;
+		}
+	} else if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop()
+	           && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)) {
+		bputs(text[TooManyEmailsToday]);
 		return false;
 	}
 	if (usernumber > 0) {

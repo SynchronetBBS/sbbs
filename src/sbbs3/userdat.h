@@ -57,6 +57,8 @@
 #define CANSEND_NO_LIMIT        (1 << 1)    // Do not apply the e-mail-per-day limit
 #define CANSEND_QWK_HUB         (1 << 2)    // From a QWK hub's packet: no sending user, so neither
                                             // the user restrictions nor the per-day limit apply
+#define CANSEND_NOT_FEEDBACK    (1 << 3)    // Not e-mail (a telegram, a forwarded message): a restricted
+                                            // user's first message to the validation user is not excepted
 
 #ifdef __cplusplus
 extern "C" {

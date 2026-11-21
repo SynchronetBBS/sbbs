@@ -4220,7 +4220,8 @@ bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, int usernumber,
 	if (!from_hub && (user == NULL || user->number == 0))
 		return false;
 	if (!from_hub && net_type == NET_NONE && usernumber > 0 && (user->rest & (UREST_EMAIL | UREST_EMAIL_SYSOP))
-	    && (cfg->valuser != usernumber || user->fbacks || user->emails)) { /* not the first validation feedback */
+	    && ((flags & CANSEND_NOT_FEEDBACK)
+	        || cfg->valuser != usernumber || user->fbacks || user->emails)) { /* not the first validation feedback */
 		user_t to = {0};
 		to.number = usernumber;
 		if (getuserdat(cfg, &to) != USER_SUCCESS)

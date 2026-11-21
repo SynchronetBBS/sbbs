@@ -234,11 +234,6 @@ bool sbbs_t::unpack_rep(char* repfile)
 				bprintf("E-mail to %s: %s\r\n", msg.to, msg.subj);
 			else
 				bprintf("E-mail from %s to %s\r\n", msg.from, msg.to);
-			if (useron.rest & UREST_EMAIL) {
-				bputs(text[R_Email]);
-				continue;
-			}
-
 			if (msg.to != NULL) {
 				if (stricmp(msg.to, "NETMAIL") == 0) {  /* QWK to FidoNet NetMail */
 					qwktonetmail(rep, block, NULL, 0);
@@ -254,11 +249,6 @@ bool sbbs_t::unpack_rep(char* repfile)
 				}
 			}
 
-			if (useron.etoday >= cfg.level_emailperday[useron.level] && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)
-			    && !(useron.rest & UREST_QWK_NODE)) {
-				bputs(text[TooManyEmailsToday]);
-				continue;
-			}
 			usernum = 0;
 			if (msg.to != NULL) {
 				usernum = atoi(msg.to);
@@ -267,12 +257,19 @@ bool sbbs_t::unpack_rep(char* repfile)
 				if (!usernum)
 					usernum = matchuser(&cfg, msg.to, TRUE /* sysop_alias */);
 			}
-			if (!usernum) {
-				bputs(text[UnknownUser]);
+			uint reason;
+			// An unknown recipient is checked as no recipient (0): the per-day limit only
+			if (!user_can_send_mail(&cfg, NET_NONE, usernum, /* count: */ 1, &useron
+			                        , (useron_is_sysop() ? CANSEND_SYSOP : 0)
+			                        | ((useron.rest & UREST_QWK_NODE) ? CANSEND_NO_LIMIT : 0), &reason)) {
+				if (reason == R_Feedback)
+					bprintf(text[R_Feedback], cfg.sys_op);
+				else
+					bputs(text[reason]);
 				continue;
 			}
-			if (usernum == 1 && useron.rest & UREST_EMAIL_SYSOP) {
-				bprintf(text[R_Feedback], cfg.sys_op);
+			if (!usernum) {
+				bputs(text[UnknownUser]);
 				continue;
 			}
 
