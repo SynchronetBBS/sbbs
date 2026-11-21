@@ -862,9 +862,12 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		s = sockprintf(socket, prot, sess, "To: %s", p); /* use original RFC822 header field */
 	else {
 		const char* to = encode_header_field(msg->to, encoded_text, sizeof encoded_text, msg);
-		if (strchr(msg->to, '@') != NULL || msg->to_net.addr == NULL)
+		if (strchr(msg->to, '@') != NULL)
 			s = sockprintf(socket, prot, sess, "To: %s", to); /* Avoid double-@ */
-		else if (msg->to_net.type == NET_INTERNET || msg->to_net.type == NET_QWK) {
+		else if (msg->to_net.addr == NULL || msg->to_net.type == NET_NONE) {
+			usermailaddr(&scfg, toaddr, msg->to);
+			s = sockprintf(socket, prot, sess, "To: \"%s\" <%s>", to, toaddr);
+		} else if (msg->to_net.type == NET_INTERNET || msg->to_net.type == NET_QWK) {
 			if (strchr((char*)msg->to_net.addr, '<') != NULL)
 				s = sockprintf(socket, prot, sess, "To: %s", (char*)msg->to_net.addr);
 			else

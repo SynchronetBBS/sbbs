@@ -10,7 +10,11 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 		delete this.rfc822;
 
 	if(this.rfc822==undefined) {
-		this.rfc822 = "To: "+ (this.to_list || this.to || this.forward_path);
+		if(!this.to_list && !this.to_net_addr && this.to_ext && this.to
+			&& this.to.indexOf('@') == -1)   /* local mail: give it an address (#972) */
+			this.rfc822 = "To: \"" + this.to + "\" <" + this.to.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">";
+		else
+			this.rfc822 = "To: "+ (this.to_list || this.to || this.forward_path);
 		if(this.to_net_addr) {
 			if(this.to_net_addr.indexOf('@') != -1)
 				this.rfc822 += " <" + this.to_net_addr + ">";
