@@ -78,13 +78,11 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	smbmsg_t    msg;
 	memset(&msg, 0, sizeof(msg));
 
-	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)) {
-		bputs(text[TooManyEmailsToday]);
-		return false;
-	}
-
-	if (!user_can_send_netmail(&useron)) {
-		bputs(text[NoNetMailAllowed]);
+	uint cansend_flags = useron_is_sysop() ? CANSEND_SYSOP : 0;
+	uint reason;
+	// The network type is not known yet: the sender's restriction and per-day limit only
+	if (!user_can_send_mail(&cfg, NET_UNKNOWN, /* usernumber: */ 0, /* count: */ 1, &useron, cansend_flags, &reason)) {
+		bputs(text[reason]);
 		return false;
 	}
 
@@ -133,8 +131,8 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 		return qnetmail(to, subj, mode, resmb, remsg);
 	}
 	if (net_type == NET_INTERNET) {
-		if (!(cfg.inetmail_misc & NMAIL_ALLOW)) {
-			bputs(text[NoNetMailAllowed]);
+		if (!user_can_send_mail(&cfg, NET_INTERNET, /* usernumber: */ 0, /* count: */ 1, &useron, cansend_flags, &reason)) {
+			bputs(text[reason]);
 			return false;
 		}
 		if (mode & WM_FILE && !useron_is_sysop() && !(cfg.inetmail_misc & NMAIL_FILE)) {
@@ -149,8 +147,8 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 			bprintf(text[InvalidNetMailAddr], to);
 		return false;
 	}
-	if (!cfg.total_faddrs || (!useron_is_sysop() && !(cfg.netmail_misc & NMAIL_ALLOW))) {
-		bputs(text[NoNetMailAllowed]);
+	if (!user_can_send_mail(&cfg, NET_FIDO, /* usernumber: */ 0, /* count: */ 1, &useron, cansend_flags, &reason)) {
+		bputs(text[reason]);
 		return false;
 	}
 	*p = 0;                   /* Chop off address */
@@ -380,8 +378,11 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 	smbmsg_t   msg;
 	struct  tm tm;
 
-	if (fromhub == 0 && !user_can_send_netmail(&useron)) {
-		bputs(text[NoNetMailAllowed]);
+	uint cansend_flags = (useron_is_sysop() ? CANSEND_SYSOP : 0) | (fromhub ? CANSEND_QWK_HUB : 0);
+	uint reason;
+
+	if (!user_can_send_mail(&cfg, NET_UNKNOWN, /* usernumber: */ 0, /* count: */ 1, &useron, cansend_flags, &reason)) {
+		bputs(text[reason]);
 		return;
 	}
 
@@ -466,7 +467,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 		*p = 0;
 	}
 	else if (p == NULL || !IS_DIGIT(*(p + 1)) || !cfg.total_faddrs) {
-		if (cfg.inetmail_misc & NMAIL_ALLOW) { /* Internet */
+		if (user_can_send_mail(&cfg, NET_INTERNET, /* usernumber: */ 0, /* count: */ 1, &useron, cansend_flags, NULL)) {
 			inet = 1;
 		} else {
 			bprintf(text[InvalidNetMailAddr], to);
@@ -480,9 +481,9 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 	}
 
 
-	if (!inet && !qnet &&        /* FidoNet */
-	    ((!useron_is_sysop() && !(cfg.netmail_misc & NMAIL_ALLOW)) || !cfg.total_faddrs)) {
-		bputs(text[NoNetMailAllowed]);
+	if (!inet && !qnet        /* FidoNet */
+	    && !user_can_send_mail(&cfg, NET_FIDO, /* usernumber: */ 0, /* count: */ 1, &useron, cansend_flags, &reason)) {
+		bputs(text[reason]);
 		free(qwkbuf);
 		return;
 	}
@@ -985,8 +986,12 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	FILE *      instream;
 	smbmsg_t    msg;
 
-	if ((!useron_is_sysop() && !(cfg.inetmail_misc & NMAIL_ALLOW)) || !user_can_send_netmail(&useron)) {
-		bputs(text[NoNetMailAllowed]);
+	uint cansend_flags = useron_is_sysop() ? CANSEND_SYSOP : 0;
+	uint reason;
+	// The per-day limit waits for the recipient count
+	if (!user_can_send_mail(&cfg, NET_INTERNET, /* usernumber: */ 0, /* count: */ 1, &useron
+	                        , cansend_flags | CANSEND_NO_LIMIT, &reason)) {
+		bputs(text[reason]);
 		return false;
 	}
 
@@ -1014,9 +1019,9 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	strListStripStrings(rcpt_list, "<>");
 	size_t rcpt_count = strListDedupe(&rcpt_list, /* case-sensitive */ false);
 
-	if (useron.etoday + rcpt_count > cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)) {
+	if (!user_can_send_mail(&cfg, NET_INTERNET, /* usernumber: */ 0, (uint)rcpt_count, &useron, cansend_flags, &reason)) {
 		strListFree(&rcpt_list);
-		bputs(text[TooManyEmailsToday]);
+		bputs(text[reason]);
 		return false;
 	}
 
@@ -1302,9 +1307,11 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	off_t       offset;
 	FILE *      instream;
 	smbmsg_t    msg;
+	uint        reason;
 
-	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)) {
-		bputs(text[TooManyEmailsToday]);
+	if (!user_can_send_mail(&cfg, NET_QWK, /* usernumber: */ 0, /* count: */ 1, &useron
+	                        , useron_is_sysop() ? CANSEND_SYSOP : 0, &reason)) {
+		bputs(text[reason]);
 		return false;
 	}
 
@@ -1312,11 +1319,6 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 		SAFECOPY(to, into);
 	if (subj != NULL)
 		SAFECOPY(title, subj);
-
-	if (!user_can_send_netmail(&useron)) {
-		bputs(text[NoNetMailAllowed]);
-		return false;
-	}
 
 	addr = strrchr(to, '@');
 	if (!addr) {

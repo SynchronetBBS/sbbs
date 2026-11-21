@@ -52,6 +52,12 @@
 #define USER_SIZE_ERROR         -109
 #define USER_ALLOC_ERROR        -110
 
+// user_can_send_mail() flags
+#define CANSEND_SYSOP           (1 << 0)    // Treat the sender as a sysop (e.g. a temporary sysop)
+#define CANSEND_NO_LIMIT        (1 << 1)    // Do not apply the e-mail-per-day limit
+#define CANSEND_QWK_HUB         (1 << 2)    // From a QWK hub's packet: no sending user, so neither
+                                            // the user restrictions nor the per-day limit apply
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -180,7 +186,8 @@ DLLEXPORT bool  user_can_read_sub(scfg_t*, int subnum, user_t*, client_t* client
 DLLEXPORT bool  user_can_post(scfg_t*, int subnum, user_t*, client_t* client, uint* reason);
 DLLEXPORT bool  user_can_upload(scfg_t*, int dirnum, user_t*, client_t* client, uint* reason);
 DLLEXPORT bool  user_can_download(scfg_t*, int dirnum, user_t*, client_t* client, uint* reason);
-DLLEXPORT bool  user_can_send_mail(scfg_t*, enum smb_net_type, int usernumber, uint count, user_t*, uint* reason);
+DLLEXPORT bool  user_can_send_mail(scfg_t*, enum smb_net_type, int usernumber, uint count, user_t*, uint flags
+                                    , uint* reason);
 DLLEXPORT bool  user_can_send_netmail(user_t*);
 DLLEXPORT bool  user_can_send_from_inet_domain(scfg_t*, user_t*, const char* domain);
 DLLEXPORT bool  user_is_nobody(user_t*);

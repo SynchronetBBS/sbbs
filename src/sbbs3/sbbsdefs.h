@@ -945,7 +945,7 @@ enum {                           // Values of mode for userlist function
 #define UREST_POST              FLAG('P') // 'P' Post on any sub: may not post messages
 #define UREST_QWK_NODE          FLAG('Q') // 'Q' QWK Network Node: the account is a QWK network node, not a person
 #define UREST_REMOVE_FILES      FLAG('R') // 'R' Remove Files: may not remove files
-#define UREST_EMAIL_SYSOP       FLAG('S') // 'S' Email Sysop: may not send feedback to user #1
+#define UREST_EMAIL_SYSOP       FLAG('S') // 'S' Email Sysop: may not send e-mail (feedback) to a sysop
 #define UREST_TRANSFER          FLAG('T') // 'T' Transfers: may not access the file transfer areas
 #define UREST_UPLOAD            FLAG('U') // 'U' Upload: may not upload files
 #define UREST_VOTE              FLAG('V') // 'V' Voting: may not vote on messages or polls

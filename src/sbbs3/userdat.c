@@ -4200,35 +4200,53 @@ bool user_can_send_from_inet_domain(scfg_t* cfg, user_t* user, const char* domai
 /****************************************************************************/
 /* Determine if the specified user can or cannot send email					*/
 /* 'reason' is an (optional) pointer to a text.dat item number				*/
-/* usernumber==0 for netmail												*/
+/* net_type NET_NONE is local e-mail to 'usernumber' (0: no particular		*/
+/* recipient, so the E and S restrictions are not applied); any other type	*/
+/* is netmail, and NET_FIDO and NET_INTERNET also require that kind of		*/
+/* netmail to be allowed (and FidoNet, a configured address)				*/
 /* 'count' is the number of recipients (a value below 1 is treated as 1)	*/
-/* Sysops are exempt from the netmail-allowed and e-mail-per-day checks		*/
+/* 'flags' are CANSEND_* bits												*/
+/* Sysops are exempt from the netmail-allowed and e-mail-per-day checks,	*/
+/* not from their own restrictions											*/
 /****************************************************************************/
-bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, int usernumber, uint count, user_t* user, uint* reason)
+bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, int usernumber, uint count, user_t* user, uint flags
+                        , uint* reason)
 {
+	bool from_hub = (flags & CANSEND_QWK_HUB) != 0;
+	bool sysop = (flags & CANSEND_SYSOP) || user_is_sysop(user);
+
 	if (reason != NULL)
-		*reason = R_Email;
-	if (user == NULL || user->number == 0)
+		*reason = net_type == NET_NONE ? R_Email : NoNetMailAllowed;
+	if (!from_hub && (user == NULL || user->number == 0))
 		return false;
-	if (net_type == NET_NONE && usernumber > 1 && user->rest & UREST_EMAIL)
+	if (!from_hub && net_type == NET_NONE && usernumber > 0 && (user->rest & (UREST_EMAIL | UREST_EMAIL_SYSOP))
+	    && (cfg->valuser != usernumber || user->fbacks || user->emails)) { /* not the first validation feedback */
+		user_t to = {0};
+		to.number = usernumber;
+		if (getuserdat(cfg, &to) != USER_SUCCESS)
+			return false; /* which restriction applies is unknown */
+		bool to_sysop = !(to.misc & (DELETED | INACTIVE)) && user_is_sysop(&to);
+		if (to_sysop && (user->rest & UREST_EMAIL_SYSOP)) {
+			if (reason != NULL)
+				*reason = R_Feedback;
+			return false;
+		}
+		if (!to_sysop && (user->rest & UREST_EMAIL))
+			return false;
+	}
+	if (!from_hub && net_type != NET_NONE && !user_can_send_netmail(user))
 		return false;
-	if (reason != NULL)
-		*reason = NoNetMailAllowed;
-	if (net_type != NET_NONE && !user_can_send_netmail(user))
+	if (net_type == NET_FIDO && (cfg->total_faddrs < 1 || (!sysop && !(cfg->netmail_misc & NMAIL_ALLOW))))
 		return false;
-	if (net_type == NET_FIDO && !user_is_sysop(user) && !(cfg->netmail_misc & NMAIL_ALLOW))              /* Fido netmail globally disallowed */
+	if (net_type == NET_INTERNET && !sysop && !(cfg->inetmail_misc & NMAIL_ALLOW))
 		return false;
-	if (net_type == NET_INTERNET && !user_is_sysop(user) && !(cfg->inetmail_misc & NMAIL_ALLOW))         /* Internet mail globally disallowed */
-		return false;
-	if (reason != NULL)
-		*reason = R_Feedback;
-	if (net_type == NET_NONE && usernumber == 1 && user->rest & UREST_EMAIL_SYSOP)
-		return false;
+	if (from_hub || (flags & CANSEND_NO_LIMIT))
+		return true;
 	if (reason != NULL)
 		*reason = TooManyEmailsToday;
 	if (count < 1)
 		count = 1;
-	if (user->etoday + count > cfg->level_emailperday[user->level] && !user_is_sysop(user) && !(user->exempt & UEXEMPT_EMAIL_LIMIT))
+	if (user->etoday + count > cfg->level_emailperday[user->level] && !sysop && !(user->exempt & UEXEMPT_EMAIL_LIMIT))
 		return false;
 
 	return true;

@@ -1500,7 +1500,8 @@ js_can_send_mail(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc = JS_SUSPENDREQUEST(cx);
 	p->getuserdat();
-	bool result = user_can_send_mail(scfg, static_cast<enum smb_net_type>(net_type), to_usernum, static_cast<uint>(count), p->user, nullptr);
+	bool result = user_can_send_mail(scfg, static_cast<enum smb_net_type>(net_type), to_usernum, static_cast<uint>(count), p->user, /* flags: */ 0
+	                                 , nullptr);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -1678,8 +1679,12 @@ static jsSyncMethodSpec js_user_functions[] = {
 		        "applying the same rules the terminal server does: the user's restriction flags, "
 		        "whether FidoNet or Internet mail is allowed at all, and the e-mail-per-day limit "
 		        "(unless the user is exempt from it).<br>"
-		        "Sysops are exempt from the per-day limit and from the netmail-allowed settings.<br>"
-		        "<i>to_usernum</i> is the recipient's user number for local e-mail (1 is the sysop, which has its own restriction).<br>"
+		        "Sysops are exempt from the per-day limit and from the netmail-allowed settings, "
+		        "but FidoNet netmail needs a configured FidoNet address, for sysops too.<br>"
+		        "<i>to_usernum</i> is the recipient's user number for local e-mail: "
+		        "the <tt>E</tt> restriction applies when that user is not a sysop (by security level) "
+		        "and the <tt>S</tt> restriction when it is, "
+		        "except for a first message to the new user validation user.<br>"
 		        "<i>count</i> is the number of recipients (default: 1, minimum: 1); "
 		        "the per-day limit is checked against the user's e-mails sent today plus <i>count</i>.")
 	 , 322},

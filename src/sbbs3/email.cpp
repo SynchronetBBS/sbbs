@@ -53,26 +53,23 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	if (remsg != NULL && title[0] == 0)
 		SAFECOPY_UTF8(title, remsg->subj);
 
-	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & UEXEMPT_EMAIL_LIMIT)) {
-		bputs(text[TooManyEmailsToday]);
+	user.number = usernumber;
+	bool known = getuserdat(&cfg, &user) == 0 && !(user.misc & (DELETED | INACTIVE));
+	uint reason;
+	// An unknown recipient is checked as no recipient (0): the per-day limit only
+	if (!user_can_send_mail(&cfg, NET_NONE, known ? usernumber : 0, /* count: */ 1, &useron
+	                        , useron_is_sysop() ? CANSEND_SYSOP : 0, &reason)) {
+		if (reason == R_Feedback)
+			bprintf(text[R_Feedback], cfg.sys_op);
+		else
+			bputs(text[reason]);
 		return false;
 	}
-	user.number = usernumber;
-	if (getuserdat(&cfg, &user) != 0 || (user.misc & (DELETED | INACTIVE))) {
+	if (!known) {
 		bputs(text[UnknownUser]);
 		return false;
 	}
 	bool to_sysop = user_is_sysop(&user);
-	if (to_sysop && useron.rest & UREST_EMAIL_SYSOP
-	    && (cfg.valuser != usernumber || useron.fbacks || useron.emails)) { /* ! val fback */
-		bprintf(text[R_Feedback], cfg.sys_op);
-		return false;
-	}
-	if (!to_sysop && useron.rest & UREST_EMAIL
-	    && (cfg.valuser != usernumber || useron.fbacks || useron.emails)) {
-		bputs(text[R_Email]);
-		return false;
-	}
 	if ((user.misc & NETMAIL) && (cfg.sys_misc & SM_FWDTONET) && !(mode & WM_NOFWD) && user_can_send_netmail(&useron)) {
 		if (netmail_addr_is_supported(&cfg, user.netmail)) {
 			bprintf(text[UserNetMail], user.netmail);
