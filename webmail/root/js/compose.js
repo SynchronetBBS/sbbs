@@ -1624,6 +1624,14 @@ export function createCompose(o) {
 		banner(null);
 		v.subject.value = s.subject;
 		v.body.value = s.body;
+		// A new message, reply or forward: the cursor goes above the
+		// signature and quoted text however the body is reached (a
+		// browser leaves it at the end of a filled-in text area).  A
+		// saved draft is continued at its end.
+		if (s.saved === null) {
+			v.body.setSelectionRange(0, 0);
+			v.body.scrollTop = 0;
+		}
 		v.el.hidden = false;
 		v.el.classList.remove("dropping");
 		for (const f of ["cc", "bcc"]) {
