@@ -739,7 +739,8 @@ try {
 	generic(rb.errors[0], "unexpected exception");
 	Kit.eq(st.list("u:Paid").total, 1, "renamed message listed");
 	Kit.eq(st.list(bills).total, 1, "the other keeps the old folder");
-	Kit.assert(preads < 10, "no summary rebuild after a partial rename (" + preads + " reads)");
+	Kit.assert(preads < 10, "no summary rebuild after a partial rename (" + preads + " reads; file dates follow a write: "
+		+ JSON.stringify(Kit.file_dates()) + ")");
 	// folders.json cannot be updated: the messages are renamed anyway
 	lock = st.jf.lock_path("folders");
 	Kit.assert(file_mutex(lock, "held by test", 60), "take folders lock");

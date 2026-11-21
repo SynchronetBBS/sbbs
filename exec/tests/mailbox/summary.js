@@ -39,12 +39,20 @@ function save(hdr, body)
 	return mb.last_msg;
 }
 
+// A header changed from outside: through a handle of its own, closed
+// again, as another process would (some file systems show a write in the
+// file's date only once the writer has closed the file)
 function retag(num, tags)
 {
-	var h = real_get.call(mb, false, num, false);	// not counted
-	h.tags = tags;
-	if (!mb.put_msg_header(false, num, h))
-		throw new Error("put_msg_header: " + mb.last_error);
+	var other = Kit.email_base(mb.file);
+	try {
+		var h = other.get_msg_header(false, num, false);
+		h.tags = tags;
+		if (!other.put_msg_header(false, num, h))
+			throw new Error("put_msg_header: " + other.last_error);
+	} finally {
+		other.close();
+	}
 }
 
 function write_text(path, text)
@@ -182,7 +190,8 @@ try {
 	reads = 0;
 	list = Summary.get(mb, jf, opts);
 	Kit.eq(reads, 50, "outside change rebuilds (.shd date " + was[0] + " -> " + now[0] + ", size " + was[1]
-		+ " -> " + now[1] + ", clock " + was[2] + " -> " + now[2] + ", date after the get " + file_date(shd) + ")");
+		+ " -> " + now[1] + ", clock " + was[2] + " -> " + now[2] + ", date after the get " + file_date(shd)
+		+ ", file dates follow a write: " + JSON.stringify(Kit.file_dates()) + ")");
 	Kit.eq(find(list, nums[10]).tags, "changed", "rebuild shows new tag");
 
 	// --- a corrupt summary file is rebuilt, not thrown

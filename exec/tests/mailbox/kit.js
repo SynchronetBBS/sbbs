@@ -68,6 +68,35 @@ var Kit = (function () {
 	};
 
 	// Open (creating) an e-mail-type base at path (no extension)
+	// How this file system dates a file that is written: { open, closed }.
+	// open: a write shows in the file's date while the file is still open;
+	// closed: it shows once the file is closed.  Some (network) file
+	// systems give the new date only after the close.  Takes up to a
+	// second; the answer is kept.
+	var dates = null;
+	Kit.file_dates = function () {
+		if (dates !== null)
+			return dates;
+		mkpath(system.temp_dir);
+		var path = system.temp_dir + format("mailbox_test_dates_%u_%u", time(), random(1000000));
+		var f = new File(path);
+		if (!f.open("w+"))
+			throw new Error("Kit.file_dates: cannot create " + path);
+		f.write("a");
+		f.flush();
+		var first = file_date(path);
+		while (time() <= first)
+			mswait(20);
+		f.write("b");
+		f.flush();
+		var open = file_date(path);
+		f.close();
+		var closed = file_date(path);
+		file_remove(path);
+		dates = { open: open > first, closed: closed > first };
+		return dates;
+	};
+
 	Kit.email_base = function (path) {
 		var mb = new MsgBase(path, /* is_path: */ true, /* is_email: */ true);
 		if (!mb.open())
