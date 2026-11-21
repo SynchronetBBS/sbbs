@@ -801,15 +801,35 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		if ((subnum == INVALID_SUB && cfg.msg_misc & MM_EMAILSIG)
 		    || (subnum != INVALID_SUB && !(cfg.sub[subnum]->misc & SUB_NOUSERSIG))) {
 			bool got_sig = false;
+			bool mail_sig = false;  // the e-mail signature file is UTF-8; zero-length means no signature
 			if (subnum_is_valid(subnum)) {
 				snprintf(str, sizeof str, "%suser/%04u.%s.sig", cfg.data_dir, useron.number, cfg.sub[subnum]->code);
 				got_sig = fexistcase(str);
+			} else if (subnum == INVALID_SUB) {
+				snprintf(str, sizeof str, "%suser/%04u.mail.sig", cfg.data_dir, useron.number);
+				mail_sig = fexistcase(str);
 			}
-			if (!got_sig)
+			if (!got_sig && !mail_sig)
 				SAFEPRINTF2(str, "%suser/%04u.sig", cfg.data_dir, useron.number);
 			FILE* sig;
 			if (fexistcase(str) && (sig = fopen(str, "r")) != NULL) {
 				while (!feof(sig)) {
+					if (mail_sig) {
+						// One line can hold the whole signature: 2000 UTF-8 characters at most
+						char line[8192];
+						if (!fgets(line, sizeof(line), sig))
+							break;
+						truncnl(line);
+						if (utf8)
+							l += fprintf(stream, "%s\r\n", line);
+						else {
+							char buf[sizeof(line)];
+							utf8_to_cp437_str(line, buf, sizeof(buf), /* minval: */ '\x02', NULL);
+							l += fprintf(stream, "%s\r\n", buf);
+						}
+						lines++;
+						continue;
+					}
 					if (!fgets(str, sizeof(str), sig))
 						break;
 					truncnl(str);

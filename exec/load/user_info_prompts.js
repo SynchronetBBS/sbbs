@@ -657,6 +657,112 @@ function change_signature(user)
 	}
 }
 
+function mail_sig_filename(user)
+{
+	if (!user)
+		user = js.global.user;
+	return  system.data_dir + "user/" + format("%04d.mail.sig", user.number);
+}
+
+// A signature problem reported by MailSig, as text for this user
+function mail_sig_error_text(e)
+{
+	if (e && e.code == "invalid")
+		return format(gettext("The signature is not valid text or is longer than %u characters")
+			, load("mailsig.js").MAX_LENGTH);
+	return gettext("The signature could not be saved");
+}
+
+function change_mail_signature(user)
+{
+	if (!user)
+		user = js.global.user;
+	var MailSig = load("mailsig.js");
+	var utf8 = console.term_supports(USER_UTF8);
+
+	var cur = MailSig.get(user.number);
+	console.newline();
+	if (cur.source == "mail" && cur.text.length)
+		console.print(gettext("Mail uses your mail signature:"));
+	else if (cur.source == "mail")
+		console.print(gettext("Mail uses no signature."));
+	else if (cur.source == "general")
+		console.print(gettext("Mail uses your general signature:"));
+	else
+		console.print(gettext("Mail uses no signature."));
+	console.newline();
+	if (cur.text.length) {
+		console.print(MailSig.to_terminal(cur.text, utf8), P_NOATCODES);
+		console.newline();
+	}
+	console.newline();
+	console.print(gettext("\x01h\x01wE\x01n)dit the mail signature, \x01h\x01wN\x01n)o signature on mail, use the \x01h\x01wG\x01n)eneral signature, or \x01h\x01wQ\x01n)uit: "));
+	switch (console.getkeys("ENGQ", 0, K_UPPER)) {
+		case 'E':
+		{
+			var before = MailSig.to_terminal(cur.text, utf8);
+			if (!utf8 && MailSig.lossy(cur.text)) {
+				console.print(gettext("Your mail signature has characters this terminal cannot show; editing it here would damage them."));
+				console.newline();
+				if (!confirm(gettext("Edit the mail signature anyway"), false))
+					break;
+			}
+			var tmp = system.temp_dir + format("mailsig-%04d.txt", user.number);
+			var f = new File(tmp);
+			if (!f.open("wb"))
+				break;
+			f.write(before.replace(/\r?\n/g, "\r\n"));
+			f.close();
+			console.editfile(tmp);
+			var after = null;
+			if (f.open("rb")) {
+				after = f.read();
+				f.close();
+			}
+			file_remove(tmp);
+			if (after === null || after === undefined)
+				break;
+			after = after.replace(/\r\n?/g, "\n");
+			if (after == before.replace(/\r\n?/g, "\n"))
+				break;	// unchanged: never write back what the terminal could not show
+			try {
+				var typed = MailSig.from_editor(after, utf8);
+				MailSig.set(user.number, typed.text);
+				if (typed.stripped) {
+					console.print(gettext("Color and control codes were removed: a mail signature is plain text."));
+					console.newline();
+				}
+				console.print(typed.text.length ? gettext("Mail signature saved.") : gettext("Mail will have no signature."));
+				console.newline();
+			} catch (e) {
+				console.print(mail_sig_error_text(e));
+				console.newline();
+			}
+			break;
+		}
+		case 'N':
+			try {
+				MailSig.set(user.number, "");
+				console.print(gettext("Mail will have no signature."));
+				console.newline();
+			} catch (e) {
+				console.print(mail_sig_error_text(e));
+				console.newline();
+			}
+			break;
+		case 'G':
+			try {
+				MailSig.set(user.number, null);
+				console.print(gettext("Mail will use your general signature."));
+				console.newline();
+			} catch (e) {
+				console.print(mail_sig_error_text(e));
+				console.newline();
+			}
+			break;
+	}
+}
+
 function ssh_keys_filename(user)
 {
 	if (!user)

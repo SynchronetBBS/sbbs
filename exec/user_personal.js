@@ -23,6 +23,7 @@
 // text_password
 // text_ssh_keys
 // text_signature
+// text_mail_signature
 // option_with_val_fmt
 // option_with_date_fmt
 // prompt
@@ -114,7 +115,15 @@ while(bbs.online && !js.terminated) {
 		, system.datestr(file_date(prompts.sig_filename(user)))));
 	keys += 'M';
 	console.add_hotspot('M');
-	console.newline(2);	
+	console.newline();
+	if (load("mailsig.js").enabled()) {
+		console.print(format(options.option_with_date_fmt, 'I', options.text_mail_signature || gettext("Mail Signature"), gettext("last changed")
+			, system.datestr(file_date(prompts.mail_sig_filename(user)))));
+		keys += 'I';
+		console.add_hotspot('I');
+		console.newline();
+	}
+	console.newline();
 	console.print(options.prompt || "\x01v@Which@ or [\x01VQ\x01v] to @Quit@: \x01V", P_ATCODES);
 	console.add_hotspot('Q');
 
@@ -149,6 +158,9 @@ while(bbs.online && !js.terminated) {
 			break;
 		case 'M':
 			prompts.change_signature(user);
+			break;
+		case 'I':
+			prompts.change_mail_signature(user);
 			break;
 		case 'S':
 			prompts.change_ssh_keys(user);

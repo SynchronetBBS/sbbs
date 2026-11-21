@@ -379,6 +379,9 @@
   sysop adds `/webmail/ = ../webmail/root/` to the `[dir]` section of
   `ctrl/web_alias.ini` (an upgrade does not add it); HTTPS only by
   default; options in `ctrl/modopts/webmail.ini`
+- New **Mail Signature** item in the terminal's user settings: a signature for
+  e-mail only (UTF-8, shared with WebMail), used instead of the general one
+  when e-mail is written from the terminal
 - New **per-user mailbox** behind WebMail: the Inbox is the
   system's mail base, and each user's own folders, Sent copies and Trash
   are kept in a private mail base in `data/user/<number>/`, limited by the

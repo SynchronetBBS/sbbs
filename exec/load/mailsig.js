@@ -171,6 +171,39 @@ var MailSig = (function () {
 		}
 	};
 
+	// The signature as a terminal shows and edits it: UTF-8 on a UTF-8
+	// terminal, else CP437
+	M.to_terminal = function (text, utf8_terminal)
+	{
+		if (utf8_terminal || str_is_ascii(text))
+			return text;
+		return utf8_decode(text);
+	};
+
+	// The reverse of to_terminal: text from the terminal as UTF-8
+	M.from_terminal = function (text, utf8_terminal)
+	{
+		if (utf8_terminal || str_is_ascii(text))
+			return text;
+		return utf8_encode(text);
+	};
+
+	// What a user typed in the terminal's editor, as a mail signature:
+	// { text, stripped }.  The mail signature is plain text, so Ctrl-A
+	// codes and ANSI sequences are removed (stripped: something was);
+	// then as from_terminal().
+	M.from_editor = function (text, utf8_terminal)
+	{
+		var plain = strip_ansi(strip_ctrl_a(text));
+		return { text: M.from_terminal(plain, utf8_terminal), stripped: plain !== text };
+	};
+
+	// True when a CP437 terminal cannot show and return this UTF-8 text intact
+	M.lossy = function (text)
+	{
+		return M.from_terminal(M.to_terminal(text, false), false) !== text;
+	};
+
 	// Is the sysop option "Include Signatures in E-mail" on?
 	M.enabled = function ()
 	{
