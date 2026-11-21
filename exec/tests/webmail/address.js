@@ -916,16 +916,26 @@ try {
 	Kit.assert(e.message.indexOf("entry") < 0, "huge: message without an entry: " + e.message);
 }
 
-// Trimming is linear: long runs of white space inside text
-var spaces = "";
-while (spaces.length < 200000)
-	spaces += "          ";
-var t0 = Date.now();
-Kit.eq(Address.clean("a" + spaces + "b", 1000000).length, spaces.length + 2, "inner spaces kept");
-Kit.eq(Address.clean("a" + spaces + "\x01"), "a", "trailing spaces before a control");
-Kit.eq(Address.clean(spaces + "a" + spaces, 300000), "a", "both edges");
-Kit.eq(Address.format("a" + spaces.substr(0, 60) + "b", "j@x.org"), "a b <j@x.org>", "format squeezes");
-Kit.assert(Date.now() - t0 < 5000, "white space handling took " + (Date.now() - t0) + " ms");
+// Trimming is linear: long runs of white space inside text.  Timed at two
+// sizes and compared, not against a fixed limit: under valgrind on a slow
+// machine the same work takes many times longer, and still four times as
+// long for four times the input (quadratic work would take sixteen).
+function white_space(n)
+{
+	var spaces = "";
+	while (spaces.length < n)
+		spaces += "          ";
+	var t0 = Date.now();
+	Kit.eq(Address.clean("a" + spaces + "b", 1000000).length, spaces.length + 2, "inner spaces kept");
+	Kit.eq(Address.clean("a" + spaces + "\x01"), "a", "trailing spaces before a control");
+	Kit.eq(Address.clean(spaces + "a" + spaces, 3 * n), "a", "both edges");
+	Kit.eq(Address.format("a" + spaces.substr(0, 60) + "b", "j@x.org"), "a b <j@x.org>", "format squeezes");
+	return Date.now() - t0;
+}
+var ws_small = white_space(50000);
+var ws_large = white_space(200000);
+Kit.assert(ws_large < 1500 || ws_large < ws_small * 10, "white space handling is not linear: " + ws_small
+	+ " ms for 50000 spaces, " + ws_large + " ms for 200000");
 
 // Fuzz: every public function's string arguments with control characters
 // mixed in; nothing returned (and no error text) has one
