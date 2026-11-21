@@ -334,6 +334,9 @@
   `EventLogLevel` to 0 for this purpose silenced both
 - Fix: the `%~` command-line specifier (Windows) passed a filename
   containing spaces unquoted when the file has no 8.3 short name
+- Fix: e-mail attachments sent "inline" with a filename (e.g. a photo sent
+  from an iPhone) are now offered for download when reading the message;
+  they were ignored (issue #485)
 
 ## Web Server
 

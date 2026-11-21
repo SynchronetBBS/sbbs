@@ -327,12 +327,9 @@ static bool mime_getattachment(const char* beg, const char* end, char* attachmen
 		}
 		p += len;
 		SKIP_WHITESPACE(p);
-		if (strnicmp(p, "inline", 6) == 0) {
-			FIND_CHAR(p, '\n');
-			continue;
-		}
+		/* An "inline" part with a filename is an attachment too (e.g. a photo sent from iOS Mail, #485) */
 		const char* filename = strstr(p, "filename=");
-		if (filename == NULL) {
+		if (filename == NULL || filename >= end) {
 			FIND_CHAR(p, '\n');
 			continue;
 		}
