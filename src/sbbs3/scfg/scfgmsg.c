@@ -1278,7 +1278,7 @@ void msg_opts()
 			SAFEPRINTF(str, "%" PRIu32, cfg.max_msgs_waiting);
 		else
 			SAFECOPY(str, "Unlimited");
-		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Maximum Messages Waiting", str);
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Maximum E-mail Messages Waiting", str);
 		if (cfg.sys_misc & SM_DELEMAIL)
 			SAFECOPY(str, "Immediately");
 		else
@@ -1348,9 +1348,9 @@ void msg_opts()
 			"it is refused, unless the user has the `W` exemption.  `Unlimited` if\n"
 			"the value is `0`.  Default is `1G`.\n"
 			"\n"
-			"`Maximum Messages Waiting`: mail for a user whose Inbox already holds\n"
-			"more than this many messages is refused, unless the user has the `W`\n"
-			"exemption.  `Unlimited` if the value is `0`.  Default is `100`.\n"
+			"`Maximum E-mail Messages Waiting`: mail for a user whose Inbox already\n"
+			"holds more than this many messages is refused, unless the user has the\n"
+			"`W` exemption.  `Unlimited` if the value is `0`.  Default is `100`.\n"
 			"\n"
 			"`Purge Deleted E-mail`: `Immediately` removes deleted messages on the\n"
 			"spot; `Daily` defers physical removal to nightly maintenance (faster\n"
@@ -1504,12 +1504,12 @@ void msg_opts()
 					"personal mailbox (folders, copies of sent messages and Trash).\n"
 					"\n"
 					"New mail for a user who has reached the quota is refused, as it is for\n"
-					"`Maximum Messages Waiting`: by the mail server (the sending system tries\n"
-					"again later), at the terminal's e-mail and bulk mail prompts and in\n"
-					"WebMail.  Mail from the system itself, FidoNet netmail and QWK network\n"
-					"mail are delivered anyway.  WebMail then keeps no copy of a message the\n"
-					"user sends and tells the user to empty the Trash.  Users with the `W`\n"
-					"exemption are not limited.\n"
+					"`Maximum E-mail Messages Waiting`: by the mail server (the sending\n"
+					"system tries again later), at the terminal's e-mail and bulk mail\n"
+					"prompts and in WebMail.  Mail from the system itself, FidoNet netmail\n"
+					"and QWK network mail are delivered anyway.  WebMail then keeps no copy\n"
+					"of a message the user sends and tells the user to empty the Trash.\n"
+					"Users with the `W` exemption are not limited.\n"
 					"\n"
 					"A suffix of `K`, `M`, `G` or `T` may be used (e.g. `1G`).  Use `0` for\n"
 					"`unlimited`.  A value that does not start with a digit is rejected and\n"
@@ -1526,7 +1526,7 @@ void msg_opts()
 			case 8:
 				SAFEPRINTF(str, "%" PRIu32, cfg.max_msgs_waiting);
 				uifc.helpbuf =
-					"`Maximum Messages Waiting:`\n"
+					"`Maximum E-mail Messages Waiting:`\n"
 					"\n"
 					"This value is the most messages a user's Inbox may hold before new mail\n"
 					"for that user is refused: by the mail server (the sending system tries\n"
@@ -1539,7 +1539,7 @@ void msg_opts()
 					"\n"
 					"Use `0` for `unlimited`.  The default is `100`.\n"
 				;
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Maximum Messages Waiting per User (0=Unlimited)"
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Maximum E-mail Messages Waiting per User (0=Unlimited)"
 				               , str, 10, K_EDIT | K_NUMBER) > 0) {
 					cfg.max_msgs_waiting = (uint32_t)strtoul(str, NULL, 10);
 					cfg.max_msgs_waiting_from_sbbs_ini = false;

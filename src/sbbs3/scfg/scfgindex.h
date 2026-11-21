@@ -3643,6 +3643,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Security Options... > Maximum Days of User Inactivity"
 	},
 	{
+		"Maximum E-mail Messages Waiting",
+		"Message Options",
+		"Message Options > Maximum E-mail Messages Waiting"
+	},
+	{
 		"Maximum Inactivity",
 		"Online Program Time Options",
 		"External Programs > Online Programs (Doors) > Online Programs... > Online Program > Online Program Time Options > Maximum Inactivity"
@@ -3656,11 +3661,6 @@ static const scfg_option_t scfg_option_index[] = {
 		"Maximum Messages",
 		"Sub-board",
 		"Message Areas > Sub-boards > Sub-board > Maximum Messages"
-	},
-	{
-		"Maximum Messages Waiting",
-		"Message Options",
-		"Message Options > Maximum Messages Waiting"
 	},
 	{
 		"Maximum Number of Files",
