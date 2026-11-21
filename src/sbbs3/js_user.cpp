@@ -1536,6 +1536,27 @@ js_mailbox_full(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_mailbox_bytes(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *      obj = JS_THIS_OBJECT(cx, arglist);
+	user_private_t* p;
+	jsrefcount      rc;
+	scfg_t*         scfg;
+
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
+
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
+		return JS_FALSE;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	uint64_t bytes = user_mailbox_bytes(scfg, p->user->number);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL((jsdouble)bytes));
+
+	return JS_TRUE;
+}
+
+static JSBool
 js_can_send_from_domain(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *      obj = JS_THIS_OBJECT(cx, arglist);
@@ -1725,6 +1746,13 @@ static jsSyncMethodSpec js_user_functions[] = {
 		        "(other non-zero values are reserved for other reasons).<br>"
 		        "Mail from the system itself (<i>system_sender</i> = <tt>true</tt>) is never refused.<br>"
 		        "<tt>MsgBase.save_msg()</tt> does not make this check: a script that delivers a user's mail calls this first.")
+	 , 322},
+	{"mailbox_bytes",   js_mailbox_bytes,   0,  JSTYPE_NUMBER,   JSDOCSTR("")
+	 , JSDOCSTR("Return the size, in bytes, of the user's mail as counted against <tt>system.mailbox_quota</tt>: "
+		        "the Inbox (spam included) plus the folders, Sent copies and Trash kept by the mailbox library "
+		        "(files attached to Inbox mail are not counted).<br>"
+		        "This reads a message header for every message in the user's Inbox, so it is much slower than "
+		        "<tt>User.stats.mail_waiting</tt>: avoid calling it for many users in a loop.")
 	 , 322},
 	{"can_send_from_domain", js_can_send_from_domain, 1,  JSTYPE_BOOLEAN,  JSDOCSTR("<i>string</i> domain")
 	 , JSDOCSTR("Return <tt>true</tt> if the user may send e-mail from an address in <i>domain</i>. "

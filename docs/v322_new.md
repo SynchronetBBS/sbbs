@@ -1211,6 +1211,8 @@
 - New `User.mailbox_full()` method (why new mail for the user is refused:
   `1` Maximum E-mail Messages Waiting, `2` the mailbox quota, `0` it is
   not) and `system.max_msgs_waiting` property
+- New `User.mailbox_bytes()` method: the size of the user's mail as
+  counted against the mailbox quota (issue #22)
 - New `User.can_send_from_domain()` method and `system.inet_domain_list`
   property (the system's Internet address, then the additional domains)
 - New read-only `server.max_inactivity` property: the server's idle
