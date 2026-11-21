@@ -23,9 +23,11 @@
 //                                      (MAX_ENTRIES entries)
 // BlockTags.unblock(path, text)        removes every entry that reads text
 //                                      (case ignored), a pattern too
-// block() and unblock() return true when the file changed.  The file is
-// replaced by rename, so the mail server never reads half of it; the
-// caller holds a lock around the call (two requests of one user).
+// block() and unblock() return true when the file changed.  The new file
+// is written beside the old one and renamed over it, so the mail server
+// never reads half of it (on Windows the old file has to be removed
+// first: for that instant no tag is blocked); the caller holds a lock
+// around the call (two requests of one user).
 // Entries are byte strings as stored; the caller converts for display.
 
 "use strict";
@@ -35,6 +37,8 @@ var BlockTags = (function () {
 
 	B.MAX_TAG = 64;
 	B.MAX_ENTRIES = 500;
+	var RENAME_TRIES = 10;
+	var RENAME_WAIT = 25;	// ms
 
 	B.path = function (data_dir, usernum) {
 		return data_dir + "user/" + format("%04d", usernum) + ".smtpblock";
@@ -90,10 +94,25 @@ var BlockTags = (function () {
 			throw new Error("BlockTags: error " + f.error + " creating " + tmp);
 		var ok = f.write(list.join(""));
 		f.close();
-		if (!ok || !file_rename(tmp, path)) {
+		if (!ok) {
 			file_remove(tmp);
-			throw new Error("BlockTags: cannot write " + path);
+			throw new Error("BlockTags: cannot write " + tmp);
 		}
+		// file_rename() does not replace an existing file on Windows:
+		// there the old file is removed first, and that can fail while
+		// the mail server has it open, so both are tried a few times
+		for (var i = 0; i < RENAME_TRIES; i++) {
+			if (i > 0)
+				mswait(RENAME_WAIT);
+			if (file_rename(tmp, path))
+				return;
+			if (file_exists(path))
+				file_remove(path);
+			if (file_rename(tmp, path))
+				return;
+		}
+		file_remove(tmp);
+		throw new Error("BlockTags: cannot replace " + path);
 	}
 
 	B.list = function (path) {
