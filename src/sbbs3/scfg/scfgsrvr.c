@@ -1009,6 +1009,7 @@ static void termsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Log Level", iniLogLevelStringList()[startup.log_level]);
 		snprintf(str, sizeof str, "%u-%u", startup.first_node, startup.last_node);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Serving Nodes", str);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		snprintf(str, sizeof str, "Port %u", startup.ssh_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SSH Support...", startup.options & BBS_OPT_ALLOW_SSH ? str : strDisabled);
 		snprintf(str, sizeof str, "Port %u", startup.telnet_port);
@@ -1037,7 +1038,6 @@ static void termsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
@@ -1052,6 +1052,11 @@ static void termsrvr_cfg(void)
 			"`Log Level`: most verbose severity of messages to log.\n"
 			"\n"
 			"`Serving Nodes`: range of node numbers this server instance answers for.\n"
+			"\n"
+			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
+			"server starts turning callers away because no node is available.\n"
+			"Later refusals are only counted, and a summary is logged once none\n"
+			"have been refused for 5 minutes.\n"
 			"\n"
 			"`SSH Support`, `Telnet Support`, `RLogin Support`: enable each protocol\n"
 			"and set its TCP port and related options.\n"
@@ -1098,11 +1103,6 @@ static void termsrvr_cfg(void)
 			"`Failed Login Attempts`: delays and automatic filtering of clients\n"
 			"after failed logins.\n"
 			"\n"
-			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
-			"server starts turning callers away because no node is available.\n"
-			"Later refusals are only counted, and a summary is logged once none\n"
-			"have been refused for 5 minutes.\n"
-			"\n"
 			"Changes take effect after the server is recycled.\n"
 			"\n"
 			"For full documentation, see `http://wiki.synchro.net/server:terminal`\n"
@@ -1126,28 +1126,31 @@ static void termsrvr_cfg(void)
 					startup.last_node = atoi(str);
 				break;
 			case 3:
-				ssh_srvr_cfg(&startup);
+				startup.max_clients_notify = !startup.max_clients_notify;
 				break;
 			case 4:
-				telnet_srvr_cfg(&startup);
+				ssh_srvr_cfg(&startup);
 				break;
 			case 5:
-				rlogin_srvr_cfg(&startup);
+				telnet_srvr_cfg(&startup);
 				break;
 			case 6:
+				rlogin_srvr_cfg(&startup);
+				break;
+			case 7:
 				SAFEPRINTF(str, "%u", startup.pet40_port);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "40 Column CBM/PETSCII TCP Port", str, 5, K_NUMBER | K_EDIT) > 0)
 					startup.pet40_port = atoi(str);
 				break;
-			case 7:
+			case 8:
 				SAFEPRINTF(str, "%u", startup.pet80_port);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "80 Column CBM/PETSCII TCP Port", str, 5, K_NUMBER | K_EDIT) > 0)
 					startup.pet80_port = atoi(str);
 				break;
-			case 8:
+			case 9:
 				startup.options ^= BBS_OPT_NO_DOS;
 				break;
-			case 9:
+			case 10:
 				max_concurrent_cfg(&startup.max_concurrent_connections, &startup.max_concurrent);
 				break;
 #define SOCKET_INACTIVITY_HELP  "\n" \
@@ -1159,7 +1162,7 @@ static void termsrvr_cfg(void)
 		"`Maximum User Inactivity` setting in `System->Advanced Options`.\n" \
 		"Normally, if enabled, this socket inactivity duration should be `longer`\n" \
 		"than the `Maximum User Inactivity` setting in `System->Advanced Options`.\n"
-			case 10:
+			case 11:
 				uifc.helpbuf =
 					"`Maximum Socket Inactivity for Dumb Terminal Login:`\n"
 					"\n"
@@ -1180,7 +1183,7 @@ static void termsrvr_cfg(void)
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Socket Inactivity for Dumb Terminal Login", str, 10, K_EDIT) > 0)
 					startup.max_dumbterm_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 11:
+			case 12:
 				uifc.helpbuf =
 					"`Maximum Socket Inactivity for User Terminal Login:`\n"
 					"\n"
@@ -1199,7 +1202,7 @@ static void termsrvr_cfg(void)
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Socket Inactivity for User Terminal Login", str, 10, K_EDIT) > 0)
 					startup.max_login_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 12:
+			case 13:
 				uifc.helpbuf =
 					"`Maximum Socket Inactivity at New User Registration:`\n"
 					"\n"
@@ -1218,7 +1221,7 @@ static void termsrvr_cfg(void)
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Socket Inactivity at New User Registration", str, 10, K_EDIT) > 0)
 					startup.max_newuser_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 13:
+			case 14:
 				uifc.helpbuf =
 					"`Maximum Socket Inactivity during User Session:`\n"
 					"\n"
@@ -1237,43 +1240,40 @@ static void termsrvr_cfg(void)
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Socket Inactivity during User Session", str, 10, K_EDIT) > 0)
 					startup.max_session_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 14:
+			case 15:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)", str, 5, K_NUMBER | K_EDIT) > 0)
 					startup.outbuf_drain_timeout = atoi(str);
 				break;
-			case 15:
-				startup.options ^= BBS_OPT_NO_EVENTS;
-				break;
 			case 16:
-				if (startup.options & BBS_OPT_NO_EVENTS)
-					break;
-				startup.options ^= BBS_OPT_NO_QWK_EVENTS;
+				startup.options ^= BBS_OPT_NO_EVENTS;
 				break;
 			case 17:
 				if (startup.options & BBS_OPT_NO_EVENTS)
 					break;
-				uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &startup.event_log_level, 0, "Event Log Level", iniLogLevelStringList());
+				startup.options ^= BBS_OPT_NO_QWK_EVENTS;
 				break;
 			case 18:
 				if (startup.options & BBS_OPT_NO_EVENTS)
 					break;
-				startup.options ^= BBS_OPT_NO_EVENT_LOG_FILE;
+				uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &startup.event_log_level, 0, "Event Log Level", iniLogLevelStringList());
 				break;
 			case 19:
-				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
+				if (startup.options & BBS_OPT_NO_EVENTS)
+					break;
+				startup.options ^= BBS_OPT_NO_EVENT_LOG_FILE;
 				break;
 			case 20:
-				getar("Terminal Server Login", startup.login_ars, /* helpbuf: */ NULL);
+				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			case 21:
-				js_startup_cfg(&startup.js);
+				getar("Terminal Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
 			case 22:
-				login_attempt_cfg(&startup.login_attempt);
+				js_startup_cfg(&startup.js);
 				break;
 			case 23:
-				startup.max_clients_notify = !startup.max_clients_notify;
+				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
 				if (memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -1602,6 +1602,7 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Access Log Format"
 			, startup.options & WEB_OPT_HTTP_LOGGING ? (*startup.custom_log_fmt ? startup.custom_log_fmt : "<Combined Log Format>") : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		str[0] = '\0';
@@ -1627,7 +1628,6 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Info Save", startup.login_info_save);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
@@ -1670,6 +1670,11 @@ static void websrvr_cfg(void)
 			"\n"
 			"`Max Clients`: limit on simultaneous clients.\n"
 			"\n"
+			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
+			"server starts refusing connections because it reached `Max Clients`.\n"
+			"Later refusals are only counted, and a summary is logged once none\n"
+			"have been refused for 5 minutes.\n"
+			"\n"
 			"`Max Inactivity`: disconnect a client idle this long.\n"
 			"\n"
 			"`Max Concurrent Connections`: limit simultaneous connections from a\n"
@@ -1700,11 +1705,6 @@ static void websrvr_cfg(void)
 			"\n"
 			"`Failed Login Attempts`: delays and automatic filtering of clients\n"
 			"after failed logins.\n"
-			"\n"
-			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
-			"server starts refusing connections because it reached `Max Clients`.\n"
-			"Later refusals are only counted, and a summary is logged once none\n"
-			"have been refused for 5 minutes.\n"
 			"\n"
 			"Changes take effect after the server is recycled.\n"
 			"\n"
@@ -1777,51 +1777,51 @@ static void websrvr_cfg(void)
 					startup.max_clients = atoi(str);
 				break;
 			case 12:
+				startup.max_clients_notify = !startup.max_clients_notify;
+				break;
+			case 13:
 				SAFECOPY(str, duration(startup.max_inactivity, false, strDefault));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 13:
+			case 14:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Concurrent Connections (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
 					startup.max_concurrent_connections = atoi(str);
 				break;
-			case 14:
+			case 15:
 				web_rate_limit_cfg(&startup);
 				break;
-			case 15:
+			case 16:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Authentication Methods"
 				           , startup.default_auth_list, sizeof(startup.default_auth_list) - 1, K_EDIT);
 				break;
-			case 16:
+			case 17:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)"
 				               , str, 5, K_NUMBER | K_EDIT) > 0)
 					startup.outbuf_drain_timeout = atoi(str);
 				break;
-			case 17:
+			case 18:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 18:
+			case 19:
 				websrvr_cgi_cfg(&startup);
 				break;
-			case 19:
+			case 20:
 				websrvr_filebase_cfg(&startup);
 				break;
-			case 20:
+			case 21:
 				getar("Web Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
-			case 21:
+			case 22:
 				getar("Web Server Login Info Saved", startup.login_info_save, /* helpbuf: */ NULL);
 				break;
-			case 22:
+			case 23:
 				js_startup_cfg(&startup.js);
 				break;
-			case 23:
-				login_attempt_cfg(&startup.login_attempt);
-				break;
 			case 24:
-				startup.max_clients_notify = !startup.max_clients_notify;
+				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
 				if (memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -1915,6 +1915,7 @@ static void ftpsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "QWK Message Packet Transfers", startup.options & FTP_OPT_ALLOW_QWK ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "QWK Message Packet Timeout", startup.options & FTP_OPT_ALLOW_QWK ? vduration(startup.qwk_timeout, strDefault) : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s bytes", "Min Uploaded File Size", byte_count_to_str(startup.min_fsize, tmp, sizeof tmp));
@@ -1937,7 +1938,6 @@ static void ftpsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Info Save", startup.login_info_save);
 		strcpy(opt[i++], "Failed Login Attempts...");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 
 		opt[i][0] = '\0';
 
@@ -1978,6 +1978,11 @@ static void ftpsrvr_cfg(void)
 			"\n"
 			"`Max Clients`: limit on simultaneous clients.\n"
 			"\n"
+			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
+			"server starts refusing connections because it reached `Max Clients`.\n"
+			"Later refusals are only counted, and a summary is logged once none\n"
+			"have been refused for 5 minutes.\n"
+			"\n"
 			"`Max Inactivity`: disconnect a client idle this long.\n"
 			"\n"
 			"`Max Concurrent Connections`: limit simultaneous connections from a\n"
@@ -2005,11 +2010,6 @@ static void ftpsrvr_cfg(void)
 			"\n"
 			"`Failed Login Attempts`: delays and automatic filtering of clients\n"
 			"after failed logins.\n"
-			"\n"
-			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
-			"server starts refusing connections because it reached `Max Clients`.\n"
-			"Later refusals are only counted, and a summary is logged once none\n"
-			"have been refused for 5 minutes.\n"
 			"\n"
 			"Changes take effect after the server is recycled.\n"
 			"\n"
@@ -2083,48 +2083,48 @@ static void ftpsrvr_cfg(void)
 					startup.max_clients = atoi(str);
 				break;
 			case 10:
+				startup.max_clients_notify = !startup.max_clients_notify;
+				break;
+			case 11:
 				SAFECOPY(str, duration(startup.max_inactivity, false, strDefault));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 11:
+			case 12:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Concurrent Connections (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
 					startup.max_concurrent_connections = atoi(str);
 				break;
-			case 12:
+			case 13:
 				byte_count_to_str(startup.min_fsize, str, sizeof str);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Minimum Uploaded File Size (in bytes)", str, 10, K_EDIT) >= 0)
 					startup.min_fsize = parse_byte_count(str, 1);
 				break;
-			case 13:
+			case 14:
 				byte_count_to_str(startup.max_fsize, str, sizeof str);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Uploaded File Size (in bytes, 0 = Unlimited)", str, 10, K_EDIT) >= 0)
 					startup.max_fsize = parse_byte_count(str, 1);
 				break;
-			case 14:
+			case 15:
 				ftp_rate_limit_cfg(&startup);
 				break;
-			case 15:
+			case 16:
 				startup.options ^= FTP_OPT_NO_LOCAL_FSYS;
 				break;
-			case 16:
+			case 17:
 				startup.options ^= FTP_OPT_ALLOW_BOUNCE;
 				break;
-			case 17:
+			case 18:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 18:
+			case 19:
 				getar("FTP Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
-			case 19:
+			case 20:
 				getar("FTP Server Login Info Saved", startup.login_info_save, /* helpbuf: */ NULL);
 				break;
-			case 20:
-				login_attempt_cfg(&startup.login_attempt);
-				break;
 			case 21:
-				startup.max_clients_notify = !startup.max_clients_notify;
+				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
 				if (memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -2575,6 +2575,7 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3/TLS Support", startup.options & MAIL_OPT_TLS_POP3 ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Mark Retrieved Mail as Read", startup.options & MAIL_OPT_NO_READ_POP3 ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Recipients Per Message", maximum(startup.max_recipients));
@@ -2617,7 +2618,6 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Archive Requirements", startup.archive_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
@@ -2648,6 +2648,11 @@ static void mailsrvr_cfg(void)
 			"using POP3.\n"
 			"\n"
 			"`Max Clients`: limit on simultaneous clients.\n"
+			"\n"
+			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
+			"server starts refusing connections because it reached `Max Clients`.\n"
+			"Later refusals are only counted, and a summary is logged once none\n"
+			"have been refused for 5 minutes.\n"
 			"\n"
 			"`Max Inactivity`: disconnect a client idle this long.\n"
 			"\n"
@@ -2707,11 +2712,6 @@ static void mailsrvr_cfg(void)
 			"`Failed Login Attempts`: delays and automatic filtering of clients\n"
 			"after failed logins.\n"
 			"\n"
-			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
-			"server starts refusing connections because it reached `Max Clients`.\n"
-			"Later refusals are only counted, and a summary is logged once none\n"
-			"have been refused for 5 minutes.\n"
-			"\n"
 			"Changes take effect after the server is recycled.\n"
 			"\n"
 			"For full documentation, see `http://wiki.synchro.net/server:mail`\n"
@@ -2767,55 +2767,58 @@ static void mailsrvr_cfg(void)
 					startup.max_clients = atoi(str);
 				break;
 			case 11:
+				startup.max_clients_notify = !startup.max_clients_notify;
+				break;
+			case 12:
 				SAFECOPY(str, duration(startup.max_inactivity, false, strDisabled));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 12:
+			case 13:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
 					startup.max_concurrent_connections = atoi(str);
 				break;
-			case 13:
+			case 14:
 				SAFECOPY(str, maximum(startup.max_recipients));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Recipients per Message", str, 10, K_EDIT) > 0)
 					startup.max_recipients = atoi(str);
 				break;
-			case 14:
+			case 15:
 				byte_count_to_str(startup.max_msg_size, str, sizeof(str));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Received Message Size (in bytes)", str, 10, K_EDIT) > 0)
 					startup.max_msg_size = (uint32_t)parse_byte_count(str, 1);
 				break;
-			case 15:
+			case 16:
 				mail_rate_limit_cfg(&startup);
 				break;
-			case 16:
+			case 17:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Override Recipient of SMTP Posts"
 						   , startup.post_to, sizeof startup.post_to -1, K_EDIT);
 				break;
-			case 17:
+			case 18:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Default Recipient (user alias)"
 				           , startup.default_user, sizeof(startup.default_user) - 1, K_EDIT);
 				break;
-			case 18:
+			case 19:
 				startup.options ^= MAIL_OPT_ALLOW_SYSOP_ALIASES;
 				break;
-			case 19:
+			case 20:
 				startup.options ^= MAIL_OPT_NO_NOTIFY;
 				break;
-			case 20:
+			case 21:
 				startup.notify_offline_users = !startup.notify_offline_users;
 				break;
-			case 21:
+			case 22:
 				startup.options ^= MAIL_OPT_ALLOW_RELAY;
 				break;
-			case 22:
+			case 23:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 23:
+			case 24:
 				startup.options ^= MAIL_OPT_DNSBL_CHKRECVHDRS;
 				break;
-			case 24:
+			case 25:
 				i = 0;
 				strcpy(opt[i++], "Refuse Session");
 				strcpy(opt[i++], "Silently Ignore");
@@ -2851,34 +2854,31 @@ static void mailsrvr_cfg(void)
 				else
 					startup.options &= ~MAIL_OPT_DNSBL_THROTTLE;
 				break;
-			case 25:
+			case 26:
 				startup.options ^= MAIL_OPT_DNSBL_SPAMHASH;
 				break;
-			case 26:
+			case 27:
 				startup.options ^= MAIL_OPT_KILL_READ_SPAM;
 				break;
-			case 27:
+			case 28:
 				SAFECOPY(str, duration(startup.spam_block_duration, false, strInfinite));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Lifetime of ban of SPAM-bait taker IP", str, 8, K_EDIT) > 0)
 					startup.spam_block_duration = (uint)parse_duration(str);
 				break;
-			case 28:
+			case 29:
 				sendmail_cfg(&startup);
 				break;
-			case 29:
+			case 30:
 				getar("Mail Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
-			case 30:
+			case 31:
 				getar("Mail Archive", startup.archive_ars, /* helpbuf: */ NULL);
 				break;
-			case 31:
+			case 32:
 				js_startup_cfg(&startup.js);
 				break;
-			case 32:
-				login_attempt_cfg(&startup.login_attempt);
-				break;
 			case 33:
-				startup.max_clients_notify = !startup.max_clients_notify;
+				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
 				if (memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -2976,9 +2976,9 @@ static void services_cfg(void)
 		} else
 			SAFECOPY(str, strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Connections", str);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
@@ -3019,19 +3019,19 @@ static void services_cfg(void)
 			"and optionally auto-filter abusers.  See the Rate Limiting sub-menu\n"
 			"for per-knob help.\n"
 			"\n"
-			"`JavaScript Settings...`: runtime tuning for JavaScript-based services\n"
-			"(heap, time limit, GC, yield, load path).  Overrides the global\n"
-			"JavaScript Settings for this server.\n"
-			"\n"
-			"`Failed Login Attempts...`: thresholds for temp-filtering or\n"
-			"disconnecting clients that fail authentication repeatedly.\n"
-			"\n"
 			"`Notify Sysop When Full`: send the sysop an error notification when a\n"
 			"service starts refusing connections at its `MaxClients` limit (set in\n"
 			"the Services Configuration File).  Only services with the `FULL_ACCEPT`\n"
 			"option refuse; the others leave new connections waiting.\n"
 			"Later refusals are only counted, and a summary is logged once none\n"
 			"have been refused for 5 minutes.\n"
+			"\n"
+			"`JavaScript Settings...`: runtime tuning for JavaScript-based services\n"
+			"(heap, time limit, GC, yield, load path).  Overrides the global\n"
+			"JavaScript Settings for this server.\n"
+			"\n"
+			"`Failed Login Attempts...`: thresholds for temp-filtering or\n"
+			"disconnecting clients that fail authentication repeatedly.\n"
 			"\n"
 			"For full documentation, see `http://wiki.synchro.net/server:services`\n"
 		;
@@ -3068,13 +3068,13 @@ static void services_cfg(void)
 				services_rate_limit_cfg(&startup);
 				break;
 			case 8:
-				js_startup_cfg(&startup.js);
+				startup.max_clients_notify = !startup.max_clients_notify;
 				break;
 			case 9:
-				login_attempt_cfg(&startup.login_attempt);
+				js_startup_cfg(&startup.js);
 				break;
 			case 10:
-				startup.max_clients_notify = !startup.max_clients_notify;
+				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
 				if (memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
