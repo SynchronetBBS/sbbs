@@ -541,6 +541,19 @@ function postMessage(sub, header, body) {
 
 // Post a message to the mail sub, if this user can do so
 // Called by postNew/postReply, not directly
+// The sender name for netmail of type 'net_type': the alias or the real name,
+// per the NetMail "Use Aliases" settings, as the Terminal Server chooses it
+function netmailFromName(net_type) {
+    var settings = net_type === NET_FIDO ? msg_area.fido_netmail_settings : msg_area.inet_netmail_settings;
+    if (net_type === NET_QWK
+        || (settings & NMAIL_ALIAS)
+        || (user.security.restrictions & UREST_REAL_NAME)
+        || !user.name) {
+        return user.alias;
+    }
+    return user.name;
+}
+
 function postMail(header, body) {
     // Lazy ARS checks; we could check the *type* of email being sent, I guess.
     if (user.security.restrictions&UREST_EMAIL || user.security.restrictions&UREST_SEND_NETMAIL) {
@@ -557,6 +570,8 @@ function postMail(header, body) {
         var un = system.matchuser(header.to);
         if (un === 0) return false; // Should actually inform about this
         header.to_ext = un;
+    } else {
+        header.from = netmailFromName(na);
     }
     var msgBase = new MsgBase('mail');
     if (msgBase.open()) {
