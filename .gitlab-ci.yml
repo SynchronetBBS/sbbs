@@ -16,6 +16,11 @@ stages:
       - xtrn/**/{GNUm,M}akefile
       - xtrn/**/*.{c,h,cpp,hpp,mk}
       - exec/tests/**/*
+      # Script libraries and the web mail client that the test suites load:
+      # without these a change to one of them is not tested until a test
+      # file or something under src/ changes too
+      - exec/load/**/*
+      - webmail/**/*
       - "**/*.mk"
       # The CI definition itself, so a commit that only edits CI config still
       # runs one.  Without this a pipeline change cannot test itself: it stays
