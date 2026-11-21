@@ -240,10 +240,16 @@ try {
 	var fresh = Summary.get(mb, jf, opts);
 	Kit.eq(applied, fresh, "modify equals fresh rebuild");
 
-	// a no-change modify reads nothing and keeps the cache
+	// a no-change modify reads nothing and keeps the cache, also when the
+	// clock has moved on since the files were last written (it must not
+	// give the files a new date, which would read as a change)
+	next_second(file_date(mb.file + ".shd"));
 	reads = 0;
 	mu = Summary.modify(mb, jf, function () { return null; }, opts);
 	Kit.eq(reads, 0, "no-change modify reads nothing");
+	reads = 0;
+	Summary.get(mb, jf, opts);
+	Kit.eq(reads, 0, "... and the next get reads nothing either");
 	Kit.eq(mu.result, null, "no-change result");
 	Kit.eq(mu.count, 50, "no-change count");
 	Summary.get(mb, jf, opts);

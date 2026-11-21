@@ -442,15 +442,23 @@ var Summary = (function () {
 				}
 				ran = true;
 				out = { bytes: null, count: null, result: result };
-				date_files(msgbase);
+				var reported = !(result === null || result === undefined);
 				var post = stamps(msgbase);
 				var rows;
 				if (!was_valid)
 					rows = build(msgbase, ddir);
-				else if (result === null || result === undefined)
+				else if (!reported)
 					rows = same_stamps(pre, post) ? c.rows : build(msgbase, ddir);
 				else
 					rows = patch(msgbase, c.rows, result, ddir);
+				// fn wrote: the files' dates are set, so the stamps kept
+				// are the ones the files will still have after the close.
+				// Not when fn reported nothing and nothing changed: a new
+				// date would itself read as a change.
+				if (reported || !same_stamps(pre, post)) {
+					date_files(msgbase);
+					post = stamps(msgbase);
+				}
 				var cache = { version: VERSION, stamps: post, rows: rows };
 				out.bytes = total(rows);
 				out.count = rows.length;
