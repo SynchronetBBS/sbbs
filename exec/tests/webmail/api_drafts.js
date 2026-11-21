@@ -39,6 +39,9 @@ function env_for(cookie, usernum, o)
 			},
 			check_netmail_addr: function () {
 				return false;
+			},
+			mailbox_full: function (n) {
+				return o.full !== undefined && o.full.indexOf(n) >= 0;
 			} };
 	}
 	ev.lib_ctx = extra;
@@ -394,6 +397,11 @@ try {
 	r = refused(call(A({ user: { deny: [0] } }), "draft.send", { id: other.id, key: key() }), "forbidden",
 		"recipient", "a recipient the user may not send to");
 	Kit.eq([r.index, r.entry], [0, "bob"], "which recipient");
+	// A local recipient whose mailbox is full: refused, with a text of its own
+	r = refused(call(A({ full: [BOB] }), "draft.send", { id: other.id, key: key() }), "forbidden",
+		"mailbox_full", "a recipient with a full mailbox");
+	Kit.eq([r.index, r.entry], [0, "bob"], "which recipient is full");
+	Kit.eq(r.message, W.STRINGS["errors.forbidden_mailbox_full"], "the mailbox-full text");
 	var unknown = new_api_draft(A(), { to: "nosuchuser", body: "x" });
 	r = refused(call(A(), "draft.send", { id: unknown.id, key: key() }), "invalid", "unknown", "an unknown name");
 	Kit.eq(r.index, 0, "index");

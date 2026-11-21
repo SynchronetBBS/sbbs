@@ -19,10 +19,11 @@
 //   resolvers   Address.system_resolvers()'s result (tests pass fakes)
 //   sys         { inet_addr, fido_addrs, inet_cost, fido_cost,
 //               inet_alias, fido_alias, user_email(usernum),
-//               check_netmail_addr(address) } (default: system.inet_addr,
-//               system.fido_addr_list, msg_area.inet_netmail_cost and
-//               fido_netmail_cost, the NMAIL_ALIAS settings,
-//               new User(n).email, system.check_netmail_addr)
+//               check_netmail_addr(address), mailbox_full(usernum) }
+//               (default: system.inet_addr, system.fido_addr_list,
+//               msg_area.inet_netmail_cost and fido_netmail_cost, the
+//               NMAIL_ALIAS settings, new User(n).email,
+//               system.check_netmail_addr, new User(n).mailbox_full())
 //   collect     a function(entries) adding the recipients to the user's
 //               contacts (default: Contacts.collect with ctx.userdata;
 //               null: none); a failure is logged
@@ -155,7 +156,11 @@
 // when qwk_route() finds a route), else forbidden ("qwk"); FidoNet: a
 // recipient name is needed ("fidoname"), and a FidoNet address of the
 // system ("fido"); user.can_send_mail(net_type, usernum, count) for every
-// recipient, else forbidden ("recipient", with index and entry);
+// recipient, else forbidden ("recipient", with index and entry); a local
+// recipient whose mailbox takes no more mail (sys.mailbox_full(): Max
+// Messages Waiting, as the mail server and the terminal decide it):
+// forbidden ("mailbox_full", with index and entry), so one full
+// recipient refuses the whole message;
 // attachments with a FidoNet or QWK recipient: invalid ("attachments");
 // the netmail cost (Internet and FidoNet, unless the user has the cost
 // exemption) against credits plus free credits: forbidden ("credits");
@@ -387,7 +392,10 @@ var Send = (function () {
 			check_netmail_addr: typeof s.check_netmail_addr === "function" ? s.check_netmail_addr
 				: function (a) {
 					return system.check_netmail_addr(a) === true;
-				}
+				},
+			mailbox_full: typeof s.mailbox_full === "function" ? s.mailbox_full : function (n) {
+				return new User(n).mailbox_full() !== 0;
+			}
 		};
 	}
 
@@ -827,6 +835,9 @@ var Send = (function () {
 			}
 			if (!ok)
 				throw error("forbidden", "recipient", where);
+			// Not caught: a check that cannot be made fails the send
+			if (r.kind == "local" && sys.mailbox_full(r.usernum))
+				throw error("forbidden", "mailbox_full", where);
 			n[r.kind]++;
 		}
 		if (files.length > 0 && (n.fido > 0 || n.qwk > 0))

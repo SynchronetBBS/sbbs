@@ -159,6 +159,26 @@ try {
 	Kit.eq(e5.index, 1, "names the second recipient");
 	Kit.eq(e5.entry, "ext@example.org", "entry");
 
+	// --- A local recipient whose mailbox is full (Max Messages Waiting):
+	// the whole send is refused, nothing saved; only local recipients are
+	// asked about
+	var asked = [];
+	var MF = context({ sys: { mailbox_full: function (n) {
+		asked.push(n);
+		return n === CARL;
+	} } });
+	var idm = new_draft(MF, { to: "bob, ext@example.org", cc: "carl", body: "x" });
+	var em = nothing_saved(MF, function () { Send.send(MF, idm, key()); }, "forbidden", "mailbox_full");
+	Kit.eq([em.index, em.entry], [2, "carl"], "names the full recipient");
+	Kit.eq(asked, [BOB, CARL], "asked for the local recipients only, in order");
+	Kit.assert(draft_exists(MF, idm), "draft kept after a full mailbox");
+	// A check that cannot be made refuses the send too
+	var MX = context({ sys: { mailbox_full: function (n) {
+		throw new Error("simulated lookup failure");
+	} } });
+	var idx = new_draft(MX, { to: "bob", body: "x" });
+	nothing_saved(MX, function () { Send.send(MX, idx, key()); }, "failed");
+
 	// --- Cost: 10 per Internet recipient, two of them
 	var F = context({ sys: { inet_cost: 10 }, user: { credits: 15 } });
 	var id6 = new_draft(F, { to: "a@example.org, b@example.org", body: "x" });

@@ -288,6 +288,8 @@ a { color: var(--wm-accent); }
 	margin: 8px 0 0; padding: 0 8px 0 20px;
 }
 .fhead h3 { margin: 0; font-size: 13px; font-weight: 650; color: var(--wm-muted); }
+.flimit { margin: 2px 12px 6px 20px; font-size: 12px; line-height: 1.4; color: var(--wm-muted); }
+.flimit.warn { color: var(--wm-danger); font-weight: 600; }
 .meter { display: grid; gap: 6px; margin: 18px 12px 0 20px; font-size: 13px; color: var(--wm-muted); }
 .meter-bar { display: block; height: 6px; border-radius: 3px; background: var(--wm-skel); overflow: hidden; }
 .meter-fill { display: block; height: 100%; width: 0; background: var(--wm-accent); }

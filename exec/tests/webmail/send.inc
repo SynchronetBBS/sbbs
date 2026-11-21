@@ -123,6 +123,9 @@ function context(o)
 		},
 		check_netmail_addr: function (a) {
 			return false;	// no QWK route
+		},
+		mailbox_full: function (n) {
+			return false;
 		} };
 	for (k in (o.sys || {}))
 		sys[k] = o.sys[k];

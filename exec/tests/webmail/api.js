@@ -424,6 +424,39 @@ try {
 	Kit.eq(fl.purged, 0, "no private base: nothing purged");
 	Kit.eq(fl.purge, undefined, "no purge object");
 	Kit.eq(fl.trash_days, system.max_trash_age, "trash_days: the system's Trash age");
+	Kit.eq(fl.inbox_limit, null, "inbox_limit: a user object without mail counts");
+
+	// --- folder.list inbox_limit: the mail server's count (not the Inbox
+	// folder's total, which is 2 here) against Max Messages Waiting
+	var limit_of = function (waiting, limit, exemptions) {
+		var saved_stats = USERS[ALICE].stats;
+		var saved_exempt = USERS[ALICE].security.exemptions;
+		USERS[ALICE].stats = { mail_waiting: waiting };
+		USERS[ALICE].security.exemptions = exemptions || 0;
+		try {
+			var lev = make_env({ cookie: alice });
+			if (limit !== undefined)
+				lev.max_msgs_waiting = limit;
+			var lr = Api.dispatch(lev, { calls: [["folder.list", {}, 1]] }).results[0][1];
+			Kit.eq(lr.ok, true, "folder.list ok");
+			Kit.eq(lr.folders[0].total, 2, "the Inbox folder's own total");
+			return lr.inbox_limit;
+		} finally {
+			USERS[ALICE].stats = saved_stats;
+			USERS[ALICE].security.exemptions = saved_exempt;
+		}
+	};
+	Kit.eq(limit_of(79, 100), { count: 79, limit: 100, level: "ok" }, "under 80%: nothing to show");
+	Kit.eq(limit_of(80, 100), { count: 80, limit: 100, level: "near" }, "at 80%: near");
+	Kit.eq(limit_of(100, 100), { count: 100, limit: 100, level: "near" }, "at the limit: mail still accepted");
+	Kit.eq(limit_of(101, 100), { count: 101, limit: 100, level: "over" }, "over the limit: mail refused");
+	Kit.eq(limit_of(3, 3).level, "near", "a small limit, at it");
+	Kit.eq(limit_of(4, 3).level, "over", "a small limit, over it");
+	Kit.eq(limit_of(500, 0), null, "limit 0: no limit");
+	Kit.eq(limit_of(500, 100, U.UEXEMPT_MAIL_WAITING), null, "the W exemption: not limited");
+	Kit.eq(limit_of(500, 100, U.UEXEMPT_MAIL_WAITING >> 1).level, "over", "another exemption flag does not exempt");
+	Kit.eq(limit_of(0, undefined), system.max_msgs_waiting > 0
+		? { count: 0, limit: system.max_msgs_waiting, level: "ok" } : null, "the system's limit by default");
 	var items = r.results[2][1].items;
 	Kit.eq(items.length, 2, "two messages");
 	Kit.eq(items[0].id, "s" + A2, "newest first");

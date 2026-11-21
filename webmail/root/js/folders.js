@@ -7,8 +7,10 @@
 //   pressed (the heading and the button show only with onNew, or when
 //   there are user folders).
 // folders.el                 the element to put in the pane
-// folders.update(result)     a folder.list result {folders, usage}; an
-//                            entry of kind "drafts" shows its total
+// folders.update(result)     a folder.list result {folders, usage,
+//                            inbox_limit}; an entry of kind "drafts"
+//                            shows its total; inbox_limit at level "near"
+//                            or "over" shows a line under the Inbox
 // folders.setCurrent(id)     marks the open folder (null: none, e.g. while
 //                            searching all mail)
 // folders.focusCurrent()     focus on the open folder's button
@@ -91,6 +93,15 @@ export function createFolders(onOpen, opts) {
 		}
 		user.hidden = user.childElementCount === 0;
 		userHead.hidden = user.hidden && !onNew;
+		const lim = r && r.inbox_limit;
+		const inbox = builtin.querySelector('[data-folder="inbox"]');
+		if (inbox && lim && typeof lim.count === "number" && typeof lim.limit === "number"
+			&& (lim.level === "near" || lim.level === "over")) {
+			const over = lim.level === "over";
+			inbox.parentNode.append(h("p", { class: over ? "flimit warn" : "flimit" },
+				t("folders.label_inbox_limit", { count: number(lim.count), limit: number(lim.limit) }),
+				over ? " " + t("folders.label_inbox_full") : null));
+		}
 		const u = r && r.usage;
 		if (u && typeof u.bytes === "number") {
 			const quota = typeof u.quota === "number" && u.quota > 0 ? u.quota : 0;

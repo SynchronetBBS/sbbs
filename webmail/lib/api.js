@@ -218,7 +218,18 @@
 //                       to webv4 (webv4_login on and env.webv4_user() is
 //                       this user), so the next visit signs in again
 //   folder.list      -> { folders, usage, purged, trash_days, inbox_days,
-//                       drafts }:  drafts is the number of drafts
+//                       inbox_limit, drafts }:  inbox_limit is { count,
+//                       limit, level }: the messages the mail server
+//                       counts against Max Messages Waiting (User.stats
+//                       .mail_waiting: every undeleted message to the
+//                       user in the mail base, spam included, which is
+//                       not the Inbox folder's total), that limit
+//                       (system.max_msgs_waiting) and level: "over" when
+//                       count is more than limit (new mail is refused),
+//                       "near" from 80% of the limit, else "ok" (the
+//                       client then shows nothing).  null when there is
+//                       no limit, the user has the W exemption or it
+//                       cannot be read.  drafts is the number of drafts
 //                       (Drafts.count; 0 when it cannot be counted), beside
 //                       the folders so the folder list itself is unchanged;
 //                       when a draft is claimed by a send and the request
@@ -464,7 +475,7 @@ var Api = (function () {
 	// The user record bits used here, as userdefs.js defines them (pinned
 	// to it by the api.js test): not loaded for every request
 	var UD = { USER_DELETED: 1 << 0, USER_INACTIVE: 1 << 6, USER_NETMAIL: 1 << 12,
-		UFLAG_G: 1 << 6, UREST_FORWARD_MAIL: 1 << 5 };
+		UFLAG_G: 1 << 6, UREST_FORWARD_MAIL: 1 << 5, UEXEMPT_MAIL_WAITING: 1 << 22 };
 	var MAX_COOKIES = 8;		// cookie values tried per request
 	var MAX_DEPTH = 32;		// nesting of a request body
 
@@ -508,7 +519,7 @@ var Api = (function () {
 		"syntax", "control", "utf8", "unbalanced", "group", "route", "kind",
 		// Send
 		"key", "unknown", "partial", "taken", "norecipients", "toomany", "qwk", "fido", "fidoname",
-		"recipient", "attachments", "credits", "domain",
+		"recipient", "mailbox_full", "attachments", "credits", "domain",
 		// Contacts
 		"name", "addrs", "note", "id", "contacts",
 		// Settings
@@ -569,6 +580,7 @@ var Api = (function () {
 		forbidden_qwk: "Mail cannot be sent to that QWK address.",
 		forbidden_fido: "This system does not send FidoNet mail.",
 		forbidden_recipient: "You are not allowed to send mail to one of the recipients.",
+		forbidden_mailbox_full: "The mailbox of one of the recipients is full. Nothing was sent.",
 		forbidden_credits: "You do not have enough credits to send this message.",
 		forbidden_domain: "You cannot send from that address.",
 		forbidden_forward_off: "This system does not forward mail.",
@@ -1287,7 +1299,29 @@ var Api = (function () {
 		}
 		return { folders: ctx.store.folders(), usage: ctx.store.usage(), purged: purged,
 			trash_days: ctx.store.options.trash_days, inbox_days: inbox_days(ctx, rq),
-			drafts: drafts.count };
+			inbox_limit: inbox_limit(ctx, rq), drafts: drafts.count };
+	}
+
+	// { count, limit, level } of Max Messages Waiting for the user, or null
+	// (no limit, the W exemption, or not readable).  env.max_msgs_waiting
+	// (tests) stands in for system.max_msgs_waiting.
+	function inbox_limit(ctx, rq)
+	{
+		try {
+			var limit = typeof rq.env.max_msgs_waiting === "number" ? rq.env.max_msgs_waiting
+				: system.max_msgs_waiting;
+			var u = ctx.user;
+			if (!(limit > 0) || (u.security.exemptions & UD.UEXEMPT_MAIL_WAITING))
+				return null;
+			var count = u.stats ? u.stats.mail_waiting : undefined;
+			if (typeof count !== "number" || !(count >= 0))
+				return null;
+			return { count: count, limit: limit,
+				level: count > limit ? "over" : (count * 5 >= limit * 4 ? "near" : "ok") };
+		} catch (e) {
+			Api.log(LOG_WARNING, "webmail api: user " + rq.usernum + ": inbox limit: " + describe(e));
+			return null;
+		}
 	}
 
 	// The number of the user's drafts, for display: the directories in
