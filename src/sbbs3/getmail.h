@@ -31,11 +31,13 @@ extern "C" {
 /* Why a user's mailbox takes no more mail (see user_mailbox_full()) */
 enum mailbox_full {
 	MAILBOX_NOT_FULL = 0,
-	MAILBOX_FULL_MSGS       /* More than cfg->max_msgs_waiting messages in the Inbox */
+	MAILBOX_FULL_MSGS,      /* More than cfg->max_msgs_waiting messages in the Inbox */
+	MAILBOX_FULL_BYTES      /* The user's mail has reached cfg->mailbox_quota */
 };
 
 DLLEXPORT int       getmail(scfg_t* cfg, int usernumber, bool sent, int attr);
 DLLEXPORT enum mailbox_full user_mailbox_full(scfg_t*, const user_t*, bool system_sender, uint* waiting);
+DLLEXPORT uint64_t  user_mailbox_bytes(scfg_t*, uint usernumber);
 DLLEXPORT mail_t *  loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
                              , int which, long mode);
 DLLEXPORT void      freemail(mail_t* mail);

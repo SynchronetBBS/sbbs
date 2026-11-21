@@ -173,6 +173,6 @@ var UEXEMPT_NETMAIL_COST    = UFLAG_S;	// 'S' NetMail Cost: network mail is free
 var UEXEMPT_TIME_ONLINE     = UFLAG_T;	// 'T' Time Online: not subject to the daily time limit
 var UEXEMPT_UPLOAD          = UFLAG_U;	// 'U' Upload Files: may upload to any directory (bypasses the upload ARS and limits)
 var UEXEMPT_AUTOLOGON       = UFLAG_V;	// 'V' AutoLogon Via IP: may be automatically logged on by IP address
-var UEXEMPT_MAIL_WAITING    = UFLAG_W;	// 'W' Mail Waiting: not subject to the maximum messages-waiting limit
+var UEXEMPT_MAIL_WAITING    = UFLAG_W;	// 'W' Mail Waiting: not subject to mail storage limits
 var UEXEMPT_XTRN_COST       = UFLAG_X;	// 'X' Xtrn Program Cost: external programs are free
 

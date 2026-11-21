@@ -1718,8 +1718,11 @@ static jsSyncMethodSpec js_user_functions[] = {
 	{"mailbox_full",    js_mailbox_full,    0,  JSTYPE_NUMBER,   JSDOCSTR("[<i>bool</i> system_sender=false]")
 	 , JSDOCSTR("Return non-zero if new mail for the user is to be refused, as the mail server and the terminal server decide it: "
 		        "<tt>1</tt> when the user's Inbox holds more than <tt>system.max_msgs_waiting</tt> messages "
-		        "(<tt>User.stats.mail_waiting</tt>, spam included) and the user does not have the <tt>W</tt> exemption; "
-		        "<tt>0</tt> otherwise (other non-zero values are reserved for other reasons).<br>"
+		        "(<tt>User.stats.mail_waiting</tt>, spam included); "
+		        "else <tt>2</tt> when the user's mail (the Inbox, spam included, plus the folders, Sent copies and Trash "
+		        "kept by the mailbox library) has reached <tt>system.mailbox_quota</tt> bytes; "
+		        "<tt>0</tt> otherwise, and always for a user with the <tt>W</tt> exemption "
+		        "(other non-zero values are reserved for other reasons).<br>"
 		        "Mail from the system itself (<i>system_sender</i> = <tt>true</tt>) is never refused.<br>"
 		        "<tt>MsgBase.save_msg()</tt> does not make this check: a script that delivers a user's mail calls this first.")
 	 , 322},

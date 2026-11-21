@@ -506,7 +506,8 @@ static jsSyncPropertySpec js_system_properties[] = {
 	{   "max_trash_age",            SYS_PROP_MAXTRASHAGE, SYSOBJ_RO_FLAGS,     322
 		, JSDOCSTR("Days that messages in a user's mailbox Trash folder are kept (<tt>0</tt>=<i>never purge</i>)")},
 	{   "mailbox_quota",            SYS_PROP_MAILBOXQUOTA, SYSOBJ_RO_FLAGS,    322
-		, JSDOCSTR("Maximum size of a user's mailbox, in bytes (<tt>0</tt>=<i>unlimited</i>)")},
+		, JSDOCSTR("Maximum size of a user's mail, in bytes: the Inbox (spam included) plus the folders, Sent copies and Trash "
+			       "kept by the mailbox library (<tt>0</tt>=<i>unlimited</i>), see <tt>User.mailbox_full()</tt>")},
 	{   "max_msgs_waiting",         SYS_PROP_MAXMSGSWAITING, SYSOBJ_RO_FLAGS,  322
 		, JSDOCSTR("Maximum number of messages in a user's Inbox before new mail for that user is refused "
 			       "(<tt>0</tt>=<i>unlimited</i>), see <tt>User.mailbox_full()</tt>")},

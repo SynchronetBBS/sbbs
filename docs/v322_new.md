@@ -99,6 +99,10 @@
   QWK and system mail are still delivered), and moved from the Mail
   Server settings to SCFG Message Options (`jsexec update` carries a
   changed value over)
+- **Mailbox Quota (per user)** now counts the user's Inbox (spam included)
+  as well as their folders, Sent copies and Trash, and e-mail for a user
+  who has reached it is refused like e-mail to a full Inbox (SMTP: try
+  again later). The `W` exemption lifts the quota too
 
 ## Servers
 
@@ -1188,6 +1192,9 @@
 - New `User.can_send_mail()` method (the terminal server's sending
   rules), `msg_area.fido_netmail_cost` / `inet_netmail_cost` and
   `system.max_trash_age` / `mailbox_quota` properties
+- New `User.mailbox_full()` method (why new mail for the user is refused:
+  `1` Maximum Messages Waiting, `2` the mailbox quota, `0` it is not) and
+  `system.max_msgs_waiting` property
 - New `User.can_send_from_domain()` method and `system.inet_domain_list`
   property (the system's Internet address, then the additional domains)
 - New read-only `server.max_inactivity` property: the server's idle

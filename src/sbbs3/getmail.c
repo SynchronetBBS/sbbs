@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "getmail.h"
+#include "ini_file.h"
 
 /****************************************************************************/
 /* Returns the number of pieces of mail waiting for usernumber              */
@@ -69,24 +70,189 @@ int getmail(scfg_t* cfg, int usernumber, bool sent, int attr)
 }
 
 /****************************************************************************/
-/* Tells whether new mail for 'user' is to be refused, and why: with more   */
-/* than cfg->max_msgs_waiting (0 = no limit) messages in the Inbox (spam    */
-/* included, as counted by getmail()), unless the user has the W exemption. */
+/* The index records of the undeleted mail waiting for usernumber (spam     */
+/* included, as getmail() counts it): returns their number and, in *list,   */
+/* a malloc'd array of them (NULL when there are none)                      */
+/****************************************************************************/
+static uint mail_waiting(scfg_t* cfg, uint usernumber, idxrec_t** list)
+{
+	char      path[MAX_PATH + 1];
+	uint      count = 0;
+	idxrec_t  idx;
+	idxrec_t* np;
+	smb_t     smb;
+
+	*list = NULL;
+	ZERO_VAR(smb);
+	SAFEPRINTF(smb.file, "%smail", cfg->data_dir);
+	smb.retry_time = 1;
+	SAFEPRINTF(path, "%s.sid", smb.file);
+	if (flength(path) < (off_t)sizeof(idxrec_t))
+		return 0;
+	smb.subnum = INVALID_SUB;
+	if (smb_open_fp(&smb, &smb.sid_fp, SH_DENYNO) != 0)
+		return 0;
+	while (!smb_feof(smb.sid_fp)) {
+		if (smb_fread(&smb, &idx, sizeof(idx), smb.sid_fp) != sizeof(idx))
+			break;
+		if (idx.number == 0 || (idx.attr & MSG_DELETE) || idx.to != usernumber)
+			continue;
+		if ((count % 100) == 0) {
+			if ((np = realloc(*list, sizeof(idxrec_t) * (count + 100))) == NULL)
+				break;
+			*list = np;
+		}
+		(*list)[count++] = idx;
+	}
+	smb_close(&smb);
+	return count;
+}
+
+/****************************************************************************/
+/* The space the listed mail holds in the mail base: each message's header  */
+/* and data, in whole blocks (data shared with other recipients' copies is  */
+/* counted in full for each).  Only the start of each header is read.       */
+/* Stops adding once the sum, begun at 'total', reaches a non-zero stop_at. */
+/* A header that cannot be read, or is no longer that message, counts 0.    */
+/****************************************************************************/
+static uint64_t mail_stored_bytes(scfg_t* cfg, const idxrec_t* list, uint count, uint64_t total, uint64_t stop_at)
+{
+	char     path[MAX_PATH + 1];
+	uchar    buf[SHD_BLOCK_LEN];
+	int      file;
+	int      rd;
+	uint     i;
+	uint     d;
+	uint     fields;
+	uint32_t datlen;
+	msghdr_t hdr;
+	dfield_t dfield;
+
+	SAFEPRINTF(path, "%smail.shd", cfg->data_dir);
+	if ((file = sopen(path, O_RDONLY | O_BINARY, SH_DENYNO)) == -1)
+		return total;
+	for (i = 0; i < count && (stop_at == 0 || total < stop_at); i++) {
+		if (lseek(file, list[i].offset, SEEK_SET) == -1)
+			continue;
+		if ((rd = read(file, buf, sizeof buf)) < (int)sizeof(hdr))
+			continue;
+		memcpy(&hdr, buf, sizeof hdr);
+		if (memcmp(hdr.msghdr_id, SHD_HEADER_ID, LEN_HEADER_ID) != 0
+		    || hdr.number != list[i].number
+		    || (hdr.attr & MSG_DELETE))
+			continue;
+		fields = (uint)((rd - sizeof(hdr)) / sizeof(dfield));
+		datlen = 0;
+		for (d = 0; d < hdr.total_dfields; d++) {
+			if (d < fields)
+				memcpy(&dfield, buf + sizeof(hdr) + (d * sizeof(dfield)), sizeof dfield);
+			else {
+				/* More data fields than the block read holds */
+				if (d == fields
+				    && lseek(file, (off_t)list[i].offset + sizeof(hdr) + (d * sizeof(dfield)), SEEK_SET) == -1)
+					break;
+				if (read(file, &dfield, sizeof dfield) != sizeof dfield)
+					break;
+			}
+			if (dfield.length > 0 && dfield.offset + dfield.length > datlen)
+				datlen = dfield.offset + dfield.length;
+		}
+		total += (uint64_t)smb_hdrblocks(hdr.length) * SHD_BLOCK_LEN
+		         + (uint64_t)smb_datblocks(datlen) * SDT_BLOCK_LEN;
+	}
+	close(file);
+	return total;
+}
+
+/****************************************************************************/
+/* The space the user's private mail base (folders, Sent copies and Trash,  */
+/* kept by exec/load/mailbox.js) holds: the 'bytes' value that library      */
+/* writes to mailbox.usage.ini beside the base; without that value, the     */
+/* sizes of the base's header and data files (never less than the space in  */
+/* use); 0 when the user has no private base.                               */
+/****************************************************************************/
+static uint64_t private_mailbox_bytes(scfg_t* cfg, uint usernumber)
+{
+	char    path[MAX_PATH + 1];
+	FILE*   fp;
+	off_t   shd;
+	off_t   sdt;
+	int64_t bytes = -1;
+	char    value[INI_MAX_VALUE_LEN];
+
+	SAFEPRINTF2(path, "%suser/%04u/mailbox.shd", cfg->data_dir, usernumber);
+	if ((shd = flength(path)) < 0)
+		return 0;
+	SAFEPRINTF2(path, "%suser/%04u/mailbox.usage.ini", cfg->data_dir, usernumber);
+	if ((fp = iniOpenFile(path, /* for_modify: */ false)) != NULL) {
+		/* Anything but a plain number (a damaged file) is not believed */
+		if (iniReadString(fp, ROOT_SECTION, "bytes", "", value) != NULL
+		    && value[0] != '\0' && strlen(value) <= 18 && strspn(value, "0123456789") == strlen(value))
+			bytes = strtoll(value, NULL, 10);
+		iniCloseFile(fp);
+	}
+	if (bytes >= 0)
+		return bytes;
+	SAFEPRINTF2(path, "%suser/%04u/mailbox.sdt", cfg->data_dir, usernumber);
+	sdt = flength(path);
+	return (uint64_t)shd + (sdt > 0 ? sdt : 0);
+}
+
+/****************************************************************************/
+/* The bytes of mail counted against cfg->mailbox_quota for usernumber: the */
+/* private mail base plus the mail waiting in the Inbox (spam included;     */
+/* files attached to Inbox mail are not counted).                           */
+/****************************************************************************/
+uint64_t user_mailbox_bytes(scfg_t* cfg, uint usernumber)
+{
+	idxrec_t* list;
+	uint      count;
+	uint64_t  total;
+
+	if (usernumber == 0)
+		return 0;
+	count = mail_waiting(cfg, usernumber, &list);
+	total = mail_stored_bytes(cfg, list, count, private_mailbox_bytes(cfg, usernumber), /* stop_at: */ 0);
+	free(list);
+	return total;
+}
+
+/****************************************************************************/
+/* Tells whether new mail for 'user' is to be refused, and why:             */
+/* MAILBOX_FULL_MSGS with more than cfg->max_msgs_waiting (0 = no limit)    */
+/* messages in the Inbox (spam included, as counted by getmail()), else     */
+/* MAILBOX_FULL_BYTES when the user's mail (see user_mailbox_bytes()) has   */
+/* reached cfg->mailbox_quota (0 = no quota); the size of the new message   */
+/* is not counted.  A user with the W exemption is subject to neither.      */
 /* Mail from the system itself (system_sender) is never refused.            */
 /* 'waiting' (may be NULL) gets the message count when it was taken, else 0 */
 /****************************************************************************/
 enum mailbox_full user_mailbox_full(scfg_t* cfg, const user_t* user, bool system_sender, uint* waiting)
 {
-	uint count;
+	uint              count;
+	idxrec_t*         list;
+	uint64_t          bytes;
+	enum mailbox_full result = MAILBOX_NOT_FULL;
 
 	if (waiting != NULL)
 		*waiting = 0;
-	if (system_sender || user->number == 0 || cfg->max_msgs_waiting == 0 || (user->exempt & UEXEMPT_MAIL_WAITING))
+	if (system_sender || user->number == 0 || (user->exempt & UEXEMPT_MAIL_WAITING)
+	    || (cfg->max_msgs_waiting == 0 && cfg->mailbox_quota == 0))
 		return MAILBOX_NOT_FULL;
-	count = getmail(cfg, user->number, /* sent: */ false, /* attr: */ 0);
+	count = mail_waiting(cfg, user->number, &list);
 	if (waiting != NULL)
 		*waiting = count;
-	return count > cfg->max_msgs_waiting ? MAILBOX_FULL_MSGS : MAILBOX_NOT_FULL;
+	if (cfg->max_msgs_waiting > 0 && count > cfg->max_msgs_waiting)
+		result = MAILBOX_FULL_MSGS;
+	else if (cfg->mailbox_quota > 0) {
+		bytes = private_mailbox_bytes(cfg, user->number);
+		if (bytes < cfg->mailbox_quota)
+			bytes = mail_stored_bytes(cfg, list, count, bytes, /* stop_at: */ cfg->mailbox_quota);
+		if (bytes >= cfg->mailbox_quota)
+			result = MAILBOX_FULL_BYTES;
+	}
+	free(list);
+	return result;
 }
 
 

@@ -977,7 +977,7 @@ enum {                           // Values of mode for userlist function
 #define UEXEMPT_TIME_ONLINE     FLAG('T') // 'T' Time Online: not subject to the daily time limit
 #define UEXEMPT_UPLOAD          FLAG('U') // 'U' Upload Files: may upload to any directory (bypasses the upload ARS and limits)
 #define UEXEMPT_AUTOLOGON       FLAG('V') // 'V' AutoLogon Via IP: may be automatically logged on by IP address
-#define UEXEMPT_MAIL_WAITING    FLAG('W') // 'W' Mail Waiting: not subject to the maximum messages-waiting limit
+#define UEXEMPT_MAIL_WAITING    FLAG('W') // 'W' Mail Waiting: not subject to mail storage limits
 #define UEXEMPT_XTRN_COST       FLAG('X') // 'X' Xtrn Program Cost: external programs are free
 
 /**************************************/

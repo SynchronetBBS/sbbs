@@ -5358,11 +5358,18 @@ static bool smtp_client_thread(smtp_t* smtp)
 			                  && !inet_domain_listed(&scfg, tp + 1);
 			bool local_copy = !fwd_to_net || (scfg.msg_misc & MM_FWDKEEP);
 			uint inbox_msgs;
+			enum mailbox_full full = MAILBOX_NOT_FULL;
 			if (cmd == SMTP_CMD_MAIL && local_copy
-			    && user_mailbox_full(&scfg, &user, /* system_sender: */ false, &inbox_msgs) != MAILBOX_NOT_FULL) {
-				lprintf(LOG_NOTICE, "%04d %-5s %s !User-recipient #%u (%s) mailbox (%u msgs) exceeds the maximum (%u) msgs waiting%s"
-				        , socket, client.protocol, client_id, user.number, user.alias, inbox_msgs, scfg.max_msgs_waiting
-				        , fwd_to_net ? ": forwarding without a local copy" : "");
+			    && (full = user_mailbox_full(&scfg, &user, /* system_sender: */ false, &inbox_msgs)) != MAILBOX_NOT_FULL) {
+				if (full == MAILBOX_FULL_BYTES)
+					lprintf(LOG_NOTICE, "%04d %-5s %s !User-recipient #%u (%s) mailbox has reached the mailbox quota (%" PRIu64 " bytes)%s"
+					        , socket, client.protocol, client_id, user.number, user.alias
+					        , scfg.mailbox_quota
+					        , fwd_to_net ? ": forwarding without a local copy" : "");
+				else
+					lprintf(LOG_NOTICE, "%04d %-5s %s !User-recipient #%u (%s) mailbox (%u msgs) exceeds the maximum (%u) msgs waiting%s"
+					        , socket, client.protocol, client_id, user.number, user.alias, inbox_msgs, scfg.max_msgs_waiting
+					        , fwd_to_net ? ": forwarding without a local copy" : "");
 				if (!fwd_to_net) {
 					sockprintf(socket, client.protocol, session, "450 Mailbox full: %s", rcpt_to);
 					stats.msgs_refused++;
