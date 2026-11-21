@@ -172,6 +172,13 @@ try {
 	Kit.eq([em.index, em.entry], [2, "carl"], "names the full recipient");
 	Kit.eq(asked, [BOB, CARL], "asked for the local recipients only, in order");
 	Kit.assert(draft_exists(MF, idm), "draft kept after a full mailbox");
+	// A sysop is not refused: the message goes to every recipient, with a warning
+	var MS = context({ user: { is_sysop: true }, sys: { mailbox_full: function (n) {
+		return n === CARL;
+	} } });
+	var rs = Send.send(MS, new_draft(MS, { to: "bob", cc: "carl", body: "x" }), key());
+	Kit.eq(rs.warning, "mailboxfull", "a sysop's send to a full mailbox warns");
+	Kit.eq(with_id(shared(), rs.message_id).length, 2, "and reaches both recipients");
 	// A check that cannot be made refuses the send too
 	var MX = context({ sys: { mailbox_full: function (n) {
 		throw new Error("simulated lookup failure");

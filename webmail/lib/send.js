@@ -160,7 +160,8 @@
 // recipient whose mailbox takes no more mail (sys.mailbox_full(): Max
 // Messages Waiting, as the mail server and the terminal decide it):
 // forbidden ("mailbox_full", with index and entry), so one full
-// recipient refuses the whole message;
+// recipient refuses the whole message; a sysop (user.is_sysop) is not
+// refused: the message is sent with warning "mailboxfull";
 // attachments with a FidoNet or QWK recipient: invalid ("attachments");
 // the netmail cost (Internet and FidoNet, unless the user has the cost
 // exemption) against credits plus free credits: forbidden ("credits");
@@ -809,6 +810,7 @@ var Send = (function () {
 		if (typeof max === "number" && max > 0 && count > max)
 			throw error("invalid", "toomany");
 		var n = { local: 0, internet: 0, fido: 0, qwk: 0 };
+		var full = false;
 		for (var i = 0; i < rcpts.length; i++) {
 			var r = rcpts[i];
 			var where = { index: r.index, entry: r.entry };
@@ -836,8 +838,11 @@ var Send = (function () {
 			if (!ok)
 				throw error("forbidden", "recipient", where);
 			// Not caught: a check that cannot be made fails the send
-			if (r.kind == "local" && sys.mailbox_full(r.usernum))
-				throw error("forbidden", "mailbox_full", where);
+			if (r.kind == "local" && sys.mailbox_full(r.usernum)) {
+				if (user.is_sysop !== true)
+					throw error("forbidden", "mailbox_full", where);
+				full = true;
+			}
 			n[r.kind]++;
 		}
 		if (files.length > 0 && (n.fido > 0 || n.qwk > 0))
@@ -848,7 +853,7 @@ var Send = (function () {
 			cost = n.internet * sys.inet_cost + n.fido * sys.fido_cost;
 		if (cost > 0 && cost > (sec.credits || 0) + (sec.free_credits || 0))
 			throw error("forbidden", "credits");
-		return { n: n, cost: cost };
+		return { n: n, cost: cost, full: full };
 	}
 
 	// The chosen From domain and, with Internet recipients, the From address
@@ -1277,6 +1282,8 @@ var Send = (function () {
 				to_list = "";
 				cc_list = "";
 			}
+			if (chk.full)
+				warning = "mailboxfull";
 			var common = {
 				subject: Address.clean(draft.subject, Address.MAX_SUBJECT),
 				id: msgid,

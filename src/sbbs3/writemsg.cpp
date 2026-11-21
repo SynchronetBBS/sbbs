@@ -1555,7 +1555,8 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 		if (getuserdat(&cfg, &user) == 0
 		    && user_mailbox_full(&cfg, &user, /* system_sender: */ false, NULL) != MAILBOX_NOT_FULL) {
 			bprintf(text[MailboxFull], user.alias);
-			return false;
+			if (!useron_is_sysop()) // a sysop is told, and may write to a full mailbox
+				return false;
 		}
 	}
 

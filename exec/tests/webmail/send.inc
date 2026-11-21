@@ -53,6 +53,7 @@ function fake_user(o)
 	o = o || {};
 	var u = {
 		number: ALICE, alias: "alice", name: "Alice Smith", email: "alice@vert.example",
+		is_sysop: o.is_sysop === true,
 		security: { restrictions: 0, exemptions: o.exemptions || 0, credits: o.credits || 0,
 			free_credits: o.free_credits || 0 },
 		adjusted: [], sent: [],

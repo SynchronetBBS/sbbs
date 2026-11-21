@@ -2147,7 +2147,8 @@ export function createCompose(o) {
 			live.delete(s.key);
 			unstash(s);
 			const w = { nocopy: "compose.label_sent_nocopy", longlist: "compose.label_sent_longlist",
-				recovered: "compose.label_sent_recovered" }[r.warning];
+				recovered: "compose.label_sent_recovered",
+				mailboxfull: "compose.label_sent_mailbox_full" }[r.warning];
 			notice(t(w || "list.label_message_sent"));
 			if (typeof o.onSent === "function")
 				o.onSent({ mode: s.mode, sourceId: s.sourceId });

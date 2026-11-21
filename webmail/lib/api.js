@@ -359,7 +359,7 @@
 //   draft.detach {id, attachment}  -> { draft }
 //   draft.send {id, key, confirm_resend}
 //                    -> { id (the Sent copy's, or null), message_id
-//                       [, warning: nocopy, longlist or recovered] }
+//                       [, warning: nocopy, longlist, recovered or mailboxfull] }
 //                       (Send.send; opens the mailbox; key: 16 to 64 of
 //                       A-Z a-z 0-9 _ -, new for each press of Send; the
 //                       same key returns the recorded outcome; conflict
@@ -1807,7 +1807,7 @@ var Api = (function () {
 	var CONTACT_ID_RE = /^c[1-9][0-9]{0,8}$/;
 	var MODES = ["new", "reply", "replyall", "forward"];
 	var PRIORITIES = ["", "high", "low"];
-	var WARNINGS = ["nocopy", "longlist", "recovered"];
+	var WARNINGS = ["nocopy", "longlist", "recovered", "mailboxfull"];
 	var MAX_RECOVER = 2;		// stale sends draft.list completes per request
 	var SEND_LIVE = 600;		// Send.LIVE (pinned by a test): folder.list does not load send.js
 	var RECOVER_SECONDS = 5;	// ... and no new one after this long

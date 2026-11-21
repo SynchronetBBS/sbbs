@@ -83,7 +83,8 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	bool validation_feedback = usernumber == cfg.valuser && useron.fbacks == 0 && useron.emails == 0;
 	if (user_mailbox_full(&cfg, &user, /* system_sender: */ validation_feedback, NULL) != MAILBOX_NOT_FULL) {
 		bprintf(text[MailboxFull], user.alias);
-		return false;
+		if (!useron_is_sysop()) // a sysop is told, and may write to a full mailbox
+			return false;
 	}
 	if (sys_status & SS_ABORT) {
 		bputs(text[Aborted]);
