@@ -29,7 +29,9 @@ function print_user(u)
 }
 
 console.mnemonics("Sort by User ~Name, ~Last-on Date or [#]: ");
-var sort = console.getkeys("NL#", 0);
+var sort = console.getkeys("NL#\r", 0);
+if(sort == '\r')
+	console.newline();
 if(sort != 'N' && sort != 'L')
 	sort = false;
 else
