@@ -692,7 +692,8 @@ function change_mail_signature(user)
 		console.print(gettext("Mail uses no signature."));
 	console.newline();
 	if (cur.text.length) {
-		console.print(MailSig.to_terminal(cur.text, utf8), P_NOATCODES);
+		// MailSig text has "\n" line ends; the terminal needs "\r\n"
+		console.print(MailSig.to_terminal(cur.text, utf8).replace(/\n/g, "\r\n"), P_NOATCODES);
 		console.newline();
 	}
 	console.newline();
