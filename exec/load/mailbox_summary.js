@@ -70,6 +70,20 @@ var Summary = (function () {
 			file_size(b + ".sid"), file_date(b + ".sid")];
 	}
 
+	// Sets the date of the base's header and index files to now, after a
+	// write.  A network file system (SMB, NFS) may show a write in a file's
+	// date only once the file is closed, and a header rewritten in place
+	// does not change the file's length: stamps taken while the base is
+	// still open would then hold the old date, and the next get() would
+	// rebuild the cache for nothing (#1374).  Only for a base that nothing
+	// but this library writes to: on an SMB share, a file whose date has
+	// been set stops being dated by later writes while it is open.
+	function date_files(msgbase)
+	{
+		file_utime(msgbase.file + ".shd");
+		file_utime(msgbase.file + ".sid");
+	}
+
 	function same_stamps(a, b)
 	{
 		if (!(a instanceof Array) || a.length != b.length)
@@ -428,6 +442,7 @@ var Summary = (function () {
 				}
 				ran = true;
 				out = { bytes: null, count: null, result: result };
+				date_files(msgbase);
 				var post = stamps(msgbase);
 				var rows;
 				if (!was_valid)
