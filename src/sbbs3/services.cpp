@@ -50,6 +50,7 @@
 #include "filterfile.hpp"
 #include "ratelimit.hpp"
 #include "ratelimit_filter.hpp"
+#include "maxclients_notify.hpp"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -103,6 +104,7 @@ struct service_t {
 	struct xpms_set *set;
 	int running;
 	bool terminated;
+	struct max_clients_episode capacity_episode;
 };
 
 struct service_client_t {
@@ -2344,6 +2346,9 @@ void services_thread(void* arg)
 			/* signal caller that we've started up successfully */
 			set_state(SERVER_READY);
 
+			for (i = 0; i < (int)services; i++)
+				max_clients_check(&service[i].capacity_episode, lprintf);
+
 #ifdef PREFER_POLL
 			/* Clear poll FDs where necessary (ie: when !SERVICE_OPT_FULL_ACCEPT) */
 			nfdsi = 0;
@@ -2585,6 +2590,9 @@ void services_thread(void* arg)
 						FREE_AND_NULL(udp_buf);
 						lprintf(LOG_WARNING, "%04d %s [%s] !MAXIMUM CLIENTS (%u) reached, access denied"
 						        , client_socket, service[i].protocol, host_ip, service[i].max_clients);
+						char reason[128];
+						SAFEPRINTF2(reason, "%s MAXIMUM CLIENTS (%u) reached", service[i].protocol, service[i].max_clients);
+						max_clients_refused(&service[i].capacity_episode, startup->max_clients_notify, reason, host_ip, lprintf);
 						close_socket(client_socket);
 						continue;
 					}

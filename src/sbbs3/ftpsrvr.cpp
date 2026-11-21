@@ -46,6 +46,7 @@
 #include "filterfile.hpp"
 #include "ratelimit.hpp"
 #include "ratelimit_filter.hpp"
+#include "maxclients_notify.hpp"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -84,6 +85,7 @@ static scfg_t             scfg;
 static struct mqtt        mqtt;
 static struct xpms_set *  ftp_set = NULL;
 static protected_uint32_t active_clients;
+static struct max_clients_episode capacity_episode;
 static protected_uint32_t thread_count;
 static volatile uint32_t  client_highwater = 0;
 static time_t             uptime = 0;
@@ -5729,6 +5731,8 @@ void ftp_server(void* arg)
 			if (ftp_set == NULL || terminate_server)   /* terminated */
 				break;
 
+			max_clients_check(&capacity_episode, lprintf);
+
 			/* now wait for connection */
 			client_addr_len = sizeof(client_addr);
 			client_socket = xpms_accept(ftp_set, &client_addr, &client_addr_len, startup->sem_chk_freq * 1000, XPMS_FLAGS_NONE, NULL);
@@ -5764,6 +5768,8 @@ void ftp_server(void* arg)
 			if (protected_uint32_value(active_clients) >= startup->max_clients) {
 				lprintf(LOG_WARNING, "%04d [%s] !MAXIMUM CLIENTS (%d) reached, access denied"
 				        , client_socket, client_ip, startup->max_clients);
+				SAFEPRINTF(str, "MAXIMUM CLIENTS (%u) reached", startup->max_clients);
+				max_clients_refused(&capacity_episode, startup->max_clients_notify, str, client_ip, lprintf);
 				sockprintf(client_socket, -1, "421 Maximum active clients reached, please try again later.");
 				ftp_close_socket(&client_socket, &none, __LINE__);
 				continue;

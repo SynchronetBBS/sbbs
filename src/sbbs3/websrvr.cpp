@@ -73,7 +73,9 @@
 #include "xpprintf.h"
 #include "ratelimit.hpp"
 #include "ratelimit_filter.hpp"
+#include "maxclients_notify.hpp"
 #include "filterfile.hpp"
+#include <mutex>
 
 static const char*  server_name = "Synchronet Web Server";
 static const char*  server_abbrev = "web";
@@ -110,6 +112,8 @@ enum {
 static scfg_t             scfg;
 static volatile bool      http_logging_thread_running = false;
 static protected_uint32_t active_clients;
+static struct max_clients_episode capacity_episode;
+static std::mutex         capacity_mutex;
 static protected_uint32_t thread_count;
 static volatile uint32_t  client_highwater = 0;
 static volatile uint32_t  con_conn_highwater = 0;
@@ -630,6 +634,16 @@ static int errprintf(int level, int line, const char* function, const char* file
 			level = LOG_WARNING;
 	}
 	return lputs(level, sbuf);
+}
+
+// Connections are refused from both the accept thread and session threads
+static void web_max_clients_refused(const char* client)
+{
+	char reason[64];
+
+	SAFEPRINTF(reason, "MAXIMUM CLIENTS (%u) reached", startup->max_clients);
+	std::lock_guard<std::mutex> lock(capacity_mutex);
+	max_clients_refused(&capacity_episode, startup->max_clients_notify, reason, client, lprintf);
 }
 
 /* TLS-PSK cannot be performed by this server (the supporting code is
@@ -7367,6 +7381,7 @@ void http_session_thread(void* arg)
 	if (startup->max_clients && client_count > startup->max_clients) {
 		lprintf(LOG_WARNING, "%04d %-5s [%s] !MAXIMUM CLIENTS (%u) exceeded by %u, access denied"
 		        , socket, session.client.protocol, session.host_ip, startup->max_clients, client_count - startup->max_clients);
+		web_max_clients_refused(session.host_ip);
 		/* link_list helpers (loginAttempts, client_on, listCountMatches) acquire+release
 		 * their list mutex internally; nothing in this thread holds a list mutex when
 		 * send_error -> js_setup acquires jsrt_mutex. */
@@ -8228,6 +8243,11 @@ void web_server(void* arg)
 				_beginthread(http_session_thread, 0, session);
 			}
 
+			{
+				std::lock_guard<std::mutex> lock(capacity_mutex);
+				max_clients_check(&capacity_episode, lprintf);
+			}
+
 			/* now wait for connection */
 			client_addr_len = sizeof(client_addr);
 			client_socket = xpms_accept(ws_set, &client_addr, &client_addr_len, startup->sem_chk_freq * 1000,
@@ -8295,6 +8315,7 @@ void web_server(void* arg)
 			if (startup->max_clients && client_count >= threshold) {
 				lprintf(LOG_WARNING, "%04d %-5s [%s] !MAXIMUM CLIENTS (%u) %s (%u), access denied"
 				        , client_socket, session->is_tls ? "HTTPS" : "HTTP", host_ip, startup->max_clients, client_count > startup->max_clients ? "exceeded" : "reached", client_count);
+				web_max_clients_refused(host_ip);
 				if (!len_503)
 					len_503 = strlen(error_503);
 				if (session->is_tls == false && sendsocket(client_socket, error_503, len_503) != len_503)

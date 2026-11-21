@@ -39,6 +39,7 @@ static const char* strOutgoing6 = "OutboundV6Interface";
 static const char* strInterfaces = "Interface";
 static const char* strPort = "Port";
 static const char* strMaxClients = "MaxClients";
+static const char* strMaxClientsNotify = "MaxClientsNotify";
 static const char* strMaxInactivity = "MaxInactivity";
 static const char* strMaxDumbTermInactivity = "MaxDumbTermInactivity";
 static const char* strMaxLoginInactivity = "MaxLoginInactivity";
@@ -615,6 +616,7 @@ bool sbbs_read_ini(
 		bbs->bind_retry_delay = iniGetInteger(list, section, strBindRetryDelay, global->bind_retry_delay);
 
 		bbs->login_attempt = get_login_attempt_settings(list, section, global);
+		bbs->max_clients_notify = iniGetBool(list, section, strMaxClientsNotify, false);
 		bbs->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, 0);
 		bbs->max_concurrent.filter_threshold = iniGetUInteger(list, section, strMaxConConnFilterThreshold, 0);
 		bbs->max_concurrent.filter_duration  = (uint)iniGetDuration(list, section, strMaxConConnFilterDuration, 24 * 60 * 60);
@@ -695,6 +697,7 @@ bool sbbs_read_ini(
 		ftp->bind_retry_count = iniGetInteger(list, section, strBindRetryCount, global->bind_retry_count);
 		ftp->bind_retry_delay = iniGetInteger(list, section, strBindRetryDelay, global->bind_retry_delay);
 		ftp->login_attempt = get_login_attempt_settings(list, section, global);
+		ftp->max_clients_notify = iniGetBool(list, section, strMaxClientsNotify, false);
 		ftp->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, 0);
 		ftp->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
 		ftp->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
@@ -799,6 +802,7 @@ bool sbbs_read_ini(
 		mail->bind_retry_count = iniGetInteger(list, section, strBindRetryCount, global->bind_retry_count);
 		mail->bind_retry_delay = iniGetInteger(list, section, strBindRetryDelay, global->bind_retry_delay);
 		mail->login_attempt = get_login_attempt_settings(list, section, global);
+		mail->max_clients_notify = iniGetBool(list, section, strMaxClientsNotify, false);
 		mail->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, 0);
 		mail->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
 		mail->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
@@ -859,6 +863,7 @@ bool sbbs_read_ini(
 		services->bind_retry_count = iniGetInteger(list, section, strBindRetryCount, global->bind_retry_count);
 		services->bind_retry_delay = iniGetInteger(list, section, strBindRetryDelay, global->bind_retry_delay);
 		services->login_attempt = get_login_attempt_settings(list, section, global);
+		services->max_clients_notify = iniGetBool(list, section, strMaxClientsNotify, false);
 	}
 
 	/***********************************************************************/
@@ -938,6 +943,7 @@ bool sbbs_read_ini(
 		web->bind_retry_count = iniGetInteger(list, section, strBindRetryCount, global->bind_retry_count);
 		web->bind_retry_delay = iniGetInteger(list, section, strBindRetryDelay, global->bind_retry_delay);
 		web->login_attempt = get_login_attempt_settings(list, section, global);
+		web->max_clients_notify = iniGetBool(list, section, strMaxClientsNotify, false);
 		web->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, WEB_DEFAULT_MAX_CON_CONN);
 		web->max_connects_per_period = iniGetUInteger(list, section, strMaxConnectsPerPeriod, 0);
 		web->connect_rate_limit_period = iniGetUInteger(list, section, strConnectRateLimitPeriod, 60 * 60);
@@ -1068,6 +1074,8 @@ bool sbbs_write_ini(
 				break;
 			if (!iniSetUInteger(lp, section, "LastNode", bbs->last_node, &style))
 				break;
+			if (!iniSetBool(lp, section, strMaxClientsNotify, bbs->max_clients_notify, &style))
+				break;
 			if (!iniSetUInteger(lp, section, "OutbufHighwaterMark", bbs->outbuf_highwater_mark, &style))
 				break;
 			if (!iniSetUInteger(lp, section, "OutbufDrainTimeout", bbs->outbuf_drain_timeout, &style))
@@ -1184,6 +1192,8 @@ bool sbbs_write_ini(
 			if (!iniSetUInt16(lp, section, strPort, ftp->port, &style))
 				break;
 			if (!iniSetUInteger(lp, section, strMaxClients, ftp->max_clients, &style))
+				break;
+			if (!iniSetBool(lp, section, strMaxClientsNotify, ftp->max_clients_notify, &style))
 				break;
 			if (!iniSetDuration(lp, section, strMaxInactivity, ftp->max_inactivity, &style))
 				break;
@@ -1313,6 +1323,8 @@ bool sbbs_write_ini(
 			if (!iniSetUInt16(lp, section, "RelayPort", mail->relay_port, &style))
 				break;
 			if (!iniSetUInteger(lp, section, strMaxClients, mail->max_clients, &style))
+				break;
+			if (!iniSetBool(lp, section, strMaxClientsNotify, mail->max_clients_notify, &style))
 				break;
 			if (!iniSetDuration(lp, section, strMaxInactivity, mail->max_inactivity, &style))
 				break;
@@ -1490,6 +1502,8 @@ bool sbbs_write_ini(
 				break;
 			if (!set_rate_limit_settings(lp, section, services->rate_limit, style))
 				break;
+			if (!iniSetBool(lp, section, strMaxClientsNotify, services->max_clients_notify, &style))
+				break;
 		}
 
 		/***********************************************************************/
@@ -1514,6 +1528,8 @@ bool sbbs_write_ini(
 			if (!iniSetUInt16(lp, section, "TLSPort", web->tls_port, &style))
 				break;
 			if (!iniSetUInteger(lp, section, strMaxClients, web->max_clients, &style))
+				break;
+			if (!iniSetBool(lp, section, strMaxClientsNotify, web->max_clients_notify, &style))
 				break;
 			if (!iniSetDuration(lp, section, strMaxInactivity, web->max_inactivity, &style))
 				break;

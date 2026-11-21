@@ -32,6 +32,7 @@
 #include "ver.h"
 #include "eventwrap.h"
 #include "filterfile.hpp"
+#include "maxclients_notify.hpp"
 #include <multisock.h>
 #include <limits.h>     // HOST_NAME_MAX
 
@@ -119,6 +120,7 @@ static str_list_t          clear_attempts_semfiles;
 static link_list_t         current_logins;
 static link_list_t         current_connections;
 static link_list_t         max_concurrent_attempts;
+static struct max_clients_episode capacity_episode;
 static void                clearMaxConcurrentAttempt(const char* host_ip);
 
 static trashCan            ip_can;
@@ -5792,6 +5794,8 @@ NO_SSH:
 				}
 			}
 
+			max_clients_check(&capacity_episode, lprintf);
+
 			/* now wait for connection */
 			client_addr_len = sizeof(client_addr);
 			client_socket = xpms_accept(ts_set, &client_addr
@@ -6176,6 +6180,8 @@ NO_SSH:
 
 			if (node_num > last_node) {
 				lprintf(LOG_WARNING, "%04d %s [%s] !No nodes available for login.", client_socket, client.protocol, host_ip);
+				SAFEPRINTF2(str, "No nodes available (nodes %u-%u)", first_node, last_node);
+				max_clients_refused(&capacity_episode, startup->max_clients_notify, str, host_ip, lprintf);
 				SAFEPRINTF(str, "%snonodes.txt", scfg.text_dir);
 				if (fexist(str))
 					sbbs->printfile(str, P_NOABORT | P_MODS);

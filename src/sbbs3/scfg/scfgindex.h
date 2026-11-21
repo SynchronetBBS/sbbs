@@ -4388,6 +4388,31 @@ static const scfg_option_t scfg_option_index[] = {
 		"Servers > Mail Server > Notify Offline Recipients"
 	},
 	{
+		"Notify Sysop When Full",
+		"FTP Server",
+		"Servers > FTP Server > Notify Sysop When Full"
+	},
+	{
+		"Notify Sysop When Full",
+		"Mail Server",
+		"Servers > Mail Server > Notify Sysop When Full"
+	},
+	{
+		"Notify Sysop When Full",
+		"Services Server",
+		"Servers > Services Server > Notify Sysop When Full"
+	},
+	{
+		"Notify Sysop When Full",
+		"Terminal Server",
+		"Servers > Terminal Server > Notify Sysop When Full"
+	},
+	{
+		"Notify Sysop When Full",
+		"Web Server",
+		"Servers > Web Server > Notify Sysop When Full"
+	},
+	{
 		"Noumea",
 		"Local Time Zone",
 		"System > Local Time Zone > Noumea"

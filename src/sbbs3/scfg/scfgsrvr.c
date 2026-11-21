@@ -1037,6 +1037,7 @@ static void termsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
@@ -1096,6 +1097,11 @@ static void termsrvr_cfg(void)
 			"\n"
 			"`Failed Login Attempts`: delays and automatic filtering of clients\n"
 			"after failed logins.\n"
+			"\n"
+			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
+			"server starts turning callers away because no node is available.\n"
+			"Later refusals are only counted, and a summary is logged once none\n"
+			"have been refused for 5 minutes.\n"
 			"\n"
 			"Changes take effect after the server is recycled.\n"
 			"\n"
@@ -1265,6 +1271,9 @@ static void termsrvr_cfg(void)
 				break;
 			case 22:
 				login_attempt_cfg(&startup.login_attempt);
+				break;
+			case 23:
+				startup.max_clients_notify = !startup.max_clients_notify;
 				break;
 			default:
 				if (memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -1618,6 +1627,7 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Info Save", startup.login_info_save);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
@@ -1690,6 +1700,11 @@ static void websrvr_cfg(void)
 			"\n"
 			"`Failed Login Attempts`: delays and automatic filtering of clients\n"
 			"after failed logins.\n"
+			"\n"
+			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
+			"server starts refusing connections because it reached `Max Clients`.\n"
+			"Later refusals are only counted, and a summary is logged once none\n"
+			"have been refused for 5 minutes.\n"
 			"\n"
 			"Changes take effect after the server is recycled.\n"
 			"\n"
@@ -1805,6 +1820,9 @@ static void websrvr_cfg(void)
 			case 23:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
+			case 24:
+				startup.max_clients_notify = !startup.max_clients_notify;
+				break;
 			default:
 				if (memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
 					uifc.changes = true;
@@ -1919,6 +1937,7 @@ static void ftpsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Info Save", startup.login_info_save);
 		strcpy(opt[i++], "Failed Login Attempts...");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 
 		opt[i][0] = '\0';
 
@@ -1986,6 +2005,11 @@ static void ftpsrvr_cfg(void)
 			"\n"
 			"`Failed Login Attempts`: delays and automatic filtering of clients\n"
 			"after failed logins.\n"
+			"\n"
+			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
+			"server starts refusing connections because it reached `Max Clients`.\n"
+			"Later refusals are only counted, and a summary is logged once none\n"
+			"have been refused for 5 minutes.\n"
 			"\n"
 			"Changes take effect after the server is recycled.\n"
 			"\n"
@@ -2098,6 +2122,9 @@ static void ftpsrvr_cfg(void)
 				break;
 			case 20:
 				login_attempt_cfg(&startup.login_attempt);
+				break;
+			case 21:
+				startup.max_clients_notify = !startup.max_clients_notify;
 				break;
 			default:
 				if (memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
@@ -2590,6 +2617,7 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Archive Requirements", startup.archive_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
@@ -2678,6 +2706,11 @@ static void mailsrvr_cfg(void)
 			"\n"
 			"`Failed Login Attempts`: delays and automatic filtering of clients\n"
 			"after failed logins.\n"
+			"\n"
+			"`Notify Sysop When Full`: send the sysop an error notification when the\n"
+			"server starts refusing connections because it reached `Max Clients`.\n"
+			"Later refusals are only counted, and a summary is logged once none\n"
+			"have been refused for 5 minutes.\n"
 			"\n"
 			"Changes take effect after the server is recycled.\n"
 			"\n"
@@ -2844,6 +2877,9 @@ static void mailsrvr_cfg(void)
 			case 32:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
+			case 33:
+				startup.max_clients_notify = !startup.max_clients_notify;
+				break;
 			default:
 				if (memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
 					uifc.changes = true;
@@ -2942,6 +2978,7 @@ static void services_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Connections", str);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Sysop When Full", startup.max_clients_notify ? "Yes" : "No");
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
@@ -2989,6 +3026,13 @@ static void services_cfg(void)
 			"`Failed Login Attempts...`: thresholds for temp-filtering or\n"
 			"disconnecting clients that fail authentication repeatedly.\n"
 			"\n"
+			"`Notify Sysop When Full`: send the sysop an error notification when a\n"
+			"service starts refusing connections at its `MaxClients` limit (set in\n"
+			"the Services Configuration File).  Only services with the `FULL_ACCEPT`\n"
+			"option refuse; the others leave new connections waiting.\n"
+			"Later refusals are only counted, and a summary is logged once none\n"
+			"have been refused for 5 minutes.\n"
+			"\n"
 			"For full documentation, see `http://wiki.synchro.net/server:services`\n"
 		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_RHT | WIN_SAV, 0, 0, 0, &cur, &bar
@@ -3028,6 +3072,9 @@ static void services_cfg(void)
 				break;
 			case 9:
 				login_attempt_cfg(&startup.login_attempt);
+				break;
+			case 10:
+				startup.max_clients_notify = !startup.max_clients_notify;
 				break;
 			default:
 				if (memcmp(&saved_startup, &startup, sizeof(startup)) != 0)
