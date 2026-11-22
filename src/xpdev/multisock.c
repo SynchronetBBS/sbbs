@@ -369,6 +369,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 	char *          p, *tok;
 	long            l;
 	void *          vp;
+	bool            haproxy;
 
 	if (xpms_set->sock_count < 1)
 		return INVALID_SOCKET;
@@ -454,7 +455,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 
 					// Set host_ip from haproxy protocol, if its used
 					// http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
-					bool haproxy = (flags & XPMS_ACCEPT_FLAG_HAPROXY) != 0;
+					haproxy = (flags & XPMS_ACCEPT_FLAG_HAPROXY) != 0;
 					if (haproxy && xpms_set->proxy_trusted != NULL && !xpms_set->proxy_trusted(addr)) {
 						char peer[INET6_ADDRSTRLEN];
 						xpms_set->lprintf(LOG_DEBUG, "%04d Not a trusted proxy, no PROXY protocol header expected: %s"
