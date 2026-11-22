@@ -179,13 +179,9 @@ function mrc_connect(host, port, ssl) {
     const line = SYSTEM_NAME + '~' + platform;
     log(LOG_DEBUG, 'To MRC: ' + line);
     sock.send(line + '\n');
-    while (sock.is_connected) {
-        yield();
-        // Just waiting for the HELLO line; we could verify, but meh
-        if (!sock.data_waiting) continue;
+    // Just waiting for the HELLO line; we could verify, but meh
+    if (sock.poll(settings.timeout) > 0)
         log(LOG_DEBUG, 'From MRC: ' + sock.recvline(512, settings.timeout));
-        break;
-    }
     // Could check if HTTPS is available and if SSH is enabled (sbbs.ini)
     mrc_send_info(sock, 'WEB', system_info.web || 'http://' + system.inet_addr + '/');
     mrc_send_info(sock, 'TEL', system_info.telnet || system.inet_addr);
@@ -254,6 +250,24 @@ function mrc_receive(sock) {
     }
 }
 
+// Block until a socket has something to read, or 'timeout' seconds pass,
+// rather than spinning (yield() alone wakes ~1000 times a second).
+// data_waiting is checked first: it sees TLS plaintext already buffered
+// in cryptlib, which socket_select() can't.
+function wait_for_activity(mrc_sock, timeout) {
+    if (mrc_sock.data_waiting)
+        return;
+    var socks = [server.socket, mrc_sock];
+    var keys = Object.keys(clients);
+    for (var i = 0; i < keys.length; i++) {
+        var c = clients[keys[i]].socket;
+        if (!c.is_connected || c.data_waiting)
+            return;
+        socks.push(c);
+    }
+    socket_select(socks, timeout);
+}
+
 function main() {
 
     var mrc_sock;
@@ -261,11 +275,13 @@ function main() {
     var last_stats = 0;
     while (!die && !js.terminated) {
 
-        yield();
         if (!mrc_sock || !mrc_sock.is_connected) {
             mrc_sock = mrc_connect(settings.server, settings.port, settings.ssl);
+            if (!mrc_sock)
+                mswait(1000);
             continue;
         }
+        wait_for_activity(mrc_sock, 1);
         
         if (time() - last_stats > 20) { // TODO: consider moving to settings
             request_stats(mrc_sock);

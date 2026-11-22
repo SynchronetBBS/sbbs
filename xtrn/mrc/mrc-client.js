@@ -158,9 +158,13 @@ function init_display(msg_color) {
     return f;
 }
 
+// The input buffer as of the divider's last redraw; undefined forces one
+var last_input_buffer;
+
 function refresh_stats(frames, session) {
     if (input_state == 'chat' ) {
         frames.divider.clear();
+        last_input_buffer = undefined;
         if (stat_mode == 0) {
             frames.divider.putmsg(format(theme_fg_color + "CLIENT STATS" + theme_2nd_color + "> " +
                 theme_fg_color + "Latency" +  theme_2nd_color + " [" + theme_fg_color + "%d" + theme_2nd_color + "] " +
@@ -504,6 +508,10 @@ function main() {
 
     var cmd, line, user_input;
     var lastnodechk = time();
+    var last_notif_chk = 0;
+    // Wait up to 100ms for a keystroke per pass (InputLine's default is
+    // 10ms); keys still return at once, incoming chat shows within 0.1s.
+    inputline.timeout = 100;
     while (!js.terminated && !break_loop) {
         if ((time() - lastnodechk) >= 10) {
             // Check the node "interrupt flag" once every 10 seconds
@@ -514,7 +522,8 @@ function main() {
             lastnodechk = time();
         }
         session.cycle();
-        if (input_state == 'chat') {
+        if (input_state == 'chat' && inputline.buffer !== last_input_buffer) {
+            last_input_buffer = inputline.buffer;
             frames.divider.gotoxy(frames.divider.width - 16, 1);
             frames.divider.putmsg(theme_2nd_color + "[" + theme_fg_color + ("000" + inputline.buffer.length).slice(-3) + theme_2nd_color + '/' + theme_fg_color + inputline.max_buffer + theme_2nd_color + "]");
 
@@ -527,6 +536,7 @@ function main() {
         }
         user_input = inputline.getkey();
         if (typeof user_input == 'string') {
+            last_input_buffer = undefined; // a key may have redrawn the divider
             if (input_state == 'chat') {
                 // Define some hotkeys
                 if (user_input == KEY_LEFT || user_input == KEY_RIGHT) { // Change user's text color                  
@@ -755,9 +765,10 @@ function main() {
             console.gotoxy(inputline.frame.__relations__.child[0].x, inputline.frame.y);
         }
 
-        display_system_messages(frames, session);
-
-        yield();
+        if (time() != last_notif_chk) { // a file stat, often over SMB: once a second
+            display_system_messages(frames, session);
+            last_notif_chk = time();
+        }
     }    
 }
 
