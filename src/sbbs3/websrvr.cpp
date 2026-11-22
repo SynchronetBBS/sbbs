@@ -2236,11 +2236,23 @@ static bool check_ars(http_session_t * session)
 		if (!http_checkuser(session))
 			return false;
 		if (scfg.sys_misc & SM_ECHO_PW && session->req.auth.type == AUTHENTICATION_BASIC)
-			lprintf(LOG_NOTICE, "%04d !UNKNOWN USER: '%s' (password: %s)"
-			        , session->socket, session->req.auth.username, session->req.auth.password);
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !UNKNOWN USER: '%s' (password: %s)"
+			        , session->socket, session->client.protocol, session->host_ip
+			        , session->req.auth.username, session->req.auth.password);
 		else
-			lprintf(LOG_NOTICE, "%04d !UNKNOWN USER: '%s'"
-			        , session->socket, session->req.auth.username);
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !UNKNOWN USER: '%s'"
+			        , session->socket, session->client.protocol, session->host_ip, session->req.auth.username);
+		switch (session->req.auth.type) {
+			case AUTHENTICATION_BASIC:
+				session_badlogin(session, session->req.auth.username, session->req.auth.password);
+				break;
+			case AUTHENTICATION_DIGEST:
+				session_badlogin(session, session->req.auth.username, "<digest>");
+				break;
+			default:
+				session_badlogin(session, session->req.auth.username, NULL);
+				break;
+		}
 		return false;
 	}
 	thisuser.number = i;
@@ -6320,11 +6332,18 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
+	if (usernum == 0) {
+		lprintf(LOG_NOTICE, "%04d %-5s [%s] !UNKNOWN USER: '%s'"
+		        , session->socket, session->client.protocol, session->host_ip, username);
+		session_badlogin(session, username, NULL);
+		JS_RESUMEREQUEST(cx, rc);
+		return JS_TRUE;
+	}
 	user.number = usernum;
 
-	if (getuserdat(&scfg, &user) != 0) {
-		lprintf(LOG_NOTICE, "%04d %-5s [%s] !USER NOT FOUND: '%s'"
-		        , session->socket, session->client.protocol, session->host_ip, username);
+	if (getuserdat(&scfg, &user) != USER_SUCCESS) {
+		lprintf(LOG_ERR, "%04d %-5s [%s] !ERROR reading user #%d data for '%s'"
+		        , session->socket, session->client.protocol, session->host_ip, usernum, username);
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
@@ -6332,6 +6351,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if (user.misc & (DELETED | INACTIVE)) {
 		lprintf(LOG_WARNING, "%04d %-5s [%s] !DELETED OR INACTIVE USER #%d: %s"
 		        , session->socket, session->client.protocol, session->host_ip, user.number, username);
+		session_badlogin(session, username, NULL);
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}

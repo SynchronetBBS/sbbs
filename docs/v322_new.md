@@ -440,6 +440,9 @@
   requests no longer reuse an earlier request's forwarded address (issue
   #1389). In `CustomLogFormat`, `%a` is now the forwarded address; the new
   `%{c}a` is the connecting address, as in Apache
+- Fix: a login with an unknown user name, or to a deleted or inactive
+  account, now counts as a failed login attempt (toward temporary bans and
+  auto-filtering), as on the other servers (issue #1390)
 
 ## FTP Server
 

@@ -471,10 +471,17 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		client->user.number = usernum;
 	}
 
-	if (getuserdat(&scfg, &client->user) != 0) {
-		lprintf(LOG_NOTICE, "%04d %s !USER NOT FOUND: '%s'"
+	if (client->user.number == 0) {
+		lprintf(LOG_NOTICE, "%04d %s !UNKNOWN USER: '%s'"
 		        , client->socket, client->service->protocol, user);
 		badlogin(client->socket, user, pass, client->client, &client->addr);
+		JS_RESUMEREQUEST(cx, rc);
+		return JS_TRUE;
+	}
+
+	if (getuserdat(&scfg, &client->user) != USER_SUCCESS) {
+		lprintf(LOG_ERR, "%04d %s !ERROR reading user #%u data for '%s'"
+		        , client->socket, client->service->protocol, client->user.number, user);
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
@@ -482,6 +489,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if (client->user.misc & (DELETED | INACTIVE)) {
 		lprintf(LOG_WARNING, "%04d %s !DELETED OR INACTIVE USER #%d: %s"
 		        , client->socket, client->service->protocol, client->user.number, user);
+		badlogin(client->socket, user, pass, client->client, &client->addr);
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
