@@ -420,6 +420,10 @@
   now sent with `X-Content-Type-Options: nosniff` and, except PDFs,
   `Content-Security-Policy: sandbox`, so an uploaded HTML or SVG file
   opens as an isolated document and not as a page of the site
+- New `ctrl/web_block.ini` refuses requests (403) by request-header
+  pattern, e.g. a scraper's User-Agent, or by host name (`!` patterns make
+  an allowlist); edits take effect without a recycle, and a section's
+  `FilterThreshold` adds a persistent client to `ip.can` (issue #1375)
 
 ## FTP Server
 

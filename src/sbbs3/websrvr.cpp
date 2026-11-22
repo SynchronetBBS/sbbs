@@ -75,6 +75,7 @@
 #include "ratelimit_filter.hpp"
 #include "maxclients_error.hpp"
 #include "filterfile.hpp"
+#include "web_block.hpp"
 #include <mutex>
 
 static const char*  server_name = "Synchronet Web Server";
@@ -150,6 +151,7 @@ static trashCan           ip_can;
 static trashCan           ip_silent_can;
 static trashCan           host_can;
 static filterFile         host_exempt;
+static webBlock           web_block;
 
 /* Logging stuff */
 link_list_t               log_list;
@@ -1711,7 +1713,7 @@ static off_t sock_sendfile(http_session_t *session, char *path, off_t start, off
 /* Sends a specified error message, closes the request, */
 /* and marks the session to be closed 					*/
 /********************************************************/
-static void send_error(http_session_t * session, unsigned line, const char* message)
+static void send_error(http_session_t * session, unsigned line, const char* message, bool ssjs_page = true)
 {
 	char        error_code[4];
 	struct stat sb;
@@ -1728,7 +1730,7 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 	session->req.keep_alive = false;
 	session->req.send_location = NO_LOCATION;
 	SAFECOPY(session->req.status, message);
-	if (atoi(error_code) < 500) {
+	if (ssjs_page && atoi(error_code) < 500) {
 		/*
 		 * Attempt to run SSJS error pages
 		 * If this fails, do the standard error page instead,
@@ -3770,6 +3772,66 @@ static bool is_legal_path(const char* path)
 	if (strchr(path, ':') != NULL)
 		return false;
 #endif
+	return true;
+}
+
+// Refuse a request that ctrl/web_block.ini blocks by request header (#1375),
+// and filter the client once it reaches the header's FilterThreshold.
+// Called after parse_headers(), so host_ip is the client's address even
+// behind a reverse proxy (ProxyIPHeader).
+static bool request_blocked(http_session_t * session)
+{
+	webBlock::match m;
+
+	if (host_exempt.listed(session->host_ip, session->host_name))
+		return false;
+	if (!web_block.blocked(session->req.headers, session->req.vhost, &m))
+		return false;
+	const char* header = m.section.header.c_str();
+	if (m.pattern.empty())
+		lprintf(LOG_NOTICE, "%04d %-5s [%s] Request blocked: %s '%s' matches no exception in %s"
+			, session->socket, session->client.protocol, session->host_ip
+			, header, m.value.c_str(), web_block.fname);
+	else
+		lprintf(LOG_NOTICE, "%04d %-5s [%s] Request blocked: %s '%s' matches '%s' in %s"
+			, session->socket, session->client.protocol, session->host_ip
+			, header, m.value.c_str(), m.pattern.c_str(), web_block.fname);
+	if (m.section.filter_threshold > 0) {
+		const struct rate_limit_settings* rl = &startup->rate_limit;
+		std::string key = rate_limit_key(session->host_ip, rl);
+		size_t      members = 0;
+		unsigned    n = web_block.count(m.section.header, key, session->host_ip, &members);
+		if (n >= m.section.filter_threshold) {
+			// As rate_limit_filter(): filter the whole subnet only when enough
+			// of its addresses have been blocked
+			std::string target = key;
+			uint        subnet_min = rl->filter_subnet_threshold ? rl->filter_subnet_threshold : 1;
+			if (key != session->host_ip && members < subnet_min)
+				target = session->host_ip;
+			bool        silent = m.section.has_filter_silent ? m.section.filter_silent : rl->filter_silent;
+			uint        duration = m.section.has_filter_duration ? m.section.filter_duration : rl->filter_duration;
+			char        reason[128];
+			char        fpath[MAX_PATH + 1];
+			const char* fname = nullptr; // nullptr => filter_ip() uses ip.can
+			if (silent) {
+				SAFEPRINTF(fpath, "%sip-silent.can", scfg.text_dir);
+				fname = fpath;
+			}
+			if (target == session->host_ip)
+				safe_snprintf(reason, sizeof reason, "%u requests blocked by %s header", n, header);
+			else
+				safe_snprintf(reason, sizeof reason, "%u requests blocked by %s header from %zu IPs", n, header, members);
+			if (filter_ip(&scfg, session->client.protocol, reason, session->host_name, target.c_str()
+			              , /* username: */ nullptr, fname, duration))
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !BLOCKING %s%s: %s%s"
+					, session->socket, session->client.protocol, session->host_ip
+					, target == session->host_ip ? "IP ADDRESS" : "SUBNET", silent ? " (silently)" : ""
+					, target.c_str(), silent ? "" : " in ip.can");
+			web_block.forget(m.section.header, key);
+		}
+	}
+	// No SSJS error page: a blocked request must not start a JS context
+	send_error(session, __LINE__, "403 Forbidden", /* ssjs_page: */ false);
 	return true;
 }
 
@@ -7475,7 +7537,7 @@ void http_session_thread(void* arg)
 				}
 				/* At this point, if redirp is non-NULL then the headers have already been parsed */
 				if ((session.http_ver < HTTP_1_0) || redirp != NULL || parse_headers(&session)) {
-					if (check_request(&session)) {
+					if ((redirp != NULL || !request_blocked(&session)) && check_request(&session)) {
 						if (session.req.send_location < MOVED_TEMP || session.req.virtual_path[0] != '/' || loop_count++ >= MAX_REDIR_LOOPS) {
 							if (read_post_data(&session))
 								respond(&session);
@@ -7638,12 +7700,13 @@ static void cleanup(int code)
 
 	thread_down();
 	if (terminate_server || code) {
-		lprintf(LOG_INFO, "#### Web Server thread terminated (%lu clients served, %u concurrently, denied: %u due to connection rate limit, %u due to request rate limit, %u due to IP address, %u due to hostname)"
+		lprintf(LOG_INFO, "#### Web Server thread terminated (%lu clients served, %u concurrently, denied: %u due to connection rate limit, %u due to request rate limit, %u due to IP address, %u due to hostname, %u due to request header)"
 		        , served, client_highwater
 				, connect_rate_limiter == nullptr ? 0 : connect_rate_limiter->disallowed.load()
 				, request_rate_limiter == nullptr ? 0 : request_rate_limiter->disallowed.load()
 				, ip_can.total_found.load() + ip_silent_can.total_found.load()
-				, host_can.total_found.load());
+				, host_can.total_found.load()
+				, web_block.total_blocked.load());
 		set_state(SERVER_STOPPED);
 		if (startup != NULL && startup->terminated != NULL)
 			startup->terminated(startup->cbdata, code);
@@ -7653,6 +7716,7 @@ static void cleanup(int code)
 	ip_silent_can.reset();
 	host_can.reset();
 	host_exempt.reset();
+	web_block.reset();
 
 	mqtt_shutdown(&mqtt);
 }
@@ -7847,6 +7911,7 @@ void web_server(void* arg)
 	char              mime_types_ini[MAX_PATH + 1];
 	char              web_handler_ini[MAX_PATH + 1];
 	char              web_alias_ini[MAX_PATH + 1];
+	char              web_block_ini[MAX_PATH + 1];
 	union xp_sockaddr client_addr;
 	socklen_t         client_addr_len;
 	SOCKET            client_socket;
@@ -8074,6 +8139,12 @@ void web_server(void* arg)
 		ip_silent_can.init(&scfg, "ip-silent");
 		host_can.init(&scfg, "host");
 		host_exempt.init(&scfg, strIpFilterExemptConfigFile);
+		iniFileName(web_block_ini, sizeof(web_block_ini), scfg.ctrl_dir, "web_block.ini");
+		web_block.init(web_block_ini, scfg.cache_filter_files, lprintf);
+		size_t blocked_headers = web_block.rule_count();
+		if (blocked_headers > 0)
+			lprintf(LOG_INFO, "Blocking requests by header per %s (%u headers)"
+				, web_block.fname, (uint)blocked_headers);
 
 		listInit(&log_list, /* flags */ LINK_LIST_MUTEX | LINK_LIST_SEMAPHORE);
 		if (startup->options & WEB_OPT_HTTP_LOGGING) {
