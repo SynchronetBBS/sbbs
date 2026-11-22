@@ -67,3 +67,37 @@ The runtime `text[]` array (indexed by IDs in `text.h`, accessed as `text[SomeId
 ### Read-tool gotcha
 
 The `Read` tool refuses `text.dat` (it has a `.dat` extension and gets classified as binary, even though it's ASCII). Workaround: copy it to a `.txt` path first (e.g., `cp ctrl/text.dat /tmp/text_dat.txt`), Read/Edit the copy, then copy it back before running `textgen`.
+
+## Log message conventions (`lprintf()` / `errprintf()` in the servers)
+
+### Identify the client the way the rest of that server does
+
+A server log line starts with the socket (`%04d`), then says whose connection it is. Two bracket styles, each with one meaning:
+
+- **`[ip-address]`** — square brackets hold a client address, and nothing else.
+- **`<alias>`** — angle brackets hold a user name, and nothing else. Use it once a user is authenticated.
+
+Never print an address inside angle brackets or a name inside square brackets — `"<%s>"` fed `host_ip`, or `user.number ? user.alias : host_ip` under a single `<%s>`, is a bug. When a line can be reached both before and after login, pick the bracket along with the value (as the `client_id` string in `mailsrvr.cpp`'s `smtp_client_thread()` and `ftpsrvr.cpp`'s `ctrl_thread()` does: `"[%s]"` with the address until login, then `"<%s>"` with the alias).
+
+The prefix differs per server; match the file you are in:
+
+| Server | Prefix |
+|--------|--------|
+| FTP (`ftpsrvr.cpp`) | `%04d [ip]` before login, `%04d <alias>` after (`[ip] <alias>` on the login line itself) |
+| Mail, Web, Services | `%04d %-5s [ip]`, with `<alias>` appended once known — the `%-5s` is the protocol (`SMTP`, `POP3`, `HTTPS`, ...) |
+| Terminal (`main.cpp` and `sbbs_t`) | `Node %d <alias>` in a node thread; `%04d %s [ip]` (socket, protocol) before a node is assigned |
+
+A **hostname** is printed bare, never wrapped by the format string, and goes before the address when both appear: `%s [%s]` with `host_name, host_ip` ("logged-out from port 1234 on example.com [192.0.2.1]"), or on its own `Hostname: %s` line. The one bracketed thing you will see in a hostname's place is `<no name>` — that is the *value* (`STR_NO_HOSTNAME`, `sbbsdefs.h`) a server stores when the reverse lookup is disabled or fails, not a format. So `<no name> [192.0.2.1]` in a log is a missing hostname, not a user.
+
+A helper that logs on behalf of a session needs the client id passed in; don't log a bare socket number because the function doesn't happen to have the address.
+
+### The text and the severity must agree (#1396)
+
+In every server's `lprintf()`, `level <= LOG_ERR` is what makes a line an error: it is written to `data/error.log`, counted, and raised in sbbsctrl. The word in the text does none of that.
+
+- **The `!ERROR` marker ⇒ `LOG_ERR` or higher.** Reserve it for something the sysop should act on, and prefer `errprintf(LOG_ERR, WHERE, ...)` for those.
+- **Below `LOG_ERR` ⇒ no `!ERROR` marker.** The plain word is fine as description — "cryptlib write error", "error 10054 receiving on socket" — it is the `!ERROR` flag that claims a severity the line does not have.
+- **The exception is a level decided at run time.** `errprintf()` demotes a repeat of the same error (`repeated_error()`, keyed on line and function) to `LOG_WARNING`, so its `!ERROR` text is sometimes logged at warning level by design. That is fine; a fixed `lprintf(LOG_WARNING, "... !ERROR ...")` is not.
+- **What a peer does is not our error.** A client disconnecting, resetting, dropping a TLS session without closing it, or sending garbage is `LOG_NOTICE` (or `LOG_WARNING` when it looks hostile), not `LOG_ERR`.
+
+Much existing code breaks this (dozens of fixed-level `!ERROR` lines at `LOG_WARNING`); don't copy it into new lines, and fix a line's wording or level when you are already changing it. Don't mass-reword: sysops and scripts match on these strings.
