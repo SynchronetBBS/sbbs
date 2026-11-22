@@ -20,7 +20,7 @@ var DENIED = 60004;	// fails access_requirements
 var GONE = 60005;	// deleted
 var IDLE = 60006;	// inactive
 var NOPASS = 60007;	// no password stored
-var GUEST_FLAG = 60008;	// is_guest false but the G restriction set
+var GUEST_FLAG = 60008;	// an ordinary-looking account with the G restriction set
 var HIGH = 70001;	// above 65535: the mail index cannot hold it
 
 var WEBMAIL_DIR = Kit.exec_root() + "../webmail/";
@@ -53,7 +53,11 @@ function add_user(n, o)
 		name: o.name || ("User " + n),
 		lang: o.lang || "",
 		settings: o.settings || 0,
-		is_guest: o.guest === true,
+		// as User.is_guest (user_is_guest()): the G restriction, read
+		// when asked, so a restriction added later counts
+		get is_guest() {
+			return (this.security.restrictions & U.UFLAG_G) !== 0;
+		},
 		security: { restrictions: o.rest || 0, password: o.password === undefined ? "pw" + n : o.password,
 			password_date: 1600000000 },
 		compare_ars: function (ars) {
@@ -64,7 +68,7 @@ function add_user(n, o)
 }
 add_user(ALICE, { alias: "alice", name: "Alice A" });
 add_user(BOB, { alias: "bob" });
-add_user(GUEST, { alias: "guest", guest: true, rest: U.UFLAG_G });
+add_user(GUEST, { alias: "guest", rest: U.UFLAG_G });
 add_user(DENIED, { alias: "denied", ars_ok: false });
 add_user(GONE, { alias: "gone", settings: U.USER_DELETED });
 add_user(IDLE, { alias: "idle", settings: U.USER_INACTIVE });

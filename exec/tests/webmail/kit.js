@@ -92,7 +92,10 @@ load(js.exec_dir + "../mailbox/kit.js");	// defines the global Kit
 				name: o.name || ("User " + n),
 				lang: "",
 				settings: o.settings || 0,
-				is_guest: o.guest === true,
+				// as User.is_guest (user_is_guest()): the G restriction
+				get is_guest() {
+					return (this.security.restrictions & U.UFLAG_G) !== 0;
+				},
 				security: { restrictions: o.rest || 0, password: "pw" + n, password_date: 1600000000 },
 				compare_ars: function (ars) {
 					return o.ars_ok !== false;
@@ -101,7 +104,7 @@ load(js.exec_dir + "../mailbox/kit.js");	// defines the global Kit
 		};
 		W.add_user(W.ALICE, { alias: "alice" });
 		W.add_user(W.BOB, { alias: "bob" });
-		W.add_user(W.GUEST, { alias: "guest", guest: true, rest: U.UFLAG_G });
+		W.add_user(W.GUEST, { alias: "guest", rest: U.UFLAG_G });
 		W.add_user(W.DENIED, { alias: "denied", ars_ok: false });
 		var S = W.S = Kit.scratch();
 		W.shared = null;

@@ -158,8 +158,8 @@
 // Who may sign in (Api.eligible), for every sign-in path (password, webv4,
 // and every later request): the user record exists, its number is at most
 // 65535 (the mail index's limit), it is not deleted or inactive, is not a
-// guest (User.is_guest, or the G restriction, which is how Synchronet
-// marks a guest account: user_is_guest() in userdat.c), and meets
+// guest (User.is_guest: the G restriction, which is how Synchronet marks
+// a guest account, user_is_guest() in userdat.c), and meets
 // config.access_requirements (User.compare_ars) when it is not empty.  A
 // password sign-in also needs a stored password (the web server's login()
 // accepts any password for an account without one).
@@ -503,7 +503,7 @@ var Api = (function () {
 	// The user record bits used here, as userdefs.js defines them (pinned
 	// to it by the api.js test): not loaded for every request
 	var UD = { USER_DELETED: 1 << 0, USER_INACTIVE: 1 << 6, USER_NETMAIL: 1 << 12,
-		UFLAG_G: 1 << 6, UREST_FORWARD_MAIL: 1 << 5, UEXEMPT_MAIL_WAITING: 1 << 22 };
+		UREST_FORWARD_MAIL: 1 << 5, UEXEMPT_MAIL_WAITING: 1 << 22 };
 	var MAX_COOKIES = 8;		// cookie values tried per request
 	var MAX_DEPTH = 32;		// nesting of a request body
 
@@ -688,7 +688,8 @@ var Api = (function () {
 				return "deleted";
 			if (u.settings & UD.USER_INACTIVE)
 				return "inactive";
-			if (u.is_guest === true || !u.security || (u.security.restrictions & UD.UFLAG_G))
+			// is_guest: user number 0 or the G restriction (user_is_guest())
+			if (u.is_guest === true || !u.security)
 				return "guest";
 			var ars = config && typeof config.access_requirements === "string"
 				? config.access_requirements : "";
