@@ -4,7 +4,7 @@
 // See mrc-client.js for a bad example.
 function MRC_Session(host, port, user, pass, alias) {
     
-    const MRC_VER = "Multi Relay Chat JS v%s 2025-12-10 [cf]"; // update date and initials [xx] with each modification
+    const MRC_VER = "Multi Relay Chat JS v%s 2026-11-21 [rs]"; // update date and initials [xx] with each modification
     const CTCP_ROOM = "ctcp_echo_channel";
     
     const handle = new Socket();
@@ -253,7 +253,7 @@ function MRC_Session(host, port, user, pass, alias) {
         var msg;
         while (handle.data_waiting) {
             try {
-                msg = JSON.parse(handle.recvline(), 1024, 10);
+                msg = JSON.parse(handle.recvline(1024, 10));
                 if (msg.body) handle_message(msg);
             } catch (err) {
                 callbacks.error.forEach(function (e) {
