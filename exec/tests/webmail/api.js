@@ -1088,14 +1088,25 @@ try {
 		USERS[ALICE].lang = "";
 		// no locale files at all: a built-in English text, never an exception
 		var cfg_none = Config.load({ directory: LS.dir + "nonesuch/" });
-		r = Api.dispatch(make_env({ config: cfg_none }), { calls: [["nonesuch", {}, 1]] });
-		Kit.eq(r.results[0][1].error, "invalid", "no locale files: still a result");
-		Kit.assert(typeof r.results[0][1].message === "string" && r.results[0][1].message !== "",
-			"a fallback text");
-		Kit.assert(r.results[0][1].message.indexOf(LS.dir) < 0, "no path in the fallback");
-		g = call(make_env({ config: cfg_none }), "session.get", {});
-		Kit.eq(g.ok, false, "session.get without strings fails");
-		Kit.eq(g.error, "internal", "session.get without strings: internal");
+		var locale_error = Api.Locale.error;
+		var locale_errors = [];
+		Api.Locale.error = function (text) {
+			locale_errors.push(text);
+		};
+		try {
+			r = Api.dispatch(make_env({ config: cfg_none }), { calls: [["nonesuch", {}, 1]] });
+			Kit.eq(r.results[0][1].error, "invalid", "no locale files: still a result");
+			Kit.assert(typeof r.results[0][1].message === "string" && r.results[0][1].message !== "",
+				"a fallback text");
+			Kit.assert(r.results[0][1].message.indexOf(LS.dir) < 0, "no path in the fallback");
+			g = call(make_env({ config: cfg_none }), "session.get", {});
+			Kit.eq(g.ok, false, "session.get without strings fails");
+			Kit.eq(g.error, "internal", "session.get without strings: internal");
+		} finally {
+			Api.Locale.error = locale_error;
+		}
+		Kit.eq(locale_errors.length, 2, "each failed load of the strings is logged");
+		Kit.assert(locale_errors[0].indexOf("nonesuch/lib/locale/en_us.ini") > 0, "the log names the missing file");
 	} finally {
 		LS.cleanup();
 	}
