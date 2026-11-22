@@ -2563,7 +2563,7 @@ static void ctrl_thread(void* arg)
 #endif
 		if (rd < 1) {
 			if (transfer_inprogress == true) {
-				lprintf(LOG_WARNING, "%04d <%s> !Aborting transfer due to CTRL socket receive error", sock, user.number ? user.alias : host_ip);
+				lprintf(LOG_WARNING, "%04d %s !Aborting transfer due to CTRL socket receive error", sock, client_id);
 				transfer_aborted = true;
 			}
 			break;
@@ -2573,17 +2573,18 @@ static void ctrl_thread(void* arg)
 		cmd = buf;
 		while (((BYTE)*cmd) == TELNET_IAC) {
 			cmd++;
-			lprintf(LOG_DEBUG, "%04d <%s> RX%s: Telnet cmd: %s", sock, user.number ? user.alias : host_ip, sess == -1 ? "" : "S", telnet_cmd_desc(*cmd));
+			lprintf(LOG_DEBUG, "%04d %s RX%s: Telnet cmd: %s", sock, client_id, sess == -1 ? "" : "S", telnet_cmd_desc(*cmd));
 			cmd++;
 		}
 		while (*cmd && *cmd < ' ') {
-			lprintf(LOG_DEBUG, "%04d <%s> RX%s: %d (0x%02X)", sock, user.number ? user.alias : host_ip, sess == -1 ? "" : "S", (BYTE)*cmd, (BYTE)*cmd);
+			lprintf(LOG_DEBUG, "%04d %s RX%s: %d (0x%02X)", sock, client_id, sess == -1 ? "" : "S", (BYTE)*cmd, (BYTE)*cmd);
 			cmd++;
 		}
 		if (!(*cmd))
 			continue;
 		if (startup->options & FTP_OPT_DEBUG_RX)
-			lprintf(LOG_DEBUG, "%04d <%s> RX%s: %s", sock, user.number ? user.alias : host_ip, sess == -1 ? "" : "S", cmd);
+			lprintf(LOG_DEBUG, "%04d %s RX%s: %s", sock, client_id, sess == -1 ? "" : "S"
+			        , (strnicmp(cmd, "PASS ", 5) == 0 && !(scfg.sys_misc & SM_ECHO_PW)) ? "PASS <redacted>" : cmd);
 		if (!stricmp(cmd, "NOOP")) {
 			sockprintf(sock, sess, "200 NOOP command successful.");
 			continue;
@@ -2931,8 +2932,8 @@ static void ctrl_thread(void* arg)
 			unsigned    denials = 0;
 			if (request_rate_limiter->allowRequest(rl_key, &denials
 			        , rl_key == host_ip ? std::string() : std::string(host_ip)) == false) {
-				lprintf(LOG_NOTICE, "%04d <%s> Too many requests per rate limit (%u over %us) for %s"
-					, sock, user.number ? user.alias : host_ip
+				lprintf(LOG_NOTICE, "%04d %s Too many requests per rate limit (%u over %us) for %s"
+					, sock, client_id
 					, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds, rl_key.c_str());
 				rate_limit_filter(sock, &scfg, client.protocol, host_ip, host_name, rl_key, denials, request_rate_limiter
 				    , &startup->rate_limit, lprintf);
