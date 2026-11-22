@@ -439,6 +439,9 @@
   connect directly, so they can share the port. Left blank, every client must
   send the header, as before, with a warning logged at startup. It is set in
   SCFG under each server's Reverse Proxy menu (issues #1391, #1392)
+- Fix: with the PROXY protocol, temporary bans for failed logins now apply to
+  the client's own address; they were checked against the proxy's, and so
+  never applied
 - Fix: behind a reverse proxy, the request rate limiter, `ip.can`, and
   failed-login counting and temporary bans now act on the forwarded client
   address instead of the proxy's, and a kept-alive connection's later

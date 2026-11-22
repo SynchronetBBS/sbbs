@@ -1273,7 +1273,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 	if (!host_exempt.listed(host_ip, host_name)) {
 		/* loginBanned acquires and releases list->mutex internally — no caller-held lock. */
 		// coverity[LOCK:SUPPRESS]
-		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
+		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, /* client_addr: */ nullptr, startup->login_attempt, &attempted);
 		if (banned) {
 			char ban_duration[128];
 			lprintf(LOG_NOTICE, "%04d %-5s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
@@ -3368,7 +3368,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 		/* local connection */
 		dnsbl_result.s_addr = 0;
 	} else if (!host_exempt.listed(host_ip, host_name)) {
-		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
+		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, /* client_addr: */ nullptr, startup->login_attempt, &attempted);
 		if (banned) {
 			char ban_duration[128];
 			lprintf(LOG_NOTICE, "%04d %-5s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"

@@ -6011,7 +6011,7 @@ NO_SSH:
 
 			if (!host_exempt.listed(host_ip, nullptr)) {
 				login_attempt_t attempted;
-				uint banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */ NULL, startup->login_attempt, &attempted);
+				uint banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, &client_addr, startup->login_attempt, &attempted);
 				if (banned) {
 					char ban_duration[128];
 					lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts%s%s) - remaining: %s"

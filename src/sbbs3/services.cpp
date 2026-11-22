@@ -2609,7 +2609,7 @@ void services_thread(void* arg)
 						login_attempt_t attempted;
 						/* loginBanned acquires and releases list->mutex internally — no caller-held lock. */
 						// coverity[LOCK:SUPPRESS]
-						ulong           banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */ NULL, startup->login_attempt, &attempted);
+						ulong           banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* client_addr: */ nullptr, startup->login_attempt, &attempted);
 						if (banned) {
 							char ban_duration[128];
 							lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"

@@ -2452,7 +2452,7 @@ static void ctrl_thread(void* arg)
 	}
 
 	if (!host_exempt.listed(host_ip, host_name)) {
-		ulong banned = loginBanned(&scfg, startup->login_attempt_list, sock, host_name, startup->login_attempt, &attempted);
+		ulong banned = loginBanned(&scfg, startup->login_attempt_list, sock, /* client_addr: */ nullptr, startup->login_attempt, &attempted);
 		if (banned) {
 			char ban_duration[128];
 			lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"

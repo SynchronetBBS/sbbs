@@ -7566,7 +7566,7 @@ void http_session_thread(void* arg)
 
 	if (!host_exempt.listed(session.host_ip, session.host_name)) {
 		login_attempt_t attempted;
-		ulong           banned = loginBanned(&scfg, startup->login_attempt_list, session.socket, host_name, startup->login_attempt, &attempted);
+		ulong           banned = loginBanned(&scfg, startup->login_attempt_list, session.socket, &session.addr, startup->login_attempt, &attempted);
 
 		/* host_ip wasn't defined in http_session_thread */
 		if (banned || ip_can.listed(session.host_ip, nullptr, &trash)) {

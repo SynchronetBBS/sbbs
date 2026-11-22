@@ -4743,11 +4743,13 @@ ulong loginFailure(link_list_t* list, const union xp_sockaddr* addr, const char*
 }
 
 #if !defined(NO_SOCKET_SUPPORT)
-ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const char* host_name
+/* client_addr is the client's address when it is not the socket's peer	*/
+/* (e.g. given by a proxy with the PROXY protocol), else NULL				*/
+ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const union xp_sockaddr* client_addr
                   , struct login_attempt_settings settings, login_attempt_t* details)
 {
 	bool              result = false;
-	union xp_sockaddr client_addr;
+	union xp_sockaddr peer_addr;
 	union xp_sockaddr server_addr;
 	socklen_t         addr_len;
 
@@ -4758,15 +4760,18 @@ ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const char* host_
 	if ((result = getsockname(sock, &server_addr.addr, &addr_len)) != 0)
 		return 0;
 
-	addr_len = sizeof(client_addr);
-	if ((result = getpeername(sock, &client_addr.addr, &addr_len)) != 0)
-		return 0;
+	if (client_addr == NULL) {
+		addr_len = sizeof(peer_addr);
+		if ((result = getpeername(sock, &peer_addr.addr, &addr_len)) != 0)
+			return 0;
+		client_addr = &peer_addr;
+	}
 
 	/* Don't ban connections from the server back to itself */
-	if (inet_addrmatch(&server_addr, &client_addr))
+	if (inet_addrmatch(&server_addr, (union xp_sockaddr*)client_addr))
 		return 0;
 
-	return loginBannedAddr(cfg, list, &client_addr, settings, details);
+	return loginBannedAddr(cfg, list, client_addr, settings, details);
 }
 
 /****************************************************************************/
