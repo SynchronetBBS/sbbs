@@ -135,6 +135,10 @@
 			webv4_user: function () {
 				return load({}, lib + "webv4.js").session_user(http_request.cookie, system.data_dir);
 			},
+			// a session started from webv4 lasts only while its key is unchanged
+			webv4_key: function (n) {
+				return load({}, lib + "webv4.js").stored_key(n, system.data_dir);
+			},
 			find_user: function (name) {
 				// the engine's lookup, the same one login() uses
 				return system.find_login_id(name);

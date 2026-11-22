@@ -63,6 +63,10 @@ js.on_exit("for (var i = 0; i < webmail_part_temp.length; i++) file_remove(webma
 			config: config,
 			secure: secure,
 			cookie: http_request.cookie[COOKIE],	// every value sent
+			// a session started from webv4 lasts only while its key is unchanged
+			webv4_key: function (n) {
+				return load({}, lib + "webv4.js").stored_key(n, system.data_dir);
+			},
 			get_user: get_user,
 			userdata: userdata,
 			make_ctx: Api.context_factory({ config: config, get_user: get_user,

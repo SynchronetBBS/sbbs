@@ -97,7 +97,12 @@
 //                  (Webv4.session_user()) or 0; called at most once per
 //                  request, only when config.webv4_login is true and
 //                  only by session.get without a session and by
-//                  session.logout, so a poll never reads the .web file
+//                  session.logout
+//   webv4_key(usernum)  the key of that user's webv4 session
+//                  (Webv4.stored_key()) or null; read when a session is
+//                  started from webv4 and on every request of a session
+//                  started that way (its stamp includes the key), so
+//                  only those sessions read the .web file on a poll
 //   now            optional time_t (tests); time() otherwise
 //   find_user(name)  the user number the server's login() would look the
 //                  name up as, or 0 (system.find_login_id(name), which
@@ -134,6 +139,9 @@
 // password and password date (stamp_of), stored with every session made
 // here, so changing the password in any way ends every web client
 // session of that user, and a forged value never reads a user record.
+// A session started from webv4 (via "webv4") has webv4_stamp instead,
+// which also covers the user's webv4 session key (env.webv4_key), so
+// signing out of webv4 ends it too.
 // touch is false when every call of the request is "changes" (the
 // background poll) or the request carries background: true (a refresh the
 // client made on its own), so polling and what follows from it do not
@@ -706,6 +714,27 @@ var Api = (function () {
 		return sha256_calc(pw + "\n" + date, /* hex: */ true);
 	}
 
+	// The stamp of a session started from a webv4 sign-in (via "webv4"):
+	// the user's stamp and the key of their webv4 session, digested
+	// together.  When webv4 deletes the key (the user signed out of it) or
+	// replaces it (they signed in to it again elsewhere), the stamp
+	// changes and the web client session ends with the webv4 one.  key is
+	// env.webv4_key(usernum): a string, or null when there is none.
+	function webv4_stamp(u, key)
+	{
+		return sha256_calc(stamp_of(u) + "\nwebv4\n" + (typeof key === "string" ? key : ""),
+			/* hex: */ true);
+	}
+
+	// The stored webv4 session key of usernum (env.webv4_key), or null
+	function webv4_key(env, usernum)
+	{
+		if (typeof env.webv4_key !== "function")
+			return null;
+		var key = env.webv4_key(usernum);
+		return typeof key === "string" && key !== "" ? key : null;
+	}
+
 	function user_of(env, usernum)
 	{
 		var u = env.get_user(usernum);
@@ -750,9 +779,9 @@ var Api = (function () {
 			var u = null;
 			var s = Session.check(ud, value, now, env.config, { touch: touch !== false,
 				stamp: (function (n) {
-					return function () {
+					return function (via) {
 						u = user_of(env, n);
-						return stamp_of(u);
+						return via === "webv4" ? webv4_stamp(u, webv4_key(env, n)) : stamp_of(u);
 					};
 				})(p.usernum) });
 			if (s === null)
@@ -1133,13 +1162,17 @@ var Api = (function () {
 	}
 
 	// Sign usernum in: a new session and its cookie; the session the
-	// browser had (if any) is removed
-	function start_session(rq, usernum, u, keep)
+	// browser had (if any) is removed.  v4key, when a string, is the key
+	// of the webv4 session the user was signed in from: the new session
+	// lasts only while that one does (webv4_stamp).
+	function start_session(rq, usernum, u, keep, v4key)
 	{
 		var env = rq.env;
 		var now = now_of(env);
+		var from_webv4 = typeof v4key === "string";
 		var value = Session.create(env.userdata(usernum), usernum, env.client || null, keep === true,
-			now, rq.config, stamp_of(u));
+			now, rq.config, from_webv4 ? webv4_stamp(u, v4key) : stamp_of(u),
+			from_webv4 ? "webv4" : undefined);
 		if (rq.usernum > 0 && typeof rq.cookie === "string") {
 			try {
 				Session.destroy(env.userdata(rq.usernum), rq.cookie, now, rq.config);
@@ -1180,7 +1213,10 @@ var Api = (function () {
 		var u = user_of(rq.env, n);
 		if (!eligible(u, rq.config))
 			return;
-		start_session(rq, n, u, false);
+		var key = webv4_key(rq.env, n);
+		if (key === null)
+			return;	// signed out of webv4 meanwhile
+		start_session(rq, n, u, false, key);
 		rq.via = "webv4";
 	}
 

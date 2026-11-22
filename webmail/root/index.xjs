@@ -90,6 +90,10 @@
 			webv4_user: function () {
 				return load({}, lib + "webv4.js").session_user(http_request.cookie, system.data_dir);
 			},
+			// a session started from webv4 lasts only while its key is unchanged
+			webv4_key: function (n) {
+				return load({}, lib + "webv4.js").stored_key(n, system.data_dir);
+			},
 			// session.get needs no password check and no mailbox
 			get_user: get_user,
 			userdata: userdata,

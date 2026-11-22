@@ -92,6 +92,18 @@ try {
 	put(data + "user/0042.web", "key=" + KEY + "\n");
 	Kit.eq(Webv4.session_user({ synchronet: ["42," + KEY] }, data), 42, "zero padded file name");
 
+	// --- stored_key: the key webv4 holds for a user, or null
+	reads = [];
+	Kit.eq(Webv4.stored_key(60001, data), KEY, "stored_key");
+	Kit.eq(reads, [web_file], "stored_key reads the user's .web file");
+	Kit.eq(Webv4.stored_key(60002, data), null, "stored_key: no file");
+	Kit.eq(Webv4.stored_key(42, data), KEY, "stored_key: zero padded file name");
+	reads = [];
+	var nonums = [0, -1, 1.5, "60001", null, 0x80000000];
+	for (var n = 0; n < nonums.length; n++)
+		Kit.eq(Webv4.stored_key(nonums[n], data), null, "stored_key: " + JSON.stringify(nonums[n]));
+	Kit.eq(reads, [], "stored_key: no file read for an invalid user number");
+
 	// --- the session file is never written
 	Kit.eq(file_date(web_file), stamp, "webv4 file not modified");
 	Kit.eq(file_size(web_file), size, "webv4 file size unchanged");

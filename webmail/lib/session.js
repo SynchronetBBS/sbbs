@@ -25,7 +25,8 @@
 //     created: <time_t>, seen: <time_t, last use, updated at most once a
 //     minute>, keep: <boolean, "keep me signed in">,
 //     client: { ip: <string, up to MAX_IP>, agent: <string, up to
-//     MAX_AGENT> } [, stamp: <string given to create()>] }
+//     MAX_AGENT> } [, stamp: <string given to create()>]
+//     [, via: <string given to create(): how the session was started>] }
 // client describes the device for a list of signed-in devices: control
 // characters are removed and the strings truncated.  A user has at most
 // MAX_SESSIONS sessions; creating one more removes the least recently
@@ -49,21 +50,25 @@
 // without one matches only a check given none.  stamp may also be a
 // function returning the stamp: it is called only after the key has
 // matched a live session, so the caller can load what the stamp is made
-// from (a user record) only for a value that is not forged.  So changing
-// the stamp (changing the password) ends every session made before.  A
-// check given a stamp that does not match also removes that session
-// (waiting at most 250 ms for the lock; if it is busy the session stays
-// stored, unusable).
+// from (a user record) only for a value that is not forged.  A stamp
+// function is given the session's via (a string, or undefined), so a
+// caller can make the stamp of a session depend on how it was started.
+// So changing the stamp (changing the password) ends every session made
+// before.  A check given a stamp that does not match also removes that
+// session (waiting at most 250 ms for the lock; if it is busy the session
+// stays stored, unusable).
 //
 // Functions (now is a time_t, time() when omitted; config is Config.load()):
 //
 //   Session.parse(value)  { usernum, key } or null if value is not a valid
 //                         cookie value.  Touches no file; never throws.
 //   Session.create(userdata, usernum, client_info, keep [, now, config,
-//                  stamp])
+//                  stamp, via])
 //                         stores a new session and returns its cookie
 //                         value.  client_info is { ip, agent } or null.
-//                         stamp, if a string, is stored (see Stamps).
+//                         stamp, if a string, is stored (see Stamps); so
+//                         is via, if it is 1 to 16 lowercase letters and
+//                         digits (any other via throws an Error).
 //                         Without config, expired sessions are not removed
 //                         (the cap still applies).  Throws
 //                         { code: "conflict" } if sessions.json stays
@@ -143,6 +148,7 @@ var Session = (function () {
 	var MAX_LIFETIME = 86400;	// seconds a session without keep can last
 	var CHECK_TIMEOUT = 250;	// ms check() waits for the lock
 	var DAY = 86400;
+	var VIA_RE = /^[a-z0-9]{1,16}$/;
 	var seq = 0;
 
 	function now_or(now)
@@ -263,11 +269,13 @@ var Session = (function () {
 		return String(v).replace(/[\x00-\x1f\x7f]/g, "").substr(0, max);
 	}
 
-	function create(userdata, usernum, client_info, keep, now, config, stamp)
+	function create(userdata, usernum, client_info, keep, now, config, stamp, via)
 	{
 		if (typeof usernum !== "number" || !(usernum >= 1 && usernum <= 0xffffffff)
 			|| Math.floor(usernum) !== usernum)
 			throw new Error("Session.create: invalid user number");
+		if (via !== undefined && !(typeof via === "string" && VIA_RE.test(via)))
+			throw new Error("Session.create: invalid via");
 		now = now_or(now);
 		var key = new_key();
 		var h = hash(key);
@@ -281,6 +289,8 @@ var Session = (function () {
 		};
 		if (typeof stamp === "string")
 			entry.stamp = stamp;
+		if (via !== undefined)
+			entry.via = via;
 		userdata.update(FILE, {}, function (obj) {
 			var sessions = sessions_of(obj);
 			prune(sessions, now, config);
@@ -308,6 +318,12 @@ var Session = (function () {
 	function stamp_of(e)
 	{
 		return typeof e.stamp === "string" ? e.stamp : undefined;
+	}
+
+	// How a session was started (create()'s via), or undefined
+	function via_of(e)
+	{
+		return typeof e.via === "string" && VIA_RE.test(e.via) ? e.via : undefined;
 	}
 
 	// Removes the session whose key hashes to h, after its stamp no longer
@@ -348,7 +364,7 @@ var Session = (function () {
 		// value
 		var stamp = options ? options.stamp : undefined;
 		if (typeof stamp === "function")
-			stamp = stamp();
+			stamp = stamp(via_of(e));
 		if (typeof stamp !== "string")
 			stamp = undefined;
 		if (stamp_of(e) !== stamp) {

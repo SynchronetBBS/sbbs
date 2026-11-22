@@ -29,6 +29,7 @@ var cfg = Config.load({ directory: WEBMAIL_DIR, access_requirements: "LEVEL 10",
 	poll_interval: 30, max_drafts: 7, product_name: "Mail <b>", brand: "<i>B</i>",
 	login_text: "Hello", footer_links: "<a href=x>x</a>", fallback_url: "/old" });
 var cfg_plain = Config.load({ directory: WEBMAIL_DIR, require_tls: false });
+var WEBV4_KEY = "k1";	// make_env's stored webv4 session key
 var cfg_webv4 = Config.load({ directory: WEBMAIL_DIR, webv4_login: true,
 	access_requirements: "LEVEL 10" });
 
@@ -109,6 +110,15 @@ function make_env(o)
 			ev.webv4_calls++;
 			return o.webv4_user || 0;
 		},
+		// the stored webv4 session key of each user: WEBV4_KEY unless the
+		// test gives webv4_keys (a user it leaves out has none)
+		webv4_key_calls: 0,
+		webv4_key: o.webv4_key_fn || function (n) {
+			ev.webv4_key_calls++;
+			if (!o.webv4_keys)
+				return WEBV4_KEY;
+			return o.webv4_keys.hasOwnProperty(n) ? o.webv4_keys[n] : null;
+		},
 		finds: [],
 		find_user: o.find_user || function (name) {
 			ev.finds.push(name);
@@ -158,6 +168,7 @@ function sealed_env(o)
 	o.login = fail("login");
 	o.find_user = fail("find_user");
 	o.webv4_fn = fail("webv4_user");
+	o.webv4_key_fn = fail("webv4_key");
 	return make_env(o);
 }
 
@@ -855,6 +866,68 @@ try {
 	g = call(make_env({ config: cfg_webv4, webv4_user: BOB, cookie: wv }), "session.get", { no_webv4: true });
 	Kit.eq(g.user.number, ALICE, "no_webv4 leaves an existing session alone");
 	err(call(sealed_env(), "session.get", { no_webv4: 1 }), "invalid", "no_webv4 must be a boolean");
+
+	// --- a session started from webv4 ends with the webv4 session (#1395)
+	ev = make_env({ config: cfg_webv4, webv4_user: ALICE, webv4_keys: { 60001: "v4a" } });
+	g = call(ev, "session.get", {});
+	Kit.eq(g.via, "webv4", "webv4-tied: signed in");
+	var tied = ev.cookies[0][0];
+	var tied_hash = sha256_calc(Session.parse(tied).key, true);
+	Kit.eq(read_json(session_file(ALICE))[tied_hash].via, "webv4", "webv4-tied: via stored");
+	// the key is never stored, only digested into the stamp
+	Kit.assert(JSON.stringify(read_json(session_file(ALICE))).indexOf("v4a") < 0,
+		"webv4-tied: the webv4 key is not stored");
+	ev = make_env({ cookie: tied, webv4_keys: { 60001: "v4a" } });
+	Kit.eq(call(ev, "folder.list", {}).ok, true, "webv4-tied: valid while the key is unchanged");
+	Kit.eq(ev.webv4_key_calls, 1, "webv4-tied: the key is read once per request");
+	ev = make_env({ cookie: tied, webv4_keys: { 60001: "v4a" } });
+	r = Api.dispatch(ev, { calls: [["changes", { state: "" }, 1]] });
+	Kit.eq(r.signed_out, false, "webv4-tied: polling keeps working");
+	// signing in to webv4 elsewhere replaces the key: signed out here
+	ev = make_env({ cookie: tied, webv4_keys: { 60001: "v4b" } });
+	r = Api.dispatch(ev, { calls: [["folder.list", {}, 1]] });
+	err(r.results[0][1], "auth", "webv4-tied: another key ends it");
+	Kit.eq(r.signed_out, true, "webv4-tied: reported as signed out");
+	Kit.eq(read_json(session_file(ALICE))[tied_hash], undefined, "webv4-tied: the session removed");
+	ev = make_env({ cookie: tied, webv4_keys: { 60001: "v4a" } });
+	err(call(ev, "folder.list", {}), "auth", "webv4-tied: the old key does not bring it back");
+	// signing out of webv4 removes the key: signed out here, also on a poll
+	ev = make_env({ config: cfg_webv4, webv4_user: ALICE, webv4_keys: { 60001: "v4c" } });
+	tied = (call(ev, "session.get", {}), ev.cookies[0][0]);
+	ev = make_env({ cookie: tied, webv4_keys: {} });
+	r = Api.dispatch(ev, { calls: [["changes", { state: "" }, 1]] });
+	Kit.eq(r.signed_out, true, "webv4-tied: signed out of webv4 ends it");
+	// and with no way to read the key (an env without the hook)
+	ev = make_env({ config: cfg_webv4, webv4_user: ALICE });
+	tied = (call(ev, "session.get", {}), ev.cookies[0][0]);
+	ev = make_env({ cookie: tied });
+	delete ev.webv4_key;
+	err(call(ev, "folder.list", {}), "auth", "webv4-tied: no key hook, no session");
+	// webv4_login turned off later: the tie still holds
+	ev = make_env({ config: cfg_webv4, webv4_user: ALICE });
+	tied = (call(ev, "session.get", {}), ev.cookies[0][0]);
+	Kit.eq(call(make_env({ cookie: tied }), "folder.list", {}).ok, true,
+		"webv4-tied: webv4_login off, key unchanged: valid");
+	err(call(make_env({ cookie: tied, webv4_keys: {} }), "folder.list", {}), "auth",
+		"webv4-tied: webv4_login off, signed out of webv4: ended");
+	// a webv4 user whose key has gone by the time it is read: no sign-in
+	ev = make_env({ config: cfg_webv4, webv4_user: ALICE, webv4_keys: {} });
+	g = call(ev, "session.get", {});
+	Kit.eq(g.user, null, "webv4 key gone: not signed in");
+	Kit.eq(ev.cookies, [], "webv4 key gone: no cookie");
+	// a password session is not tied to webv4, and never reads the key
+	tmp = sign_in(BOB);
+	ev = make_env({ cookie: tmp, webv4_keys: {} });
+	Kit.eq(call(ev, "folder.list", {}).ok, true, "password session: no webv4 session needed");
+	Kit.eq(ev.webv4_key_calls, 0, "password session: the webv4 key is not read");
+	// the password stamp still applies to a tied session
+	ev = make_env({ config: cfg_webv4, webv4_user: ALICE });
+	tied = (call(ev, "session.get", {}), ev.cookies[0][0]);
+	var alice_pw = USERS[ALICE].security.password;
+	USERS[ALICE].security.password = "changed";
+	err(call(make_env({ cookie: tied }), "folder.list", {}), "auth",
+		"webv4-tied: a password change still ends it");
+	USERS[ALICE].security.password = alice_pw;
 
 	// --- session.get contents
 	ev = make_env({ cookie: alice });

@@ -3,8 +3,14 @@
 // var Webv4 = load("webv4.js");
 // var usernum = Webv4.session_user(http_request.cookie, system.data_dir);
 //
-// Used only when the webmail option webv4_login is true, to sign a user in
-// to the web client without the sign-in form.
+// var key = Webv4.stored_key(usernum, system.data_dir);
+//
+// session_user is used only when the webmail option webv4_login is true,
+// to sign a user in to the web client without the sign-in form.
+// stored_key is the key of the user's webv4 session (or null): a web
+// client session started that way lasts only while it is unchanged, so
+// signing out of webv4 (or signing in to webv4 again elsewhere) signs the
+// user out of the web client too.
 //
 // This follows webv4's own rule (webv4/lib/auth.js, validateSession and
 // getSession) and nothing more:
@@ -28,7 +34,7 @@
 //     session lasts until the user signs out of webv4 (which deletes the
 //     .web file) or signs in again elsewhere (which replaces the key).
 //     The web client's own session, created from this one, has its own
-//     limits (session.js).
+//     limits (session.js), and ends when this one does (api.js).
 // Several values for the cookie are tried in order, as webv4 does; the
 // first that matches wins.  The .web file is only read (opened "r"),
 // never written.  A missing file, a missing or empty key, or any problem
@@ -109,9 +115,20 @@ var Webv4 = (function () {
 		return 0;
 	}
 
+	// The webv4 session key stored for usernum, or null (no session, or
+	// one webv4 would refuse); read through Webv4.read_key
+	function stored_key(usernum, data_dir)
+	{
+		if (typeof usernum !== "number" || !(usernum >= 1 && usernum <= MAX_USERNUM)
+			|| Math.floor(usernum) !== usernum)
+			return null;
+		return Webv4.read_key(data_dir + format("user/%04u.web", usernum));
+	}
+
 	var Webv4 = {
 		COOKIE: COOKIE,
 		session_user: session_user,
+		stored_key: stored_key,
 		read_key: read_key
 	};
 

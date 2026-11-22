@@ -369,6 +369,33 @@ try {
 	var xv = Session.create(sud, 60009, CLIENT, false, T0, cfg, 5);
 	Kit.eq(Session.check(sud, xv, T0, cfg, { touch: false }), { usernum: 60009, keep: false },
 		"a non-string stamp counts as none");
+	// via: stored, and given to a stamp function
+	var vv = Session.create(sud, 60009, CLIENT, false, T0, cfg, "s1", "webv4");
+	Kit.eq(sud.read("sessions")[sha256_calc(key_of(vv), true)].via, "webv4", "via is stored");
+	var given = [];
+	var via_fn = function (via) {
+		given.push(via);
+		return "s1";
+	};
+	Kit.eq(Session.check(sud, vv, T0, cfg, { touch: false, stamp: via_fn }),
+		{ usernum: 60009, keep: false }, "check with via");
+	Kit.eq(given, ["webv4"], "the stamp function gets the via");
+	given = [];
+	Session.check(sud, fv, T0, cfg, { touch: false, stamp: via_fn });
+	var pv = Session.create(sud, 60009, CLIENT, false, T0, cfg, "s1");
+	Session.check(sud, pv, T0, cfg, { touch: false, stamp: via_fn });
+	Kit.eq(given, [undefined], "no via: undefined");
+	Kit.eq(sud.read("sessions")[sha256_calc(key_of(pv), true)].via, undefined, "no via stored");
+	var bad = ["", "Webv4", "web v4", "x12345678901234567", 4, null];
+	for (var b = 0; b < bad.length; b++) {
+		var threw = false;
+		try {
+			Session.create(sud, 60009, CLIENT, false, T0, cfg, "s1", bad[b]);
+		} catch (e) {
+			threw = true;
+		}
+		Kit.assert(threw, "an invalid via throws: " + JSON.stringify(bad[b]));
+	}
 } finally {
 	scr.cleanup();
 }
