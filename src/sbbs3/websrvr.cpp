@@ -2138,6 +2138,19 @@ static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t
 		mswait(startup->login_attempt.delay);
 }
 
+// The password to record with a failed HTTP authentication
+static const char* auth_password(http_session_t * session)
+{
+	switch (session->req.auth.type) {
+		case AUTHENTICATION_BASIC:
+			return session->req.auth.password;
+		case AUTHENTICATION_DIGEST:
+			return "<digest>";
+		default:
+			return NULL;
+	}
+}
+
 // A failed login, counted against the request's client (#1389)
 static void session_badlogin(http_session_t * session, const char* user, const char* passwd)
 {
@@ -2242,23 +2255,28 @@ static bool check_ars(http_session_t * session)
 		else
 			lprintf(LOG_NOTICE, "%04d %-5s [%s] !UNKNOWN USER: '%s'"
 			        , session->socket, session->client.protocol, session->host_ip, session->req.auth.username);
-		switch (session->req.auth.type) {
-			case AUTHENTICATION_BASIC:
-				session_badlogin(session, session->req.auth.username, session->req.auth.password);
-				break;
-			case AUTHENTICATION_DIGEST:
-				session_badlogin(session, session->req.auth.username, "<digest>");
-				break;
-			default:
-				session_badlogin(session, session->req.auth.username, NULL);
-				break;
-		}
+		session_badlogin(session, session->req.auth.username, auth_password(session));
 		return false;
 	}
 	thisuser.number = i;
 	if (getuserdat(&scfg, &thisuser) != USER_SUCCESS) {
 		lprintf(LOG_ERR, "%04d !ERROR reading user #%u data for '%s'"
 		        , session->socket, i, session->req.auth.username);
+		return false;
+	}
+	if (thisuser.misc & (DELETED | INACTIVE)) {
+		if (session->last_user_num != 0) {
+			if (session->last_user_num > 0)
+				http_logoff(session, session->socket, __LINE__);
+			session->user.number = 0;
+			http_logon(session, NULL);
+		}
+		if (!http_checkuser(session))
+			return false;
+		lprintf(LOG_NOTICE, "%04d %-5s [%s] !DELETED or INACTIVE user #%u: '%s'"
+		        , session->socket, session->client.protocol, session->host_ip
+		        , thisuser.number, session->req.auth.username);
+		session_badlogin(session, session->req.auth.username, auth_password(session));
 		return false;
 	}
 	switch (session->req.auth.type) {

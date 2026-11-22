@@ -443,6 +443,8 @@
 - Fix: a login with an unknown user name, or to a deleted or inactive
   account, now counts as a failed login attempt (toward temporary bans and
   auto-filtering), as on the other servers (issue #1390)
+- Fix: HTTP authentication (Basic and Digest) accepted the right password
+  for a deleted or inactive account
 
 ## FTP Server
 
