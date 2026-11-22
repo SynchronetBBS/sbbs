@@ -1334,12 +1334,15 @@ cterm_clearscreen(struct cterminal *cterm, char attr)
 	if(!cterm->started)
 		cterm_start(cterm);
 
-	int minx = TERM_MINX;
-	int miny = TERM_MINY;
-	cterm_coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &minx, &miny);
+	/* Capture the same rows clrscr() clears: the full display normally,
+	 * or the scrolling window when origin mode is enabled. */
+	int miny = CURR_MINY;
+	int maxy = CURR_MAXY;
+	cterm_coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, NULL, &miny);
+	cterm_coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, NULL, &maxy);
 
-	for (int i = 0; i < cterm->height; i++)
-		cterm_line_to_scrollback(cterm, miny + i);
+	for (int row = miny; row <= maxy; row++)
+		cterm_line_to_scrollback(cterm, row);
 	clrscr();
 	gotoxy(CURR_MINX, CURR_MINY);
 }

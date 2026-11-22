@@ -1344,6 +1344,74 @@ static int test_ansi_ed_all(void)
 	return 1;
 }
 
+
+/* Screen clears must archive exactly the cleared rows, even with margins
+ * and a terminal positioned inside a larger screen with a status row. */
+static int check_clear_scrollback(int origin_mode)
+{
+	const char *clears[] = { "\033[2J", "\f" };
+	for (size_t cmd = 0; cmd < sizeof(clears) / sizeof(clears[0]); cmd++) {
+		for (int offset = 0; offset <= 2; offset += 2) {
+			setup_ansi();
+			cterm_resize_rows(cterm, 20);
+			cterm->y += offset;
+			ct_puts("\033[5;16r");
+			if (origin_mode)
+				ct_puts("\033[?6h");
+			struct vmem_cell cells[80];
+			memset(cells, 0, sizeof(cells));
+			for (int row = 1; row <= term_rows; row++) {
+				for (int col = 0; col < term_cols; col++) {
+					cells[col].ch = 'A' + row - 1;
+					cells[col].legacy_attr = 7;
+					cells[col].fg = 7;
+				}
+				vmem_puttext(1, row, term_cols, row, cells);
+			}
+			cterm->backfilled = cterm->backpos = cterm->backstart = 0;
+			int first = cterm->y + (origin_mode ? 4 : 0);
+			int rows = origin_mode ? 12 : cterm->height;
+			ct_puts(clears[cmd]);
+			if (cterm->backfilled != rows) {
+				fprintf(result_fp, "    clear %zu offset %d: archived %d rows, expected %d\n",
+				    cmd, offset, cterm->backfilled, rows);
+				return 0;
+			}
+			for (int row = 0; row < rows; row++) {
+				for (int col = 0; col < term_cols; col++) {
+					if (scrollback[row * term_cols + col].ch != (uint32_t)('A' + first + row - 1)) {
+						fprintf(result_fp, "    clear %zu offset %d: history row %d captured the wrong screen row\n",
+						    cmd, offset, row + 1);
+						return 0;
+					}
+				}
+			}
+			for (int row = 1; row <= term_rows; row++) {
+				uint32_t expected = row >= first && row < first + rows ? ' ' : 'A' + row - 1;
+				ct_gettext(1, row, term_cols, row, cells);
+				for (int col = 0; col < term_cols; col++) {
+					if (cells[col].ch != expected) {
+						fprintf(result_fp, "    clear %zu offset %d: screen row %d changed incorrectly\n",
+						    cmd, offset, row);
+						return 0;
+					}
+				}
+			}
+		}
+	}
+	return 1;
+}
+
+static int test_ansi_clear_scrollback(void)
+{
+	return check_clear_scrollback(0);
+}
+
+static int test_ansi_clear_scrollback_origin(void)
+{
+	return check_clear_scrollback(1);
+}
+
 /* EL variants */
 static int test_ansi_el_left(void)
 {
@@ -2392,6 +2460,101 @@ static int test_ansi_decstbm_outside(void)
 	if (!expect_text(1, 5, "OUTSIDE_ABOVE")) return 0;
 	if (!expect_text(1, 20, "OUTSIDE_BELOW")) return 0;
 	ct_printf("\033[r");
+	return 1;
+}
+
+
+/* A large region at the top triggers the bitmap ring-buffer scroll path.
+ * Rows below it, including SyncTERM's status row, must stay in place. */
+static int test_ansi_scroll_status_preserved(void)
+{
+	setup_ansi();
+	cterm_resize_rows(cterm, term_rows - 1);
+	cterm->backfilled = cterm->backpos = cterm->backstart = 0;
+	struct vmem_cell cells[80];
+	memset(cells, 0, sizeof(cells));
+	for (int row = 1; row <= term_rows; row++) {
+		for (int col = 0; col < term_cols; col++) {
+			cells[col].ch = 'A' + row - 1;
+			cells[col].legacy_attr = 7;
+			cells[col].fg = 7;
+		}
+		vmem_puttext(1, row, term_cols, row, cells);
+	}
+	ct_puts("\033[1;20r\033[20;1H\n");
+	for (int row = 21; row <= term_rows; row++) {
+		ct_gettext(1, row, term_cols, row, cells);
+		for (int col = 0; col < term_cols; col++) {
+			if (cells[col].ch != (uint32_t)('A' + row - 1)) {
+				fprintf(result_fp, "    footer/status row %d moved during scroll\n", row);
+				return 0;
+			}
+		}
+	}
+	/* Once the full main-display region resumes, a displaced status row
+	 * would be carried into history by otherwise ordinary line feeds. */
+	ct_puts("\033[r\033[24;1H");
+	for (int i = 0; i < 2 * term_rows; i++)
+		ct_puts("\n");
+	for (int row = 0; row < cterm->backfilled; row++) {
+		for (int col = 0; col < term_cols; col++) {
+			if (scrollback[row * term_cols + col].ch == 'Y') {
+				fprintf(result_fp, "    status row entered scrollback\n");
+				return 0;
+			}
+		}
+	}
+	return 1;
+}
+
+/* Exercise multi-row copies with and without a fill, across ring wraps. */
+static int test_ansi_scroll_copy_preserved(void)
+{
+	const int modes[] = { C80, C80X43 };
+	for (size_t mode = 0; mode < sizeof(modes) / sizeof(modes[0]); mode++) {
+		setup_cterm(modes[mode], CTERM_EMULATION_ANSI_BBS);
+		struct vmem_cell *before = calloc(term_cols * term_rows, sizeof(*before));
+		struct vmem_cell *after = calloc(term_cols * term_rows, sizeof(*after));
+		if (!before || !after) {
+			free(before);
+			free(after);
+			return 0;
+		}
+		struct vmem_cell fill = { .ch = ' ', .legacy_attr = 7, .fg = 7 };
+		for (int filled = 0; filled <= 1; filled++) {
+			for (int below = 0; below <= 5; below++) {
+				for (int shift = 1; shift <= 4; shift++) {
+					int bottom = term_rows - below;
+					for (int i = 0; i < term_cols * term_rows; i++) {
+						before[i] = fill;
+						before[i].ch = 'A' + i / term_cols;
+					}
+					vmem_puttext(1, 1, term_cols, term_rows, before);
+					movetext_clear(1, 1 + shift, term_cols, bottom, 1, 1,
+					    filled ? &fill : NULL);
+					ct_gettext(1, 1, term_cols, term_rows, after);
+					for (int row = 0; row < term_rows; row++) {
+						for (int col = 0; col < term_cols; col++) {
+							const struct vmem_cell *expected = &before[row * term_cols + col];
+							if (row < bottom - shift)
+								expected = &before[(row + shift) * term_cols + col];
+							else if (filled && row < bottom)
+								expected = &fill;
+							if (memcmp(&after[row * term_cols + col], expected, sizeof(*expected))) {
+								fprintf(result_fp, "    mode=%d fill=%d below=%d shift=%d row=%d\n",
+								    modes[mode], filled, below, shift, row + 1);
+								free(before);
+								free(after);
+								return 0;
+							}
+						}
+					}
+				}
+			}
+		}
+		free(before);
+		free(after);
+	}
 	return 1;
 }
 
@@ -5967,6 +6130,8 @@ struct test_entry {
 };
 
 static struct test_entry tests[] = {
+	{"ANSI_scroll_status_preserved", test_ansi_scroll_status_preserved},
+	{"ANSI_scroll_copy_preserved", test_ansi_scroll_copy_preserved},
 	/* ANSI-BBS — C0 controls */
 	{"ANSI_NUL",          test_ansi_nul},
 	{"ANSI_BS",           test_ansi_bs},
@@ -6057,6 +6222,8 @@ static struct test_entry tests[] = {
 	/* ANSI-BBS — ED/EL variants */
 	{"ANSI_ED_above",     test_ansi_ed_above},
 	{"ANSI_ED_all",       test_ansi_ed_all},
+	{"ANSI_clear_scrollback", test_ansi_clear_scrollback},
+	{"ANSI_clear_scrollback_origin", test_ansi_clear_scrollback_origin},
 	{"ANSI_EL_left",      test_ansi_el_left},
 	{"ANSI_EL_all",       test_ansi_el_all},
 	/* ANSI-BBS — Tabs */

@@ -555,6 +555,14 @@ if(NOT WITHOUT_CRYPTO)
 	add_test(NAME ini_crypt_test COMMAND ini_crypt_test)
 endif()
 if(UNIX AND NOT WITHOUT_SDL)
+	find_package(Python3 COMPONENTS Interpreter QUIET)
+	if(Python3_Interpreter_FOUND)
+		add_test(NAME quick_connect_test
+			COMMAND ${CMAKE_COMMAND} -E env
+				SYNCTERM=$<TARGET_FILE:syncterm>
+				${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_quick_connect.py)
+		set_tests_properties(quick_connect_test PROPERTIES TIMEOUT 90)
+	endif()
 	add_executable(termtest termtest.c)
 	add_test(NAME termtest
 		COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run_termtest.sh

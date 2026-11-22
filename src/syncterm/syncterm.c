@@ -2775,13 +2775,12 @@ main(int argc, char **argv)
 			set_default_cursor();
 			settitle("SyncTERM");
 		}
+		/* Both command-line URLs and menu quick-connects are transient.
+		 * Offer to save after disconnect, including a return via Alt-H. */
+		if (bbs != NULL && bbs->id == -1 && !safe_mode &&
+		    settings.prompt_save && !bbs->hidepopups)
+			(void)wren_menu_host_offer_save_bbs(bbs);
 		if (quitting || url[0]) {
-			if ((bbs != NULL) && (bbs->id == -1)) {
-				/* Started from the command line with a URL. */
-				if (!safe_mode && settings.prompt_save &&
-				    !bbs->hidepopups)
-					(void)wren_menu_host_offer_save_bbs(bbs);
-			}
 			if (bbs_alloc) {
 				bbs_alloc = false;
 				free(bbs);

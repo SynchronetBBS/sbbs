@@ -1974,11 +1974,13 @@ int bitmap_movetext_clear(int x, int y, int ex, int ey, int tox, int toy, struct
 		if (vstat.vmem->top_row < 0)
 			vstat.vmem->top_row += vstat.vmem->height;
 
-		// Set up the correction copy
-		scrolldown = !scrolldown;
-		height = scroll_shift;
-		y = ey;
-		toy = vstat.rows - height + 1;
+		/* Rotation also moves the rows below the destination rectangle.
+		 * Restore all of them, including any status/footer rows below
+		 * the source.  The vacated source rows are filled below. */
+		scrolldown = true;
+		toy = orig_ey - scroll_shift + 1;
+		y = toy - scroll_shift;
+		height = vstat.rows - toy + 1;
 	}
 	if (scrolldown) {
 		soff = vmem_cell_offset(vstat.vmem, x - 1, y + height - 2);

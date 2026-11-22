@@ -21,6 +21,7 @@
 #include "gen_defs.h"
 #include "genwrap.h"
 #include "host_ui.h"
+#include "ini_crypt.h"
 #include "protocol_log.h"
 #include "sftp.h"
 #include "ssh.h"
@@ -205,6 +206,27 @@ hex_encode(char *dst, const uint8_t *src, size_t n)
 	dst[n * 2] = 0;
 }
 
+static void
+save_hostkey(struct bbslist *bbs, const char *fingerprint)
+{
+	/* A transient connection has no directory entry to update.  Keep its
+	 * fingerprint in memory until the user chooses to save the full entry. */
+	if (safe_mode || bbs->id < 0 || bbs->type != USER_BBSLIST)
+		return;
+	FILE *lf = fopen(settings.list_path, "r+b");
+	if (lf == NULL)
+		return;
+	str_list_t inifile = iniReadBBSList(lf, true);
+	/* The entry may have been removed since this session was selected. */
+	if (inifile != NULL && iniSectionExists(inifile, bbs->name)) {
+		iniSetString(&inifile, bbs->name, "SSHFingerprint", fingerprint, &ini_style);
+		iniWriteEncryptedFile(lf, inifile, list_algo, list_keysize,
+		    settings.keyDerivationIterations, list_password);
+	}
+	fclose(lf);
+	strListFree(&inifile);
+}
+
 static dssh_hostkey_decision
 hostkey_verify_cb(const char *algo_name, unsigned int key_bits,
                   const uint8_t *sha256, const uint8_t *blob, size_t blob_len,
@@ -279,8 +301,6 @@ handle_hostkey_result(struct bbslist *bbs)
 			   fingerprint; the OK path wouldn't reach here.  NEW +
 			   weak is the one exception — we prompt before trusting
 			   a small RSA key on first contact. */
-			FILE *lf;
-			str_list_t inifile;
 			char fpstr[65];
 			if (hostkey_result == HOSTKEY_NEW && hostkey_is_weak()) {
 				/* Refuse rather than silently TOFU a weak key when
@@ -313,13 +333,7 @@ handle_hostkey_result(struct bbslist *bbs)
 			hex_encode(fpstr, hostkey_sha256, 32);
 			memcpy(bbs->ssh_fingerprint, hostkey_sha256, 32);
 			bbs->ssh_fingerprint_len = 32;
-			if (!safe_mode && (lf = fopen(settings.list_path, "r+b")) != NULL) {
-				inifile = iniReadBBSList(lf, true);
-				iniSetString(&inifile, bbs->name, "SSHFingerprint", fpstr, &ini_style);
-				iniWriteFile(lf, inifile);
-				fclose(lf);
-				strListFree(&inifile);
-			}
+			save_hostkey(bbs, fpstr);
 			return true;
 		}
 
@@ -358,17 +372,9 @@ handle_hostkey_result(struct bbslist *bbs)
 			int choice = host_ui_choice_message(title, message, opts, 3, 0);
 			free(message);
 			if (choice == 1) {	/* Update */
-				FILE *lf;
-				str_list_t inifile;
 				memcpy(bbs->ssh_fingerprint, hostkey_sha256, 32);
 				bbs->ssh_fingerprint_len = 32;
-				if (!safe_mode && (lf = fopen(settings.list_path, "r+b")) != NULL) {
-					inifile = iniReadBBSList(lf, true);
-					iniSetString(&inifile, bbs->name, "SSHFingerprint", newfp, &ini_style);
-					iniWriteFile(lf, inifile);
-					fclose(lf);
-					strListFree(&inifile);
-				}
+				save_hostkey(bbs, newfp);
 				return true;
 			}
 			if (choice == 2)	/* Ignore */

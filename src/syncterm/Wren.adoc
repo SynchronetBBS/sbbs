@@ -1092,6 +1092,10 @@ profile visited.  New entries are inserted according to the active sort
 profile after their connection details are accepted.  Quick Connect limits
 the directory address field to 64 characters.  Current Screen Mode and
 Startup Screen Mode use distinct dialog titles and context help.
+When `PromptSave` is enabled, ending an unsaved quick-connect or command-line
+session offers to save its complete entry, including after Alt-H returns to
+the directory.  SSH host-key verification keeps a temporary connection's
+fingerprint in memory until that entry is saved.
 Directory password and system-password rows are obscured in the editor
 list, but selecting one uses ordinary text editing so the existing value can
 be inspected and corrected.  Personal-directory encryption prompts are
