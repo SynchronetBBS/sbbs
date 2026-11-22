@@ -3054,7 +3054,7 @@ static std::string forwarded_client(const std::string& forwarded)
 		uint8_t     ip_addr[16];
 		if (inet_pton(AF_INET, addr.c_str(), ip_addr) != 1 && inet_pton(AF_INET6, addr.c_str(), ip_addr) != 1)
 			return std::string();
-		addrs.push_back(addr);
+		addrs.push_back(std::move(addr));
 		start = end + 1;
 	}
 	if (strListCount(proxy_trust) < 1)
@@ -6062,7 +6062,8 @@ JSObject* js_CreateHttpRequestObject(JSContext* cx
 		session->js_cookie = JS_DefineObject(cx, session->js_request, "cookie", NULL
 		                                     , NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 
-
+	if (session->js_query == NULL || session->js_header == NULL || session->js_cookie == NULL)
+		return nullptr;
 	return session->js_request;
 }
 
@@ -6925,12 +6926,9 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 
 	JS_BEGINREQUEST(session->js_cx);
 	// webctrl.ini scripts ran after js_setup() and parsed into these already
-	if (session->js_query != NULL)
-		JS_ClearScope(session->js_cx, session->js_query);
-	if (session->js_header != NULL)
-		JS_ClearScope(session->js_cx, session->js_header);
-	if (session->js_cookie != NULL)
-		JS_ClearScope(session->js_cx, session->js_cookie);
+	JS_ClearScope(session->js_cx, session->js_query);
+	JS_ClearScope(session->js_cx, session->js_header);
+	JS_ClearScope(session->js_cx, session->js_cookie);
 	js_add_request_prop(session, "real_path", session->req.physical_path);
 	js_add_request_prop(session, "virtual_path", session->req.virtual_path);
 	js_add_request_prop(session, "ars", session->req.ars);

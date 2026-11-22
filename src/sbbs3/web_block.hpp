@@ -335,7 +335,7 @@ class webBlock {
 					r.has_filter_silent = true;
 					r.filter_silent = iniGetBool(ini, section, "FilterSilent", false);
 				}
-				loaded.push_back(r);
+				loaded.push_back(std::move(r));
 			}
 			iniFreeStringList(all);
 			iniFreeStringList(sections);
