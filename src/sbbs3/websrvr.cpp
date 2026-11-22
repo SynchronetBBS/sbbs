@@ -2172,7 +2172,7 @@ static bool check_file_download(http_session_t * session, uint* reason)
 	return user_can_download(&scfg, session->file.dir, &session->user, &session->client, reason);
 }
 
-static bool check_ars(http_session_t * session)
+static bool check_access(http_session_t * session)
 {
 	uchar *   ar;
 	bool      authorized;
@@ -4538,7 +4538,7 @@ static bool check_request(http_session_t * session)
 		if (!session->req.dynamic && session->req.extra_path_info[0])
 			send404 = true;
 	}
-	if (!check_ars(session)) {
+	if (!check_access(session)) {
 		unsigned *auth_list;
 		unsigned  auth_list_len;
 
