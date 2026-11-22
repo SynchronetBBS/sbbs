@@ -5258,7 +5258,14 @@ static void ctrl_thread(void* arg)
 		if (mkdir_cmd && !(user.rest & (UREST_EDIT_DEFAULTS | UREST_UPLOAD))) {
 			p = cmd + 4;
 			SKIP_WHITESPACE(p);
-			sockprintf(sock, sess, "257 \"%s\" directory created (not really)", p);
+			// Claim success only for a directory that a following CWD can enter
+			tp = p;
+			lib = curlib;
+			dir = curdir;
+			if (parsepath(&tp, &user, &client, &lib, &dir) == 0 && *tp == 0)
+				sockprintf(sock, sess, "257 \"%s\" directory created (not really)", p);
+			else
+				sockprintf(sock, sess, "550 %s: Cannot create directory.", p);
 			lprintf(LOG_DEBUG, "%04d <%s> requested to create directory: %s", sock, user.alias, p);
 			continue;
 		}
