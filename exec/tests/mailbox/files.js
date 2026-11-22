@@ -100,17 +100,32 @@ try {
 	});
 	Kit.assert(!file_exists(dir + "t_e.lock"), "lock released after fn throws");
 
+	// A lock's age is the clock minus its file's modification time, and
+	// on a file system with coarse or skewed file times (a share a CI VM
+	// builds on) a lock a second or two old can look fresh or stale.  So
+	// the conflict is checked with a max_age far above that, and a lock is
+	// made stale by waiting until it is, by the same measure file_mutex()
+	// uses, rather than for a fixed time.
+	function wait_stale(path, max_age)
+	{
+		var limit = system.timer + 30;
+		while (!(time() - file_date(path) > max_age) && system.timer < limit)
+			mswait(100);
+		Kit.assert(time() - file_date(path) > max_age, "stale within 30 s: " + path);
+	}
+
 	// stale lock taken over
+	var jf_fresh = new JsonFiles(dir, "t_", { timeout: 300, max_age: 30 });
 	var jf2 = new JsonFiles(dir, "t_", { timeout: 300, max_age: 1 });
 	Kit.assert(file_mutex(dir + "t_s.lock"), "make lock");
-	Kit.throws(function () { jf2.update("s", {}, function (o) { return o; }); }, "conflict");
-	mswait(2100);
+	Kit.throws(function () { jf_fresh.update("s", {}, function (o) { return o; }); }, "conflict");
+	wait_stale(dir + "t_s.lock", 1);
 	Kit.eq(jf2.update("s", {}, function (o) { o.ok = 1; return o; }), { ok: 1 }, "stale lock taken over");
 
 	// a holder that outlived max_age does not remove the new holder's lock
 	var jf5 = new JsonFiles(dir, "t_", { timeout: 300, max_age: 1 });
 	jf5.update("o", {}, function (o) {
-		mswait(2100);
+		wait_stale(dir + "t_o.lock", 1);
 		// lock is now stale: another holder takes it over
 		Kit.assert(file_mutex(dir + "t_o.lock", "other-holder", 1), "takeover");
 		return o;
