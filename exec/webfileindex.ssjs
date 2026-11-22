@@ -263,14 +263,21 @@ function viewable_file(filename)
 	return false;
 }
 
-function nav_file(filename)
+// The names of the files in a directory, or null
+function dir_file_names(code)
 {
-	var ret = {};
-	var fb = FileBase(http_request.dir);
+	var fb = new FileBase(code);
 	if(!fb.open())
 		return null;
-	var list = fb.get_names().filter(viewable_file);
+	var list = fb.get_names();
 	fb.close();
+	return list;
+}
+
+function nav_file(filename, names)
+{
+	var ret = {};
+	var list = names.filter(viewable_file);
 	for(var i = 0; i < list.length; ++i) {
 		if(list[i] == filename) {
 			if(i)
@@ -297,9 +304,9 @@ function nav_links(nav)
 		'</svg>';
 	var result = '';
 	if(nav && nav.prev)
-		result += left.link("?view=" + nav.prev) + " ";
+		result += left.link("?view=" + encodeURIComponent(nav.prev)) + " ";
 	if(nav && nav.next)
-		result += right.link("?view=" + nav.next);
+		result += right.link("?view=" + encodeURIComponent(nav.next));
 	return result;
 }
 
@@ -307,21 +314,33 @@ function view_file(filename)
 {
 	if(filename[0] == '"')
 		filename = filename.substring(1, filename.length - 1);
-	header(" - " + filename);
-	dir = file_area.dir[http_request.dir];
+	var dir = file_area.dir[http_request.dir];
+	/* Only a file of this directory is viewed: the name is never used as
+	   given (nor written back) unless it is one of the directory's own. */
+	var names = dir_file_names(http_request.dir);
+	if(names === null || names.indexOf(filename) < 0) {
+		http_reply.status = "404 Not Found";
+		header(" - File not found");
+		writeln("[" + root_link() + "] / ");
+		writeln(lib_link(dir) + " / ");
+		writeln(dir.description.link("./"));
+		writeln("<p>No such file in this directory.");
+		return;
+	}
+	header(" - " + desc_text(filename));
 	writeln("[" + root_link() + "] / ");
 	writeln(lib_link(dir) + " / ");
 	writeln(dir.description.link("./"));
 	writeln("<br />");
 	writeln("<p>");
-	var nav  = nav_file(filename);
+	var nav = nav_file(filename, names);
 	writeln(nav_links(nav));
 	writeln("<p>");
 	if(!viewable_file(filename)) {
-		writeln("Non-viewable file type: " + filename);
+		writeln("Non-viewable file type: " + desc_text(filename));
 		return;
 	}
-	var filename = file_area.dir[http_request.dir].path + filename;
+	filename = dir.path + filename;
 
 	if(archive_file(filename))
 		view_archive(filename);
