@@ -2133,9 +2133,12 @@ void cterm_start(struct cterminal *cterm)
 void
 cterm_advance_char(struct cterminal *cterm, int *x, int *y, int move)
 {
-	int lm = cterm->left_margin;
-	int rm = cterm->right_margin;
-	int bm = cterm->bottom_margin;
+	int lm = TERM_MINX;
+	int rm = TERM_MAXX;
+	int bm = TERM_MAXY;
+
+	cterm_coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &lm, NULL);
+	cterm_coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &rm, &bm);
 
 	if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB) {
 		cterm_prestel_fix_line(cterm, *x, *y, true, false);
@@ -2159,6 +2162,9 @@ cterm_advance_char(struct cterminal *cterm, int *x, int *y, int move)
 				cterm_prestel_new_line(cterm);
 			}
 			else {
+				/* cputs() may already have wrapped past the margins.
+				 * Test scrolling at the character's logical position. */
+				gotoxy(*x, *y);
 				cterm_cond_scrollup(cterm);
 				move = 1;
 				*x = lm;
@@ -2193,7 +2199,7 @@ cterm_ctputs(struct cterminal *cterm, char *buf)
 	char *p;
 	int		oldscroll;
 	int cx, cy;
-	int lm, rm, bm;
+	int rm;
 
 	if (cterm->font_render) {
 		cterm->font_render(buf);
@@ -2206,11 +2212,8 @@ cterm_ctputs(struct cterminal *cterm, char *buf)
 	CURR_XY(&cx, &cy);
 	if (cterm->log == CTERM_LOG_ASCII && cterm->logfile != NULL)
 		fputs(buf, cterm->logfile);
-	lm = TERM_MINX;
-	cterm_coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &lm, NULL);
 	rm = TERM_MAXX;
-	bm = TERM_MAXY;
-	cterm_coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &rm, &bm);
+	cterm_coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &rm, NULL);
 	for (p = buf; *p; p++) {
 		switch(*p) {
 			case '\n':
@@ -2252,12 +2255,12 @@ cterm_ctputs(struct cterminal *cterm, char *buf)
 				break;
 			default:
 				if ((cterm->last_column_flag & (CTERM_LCF_ENABLED | CTERM_LCF_SET)) == (CTERM_LCF_ENABLED | CTERM_LCF_SET)) {
-					if (cx == cterm->right_margin || cx == CURR_MAXX) {
+					if (cx == rm || cx == CURR_MAXX) {
 						cterm_advance_char(cterm, &cx, &cy, 1);
 						cterm_clear_lcf(cterm);
 					}
 				}
-				if (cx == cterm->right_margin || cx == CURR_MAXX) {
+				if (cx == rm || cx == CURR_MAXX) {
 					char ch;
 					ch = *(p + 1);
 					*(p + 1) = 0;

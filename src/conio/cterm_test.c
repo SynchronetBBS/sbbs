@@ -1223,6 +1223,100 @@ static int test_ansi_nowrap(void)
 	return 1;
 }
 
+
+/* Wrapping at the bottom margin must scroll without disturbing the footer
+ * or status row, regardless of origin mode or print-buffer boundaries. */
+static int check_ansi_wrap_margins(int delayed, int autowrap)
+{
+	for (int origin = 0; origin <= 1; origin++) {
+		for (int horizontal = 0; horizontal <= 1; horizontal++) {
+			for (int batched = 0; batched <= 1; batched++) {
+				setup_ansi();
+				cterm_resize_rows(cterm, term_rows - 1);
+				ct_puts("\033[5;20r");
+				if (horizontal) ct_puts("\033[?69h\033[5;70s");
+				if (origin) ct_puts("\033[?6h");
+				if (delayed) ct_puts("\033[=4h");
+				if (!autowrap) ct_puts("\033[?7l");
+				int left = horizontal ? 5 : 1;
+				int right = horizontal ? 70 : term_cols;
+				ct_printf("\033[%d;%dH", origin ? 16 : 20,
+				    origin ? right - left + 1 : right);
+				struct vmem_cell cells[80];
+				memset(cells, 0, sizeof(cells));
+				for (int row = 1; row <= term_rows; row++) {
+					for (int col = 0; col < term_cols; col++) {
+						cells[col].ch = 'A' + row - 1;
+						cells[col].legacy_attr = 7;
+						cells[col].fg = 7;
+					}
+					vmem_puttext(1, row, term_cols, row, cells);
+				}
+				cterm->backfilled = cterm->backpos = cterm->backstart = 0;
+				if (batched) {
+					ct_puts("xy");
+				} else {
+					ct_puts("x");
+					int expected_x = autowrap && !delayed ? left : right;
+					int expected_history = autowrap && !delayed ? 1 : 0;
+					if (cterm->xpos != expected_x || cterm->ypos != 20 ||
+					    cterm->backfilled != expected_history) {
+						fprintf(result_fp, "    first character: origin=%d horizontal=%d cursor=%d,%d history=%d\n",
+						    origin, horizontal, cterm->xpos, cterm->ypos, cterm->backfilled);
+						return 0;
+					}
+					ct_puts("y");
+				}
+				if (cterm->xpos != (autowrap ? left + 1 : right) ||
+				    cterm->ypos != 20 || cterm->backfilled != autowrap) {
+					fprintf(result_fp, "    final position: origin=%d horizontal=%d batched=%d cursor=%d,%d history=%d\n",
+					    origin, horizontal, batched, cterm->xpos, cterm->ypos, cterm->backfilled);
+					return 0;
+				}
+				for (int row = 1; row <= term_rows; row++) {
+					ct_gettext(1, row, term_cols, row, cells);
+					for (int col = 1; col <= term_cols; col++) {
+						uint32_t expected = 'A' + row - 1;
+						if (autowrap && col >= left && col <= right) {
+							if (row >= 5 && row < 20) expected++;
+							if (row == 19 && col == right) expected = 'x';
+							if (row == 20) expected = col == left ? 'y' : ' ';
+						} else if (!autowrap && row == 20 && col == right) {
+							expected = 'y';
+						}
+						if (cells[col - 1].ch != expected) {
+							fprintf(result_fp, "    cell %d,%d: origin=%d horizontal=%d batched=%d got=%u expected=%u\n",
+							    col, row, origin, horizontal, batched, cells[col - 1].ch, expected);
+							return 0;
+						}
+					}
+				}
+				if (autowrap) {
+					for (int col = 0; col < term_cols; col++) {
+						if (scrollback[col].ch != 'E') return 0;
+					}
+				}
+			}
+		}
+	}
+	return 1;
+}
+
+static int test_ansi_autowrap_margins(void)
+{
+	return check_ansi_wrap_margins(0, 1);
+}
+
+static int test_ansi_delayed_wrap_margins(void)
+{
+	return check_ansi_wrap_margins(1, 1);
+}
+
+static int test_ansi_nowrap_margins(void)
+{
+	return check_ansi_wrap_margins(0, 0);
+}
+
 /* Origin mode */
 
 static int test_ansi_origin_mode(void)
@@ -6209,6 +6303,9 @@ static struct test_entry tests[] = {
 	/* ANSI-BBS — Modes */
 	{"ANSI_autowrap",     test_ansi_autowrap},
 	{"ANSI_nowrap",       test_ansi_nowrap},
+	{"ANSI_autowrap_margins", test_ansi_autowrap_margins},
+	{"ANSI_delayed_wrap_margins", test_ansi_delayed_wrap_margins},
+	{"ANSI_nowrap_margins", test_ansi_nowrap_margins},
 	{"ANSI_origin",       test_ansi_origin_mode},
 	/* ANSI-BBS — DEC rectangular ops */
 	{"ANSI_DECERA",       test_ansi_decera},
