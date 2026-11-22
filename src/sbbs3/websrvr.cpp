@@ -8556,7 +8556,7 @@ void web_server(void* arg)
 				/* Connection rate limiting (subnet-aggregated), enforced before a
 				 * session thread or TLS handshake is spawned. Repeat offenders may
 				 * be auto-filtered (into ip-silent.can so they're dropped here). */
-				if (connect_rate_limiter->maxRequests > 0) {
+				if (connect_rate_limiter->maxRequests > 0 && !host_exempt.listed(host_ip, nullptr)) {
 					std::string rl_key = rate_limit_key(host_ip, &startup->rate_limit);
 					unsigned    denials = 0;
 					if (connect_rate_limiter->allowRequest(rl_key, &denials

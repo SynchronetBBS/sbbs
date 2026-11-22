@@ -453,6 +453,8 @@
   auto-filtering), as on the other servers (issue #1390)
 - Fix: HTTP authentication (Basic and Digest) accepted the right password
   for a deleted or inactive account
+- Fix: the connection rate limiter (Limit Rate of Connections) now skips
+  clients listed in `ipfilter_exempt.cfg`, such as a reverse proxy
 
 ## FTP Server
 
