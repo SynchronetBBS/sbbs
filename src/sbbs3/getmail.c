@@ -113,7 +113,8 @@ static uint mail_waiting(scfg_t* cfg, uint usernumber, idxrec_t** list)
 /* and data, in whole blocks (data shared with other recipients' copies is  */
 /* counted in full for each).  Only the start of each header is read.       */
 /* Stops adding once the sum, begun at 'total', reaches a non-zero stop_at. */
-/* A header that cannot be read, or is no longer that message, counts 0.    */
+/* A header that cannot be read, is corrupt, or is no longer that message,  */
+/* counts 0.                                                                */
 /****************************************************************************/
 static uint64_t mail_stored_bytes(scfg_t* cfg, const idxrec_t* list, uint count, uint64_t total, uint64_t stop_at)
 {
@@ -124,7 +125,7 @@ static uint64_t mail_stored_bytes(scfg_t* cfg, const idxrec_t* list, uint count,
 	uint     i;
 	uint     d;
 	uint     fields;
-	uint32_t datlen;
+	off_t    datlen;
 	msghdr_t hdr;
 	dfield_t dfield;
 
@@ -141,6 +142,11 @@ static uint64_t mail_stored_bytes(scfg_t* cfg, const idxrec_t* list, uint count,
 		    || hdr.number != list[i].number
 		    || (hdr.attr & MSG_DELETE))
 			continue;
+		/* The data fields lie within the header record: a count that does
+		 * not fit its length is corrupt */
+		if (hdr.length < sizeof(hdr)
+		    || hdr.total_dfields > (hdr.length - sizeof(hdr)) / sizeof(dfield))
+			continue;
 		fields = (uint)((rd - sizeof(hdr)) / sizeof(dfield));
 		datlen = 0;
 		for (d = 0; d < hdr.total_dfields; d++) {
@@ -149,13 +155,13 @@ static uint64_t mail_stored_bytes(scfg_t* cfg, const idxrec_t* list, uint count,
 			else {
 				/* More data fields than the block read holds */
 				if (d == fields
-				    && lseek(file, (off_t)list[i].offset + sizeof(hdr) + (d * sizeof(dfield)), SEEK_SET) == -1)
+				    && lseek(file, (off_t)list[i].offset + (off_t)(sizeof(hdr) + (d * sizeof(dfield))), SEEK_SET) == -1)
 					break;
 				if (read(file, &dfield, sizeof dfield) != sizeof dfield)
 					break;
 			}
-			if (dfield.length > 0 && dfield.offset + dfield.length > datlen)
-				datlen = dfield.offset + dfield.length;
+			if (dfield.length > 0 && (off_t)dfield.offset + dfield.length > datlen)
+				datlen = (off_t)dfield.offset + dfield.length;
 		}
 		total += (uint64_t)smb_hdrblocks(hdr.length) * SHD_BLOCK_LEN
 		         + (uint64_t)smb_datblocks(datlen) * SDT_BLOCK_LEN;
