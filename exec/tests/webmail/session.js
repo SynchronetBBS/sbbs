@@ -152,11 +152,14 @@ try {
 	var n24 = Session.create(ud, 60001, CLIENT, false, T0, cfg);
 	var k24 = Session.create(ud, 60001, CLIENT, true, T0, cfg);
 	var t;
-	for (t = T0 + 60; t < T0 + DAY; t += 60) {
+	// used every half idle limit (each use refreshes seen, so it never
+	// goes idle; a step this size keeps the test to a few dozen writes)
+	var step = TO / 2;
+	for (t = T0 + step; t < T0 + DAY; t += step) {
 		if (Session.check(ud, n24, t, cfg) === null)
 			break;
 	}
-	Kit.eq(t, T0 + DAY, "used every minute: valid until 24 hours");
+	Kit.eq(t, T0 + DAY, "used regularly: valid until 24 hours");
 	Kit.assert(Session.check(ud, n24, T0 + DAY - 1, cfg) !== null, "24h - 1");
 	Kit.assert(Session.check(ud, n24, T0 + DAY, cfg) === null, "24h: expired");
 	Kit.eq(Session.check(ud, k24, T0 + DAY, cfg), { usernum: 60001, keep: true }, "keep: no 24h limit");
