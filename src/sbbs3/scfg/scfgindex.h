@@ -1343,6 +1343,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Networks > Message Queue Telemetry Transport > Client Cert"
 	},
 	{
+		"Client IP Header",
+		"Reverse Proxy...",
+		"Servers > Web Server > Reverse Proxy... > Client IP Header"
+	},
+	{
 		"Clone Options",
 		"Group",
 		"Message Areas > Group > Clone Options"
@@ -4951,6 +4956,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Retain Ctrl-A Codes in Quotes",
 		"Editor",
 		"External Programs > Message Editors > Editor > Retain Ctrl-A Codes in Quotes"
+	},
+	{
+		"Reverse Proxy...",
+		"Web Server",
+		"Servers > Web Server > Reverse Proxy..."
 	},
 	{
 		"Rio de Janeiro",
@@ -10551,6 +10561,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Tokyo",
 		"Local Time Zone",
 		"System > Local Time Zone > Tokyo"
+	},
+	{
+		"Trusted Proxies",
+		"Reverse Proxy...",
+		"Servers > Web Server > Reverse Proxy... > Trusted Proxies"
 	},
 	{
 		"UART Only",

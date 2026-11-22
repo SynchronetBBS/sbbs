@@ -152,6 +152,7 @@ static trashCan           ip_silent_can;
 static trashCan           host_can;
 static filterFile         host_exempt;
 static webBlock           web_block;
+static str_list_t         proxy_trust;    // RemoteIPHeaderTrust
 
 /* Logging stuff */
 link_list_t               log_list;
@@ -166,7 +167,8 @@ struct log_data {
 	int status;
 	off_t size;
 	struct tm completed;
-	client_t client;
+	client_t client;        // client.addr: the request's client (from RemoteIPHeader when forwarded)
+	char peer_addr[128];    // the connection's own address
 	uint16_t server_port;
 };
 
@@ -1261,6 +1263,8 @@ static void close_request(http_session_t * session)
 		now = time(NULL);
 		localtime_r(&now, &session->req.ld->completed);
 		session->req.ld->client = session->client;
+		SAFECOPY(session->req.ld->peer_addr, session->client.addr);
+		SAFECOPY(session->req.ld->client.addr, session->host_ip);
 		listPushNode(&log_list, session->req.ld);
 		session->req.ld = NULL;
 	}
@@ -2088,6 +2092,19 @@ static bool digest_authentication(http_session_t* session, int auth_allowed, use
 /* rate_limit_key() and rate_limit_filter() are shared with the other servers
  * via ratelimit_filter.hpp (included near the top of this file). */
 
+// The client of this request for login-attempt tracking: the connection's,
+// or with the address from RemoteIPHeader when the request was forwarded
+static void request_client(http_session_t * session, client_t* client, union xp_sockaddr* addr)
+{
+	*client = session->client;
+	*addr = session->addr;
+	if (strcmp(session->host_ip, session->client.addr) != 0
+	    && inet_ptoaddr(session->host_ip, addr, sizeof *addr) != NULL) {
+		SAFECOPY(client->addr, session->host_ip);
+		SAFECOPY(client->host, STR_NO_HOSTNAME);
+	}
+}
+
 static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t* client, union xp_sockaddr* addr)
 {
 	char            tmp[128];
@@ -2119,6 +2136,16 @@ static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t
 	}
 	if (count > 1)
 		mswait(startup->login_attempt.delay);
+}
+
+// A failed login, counted against the request's client (#1389)
+static void session_badlogin(http_session_t * session, const char* user, const char* passwd)
+{
+	client_t          client;
+	union xp_sockaddr addr;
+
+	request_client(session, &client, &addr);
+	badlogin(session->socket, user, passwd, &client, &addr);
 }
 
 static bool check_file_download(http_session_t * session, uint* reason)
@@ -2253,7 +2280,7 @@ static bool check_ars(http_session_t * session)
 				else
 					lprintf(LOG_WARNING, "%04d <%s> !BASIC AUTHENTICATION FAILURE"
 					        , session->socket, session->req.auth.username);
-				badlogin(session->socket, session->req.auth.username, session->req.auth.password, &session->client, &session->addr);
+				session_badlogin(session, session->req.auth.username, session->req.auth.password);
 				return false;
 			}
 			break;
@@ -2263,7 +2290,7 @@ static bool check_ars(http_session_t * session)
 			if (!digest_authentication(session, auth_allowed, &thisuser, &reason)) {
 				lprintf(LOG_NOTICE, "%04d <%s> !DIGEST AUTHENTICATION FAILURE (reason: %s)"
 				        , session->socket, session->req.auth.username, reason);
-				badlogin(session->socket, session->req.auth.username, "<digest>", &session->client, &session->addr);
+				session_badlogin(session, session->req.auth.username, "<digest>");
 				return false;
 			}
 			break;
@@ -2288,7 +2315,7 @@ static bool check_ars(http_session_t * session)
 	if (!chk_ars(&scfg, startup->login_ars, &thisuser, &session->client)) {
 		lprintf(LOG_NOTICE, "%04d <%s> !Insufficient server access: %s"
 		        , session->socket, thisuser.alias, startup->login_ars);
-		badlogin(session->socket, thisuser.alias, NULL, &session->client, &session->addr);
+		session_badlogin(session, thisuser.alias, NULL);
 		return false;
 	}
 
@@ -2332,7 +2359,10 @@ static bool check_ars(http_session_t * session)
 		add_env(session, "REMOTE_USER", session->user.alias);
 
 		if (thisuser.pass[0]) {
-			loginSuccess(startup->login_attempt_list, &session->addr);
+			client_t          client;
+			union xp_sockaddr addr;
+			request_client(session, &client, &addr);
+			loginSuccess(startup->login_attempt_list, &addr);
 			mqtt_pub_login_attempt_clear(&mqtt, session->host_ip);
 		}
 
@@ -2955,8 +2985,50 @@ static int hexval(unsigned char ch)
 	return 0;
 }
 
+// Is ip one of the proxies whose RemoteIPHeader is honored? (#1283)
+static bool trusted_proxy(const char* ip)
+{
+	return findstr_in_list(ip, proxy_trust, nullptr);
+}
+
+// The client address in a RemoteIPHeader value (all of the request's
+// headers of that name, joined with commas) from a trusted proxy: each
+// proxy appends the address it received the request from, so the client
+// is the right-most address that is not itself a trusted proxy (with no
+// RemoteIPHeaderTrust, the right-most address).  Empty when any entry is
+// not an IP address.
+static std::string forwarded_client(const std::string& forwarded)
+{
+	std::vector<std::string> addrs;
+	size_t                   start = 0;
+
+	while (start <= forwarded.size()) {
+		size_t      end = forwarded.find(',', start);
+		if (end == std::string::npos)
+			end = forwarded.size();
+		std::string addr = forwarded.substr(start, end - start);
+		size_t      first = addr.find_first_not_of(" \t");
+		size_t      last = addr.find_last_not_of(" \t");
+		addr = (first == std::string::npos) ? "" : addr.substr(first, last - first + 1);
+		uint8_t     ip_addr[16];
+		if (inet_pton(AF_INET, addr.c_str(), ip_addr) != 1 && inet_pton(AF_INET6, addr.c_str(), ip_addr) != 1)
+			return std::string();
+		addrs.push_back(addr);
+		start = end + 1;
+	}
+	if (strListCount(proxy_trust) < 1)
+		return addrs.back();
+	for (auto it = addrs.rbegin(); it != addrs.rend(); ++it) {
+		if (!trusted_proxy(it->c_str()))
+			return *it;
+	}
+	return addrs.front();
+}
+
 static bool parse_headers(http_session_t * session)
 {
+	std::string forwarded;
+	bool        forwarded_seen = false;
 	char * head_line;
 	char * value;
 	char * tvalue;
@@ -2975,23 +3047,11 @@ static bool parse_headers(http_session_t * session)
 			i = get_header_type(head_line);
 			while (*value && *value <= ' ') value++;
 			if (startup->proxy_ip_header[0] && stricmp(startup->proxy_ip_header, head_line) == 0) {
-				uint8_t     ip_addr[16];
-				const char* log_host = value;
 				truncsp(value);
-				if (inet_pton(AF_INET, value, ip_addr) != 1 && inet_pton(AF_INET6, value, ip_addr) != 1) {
-					SAFECOPY(session->host_ip, session->client.addr);
-					lprintf(LOG_NOTICE, "%04d %-5s [%s] !Ignoring invalid IP address in %s header: %s", session->socket, session->client.protocol, session->host_ip, startup->proxy_ip_header, value);
-					log_host = session->host_name;
-				}
-				else {
-					lprintf(LOG_INFO, "%04d %-5s [%s] New IP Address from %s header: %s", session->socket, session->client.protocol, session->host_ip, startup->proxy_ip_header, value);
-					SAFECOPY(session->host_ip, value);
-				}
-				if (session->req.ld != NULL) {
-					FREE_AND_NULL(session->req.ld->hostname);
-					/* FREE()d in http_logging_thread() */
-					session->req.ld->hostname = strdup(log_host);
-				}
+				if (forwarded_seen)
+					forwarded += ',';
+				forwarded += value;
+				forwarded_seen = true;
 			}
 			switch (i) {
 				case HEAD_AUTH:
@@ -3258,6 +3318,27 @@ static bool parse_headers(http_session_t * session)
 			add_env(session, env_name, value);
 		}
 		free(head_line);
+	}
+	if (forwarded_seen) {
+		if (strListCount(proxy_trust) > 0 && !trusted_proxy(session->client.addr))
+			lprintf(LOG_DEBUG, "%04d %-5s [%s] Ignoring %s header from a client that is not a trusted proxy: %s"
+				, session->socket, session->client.protocol, session->host_ip, startup->proxy_ip_header, forwarded.c_str());
+		else {
+			std::string client = forwarded_client(forwarded);
+			if (client.empty())
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !Ignoring invalid IP address in %s header: %s"
+					, session->socket, session->client.protocol, session->host_ip, startup->proxy_ip_header, forwarded.c_str());
+			else {
+				lprintf(LOG_INFO, "%04d %-5s [%s] New IP Address from %s header: %s"
+					, session->socket, session->client.protocol, session->host_ip, startup->proxy_ip_header, client.c_str());
+				SAFECOPY(session->host_ip, client.c_str());
+				if (session->req.ld != NULL) {
+					FREE_AND_NULL(session->req.ld->hostname);
+					/* FREE()d in http_logging_thread() */
+					session->req.ld->hostname = strdup(session->host_ip);
+				}
+			}
+		}
 	}
 	if (content_len)
 		session->req.post_len = content_len;
@@ -3775,16 +3856,19 @@ static bool is_legal_path(const char* path)
 	return true;
 }
 
+// The client's hostname, or nullptr when the client's address came from
+// RemoteIPHeader: host_name is then the proxy's
+static const char* client_host_name(http_session_t * session)
+{
+	return strcmp(session->host_ip, session->client.addr) == 0 ? session->host_name : nullptr;
+}
+
 // Refuse a request that ctrl/web_block.ini blocks by request header (#1375),
-// and filter the client once it reaches the header's FilterThreshold.
-// Called after parse_headers(), so host_ip is the client's address even
-// behind a reverse proxy (ProxyIPHeader).
+// and filter the client once it reaches the header's FilterThreshold
 static bool request_blocked(http_session_t * session)
 {
 	webBlock::match m;
 
-	if (host_exempt.listed(session->host_ip, session->host_name))
-		return false;
 	if (!web_block.blocked(session->req.headers, session->req.vhost, &m))
 		return false;
 	const char* header = m.section.header.c_str();
@@ -3821,7 +3905,7 @@ static bool request_blocked(http_session_t * session)
 				safe_snprintf(reason, sizeof reason, "%u requests blocked by %s header", n, header);
 			else
 				safe_snprintf(reason, sizeof reason, "%u requests blocked by %s header from %zu IPs", n, header, members);
-			if (filter_ip(&scfg, session->client.protocol, reason, session->host_name, target.c_str()
+			if (filter_ip(&scfg, session->client.protocol, reason, client_host_name(session), target.c_str()
 			              , /* username: */ nullptr, fname, duration))
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] !BLOCKING %s%s: %s%s"
 					, session->socket, session->client.protocol, session->host_ip
@@ -3832,6 +3916,69 @@ static bool request_blocked(http_session_t * session)
 	}
 	// No SSJS error page: a blocked request must not start a JS context
 	send_error(session, __LINE__, "403 Forbidden", /* ssjs_page: */ false);
+	return true;
+}
+
+// The per-request checks of the client's address, made once parse_headers()
+// has applied RemoteIPHeader, so behind a reverse proxy they act on the
+// client and not on the proxy (#1389): for a forwarded address, its
+// temporary ban for failed logins, ip-silent.can and ip.can (the
+// connection's own address was checked when it connected); then
+// ctrl/web_block.ini, and the request rate limiter.  Returns
+// false, having answered the request (or dropped the connection), to
+// refuse it.
+static bool request_allowed(http_session_t * session)
+{
+	if (host_exempt.listed(session->host_ip, client_host_name(session)))
+		return true;
+	if (strcmp(session->host_ip, session->client.addr) != 0) {
+		struct trash      trash {};
+		client_t          client;
+		union xp_sockaddr addr;
+		login_attempt_t   attempted;
+		request_client(session, &client, &addr);
+		ulong             banned = loginBannedAddr(&scfg, startup->login_attempt_list, &addr, startup->login_attempt, &attempted);
+		if (banned) {
+			char ban_duration[128];
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
+				, session->socket, session->client.protocol
+				, session->host_ip, attempted.count - attempted.dupes, attempted.user
+				, duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
+			send_error(session, __LINE__, "403 Forbidden", /* ssjs_page: */ false);
+			return false;
+		}
+		if (ip_silent_can.listed(session->host_ip)) {
+			lprintf(LOG_DEBUG, "%04d %-5s [%s] Forwarded client in %s: dropping connection"
+				, session->socket, session->client.protocol, session->host_ip, ip_silent_can.fname);
+			close_session_socket(session);
+			return false;
+		}
+		if (ip_can.listed(session->host_ip, nullptr, &trash)) {
+			if (!trash.quiet) {
+				char details[128];
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s %s"
+					, session->socket, session->client.protocol, session->host_ip, ip_can.fname
+					, trash_details(&trash, details, sizeof details));
+			}
+			send_error(session, __LINE__, "403 Forbidden", /* ssjs_page: */ false);
+			return false;
+		}
+	}
+	if (request_blocked(session))
+		return false;
+	std::string rl_key = rate_limit_key(session->host_ip, &startup->rate_limit);
+	unsigned    denials = 0;
+	if (request_rate_limiter->allowRequest(rl_key, &denials
+	        , rl_key == session->host_ip ? std::string() : std::string(session->host_ip)) == false) {
+		lprintf(LOG_NOTICE, "%04d %-5s [%s] Too many requests per rate limit (%u over %us) for %s"
+			, session->socket, session->client.protocol, session->host_ip
+			, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds, rl_key.c_str());
+		rate_limit_filter(session->socket, &scfg, session->client.protocol, session->host_ip
+			, client_host_name(session), rl_key, denials, request_rate_limiter
+			, &startup->rate_limit, lprintf);
+		send_error(session, __LINE__, error_429);
+		return false;
+	}
 	return true;
 }
 
@@ -3894,21 +4041,6 @@ static bool get_req(http_session_t * session, char *request_line)
 					, session->socket, session->client.protocol, session->host_ip, session->req.physical_path);
 				send_error(session, __LINE__, "400 Bad Request");
 				return false;
-			}
-			if (!host_exempt.listed(session->host_ip, session->host_name)) {
-				std::string rl_key = rate_limit_key(session->host_ip, &startup->rate_limit);
-				unsigned    denials = 0;
-				if (request_rate_limiter->allowRequest(rl_key, &denials
-				        , rl_key == session->host_ip ? std::string() : std::string(session->host_ip)) == false) {
-					lprintf(LOG_NOTICE, "%04d %-5s [%s] Too many requests per rate limit (%u over %us) for %s"
-						, session->socket, session->client.protocol, session->host_ip
-						, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds, rl_key.c_str());
-					rate_limit_filter(session->socket, &scfg, session->client.protocol, session->host_ip
-						, session->host_name, rl_key, denials, request_rate_limiter
-						, &startup->rate_limit, lprintf);
-					send_error(session, __LINE__, error_429);
-					return false;
-				}
 			}
 			enum get_fullpath fullpath_valid = get_fullpath(session);
 			if (fullpath_valid != FULLPATH_VALID) {
@@ -6219,7 +6351,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 			else
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> !FAILED Password attempt"
 				        , session->socket, session->client.protocol, session->host_ip, user.alias);
-			badlogin(session->socket, username, password, &session->client, &session->addr);
+			session_badlogin(session, username, password);
 			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE;
 		}
@@ -6228,7 +6360,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if (!chk_ars(&scfg, startup->login_ars, &user, &session->client)) {
 		lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> !Insufficient server access: %s"
 		        , session->socket, session->client.protocol, session->host_ip, user.alias, startup->login_ars);
-		badlogin(session->socket, username, NULL, &session->client, &session->addr);
+		session_badlogin(session, username, NULL);
 		return JS_TRUE;
 	}
 
@@ -7480,6 +7612,8 @@ void http_session_thread(void* arg)
 	while (!session.finished) {
 		init_error = false;
 		memset(&(session.req), 0, sizeof(session.req));
+		// Each request's RemoteIPHeader (if any) sets its own client address
+		SAFECOPY(session.host_ip, session.client.addr);
 		if (session.is_tls) {
 #if 0 // TLS-PSK is currently broken in cryptlib
 			uname = get_crypt_attribute(session.tls_sess, CRYPT_SESSINFO_USERNAME);
@@ -7537,7 +7671,7 @@ void http_session_thread(void* arg)
 				}
 				/* At this point, if redirp is non-NULL then the headers have already been parsed */
 				if ((session.http_ver < HTTP_1_0) || redirp != NULL || parse_headers(&session)) {
-					if ((redirp != NULL || !request_blocked(&session)) && check_request(&session)) {
+					if ((redirp != NULL || request_allowed(&session)) && check_request(&session)) {
 						if (session.req.send_location < MOVED_TEMP || session.req.virtual_path[0] != '/' || loop_count++ >= MAX_REDIR_LOOPS) {
 							if (read_post_data(&session))
 								respond(&session);
@@ -7717,6 +7851,7 @@ static void cleanup(int code)
 	host_can.reset();
 	host_exempt.reset();
 	web_block.reset();
+	strListFree(&proxy_trust);
 
 	mqtt_shutdown(&mqtt);
 }
@@ -7754,6 +7889,7 @@ void format_log_line(char* buf, size_t buflen, const char* fmt, struct log_data*
 {
 	named_string_t str_vars[] = {
 		{ (char*)"a", ld->client.addr },
+		{ (char*)"{c}a", ld->peer_addr },
 		{ (char*)"H", ld->client.protocol },
 		{ (char*)"b", sizestr },
 		{ (char*)"t", timestr },
@@ -8141,6 +8277,11 @@ void web_server(void* arg)
 		host_exempt.init(&scfg, strIpFilterExemptConfigFile);
 		iniFileName(web_block_ini, sizeof(web_block_ini), scfg.ctrl_dir, "web_block.ini");
 		web_block.init(web_block_ini, scfg.cache_filter_files, lprintf);
+		strListFree(&proxy_trust);
+		proxy_trust = strListSplitCopy(NULL, startup->proxy_ip_trust, ", \t");
+		if (startup->proxy_ip_header[0] != '\0' && strListCount(proxy_trust) < 1)
+			lprintf(LOG_WARNING, "!%s header honored from every client: set RemoteIPHeaderTrust to the proxy addresses"
+				, startup->proxy_ip_header);
 		size_t blocked_headers = web_block.rule_count();
 		if (blocked_headers > 0)
 			lprintf(LOG_INFO, "Blocking requests by header per %s (%u headers)"

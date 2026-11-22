@@ -951,6 +951,7 @@ bool sbbs_read_ini(
 		web->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
 		web->rate_limit = get_rate_limit_settings(list, section);
 		INI_GET_STR(web->proxy_ip_header, list, section, "RemoteIPHeader", nulstr);
+		INI_GET_STR(web->proxy_ip_trust, list, section, "RemoteIPHeaderTrust", nulstr);
 		INI_GET_STR(web->custom_log_fmt, list, section, "CustomLogFormat", nulstr);
 	}
 
@@ -1629,6 +1630,8 @@ bool sbbs_write_ini(
 			if (!set_rate_limit_settings(lp, section, web->rate_limit, style))
 				break;
 			if (!iniSetString(lp, section, "RemoteIPHeader", web->proxy_ip_header, &style))
+				break;
+			if (!iniSetString(lp, section, "RemoteIPHeaderTrust", web->proxy_ip_trust, &style))
 				break;
 			if (!iniSetString(lp, section, "CustomLogFormat", web->custom_log_fmt, &style))
 				break;

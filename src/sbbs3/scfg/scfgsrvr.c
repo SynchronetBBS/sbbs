@@ -1543,6 +1543,57 @@ static void websrvr_filebase_cfg(web_startup_t* startup)
 	}
 }
 
+static void websrvr_proxy_cfg(web_startup_t* startup)
+{
+	static int cur, bar;
+
+	while (1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Client IP Header"
+		         , *startup->proxy_ip_header ? startup->proxy_ip_header : "<none>");
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Trusted Proxies"
+		         , *startup->proxy_ip_header ? (*startup->proxy_ip_trust ? startup->proxy_ip_trust : "<any client>") : "N/A");
+		opt[i][0] = '\0';
+
+		uifc.helpbuf =
+			"`Web Server Reverse Proxy:`\n"
+			"\n"
+			"Settings for a Web Server reached through a reverse proxy or CDN (e.g.\n"
+			"Cloudflare, or nginx on the same system), which connects to the server\n"
+			"on behalf of each client and passes the client's IP address in a request\n"
+			"header.\n"
+			"\n"
+			"`Client IP Header`: name of the request header that carries the client's\n"
+			"IP address, e.g. `CF-Connecting-IP` (Cloudflare) or `X-Forwarded-For`.\n"
+			"The address is then used in the logs, by scripts, and for rate limiting\n"
+			"and IP filtering.  For a list of addresses (`X-Forwarded-For`), the\n"
+			"client is the right-most address that is not a trusted proxy.  Blank to\n"
+			"use the address of the connecting system.\n"
+			"\n"
+			"`Trusted Proxies`: IP addresses or CIDR ranges (e.g. `127.0.0.1`,\n"
+			"`173.245.48.0/20`), separated by commas, whose `Client IP Header` is\n"
+			"believed.  The header from any other client is ignored.  Left blank,\n"
+			"every client's header is believed, so a client that connects directly\n"
+			"can claim any IP address.  Cloudflare publishes its ranges at\n"
+			"`https://www.cloudflare.com/ips/`\n"
+		;
+		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
+		                  , "Web Server Reverse Proxy", opt)) {
+			case 0:
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Client IP Header (blank to disable)"
+				           , startup->proxy_ip_header, sizeof(startup->proxy_ip_header) - 1, K_EDIT);
+				break;
+			case 1:
+				if (*startup->proxy_ip_header)
+					uifc.input(WIN_MID | WIN_SAV, 0, 0, "Trusted Proxies (blank for any client)"
+					           , startup->proxy_ip_trust, sizeof(startup->proxy_ip_trust) - 1, K_EDIT);
+				break;
+			default:
+				return;
+		}
+	}
+}
+
 static void websrvr_cfg(void)
 {
 	static int    cur, bar;
@@ -1624,6 +1675,7 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Authentication Methods", startup.default_auth_list);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Reverse Proxy...", *startup.proxy_ip_header ? startup.proxy_ip_header : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Support...",  startup.options & WEB_OPT_NO_CGI ? strDisabled : startup.cgi_dir);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase Support...", startup.options & WEB_OPT_NO_FILEBASE ? strDisabled: startup.file_vpath_prefix);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
@@ -1694,6 +1746,10 @@ static void websrvr_cfg(void)
 			"\n"
 			"`Lookup Client Hostname`: look up the hostname of each incoming\n"
 			"connection.  `No` logs only IP addresses.\n"
+			"\n"
+			"`Reverse Proxy`: the request header that carries the client's IP address\n"
+			"when the server is reached through a reverse proxy or CDN, and the\n"
+			"proxies trusted to send it.\n"
 			"\n"
 			"`CGI Support`: running external CGI programs.\n"
 			"\n"
@@ -1810,21 +1866,24 @@ static void websrvr_cfg(void)
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			case 19:
-				websrvr_cgi_cfg(&startup);
+				websrvr_proxy_cfg(&startup);
 				break;
 			case 20:
-				websrvr_filebase_cfg(&startup);
+				websrvr_cgi_cfg(&startup);
 				break;
 			case 21:
-				getar("Web Server Login", startup.login_ars, /* helpbuf: */ NULL);
+				websrvr_filebase_cfg(&startup);
 				break;
 			case 22:
-				getar("Web Server Login Info Saved", startup.login_info_save, /* helpbuf: */ NULL);
+				getar("Web Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
 			case 23:
-				js_startup_cfg(&startup.js);
+				getar("Web Server Login Info Saved", startup.login_info_save, /* helpbuf: */ NULL);
 				break;
 			case 24:
+				js_startup_cfg(&startup.js);
+				break;
+			case 25:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:

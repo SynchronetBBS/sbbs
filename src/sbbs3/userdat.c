@@ -4746,11 +4746,7 @@ ulong loginFailure(link_list_t* list, const union xp_sockaddr* addr, const char*
 ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const char* host_name
                   , struct login_attempt_settings settings, login_attempt_t* details)
 {
-	char              name[(LEN_ALIAS * 2) + 1];
-	list_node_t*      node;
-	login_attempt_t*  attempt;
 	bool              result = false;
-	time32_t          now = time32(NULL);
 	union xp_sockaddr client_addr;
 	union xp_sockaddr server_addr;
 	socklen_t         addr_len;
@@ -4770,9 +4766,26 @@ ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const char* host_
 	if (inet_addrmatch(&server_addr, &client_addr))
 		return 0;
 
+	return loginBannedAddr(cfg, list, &client_addr, settings, details);
+}
+
+/****************************************************************************/
+/* As loginBanned(), for a client address that is not the socket's peer	*/
+/* (e.g. one forwarded by a reverse proxy)									*/
+/****************************************************************************/
+ulong loginBannedAddr(scfg_t* cfg, link_list_t* list, const union xp_sockaddr* client_addr
+                      , struct login_attempt_settings settings, login_attempt_t* details)
+{
+	char              name[(LEN_ALIAS * 2) + 1];
+	list_node_t*      node;
+	login_attempt_t*  attempt;
+	time32_t          now = time32(NULL);
+
+	if (list == NULL)
+		return 0;
 	if (!listLock(list))
 		return 0;
-	node = login_attempted(list, &client_addr);
+	node = login_attempted(list, client_addr);
 	listUnlock(list);
 	if (node == NULL)
 		return 0;
