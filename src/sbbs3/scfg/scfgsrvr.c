@@ -967,6 +967,111 @@ static void rlogin_srvr_cfg(bbs_startup_t* startup)
 	}
 }
 
+/* The Reverse Proxy settings of a server; a NULL ip_header (Terminal Server)
+   omits the Client IP Header item */
+struct proxy_cfg_view {
+	const char* server_name;    /* e.g. "Web Server" */
+	uint32_t*   options;        /* BBS_OPT_HAPROXY_PROTO */
+	char*       ip_header;
+	size_t      ip_header_size;
+	char*       trust;
+	size_t      trust_size;
+};
+
+static void proxy_cfg(struct proxy_cfg_view* view)
+{
+	static int cur, bar;
+	char       title[128];
+	enum { HEADER, HAPROXY, TRUST } item[3];
+
+	SAFEPRINTF(title, "%s Reverse Proxy", view->server_name);
+	while (1) {
+		int  i = 0;
+		bool in_use = (*view->options & BBS_OPT_HAPROXY_PROTO) || (view->ip_header != NULL && *view->ip_header);
+		if (view->ip_header != NULL) {
+			item[i] = HEADER;
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Client IP Header", *view->ip_header ? view->ip_header : "<none>");
+		}
+		item[i] = HAPROXY;
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "PROXY Protocol", *view->options & BBS_OPT_HAPROXY_PROTO ? "Yes" : "No");
+		item[i] = TRUST;
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Trusted Proxies"
+		         , in_use ? (*view->trust ? view->trust : "<any client>") : "N/A");
+		opt[i][0] = '\0';
+
+		uifc.helpbuf =
+			"`Reverse Proxy:`\n"
+			"\n"
+			"Settings for a server reached through a reverse proxy or CDN (e.g.\n"
+			"HAProxy, nginx, or for the Web Server, Cloudflare), which connects to\n"
+			"the server on behalf of each client and passes on the client's IP\n"
+			"address, used then in the logs, by scripts, and for rate limiting and\n"
+			"IP filtering.\n"
+			"\n"
+			"`Client IP Header` (Web Server): name of the request header that carries\n"
+			"the client's IP address, e.g. `CF-Connecting-IP` (Cloudflare) or\n"
+			"`X-Forwarded-For`.  For a list of addresses (`X-Forwarded-For`), the\n"
+			"client is the right-most address that is not a trusted proxy.  Blank to\n"
+			"use the address of the connecting system.\n"
+			"\n"
+			"`PROXY Protocol`: connections from a trusted proxy begin with a PROXY\n"
+			"protocol header (version 1 or 2, as sent by HAProxy, nginx\n"
+			"`proxy_protocol`, and others) giving the client's address, which is\n"
+			"then used for the whole connection, IP filtering included.  A\n"
+			"connection from a trusted proxy without the header is dropped; one\n"
+			"from any other system is an ordinary direct connection.\n"
+			"\n"
+			"`Trusted Proxies`: IP addresses or CIDR ranges (e.g. `127.0.0.1`,\n"
+			"`173.245.48.0/20`), separated by commas, of the proxies whose `Client IP\n"
+			"Header` or PROXY protocol header is believed.  Left blank, every\n"
+			"client's is believed (and with `PROXY Protocol`, every client must send\n"
+			"one), so a client that connects directly can claim any IP address.\n"
+			"Cloudflare publishes its ranges at `https://www.cloudflare.com/ips/`\n"
+		;
+		i = uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar, title, opt);
+		if (i < 0)
+			return;
+		switch (item[i]) {
+			case HEADER:
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Client IP Header (blank to disable)"
+				           , view->ip_header, view->ip_header_size - 1, K_EDIT);
+				break;
+			case HAPROXY:
+				*view->options ^= BBS_OPT_HAPROXY_PROTO;
+				break;
+			case TRUST:
+				if (in_use)
+					uifc.input(WIN_MID | WIN_SAV, 0, 0, "Trusted Proxies (blank for any client)"
+					           , view->trust, view->trust_size - 1, K_EDIT);
+				break;
+		}
+	}
+}
+
+static void websrvr_proxy_cfg(web_startup_t* startup)
+{
+	struct proxy_cfg_view view = {
+		.server_name    = "Web Server",
+		.options        = &startup->options,
+		.ip_header      = startup->proxy_ip_header,
+		.ip_header_size = sizeof startup->proxy_ip_header,
+		.trust          = startup->proxy_ip_trust,
+		.trust_size     = sizeof startup->proxy_ip_trust,
+	};
+	proxy_cfg(&view);
+}
+
+static void termsrvr_proxy_cfg(bbs_startup_t* startup)
+{
+	struct proxy_cfg_view view = {
+		.server_name    = "Terminal Server",
+		.options        = &startup->options,
+		.trust          = startup->proxy_trust,
+		.trust_size     = sizeof startup->proxy_trust,
+	};
+	proxy_cfg(&view);
+}
+
 static void termsrvr_cfg(void)
 {
 	static int    cur, bar;
@@ -1035,6 +1140,7 @@ static void termsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Event Log File"
 		         , startup.options & BBS_OPT_NO_EVENTS ? "N/A" : startup.options & BBS_OPT_NO_EVENT_LOG_FILE ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Reverse Proxy...", startup.options & BBS_OPT_HAPROXY_PROTO ? "PROXY Protocol" : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
@@ -1096,6 +1202,9 @@ static void termsrvr_cfg(void)
 			"\n"
 			"`Lookup Client Hostname`: look up the hostname of each incoming\n"
 			"connection.  `No` logs only IP addresses.\n"
+			"\n"
+			"`Reverse Proxy`: the PROXY protocol, for a server reached through a\n"
+			"proxy such as HAProxy, and the proxies trusted to use it.\n"
 			"\n"
 			"`Login Requirements`: access requirements a user must meet to log in\n"
 			"to this server.\n"
@@ -1269,12 +1378,15 @@ static void termsrvr_cfg(void)
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			case 21:
-				getar("Terminal Server Login", startup.login_ars, /* helpbuf: */ NULL);
+				termsrvr_proxy_cfg(&startup);
 				break;
 			case 22:
-				js_startup_cfg(&startup.js);
+				getar("Terminal Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
 			case 23:
+				js_startup_cfg(&startup.js);
+				break;
+			case 24:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
@@ -1543,57 +1655,6 @@ static void websrvr_filebase_cfg(web_startup_t* startup)
 	}
 }
 
-static void websrvr_proxy_cfg(web_startup_t* startup)
-{
-	static int cur, bar;
-
-	while (1) {
-		int i = 0;
-		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Client IP Header"
-		         , *startup->proxy_ip_header ? startup->proxy_ip_header : "<none>");
-		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Trusted Proxies"
-		         , *startup->proxy_ip_header ? (*startup->proxy_ip_trust ? startup->proxy_ip_trust : "<any client>") : "N/A");
-		opt[i][0] = '\0';
-
-		uifc.helpbuf =
-			"`Web Server Reverse Proxy:`\n"
-			"\n"
-			"Settings for a Web Server reached through a reverse proxy or CDN (e.g.\n"
-			"Cloudflare, or nginx on the same system), which connects to the server\n"
-			"on behalf of each client and passes the client's IP address in a request\n"
-			"header.\n"
-			"\n"
-			"`Client IP Header`: name of the request header that carries the client's\n"
-			"IP address, e.g. `CF-Connecting-IP` (Cloudflare) or `X-Forwarded-For`.\n"
-			"The address is then used in the logs, by scripts, and for rate limiting\n"
-			"and IP filtering.  For a list of addresses (`X-Forwarded-For`), the\n"
-			"client is the right-most address that is not a trusted proxy.  Blank to\n"
-			"use the address of the connecting system.\n"
-			"\n"
-			"`Trusted Proxies`: IP addresses or CIDR ranges (e.g. `127.0.0.1`,\n"
-			"`173.245.48.0/20`), separated by commas, whose `Client IP Header` is\n"
-			"believed.  The header from any other client is ignored.  Left blank,\n"
-			"every client's header is believed, so a client that connects directly\n"
-			"can claim any IP address.  Cloudflare publishes its ranges at\n"
-			"`https://www.cloudflare.com/ips/`\n"
-		;
-		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
-		                  , "Web Server Reverse Proxy", opt)) {
-			case 0:
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Client IP Header (blank to disable)"
-				           , startup->proxy_ip_header, sizeof(startup->proxy_ip_header) - 1, K_EDIT);
-				break;
-			case 1:
-				if (*startup->proxy_ip_header)
-					uifc.input(WIN_MID | WIN_SAV, 0, 0, "Trusted Proxies (blank for any client)"
-					           , startup->proxy_ip_trust, sizeof(startup->proxy_ip_trust) - 1, K_EDIT);
-				break;
-			default:
-				return;
-		}
-	}
-}
-
 static void websrvr_cfg(void)
 {
 	static int    cur, bar;
@@ -1675,7 +1736,11 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Authentication Methods", startup.default_auth_list);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Reverse Proxy...", *startup.proxy_ip_header ? startup.proxy_ip_header : strDisabled);
+		if (startup.options & BBS_OPT_HAPROXY_PROTO)
+			SAFECOPY(str, "PROXY Protocol");
+		else
+			SAFECOPY(str, *startup.proxy_ip_header ? startup.proxy_ip_header : strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Reverse Proxy...", str);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Support...",  startup.options & WEB_OPT_NO_CGI ? strDisabled : startup.cgi_dir);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase Support...", startup.options & WEB_OPT_NO_FILEBASE ? strDisabled: startup.file_vpath_prefix);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
@@ -1747,9 +1812,9 @@ static void websrvr_cfg(void)
 			"`Lookup Client Hostname`: look up the hostname of each incoming\n"
 			"connection.  `No` logs only IP addresses.\n"
 			"\n"
-			"`Reverse Proxy`: the request header that carries the client's IP address\n"
-			"when the server is reached through a reverse proxy or CDN, and the\n"
-			"proxies trusted to send it.\n"
+			"`Reverse Proxy`: how the client's IP address is learned when the server\n"
+			"is reached through a reverse proxy or CDN (a request header, or the\n"
+			"PROXY protocol), and the proxies trusted to send it.\n"
 			"\n"
 			"`CGI Support`: running external CGI programs.\n"
 			"\n"

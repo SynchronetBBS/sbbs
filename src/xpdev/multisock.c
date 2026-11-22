@@ -454,7 +454,14 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 
 					// Set host_ip from haproxy protocol, if its used
 					// http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
-					if (flags & XPMS_ACCEPT_FLAG_HAPROXY) {
+					bool haproxy = (flags & XPMS_ACCEPT_FLAG_HAPROXY) != 0;
+					if (haproxy && xpms_set->proxy_trusted != NULL && !xpms_set->proxy_trusted(addr)) {
+						char peer[INET6_ADDRSTRLEN];
+						xpms_set->lprintf(LOG_DEBUG, "%04d Not a trusted proxy, no PROXY protocol header expected: %s"
+						                  , ret, inet_addrtop(addr, peer, sizeof peer));
+						haproxy = false;
+					}
+					if (haproxy) {
 						memset(addr, 0, sizeof(*addr));
 						xpms_set->lprintf(LOG_DEBUG, "%04d Working out client address from HAProxy PROTO", ret);
 

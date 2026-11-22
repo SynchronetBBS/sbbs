@@ -152,7 +152,7 @@ static trashCan           ip_silent_can;
 static trashCan           host_can;
 static filterFile         host_exempt;
 static webBlock           web_block;
-static str_list_t         proxy_trust;    // RemoteIPHeaderTrust
+static str_list_t         proxy_trust;    // TrustedProxies
 
 /* Logging stuff */
 link_list_t               log_list;
@@ -3021,11 +3021,22 @@ static bool trusted_proxy(const char* ip)
 	return findstr_in_list(ip, proxy_trust, nullptr);
 }
 
+// May this connecting peer send a PROXY protocol header (#1391)?
+static bool proxy_peer_trusted(const union xp_sockaddr* peer)
+{
+	char ip[INET6_ADDRSTRLEN];
+
+	if (strListCount(proxy_trust) < 1)
+		return true;
+	inet_addrtop((union xp_sockaddr*)peer, ip, sizeof ip);
+	return trusted_proxy(ip);
+}
+
 // The client address in a RemoteIPHeader value (all of the request's
 // headers of that name, joined with commas) from a trusted proxy: each
 // proxy appends the address it received the request from, so the client
 // is the right-most address that is not itself a trusted proxy (with no
-// RemoteIPHeaderTrust, the right-most address).  Empty when any entry is
+// TrustedProxies, the right-most address).  Empty when any entry is
 // not an IP address.
 static std::string forwarded_client(const std::string& forwarded)
 {
@@ -8289,6 +8300,7 @@ void web_server(void* arg)
 			cleanup(1);
 			return;
 		}
+		ws_set->proxy_trusted = proxy_peer_trusted;
 		lprintf(LOG_DEBUG, "Web Server socket set created");
 
 		/*
@@ -8317,9 +8329,13 @@ void web_server(void* arg)
 		web_block.init(web_block_ini, scfg.cache_filter_files, lprintf);
 		strListFree(&proxy_trust);
 		proxy_trust = strListSplitCopy(NULL, startup->proxy_ip_trust, ", \t");
-		if (startup->proxy_ip_header[0] != '\0' && strListCount(proxy_trust) < 1)
-			lprintf(LOG_WARNING, "!%s header honored from every client: set RemoteIPHeaderTrust to the proxy addresses"
-				, startup->proxy_ip_header);
+		if (strListCount(proxy_trust) < 1) {
+			if (startup->proxy_ip_header[0] != '\0')
+				lprintf(LOG_WARNING, "!%s header honored from every client: set TrustedProxies to the proxy addresses"
+					, startup->proxy_ip_header);
+			if (startup->options & BBS_OPT_HAPROXY_PROTO)
+				lprintf(LOG_WARNING, "!PROXY protocol header honored from every client: set TrustedProxies to the proxy addresses");
+		}
 		size_t blocked_headers = web_block.rule_count();
 		if (blocked_headers > 0)
 			lprintf(LOG_INFO, "Blocking requests by header per %s (%u headers)"

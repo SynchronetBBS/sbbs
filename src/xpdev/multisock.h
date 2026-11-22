@@ -25,6 +25,10 @@ struct xpms_set {
 	size_t				sock_count;
 	unsigned int		retries;
 	unsigned int		wait_secs;
+	/* With XPMS_ACCEPT_FLAG_HAPROXY: is this peer a proxy whose PROXY protocol
+	   header is believed?  Any other peer is an ordinary direct connection.
+	   NULL: every peer must send the header. */
+	bool				(*proxy_trusted)(const union xp_sockaddr *peer);
 };
 
 #define XPMS_FOREVER	UINT_MAX

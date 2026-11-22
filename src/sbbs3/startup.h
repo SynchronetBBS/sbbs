@@ -187,6 +187,7 @@ typedef struct {
 	uint16_t max_newuser_inactivity;    // seconds
 	uint16_t max_session_inactivity;    // seconds
 	uint16_t max_sftp_inactivity;       // seconds
+	char proxy_trust[INI_MAX_VALUE_LEN]; // TrustedProxies: peers whose PROXY protocol header is believed (none: any)
 
 	/* JavaScript operating parameters */
 	js_startup_t js;

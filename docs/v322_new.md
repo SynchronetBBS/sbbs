@@ -429,11 +429,16 @@
   pattern, e.g. a scraper's User-Agent, or by host name (`!` patterns make
   an allowlist); edits take effect without a recycle, and a section's
   `FilterThreshold` adds a persistent client to `ip.can` (issue #1375)
-- Behind a reverse proxy or CDN (e.g. Cloudflare): the new `RemoteIPHeaderTrust`
+- Behind a reverse proxy or CDN (e.g. Cloudflare): the new `TrustedProxies`
   setting lists the proxy addresses whose `RemoteIPHeader` is believed (left
   blank, any client's is, with a warning logged at startup); an
   `X-Forwarded-For` list now yields its right-most untrusted address; both
   settings are in SCFG (Web Server > Reverse Proxy) (issue #1283)
+- The PROXY protocol (`HAPROXY_PROTO`, Web and Terminal Servers) is now
+  believed only from `TrustedProxies` (`[Web]` and `[BBS]`); other clients
+  connect directly, so they can share the port. Left blank, every client must
+  send the header, as before, with a warning logged at startup. It is set in
+  SCFG under each server's Reverse Proxy menu (issues #1391, #1392)
 - Fix: behind a reverse proxy, the request rate limiter, `ip.can`, and
   failed-login counting and temporary bans now act on the forwarded client
   address instead of the proxy's, and a kept-alive connection's later

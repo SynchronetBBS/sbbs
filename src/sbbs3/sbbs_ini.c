@@ -60,6 +60,7 @@ static const char* strRateLimitFilterThreshold = "RateLimitFilterThreshold";
 static const char* strRateLimitFilterDuration = "RateLimitFilterDuration";
 static const char* strRateLimitFilterSilent = "RateLimitFilterSilent";
 static const char* strRateLimitFilterSubnetThreshold = "RateLimitFilterSubnetThreshold";
+static const char* strTrustedProxies = "TrustedProxies";
 static const char* strHostName = "HostName";
 static const char* strLogLevel = "LogLevel";
 static const char* strEventLogLevel = "EventLogLevel";
@@ -627,6 +628,7 @@ bool sbbs_read_ini(
 		bbs->max_newuser_inactivity = (uint16_t)iniGetDuration(list, section, strMaxNewUserInactivity, 60 * 60);
 		bbs->max_session_inactivity = (uint16_t)iniGetDuration(list, section, strMaxSessionInactivity, 10 * 60);
 		bbs->max_sftp_inactivity = (uint16_t)iniGetDuration(list, section, strMaxSFTPInactivity, FTP_DEFAULT_MAX_INACTIVITY);
+		INI_GET_STR(bbs->proxy_trust, list, section, strTrustedProxies, nulstr);
 
 		INI_GET_STR(bbs->web_file_vpath_prefix, list, "web", strFileVPathPrefix, nulstr);
 	}
@@ -951,7 +953,7 @@ bool sbbs_read_ini(
 		web->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
 		web->rate_limit = get_rate_limit_settings(list, section);
 		INI_GET_STR(web->proxy_ip_header, list, section, "RemoteIPHeader", nulstr);
-		INI_GET_STR(web->proxy_ip_trust, list, section, "RemoteIPHeaderTrust", nulstr);
+		INI_GET_STR(web->proxy_ip_trust, list, section, strTrustedProxies, nulstr);
 		INI_GET_STR(web->custom_log_fmt, list, section, "CustomLogFormat", nulstr);
 	}
 
@@ -1098,6 +1100,8 @@ bool sbbs_write_ini(
 			if (!iniSetDuration(lp, section, strMaxSessionInactivity, bbs->max_session_inactivity, &style))
 				break;
 			if (!iniSetDuration(lp, section, strMaxSFTPInactivity, bbs->max_sftp_inactivity, &style))
+				break;
+			if (!iniSetString(lp, section, strTrustedProxies, bbs->proxy_trust, &style))
 				break;
 
 			if (bbs->sem_chk_freq == global->sem_chk_freq)
@@ -1631,7 +1635,7 @@ bool sbbs_write_ini(
 				break;
 			if (!iniSetString(lp, section, "RemoteIPHeader", web->proxy_ip_header, &style))
 				break;
-			if (!iniSetString(lp, section, "RemoteIPHeaderTrust", web->proxy_ip_trust, &style))
+			if (!iniSetString(lp, section, strTrustedProxies, web->proxy_ip_trust, &style))
 				break;
 			if (!iniSetString(lp, section, "CustomLogFormat", web->custom_log_fmt, &style))
 				break;

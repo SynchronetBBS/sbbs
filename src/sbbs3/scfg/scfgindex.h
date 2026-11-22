@@ -1344,8 +1344,13 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Client IP Header",
-		"Reverse Proxy...",
-		"Servers > Web Server > Reverse Proxy... > Client IP Header"
+		"Reverse Proxy",
+		"Servers > Web Server > Reverse Proxy... > Reverse Proxy > Client IP Header"
+	},
+	{
+		"Client IP Header",
+		"Reverse Proxy",
+		"Servers > Terminal Server > Reverse Proxy... > Reverse Proxy > Client IP Header"
 	},
 	{
 		"Clone Options",
@@ -4703,6 +4708,16 @@ static const scfg_option_t scfg_option_index[] = {
 		"Networks > Message Queue Telemetry Transport > Protocol Version"
 	},
 	{
+		"PROXY Protocol",
+		"Reverse Proxy",
+		"Servers > Web Server > Reverse Proxy... > Reverse Proxy > PROXY Protocol"
+	},
+	{
+		"PROXY Protocol",
+		"Reverse Proxy",
+		"Servers > Terminal Server > Reverse Proxy... > Reverse Proxy > PROXY Protocol"
+	},
+	{
 		"Public 'To' User",
 		"Toggle Options",
 		"Message Areas > Sub-boards > Sub-board > Toggle Options > Public 'To' User"
@@ -4956,6 +4971,21 @@ static const scfg_option_t scfg_option_index[] = {
 		"Retain Ctrl-A Codes in Quotes",
 		"Editor",
 		"External Programs > Message Editors > Editor > Retain Ctrl-A Codes in Quotes"
+	},
+	{
+		"Reverse Proxy",
+		"Reverse Proxy...",
+		"Servers > Web Server > Reverse Proxy... > Reverse Proxy"
+	},
+	{
+		"Reverse Proxy",
+		"Reverse Proxy...",
+		"Servers > Terminal Server > Reverse Proxy... > Reverse Proxy"
+	},
+	{
+		"Reverse Proxy...",
+		"Terminal Server",
+		"Servers > Terminal Server > Reverse Proxy..."
 	},
 	{
 		"Reverse Proxy...",
@@ -10564,8 +10594,13 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Trusted Proxies",
-		"Reverse Proxy...",
-		"Servers > Web Server > Reverse Proxy... > Trusted Proxies"
+		"Reverse Proxy",
+		"Servers > Web Server > Reverse Proxy... > Reverse Proxy > Trusted Proxies"
+	},
+	{
+		"Trusted Proxies",
+		"Reverse Proxy",
+		"Servers > Terminal Server > Reverse Proxy... > Reverse Proxy > Trusted Proxies"
 	},
 	{
 		"UART Only",

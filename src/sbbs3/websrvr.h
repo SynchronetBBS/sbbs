@@ -66,7 +66,7 @@ typedef struct {
 	uint outbuf_drain_timeout;
 	char login_info_save[INI_MAX_VALUE_LEN];
 	char proxy_ip_header[128];
-	char proxy_ip_trust[INI_MAX_VALUE_LEN];         /* proxies whose proxy_ip_header is honored (none: any client) */
+	char proxy_ip_trust[INI_MAX_VALUE_LEN];         /* TrustedProxies: peers whose proxy_ip_header or PROXY protocol header is believed (none: any) */
 	char custom_log_fmt[INI_MAX_VALUE_LEN];
 
 	/* JavaScript operating parameters */

@@ -127,10 +127,22 @@ static trashCan            ip_can;
 static trashCan            ip_silent_can;
 static trashCan            host_can;
 static filterFile          host_exempt;
+static str_list_t          proxy_trust;    // TrustedProxies
 
 #ifdef _THREAD_SUID_BROKEN
 int                        thread_suid_broken = true; /* NPTL is no longer broken */
 #endif
+
+// May this connecting peer send a PROXY protocol header (#1391)?
+static bool proxy_peer_trusted(const union xp_sockaddr* peer)
+{
+	char ip[INET6_ADDRSTRLEN];
+
+	if (strListCount(proxy_trust) < 1)
+		return true;
+	inet_addrtop((union xp_sockaddr*)peer, ip, sizeof ip);
+	return findstr_in_list(ip, proxy_trust, nullptr);
+}
 
 /* convenient space-saving global variables */
 extern "C" {
@@ -5130,6 +5142,7 @@ static void cleanup(int code)
 	ip_silent_can.reset();
 	host_can.reset();
 	host_exempt.reset();
+	strListFree(&proxy_trust);
 
 	mqtt_shutdown(&mqtt);
 }
@@ -5566,6 +5579,11 @@ void bbs_thread(void* arg)
 			cleanup(1);
 			return;
 		}
+		strListFree(&proxy_trust);
+		proxy_trust = strListSplitCopy(NULL, startup->proxy_trust, ", \t");
+		ts_set->proxy_trusted = proxy_peer_trusted;
+		if ((startup->options & BBS_OPT_HAPROXY_PROTO) && strListCount(proxy_trust) < 1)
+			lprintf(LOG_WARNING, "!PROXY protocol header honored from every client: set TrustedProxies to the proxy addresses");
 		if (!(startup->options & BBS_OPT_NO_TELNET)) {
 			telnet_cb.protocol = "telnet";
 			telnet_cb.startup = startup;
