@@ -138,7 +138,7 @@ try {
 		[{ id: d.id, rev: 2, mode: "reply" }, "a field not saved"],
 		[{ id: "../../etc/x", rev: 2 }, "id path"],
 		[{ id: d.id + "0", rev: 2 }, "17-character id"],
-		[{ id: d.id.toUpperCase(), rev: 2 }, "upper-case id"],
+		[{ id: d.id.substr(0, 15) + "A", rev: 2 }, "upper-case id"],
 		[{ id: d.id, rev: 2, body: String.fromCharCode(0x263a) }, "a wide character"]];
 	for (i = 0; i < bad_saves.length; i++)
 		err(call(A(), "draft.save", bad_saves[i][0]), "invalid", "draft.save: " + bad_saves[i][1]);
