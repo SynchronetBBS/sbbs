@@ -64,7 +64,15 @@ Other areas where MSVC is more forgiving than GCC/Clang:
 - **Narrowing conversions in braced-init lists** (`int x{some_long}`) — GCC/Clang error, MSVC warning.
 - **`-Werror` is in effect on some build targets**, so a warning under one compiler can become an error elsewhere. Don't ignore warnings just because the build you ran passed.
 
-Borland is even more conservative than MSVC on modern C/C++ features and largely affects only the two GUI sub-projects; if you're touching those, see `src/sbbs3/CLAUDE.md` and the `synchronet-build` skill's Borland section. For everything else, the practical rule is: write code that compiles cleanly under GCC/Clang first; MSVC will follow.
+Borland (C++ Builder 6, `bcc32`) is even more conservative than MSVC on modern C/C++ features. It builds the two GUI sub-projects — see `src/sbbs3/CLAUDE.md` and the `synchronet-build` skill's Borland sections — and it also compiles plain C that the rest of the tree shares, **as C89**:
+
+- every `.c` in `src/xpdev/` (the `windows-x86 [sbbs]` CI job begins with Borland `make` there)
+- `src/sbbs3/sbbs_ini.c`, `nopen.c`, `ringbuf.c`, `getctrl.c` (listed in the `.bpr` projects)
+- `xtrn/sdk/`, `xtrn/sbj/`, `xtrn/tbd/`
+
+In those files, and in headers they include, **declare locals at the top of a block, before any statement** — no mid-block declarations and no `for (int i = 0; ...)`. GCC, Clang and MSVC all accept both, so only the CI Borland job catches it (`Error E2140: Declaration is not allowed here`; `03be043f22` broke the build this way in `multisock.c`'s `xpms_accept()`). `bool`, `//` comments and `<stdint.h>` types are fine there.
+
+For everything else, the practical rule is: write code that compiles cleanly under GCC/Clang first; MSVC will follow.
 
 When you make a `.c`/`.cpp` change and can only verify it under MSVC, say so explicitly when offering the commit so the next compile under GCC/Clang isn't a surprise.
 
