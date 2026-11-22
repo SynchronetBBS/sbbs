@@ -32,6 +32,10 @@ var cfg_plain = Config.load({ directory: WEBMAIL_DIR, require_tls: false });
 var WEBV4_KEY = "k1";	// make_env's stored webv4 session key
 var cfg_webv4 = Config.load({ directory: WEBMAIL_DIR, webv4_login: true,
 	access_requirements: "LEVEL 10" });
+var cfg_webv4_out = Config.load({ directory: WEBMAIL_DIR, webv4_login: true, webv4_logout: true,
+	access_requirements: "LEVEL 10" });
+var cfg_out_only = Config.load({ directory: WEBMAIL_DIR, webv4_logout: true,
+	access_requirements: "LEVEL 10" });
 
 var STRINGS = (function () {
 	var Locale = Kit.wlib("locale");
@@ -119,6 +123,16 @@ function make_env(o)
 				return WEBV4_KEY;
 			return o.webv4_keys.hasOwnProperty(n) ? o.webv4_keys[n] : null;
 		},
+		// ends the browser's webv4 session of user n: true when o.webv4_user
+		// is n (that session then ends), as Webv4.end_session
+		webv4_ended: [],
+		webv4_end: o.webv4_end_fn || function (n) {
+			ev.webv4_ended.push(n);
+			if (o.webv4_user !== n)
+				return false;
+			o.webv4_user = 0;
+			return true;
+		},
 		finds: [],
 		find_user: o.find_user || function (name) {
 			ev.finds.push(name);
@@ -169,6 +183,7 @@ function sealed_env(o)
 	o.find_user = fail("find_user");
 	o.webv4_fn = fail("webv4_user");
 	o.webv4_key_fn = fail("webv4_key");
+	o.webv4_end_fn = fail("webv4_end");
 	return make_env(o);
 }
 
@@ -781,6 +796,56 @@ try {
 	tmp = sign_in(BOB);
 	r = call(make_env({ cookie: tmp, webv4_user: BOB }), "session.logout", {});
 	Kit.eq(r.webv4, false, "webv4_login off: false");
+	// webv4_logout off: the webv4 session is left alone
+	tmp = sign_in(BOB);
+	ev = make_env({ cookie: tmp, config: cfg_webv4, webv4_user: BOB });
+	call(ev, "session.logout", {});
+	Kit.eq(ev.webv4_ended, [], "webv4_logout off: webv4 not signed out");
+
+	// --- webv4_logout: signing out here signs the browser out of webv4 too
+	tmp = sign_in(BOB);
+	ev = make_env({ cookie: tmp, config: cfg_webv4_out, webv4_user: BOB });
+	r = call(ev, "session.logout", {});
+	Kit.eq(r, { ok: true, webv4: false }, "webv4_logout: no longer signed in to webv4");
+	Kit.eq(ev.webv4_ended, [BOB], "webv4_logout: the webv4 session of this user ended");
+	Kit.eq(ev.cookies, [["", false]], "webv4_logout: the web client cookie cleared");
+	Kit.eq(call(make_env({ cookie: tmp }), "session.get", {}).user, null,
+		"webv4_logout: the web client session is gone");
+	// a session started from webv4 too
+	ev = make_env({ config: cfg_webv4_out, webv4_user: ALICE });
+	var wsess = (call(ev, "session.get", {}), ev.cookies[0][0]);
+	ev = make_env({ cookie: wsess, config: cfg_webv4_out, webv4_user: ALICE });
+	r = call(ev, "session.logout", {});
+	Kit.eq([r.webv4, ev.webv4_ended], [false, [ALICE]], "webv4_logout: a webv4-started session");
+	// the browser signed in to webv4 as someone else: that session is kept
+	tmp = sign_in(BOB);
+	ev = make_env({ cookie: tmp, config: cfg_webv4_out, webv4_user: ALICE });
+	r = call(ev, "session.logout", {});
+	Kit.eq(r.webv4, false, "webv4_logout, other webv4 user: not this user's");
+	Kit.eq(ev.webv4_ended, [BOB], "webv4_logout, other webv4 user: asked for this user only");
+	// works without webv4_login
+	tmp = sign_in(BOB);
+	ev = make_env({ cookie: tmp, config: cfg_out_only, webv4_user: BOB });
+	r = call(ev, "session.logout", {});
+	Kit.eq([r.webv4, ev.webv4_ended], [false, [BOB]], "webv4_logout without webv4_login");
+	// a failure ending the webv4 session does not fail the sign-out
+	tmp = sign_in(BOB);
+	ev = make_env({ cookie: tmp, config: cfg_webv4_out, webv4_user: BOB,
+		webv4_end_fn: function () {
+			throw new Error("disk on fire");
+		} });
+	r = call(ev, "session.logout", {});
+	Kit.eq(r, { ok: true, webv4: true }, "webv4_logout failed: signed out here, still there");
+	Kit.eq(ev.cookies, [["", false]], "webv4_logout failed: cookie cleared");
+	// no session here (already ended): nothing to sign out of webv4 for
+	ev = make_env({ config: cfg_webv4_out, webv4_user: BOB });
+	r = Api.dispatch(ev, { calls: [["session.logout", {}, 1]] });
+	Kit.eq(ev.webv4_ended, [], "webv4_logout, not signed in here: webv4 left alone");
+	// logout + get in one request: not signed in again from webv4
+	tmp = sign_in(BOB);
+	ev = make_env({ cookie: tmp, config: cfg_webv4_out, webv4_user: BOB });
+	r = Api.dispatch(ev, { calls: [["session.logout", {}, 1], ["session.get", {}, 2]] });
+	Kit.eq(r.results[1][1].user, null, "webv4_logout, logout + get: no user");
 
 	// --- webv4 sign-in through session.get
 	ev = make_env({ config: cfg_webv4, webv4_user: ALICE });

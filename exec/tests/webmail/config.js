@@ -21,6 +21,7 @@ var DEFAULTS = {
 	max_message_bytes: 20971520,
 	access_requirements: "",
 	webv4_login: false,
+	webv4_logout: false,
 	require_tls: true,
 	tls_proxy_header: "",
 	hsts_max_age: 0,
@@ -44,7 +45,7 @@ var DEFAULTS = {
 	var n = 0;
 	for (var kk in c)
 		n++;
-	Kit.eq(n, 22, "key count");
+	Kit.eq(n, 23, "key count");
 });
 
 // No argument: reads this install's real options; the stock file changes
@@ -218,6 +219,14 @@ var DEFAULTS = {
 	Kit.assert(Config.load({ webv4_login: "yes" }).webv4_login === true);
 	Kit.assert(Config.load({ webv4_login: true }).webv4_login === true);
 	Kit.assert(Config.load({ webv4_login: "banana" }).webv4_login === false);
+})();
+
+// webv4_logout
+(function () {
+	Kit.assert(Config.load({}).webv4_logout === false);
+	Kit.assert(Config.load({ webv4_logout: "on" }).webv4_logout === true);
+	Kit.assert(Config.load({ webv4_logout: true }).webv4_logout === true);
+	Kit.assert(Config.load({ webv4_logout: "banana" }).webv4_logout === false);
 })();
 
 // Warnings: one per unusable present value, naming the key; none for an

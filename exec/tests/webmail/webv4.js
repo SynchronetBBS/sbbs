@@ -104,7 +104,37 @@ try {
 		Kit.eq(Webv4.stored_key(nonums[n], data), null, "stored_key: " + JSON.stringify(nonums[n]));
 	Kit.eq(reads, [], "stored_key: no file read for an invalid user number");
 
-	// --- the session file is never written
+	// --- end_session: removes the user's .web file, only for a valid
+	// cookie of that user
+	var end_file = data + "user/60010.web";
+	put(end_file, "key=" + KEY + "\n");
+	var removed = [];
+	var real_remove = Webv4.remove_file;
+	Webv4.remove_file = function (path) {
+		removed.push(path);
+		return real_remove(path);
+	};
+	try {
+		Kit.eq(Webv4.end_session({ synchronet: ["60010," + KEY] }, data, 60001), false,
+			"end_session: another user's cookie");
+		Kit.eq(Webv4.end_session({ synchronet: ["60010,wrong"] }, data, 60010), false,
+			"end_session: a wrong key");
+		Kit.eq(Webv4.end_session({}, data, 60010), false, "end_session: no cookie");
+		Kit.eq(Webv4.end_session({ synchronet: ["60010," + KEY] }, data, "60010"), false,
+			"end_session: a user number that is not a number");
+		Kit.eq(removed, [], "end_session: nothing removed for those");
+		Kit.assert(file_exists(end_file), "end_session: the file is still there");
+		Kit.eq(Webv4.end_session({ synchronet: ["60010," + KEY] }, data, 60010), true,
+			"end_session: ended");
+		Kit.eq(removed, [end_file], "end_session: the user's .web file");
+		Kit.assert(!file_exists(end_file), "end_session: the file is gone");
+		Kit.eq(Webv4.session_user({ synchronet: ["60010," + KEY] }, data), 0,
+			"end_session: the cookie no longer signs in");
+	} finally {
+		Webv4.remove_file = real_remove;
+	}
+
+	// --- the session file is never written (other than by end_session)
 	Kit.eq(file_date(web_file), stamp, "webv4 file not modified");
 	Kit.eq(file_size(web_file), size, "webv4 file size unchanged");
 

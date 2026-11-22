@@ -139,6 +139,17 @@
 			webv4_key: function (n) {
 				return load({}, lib + "webv4.js").stored_key(n, system.data_dir);
 			},
+			// webv4_logout: end the browser's webv4 session and clear its
+			// cookie, with the domain and path webv4 sets it with
+			// (webv4/lib/auth.js, setCookie and destroySession)
+			webv4_end: function (n) {
+				var Webv4 = load({}, lib + "webv4.js");
+				if (!Webv4.end_session(http_request.cookie, system.data_dir, n))
+					return false;
+				set_cookie(Webv4.COOKIE, "", time() - 86400,
+					String(http_request.host).replace(/\:\d*/g, ""), "/");
+				return true;
+			},
 			find_user: function (name) {
 				// the engine's lookup, the same one login() uses
 				return system.find_login_id(name);

@@ -4,6 +4,7 @@
 // var usernum = Webv4.session_user(http_request.cookie, system.data_dir);
 //
 // var key = Webv4.stored_key(usernum, system.data_dir);
+// var ended = Webv4.end_session(http_request.cookie, system.data_dir, usernum);
 //
 // session_user is used only when the webmail option webv4_login is true,
 // to sign a user in to the web client without the sign-in form.
@@ -11,6 +12,9 @@
 // client session started that way lasts only while it is unchanged, so
 // signing out of webv4 (or signing in to webv4 again elsewhere) signs the
 // user out of the web client too.
+// end_session is used only when the webmail option webv4_logout is true:
+// signing out of the web client then signs the browser out of webv4 too,
+// when its webv4 cookie is a valid session of the same user.
 //
 // This follows webv4's own rule (webv4/lib/auth.js, validateSession and
 // getSession) and nothing more:
@@ -37,7 +41,7 @@
 //     limits (session.js), and ends when this one does (api.js).
 // Several values for the cookie are tried in order, as webv4 does; the
 // first that matches wins.  The .web file is only read (opened "r"),
-// never written.  A missing file, a missing or empty key, or any problem
+// never written, except that end_session removes it.  A missing file, a missing or empty key, or any problem
 // reading or parsing the file gives 0.
 //
 // Whether that user may use the web client (not a guest, not deleted,
@@ -125,11 +129,30 @@ var Webv4 = (function () {
 		return Webv4.read_key(data_dir + format("user/%04u.web", usernum));
 	}
 
+	// End the webv4 session of usernum that the browser's cookie belongs
+	// to, as webv4's own sign-out does (auth.js, destroySession): its .web
+	// file is removed.  Only a cookie that is a valid session of that user
+	// counts; returns true when a session was ended.  Clearing the browser's
+	// cookie is the caller's part (it has the reply).
+	function end_session(cookies, data_dir, usernum)
+	{
+		if (typeof usernum !== "number" || session_user(cookies, data_dir) !== usernum)
+			return false;
+		return Webv4.remove_file(data_dir + format("user/%04u.web", usernum));
+	}
+
+	function remove_file(path)
+	{
+		return file_remove(path);
+	}
+
 	var Webv4 = {
 		COOKIE: COOKIE,
 		session_user: session_user,
 		stored_key: stored_key,
-		read_key: read_key
+		end_session: end_session,
+		read_key: read_key,
+		remove_file: remove_file
 	};
 
 	return Webv4;

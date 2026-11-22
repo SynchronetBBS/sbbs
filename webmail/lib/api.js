@@ -103,6 +103,11 @@
 //                  started from webv4 and on every request of a session
 //                  started that way (its stamp includes the key), so
 //                  only those sessions read the .web file on a poll
+//   webv4_end(usernum)  ends the browser's webv4 session if it is a valid
+//                  one of usernum (Webv4.end_session(), and the webv4
+//                  cookie cleared); true if it did.  Called only by
+//                  session.logout, and only when config.webv4_logout is
+//                  true
 //   now            optional time_t (tests); time() otherwise
 //   find_user(name)  the user number the server's login() would look the
 //                  name up as, or 0 (system.find_login_id(name), which
@@ -224,7 +229,11 @@
 //                       as the new user.
 //   session.logout   -> { webv4 }: true when the user is still signed in
 //                       to webv4 (webv4_login on and env.webv4_user() is
-//                       this user), so the next visit signs in again
+//                       this user), so the next visit signs in again.
+//                       With webv4_logout on, env.webv4_end(usernum) first
+//                       ends the browser's webv4 session if it is this
+//                       user's (webv4 is then false); a failure there is
+//                       logged and the sign-out still succeeds
 //   folder.list      -> { folders, usage, purged, trash_days, inbox_days,
 //                       inbox_limit, drafts }:  inbox_limit is { count,
 //                       limit, level }: the messages the mail server
@@ -1308,6 +1317,17 @@ var Api = (function () {
 		rq.cookie = null;
 		rq.logged_out = true;
 		set_cookie(rq, "", false);
+		// webv4_logout: the browser's webv4 session of the same user ends too
+		if (n !== 0 && rq.config.webv4_logout === true && typeof rq.env.webv4_end === "function") {
+			var ended = false;
+			try {
+				ended = rq.env.webv4_end(n) === true;
+			} catch (e) {
+				Api.log(LOG_WARNING, "webmail api: user " + n + ": ending the webv4 session: " + describe(e));
+			}
+			if (ended)
+				rq.webv4 = 0;	// no longer signed in there
+		}
 		return { webv4: n !== 0 && webv4_user(rq) === n };
 	}
 

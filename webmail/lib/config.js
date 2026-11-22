@@ -85,6 +85,7 @@ var Config = (function () {
 	};
 	var BOOLEANS = {
 		webv4_login: false,
+		webv4_logout: false,
 		require_tls: true
 	};
 	var STRINGS = {
