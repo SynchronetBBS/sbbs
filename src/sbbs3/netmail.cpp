@@ -909,6 +909,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 			break;
 	}
 	if (!i) {
+		free(qwkbuf);
 		bputs(text[TooManyEmailsToday]);
 		return;
 	}
@@ -919,6 +920,8 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uint fromhub)
 	}
 	if (write(fido, &hdr, sizeof(hdr)) != sizeof hdr) {
 		free(qwkbuf);
+		close(fido);
+		remove(str);
 		errormsg(WHERE, ERR_WRITE, str, sizeof hdr);
 		return;
 	}
