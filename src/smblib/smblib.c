@@ -1203,7 +1203,32 @@ void smb_freemsgmem(smbmsg_t* msg)
 }
 
 /****************************************************************************/
+/* Undoes a partial smb_copymsgmem(): frees what it allocated for 'msg' and */
+/* leaves 'msg' holding no allocations (none shared with the source either) */
+/****************************************************************************/
+static void copymsgmem_failed(smbmsg_t* msg)
+{
+	int i;
+
+	FREE_AND_NULL(msg->dfield);
+	msg->hdr.total_dfields = 0;
+	if (msg->hfield_dat != NULL) {
+		for (i = 0; i < msg->total_hfields; i++)
+			free(msg->hfield_dat[i]);
+		FREE_AND_NULL(msg->hfield_dat);
+	}
+	FREE_AND_NULL(msg->hfield);
+	msg->total_hfields = 0;
+	FREE_AND_NULL(msg->text_subtype);
+	FREE_AND_NULL(msg->text_charset);
+	clear_convenience_ptrs(msg);
+	msg->text = NULL;
+	msg->tail = NULL;
+}
+
+/****************************************************************************/
 /* Copies memory allocated for 'srcmsg' to 'msg'							*/
+/* On failure, 'msg' holds no allocations (smb_freemsgmem() on it is safe)	*/
 /****************************************************************************/
 int smb_copymsgmem(smb_t* smb, smbmsg_t* msg, smbmsg_t* srcmsg)
 {
@@ -1211,6 +1236,10 @@ int smb_copymsgmem(smb_t* smb, smbmsg_t* msg, smbmsg_t* srcmsg)
 
 	memcpy(msg, srcmsg, sizeof(smbmsg_t));
 	clear_convenience_ptrs(msg);
+	/* srcmsg's arrays are not msg's: each is allocated anew below */
+	msg->dfield = NULL;
+	msg->hfield = NULL;
+	msg->hfield_dat = NULL;
 
 	/* data field types/lengths */
 	if (msg->hdr.total_dfields > 0) {
@@ -1219,6 +1248,7 @@ int smb_copymsgmem(smb_t* smb, smbmsg_t* msg, smbmsg_t* srcmsg)
 				safe_snprintf(smb->last_error, sizeof(smb->last_error)
 				              , "%s malloc failure of %d bytes for %d data fields", __FUNCTION__
 				              , (int)(msg->hdr.total_dfields * sizeof(dfield_t)), msg->hdr.total_dfields);
+			copymsgmem_failed(msg);
 			return SMB_ERR_MEM;
 		}
 		memcpy(msg->dfield, srcmsg->dfield, msg->hdr.total_dfields * sizeof(dfield_t));
@@ -1231,16 +1261,18 @@ int smb_copymsgmem(smb_t* smb, smbmsg_t* msg, smbmsg_t* srcmsg)
 				safe_snprintf(smb->last_error, sizeof(smb->last_error)
 				              , "%s malloc failure of %d bytes for %d header fields", __FUNCTION__
 				              , (int)(msg->total_hfields * sizeof(hfield_t)), msg->total_hfields);
+			copymsgmem_failed(msg);
 			return SMB_ERR_MEM;
 		}
 		memcpy(msg->hfield, srcmsg->hfield, msg->total_hfields * sizeof(hfield_t));
 
-		/* header field data */
-		if ((msg->hfield_dat = (void**)malloc(msg->total_hfields * sizeof(void*))) == NULL) {
+		/* header field data (zeroed, so a partial copy can be freed) */
+		if ((msg->hfield_dat = (void**)calloc(msg->total_hfields, sizeof(void*))) == NULL) {
 			if (smb != NULL)
 				safe_snprintf(smb->last_error, sizeof(smb->last_error)
 				              , "%s malloc failure of %d bytes for %d header fields", __FUNCTION__
 				              , (int)(msg->total_hfields * sizeof(void*)), msg->total_hfields);
+			copymsgmem_failed(msg);
 			return SMB_ERR_MEM;
 		}
 
@@ -1250,6 +1282,7 @@ int smb_copymsgmem(smb_t* smb, smbmsg_t* msg, smbmsg_t* srcmsg)
 					safe_snprintf(smb->last_error, sizeof(smb->last_error)
 					              , "%s malloc failure of %d bytes for header field #%d", __FUNCTION__
 					              , msg->hfield[i].length + 1, i + 1);
+				copymsgmem_failed(msg);
 				return SMB_ERR_MEM;
 			}
 			memset(msg->hfield_dat[i], 0, msg->hfield[i].length + 1);
