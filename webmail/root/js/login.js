@@ -1,7 +1,9 @@
 // The sign-in view.
 //
-// const view = createLogin({ insecure, poweredBy, onSignedIn })
+// const view = createLogin({ insecure, poweredBy, onSignedIn, webv4Url })
 //   poweredBy: the system's version notice for the footer line ("" none)
+//   webv4Url: when a string (the webv4_only setting), there is no form:
+//             users sign in on the main site, and the view links there
 //   view.el                the view's element (to be placed in the page)
 //   view.say(text, kind)   a message above the form: "error" (an alert),
 //                          or "info" (signed out, session ended)
@@ -15,8 +17,9 @@ import { t } from "./i18n.js";
 import { rpc } from "./rpc.js";
 import { poweredBy as poweredLine } from "./powered.js";
 
-export function createLogin({ insecure, poweredBy, onSignedIn }) {
+export function createLogin({ insecure, poweredBy, onSignedIn, webv4Url }) {
 	let pending = false;
+	const siteOnly = typeof webv4Url === "string";
 
 	const errText = h("p");
 	const errBox = h("div", { class: "msgbox err", role: "alert", hidden: true }, icon("alert"), errText);
@@ -33,18 +36,27 @@ export function createLogin({ insecure, poweredBy, onSignedIn }) {
 	const keep = h("input", { id: "login-keep", type: "checkbox", "aria-describedby": "login-keep-help" });
 	const submit = h("button", { class: "btn primary", type: "submit", text: t("main.button_sign_in") });
 
-	const form = h("form", { class: "card", novalidate: true, "aria-labelledby": "login-title", onsubmit: send },
-		h("div", { class: "brand" }, template("wm-brand")),
-		h("h1", { id: "login-title", tabindex: "-1", text: t("main.label_sign_in_title") }),
-		insecure ? h("div", { class: "msgbox warn" }, icon("alert"),
-			h("p", { text: t("main.label_not_encrypted") })) : null,
-		infoBox,
-		errBox,
+	// Signing in only on the main site: a link there in place of the fields
+	const siteLink = siteOnly ? h("a", { class: "btn primary", href: webv4Url,
+		text: t("main.button_sign_in_webv4") }) : null;
+	const fields = siteOnly ? [
+		h("p", { text: t("main.label_sign_in_webv4") }),
+		siteLink
+	] : [
 		h("div", { class: "field" }, h("label", { for: "login-user", text: t("main.label_user_name") }), user),
 		h("div", { class: "field" }, h("label", { for: "login-pass", text: t("main.label_password") }), pass),
 		h("label", { class: "check", for: "login-keep" }, keep, h("span", { text: t("main.label_keep_signed_in") })),
 		h("p", { class: "hint", id: "login-keep-help", text: t("main.label_keep_signed_in_help") }),
-		submit,
+		submit
+	];
+	const form = h("form", { class: "card", novalidate: true, "aria-labelledby": "login-title", onsubmit: send },
+		h("div", { class: "brand" }, template("wm-brand")),
+		h("h1", { id: "login-title", tabindex: "-1", text: t("main.label_sign_in_title") }),
+		insecure && !siteOnly ? h("div", { class: "msgbox warn" }, icon("alert"),
+			h("p", { text: t("main.label_not_encrypted") })) : null,
+		infoBox,
+		errBox,
+		fields,
 		h("div", { class: "sysop" }, template("wm-login-text")),
 		h("div", { class: "sysop" }, template("wm-footer")),
 		poweredLine(poweredBy)
@@ -66,7 +78,10 @@ export function createLogin({ insecure, poweredBy, onSignedIn }) {
 	}
 
 	function focus() {
-		(user.value === "" ? user : pass).focus();
+		if (siteOnly)
+			siteLink.focus();
+		else
+			(user.value === "" ? user : pass).focus();
 	}
 
 	function busy(on) {
@@ -77,7 +92,7 @@ export function createLogin({ insecure, poweredBy, onSignedIn }) {
 
 	function send(e) {
 		e.preventDefault();
-		if (pending)
+		if (pending || siteOnly)
 			return;
 		const name = user.value.trim();
 		if (name === "" || pass.value === "") {

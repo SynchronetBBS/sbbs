@@ -1014,6 +1014,24 @@ try {
 	Kit.eq(g.poll_ms, 30000, "poll_ms");
 	Kit.eq([g.product_name, g.brand, g.login_text, g.footer_links, g.fallback_url],
 		["Mail <b>", "<i>B</i>", "Hello", "<a href=x>x</a>", "/old"], "brand keys as given");
+	Kit.eq([g.webv4_only, g.webv4_url], [false, undefined], "webv4_only off: no webv4_url");
+
+	// --- webv4_only: sign-in only through webv4
+	var cfg_only = Config.load({ directory: WEBMAIL_DIR, webv4_only: true, webv4_url: "/bbs/",
+		access_requirements: "LEVEL 10" });
+	ev = make_env({ config: cfg_only });
+	g = call(ev, "session.get", {});
+	Kit.eq([g.user, g.webv4_only, g.webv4_url], [null, true, "/bbs/"], "webv4_only: signed out, the link given");
+	ev = make_env({ config: cfg_only });
+	err(call(ev, "session.login", { user: "alice", password: "pw" + ALICE, keep: false }), "forbidden",
+		"webv4_only: no password sign-in");
+	Kit.eq([ev.logins, ev.finds, ev.cookies], [[], [], []], "webv4_only: no login(), lookup or cookie");
+	// signed in from webv4 (webv4_only turns webv4_login on)
+	ev = make_env({ config: cfg_only, webv4_user: ALICE });
+	g = call(ev, "session.get", {});
+	Kit.eq([g.user && g.user.number, g.via], [ALICE, "webv4"], "webv4_only: signed in from webv4");
+	Kit.eq(call(make_env({ config: Config.load({ directory: WEBMAIL_DIR, webv4_only: true }) }), "session.get", {}).webv4_url,
+		"/", "webv4_only: webv4_url default");
 	Kit.eq(g.powered_by, Api.powered_by(system.version_notice), "powered_by: the system's version notice");
 	Kit.assert(/Synchronet/.test(g.powered_by) && !/\s\s/.test(g.powered_by) && g.powered_by === g.powered_by.trim(),
 		"powered_by: runs of spaces collapsed: " + g.powered_by);

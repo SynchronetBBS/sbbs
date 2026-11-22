@@ -14,7 +14,7 @@
 //   returns for a request of one session.get call: { ok: true, user (or
 //   null), insecure, locale, strings, domains, limits, poll_ms,
 //   powered_by, product_name, brand, login_text, footer_links,
-//   fallback_url [, via] }, plus signed_out (the reply's flag: the browser
+//   fallback_url, webv4_only [, webv4_url] [, via] }, plus signed_out (the reply's flag: the browser
 //   sent a session cookie that is no longer valid).  The shell page is the
 //   app's own document, fetched by a navigation that cannot carry the
 //   X-Webmail header, so the dispatch is told the header was present.

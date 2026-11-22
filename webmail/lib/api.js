@@ -205,7 +205,10 @@
 //                       version notice, "Synchronet BBS for Linux Version
 //                       3.22": Api.powered_by(system.version_notice), white
 //                       space runs made one space), product_name, brand,
-//                       login_text, footer_links, fallback_url
+//                       login_text, footer_links, fallback_url,
+//                       webv4_only [, webv4_url] (webv4_only true: there is
+//                       no password sign-in, the client links to webv4_url
+//                       to sign in there instead)
 //                       [, via: "webv4"] }
 //                       With no web client session, config.webv4_login
 //                       and env.webv4_user() an eligible user, it first
@@ -226,7 +229,8 @@
 //                       asking login(); every refusal is "auth" with the
 //                       same text.  A valid session the browser already
 //                       had is destroyed.  Later calls of the request run
-//                       as the new user.
+//                       as the new user.  With webv4_only on, always
+//                       "forbidden", without asking login().
 //   session.logout   -> { webv4 }: true when the user is still signed in
 //                       to webv4 (webv4_login on and env.webv4_user() is
 //                       this user), so the next visit signs in again.
@@ -1275,6 +1279,11 @@ var Api = (function () {
 			var v = config[BRAND_KEYS[i]];
 			out[BRAND_KEYS[i]] = typeof v === "string" ? v : "";
 		}
+		// sign-in only through webv4: the client shows a link there, not
+		// the sign-in form
+		out.webv4_only = config.webv4_only === true;
+		if (out.webv4_only)
+			out.webv4_url = typeof config.webv4_url === "string" ? config.webv4_url : "/";
 		return out;
 	}
 
@@ -1289,6 +1298,10 @@ var Api = (function () {
 
 	function session_login(ctx, args, rq)
 	{
+		// webv4_only: no password sign-in here at all (and no login() call,
+		// so nothing is counted as a failed attempt)
+		if (rq.config.webv4_only === true)
+			throw { code: "forbidden", message: "sign-in only through webv4" };
 		var name = args.user;
 		var password = args.password;
 		if (name === "" || password === "" || name.length > MAX_USER || password.length > MAX_PASSWORD)

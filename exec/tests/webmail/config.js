@@ -22,6 +22,8 @@ var DEFAULTS = {
 	access_requirements: "",
 	webv4_login: false,
 	webv4_logout: false,
+	webv4_only: false,
+	webv4_url: "/",
 	require_tls: true,
 	tls_proxy_header: "",
 	hsts_max_age: 0,
@@ -45,7 +47,7 @@ var DEFAULTS = {
 	var n = 0;
 	for (var kk in c)
 		n++;
-	Kit.eq(n, 23, "key count");
+	Kit.eq(n, 25, "key count");
 });
 
 // No argument: reads this install's real options; the stock file changes
@@ -227,6 +229,26 @@ var DEFAULTS = {
 	Kit.assert(Config.load({ webv4_logout: "on" }).webv4_logout === true);
 	Kit.assert(Config.load({ webv4_logout: true }).webv4_logout === true);
 	Kit.assert(Config.load({ webv4_logout: "banana" }).webv4_logout === false);
+})();
+
+// webv4_only: also turns on webv4_login; webv4_url as fallback_url, "/"
+// when absent or unusable
+(function () {
+	var c = Config.load({});
+	Kit.eq([c.webv4_only, c.webv4_login], [false, false], "webv4_only default");
+	c = Config.load({ webv4_only: "yes" });
+	Kit.eq([c.webv4_only, c.webv4_login], [true, true], "webv4_only turns on webv4_login");
+	c = Config.load({ webv4_only: true, webv4_login: false });
+	Kit.eq(c.webv4_login, true, "webv4_only wins over webv4_login false");
+	Kit.eq(Config.load({ webv4_url: "https://bbs.example/" }).webv4_url, "https://bbs.example/", "webv4_url URL");
+	Kit.eq(Config.load({ webv4_url: "/web/" }).webv4_url, "/web/", "webv4_url path");
+	warnings = [];
+	Kit.eq(Config.load({ webv4_url: "javascript:x" }).webv4_url, "/", "webv4_url refused: default");
+	Kit.eq(warnings.length, 1, "webv4_url refused: one warning");
+	Kit.assert(warnings[0].indexOf("webv4_url") >= 0, "the warning names webv4_url");
+	warnings = [];
+	Kit.eq(Config.load({ webv4_url: "" }).webv4_url, "/", "webv4_url empty: default");
+	Kit.eq(warnings.length, 0, "webv4_url empty: no warning");
 })();
 
 // Warnings: one per unusable present value, naming the key; none for an

@@ -30,9 +30,12 @@
 //   booleans (true/false, yes/no, on/off, 1/0, any case)
 //   strings (a value modopts turned into a number or boolean is used in
 //     its string form)
-//   fallback_url: an http:// or https:// URL or a relative path; any
-//     other value (another scheme such as javascript:, a scheme-relative
-//     //host URL, white space or control characters) is unusable
+//   fallback_url and webv4_url (default "/"): an http:// or https:// URL
+//     or a relative path; any other value (another scheme such as
+//     javascript:, a scheme-relative //host URL, white space or control
+//     characters) is unusable
+//   webv4_only true also makes webv4_login true (signing in only through
+//     webv4 is signing in through webv4)
 //   directory: a string; a relative one is resolved against
 //     system.exec_dir; the result ends with a path separator
 //
@@ -86,6 +89,7 @@ var Config = (function () {
 	var BOOLEANS = {
 		webv4_login: false,
 		webv4_logout: false,
+		webv4_only: false,
 		require_tls: true
 	};
 	var STRINGS = {
@@ -169,20 +173,21 @@ var Config = (function () {
 		return def;
 	}
 
-	// fallback_url: an http:// or https:// URL, or a relative path (no
-	// scheme, not scheme-relative); anything else is unusable, so a sysop
-	// typo can never put a javascript: or data: link on the page
-	function to_url(v)
+	// fallback_url and webv4_url: an http:// or https:// URL, or a
+	// relative path (no scheme, not scheme-relative); anything else is
+	// unusable, so a sysop typo can never put a javascript: or data: link
+	// on the page.  def is the value for an absent or unusable one.
+	function to_url(key, v, def)
 	{
-		var s = to_string("fallback_url", v, "");
+		var s = to_string(key, v, "");
 		if (s === "")
-			return "";
+			return def;
 		s = trim(s);
 		var absolute = /^https?:\/\/[^\/\\]/i.test(s);
 		var relative = !/^[A-Za-z][A-Za-z0-9+.\-]*:/.test(s) && !/^[\/\\]{2}/.test(s);
 		if (s === "" || /[\x00-\x20\x7f]/.test(s) || !(absolute || relative)) {
-			bad("fallback_url");
-			return "";
+			bad(key);
+			return def;
 		}
 		return s;
 	}
@@ -266,7 +271,11 @@ var Config = (function () {
 		}
 		if (!present(raw.max_attachment_bytes) && cfg.max_message_bytes > 0)
 			cfg.max_attachment_bytes = attachment_allowance(cfg.max_message_bytes);
-		cfg.fallback_url = to_url(raw.fallback_url);
+		cfg.fallback_url = to_url("fallback_url", raw.fallback_url, "");
+		cfg.webv4_url = to_url("webv4_url", raw.webv4_url, "/");
+		// signing in only through webv4 is signing in through webv4
+		if (cfg.webv4_only)
+			cfg.webv4_login = true;
 		cfg.directory = to_directory(raw.directory);
 		return cfg;
 	}

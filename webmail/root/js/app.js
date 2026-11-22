@@ -151,7 +151,8 @@ function showLogin(text, kind) {
 	dismissNotice();
 	if (login)
 		login.el.remove();
-	login = createLogin({ insecure: boot.insecure === true, poweredBy: boot.powered_by, onSignedIn: signedIn });
+	login = createLogin({ insecure: boot.insecure === true, poweredBy: boot.powered_by, onSignedIn: signedIn,
+		webv4Url: boot.webv4_only === true && typeof boot.webv4_url === "string" ? boot.webv4_url : undefined });
 	app.append(login.el);
 	view = "login";
 	login.say(text, kind);
