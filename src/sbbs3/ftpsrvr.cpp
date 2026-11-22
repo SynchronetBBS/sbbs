@@ -443,24 +443,28 @@ static int sockprintf(SOCKET sock, CRYPT_SESSION sess, const char *fmt, ...)
 	return len;
 }
 
-void recverror(SOCKET socket, int rd, int line)
+void recverror(SOCKET socket, const char* client_id, int rd, int line)
 {
 	if (rd == 0)
-		lprintf(LOG_NOTICE, "%04d Socket closed by peer on receive (line %u)"
-		        , socket, line);
+		lprintf(LOG_NOTICE, "%04d %s Socket closed by peer on receive (line %u)"
+		        , socket, client_id, line);
 	else if (rd == SOCKET_ERROR) {
 		if (SOCKET_ERRNO == ECONNRESET)
-			lprintf(LOG_NOTICE, "%04d Connection reset by peer on receive (line %u)"
-			        , socket, line);
+			lprintf(LOG_NOTICE, "%04d %s Connection reset by peer on receive (line %u)"
+			        , socket, client_id, line);
 		else if (SOCKET_ERRNO == ECONNABORTED)
-			lprintf(LOG_NOTICE, "%04d Connection aborted by peer on receive (line %u)"
-			        , socket, line);
+			lprintf(LOG_NOTICE, "%04d %s Connection aborted by peer on receive (line %u)"
+			        , socket, client_id, line);
 		else
-			lprintf(LOG_NOTICE, "%04d !ERROR %d receiving on socket (line %u)"
-			        , socket, SOCKET_ERRNO, line);
-	} else
-		lprintf(LOG_WARNING, "%04d !ERROR: recv on socket returned unexpected value: %d (line %u)"
-		        , socket, rd, line);
+			lprintf(LOG_NOTICE, "%04d %s Error %d receiving on socket (line %u)"
+			        , socket, client_id, SOCKET_ERRNO, line);
+	} else if (rd == CRYPT_ERROR_READ || rd == CRYPT_ERROR_WRITE)
+		// A TLS peer that disconnects without closing the session
+		lprintf(LOG_NOTICE, "%04d %s TLS connection lost on receive (cryptlib %s error, line %u)"
+		        , socket, client_id, rd == CRYPT_ERROR_READ ? "read" : "write", line);
+	else
+		lprintf(LOG_WARNING, "%04d %s recv on socket returned unexpected value: %d (line %u)"
+		        , socket, client_id, rd, line);
 }
 
 static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *lastactive)
@@ -545,7 +549,7 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 	}
 }
 
-int sockreadline(SOCKET socket, CRYPT_SESSION sess, char* buf, int len, time_t* lastactive)
+int sockreadline(SOCKET socket, const char* client_id, CRYPT_SESSION sess, char* buf, int len, time_t* lastactive)
 {
 	char ch;
 	int  i, rd = 0;
@@ -562,7 +566,7 @@ int sockreadline(SOCKET socket, CRYPT_SESSION sess, char* buf, int len, time_t* 
 
 		if (i < 1) {
 			if (sess != -1)
-				recverror(socket, i, __LINE__);
+				recverror(socket, client_id, i, __LINE__);
 			return i;
 		}
 		if (ch == '\n' /* && rd>=1 */) { /* Mar-9-2003: terminate on sole LF */
@@ -2321,6 +2325,7 @@ static void ctrl_thread(void* arg)
 	char              sys_pass[128];
 	char              host_name[256];
 	char              host_ip[INET6_ADDRSTRLEN];
+	char              client_id[INET6_ADDRSTRLEN + LEN_ALIAS + 3];
 	char              data_ip[INET6_ADDRSTRLEN];
 	uint16_t          data_port;
 	char              path[MAX_PATH + 1];
@@ -2548,7 +2553,11 @@ static void ctrl_thread(void* arg)
 #ifdef SOCKET_DEBUG_READLINE
 		socket_debug[sock] |= SOCKET_DEBUG_READLINE;
 #endif
-		rd = sockreadline(sock, sess, buf, sizeof(buf), &lastactive);
+		if (user.number)
+			SAFEPRINTF(client_id, "<%s>", user.alias);
+		else
+			SAFEPRINTF(client_id, "[%s]", host_ip);
+		rd = sockreadline(sock, client_id, sess, buf, sizeof(buf), &lastactive);
 #ifdef SOCKET_DEBUG_READLINE
 		socket_debug[sock] &= ~SOCKET_DEBUG_READLINE;
 #endif
