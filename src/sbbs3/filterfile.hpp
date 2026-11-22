@@ -68,11 +68,27 @@ class filterFile {
 				if ((now - lastftime_check) >= fchk_interval) {
 					lastftime_check = now;
 					time_t latest = fdate(fname);
-					if (latest > timestamp) {
-						findstr_list_free(&list);
-						list = findstr_list(fname);
-						timestamp = latest;
-						++fread_count;
+					if (latest != timestamp) {
+						if (latest == -1) { // no file (or it was removed): nothing listed
+							findstr_list_free(&list);
+							timestamp = latest;
+						} else {
+							// An unreadable file (after fnopen()'s retries) keeps the
+							// list already loaded until it changes again, rather than
+							// repeating those retries, mutex held, at every check
+							str_list_t loaded = findstr_list(fname);
+							if (loaded == nullptr) {
+								timestamp = latest;
+							} else {
+								findstr_list_free(&list);
+								list = loaded;
+								// A file changed within the last second may have been
+								// read while still being written: read it again at the
+								// next check
+								timestamp = (latest >= now - 1) ? latest - 1 : latest;
+								++fread_count;
+							}
+						}
 					}
 				}
 				result = trash_in_list(str1, str2, list, details);

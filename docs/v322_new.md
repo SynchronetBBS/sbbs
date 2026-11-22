@@ -130,6 +130,11 @@
   capacity (`MaxClientsError`, SCFG "Log Error When Full", off by
   default): once per episode, then a logged summary once 5 minutes
   pass with no connection refused
+- Fix: a filter file (`ip.can`, `host.can`, `ipfilter_exempt.cfg`,
+  `spamblock.cfg`, ...) that changed but could not be read was treated as
+  empty until it next changed; it now keeps its previous contents. A
+  deleted filter file no longer stays in effect, and one restored with an
+  older date is now re-read
 
 ## Terminal Server
 
