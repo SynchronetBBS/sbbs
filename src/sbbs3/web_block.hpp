@@ -1,5 +1,4 @@
 // Web Server request blocking by request-header pattern (ctrl/web_block.ini)
-// Header-only, like ratelimit_filter.hpp, so no project files change.
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,7 +1,5 @@
 // Error logged when a server starts refusing connections at its capacity,
 // shared by the terminal, web, ftp, mail and services servers (#1384)
-// (kept header-only / static-inline so no shared .cpp needs to be added
-// to each server's project files).
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
