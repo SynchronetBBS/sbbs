@@ -1,9 +1,8 @@
 /* sixelview.js
  *
  * Universal viewer for Sixel terminals (SyncTERM 1.2+) with scrolling and zooming.
- * Displays PDF files, Sixel files (.six), PNG (non-interlaced), baseline JPEG, GIF (first frame), BMP
- * (uncompressed) and binary PPM/PGM images; the type is detected from the file's
- * contents.
+ * Displays PDF files, Sixel files (.six), PNG, JPEG, GIF (animated too), BMP, PPM/PGM, SVG, PCX, TGA, ICO,
+ * TIFF, IFF/ILBM and XBin/BIN text-mode art; the type is detected from the file's contents.
  *
  *	?sixelview <file> [start-page] [force]
  *
@@ -11,7 +10,7 @@
  *	force		skip the SyncTERM/Sixel capability check
  *
  * Keys: arrow keys scroll, + / - zoom, W fit width, F fit whole image/page, 1 actual
- * size, V invert colours, N/P/G change page (PDF), Q or ESC quit.  See pdfview.js for
+ * size, V invert colors, N/P/G change page (PDF), Q or ESC quit.  See pdfview.js for
  * the full key list and the PDF features that are not supported.
  *
  * Unlike /sbbs/mods/sixel.js (which just dumps a Sixel file to the terminal), the
@@ -43,6 +42,8 @@ function main()
 		}
 		if (head.indexOf("%PDF-") >= 0)
 			doc = load_pdf(file);
+		else if (/\.svg$/i.test(file) || /<svg[\s>]/i.test(head))
+			doc = load_svg(file);
 		else
 			doc = new ImageDoc(load_image_file(file));
 	}
@@ -51,7 +52,12 @@ function main()
 		console.pause();
 		return;
 	}
-	viewer(doc, parseInt(argv[1], 10) || 0);
+	try {
+		viewer(doc, parseInt(argv[1], 10) || 0);
+	}
+	finally {
+		mouse_stop();
+	}
 }
 
 try {

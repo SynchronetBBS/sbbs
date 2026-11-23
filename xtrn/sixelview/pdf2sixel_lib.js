@@ -1620,7 +1620,8 @@ PDFDoc.prototype.get_pages = function ()
 		}
 		var rot = doc.resolve(my.Rotate) || 0;
 		rot = ((Math.round(rot / 90) % 4) + 4) % 4 * 90;
-		pages.push({ dict: node, res: doc.resolve(my.Resources) || {}, box: box, rotate: rot });
+		pages.push({ dict: node, res: doc.resolve(my.Resources) || {}, box: box, rotate: rot,
+			num: ref instanceof Ref ? ref.num : -1 });
 	}
 	walk(root.Pages, {}, 0);
 	this.pages = pages;
@@ -7659,6 +7660,209 @@ function sixel_encode(fb, W, H)
 	out.push("\x1b\\");
 	return out.join("");
 }
+
+/* ----- Links (annotations that jump to a page or name a URL) ----- */
+
+/* Find a named destination (old-style /Dests dictionary or the /Names /Dests name tree) */
+PDFDoc.prototype.find_dest = function (name)
+{
+	var doc = this;
+	var root = this.resolve(this.trailer.Root);
+	if (!isDict(root))
+		return undefined;
+	var d = this.resolve(root.Dests);
+	if (isDict(d) && d[name] !== undefined)
+		return this.resolve(d[name]);
+	var names = this.resolve(root.Names);
+	if (!isDict(names))
+		return undefined;
+	function walk(node, depth)
+	{
+		node = doc.resolve(node);
+		if (!isDict(node) || depth > 24)
+			return undefined;
+		var arr = doc.resolve(node.Names);
+		var i;
+		if (arr instanceof Array) {
+			for (i = 0; i + 1 < arr.length; i += 2) {
+				if (String(doc.resolve(arr[i])) == name)
+					return doc.resolve(arr[i + 1]);
+			}
+		}
+		var kids = doc.resolve(node.Kids);
+		if (kids instanceof Array) {
+			for (i = 0; i < kids.length; i++) {
+				var r = walk(kids[i], depth + 1);
+				if (r !== undefined)
+					return r;
+			}
+		}
+		return undefined;
+	}
+	return walk(names.Dests, 0);
+};
+
+/* Turn a destination (array, name, string or dict with /D) into { page, x, y } (page = -1 if unknown) */
+PDFDoc.prototype.resolve_dest = function (dest)
+{
+	dest = this.resolve(dest);
+	if (isName(dest))
+		dest = this.find_dest(dest.name);
+	else if (typeof dest == "string")
+		dest = this.find_dest(dest);
+	if (isDict(dest))
+		dest = this.resolve(dest.D);
+	if (!(dest instanceof Array) || dest.length < 1)
+		return null;
+	var pages = this.get_pages();
+	var target = dest[0];
+	var idx = -1;
+	if (target instanceof Ref) {
+		for (var i = 0; i < pages.length; i++) {
+			if (pages[i].num == target.num) {
+				idx = i;
+				break;
+			}
+		}
+	}
+	else if (typeof target == "number")
+		idx = target;
+	if (idx < 0 || idx >= pages.length)
+		return null;
+	var kind = this.resolve(dest[1]);
+	var x, y;
+	function n(v) { v = typeof v == "object" ? undefined : v; return typeof v == "number" ? v : undefined; }
+	if (isName(kind, "XYZ")) {
+		x = n(this.resolve(dest[2]));
+		y = n(this.resolve(dest[3]));
+	}
+	else if (isName(kind, "FitH") || isName(kind, "FitBH"))
+		y = n(this.resolve(dest[2]));
+	else if (isName(kind, "FitR"))
+		y = n(this.resolve(dest[5]));
+	return { page: idx, x: x, y: y };
+};
+
+/* Decode a PDF text string (PDFDocEncoding or UTF-16) to plain CP437-friendly text */
+function pdf_text_string(v)
+{
+	if (typeof v != "string")
+		return "";
+	var out = "";
+	var i, c;
+	if (v.charCodeAt(0) == 0xfe && v.charCodeAt(1) == 0xff) {
+		for (i = 2; i + 1 < v.length; i += 2) {
+			c = v.charCodeAt(i) * 256 + v.charCodeAt(i + 1);
+			if (c >= 0x20 && c < 0x7f)
+				out += String.fromCharCode(c);
+			else if (c == 0x2018 || c == 0x2019)
+				out += "'";
+			else if (c == 0x201c || c == 0x201d)
+				out += '"';
+			else if (c == 0x2013 || c == 0x2014)
+				out += "-";
+			else if (c == 0x2026)
+				out += "...";
+			else if (c == 0xa0 || c == 0x09)
+				out += " ";
+			else if (c >= 0xc0 && c < 0x100)
+				out += "AAAAAAACEEEEIIIIDNOOOOOxOUUUUYTsaaaaaaaceeeeiiiidnooooo/ouuuuyty".charAt(c - 0xc0);
+			else if (c > 0x7e)
+				out += "?";
+		}
+		return out;
+	}
+	for (i = 0; i < v.length; i++) {
+		c = v.charCodeAt(i);
+		out += (c >= 0x20 && c < 0x7f) ? v.charAt(i) : c == 0x09 ? " " : c >= 0xc0 ? "?" : "";
+	}
+	return out;
+}
+
+/* Bookmarks / table of contents: [{ title, level, page (-1 if none), x, y }] in document order */
+PDFDoc.prototype.outline = function ()
+{
+	if (this.outline_cache)
+		return this.outline_cache;
+	var out = [];
+	var doc = this;
+	var seen = {};
+	var root = this.resolve(this.trailer.Root);
+	var o = isDict(root) ? this.resolve(root.Outlines) : null;
+	function walk(ref, level)
+	{
+		var guard = 0;
+		while (ref !== undefined && ref !== null && out.length < 3000 && guard++ < 3000) {
+			if (ref instanceof Ref) {
+				if (seen[ref.num])
+					return;
+				seen[ref.num] = true;
+			}
+			var item = doc.resolve(ref);
+			if (!isDict(item))
+				return;
+			try {
+				var act = doc.resolve(item.A);
+				var dest = item.Dest !== undefined ? item.Dest : (isDict(act) && isName(doc.resolve(act.S), "GoTo") ? act.D : undefined);
+				var d = dest !== undefined ? doc.resolve_dest(dest) : null;
+				out.push({ title: pdf_text_string(doc.resolve(item.Title)).replace(/^\s+|\s+$/g, ""), level: level,
+					page: d ? d.page : -1, x: d ? d.x : undefined, y: d ? d.y : undefined });
+			}
+			catch (e) {}
+			if (item.First !== undefined && level < 8)
+				walk(item.First, level + 1);
+			ref = item.Next;
+		}
+	}
+	if (isDict(o) && o.First !== undefined)
+		walk(o.First, 0);
+	this.outline_cache = out;
+	return out;
+};
+
+PDFDoc.prototype.has_outline = function ()
+{
+	var root = this.resolve(this.trailer.Root);
+	var o = isDict(root) ? this.resolve(root.Outlines) : null;
+	return isDict(o) && o.First !== undefined;
+};
+
+/* Links on page number pageno (0-based) that jump to another place in the document, in reading
+ * order.  Each is { rect: [x0, y0, x1, y1] (PDF user space), page: index, x, y } */
+PDFDoc.prototype.page_links = function (pageno)
+{
+	if (!this.link_cache)
+		this.link_cache = {};
+	if (this.link_cache[pageno])
+		return this.link_cache[pageno];
+	var out = [];
+	var page = this.get_pages()[pageno];
+	var annots = page ? this.resolve(page.dict.Annots) : null;
+	if (annots instanceof Array) {
+		for (var i = 0; i < annots.length && out.length < 500; i++) {
+			try {
+				var a = this.resolve(annots[i]);
+				if (!isDict(a) || !isName(this.resolve(a.Subtype), "Link"))
+					continue;
+				var rect = rect_of(this, a.Rect);
+				if (!rect)
+					continue;
+				/* only links to somewhere inside the document are kept */
+				var act = this.resolve(a.A);
+				var d = this.resolve_dest(isDict(act) && isName(this.resolve(act.S), "GoTo") ? act.D : a.Dest);
+				if (d)
+					out.push({ rect: rect, page: d.page, x: d.x, y: d.y });
+			}
+			catch (e) {}
+		}
+	}
+	out.sort(function (p, q) {
+		var dy = q.rect[3] - p.rect[3];
+		return Math.abs(dy) > 2 ? dy : p.rect[0] - q.rect[0];
+	});
+	this.link_cache[pageno] = out;
+	return out;
+};
 
 /* ----- View management ----- */
 
