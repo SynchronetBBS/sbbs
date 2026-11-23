@@ -2,7 +2,7 @@
 
 load("sbbsdefs.js");
 
-var REVISION = "1.105";
+var REVISION = "1.110";
 require("text.js", 'FileNotReceived');
 
 if(!bbs.mods.userprops)
@@ -54,6 +54,21 @@ if(console.term_supports(USER_UTF8))
 	pmode |= P_UTF8;
 
 var tab_width = bbs.mods.userprops.get("fseditor", "tabstop", options.default_tabstop);
+
+/* Spell checking (see load/fseditor_spell.js) */
+require("userdefs.js", 'UREST_EDIT_DEFAULTS');
+var spell = load({}, "fseditor_spell.js");
+/* Sysop master switch: spell_enabled=false in the [fseditor] section of modopts.ini */
+var spell_enabled = (options.spell_enabled === false || String(options.spell_enabled).toLowerCase() == "false") ? false : true;
+var spell_opts = {
+	before_send:	spell_enabled && bbs.mods.userprops.get("fseditor", "spell_before_send", options.default_spell_before_send ? true : false),
+	inline:			spell_enabled && bbs.mods.userprops.get("fseditor", "spell_inline", options.default_spell_inline ? true : false),
+	language:		bbs.mods.userprops.get("fseditor", "spell_language", options.default_spell_language || "en-US"),
+	skip_quotes:	bbs.mods.userprops.get("fseditor", "spell_skip_quotes", options.default_spell_skip_quotes === false ? false : true),
+	skip_caps:		bbs.mods.userprops.get("fseditor", "spell_skip_caps", options.default_spell_skip_caps === false ? false : true)
+};
+var spell_ignore = {};		/* Words ignored for this editing session ("$word" -> true) */
+var spell_gen = 0;			/* Bumped whenever cached inline results become stale */
 
 function Line(copyfrom)
 {
@@ -147,8 +162,15 @@ function draw_line(l,x,clear)
 			return;
 
 		console.gotoxy(x+1,yp);
+		var sp=null;
+		if(spell_opts.inline && spell.is_loaded(spell_opts.language))
+			sp=spell_marks(l);
 		for(; x<line[l].text.length && x<(console.screen_columns-1); x++) {
-			console.attributes=ascii(line[l].attr.substr(x,1));
+			var a=ascii(line[l].attr.substr(x,1));
+			if(sp!==null && sp.sp_marks[x] !== undefined
+			    && !(l==ypos && sp.sp_marks[x].start<=xpos && xpos<=sp.sp_marks[x].end))
+				a=(a&0xf0)|RED|HIGH;
+			console.attributes=a;
 			shitty_putc(line[l].text[x]);
 		}
 		if(clear && x<(console.screen_columns-1)) {
@@ -1582,6 +1604,487 @@ function handle_delete()
 
 }
 
+/* ------------------------------------------------------------------ */
+/* Spell checking                                                      */
+/* ------------------------------------------------------------------ */
+
+function spell_save_opt(key, val)
+{
+	bbs.mods.userprops.set("fseditor", key, val);
+}
+
+/* The user's personal word list (null if this user can't save settings) */
+function spell_personal_file()
+{
+	if(user.security.restrictions & UREST_EDIT_DEFAULTS)
+		return null;
+	return system.data_dir + format("user/%04u.fse_words", user.number);
+}
+
+/* Show a message on the status line, optionally pausing so it can be read */
+function status_msg(text, pause_ms)
+{
+	console.gotoxy(1, console.screen_rows);
+	console.attributes = stat_attr;
+	console.write(text);
+	console.cleartoeol();
+	if(pause_ms) {
+		mswait(pause_ms);
+		status_line();
+	}
+}
+
+/* Loads the dictionary for the user's language if needed.  Returns false if unavailable. */
+function spell_ready()
+{
+	if(spell.is_loaded(spell_opts.language))
+		return true;
+	status_msg(" Loading dictionary...");
+	var ok = spell.load_language(spell_opts.language, spell_personal_file());
+	spell_gen++;
+	if(!ok)
+		status_msg(" " + spell.load_error, 2000);
+	status_line();
+	return ok;
+}
+
+/* Inline checking: finds (and caches on the line) the misspelled words of line l */
+function spell_marks(l)
+{
+	var ln = line[l];
+	if(ln.sp_gen !== spell_gen || ln.sp_text !== ln.text) {
+		ln.sp_gen = spell_gen;
+		ln.sp_text = ln.text;
+		ln.sp_marks = [];
+		if(!(spell_opts.skip_quotes && spell.is_skipped_line(ln.text))) {
+			var errs = spell.find_errors(ln.text, { skip_caps: spell_opts.skip_caps, ignore: spell_ignore });
+			for(var i = 0; i < errs.length; i++) {
+				for(var x = errs[i].start; x < errs[i].end; x++)
+					ln.sp_marks[x] = errs[i];
+			}
+		}
+	}
+	return ln;
+}
+
+/* Start of the word the cursor is in or touching, or -1 */
+function cursor_word_start()
+{
+	var t = line[ypos].text;
+	var s = xpos;
+	var e = xpos;
+	while(s > 0 && /[A-Za-z'\u2019]/.test(t.charAt(s - 1)))
+		s--;
+	while(e < t.length && /[A-Za-z'\u2019]/.test(t.charAt(e)))
+		e++;
+	return e > s ? s : -1;
+}
+
+/*
+ * Inline checking doesn't flag the word being typed.  When the cursor moves
+ * off a word (or to another line) redraw so that word gets checked.
+ */
+var inline_key = '';
+var inline_last_y = -1;
+function inline_refresh()
+{
+	if(!spell_opts.inline || !spell.is_loaded(spell_opts.language))
+		return;
+	if(line[ypos] === undefined)
+		return;
+	var key = ypos + ":" + cursor_word_start();
+	if(key === inline_key)
+		return;
+	var py = inline_last_y;
+	inline_key = key;
+	inline_last_y = ypos;
+	if(py >= 0 && py != ypos && line[py] !== undefined)
+		draw_line(py);
+	draw_line(ypos);
+}
+
+/* Scroll (if needed) so line l is visible and clear of the bottom prompt rows */
+function spell_show_line(l)
+{
+	var reserve = lines_on_screen > 6 ? 3 : 0;
+	if(l < topline || l >= topline + lines_on_screen - reserve) {
+		topline = l - 2;
+		if(topline < 0)
+			topline = 0;
+		for(var i = edit_top; i <= edit_bottom; i++)
+			draw_line(i - edit_top + topline);
+	}
+}
+
+/* Shows the suggestion list on the last two rows of the edit window */
+function spell_draw_choices(word, sugg)
+{
+	var width = console.screen_columns - 1;
+	console.gotoxy(1, edit_bottom - 1);
+	console.attributes = YELLOW | HIGH;
+	console.write('"' + word + '"');
+	console.attributes = 7;
+	console.write(" is not in the dictionary.");
+	console.cleartoeol();
+	console.gotoxy(1, edit_bottom);
+	if(sugg.length == 0) {
+		console.attributes = 7;
+		console.write("No suggestions.");
+	}
+	else {
+		var used = 0;
+		for(var i = 0; i < sugg.length; i++) {
+			var item = ") " + sugg[i] + "  ";
+			if(used + 1 + item.length > width)
+				break;
+			console.attributes = CYAN | HIGH;
+			console.write(String(i + 1));
+			console.attributes = 7;
+			console.write(item);
+			used += 1 + item.length;
+		}
+	}
+	console.cleartoeol();
+}
+
+/* Replaces a misspelled word in line l and re-wraps */
+function spell_replace(l, e, newtext)
+{
+	var ln = line[l];
+	var a = ln.attr.substr(e.start, 1);
+	if(a == '')
+		a = ascii(7);
+	var attr = '';
+	for(var i = 0; i < newtext.length; i++)
+		attr += a;
+	ln.text = ln.text.substr(0, e.start) + newtext + ln.text.substr(e.end);
+	ln.attr = ln.attr.substr(0, e.start) + attr + ln.attr.substr(e.end);
+	last_xpos = -1;
+	ypos = l;
+	xpos = e.start + newtext.length;
+	rewrap();
+	for(var i = l - 1; i <= l + 1; i++) {
+		if(i >= 0)
+			draw_line(i);
+	}
+}
+
+/*
+ * Asks the user what to do about one misspelled word.
+ * Returns { stop: true }, { replace: "text" } or {} (ignored / added to dictionary).
+ */
+function spell_prompt(l, e)
+{
+	var word = e.word;
+	var sugg = spell.suggest(word, 9);
+	var ret = {};
+	var key;
+
+	while(1) {
+		spell_show_line(l);
+		var row = edit_top + (l - topline);
+		/* Highlight the word */
+		if(e.start < console.screen_columns - 1) {
+			console.gotoxy(e.start + 1, row);
+			console.attributes = 0x4f;
+			var t = line[l].text.substr(e.start, e.end - e.start);
+			for(var i = 0; i < t.length && e.start + i < console.screen_columns - 1; i++)
+				shitty_putc(t.charAt(i));
+		}
+		spell_draw_choices(word, sugg);
+		status_msg(" (I)gnore  (A)dd to dictionary  (E)dit  (1-9) Replace  (ESC) Stop");
+
+		key = console.getkey(K_UPPER);
+		var done = false;
+		if(key === '' && !bbs.online) {
+			ret.stop = true;
+			done = true;
+		}
+		else if(key == 'I') {
+			spell_ignore["$" + word.toLowerCase()] = true;
+			spell_gen++;
+			done = true;
+		}
+		else if(key == 'A') {
+			spell.add_personal(word);
+			spell_gen++;
+			done = true;
+		}
+		else if(key >= '1' && key <= '9' && (ascii(key) - 49) < sugg.length) {
+			ret.replace = sugg[ascii(key) - 49];
+			done = true;
+		}
+		else if(key == 'E') {
+			console.gotoxy(1, console.screen_rows);
+			console.attributes = 7;
+			console.write(" Replace with: ");
+			console.cleartoeol();
+			/* K_NOCRLF: the CR/LF getstr() sends on Enter would scroll the whole screen */
+			var newword = console.getstr(word, 40, K_LINE | K_EDIT | K_AUTODEL | K_NOCRLF);
+			redraw_screen();
+			if(newword !== undefined && newword !== null) {
+				newword = newword.replace(/^\s+|\s+$/g, "");
+				if(newword.length > 0) {
+					ret.replace = newword;
+					done = true;
+				}
+			}
+		}
+		else if(key == '\x1b' || key == 'Q' || key == '\x03') {
+			ret.stop = true;
+			done = true;
+		}
+		else
+			console.beep();
+
+		/* Remove the prompt rows and the highlight */
+		draw_line(edit_bottom - edit_top + topline);
+		draw_line(edit_bottom - 1 - edit_top + topline);
+		draw_line(l);
+		if(done)
+			break;
+	}
+	return ret;
+}
+
+/*
+ * Interactive spell check of the whole message (CTRL-O, and before sending).
+ * Returns { available: false } if there's no dictionary, otherwise
+ * { available: true, completed: <false if the user stopped early>, found, changed }
+ */
+function spell_check()
+{
+	var result = { available: false, completed: false, found: 0, changed: 0 };
+
+	if(!spell_enabled || !spell_ready())
+		return result;
+	result.available = true;
+
+	var save_x = xpos;
+	var save_y = ypos;
+	var save_top = topline;
+	var opts = { skip_caps: spell_opts.skip_caps, ignore: spell_ignore };
+	var stopped = false;
+	var l = 0;
+
+	while(l < line.length && !stopped) {
+		if(spell_opts.skip_quotes && spell.is_skipped_line(line[l].text)) {
+			l++;
+			continue;
+		}
+		var errs = spell.find_errors(line[l].text, opts);
+		if(errs.length == 0) {
+			l++;
+			continue;
+		}
+		result.found++;
+		var r = spell_prompt(l, errs[0]);
+		if(r.stop)
+			stopped = true;
+		else if(r.replace !== undefined) {
+			spell_replace(l, errs[0], r.replace);
+			result.changed++;
+			/* Re-wrapping can pull text up from the line below, so look at the previous line again */
+			l = Math.max(0, l - 1);
+		}
+		/* Otherwise the word was ignored or added; the same line is checked again for further errors */
+	}
+	result.completed = !stopped;
+
+	if(result.completed) {
+		if(result.found == 0)
+			status_msg(" No spelling errors found.", 1200);
+		else
+			status_msg(format(" Spell check complete: %u misspelled word%s found, %u changed.",
+				result.found, result.found == 1 ? "" : "s", result.changed), 1800);
+	}
+
+	/* Put the cursor back where it was */
+	last_xpos = -1;
+	ypos = Math.min(save_y, line.length - 1);
+	xpos = Math.min(save_x, line[ypos].text.length);
+	topline = Math.min(save_top, ypos);
+	if(ypos >= topline + lines_on_screen)
+		topline = ypos - lines_on_screen + 1;
+	redraw_screen();
+	return result;
+}
+
+/*
+ * Called when the user saves with CTRL-Z and "spell check before sending" is on.
+ * Returns false if the message shouldn't be sent (the user wants to keep editing).
+ */
+function spell_before_send()
+{
+	var r = spell_check();
+	if(!r.available || r.completed)
+		return true;
+	status_msg(" Spell check was not finished.  Send the message anyway? (Y/N) ");
+	var key = console.getkey(K_UPPER);
+	status_line();
+	return key == 'Y';
+}
+
+/* ------------------------------------------------------------------ */
+/* Personal options menu (CTRL-D)                                      */
+/* ------------------------------------------------------------------ */
+
+function on_off(b)
+{
+	return b ? "On" : "Off";
+}
+
+function yes_no(b)
+{
+	return b ? "Yes" : "No";
+}
+
+function options_clear(rows)
+{
+	console.attributes = 7;
+	for(var i = 0; i < rows; i++) {
+		console.gotoxy(1, edit_top + i);
+		console.cleartoeol();
+	}
+}
+
+function options_row(n, key, label, value)
+{
+	console.gotoxy(1, edit_top + n);
+	console.attributes = CYAN | HIGH;
+	console.write("  " + key);
+	console.attributes = 7;
+	console.write(format(") %-42s", label));
+	console.attributes = YELLOW | HIGH;
+	console.write(value);
+	console.attributes = 7;
+	console.cleartoeol();
+}
+
+function options_draw()
+{
+	options_clear(12);
+	console.gotoxy(1, edit_top);
+	console.attributes = WHITE | HIGH;
+	console.write("Personal options");
+	console.attributes = 7;
+	var lang_text = spell.lang_name(spell_opts.language);
+	options_row(2, "1", "Spell check before sending",			on_off(spell_opts.before_send));
+	options_row(3, "2", "Inline spell check (as you type)",	on_off(spell_opts.inline));
+	options_row(4, "3", "Spell check language",				lang_text);
+	options_row(5, "4", "Skip quoted text",					yes_no(spell_opts.skip_quotes));
+	options_row(6, "5", "Ignore ALL-CAPS words",				yes_no(spell_opts.skip_caps));
+	options_row(7, "6", "Clear personal dictionary",
+		spell.is_loaded(spell_opts.language) || spell.personal_count() > 0
+			? format("%u word%s", spell.personal_count(), spell.personal_count() == 1 ? "" : "s") : "");
+	options_row(9, "Q", "Return to editing", "");
+	console.gotoxy(1, edit_top + 11);
+	console.attributes = 7;
+	console.write("Press CTRL-O at any time to spell check the message.");
+	console.gotoxy(1, edit_top + 10);
+}
+
+function options_language()
+{
+	var langs = spell.languages();
+	options_clear(12);
+	console.gotoxy(1, edit_top);
+	console.attributes = WHITE | HIGH;
+	console.write("Select spell check language");
+	if(langs.length == 0) {
+		console.gotoxy(1, edit_top + 2);
+		console.attributes = 7;
+		console.write("No dictionaries are installed.  Press any key.");
+		console.getkey();
+		return;
+	}
+	for(var i = 0; i < langs.length && i < 26; i++) {
+		console.gotoxy(1, edit_top + 2 + i);
+		if(edit_top + 2 + i > edit_bottom - 1)
+			break;
+		console.attributes = CYAN | HIGH;
+		console.write("  " + String.fromCharCode(65 + i));
+		console.attributes = 7;
+		console.write(") " + langs[i].name);
+		if(langs[i].code == spell_opts.language) {
+			console.attributes = YELLOW | HIGH;
+			console.write("  (current)");
+		}
+		console.attributes = 7;
+		console.cleartoeol();
+	}
+	console.gotoxy(1, edit_bottom);
+	console.write("Press a letter to select, or ESC to leave it as it is.");
+	console.cleartoeol();
+	var key = console.getkey(K_UPPER);
+	var idx = ascii(key) - 65;
+	if(key.length == 1 && idx >= 0 && idx < langs.length && idx < 26) {
+		if(langs[idx].code != spell_opts.language) {
+			spell_opts.language = langs[idx].code;
+			spell_save_opt("spell_language", spell_opts.language);
+			spell_gen++;
+			/* Dictionary loading is deferred until needed, except for inline checking */
+			if(spell_opts.inline)
+				spell_ready();
+		}
+	}
+}
+
+function options_menu()
+{
+	var done = false;
+
+	while(!done && bbs.online) {
+		options_draw();
+		var key = console.getkey(K_UPPER);
+		switch(key) {
+			case '1':
+				spell_opts.before_send = !spell_opts.before_send;
+				spell_save_opt("spell_before_send", spell_opts.before_send);
+				break;
+			case '2':
+				if(!spell_opts.inline && !spell_ready())
+					break;
+				spell_opts.inline = !spell_opts.inline;
+				spell_save_opt("spell_inline", spell_opts.inline);
+				spell_gen++;
+				inline_key = '';
+				break;
+			case '3':
+				options_language();
+				break;
+			case '4':
+				spell_opts.skip_quotes = !spell_opts.skip_quotes;
+				spell_save_opt("spell_skip_quotes", spell_opts.skip_quotes);
+				spell_gen++;
+				break;
+			case '5':
+				spell_opts.skip_caps = !spell_opts.skip_caps;
+				spell_save_opt("spell_skip_caps", spell_opts.skip_caps);
+				spell_gen++;
+				break;
+			case '6':
+				if(spell_ready() && spell.personal_count() > 0) {
+					status_msg(" Remove all words from your personal dictionary? (Y/N) ");
+					if(console.getkey(K_UPPER) == 'Y') {
+						spell.clear_personal();
+						spell_gen++;
+					}
+					status_line();
+				}
+				break;
+			case 'Q':
+			case '\x1b':
+			case '\x04':
+			case '\r':
+				done = true;
+				break;
+		}
+	}
+	inline_key = '';
+	redraw_screen();
+}
+
 function edit(quote_first)
 {
 	var prev_key;
@@ -1598,6 +2101,8 @@ function edit(quote_first)
 		}
 	}
 
+	if(spell_opts.inline)
+		spell_ready();
 	redraw_screen();
 	if(quote_first) {
 		if(quote_mode()) {
@@ -1606,6 +2111,7 @@ function edit(quote_first)
 		}
 	}
 	while(1) {
+		inline_refresh();
 		set_cursor();
 		key=shitty_inkey(/* mode: */0, /* timeout (ms): */10000);
 		if(!bbs.online) {
@@ -1720,7 +2226,13 @@ function edit(quote_first)
 					xpos=line[ypos].length;
 				draw_line(ypos);
 				break;
-			case '\x04':	/* CTRL-D (Quick Find in SyncEdit)*/
+			case '\x04':	/* CTRL-D (Quick Find in SyncEdit) - Personal options */
+				if(spell_enabled)
+					options_menu();
+				break;
+			case '\x0f':	/* CTRL-O (Spell check) */
+				if(spell_enabled)
+					spell_check();
 				break;
 			case KEY_END:	/* CTRL-E  */
 				last_xpos=-1;
@@ -1767,43 +2279,35 @@ function edit(quote_first)
 				console.gotoxy(1,edit_top);
 				console.write("Editing keys:");
 				console.cleartoeol();
-				console.write("\r\n CTRL-@ - Change Colour                  CTRL-P - Page Up");
-				console.cleartoeol();
-				console.write("\r\n CTRL-A - Change Colour                  CTRL-Q - Quick Abort (no save)");
-				console.cleartoeol();
-				console.write("\r\n CTRL-B - Move to beginning of line      CTRL-R - Redraw screen");
-				console.cleartoeol();
-				console.write("\r\n CTRL-C - Center line on screen          CTRL-S - Edit Subject");
-				console.cleartoeol();
-				console.write("\r\n CTRL-E - Move to end of line            CTRL-T - Adjust Tab Width");
-				console.cleartoeol();
-				console.write("\r\n CTRL-F - Move right one character       CTRL-U - Enter quote mode");
-				console.cleartoeol();
-				console.write("\r\n CTRL-G - Enter graphic character        CTRL-V - Toggle insert mode");
-				console.cleartoeol();
-				console.write("\r\n CTRL-H - Backspace (BACKSPACE)          CTRL-W - Delete word backwards");
-				console.cleartoeol();
-				console.write("\r\n CTRL-I - Move to next tabstop (TAB)     CTRL-Y - Delete Line");
-				console.cleartoeol();
-				console.write("\r\n CTRL-J - Move down one line             CTRL-Z - Save message and exit");
-				console.cleartoeol();
-				console.write("\r\n CTRL-K - Show This Help                 CTRL-\\ - Edit Subject");
-				console.cleartoeol();
-				console.write("\r\n CTRL-L - Insert Line                    CTRL-] - Move left one character");
-				console.cleartoeol();
-				console.write("\r\n CTRL-M - Carriage Return                CTRL-^ - Move up one line");
-				console.cleartoeol();
-				console.write("\r\n CTRL-N - Page Down                      CTRL-_ - Quick Abort (no save)");
-				console.cleartoeol();	
+				var help_keys=[
+					["CTRL-@ - Change Colour",				"CTRL-O - Spell check message"],
+					["CTRL-A - Change Colour",				"CTRL-P - Page Up"],
+					["CTRL-B - Move to beginning of line",	"CTRL-Q - Quick Abort (no save)"],
+					["CTRL-C - Center line on screen",		"CTRL-R - Redraw screen"],
+					["CTRL-D - Personal options",			"CTRL-S - Edit Subject"],
+					["CTRL-E - Move to end of line",		"CTRL-T - Adjust Tab Width"],
+					["CTRL-F - Move right one character",	"CTRL-U - Enter quote mode"],
+					["CTRL-G - Enter graphic character",	"CTRL-V - Toggle insert mode"],
+					["CTRL-H - Backspace (BACKSPACE)",		"CTRL-W - Delete word backwards"],
+					["CTRL-I - Move to next tabstop (TAB)",	"CTRL-Y - Delete Line"],
+					["CTRL-J - Move down one line",			"CTRL-Z - Save message and exit"],
+					["CTRL-K - Show This Help",				"CTRL-\\ - Edit Subject"],
+					["CTRL-L - Insert Line",				"CTRL-] - Move left one character"],
+					["CTRL-M - Carriage Return",			"CTRL-^ - Move up one line"],
+					["CTRL-N - Page Down",					"CTRL-_ - Quick Abort (no save)"]
+				];
+				if(!spell_enabled) {
+					help_keys[0][1]="";
+					help_keys[4][0]="";
+				}
+				for(var hk=0; hk<help_keys.length; hk++) {
+					console.write(format("\r\n %-40s%s", help_keys[hk][0], help_keys[hk][1]));
+					console.cleartoeol();
+				}
 				console.write('\r\n');
 				console.cleartoeol();
-				console.write('\r\n');
 				console.write("Press any key to return to editing..");
 				console.cleartoeol();
-				console.write('\r\n');
-				console.cleartoeol();
-				console.up();
-				console.right(37);
 				console.getkey();
 				redraw_screen();
 				break;
@@ -1972,6 +2476,8 @@ function edit(quote_first)
 				status_line();
 				break;
 			case '\x1a':	/* CTRL-Z (EOF) (PgUp in SyncEdit)  */
+				if(spell_opts.before_send && !spell_before_send())
+					break;
 				save_file();
 				console.line_counter=0;
 				return;
@@ -2052,7 +2558,7 @@ js.on_exit("bbs.sys_status = " + bbs.sys_status);
 bbs.sys_status&=~SS_PAUSEON;
 bbs.sys_status|=SS_PAUSEOFF;
 js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
-console.ctrlkey_passthru="+ACGKLNPQRTUVWXYZ_";
+console.ctrlkey_passthru="+ABCDGKLNOPQRTUVWXYZ_";
 /* Enable delete line in SyncTERM (Disabling ANSI Music in the process) */
 console.write("\033[=1M");
 console.clear();

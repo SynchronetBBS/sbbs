@@ -1132,6 +1132,10 @@
   logon number, instead of the time and system logon total when the
   logon module reached the list (after the logon screens), which could
   include later logons on other nodes
+- FSEditor now has a spellchecker that can be enabled/disabled by the
+  sysop. It has optional inline checking, check before sending, skip
+  quoted text and call uppercase words. User can select the language
+  and keep a personal dictionary.
 
 ## JavaScript
 

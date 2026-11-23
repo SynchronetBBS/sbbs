@@ -32,6 +32,7 @@ CTRL-Key  Action
 A   - Colour
 B   - Home cursor (Beginning of line)
 C   - Center line in message
+D   - Personal options (spell check settings)
 E   - End of line
 F   - Right one character
 G   - Enter Graphic Char
@@ -42,6 +43,7 @@ K   - List keybindings
 L   - Insert line
 M   - Carriage Return
 N   - Page Down
+O   - Spell check message
 P   - Page Up
 Q   - Quick abort (Xoff)
 R   - Redraw screen
@@ -56,6 +58,49 @@ Z   - Save and exit
 ]   - Move left
 ^   - Move up
 _   - Quick abort (Same as Xoff CTRL-Q)
+
+
+Spell checking:
+---------------
+CTRL-O checks the spelling of the whole message.  For each word that is not in
+the dictionary, the word is highlighted, suggested corrections are listed, and
+you can choose:
+  I      - Ignore the word (for the rest of this editing session)
+  A      - Add the word to your personal dictionary
+  E      - Type your own replacement
+  1 - 9  - Replace the word with a numbered suggestion
+  ESC    - Stop checking
+Quoted text, ALL-CAPS words, URLs, e-mail addresses and words containing
+digits are skipped (quoted text and ALL-CAPS can be turned off, see below).
+
+CTRL-D opens the personal options menu.  The settings are saved per user:
+  1) Spell check before sending - runs the spell checker when you save with
+     CTRL-Z.  If you stop the check early you are asked whether to send anyway.
+  2) Inline spell check - misspelled words are shown in red as you type
+     (display only; the message text and colours are not changed).
+  3) Spell check language - any language with dictionary files installed.
+  4) Skip quoted text
+  5) Ignore ALL-CAPS words
+  6) Clear personal dictionary
+
+Dictionaries are the same word lists SlyEdit uses: ctrl/dictionary_en.txt plus
+the regional supplement, e.g. ctrl/dictionary_en-US-supplemental.txt.  The
+language "en-US" uses both of those files.  Files in sbbs/mods take precedence
+over those in sbbs/ctrl.  A language appears in the menu for every
+dictionary_<language>-supplemental.txt file found.  Personal dictionaries are
+stored in data/user/<usernum>.fse_words.
+
+Optional defaults for users who haven't chosen their own settings can be set in
+the [fseditor] section of ctrl/modopts.ini:
+  default_spell_language       = en-US
+  default_spell_before_send    = false
+  default_spell_inline         = false
+  default_spell_skip_quotes    = true
+  default_spell_skip_caps      = true
+
+To turn spell checking off entirely (CTRL-O and CTRL-D do nothing, nothing is
+loaded), set in the same section:
+  spell_enabled                = false
 
 
 Quote Mode:
@@ -87,11 +132,11 @@ ones fall into three catagories:
 3) "Changers" ones I would change in a heartbeat if I had an alternative.
 
 The breakdown is as follows:
-Keepers:  ABCEFGHIJLMRWZ
+Keepers:  ABCDEFGHIJLMORWZ
 Lukewarm: KSTVY\]
 Changers: @NPQU_
 
-The following CTRL keys are currently unused: DOX[
+The following CTRL keys are currently unused: X[
 
 CTRL-Q and CTRL-S I do *not* want to use without alternates as they are the
 Xon/Xoff chars used in flow control and are sometimes impossible to send from
