@@ -98,6 +98,8 @@ function resolvers()
 
 // A context for Alice; o: user (fake_user options), config, sys, settings,
 // domains
+var TZ_PACIFIC = 0x41E0;	// SMB zone of US Pacific standard time (sys.timezone)
+
 function context(o)
 {
 	o = o || {};
@@ -118,6 +120,7 @@ function context(o)
 	ctx.resolvers = resolvers();
 	ctx.settings = o.settings || {};
 	var sys = { inet_addr: "vert.example", fido_addrs: ["1:103/705"], inet_cost: 0, fido_cost: 0,
+		timezone: TZ_PACIFIC,
 		inet_alias: true, fido_alias: true,
 		user_email: function (n) {
 			return NAMES[n] + "@vert.example";
@@ -197,7 +200,8 @@ function shared()
 				from_net_addr: h.from_net_addr, reverse_path: h.reverse_path, to_list: h.to_list,
 				cc_list: h.cc_list, id: h.id, reply_id: h.reply_id, priority: h.priority,
 				netattr: h.netattr, subject: h.subject, ftn_charset: h.ftn_charset,
-				content_type: h.content_type, field_list: h.field_list, auxattr: h.auxattr } });
+				content_type: h.content_type, field_list: h.field_list, auxattr: h.auxattr,
+				when_written_time: h.when_written_time, when_written_zone: h.when_written_zone } });
 		}
 	} finally {
 		mb.close();

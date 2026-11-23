@@ -38,6 +38,8 @@ try {
 			Kit.assert(!/carl/i.test(JSON.stringify([h.to_list, h.cc_list])), "BCC not in carl's lists");
 		Kit.eq(h.priority, 2, "priority high");
 		Kit.assert(h.auxattr & D.MSG_HFIELDS_UTF8, "UTF-8 header fields");
+		// the written time carries the system's time zone, not UTC
+		Kit.eq(h.when_written_zone, TZ_PACIFIC, "written zone: the system's");
 		Kit.eq(h.subject, "Report \xe2\x82\xac", "subject");
 		Kit.eq(h.from_ext, String(ALICE), "from_ext");
 		Kit.eq(h.to_list, "Ext Person <ext@example.org>", "to_list");

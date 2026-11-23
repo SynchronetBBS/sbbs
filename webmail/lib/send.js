@@ -17,10 +17,11 @@
 //   settings    the user's web mail settings (display_name)
 //   now         a function returning a time_t (default time())
 //   resolvers   Address.system_resolvers()'s result (tests pass fakes)
-//   sys         { inet_addr, fido_addrs, inet_cost, fido_cost,
+//   sys         { inet_addr, timezone, fido_addrs, inet_cost, fido_cost,
 //               inet_alias, fido_alias, user_email(usernum),
 //               check_netmail_addr(address), mailbox_full(usernum) }
-//               (default: system.inet_addr, system.fido_addr_list,
+//               (default: system.inet_addr, system.timezone (the zone of
+//               the written time), system.fido_addr_list,
 //               msg_area.inet_netmail_cost and fido_netmail_cost, the
 //               NMAIL_ALIAS settings, new User(n).email,
 //               system.check_netmail_addr, new User(n).mailbox_full())
@@ -376,6 +377,7 @@ var Send = (function () {
 		}
 		return {
 			inet_addr: lower(String(pick("inet_addr", function () { return system.inet_addr; }))),
+			timezone: pick("timezone", function () { return system.timezone; }),
 			fido_addrs: pick("fido_addrs", function () { return system.fido_addr_list; }) || [],
 			inet_cost: pick("inet_cost", function () { return msg_area.inet_netmail_cost; }) || 0,
 			fido_cost: pick("fido_cost", function () { return msg_area.fido_netmail_cost; }) || 0,
@@ -1288,6 +1290,7 @@ var Send = (function () {
 				subject: Address.clean(draft.subject, Address.MAX_SUBJECT),
 				id: msgid,
 				when_written_time: now,
+				when_written_zone: sys.timezone,
 				auxattr: D.MSG_HFIELDS_UTF8
 			};
 			if (draft.in_reply_to && draft.reply_message_id) {
