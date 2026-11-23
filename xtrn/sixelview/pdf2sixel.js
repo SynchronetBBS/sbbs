@@ -94,6 +94,8 @@ function main()
 	if (!tty)
 		message("page " + (view.page + 1) + " of " + view.pages.length + ", " + FW + "x" + FH + " pixels, "
 			+ data.length + " bytes, " + (Date.now() - t0) + "ms");
+	for (var why in IMG_FAIL)
+		message("  note: " + IMG_FAIL[why] + " x " + why);
 }
 
 try {
