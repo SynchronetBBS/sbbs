@@ -1085,6 +1085,10 @@
 - Stock JavaScript files are now all ASCII or valid UTF-8: the raw
   CP437 characters in DrugLord, Milliways Casino and two LORD IGMs are
   now escape sequences, with unchanged output (issue #1341)
+- Fix: the logon list (`logon.jsonl`) records each logon's own time and
+  logon number, instead of the time and system logon total when the
+  logon module reached the list (after the logon screens), which could
+  include later logons on other nodes
 
 ## JavaScript
 
@@ -1199,6 +1203,8 @@
   `bbs.remove_file()` and `bbs.move_file()` methods, for one file in a
   directory; `bbs.expand_atcodes()` expands the `@FILE_*@` codes for a
   `FileBase` file object
+- New `bbs.logon_number` property: the system logon number of the
+  current logon (0 when the logon is not counted)
 - New `console.upload_key`, `download_key`, `configure_key`, `select_key`,
   and `pointers_key` properties; all `console.*_key` properties now return
   an uppercase key

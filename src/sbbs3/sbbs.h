@@ -717,6 +717,7 @@ public:
 			starttime=0,	/* Time stamp to use for time left calcs */
 			ns_time=0,		/* File new-scan time */
 			last_ns_time=0;	/* Most recent new-file-scan this call */
+	uint	logon_number = 0;	/* System logon number of this logon (0 if not counted) */
 	uint    timeon() { int result = (int)(time(&now) - logontime); if (result < 0) result = 0; return result; }
 	uint    timeused() { int result = (int)(time(&now) - starttime); if (result < 0) result = 0; return result; }
 	uint    useron_minutes_today() { return useron.ttoday + (timeon() / 60); }

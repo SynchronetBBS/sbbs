@@ -34,6 +34,7 @@ enum {
 	, BBS_PROP_STARTUP_OPT
 	, BBS_PROP_ANSWER_TIME
 	, BBS_PROP_LOGON_TIME
+	, BBS_PROP_LOGON_NUMBER
 	, BBS_PROP_START_TIME
 	, BBS_PROP_NS_TIME
 	, BBS_PROP_LAST_NS_TIME
@@ -166,6 +167,7 @@ static const char* bbs_prop_desc[] = {
 	, "Startup options bit-flags (see <tt>BBS_OPT_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	, "Answer time, in <i>time_t</i> format"
 	, "Logon time, in <i>time_t</i> format"
+	, "System logon number of the current user's logon, or 0 if the logon was not counted in the system statistics"
 	, "Time from which user's time left is calculated, in <i>time_t</i> format"
 	, "Current file new-scan time, in <i>time_t</i> format"
 	, "Previous file new-scan time, in <i>time_t</i> format"
@@ -327,6 +329,9 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case BBS_PROP_LOGON_TIME:
 			val = (uint32)sbbs->logontime;
+			break;
+		case BBS_PROP_LOGON_NUMBER:
+			val = sbbs->logon_number;
 			break;
 		case BBS_PROP_START_TIME:
 			val = (uint32)sbbs->starttime;
@@ -1031,6 +1036,7 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{   "startup_options", BBS_PROP_STARTUP_OPT, JSPROP_ENUMERATE, 310},
 	{   "answer_time", BBS_PROP_ANSWER_TIME, JSPROP_ENUMERATE, 310},
 	{   "logon_time", BBS_PROP_LOGON_TIME, JSPROP_ENUMERATE, 310},
+	{   "logon_number", BBS_PROP_LOGON_NUMBER, PROP_READONLY, 322},
 	{   "start_time", BBS_PROP_START_TIME, JSPROP_ENUMERATE, 314},
 	{   "new_file_time", BBS_PROP_NS_TIME, JSPROP_ENUMERATE, 310},
 	{   "last_new_file_time", BBS_PROP_LAST_NS_TIME, JSPROP_ENUMERATE, 310},

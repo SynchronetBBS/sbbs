@@ -48,7 +48,6 @@ bool sbbs_t::logon_process()
 	char       path[MAX_PATH + 1];
 	int        i, j;
 	uint       mailw, mailr;
-	uint       totallogons;
 	node_t     node;
 	struct  tm tm;
 
@@ -352,9 +351,9 @@ bool sbbs_t::logon_process()
 	/********************/
 	/* SUCCESSFUL LOGON */
 	/********************/
-	totallogons = logonstats();
+	logon_number = logonstats();
 	llprintf("++", "(%04u)  %-25s  %sLogon %u - %u"
-	              , useron.number, useron.alias, (sys_status & SS_FASTLOGON) ? "Fast-":"", totallogons, useron.ltoday);
+	              , useron.number, useron.alias, (sys_status & SS_FASTLOGON) ? "Fast-":"", logon_number, useron.ltoday);
 
 	if (!(sys_status & SS_QWKLOGON)) {
 		bool invoked;
@@ -374,7 +373,7 @@ bool sbbs_t::logon_process()
 		getuserstr(&cfg, useron.number, USER_NOTE, useron.note, sizeof(useron.note));
 		getuserstr(&cfg, useron.number, USER_LOCATION, useron.location, sizeof(useron.location));
 		safe_snprintf(str, sizeof(str), text[LastFewCallersFmt], cfg.node_num
-		              , totallogons, useron.alias
+		              , logon_number, useron.alias
 		              , cfg.sys_misc & SM_LISTLOC ? useron.location : useron.note
 		              , tm.tm_hour, tm.tm_min
 		              , connection, useron.ltoday > 999 ? 999 : useron.ltoday);

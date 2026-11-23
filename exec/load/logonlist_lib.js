@@ -26,8 +26,13 @@ function add(obj)
 {
 	if(!obj)
 		obj = {};
-	if(obj.time === undefined)
-		obj.time = time();
+	if(obj.time === undefined) {
+		// When the user logged on, not when the logon module got this far
+		if(js.global.bbs !== undefined && bbs.logon_time)
+			obj.time = bbs.logon_time;
+		else
+			obj.time = time();
+	}
 	if(obj.protocol === undefined)
 		obj.protocol = client.protocol;
 	if(obj.user === undefined) {
@@ -38,8 +43,11 @@ function add(obj)
 	if(js.global.bbs !== undefined) {
 		if(obj.node === undefined)
 			obj.node = bbs.node_num;
+		// bbs.logon_number (v3.22+) is this logon's own number; the system
+		// total may already include later logons on other nodes
 		if(obj.total === undefined)
-			obj.total = system.stats.total_logons;
+			obj.total = bbs.logon_number !== undefined
+				? bbs.logon_number : system.stats.total_logons;
 	}
 	if(obj.terminal === undefined
 		&& js.global.console !== undefined) {
