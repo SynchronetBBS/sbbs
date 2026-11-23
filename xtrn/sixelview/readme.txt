@@ -114,6 +114,11 @@ settings-example.ini	Example configuration for the library browser
 
 DefaultTheme.cfg	The colors and text the library browser uses
 
+install-xtrn.ini	Data for Synchronet's installer (see ADDING IT TO
+			YOUR MENUS)
+
+.gitignore		Keeps settings.ini and .cache/ out of git
+
 hooks/			Small scripts that connect the browser to online
 			archives, such as hooks/sixteencolors.js
 
@@ -302,8 +307,9 @@ SETTINGS.INI
 ============
 Everything is configured in settings.ini in this directory.  There is a
 settings-example.ini that explains every option; copy it to settings.ini and
-edit that.  The file has two parts: some settings at the top that apply to
-everything, and then one section for each library.
+edit that (the installer does the copying for you).  The file has two parts:
+some settings at the top that apply to everything, and then one section for
+each library.
 
 The top part looks like this, and everything in it is optional:
 
@@ -571,8 +577,18 @@ codes, so you can change them to whichever characters you prefer.
 
 ADDING IT TO YOUR MENUS
 =======================
+The easiest way to add it as an online program is Synchronet's installer.
+From your exec directory (or with ;exec ?install-xtrn from the terminal) run:
+
+  jsexec install-xtrn ../xtrn/sixelview
+
+It adds the SXLIB online program (the second way below) and copies
+settings-example.ini to settings.ini if you don't have one yet; an
+existing settings.ini is kept.  It can't make SixelView your text file
+section, so for that use the first way below.
+
 There are three ways to give users access.  If your Synchronet is a modern
-one (3.18 or later), the easiest is the first.
+one (3.18 or later), the easiest manual way is the first.
 
 The first is to make it your text file section.  In SCFG go to System,
 Loadable Modules and choose Text Section.  This is the module Synchronet
@@ -775,3 +791,6 @@ Version 1.3		23 Nov 2026	Pictures and PDFs: JPEG 2000 and JBIG2
 					faster, no picture limit of 120).
 					Host tool: pdfunmark.js (remove
 					watermark text).
+Version 1.4		23 Nov 2026	Install: install-xtrn.ini (run
+					jsexec install-xtrn ../xtrn/sixelview)
+					and a .gitignore for settings.ini.
