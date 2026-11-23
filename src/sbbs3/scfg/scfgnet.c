@@ -202,7 +202,7 @@ void mqtt_cfg()
 			"MQTT clients.\n"
 			"\n"
 			"For the MQTT Topic Naming and Payload Schemes used by Synchronet, see:\n"
-			"`https://wiki.synchro.net/ref:mqtt`\n"
+			"`https://wiki.synchro.net/monitor:mqtt`\n"
 			"\n"
 			"Note: An MQTT `Broker` is sometimes referred to as an MQTT `Server`.\n"
 		;

@@ -3167,7 +3167,7 @@ static void services_cfg(void)
 			"`Failed Login Attempts...`: thresholds for temp-filtering or\n"
 			"disconnecting clients that fail authentication repeatedly.\n"
 			"\n"
-			"For full documentation, see `http://wiki.synchro.net/server:services`\n"
+			"For full documentation, see `https://wiki.synchro.net/service:index`\n"
 		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_RHT | WIN_SAV, 0, 0, 0, &cur, &bar
 		                  , "Services Server Settings", opt)) {
