@@ -923,19 +923,31 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 			jsuint    len = 0;
 			if (array == NULL || !JS_GetArrayLength(cx, array, &len))
 				return JS_FALSE;
-			history = (str_list_t)alloca(sizeof(char*) * (len + 1));
-			memset(history, 0, sizeof(char*) * (len + 1));
+			strListFree(&history);
+			if (len >= SIZE_MAX / sizeof(char*)
+			    || (history = (str_list_t)calloc(len + 1, sizeof(char*))) == NULL) {
+				JS_ReportError(cx, "Error allocating history of %u entries", (unsigned)len);
+				return JS_FALSE;
+			}
+			size_t histmax = (maxlen > 0) ? maxlen : 80;
 			for (jsuint j = 0; j < len; j++) {
 				jsval     val;
 				if (!JS_GetElement(cx, array, j, &val))
 					break;
 				JSString* hist = JS_ValueToString(cx, val);
-				if (hist == NULL)
+				if (hist == NULL) {
+					strListFree(&history);
 					return JS_FALSE;
+				}
 				char*     cstr = NULL;
-				JSSTRING_TO_ASTRING(cx, hist, cstr, (uint)(maxlen ? maxlen : 80), NULL);
-				if (cstr == NULL)
+				size_t    cstr_len = 0;
+				JSSTRING_TO_MSTRING(cx, hist, cstr, &cstr_len);
+				if (cstr == NULL) {
+					strListFree(&history);
 					return JS_FALSE;
+				}
+				if (cstr_len >= histmax)
+					cstr[histmax - 1] = '\0';
 				history[j] = cstr;
 			}
 		}
@@ -944,13 +956,16 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 	if (maxlen < 1)
 		maxlen = 128;
 
-	if ((p = (char *)calloc(1, maxlen + 1)) == NULL)
+	if ((p = (char *)calloc(1, maxlen + 1)) == NULL) {
+		strListFree(&history);
 		return JS_FALSE;
+	}
 
 	if (js_str != NULL) {
 		JSSTRING_TO_MSTRING(cx, js_str, p2, NULL);
 		if (p2 == NULL) {
 			free(p);
+			strListFree(&history);
 			return JS_FALSE;
 		}
 		strlcpy(p, p2, maxlen + 1);
@@ -960,6 +975,7 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 	rc = JS_SUSPENDREQUEST(cx);
 	sbbs->getstr(p, maxlen, mode, history);
 	JS_RESUMEREQUEST(cx, rc);
+	strListFree(&history);
 
 	js_str = JS_NewStringCopyZ(cx, p);
 
