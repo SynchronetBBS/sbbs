@@ -7,7 +7,7 @@
  */
 
 "use strict";
-
+ 
 if (typeof(require) === "function")
 {
 	require("text.js", "Pause");
@@ -963,7 +963,7 @@ function getCurrentTimeStr()
 	var timeStr = strftime("%I:%M%p", time());
 	timeStr = timeStr.replace("AM", "a");
 	timeStr = timeStr.replace("PM", "p");
-
+	
 	return timeStr;
 }
 
@@ -1458,7 +1458,7 @@ function promptYesNo(pQuestion, pDefaultYes, pBoxTitle, pIceRefreshForBothAnswer
    }
    else if (EDITOR_STYLE == "ICE")
    {
-      const originalCurpos = console.getxy();
+      const originalCurpos = getConsoleXYMultipleTimes();
       // Go to the bottom line on the screen and prompt the user
       console.gotoxy(1, console.screen_rows);
       console.cleartoeol();
@@ -2509,7 +2509,7 @@ function wrapTextLinesForQuoting(pTextLines, pQuotePrefix, pIndentQuoteLines, pT
 						else if (lineScreenLen > arbitraryLongLineLen && numLinesInSection > 1 && !nextLineIsBlank && lineLastLength <= mostOfConsoleWidth)
 							sectionText += "\r\n";
 						else if (lineScreenLen <= halfConsoleWidth && !nextLineIsBlank)
-							sectionText += "\r\n";
+							sectionText += "\r\n";					
 						else
 							sectionText += " ";
 					}
@@ -5414,6 +5414,24 @@ function getCenteredTextStr(pStr, pTrailingPadding)
 		paddedStr += format("%*s", console.screen_columns - console.strlen(paddedStr) - 1, "");
 
 	return paddedStr;
+}
+
+// Calls console.getxy() multiple times to try to get a valid
+// cursor position. The user's terminal might time out, in which
+// console.xy() would return false.
+//
+// Parameters:
+//  pNumTries: The number of tries to attempt calling console.getxy(). Defaults to 3.
+//
+// Return value: An object containing x and y parameters with the
+//               console cursor position, or false if failed.
+function getConsoleXYMultipleTimes(pNumTries)
+{
+	var numTries = (typeof(pNumTries) === "number" && pNumTries > 0 ? pNumTries : 3);
+	var xy = console.getxy();
+	for (var i = 0; xy === false && i < numTries; ++i)
+		xy = console.getxy();
+	return xy;
 }
 
 // Displays a RIP header at the top of the screen

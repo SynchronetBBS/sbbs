@@ -137,7 +137,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(" ");
 	// More spaces until the time location
-	var curpos = console.getxy();
+	var curpos = getConsoleXYMultipleTimes();
 	var startX = console.screen_columns - 8;
 	while (curpos.x < startX)
 	{
@@ -173,7 +173,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	startX = console.screen_columns - fieldWidth - 10;
 	// Before outputting the time left, write more spaces until the starting
 	// horizontal location.
-	curpos = console.getxy();
+	curpos = getConsoleXYMultipleTimes();
 	while (curpos.x < startX)
 	{
 		console.print(" ");
