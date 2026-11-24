@@ -2544,6 +2544,9 @@ cleanup:
 	return ok;
 }
 
+#define GURU_TYPING_MS_PER_CHAR 120     /* ~100 wpm, a fast human typist */
+#define GURU_TYPING_MS_MAX      10000
+
 /* Single-turn dispatch into the LLM engine from multinode chat.
  *
  * Multinode chatsection() calls this once per user-typed line (when
@@ -2577,6 +2580,7 @@ bool sbbs_t::chat_llm_multinode_turn(int gurunum, const char* input)
 		/* Hoisted above any `goto mt_done` so GCC's "jump crosses
 		 * initialization" rule is satisfied. */
 		bool supports_utf8 = term->supports(UTF8);
+		uint64_t turn_start = xp_timer64();
 
 		/* Lazy-load the module: check whether chat_session is
 		 * already defined in our JS globals; if not, js_execfile
@@ -2633,6 +2637,10 @@ bool sbbs_t::chat_llm_multinode_turn(int gurunum, const char* input)
 			 * condition already filters). */
 			jsval addr_val = BOOLEAN_TO_JSVAL(JS_TRUE);
 			JS_SetProperty(js_cx, ctx_obj, "addressed", &addr_val);
+			/* A key typed while the reply is pending abandons it; the
+			 * key is left for multinodechat()'s input loop. */
+			jsval abort_val = BOOLEAN_TO_JSVAL(JS_TRUE);
+			JS_SetProperty(js_cx, ctx_obj, "abort_on_input", &abort_val);
 		}
 
 		/* (No typing-simulation knobs needed -- multinode emits as
@@ -2662,13 +2670,21 @@ bool sbbs_t::chat_llm_multinode_turn(int gurunum, const char* input)
 				/* Multinode emits the reply as a single line via
 				 * text[ChatLineFmt] (e.g. "<guru-name> #N: <text>"),
 				 * NOT character-by-character via simulate_type.  This
-				 * matches the legacy guruchat() multinode branch
-				 * (chat.cpp line 1748-1750) and the format the other
-				 * chat participants would expect to see.  Short
-				 * thinking-time pause approximates the legacy
-				 * mswait(strlen * 100). */
-				size_t reply_len = strlen(reply);
-				mswait((int)(reply_len * 100));
+				 * matches the legacy guruchat() multinode branch and
+				 * the format the other chat participants would expect
+				 * to see.
+				 *
+				 * A reply that came back faster than the guru could have
+				 * typed it is held for the difference (#1407); a key-press
+				 * shows it at once. */
+				uint64_t typing_ms = strlen(reply) * GURU_TYPING_MS_PER_CHAR;
+				if (typing_ms > GURU_TYPING_MS_MAX)
+					typing_ms = GURU_TYPING_MS_MAX;
+				uint64_t ready = turn_start + typing_ms;
+				size_t   inbuf_level = RingBufFull(&inbuf);
+				while (online && xp_timer64() < ready
+				       && RingBufFull(&inbuf) <= inbuf_level)
+					mswait(50);
 				attr(cfg.color[clr_chatlocal]);
 				/* The reply comes off the LLM as UTF-8 regardless of the
 				 * reader's terminal, so emit it with P_AUTO_UTF8 and let

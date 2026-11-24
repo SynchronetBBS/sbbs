@@ -54,6 +54,19 @@ var DEFAULT_TEMP         = 0.7;
 var ENDPOINT_FAILOVER_COOLDOWN = 60;
 var _primary_down_until = 0;   /* unix time; 0 = primary presumed up */
 
+/* Set by chat_session() for the duration of a turn whose caller asked
+ * for ctx.abort_on_input: returns true once the user has typed since the
+ * turn began.  Every LLM request made through _new_http() polls it. */
+var _abort_check = null;
+
+function _new_http(headers, timeout)
+{
+    var http = new HTTPRequest(undefined, undefined, headers, timeout);
+    if (_abort_check)
+        http.abort_check = _abort_check;
+    return http;
+}
+
 /* ISO 639-1 -> English name lookup. Synchronet's user.lang field is
  * usually a 2-letter code (matching the text.<lang>.ini convention),
  * but models handle bare codes inconsistently (qwen2.5 mistook "ja"
@@ -578,7 +591,7 @@ function chat_openai(cfg, messages, opts)
     var body = JSON.stringify(req);
 
     var headers = { 'Authorization': 'Bearer ' + cfg.api_key };
-    var http = new HTTPRequest(undefined, undefined, headers, cfg.timeout);
+    var http = _new_http(headers, cfg.timeout);
 
     if (streaming) {
         /* Streaming: parse SSE events as chunks arrive, emit each token's
@@ -883,7 +896,7 @@ function relay_perspective_rewrite(cfg, text, recipient, sender, bot_name) {
 
     try {
         var headers = { 'Authorization': 'Bearer ' + cfg.api_key };
-        var http = new HTTPRequest(undefined, undefined, headers, cfg.timeout);
+        var http = _new_http(headers, cfg.timeout);
         var raw  = http.Post(cfg.endpoint, JSON.stringify(req), undefined, undefined,
                              'application/json');
         if (http.response_code != 200) return text;
@@ -1009,7 +1022,7 @@ function chat_llm_ack(cfg, bot_line, user_reply, kind) {
     if (cfg.keep_alive) req.keep_alive = cfg.keep_alive;
     try {
         var headers = { 'Authorization': 'Bearer ' + cfg.api_key };
-        var http = new HTTPRequest(undefined, undefined, headers, cfg.timeout);
+        var http = _new_http(headers, cfg.timeout);
         var raw  = http.Post(cfg.endpoint, JSON.stringify(req), undefined, undefined,
                              'application/json');
         if (http.response_code != 200) return canned;
@@ -1090,7 +1103,7 @@ function chat_ollama(cfg, messages, opts)
     var body = JSON.stringify(req);
 
     var headers = { 'Authorization': 'Bearer ' + cfg.api_key };
-    var http = new HTTPRequest(undefined, undefined, headers, cfg.timeout);
+    var http = _new_http(headers, cfg.timeout);
 
     if (streaming) {
         /* NDJSON streaming: one complete JSON object per line, terminated
@@ -1423,7 +1436,8 @@ function dispatch(cfg, messages, opts)
         try {
             return _dispatch_provider(_via(fb), messages, opts);
         } catch (e) {
-            _primary_down_until = 0;   /* fallback down too -- re-probe primary next turn */
+            if (!(e && e.aborted))
+                _primary_down_until = 0;   /* fallback down too -- re-probe primary next turn */
             throw e;
         }
     }
@@ -1433,6 +1447,8 @@ function dispatch(cfg, messages, opts)
         _primary_down_until = 0;       /* primary healthy */
         return r;
     } catch (e) {
+        if (e && e.aborted)
+            throw e;               /* the user's doing, not the endpoint's */
         _primary_down_until = now + ENDPOINT_FAILOVER_COOLDOWN;
         log(LOG_WARNING, 'chat_llm: primary endpoint ' + cfg.endpoint
             + ' failed (' + e + '); failing over to ' + fb);
@@ -1900,7 +1916,7 @@ function verify_volunteer_answer(cfg, question, context, answer)
     }
     try {
         var headers = { 'Authorization': 'Bearer ' + cfg.api_key };
-        var http = new HTTPRequest(undefined, undefined, headers, cfg.timeout);
+        var http = _new_http(headers, cfg.timeout);
         var raw  = http.Post(cfg.endpoint, JSON.stringify(req), undefined,
                              undefined, 'application/json');
         if (http.response_code != 200) return false;
@@ -2189,7 +2205,7 @@ function summarize_old_turns(cfg, ctx, memory, opts)
         temperature: cfg.temperature,
         stream:      true
     };
-    var http = new HTTPRequest(undefined, undefined,
+    var http = _new_http(
         { 'Authorization': 'Bearer ' + cfg.api_key }, cfg.timeout);
     var body = JSON.stringify(req);
     var full = '';
@@ -2244,9 +2260,36 @@ function is_forget_command(input)
  *
  * These are what BBS C++ dispatch and IRC adapters should call. They
  * handle the load/save dance so callers don't have to. Memory I/O is
- * skipped when cfg.memory_persist == false. */
+ * skipped when cfg.memory_persist == false.
+ *
+ * With ctx.abort_on_input set (terminal callers only), any key the user
+ * types while the turn is pending abandons it: the LLM request is closed,
+ * nothing is remembered, and null is returned with ctx._aborted = true.
+ * The key stays in the input buffer for the caller to read. */
 
 function chat_session(input, ctx)
+{
+    if (!ctx.abort_on_input || typeof console == 'undefined')
+        return _chat_session_turn(input, ctx);
+
+    var inbuf_level = console.input_buffer_level;
+    _abort_check = function () {
+        return console.input_buffer_level > inbuf_level;
+    };
+    try {
+        return _chat_session_turn(input, ctx);
+    } catch (e) {
+        if (e && e.aborted) {
+            ctx._aborted = true;
+            return null;
+        }
+        throw e;
+    } finally {
+        _abort_check = null;
+    }
+}
+
+function _chat_session_turn(input, ctx)
 {
     var t_start = system.timer;
     var cfg = load_config(ctx.persona && ctx.persona.code);
