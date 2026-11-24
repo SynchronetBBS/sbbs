@@ -329,8 +329,13 @@ bool sbbs_t::getsmsg(int usernumber, bool clearline)
 		}
 	}
 
-	if ((buf = readsmsg(&cfg, usernumber)) == NULL)
+	if ((buf = readsmsg(&cfg, usernumber)) == NULL) {
+		char path[MAX_PATH + 1];
+		SAFEPRINTF2(path, "%smsgs/%4.4u.msg", cfg.data_dir, usernumber);
+		if (flength(path) > 0)   // messages are waiting, but couldn't be read
+			errormsg(WHERE, ERR_READ, path, 0);
 		return false;
+	}
 	getnodedat(cfg.node_num, &thisnode);
 	if (clearline)
 		term->clearline();

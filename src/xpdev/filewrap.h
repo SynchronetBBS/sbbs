@@ -146,6 +146,15 @@
 
 // These errno values should trigger sopen() and lock() retries, within limits
 #define FILE_RETRY_ERRNO(x) ((x)==EACCES || (x)==EAGAIN || (x)==EDEADLOCK || (x)==EBUSY || (x)==EIO)
+// The subset worth retrying when sopen() fails.  On Windows, a sharing
+// violation is reported as EACCES.  Elsewhere, an EACCES from sopen() is a
+// permission error (sopen() reports a lock conflict as EAGAIN), which no
+// retry will fix.
+#if defined(_WIN32)
+#define FILE_OPEN_RETRY_ERRNO(x) FILE_RETRY_ERRNO(x)
+#else
+#define FILE_OPEN_RETRY_ERRNO(x) ((x)==EAGAIN || (x)==EDEADLOCK || (x)==EBUSY || (x)==EIO)
+#endif
 #define FILE_RETRY_DELAY(x, y) SLEEP((((x) / 10) * ((y) / 2)) + xp_random((y) + 1))
 
 // Limits of xp_rename_file(), xp_replace_file() and xp_remove_file() retries while another process holds the file open

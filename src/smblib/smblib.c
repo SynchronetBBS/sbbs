@@ -1595,7 +1595,7 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 	while (1) {
 		if ((file = sopen(str, O_RDWR | O_CREAT | O_BINARY, SH_DENYRW, DEFFILEMODE)) != -1)
 			break;
-		if (!FILE_RETRY_ERRNO(get_errno())) {
+		if (!FILE_OPEN_RETRY_ERRNO(get_errno())) {
 			safe_snprintf(smb->last_error, sizeof(smb->last_error)
 			              , "%s %d '%s' opening %s", __FUNCTION__
 			              , get_errno(), strerror(get_errno()), str);

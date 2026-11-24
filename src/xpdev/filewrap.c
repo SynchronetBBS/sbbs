@@ -272,7 +272,11 @@ int sopen(const char *fn, int sh_access, int share, ...)
 		alock.l_type = F_WRLCK; /* set write lock to prevent all access */
 
 	if (fcntl(fd, F_SETLK, &alock) != 0) {
+		int err = errno;
 		close(fd);
+		/* POSIX allows EACCES or EAGAIN for a conflicting lock: report
+		   EAGAIN, so EACCES from here always means a permission error */
+		errno = (err == EACCES) ? EAGAIN : err;
 		return -1;
 	}
 

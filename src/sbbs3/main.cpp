@@ -4119,7 +4119,7 @@ int sbbs_t::nopen(char *str, int access)
 	if (!(access & O_TEXT))
 		access |= O_BINARY;
 	while (((file = sopen(str, access, share, DEFFILEMODE)) == -1)
-	       && FILE_RETRY_ERRNO(errno) && count++ < LOOP_NOPEN)
+	       && FILE_OPEN_RETRY_ERRNO(errno) && count++ < LOOP_NOPEN)
 		FILE_RETRY_DELAY(count, LOCK_RETRY_DELAY);
 	if (count > (LOOP_NOPEN / 2) && count <= LOOP_NOPEN) {
 		llprintf(LOG_WARNING, "!!", "NOPEN COLLISION - File: \"%s\" Count: %d"

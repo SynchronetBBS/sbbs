@@ -147,7 +147,7 @@ int smb_open_fp(smb_t* smb, FILE** fp, int share)
 	while (1) {
 		if ((file = sopen(path, O_RDWR | O_CREAT | O_BINARY, share, DEFFILEMODE)) != -1)
 			break;
-		if (!FILE_RETRY_ERRNO(get_errno())) {
+		if (!FILE_OPEN_RETRY_ERRNO(get_errno())) {
 			safe_snprintf(smb->last_error, sizeof(smb->last_error)
 			              , "%s %d '%s' opening %s", __FUNCTION__
 			              , get_errno(), strerror(get_errno()), path);
