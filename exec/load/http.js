@@ -141,7 +141,28 @@ HTTPRequest.prototype.SendRequest=function() {
 	}
 };
 
+/* When this.abort_check is a function, wait for response data in short
+ * polls, calling it between them; if it returns true, close the
+ * connection and throw an Error with .aborted = true.  Lets an
+ * interactive caller abandon a slow request (e.g. on a user key-press). */
+HTTPRequest.prototype.WaitReadable=function() {
+	if(typeof this.abort_check != 'function')
+		return;
+	var deadline = system.timer + this.recv_timeout;
+	while(!this.sock.poll(0.1)) {
+		if(this.abort_check()) {
+			this.sock.close();
+			var e = new Error("Aborted");
+			e.aborted = true;
+			throw e;
+		}
+		if(system.timer >= deadline)
+			throw new Error("Timed out waiting for response");
+	}
+};
+
 HTTPRequest.prototype.ReadStatus=function() {
+	this.WaitReadable();
 	this.status_line=this.sock.recvline(4096, this.recv_timeout);
 	if(this.status_line==null)
 		throw new Error("Unable to read status");
@@ -158,6 +179,7 @@ HTTPRequest.prototype.ReadHeaders=function() {
 	this.response_headers_parsed={};
 
 	for(;;) {
+		this.WaitReadable();
 		header=this.sock.recvline(4096, this.recv_timeout);
 		if(header==null)
 			throw new Error("Unable to receive headers");
@@ -207,7 +229,10 @@ HTTPRequest.prototype.ReadBody=function() {
 	}
 
 	this.body='';
-	while((ch=this.sock.recv(len, this.recv_timeout))!=null && ch != '') {
+	for(;;) {
+		this.WaitReadable();
+		if((ch=this.sock.recv(len, this.recv_timeout))==null || ch == '')
+			break;
 		this.body += ch.toString();
 		len -= ch.length;
 		if(len < 1)
@@ -320,6 +345,7 @@ HTTPRequest.prototype.SetupPostStreaming = function(url, referer, base, data, co
 HTTPRequest.prototype.ReadChunkedBody = function(on_chunk) {
 	var accum = '';
 	while (true) {
+		this.WaitReadable();
 		var size_line = this.sock.recvline(64, this.recv_timeout);
 		if (size_line == null)
 			throw new Error("Unable to read chunk size");
@@ -340,6 +366,7 @@ HTTPRequest.prototype.ReadChunkedBody = function(on_chunk) {
 		var remaining = chunk_size;
 		var chunk = '';
 		while (remaining > 0) {
+			this.WaitReadable();
 			var part = this.sock.recv(remaining, this.recv_timeout);
 			if (part == null || part == '')
 				throw new Error("Unable to read chunk data");
