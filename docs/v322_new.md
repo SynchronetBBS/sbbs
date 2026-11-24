@@ -599,6 +599,8 @@
 - Fix: IMAP run with `-d` or `-r` (debug logging) no longer writes
   users' passwords to the log; the arguments of `LOGIN` are masked unless
   *Display/Log Passwords Locally* is enabled in SCFG
+- Fix: IMAP now includes a FidoNet message's tosser ID (`X-FTN-TID`) with
+  its other `X-FTN-*` header fields
 - NNTP: `XOVER`/`XHDR` read only the messages in the requested range
   instead of looking up every article number in it (far faster on
   sparsely numbered groups and the mail group), and `XHDR` now accepts
