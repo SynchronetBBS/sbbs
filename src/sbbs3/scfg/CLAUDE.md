@@ -126,7 +126,25 @@ Editing the helper's helpbuf updates every caller's menu in one go.
 There is no automated test for menu help text. After building scfg
 (`make -C src/sbbs3/scfg` — see the synchronet-build skill), have a
 sysop open SCFG, navigate to the menu, and press **F1** to confirm the
-rendered help looks right. Watch for: line wraps that look ragged,
+rendered help looks right.
+
+To script a check of menus, option values, help text, or saving, run
+scfg with **`-id`** (the stdio interface). Each menu prints as a
+numbered list showing current values, and the `Which (Help or Quit):`
+prompt takes an item number, or `?` to print that menu's help text
+(raw, with the backtick markup, so it checks content but not the
+rendered wrapping). Pipe the answers in:
+
+```
+printf '2\n11\n\n?\nq\nq\nq\ny\n' | SBBSCTRL=<copy-of-ctrl> timeout 5 scfg -id
+```
+
+- A list longer than about 22 items pauses at `More?`, which takes one
+  input line (the empty line above).
+- At end of input it keeps re-printing the main menu and `Exit SCFG?`,
+  so end the input with the quit answers and run it under `timeout`.
+- Point it at a **copy** of the `ctrl` directory: SCFG writes the
+  configuration on exit and signals running servers to recycle. Watch for: line wraps that look ragged,
 backtick spans that didn't highlight, accidental long-option-dash
 substitutions in literal CLI examples, and CP437 box-drawing characters
 that got mangled (see below).
