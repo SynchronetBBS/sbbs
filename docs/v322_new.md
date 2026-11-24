@@ -665,8 +665,8 @@
   Advanced Options
 - Fix: saving a configuration file removed it until the new one was
   completely written, so a server or SBBSecho loading the configuration
-  during a save ran without it; the new file now replaces the old one only
-  once complete
+  during a save ran without it; the file is now rewritten in place while
+  locked, so a program loading the configuration waits for the save
 - New **Purge Mailbox Trash by Age** (default 30 days) and **Mailbox
   Quota (per user)** (default 1 GB) options under Message Options, for
   WebMail's per-user mailbox

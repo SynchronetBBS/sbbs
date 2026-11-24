@@ -32,28 +32,25 @@ bool               no_msghdr = false, all_msghdr = false;
 static ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
 
 /****************************************************************************/
-/* Replaces a configuration file only once its new contents are completely	*/
-/* written, so a program loading the configuration meanwhile reads either	*/
-/* the whole old file or the whole new one (#1404)							*/
+/* Rewrites a configuration file in place while holding it open exclusively	*/
+/* (#1404): a program loading the configuration opens it with fnopen(), so	*/
+/* it waits and then reads the whole old file or the whole new one.  The	*/
+/* file is never renamed: on an SMB share, renaming over a file that		*/
+/* another program has open can delete it.									*/
 /****************************************************************************/
 static bool write_cfg_file(scfg_t* cfg, const char* path, str_list_t ini)
 {
-	char  tmp[MAX_PATH + 1];
 	FILE* fp;
+	int   file;
 	bool  result;
 
-	SAFEPRINTF(tmp, "%s.tmp", path);
-	if ((fp = fopen(tmp, "w")) == NULL)
+	backup(path, cfg->config_backup_level, /* ren: */ false);
+	/* No O_TRUNC: the file must not be emptied before it is locked */
+	if ((fp = fnopen(&file, path, O_WRONLY | O_CREAT)) == NULL)
 		return false;
-	result = iniWriteFile(fp, ini);
+	result = chsize(file, 0) == 0 && iniWriteFile(fp, ini);
 	if (fclose(fp) != 0)
 		result = false;
-	if (result) {
-		backup(path, cfg->config_backup_level, /* ren: */ false);
-		result = xp_replace_file(tmp, path) == 0;
-	}
-	if (!result)
-		remove(tmp);
 	return result;
 }
 
