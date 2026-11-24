@@ -63,7 +63,7 @@ xpDateTime_t xpDateTime_now(void)
 	localtime_r(&t, &tm);
 
 	return xpDateTime_create(1900 + tm.tm_year, 1 + tm.tm_mon, tm.tm_mday
-	                         , tm.tm_hour, tm.tm_min, (float)tm.tm_sec + (tv.tv_usec * 0.00001)
+	                         , tm.tm_hour, tm.tm_min, (float)tm.tm_sec + (tv.tv_usec * 0.000001)
 	                         , xpTimeZone_local());
 #endif
 }
