@@ -130,6 +130,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
     memset(&scfg,0,sizeof(scfg));
     SAFECOPY(scfg.ctrl_dir,MainForm->global.ctrl_dir);
     scfg.size=sizeof(scfg);
+    scfg.node_num=MainForm->bbs_startup.first_node;
     char error[256];
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
     if(!load_cfg(&scfg, /* text: */NULL, 0, /* prep: */FALSE, /* req_cfg: */ FALSE, error, sizeof(error))) {
