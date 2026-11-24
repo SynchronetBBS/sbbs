@@ -773,5 +773,8 @@ Version 1.3		23 Nov 2026	Pictures and PDFs: JPEG 2000 and JBIG2
 					merged into sixelviewlibrary.js, EPUB
 					pictures kept as they are (much
 					faster, no picture limit of 120).
+					settings-example.ini has a demo
+					library active, and its two stray
+					lines are now comments.
 					Host tool: pdfunmark.js (remove
 					watermark text).
