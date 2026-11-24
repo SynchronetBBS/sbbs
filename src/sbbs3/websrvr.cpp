@@ -6099,6 +6099,14 @@ JSObject* js_CreateHttpRequestObject(JSContext* cx
 	return session->js_request;
 }
 
+static pthread_mutex_t js_error_mutex;
+static pthread_once_t  js_error_mutex_once = PTHREAD_ONCE_INIT;
+
+static void js_error_mutex_init(void)
+{
+	pthread_mutex_init(&js_error_mutex, NULL);
+}
+
 static void
 js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
@@ -6134,20 +6142,15 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 			warning = "warning";
 		log_level = LOG_WARNING;
 	} else if (report->filename != NULL) {
-		static pthread_mutex_t mutex;
-		static bool            mutex_initialized;
-		static char            lastfile[MAX_PATH + 1];
-		static uint            lastline;
-		if (!mutex_initialized) {
-			pthread_mutex_init(&mutex, NULL);
-			mutex_initialized = true;
-		}
-		pthread_mutex_lock(&mutex);
+		static char lastfile[MAX_PATH + 1];
+		static uint lastline;
+		pthread_once(&js_error_mutex_once, js_error_mutex_init);
+		pthread_mutex_lock(&js_error_mutex);
 		if (lastline == report->lineno && strcmp(lastfile, report->filename) == 0)
 			log_level = LOG_WARNING;
 		lastline = report->lineno;
 		SAFECOPY(lastfile, report->filename);
-		pthread_mutex_unlock(&mutex);
+		pthread_mutex_unlock(&js_error_mutex);
 	}
 
 	/* Logged only: the message (which may echo request data) and the script's path are not for the client */
