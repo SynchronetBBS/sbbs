@@ -2,6 +2,10 @@
 
 ## General
 
+- The **Text Directory** is now one system-wide setting (`[dir] text` in
+  `ctrl/main.ini`, SCFG System → Advanced Options) instead of a per-node
+  one. Until it is set there, every program uses node 1's Text Directory,
+  as the servers and utilities always did
 - A configuration string value (in `ctrl/*.ini`, including the server
   settings in `sbbs.ini`) longer than the field that holds it was
   silently cut at load time; it is now logged as a warning naming the
@@ -647,6 +651,8 @@
 
 ## SCFG
 
+- **Text Directory** moved from each node's configuration to System →
+  Advanced Options
 - New **Purge Mailbox Trash by Age** (default 30 days) and **Mailbox
   Quota (per user)** (default 1 GB) options under Message Options, for
   WebMail's per-user mailbox

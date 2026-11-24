@@ -199,7 +199,6 @@ void node_cfg()
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Keep Node File Open", cfg.node_misc & NM_CLOSENODEDAB ? "No":"Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Daily Event", (cfg.node_daily_misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.node_daily_cmd);
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Node Directory", cfg.node_path[cfg.node_num - 1]);
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Text Directory", cfg.text_dir);
 		opt[i][0] = 0;
 		sprintf(str, "Node %d Configuration", cfg.node_num);
 		uifc.helpbuf =
@@ -270,17 +269,6 @@ void node_cfg()
 				uifc.helpbuf = node_path_help;
 				uifc.input(WIN_MID | WIN_SAV, 0, 10, "Node Directory"
 				           , cfg.node_path[cfg.node_num - 1], sizeof(cfg.node_path[0]) - 1, K_EDIT);
-				break;
-			case __COUNTER__:
-				uifc.helpbuf =
-					"`Text Directory:`\n"
-					"\n"
-					"This directory contains the system's menus and other important text\n"
-					"files, so be sure the files and directories are copied or moved to this\n"
-					"directory if you decide to change its location.\n"
-				;
-				uifc.input(WIN_MID | WIN_SAV, 0, 10, "Text Directory"
-				           , cfg.text_dir, sizeof(cfg.text_dir) - 1, K_EDIT);
 				break;
 		}
 	}

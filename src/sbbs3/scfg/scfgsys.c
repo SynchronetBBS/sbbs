@@ -2891,6 +2891,8 @@ void sys_cfg(void)
 					         , cfg.exec_dir);
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Mods Directory"
 					         , cfg.mods_dir);
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Text Directory"
+					         , cfg.text_dir);
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Input SIF Questionnaire"
 					         , cfg.new_sif);
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Output SIF Questionnaire"
@@ -2964,11 +2966,12 @@ void sys_cfg(void)
 						"`New User Magic Word`: secret word a new user must echo back after\n"
 						"registration; placed in `text/newuser.msg` to verify they read it.\n"
 						"\n"
-						"`Data Directory`, `Logs Directory`, `Exec Directory`, `Mods Directory`:\n"
-						"filesystem paths for the four canonical Synchronet directories.  Data\n"
-						"must be on shared, non-volatile storage accessible to all nodes.  Mods\n"
-						"overlays Exec for sysop customizations that survive upgrades.  Dated\n"
-						"log files go in the `logs` sub-directory of the Logs Directory.\n"
+						"`Data Directory`, `Logs Directory`, `Exec Directory`, `Mods Directory`,\n"
+						"`Text Directory`: filesystem paths for the canonical Synchronet\n"
+						"directories.  Data must be on shared, non-volatile storage accessible\n"
+						"to all nodes.  Mods overlays Exec and Text for sysop customizations\n"
+						"that survive upgrades.  Dated log files go in the `logs` sub-directory\n"
+						"of the Logs Directory.\n"
 						"\n"
 						"`Input SIF Questionnaire` / `Output SIF Questionnaire`: optional SIF\n"
 						"files (in `text/`) presenting questions to new users and to the sysop\n"
@@ -3141,6 +3144,28 @@ void sys_cfg(void)
 							}
 							break;
 						case 5:
+							uifc.helpbuf =
+								"`Text Directory:`\n"
+								"\n"
+								"The Synchronet text directory contains the menus, display files and\n"
+								"other text files shown to users.  Every node and server uses this one\n"
+								"directory.  If you change its location, copy or move its files and\n"
+								"sub-directories to the new location first.\n"
+								"\n"
+								"Modified copies of text and menu files can be placed in the `text`\n"
+								"sub-directory of the `Mods Directory` instead, where they take\n"
+								"precedence and are not overwritten by future updates.\n"
+								"\n"
+								"See `http://wiki.synchro.net/dir:text` for details.\n"
+							;
+							strcpy(str, cfg.text_dir);
+							if (uifc.input(WIN_MID | WIN_SAV, 0, 9, "Text Directory"
+							               , str, sizeof(cfg.text_dir) - 1, K_EDIT) > 0) {
+								backslash(str);
+								SAFECOPY(cfg.text_dir, str);
+							}
+							break;
+						case 6:
 							strcpy(str, cfg.new_sif);
 							uifc.helpbuf =
 								"`SIF Questionnaire for User Input:`\n"
@@ -3156,7 +3181,7 @@ void sys_cfg(void)
 							else
 								uifc.msg("Invalid SIF Name");
 							break;
-						case 6:
+						case 7:
 							strcpy(str, cfg.new_sof);
 							uifc.helpbuf =
 								"`SIF Questionnaire for Reviewing User Input:`\n"
@@ -3172,7 +3197,7 @@ void sys_cfg(void)
 							else
 								uifc.msg("Invalid SIF Name");
 							break;
-						case 7:
+						case 8:
 							uifc.helpbuf =
 								"`Credits Per Dollar:`\n"
 								"\n"
@@ -3187,7 +3212,7 @@ void sys_cfg(void)
 							           , "Credits Per Dollar", str, 10, K_NUMBER | K_EDIT);
 							cfg.cdt_per_dollar = atol(str);
 							break;
-						case 8:
+						case 9:
 							uifc.helpbuf =
 								"`Minutes Per 100K Credits:`\n"
 								"\n"
@@ -3199,7 +3224,7 @@ void sys_cfg(void)
 							           , "Minutes Per 100K Credits", str, 5, K_NUMBER | K_EDIT);
 							cfg.cdt_min_value = atoi(str);
 							break;
-						case 9:
+						case 10:
 							uifc.helpbuf =
 								"`Maximum Number of Minutes User Can Have:`\n"
 								"\n"
@@ -3216,7 +3241,7 @@ void sys_cfg(void)
 							           , str, 10, K_NUMBER | K_EDIT);
 							cfg.max_minutes = atol(str);
 							break;
-						case 10:
+						case 11:
 							uifc.helpbuf =
 								"`Warning Days Till Expire:`\n"
 								"\n"
@@ -3229,7 +3254,7 @@ void sys_cfg(void)
 							           , "Warning Days Till Expire", str, 5, K_NUMBER | K_EDIT);
 							cfg.sys_exp_warn = atoi(str);
 							break;
-						case 11:
+						case 12:
 							uifc.helpbuf =
 								"`Last Displayed Node:`\n"
 								"\n"
@@ -3242,7 +3267,7 @@ void sys_cfg(void)
 							           , "Last Displayed Node", str, 5, K_NUMBER | K_EDIT);
 							cfg.sys_lastnode = atoi(str);
 							break;
-						case 12:
+						case 13:
 							uifc.helpbuf =
 								"`Phone Number Format:`\n"
 								"\n"
@@ -3255,10 +3280,10 @@ void sys_cfg(void)
 							           , "Phone Number Format", cfg.sys_phonefmt
 							           , LEN_PHONE, K_UPPER | K_EDIT);
 							break;
-						case 13:
+						case 14:
 							getar("Sysop Chat Override", cfg.sys_chat_arstr, /* helpbuf: */ NULL);
 							break;
-						case 14:
+						case 15:
 							uifc.helpbuf =
 								"`User Database Backups:`\n"
 								"\n"
@@ -3272,7 +3297,7 @@ void sys_cfg(void)
 							           , str, 4, K_NUMBER | K_EDIT);
 							cfg.user_backup_level = atoi(str);
 							break;
-						case 15:
+						case 16:
 							uifc.helpbuf =
 								"`Mail Database Backups:`\n"
 								"\n"
@@ -3286,7 +3311,7 @@ void sys_cfg(void)
 							           , str, 4, K_NUMBER | K_EDIT);
 							cfg.mail_backup_level = atoi(str);
 							break;
-						case 16:
+						case 17:
 							uifc.helpbuf =
 								"`Configuration Backups:`\n"
 								"\n"
@@ -3299,7 +3324,7 @@ void sys_cfg(void)
 							           , str, 4, K_NUMBER | K_EDIT);
 							cfg.config_backup_level = atoi(str);
 							break;
-						case 17:
+						case 18:
 							uifc.helpbuf =
 								"`Maximum Log File Size:`\n"
 								"\n"
@@ -3333,7 +3358,7 @@ void sys_cfg(void)
 								}
 							}
 							break;
-						case 18:
+						case 19:
 							duration_to_str(cfg.max_getkey_inactivity, str, sizeof(str));
 							uifc.helpbuf =
 								"`Duration Before Inactive-User Disconnection:`\n"
@@ -3352,7 +3377,7 @@ void sys_cfg(void)
 							           , str, 10, K_EDIT);
 							cfg.max_getkey_inactivity = (uint)parse_duration(str);
 							break;
-						case 19:
+						case 20:
 							ultoa(cfg.inactivity_warn, str, 10);
 							uifc.helpbuf =
 								"`Percentage of Maximum Inactivity Before Warning:`\n"
@@ -3367,7 +3392,7 @@ void sys_cfg(void)
 							           , str, 4, K_NUMBER | K_EDIT);
 							cfg.inactivity_warn = atoi(str);
 							break;
-						case 20:
+						case 21:
 							uifc.helpbuf =
 								"`Control Key Pass-through:`\n"
 								"\n"
@@ -3392,7 +3417,7 @@ void sys_cfg(void)
 							           , str, 8, K_UPPER | K_EDIT);
 							cfg.ctrlkey_passthru = strtoul(str, NULL, 16);
 							break;
-						case 21:
+						case 22:
 							uifc.helpbuf =
 								"`Statistics Interval:`\n"
 								"\n"
@@ -3411,7 +3436,7 @@ void sys_cfg(void)
 							           , str, 10, K_UPPER | K_EDIT);
 							cfg.stats_interval = (uint)parse_duration(str);
 							break;
-						case 22:
+						case 23:
 							uifc.helpbuf =
 								"`Cache Filter Files:`\n"
 								"\n"
@@ -3438,7 +3463,7 @@ void sys_cfg(void)
 							           , str, 10, K_UPPER | K_EDIT);
 							cfg.cache_filter_files = (uint)parse_duration(str);
 							break;
-						case 23:
+						case 24:
 							uifc.helpbuf =
 								"`Message/File Total Interval:`\n"
 								"\n"
@@ -3476,7 +3501,7 @@ void sys_cfg(void)
 							           , str, 10, K_UPPER | K_EDIT);
 							cfg.totals_interval = (uint)parse_duration(str);
 							break;
-						case 24:
+						case 25:
 							uifc.helpbuf =
 								"`Maximum Sound File Size:`\n"
 								"\n"
@@ -3509,7 +3534,7 @@ void sys_cfg(void)
 							               , str, 10, K_EDIT | K_UPPER) > 0)
 								cfg.max_sound_file_size = (uint32_t)parse_byte_count(str, 1);
 							break;
-						case 25:
+						case 26:
 							uifc.helpbuf =
 								"`Maximum Cached File Size:`\n"
 								"\n"

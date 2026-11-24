@@ -66,7 +66,6 @@ bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	INI_GET_STR(cfg->node_phone, ini, ROOT_SECTION, "phone", "");
 	INI_GET_STR(cfg->node_daily_cmd, ini, ROOT_SECTION, "daily", "");
 	cfg->node_daily_misc = iniGetUInteger(ini, ROOT_SECTION, "daily_settings", 0);
-	INI_GET_STR(cfg->text_dir, ini, ROOT_SECTION, "text_dir", "../text/");
 	INI_GET_STR(cfg->temp_dir, ini, ROOT_SECTION, "temp_dir", "temp");
 	INI_GET_STR(cfg->node_arstr, ini, ROOT_SECTION, "ars", "");
 	arstr(NULL, cfg->node_arstr, cfg, cfg->node_ar);
@@ -76,6 +75,28 @@ bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	iniFreeStringList(ini);
 
 	return result;
+}
+
+/****************************************************************************/
+/* The Text Directory from node 1's node.ini, for a main.ini without one	*/
+/****************************************************************************/
+static void read_legacy_text_dir(scfg_t* cfg)
+{
+	char       path[MAX_PATH + 1];
+	FILE*      fp;
+	str_list_t ini = NULL;
+
+	if (cfg->sys_nodes > 0) {
+		SAFECOPY(path, cfg->node_path[0]);
+		prep_dir(cfg->ctrl_dir, path, sizeof path);
+		SAFECAT(path, "node.ini");
+		if ((fp = fnopen(NULL, path, O_RDONLY)) != NULL) {
+			ini = iniReadFile(fp);
+			fclose(fp);
+		}
+	}
+	INI_GET_STR(cfg->text_dir, ini, ROOT_SECTION, "text_dir", "../text/");
+	iniFreeStringList(ini);
 }
 
 /****************************************************************************/
@@ -273,6 +294,10 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	INI_GET_STR(cfg->exec_dir, section, NULL, "exec", "../exec/");
 	INI_GET_STR(cfg->mods_dir, section, NULL, "mods", "../mods/");
 	INI_GET_STR(cfg->logs_dir, section, NULL, "logs", cfg->data_dir);
+	if (iniKeyExists(section, NULL, "text"))
+		INI_GET_STR(cfg->text_dir, section, NULL, "text", "../text/");
+	else    /* configured per node before v3.22: use node 1's */
+		read_legacy_text_dir(cfg);
 
 	/*********************/
 	/* New User Settings */

@@ -10444,8 +10444,8 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Text Directory",
-		"Node Configuration",
-		"Nodes > Node Configuration > Text Directory"
+		"Advanced Options",
+		"System > Advanced Options > Text Directory"
 	},
 	{
 		"Text File Sections",

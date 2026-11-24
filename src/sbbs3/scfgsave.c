@@ -226,6 +226,7 @@ bool write_main_cfg(scfg_t* cfg)
 		iniSetString(&ini, name, "exec", cfg->exec_dir, &ini_style);
 		iniSetString(&ini, name, "mods", cfg->mods_dir, &ini_style);
 		iniSetString(&ini, name, "logs", cfg->logs_dir, &ini_style);
+		iniSetString(&ini, name, "text", cfg->text_dir, &ini_style);
 	}
 
 	write_fixed_event(&ini, "newuser", cfg->sys_newuser);
