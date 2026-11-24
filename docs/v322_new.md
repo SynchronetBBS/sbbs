@@ -1054,7 +1054,9 @@
 - New: `extfileinfo.js`: an Ext File Info loadable module (SCFG->System->
   Loadable Modules->Ext File Info) that shows a file's extended
   information as the built-in display does, with what a file search found
-  highlighted in its descriptions (issue #1421)
+  highlighted in its descriptions (issue #1421). Set by the stock
+  `main.ini`; an existing system keeps the built-in display until its
+  sysop sets it
 - More strings in stock modules route through `gettext()` for
   `ctrl/text.ini` `[JS]`-section customization
 - Good Time Trivia gains a `useDoveNetSyncData` option that
