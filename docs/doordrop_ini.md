@@ -370,7 +370,7 @@ The file carries no secrets and grants no privileges, and personal details beyon
 A native door on a socket, with a muted user, CTerm capabilities and one vendor key:
 
 ```ini
-; Written by Synchronet 3.22a
+; Written by Synchronet v3.22a (master/1a2b3c4d5e) 2026-09-23 15:15:00-07:00
 [file]
 FILE_UTF8=1
 FILE_TIME=2026-09-23T15:15:00-07:00

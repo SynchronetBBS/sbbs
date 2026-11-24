@@ -29,6 +29,14 @@
 #include "sbbsdefs.h"   /* JAVASCRIPT_* macros */
 #include "nopen.h"      /* backup */
 
+#if defined(SCFG)
+	#define SBBS_INI_WRITER "SCFG"
+#elif defined(__BORLANDC__)  /* the only Borland build that writes it */
+	#define SBBS_INI_WRITER "sbbsctrl"
+#else
+	#define SBBS_INI_WRITER "Synchronet"
+#endif
+
 static const char* nulstr = "";
 static const char* strAutoStart = "AutoStart";
 static const char* strCtrlDirectory = "CtrlDirectory";
@@ -1642,6 +1650,7 @@ bool sbbs_write_ini(
 		}
 
 		/***********************************************************************/
+		ini_set_written_by(&list, SBBS_INI_WRITER);
 		backup(cfg->filename, cfg->config_backup_level, /* rename: */ false);
 		result = iniWriteFile(fp, list);
 

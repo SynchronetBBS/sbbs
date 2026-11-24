@@ -1426,7 +1426,7 @@ bool sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 #endif
 		char val[DOORDROP_MAX_LINE + 1];
 
-		fprintf(fp, "; Written by Synchronet %s%c\r\n", VERSION, REVISION);
+		fprintf(fp, "%s\r\n", written_by(val, sizeof val, "Synchronet"));
 		fprintf(fp, "[file]\r\n");
 		if (utf8)
 			doordrop_put(fp, "FILE_UTF8", "1");

@@ -25,9 +25,6 @@
 #include "smblib.h"
 #include "userdat.h"
 #include "nopen.h"
-#include "xpdatetime.h"
-#include "git_branch.h"
-#include "git_hash.h"
 
 #ifdef SCFG
 	#define CFG_WRITER "SCFG"
@@ -39,28 +36,6 @@ extern const char* scfg_addr_list_separator;
 
 bool               no_msghdr = false, all_msghdr = false;
 static ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
-
-/****************************************************************************/
-/* Sets the comment that begins a written configuration file, recording the	*/
-/* program and build that wrote it and when (a backup copy keeps it, where	*/
-/* a file's timestamp may not survive)										*/
-/****************************************************************************/
-#define WRITTEN_BY_PREFIX "; Written by "
-
-static void set_written_by(str_list_t* ini, const char* program)
-{
-	char line[256];
-	char when[64];
-
-	xpDateTime_to_isoDateTimeStr(xpDateTime_now(), "-", " ", ":", 0, when, sizeof when);
-	snprintf(line, sizeof line, WRITTEN_BY_PREFIX "%s v%s%c (%s/%s) %s"
-	         , program, VERSION, REVISION, GIT_BRANCH, GIT_HASH, when);
-	if (*ini != NULL && (*ini)[0] != NULL
-	    && strncmp((*ini)[0], WRITTEN_BY_PREFIX, strlen(WRITTEN_BY_PREFIX)) == 0)
-		strListReplace(*ini, 0, line);
-	else
-		strListInsert(ini, line, 0);
-}
 
 /****************************************************************************/
 /* Rewrites a configuration file in place while holding it open exclusively	*/
@@ -75,7 +50,7 @@ static bool write_cfg_file(scfg_t* cfg, const char* path, str_list_t* ini)
 	int   file;
 	bool  result;
 
-	set_written_by(ini, CFG_WRITER);
+	ini_set_written_by(ini, CFG_WRITER);
 	backup(path, cfg->config_backup_level, /* ren: */ false);
 	/* No O_TRUNC: the file must not be emptied before it is locked */
 	if ((fp = fnopen(&file, path, O_WRONLY | O_CREAT)) == NULL)

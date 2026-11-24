@@ -698,6 +698,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		iniSetBool(&ini, section, "UsesMSG", bot->uses_msg, style);
 	}
 
+	ini_set_written_by(&ini, "EchoCfg");
 	iniWriteFile(fp, ini);
 	iniCloseFile(fp);
 

@@ -26,12 +26,14 @@
 #include <fcntl.h>          /* O_RDONLY */
 #include "gen_defs.h"       /* bool */
 #include "dirwrap.h"        /* MAX_PATH */
+#include "str_list.h"       /* str_list_t */
 
 #define FNOPEN_BUF_SIZE     (64 * 1024)
 #define FCOPY_BUF_SIZE      (256 * 1024)
 #define LOOP_NOPEN    100   /* Retries before file access denied			*/
 #define LOCK_RETRY_DELAY 100 // Milliseconds between retries on locked resource
 #define FMUTEX_UNLINK_RETRIES 10 // Retries of a mutex file removal another host is blocking
+#define WRITTEN_BY_PREFIX "; Written by "
 
 typedef struct {
 	int fd;
@@ -53,6 +55,8 @@ bool    fmutex_close(fmutex_t*);
 bool    fcompare(const char* fn1, const char* fn2);
 bool    nfcopy(const char* src, const char* dest);
 bool    backup(const char* org, int backup_level, bool ren);
+char*   written_by(char* buf, size_t size, const char* program);
+void    ini_set_written_by(str_list_t* ini, const char* program);
 
 #ifdef __cplusplus
 }
