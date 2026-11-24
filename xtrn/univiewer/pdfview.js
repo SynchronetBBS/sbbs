@@ -26,14 +26,14 @@
  * grey boxes), tiling patterns (approximated by a flat colour), transparency
  * groups/blend modes, AES-256 (V5) encryption, and password-protected files.
  *
- * sixelview.js does the same for PDFs and also displays images and Sixel files; this
+ * univiewer.js does the same for PDFs and also displays images and Sixel files; this
  * program is the PDF-only version.  See also pdf2sixel.js (convert to a Sixel file).
- * Requires load/sixelview_lib.js, which loads pdf2sixel_lib.js.  Tab size is 4.
+ * Requires load/univiewer_lib.js, which loads pdf2sixel_lib.js.  Tab size is 4.
  */
 
 "use strict";
 
-load("sixelview_lib.js");
+load("univiewer_lib.js");
 
 function main()
 {

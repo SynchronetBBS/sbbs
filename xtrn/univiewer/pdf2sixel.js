@@ -11,7 +11,7 @@
  *	jsexec pdf2sixel.js /full/path/file.pdf out=-			(stdout, explicitly)
  *
  * Under the BBS (?pdf2sixel file.pdf [page=N] ...) the image is sent to the user's
- * terminal once.  Use pdfview.js for interactive viewing and sixelview.js to view
+ * terminal once.  Use pdfview.js for interactive viewing and univiewer.js to view
  * the resulting .six files (or other images).
  *
  * Options (key=value, in any order after the file name):

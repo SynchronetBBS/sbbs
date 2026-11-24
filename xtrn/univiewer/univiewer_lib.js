@@ -1,11 +1,11 @@
-/* sixelview_lib.js
+/* univiewer_lib.js
  *
  * Terminal image/document viewer library: the full-screen scroll/zoom viewer used by
- * pdfview.js and sixelview.js, plus Sixel/PNG/JPEG/GIF/BMP/PPM image loading.
+ * pdfview.js and univiewer.js, plus Sixel/PNG/JPEG/GIF/BMP/PPM image loading.
  * Requires pdf2sixel_lib.js (rasterizer, Sixel encoder, JPEG decoder) and, for PNG,
  * inflate.js.  Tab size is 4.
  *
- *	load("sixelview_lib.js");
+ *	load("univiewer_lib.js");
  *	viewer(load_pdf(path), 1);				// interactive PDF viewer, first page
  *	viewer(new ImageDoc(load_image_file(path)), 0);	// interactive image viewer
  *
