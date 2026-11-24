@@ -1497,7 +1497,7 @@ js_quote_msg(JSContext *cx, uintN argc, jsval *arglist)
 			strcat(outbuf, prefix);
 		if (clen < len || inbuf[i] == '\n' || inbuf[i] == '\r')
 			linebuf[l++] = inbuf[i];
-		if (inbuf[i] == '\x01') {      /* Handle CTRL-A */
+		if (inbuf[i] == '\x01' && inbuf[i + 1] != '\0') {      /* Handle CTRL-A */
 			linebuf[l++] = inbuf[++i];
 			if (inbuf[i] == '\x01')
 				clen++;
