@@ -45,6 +45,9 @@ Text (shown in the text reader or drawn to the terminal):
 Archives (unpacked on demand; see below):
   ZIP RAR CBZ CBR
 
+Music (played through the terminal's audio; see MUSIC below):
+  MP3 OGG OGA OPUS FLAC WAV AIF AIFF AIFC AU
+
 USING THE MOUSE
 ===============
 It works in any terminal that reports the mouse (SyncTERM does).
@@ -106,6 +109,11 @@ pdfunmark.js		Host tool: removes watermark text from PDF books (see
 			REMOVING WATERMARKS below).  Not used by the BBS.
 
 sixelviewlibrary.js	The library browser (see below)
+
+sixelmusic_lib.js	The music player the library browser uses (see MUSIC)
+
+sixelmusic.js		Plays a music file or directory by itself
+			(?sixelmusic <file or directory>)
 
 http_lib.js		The web requests the browser makes (GET and POST, with
 			the limits and checks described under WEB PAGES)
@@ -365,6 +373,15 @@ above.  If you give both, include is applied first and then exclude removes
 things from what's left.  A plain extension like "pdf" is understood as
 "*.pdf".  (If you are coming from ansiview, its "hide" setting works here
 too as another name for exclude.)
+
+A pattern that ends in / matches directories only, and the others match files
+only.  So "exclude = old/,*.exe" hides every directory named old and every
+.exe file, and "include = *.pdf,books/" lists only PDF files and, with
+subdirs on, only the directory books.  If an include has patterns for just
+one kind (files or directories), the other kind isn't limited by it:
+"include = pdf" still lists every directory, and "include = books/" lists
+every file in the directory it is in.  Directory patterns only matter when
+subdirs is true.
 
 Any file whose extension isn't one of the types listed above is treated as a
 text file, so things like "turkey.fun", "recipe.012" or a file with no
@@ -647,6 +664,109 @@ menu display, in /sbbs/text/menu/ (the main.* files, whichever you use), and
 add the new key and name where you want it.
 
 
+USING MORE THAN ONE SETTINGS FILE
+=================================
+By default sixelviewlibrary.js reads settings.ini.  If you give it the name of
+an .ini file as its first argument, it reads that file instead:
+
+  ?sixelviewlibrary.js music.ini
+
+The name is looked for in the SixelView directory unless it is a full path,
+and ".ini" is added if you leave it off.  The file is laid out exactly like
+settings.ini (a theme and [library:...] sections).
+
+Why: the same script runs wherever you put it on the menus, and a single
+settings.ini gives every one of those places the same list of libraries.
+With a file per menu entry you can have, for example, a Text Files section
+that lists your textfiles, a Music entry that lists only your music
+directories, and a Documents entry for PDFs, each with its own libraries,
+access requirements and even its own theme, and all of them still run the
+one copy of the program.  Use it in the Command Line of an online program
+(see the second way above), in the exec line of a command shell key, or after
+the module name in the Text Section command in SCFG:
+
+  ../xtrn/sixelview/sixelviewlibrary.js music.ini
+
+Synchronet runs the first Text Section module whose access requirements the
+user meets, so you can give different groups of users different settings
+files that way.
+
+MUSIC
+=====
+Choosing an MP3, Ogg Vorbis, Opus, FLAC, WAV, AIFF or AU file in a library
+plays it, using the audio support in SyncTERM.  It needs nothing but
+Synchronet: the BBS reads the file's tags and length itself and sends the
+file to the terminal, which decodes and plays it.  Terminals that can't play
+audio are told so.  MP3 also needs libsndfile 1.1 or later on the user's
+computer.  Titles and artists are shown for MP3, Ogg, Opus, FLAC and AIFF
+files that have them.
+
+The screen shows the title, artist, album and format, a progress bar with the
+time, a volume bar and a menu on the bottom line:
+
+  S       Stop or start the song (Space too); a stopped song starts over
+  N / P   Next and previous track.  P goes back to the beginning of the
+          song first if it has been playing for more than a few seconds.
+          The tracks are the music files in the same directory.
+  Up/Down Volume (+ and - too); M mutes
+  A       Autoplay on or off: with it on, the next song starts when one
+          ends.  It is off to begin with.
+  Q       Quit (Ctrl-C and a right click do too)
+
+Every item on the bottom line, the buttons and the volume bar can be clicked.
+
+Why it is limited: SyncTERM can't seek, pause or say where it is in a song,
+so there is no skipping ahead and a stopped song starts again from the
+beginning.  The position shown is the player's own clock.  Each song is sent
+once when it starts, up to 64 MB (less on a BBS with a small JavaScript heap).
+
+SENDING SMALLER FILES: a song is sent to the user's terminal whole, so a big
+FLAC or 320 kbps MP3 takes a while on a slow connection (the bottom line shows
+the size and, after the first song, a time estimate).  If you set music_kbps
+in settings.ini:
+
+  music_kbps = 128
+
+then any song with a higher bit rate is sent as a smaller Opus copy at about
+that rate.  This is the one place an outside program is used.  ffmpeg (with
+libopus) is optional but highly recommended: the music player works fully
+without it, but with it songs are a fraction of the size, which saves
+bandwidth and gets them to slow connections much sooner.  FLAC files and high
+bit rate MP3s benefit the most.  It is never used unless you set music_kbps.
+Why ffmpeg: re-encoding music inside Synchronet's JavaScript would take
+minutes per song.
+
+ffmpeg is looked for in the exec directory and then on the path, but the BBS
+often runs with a shorter path than your own login, so you can name it:
+
+  ffmpeg = /usr/bin/ffmpeg
+
+(a full path, with no quotes; spaces are fine but shell characters such as
+$ or ; are not).  If that file isn't there, nothing is converted and an error
+is written to the Synchronet log.
+
+The copy is made the first time someone plays the song (the user sees "making
+a smaller copy"), kept in .cache/music/ and cleaned up by cache_max_days and
+cache_max_mb like the other cached files.  Songs that are already small,
+files whose names contain unusual characters, and any song ffmpeg can't
+convert are sent as they are.  Titles and artists are kept; the screen shows
+"Opus (from FLAC)" or similar.  Leave music_kbps out to always send the
+original files.
+
+music_kbps can be set for all libraries (at the top of settings.ini) or in
+a single [library:...] section, where it overrides the top one.  For example,
+set 128 at the top for everything and put music_kbps = 0 in a library of
+small files, or leave the top alone and set it only in a library that holds
+FLAC.  ffmpeg = is always global.
+
+To make a music section, add a library to a settings file, for example:
+
+  [library:Music]
+  dir = /sbbs/xtrn/music
+
+and, if you like, keep it in its own file (see USING MORE THAN ONE SETTINGS
+FILE above).
+
 SOME NOTES AND LIMITS
 =====================
 The viewers are written in plain JavaScript, so everything is slow on a
@@ -797,3 +917,20 @@ Version 1.3		23 Nov 2026	Pictures and PDFs: JPEG 2000 and JBIG2
 Version 1.4		23 Nov 2026	Install: install-xtrn.ini (run
 					jsexec install-xtrn ../xtrn/sixelview)
 					and a .gitignore for settings.ini.
+Version 1.5		23 Nov 2026	Music: MP3, Ogg Vorbis, Opus, FLAC,
+					WAV, AIFF and AU play in SyncTERM
+					(sixelmusic_lib.js, sixelmusic.js):
+					next, previous, volume, mute,
+					autoplay option, keyboard and mouse.
+					music_kbps= sends big songs as a
+					smaller Opus copy made with ffmpeg
+					(named by ffmpeg=, or found on the
+					path), for slow connections; it can
+					be set per library too.
+					Library: an .ini file named on the
+					command line replaces settings.ini
+					(?sixelviewlibrary.js music.ini),
+					so each menu entry can have its own
+					libraries.  include and exclude:
+					a pattern ending in / matches
+					directories only.

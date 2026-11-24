@@ -20,6 +20,7 @@ load("key_defs.js");
 load("smbdefs.js");
 load("sixelview_lib.js");
 load("http_lib.js");
+load("sixelmusic_lib.js");
 /* html_lib.js
  *
  * HTML (and EPUB) support for SixelView.  An HTML document is laid out into pages and written as a
@@ -1403,7 +1404,7 @@ var IMAGE_TYPES = ["pdf", "png", "jpg", "jpeg", "gif", "bmp", "ppm", "pgm", "six
 var TEXT_TYPES = ["ans", "ansi", "asc", "txt", "msg", "diz", "nfo", "bbs", "md", "log", "cfg", "ini", "conf", "1st"];
 var ARCHIVE_TYPES = ["zip", "cbz", "rar", "cbr"];		/* extracted on demand into a directory of the same name */
 var HTML_TYPES = ["html", "htm", "xhtml", "epub"];	/* laid out as pages and shown like a PDF */
-var SUPPORTED_TYPES = IMAGE_TYPES.concat(TEXT_TYPES, ARCHIVE_TYPES, HTML_TYPES);
+var SUPPORTED_TYPES = IMAGE_TYPES.concat(TEXT_TYPES, ARCHIVE_TYPES, HTML_TYPES, MUSIC_TYPES);	/* MUSIC_TYPES: see sixelmusic_lib.js */
 
 /* Output speeds for text/ANSI files; index 0 = unlimited (the index is also what SyncTERM is sent) */
 var SPEEDS = [0, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 115200];
@@ -1516,18 +1517,37 @@ function split_list(str)
 				p = cp;
 		}
 		p = p.replace(/\\x([0-9a-fA-F]{2})/g, function (m, h) { return String.fromCharCode(parseInt(h, 16)); });
-		if (!/[*?]/.test(p))
+		/* a pattern ending in a slash (such as old/) matches directories only; the others match files only */
+		var isdir = /\/$/.test(p);
+		if (isdir)
+			p = p.replace(/\/+$/, "");
+		else if (!/[*?]/.test(p))
 			p = "*." + p.replace(/^\./, "");
+		if (!p.length)
+			continue;
 		var re = p.replace(/[\\^$.+()\[\]{}|\/]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".");
-		out.push(new RegExp("^" + re + "$", "i"));
+		var rx = new RegExp("^" + re + "$", "i");
+		rx.isdir = isdir;
+		out.push(rx);
 	}
 	return out;
 }
 
-function matches_any(list, name)
+/* Does name match a pattern in the list?  Patterns ending in / are for directories (isdir) and the others for files */
+function matches_any(list, name, isdir)
 {
 	for (var i = 0; i < list.length; i++) {
-		if (list[i].test(name))
+		if (!!list[i].isdir == !!isdir && list[i].test(name))
+			return true;
+	}
+	return false;
+}
+
+/* Does the list have any patterns for directories (isdir) or for files? */
+function has_patterns(list, isdir)
+{
+	for (var i = 0; i < list.length; i++) {
+		if (!!list[i].isdir == !!isdir)
 			return true;
 	}
 	return false;
@@ -1635,9 +1655,24 @@ function read_theme(filename)
 	}
 }
 
+/* The settings file is settings.ini unless the first command-line argument names another .ini
+   file (absolute, or relative to this directory), so each menu entry can use its own set of
+   libraries: ?sixelviewlibrary.js music.ini */
+function settings_path()
+{
+	var arg = (typeof argv !== "undefined" && argv.length) ? String(argv[0]) : "";
+	if (!arg)
+		return BASE_DIR + "settings.ini";
+	if (!/\.ini$/i.test(arg))
+		arg += ".ini";
+	if (!/^([\/\\]|[A-Za-z]:)/.test(arg))
+		arg = BASE_DIR + arg;
+	return arg;
+}
+
 function read_settings()
 {
-	var f = new File(BASE_DIR + "settings.ini");
+	var f = new File(settings_path());
 	if (!f.open("r")) {
 		log(LOG_ERR, "sixelviewlibrary: unable to open " + f.name);
 		return null;
@@ -1701,6 +1736,11 @@ function read_settings()
 		opt.cache_max_days = Number(root.cache_max_days);
 	if (root.cache_max_mb !== undefined && Number(root.cache_max_mb) >= 0)
 		opt.cache_max_bytes = Number(root.cache_max_mb) * 1048576;
+	/* music_kbps=128 sends songs bigger than that as a smaller Opus copy made with ffmpeg (0 = as they are) */
+	if (Number(root.music_kbps) > 0)
+		opt.music_kbps = Number(root.music_kbps);
+	if (root.ffmpeg)		/* full path of ffmpeg; otherwise the exec directory, then the path */
+		opt.ffmpeg = String(root.ffmpeg).replace(/^\s+|\s+$/g, "");
 	return { theme: root.theme, libraries: libraries };
 }
 
@@ -1711,11 +1751,19 @@ function type_allowed(lib, name)
 	/* any other extension (or none, or .012) is treated as a text file; use exclude= to hide things */
 	if (ARCHIVE_TYPES.indexOf(ext) >= 0 && !lib.subdirs)	/* extracted archives are browsed as sub-directories */
 		return false;
-	if (lib.include.length && !matches_any(lib.include, name))
+	if (has_patterns(lib.include, false) && !matches_any(lib.include, name, false))
 		return false;
-	if (matches_any(lib.exclude, name))
+	if (matches_any(lib.exclude, name, false))
 		return false;
 	return true;
+}
+
+/* Is a directory shown in this library?  (include and exclude patterns that end in /) */
+function dir_allowed(lib, name)
+{
+	if (has_patterns(lib.include, true) && !matches_any(lib.include, name, true))
+		return false;
+	return !matches_any(lib.exclude, name, true);
 }
 
 function library_allowed(lib)
@@ -1870,10 +1918,8 @@ function list_hook_entries(lib, subpath)
 	var out = [{ name: "..", isdir: true, up: true, size: 0, date: 0 }];	/* at the top it leaves the library */
 	for (var i = 0; i < items.length; i++) {
 		var it = items[i];
-		if (!it.isdir) {
-			if (!type_allowed(lib, it.name))
-				continue;
-		}
+		if (it.isdir ? !dir_allowed(lib, it.name) : !type_allowed(lib, it.name))
+			continue;
 		out.push(it);
 	}
 	return out;
@@ -1950,7 +1996,7 @@ function list_entries(lib, subpath)
 		if (file_isdir(p)) {
 			if (comics[name.toLowerCase()])
 				continue;
-			if (lib.subdirs)
+			if (lib.subdirs && dir_allowed(lib, name))
 				dirs.push({ name: name, isdir: true, path: p, size: 0, date: file_date(p), desc: descs && descs[name] || "" });
 		}
 		else if (type_allowed(lib, name)) {
@@ -3842,6 +3888,15 @@ function view_file_inner(entry)
 	var doc;
 	try {
 		var xt = file_ext(entry.name);
+		if (MUSIC_TYPES.indexOf(xt) >= 0) {
+			/* the music files beside this one make the playlist; the player handles next and previous itself */
+			var mpl = music_playlist_for(entry.path);
+			/* music_kbps in the library's own section overrides the one in the root (0 turns it off) */
+			var lo = CUR_LIB && CUR_LIB.options ? CUR_LIB.options : {};
+			var mk = lo.music_kbps !== undefined && Number(lo.music_kbps) >= 0 ? Number(lo.music_kbps) : opt.music_kbps;
+			music_player(mpl.list, mpl.index, mk, opt.ffmpeg);
+			return "";
+		}
 		if (TEXT_TYPES.indexOf(xt) >= 0)
 			return view_text(entry.path);
 		if (SUPPORTED_TYPES.indexOf(xt) < 0 && !looks_binary(entry.path))
@@ -4016,7 +4071,7 @@ function main()
 {
 	var settings = read_settings();
 	if (!settings) {
-		console.print("\x01n\x01h\x01rSixelView Library is not configured (settings.ini not found).\x01n\r\n");
+		console.print("\x01n\x01h\x01rSixelView Library is not configured (" + file_getname(settings_path()) + " not found).\x01n\r\n");
 		console.pause();
 		return;
 	}
