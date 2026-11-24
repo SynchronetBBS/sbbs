@@ -9,19 +9,20 @@ require("utf8_cp437.js", 'utf8_cp437');
 function decode(hvalue)
 {
 	var result = [];
-	var regex = /(\=\?[a-zA-Z0-9-]+\?.\?[^ ?]*\?\=|\S+\s*)/g;
+	var encoded_word = /^\=\?([a-zA-Z0-9-]+)\?(.)\?([^ ?]*)\?\=/;
+	var regex = /(\=\?[a-zA-Z0-9-]+\?.\?[^ ?]*\?\=)(\s*)|\S+\s*/g;
 	var word;
 
 	while(hvalue && (word = regex.exec(hvalue)) !== null) {
-		var str = word[1];
-		var retval = { charset: 'unspecified (US-ASCII)', data: str };
+		var retval = { charset: 'unspecified (US-ASCII)', data: word[0] };
 
-		var match = str.match(/^\=\?([a-zA-Z0-9-]+)\?(.)\?([^ ?]*)\?\=$/);
-		if(!match) {
+		if(!word[1]) {
 			result.push(retval);
 			continue;
 		}
+		var match = word[1].match(encoded_word);
 
+		retval.data = word[1];
 		retval.charset = match[1].toLowerCase();
 		switch(match[2].toUpperCase()) {
 			case 'Q':	// "similar to" Quoted-printable
@@ -34,6 +35,9 @@ function decode(hvalue)
 				break;
 		}
 		result.push(retval);
+		// White space is dropped only between two adjacent encoded words
+		if(word[2] && !encoded_word.test(hvalue.substring(regex.lastIndex)))
+			result.push({ charset: 'unspecified (US-ASCII)', data: word[2] });
 	}
 	return result;
 }
