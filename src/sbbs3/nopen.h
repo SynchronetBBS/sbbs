@@ -34,6 +34,10 @@
 #define LOCK_RETRY_DELAY 100 // Milliseconds between retries on locked resource
 #define FMUTEX_UNLINK_RETRIES 10 // Retries of a mutex file removal another host is blocking
 #define WRITTEN_BY_PREFIX "; Written by "
+/* printf format and arguments of a written_by() writer naming a program and
+   the Synchronet build: the caller includes sbbsdefs.h and the git_*.h headers */
+#define WRITTEN_BY_BUILD_FMT "%s (Synchronet v%s%c %s/%s)"
+#define WRITTEN_BY_BUILD_ARGS(program) (program), VERSION, REVISION, GIT_BRANCH, GIT_HASH
 
 typedef struct {
 	int fd;
@@ -55,8 +59,8 @@ bool    fmutex_close(fmutex_t*);
 bool    fcompare(const char* fn1, const char* fn2);
 bool    nfcopy(const char* src, const char* dest);
 bool    backup(const char* org, int backup_level, bool ren);
-char*   written_by(char* buf, size_t size, const char* program);
-void    ini_set_written_by(str_list_t* ini, const char* program);
+char*   written_by(char* buf, size_t size, const char* writer);
+void    ini_set_written_by(str_list_t* ini, const char* writer);
 
 #ifdef __cplusplus
 }

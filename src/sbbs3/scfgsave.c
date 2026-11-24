@@ -25,6 +25,8 @@
 #include "smblib.h"
 #include "userdat.h"
 #include "nopen.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 #ifdef SCFG
 	#define CFG_WRITER "SCFG"
@@ -49,8 +51,10 @@ static bool write_cfg_file(scfg_t* cfg, const char* path, str_list_t* ini)
 	FILE* fp;
 	int   file;
 	bool  result;
+	char  writer[128];
 
-	ini_set_written_by(ini, CFG_WRITER);
+	snprintf(writer, sizeof writer, WRITTEN_BY_BUILD_FMT, WRITTEN_BY_BUILD_ARGS(CFG_WRITER));
+	ini_set_written_by(ini, writer);
 	backup(path, cfg->config_backup_level, /* ren: */ false);
 	/* No O_TRUNC: the file must not be emptied before it is locked */
 	if ((fp = fnopen(&file, path, O_WRONLY | O_CREAT)) == NULL)

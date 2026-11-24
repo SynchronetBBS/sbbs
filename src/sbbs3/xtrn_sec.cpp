@@ -20,6 +20,8 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "git_branch.h"
+#include "git_hash.h"
 #include "pcbdefs.hpp"
 #include "qbbsdefs.hpp"
 #include "uartdefs.h"
@@ -1426,7 +1428,9 @@ bool sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 #endif
 		char val[DOORDROP_MAX_LINE + 1];
 
-		fprintf(fp, "%s\r\n", written_by(val, sizeof val, "Synchronet"));
+		char writer[128];
+		snprintf(writer, sizeof writer, "Synchronet v%s%c (%s/%s)", VERSION, REVISION, GIT_BRANCH, GIT_HASH);
+		fprintf(fp, "%s\r\n", written_by(val, sizeof val, writer));
 		fprintf(fp, "[file]\r\n");
 		if (utf8)
 			doordrop_put(fp, "FILE_UTF8", "1");

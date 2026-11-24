@@ -29,7 +29,9 @@
 #include "sbbsdefs.h"   /* JAVASCRIPT_* macros */
 #include "nopen.h"      /* backup */
 
-#if defined(SCFG)
+#if defined(SCFG)  /* SCFG's builds have the git_*.h headers; others may not */
+	#include "git_branch.h"
+	#include "git_hash.h"
 	#define SBBS_INI_WRITER "SCFG"
 #elif defined(__BORLANDC__)  /* the only Borland build that writes it */
 	#define SBBS_INI_WRITER "sbbsctrl"
@@ -992,6 +994,7 @@ bool sbbs_write_ini(
 	str_list_t*      lp;
 	ini_style_t      style;
 	global_startup_t global_buf;
+	char             writer[128];
 
 	memset(&style, 0, sizeof(style));
 	style.key_prefix = "\t";
@@ -1650,7 +1653,12 @@ bool sbbs_write_ini(
 		}
 
 		/***********************************************************************/
-		ini_set_written_by(&list, SBBS_INI_WRITER);
+#if defined(SCFG)
+		snprintf(writer, sizeof writer, WRITTEN_BY_BUILD_FMT, WRITTEN_BY_BUILD_ARGS(SBBS_INI_WRITER));
+#else
+		snprintf(writer, sizeof writer, "%s (Synchronet v%s%c)", SBBS_INI_WRITER, VERSION, REVISION);
+#endif
+		ini_set_written_by(&list, writer);
 		backup(cfg->filename, cfg->config_backup_level, /* rename: */ false);
 		result = iniWriteFile(fp, list);
 

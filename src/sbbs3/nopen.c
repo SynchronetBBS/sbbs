@@ -26,10 +26,7 @@
 #include "filewrap.h"
 #include "sockwrap.h"
 #include "nopen.h"
-#include "sbbsdefs.h"     /* VERSION, REVISION */
 #include "xpdatetime.h"
-#include "git_branch.h"
-#include "git_hash.h"
 #ifdef _WIN32
 	#include <io.h>
 #endif
@@ -409,22 +406,15 @@ bool backup(const char *fname, int backup_level, bool ren)
 }
 
 /****************************************************************************/
-/* The comment that begins a configuration file written by 'program': names	*/
-/* the program and the Synchronet build that wrote it and when, e.g.		*/
-/* "; Written by SCFG (Synchronet v3.22a master/2d9eaaeb86) 2026-11-23	*/
-/* 22:22:04-08:00"														*/
+/* The comment that begins a configuration file: "; Written by <writer>	*/
+/* <time>", the writer naming the program and build (WRITTEN_BY_BUILD_FMT)	*/
 /****************************************************************************/
-char* written_by(char* buf, size_t size, const char* program)
+char* written_by(char* buf, size_t size, const char* writer)
 {
 	char when[64];
 
 	xpDateTime_to_isoDateTimeStr(xpDateTime_now(), "-", " ", ":", 0, when, sizeof when);
-	if (strcmp(program, "Synchronet") == 0)
-		snprintf(buf, size, "%sSynchronet v%s%c (%s/%s) %s"
-		         , WRITTEN_BY_PREFIX, VERSION, REVISION, GIT_BRANCH, GIT_HASH, when);
-	else
-		snprintf(buf, size, "%s%s (Synchronet v%s%c %s/%s) %s"
-		         , WRITTEN_BY_PREFIX, program, VERSION, REVISION, GIT_BRANCH, GIT_HASH, when);
+	snprintf(buf, size, "%s%s %s", WRITTEN_BY_PREFIX, writer, when);
 	return buf;
 }
 
@@ -432,11 +422,11 @@ char* written_by(char* buf, size_t size, const char* program)
 /* Makes that comment the first line of a .ini file's contents, replacing	*/
 /* the one a previous write put there										*/
 /****************************************************************************/
-void ini_set_written_by(str_list_t* ini, const char* program)
+void ini_set_written_by(str_list_t* ini, const char* writer)
 {
 	char line[256];
 
-	written_by(line, sizeof line, program);
+	written_by(line, sizeof line, writer);
 	if (*ini != NULL && (*ini)[0] != NULL
 	    && strncmp((*ini)[0], WRITTEN_BY_PREFIX, strlen(WRITTEN_BY_PREFIX)) == 0)
 		strListReplace(*ini, 0, line);
