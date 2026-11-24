@@ -1,4 +1,4 @@
-/* sixteencolors.js - SixelView Library hook for the Sixteen Colors ANSI/ASCII art archive
+/* sixteencolors.js - Universal Viewer Library hook for the Sixteen Colors ANSI/ASCII art archive
  * (https://16colo.rs).  Years -> packs -> files.
  *
  * A hook is loaded with load({}, "hooks/<module>") and must define create(ctx), returning an

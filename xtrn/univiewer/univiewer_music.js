@@ -1,10 +1,10 @@
-/* sixelmusic.js
+/* univiewer_music.js
  *
  * Play a music file (MP3, Ogg Vorbis, Opus, FLAC, WAV, AIFF or AU) in SyncTERM, with the other music files in the same
- * directory as a playlist.  Written entirely in Synchronet JS; see sixelmusic_lib.js.
+ * directory as a playlist.  Written entirely in Synchronet JS; see univiewer_music_lib.js.
  *
- * Usage:  ?sixelmusic <file>		play that file, then the ones after it
- *         ?sixelmusic <directory>	play every music file in the directory
+ * Usage:  ?univiewer_music <file>		play that file, then the ones after it
+ *         ?univiewer_music <directory>	play every music file in the directory
  *
  * Tab size is 4.
  */
@@ -13,14 +13,14 @@
 
 load("sbbsdefs.js");
 load("key_defs.js");
-load("sixelview_lib.js");
-load("sixelmusic_lib.js");
+load("univiewer_lib.js");
+load("univiewer_music_lib.js");
 
 function main()
 {
 	var arg = argv.length > 0 ? argv.join(" ") : "";
 	if (!arg.length) {
-		console.print("\x01n\x01cusage: \x01h?sixelmusic <file or directory>\x01n\r\n");
+		console.print("\x01n\x01cusage: \x01h?univiewer_music <file or directory>\x01n\r\n");
 		return;
 	}
 	var path = arg;

@@ -1,16 +1,16 @@
-/* sixelviewlibrary.js
+/* univiewerlibrary.js
  *
- * Library browser for SixelView.  Lists the libraries (directories of PDF, image,
+ * Library browser for Universal Viewer.  Lists the libraries (directories of PDF, image,
  * ANSI/ASCII art and text files) configured in settings.ini, filtered by each library's
- * ARS, include and exclude settings, and opens the chosen file in the SixelView viewer
+ * ARS, include and exclude settings, and opens the chosen file in the Universal Viewer viewer
  * (PDF and images) or the text/ANSI viewer.  ZIP files in libraries that allow
  * sub-directories are extracted on demand into a directory of the same name.
  * S and P in the lists set the output speed and screen pausing for text/ANSI files.
  *
- *	?sixelviewlibrary [force]
+ *	?univiewerlibrary [force]
  *
  * Configuration: settings.ini (see settings-example.ini) and the theme file it names.
- * Requires sixelview_lib.js.  Tab size is 4.
+ * Requires univiewer_lib.js.  Tab size is 4.
  */
 
 "use strict";
@@ -18,12 +18,12 @@
 load("sbbsdefs.js");
 load("key_defs.js");
 load("smbdefs.js");
-load("sixelview_lib.js");
+load("univiewer_lib.js");
 load("http_lib.js");
-load("sixelmusic_lib.js");
+load("univiewer_music_lib.js");
 /* html_lib.js
  *
- * HTML (and EPUB) support for SixelView.  An HTML document is laid out into pages and written as a
+ * HTML (and EPUB) support for Universal Viewer.  An HTML document is laid out into pages and written as a
  * real PDF file, which the normal viewer then displays.  That gives HTML scrolling, zooming, page
  * navigation, links (Tab / Enter) and a table of contents (C, built from the headings) for free.
  *
@@ -1404,7 +1404,7 @@ var IMAGE_TYPES = ["pdf", "png", "jpg", "jpeg", "gif", "bmp", "ppm", "pgm", "six
 var TEXT_TYPES = ["ans", "ansi", "asc", "txt", "msg", "diz", "nfo", "bbs", "md", "log", "cfg", "ini", "conf", "1st"];
 var ARCHIVE_TYPES = ["zip", "cbz", "rar", "cbr"];		/* extracted on demand into a directory of the same name */
 var HTML_TYPES = ["html", "htm", "xhtml", "epub"];	/* laid out as pages and shown like a PDF */
-var SUPPORTED_TYPES = IMAGE_TYPES.concat(TEXT_TYPES, ARCHIVE_TYPES, HTML_TYPES, MUSIC_TYPES);	/* MUSIC_TYPES: see sixelmusic_lib.js */
+var SUPPORTED_TYPES = IMAGE_TYPES.concat(TEXT_TYPES, ARCHIVE_TYPES, HTML_TYPES, MUSIC_TYPES);	/* MUSIC_TYPES: see univiewer_music_lib.js */
 
 /* Output speeds for text/ANSI files; index 0 = unlimited (the index is also what SyncTERM is sent) */
 var SPEEDS = [0, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 115200];
@@ -1450,7 +1450,7 @@ var DEFAULT_THEME = {
 	scrollbarBGChar: "\\xb0",
 	scrollbarScrollBlockColor: "nhw",
 	scrollbarScrollBlockChar: "\\xdb",
-	titleText: "\\x01n\\x01h\\x01wSixelView Library",
+	titleText: "\\x01n\\x01h\\x01wUniversal Viewer Library",
 	noLibrariesText: "\\x01n\\x01h\\x01yThere are no libraries available.",
 	emptyLibraryText: "\\x01n\\x01h\\x01yThere are no files to display here.",
 	errorText: "\\x01n\\x01h\\x01rUnable to display file: \\x01w%s",
@@ -1644,7 +1644,7 @@ function read_theme(filename)
 		return;
 	var f = new File(resolve_path(filename));
 	if (!f.open("r")) {
-		log(LOG_WARNING, "sixelviewlibrary: unable to open theme " + f.name);
+		log(LOG_WARNING, "univiewerlibrary: unable to open theme " + f.name);
 		return;
 	}
 	var obj = f.iniGetObject();
@@ -1657,7 +1657,7 @@ function read_theme(filename)
 
 /* The settings file is settings.ini unless the first command-line argument names another .ini
    file (absolute, or relative to this directory), so each menu entry can use its own set of
-   libraries: ?sixelviewlibrary.js music.ini */
+   libraries: ?univiewerlibrary.js music.ini */
 function settings_path()
 {
 	var arg = (typeof argv !== "undefined" && argv.length) ? String(argv[0]) : "";
@@ -1674,7 +1674,7 @@ function read_settings()
 {
 	var f = new File(settings_path());
 	if (!f.open("r")) {
-		log(LOG_ERR, "sixelviewlibrary: unable to open " + f.name);
+		log(LOG_ERR, "univiewerlibrary: unable to open " + f.name);
 		return null;
 	}
 	var root = f.iniGetObject() || {};
@@ -1808,7 +1808,7 @@ function open_hook(lib)
 			return new HTTPRequest().Get(url);
 		}
 		catch (e) {
-			log(LOG_WARNING, "sixelviewlibrary: " + url + ": " + e);
+			log(LOG_WARNING, "univiewerlibrary: " + url + ": " + e);
 			return null;
 		}
 	}
@@ -1855,7 +1855,7 @@ function open_hook(lib)
 		lib.hook = scope.create(ctx);
 	}
 	catch (e) {
-		log(LOG_ERR, "sixelviewlibrary: hook " + modname + ": " + e);
+		log(LOG_ERR, "univiewerlibrary: hook " + modname + ": " + e);
 	}
 	return lib.hook;
 }
@@ -2851,7 +2851,7 @@ function report_problem(path, problem)
 		mark += md5_calc(path + "|" + problem.substr(0, 40), true);
 		if (file_exists(mark) && time() - file_date(mark) < 86400)
 			return;
-		var hdr = { from: "SixelView", from_ext: "0", subject: "SixelView: problem with " + file_getname(path) };
+		var hdr = { from: "Universal Viewer", from_ext: "0", subject: "Universal Viewer: problem with " + file_getname(path) };
 		if (to.indexOf("@") > 0) {
 			hdr.to = to;
 			hdr.to_net_type = NET_INTERNET;
@@ -2859,7 +2859,7 @@ function report_problem(path, problem)
 		} else {
 			var un = to === "" ? 1 : (/^\d+$/.test(to) ? Number(to) : system.matchuser(to));
 			if (!un || !system.username(un)) {
-				log(LOG_WARNING, "sixelviewlibrary: error_mail user '" + to + "' not found");
+				log(LOG_WARNING, "univiewerlibrary: error_mail user '" + to + "' not found");
 				return;
 			}
 			hdr.to = system.username(un);
@@ -2867,10 +2867,10 @@ function report_problem(path, problem)
 		}
 		var mb = new MsgBase("mail");
 		if (!mb.open()) {
-			log(LOG_WARNING, "sixelviewlibrary: " + mb.error + " opening the mail base");
+			log(LOG_WARNING, "univiewerlibrary: " + mb.error + " opening the mail base");
 			return;
 		}
-		var ok = mb.save_msg(hdr, "SixelView could not open a file.\r\n\r\n" +
+		var ok = mb.save_msg(hdr, "Universal Viewer could not open a file.\r\n\r\n" +
 			"File:    " + path + "\r\n" +
 			"Problem: " + problem + "\r\n" +
 			"User:    " + user.alias + " (#" + user.number + ") on node " + bbs.node_num + "\r\n" +
@@ -2881,10 +2881,10 @@ function report_problem(path, problem)
 			if (f.open("w")) { f.write(""); f.close(); }
 		}
 		else
-			log(LOG_WARNING, "sixelviewlibrary: unable to send problem report: " + mb.error);
+			log(LOG_WARNING, "univiewerlibrary: unable to send problem report: " + mb.error);
 	}
 	catch (e) {
-		log(LOG_WARNING, "sixelviewlibrary: problem report: " + e);
+		log(LOG_WARNING, "univiewerlibrary: problem report: " + e);
 	}
 }
 
@@ -2899,7 +2899,7 @@ function archive_too_big(path, name, count, total)
 		why.push("it has " + count + " files and the limit is " + opt.zip_max_files);
 	if (total > opt.zip_max_bytes)
 		why.push("it is " + Math.ceil(total / 1048576) + " MB unpacked and the limit is " + Math.floor(opt.zip_max_bytes / 1048576) + " MB");
-	log(LOG_WARNING, "sixelviewlibrary: " + user.alias + " could not open " + path + ": " + why.join(", and "));
+	log(LOG_WARNING, "univiewerlibrary: " + user.alias + " could not open " + path + ": " + why.join(", and "));
 	report_problem(path, "archive too large to extract: " + why.join(", and "));
 	return "Can't open " + name + ": " + why.join(", and ") +
 		". The sysop has been told so the limit can be raised";
@@ -2920,7 +2920,7 @@ function extract_rar(path, dest, name)
 	file_remove(tmp);
 	var m = /(\d+)[^\n\d]*(\d+)\s*\r?\n?\s*$/.exec(txt.replace(/\s+$/, ""));
 	if (!m || txt.indexOf("-----") < 0) {
-		log(LOG_WARNING, "sixelviewlibrary: unable to list " + path + " with unrar");
+		log(LOG_WARNING, "univiewerlibrary: unable to list " + path + " with unrar");
 		return "Unable to extract " + name;
 	}
 	var big = archive_too_big(path, name, Number(m[2]), Number(m[1]));
@@ -2931,7 +2931,7 @@ function extract_rar(path, dest, name)
 		return "Unable to create " + file_getname(dest);
 	var rc = system.exec(unrar + ' x -o+ -y -p- -inul "' + path + '" "' + backslash(dest) + '"');
 	if (rc !== 0 || directory(backslash(dest) + "*").length < 1) {
-		log(LOG_WARNING, "sixelviewlibrary: unrar of " + path + " failed, code " + rc);
+		log(LOG_WARNING, "univiewerlibrary: unrar of " + path + " failed, code " + rc);
 		remove_tree(dest);
 		return "Unable to extract " + name;
 	}
@@ -2951,7 +2951,7 @@ function extract_archive(path, dest, name)
 		}
 		catch (e) {
 			if (ext == "rar") {
-				log(LOG_INFO, "sixelviewlibrary: " + path + ": " + e + " (trying unrar)");
+				log(LOG_INFO, "univiewerlibrary: " + path + ": " + e + " (trying unrar)");
 				return extract_rar(path, dest, name);
 			}
 			throw e;
@@ -2989,7 +2989,7 @@ function extract_archive(path, dest, name)
 		}
 		catch (e) {
 			/* e.g. old "imploded" ZIPs that libarchive can't read: start again with unzip, if there is one */
-			log(LOG_INFO, "sixelviewlibrary: " + path + ": " + e + " (trying " + (ext == "rar" ? "unrar" : "unzip") + ")");
+			log(LOG_INFO, "univiewerlibrary: " + path + ": " + e + " (trying " + (ext == "rar" ? "unrar" : "unzip") + ")");
 		}
 		remove_tree(dest);
 		if (ext == "rar")
@@ -3002,13 +3002,13 @@ function extract_archive(path, dest, name)
 			return "Unable to create " + file_getname(dest);
 		var rc = system.exec(unzip + ' -o -qq -d "' + dest + '" "' + path + '"');
 		if ((rc !== 0 && rc !== 1) || directory(backslash(dest) + "*").length < 1) {
-			log(LOG_WARNING, "sixelviewlibrary: unzip of " + path + " failed, code " + rc);
+			log(LOG_WARNING, "univiewerlibrary: unzip of " + path + " failed, code " + rc);
 			remove_tree(dest);
 			return "Unable to extract " + name;
 		}
 	}
 	catch (e) {
-		log(LOG_WARNING, "sixelviewlibrary: extracting " + path + ": " + e);
+		log(LOG_WARNING, "univiewerlibrary: extracting " + path + ": " + e);
 		remove_tree(dest);
 		return "Unable to extract " + name;
 	}
@@ -3217,7 +3217,7 @@ function form_submit(lib, form, clicked, st, base)
 		return { error: "There is too much data to send" };
 	FORM_SENT.push(now);
 	/* the log says where a form went, never what was in it */
-	log(LOG_INFO, "sixelviewlibrary: user " + user.number + " sent a " + form.method + " form to " + action.replace(/[?#].*$/, ""));
+	log(LOG_INFO, "univiewerlibrary: user " + user.number + " sent a " + form.method + " form to " + action.replace(/[?#].*$/, ""));
 	if (form.method == "GET") {
 		var target = http_clean_url(http_get_url(action, body));
 		return target ? { nav: target } : { error: "The address would be too long" };
@@ -4071,7 +4071,7 @@ function main()
 {
 	var settings = read_settings();
 	if (!settings) {
-		console.print("\x01n\x01h\x01rSixelView Library is not configured (" + file_getname(settings_path()) + " not found).\x01n\r\n");
+		console.print("\x01n\x01h\x01rUniversal Viewer Library is not configured (" + file_getname(settings_path()) + " not found).\x01n\r\n");
 		console.pause();
 		return;
 	}
@@ -4143,6 +4143,6 @@ try {
 	console.clear();
 }
 catch (e) {
-	log(LOG_ERR, "sixelviewlibrary error: " + e + (e && e.stack ? "\n" + e.stack : ""));
-	console.print("\x01n\x01h\x01rsixelviewlibrary error: \x01w" + String(e).replace(/\x01/g, "") + "\x01n\r\n");
+	log(LOG_ERR, "univiewerlibrary error: " + e + (e && e.stack ? "\n" + e.stack : ""));
+	console.print("\x01n\x01h\x01runiviewerlibrary error: \x01w" + String(e).replace(/\x01/g, "") + "\x01n\r\n");
 }
