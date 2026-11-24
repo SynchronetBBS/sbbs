@@ -373,7 +373,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 		if (!IS_ALPHA(ch) || sys_status & SS_ABORT)
 			return false;
 		term->newline();
-		SAFEPRINTF(descbeg, text[Rated], toupper(ch));
+		SAFEPRINTF(descbeg, text[Rated], TO_UPPERCASE(ch));
 	}
 	if (cfg.dir[dirnum]->misc & DIR_ULDATE) {
 		now = time(NULL);
@@ -593,7 +593,7 @@ bool sbbs_t::recvfile(char *fname, char prot, bool autohang)
 	bool result = false;
 
 	if (prot)
-		ch = toupper(prot);
+		ch = TO_UPPERCASE(prot);
 	else {
 		cmd_keys_scope keys_scope(this, nullptr);
 		xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);

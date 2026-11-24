@@ -1938,7 +1938,7 @@ int main(int argc, char** argv)  {
 			continue;
 		}
         if(argv[i][0]=='-')
-            switch(toupper(argv[i][1])) {
+            switch(TO_UPPERCASE(argv[i][1])) {
                 case 'C':
         			uifc.mode|=UIFC_COLOR;
                     break;
@@ -1949,7 +1949,7 @@ int main(int argc, char** argv)  {
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
 				case 'I':
-					switch(toupper(argv[i][2])) {
+					switch(TO_UPPERCASE(argv[i][2])) {
 						case 'A':
 							ciolib_mode=CIOLIB_MODE_ANSI;
 							break;

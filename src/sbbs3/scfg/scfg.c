@@ -554,7 +554,7 @@ int main(int argc, char **argv)
 					uifc.esc_delay = atoi(argv[i] + 2);
 					break;
 				case 'i':
-					switch (toupper(argv[i][2])) {
+					switch (TO_UPPERCASE(argv[i][2])) {
 						case 'A':
 							ciolib_mode = CIOLIB_MODE_ANSI;
 							break;
@@ -576,7 +576,7 @@ int main(int argc, char **argv)
 							ciolib_mode = CIOLIB_MODE_CONIO;
 							break;
 						case 'G':
-							switch (toupper(argv[i][3])) {
+							switch (TO_UPPERCASE(argv[i][3])) {
 								case 0:
 								case 'W':
 									ciolib_mode = CIOLIB_MODE_GDI;
@@ -690,7 +690,7 @@ USAGE:
 		if (p != NULL) {
 			*p = 0;
 			p++;
-			base = toupper(*p);
+			base = TO_UPPERCASE(*p);
 		}
 		FILE* fp = fopen(fname, "r");
 		if (fp == NULL) {

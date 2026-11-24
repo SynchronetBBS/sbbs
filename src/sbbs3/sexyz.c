@@ -1810,8 +1810,8 @@ int main(int argc, char **argv)
 		}
 
 		if (!(mode & (SEND | RECV))) {
-			if (toupper(argv[i][0]) == 'S' || toupper(argv[i][0]) == 'R') { /* cmd */
-				if (toupper(argv[i][0]) == 'R')
+			if (TO_UPPERCASE(argv[i][0]) == 'S' || TO_UPPERCASE(argv[i][0]) == 'R') { /* cmd */
+				if (TO_UPPERCASE(argv[i][0]) == 'R')
 					mode |= RECV;
 				else
 					mode |= SEND;
@@ -1853,7 +1853,7 @@ int main(int argc, char **argv)
 				continue;
 			}
 
-			if (toupper(argv[i][0]) == 'V') {
+			if (TO_UPPERCASE(argv[i][0]) == 'V') {
 
 				fprintf(statfp, "%-8s %s\n", getfname(__FILE__), revision);
 				fprintf(statfp, "%-8s %s\n", getfname(xmodem_source()), xmodem_ver(str));

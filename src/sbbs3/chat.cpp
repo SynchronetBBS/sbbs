@@ -1366,7 +1366,7 @@ void sbbs_t::nodemsg()
 			break;
 		}
 
-		switch (toupper(ch)) {
+		switch (TO_UPPERCASE(ch)) {
 			case 'T':   /* Telegram */
 				bputs("Telegram\r\n");
 				usernumber = getnodetopage(0, 1);
@@ -1603,7 +1603,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 				if (answer[i][j] == '`') {
 					j++;
 					theanswer[k] = 0;
-					switch (toupper(answer[i][j])) {
+					switch (TO_UPPERCASE(answer[i][j])) {
 						case 'A':
 							if (sys_status & SS_USERON) {
 								SAFECAT(theanswer, useron.alias);

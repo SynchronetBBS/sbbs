@@ -31,7 +31,7 @@ char *mycmdstr(char *instr, char *fpath)
 		if(instr[i]=='%') {
 			i++;
 			cmd[j]=0;
-			switch(toupper(instr[i])) {
+			switch(TO_UPPERCASE(instr[i])) {
 				case 'F':   /* File path */
 					strcat(cmd,fpath);
 					break;

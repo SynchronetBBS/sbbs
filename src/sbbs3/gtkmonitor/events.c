@@ -714,10 +714,10 @@ char *select_filename(GtkWidget *wiggy, char *title, char *name, char *in_patter
 		pat[0]=0;
 		p2=pat;
 		for(p1=next;*p1;p1++) {
-			if(toupper(*p1)!=tolower(*p1)) {
+			if(TO_UPPERCASE(*p1)!=TO_LOWERCASE(*p1)) {
 				*(p2++)='[';
-				*(p2++)=toupper(*p1);
-				*(p2++)=tolower(*p1);
+				*(p2++)=TO_UPPERCASE(*p1);
+				*(p2++)=TO_LOWERCASE(*p1);
 				*(p2++)=']';
 			}
 			else

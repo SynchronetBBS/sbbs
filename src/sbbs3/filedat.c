@@ -1640,7 +1640,7 @@ char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
 			int  avail = maxlen - j;
 			char ch = instr[i];
 			if (IS_ALPHA(ch))
-				ch = toupper(ch);
+				ch = TO_UPPERCASE(ch);
 			switch (ch) {
 				case 'A':   /* User alias */
 					if (user != NULL)

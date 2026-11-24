@@ -62,7 +62,7 @@ int main(int argc, char** argv)  {
 
 	for (i = 1; i < argc; i++) {
 		if (argv[i][0] == '-')
-			switch (toupper(argv[i][1])) {
+			switch (TO_UPPERCASE(argv[i][1])) {
 				case 'C':
 					uifc.mode |= UIFC_COLOR;
 					break;

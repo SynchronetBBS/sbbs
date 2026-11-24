@@ -3307,7 +3307,7 @@ int mv(const char *insrc, const char *indest, bool copy)
 	if (!copy
 #ifndef __unix__
 	    && ((src[1] != ':' && dest[1] != ':')
-	        || (src[1] == ':' && dest[1] == ':' && toupper(src[0]) == toupper(dest[0])))
+	        || (src[1] == ':' && dest[1] == ':' && TO_UPPERCASE(src[0]) == TO_UPPERCASE(dest[0])))
 #endif
 	    ) {
 		if (xp_rename_file(src, dest) == 0)     /* same drive, so move */
@@ -7066,7 +7066,7 @@ int main(int argc, char **argv)
 		    ) {
 			j = 1;
 			while (argv[i][j]) {
-				switch (toupper(argv[i][j])) {
+				switch (TO_UPPERCASE(argv[i][j])) {
 					case 'C':
 						opt_export_netmail = false;
 						break;

@@ -232,7 +232,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 					printf("More? ");
 					str[0] = 0;
 					getstr(str, sizeof(str) - 1);
-					if (toupper(*str) == 'N')
+					if (TO_UPPERCASE(*str) == 'N')
 						break;
 				}
 			}
@@ -259,7 +259,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 			return *cur;
 		}
 		i = atoi(str + 1);
-		switch (toupper(*str)) {
+		switch (TO_UPPERCASE(*str)) {
 			case 0:
 			case ESC:
 			case 'Q':

@@ -1704,7 +1704,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 						if (option[j] != NULL
 						    && strlen(option[j]) > (size_t)b
 						    && ((!a && s && !strnicmp(option[j] + b, search, s + 1))
-						        || ((a || !s) && toupper(option[j][b]) == toupper(gotkey)))) {
+						        || ((a || !s) && TO_UPPERCASE(option[j][b]) == toupper(gotkey)))) {
 							if (a)
 								s = 0;
 							else

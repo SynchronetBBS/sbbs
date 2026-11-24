@@ -2254,7 +2254,7 @@ int main(int argc, char **argv)
 								        , beep, i, smb.last_error);
 								return 1;
 							}
-							postmsg((char)toupper(cmd[y]), to, to_number, to_address, from, from_number, subj, fp);
+							postmsg((char)TO_UPPERCASE(cmd[y]), to, to_number, to_address, from, from_number, subj, fp);
 							fclose(fp);
 							y = strlen(cmd) - 1;
 							break;
@@ -2285,7 +2285,7 @@ int main(int argc, char **argv)
 								smb.is_locked = false; // so smb_close() leaves the lock file behind
 								break;
 							}
-							switch (toupper(cmd[y])) {
+							switch (TO_UPPERCASE(cmd[y])) {
 								case 'P':
 									packmsgs(atol(cmd + y + 1));
 									break;

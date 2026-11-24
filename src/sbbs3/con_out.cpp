@@ -883,7 +883,7 @@ void sbbs_t::ctrl_a(char x)
 			console ^= (CON_ECHO_OFF);
 		return;
 	}
-	switch (toupper(x)) {
+	switch (TO_UPPERCASE(x)) {
 		case '!':   /* level 10 or higher */
 			if (useron.level < 10)
 				console ^= CON_ECHO_OFF;
@@ -936,7 +936,7 @@ void sbbs_t::ctrl_a(char x)
 	if (IS_DIGIT(x)) {   /* background color */
 		atr &= (BG_BRIGHT | BLINK | 0x0f);
 	}
-	switch (toupper(x)) {
+	switch (TO_UPPERCASE(x)) {
 		case '+':   /* push current attribute */
 			if (attr_sp < (int)(sizeof(attr_stack) / sizeof(attr_stack[0])))
 				attr_stack[attr_sp++] = curatr;

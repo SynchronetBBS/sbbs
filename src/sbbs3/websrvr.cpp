@@ -927,7 +927,7 @@ static void add_env(http_session_t *session, const char *name, const char *value
 	SAFECOPY(newname, name);
 
 	for (p = newname; *p; p++)  {
-		*p = toupper(*p);
+		*p = TO_UPPERCASE(*p);
 		if (*p == '-')
 			*p = '_';
 	}

@@ -256,8 +256,8 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 					bprintf(P_ATCODES, text[SeekPrompt], (int)(progress ? (100.0 / progress) : 0), getfname(fpath));
 					key = getkey(kmode);
 					// 'N' is reserved here for backward search ('less'-style); only quit_key aborts.
-					// toupper() lets users press 'q' or 'Q' to quit (no longer using K_UPPER on getkey()).
-					if (toupper(key) == quit_key())
+					// TO_UPPERCASE() lets users press 'q' or 'Q' to quit (no longer using K_UPPER on getkey()).
+					if (TO_UPPERCASE(key) == TO_UPPERCASE(quit_key()))
 						sys_status |= SS_ABORT;
 					attr(curatr);
 					term->carriage_return();

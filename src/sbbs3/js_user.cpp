@@ -618,7 +618,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			putuserdec32(p->cfg, p->user->number, USER_COLS, p->user->cols);
 			break;
 		case USER_PROP_GENDER:
-			p->user->gender = toupper(str[0]);
+			p->user->gender = TO_UPPERCASE(str[0]);
 			putuserstr(p->cfg, p->user->number, USER_GENDER, strupr(str));    /* single char */
 			break;
 		case USER_PROP_CURSUB:
@@ -711,7 +711,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_PROT:
-			p->user->prot = toupper(str[0]);
+			p->user->prot = TO_UPPERCASE(str[0]);
 			putuserstr(p->cfg, p->user->number, USER_PROT, strupr(str)); /* single char */
 			break;
 		case USER_PROP_LOGONTIME:

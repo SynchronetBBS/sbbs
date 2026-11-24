@@ -345,7 +345,7 @@ void sbbs_t::sif(char *fname, char *answers, int len)
 		}
 		putmsg(buf + l, P_SAVEATR);
 		m++;
-		if (toupper(buf[m]) != 'C' && toupper(buf[m]) != 'S')
+		if (TO_UPPERCASE(buf[m]) != 'C' && TO_UPPERCASE(buf[m]) != 'S')
 			continue;
 		sync();
 		if (online == ON_REMOTE)
@@ -515,7 +515,7 @@ void sbbs_t::sof(char *fname, char *answers, int len)
 		}
 		putmsg(buf + l, P_SAVEATR);
 		m++;
-		if (toupper(buf[m]) != 'C' && toupper(buf[m]) != 'S')
+		if (TO_UPPERCASE(buf[m]) != 'C' && TO_UPPERCASE(buf[m]) != 'S')
 			continue;
 		sync();
 		if (online == ON_REMOTE)

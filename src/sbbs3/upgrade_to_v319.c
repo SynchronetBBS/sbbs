@@ -114,11 +114,11 @@ uint hptoi(const char *str)
 	char tmp[128];
 	uint i;
 
-	if (!str[1] || toupper(str[0]) <= 'F')
+	if (!str[1] || TO_UPPERCASE(str[0]) <= 'F')
 		return ahtoul(str);
 	SAFECOPY(tmp, str);
 	tmp[0] = 'F';
-	i = ahtoul(tmp) + ((toupper(str[0]) - 'F') * 0x10);
+	i = ahtoul(tmp) + ((TO_UPPERCASE(str[0]) - 'F') * 0x10);
 	return i;
 }
 

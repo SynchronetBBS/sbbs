@@ -620,7 +620,7 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (p != NULL) {
 		SKIP_WHITESPACE(p);
-		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(tolower(*p) != 'n'));
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(TO_LOWERCASE(*p) != 'n'));
 	}
 	return JS_TRUE;
 }
@@ -657,7 +657,7 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (p != NULL) {
 		SKIP_WHITESPACE(p);
-		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(tolower(*p) != 'y'));
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(TO_LOWERCASE(*p) != 'y'));
 	}
 	return JS_TRUE;
 }

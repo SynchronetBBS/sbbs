@@ -1147,7 +1147,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				strListFree(&str);
 				return 0;
 			}
-			else if (toupper(strin[1]) == 'D') {   // delete line(s)
+			else if (TO_UPPERCASE(strin[1]) == 'D') {   // delete line(s)
 				lines = strListCount(str);
 				char* p = strin + 2;
 				int   first = atoi(p) - 1;
@@ -1178,7 +1178,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 					line = lines;
 				continue;
 			}
-			else if (toupper(strin[1]) == 'I') {   /* insert a line before number x */
+			else if (TO_UPPERCASE(strin[1]) == 'I') {   /* insert a line before number x */
 				lines = strListCount(str);
 				if (line >= maxlines || !lines)
 					continue;
@@ -1193,7 +1193,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				}
 				continue;
 			}
-			else if (toupper(strin[1]) == 'E') {   /* edit a line */
+			else if (TO_UPPERCASE(strin[1]) == 'E') {   /* edit a line */
 				if (str[0] == NULL)
 					continue;
 				lines = strListCount(str);
@@ -1220,7 +1220,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				putmsg(top, pmode);
 				continue;
 			}
-			else if (toupper(strin[1]) == 'L') {   /* list message */
+			else if (TO_UPPERCASE(strin[1]) == 'L') {   /* list message */
 				if (str[0] == NULL) {
 					continue;
 				}

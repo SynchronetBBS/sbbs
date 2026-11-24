@@ -324,7 +324,7 @@ int main(int argc, char** argv)
 
 	for (i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
-			switch (tolower(argv[i][1])) {
+			switch (TO_LOWERCASE(argv[i][1])) {
 				case 'b':
 					bodyfp = stdout;
 				/* fall-through */

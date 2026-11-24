@@ -430,7 +430,7 @@ uint32_t ahtou32(const char *str)
 /****************************************************************************/
 bool valid_ctrl_a_attr(char a)
 {
-	switch (toupper(a)) {
+	switch (TO_UPPERCASE(a)) {
 		case '+':   /* push attr	*/
 		case '-':   /* pop attr		*/
 		case '_':   /* clear        */
@@ -469,7 +469,7 @@ bool valid_ctrl_a_attr(char a)
 /****************************************************************************/
 bool valid_ctrl_a_code(char a)
 {
-	switch (toupper(a)) {
+	switch (TO_UPPERCASE(a)) {
 		case 'P':       /* Pause */
 		case 'L':       /* CLS */
 		case ',':       /* 100ms delay */
@@ -482,7 +482,7 @@ bool valid_ctrl_a_code(char a)
 /****************************************************************************/
 char ctrl_a_to_ascii_char(char a)
 {
-	switch (toupper(a)) {
+	switch (TO_UPPERCASE(a)) {
 		case 'L':   /* cls          */
 			return FF;
 		case '<':   /* backspace	*/
@@ -740,7 +740,7 @@ uint32_t str_to_bits(uint32_t val, const char *str)
 				val = 0;
 				op = 1;
 			}
-			ctrl = toupper(*s);
+			ctrl = TO_UPPERCASE(*s);
 			ctrl &= 0x1f;         /* Ensure it fits */
 			switch (op) {
 				case 1:     /* Add to the set */

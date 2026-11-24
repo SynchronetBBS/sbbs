@@ -2645,7 +2645,7 @@ static void ctrl_thread(void* arg)
 			}
 			mlsx_feats = 0;
 			for (p = cmd; *p; p++)
-				*p = toupper(*p);
+				*p = TO_UPPERCASE(*p);
 			if (strstr(cmd, "TYPE;"))
 				mlsx_feats |= MLSX_TYPE;
 			if (strstr(cmd, "PERM;"))
@@ -3367,7 +3367,7 @@ static void ctrl_thread(void* arg)
 		if (!strnicmp(cmd, "MODE ", 5)) {
 			p = cmd + 5;
 			SKIP_WHITESPACE(p);
-			if (toupper(*p) != 'S')
+			if (TO_UPPERCASE(*p) != 'S')
 				sockprintf(sock, sess, "504 Only STREAM mode supported.");
 			else
 				sockprintf(sock, sess, "200 STREAM mode.");
@@ -3377,7 +3377,7 @@ static void ctrl_thread(void* arg)
 		if (!strnicmp(cmd, "STRU ", 5)) {
 			p = cmd + 5;
 			SKIP_WHITESPACE(p);
-			if (toupper(*p) != 'F')
+			if (TO_UPPERCASE(*p) != 'F')
 				sockprintf(sock, sess, "504 Only FILE structure supported.");
 			else
 				sockprintf(sock, sess, "200 FILE structure.");

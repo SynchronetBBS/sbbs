@@ -121,7 +121,7 @@ int main(int argc, char **argv)
 				printf("%s", usage);
 				return 1;
 			}
-			switch (toupper(argv[i++][1])) {
+			switch (TO_UPPERCASE(argv[i++][1])) {
 				case 'A':
 					SAFECOPY(user.address, argv[i]);
 					break;
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 					user.expire = (time32_t)(now + ((long)atoi(argv[i]) * 24L * 60L * 60L));
 					break;
 				case 'F':
-					switch (toupper(argv[i - 1][2])) {
+					switch (TO_UPPERCASE(argv[i - 1][2])) {
 						case '1':
 							user.flags1 = aftou32(argv[i]);
 							break;
@@ -163,7 +163,7 @@ int main(int argc, char **argv)
 					}
 					break;
 				case 'G':
-					user.gender = toupper(argv[i][0]);
+					user.gender = TO_UPPERCASE(argv[i][0]);
 					break;
 				case 'H':
 					SAFECOPY(user.handle, argv[i]);

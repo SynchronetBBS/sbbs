@@ -983,7 +983,7 @@ static void play_music(struct cterminal *cterm)
 
 	p=cterm->musicbuf;
 	if(cterm->music==1) {
-		switch(toupper(*p)) {
+		switch(TO_UPPERCASE(*p)) {
 			case 'F':
 				cterm->musicfore=TRUE;
 				p++;
@@ -1011,10 +1011,10 @@ static void play_music(struct cterminal *cterm)
 	for(;*p;p++) {
 		notenum=0;
 		offset=0;
-		switch(toupper(*p)) {
+		switch(TO_UPPERCASE(*p)) {
 			case 'M':
 				p++;
-				switch(toupper(*p)) {
+				switch(TO_UPPERCASE(*p)) {
 					case 'F':
 						cterm->musicfore=TRUE;
 						break;
@@ -1088,7 +1088,7 @@ static void play_music(struct cterminal *cterm)
 			case 'F':
 			case 'G':
 			case 'P':
-				note=toupper(*p);
+				note=TO_UPPERCASE(*p);
 				notelen=cterm->notelen;
 				dotted=0;
 				i=1;

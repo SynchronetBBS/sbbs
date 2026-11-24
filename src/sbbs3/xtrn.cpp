@@ -2305,7 +2305,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 			int  avail = maxlen - j;
 			char ch = instr[i];
 			if (IS_ALPHA(ch))
-				ch = toupper(ch);
+				ch = TO_UPPERCASE(ch);
 			switch (ch) {
 				case 'A':   /* User alias */
 					strncat(cmd, QUOTED_STRING(instr[i], useron.alias, str, sizeof(str)), avail);

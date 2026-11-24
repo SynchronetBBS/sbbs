@@ -922,7 +922,7 @@ void compile(char *src)
 			else if (!stricmp(arg, "EDIGIT"))
 				ch = CS_EDIGIT;
 			else
-				ch = toupper(*arg);
+				ch = TO_UPPERCASE(*arg);
 			if (ch == '/')
 				ch = *(arg + 1) | 0x80; /* high bit indicates slash required */
 			else if (ch == '^' && (*(arg + 1) >= 0x40))
@@ -3320,9 +3320,9 @@ void compile(char *src)
 			if (!(*arg))
 				break;
 			p = arg;
-			fprintf(out, "%c%c", CS_TOGGLE_USER_FLAG, toupper(*p++));
+			fprintf(out, "%c%c", CS_TOGGLE_USER_FLAG, TO_UPPERCASE(*p++));
 			SKIPCTRLSP(p);
-			fprintf(out, "%c", toupper(*p));
+			fprintf(out, "%c", TO_UPPERCASE(*p));
 			continue;
 		}
 
@@ -3453,7 +3453,7 @@ void compile(char *src)
 			else if (!stricmp(arg, "EDIGIT"))
 				ch = CS_EDIGIT;
 			else
-				ch = toupper(*arg);
+				ch = TO_UPPERCASE(*arg);
 			if (ch == '/')
 				ch = (*arg) | 0x80; /* high bit indicates slash required */
 			else if (ch == '^' && (*(arg + 1)) >= 0x40)
@@ -4054,7 +4054,7 @@ int main(int argc, char **argv)
 		    || argv[i][0] == '/'
 #endif
 		    )
-			switch (toupper(argv[i][1])) {
+			switch (TO_UPPERCASE(argv[i][1])) {
 				case 'D':
 					display = 1;
 					break;

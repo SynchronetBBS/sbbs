@@ -154,7 +154,7 @@ bool matchusername(scfg_t* cfg, const char* name, const char* comp)
 			cp++;
 			continue;
 		}
-		if (toupper(*np) != toupper(*cp))
+		if (TO_UPPERCASE(*np) != TO_UPPERCASE(*cp))
 			break;
 		np++, cp++;
 	}
@@ -4488,7 +4488,7 @@ bool check_pass(scfg_t* cfg, const char *pass, user_t* user, bool unique, int* r
 		char good[LEN_PASS + 1] = {0};
 		int g = 0;
 		for (i = 0; i < len; ++i) {
-			if (abs(toupper(pass[i]) - toupper(pass[i + 1])) > 1 && strchr(good, pass[i]) == NULL)
+			if (abs(TO_UPPERCASE(pass[i]) - TO_UPPERCASE(pass[i + 1])) > 1 && strchr(good, pass[i]) == NULL)
 				good[g++] = pass[i];
 		}
 		if (g < cfg->min_pwlen) {

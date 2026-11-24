@@ -2238,7 +2238,7 @@ static char* mailcmdstr(char* instr, char* msgpath, char* newpath, char* logpath
 		if (instr[i] == '%') {
 			i++;
 			cmd[j] = 0;
-			switch (toupper(instr[i])) {
+			switch (TO_UPPERCASE(instr[i])) {
 				case 'D':
 					strcat(cmd, logpath);
 					break;
@@ -2744,7 +2744,7 @@ bool mimehdr_value_decode(char* str, smbmsg_t* msg)
 			FIND_CHAR(cp, '?');
 			if (*cp == '?' && *(cp + 1) != 0 && *(cp + 2) == '?') {
 				cp++;
-				char  encoding = toupper(*cp);
+				char  encoding = TO_UPPERCASE(*cp);
 				cp += 2;
 				SAFECOPY(tmp, cp);
 				char* tp = lastchar(tmp);

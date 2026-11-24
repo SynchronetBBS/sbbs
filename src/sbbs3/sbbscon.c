@@ -1392,7 +1392,7 @@ int main(int argc, char** argv)
 			continue;
 		}
 #endif
-		switch (toupper(*(arg++))) {
+		switch (TO_UPPERCASE(*(arg++))) {
 #ifdef __unix__
 			case 'D':     /* Run as daemon */
 				is_daemon = TRUE;
@@ -1401,7 +1401,7 @@ int main(int argc, char** argv)
 				break;
 #endif
 			case 'T':   /* Terminal server settings */
-				switch (toupper(*(arg++))) {
+				switch (TO_UPPERCASE(*(arg++))) {
 					case '!':
 						run_ftp = FALSE;
 						run_mail = FALSE;
@@ -1442,7 +1442,7 @@ int main(int argc, char** argv)
 				break;
 			case 'R':   /* RLogin */
 				bbs_startup.options |= BBS_OPT_ALLOW_RLOGIN;
-				switch (toupper(*(arg++))) {
+				switch (TO_UPPERCASE(*(arg++))) {
 					case 'P':
 						bbs_startup.rlogin_port = atoi(arg);
 						break;
@@ -1452,7 +1452,7 @@ int main(int argc, char** argv)
 				}
 				break;
 			case 'F':   /* FTP */
-				switch (toupper(*(arg++))) {
+				switch (TO_UPPERCASE(*(arg++))) {
 					case '!':
 						run_bbs = FALSE;
 						run_mail = FALSE;
@@ -1477,7 +1477,7 @@ int main(int argc, char** argv)
 				}
 				break;
 			case 'M':   /* Mail */
-				switch (toupper(*(arg++))) {
+				switch (TO_UPPERCASE(*(arg++))) {
 					case '!':
 						run_bbs = FALSE;
 						run_ftp = FALSE;
@@ -1498,7 +1498,7 @@ int main(int argc, char** argv)
 							mail_startup.smtp_port = atoi(arg);
 							break;
 						}
-						switch (toupper(*(arg++))) {
+						switch (TO_UPPERCASE(*(arg++))) {
 							case '-':
 								mail_startup.options |= MAIL_OPT_NO_SENDMAIL;
 								break;
@@ -1512,7 +1512,7 @@ int main(int argc, char** argv)
 							mail_startup.pop3_port = atoi(arg);
 							break;
 						}
-						switch (toupper(*(arg++))) {
+						switch (TO_UPPERCASE(*(arg++))) {
 							case '-':
 								mail_startup.options &= ~MAIL_OPT_ALLOW_POP3;
 								break;
@@ -1542,7 +1542,7 @@ int main(int argc, char** argv)
 				}
 				break;
 			case 'S':   /* Services */
-				switch (toupper(*(arg++))) {
+				switch (TO_UPPERCASE(*(arg++))) {
 					case '!':
 						run_bbs = FALSE;
 						run_ftp = FALSE;
@@ -1564,7 +1564,7 @@ int main(int argc, char** argv)
 				}
 				break;
 			case 'W':   /* Web server */
-				switch (toupper(*(arg++))) {
+				switch (TO_UPPERCASE(*(arg++))) {
 					case '!':
 						run_bbs = FALSE;
 						run_ftp = FALSE;
@@ -1589,7 +1589,7 @@ int main(int argc, char** argv)
 				}
 				break;
 			case 'G':   /* GET */
-				switch (toupper(*(arg++))) {
+				switch (TO_UPPERCASE(*(arg++))) {
 					case 'I': /* Identity */
 						bbs_startup.options |= BBS_OPT_GET_IDENT;
 						ftp_startup.options |= BBS_OPT_GET_IDENT;
@@ -1603,7 +1603,7 @@ int main(int argc, char** argv)
 				}
 				break;
 			case 'H':   /* Host */
-				switch (toupper(*(arg++))) {
+				switch (TO_UPPERCASE(*(arg++))) {
 					case 'N':   /* Name */
 						if (*arg) {
 							SAFECOPY(bbs_startup.host_name, arg);
@@ -1626,7 +1626,7 @@ int main(int argc, char** argv)
 				}
 				break;
 			case 'U':   /* runtime UID */
-				switch (toupper(*(arg++))) {
+				switch (TO_UPPERCASE(*(arg++))) {
 					case 'N': /* username */
 #ifdef __unix__
 						if (strlen(arg) > 1)
@@ -1649,7 +1649,7 @@ int main(int argc, char** argv)
 				}
 				break;
 			case 'N':   /* No */
-				switch (toupper(*(arg++))) {
+				switch (TO_UPPERCASE(*(arg++))) {
 					case 'F':   /* FTP Server */
 						run_ftp = FALSE;
 						break;
@@ -1722,7 +1722,7 @@ int main(int argc, char** argv)
 /* Daemonize / Set uid/gid */
 #ifdef __unix__
 
-	switch (toupper(log_facility[0])) {
+	switch (TO_UPPERCASE(log_facility[0])) {
 		case '0':
 			openlog(log_ident, LOG_CONS, LOG_LOCAL0);
 			break;

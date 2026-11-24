@@ -757,7 +757,7 @@ uint32_t aftou32(const char *str)
 	uint32_t l = 0;
 
 	while (str[c]) {
-		ch = toupper(str[c]);
+		ch = TO_UPPERCASE(str[c]);
 		if (ch >= 'A' && ch <= 'Z')
 			l |= FLAG(ch);
 		c++;
@@ -794,7 +794,7 @@ uint strtoattr(scfg_t* cfg, const char *str, char** endptr)
 
 	atr = LIGHTGRAY;
 	while (str[l]) {
-		switch (toupper(str[l])) {
+		switch (TO_UPPERCASE(str[l])) {
 			case CTRL_A:
 				break;
 			case 'H':   /* High intensity */

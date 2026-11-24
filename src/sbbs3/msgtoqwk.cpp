@@ -438,7 +438,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 				if (mode & QM_EXPCTLA) {
 					str[0] = 0;
 					ANSI_Terminal ansi(this);
-					switch (toupper(ch)) {
+					switch (TO_UPPERCASE(ch)) {
 						case 'W':
 							SAFECOPY(str, ansi.attrstr(LIGHTGRAY));
 							break;

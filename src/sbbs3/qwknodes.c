@@ -172,11 +172,11 @@ int main(int argc, char **argv)
 
 	for (i = 1; i < argc; i++)
 		for (j = 0; argv[i][j]; j++)
-			switch (toupper(argv[i][j])) {
+			switch (TO_UPPERCASE(argv[i][j])) {
 				case '/':
 				case '-':
 					while (argv[i][++j])
-						switch (toupper(argv[i][j])) {
+						switch (TO_UPPERCASE(argv[i][j])) {
 							case 'F':
 								mode |= FEED;
 								break;

@@ -1127,7 +1127,7 @@ js_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 		ch = (char)i;
 	}
 
-	str[0] = toupper(ch) & ~0x40;
+	str[0] = TO_UPPERCASE(ch) & ~0x40;
 	str[1] = 0;
 
 	if ((js_str = JS_NewStringCopyZ(cx, str)) == NULL)
@@ -2216,7 +2216,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 						hpos++;
 					}
 				}
-				else switch (toupper(tmpbuf[i + 1]))
+				else switch (TO_UPPERCASE(tmpbuf[i + 1]))
 					{
 						case 'K':
 							fg = 0;

@@ -124,7 +124,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 
 		if (str[i] == '$') {
 			arg_expected = TRUE;
-			switch ((ch = toupper(str[++i]))) {
+			switch ((ch = TO_UPPERCASE(str[++i]))) {
 				case 'A':
 					artype = AR_AGE;
 					break;
@@ -655,7 +655,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				     && str[i] != '|'
 				     && str[i] != '&'
 				     ; n++)
-					ar[j++] = toupper(str[i++]);
+					ar[j++] = TO_UPPERCASE(str[i++]);
 				ar[j++] = 0;
 				i--;
 				break;
@@ -666,7 +666,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 			case AR_EXEMPT:
 			case AR_SEX:
 			case AR_REST:
-				ar[j++] = toupper(str[i]);
+				ar[j++] = TO_UPPERCASE(str[i]);
 				break;
 			case AR_SUB:
 				for (n = 0; n < (uint)cfg->total_subs; n++)
@@ -693,20 +693,20 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				while (IS_ALPHA(str[i + 1])) i++;
 				break;
 			case AR_DAY:
-				if (toupper(str[i]) == 'S'
-				    && toupper(str[i + 1]) == 'U')              /* Sunday */
+				if (TO_UPPERCASE(str[i]) == 'S'
+				    && TO_UPPERCASE(str[i + 1]) == 'U')              /* Sunday */
 					ar[j++] = 0;
-				else if (toupper(str[i]) == 'M')               /* Monday */
+				else if (TO_UPPERCASE(str[i]) == 'M')               /* Monday */
 					ar[j++] = 1;
-				else if (toupper(str[i]) == 'T'
-				         && toupper(str[i + 1]) == 'U')     /* Tuesday */
+				else if (TO_UPPERCASE(str[i]) == 'T'
+				         && TO_UPPERCASE(str[i + 1]) == 'U')     /* Tuesday */
 					ar[j++] = 2;
-				else if (toupper(str[i]) == 'W')               /* Wednesday */
+				else if (TO_UPPERCASE(str[i]) == 'W')               /* Wednesday */
 					ar[j++] = 3;
-				else if (toupper(str[i]) == 'T'
-				         && toupper(str[i + 1]) == 'H')     /* Thursday */
+				else if (TO_UPPERCASE(str[i]) == 'T'
+				         && TO_UPPERCASE(str[i + 1]) == 'H')     /* Thursday */
 					ar[j++] = 4;
-				else if (toupper(str[i]) == 'F')               /* Friday */
+				else if (TO_UPPERCASE(str[i]) == 'F')               /* Friday */
 					ar[j++] = 5;
 				else
 					ar[j++] = 6;                            /* Saturday */
