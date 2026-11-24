@@ -25,11 +25,42 @@
 #include "smblib.h"
 #include "userdat.h"
 #include "nopen.h"
+#include "xpdatetime.h"
+#include "git_branch.h"
+#include "git_hash.h"
+
+#ifdef SCFG
+	#define CFG_WRITER "SCFG"
+#else
+	#define CFG_WRITER "Synchronet"
+#endif
 
 extern const char* scfg_addr_list_separator;
 
 bool               no_msghdr = false, all_msghdr = false;
 static ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
+
+/****************************************************************************/
+/* Sets the comment that begins a written configuration file, recording the	*/
+/* program and build that wrote it and when (a backup copy keeps it, where	*/
+/* a file's timestamp may not survive)										*/
+/****************************************************************************/
+#define WRITTEN_BY_PREFIX "; Written by "
+
+static void set_written_by(str_list_t* ini, const char* program)
+{
+	char line[256];
+	char when[64];
+
+	xpDateTime_to_isoDateTimeStr(xpDateTime_now(), "-", " ", ":", 0, when, sizeof when);
+	snprintf(line, sizeof line, WRITTEN_BY_PREFIX "%s v%s%c (%s/%s) %s"
+	         , program, VERSION, REVISION, GIT_BRANCH, GIT_HASH, when);
+	if (*ini != NULL && (*ini)[0] != NULL
+	    && strncmp((*ini)[0], WRITTEN_BY_PREFIX, strlen(WRITTEN_BY_PREFIX)) == 0)
+		strListReplace(*ini, 0, line);
+	else
+		strListInsert(ini, line, 0);
+}
 
 /****************************************************************************/
 /* Rewrites a configuration file in place while holding it open exclusively	*/
@@ -38,17 +69,18 @@ static ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
 /* file is never renamed: on an SMB share, renaming over a file that		*/
 /* another program has open can delete it.									*/
 /****************************************************************************/
-static bool write_cfg_file(scfg_t* cfg, const char* path, str_list_t ini)
+static bool write_cfg_file(scfg_t* cfg, const char* path, str_list_t* ini)
 {
 	FILE* fp;
 	int   file;
 	bool  result;
 
+	set_written_by(ini, CFG_WRITER);
 	backup(path, cfg->config_backup_level, /* ren: */ false);
 	/* No O_TRUNC: the file must not be emptied before it is locked */
 	if ((fp = fnopen(&file, path, O_WRONLY | O_CREAT)) == NULL)
 		return false;
-	result = chsize(file, 0) == 0 && iniWriteFile(fp, ini);
+	result = chsize(file, 0) == 0 && iniWriteFile(fp, *ini);
 	if (fclose(fp) != 0)
 		result = false;
 	return result;
@@ -111,7 +143,7 @@ bool write_node_cfg(scfg_t* cfg)
 
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->node_misc, NULL);
 
-	result = write_cfg_file(cfg, inipath, ini);
+	result = write_cfg_file(cfg, inipath, &ini);
 	iniFreeStringList(ini);
 
 	return result;
@@ -402,7 +434,7 @@ bool write_main_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	result = write_cfg_file(cfg, inipath, ini);
+	result = write_cfg_file(cfg, inipath, &ini);
 	iniFreeStringList(ini);
 
 	return result;
@@ -656,7 +688,7 @@ bool write_msgs_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	result = write_cfg_file(cfg, inipath, ini);
+	result = write_cfg_file(cfg, inipath, &ini);
 	iniFreeStringList(ini);
 	if (!result)    /* leave errno for the caller to report */
 		return false;
@@ -995,7 +1027,7 @@ bool write_file_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	result = write_cfg_file(cfg, inipath, ini);
+	result = write_cfg_file(cfg, inipath, &ini);
 	iniFreeStringList(ini);
 
 	return result;
@@ -1049,7 +1081,7 @@ bool write_chat_cfg(scfg_t* cfg)
 		iniSetHexInt(&ini, section, "settings", cfg->page[i]->misc, &ini_style);
 	}
 
-	result = write_cfg_file(cfg, inipath, ini);
+	result = write_cfg_file(cfg, inipath, &ini);
 	iniFreeStringList(ini);
 
 	return result;
@@ -1149,7 +1181,7 @@ bool write_xtrn_cfg(scfg_t* cfg)
 		iniSetHexInt(&ini, name, "settings", cfg->hotkey[i]->misc, &ini_style);
 	}
 
-	result = write_cfg_file(cfg, inipath, ini);
+	result = write_cfg_file(cfg, inipath, &ini);
 	iniFreeStringList(ini);
 
 	return result;
