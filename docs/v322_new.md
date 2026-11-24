@@ -6,6 +6,14 @@
   `ctrl/main.ini`, SCFG System → Advanced Options) instead of a per-node
   one. Until it is set there, every program uses node 1's Text Directory,
   as the servers and utilities always did
+- Only Terminal Server nodes read a `node.ini` now: the other servers,
+  JSexec and the utilities no longer act as node 1, so their transfers,
+  posts and e-mail no longer count in node 1's statistics, and JSexec no
+  longer fails when `node1/node.ini` is missing
+- Fix: since v3.21c, the FTP, Mail, Web and Services servers, SBBSecho and
+  the utilities ran without any message, file, external program or chat
+  areas when `msgs.ini`, `file.ini`, `xtrn.ini` or `chat.ini` could not be
+  read; they again fail to load instead
 - A configuration string value (in `ctrl/*.ini`, including the server
   settings in `sbbs.ini`) longer than the field that holds it was
   silently cut at load time; it is now logged as a warning naming the

@@ -109,9 +109,6 @@ bool load_cfg(scfg_t* cfg, char* text[], size_t total_text, bool prep, bool req_
 
 	free_cfg(cfg);  /* free allocated config parameters */
 
-	if (cfg->node_num < 1)
-		cfg->node_num = 1;
-
 	backslash(cfg->ctrl_dir);
 	if (read_main_cfg(cfg, error, maxerrlen) == false && req_cfg)
 		return false;
@@ -120,7 +117,15 @@ bool load_cfg(scfg_t* cfg, char* text[], size_t total_text, bool prep, bool req_
 		for (i = 0; i < cfg->sys_nodes; i++)
 			prep_dir(cfg->ctrl_dir, cfg->node_path[i], sizeof(cfg->node_path[i]));
 
-	if (cfg->sys_nodes < cfg->node_num)
+	if (cfg->node_num == 0) {  /* not a node: node.ini doesn't apply */
+		/* node_dir (%N, system.node_dir) has always been node 1's here */
+		if (cfg->sys_nodes > 0) {
+			SAFECOPY(cfg->node_dir, cfg->node_path[0]);
+			prep_dir(cfg->ctrl_dir, cfg->node_dir, sizeof(cfg->node_dir));
+		}
+		SAFECOPY(cfg->temp_dir, "../temp/");
+	}
+	else if (cfg->sys_nodes < cfg->node_num)
 		snprintf(error, maxerrlen, "%d nodes configured in %s", cfg->sys_nodes, cfg->filename);
 	else {
 		SAFECOPY(cfg->node_dir, cfg->node_path[cfg->node_num - 1]);

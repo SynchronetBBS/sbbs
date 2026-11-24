@@ -5558,7 +5558,7 @@ void ftp_server(void* arg)
 		lprintf(LOG_INFO, "Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size = sizeof(scfg);
 		SAFECOPY(error, UNKNOWN_LOAD_ERROR);
-		if (!load_cfg(&scfg, text, TOTAL_TEXT, /* prep: */ true, /* node: */ false, error, sizeof(error))) {
+		if (!load_cfg(&scfg, text, TOTAL_TEXT, /* prep: */ true, /* req_cfg: */ true, error, sizeof(error))) {
 			errprintf(LOG_CRIT, WHERE, "!ERROR loading configuration files: %s", error);
 			cleanup(1, __LINE__);
 			break;
