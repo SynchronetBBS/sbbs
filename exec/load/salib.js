@@ -75,8 +75,9 @@ function Message_DoCommand(command)
 	   Content-Length mismatch (protocol error 76). */
 	var msg_file = new File(this.messagefile);
 	if(!msg_file.open("rb")) {
+		var open_error = msg_file.error;	/* errno: read before anything else changes it */
 		sock.close();
-		ret.error="Failed to open message file: " + this.messagefile;
+		ret.error="Failed to open message file (error " + open_error + "): " + this.messagefile;
 		return(ret);
 	}
 	var msg_bytes = msg_file.read(500000);	/* cap read at 500 KB (spamc.js also limits message size) */
@@ -237,8 +238,9 @@ function Message_DoLearn(msgclass)
 
 	var msg_file=new File(this.messagefile);
 	if(!msg_file.open("rb")) {
+		var open_error = msg_file.error;	/* errno: read before anything else changes it */
 		sock.close();
-		ret.error="Failed to open message file: " + this.messagefile;
+		ret.error="Failed to open message file (error " + open_error + "): " + this.messagefile;
 		return(ret);
 	}
 	var msg_bytes=msg_file.read(500000);	/* cap read at 500 KB (mailproc also limits message size) */
