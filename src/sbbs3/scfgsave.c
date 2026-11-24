@@ -658,7 +658,8 @@ bool write_msgs_cfg(scfg_t* cfg)
 
 	result = write_cfg_file(cfg, inipath, ini);
 	iniFreeStringList(ini);
-
+	if (!result)    /* leave errno for the caller to report */
+		return false;
 
 	/* MUST BE AT END */
 

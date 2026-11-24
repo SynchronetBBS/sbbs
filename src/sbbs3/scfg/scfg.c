@@ -741,7 +741,16 @@ USAGE:
 		else {
 			printf("Imported %ld areas (%ld added) from %s\n", ported, added, fname);
 			printf("Saving configuration (%u message areas) ... ", cfg.total_subs);
-			write_msgs_cfg(&cfg);
+			errno = 0;
+			if (!write_msgs_cfg(&cfg)) {
+				if (errno != 0)
+					printf("!ERROR %d (%s) writing msgs.ini\n", errno, strerror(errno));
+				else
+					printf("!ERROR writing msgs.ini\n");
+				free_msgs_cfg(&cfg);
+				free_main_cfg(&cfg);
+				return EXIT_FAILURE;
+			}
 			printf("done.\n");
 			refresh_cfg(&cfg);
 		}
@@ -1126,27 +1135,48 @@ bool load_xtrn_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 	return result;
 }
 
+/* Reports a failed write of a configuration file to the sysop */
+static bool save_result(bool result, int err, const char* fname)
+{
+	if (!result) {
+		if (err != 0)
+			uifc.msgf("ERROR %d (%s) writing %s", err, strerror(err), fname);
+		else
+			uifc.msgf("ERROR writing %s", fname);
+	}
+	return result;
+}
+
 bool save_main_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing main.ini ...");
+	errno = 0;
 	bool result = write_main_cfg(cfg);
+	int  err = errno;
 	uifc.pop(NULL);
-	return result;
+	return save_result(result, err, "main.ini");
 }
 
 bool save_node_cfg(scfg_t* cfg)
 {
+	char fname[64];
+	SAFEPRINTF(fname, "node %u node.ini", cfg->node_num);
 	uifc.pop("Writing node.ini ...");
+	errno = 0;
 	bool result = write_node_cfg(cfg);
+	int  err = errno;
 	uifc.pop(NULL);
-	return result;
+	return save_result(result, err, fname);
 }
 
 bool save_msgs_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing msgs.ini ...");
+	errno = 0;
 	bool result = write_msgs_cfg(cfg);
+	int  err = errno;
 	uifc.pop(NULL);
+	save_result(result, err, "msgs.ini");
 	/* msgs.ini now holds the additional domains (even an empty list) and	*/
 	/* says so: domains.cfg is left in place for a server that may still	*/
 	/* read it (an older binary, or another host sharing this ctrl dir)	*/
@@ -1158,25 +1188,31 @@ bool save_msgs_cfg(scfg_t* cfg)
 bool save_file_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing file.ini ...");
+	errno = 0;
 	bool result = write_file_cfg(cfg);
+	int  err = errno;
 	uifc.pop(NULL);
-	return result;
+	return save_result(result, err, "file.ini");
 }
 
 bool save_chat_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing chat.ini ...");
+	errno = 0;
 	bool result = write_chat_cfg(cfg);
+	int  err = errno;
 	uifc.pop(NULL);
-	return result;
+	return save_result(result, err, "chat.ini");
 }
 
 bool save_xtrn_cfg(scfg_t* cfg)
 {
 	uifc.pop("Writing xtrn.ini ...");
+	errno = 0;
 	bool result = write_xtrn_cfg(cfg);
+	int  err = errno;
 	uifc.pop(NULL);
-	return result;
+	return save_result(result, err, "xtrn.ini");
 }
 
 
