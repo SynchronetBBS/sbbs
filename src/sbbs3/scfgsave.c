@@ -522,8 +522,8 @@ bool write_msgs_cfg(scfg_t* cfg)
 			SAFEPRINTF2(name, "sub:%s:%s", cfg->grp[cfg->sub[i]->grp]->sname, cfg->sub[i]->code_suffix);
 			str_list_t section = sub_ini_section(cfg, cfg->sub[i], name);
 			if (section == NULL) {
-				result = false;
-				continue;
+				iniFreeStringList(ini);
+				return false;
 			}
 			strListMerge(&ini, section);
 			free(section);
@@ -911,8 +911,8 @@ bool write_file_cfg(scfg_t* cfg)
 			            , cfg->lib[j]->sname, cfg->dir[i]->code_suffix);
 			str_list_t section = dir_ini_section(cfg, cfg->dir[i], name);
 			if (section == NULL) {
-				result = false;
-				continue;
+				iniFreeStringList(ini);
+				return false;
 			}
 			if (cfg->dir[i]->misc & DIR_FCHK) {
 				SAFECOPY(path, cfg->dir[i]->path);
