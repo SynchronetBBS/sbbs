@@ -2628,8 +2628,16 @@ static int pipereadline(int pipe, char *buf, size_t length, char *fullbuf, size_
 		fullbuf[0] = 0;
 	for (i = 0; true;) {
 #if defined(_WIN32)
+		DWORD  avail = 0;
+		time_t end = time(NULL) + startup->max_cgi_inactivity;
+		while (PeekNamedPipe(pipe, NULL, 0, NULL, &avail, NULL) && avail == 0) {
+			if (time(NULL) >= end)
+				return -1;
+			SLEEP(1);
+		}
 		ret = 0;
-		ReadFile(pipe, &ch, 1, (DWORD*)&ret, NULL);
+		if (!ReadFile(pipe, &ch, 1, (DWORD*)&ret, NULL))
+			ret = 0;
 #else
 		if (!socket_readable(pipe, startup->max_cgi_inactivity * 1000))
 			return -1;
