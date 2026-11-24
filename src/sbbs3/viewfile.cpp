@@ -28,7 +28,7 @@
 /* call with ext=1 for default to extended info, or 0 for file view         */
 /* Returns -1 for Batch, 1 for Next, -2 for Previous, or 0 for Quit         */
 /****************************************************************************/
-int sbbs_t::viewfile(file_t* f, bool ext)
+int sbbs_t::viewfile(file_t* f, bool ext, const char* search)
 {
 	char ch, str[256];
 
@@ -38,7 +38,7 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 		clearabort();
 		SAFEPRINTF(str, text[FileInfoPrompt], f->name);
 		if (ext) {
-			showfileinfo(f);
+			showfileinfo(f, /* show_extdesc: */ true, search);
 			if (can_edit)
 				SAFEPRINTF(str, text[FileInfoEditPrompt], f->name);
 		} else

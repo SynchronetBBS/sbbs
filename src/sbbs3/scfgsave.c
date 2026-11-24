@@ -294,6 +294,7 @@ bool write_main_cfg(scfg_t* cfg)
 	write_loadable_module(&ini, "scandirs", cfg->scandirs_mod);
 	write_loadable_module(&ini, "listfiles", cfg->listfiles_mod);
 	write_loadable_module(&ini, "fileinfo", cfg->fileinfo_mod);
+	write_loadable_module(&ini, "extfileinfo", cfg->extfileinfo_mod);
 	write_loadable_module(&ini, "batxfer", cfg->batxfer_mod);
 	write_loadable_module(&ini, "qwksec", cfg->qwksec_mod);
 	write_loadable_module(&ini, "tempxfer", cfg->tempxfer_mod);

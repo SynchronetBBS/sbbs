@@ -401,6 +401,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->scandirs_mod = read_loadable_mod(cfg, section, "scandirs", "");
 	cfg->listfiles_mod = read_loadable_mod(cfg, section, "listfiles", "");
 	cfg->fileinfo_mod = read_loadable_mod(cfg, section, "fileinfo", "");
+	cfg->extfileinfo_mod = read_loadable_mod(cfg, section, "extfileinfo", "");
 	cfg->batxfer_mod = read_loadable_mod(cfg, section, "batxfer", "batchxfer");
 	cfg->qwksec_mod = read_loadable_mod(cfg, section, "qwksec", "qwk_sec");
 	cfg->tempxfer_mod = read_loadable_mod(cfg, section, "tempxfer", "tempxfer");

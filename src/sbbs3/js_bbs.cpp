@@ -2538,20 +2538,28 @@ js_view_file_info(JSContext *cx, uintN argc, jsval *arglist)
 	int     dirnum;
 	bool    found;
 	JSBool  extended = JS_TRUE;
+	char*   search = NULL;
 	int     result = 1;  // Next
 
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
-	if (!js_load_dir_file(cx, argc, argv, sbbs, &dirnum, &f, &found))
+	if (argc > 3 && JSVAL_IS_STRING(argv[3])) {
+		JSVALUE_TO_MSTRING(cx, argv[3], search, NULL);
+		HANDLE_PENDING(cx, search);
+	}
+	if (!js_load_dir_file(cx, argc, argv, sbbs, &dirnum, &f, &found)) {
+		free(search);
 		return JS_FALSE;
+	}
 	if (argc > 2 && JSVAL_IS_BOOLEAN(argv[2]))
 		extended = JSVAL_TO_BOOLEAN(argv[2]);
 	if (found) {
 		jsrefcount rc = JS_SUSPENDREQUEST(cx);
-		result = sbbs->viewfile(&f, extended ? true : false);
+		result = sbbs->viewfile(&f, extended ? true : false, search);
 		smb_freefilemem(&f);
 		JS_RESUMEREQUEST(cx, rc);
 	}
+	free(search);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
 	return JS_TRUE;
 }
@@ -5317,9 +5325,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 		        "displaying the reason when it can't be added. Returns <tt>false</tt> if it wasn't added or there's no such file.")
 	 , 322
 	},
-	{"view_file_info",  js_view_file_info,  2,  JSTYPE_NUMBER,  JSDOCSTR("dir_code, filename [,extended=true]")
+	{"view_file_info",  js_view_file_info,  2,  JSTYPE_NUMBER,  JSDOCSTR("dir_code, filename [,extended=true] [,search]")
 	 , JSDOCSTR("Display a file's extended information (or, when <tt>extended</tt> is <tt>false</tt>, its contents) "
-		        "and prompt for an action, as the built-in file lister does. Returns -1 if the file was added to the "
+		        "and prompt for an action, as the built-in file lister does. When <i>search</i> (a search expression) "
+		        "is specified, an Extended File Info module may highlight what it found. Returns -1 if the file was added to the "
 		        "batch download queue, 1 for next (also returned when there's no such file), -2 for previous, or 0 for quit.")
 	 , 322
 	},

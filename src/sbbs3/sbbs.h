@@ -1267,7 +1267,7 @@ public:
 	bool	recvfile(char* fname, char prot=0, bool autohang=true);
 
 	/* file.cpp */
-	void	showfileinfo(file_t*, bool show_extdesc = true);
+	void	showfileinfo(file_t*, bool show_extdesc = true, const char* search = nullptr);
 	bool	removefcdt(file_t*);
 	bool	removefile(smb_t*, file_t*);
 	bool	movefile(smb_t*, file_t*, int newdir);
@@ -1287,7 +1287,7 @@ public:
 	int		listfiles(int dirnum, const char *filespec, FILE* tofile, int mode);
 	int		listfileinfo(int dirnum, const char *filespec, int mode);
 	void	listfiletofile(file_t*, FILE*);
-	int		batchflagprompt(smb_t*, file_t* bf[], uint row[], int total, int totalfiles);
+	int		batchflagprompt(smb_t*, file_t* bf[], uint row[], int total, int totalfiles, const char* search = nullptr);
 
 	/* bat_xfer.cpp */
 	void	batchmenu(void);
@@ -1305,7 +1305,7 @@ public:
 	uint	create_filelist(const char *name, int mode);
 
 	/* viewfile.cpp */
-	int		viewfile(file_t* f, bool extdesc);
+	int		viewfile(file_t* f, bool extdesc, const char* search = nullptr);
 	bool	viewfile(const char* path);
 	bool	viewfilecontents(file_t* f);
 	bool	can_view_file(file_t* f);

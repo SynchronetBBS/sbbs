@@ -448,6 +448,7 @@ void free_cfg(scfg_t* cfg)
 	free_loadable_module(&cfg->scandirs_mod);
 	free_loadable_module(&cfg->listfiles_mod);
 	free_loadable_module(&cfg->fileinfo_mod);
+	free_loadable_module(&cfg->extfileinfo_mod);
 	free_loadable_module(&cfg->nodelist_mod);
 	free_loadable_module(&cfg->whosonline_mod);
 	free_loadable_module(&cfg->privatemsg_mod);
