@@ -1672,7 +1672,8 @@ static off_t sock_sendfile(http_session_t *session, char *path, off_t start, off
 	int      file;
 	off_t    ret = 0;
 	ssize_t  i;
-	char     buf[OUTBUF_LEN];       /* Input buffer */
+	char*    buf;
+	size_t   bufsz = OUTBUF_LEN;
 	uint64_t remain;
 
 	if (startup->options & WEB_OPT_DEBUG_TX) {
@@ -1683,6 +1684,10 @@ static off_t sock_sendfile(http_session_t *session, char *path, off_t start, off
 			lprintf(LOG_DEBUG, "%04d %-5s [%s] Sending %s"
 			        , session->socket, session->client.protocol, session->host_ip, path);
 	}
+	if ((buf = (char*)malloc(bufsz)) == NULL) {
+		errprintf(LOG_CRIT, WHERE, "%04d !ERROR allocating %u bytes", session->socket, (unsigned)bufsz);
+		return 0;
+	}
 	if ((file = open(path, O_RDONLY | O_BINARY)) == -1)
 		lprintf(LOG_WARNING, "%04d !ERROR %d opening %s", session->socket, errno, path);
 	else {
@@ -1690,6 +1695,7 @@ static off_t sock_sendfile(http_session_t *session, char *path, off_t start, off
 			if (lseek(file, start, SEEK_SET) == -1) {
 				lprintf(LOG_WARNING, "%04d !ERROR %d seeking to position %" PRIdOFF " in %s", session->socket, errno, start, path);
 				close(file);
+				free(buf);
 				return 0;
 			}
 			remain = end - start + 1;
@@ -1697,12 +1703,13 @@ static off_t sock_sendfile(http_session_t *session, char *path, off_t start, off
 		else {
 			remain = -1L;
 		}
-		while ((i = read(file, buf, (size_t)(remain > sizeof(buf)?sizeof(buf):remain))) > 0) {
+		while ((i = read(file, buf, (size_t)(remain > bufsz ? bufsz : remain))) > 0) {
 			int wr = writebuf(session, buf, i);
 			if (wr != i) {
 				lprintf(LOG_WARNING, "%04d %-5s [%s] !ERROR sending %s (sent %d of %d bytes)"
 					,session->socket, session->client.protocol, session->host_ip, path, wr, (int)i);
 				close(file);
+				free(buf);
 				return 0;
 			}
 			ret += i;
@@ -1710,6 +1717,7 @@ static off_t sock_sendfile(http_session_t *session, char *path, off_t start, off
 		}
 		close(file);
 	}
+	free(buf);
 	return ret;
 }
 
@@ -2608,6 +2616,11 @@ static int pipereadline(int pipe, char *buf, size_t length, char *fullbuf, size_
 	DWORD i;
 	int   ret = 0;
 
+	if (length < 1)
+		buf = NULL;
+	if (fullbuf_len < 1)
+		fullbuf = NULL;
+
 	/* Terminate buffers */
 	if (buf != NULL)
 		buf[0] = 0;
@@ -2631,7 +2644,7 @@ static int pipereadline(int pipe, char *buf, size_t length, char *fullbuf, size_
 			if (ch == '\n')
 				break;
 
-			if (buf != NULL && i < length)
+			if (buf != NULL && i < length - 1)
 				buf[i] = ch;
 
 			i++;
@@ -2641,8 +2654,8 @@ static int pipereadline(int pipe, char *buf, size_t length, char *fullbuf, size_
 	}
 
 	/* Terminate at length if longer */
-	if (i > length)
-		i = length;
+	if (buf != NULL && i >= length)
+		i = length - 1;
 
 	if (i > 0 && buf != NULL && buf[i - 1] == '\r')
 		buf[--i] = 0;
@@ -5897,6 +5910,7 @@ static bool exec_cgi(http_session_t *session)
 	if (!CreatePipe(&startup_info.hStdInput, &wrinpipe, &sa, 0 /* default buffer size */)) {
 		errprintf(LOG_ERR, WHERE, "%04d !ERROR %d creating stdin pipe", session->socket, GetLastError());
 		CloseHandle(rdoutpipe);
+		CloseHandle(startup_info.hStdOutput);
 		return false;
 	}
 
@@ -5927,13 +5941,23 @@ static bool exec_cgi(http_session_t *session)
 		&startup_info,  /* pointer to STARTUPINFO */
 		&process_info   /* pointer to PROCESS_INFORMATION */
 		);
+	DWORD create_error = success ? 0 : GetLastError();
 
 	strListFreeBlock(env_block);
 
+	// The child has its own copies of these now
+	CloseHandle(startup_info.hStdOutput);
+	CloseHandle(startup_info.hStdInput);
+
 	if (!success) {
-		errprintf(LOG_ERR, WHERE, "%04d !ERROR %d running %s", session->socket, GetLastError(), cmdline);
+		errprintf(LOG_ERR, WHERE, "%04d !ERROR %d running %s", session->socket, create_error, cmdline);
+		if (rdpipe != INVALID_HANDLE_VALUE)
+			CloseHandle(rdpipe);
+		if (wrpipe != INVALID_HANDLE_VALUE)
+			CloseHandle(wrpipe);
 		return false;
 	}
+	CloseHandle(process_info.hThread);
 
 	cd.wrpipe = wrpipe;
 	cd.rdpipe = rdpipe;
@@ -7274,8 +7298,9 @@ void http_output_thread(void *arg)
 {
 	http_session_t *session = (http_session_t *)arg;
 	RingBuf *       obuf;
-	char            buf[OUTBUF_LEN + 12];           /* *MUST* be large enough to hold the buffer,
+	char *          buf;                            /* *MUST* be large enough to hold the buffer,
 	                                                	the size of the buffer in hex, and four extra bytes. */
+	const size_t    bufsz = OUTBUF_LEN + 12;
 	char *          bufdata;
 	int             len;
 	unsigned        avail;
@@ -7287,11 +7312,21 @@ void http_output_thread(void *arg)
 	thread_up(true /* setuid */);
 
 	obuf = &(session->outbuf);
+	if ((buf = (char*)malloc(bufsz)) == NULL) {
+		errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] !ERROR allocating %u bytes for output buffer"
+		          , session->socket, session->client.protocol, session->host_ip, (unsigned)bufsz);
+		close_session_socket(session);
+		thread_down();
+		sem_post(&session->output_thread_terminated);
+		return;
+	}
 	/* Destroyed at end of function */
 	if ((i = pthread_mutex_init(&session->outbuf_write, NULL)) != 0) {
 		lprintf(LOG_DEBUG, "%04d %-5s [%s] Error %d initializing outbuf mutex", session->socket, session->client.protocol, session->host_ip, i);
+		free(buf);
 		close_session_socket(session);
 		thread_down();
+		sem_post(&session->output_thread_terminated);
 		return;
 	}
 	session->outbuf_write_initialized = 1;
@@ -7405,6 +7440,7 @@ void http_output_thread(void *arg)
 	session->outbuf_write_initialized = 0;
 	pthread_mutex_unlock(&session->outbuf_write);
 	pthread_mutex_destroy(&session->outbuf_write);
+	free(buf);
 	sem_post(&session->output_thread_terminated);
 }
 
