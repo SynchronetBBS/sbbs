@@ -1,0 +1,4 @@
+# Live sysop-edited config, seeded from settings-example.ini by install-xtrn.
+/settings.ini
+# Downloads from online archives (hooks), generated at run time.
+/.cache/
