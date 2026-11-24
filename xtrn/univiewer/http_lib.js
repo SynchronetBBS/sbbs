@@ -1,6 +1,6 @@
 /* http_lib.js
  *
- * HTTP for SixelView's mini browser (web libraries): URL handling, safe encoding of form data, and a
+ * HTTP for Universal Viewer's mini browser (web libraries): URL handling, safe encoding of form data, and a
  * request function that does GET and POST under tight limits.  Kept apart from the rest so that it can
  * grow (other methods, cookies ...) without touching the viewer.
  *
