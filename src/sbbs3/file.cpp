@@ -38,13 +38,15 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc, const char* search)
 
 	// An Extended File Info module, when configured, displays it all instead:
 	// passed the search expression with its % and " encoded (so its quotes
-	// survive the module's command-line)
+	// survive the module's command-line). A module that fails (non-zero
+	// result, e.g. the file has since been removed, or a script error) leaves
+	// the display to the built-in code below.
 	char encoded_search[256];
 	bool invoked;
 	hex_encode('%', search == nullptr ? "" : search, "\"", encoded_search, sizeof encoded_search);
-	exec_mod("extended file info", cfg.extfileinfo_mod, &invoked, "%s \"%s\" %d %s"
-	         , cfg.dir[f->dir]->code, f->name, show_extdesc ? 1 : 0, encoded_search);
-	if (invoked) {
+	int  result = exec_mod("extended file info", cfg.extfileinfo_mod, &invoked, "%s \"%s\" %d %s"
+	                       , cfg.dir[f->dir]->code, f->name, show_extdesc ? 1 : 0, encoded_search);
+	if (invoked && result == 0) {
 		current_file = NULL;
 		return;
 	}

@@ -8,6 +8,8 @@
 // Arguments (from the Terminal Server):
 //   <dir code> <filename> <1 to show the extended description, or 0>
 //   [search expression, with any % and " encoded as %25 and %22]
+// Exits with 0 when it displayed the information; otherwise (e.g. the file
+// has since been removed) the Terminal Server displays it instead.
 
 // The highlight color is the List Files module's found_attr option (the
 // [listfiles] sections of ctrl/modopts.ini), by default bright yellow.
@@ -145,12 +147,17 @@ function show_header(dir, f, disk, terms, attr)
 
 function main(args)
 {
+	// Exiting non-zero has the Terminal Server display the information itself
 	var dir = file_area.dir[String(args[0] || "").toLowerCase()];
-	if (!dir || args.length < 2)
-		return 0;
+	if (!dir || args.length < 2) {
+		log(LOG_ERR, "extfileinfo: unknown directory or missing arguments: " + args.join(" "));
+		return 1;
+	}
 	var fb = new FileBase(dir.code);
-	if (!fb.open())
-		return 0;
+	if (!fb.open()) {
+		log(LOG_ERR, "extfileinfo: " + dir.code + ": " + fb.last_error);
+		return 1;
+	}
 	var f = fb.get(args[1], FileBase.DETAIL.MAX);
 	var disk = {};
 	if (f) {
@@ -162,8 +169,10 @@ function main(args)
 		disk.path = fb.get_path(f.name);
 	}
 	fb.close();
-	if (!f)
-		return 0;
+	if (!f) {
+		log(LOG_WARNING, "extfileinfo: " + dir.code + ": no such file: " + args[1]);
+		return 1;
+	}
 	var terms = listfiles_search_terms(extfileinfo_decode_search(args.slice(3)));
 	var attr = terms.length ? extfileinfo_found_attr(found_attr(dir)) : "";
 
