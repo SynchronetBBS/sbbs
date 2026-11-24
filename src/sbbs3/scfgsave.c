@@ -32,6 +32,32 @@ bool               no_msghdr = false, all_msghdr = false;
 static ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
 
 /****************************************************************************/
+/* Replaces a configuration file only once its new contents are completely	*/
+/* written, so a program loading the configuration meanwhile reads either	*/
+/* the whole old file or the whole new one (#1404)							*/
+/****************************************************************************/
+static bool write_cfg_file(scfg_t* cfg, const char* path, str_list_t ini)
+{
+	char  tmp[MAX_PATH + 1];
+	FILE* fp;
+	bool  result;
+
+	SAFEPRINTF(tmp, "%s.tmp", path);
+	if ((fp = fopen(tmp, "w")) == NULL)
+		return false;
+	result = iniWriteFile(fp, ini);
+	if (fclose(fp) != 0)
+		result = false;
+	if (result) {
+		backup(path, cfg->config_backup_level, /* ren: */ false);
+		result = xp_replace_file(tmp, path) == 0;
+	}
+	if (!result)
+		remove(tmp);
+	return result;
+}
+
+/****************************************************************************/
 /****************************************************************************/
 bool save_cfg(scfg_t* cfg)
 {
@@ -66,7 +92,6 @@ bool write_node_cfg(scfg_t* cfg)
 {
 	bool  result = false;
 	char  inipath[MAX_PATH + 1];
-	FILE* fp;
 
 	if (cfg->prepped)
 		return false;
@@ -78,7 +103,6 @@ bool write_node_cfg(scfg_t* cfg)
 	prep_dir(cfg->ctrl_dir, inipath, sizeof(inipath));
 	md(inipath);
 	SAFECAT(inipath, "node.ini");
-	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
 	iniSetString(&ini, ROOT_SECTION, "phone", cfg->node_phone, NULL);
@@ -90,10 +114,7 @@ bool write_node_cfg(scfg_t* cfg)
 
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->node_misc, NULL);
 
-	if ((fp = fopen(inipath, "w")) != NULL) {
-		result = iniWriteFile(fp, ini);
-		fclose(fp);
-	}
+	result = write_cfg_file(cfg, inipath, ini);
 	iniFreeStringList(ini);
 
 	return result;
@@ -153,13 +174,11 @@ bool write_main_cfg(scfg_t* cfg)
 	char  inipath[MAX_PATH + 1];
 	char  name[INI_MAX_VALUE_LEN];
 	char  tmp[128];
-	FILE* fp;
 
 	if (cfg->prepped)
 		return false;
 
 	SAFEPRINTF(inipath, "%smain.ini", cfg->ctrl_dir);
-	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
 	iniSetString(&ini, ROOT_SECTION, "name", cfg->sys_name, NULL);
@@ -386,10 +405,7 @@ bool write_main_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	if ((fp = fopen(inipath, "w")) != NULL) {
-		result = iniWriteFile(fp, ini);
-		fclose(fp);
-	}
+	result = write_cfg_file(cfg, inipath, ini);
 	iniFreeStringList(ini);
 
 	return result;
@@ -435,7 +451,6 @@ bool write_msgs_cfg(scfg_t* cfg)
 	char  inipath[MAX_PATH + 1];
 	char  name[INI_MAX_VALUE_LEN];
 	char  tmp[INI_MAX_VALUE_LEN];
-	FILE* fp;
 	smb_t smb;
 
 	if (cfg->prepped)
@@ -444,7 +459,6 @@ bool write_msgs_cfg(scfg_t* cfg)
 	ZERO_VAR(smb);
 
 	SAFEPRINTF(inipath, "%smsgs.ini", cfg->ctrl_dir);
-	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->msg_misc, NULL);
@@ -645,10 +659,7 @@ bool write_msgs_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	if ((fp = fopen(inipath, "w")) != NULL) {
-		result = iniWriteFile(fp, ini);
-		fclose(fp);
-	}
+	result = write_cfg_file(cfg, inipath, ini);
 	iniFreeStringList(ini);
 
 
@@ -744,7 +755,6 @@ bool write_file_cfg(scfg_t* cfg)
 		return false;
 
 	SAFEPRINTF(inipath, "%sfile.ini", cfg->ctrl_dir);
-	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
 	iniSetBytes(&ini, ROOT_SECTION, "min_dspace", 1, cfg->min_dspace, NULL);
@@ -987,11 +997,7 @@ bool write_file_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	FILE* fp = fopen(inipath, "w");
-	if (fp != NULL) {
-		result = iniWriteFile(fp, ini);
-		fclose(fp);
-	}
+	result = write_cfg_file(cfg, inipath, ini);
 	iniFreeStringList(ini);
 
 	return result;
@@ -1010,7 +1016,6 @@ bool write_chat_cfg(scfg_t* cfg)
 		return false;
 
 	SAFEPRINTF(inipath, "%schat.ini", cfg->ctrl_dir);
-	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
 	for (int i = 0; i < cfg->total_gurus; i++) {
@@ -1046,11 +1051,7 @@ bool write_chat_cfg(scfg_t* cfg)
 		iniSetHexInt(&ini, section, "settings", cfg->page[i]->misc, &ini_style);
 	}
 
-	FILE* fp = fopen(inipath, "w");
-	if (fp != NULL) {
-		result = iniWriteFile(fp, ini);
-		fclose(fp);
-	}
+	result = write_cfg_file(cfg, inipath, ini);
 	iniFreeStringList(ini);
 
 	return result;
@@ -1069,7 +1070,6 @@ bool write_xtrn_cfg(scfg_t* cfg)
 		return false;
 
 	SAFEPRINTF(inipath, "%sxtrn.ini", cfg->ctrl_dir);
-	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
 	for (int i = 0; i < cfg->total_xedits; i++) {
@@ -1151,11 +1151,7 @@ bool write_xtrn_cfg(scfg_t* cfg)
 		iniSetHexInt(&ini, name, "settings", cfg->hotkey[i]->misc, &ini_style);
 	}
 
-	FILE* fp = fopen(inipath, "w");
-	if (fp != NULL) {
-		result = iniWriteFile(fp, ini);
-		fclose(fp);
-	}
+	result = write_cfg_file(cfg, inipath, ini);
 	iniFreeStringList(ini);
 
 	return result;

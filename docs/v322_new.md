@@ -661,6 +661,10 @@
 
 - **Text Directory** moved from each node's configuration to System →
   Advanced Options
+- Fix: saving a configuration file removed it until the new one was
+  completely written, so a server or SBBSecho loading the configuration
+  during a save ran without it; the new file now replaces the old one only
+  once complete
 - New **Purge Mailbox Trash by Age** (default 30 days) and **Mailbox
   Quota (per user)** (default 1 GB) options under Message Options, for
   WebMail's per-user mailbox
