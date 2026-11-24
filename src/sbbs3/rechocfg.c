@@ -509,6 +509,7 @@ ini_style_t sbbsecho_ini_style = {  .value_separator = " = ", .section_separator
 bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 {
 	char       section[128];
+	char       program[32];
 	FILE*      fp;
 	str_list_t ini;
 
@@ -698,7 +699,8 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		iniSetBool(&ini, section, "UsesMSG", bot->uses_msg, style);
 	}
 
-	ini_set_written_by(&ini, "EchoCfg");
+	SAFEPRINTF2(program, "EchoCfg v%u.%02u", SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR);
+	ini_set_written_by(&ini, program);
 	iniWriteFile(fp, ini);
 	iniCloseFile(fp);
 
