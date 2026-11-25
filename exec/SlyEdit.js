@@ -102,8 +102,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "2.04";
-var EDITOR_VER_DATE = "2026-10-18";
+var EDITOR_VERSION = "2.05";
+var EDITOR_VER_DATE = "2026-11-24";
 
 
 // Program variables
@@ -453,7 +453,7 @@ Object.defineProperty(js.global, "SlyEdit_areYouThereProp", {
 		// a keypress after the "Are you there" warning
 		console.ungetstr(KEY_ENTER);
 
-		console.gotoxy(originalCurPos);
+		consoleGoLocation1ElseLocation2(originalCurPos, {x: gEditLeft, y: gEditTop});
 		console.attributes = originalAtrs;
 
 		return "";
@@ -5057,7 +5057,7 @@ function updateTime(pCurpos, pMoveCursorBack)
 		console.print(chooseEditColor());
 		// Move the cursor back to where it was
 		if (pMoveCursorBack)
-			console.gotoxy(curpos);
+			consoleGoLocation1ElseLocation2(curpos, {x: gEditLeft, y: gEditTop});
 		// Update this function's time variable
 		updateTime.timeStr = currentTime;
 	}
@@ -5322,7 +5322,11 @@ function doCrossPosting(pOriginalCurpos)
 	if ((pOriginalCurpos != null) && (typeof(pOriginalCurpos) != "undefined"))
 		origStartingCurpos = pOriginalCurpos;
 	else
+	{
 		origStartingCurpos = console.getxy();
+		if (origStartingCurpos === false)
+			origStartingCurpos ={x: gEditLeft, y: gEditTop};
+	}
 
 	// Construct objects to represent the screen locations of the upper-left
 	// and lower-right corners of the selection box.  Initially, let the box
@@ -5724,8 +5728,11 @@ function createCrossPostSubBoardMenu(pGrpIdx, pListStartCol, pListStartRow, pLis
 		{
 			// Go to the bottom row of the selection box and display an error that
 			// the user can't post in the selected sub-board and pause for a moment.
+			var origCurPos = console.getxy();
+			if (origCurPos === false)
+				origCurPos =
 			writeCantPostErrMsg(pListStartCol-1, pListStartRow+pListHeight, subBoardMenu.selectedItemIdx+1,
-								pListWidth+2, pListWidth, 2000/*cantPostErrPauseMS*/, console.getxy());
+								pListWidth+2, pListWidth, 2000/*cantPostErrPauseMS*/, origCurPos);
 		}
 	};
 
@@ -5865,7 +5872,7 @@ function listTextReplacements()
 		var originalCurpos = console.getxy();
 		writeMsgOntBtmHelpLineWithPause("\x01n\x01h\x01yThere are no text replacements.", ERRORMSG_PAUSE_MS);
 		console.print(chooseEditColor()); // Make sure the edit color is correct
-		console.gotoxy(originalCurpos);
+		consoleGoLocation1ElseLocation2(originalCurpos, {x: gEditLeft, y: gEditTop});
 		return;
 	}
 
@@ -6049,10 +6056,15 @@ function listTextReplacements()
 	// We're done listing the text replacements.
 	// Erase the list box rectangle by re-drawing the message text.  Then, move
 	// the cursor back to where it was originally.
-	var editLineIndexAtSelBoxTopRow = gEditLinesIndex - (originalCurpos.y-boxInfo.topLeftY);
-	displayMessageRectangle(boxInfo.topLeftX, boxInfo.topLeftY, boxInfo.width,
-	                        boxInfo.height, editLineIndexAtSelBoxTopRow, true);
-	console.gotoxy(originalCurpos);
+	if (typeof(originalCurpos) === "object" && typeof(originalCurpos.x) === "number" && typeof(originalCurpos.y) === "number")
+	{
+		var editLineIndexAtSelBoxTopRow = gEditLinesIndex - (originalCurpos.y-boxInfo.topLeftY);
+		displayMessageRectangle(boxInfo.topLeftX, boxInfo.topLeftY, boxInfo.width,
+								boxInfo.height, editLineIndexAtSelBoxTopRow, true);
+		console.gotoxy(originalCurpos);
+	}
+	else
+		console.gotoxy(gEditLeft, gEditTop);
 	console.print(chooseEditColor());
 }
 
@@ -6747,7 +6759,10 @@ function letUserUploadMessageFile(pCurpos)
 	if (typeof(pCurpos) === "object" && pCurpos.hasOwnProperty("x") && pCurpos.hasOwnProperty("y"))
 		originalCurpos = pCurpos;
 	else
-		originalCurpos = console.getxy();
+	{
+		if (originalCurpos === false)
+			originalCurpos = {x: gEditLeft, y: gEditTop};
+	}
 
 	var uploadedMessage = false;
 	if (promptYesNo("Upload a message", true, "Upload message", true, true))
@@ -6961,9 +6976,12 @@ function promptForGraphicsChar(pCurPos)
 				{
 					inp = inp.substr(0, inp.length-1);
 					var curPos = console.getxy();
-					console.gotoxy(curPos.x-1, curPos.y);
-					console.print(" ");
-					console.gotoxy(curPos.x-1, curPos.y);
+					if (typeof(curPos) === "object" && typeof(curPos.x) === "number" && typeof(curPos.y) === "number")
+					{
+						console.gotoxy(curPos.x-1, curPos.y);
+						console.print(" ");
+						console.gotoxy(curPos.x-1, curPos.y);
+					}
 				}
 				break;
 			case '\x0d':	// CR

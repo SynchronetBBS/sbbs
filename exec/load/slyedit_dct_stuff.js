@@ -650,12 +650,15 @@ function promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, pParamObj, pAlw
 		// Calculate the difference in the edit lines index we'll need to use
 		// to erase the confirmation box.  This will be the difference between
 		// the cursor position between boxY and the current cursor row.
-		const editLinesIndexDiff = boxY - originalCurpos.y;
-		pParamObj.displayMessageRectangle(boxX, boxY, boxWidth, boxHeight,
-		                                  pParamObj.editLinesIndex + editLinesIndexDiff,
-		                                  true);
-		// Put the cursor back where it was
-		console.gotoxy(originalCurpos);
+		if (typeof(originalCurpos) === "object" && typeof(originalCurpos.x) === "number" && typeof(originalCurpos.y) === "number")
+		{
+			const editLinesIndexDiff = boxY - originalCurpos.y;
+			pParamObj.displayMessageRectangle(boxX, boxY, boxWidth, boxHeight,
+			                                  pParamObj.editLinesIndex + editLinesIndexDiff,
+			                                  true);
+			// Put the cursor back where it was
+			console.gotoxy(originalCurpos);
+		}
 	}
 
 	return userResponse;

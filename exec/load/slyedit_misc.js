@@ -1470,7 +1470,7 @@ function promptYesNo(pQuestion, pDefaultYes, pBoxTitle, pIceRefreshForBothAnswer
       if (pIceRefreshForBothAnswers || !userResponse)
       {
          fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
-         console.gotoxy(originalCurpos);
+		 consoleGoLocation1ElseLocation2(originalCurpos, {x: gEditLeft, y: gEditTop});
       }
    }
 
@@ -5442,4 +5442,18 @@ function displayRIPHdr(pText, pTextColorNum, pInnerBorderColorNum, pOuterEdgeCol
 	rip += RIPButtonNumeric(0, 0, 640, 60, 0, 0, 0, [pText], "");
 	console.crlf();
 	console.print(rip + "\r\n");
+}
+
+// Moves the console cursor to one location if that location object is
+// valid; otherwise, moves the cursor to the 2nd location.
+//
+// Parameters:
+//  pLocation1: The 1st console location to try
+//  pLocation2: The 2nd console location to try
+function consoleGoLocation1ElseLocation2(pLocation1, pLocation2)
+{
+	if (typeof(pLocation1) === "object" && typeof(pLocation1.x) === "number" && typeof(pLocation1.y) === "number")
+		console.gotoxy(pLocation1);
+	else if (typeof(pLocation2) === "object" && typeof(pLocation2.x) === "number" && typeof(pLocation2.y) === "number")
+		console.gotoxy(pLocation2);
 }
