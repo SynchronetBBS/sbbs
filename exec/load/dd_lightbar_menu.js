@@ -66,6 +66,14 @@ By default, the menu selection will wrap around to the beginning/end when using
 the down/up arrows.  That behavior can be disabled by setting the wrapNavigation
 property to false.
 
+By default, the left arrow also scrolls up and the right arrow also scrolls
+down.  Those alternate keys are scrollUpAlternateKey (default KEY_LEFT) and
+scrollDownAlternateKey (default KEY_RIGHT).  Set either one to "" to stop
+using that key for scrolling, or set it to a different key.  For a key that
+is not used by the menu itself, set OnCustomKey to a function(pKey) that
+returns true when it handles the key (the input loop stays open and the menu
+is not redrawn unless that function draws something).
+
 You can enable the display of a scrollbar by setting the scrollbarEnabled property
 to true.  By default, it is false.  For instance (assuming the menu object is lbMenu):
 lbMenu.scrollbarEnabled = true;
@@ -300,7 +308,7 @@ lbMenu.ValidateSelectItem = function(pItemRetval) {
 	}
 }
 
-OnItemSelect is a function that is called when an item is selected, or toggled
+OnItemSelect is a function that is called when an item is selected, or toggled 
 if multi-select is enabled.
 
 Parameters:
@@ -484,6 +492,12 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.selectedItemIdx = 0;
 	this.topItemIdx = 0;
 	this.wrapNavigation = true;
+	// Left/right also scroll up/down unless the caller overrides these.
+	// An empty string disables that alternate key.
+	this.scrollUpAlternateKey = KEY_LEFT;
+	this.scrollDownAlternateKey = KEY_RIGHT;
+	// Optional function(pKey). Return true if the key was consumed.
+	this.OnCustomKey = null;
 	this.hotkeyCaseSensitive = false;
 	this.ampersandHotkeysInItems = true;
 	this.multiSelect = false;
@@ -622,7 +636,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// the user can select it.
 	this.ValidateSelectItem = function(pItemRetval) { return true; }
 
-	// OnItemSelect is a function that is called when an item is selected, or toggled
+	// OnItemSelect is a function that is called when an item is selected, or toggled 
 	// if multi-select is enabled.
 	//
 	// Parameters:
@@ -917,7 +931,7 @@ function DDLightbarMenu_SetPos(pX, pY)
 			this.pos.x = pX.x;
 			this.pos.y = pX.y;
 		}
-
+		
 	}
 	else if ((typeof(pX) == "number") && (typeof(pY) == "number"))
 	{
@@ -1211,7 +1225,12 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 		var shortenedText = substrWithAttrCodes(itemText, this.nextDrawOnlyItemSubstr.start, len);
 		if (this.ANSISupported())
 			console.gotoxy(pScreenX+this.nextDrawOnlyItemSubstr.start, pScreenY);
-		console.print(shortenedText + "\x01n", printModeBits);
+		// Keep the field color active so any padding uses the same background.
+		console.print(shortenedText, printModeBits);
+		var printedLen = console.strlen(shortenedText, P_AUTO_UTF8);
+		if (printedLen < len)
+			printf("%*s", len - printedLen, "");
+		console.print("\x01n");
 	}
 	else
 	{
@@ -2025,13 +2044,13 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			}
 			else // this.mouseEnabled is false
 				this.lastUserInput = console.getkey(inputMode);
-
-
+				
+			
 			// If the user is no longer online (disconnected) or the JS engine has
 			// been terminated, then exit the loop now
 			if (bbs.online == 0 || js.terminated)
 				break;
-
+			
 
 			// If no further input processing needs to be done due to a mouse click
 			// action, then continue to the next loop iteration.
@@ -2058,9 +2077,9 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					retVal = null; // For single-choice mode
 				}
 			}
-			else if ((this.lastUserInput == KEY_UP) || (this.lastUserInput == KEY_LEFT))
+			else if ((this.lastUserInput == KEY_UP) || (typeof(this.scrollUpAlternateKey) === "string" && this.scrollUpAlternateKey.length > 0 && this.lastUserInput == this.scrollUpAlternateKey))
 				this.DoKeyUp(selectedItemIndexes, numItems);
-			else if ((this.lastUserInput == KEY_DOWN) || (this.lastUserInput == KEY_RIGHT))
+			else if ((this.lastUserInput == KEY_DOWN) || (typeof(this.scrollDownAlternateKey) === "string" && this.scrollDownAlternateKey.length > 0 && this.lastUserInput == this.scrollDownAlternateKey))
 				this.DoKeyDown(selectedItemIndexes, numItems);
 			else if (this.lastUserInput == KEY_PAGEUP || this.PageUpKeysIncludes(this.lastUserInput))
 				this.DoPageUp(selectedItemIndexes, numItems);
@@ -2246,6 +2265,11 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				else
 					console.gotoxy(originalCurpos); // Move the cursor back where it was
 			}
+			else if (typeof(this.OnCustomKey) === "function" && typeof(this.lastUserInput) === "string" && this.OnCustomKey(this.lastUserInput))
+			{
+				// The caller handled this key and may have updated part of the
+				// menu itself. Stay in the input loop.
+			}
 			else
 			{
 				// See if the user pressed a hotkey set for one of the items.  If so,
@@ -2358,7 +2382,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	// Set the screen color back to normal so that text written to the screen
 	// after this looks good.
 	console.attributes = "N";
-
+	
 	// If in multi-select mode, populate userChoices with the choices
 	// that the user selected.
 	if (this.multiSelect && (Object.keys(selectedItemIndexes).length > 0))
