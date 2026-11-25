@@ -20,10 +20,10 @@
  *	+ / -			zoom in / out (also i / o)
  *	W			fit page width       F  fit whole page      1  actual size
  *	N / P			next / previous page G  go to page
- *	V			invert colours       ?  help               Q / ESC  quit
+ *	V			invert colors       ?  help               Q / ESC  quit
  *
- * Not supported: JPEG 2000 (JPXDecode), JBIG2 and progressive JPEG images (shown as
- * grey boxes), tiling patterns (approximated by a flat colour), transparency
+ * Not supported: arithmetic-coded JPEG images (shown as gray boxes), tiling
+ * patterns (approximated by a flat color), transparency
  * groups/blend modes, AES-256 (V5) encryption, and password-protected files.
  *
  * univiewer.js does the same for PDFs and also displays images and Sixel files; this
@@ -44,6 +44,7 @@ function main()
 	}
 	var doc;
 	try {
+		status_line(" Loading ...");
 		doc = load_pdf(file);
 	}
 	catch (e) {
@@ -51,7 +52,12 @@ function main()
 		console.pause();
 		return;
 	}
-	viewer(doc, parseInt(argv[1], 10) || 0);
+	try {
+		viewer(doc, parseInt(argv[1], 10) || 0);
+	}
+	finally {
+		mouse_stop();
+	}
 }
 
 try {
