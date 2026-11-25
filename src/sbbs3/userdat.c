@@ -185,7 +185,7 @@ int find_login_id(scfg_t* cfg, const char* user_id)
 	}
 
 	usernum = matchuser_ex(cfg, user_id, /* sysop_alias: */ false);
-	if (usernum == 0 && check_realname(cfg, user_id) && (cfg->sys_login & LOGIN_REALNAME))
+	if (usernum == 0 && check_realname(cfg, user_id, NULL) && (cfg->sys_login & LOGIN_REALNAME))
 		usernum = finduserstr_ex(cfg, 0, USER_NAME, user_id
 		                         , /* del: */ false, /* next: */ false
 		                         , /* Progress_cb: */ NULL, /* cbdata: */ NULL);
@@ -4395,65 +4395,90 @@ time_t gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 }
 
 /*************************************************************************/
-/* Check a supplied name/alias and see if it's valid by our standards.   */
+/* Checks common to user names and aliases.                              */
+/* Sets *reason to a text.dat item number when returning false.          */
 /*************************************************************************/
-bool check_name(scfg_t* cfg, const char* name, bool unique)
+static bool check_name_format(scfg_t* cfg, const char* name, size_t min_len, int* reason)
 {
-	char   tmp[512];
-	size_t len;
+	size_t len = strlen(name);
 
+	if (len < min_len) {
+		*reason = NameTooShort;
+		return false;
+	}
+	if (str_has_ctrl(name)
+	    || strchr(name, 0xff) != NULL
+	    || ((cfg->uq & UQ_NOEXASC) && !str_is_ascii(name))) {
+		*reason = NameHasInvalidChars;
+		return false;
+	}
+	if ((uchar)name[0] <= ' '
+	    || (uchar)name[len - 1] <= ' '
+	    || strstr(name, "  ") != NULL) {
+		*reason = NameHasExtraSpaces;
+		return false;
+	}
+	if (!IS_ALPHA(name[0])) {
+		*reason = NameMustBeginWithLetter;
+		return false;
+	}
+	return true;
+}
+
+/*************************************************************************/
+/* Check a supplied name/alias and see if it's valid by our standards.   */
+/* 'reason' is an (optional) pointer to a text.dat item number,          */
+/* indicating why the name is not valid, when returning false.           */
+/*************************************************************************/
+bool check_name(scfg_t* cfg, const char* name, bool unique, int* reason)
+{
+	char tmp[512];
+	int  reason_;
+
+	if (reason == NULL)
+		reason = &reason_;
+	*reason = YouCantUseThatName;
 	if (name == NULL)
 		return false;
-	if (str_has_ctrl(name))
+	if (!check_name_format(cfg, name, 1, reason))
 		return false;
-	if ((cfg->uq & UQ_NOEXASC) && !str_is_ascii(name))
-		return false;
-	len = strlen(name);
-	if (len < 1)
-		return false;
-	if (strstr(name, "  ") != NULL) /* double spaces */
-		return false;
-	if (unique && matchuser(cfg, name, true /* sysop_alias */))
-		return false;
-	if ((uchar)name[0] <= ' '              /* begins with white-space? */
-	    || (uchar)name[len - 1] <= ' '     /* ends with white-space */
-	    || !IS_ALPHA(name[0])
-	    || !stricmp(name, cfg->sys_id)
-	    || strchr(name, 0xff)
+	if (!stricmp(name, cfg->sys_id)
 	    || trashcan(cfg, name, "name")
-	    || alias(cfg, name, tmp) != name
-	    )
+	    || alias(cfg, name, tmp) != name) {
+		*reason = NameNotAllowed;
 		return false;
+	}
+	if (unique && matchuser(cfg, name, true /* sysop_alias */)) {
+		*reason = NameAlreadyInUse;
+		return false;
+	}
 	return true;
 }
 
 /*************************************************************************/
 /* Check a supplied real name and see if it's valid by our standards.   */
+/* 'reason' is an (optional) pointer to a text.dat item number,          */
+/* indicating why the name is not valid, when returning false.           */
 /*************************************************************************/
-bool check_realname(scfg_t* cfg, const char* name)
+bool check_realname(scfg_t* cfg, const char* name, int* reason)
 {
-	size_t len;
+	int reason_;
+
+	if (reason == NULL)
+		reason = &reason_;
+	*reason = YouCantUseThatName;
 	if (name == NULL)
 		return false;
-	len = strlen(name);
-	if (len < 2)
+	if (!check_name_format(cfg, name, 2, reason))
 		return false;
-	if ((uchar)name[0] <= ' ' || (uchar)name[len - 1] <= ' ')
+	if ((cfg->uq & UQ_REALNAME) && !(cfg->uq & UQ_NOSPACEREQ) && strchr(name, ' ') == NULL) {
+		*reason = RealNameNeedsSpace;
 		return false;
-	if (str_has_ctrl(name))
+	}
+	if (trashcan(cfg, name, "name")) {
+		*reason = NameNotAllowed;
 		return false;
-	if ((cfg->uq & UQ_NOEXASC) && !str_is_ascii(name))
-		return false;
-	if ((cfg->uq & UQ_REALNAME) && !(cfg->uq & UQ_NOSPACEREQ) && strchr(name, ' ') == NULL)
-		return false;
-	if (strstr(name, "  ") != NULL) /* double spaces */
-		return false;
-	if (!IS_ALPHA(name[0]))
-		return false;
-	if (strchr(name, 0xff))
-		return false;
-	if (trashcan(cfg, name, "name"))
-		return false;
+	}
 	return true;
 }
 

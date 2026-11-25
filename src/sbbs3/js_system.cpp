@@ -2049,7 +2049,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_ASTRING(cx, argv[0], alias, LEN_ALIAS + 2, NULL);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	if (!check_name(cfg, alias, /* unique: */true)) {
+	if (!check_name(cfg, alias, /* unique: */true, /* reason: */NULL)) {
 		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "Invalid or duplicate user alias: %s", alias);
 		return JS_FALSE;
@@ -2281,7 +2281,7 @@ js_chkname(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(check_name(sys->cfg, str, unique)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(check_name(sys->cfg, str, unique, /* reason: */NULL)));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
@@ -2308,7 +2308,7 @@ js_chkrealname(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(check_realname(sys->cfg, str)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(check_realname(sys->cfg, str, /* reason: */NULL)));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;

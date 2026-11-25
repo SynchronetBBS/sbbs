@@ -999,8 +999,15 @@ var FileReceivedIn=989;
 var MailboxFull=990;
 var YourMailboxIsFull=991;
 var AbortedAnswer=992;
+var NameTooShort=993;
+var NameHasInvalidChars=994;
+var NameHasExtraSpaces=995;
+var NameMustBeginWithLetter=996;
+var RealNameNeedsSpace=997;
+var NameNotAllowed=998;
+var NameAlreadyInUse=999;
 
-var TOTAL_TEXT=992;
+var TOTAL_TEXT=999;
 
 /* Former names of renamed strings */
 var NScanPmQ=406;

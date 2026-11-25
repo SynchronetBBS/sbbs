@@ -36,6 +36,14 @@ function ask_to_cancel(msg)
 		exit(1);
 }
 
+function name_in_use(field, name)
+{
+	if (!bbs.matchuserdata(field, name))
+		return false;
+	console.print(bbs.text(bbs.text.NameAlreadyInUse));
+	return true;
+}
+
 function get_lang(user)
 {
 	if (!user)
@@ -299,11 +307,11 @@ function get_alias(user)
 			ask_to_cancel();
 			continue;
 		}
-		if (!system.check_name(alias)
-			|| bbs.matchuserdata(U_NAME, alias)
-			|| (!(system.newuser_questions & UQ_ALIASES) && !system.check_realname(alias))) {
+		if (!bbs.check_name(alias)
+			|| name_in_use(U_NAME, alias)
+			|| (!(system.newuser_questions & UQ_ALIASES) && !bbs.check_realname(alias))) {
 			bbs.logline(LOG_NOTICE, "N!", format("Invalid or duplicate user real name or alias: '%s'", alias));
-			ask_to_cancel(bbs.text(bbs.text.YouCantUseThatName));
+			ask_to_cancel();
 			if (!operation)
 				return false;
 			continue;
@@ -328,12 +336,12 @@ function get_name(user)
 				ask_to_cancel();
 				continue;
 			}
-			if (!system.check_name(name, /* unique: */true)
-				|| !system.check_realname(name)
+			if (!bbs.check_name(name, /* unique: */true)
+				|| !bbs.check_realname(name)
 				|| ((system.newuser_questions & UQ_DUPREAL)
-					&& bbs.matchuserdata(U_NAME, name))) {
+					&& name_in_use(U_NAME, name))) {
 				bbs.logline(LOG_NOTICE, "N!", format("Invalid or duplicate user real name: '%s'", name));
-				ask_to_cancel(bbs.text(bbs.text.YouCantUseThatName));
+				ask_to_cancel();
 				if (!operation)
 					return false;
 			} else {
@@ -366,13 +374,19 @@ function get_handle(user)
 			ask_to_cancel();
 			continue;
 		}
-		if (!handle
-			|| handle.indexOf(0xff) >= 0
-			|| ((system.newuser_questions & UQ_DUPHAND)
+		var reason;
+		if (!handle)
+			reason = bbs.text.NameTooShort;
+		else if (handle.indexOf('\xff') >= 0)
+			reason = bbs.text.NameHasInvalidChars;
+		else if (bbs.trashcan("name", handle))
+			reason = bbs.text.NameNotAllowed;
+		else if ((system.newuser_questions & UQ_DUPHAND)
 				&& bbs.matchuserdata(U_HANDLE, handle))
-			|| bbs.trashcan("name", handle)) {
+			reason = bbs.text.NameAlreadyInUse;
+		if (reason) {
 			bbs.logline(LOG_NOTICE, "N!", format("Invalid or duplicate user handle: '%s'", handle));
-			ask_to_cancel(bbs.text(bbs.text.YouCantUseThatName));
+			ask_to_cancel(bbs.text(reason));
 		} else {
 			user.handle = handle;
 			break;
