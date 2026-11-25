@@ -175,7 +175,7 @@
   bare script names already were
 - New user name prompts now say why a name was rejected (e.g. a real name
   without a last name, a name already in use) instead of only
-  "duplicate or invalid" (new `Name*` and `RealNameNeedsSpace` text strings)
+  "duplicate or invalid" (new text strings)
 - Fix: a new user handle containing "255" was rejected as invalid
 - New auto-filter for clients repeatedly hitting the per-IP
   unauthenticated concurrent-connection cap (effective against
@@ -789,6 +789,15 @@
     (more translatable words for menus and prompts)
   - `FileNoun`, `FilesNoun`, `MessageNoun`, `MessagesNoun`, `MenuNoun`,
     `MailNoun`, `UserNoun`, `UsersNoun` (translatable nouns: "File", etc.)
+  - `QWKTransferInProgress` (QWK download or REP upload refused while
+    another session packs or imports for the same user)
+  - `FileSentIn`, `FileReceivedIn` (single-file transfer times)
+  - `MailboxFull`, `YourMailboxIsFull` (full-mailbox notices to the
+    sender and, at logon, the recipient)
+  - `AbortedAnswer` (Yes/No prompt aborted with Ctrl-C)
+  - `NameTooShort`, `NameHasInvalidChars`, `NameHasExtraSpaces`,
+    `NameMustBeginWithLetter`, `RealNameNeedsSpace`, `NameNotAllowed`,
+    `NameAlreadyInUse` (why a new user name was rejected)
 - The stock menu files display their most common command words and nouns
   from the text strings (e.g. `@List@ files in dir`), so a word translated
   in `text.<lang>.ini` appears in every menu and a language needs few or no
