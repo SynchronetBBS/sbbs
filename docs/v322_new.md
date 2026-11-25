@@ -906,7 +906,10 @@
   HTML pages, pictures, ANSI art, text (with coloring for INI, JSON, XML,
   YAML, TOML and Markdown), and music. Archives (ZIP, RAR, 7Z, TAR, ISO,
   CAB and more) and FAT disk images are browsed in place, and text can be
-  searched in the reader and in PDF, HTML and EPUB files
+  searched in the reader and in PDF, HTML and EPUB files. File names
+  and descriptions can be searched across the libraries (`/`), from plain
+  text index files that `univiewer_index.js` builds, by default every
+  night from a timed event that `install-xtrn.js` offers to add
 - New: **Avatar Chat** — avatar-first conversations with
   optional ANSI-art send/view and MOTD support
 - New: `typemd.js` and `load/md2asc.js` — Markdown viewer that
