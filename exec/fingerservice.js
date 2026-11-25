@@ -44,17 +44,7 @@
 var REVISION = "1.49";
 
 var active_users = false;	// Active-Users/SYSTAT protocol mode (Finger when false)
-var options = load('modopts.js', 'fingerservice');
-if(!options)
-	options = {};
-if(options.include_age === undefined)
-	options.include_age = true;
-if(options.include_gender === undefined)
-	options.include_gender = true;
-if(options.include_location === undefined)
-	options.include_location = true;
-if(options.include_real_name === undefined)
-	options.include_real_name = true;
+var options = load("finger_options.js");
 if(options.findfile === undefined)
 	options.findfile = false;
 if(options.bbslist === undefined)

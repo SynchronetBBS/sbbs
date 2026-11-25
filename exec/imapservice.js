@@ -1150,7 +1150,8 @@ function check_msgflags(attr, netattr, ismail, touser, fromuser, isoperator)
 {
 	var flags={attr:attr, netattr:netattr};
 	const op_perms=(MSG_DELETE|MSG_VALIDATED);
-	const to_perms=(MSG_READ);
+	// In mail, MSG_VALIDATED is the user's own \Flagged (star) mark
+	const to_perms=ismail ? (MSG_READ|MSG_DELETE|MSG_VALIDATED) : MSG_READ;
 	const from_perms=0;
 	var perms=0;
 
@@ -2071,6 +2072,7 @@ function do_store(seq, uid, item, data)
 	var chflags;
 	var hdr;
 	var idx;
+	var want;
 	var changed=false;
 	var uci = item.toUpperCase();
 
@@ -2081,12 +2083,14 @@ function do_store(seq, uid, item, data)
 		for(i in seq) {
 			idx=index.idx[seq[i]];
 			hdr=base.get_msg_header(true, idx.offset, false);
-			// Hack in our seen flag...
-			if (get_seen_flag(index.code, idx)) {
-				idx.attr |= MSG_READ;
-			}
+			// Work from the current header, not the index read at SELECT
+			if (base.subnum==-1)
+				idx.attr = hdr.attr;
 			else {
-				idx.attr &= ~MSG_READ;
+				// Hack in our seen flag (mail uses the real MSG_READ)
+				idx.attr = hdr.attr & ~MSG_READ;
+				if (get_seen_flag(index.code, idx))
+					idx.attr |= MSG_READ;
 			}
 			switch(uci) {
 				case 'FLAGS.SILENT':
@@ -2107,22 +2111,31 @@ function do_store(seq, uid, item, data)
 				default:
 					chflags={attr:0, netattr:0};
 			}
-			if (((idx.attr ^ chflags.attr) & MSG_READ) == MSG_READ) {
+			want = idx.attr ^ chflags.attr;
+			if ((want & MSG_READ) == MSG_READ) {
 				set_seen_flag_g(index.code, idx, 1);
 			}
 			else {
 				set_seen_flag_g(index.code, idx, 0);
 			}
 
-			chflags=check_msgflags(chflags.attr, chflags.netattr, base.subnum==-1, hdr.to_net_type==NET_NONE?hdr.to==user.number:false, hdr.from_net_type==NET_NONE?hdr.from==user.number:false,base.is_operator);
-			if(chflags.attr || chflags.netattr) {
-				hdr.attr ^= chflags.attr;
+			chflags=check_msgflags(chflags.attr, chflags.netattr, base.subnum==-1
+				,!hdr.to_net_type && parseInt(hdr.to_ext, 10)==user.number
+				,!hdr.from_net_type && parseInt(hdr.from_ext, 10)==user.number
+				,base.cfg !== undefined && msg_area.sub[base.cfg.code].is_operator);
+			if((chflags.attr || chflags.netattr) && !readonly) {
+				// Set the permitted bits to the wanted state; on a sub the
+				// header's MSG_READ needn't match the faked \Seen
+				hdr.attr = (hdr.attr & ~chflags.attr) | (want & chflags.attr);
 				hdr.netattr ^= chflags.netattr;
-				if(!readonly) {
-					base.put_msg_header(true, idx.offset, hdr);
-					changed=true;
-				}
+				base.put_msg_header(true, idx.offset, hdr);
+				changed=true;
 			}
+			// So the FETCH response below reports the stored flags
+			if (base.subnum==-1)
+				idx.attr = hdr.attr;
+			else
+				idx.attr = (idx.attr & MSG_READ) | (hdr.attr & ~MSG_READ);
 			if(!silent)
 				send_fetch_response(seq[i], ["FLAGS"], uid);
 			if (!client.socket.is_connected)

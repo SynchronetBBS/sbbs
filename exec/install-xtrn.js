@@ -82,6 +82,26 @@
 //      overwrite       = if true, replace an existing dest without prompting
 //                        (otherwise the sysop is asked, and an unattended
 //                        install keeps the existing file)
+//
+// File type handlers (ctrl/file.ini), where <ext> is the file type extension
+// (wildcards allowed) or, for a viewer or tester, a comma-separated list of them:
+//
+// [viewer:<ext>[,ext...]]   ; viewable file type
+// [tester:<ext>[,ext...]]   ; testable (uploaded) file type
+// [extractor:<ext>]         ; extractable file type
+// [compressor:<ext>]        ; compressible file type
+//		cmd 			= command-line to execute (100 chars max)
+//		ars				= access requirements string (40 chars max)
+//		ex_mode			= external() mode flags (see EX_* in sbbsdefs.js)
+//		working			= string to display while testing (tester only)
+//
+//   A new tester is added at the end of the list, since every matching tester
+//   is run. For the other types, the first match is used, so a new handler is
+//   inserted before the first existing handler of the same type that would
+//   match a file of one of its types (e.g. one for the same extension, or a
+//   "*" catch-all), else added at the end of the list. A new wildcard handler
+//   (e.g. "XYZ*") goes before a broader one ("*", "X*") but not before one for
+//   a specific type ("XYZ"), so it doesn't take over types with their own.
 
 // Additionally, each section can have the following optional keys that are
 // only used by this script (i.e. not written to any configuration files):
@@ -219,6 +239,136 @@ function install_xtrn_item(cfg, type, name, desc, item, cats)
 		print(JSON.stringify(cfg[type], null, 4));
 	
 	print(desc + " (" + item.name + ") installed successfully");
+	return true;
+}
+
+var file_handler_types = {
+	viewer:		{ desc: "File Viewer",		multi_ext: true },
+	tester:		{ desc: "File Tester",		multi_ext: true, append: true },
+	extractor:	{ desc: "File Extractor",	multi_ext: false },
+	compressor:	{ desc: "File Compressor",	multi_ext: false }
+};
+
+function ext_list(str)
+{
+	var list = String(str).split(',');
+	var result = [];
+	for (var i = 0; i < list.length; i++) {
+		var ext = list[i].replace(/^\s+|\s+$/g, "");
+		if (ext)
+			result.push(ext);
+	}
+	return result;
+}
+
+// True if a file of any of the 'types' would be matched by any of the 'by'
+// types first, as file_type_match() matches them: by "*.<type>" wildcard.
+// A wildcard type is tested as if it were a literal extension, so "XYZ*" is
+// matched by "*" and "X*", but not by "XYZ" or "JPG".
+function exts_matched_by(types, by)
+{
+	for (var i = 0; i < types.length; i++)
+		for (var j = 0; j < by.length; j++)
+			if (wildmatch("x." + types[i], "*." + by[j]))
+				return true;
+	return false;
+}
+
+function exts_overlap(a, b)
+{
+	for (var i = 0; i < a.length; i++)
+		for (var j = 0; j < b.length; j++)
+			if (a[i].toUpperCase() == b[j].toUpperCase())
+				return true;
+	return false;
+}
+
+// Returns true if installed, false if skipped, or an error string
+function install_file_handler(cfg, type, item)
+{
+	var info = file_handler_types[type];
+	var desc = info.desc;
+	var exts = ext_list(item.extension);
+
+	if (!exts.length)
+		return desc + " has no file type extension";
+	if (!info.multi_ext && exts.length > 1)
+		return desc + " supports only one file type extension: " + item.extension;
+	item.extension = exts.join(",");
+	if (item.extension.length > (info.multi_ext ? 255 : 15))
+		return desc + " file type extension list is too long: " + item.extension;
+	if (!item.cmd)
+		return desc + " (" + item.extension + ") has no cmd";
+	if (item.cmd.length > 100)
+		return desc + " command-line is too long (100 chars max): " + item.cmd;
+	if (item.ars === undefined)
+		item.ars = "";
+	if (item.ars.length > 40)
+		return desc + " access requirements are too long (40 chars max): " + item.ars;
+	if (type == "tester") {
+		if (item.working === undefined)
+			item.working = "";
+		if (item.working.length > 40)
+			return desc + " working string is too long (40 chars max): " + item.working;
+	}
+
+	// Already installed: the same command-line for any of the same file types
+	var list = cfg[type];
+	for (var i = 0; i < list.length; i++) {
+		if (String(list[i].cmd).toLowerCase() != item.cmd.toLowerCase()
+			|| !exts_overlap(exts, ext_list(list[i].extension)))
+			continue;
+		var msg = desc + " (" + list[i].extension + ") with command-line '" + item.cmd + "' already exists";
+		if (options.auto) {
+			print(msg + " (skipping)");
+			return false;
+		}
+		if (deny(msg + ", continue"))
+			return false;
+		break;
+	}
+
+	if (item.note)
+		print(item.note);
+
+	var prompt = "Install " + desc + " for " + item.extension + " files";
+	if (item.prompt !== undefined)
+		prompt = item.prompt;
+	if (prompt && !confirm(prompt))
+		return false;
+
+	try {
+		if (typeof item.ex_mode == "string")
+			item.ex_mode = eval(item.ex_mode);
+	} catch(e) {
+		return e;
+	}
+
+	var handler = { extension: item.extension, cmd: item.cmd };
+	if (type == "tester")
+		handler.working = item.working;
+	handler.ars = item.ars;
+	// Every handler section has the same keys, so a section updated in place
+	// doesn't keep a stale value: this default is the one file.ini loading uses
+	handler.ex_mode = (item.ex_mode === undefined) ? (EX_STDIO | EX_SH) : item.ex_mode;
+
+	// The first match is used (except for testers: all matches are run), so go
+	// ahead of the first existing handler that would match one of these types
+	var pos = list.length;
+	if (!info.append) {
+		for (var i = 0; i < list.length; i++) {
+			if (exts_matched_by(exts, ext_list(list[i].extension))) {
+				pos = i;
+				break;
+			}
+		}
+	}
+	list.splice(pos, 0, handler);
+	if (options.debug)
+		print(JSON.stringify(list, null, 4));
+
+	print(desc + " for " + item.extension + " files installed successfully"
+		+ " (" + (pos + 1) + " of " + list.length + ")");
 	return true;
 }
 
@@ -493,6 +643,31 @@ function install(ini_fname)
 		done = Boolean(item.done);
 	}
 	
+	var file_cfg = null;
+	var file_handlers = 0;
+	for (var t in file_handler_types) {
+		var list = ini_file.iniGetAllObjects("extension", t + ":");
+		if (!list.length)
+			continue;
+		if (!file_cfg) {
+			file_cfg = cfglib.read(system.ctrl_dir + "file.ini");
+			if (!file_cfg)
+				return "Failed to read " + system.ctrl_dir + "file.ini";
+		}
+		for (var i = 0; i < list.length && !done; i++) {
+			var item = list[i];
+			var result = install_file_handler(file_cfg, t, item);
+			if (typeof result !== 'boolean')
+				return result;
+			if (result === true)
+				file_handlers++;
+			else if (item.required)
+				return item.fail || false;
+			if (item.last === true)
+				break;
+			done = Boolean(item.done);
+		}
+	}
 	if(done === false) {
 		result = install_exec_cmd(ini_file, "exec:", install_dir);
 		if(typeof result !== 'boolean')
@@ -510,8 +685,14 @@ function install(ini_fname)
 	if (installed) {
 		if (!options.debug && !cfglib.write(system.ctrl_dir + "xtrn.ini", undefined, xtrn_cfg))
 			return "Failed to write " + system.ctrl_dir + "xtrn.ini";
-		print("Installed " + installed + " items from " + ini_fname + " successfully");
 	}
+	if (file_handlers) {
+		if (!options.debug && !cfglib.write(system.ctrl_dir + "file.ini", undefined, file_cfg))
+			return "Failed to write " + system.ctrl_dir + "file.ini";
+	}
+	installed += file_handlers;
+	if (installed)
+		print("Installed " + installed + " items from " + ini_fname + " successfully");
 
 	return installed >= 1; // success
 }
