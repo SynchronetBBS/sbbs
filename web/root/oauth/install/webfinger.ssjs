@@ -1,19 +1,6 @@
 // RFC 7033 discovery for local BBS accounts.
 "use strict";
 
-function oidcIssuer()
-{
-	var dbPath = system.ctrl_dir + "oidc.sqlite";
-	if (!file_exists(dbPath))
-		return "https://" + system.host_name;
-	var db = new SQLite(dbPath);
-	try {
-		return db.query("SELECT issuer FROM settings")[0].issuer;
-	} finally {
-		db.close();
-	}
-}
-
 // Synchronet exposes user data as bytes, either UTF-8 or legacy CP437.
 function profileText(value)
 {
@@ -79,11 +66,11 @@ function serve()
 	if (/[\x00-\x1f\x7f]/.test(local))
 		return error("400 Bad Request");
 
-	var issuer = oidcIssuer();
-	var host = system.host_name.toLowerCase();
-	var issuerHost = issuer.slice("https://".length).replace(/:\d+$/, "").toLowerCase();
+	if (!system.inet_addr) return error("500 Internal Server Error");
+	var host = system.inet_addr.toLowerCase();
+	var serverHost = system.host_name.toLowerCase();
 	var requestedHost = parts[2].toLowerCase();
-	if (requestedHost !== host && requestedHost !== issuerHost)
+	if (requestedHost !== host && requestedHost !== serverHost)
 		return error("404 Not Found");
 	var number = findAccount(local);
 	if (!number)
@@ -100,8 +87,8 @@ function serve()
 	var alias = encodeURIComponent(accountAlias);
 	var prefix = "acct:" + alias + "@";
 	var doc = {subject: prefix + host, properties: {}, links: []};
-	if (host !== issuerHost)
-		doc.aliases = [prefix + issuerHost];
+	if (host !== serverHost)
+		doc.aliases = [prefix + serverHost];
 	var ns = "https://synchro.net/ns/finger/";
 	var visibility = load("finger_options.js");
 	function property(key, value) {
@@ -122,7 +109,8 @@ function serve()
 		if (type) item.type = type;
 		doc.links.push(item);
 	}
-	link("http://openid.net/specs/connect/1.0/issuer", issuer);
+	var issuerUrl = load({}, js.exec_dir + "../oauth/issuer.js");
+	link("http://openid.net/specs/connect/1.0/issuer", issuerUrl(host, load("modopts.js", "oidc")));
 	var web = load("modopts.js", "webfinger") || {};
 	link("http://webfinger.net/rel/profile-page", publicUrl(web.profile_url, account, alias), "text/html");
 	if (web.plan_url && file_exists(format("%suser/%04d.plan", system.data_dir, number)))

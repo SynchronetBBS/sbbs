@@ -10,7 +10,7 @@ Install
 
 From web/root/oauth in the source tree, copy client-registration.ssjs,
 register.ssjs, auth.ssjs,
-token.ssjs, userinfo.ssjs, logout.ssjs, jwks.ssjs, provider.js, request.js
+token.ssjs, userinfo.ssjs, logout.ssjs, jwks.ssjs, provider.js, issuer.js, request.js
 and the adjacent webctrl.ini to oauth/ in the issuer's web root.
 Copy webmail/lib/webv4.js from the Synchronet source tree to oauth/webv4.js
 when installing outside the source layout. The provider uses WebMail's
@@ -31,12 +31,20 @@ line belongs in install/webctrl.ini, where it protects the administration
 and test scripts.
 
 On the configured BBS host, initialize the provider once with the web
-server's account and control directory. From the source oauth/ directory,
-use the public HTTPS origin, with a lowercase host and no trailing slash
-or path. Include the port if the issuer uses a non-default HTTPS port.
+server's account and control directory. Run this from the source oauth/
+directory.
 
     umask 077
-    jsexec install/oidc-admin.js init https://bbs.example
+    jsexec install/oidc-admin.js init
+
+The issuer is the HTTPS URL of the BBS Internet Address (the addr key
+under [Internet] in ctrl/msgs.ini, exposed as system.inet_addr). For a
+public HTTPS port other than 443, set https_port under [oidc] in
+ctrl/modopts.ini to the port clients connect to. Visiting an HTTPS alias
+uses the same issuer. Existing installations can deploy these scripts
+without reinitializing the database. They ignore the old settings.issuer
+value. Clients configured with another issuer URL must switch to the
+primary URL and may need to re-link accounts.
 
 Init creates ctrl/oidc.sqlite. The provider generates its P-256 (ES256)
 and RSA (RS256) signing keys automatically in one cryptlib keyset,
@@ -76,7 +84,9 @@ secret and invalidates the old one.
 Register your application
 -------------------------
 
-Sign in at /oauth/register.ssjs with a regular BBS account. Enter an
+Sign in at /oauth/register.ssjs with a regular BBS account using any HTTPS
+hostname that serves the page. The page shows the configured issuer URL
+to use in your application's OpenID Connect settings. Enter an
 application name and the exact HTTPS callback URL supplied by your site.
 Choose the ID token signing algorithm your application is configured to
 verify. The form preselects an EC algorithm when one is available.
@@ -157,9 +167,9 @@ without a [fingerservice] section. Finger's -a (hide real name) and -n
 (hide age and gender) apply only to that Finger listener. Use the shared
 switches to hide a field on both services.
 
-WebFinger answers acct: URIs for active BBS accounts on the system host
-and the configured OpenID issuer host. The system host is canonical. When
-the hosts differ, aliases contains the account URI on the issuer host.
+WebFinger answers acct: URIs for active BBS accounts on the primary BBS
+Internet domain and the Synchronet server hostname. The primary domain is
+canonical. When the names differ, aliases contains the server hostname URI.
 Encode the account name in the URI, then encode the whole resource as a
 query parameter. For example:
 
@@ -168,9 +178,10 @@ query parameter. For example:
 
 The public JRD uses property names under https://synchro.net/ns/finger/:
 handle, email (the local BBS address), real-name, location, gender and age.
-Empty values and unknown ages are omitted. Its issuer link uses the issuer
-in ctrl/oidc.sqlite, or https:// followed by the system host when that
-database is absent. Repeated rel parameters select the matching links.
+Empty values and unknown ages are omitted. Its issuer link uses the primary
+BBS Internet domain. A standalone WebFinger installation also needs
+oauth/issuer.js. Repeated rel
+parameters select the matching links.
 
 To advertise existing public HTML profiles or plain-text plans, configure
 their HTTPS URLs in ctrl/modopts.ini. Both links are optional:

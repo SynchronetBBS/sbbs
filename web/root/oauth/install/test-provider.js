@@ -4,7 +4,7 @@ var dir = js.exec_dir + "../";
 var tmp = argv[0] + "/";
 if (argc !== 1 || !mkdir(tmp)) throw new Error("Supply a new scratch directory");
 mkdir(tmp + "user");
-var site = {ctrl_dir:tmp,data_dir:tmp,host_name:"bbs.example",lastuser:3};
+var site = {ctrl_dir:tmp,data_dir:tmp,inet_addr:"bbs.example",host_name:"alias.example",lastuser:3};
 var P = load({system:site}, dir+"provider.js");
 var issuer = "https://bbs.example", callback = "https://app.example/callback";
 var f = new File(tmp+"main.ini");
@@ -12,7 +12,7 @@ if (!f.open("w")) throw new Error("Cannot create test main.ini");
 f.writeln("Password=fixture"); f.close();
 var key = P.signingKey("ES256");
 var db = P.openDatabase(true), secret = P.token();
-P.schema(db,issuer);
+P.schema(db);
 db.run("INSERT INTO clients VALUES('app',?,'ALLOW',1)",[P.digest(secret)]);
 db.run("INSERT INTO callbacks VALUES('app',?)",[callback]);
 var allowed = true, now = time(), serverSession;
@@ -23,9 +23,9 @@ var registrationOptions = {};
 function request(endpoint, method, params, cookies, headers, bodyData) {
 	var reply = {status:"200 OK",header:{}}, body = "", q = {};
 	Object.keys(params || {}).forEach(function (k) { q[k] = [params[k]]; });
-	var scope = {http_request:{host:"bbs.example",method:method,cookie:cookies || {},query:q,post_data:bodyData,
+	var scope = {http_request:{host:"alias.example",method:method,cookie:cookies || {},query:q,post_data:bodyData,
 	    header:headers || {"content-type":"application/x-www-form-urlencoded"}},http_reply:reply,
-	    client:{protocol:"HTTPS"},js:{exec_dir:dir},system:site,User:function () { return account; },user:account,
+	    client:{protocol:"HTTPS",socket:{local_port:10443}},js:{exec_dir:dir},system:site,User:function () { return account; },user:account,
 	    login:function (name,pw) {return name === account.alias && pw === "fixture";},
 	    write:function (s) { body += s; },time:function () { return now; },
 	    USER_DELETED:1,USER_INACTIVE:64,UFLAG_G:64,
@@ -72,6 +72,7 @@ assert(JSON.parse(exchange(code,verifier).body).error === "invalid_grant","repla
 function info() { return JSON.parse(request("userinfo","GET",{},null,{authorization:"Bearer "+tokens.access_token}).body); }
 var sub = info().sub;
 assert(JSON.parse(base64_decode(tokens.id_token.split(".")[0])).alg === "RS256", "legacy client signature");
+assert(JSON.parse(base64_decode(tokens.id_token.split(".")[1])).iss === issuer, "alias sign-in uses the primary domain");
 assert(sub && info().email_verified === false,"userinfo");
 account.alias = "New Alias";
 assert(info().sub === sub && info().preferred_username === "New Alias","rename");
@@ -228,7 +229,9 @@ var regFields = {action:"create",signing_alg:"ES256",name:"Example App",redirect
 var formCookies = {"__Host-sbbs_oidc_form":[csrf]};
 var ownerPath = tmp+"user/0002.apps.sqlite";
 assert(request("register","GET",{}).body.indexOf("BBS username") >= 0, "anonymous registration");
-assert(request("register","POST",regFields,{}).status === "403 Forbidden", "registration CSRF");
+var invalidForm = request("register","POST",regFields,{});
+assert(invalidForm.status === "403 Forbidden" && invalidForm.header["Content-Type"].indexOf("text/html") === 0 &&
+    invalidForm.body.indexOf("form could not be verified") >= 0, "registration CSRF error page");
 var sign = request("register","POST",{action:"login",username:account.alias,password:"fixture",csrf:csrf},formCookies);
 assert(sign.status === "303 See Other", "owner sign-in");
 formCookies["__Host-sbbs_oidc"] = [sign.header["Set-Cookie"].split(/[=;]/)[1]];

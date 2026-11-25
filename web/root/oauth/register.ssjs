@@ -69,6 +69,7 @@ load({}, js.exec_dir + "request.js").serve(js.exec_dir, function register(oidc) 
 	var csrf = oidc.formToken();
 	var rows = attached ? oidc.db.query("SELECT c.*,cb.uri FROM apps.clients c JOIN apps.callbacks cb ON cb.client=c.id ORDER BY c.name") : [];
 	oidc.page("Your OpenID applications");
+	write('<p>Use this OpenID Connect issuer when configuring your application: <code>' + oidc.html(oidc.issuer) + '</code></p>');
 	if (message) write('<p role="alert">' + oidc.html(message) + '</p>');
 	if (secret) {
 		write('<h2>Client credentials</h2><p>Copy the secret now. It is shown only once.</p><dl><dt>Client ID</dt><dd><code>' +
@@ -105,4 +106,4 @@ load({}, js.exec_dir + "request.js").serve(js.exec_dir, function register(oidc) 
 		http_reply.status = "303 See Other";
 		http_reply.header.Location = "/oauth/register.ssjs";
 	}
-});
+}, {managementPage:true});

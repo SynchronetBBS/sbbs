@@ -1,6 +1,7 @@
 // Run in a Synchronet JS runtime from the source checkout.
 "use strict";
 var endpoint = js.exec_dir + "webfinger.ssjs";
+var issuerFile = js.exec_dir + "../issuer.js";
 var optionsFile = "finger_options.js";
 var ns = "https://synchro.net/ns/finger/";
 var oidc = "http://openid.net/specs/connect/1.0/issuer";
@@ -10,12 +11,13 @@ var alternate = canonical.replace("bbs.example", "login.example");
 var acct = {number: 42, alias: "Test %/\x90", name: "Real Name", handle: "Handle",
 	email: "local@bbs.example", netmail: "private@example.test", location: "Montr\x82al",
 	age: 23, gender: "F", settings: 0};
-var finger, web, hasDb = true, hasPlan = true;
+var finger, web, serverHost = "login.example", port = 443, hasPlan = true;
 
 function check(ok, label) {
 	if (!ok) throw new Error(label);
 }
 function options(module) {
+	if (module === "oidc") return {https_port:port};
 	return module === "fingerservice" ? finger : web;
 }
 function request(resource, rel, method) {
@@ -25,18 +27,15 @@ function request(resource, rel, method) {
 	if (rel !== undefined) q.rel = rel;
 	var scope = {
 		http_request: {method: method || "GET", query: q}, http_reply: reply,
-		system: {ctrl_dir: "/ctrl/", data_dir: "/data/", host_name: "bbs.example",
+		js: {exec_dir:"/.well-known/"},
+		system: {ctrl_dir: "/ctrl/", data_dir: "/data/", host_name: serverHost, inet_addr: "bbs.example",
 			matchuser: function (name) { return name === acct.alias ? 42 : 0; }},
 		User: function () { return acct; },
-		SQLite: function () {
-			return {query: function () { return [{issuer: "https://login.example"}]; }, close: function () {}};
-		},
-		file_exists: function (p) {
-			return (hasPlan && p === "/data/user/0042.plan") || (hasDb && p === "/ctrl/oidc.sqlite");
-		},
+		file_exists: function (p) { return hasPlan && p === "/data/user/0042.plan"; },
 		load: function (file, name) {
 			if (file === "finger_options.js")
 				return load({load: function (_, module) { return options(module); }}, optionsFile);
+			if (name === "/.well-known/../oauth/issuer.js") return load({}, issuerFile);
 			if (file === "modopts.js") return options(name);
 			throw new Error("Unexpected load: " + file);
 		},
@@ -52,7 +51,7 @@ function request(resource, rel, method) {
 var r = request(alternate);
 check(r.doc.subject === canonical && r.doc.aliases.join() === alternate, "canonical and alternate account URIs");
 check(r.header["Access-Control-Allow-Origin"] === "*" && r.header["Content-Type"] === "application/jrd+json", "headers");
-check(r.doc.links.length === 1 && r.doc.links[0].rel === oidc && r.doc.links[0].href === "https://login.example", "default links");
+check(r.doc.links.length === 1 && r.doc.links[0].rel === oidc && r.doc.links[0].href === "https://bbs.example", "primary domain issuer");
 var props = r.doc.properties;
 check(props[ns+"location"] === "Montr\u00e9al" && props[ns+"age"] === "23" && props[ns+"gender"] === "F"
 	&& props[ns+"real-name"] === acct.name && props[ns+"email"] === acct.email && props[ns+"handle"] === acct.handle, "profile fields and encoding");
@@ -74,7 +73,10 @@ hasPlan = false;
 check(request(canonical, [ns+"plan"]).doc.links.length === 0, "missing plan");
 web = {profile_url: "https://example/{unknown}"};
 check(request(canonical, [profile]).doc.links.length === 0, "invalid template");
-hasDb = false;
+port = 8443;
+check(request(canonical).doc.links[0].href === "https://bbs.example:8443", "non-default TLS port");
+port = 443;
+serverHost = "bbs.example";
 r = request(canonical);
 check(!r.doc.aliases && r.doc.links[0].href === "https://bbs.example", "standalone host");
 check(request(canonical, undefined, "HEAD").body === "", "HEAD");

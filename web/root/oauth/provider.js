@@ -51,13 +51,11 @@ function createRegistry(db, owned)
 	    "CREATE INDEX " + schema + "grant_expiry ON grants(expires)");
 }
 
-function schema(db, issuer)
+function schema(db)
 {
 	db.transaction(function () {
-		db.exec("CREATE TABLE settings (issuer TEXT NOT NULL);" +
-		    "CREATE TABLE sessions (hash TEXT PRIMARY KEY, num INTEGER NOT NULL, sub TEXT NOT NULL, stamp TEXT NOT NULL, webkey TEXT, created INTEGER NOT NULL, seen INTEGER NOT NULL)");
+		db.exec("CREATE TABLE sessions (hash TEXT PRIMARY KEY, num INTEGER NOT NULL, sub TEXT NOT NULL, stamp TEXT NOT NULL, webkey TEXT, created INTEGER NOT NULL, seen INTEGER NOT NULL)");
 		createRegistry(db, false);
-		db.run("INSERT INTO settings VALUES (?)", [issuer]);
 	});
 }
 

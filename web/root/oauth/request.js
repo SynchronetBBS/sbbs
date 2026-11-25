@@ -1,6 +1,6 @@
 // Loaded in a fresh scope for each SSJS request.
 "use strict";
-var provider, db, issuer, libraryDir, webv4;
+var provider, db, issuer, libraryDir, webv4, options;
 var sessionCookie = "__Host-sbbs_oidc", csrfCookie = "__Host-sbbs_oidc_form";
 var registry = "main.", ownerNumber = 0;
 var idle = 7200, lifetime = 86400;
@@ -148,7 +148,6 @@ function selectClient(id)
 
 function dynamicRegistrationLimit()
 {
-	var options = load("modopts.js", "oidc") || {};
 	if (options.dynamic_registrations_per_hour === undefined) return 60;
 	var limit = Number(options.dynamic_registrations_per_hour);
 	return isFinite(limit) && limit > 0 ? Math.floor(limit) : 0;
@@ -242,24 +241,40 @@ function serverSession()
 	return session;
 }
 
-function serve(dir, handler)
+function serve(dir, handler, pageOptions)
 {
 	libraryDir = dir;
+	var managementPage = pageOptions && pageOptions.managementPage;
 	http_reply.header["Cache-Control"] = "no-store";
 	http_reply.header.Pragma = "no-cache";
 	http_reply.header["Referrer-Policy"] = "no-referrer";
 	http_reply.header["Content-Security-Policy"] = "default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
 	try {
+		if (String(client.protocol).toLowerCase() !== "https")
+			fail("invalid_request", "400 Bad Request", "Open this page using HTTPS.");
 		provider = load({}, dir + "provider.js");
 		db = provider.openDatabase(false);
-		issuer = db.query("SELECT issuer FROM settings")[0].issuer;
-		if (String(client.protocol).toLowerCase() !== "https" || "https://" + http_request.host.toLowerCase() !== issuer)
-			fail("invalid_request");
+		options = load("modopts.js", "oidc") || {};
+		issuer = load({}, dir + "issuer.js")(system.inet_addr, options);
 		handler(this);
 	} catch (e) {
 		if (!e.oidc) log(LOG_ERR,"OIDC " + handler.name + " failed at " + (e.fileName || "") + " line " + (e.lineNumber || 0));
 		http_reply.status = e.status || "500 Internal Server Error";
-		json({error:e.oidc || "server_error", error_description:e.oidc ? e.description : undefined});
+		if (managementPage) {
+			var messages = {
+				"400 Bad Request":"The form could not be read. Open the applications page and try again.",
+				"403 Forbidden":e.oidc === "access_denied" ? "This BBS account cannot manage applications." :
+				    "The form could not be verified. Open the applications page again before submitting it.",
+				"404 Not Found":"This application is no longer in your list.",
+				"405 Method Not Allowed":"Open the applications page in your browser to manage your registrations."
+			};
+			page("Unable to manage applications");
+			write('<p>' + html(e.oidc && e.description || messages[http_reply.status] ||
+			    "The BBS could not load your applications. Please try again later.") + '</p>');
+			if (String(client.protocol).toLowerCase() === "https")
+				write('<p><a href="/oauth/register.ssjs">Return to your applications</a></p>');
+			write('</main></html>');
+		} else json({error:e.oidc || "server_error", error_description:e.oidc ? e.description : undefined});
 	} finally {
 		if (db) db.close();
 	}

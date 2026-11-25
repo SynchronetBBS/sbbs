@@ -4,17 +4,17 @@ if (typeof http_request !== "undefined") throw new Error("Local command only");
 var P = load({}, js.exec_dir + "../provider.js");
 var args = argv.slice();
 var op = args.shift();
-var usage = "init HTTPS-ISSUER | add-key ES256|ES384|ES512|RS256 | add ID [--ars ARS] [--alg ALG] CALLBACK... | list | rotate ID | disable ID | remove ID";
+var usage = "init | add-key ES256|ES384|ES512|RS256 | add ID [--ars ARS] [--alg ALG] CALLBACK... | list | rotate ID | disable ID | remove ID";
 function run()
 {
 	if (op === "init") {
-		if (args.length !== 1 || !/^https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?$/.test(args[0])) throw new Error(usage);
+		if (args.length) throw new Error(usage);
 		if (file_exists(system.ctrl_dir + "oidc.sqlite")) throw new Error("Database already exists");
 		P.signingKeys();
 	}
 	var db = P.openDatabase(op === "init");
 	try {
-		if (op === "init") { P.schema(db, args[0]); return; }
+		if (op === "init") { P.schema(db); return; }
 		if (op === "add-key" && args.length === 1) { P.addKey(args[0]); return; }
 		if (op === "list" && !args.length) {
 			db.query("SELECT id, enabled, ars, uri FROM clients JOIN callbacks ON client=id ORDER BY id,uri").forEach(function (row) {
