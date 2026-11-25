@@ -1,122 +1,279 @@
 Synchronet OpenID Connect provider
 ==================================
 
-These Synchronet web server scripts let a client sign in a BBS user and
-receive a signed ID token identifying that user by alias. The scripts
-implement the provider side of the exchange. Two details matter before
-configuring a client: discovery advertises HTTP URLs while ID tokens name
-an HTTPS issuer, and the access tokens have no backing resource service.
+This provider lets registered applications sign users in with a Synchronet
+account, using the authorization code flow, S256 PKCE and RS256. It needs
+HTTPS, SQLite in SSJS and jsexec, and Synchronet cryptlib support.
 
-Install the endpoints
----------------------
+Install
+-------
 
-Use the document root served for the BBS host. Paths on the left below
-are relative to the source tree's web/root/oauth directory.
+From web/root/oauth in the source tree, copy client-registration.ssjs,
+register.ssjs, auth.ssjs,
+token.ssjs, userinfo.ssjs, logout.ssjs, jwks.ssjs, provider.js, request.js
+and the adjacent webctrl.ini to oauth/ in the issuer's web root.
+Copy webmail/lib/webv4.js from the Synchronet source tree to oauth/webv4.js
+when installing outside the source layout. The provider uses WebMail's
+same-host webv4 cookie validator. The web server needs write access to
+ctrl/oidc.sqlite, its SQLite journal in ctrl/, and the per-user files in
+data/user/. Both directories must support SQLite locking.
 
-    Source                           Destination under the site's web root
-    auth.ssjs, token.ssjs, jwks.ssjs  oauth/ (keep each filename)
-    rewrite_lib.js, webctrl.ini       oauth/ (authorization and token routes)
-    install/openid-configuration.ssjs .well-known/openid-configuration.ssjs
-    install/rewrite_lib.js            .well-known/rewrite_lib.js (merge)
-    install/webctrl.ini               .well-known/webctrl.ini (see below)
+Install install/openid-configuration.ssjs and install/webfinger.ssjs under
+.well-known/, merging any site-specific behavior in an existing handler.
+Install exec/load/finger_options.js in the Synchronet JS load directory.
+Both WebFinger and the updated exec/fingerservice.js use this loader.
 
-If the site already serves oauth/ from the source tree, those five files
-are already in place. Create .well-known/ if needed. The two files named
-rewrite_lib.js contain different functions, each loaded by the webctrl.ini
-in its own directory.
+Merge only the [webfinger] and [openid-configuration] sections from
+install/webctrl.ini into .well-known/webctrl.ini. Merge wf_rewrite() and
+oid_conf_rewrite() from install/rewrite_lib.js into .well-known/rewrite_lib.js.
+Preserve ACME and other existing routes. The AccessRequirements=level 90
+line belongs in install/webctrl.ini, where it protects the administration
+and test scripts.
 
-For discovery, copy openid-configuration.ssjs, add oid_conf_rewrite() to
-the destination rewrite_lib.js, and merge the [openid-configuration]
-section from install/webctrl.ini into the destination webctrl.ini. On a
-new site the discovery rewrite library can be copied as a file.
+On the configured BBS host, initialize the provider once with the web
+server's account and control directory. From the source oauth/ directory,
+use the public HTTPS origin, with a lowercase host and no trailing slash
+or path. Include the port if the issuer uses a non-default HTTPS port.
 
-The top-level AccessRequirements=level 90 in install/webctrl.ini applies
-to the staging directory. Copying it into .well-known/ would restrict
-discovery and could also restrict other services there. For public
-discovery, the metadata must be readable without a BBS login. Preserve
-the site's other access rules and check the inherited rules as well.
+    umask 077
+    jsexec install/oidc-admin.js init https://bbs.example
 
-The installation under /synchronet/sbbs/web/root has both discovery and
-WebFinger in .well-known/. Its webctrl.ini has separate [webfinger] and
-[openid-configuration] sections, and its rewrite_lib.js contains both
-functions. WebFinger is an additional installed service. The files in
-this install directory supply only OpenID provider metadata.
+Init creates ctrl/oidc.sqlite. It reuses the RSA signing key in ctrl/oid.key
+or generates one if the key file is missing. The key label is the system
+host name and the key password comes from ctrl/main.ini.
 
-Host name and signing key
--------------------------
-
-The scripts use system.host_name for the issuer, endpoint URLs and RSA key
-label. They require Synchronet SSJS with CryptKeyset and CryptContext.
-All three oauth/*.ssjs handlers read the system password from the legacy
-binary main.cnf in system.ctrl_dir, even when a signing key already
-exists. A system with only main.ini requires a script update before use.
-
-The first OAuth handler invoked creates oid.key in system.ctrl_dir if
-needed and generates a 2048-bit RSA key if it cannot load the labeled
-key. The web server account needs access to main.cnf and the keyset, and
-permission to create the keyset on first use. Keep oid.key private and
-preserve it across upgrades. Clients fetch its public key from jwks.ssjs.
-
-Check discovery and the public key
-----------------------------------
-
-Replace bbs.example with the BBS host. From a client without a BBS login,
-request both documents over HTTPS.
-
-    curl -fsS https://bbs.example/.well-known/openid-configuration
-    curl -fsS https://bbs.example/oauth/jwks.ssjs
-
-Discovery should return JSON with issuer, authorization_endpoint,
-token_endpoint and jwks_uri. If only the extensionless URL gives a 404,
-try /.well-known/openid-configuration.ssjs and check the discovery rewrite.
-A login challenge on discovery points to the effective access requirements.
-The key response should contain a keys array with an RSA public key,
-algorithm RS256 and key ID "1". If discovery works but the key request
-fails, check the web server log for a main.cnf or keyset error.
-
-As shipped, discovery builds its issuer and all three URLs with http://,
-even when fetched over HTTPS. ID tokens use https:// for the same host.
-Clients that compare issuers will reject that mismatch. Before using
-discovery for sign-in, align the issuer in openid-configuration.ssjs with
-the public HTTPS issuer. The three advertised endpoints derive from it.
-
-Sign in with an authorization code
-----------------------------------
-
-1. Send the user's browser to /oauth/auth.ssjs on the HTTPS BBS host with
-   URL-encoded response_type=code, client_id and redirect_uri parameters.
-   Include scope=openid, a fresh state for the callback and a nonce for
-   the ID token. The [auth.ssjs] rule requires a BBS login (level 0).
-   /oauth/authorize is an alias when followed by a query string.
-
-2. After login, the browser receives a 302 to redirect_uri with code and
-   the supplied state in the query string. The client checks the state
-   and has ten minutes from code issuance to exchange the code.
-
-3. POST form-encoded grant_type=authorization_code, code, client_id and
-   redirect_uri to /oauth/token.ssjs over HTTPS. Use the same client ID
-   and callback URI as in step 1. The /oauth/token alias also works when
-   the URL ends in /token and the parameters are in the request body.
-   The JSON response contains id_token, access_token, token_type (Bearer)
-   and expires_in (3600 seconds).
-
-4. Verify the ID token's RS256 signature with the published key, then
-   check issuer, audience, expiry and the nonce sent in step 1. The token
-   carries the BBS alias in sub, the client ID in aud, and the issue and
-   expiry times in iat and exp. auth_time is set to the time of issuance.
-
-Other responses and limits
+Sysop-managed applications
 --------------------------
 
-auth.ssjs also accepts id_token, token and the space-separated value
-"id_token token". These responses return their fields in the redirect
-URI fragment. Discovery lists "token id_token" in the opposite order
-and omits the token-only response. Use "code" for the flow above.
+For a site-managed client, choose its client ID and register its exact
+HTTPS callback URLs. For example, this registers GitLab for users meeting
+the Synchronet access requirement LEVEL 10.
 
-The scripts do not register clients, validate callback URIs against a
-registry, or bind a code to its issuing client and callback. The token
-handler checks the code's age but does not record redemption. There is
-no client-secret or PKCE check. These limits matter when deciding which
-applications can be trusted with BBS sign-in. The access token is a
-generated string that the scripts neither store nor validate. The
-package supplies no UserInfo endpoint or refresh-token grant.
+    jsexec install/oidc-admin.js add gitlab --ars "LEVEL 10" https://gitlab.example/users/auth/openid_connect/callback
+
+Omit --ars to allow all eligible BBS accounts. Supply additional callback
+URLs as separate arguments. Add prints the secret once. Copy it to the
+client. The administration script also accepts list, rotate ID, disable ID
+and remove ID for clients in ctrl/oidc.sqlite. Rotate prints a replacement
+secret and invalidates the old one.
+
+Register your application
+-------------------------
+
+Sign in at /oauth/register.ssjs with a regular BBS account. Enter an
+application name and the exact HTTPS callback URL supplied by your site.
+Copy the generated client ID and secret into the site's OpenID Connect
+settings. The secret is displayed once and is used for each code exchange
+until replaced or deregistered. Use this BBS's HTTPS issuer URL for
+discovery. Return to the same page to list your applications, replace a
+secret, or remove an application. Removal invalidates its outstanding
+authorization codes and access tokens.
+
+When a user signs in to a member's application, the BBS displays the
+callback URL and requested identity fields at each authorization. With
+prompt=none, a signed-out user gets login_required and a signed-in,
+eligible user gets consent_required. Denying approval returns access_denied.
+
+Back up ctrl/oidc.sqlite, ctrl/oid.key, data/user/####.oidc (each user's
+subject identifier), and data/user/####.apps.sqlite for application owners.
+The numbered database holds the owner's registrations, callback URLs,
+secret digests and grants. Deleting or deactivating the owner disables
+use of those applications immediately. Synchronet's newuserdat() clears
+the numbered files when it assigns the slot to another account.
+
+Sites that start with a BBS account address can use WebFinger to find its
+issuer. Sites configured with the issuer URL can read the provider metadata
+directly from /.well-known/openid-configuration. The site uses its client
+ID and secret when it exchanges an authorization code for tokens.
+
+Sign in to a site using your BBS address
+----------------------------------------
+
+On an OpenID Connect site that accepts a user-supplied provider and
+supports open dynamic registration, enter your BBS address (for example,
+alice@bbs.example). The site discovers the issuer via WebFinger and
+registers its HTTPS callbacks before sending your browser to the BBS.
+Sign in, review the callback and requested information, and choose Allow
+or Deny. On subsequent visits, the site can recognize the same user by
+the issuer and subject (iss and sub), even after a BBS alias change.
+
+A site's backend obtains registration_endpoint from the discovery document
+and POSTs application/json to that URL. No BBS login or initial token is
+required. For example, the registration request body can be:
+
+    {"redirect_uris":["https://site.example/login/callback"],
+     "client_name":"Example site","token_endpoint_auth_method":"client_secret_post"}
+
+The 201 response includes a client ID and secret. Store these on the site
+and reuse them for future logins. This provider registers confidential web
+clients with exact HTTPS callbacks, code flow, S256 PKCE, client_secret_post,
+public subjects and RS256 ID tokens. A site may register an explicit scope
+such as "openid profile". By default it can request openid, profile and
+email. The user reviews each authorization. Classic OpenID 2.0 identity
+URLs require a different protocol.
+
+Open registrations belong to the site and live in ctrl/oidc.sqlite.
+The sysop can list, disable or remove them with install/oidc-admin.js.
+The issuer accepts up to 60 new registrations per rolling hour by default.
+To change that limit, set dynamic_registrations_per_hour in the [oidc]
+section of ctrl/modopts.ini. Zero closes registration and removes the
+endpoint from discovery. Previously registered sites can continue signing
+users in.
+
+Public Finger and WebFinger profiles
+------------------------------------
+
+Finger and WebFinger share these visibility switches in ctrl/modopts.ini.
+The shipped settings are:
+
+    [fingerservice]
+    include_age = false
+    include_gender = false
+    include_location = true
+    include_real_name = true
+
+Each missing switch defaults to true, including on older installations
+without a [fingerservice] section. Finger's -a (hide real name) and -n
+(hide age and gender) apply only to that Finger listener. Use the shared
+switches to hide a field on both services.
+
+WebFinger answers acct: URIs for active BBS accounts on the system host
+and the configured OpenID issuer host. The system host is canonical. When
+the hosts differ, aliases contains the account URI on the issuer host.
+Encode the account name in the URI, then encode the whole resource as a
+query parameter. For example:
+
+    curl -G https://bbs.example/.well-known/webfinger \
+        --data-urlencode 'resource=acct:Test%20User@bbs.example'
+
+The public JRD uses property names under https://synchro.net/ns/finger/:
+handle, email (the local BBS address), real-name, location, gender and age.
+Empty values and unknown ages are omitted. Its issuer link uses the issuer
+in ctrl/oidc.sqlite, or https:// followed by the system host when that
+database is absent. Repeated rel parameters select the matching links.
+
+To advertise existing public HTML profiles or plain-text plans, configure
+their HTTPS URLs in ctrl/modopts.ini. Both links are optional:
+
+    [webfinger]
+    profile_url = https://bbs.example/users/{alias}
+    plan_url = https://bbs.example/plans/{number4}.txt
+
+Use {alias} for a URI-encoded alias, {number} for the decimal user number,
+or {number4} for the number padded to at least four digits. The profile
+relation is http://webfinger.net/rel/profile-page. The plan relation is
+https://synchro.net/ns/finger/plan and is advertised only when that user's
+data/user/####.plan exists. The sysop supplies the public-serving endpoint.
+
+Sign-in and sign-out
+--------------------
+
+Use the endpoint URLs published in /.well-known/openid-configuration.
+Send the browser to the authorization endpoint with
+response_type=code, client_id, an exact registered redirect_uri, scope
+including openid, state, nonce, and an S256 code challenge. A regular BBS
+user can sign in with a matched same-host webv4 session or the provider
+form. The host-only Secure, HttpOnly, SameSite=Lax session cookie has a
+two-hour idle and 24-hour absolute limit. A changed BBS password invalidates
+the provider session. A session obtained from webv4 also depends on the
+matching webv4 cookie and key. Shared Guest accounts cannot authorize.
+
+Check state at the callback. POST the code, grant_type=authorization_code,
+client_id, client_secret, redirect_uri and code_verifier as form fields
+to the token endpoint. Codes last ten minutes and can be redeemed once.
+Verify the ID token's RS256 signature using the published JWKS. Check its
+issuer, audience, expiry and the nonce from the original request. Send the
+one-hour access token to UserInfo in the Authorization: Bearer <token> header.
+Request profile for the alias and real name, and email for an available
+Internet address. UserInfo marks the address unverified.
+
+Visit /oauth/logout.ssjs to confirm sign-out. This ends the current provider
+session and the matching webv4 session if it supplied that sign-in. Each
+external application controls the lifetime of its own browser sessions.
+
+Server browser-session integration (#1398)
+------------------------------------------
+
+The provider recognizes an optional server-supplied SSJS object,
+http_request.browser_session. Leave the property undefined on hosts using
+standalone OIDC sign-in. When enabled, supply the object on every request,
+including anonymous requests. The server resolves its session before SSJS
+runs and exposes the authenticated BBS account through the existing user
+object. The interface has three members:
+
+    auth_time
+        Unix time in whole seconds of the actual browser authentication,
+        or null for an anonymous, expired or revoked session. This time
+        travels with the code into the signed ID token.
+    request_login(return_path, force)
+        Respond to the current request with the server's interactive sign-in.
+        After success return the browser by GET to return_path, a local
+        /oauth/auth.ssjs URL containing the validated OIDC parameters or
+        /oauth/register.ssjs for application registration.
+        With force=true require fresh authentication before returning, even
+        if the browser already has a session. Throw on failure.
+    logout()
+        Revoke this browser's server session and expire its cookie. Succeed
+        for an already signed-out browser, or throw if revocation fails.
+        The OIDC endpoint owns the confirmation form and checks its CSRF
+        token before calling logout().
+
+With this object present, the server is the sole browser identity source.
+The provider skips its own session table and the webv4 cookie. An anonymous
+prompt=none request returns login_required immediately. The provider checks
+client registration, callback, PKCE and account eligibility and issues its
+own codes and tokens in both modes.
+
+GitLab
+------
+
+Register GitLab's exact callback URL using the BBS registration page or
+the sysop command above. Use the returned client ID (gitlab in the sysop
+example) and secret. For a GitLab Linux package installation, add this
+entry to the existing gitlab_rails['omniauth_providers'] array in gitlab.rb.
+
+    {
+      name: "openid_connect", label: "Synchronet",
+      args: {
+        name: "openid_connect", issuer: "https://bbs.example",
+        discovery: true, response_type: "code", pkce: true,
+        scope: ["openid", "profile", "email"], uid_field: "sub",
+        client_auth_method: "query", send_scope_to_token_endpoint: false,
+        client_options: {
+          identifier: "<registered client ID>", secret: "<generated client secret>",
+          redirect_uri: "https://gitlab.example/users/auth/openid_connect/callback"
+        }
+      }
+    }
+
+Reconfigure GitLab after saving gitlab.rb. The strategy's "query" option
+sends the client credentials in the POST body (client_secret_post).
+Keep automatic email linking disabled. Existing
+users link Synchronet from their GitLab profile. Keep an administrator
+password sign-in available and choose the new-account approval policy in
+GitLab. Set after_sign_out_path to the provider's logout page if desired.
+Git over HTTPS and SSH authentication are separate from web UI sign-in.
+GitLab setup reference: https://docs.gitlab.com/administration/auth/oidc/
+
+Upgrade and verify
+------------------
+
+Back up the installed OAuth scripts and configuration before replacing them.
+Register each client and enable PKCE before cutover. Legacy implicit flows
+and unregistered callbacks are retired. The old provider used an alias as
+sub. Existing clients must explicitly re-link those identities, including
+after an issuer change.
+
+Check /.well-known/openid-configuration, its jwks_uri, and the WebFinger
+issuer relation over HTTPS. Complete a sign-in through a registered test
+client and verify the ID signature and UserInfo sub. Remove the test client.
+On a configured Synchronet test host, run the isolated regression tests
+from the source oauth/ directory. Give the provider test a new, private
+scratch-directory name.
+
+    umask 077
+    jsexec install/test-provider.js /tmp/oidc-test-$$
+    jsexec install/test-webfinger.js
+
+The provider test leaves its fixture databases and RSA signing key in the
+scratch directory. The WebFinger test uses in-memory account fixtures.
