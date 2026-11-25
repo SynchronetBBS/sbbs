@@ -107,7 +107,7 @@ bool sbbs_t::newuser()
 		errormsg(WHERE, ERR_CHK, "New user alias (blank)", 0);
 		return false;
 	}
-	if (!check_name(&cfg, useron.alias, /* unique: */true)) {
+	if (!check_name(&cfg, useron.alias, /* unique: */true, /* reason: */NULL)) {
 		errormsg(WHERE, ERR_CHK, "New user alias (invalid or duplicate)", 0, useron.alias);
 		return false;
 	}
@@ -117,8 +117,8 @@ bool sbbs_t::newuser()
 		SAFECOPY(useron.name, useron.alias);
 	}
 	bool dupe_name = finduserstr(0, USER_NAME, useron.name) > 0;
-	if (!check_name(&cfg, useron.name, /* unique: */true)
-		|| !check_realname(&cfg, useron.name)
+	if (!check_name(&cfg, useron.name, /* unique: */true, /* reason: */NULL)
+		|| !check_realname(&cfg, useron.name, /* reason: */NULL)
 		|| ((cfg.uq & UQ_ALIASES) && (cfg.uq & UQ_REALNAME) && (cfg.uq & UQ_DUPREAL) && dupe_name)) {
 		errormsg(WHERE, ERR_CHK, "New user name (invalid or duplicate)", 0, useron.name);
 		return false;

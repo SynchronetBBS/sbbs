@@ -993,4 +993,11 @@ const char* const text_id[]={
 	,"MailboxFull"
 	,"YourMailboxIsFull"
 	,"AbortedAnswer"
+	,"NameTooShort"
+	,"NameHasInvalidChars"
+	,"NameHasExtraSpaces"
+	,"NameMustBeginWithLetter"
+	,"RealNameNeedsSpace"
+	,"NameNotAllowed"
+	,"NameAlreadyInUse"
 };

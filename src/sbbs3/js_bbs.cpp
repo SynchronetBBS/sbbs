@@ -1522,6 +1522,53 @@ js_chkpass(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+static JSBool
+js_chkname_common(JSContext *cx, uintN argc, jsval *arglist, bool realname)
+{
+	jsval *    argv = JS_ARGV(cx, arglist);
+	sbbs_t*    sbbs;
+	char*      cstr;
+	jsrefcount rc;
+	bool       unique = true;
+	bool       result;
+	int        reason;
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+
+	if (!realname && argc > 1 && JSVAL_IS_BOOLEAN(argv[1]))
+		unique = JSVAL_TO_BOOLEAN(argv[1]);
+
+	JSString* str = JS_ValueToString(cx, argv[0]);
+
+	JSSTRING_TO_ASTRING(cx, str, cstr, (LEN_ALIAS > LEN_NAME) ? LEN_ALIAS + 2 : LEN_NAME + 2, NULL);
+	rc = JS_SUSPENDREQUEST(cx);
+	if (realname)
+		result = check_realname(&sbbs->cfg, cstr, &reason);
+	else
+		result = check_name(&sbbs->cfg, cstr, unique, &reason);
+	if (!result)
+		sbbs->bputs(sbbs->text[reason]);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	JS_RESUMEREQUEST(cx, rc);
+	return JS_TRUE;
+}
+
+static JSBool
+js_chkname(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_chkname_common(cx, argc, arglist, /* realname: */false);
+}
+
+static JSBool
+js_chkrealname(JSContext *cx, uintN argc, jsval *arglist)
+{
+	return js_chkname_common(cx, argc, arglist, /* realname: */true);
+}
+
 
 static JSBool
 js_text(JSContext *cx, uintN argc, jsval *arglist)
@@ -5641,6 +5688,16 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 		        "(length, uniqueness, etc.) (AKA good_password). Also checks the <tt>password.can</tt> filter file.<br>"
 		        "When <i>forced_unique</i> is <tt>true</tt>, the password must be substantially different from the user's current password.")
 	 , 310
+	},
+	{"check_name",      js_chkname,         1,  JSTYPE_BOOLEAN, JSDOCSTR("name/alias [,unique=true]")
+	 , JSDOCSTR("Check that the provided name/alias is suitable for a new user account and, "
+		        "optionally, unique. Displays the reason when it is not.")
+	 , 322
+	},
+	{"check_realname",  js_chkrealname,     1,  JSTYPE_BOOLEAN, JSDOCSTR("name")
+	 , JSDOCSTR("Check that the provided real name is suitable for a new user account. "
+		        "Displays the reason when it is not.")
+	 , 322
 	},
 	/* chat/node stuff */
 	{"page_sysop",      js_pagesysop,       0,  JSTYPE_BOOLEAN, JSDOCSTR("")

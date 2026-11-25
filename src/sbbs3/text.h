@@ -1009,6 +1009,13 @@ enum text {
 	,MailboxFull
 	,YourMailboxIsFull
 	,AbortedAnswer
+	,NameTooShort
+	,NameHasInvalidChars
+	,NameHasExtraSpaces
+	,NameMustBeginWithLetter
+	,RealNameNeedsSpace
+	,NameNotAllowed
+	,NameAlreadyInUse
 
 	,TOTAL_TEXT
 };

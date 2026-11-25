@@ -173,6 +173,10 @@
   that isn't found relative to the `ctrl` directory is now also searched
   for in the external program's startup directory, `mods` and `exec`, as
   bare script names already were
+- New user name prompts now say why a name was rejected (e.g. a real name
+  without a last name, a name already in use) instead of only
+  "duplicate or invalid" (new `Name*` and `RealNameNeedsSpace` text strings)
+- Fix: a new user handle containing "255" was rejected as invalid
 - New auto-filter for clients repeatedly hitting the per-IP
   unauthenticated concurrent-connection cap (effective against
   bots that tie up nodes idling at the login prompt) — optional
@@ -1122,6 +1126,8 @@
 
 ## JavaScript
 
+- New `bbs.check_name()` and `bbs.check_realname()` methods: like their
+  `system` counterparts, but display why a name is rejected
 - New global `bool_search(expression [,text] [,...])` function: the
   boolean search engine of the BBS's text searches (`AND`/`OR`/`NOT`,
   parentheses, phrases and quoted whole words); throws on a syntax error

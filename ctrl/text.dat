@@ -1185,3 +1185,10 @@
 "\1r\1h\r\nThe mailbox of %s is full.\1n\r\n"              990 MailboxFull
 "\1r\1h\r\nYour mailbox is full: new e-mail for you is refused.\r\nDelete messages you do not need to make room.\1n\r\n" 991 YourMailboxIsFull
 "\1r\1hAborted\1n"                                      992 AbortedAnswer
+"\1nThat name is too short.\r\n"                        993 NameTooShort
+"\1nThat name contains characters that are not allowed.\r\n" 994 NameHasInvalidChars
+"\1nA name may not begin or end with a space or contain two spaces in a row.\r\n" 995 NameHasExtraSpaces
+"\1nA name must begin with a letter.\r\n"               996 NameMustBeginWithLetter
+"\1nPlease enter your first and last name (e.g. John Smith).\r\n" 997 RealNameNeedsSpace
+"\1nThat name is not allowed.\r\n"                      998 NameNotAllowed
+"\1nThat name is already in use.\r\n"                   999 NameAlreadyInUse
