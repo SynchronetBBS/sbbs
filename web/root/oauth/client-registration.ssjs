@@ -29,9 +29,11 @@ load({}, js.exec_dir + "request.js").serve(js.exec_dir, function registerClient(
 		    });
 	})) oidc.fail("invalid_redirect_uri", "400 Bad Request", "Supply one to sixteen distinct, exact HTTPS callback URIs.");
 
+	var alg = data.id_token_signed_response_alg === undefined ? "RS256" : data.id_token_signed_response_alg;
+	if (!oidc.provider.signingKeys().some(function (key) { return key.alg === alg; })) invalid("id_token_signed_response_alg");
 	var metadata = {
 		redirect_uris:uris, application_type:"web", grant_types:["authorization_code"], response_types:["code"],
-		token_endpoint_auth_method:"client_secret_post", subject_type:"public", id_token_signed_response_alg:"RS256"
+		token_endpoint_auth_method:"client_secret_post", subject_type:"public", id_token_signed_response_alg:alg
 	};
 	Object.keys(metadata).forEach(function (key) {
 		if (key !== "redirect_uris" && data[key] !== undefined && JSON.stringify(data[key]) !== JSON.stringify(metadata[key]))
@@ -74,6 +76,7 @@ load({}, js.exec_dir + "request.js").serve(js.exec_dir, function registerClient(
 		}
 		var id = "dyn~" + oidc.provider.token(), secret = oidc.provider.token();
 		oidc.db.run("INSERT INTO clients(id,secret,ars) VALUES(?,?,'')", [id,oidc.provider.digest(secret)]);
+		oidc.provider.setSigningAlg(oidc.db, "main.", id, alg);
 		uris.forEach(function (uri) { oidc.db.run("INSERT INTO callbacks(client,uri) VALUES(?,?)", [id,uri]); });
 		oidc.db.run("INSERT INTO dynamic_clients(id,name,scope,issued) VALUES(?,?,?,?)", [id,metadata.client_name,scope,now]);
 		metadata.client_id = id;

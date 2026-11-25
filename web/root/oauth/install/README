@@ -2,7 +2,7 @@ Synchronet OpenID Connect provider
 ==================================
 
 This provider lets registered applications sign users in with a Synchronet
-account, using the authorization code flow, S256 PKCE and RS256. It needs
+account using the authorization code flow, S256 PKCE, and signed ID tokens. It needs
 HTTPS, SQLite in SSJS and jsexec, and Synchronet cryptlib support.
 
 Install
@@ -38,9 +38,24 @@ or path. Include the port if the issuer uses a non-default HTTPS port.
     umask 077
     jsexec install/oidc-admin.js init https://bbs.example
 
-Init creates ctrl/oidc.sqlite. It reuses the RSA signing key in ctrl/oid.key
-or generates one if the key file is missing. The key label is the system
-host name and the key password comes from ctrl/main.ini.
+Init creates ctrl/oidc.sqlite. The provider generates its P-256 (ES256)
+and RSA (RS256) signing keys automatically in one cryptlib keyset,
+ctrl/oid.key. If the keyset or either default key is missing, the next
+request that needs signing keys creates only what is missing. The web
+server needs write access to ctrl/ for this. The key password comes from
+ctrl/main.ini.
+
+An existing host-labelled key keeps its original public key ID of "1".
+New keys have labels such as "OIDC ES256" and use their public key
+thumbprint as the key ID. To enable optional P-384 or P-521 signing, use
+add-key ES384 or add-key ES512. For example:
+
+    umask 077
+    jsexec install/oidc-admin.js add-key ES384
+
+Discovery reports the available algorithms and JWKS publishes each public
+key with its alg and kid. Clients can select an available EC algorithm
+when registering. Registrations that omit the algorithm default to RS256.
 
 Sysop-managed applications
 --------------------------
@@ -52,7 +67,8 @@ the Synchronet access requirement LEVEL 10.
     jsexec install/oidc-admin.js add gitlab --ars "LEVEL 10" https://gitlab.example/users/auth/openid_connect/callback
 
 Omit --ars to allow all eligible BBS accounts. Supply additional callback
-URLs as separate arguments. Add prints the secret once. Copy it to the
+URLs as separate arguments. To select EC signing, supply --alg ES256
+after any --ars option and before the callbacks. Add prints the secret once. Copy it to the
 client. The administration script also accepts list, rotate ID, disable ID
 and remove ID for clients in ctrl/oidc.sqlite. Rotate prints a replacement
 secret and invalidates the old one.
@@ -62,6 +78,8 @@ Register your application
 
 Sign in at /oauth/register.ssjs with a regular BBS account. Enter an
 application name and the exact HTTPS callback URL supplied by your site.
+Choose the ID token signing algorithm your application is configured to
+verify. The form preselects an EC algorithm when one is available.
 Copy the generated client ID and secret into the site's OpenID Connect
 settings. The secret is displayed once and is used for each code exchange
 until replaced or deregistered. Use this BBS's HTTPS issuer URL for
@@ -107,7 +125,9 @@ required. For example, the registration request body can be:
 The 201 response includes a client ID and secret. Store these on the site
 and reuse them for future logins. This provider registers confidential web
 clients with exact HTTPS callbacks, code flow, S256 PKCE, client_secret_post,
-public subjects and RS256 ID tokens. A site may register an explicit scope
+public subjects and signed ID tokens. To choose ECDSA, include an
+id_token_signed_response_alg such as "ES256" from discovery. A site may
+register an explicit scope
 such as "openid profile". By default it can request openid, profile and
 email. The user reviews each authorization. Classic OpenID 2.0 identity
 URLs require a different protocol.
@@ -181,7 +201,8 @@ matching webv4 cookie and key. Shared Guest accounts cannot authorize.
 Check state at the callback. POST the code, grant_type=authorization_code,
 client_id, client_secret, redirect_uri and code_verifier as form fields
 to the token endpoint. Codes last ten minutes and can be redeemed once.
-Verify the ID token's RS256 signature using the published JWKS. Check its
+Verify the ID token using the registered signing algorithm and the
+published JWK matching its kid. Check its
 issuer, audience, expiry and the nonce from the original request. Send the
 one-hour access token to UserInfo in the Authorization: Bearer <token> header.
 Request profile for the alias and real name, and email for an available
@@ -275,5 +296,5 @@ scratch-directory name.
     jsexec install/test-provider.js /tmp/oidc-test-$$
     jsexec install/test-webfinger.js
 
-The provider test leaves its fixture databases and RSA signing key in the
+The provider test leaves its fixture databases and signing keys in the
 scratch directory. The WebFinger test uses in-memory account fixtures.

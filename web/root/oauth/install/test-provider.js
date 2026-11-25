@@ -10,7 +10,7 @@ var issuer = "https://bbs.example", callback = "https://app.example/callback";
 var f = new File(tmp+"main.ini");
 if (!f.open("w")) throw new Error("Cannot create test main.ini");
 f.writeln("Password=fixture"); f.close();
-var key = P.signingKey(true);
+var key = P.signingKey("ES256");
 var db = P.openDatabase(true), secret = P.token();
 P.schema(db,issuer);
 db.run("INSERT INTO clients VALUES('app',?,'ALLOW',1)",[P.digest(secret)]);
@@ -42,7 +42,7 @@ function request(endpoint, method, params, cookies, headers, bodyData) {
 	return {status:reply.status,header:reply.header,body:body};
 }
 var keys = JSON.parse(request("jwks","GET").body).keys;
-assert(keys.length === 1 && keys[0].n === P.jwk(key).n,"published signing key");
+assert(keys.length === 2 && keys[0].x === P.jwk(key).x && keys[0].crv === "P-256" && keys[1].alg === "RS256", "published signing keys");
 var verifier = P.token();
 var req = {response_type:"code", scope:"openid profile email",client_id:"app",redirect_uri:callback,
     code_challenge_method:"S256",code_challenge:P.url64(sha256_calc(verifier)),nonce:"abc",state:"state"};
@@ -71,6 +71,7 @@ assert(tokens.id_token && tokens.access_token,"redemption: "+JSON.stringify(toke
 assert(JSON.parse(exchange(code,verifier).body).error === "invalid_grant","replay");
 function info() { return JSON.parse(request("userinfo","GET",{},null,{authorization:"Bearer "+tokens.access_token}).body); }
 var sub = info().sub;
+assert(JSON.parse(base64_decode(tokens.id_token.split(".")[0])).alg === "RS256", "legacy client signature");
 assert(sub && info().email_verified === false,"userinfo");
 account.alias = "New Alias";
 assert(info().sub === sub && info().preferred_username === "New Alias","rename");
@@ -173,6 +174,8 @@ assert(JSON.parse(dynamic({redirect_uris:[callback],grant_types:["implicit"]}).b
 assert(request("client-registration","GET",{}).status === "405 Method Not Allowed", "registration GET");
 assert(request("client-registration","POST",{}).status === "415 Unsupported Media Type", "registration requires JSON");
 registrationOptions.dynamic_registrations_per_hour = 1;
+assert(JSON.parse(dynamic({redirect_uris:[callback], id_token_signed_response_alg:"none"}).body).error === "invalid_client_metadata", "invalid signing algorithm");
+registration.id_token_signed_response_alg = "ES256";
 var created = dynamic(registration);
 assert(created.status === "201 Created" && created.header["Cache-Control"] === "no-store", "registration response");
 var rp = JSON.parse(created.body);
@@ -200,6 +203,7 @@ dynCookies["__Host-sbbs_oidc"]=[approved.header["Set-Cookie"].split(/[=;]/)[1]];
 function tokenSubject(access) {
 	return JSON.parse(request("userinfo","GET",{},{},{authorization:"Bearer "+access}).body).sub;
 }
+assert(JSON.parse(base64_decode(initialTokens.id_token.split(".")[0])).alg === "ES256", "negotiated EC signature");
 var initialSub=tokenSubject(initialTokens.access_token);
 assert(initialSub && initialTokens.id_token, "first sign-in to new site");
 delete dynReq.username; delete dynReq.password;
@@ -220,7 +224,7 @@ assert(!tokenSubject(returnTokens.access_token) && !db.query("SELECT id FROM dyn
     "removal cascades to dynamic metadata and grants");
 
 // Self-service clients and their grants live entirely in the owner's file.
-var regFields = {action:"create",name:"Example App",redirect_uri:callback,csrf:csrf};
+var regFields = {action:"create",signing_alg:"ES256",name:"Example App",redirect_uri:callback,csrf:csrf};
 var formCookies = {"__Host-sbbs_oidc_form":[csrf]};
 var ownerPath = tmp+"user/0002.apps.sqlite";
 assert(request("register","GET",{}).body.indexOf("BBS username") >= 0, "anonymous registration");
@@ -258,7 +262,9 @@ function redeemApp(pw) {
 var change = {csrf:csrf,action:"rotate",client_id:app.id};
 var rotated = credentials(request("register","POST",change,formCookies));
 assert(rotated.secret !== app.secret && redeemApp(app.secret).error === "invalid_client", "old secret rejected");
-var access = redeemApp(rotated.secret).access_token;
+var memberTokens = redeemApp(rotated.secret);
+assert(JSON.parse(base64_decode(memberTokens.id_token.split(".")[0])).alg === "ES256", "member signing preference");
+var access = memberTokens.access_token;
 function appInfo() { return request("userinfo","GET",{},{},{authorization:"Bearer "+access}); }
 assert(access && JSON.parse(appInfo().body).preferred_username === account.alias, "member-owned app token and userinfo");
 account.settings = 1;
@@ -279,5 +285,46 @@ req.client_id = app.id;
 assert(request("auth","GET",req,formCookies).status === "400 Bad Request" && !file_exists(ownerPath), "deleted registration stays gone");
 account.is_guest = true;
 assert(request("register","POST",regFields,formCookies).status === "403 Forbidden", "guest registration");
+// Cryptlib exports minimal EC coordinates. JWK and JOSE require their full widths.
+function unurl(value) { return base64_decode(value.replace(/-/g, "+").replace(/_/g, "/")); }
+[["ES256",32],["ES384",48],["ES512",66]].forEach(function (spec) {
+	var signer = P.addKey(spec[0]), width = spec[1];
+	var jwk = P.jwk(signer);
+	assert(unurl(jwk.x).length === width && unurl(jwk.y).length === width, "coordinate width "+spec[0]);
+	var jwt = P.sign({sub:"fixture"},signer).split(".");
+	var header = JSON.parse(unurl(jwt[0]));
+	assert(header.kid === jwk.kid && header.alg === jwk.alg && unurl(jwt[2]).length === 2*width, "signature format "+spec[0]);
+	assert(P.jwk(P.addKey(spec[0])).x === jwk.x, "existing key replaced");
+});
+assert(directory(tmp+"*.key").length === 1 && file_exists(tmp+"oid.key"), "one signing keyset");
+assert(P.signingKeys().length === 4 && P.jwk(P.signingKey()).x === keys[0].x, "all four keys survive reopen");
+
+// The original provider wrote one host-labelled key. Add EC without rotating RSA.
+var oldDir = tmp+"legacy/";
+assert(mkdir(oldDir) && file_copy(tmp+"main.ini",oldDir+"main.ini"), "legacy setup");
+var original = new CryptContext(CryptContext.ALGO.RSA);
+original.keysize = 256;
+original.label = site.host_name;
+original.generate_key();
+var oldStore = new CryptKeyset(oldDir+"oid.key",CryptKeyset.KEYOPT.CREATE);
+try { oldStore.add_private_key(original,"fixture"); } finally { oldStore.close(); }
+var legacy = load({system:{ctrl_dir:oldDir,host_name:site.host_name}},dir+"provider.js");
+var oldKeys = legacy.signingKeys().map(legacy.jwk);
+assert(oldKeys.length === 2 && oldKeys[0].kid === "1" && oldKeys[0].n === original.public_key.n &&
+    oldKeys[1].alg === "ES256" && oldKeys[1].kid !== "1" && directory(oldDir+"*.key").length === 1,
+    "add EC to the original keyset");
+// Delete either default key and let an ordinary request repair the store.
+["RS256","ES256"].forEach(function (alg) {
+	var before = P.signingKeys().map(P.jwk);
+	var store = new CryptKeyset(tmp+"oid.key",CryptKeyset.KEYOPT.NONE);
+	try { store.delete_key("OIDC " + alg); } finally { store.close(); }
+	var after = JSON.parse(request("jwks","GET").body).keys;
+	assert(after.length === before.length && before.every(function (old) {
+		var next = after.filter(function (k) { return k.alg === old.alg; })[0];
+		return next && (old.alg === alg ? next.kid !== old.kid : JSON.stringify(next) === JSON.stringify(old));
+	}), "regenerate only missing "+alg);
+});
+var padded = P.jwk({alg:"ES512",kid:"fixture",key:{public_key:{x:"AQ",y:"Ag"}}});
+assert(unurl(padded.x).length === 66 && unurl(padded.x).charCodeAt(65) === 1, "short P-521 coordinate");
 db.close();
 print("Passed provider tests");

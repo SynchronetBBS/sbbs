@@ -11,7 +11,7 @@ load({}, js.exec_dir + "../oauth/request.js").serve(js.exec_dir + "../oauth/", f
 		grant_types_supported: ["authorization_code"],
 		subject_types_supported: ["public"],
 		scopes_supported: ["openid", "profile", "email"],
-		id_token_signing_alg_values_supported: ["RS256"],
+		id_token_signing_alg_values_supported: oidc.provider.signingKeys().map(function (k) { return k.alg; }),
 		token_endpoint_auth_methods_supported: ["client_secret_post"],
 		code_challenge_methods_supported: ["S256"]
 	};

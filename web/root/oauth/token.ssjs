@@ -16,7 +16,7 @@ load({}, js.exec_dir + "request.js").serve(js.exec_dir, function redeem(oidc) {
 		if (oidc.ownerNumber) access = oidc.ownerNumber + "." + access;
 		var claims = {iss:oidc.issuer,sub:g.sub,aud:id,exp:now+3600,iat:now,auth_time:g.auth_time};
 		if (g.nonce !== null) claims.nonce = g.nonce;
-		var signed = oidc.provider.sign(claims,oidc.provider.signingKey(false));
+		var signed = oidc.provider.sign(claims,oidc.provider.signingKey(app.signing_alg || "RS256"));
 		oidc.db.run("UPDATE " + oidc.registry + "grants SET kind='access', hash=?, expires=? WHERE hash=?",
 		    [oidc.provider.digest(access),now+3600,g.hash]);
 		return {access_token:access,token_type:"Bearer",expires_in:3600,scope:g.scope,id_token:signed};
