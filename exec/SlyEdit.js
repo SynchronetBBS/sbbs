@@ -5730,7 +5730,7 @@ function createCrossPostSubBoardMenu(pGrpIdx, pListStartCol, pListStartRow, pLis
 			// the user can't post in the selected sub-board and pause for a moment.
 			var origCurPos = console.getxy();
 			if (origCurPos === false)
-				origCurPos =
+				origCurPos = {x: gEditLeft, y: gEditTop};
 			writeCantPostErrMsg(pListStartCol-1, pListStartRow+pListHeight, subBoardMenu.selectedItemIdx+1,
 								pListWidth+2, pListWidth, 2000/*cantPostErrPauseMS*/, origCurPos);
 		}
@@ -6086,7 +6086,16 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	if (!gConfigSettings.allowUserSettings)
 		return retObj;
 
-	const originalCurpos = (typeof(pCurpos) == "object" ? pCurpos : console.getxy());
+	//const originalCurpos = (typeof(pCurpos) == "object" ? pCurpos : console.getxy());
+	var originalCurpos;
+	if (typeof(pCurpos) === "object" && typeof(pCurpos.x) === "number" && typeof(pCurpos.y) === "number")
+		originalCurpos = pCurpos;
+	else
+	{
+		originalCurpos = console.getxy();
+		if (originalCurpos === false)
+			originalCurpos = originalCurpos = {x: gEditLeft, y: gEditTop};
+	}
 	var returnCursorWhenDone = true;
 	if (typeof(pReturnCursorToOriginalPos) == "boolean")
 		returnCursorWhenDone = pReturnCursorToOriginalPos;
@@ -6760,8 +6769,9 @@ function letUserUploadMessageFile(pCurpos)
 		originalCurpos = pCurpos;
 	else
 	{
+		originalCurpos = console.getxy();
 		if (originalCurpos === false)
-			originalCurpos = {x: gEditLeft, y: gEditTop};
+			originalCurpos = originalCurpos = {x: gEditLeft, y: gEditTop};
 	}
 
 	var uploadedMessage = false;

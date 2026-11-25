@@ -3530,7 +3530,15 @@ function getUserInputWithSetOfInputStrs(pMode, pValidKeyStrs, pCfgObj, pCurPos)
 		return "";
 
 	// Get the current cursor position, either from pCurPos or console.getxy().
-	var curPos = (pCurPos != null ? pCurPos : console.getxy());
+	var curPos;
+	if (typeof(pCurPos) === "object" && typeof(pCurPos.x) === "number" && typeof(pCurPos.y) === "number")
+		curPos = pCurPos;
+	else
+	{
+		curPos = console.getxy();
+		if (curPos === false)
+			curPos = {x: gEditLeft, y: gEditTop};
+	}
 	var originalCurposX = curPos.x;
 
 	// Build one string containing all the valid keys.
