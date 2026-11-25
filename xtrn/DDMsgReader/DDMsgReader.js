@@ -123,6 +123,16 @@
  *                              to the Synchronet stock reader.
  * 2026-10-24 Eric Oulashin     Veresion 1.97p
  *                              Releasing this verison.
+ * 2026-11-15 Eric Oulashin     Version 1.98 Beta
+ *                              User setting (Ctrl-U) to use RIP for the enhanced
+ *                              reader status panel and scrollbar when the terminal
+ *                              supports RIP.
+ * 2026-11-24 Eric Oulashin     Lightbar message list: left/right scroll a long
+ *                              subject, from name, or to name horizontally.
+ *                              Tab cycles From, To, Subject. Only that column
+ *                              is redrawn.
+ *                              Indexed scan list: left/right scroll a long
+ *                              sub-board name the same way.
  */
 
 "use strict";
@@ -227,6 +237,8 @@ load('822header.js');
 require("frame.js", "Frame");
 require("scrollbar.js", "ScrollBar");
 require("choice_scroll_box.js", "ChoiceScrollbox");
+require("rip_lib.js", "RIPWindow");
+require("rip_scrollbar.js", "RIPScrollbar");
 var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 var hexdump = load('hexdump_lib.js');
 var sauce_lib = load({}, "sauce_lib.js");
@@ -242,8 +254,13 @@ require("rip_scrollbar.js", "RIPScrollbar");
 
 
 // Reader version information
-var READER_VERSION = "1.97p";
-var READER_DATE = "2026-10-24";
+var READER_VERSION = "1.98";
+var READER_DATE = "2026-11-24";
+
+// RIP scrollbar instance for the enhanced reader, or null when CP437 is in use.
+var gEnhReaderRIPScrollbar = null;
+// Cached text-cell pixel size for RIP layout. Null until the first RIP draw.
+var gDDRipScreenPx = null;
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -777,6 +794,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.ListMessages_Lightbar = DigDistMsgReader_ListMessages_Lightbar;
 	this.CreateLightbarMsgListMenu = DigDistMsgReader_CreateLightbarMsgListMenu;
 	this.AdjustLightbarMsgListMenuIdxes = DigDistMsgReader_AdjustLightbarMsgListMenuIdxes;
+	this.MsgListFromAndSubject = DigDistMsgReader_MsgListFromAndSubject;
+	this.ResetMsgListHorizScroll = DigDistMsgReader_ResetMsgListHorizScroll;
+	this.RefreshMsgListHorizScrollHeader = DigDistMsgReader_RefreshMsgListHorizScrollHeader;
+	this.ScrollLightbarMsgListField = DigDistMsgReader_ScrollLightbarMsgListField;
 	this.ClearSearchData = DigDistMsgReader_ClearSearchData;
 	this.ReadOrListSubBoard = DigDistMsgReader_ReadOrListSubBoard;
 	this.PopulateHdrsIfSearch_DispErrorIfNoMsgs = DigDistMsgReader_PopulateHdrsIfSearch_DispErrorIfNoMsgs;
@@ -845,7 +866,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.DoPrivateReply = DigDistMsgReader_DoPrivateReply;
 	this.DisplayEnhancedReaderHelp = DigDistMsgReader_DisplayEnhancedReaderHelp;
 	this.GetEnhancedReaderHelpLines = DigDistMsgReader_GetEnhancedReaderHelpLines;
+	this.RIPEnabled = DigDistMsgReader_RIPEnabled;
 	this.DisplayEnhancedMsgHdr = DigDistMsgReader_DisplayEnhancedMsgHdr;
+	this.DisplayRIPEnhancedMsgHdr = DigDistMsgReader_DisplayRIPEnhancedMsgHdr;
 	this.DisplayAreaChgHdr = DigDistMsgReader_DisplayAreaChgHdr;
 	this.DisplayEnhancedReaderWholeScrollbar = DigDistMsgReader_DisplayEnhancedReaderWholeScrollbar;
 	this.UpdateEnhancedReaderScrollbar = DigDistMsgReader_UpdateEnhancedReaderScrollbar;
@@ -936,6 +959,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 
 	// Whether or not we're in indexed reader mode
 	this.indexedMode = false;
+	// How far the indexed-mode sub-board name column is scrolled. 0 shows the start.
+	this.indexedModeDescScrollOffset = 0;
 	// For indexed reader mode, whether or not to enable caching the message
 	// header lists for performance
 	this.enableIndexedModeMsgListCache = true;
@@ -1217,6 +1242,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		emailFilter: [],
 		// Whether or not to use the scrollbar in the enhanced message reader
 		useEnhReaderScrollbar: true,
+		// Whether or not to draw the enhanced-reader status panel and scrollbar
+		// with RIP when the terminal supports it
+		useRIPForEnhReader: false,
 		// Whether or not to only show new messages when doing a newscan
 		newscanOnlyShowNewMsgs: true,
 		// Whether or not to use indexed mode for doing a newscan
@@ -1260,6 +1288,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 			this.DDMsgAreaChooserFilename = msgAreaChooserFullPath;
 	}
 	this.ReadUserSettingsFile();
+	// iniGetValue() may return the string "true"/"false" depending on the file.
+	// Keep this flag a real boolean so later comparisons stay reliable.
+	var ripSettingVal = this.userSettings.useRIPForEnhReader;
+	this.userSettings.useRIPForEnhReader = (ripSettingVal === true || ripSettingVal === "true");
 	// Set any other values specified by the command-line parameters
 	// Reader start mode - Read or list mode
 	if (scriptArgsIsValid)
@@ -1525,6 +1557,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.IndexedModeChooseSubBoard = DigDistMsgReader_IndexedModeChooseSubBoard;
 	this.CreateLightbarIndexedModeMenu = DigDistMsgReader_CreateLightbarIndexedModeMenu;
 	this.GetIndexedModeSubBoardMenuItemTextAndInfo = DigDistMsgReader_GetIndexedModeSubBoardMenuItemTextAndInfo;
+	this.ScrollIndexedModeSubBoardName = DigDistMsgReader_ScrollIndexedModeSubBoardName;
+	this.RefreshIndexedModeDescHeader = DigDistMsgReader_RefreshIndexedModeDescHeader;
 	this.MakeIndexedModeHelpLine = DigDistMsgReader_MakeIndexedModeHelpLine;
 	this.ShowIndexedListHelp = DigDistMsgReader_ShowIndexedListHelp;
 	// Handler function for showing the "Are you there?" warning to the user for the scrollable/ANSI interface
@@ -1586,6 +1620,12 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// The selected message cursor position for the lightbar message list (initially
 	// null, will be set in the lightbar list message)
 	this.lightbarListCurPos = null;
+	// Horizontal scroll for the lightbar message list. Left/right pan the active
+	// column (subject by default). Tab cycles From, To, then Subject.
+	this.msgListHorizScrollField = "subject";
+	this.msgListFromScrollOffset = 0;
+	this.msgListToScrollOffset = 0;
+	this.msgListSubjScrollOffset = 0;
 	
 	// selectedMessages will be an object (indexed by sub-board internal code)
 	// containing objects that contain message indexes (as properties) for the
@@ -1632,6 +1672,15 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		msgOffset: 0,
 		msgAreaWidth: this.msgAreaWidth
 	};
+
+	// True while the enhanced-reader message info panel is drawn with RIP.
+	// When the reader switches back to the ANSI header, this says the RIP
+	// graphic is still on screen and needs to be cleared first.
+	this.RIPMsgHdrGfxActive = false;
+	// Pixel rectangle of that RIP message info panel (x0, y0, x1, y1, rows),
+	// or null when none has been drawn. Used to black-fill the panel when
+	// RIP is turned off.
+	this.RIPMsgHdrRect = null;
 }
 
 // For the DigDistMsgReader class: Sets the subBoardCode property and also
@@ -3993,8 +4042,10 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 
 	var allowChgSubBoard = (typeof(pAllowChgSubBoard) == "boolean" ? pAllowChgSubBoard : true);
 
-	// Clear the screen and write the header at the top
+	// Clear the screen and write the header at the top.
+	// Each visit to the list starts on the subject column, unscrolled.
 	console.clear("\x01n");
+	this.ResetMsgListHorizScroll(true);
 	this.WriteMsgListScreenTopHeader();
 	this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 
@@ -4338,6 +4389,9 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				if (continueOn)
 				{
 					console.clear("\x01n");
+					// A different sub-board has different from names and subjects.
+					this.ResetMsgListHorizScroll(false);
+					msgListMenu.msgListFieldCache = {};
 					// Adjust the menu indexes to ensure they're correct for the current sub-board
 					this.AdjustLightbarMsgListMenuIdxes(msgListMenu);
 					this.WriteMsgListScreenTopHeader();
@@ -4503,6 +4557,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					console.print("\x01y\x01hFailed to open the messagbase!\x01\r\n\x01p");
 				this.SetUpLightbarMsgListVars();
 				msgListMenu = this.CreateLightbarMsgListMenu();
+				this.RefreshMsgListHorizScrollHeader();
 				drawMenu = true;
 			}
 			if (userSettingsRetObj.needWholeScreenRefresh)
@@ -4536,6 +4591,8 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 function DigDistMsgReader_CreateLightbarMsgListMenu()
 {
 	this.RecalcMsgListWidthsAndFormatStrs(); // 2026-10-08 - Suggested with Claude from Nelgin:
+	// A rebuilt menu is a new list, so horizontal scrolling starts over.
+	this.ResetMsgListHorizScroll(true);
    // https://www.pasteboard.co/oIyYFGUaUeUo.png
 
 	// Start & end indexes for the various items in each message list row
@@ -4648,9 +4705,13 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 		var msgHdr = this.msgReader.GetMsgHdrByIdx(itemIdx, this.msgReader.showScoresInMsgList);
 		if (msgHdr != null)
 		{
+			// Full from name and subject, used later to pan the column without
+			// reading the header again.
+			var listFields = this.msgReader.MsgListFromAndSubject(msgHdr);
 			// When setting the item text, call PrintMessageInfo with true as
-			// the last parameter to return the string instead
-			menuItemObj.text = strip_ctrl(this.msgReader.PrintMessageInfo(msgHdr, false, itemIdx+1, true));
+			// the 4th parameter to return the string instead. The last two
+			// parameters window the from name and subject.
+			menuItemObj.text = strip_ctrl(this.msgReader.PrintMessageInfo(msgHdr, false, itemIdx+1, true, this.msgReader.msgListFromScrollOffset, this.msgReader.msgListSubjScrollOffset, this.msgReader.msgListToScrollOffset));
 			var subjUTF8 = str_is_utf8(msgHdr.subject) && !str_is_ascii(msgHdr.subject);
 			menuItemObj.textIsUTF8 = (msgHdr.hasOwnProperty("is_utf8") && msgHdr.is_utf8) || subjUTF8;
 			menuItemObj.retval = msgHdr.number;
@@ -4711,6 +4772,15 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 				if (menuItemObj.itemSelectedColor.length >= 2)
 					menuItemObj.itemSelectedColor[1].attrs = "\x01n" + this.msgReader.colors.selectedMsgMarkColor + this.msgReader.colors.msgListHighlightBkgColor;
 			}
+			if (typeof(this.msgListFieldCache) != "object" || this.msgListFieldCache == null)
+				this.msgListFieldCache = {};
+			this.msgListFieldCache[pItemIndex] = {
+				fromName: listFields.fromName,
+				toName: listFields.toName,
+				subject: listFields.subject,
+				normalColors: (menuItemObj.itemColor != null ? menuItemObj.itemColor : (menuItemObj.useAltColors ? this.colors.altItemColor : this.colors.itemColor)),
+				selectedColors: (menuItemObj.itemSelectedColor != null ? menuItemObj.itemSelectedColor : (menuItemObj.useAltColors ? this.colors.altSelectedItemColor : this.colors.selectedItemColor))
+			};
 		}
 		return menuItemObj;
 	};
@@ -4732,6 +4802,33 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 			bbs.replace_text(AreYouThere, "@JS:DDMsgReader_areYouThereProp@");
 		};
 	}
+
+	// Left/right pan the subject, from, or to column instead of moving the bar.
+	// Other menus keep the default (left = up, right = down).
+	msgListMenu.scrollUpAlternateKey = "";
+	msgListMenu.scrollDownAlternateKey = "";
+	msgListMenu.msgListFieldCache = {};
+	msgListMenu.OnCustomKey = function(pKey) {
+		if (pKey == CTRL_I)
+		{
+			// Column order: From, To, Subject. Subject is the default, so the
+			// first Tab moves to From.
+			if (this.msgReader.msgListHorizScrollField == "from")
+				this.msgReader.msgListHorizScrollField = "to";
+			else if (this.msgReader.msgListHorizScrollField == "to")
+				this.msgReader.msgListHorizScrollField = "subject";
+			else
+				this.msgReader.msgListHorizScrollField = "from";
+			this.msgReader.RefreshMsgListHorizScrollHeader();
+			return true;
+		}
+		if (pKey == KEY_LEFT || pKey == KEY_RIGHT)
+		{
+			this.msgReader.ScrollLightbarMsgListField(this, pKey == KEY_RIGHT ? 1 : -1);
+			return true;
+		}
+		return false;
+	};
 
 	return msgListMenu;
 }
@@ -4756,6 +4853,253 @@ function DigDistMsgReader_AdjustLightbarMsgListMenuIdxes(pMsgListMenu)
 	}
 	// TODO: Ensure this.lightbarListTopMsgIdx is always correct for the last page
 }
+// Returns the from name, to name, and subject as they should be shown in the
+// message list, before truncation. Anonymous posts show "Anonymous" for
+// non-sysops, and UTF-8 headers are converted when the terminal is not UTF-8.
+//
+// Return value: An object { fromName: string, toName: string, subject: string }
+function DigDistMsgReader_MsgListFromAndSubject(pMsgHeader)
+{
+	var fromName = "";
+	var toName = "";
+	var subject = "";
+	if (pMsgHeader == null)
+		return { fromName: fromName, toName: toName, subject: subject };
+
+	fromName = (typeof(pMsgHeader.from) === "string" ? pMsgHeader.from : "");
+	toName = (typeof(pMsgHeader.to) === "string" ? pMsgHeader.to : "");
+	subject = (typeof(pMsgHeader.subject) === "string" ? pMsgHeader.subject : "");
+	var userConsoleSupportsUTF8 = (typeof(USER_UTF8) != "undefined" ? console.term_supports(USER_UTF8) : false);
+	var msgIsUTF8 = pMsgHeader.hasOwnProperty("is_utf8") && pMsgHeader.is_utf8;
+	if (msgIsUTF8 && !userConsoleSupportsUTF8)
+	{
+		fromName = utf8_cp437(fromName);
+		toName = utf8_cp437(toName);
+		subject = utf8_cp437(subject);
+	}
+	if (!user.is_sysop && Boolean(pMsgHeader.attr & MSG_ANONYMOUS))
+		fromName = "Anonymous";
+	return { fromName: fromName, toName: toName, subject: subject };
+}
+// Resets horizontal scrolling for the lightbar message list.
+//
+// Parameters:
+//  pResetField: Optional boolean. When not false, the active column returns
+//               to the subject. Offsets are always cleared.
+function DigDistMsgReader_ResetMsgListHorizScroll(pResetField)
+{
+	if (pResetField !== false)
+		this.msgListHorizScrollField = "subject";
+	this.msgListFromScrollOffset = 0;
+	this.msgListToScrollOffset = 0;
+	this.msgListSubjScrollOffset = 0;
+}
+// Repaints the From, To, and Subject column titles so the one that left/right
+// will scroll is shown in bright yellow. Also paints a "<" in front of that
+// column when it is scrolled away from the start. Only those few characters
+// are written.
+function DigDistMsgReader_RefreshMsgListHorizScrollHeader()
+{
+	if (!console.term_supports(USER_ANSI))
+		return;
+	var headerRow = this.lightbarMsgListStartScreenRow - 1;
+	if (headerRow < 1)
+		headerRow = 1;
+
+	var msgNumLen = +this.MSGNUM_LEN;
+	var fromLen = +this.FROM_LEN;
+	var toLen = +this.TO_LEN;
+	if (!(msgNumLen > 0))
+		msgNumLen = 0;
+	if (!(fromLen > 0))
+		fromLen = 0;
+	if (!(toLen > 0))
+		toLen = 0;
+
+	// 1-based screen columns of the from, to, and subject text. These match
+	// the item color indexes built in CreateLightbarMsgListMenu().
+	var fromX = msgNumLen + 4;
+	var toX = msgNumLen + fromLen + 5;
+	var subjX = msgNumLen + fromLen + toLen + 6;
+	var normalColor = this.colors.msgListColHeader;
+	// High yellow on whatever background the column header already uses.
+	var activeColor = normalColor + "\x01h\x01y";
+	var activeField = this.msgListHorizScrollField;
+
+	function paintLabel(pX, pText, pFieldName, pOffset)
+	{
+		var active = (activeField == pFieldName);
+		if (pX > 1)
+		{
+			console.gotoxy(pX - 1, headerRow);
+			if (active && pOffset > 0)
+				console.print(activeColor + "<\x01n");
+			else
+				console.print(normalColor + " \x01n");
+		}
+		console.gotoxy(pX, headerRow);
+		console.print((active ? activeColor : normalColor) + pText + "\x01n");
+	}
+	paintLabel(fromX, "From", "from", this.msgListFromScrollOffset);
+	paintLabel(toX, "To", "to", this.msgListToScrollOffset);
+	paintLabel(subjX, "Subject", "subject", this.msgListSubjScrollOffset);
+}
+// Scrolls the active lightbar column (subject, from, or to) by one character
+// and redraws only the visible cells in that column whose text changed.
+//
+// Parameters:
+//  pMenu: The message-list DDLightbarMenu
+//  pDelta: 1 to scroll right, -1 to scroll left
+function DigDistMsgReader_ScrollLightbarMsgListField(pMenu, pDelta)
+{
+	if (typeof(pMenu) != "object" || pMenu == null)
+		return;
+	if (pDelta !== 1 && pDelta !== -1)
+		return;
+
+	var fieldInfo = msgListHorizScrollFieldInfo(this, pMenu);
+	var width = fieldInfo.width;
+	if (!(width > 0))
+		return;
+	var offset = this[fieldInfo.offsetProp];
+	if (typeof(offset) != "number" || offset < 0)
+		offset = 0;
+
+	if (pDelta < 0)
+	{
+		if (offset <= 0)
+			return;
+	}
+	else if (!msgListColumnHasMore(pMenu, fieldInfo.cacheKey, offset, width))
+		return;
+
+	var newOffset = offset + pDelta;
+	this[fieldInfo.offsetProp] = newOffset;
+
+	// textIndex is the 0-based index of the field text within the item line
+	// (the color segment starts one character earlier, on the separating space).
+	var textIndex = fieldInfo.textIndex;
+
+	// Repaint a row only when its visible window changes, and only that
+	// column. The text and colors come from the cache filled when the row
+	// was drawn, so this does not read message headers or redraw the line.
+	var numPerPage = pMenu.GetNumItemsPerPage();
+	var lastIdx = pMenu.topItemIdx + numPerPage - 1;
+	var numItems = pMenu.NumItems();
+	if (lastIdx >= numItems)
+		lastIdx = numItems - 1;
+	var cache = pMenu.msgListFieldCache;
+	for (var idx = pMenu.topItemIdx; idx <= lastIdx; ++idx)
+	{
+		if (typeof(cache) != "object" || cache == null || !cache.hasOwnProperty(idx))
+			continue;
+		var entry = cache[idx];
+		var fullText = entry[fieldInfo.cacheKey];
+		if (typeof(fullText) != "string")
+			fullText = "";
+		if (fullText.substr(offset, width) == fullText.substr(newOffset, width))
+			continue;
+		var slice = msgListScrolledField(fullText, newOffset, width);
+		var colorSpec = (idx == pMenu.selectedItemIdx ? entry.selectedColors : entry.normalColors);
+		var attrs = msgListFieldAttrs(colorSpec, textIndex);
+		var screenY = pMenu.pos.y + (idx - pMenu.topItemIdx);
+		var screenX = pMenu.pos.x + textIndex;
+		if (pMenu.borderEnabled)
+		{
+			++screenY;
+			++screenX;
+		}
+		console.gotoxy(screenX, screenY);
+		console.print("\x01n" + attrs + slice, P_AUTO_UTF8);
+		var printedLen = console.strlen(slice, P_AUTO_UTF8);
+		if (printedLen < width)
+			printf("%*s", width - printedLen, "");
+		console.print("\x01n");
+	}
+	// The "<" marker only changes when scrolling away from, or back to, the start.
+	if ((offset > 0) != (newOffset > 0))
+		this.RefreshMsgListHorizScrollHeader();
+}
+// Describes the lightbar column that left/right currently scroll.
+function msgListHorizScrollFieldInfo(pReader, pMenu)
+{
+	var idxes = pMenu.msgListIdxes;
+	if (pReader.msgListHorizScrollField == "from")
+	{
+		return {
+			cacheKey: "fromName",
+			width: +pReader.FROM_LEN,
+			offsetProp: "msgListFromScrollOffset",
+			textIndex: idxes.fromNameStart + 1
+		};
+	}
+	if (pReader.msgListHorizScrollField == "to")
+	{
+		return {
+			cacheKey: "toName",
+			width: +pReader.TO_LEN,
+			offsetProp: "msgListToScrollOffset",
+			textIndex: idxes.toNameStart + 1
+		};
+	}
+	return {
+		cacheKey: "subject",
+		width: +pReader.SUBJ_LEN,
+		offsetProp: "msgListSubjScrollOffset",
+		textIndex: idxes.subjStart + 1
+	};
+}
+// Returns the attribute string for a message-list column at a character index.
+function msgListFieldAttrs(pColorSpec, pTextIndex)
+{
+	if (typeof(pColorSpec) === "string")
+		return pColorSpec;
+	if (!Array.isArray(pColorSpec))
+		return "";
+	var attrs = "";
+	for (var i = 0; i < pColorSpec.length; ++i)
+	{
+		var seg = pColorSpec[i];
+		if (seg.start <= pTextIndex && (seg.end > pTextIndex || seg.end <= 0))
+			attrs = seg.attrs;
+	}
+	return attrs;
+}
+// True when some visible row still has field text past the current window.
+function msgListColumnHasMore(pMenu, pCacheKey, pOffset, pWidth)
+{
+	var cache = pMenu.msgListFieldCache;
+	if (typeof(cache) != "object" || cache == null)
+		return false;
+	var numPerPage = pMenu.GetNumItemsPerPage();
+	var lastIdx = pMenu.topItemIdx + numPerPage - 1;
+	var numItems = pMenu.NumItems();
+	if (lastIdx >= numItems)
+		lastIdx = numItems - 1;
+	var limit = pOffset + pWidth;
+	for (var idx = pMenu.topItemIdx; idx <= lastIdx; ++idx)
+	{
+		if (!cache.hasOwnProperty(idx))
+			continue;
+		var fullText = cache[idx][pCacheKey];
+		if (typeof(fullText) === "string" && fullText.length > limit)
+			return true;
+	}
+	return false;
+}
+// Returns the width-sized window of a list field starting at pOffset.
+// Shorter text is returned as-is; the list format string pads it.
+function msgListScrolledField(pText, pOffset, pWidth)
+{
+	var text = (typeof(pText) === "string" ? pText : "");
+	var width = +pWidth;
+	if (!(width > 0))
+		return "";
+	var offset = (typeof(pOffset) === "number" && pOffset > 0 ? Math.floor(pOffset) : 0);
+	if (offset > text.length)
+		offset = text.length;
+	return text.substr(offset, width);
+}
 // For the DigDistMsgListerClass: Prints a line of information about
 // a message.
 //
@@ -4767,7 +5111,10 @@ function DigDistMsgReader_AdjustLightbarMsgListMenuIdxes(pMsgListMenu)
 //           in the message header
 //  pReturnStrInstead: Optional boolean - Whether or not to return a formatted string
 //                     instead of printing to the console.  Defaults to false.
-function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pReturnStrInstead)
+//  pFromScrollOff: Optional - Character offset for the from-name column. Defaults to 0.
+//  pSubjScrollOff: Optional - Character offset for the subject column. Defaults to 0.
+//  pToScrollOff: Optional - Character offset for the to-name column. Defaults to 0.
+function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pReturnStrInstead, pFromScrollOff, pSubjScrollOff, pToScrollOff)
 {
 	// pMsgHeader must be a valid object.
 	if (typeof(pMsgHeader) == "undefined")
@@ -4891,6 +5238,15 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 	if (!user.is_sysop && Boolean(pMsgHeader.attr & MSG_ANONYMOUS))
 		fromName = "Anonymous";
 
+	// Window the from name, to name, and subject when the lightbar list is
+	// scrolled horizontally. A zero offset keeps the existing left-aligned truncation.
+	var fromScrollOff = (typeof(pFromScrollOff) === "number" && pFromScrollOff > 0 ? Math.floor(pFromScrollOff) : 0);
+	var toScrollOff = (typeof(pToScrollOff) === "number" && pToScrollOff > 0 ? Math.floor(pToScrollOff) : 0);
+	var subjScrollOff = (typeof(pSubjScrollOff) === "number" && pSubjScrollOff > 0 ? Math.floor(pSubjScrollOff) : 0);
+	var fromForList = msgListScrolledField(fromName, fromScrollOff, this.FROM_LEN);
+	var toForList = msgListScrolledField(toName, toScrollOff, this.TO_LEN);
+	var subjForList = msgListScrolledField(subject, subjScrollOff, this.SUBJ_LEN);
+
 	// Generate the string with the message header information.
 	var msgHdrStr = "";
 	// Note: The message header has the following fields:
@@ -4922,7 +5278,7 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		// TODO: Handle UTF-8 in the header fields
 		/*
 		var fromNameForItemStr = fromName.substr(0, this.FROM_LEN);
-		var toNameForItemStr = toName.substr(0, this.TO_LEN);
+		var toNameForItemStr = toForList;
 		var subjectForItemStr = subject.substr(0, this.SUBJ_LEN);
 		if (msgIsUTF8 && userConsoleSupportsUTF8)
 		{
@@ -4951,17 +5307,17 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		if (this.showScoresInMsgList)
 		{
 			msgHdrStr += format(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
-			       fromName.substr(0, this.FROM_LEN),
-			       toName.substr(0, this.TO_LEN),
-			       subject.substr(0, this.SUBJ_LEN),
+			       fromForList,
+			       toForList,
+			       subjForList,
 			       msgVoteInfo.voteScore, sDate, sTime);
 		}
 		else
 		{
 			msgHdrStr += format(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
-			       fromName.substr(0, this.FROM_LEN),
-			       toName.substr(0, this.TO_LEN),
-			       subject.substr(0, this.SUBJ_LEN),
+			       fromForList,
+			       toForList,
+			       subjForList,
 			       sDate, sTime);
 		}
 	}
@@ -5006,7 +5362,7 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		//var fromNameForItemStr = format("%-" + this.FROM_LEN + "s", fromName.substr(0, this.FROM_LEN));
 		var fromNameForItemStr = fromName.substr(0, this.FROM_LEN);
 		//if (fromNameForItemStr[0] == "D") fromNameForItemStr = str_is_ascii(fromNameForItemStr);
-		var toNameForItemStr = toName.substr(0, this.TO_LEN);
+		var toNameForItemStr = toForList;
 		var subjectForItemStr = subject.substr(0, this.SUBJ_LEN);
 		if (msgIsUTF8 && userConsoleSupportsUTF8)
 		{
@@ -5035,14 +5391,14 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 
 		if (this.showScoresInMsgList)
 		{
-			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, fromName.substr(0, this.FROM_LEN),
-			       toName.substr(0, this.TO_LEN), subject.substr(0, this.SUBJ_LEN),
+			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, fromForList,
+			       toForList, subjForList,
 			       msgVoteInfo.voteScore, sDate, sTime);
 		}
 		else
 		{
-			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, fromName.substr(0, this.FROM_LEN),
-			       toName.substr(0, this.TO_LEN), subject.substr(0, this.SUBJ_LEN),
+			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, fromForList,
+			       toForList, subjForList,
 			       sDate, sTime);
 		}
 	}
@@ -5419,7 +5775,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		console.gotoxy(1, console.screen_rows);
 	}
 
-	var msgAreaWidth = this.userSettings.useEnhReaderScrollbar ? this.msgAreaWidth : this.msgAreaWidth + 1;
+	var msgAreaWidth = ddEnhReaderMsgTextWidth(this);
 	this.scrollableReadingData.msgAreaWidth = msgAreaWidth; // For the AreYouThere handler for the scrollable/ANSI interface
 
 	// We could word-wrap the message to ensure words aren't split across lines, but
@@ -6446,8 +6802,9 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				*/
 				break;
 			case this.enhReaderKeys.userSettings:
-				// Make a backup copy of the this.userSettings.useEnhReaderScrollbar setting in case it changes, so we can tell if we need to refresh the scrollbar
+				// Make a backup copy of the scrollbar and RIP settings in case they change, so we can tell if we need to refresh
 				var oldUseEnhReaderScrollbar = this.userSettings.useEnhReaderScrollbar;
+				var oldUseRIPForEnhReader = this.userSettings.useRIPForEnhReader;
 				var userSettingsRetObj = this.DoUserSettings_Scrollable(function(pReader) { pReader.DisplayEnhancedMsgReadHelpLine(console.screen_rows, allowChgMsgArea); });
 				retObj.lastKeypress = "";
 				writeMessage = userSettingsRetObj.needWholeScreenRefresh;
@@ -6517,10 +6874,13 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				}
 				else
 				{
-					// If the message scrollbar was toggled, then draw/erase the scrollbar
-					if (this.userSettings.useEnhReaderScrollbar != oldUseEnhReaderScrollbar)
+					var ripSettingChanged = (this.userSettings.useRIPForEnhReader != oldUseRIPForEnhReader);
+					if (ripSettingChanged)
+						this.DisplayEnhancedMsgHdr(msgHeader, pOffset+1, 1);
+					// If the message scrollbar or RIP mode was toggled, then draw/erase the scrollbar
+					if (this.userSettings.useEnhReaderScrollbar != oldUseEnhReaderScrollbar || ripSettingChanged)
 					{
-						msgAreaWidth = this.userSettings.useEnhReaderScrollbar ? this.msgAreaWidth : this.msgAreaWidth + 1;
+						msgAreaWidth = ddEnhReaderMsgTextWidth(this);
 						// If the message is ANSI, then re-create the Graphic object to account for the
 						// new width
 						if (msgHasANSICodes)
@@ -6544,7 +6904,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 						}
 						else
 						{
-							// Erase the scrollbar
+							// Erase the scrollbar (CP437 column and any RIP scrollbar graphics)
+							ddClearRIPScrollbar();
 							console.attributes = "N";
 							for (var screenY = this.msgAreaTop; screenY <= this.msgAreaBottom; ++screenY)
 							{
@@ -10416,6 +10777,10 @@ function DigDistMsgReader_WriteMsgListScreenTopHeader()
 	else
 		printf(this.colors.msgListColHeader + this.sMsgListHdrFormatStr, "Msg#", "From", "To", "Subject", "Date", "Time");
 
+	// Mark which column left/right will scroll. Traditional lists don't use that.
+	if (this.msgListUseLightbarListInterface && console.term_supports(USER_ANSI))
+		this.RefreshMsgListHorizScrollHeader();
+
 	// Set the normal text attribute
 	console.attributes = "N";
 }
@@ -10686,6 +11051,9 @@ function DigDistMsgReader_GetLightbarMsgListHelpText(pChgSubBoardAllowed)
 	helpText += hc + "currently-selected message will be highlighted as you navigate through\r\n";
 	helpText += hc + "the list.  To read a message, navigate to the desired message and press\r\n";
 	helpText += hc + "the enter key.  You can also read a message by typing its message number.\r\n";
+	helpText += hc + "If a from name, to name, or subject is too long for its column, the left\r\n";
+	helpText += hc + "and right arrows scroll that column.  Tab cycles From, To, and Subject.\r\n";
+	helpText += hc + "Subject is selected by default, and that column name is highlighted.\r\n";
 	helpText += hc + "To quit out of the message list, press the Q key.\r\n\r\n";
 	helpText += this.GetMessageListNotesHelpText();
 	helpText += "\r\n\r\n";
@@ -10693,6 +11061,8 @@ function DigDistMsgReader_GetLightbarMsgListHelpText(pChgSubBoardAllowed)
 	helpText += hc;
 	helpText += "\x01n\x01h\x01cDown arrow" + hc + ": Move the cursor down/select the next message\r\n";
 	helpText += "\x01n\x01h\x01cUp arrow" + hc + ": Move the cursor up/select the previous message\r\n";
+	helpText += "\x01n\x01h\x01cLeft/Right" + hc + ": Scroll the from name, to name, or subject horizontally\r\n";
+	helpText += "\x01n\x01h\x01cTab" + hc + ": Cycle horizontal scrolling through From, To, and Subject\r\n";
 	helpText += "\x01n\x01h\x01cN" + hc + ": Go to the next page\r\n";
 	helpText += "\x01n\x01h\x01cP" + hc + ": Go to the previous page\r\n";
 	helpText += "\x01n\x01h\x01cF" + hc + ": Go to the first page\r\n";
@@ -13530,6 +13900,284 @@ function DigDistMsgReader_GetEnhancedReaderHelpLines(pDisplayChgAreaOpt, pDispla
 	return helpText;
 }
 
+// Send one RIP command batch. A leading CR keeps the text cursor from scrolling
+// before the '!' that starts the RIP line.
+function ddSendRIP(pCmds)
+{
+	if (typeof(pCmds) !== "string" || pCmds.length == 0)
+		return;
+	var origSysStatus = bbs.sys_status;
+	bbs.sys_status |= SS_MOFF;
+	// RIP's default canvas is 640x350. A 25-row screen with a 16px font is 400
+	// pixels, so graphics aimed at the 350-line grid stop several rows above
+	// the help line. Set the world frame to the text screen first; SyncTERM
+	// then scales those coordinates onto the real framebuffer.
+	console.write("\r!" + ddRIPWorldFrameCmd() + pCmds + RIPGotoXYNumeric(0, 0) + RIPNoMore() + "\r\n");
+	bbs.sys_status = origSysStatus;
+}
+
+// Pixel size of one text cell, and the graphics frame that covers the screen.
+// 16px is the usual height for 30 rows or fewer (14px EGA still lines up,
+// because a taller frame is scaled down onto the 350-line screen).
+function ddRIPFallbackCellH(pRows)
+{
+	if (pRows == 27 || pRows == 28 || pRows == 33 || pRows == 34)
+		return 14;
+	if (pRows <= 30)
+		return 16;
+	return 8;
+}
+
+function ddRIPScreenPixels()
+{
+	var cols = ddRIPScreenCols();
+	var rows = ddRIPScreenRows();
+	if (gDDRipScreenPx != null && gDDRipScreenPx.cols == cols && gDDRipScreenPx.rows == rows)
+		return gDDRipScreenPx;
+	var cellW = 8;
+	var cellH = ddRIPFallbackCellH(rows);
+	if (typeof(console.cterm_charheight) === "number" && console.cterm_charheight >= 8 && console.cterm_charheight <= 32)
+		cellH = console.cterm_charheight;
+	var pxW = cols * cellW;
+	var pxH = rows * cellH;
+	if (pxW < 2)
+		pxW = 640;
+	if (pxH < 2)
+		pxH = 350;
+	// World-frame sizes are 2-digit MegaNums (max 1295).
+	if (pxW > 1295)
+		pxW = 1295;
+	if (pxH > 1295)
+		pxH = 1295;
+	gDDRipScreenPx = { cols: cols, rows: rows, cellW: cellW, cellH: cellH, pxW: pxW, pxH: pxH };
+	return gDDRipScreenPx;
+}
+
+function ddRIPWorldFrameCmd()
+{
+	var px = ddRIPScreenPixels();
+	return "|f" + toMegaNum(px.pxW, 2) + toMegaNum(px.pxH, 2);
+}
+
+// Strip characters that would break a RIP command line, and optionally truncate.
+function ddRIPSafeText(pText, pMaxChars)
+{
+	var text = (typeof(pText) === "string" ? pText : "");
+	text = strip_ctrl(text).replace(/[|\r\n]/g, " ");
+	if (typeof(pMaxChars) === "number" && pMaxChars >= 0 && text.length > pMaxChars)
+		text = text.substr(0, pMaxChars);
+	return text;
+}
+
+// Raised or sunken bevel made of filled 1-pixel bars.
+function ddRIPBevel(pX0, pY0, pX1, pY1, pBright, pDark, pThickness, pRaised)
+{
+	var rip = "";
+	var thickness = (typeof(pThickness) === "number" && pThickness > 0 ? pThickness : 1);
+	var topLeft = (pRaised ? pBright : pDark);
+	var botRight = (pRaised ? pDark : pBright);
+	for (var i = 0; i < thickness; ++i)
+	{
+		rip += RIPFillStyleNumeric(1, topLeft);
+		rip += RIPBarNumeric(pX0 + i, pY0 + i, pX1 - i, pY0 + i);
+		rip += RIPBarNumeric(pX0 + i, pY0 + i, pX0 + i, pY1 - i);
+		rip += RIPFillStyleNumeric(1, botRight);
+		rip += RIPBarNumeric(pX0 + i, pY1 - i, pX1 - i, pY1 - i);
+		rip += RIPBarNumeric(pX1 - i, pY0 + i, pX1 - i, pY1 - i);
+	}
+	return rip;
+}
+
+function ddRIPScreenRows()
+{
+	var rows = console.screen_rows;
+	if (typeof(rows) !== "number" || rows < 1)
+		rows = 25;
+	return rows;
+}
+
+function ddRIPScreenCols()
+{
+	var cols = console.screen_columns;
+	if (typeof(cols) !== "number" || cols < 1)
+		cols = 80;
+	return cols;
+}
+
+// Top pixel of a 1-based text row inside the RIP world frame.
+function ddRIPRowTop(pRow)
+{
+	var px = ddRIPScreenPixels();
+	var row = pRow;
+	if (typeof(row) !== "number" || row < 1)
+		row = 1;
+	var y = (row - 1) * px.cellH;
+	if (y < 0)
+		y = 0;
+	if (y > px.pxH - 1)
+		y = px.pxH - 1;
+	return y;
+}
+
+function ddRIPCellSize()
+{
+	var px = ddRIPScreenPixels();
+	return { cellW: px.cellW, cellH: px.cellH };
+}
+
+// Pixel rectangle covering the enhanced-reader status rows.
+function ddRIPStatusRect(pReader)
+{
+	var px = ddRIPScreenPixels();
+	var hdrRows = pReader.enhMsgHeaderLines.length;
+	if (hdrRows < 1)
+		hdrRows = 7;
+	var x1 = px.pxW - 1;
+	// Bottom pixel of the last header row, just above the message text.
+	var y1 = ddRIPRowTop(hdrRows + 1) - 1;
+	if (y1 < px.cellH)
+		y1 = px.cellH;
+	if (y1 > px.pxH - 1)
+		y1 = px.pxH - 1;
+	return { x0: 0, y0: 0, x1: x1, y1: y1, rows: hdrRows };
+}
+
+// Pixel geometry for the RIP scrollbar along the right side of the message area.
+// The bar starts at the first message row and ends on the pixel just above the
+// key help line (the last text row).
+function ddRIPScrollbarGeom(pReader)
+{
+	var px = ddRIPScreenPixels();
+	var cellW = px.cellW;
+	var sbCols = Math.ceil(16 / cellW);
+	if (sbCols < 1)
+		sbCols = 1;
+	if (sbCols > px.cols)
+		sbCols = px.cols;
+	var sbW = sbCols * cellW;
+	var x = px.pxW - sbW;
+	if (x < 0)
+		x = 0;
+	var y = ddRIPRowTop(pReader.msgAreaTop);
+	// The help line is the last screen row. Stop on the pixel above it.
+	var helpTop = ddRIPRowTop(ddRIPScreenRows());
+	var bottom = helpTop - 1;
+	if (bottom > px.pxH - 1)
+		bottom = px.pxH - 1;
+	if (bottom <= y)
+		bottom = Math.min(px.pxH - 1, y + px.cellH);
+	return {
+		x: x,
+		y: y,
+		w: sbW,
+		h: bottom - y + 1,
+		textCol: Math.floor(x / cellW) + 1,
+		textCols: sbCols
+	};
+}
+
+// Width of the message text column when the enhanced reader is showing a scrollbar.
+// The CP437 scrollbar is one column. The RIP scrollbar is wider, so the text
+// stops before it; otherwise each scroll repaints that text over the bar's left edge.
+function ddEnhReaderMsgTextWidth(pReader)
+{
+	var width = pReader.msgAreaWidth;
+	if (!pReader.userSettings.useEnhReaderScrollbar)
+		return width + 1;
+	if (pReader.RIPEnabled())
+	{
+		var extraCols = ddRIPScrollbarGeom(pReader).textCols - 1;
+		if (extraCols > 0)
+			width -= extraCols;
+		if (width < 20)
+			width = 20;
+	}
+	return width;
+}
+
+// Bright left edge and dark right/bottom edge so the bar's outline reaches
+// the pixel just above the help line, including the down-arrow button.
+function ddRIPScrollbarEdge(pSb)
+{
+	var x = pSb.pos.x;
+	var y = pSb.pos.y;
+	var right = x + pSb.size.width - 1;
+	var bottom = y + pSb.size.height - 1;
+	var rip = RIPFillStyleNumeric(1, pSb.colors.bevelBright);
+	rip += RIPBarNumeric(x, y, x, bottom);
+	rip += RIPFillStyleNumeric(1, pSb.colors.bevelDark);
+	rip += RIPBarNumeric(right, y, right, bottom);
+	rip += RIPBarNumeric(x, bottom, right, bottom);
+	return rip;
+}
+
+function ddEnsureRIPScrollbar(pReader)
+{
+	var geom = ddRIPScrollbarGeom(pReader);
+	var sb = gEnhReaderRIPScrollbar;
+	if (sb == null || sb.pos.x != geom.x || sb.pos.y != geom.y || sb.size.width != geom.w || sb.size.height != geom.h)
+	{
+		sb = new RIPScrollbar(geom.x, geom.y, geom.w, geom.h);
+		if (geom.h < 56)
+			sb.arrowHeight = Math.max(8, Math.floor(geom.h / 5));
+		sb.computeLayout();
+		gEnhReaderRIPScrollbar = sb;
+	}
+	return sb;
+}
+
+// Map the CP437 scrollbar's solid-block row onto the RIP scrollbar's scroll state.
+function ddRIPScrollbarSetFromRows(pScrollbar, pReader, pSolidStartRow, pNumSolid)
+{
+	var trackRows = pReader.msgAreaBottom - pReader.msgAreaTop + 1;
+	if (trackRows < 1)
+		trackRows = 1;
+	var visible = pNumSolid;
+	if (typeof(visible) !== "number" || visible < 1)
+		visible = 1;
+	if (visible > trackRows)
+		visible = trackRows;
+	var topIndex = pSolidStartRow - pReader.msgAreaTop;
+	if (topIndex < 0)
+		topIndex = 0;
+	var maxTop = trackRows - visible;
+	if (topIndex > maxTop)
+		topIndex = maxTop;
+	pScrollbar.setScrollState(trackRows, visible, topIndex);
+}
+
+// Remove RIP scrollbar graphics and its mouse regions.
+function ddClearRIPScrollbar()
+{
+	if (gEnhReaderRIPScrollbar == null)
+		return;
+	var sb = gEnhReaderRIPScrollbar;
+	var rip = RIPKillMouseFields();
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_BLACK);
+	rip += RIPBarNumeric(sb.pos.x, sb.pos.y, sb.pos.x + sb.size.width - 1, sb.pos.y + sb.size.height - 1);
+	ddSendRIP(rip);
+	gEnhReaderRIPScrollbar = null;
+}
+
+// Blank the text cells behind a RIP graphic so those cells don't cover it.
+function ddClearTextRows(pFirstRow, pLastRow, pFirstCol, pWidth)
+{
+	console.attributes = "N";
+	var firstCol = (typeof(pFirstCol) === "number" && pFirstCol >= 1 ? pFirstCol : 1);
+	var width = (typeof(pWidth) === "number" && pWidth > 0 ? pWidth : console.screen_columns - firstCol + 1);
+	for (var screenY = pFirstRow; screenY <= pLastRow; ++screenY)
+	{
+		console.gotoxy(firstCol, screenY);
+		printf("%-*s", width, "");
+	}
+}
+
+// Returns whether RIP can be displayed
+function DigDistMsgReader_RIPEnabled()
+{
+	return (this.userSettings.useRIPForEnhReader && console.term_supports(USER_RIP));
+}
+
 // For the DigDistMsgReader class: Displays the enhanced reader mode message
 // header information for a particular message header.
 //
@@ -13543,7 +14191,7 @@ function DigDistMsgReader_GetEnhancedReaderHelpLines(pDisplayChgAreaOpt, pDispla
 //                   supports ANSI.
 function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartScreenRow)
 {
-	if ((pMsgHdr == null) || (typeof(pMsgHdr) != "object"))
+	if (pMsgHdr == null || typeof(pMsgHdr) != "object")
 		return;
 	// For the set of enhanced header lines, choose the regular set or the set with
 	// the highlighted 'to' user, dependin on whether the message was written to the
@@ -13551,8 +14199,27 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	var enhMsgHdrLines = (userHandleAliasNameMatch(pMsgHdr.to) ? this.enhMsgHeaderLinesToReadingUser : this.enhMsgHeaderLines);
 	if (enhMsgHdrLines == null)
 		return;
-	if ((enhMsgHdrLines.length == 0) || (this.enhMsgHeaderWidth == 0))
+	if (enhMsgHdrLines.length == 0 || this.enhMsgHeaderWidth == 0)
 		return;
+
+	// RIP status panel replaces the ANSI/CP437 header if the user enabled it
+	// and the user's terminal supports RIP.
+	if (console.term_supports(USER_RIP))
+	{
+		if (this.userSettings.useRIPForEnhReader)
+		{
+			this.DisplayRIPEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum);
+			return;
+		}
+		// RIP is off for this draw, but a RIP message info panel may still be on
+		// screen from an earlier message. Black-fill that panel's rectangle so
+		// the ANSI header is not drawn on top of the graphic, then mark it gone.
+		else if (this.RIPMsgHdrGfxActive && this.RIPMsgHdrRect != null)
+		{
+			this.ClearRIPMsgHdr();
+		}
+	}
+
 	/*
 	// Temporary
 	if (console.term_supports(USER_RIP) && user.is_sysop)
@@ -13697,6 +14364,173 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 	}
 }
 
+// For the DigDistMsgReader class: Draws/writes the enhanced-reader message status block with a beveled RIP panel.
+function DigDistMsgReader_DisplayRIPEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum)
+{
+	var rect = ddRIPStatusRect(this);
+	ddClearTextRows(1, rect.rows, 1, console.screen_columns);
+
+	var dateTimeStr = "";
+	var useBBSLocalTimeZone = false;
+	var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(pMsgHdr);
+	if (msgWrittenLocalTime != -1)
+	{
+		dateTimeStr = strftime("%a, %d %b %Y %H:%M:%S", msgWrittenLocalTime);
+		useBBSLocalTimeZone = true;
+	}
+	else
+		dateTimeStr = pMsgHdr.date.replace(/ [-+][0-9]+$/, "");
+	if (useBBSLocalTimeZone)
+		dateTimeStr += " " + system.zonestr(system.timezone);
+	else if (typeof(pMsgHdr.when_written_zone) === "number")
+		dateTimeStr += " " + system.zonestr(pMsgHdr.when_written_zone);
+
+	var terminalSupportsUTF8 = (typeof(USER_UTF8) != "undefined" ? console.term_supports(USER_UTF8) : false);
+	var hdrIsUTF8 = pMsgHdr.hasOwnProperty("is_utf8") && pMsgHdr.is_utf8;
+	function ripFieldText(pText)
+	{
+		var text = (typeof(pText) === "string" ? pText : "");
+		if (hdrIsUTF8 && !terminalSupportsUTF8)
+			text = utf8_cp437(text);
+		return text;
+	}
+
+	var areaLabel = "Personal mail";
+	if (!this.readingPersonalEmail && msg_area.sub[this.subBoardCode] != null)
+	{
+		var sub = msg_area.sub[this.subBoardCode];
+		areaLabel = sub.grp_name + " / " + sub.name;
+	}
+	var messageNum = (typeof(pDisplayMsgNum) === "number" ? pDisplayMsgNum : pMsgHdr.offset + 1);
+	var msgNumText = "Msg " + messageNum + " of " + this.NumMessages();
+
+	var fromName = ripFieldText(pMsgHdr.from);
+	if (!user.is_sysop && ((pMsgHdr.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+		fromName = "Anonymous";
+	else if (typeof(pMsgHdr.from_net_addr) === "string" && pMsgHdr.from_net_addr.length > 0)
+		fromName += " (" + ripFieldText(pMsgHdr.from_net_addr) + ")";
+	var toName = ripFieldText(pMsgHdr.to);
+	var toReadingUser = userHandleAliasNameMatch(pMsgHdr.to);
+	var subject = ripFieldText(pMsgHdr.subject);
+
+	var extra = "";
+	if (this.readingPersonalEmail && Boolean(pMsgHdr.attr & MSG_REPLIED))
+		extra = "Replied";
+	var msgIsAPoll = false;
+	if (typeof(MSG_POLL) != "undefined")
+		msgIsAPoll = Boolean(pMsgHdr.attr & MSG_POLL);
+	if (!msgIsAPoll && pMsgHdr.hasOwnProperty("total_votes") && pMsgHdr.hasOwnProperty("upvotes") && pMsgHdr.total_votes != 0)
+	{
+		var voteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
+		var voteText = "Score " + voteInfo.voteScore + " (+" + voteInfo.upvotes + ", -" + voteInfo.downvotes + ")";
+		extra = (extra.length > 0 ? extra + "   " + voteText : voteText);
+	}
+
+	var x0 = rect.x0;
+	var y0 = rect.y0;
+	var x1 = rect.x1;
+	var y1 = rect.y1;
+	// Windows 3.1 / Borland OWL raised button: white top-left, black outer
+	// bottom-right, dark-gray inner shadow, light-gray face.
+	var innerX0 = x0 + 2;
+	var innerY0 = y0 + 2;
+	var innerX1 = x1 - 2;
+	var innerY1 = y1 - 2;
+
+	/*
+	// ---------------------------------------------
+	// 00     Default 8x8 font            Bit-Mapped
+	// 01     Triplex Font                Scalable
+	// 02     Small Font                  Scalable
+	// 03     Sans Serif Font             Scalable
+	// 04     Gothic [Old English] Font   Scalable
+	// 05     Script Font                 Scalable
+	// 06     Simplex Font                Scalable
+	// 07     Triplex Script Font         Scalable
+	// 08     Complex Font                Scalable
+	// 09     European Font               Scalable
+	// 0A     Bold Font                   Scalable
+	var RIP_FONT_DEFAULT    = 0;  // Default 8x8 font
+	var RIP_FONT_TRIPLEX    = 1;  // Scalable
+	var RIP_FONT_SMALL      = 2;  // Scalable
+	var RIP_FONT_SANS_SERIF = 3;  // Scalable
+	var RIP_FONT_GOTHIC     = 4;  // Scalable
+	var RIP_FONT_SCRIPT     = 5;  // Scalable
+	var RIP_FONT_SIMPLEX    = 6;  // Scalable
+	var RIP_FONT_TRIPLEX    = 7;  // Scalable
+	var RIP_FONT_COMPLEX    = 8;  // Scalable
+	var RIP_FONT_EUROPEAN   = 9;  // Scalable
+	var RIP_FONT_BOLD       = 10; // Scalable
+	*/
+	var RIPFont = RIP_FONT_DEFAULT;
+	//RIPFont = RIP_FONT_TRIPLEX;
+
+	var rip = RIPWriteMode(0);
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_LT_GRAY);
+	rip += RIPBarNumeric(x0, y0, x1, y1);
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_WHITE);
+	rip += RIPBarNumeric(x0, y0, x1 - 1, y0);
+	rip += RIPBarNumeric(x0, y0, x0, y1 - 1);
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_BLACK);
+	rip += RIPBarNumeric(x0, y1, x1, y1);
+	rip += RIPBarNumeric(x1, y0, x1, y1);
+	rip += RIPFillStyleNumeric(1, RIP_COLOR_DK_GRAY);
+	rip += RIPBarNumeric(x0 + 1, y1 - 1, x1 - 1, y1 - 1);
+	rip += RIPBarNumeric(x1 - 1, y0 + 1, x1 - 1, y1 - 1);
+
+	var innerChars = Math.floor((innerX1 - innerX0 - 8) / 8);
+	if (innerChars < 8)
+		innerChars = 8;
+	var msgNumSafe = ddRIPSafeText(msgNumText, 24);
+	var areaMax = innerChars - msgNumSafe.length - 2;
+	if (areaMax < 4)
+		areaMax = 4;
+	var areaSafe = ddRIPSafeText(areaLabel, areaMax);
+	var titleTextY = innerY0 + 2;
+	rip += RIPColorNumeric(RIP_COLOR_BLUE);
+	rip += RIPFontStyleNumeric(RIPFont, 0, 1, 0);
+	rip += RIPTextXYNumeric(innerX0 + 4, titleTextY, areaSafe);
+	var msgNumX = innerX1 - 4 - (msgNumSafe.length * 8);
+	if (msgNumX < innerX0 + 4 + (areaSafe.length * 8) + 8)
+		msgNumX = innerX0 + 4 + (areaSafe.length * 8) + 8;
+	rip += RIPColorNumeric(RIP_COLOR_BLUE);
+	rip += RIPTextXYNumeric(msgNumX, titleTextY, msgNumSafe);
+
+	var fields = [
+		{ label: "From", value: fromName, color: RIP_COLOR_RED },
+		{ label: "To", value: toName, color: RIP_COLOR_MAGENTA },
+		{ label: "Subj", value: subject, color: RIP_COLOR_DK_GRAY },
+		{ label: "Date", value: dateTimeStr + (extra.length > 0 ? "    " + extra : ""), color: RIP_COLOR_YELLOW }
+	];
+	var labelX = innerX0 + 4;
+	var valueX = labelX + (6 * 8);
+	var valueMax = Math.floor((innerX1 - 4 - valueX) / 8);
+	if (valueMax < 4)
+		valueMax = 4;
+	var textY = titleTextY + 12;
+	var fieldRoom = innerY1 - textY;
+	var lineStep = (fields.length > 0 ? Math.floor(fieldRoom / fields.length) : 10);
+	if (lineStep > 12)
+		lineStep = 12;
+	if (lineStep < 8)
+		lineStep = 8;
+	for (var fieldIdx = 0; fieldIdx < fields.length; ++fieldIdx)
+	{
+		if (textY + 8 > innerY1)
+			break;
+		var field = fields[fieldIdx];
+		rip += RIPColorNumeric(RIP_COLOR_BLUE);
+		rip += RIPTextXYNumeric(labelX, textY, field.label);
+		rip += RIPColorNumeric(field.color);
+		rip += RIPTextXYNumeric(valueX, textY, ddRIPSafeText(field.value, valueMax));
+		textY += lineStep;
+	}
+
+	ddSendRIP(rip);
+	this.RIPMsgHdrGfxActive = true;
+	this.RIPMsgHdrRect = rect;
+}
+
 // For the DigDistMsgReader class: Displays the area chooser header
 //
 // Parameters:
@@ -13763,6 +14597,24 @@ function DigDistMsgReader_DisplayAreaChgHdr(pStartScreenRow, pClearRowsFirst)
 //  pNumSolidBlocks: The number of solid/bright blocks to write
 function DigDistMsgReader_DisplayEnhancedReaderWholeScrollbar(pSolidBlockStartRow, pNumSolidBlocks)
 {
+	if (this.RIPEnabled())
+	{
+		var sb = ddEnsureRIPScrollbar(this);
+		ddRIPScrollbarSetFromRows(sb, this, pSolidBlockStartRow, pNumSolidBlocks);
+		var geom = ddRIPScrollbarGeom(this);
+		ddClearTextRows(this.msgAreaTop, this.msgAreaBottom, geom.textCol, geom.textCols);
+		var rip = RIPKillMouseFields();
+		rip += sb.buildFullRIP();
+		// A solid left edge. The thumb-only update fills the track from the left
+		// pixel and otherwise leaves that edge only on the thumb, so it vanishes
+		// above the thumb once the reader scrolls.
+		rip += ddRIPScrollbarEdge(sb);
+		rip += sb.buildMouseRegionsRIP();
+		ddSendRIP(rip);
+		return;
+	}
+	ddClearRIPScrollbar();
+
 	//console.attributes = "N";
 	var numSolidBlocksWritten = 0;
 	var wroteBrightBlockColor = false;
@@ -13807,6 +14659,20 @@ function DigDistMsgReader_DisplayEnhancedReaderWholeScrollbar(pSolidBlockStartRo
 //  pNumSolidBlocks: The number of solid/bright blocks
 function DigDistMsgReader_UpdateEnhancedReaderScrollbar(pNewStartRow, pOldStartRow, pNumSolidBlocks)
 {
+	if (this.RIPEnabled())
+	{
+		var sb = ddEnsureRIPScrollbar(this);
+		ddRIPScrollbarSetFromRows(sb, this, pNewStartRow, pNumSolidBlocks);
+		var rip = RIPKillMouseFields();
+		// Repaint the whole bar. buildThumbRIP() refills the track from its left
+		// pixel and drops the left bevel everywhere except the thumb.
+		rip += sb.buildFullRIP();
+		rip += ddRIPScrollbarEdge(sb);
+		rip += sb.buildMouseRegionsRIP();
+		ddSendRIP(rip);
+		return;
+	}
+
 	// Calculate the difference in the start row.  If the difference is positive,
 	// then the solid block section has moved down; if the diff is negative, the
 	// solid block section has moved up.
@@ -15395,7 +16261,7 @@ function DigDistMsgReader_ShowMsgHex_Scrolling(pMsgHexInfo)
 
 	if (pMsgHexInfo.msgHexArray.length > 0)
 	{
-		var msgAreaWidth = this.userSettings.useEnhReaderScrollbar ? this.msgAreaWidth : this.msgAreaWidth + 1;
+		var msgAreaWidth = ddEnhReaderMsgTextWidth(this);
 		var msgAreaHeight = this.msgAreaBottom - this.msgAreaTop + 1;
 		if (this.userSettings.useEnhReaderScrollbar)
 			this.DisplayEnhancedReaderWholeScrollbar(pMsgHexInfo.solidBlockStartRow, pMsgHexInfo.numSolidScrollBlocks);
@@ -16999,6 +17865,10 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 	if (this.userSettings.useEnhReaderScrollbar)
 		optionBox.chgCharInTextItem(ENH_SCROLLBAR_OPT_INDEX, checkIdx, CP437_CHECK_MARK);
 
+	const RIP_ENH_READER_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Use RIP in enhanced reader"));
+	if (this.userSettings.useRIPForEnhReader)
+		optionBox.chgCharInTextItem(RIP_ENH_READER_OPT_INDEX, checkIdx, CP437_CHECK_MARK);
+
 	const LIST_MESSAGES_IN_REVERSE_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "List messages in reverse"));
 	if (this.userSettings.listMessagesInReverse)
 		optionBox.chgCharInTextItem(LIST_MESSAGES_IN_REVERSE_OPT_INDEX, checkIdx, CP437_CHECK_MARK);
@@ -17059,6 +17929,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 	var optionToggles = {};
 	optionToggles[MSG_LIST_SELECT_MSG_MOVES_TO_NEXT_MSG_OPT_INDEX] = this.userSettings.selectInMsgListMovesToNext;
 	optionToggles[ENH_SCROLLBAR_OPT_INDEX] = this.userSettings.useEnhReaderScrollbar;
+	optionToggles[RIP_ENH_READER_OPT_INDEX] = this.userSettings.useRIPForEnhReader;
 	optionToggles[LIST_MESSAGES_IN_REVERSE_OPT_INDEX] = this.userSettings.listMessagesInReverse;
 	optionToggles[NEWSCAN_ONLY_SHOW_NEW_MSGS_INDEX] = this.userSettings.newscanOnlyShowNewMsgs;
 	optionToggles[INDEXED_MODE_NEWSCAN_OPT_INDEX] = this.userSettings.useIndexedModeForNewscan;
@@ -17104,6 +17975,9 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 						break;
 					case ENH_SCROLLBAR_OPT_INDEX:
 						this.readerObj.userSettings.useEnhReaderScrollbar = !this.readerObj.userSettings.useEnhReaderScrollbar;
+						break;
+					case RIP_ENH_READER_OPT_INDEX:
+						this.readerObj.userSettings.useRIPForEnhReader = !this.readerObj.userSettings.useRIPForEnhReader;
 						break;
 					case LIST_MESSAGES_IN_REVERSE_OPT_INDEX:
 						this.readerObj.userSettings.listMessagesInReverse = !this.readerObj.userSettings.listMessagesInReverse;
@@ -17302,6 +18176,7 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	};
 
 	var optNum = 1;
+	var USE_RIP_FOR_ENH_READER_OPT_NUM = optNum++;
 	var LIST_MESSAGES_IN_REVERSE_OPT_NUM = optNum++;
 	var NEWSCAN_ONLY_SHOW_NEW_MSGS_OPT_NUM = optNum++;
 	var USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM = optNum++;
@@ -17338,6 +18213,7 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	var wordFirstCharAttrs = "\x01c\x01h";
 	var wordRemainingAttrs = "\x01c";
 	console.print(colorFirstCharAndRemainingCharsInWords("User Settings", wordFirstCharAttrs, wordRemainingAttrs) + "\r\n");
+	printTradUserSettingOption(USE_RIP_FOR_ENH_READER_OPT_NUM, "Use RIP in enhanced reader", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(LIST_MESSAGES_IN_REVERSE_OPT_NUM, "List messages in reverse", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(NEWSCAN_ONLY_SHOW_NEW_MSGS_OPT_NUM, "Only show new messages for newscan", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM, "Use Indexed mode for newscan", wordFirstCharAttrs, wordRemainingAttrs);
@@ -17369,6 +18245,11 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	var chgSubBoardSortOptChanged = false;
 	switch (userChoiceNum)
 	{
+		case USE_RIP_FOR_ENH_READER_OPT_NUM:
+			var oldUseRIPForEnhReader = this.userSettings.useRIPForEnhReader;
+			this.userSettings.useRIPForEnhReader = !console.noyes("Use RIP in enhanced reader");
+			userSettingsChanged = (this.userSettings.useRIPForEnhReader != oldUseRIPForEnhReader);
+			break;
 		case LIST_MESSAGES_IN_REVERSE_OPT_NUM:
 			var oldListMsgsInReverseSetting = this.userSettings.listMessagesInReverse;
 			this.userSettings.listMessagesInReverse = !console.noyes("List messages in reverse");
@@ -17652,6 +18533,7 @@ function DigDistMsgReader_DoIndexedMode(pScanScope, pNewscanOnly)
 					var currentMenuItem = this.indexedModeMenu.GetItem(this.indexedModeMenu.selectedItemIdx);
 					var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(indexRetObj.chosenSubCode);
 					currentMenuItem.text = itemInfo.itemText;
+					currentMenuItem.fullSubBoardName = itemInfo.fullSubBoardName;
 					currentMenuItem.retval.numNewMsgs = itemInfo.numNewMsgs;
 					// If enabled, store the message headers for this sub-board as a cache for performance
 					if (this.enableIndexedModeMsgListCache)
@@ -17719,6 +18601,7 @@ function DigDistMsgReader_DoIndexedMode(pScanScope, pNewscanOnly)
 				var currentMenuItem = this.indexedModeMenu.GetItem(this.indexedModeMenu.selectedItemIdx);
 				var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(indexRetObj.chosenSubCode);
 				currentMenuItem.text = itemInfo.itemText;
+				currentMenuItem.fullSubBoardName = itemInfo.fullSubBoardName;
 				currentMenuItem.retval.numNewMsgs = itemInfo.numNewMsgs;
 				// If enabled, store the message headers for this sub-board as a cache for performance
 				if (this.enableIndexedModeMsgListCache)
@@ -17954,6 +18837,8 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 	}
 	else
 		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = this.indexedModeMenu.selectedItemIdx;
+	// Each visit to the list starts with sub-board names unscrolled.
+	this.indexedModeDescScrollOffset = 0;
 	// Ensure the menu is clear, and (re-)populate the menu with sub-board information w/ # of new messages in each, etc.
 	// Also, build an array of sub-board codes for each menu item.
 	// Also, display loading percentage while this is happening.
@@ -18030,6 +18915,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 				subCode: subCode,
 				numNewMsgs: itemInfo.numNewMsgs
 			});
+			this.indexedModeMenu.GetItem(this.indexedModeMenu.NumItems() - 1).fullSubBoardName = itemInfo.fullSubBoardName;
 
 			totalNewMsgs += itemInfo.numNewMsgs;
 		}
@@ -18130,11 +19016,43 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 	if (currentTotalColWidth < maxScreenWidth)
 		descWidthForHdr += (maxScreenWidth - currentTotalColWidth - 1);
 	var indexMenuHdrFormatStr = "\x01n" + this.colors.indexMenuHeader;
-	indexMenuHdrFormatStr += "%-" + descWidthForHdr + "s %" + numMsgsWidth + "s %" + numNewMsgsWidth + "s %" + lastPostDateWidth + "s";
-	printf(indexMenuHdrFormatStr, "Description", "Total", "New", "Last Post");
+	// Leave the first 4 columns for the "NEW" marker so "Description" lines up with the sub-board name.
+	var nameHdrWidth = descWidthForHdr - 4;
+	if (nameHdrWidth > 0)
+		indexMenuHdrFormatStr += "%-4s%-" + nameHdrWidth + "s %" + numMsgsWidth + "s %" + numNewMsgsWidth + "s %" + lastPostDateWidth + "s";
+	else
+		indexMenuHdrFormatStr += "%-" + descWidthForHdr + "s %" + numMsgsWidth + "s %" + numNewMsgsWidth + "s %" + lastPostDateWidth + "s";
+	if (nameHdrWidth > 0)
+		printf(indexMenuHdrFormatStr, "", "Description", "Total", "New", "Last Post");
+	else
+		printf(indexMenuHdrFormatStr, "Description", "Total", "New", "Last Post");
 	console.attributes = "N";
+	if (usingANSI)
+		this.RefreshIndexedModeDescHeader();
 	if (!usingANSI)
 		console.crlf();
+
+	// Left/right pan a long sub-board name. Other lightbar menus keep left/right as up/down.
+	if (usingANSI)
+	{
+		this.indexedModeMenu.scrollUpAlternateKey = "";
+		this.indexedModeMenu.scrollDownAlternateKey = "";
+		this.indexedModeMenu.msgReader = this;
+		this.indexedModeMenu.OnCustomKey = function(pKey) {
+			if (pKey == KEY_LEFT || pKey == KEY_RIGHT)
+			{
+				this.msgReader.ScrollIndexedModeSubBoardName(this, pKey == KEY_RIGHT ? 1 : -1);
+				return true;
+			}
+			return false;
+		};
+	}
+	else
+	{
+		this.indexedModeMenu.scrollUpAlternateKey = KEY_LEFT;
+		this.indexedModeMenu.scrollDownAlternateKey = KEY_RIGHT;
+		this.indexedModeMenu.OnCustomKey = null;
+	}
 
 	// Indexed mode menu input loop
 	var continueOn = true;
@@ -18183,6 +19101,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 					numNewMsgs: itemInfo.numNewMsgs
 				});
 				menuItem.text = itemInfo.itemText;
+				menuItem.fullSubBoardName = itemInfo.fullSubBoardName;
 				this.indexedModeMenu.items[this.indexedModeMenu.selectedItemIdx] = menuItem;
 				// Visually refresh the item on the menu
 				//if (usingANSI)
@@ -18359,6 +19278,135 @@ function indexedSubMenuSetSelectedNextWithnNewMsgs(pIndexSubBoardMenu, pStartIdx
 	return foundMenuItem;
 }
 
+// Highlights the indexed-mode Description column and shows a "<" at the right
+// edge of that column once the sub-board names are scrolled.
+function DigDistMsgReader_RefreshIndexedModeDescHeader()
+{
+	if (!console.term_supports(USER_ANSI))
+		return;
+	var normalColor = this.colors.indexMenuHeader;
+	if (typeof(normalColor) !== "string")
+		normalColor = "\x01n\x01w";
+	var activeColor = normalColor + "\x01h\x01y";
+	var label = "Description";
+	var descWidth = +this.indexedModeItemDescWidth;
+	// Column 5 is the first character of the sub-board name, after "NEW ".
+	var nameStartX = 5;
+	var nameWidth = descWidth - 4;
+	if (!(nameWidth > 0))
+	{
+		nameStartX = 1;
+		nameWidth = descWidth;
+	}
+	if (nameWidth > 0 && nameWidth < label.length)
+		label = label.substr(0, nameWidth);
+	console.gotoxy(nameStartX, 1);
+	console.print(activeColor + label + "\x01n");
+	// The character just after the name field. That is a space between the
+	// name and the Total column.
+	var markerX = descWidth + 1;
+	if (markerX > 1 && markerX <= console.screen_columns)
+	{
+		console.gotoxy(markerX, 1);
+		if (this.indexedModeDescScrollOffset > 0)
+			console.print(activeColor + "<\x01n");
+		else
+			console.print(normalColor + " \x01n");
+	}
+}
+// Scrolls the indexed-mode sub-board name by one character. The "NEW" marker
+// stays put. Only visible name cells whose text changed are rewritten.
+//
+// Parameters:
+//  pMenu: The indexed-mode DDLightbarMenu
+//  pDelta: 1 to scroll right, -1 to scroll left
+function DigDistMsgReader_ScrollIndexedModeSubBoardName(pMenu, pDelta)
+{
+	if (typeof(pMenu) != "object" || pMenu == null)
+		return;
+	if (pDelta !== 1 && pDelta !== -1)
+		return;
+
+	var descWidth = +this.indexedModeItemDescWidth;
+	var nameWidth = descWidth - 4;
+	if (!(nameWidth > 0))
+		return;
+	var offset = this.indexedModeDescScrollOffset;
+	if (typeof(offset) != "number" || offset < 0)
+		offset = 0;
+	if (pDelta < 0)
+	{
+		if (offset <= 0)
+			return;
+	}
+	else if (!indexedModeNameHasMore(pMenu, offset, nameWidth))
+		return;
+
+	var newOffset = offset + pDelta;
+	this.indexedModeDescScrollOffset = newOffset;
+
+	var numItems = pMenu.NumItems();
+	var numPerPage = pMenu.GetNumItemsPerPage();
+	var lastVisibleIdx = pMenu.topItemIdx + numPerPage - 1;
+	if (lastVisibleIdx >= numItems)
+		lastVisibleIdx = numItems - 1;
+	var textIndex = 4;
+	for (var idx = 0; idx < numItems; ++idx)
+	{
+		var item = pMenu.GetItem(idx);
+		if (item == null || typeof(item.fullSubBoardName) !== "string")
+			continue;
+		var oldSlice = msgListScrolledField(item.fullSubBoardName, offset, nameWidth);
+		var newSlice = msgListScrolledField(item.fullSubBoardName, newOffset, nameWidth);
+		var padded = format("%-" + nameWidth + "s", newSlice);
+		if (typeof(item.text) === "string" && item.text.length >= descWidth)
+			item.text = item.text.substr(0, 4) + padded + item.text.substr(descWidth);
+		if (idx < pMenu.topItemIdx || idx > lastVisibleIdx)
+			continue;
+		if (oldSlice == newSlice)
+			continue;
+		var colorSpec = (idx == pMenu.selectedItemIdx ? pMenu.colors.selectedItemColor : pMenu.colors.itemColor);
+		if (item.itemColor != null && idx != pMenu.selectedItemIdx)
+			colorSpec = item.itemColor;
+		if (item.itemSelectedColor != null && idx == pMenu.selectedItemIdx)
+			colorSpec = item.itemSelectedColor;
+		var attrs = msgListFieldAttrs(colorSpec, textIndex);
+		var screenY = pMenu.pos.y + (idx - pMenu.topItemIdx);
+		var screenX = pMenu.pos.x + textIndex;
+		if (pMenu.borderEnabled)
+		{
+			++screenY;
+			++screenX;
+		}
+		console.gotoxy(screenX, screenY);
+		console.print("\x01n" + attrs + newSlice, P_AUTO_UTF8);
+		var printedLen = console.strlen(newSlice, P_AUTO_UTF8);
+		if (printedLen < nameWidth)
+			printf("%*s", nameWidth - printedLen, "");
+		console.print("\x01n");
+	}
+	if ((offset > 0) != (newOffset > 0))
+		this.RefreshIndexedModeDescHeader();
+}
+// True when some visible indexed-mode row still has name text past the window.
+function indexedModeNameHasMore(pMenu, pOffset, pNameWidth)
+{
+	var numItems = pMenu.NumItems();
+	var numPerPage = pMenu.GetNumItemsPerPage();
+	var lastIdx = pMenu.topItemIdx + numPerPage - 1;
+	if (lastIdx >= numItems)
+		lastIdx = numItems - 1;
+	var limit = pOffset + pNameWidth;
+	for (var idx = pMenu.topItemIdx; idx <= lastIdx; ++idx)
+	{
+		var item = pMenu.GetItem(idx);
+		if (item == null || typeof(item.fullSubBoardName) !== "string")
+			continue;
+		if (item.fullSubBoardName.length > limit)
+			return true;
+	}
+	return false;
+}
 // Returns a string to use for a sub-board for the indexed mode sub-board menu
 //
 // Parameters:
@@ -18366,6 +19414,7 @@ function indexedSubMenuSetSelectedNextWithnNewMsgs(pIndexSubBoardMenu, pStartIdx
 //
 // Return value: An object containing the following properties:
 //               itemText: A string for the indexed mode menu item for the sub-board
+//               fullSubBoardName: The sub-board name (and description, when different), untruncated
 //               numNewMsgs: The number of new messages in the sub-board
 function DigDistMsgReader_GetIndexedModeSubBoardMenuItemTextAndInfo(pSubCode)
 {
@@ -18381,12 +19430,18 @@ function DigDistMsgReader_GetIndexedModeSubBoardMenuItemTextAndInfo(pSubCode)
 	var totalNumMsgsInSub = msg_area.sub[pSubCode].posts;
 	var latestPostInfo = getLatestPostTimestampAndNumNewMsgs(pSubCode, this.msgAreaList_lastImportedMsg_showImportTime, null);
 	var lastPostDate = strftime("%Y-%m-%d", latestPostInfo.latestMsgTimestamp);
-	var subDesc = (latestPostInfo.numNewMsgs > 0 ? "NEW " : "    ");
-	subDesc += msg_area.sub[pSubCode].name;
+	var subDescPrefix = (latestPostInfo.numNewMsgs > 0 ? "NEW " : "    ");
+	var fullSubBoardName = msg_area.sub[pSubCode].name;
 	if (msg_area.sub[pSubCode].name !== msg_area.sub[pSubCode].description)
-		subDesc += " - " + msg_area.sub[pSubCode].description;
-	subDesc = subDesc.substr(0, this.indexedModeItemDescWidth);
+		fullSubBoardName += " - " + msg_area.sub[pSubCode].description;
+	// The 4-character NEW/blank prefix stays put. Left/right scroll the name after it.
+	var nameWidth = this.indexedModeItemDescWidth - subDescPrefix.length;
+	if (nameWidth < 0)
+		nameWidth = 0;
+	var nameOffset = (typeof(this.indexedModeDescScrollOffset) === "number" && this.indexedModeDescScrollOffset > 0 ? this.indexedModeDescScrollOffset : 0);
+	var subDesc = subDescPrefix + msgListScrolledField(fullSubBoardName, nameOffset, nameWidth);
 	retObj.itemText = format(this.indexedModeSubBoardMenuSubBoardFormatStr, subDesc, totalNumMsgsInSub, latestPostInfo.numNewMsgs, lastPostDate);
+	retObj.fullSubBoardName = fullSubBoardName;
 	retObj.numNewMsgs = latestPostInfo.numNewMsgs;
 	return retObj;
 }
@@ -18463,6 +19518,7 @@ function DigDistMsgReader_ShowIndexedListHelp()
 		console.print(this.colors.tradInterfaceHelpScreenColor);
 		printf(formatStr, "Down arrow", "Move the cursor down/select the next sub-board");
 		printf(formatStr, "Up arrow", "Move the cursor up/select the previous sub-board");
+		printf(formatStr, "Left/Right", "Scroll a long sub-board name horizontally");
 		printf(formatStr2, "PageDown", "N", "Go to the next page");
 		printf(formatStr2, "PageUp", "P", "Go to the previous page");
 		printf(formatStr2, "HOME", "F", "Go to the first item");
@@ -21477,14 +22533,6 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 		// clear out the rest of the row on the screen
 		if (writeTxtLines)
 		{
-			// If the scroll update function parameter is a function, then calculate
-			// the fraction to the last page and call the scroll update function.
-			if (pUseScrollbar && typeof(pScrollUpdateFn) == "function")
-			{
-				if (topLineIdxForLastPage != 0)
-					fractionToLastPage = retObj.topLineIdx / topLineIdxForLastPage;
-				pScrollUpdateFn(fractionToLastPage);
-			}
 			var screenY = pTopLeftY;
 			for (var lineIdx = retObj.topLineIdx; (lineIdx < pTxtLines.length) && (screenY <= lastTxtRow); ++lineIdx)
 			{
@@ -21501,6 +22549,14 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 				console.gotoxy(pTopLeftX, screenY++);
 				printf(txtLineFormatStr, "");
 			}
+			// Draw the scrollbar after the text. The RIP bar is wider than one
+			// text column; painting it first lets the message text cover its left edge.
+			if (pUseScrollbar && typeof(pScrollUpdateFn) == "function")
+			{
+				if (topLineIdxForLastPage != 0)
+					fractionToLastPage = retObj.topLineIdx / topLineIdxForLastPage;
+				pScrollUpdateFn(fractionToLastPage);
+			}
 		}
 
 		writeTxtLines = false;
@@ -21511,6 +22567,71 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 		if (console.aborted)
 			break;
 		console.gotoxy(pPostWriteCurX, pPostWriteCurY);
+
+		// RIP scrollbar mouse regions (arrows, track, and thumb drag). Handled here
+		// so every enhanced-reader view that uses scrollTextLines() gets them.
+		if (gEnhReaderRIPScrollbar != null && retObj.lastKeypress.length > 0)
+		{
+			var ripSb = gEnhReaderRIPScrollbar;
+			var ripMouseCode = retObj.lastKeypress.charCodeAt(0);
+			var ripMouseHandled = false;
+			if (ripMouseCode === ripSb.mouseChars.scrollUp)
+			{
+				if (retObj.topLineIdx > 0)
+					--retObj.topLineIdx;
+				ripMouseHandled = true;
+			}
+			else if (ripMouseCode === ripSb.mouseChars.scrollDn)
+			{
+				if (retObj.topLineIdx < topLineIdxForLastPage)
+					++retObj.topLineIdx;
+				ripMouseHandled = true;
+			}
+			else if (ripMouseCode === ripSb.mouseChars.trackPgUp)
+			{
+				retObj.topLineIdx = Math.max(0, retObj.topLineIdx - pHeight);
+				ripMouseHandled = true;
+			}
+			else if (ripMouseCode === ripSb.mouseChars.trackPgDn)
+			{
+				retObj.topLineIdx = Math.min(topLineIdxForLastPage, retObj.topLineIdx + pHeight);
+				ripMouseHandled = true;
+			}
+			else if (ripMouseCode === ripSb.mouseChars.thumbDrag)
+			{
+				var yStr = "";
+				for (var digitIdx = 0; digitIdx < 4; ++digitIdx)
+				{
+					var digitCh = console.inkey(K_NONE, 500);
+					if (digitCh === "" || digitCh < "0" || digitCh > "9")
+						break;
+					yStr += digitCh;
+				}
+				var mouseY = parseInt(yStr, 10);
+				var sbLayout = ripSb._layout;
+				if (!isNaN(mouseY) && sbLayout != null && sbLayout.trackHeight > 0 && topLineIdxForLastPage > 0)
+				{
+					var thumbGeom = ripSb.getThumbGeometry();
+					var thumbRange = sbLayout.trackHeight - thumbGeom.h;
+					if (thumbRange > 0)
+					{
+						var clampedY = Math.max(sbLayout.trackTop, Math.min(sbLayout.trackBot, mouseY));
+						var relY = clampedY - sbLayout.trackTop;
+						retObj.topLineIdx = Math.round(relY * topLineIdxForLastPage / thumbRange);
+						if (retObj.topLineIdx < 0)
+							retObj.topLineIdx = 0;
+						if (retObj.topLineIdx > topLineIdxForLastPage)
+							retObj.topLineIdx = topLineIdxForLastPage;
+					}
+				}
+				ripMouseHandled = true;
+			}
+			if (ripMouseHandled)
+			{
+				writeTxtLines = true;
+				continue;
+			}
+		}
 
 		switch (retObj.lastKeypress)
 		{
