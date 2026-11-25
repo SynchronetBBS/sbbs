@@ -901,6 +901,12 @@
   by every caller. Builds and runs on both Linux and Windows
   (Win32). The original DOS game data is sysop-supplied, not
   shipped
+- New: **Universal Viewer** (`xtrn/univiewer`, formerly SixelView) — a
+  file library and viewer for SyncTERM in pure JavaScript: PDF, EPUB and
+  HTML pages, pictures, ANSI art, text (with coloring for INI, JSON, XML,
+  YAML, TOML and Markdown), and music. Archives (ZIP, RAR, 7Z, TAR, ISO,
+  CAB and more) and FAT disk images are browsed in place, and text can be
+  searched in the reader and in PDF, HTML and EPUB files
 - New: **Avatar Chat** — avatar-first conversations with
   optional ANSI-art send/view and MOTD support
 - New: `typemd.js` and `load/md2asc.js` — Markdown viewer that

@@ -34,8 +34,8 @@
  *	- a PDF parser: xref tables and streams, object streams, recovery of damaged
  *	  files, standard-security-handler decryption (empty password; RC4 and AES-128)
  *	- stream filters: Flate (inflate.js), LZW, ASCII85, ASCIIHex, RunLength,
- *	  CCITT G3/G4 and baseline DCT/JPEG
- *	- a content-stream interpreter: paths, clipping, strokes, colour spaces,
+ *	  CCITT G3/G4, JBIG2 (generic, symbol and text regions), JPEG 2000 and baseline DCT/JPEG
+ *	- a content-stream interpreter: paths, clipping, strokes, color spaces,
  *	  functions, shadings, images and masks, forms, annotations, Type 3 fonts
  *	- TrueType/OpenType, CFF and Type 1 font outlines; non-embedded fonts use the
  *	  outlines in pdf2sixel_fonts.js, falling back to the bitmap fonts in ctrl/fonts
@@ -519,7 +519,7 @@ function ccitt_decode(data, parms, doc, height)
 		}
 		return -1;
 	}
-	/* total run length for a colour */
+	/* total run length for a color */
 	function run(isblack)
 	{
 		var total = 0;
@@ -1051,6 +1051,24 @@ PDFStream.prototype.decode = function ()
 			case "CCITTFaxDecode": case "CCF":
 				data = ccitt_decode(data, pm, doc, doc.resolve(this.dict.Height) || doc.resolve(this.dict.H) || 0);
 				break;
+			case "JBIG2Decode":
+				try {
+					var gdata = null;
+					if (isDict(pm)) {
+						var gs = doc.resolve(pm.JBIG2Globals);
+						if (gs && gs.bytes)
+							gdata = gs.bytes();
+					}
+					data = jb2_decode(data, gdata, doc, doc.resolve(this.dict.Width), doc.resolve(this.dict.Height));
+				}
+				catch (e) {
+					/* unsupported JBIG2 features: the image is shown as a gray box */
+					IMG_FAIL[String(e)] = (IMG_FAIL[String(e)] || 0) + 1;
+					result.filter = fn;
+					result.parms = pm;
+					k = filters.length;
+				}
+				break;
 			case "Crypt":
 				break;
 			default:	/* DCTDecode, JPXDecode, CCITTFaxDecode, JBIG2Decode */
@@ -1068,6 +1086,2169 @@ PDFStream.prototype.bytes = function ()
 {
 	return this.decode().data;
 };
+
+/* ----- JBIG2 (generic regions) ----- */
+
+/* The MQ arithmetic coder's probability table: Qe, next state after MPS, after LPS, switch flag */
+var JB2_QE = new Uint16Array([0x5601, 0x3401, 0x1801, 0x0AC1, 0x0521, 0x0221, 0x5601, 0x5401, 0x4801, 0x3801, 0x3001, 0x2401,
+	0x1C01, 0x1601, 0x5601, 0x5401, 0x5101, 0x4801, 0x3801, 0x3401, 0x3001, 0x2801, 0x2401, 0x2201, 0x1C01, 0x1801, 0x1601,
+	0x1401, 0x1201, 0x1101, 0x0AC1, 0x09C1, 0x08A1, 0x0521, 0x0441, 0x02A1, 0x0221, 0x0141, 0x0111, 0x0085, 0x0049, 0x0025,
+	0x0015, 0x0009, 0x0005, 0x0001, 0x5601]);
+var JB2_NMPS = new Uint8Array([1, 2, 3, 4, 5, 38, 7, 8, 9, 10, 11, 12, 13, 29, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+	28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 45, 46]);
+var JB2_NLPS = new Uint8Array([1, 6, 9, 12, 29, 33, 6, 14, 14, 14, 17, 18, 20, 21, 14, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 23,
+	24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 46]);
+var JB2_SW = new Uint8Array([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+
+/* Pixels of the generic region templates (dx, dy); the adaptive pixels are added to these */
+var JB2_TEMPLATES = [
+	[[-1, -2], [0, -2], [1, -2], [-2, -1], [-1, -1], [0, -1], [1, -1], [2, -1], [-4, 0], [-3, 0], [-2, 0], [-1, 0]],
+	[[-1, -2], [0, -2], [1, -2], [2, -2], [-2, -1], [-1, -1], [0, -1], [1, -1], [2, -1], [-3, 0], [-2, 0], [-1, 0]],
+	[[-1, -2], [0, -2], [1, -2], [-2, -1], [-1, -1], [0, -1], [1, -1], [-2, 0], [-1, 0]],
+	[[-3, -1], [-2, -1], [-1, -1], [0, -1], [1, -1], [-4, 0], [-3, 0], [-2, 0], [-1, 0]]];
+/* the context used to decode the "same as the line above" flag (TPGDON) */
+var JB2_SLTP = [0x9b25, 0x0795, 0x00e5, 0x0195];
+
+/* Decode an arithmetic-coded generic region: returns w*h bytes, 1 = black.  at is the list of adaptive
+ * pixel offsets [dx, dy, ...]. */
+var JB2_ROWS = null;		/* the black pixel lists of the last generic region decoded (typed arrays can't carry properties) */
+
+function jb2_generic_dec(dec, cxs, w, h, tmpl, tpgd, at, skip)
+{
+	var bm = new Uint8Array(w * h);
+	var pix = JB2_TEMPLATES[tmpl].slice(0);
+	for (var i = 0; i + 1 < at.length; i += 2)
+		pix.push([at[i], at[i + 1]]);
+	var defat = !skip && tmpl == 0 && at.length == 8 && at[0] == 3 && at[1] == -1 && at[2] == -3 && at[3] == -1 &&
+		at[4] == 2 && at[5] == -2 && at[6] == -2 && at[7] == -2;
+	pix.sort(function (p, q) { return p[1] - q[1] || p[0] - q[0]; });
+	var np = pix.length;
+	var pdx = new Int32Array(np), pdy = new Int32Array(np);
+	for (i = 0; i < np; i++) {
+		pdx[i] = pix[i][0];
+		pdy[i] = pix[i][1];
+	}
+
+	var data = dec.data, end = dec.end, bp = dec.bp, chigh = dec.chigh, clow = dec.clow, ct = dec.ct, a = dec.a;
+
+	function byte_in()
+	{
+		if (data[bp] === 0xff) {
+			if (data[bp + 1] > 0x8f) {
+				clow += 0xff00;
+				ct = 8;
+			}
+			else {
+				bp++;
+				clow += data[bp] << 9;
+				ct = 7;
+			}
+		}
+		else {
+			bp++;
+			clow += bp < end ? data[bp] << 8 : 0xff00;
+			ct = 8;
+		}
+		if (clow > 0xffff) {
+			chigh += clow >> 16;
+			clow &= 0xffff;
+		}
+	}
+
+	/* the full decoding procedure for one decision (the common case is done in line below) */
+	mq_tables();
+	var QEt = MQ_QE, NMPSt = MQ_NMPS, NLPSt = MQ_NLPS;
+	function read_bit(pos)
+	{
+		var cx = cxs[pos], qe = QEt[cx], d;
+		var a2 = a - qe;
+		if (chigh < qe) {
+			if (a2 < qe) {
+				d = cx & 1;
+				cxs[pos] = NMPSt[cx];
+			}
+			else {
+				d = (cx & 1) ^ 1;
+				cxs[pos] = NLPSt[cx];
+			}
+			a2 = qe;
+		}
+		else {
+			chigh -= qe;
+			if (a2 & 0x8000) {
+				a = a2;
+				return cx & 1;
+			}
+			if (a2 < qe) {
+				d = (cx & 1) ^ 1;
+				cxs[pos] = NLPSt[cx];
+			}
+			else {
+				d = cx & 1;
+				cxs[pos] = NMPSt[cx];
+			}
+		}
+		do {
+			if (ct === 0)
+				byte_in();
+			a2 <<= 1;
+			chigh = ((chigh << 1) & 0xffff) | ((clow >> 15) & 1);
+			clow = (clow << 1) & 0xffff;
+			ct--;
+		} while ((a2 & 0x8000) === 0);
+		a = a2;
+		return d;
+	}
+
+	var row0 = new Uint8Array(w + 8), row1 = new Uint8Array(w + 8), row2 = new Uint8Array(w + 8), zbuf = new Uint8Array(w + 8), rtmp;
+	var ltp = 0, x, y, ctx, bit, cx, qe, a2, r0, r1, r2, o, k, xx, yy, ro;
+	var b1 = [], b2 = [], bc, i1, i2, nb1, nb2, kr, ka;	/* x positions of the black pixels of the last two rows */
+	var rows = [];	/* ... and of every row, for the caller */
+	for (y = 0; y < h; y++) {
+		ro = y * w;
+		if (tpgd) {
+			ltp ^= read_bit(JB2_SLTP[tmpl]);
+			if (ltp) {
+				if (y > 0)
+					bm.set(bm.subarray(ro - w, ro), ro);
+				if (defat) {
+					rtmp = row2;
+					rtmp.set(row1);
+					row2 = row1;
+					row1 = rtmp;
+				}
+				b2 = b1;
+				if (y == 0)
+					b1 = [];
+				if (rows)
+					rows.push(b1);
+				continue;
+			}
+		}
+		if (defat) {
+			r0 = 0;
+			r1 = (row1[0] << 3) | (row1[1] << 2) | (row1[2] << 1) | row1[3];
+			r2 = (row2[0] << 2) | (row2[1] << 1) | row2[2];
+			bc = [];
+			i1 = 0;
+			i2 = 0;
+			for (x = 0; x < w; x++) {
+				ctx = (r2 << 11) | (r1 << 4) | r0;
+				cx = cxs[ctx];
+				qe = QEt[cx];
+				if (chigh >= qe && ((a2 = a - qe) & 0x8000)) {
+					if (ctx === 0 && !(cx & 1)) {
+						/* white space: while the neighbourhood stays blank and the coder doesn't need to renormalise, every
+						 * decision is the same MPS, so a whole run of them is done at once */
+						while (i1 < b1.length && b1[i1] < x + 4)
+							i1++;
+						while (i2 < b2.length && b2[i2] < x + 3)
+							i2++;
+						nb1 = i1 < b1.length ? b1[i1] : w + 8;
+						nb2 = i2 < b2.length ? b2[i2] : w + 8;
+						kr = Math.min(nb2 - x - 2, nb1 - x - 3, w - x);
+						ka = Math.min(((a - 0x8000) / qe) | 0, (chigh / qe) | 0);
+						if (ka < kr)
+							kr = ka;
+						if (kr > 1) {
+							chigh -= kr * qe;
+							a -= kr * qe;
+							x += kr;
+							/* the windows over the rows above, as they are at the new position */
+							r1 = 0;
+							for (k = i1; k < b1.length && b1[k] <= x + 3; k++)
+								r1 |= 1 << (x + 3 - b1[k]);
+							r2 = 0;
+							for (k = i2; k < b2.length && b2[k] <= x + 2; k++)
+								r2 |= 1 << (x + 2 - b2[k]);
+							x--;
+							continue;
+						}
+					}
+					chigh -= qe;
+					a = a2;
+					bit = cx & 1;
+				}
+				else
+					bit = read_bit(ctx);
+				if (bit) {
+					row0[x] = 1;
+					bc.push(x);
+				}
+				r0 = ((r0 << 1) & 0xf) | bit;
+				r1 = ((r1 << 1) & 0x7f) | row1[x + 4];
+				r2 = ((r2 << 1) & 0x1f) | row2[x + 3];
+			}
+			bm.set(row0.subarray(0, w), ro);
+			rtmp = row2;
+			row2 = row1;
+			row1 = row0;
+			row0 = rtmp;
+			row0.set(zbuf);
+			b2 = b1;
+			b1 = bc;
+			rows.push(bc);
+		}
+		else {
+			bc = [];
+			for (x = 0; x < w; x++) {
+				if (skip && skip[y * w + x])
+					continue;
+				ctx = 0;
+				for (k = 0; k < np; k++) {
+					xx = x + pdx[k];
+					yy = y + pdy[k];
+					ctx = (ctx << 1) | (xx >= 0 && xx < w && yy >= 0 ? bm[yy * w + xx] : 0);
+				}
+				cx = cxs[ctx];
+				qe = JB2_QE[cx >> 1];
+				if (chigh >= qe && ((a2 = a - qe) & 0x8000)) {
+					chigh -= qe;
+					a = a2;
+					bit = cx & 1;
+				}
+				else
+					bit = read_bit(ctx);
+				bm[ro + x] = bit;
+				if (bit)
+					bc.push(x);
+			}
+			b2 = b1;
+			b1 = bc;
+			rows.push(bc);
+		}
+	}
+	JB2_ROWS = rows;
+	dec.bp = bp;
+	dec.chigh = chigh;
+	dec.clow = clow;
+	dec.ct = ct;
+	dec.a = a;
+	return bm;
+}
+
+/* The MQ arithmetic decoder as an object (used by the symbol and text region code; generic regions copy its state
+ * into local variables for speed and store it back) */
+function Jb2Arith(data, start, end)
+{
+	this.data = data;
+	this.bp = start;
+	this.end = end;
+	this.chigh = data[start];
+	this.clow = 0;
+	this.ct = 0;
+	this.a = 0;
+	this.byte_in();
+	this.chigh = ((this.chigh << 7) & 0xffff) | ((this.clow >> 9) & 0x7f);
+	this.clow = (this.clow << 7) & 0xffff;
+	this.ct -= 7;
+	this.a = 0x8000;
+}
+
+Jb2Arith.prototype.byte_in = function ()
+{
+	var data = this.data, bp = this.bp;
+	if (data[bp] === 0xff) {
+		if (data[bp + 1] > 0x8f) {
+			this.clow += 0xff00;
+			this.ct = 8;
+		}
+		else {
+			bp++;
+			this.clow += data[bp] << 9;
+			this.ct = 7;
+			this.bp = bp;
+		}
+	}
+	else {
+		bp++;
+		this.clow += bp < this.end ? data[bp] << 8 : 0xff00;
+		this.ct = 8;
+		this.bp = bp;
+	}
+	if (this.clow > 0xffff) {
+		this.chigh += this.clow >> 16;
+		this.clow &= 0xffff;
+	}
+};
+
+Jb2Arith.prototype.bit = function (cxs, pos)
+{
+	var idx = cxs[pos] >> 1, mps = cxs[pos] & 1;
+	var qe = JB2_QE[idx], d;
+	var a = this.a - qe;
+	if (this.chigh < qe) {
+		if (a < qe) {
+			a = qe;
+			d = mps;
+			idx = JB2_NMPS[idx];
+		}
+		else {
+			a = qe;
+			d = 1 ^ mps;
+			if (JB2_SW[idx])
+				mps = d;
+			idx = JB2_NLPS[idx];
+		}
+	}
+	else {
+		this.chigh -= qe;
+		if (a & 0x8000) {
+			this.a = a;
+			return mps;
+		}
+		if (a < qe) {
+			d = 1 ^ mps;
+			if (JB2_SW[idx])
+				mps = d;
+			idx = JB2_NLPS[idx];
+		}
+		else {
+			d = mps;
+			idx = JB2_NMPS[idx];
+		}
+	}
+	do {
+		if (this.ct === 0)
+			this.byte_in();
+		a <<= 1;
+		this.chigh = ((this.chigh << 1) & 0xffff) | ((this.clow >> 15) & 1);
+		this.clow = (this.clow << 1) & 0xffff;
+		this.ct--;
+	} while ((a & 0x8000) === 0);
+	this.a = a;
+	cxs[pos] = (idx << 1) | mps;
+	return d;
+};
+
+/* Annex A.2: arithmetic integer decoding; returns null for the out-of-band value */
+function jb2_int(dec, cxs)
+{
+	var prev = 1;
+	function bits(n)
+	{
+		var v = 0;
+		for (var i = 0; i < n; i++) {
+			var b = dec.bit(cxs, prev);
+			prev = prev < 256 ? (prev << 1) | b : (((prev << 1) | b) & 511) | 256;
+			v = v * 2 + b;
+		}
+		return v;
+	}
+	var sign = bits(1);
+	var value = bits(1) ? (bits(1) ? (bits(1) ? (bits(1) ? (bits(1) ? bits(32) + 4436 : bits(12) + 340) : bits(8) + 84) :
+		bits(6) + 20) : bits(4) + 4) : bits(2);
+	if (sign === 0)
+		return value;
+	return value > 0 ? -value : null;
+}
+
+/* Annex A.3: symbol ID decoding */
+function jb2_iaid(dec, cxs, codelen)
+{
+	var prev = 1;
+	for (var i = 0; i < codelen; i++)
+		prev = (prev << 1) | dec.bit(cxs, prev);
+	return prev - (1 << codelen);
+}
+
+/* 6.3: generic refinement region decoding (arithmetic coded, TPGRON off).  ref is a { w, h, d } bitmap. */
+function jb2_refine(dec, cxs, w, h, tmpl, ref, dx, dy, at)
+{
+	var out = new Uint8Array(w * h);
+	var ct, rt;
+	if (tmpl == 0) {
+		ct = [[0, -1], [1, -1], [-1, 0], [at[0], at[1]]];
+		rt = [[0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1], [at[2], at[3]]];
+	}
+	else {
+		ct = [[-1, -1], [0, -1], [1, -1], [-1, 0]];
+		rt = [[0, -1], [-1, 0], [0, 0], [1, 0], [0, 1], [1, 1]];
+	}
+	var nc = ct.length, nr = rt.length, rw = ref.w, rh = ref.h, rd = ref.d;
+	for (var y = 0; y < h; y++) {
+		for (var x = 0; x < w; x++) {
+			var ctx = 0, k, xx, yy;
+			for (k = 0; k < nc; k++) {
+				xx = x + ct[k][0];
+				yy = y + ct[k][1];
+				ctx = (ctx << 1) | (xx >= 0 && xx < w && yy >= 0 ? out[yy * w + xx] : 0);
+			}
+			for (k = 0; k < nr; k++) {
+				xx = x + rt[k][0] - dx;
+				yy = y + rt[k][1] - dy;
+				ctx = (ctx << 1) | (xx >= 0 && xx < rw && yy >= 0 && yy < rh ? rd[yy * rw + xx] : 0);
+			}
+			out[y * w + x] = dec.bit(cxs, ctx);
+		}
+	}
+	return out;
+}
+
+/* The integer decoding contexts of text region decoding (6.4); a symbol dictionary with aggregation shares them */
+function jb2_text_ctx(codelen)
+{
+	return { DT: new Uint8Array(512), FS: new Uint8Array(512), DS: new Uint8Array(512), IT: new Uint8Array(512),
+		RI: new Uint8Array(512), RDW: new Uint8Array(512), RDH: new Uint8Array(512), RDX: new Uint8Array(512),
+		RDY: new Uint8Array(512), ID: new Uint8Array(1 << (codelen + 1)), GR: new Uint8Array(1 << 14) };
+}
+
+/* 6.4: decode the text region described by P (rw, rh, ninst, logstrips, corner, transposed, combop, defpix, dsoff,
+ * refine, rtmpl, rat, syms, codelen) from the arithmetic decoder dec.  Returns the bitmap: packed (8 pixels to a
+ * byte) if P.packed (only for symbols combined with OR on a white background), else one byte per pixel. */
+function jb2_text_core(dec, cx, P)
+{
+	var rw = P.rw, rh = P.rh, syms = P.syms, corner = P.corner, transposed = P.transposed, combop = P.combop;
+	var rrow = (rw + 7) >> 3;
+	var packed = P.packed && !P.defpix && combop == 0;
+	var page = new Uint8Array(packed ? rrow * rh : rw * rh);
+	var i;
+	if (P.defpix && !packed)
+		for (i = 0; i < page.length; i++)
+			page[i] = 1;
+	var strips = 1 << P.logstrips;
+	var stript = jb2_int(dec, cx.DT);
+	if (stript === null)
+		throw "JBIG2: bad text region";
+	stript *= -strips;
+	var firsts = 0, n = 0;
+	while (n < P.ninst) {
+		var dt = jb2_int(dec, cx.DT);
+		if (dt === null)
+			throw "JBIG2: bad text region";
+		stript += dt * strips;
+		var dfs = jb2_int(dec, cx.FS);
+		if (dfs === null)
+			throw "JBIG2: bad text region";
+		firsts += dfs;
+		var curs = firsts;
+		for (;;) {
+			if (n >= P.ninst)
+				break;
+			var curt = strips == 1 ? 0 : jb2_int(dec, cx.IT);
+			var ti = stript + curt;
+			var id = jb2_iaid(dec, cx.ID, P.codelen);
+			var sym = syms[id];
+			if (!sym)
+				throw "JBIG2: bad symbol id";
+			if (P.refine && jb2_int(dec, cx.RI)) {
+				var rdw = jb2_int(dec, cx.RDW), rdh = jb2_int(dec, cx.RDH), rdx = jb2_int(dec, cx.RDX), rdy = jb2_int(dec, cx.RDY);
+				var nw = sym.w + rdw, nh = sym.h + rdh;
+				if (nw < 0 || nh < 0 || nw * nh > 16 * 1048576)
+					throw "JBIG2: bad refinement size";
+				sym = { w: nw, h: nh, d: nw && nh ? jb2_refine(dec, cx.GR, nw, nh, P.rtmpl, sym, (rdw >> 1) + rdx, (rdh >> 1) + rdy, P.rat) : new Uint8Array(0) };
+			}
+			var wi = sym.w, hi = sym.h;
+			if (!transposed && (corner & 2))
+				curs += wi - 1;
+			else if (transposed && !(corner & 1))
+				curs += hi - 1;
+			var x, y;
+			if (!transposed) {
+				x = curs - ((corner & 2) ? wi - 1 : 0);
+				y = ti - ((corner & 1) ? 0 : hi - 1);
+			}
+			else {
+				x = ti - ((corner & 2) ? wi - 1 : 0);
+				y = curs - ((corner & 1) ? 0 : hi - 1);
+			}
+			for (var yy = 0; yy < hi; yy++) {
+				var py = y + yy;
+				if (py < 0 || py >= rh)
+					continue;
+				for (var xx = 0; xx < wi; xx++) {
+					var px = x + xx;
+					if (px < 0 || px >= rw)
+						continue;
+					var sv = sym.d[yy * wi + xx];
+					if (packed) {
+						if (sv)
+							page[py * rrow + (px >> 3)] |= 0x80 >> (px & 7);
+					}
+					else {
+						var k = py * rw + px, pv = page[k];
+						page[k] = combop == 0 ? pv | sv : combop == 1 ? pv & sv : combop == 2 ? pv ^ sv : 1 - (pv ^ sv);
+					}
+				}
+			}
+			if (!transposed && !(corner & 2))
+				curs += wi - 1;
+			else if (transposed && (corner & 1))
+				curs += hi - 1;
+			n++;
+			var ids = jb2_int(dec, cx.DS);
+			if (ids === null)
+				break;
+			curs += ids + P.dsoff;
+		}
+	}
+	return page;
+}
+
+function jb2_codelen(n)
+{
+	var c = 0;
+	while ((1 << c) < n)
+		c++;
+	return c;
+}
+
+/* 7.4.2 / 6.5: a symbol dictionary segment (arithmetic coded; refinement/aggregation is supported, Huffman
+ * isn't).  Returns the exported symbols as { w, h, d } bitmaps.  insyms are the symbols imported from the
+ * dictionaries it refers to. */
+function jb2_symbol_dict(b, s, insyms)
+{
+	var p = s.start;
+	var flags = (b[p] << 8) | b[p + 1];
+	p += 2;
+	var huff = flags & 1, refagg = (flags >> 1) & 1, tmpl = (flags >> 10) & 3, rtmpl = (flags >> 12) & 1;
+	if (huff)
+		throw "JBIG2: Huffman symbol dictionary";
+	if (flags & 0x100)
+		throw "JBIG2: symbol dictionary context reuse";
+	var at = [], rat = [], nat = tmpl == 0 ? 4 : 1, i, v;
+	for (i = 0; i < nat * 2; i++) {
+		v = b[p++];
+		at.push(v > 127 ? v - 256 : v);
+	}
+	if (refagg && !rtmpl)
+		for (i = 0; i < 4; i++) {
+			v = b[p++];
+			rat.push(v > 127 ? v - 256 : v);
+		}
+	var nex = jb2_u32(b, p), nnew = jb2_u32(b, p + 4);
+	p += 8;
+	if (nnew > 100000)
+		throw "JBIG2: too many symbols";
+	var dec = new Jb2Arith(b, p, s.end);
+	var cxDH = new Uint8Array(512), cxDW = new Uint8Array(512), cxEX = new Uint8Array(512), cxAI = new Uint8Array(512);
+	var gb = new Uint8Array(1 << 16);
+	var codelen = jb2_codelen(insyms.length + nnew);
+	var tcx = refagg ? jb2_text_ctx(codelen) : null;
+	var news = [], hc = 0;
+	while (news.length < nnew) {
+		var dh = jb2_int(dec, cxDH);
+		if (dh === null)
+			throw "JBIG2: bad symbol dictionary";
+		hc += dh;
+		var sw = 0;
+		for (;;) {
+			var dw = jb2_int(dec, cxDW);
+			if (dw === null)
+				break;
+			if (news.length >= nnew)
+				break;
+			sw += dw;
+			if (sw < 0 || hc < 0 || sw * hc > 16 * 1048576)
+				throw "JBIG2: bad symbol size";
+			var d;
+			if (!refagg)
+				d = sw && hc ? jb2_generic_dec(dec, gb, sw, hc, tmpl, false, at) : new Uint8Array(0);
+			else {
+				var ninstr = jb2_int(dec, cxAI);
+				var known = insyms.concat(news);
+				if (ninstr === null || ninstr < 1)
+					throw "JBIG2: bad aggregate symbol";
+				if (ninstr > 1) {
+					d = jb2_text_core(dec, tcx, { rw: sw, rh: hc, ninst: ninstr, logstrips: 0, corner: 1, transposed: 0, combop: 0,
+						defpix: 0, dsoff: 0, refine: 1, rtmpl: rtmpl, rat: rat, syms: known, codelen: codelen, packed: false });
+				}
+				else {
+					var id = jb2_iaid(dec, tcx.ID, codelen);
+					var rdx = jb2_int(dec, tcx.RDX), rdy = jb2_int(dec, tcx.RDY);
+					if (!known[id])
+						throw "JBIG2: bad symbol id";
+					d = sw && hc ? jb2_refine(dec, tcx.GR, sw, hc, rtmpl, known[id], rdx, rdy, rat) : new Uint8Array(0);
+				}
+			}
+			news.push({ w: sw, h: hc, d: d });
+		}
+	}
+	/* export flags */
+	var all = insyms.concat(news), out = [], ix = 0, cur = 0;
+	while (ix < all.length) {
+		var run = jb2_int(dec, cxEX);
+		if (run === null || run < 0 || ix + run > all.length)
+			throw "JBIG2: bad symbol export";
+		if (cur)
+			for (i = 0; i < run; i++)
+				out.push(all[ix + i]);
+		ix += run;
+		cur ^= 1;
+	}
+	return out;
+}
+
+/* 7.4.3: a text region segment (arithmetic coded).  Returns a packed region { w, h, d, rowb, x, y, op }. */
+function jb2_text_region(b, s, syms)
+{
+	var p = s.start;
+	var rw = jb2_u32(b, p), rh = jb2_u32(b, p + 4), rx = jb2_u32(b, p + 8), ry = jb2_u32(b, p + 12);
+	var op = b[p + 16] & 7;
+	p += 17;
+	var flags = (b[p] << 8) | b[p + 1];
+	p += 2;
+	var huff = flags & 1, refine = (flags >> 1) & 1;
+	var dsoff = (flags >> 10) & 31;
+	if (dsoff > 15)
+		dsoff -= 32;
+	var rtmpl = (flags >> 15) & 1;
+	if (huff)
+		throw "JBIG2: Huffman text region";
+	var rat = [];
+	if (refine && !rtmpl)
+		for (var i = 0; i < 4; i++) {
+			var v = b[p++];
+			rat.push(v > 127 ? v - 256 : v);
+		}
+	var ninst = jb2_u32(b, p);
+	p += 4;
+	if (rw * rh > 256 * 1048576)
+		throw "JBIG2: text region too large";
+	var codelen = jb2_codelen(syms.length);
+	var P = { rw: rw, rh: rh, ninst: ninst, logstrips: (flags >> 2) & 3, corner: (flags >> 4) & 3, transposed: (flags >> 6) & 1,
+		combop: (flags >> 7) & 3, defpix: (flags >> 9) & 1, dsoff: dsoff, refine: refine, rtmpl: rtmpl, rat: rat,
+		syms: syms, codelen: codelen, packed: true };
+	var d = jb2_text_core(new Jb2Arith(b, p, s.end), jb2_text_ctx(codelen), P);
+	var rrow = (rw + 7) >> 3;
+	if (P.defpix || P.combop != 0)
+		d = jb2_pack(d, rw, rh).d;
+	return { w: rw, h: rh, d: d, rowb: rrow, x: rx, y: ry, op: op };
+}
+
+/* 7.4.4: a pattern dictionary (arithmetic coded): returns the patterns as { w, h, d } bitmaps */
+function jb2_pattern_dict(b, s)
+{
+	var p = s.start;
+	var flags = b[p], pw = b[p + 1], ph = b[p + 2], graymax = jb2_u32(b, p + 3);
+	if (flags & 1)
+		throw "JBIG2: MMR pattern dictionary";
+	if (!pw || !ph || (graymax + 1) * pw * ph > 16 * 1048576)
+		throw "JBIG2: bad pattern dictionary";
+	var tmpl = (flags >> 1) & 3;
+	var at = tmpl == 0 ? [-pw, 0, -3, -1, 2, -2, -2, -2] : [-pw, 0];
+	var cw = (graymax + 1) * pw;
+	var bm = jb2_generic(b, p + 7, s.end, cw, ph, tmpl, false, at);
+	var pats = [];
+	for (var i = 0; i <= graymax; i++) {
+		var d = new Uint8Array(pw * ph);
+		for (var y = 0; y < ph; y++)
+			for (var x = 0; x < pw; x++)
+				d[y * pw + x] = bm[y * cw + i * pw + x];
+		pats.push({ w: pw, h: ph, d: d });
+	}
+	return pats;
+}
+
+/* 7.4.5 / 6.6: a halftone region (arithmetic coded): returns a packed region { w, h, d, rowb, x, y, op } */
+function jb2_halftone_region(b, s, pats)
+{
+	var p = s.start;
+	var rw = jb2_u32(b, p), rh = jb2_u32(b, p + 4), rx = jb2_u32(b, p + 8), ry = jb2_u32(b, p + 12);
+	var op = b[p + 16] & 7;
+	var hf = b[p + 17];
+	p += 18;
+	if (hf & 1)
+		throw "JBIG2: MMR halftone region";
+	var tmpl = (hf >> 1) & 3, enableskip = (hf >> 3) & 1, combop = (hf >> 4) & 7, defpix = (hf >> 7) & 1;
+	var gw = jb2_u32(b, p), gh = jb2_u32(b, p + 4), gx = jb2_u32(b, p + 8) | 0, gy = jb2_u32(b, p + 12) | 0;
+	var rxs = j2k_u16(b, p + 16), rys = j2k_u16(b, p + 18);
+	p += 20;
+	if (!pats || !pats.length || gw * gh > 64 * 1048576 || rw * rh > 256 * 1048576)
+		throw "JBIG2: bad halftone region";
+	var pw = pats[0].w, ph = pats[0].h;
+	var bpp = jb2_codelen(pats.length);
+	var skip = null, m, n;
+	if (enableskip) {
+		skip = new Uint8Array(gw * gh);
+		for (m = 0; m < gh; m++)
+			for (n = 0; n < gw; n++) {
+				var sx = (gx + m * rys + n * rxs) >> 8, sy = (gy + m * rxs - n * rys) >> 8;
+				if (sx + pw <= 0 || sx >= rw || sy + ph <= 0 || sy >= rh)
+					skip[m * gw + n] = 1;
+			}
+	}
+	var dec = new Jb2Arith(b, p, s.end), cxs = new Uint8Array(1 << 16);
+	var at = tmpl <= 1 ? [3, -1, -3, -1, 2, -2, -2, -2] : [2, -1];
+	if (tmpl == 0)
+		at = [3, -1, -3, -1, 2, -2, -2, -2];
+	var gray = new Int32Array(gw * gh), prev = null, j, i;
+	/* the bit-planes, most significant first, Gray coded */
+	for (j = bpp - 1; j >= 0; j--) {
+		var plane = jb2_generic_dec(dec, cxs, gw, gh, tmpl, false, at, skip);
+		if (prev)
+			for (i = 0; i < plane.length; i++)
+				plane[i] ^= prev[i];
+		for (i = 0; i < plane.length; i++)
+			gray[i] |= plane[i] << j;
+		prev = plane;
+	}
+	/* draw the patterns into a packed bitmap */
+	var rrow = (rw + 7) >> 3, reg = new Uint8Array(rrow * rh);
+	if (defpix)
+		for (i = 0; i < reg.length; i++)
+			reg[i] = 0xff;
+	for (m = 0; m < gh; m++) {
+		for (n = 0; n < gw; n++) {
+			var x0 = (gx + m * rys + n * rxs) >> 8, y0 = (gy + m * rxs - n * rys) >> 8;
+			var gi = gray[m * gw + n];
+			var pat = pats[gi < pats.length ? gi : pats.length - 1];
+			for (var yy = 0; yy < ph; yy++) {
+				var py = y0 + yy;
+				if (py < 0 || py >= rh)
+					continue;
+				for (var xx = 0; xx < pw; xx++) {
+					var px = x0 + xx;
+					if (px < 0 || px >= rw)
+						continue;
+					var pv = pat.d[yy * pw + xx], bi = py * rrow + (px >> 3), mk = 0x80 >> (px & 7);
+					var cur = (reg[bi] & mk) ? 1 : 0, res;
+					res = combop == 0 ? cur | pv : combop == 1 ? cur & pv : combop == 2 ? cur ^ pv : combop == 3 ? 1 - (cur ^ pv) : pv;
+					if (res)
+						reg[bi] |= mk;
+					else
+						reg[bi] &= ~mk;
+				}
+			}
+		}
+	}
+	return { w: rw, h: rh, d: reg, rowb: rrow, x: rx, y: ry, op: op };
+}
+
+/* Generic region with its own decoder, from the start of an arithmetic-coded data area */
+function jb2_generic(data, start, end, w, h, tmpl, tpgd, at)
+{
+	return jb2_generic_dec(new Jb2Arith(data, start, end), new Uint8Array(1 << 16), w, h, tmpl, tpgd, at);
+}
+
+function jb2_u32(b, p)
+{
+	return ((b[p] << 24) | (b[p + 1] << 16) | (b[p + 2] << 8) | b[p + 3]) >>> 0;
+}
+
+/* Read the segments of one JBIG2 data stream (embedded organisation: headers and data interleaved) */
+function jb2_segments(b, list)
+{
+	var p = 0;
+	while (p + 11 <= b.length) {
+		var s = { num: jb2_u32(b, p), flags: b[p + 4] };
+		s.type = s.flags & 63;
+		p += 5;
+		var cnt = b[p] >> 5;
+		if (cnt == 7) {
+			cnt = jb2_u32(b, p) & 0x1fffffff;
+			p += 4 + ((cnt + 8) >> 3);
+		}
+		else
+			p++;
+		var rs = s.num <= 256 ? 1 : s.num <= 65536 ? 2 : 4;
+		s.refs = [];
+		for (var ri = 0; ri < cnt && p + (ri + 1) * rs <= b.length; ri++) {
+			var rn = 0;
+			for (var rb = 0; rb < rs; rb++)
+				rn = rn * 256 + b[p + ri * rs + rb];
+			s.refs.push(rn);
+		}
+		p += cnt * rs;
+		p += (s.flags & 0x40) ? 4 : 1;
+		var len = jb2_u32(b, p);
+		p += 4;
+		if (len == 0xffffffff) {
+			/* unknown length (immediate generic region): ends with 0xFF 0xAC (arithmetic) or 0x00 0x00 (MMR), then a row count */
+			var mmr = (b[p + 17] & 1) != 0, q = p + 18;
+			while (q + 1 < b.length && !(mmr ? (b[q] == 0 && b[q + 1] == 0) : (b[q] == 0xff && b[q + 1] == 0xac)))
+				q++;
+			len = Math.min(q + 2 + 4, b.length) - p;
+		}
+		s.start = p;
+		s.end = Math.min(p + len, b.length);
+		list.push(s);
+		p += len;
+	}
+}
+
+/* Pack a bitmap of one byte per pixel into 8 pixels to a byte (using the lists of black pixels, if given) */
+function jb2_pack(bm, w, h, rows)
+{
+	var rowb = (w + 7) >> 3, d = new Uint8Array(rowb * h), x, y;
+	if (rows) {
+		for (y = 0; y < h; y++) {
+			var list = rows[y], base = y * rowb;
+			for (var li = 0; li < list.length; li++) {
+				x = list[li];
+				d[base + (x >> 3)] |= 0x80 >> (x & 7);
+			}
+		}
+	}
+	else {
+		for (y = 0; y < h; y++)
+			for (x = 0; x < w; x++)
+				if (bm[y * w + x])
+					d[y * rowb + (x >> 3)] |= 0x80 >> (x & 7);
+	}
+	return { d: d, rowb: rowb, w: w, h: h };
+}
+
+/* Combine a packed region bitmap (reg: d, rowb, w, h) into the page, which is packed the same way, 1 = black
+ * (op: 0 OR, 1 AND, 2 XOR, 3 XNOR, 4 replace) */
+function jb2_compose(pg, reg, rx, ry, op)
+{
+	var page = pg.page, prow = pg.rowb, pw = pg.pw, ph = pg.ph, d = reg.d, rrow = reg.rowb, rh = reg.h, rw = reg.w;
+	var yy, xx, i;
+	if (op > 2 || op == 1) {
+		/* the rare ones: pixel by pixel */
+		for (yy = 0; yy < rh; yy++) {
+			var py = ry + yy;
+			if (py >= ph)
+				break;
+			for (xx = 0; xx < rw; xx++) {
+				var q = rx + xx;
+				if (q >= pw)
+					break;
+				var nv = (d[yy * rrow + (xx >> 3)] >> (7 - (xx & 7))) & 1, bi = py * prow + (q >> 3), m = 0x80 >> (q & 7);
+				var pv = (page[bi] & m) ? 1 : 0;
+				var res = op == 1 ? pv & nv : op == 3 ? 1 - (pv ^ nv) : nv;
+				if (res)
+					page[bi] |= m;
+				else
+					page[bi] &= ~m;
+			}
+		}
+		return;
+	}
+	if (rx == 0 && rrow == prow && ry == 0 && rh <= ph && (page.byteLength & 3) == 0 && d.byteLength == page.byteLength - (ph - rh) * prow) {
+		/* the region has the page's own layout: combine four bytes at a time */
+		var pw32 = new Uint32Array(page.buffer, page.byteOffset, page.byteLength >> 2), nw = (rrow * rh) >> 2, d32 = null;
+		if (((d.byteOffset & 3) == 0) && (rrow * rh & 3) == 0) {
+			d32 = new Uint32Array(d.buffer, d.byteOffset, nw);
+			var wi;
+			if (op == 0) {
+				for (wi = 0; wi < nw; wi++)
+					if (d32[wi] !== 0)
+						pw32[wi] |= d32[wi];
+			}
+			else {
+				for (wi = 0; wi < nw; wi++)
+					if (d32[wi] !== 0)
+						pw32[wi] ^= d32[wi];
+			}
+			return;
+		}
+	}
+	var sh = rx & 7, bx = rx >> 3, maxb = prow - bx;
+	for (yy = 0; yy < rh; yy++) {
+		if (ry + yy >= ph)
+			break;
+		var base = (ry + yy) * prow + bx, r = yy * rrow;
+		for (i = 0; i < rrow; i++) {
+			var v = d[r + i];
+			if (v === 0)
+				continue;
+			var hi = v >> sh, lo = sh ? (v << (8 - sh)) & 0xff : 0;
+			if (i < maxb)
+				page[base + i] = op == 0 ? page[base + i] | hi : page[base + i] ^ hi;
+			if (lo && i + 1 < maxb)
+				page[base + i + 1] = op == 0 ? page[base + i + 1] | lo : page[base + i + 1] ^ lo;
+		}
+	}
+}
+
+/* Decode an embedded JBIG2 stream to PDF image data (1 bit per pixel, 0 = black). */
+function jb2_decode(data, globals, doc, w, h)
+{
+	var segs = [], gl = null, j;
+	if (globals)
+		jb2_segments(globals, segs);
+	var ng = segs.length;
+	jb2_segments(data, segs);
+	var pw = w, ph = h, pg = null, drew = false, unsupported = null, dicts = {}, pats = {};
+	function new_page(fill)
+	{
+		var rb = (pw + 7) >> 3, pgd = new Uint8Array(rb * ph);
+		if (fill)
+			for (var q = 0; q < pgd.length; q++)
+				pgd[q] = 0xff;
+		return { page: pgd, rowb: rb, pw: pw, ph: ph };
+	}
+	for (var i = 0; i < segs.length; i++) {
+		var s = segs[i], b = i < ng ? globals : data;
+		var t = s.type, p = s.start;
+		if (t == 48) {
+			var iw = jb2_u32(b, p), ih = jb2_u32(b, p + 4);
+			if (iw > 0 && iw < 0x7fffffff)
+				pw = iw;
+			if (ih > 0 && ih < 0x7fffffff)
+				ph = ih;
+			pg = new_page(b[p + 16] & 4);
+		}
+		else if (t == 36 || t == 38 || t == 39) {
+			if (!pg)
+				pg = new_page(0);
+			var rw = jb2_u32(b, p), rh = jb2_u32(b, p + 4), rx = jb2_u32(b, p + 8), ry = jb2_u32(b, p + 12);
+			var op = b[p + 16] & 7;
+			var gf = b[p + 17];
+			var mmr = (gf & 1) != 0, tmpl = (gf >> 1) & 3, tpgd = (gf & 8) != 0;
+			var q = p + 18, at = [];
+			if (!mmr) {
+				var nat = tmpl == 0 ? 4 : 1;
+				for (j = 0; j < nat * 2; j++) {
+					var v = b[q++];
+					at.push(v > 127 ? v - 256 : v);
+				}
+			}
+			if (rw < 1 || rh < 1 || rw * rh > 128 * 1048576)
+				continue;
+			var bm;
+			if (mmr) {
+				var g = ccitt_decode(bytes_sub(b, q, s.end), { K: -1, Columns: rw, BlackIs1: true }, doc, rh);
+				bm = new Uint8Array(rw * rh);
+				var rb = (rw + 7) >> 3;
+				for (var yy = 0; yy < rh; yy++)
+					for (var xx = 0; xx < rw; xx++)
+						bm[yy * rw + xx] = (g[yy * rb + (xx >> 3)] >> (7 - (xx & 7))) & 1;
+			}
+			else
+				bm = jb2_generic(b, q, s.end, rw, rh, tmpl, tpgd, at);
+			if (t == 36)
+				continue;	/* intermediate region: only used by refinement, which isn't supported */
+			jb2_compose(pg, jb2_pack(bm, rw, rh, mmr ? null : JB2_ROWS), rx, ry, op);
+			drew = true;
+		}
+		else if (t == 0) {
+			try {
+				var insyms = [];
+				for (j = 0; j < s.refs.length; j++)
+					if (dicts[s.refs[j]])
+						insyms = insyms.concat(dicts[s.refs[j]]);
+				dicts[s.num] = jb2_symbol_dict(b, s, insyms);
+			}
+			catch (e) {
+				unsupported = unsupported || String(e);
+			}
+		}
+		else if (t == 16) {
+			try {
+				pats[s.num] = jb2_pattern_dict(b, s);
+			}
+			catch (e) {
+				unsupported = unsupported || String(e);
+			}
+		}
+		else if (t == 20 || t == 22 || t == 23) {
+			try {
+				if (!pg)
+					pg = new_page(0);
+				var hpats = null;
+				for (j = 0; j < s.refs.length; j++)
+					if (pats[s.refs[j]])
+						hpats = pats[s.refs[j]];
+				var hr = jb2_halftone_region(b, s, hpats);
+				if (t != 20) {
+					jb2_compose(pg, hr, hr.x, hr.y, hr.op);
+					drew = true;
+				}
+			}
+			catch (e) {
+				unsupported = unsupported || String(e);
+			}
+		}
+		else if (t == 6 || t == 7) {
+			try {
+				var tsyms = [];
+				for (j = 0; j < s.refs.length; j++)
+					if (dicts[s.refs[j]])
+						tsyms = tsyms.concat(dicts[s.refs[j]]);
+				if (!pg)
+					pg = new_page(0);
+				var tr = jb2_text_region(b, s, tsyms);
+				jb2_compose(pg, tr, tr.x, tr.y, tr.op);
+				drew = true;
+			}
+			catch (e) {
+				unsupported = unsupported || String(e);
+			}
+		}
+		else if (t != 49 && t != 50 && t != 51 && t != 52 && t != 53 && t != 62)
+			unsupported = unsupported || ("segment type " + t);
+	}
+	if (!pg || !drew && unsupported)
+		throw "JBIG2: " + (unsupported || "no image");
+	/* PDF image data has 0 = black: invert, and crop or pad to the size the PDF says */
+	var rowb = (w + 7) >> 3, out = new Uint8Array(rowb * h), src = pg.page;
+	if (pg.rowb == rowb && pg.ph == h) {
+		var nwords = out.length >> 2, o32 = new Uint32Array(out.buffer, out.byteOffset, nwords), s32 = new Uint32Array(src.buffer, src.byteOffset, nwords);
+		for (var q = 0; q < nwords; q++)
+			o32[q] = ~s32[q];
+		for (q = nwords << 2; q < out.length; q++)
+			out[q] = ~src[q];
+	}
+	else {
+		for (var y2 = 0; y2 < h; y2++)
+			for (var x2 = 0; x2 < rowb; x2++)
+				out[y2 * rowb + x2] = (y2 < pg.ph && x2 < pg.rowb) ? ~src[y2 * pg.rowb + x2] : 0xff;
+	}
+	return out;
+}
+
+/* ----- JPEG 2000 (JP2 files and raw codestreams, baseline features, optional reduced resolution) ----- */
+
+/* Table of zero coding contexts (T.800 table D.1): index orient * 256 + neighbour bits, where the neighbour bits are
+ * 1 W, 2 E, 4 N, 8 S, 16 NW, 32 NE, 64 SW, 128 SE.  orient: 0 LL and LH, 1 HL, 2 HH (the band type numbers used
+ * below are 0 LL, 1 HL, 2 LH, 3 HH). */
+var J2K_ZC = null, J2K_SC = null;
+
+function j2k_contrib(sig, neg, bit)
+{
+	return (sig & bit) ? ((neg & bit) ? -1 : 1) : 0;
+}
+
+function j2k_tables()
+{
+	if (J2K_ZC)
+		return;
+	J2K_ZC = new Uint8Array(3 * 256);
+	J2K_SC = new Uint8Array(256);
+	var n, o, h, v, d, c, hv;
+	for (n = 0; n < 256; n++) {
+		h = (n & 1) + ((n >> 1) & 1);
+		v = ((n >> 2) & 1) + ((n >> 3) & 1);
+		d = ((n >> 4) & 1) + ((n >> 5) & 1) + ((n >> 6) & 1) + ((n >> 7) & 1);
+		for (o = 0; o < 3; o++) {
+			var hh = h, vv = v;
+			if (o == 1) {
+				hh = v;
+				vv = h;
+			}
+			if (o < 2) {
+				if (hh == 2)
+					c = 8;
+				else if (hh == 1)
+					c = vv >= 1 ? 7 : (d >= 1 ? 6 : 5);
+				else if (vv == 2)
+					c = 4;
+				else if (vv == 1)
+					c = 3;
+				else
+					c = d >= 2 ? 2 : d;
+			}
+			else {
+				hv = h + v;
+				if (d >= 3)
+					c = 8;
+				else if (d == 2)
+					c = hv >= 1 ? 7 : 6;
+				else if (d == 1)
+					c = hv >= 2 ? 5 : (hv == 1 ? 4 : 3);
+				else
+					c = hv >= 2 ? 2 : hv;
+			}
+			J2K_ZC[o * 256 + n] = c;
+		}
+	}
+	/* sign coding contexts: index = significance bits W E N S (low nibble) + their sign bits (high nibble) */
+	for (n = 0; n < 256; n++) {
+		var sig = n & 15, neg = n >> 4;
+		var hc = Math.max(-1, Math.min(1, j2k_contrib(sig, neg, 1) + j2k_contrib(sig, neg, 2)));
+		var vc = Math.max(-1, Math.min(1, j2k_contrib(sig, neg, 4) + j2k_contrib(sig, neg, 8)));
+		var ctx, xr = 0;
+		if (hc == 1)
+			ctx = vc == 1 ? 13 : (vc == 0 ? 12 : 11);
+		else if (hc == 0) {
+			ctx = vc == 0 ? 9 : 10;
+			xr = vc == -1 ? 1 : 0;
+		}
+		else {
+			ctx = vc == 1 ? 11 : (vc == 0 ? 12 : 13);
+			xr = 1;
+		}
+		J2K_SC[n] = ctx | (xr << 4);
+	}
+}
+
+function j2k_u16(b, p)
+{
+	return (b[p] << 8) | b[p + 1];
+}
+
+/* ---- codestream parsing ---- */
+
+function j2k_find_codestream(b)
+{
+	if (b[0] == 0xff && b[1] == 0x4f)
+		return { start: 0, enumcs: 0, palette: false };
+	var p = 0, r = { start: -1, enumcs: 0, palette: false };
+	while (p + 8 <= b.length) {
+		var len = jb2_u32(b, p);
+		var type = String.fromCharCode(b[p + 4], b[p + 5], b[p + 6], b[p + 7]);
+		var hdr = 8;
+		if (len == 1) {
+			len = jb2_u32(b, p + 12);
+			hdr = 16;
+		}
+		else if (len == 0)
+			len = b.length - p;
+		if (type == "jp2c") {
+			r.start = p + hdr;
+			return r;
+		}
+		if (type == "jp2h") {
+			var q = p + hdr, e = Math.min(b.length, p + len);
+			while (q + 8 <= e) {
+				var l2 = jb2_u32(b, q);
+				var t2 = String.fromCharCode(b[q + 4], b[q + 5], b[q + 6], b[q + 7]);
+				if (t2 == "colr" && b[q + 8] == 1 && !r.enumcs)
+					r.enumcs = jb2_u32(b, q + 11);
+				else if (t2 == "pclr") {
+					var ne = j2k_u16(b, q + 8), npc = b[q + 10], pb = [], pq = q + 11, e2;
+					for (e2 = 0; e2 < npc; e2++)
+						pb.push((b[pq++] & 127) + 1);
+					var tab = [];
+					for (var en = 0; en < ne; en++)
+						for (e2 = 0; e2 < npc; e2++) {
+							var nbytes = (pb[e2] + 7) >> 3, val = 0;
+							for (var by = 0; by < nbytes; by++)
+								val = val * 256 + b[pq++];
+							tab.push(val);
+						}
+					r.palette = { ne: ne, npc: npc, bits: pb, table: tab, cmap: null };
+				}
+				else if (t2 == "cmap") {
+					r.cmap = [];
+					for (var cp = q + 8; cp + 4 <= q + l2; cp += 4)
+						r.cmap.push({ comp: j2k_u16(b, cp), mtyp: b[cp + 2], pcol: b[cp + 3] });
+				}
+				if (l2 < 8)
+					break;
+				q += l2;
+			}
+		}
+		if (len < 8)
+			break;
+		p += len;
+	}
+	return r;
+}
+
+/* Parse the coding style / quantization segments (COD, COC, QCD, QCC) into the parameter objects */
+function j2k_read_cod(b, p, end, isCoc, comp)
+{
+	var o = {};
+	var scod = b[p++];
+	o.precincts = !!(scod & 1);
+	if (!isCoc) {
+		o.sop = !!(scod & 2);
+		o.eph = !!(scod & 4);
+		o.prog = b[p];
+		o.layers = j2k_u16(b, p + 1);
+		o.mct = b[p + 3];
+		p += 4;
+	}
+	o.levels = b[p];
+	o.xcb = (b[p + 1] & 15) + 2;
+	o.ycb = (b[p + 2] & 15) + 2;
+	o.style = b[p + 3];
+	o.rev = b[p + 4] == 1;
+	p += 5;
+	o.pp = [];
+	for (var r = 0; r <= o.levels; r++) {
+		if (o.precincts && p < end) {
+			o.pp.push({ x: b[p] & 15, y: b[p] >> 4 });
+			p++;
+		}
+		else
+			o.pp.push({ x: 15, y: 15 });
+	}
+	return o;
+}
+
+function j2k_read_qcd(b, p, end)
+{
+	var q = {};
+	var s = b[p++];
+	q.style = s & 31;
+	q.guard = s >> 5;
+	q.eps = [];
+	q.mu = [];
+	if (q.style == 0) {
+		while (p < end)
+			q.eps.push(b[p++] >> 3), q.mu.push(0);
+	}
+	else {
+		while (p + 1 < end) {
+			var v = j2k_u16(b, p);
+			p += 2;
+			q.eps.push(v >> 11);
+			q.mu.push(v & 0x7ff);
+		}
+	}
+	return q;
+}
+
+function j2k_parse(b)
+{
+	var loc = j2k_find_codestream(b);
+	if (loc.start < 0)
+		throw "JPX: no codestream";
+	var p = loc.start;
+	if (b[p] != 0xff || b[p + 1] != 0x4f)
+		throw "JPX: bad codestream";
+	p += 2;
+	var cs = { enumcs: loc.enumcs, palette: loc.palette ? loc.palette : null, cmap: loc.cmap || null, cod: null, coc: {}, qcd: null, qcc: {}, tiles: {} };
+	var cur = null;		/* the tile being read */
+	while (p + 2 <= b.length) {
+		var m = j2k_u16(b, p);
+		if (m == 0xffd9)
+			break;
+		if (m == 0xff93) {		/* SOD: packet data to the end of this tile-part */
+			p += 2;
+			var tend = cur.partEnd > 0 ? cur.partEnd : b.length;
+			if (tend > b.length)
+				tend = b.length;
+			cur.chunks.push(bytes_sub(b, p, tend));
+			p = tend;
+			continue;
+		}
+		var len = j2k_u16(b, p + 2), seg = p + 4, end = p + 2 + len;
+		var holder = cur ? cur : cs;
+		switch (m) {
+			case 0xff51:
+				cs.xsiz = jb2_u32(b, seg + 2);
+				cs.ysiz = jb2_u32(b, seg + 6);
+				cs.xo = jb2_u32(b, seg + 10);
+				cs.yo = jb2_u32(b, seg + 14);
+				cs.xt = jb2_u32(b, seg + 18);
+				cs.yt = jb2_u32(b, seg + 22);
+				cs.xto = jb2_u32(b, seg + 26);
+				cs.yto = jb2_u32(b, seg + 30);
+				cs.ncomp = j2k_u16(b, seg + 34);
+				cs.comps = [];
+				for (var c = 0; c < cs.ncomp; c++)
+					cs.comps.push({ prec: (b[seg + 36 + 3 * c] & 127) + 1, signed: !!(b[seg + 36 + 3 * c] & 128),
+						dx: b[seg + 37 + 3 * c], dy: b[seg + 38 + 3 * c] });
+				cs.ntx = Math.ceil((cs.xsiz - cs.xto) / cs.xt);
+				cs.nty = Math.ceil((cs.ysiz - cs.yto) / cs.yt);
+				break;
+			case 0xff52:
+				holder.cod = j2k_read_cod(b, seg, end, false, 0);
+				break;
+			case 0xff53: {
+				var ci, q;
+				if (cs.ncomp < 257) {
+					ci = b[seg];
+					q = seg + 1;
+				}
+				else {
+					ci = j2k_u16(b, seg);
+					q = seg + 2;
+				}
+				holder.coc[ci] = j2k_read_cod(b, q, end, true, ci);
+				break;
+			}
+			case 0xff5c:
+				holder.qcd = j2k_read_qcd(b, seg, end);
+				break;
+			case 0xff5d: {
+				var qi, q2;
+				if (cs.ncomp < 257) {
+					qi = b[seg];
+					q2 = seg + 1;
+				}
+				else {
+					qi = j2k_u16(b, seg);
+					q2 = seg + 2;
+				}
+				holder.qcc[qi] = j2k_read_qcd(b, q2, end);
+				break;
+			}
+			case 0xff90: {		/* SOT */
+				var ti = j2k_u16(b, seg), psot = jb2_u32(b, seg + 2);
+				cur = cs.tiles[ti];
+				if (!cur)
+					cur = cs.tiles[ti] = { index: ti, cod: null, coc: {}, qcd: null, qcc: {}, chunks: [] };
+				cur.partEnd = psot ? p + psot : 0;
+				break;
+			}
+			case 0xff60: case 0xff61:	/* PPM, PPT */
+				throw "JPX: packed packet headers aren't supported";
+			case 0xff5f:
+				throw "JPX: progression order changes aren't supported";
+		}
+		p = end;
+	}
+	if (!cs.comps || !cs.cod || !cs.qcd)
+		throw "JPX: missing main header";
+	return cs;
+}
+
+/* ---- tile structure ---- */
+
+function j2k_ceil(a, s)
+{
+	return Math.ceil(a / Math.pow(2, s));
+}
+
+function j2k_floor(a, s)
+{
+	return Math.floor(a / Math.pow(2, s));
+}
+
+/* A tag tree over w x h leaves */
+function J2kTagTree(w, h)
+{
+	this.levels = [];
+	var lw = w, lh = h;
+	for (;;) {
+		var lv = { w: lw, h: lh, value: new Int32Array(lw * lh), low: new Int32Array(lw * lh) };
+		this.levels.push(lv);
+		for (var i = 0; i < lv.value.length; i++)
+			lv.value[i] = 0x7fffffff;
+		if (lw <= 1 && lh <= 1)
+			break;
+		lw = (lw + 1) >> 1;
+		lh = (lh + 1) >> 1;
+	}
+}
+
+/* Decode as far as needed to know whether the leaf's value is below threshold */
+J2kTagTree.prototype.decode = function (bit, x, y, threshold)
+{
+	var low = 0, nl = this.levels.length;
+	for (var l = nl - 1; l >= 0; l--) {
+		var lv = this.levels[l], idx = (y >> l) * lv.w + (x >> l);
+		if (low > lv.low[idx])
+			lv.low[idx] = low;
+		else
+			low = lv.low[idx];
+		while (low < threshold && low < lv.value[idx]) {
+			if (bit())
+				lv.value[idx] = low;
+			else
+				low++;
+		}
+		lv.low[idx] = low;
+	}
+	return this.levels[0].value[y * this.levels[0].w + x] < threshold;
+};
+
+J2kTagTree.prototype.value = function (x, y)
+{
+	return this.levels[0].value[y * this.levels[0].w + x];
+};
+
+/* Build the resolution / band / precinct / code-block structure of one tile-component */
+function j2k_build_tc(cs, tx0, ty0, tx1, ty1, c, cod, qcd)
+{
+	var comp = cs.comps[c];
+	var tc = { x0: Math.ceil(tx0 / comp.dx), y0: Math.ceil(ty0 / comp.dy), x1: Math.ceil(tx1 / comp.dx), y1: Math.ceil(ty1 / comp.dy),
+		nl: cod.levels, rev: cod.rev, res: [], cod: cod, qcd: qcd, prec: comp.prec };
+	var NL = cod.levels;
+	for (var r = 0; r <= NL; r++) {
+		var sh = NL - r;
+		var rs = { x0: j2k_ceil(tc.x0, sh), y0: j2k_ceil(tc.y0, sh), x1: j2k_ceil(tc.x1, sh), y1: j2k_ceil(tc.y1, sh), bands: [] };
+		var ppx = cod.pp[r].x, ppy = cod.pp[r].y;
+		rs.npw = rs.x1 > rs.x0 ? j2k_ceil(rs.x1, ppx) - j2k_floor(rs.x0, ppx) : 0;
+		rs.nph = rs.y1 > rs.y0 ? j2k_ceil(rs.y1, ppy) - j2k_floor(rs.y0, ppy) : 0;
+		var types = r == 0 ? [0] : [1, 2, 3];
+		for (var bi = 0; bi < types.length; bi++) {
+			var t = types[bi];
+			var band = { type: t, precincts: [] };
+			if (r == 0) {
+				band.x0 = rs.x0;
+				band.y0 = rs.y0;
+				band.x1 = rs.x1;
+				band.y1 = rs.y1;
+			}
+			else {
+				var nb = NL - r + 1, xob = (t == 1 || t == 3) ? 1 : 0, yob = (t == 2 || t == 3) ? 1 : 0;
+				var half = Math.pow(2, nb - 1);
+				band.x0 = j2k_ceil(tc.x0 - half * xob, nb);
+				band.y0 = j2k_ceil(tc.y0 - half * yob, nb);
+				band.x1 = j2k_ceil(tc.x1 - half * xob, nb);
+				band.y1 = j2k_ceil(tc.y1 - half * yob, nb);
+			}
+			/* quantization parameters for this band */
+			var qi = r == 0 ? 0 : 3 * (r - 1) + t;
+			var eps, mu;
+			if (qcd.style == 1) {
+				var nbl = r == 0 ? NL : NL - r + 1;
+				eps = qcd.eps[0] - NL + nbl;
+				mu = qcd.mu[0];
+			}
+			else {
+				eps = qcd.eps[qi];
+				mu = qcd.mu[qi];
+			}
+			if (eps === undefined)
+				throw "JPX: missing quantization parameters";
+			band.mb = qcd.guard + eps - 1;
+			var gain = t == 0 ? 0 : (t == 3 ? 2 : 1);
+			band.delta = qcd.style == 0 ? 1 : Math.pow(2, comp.prec + gain - eps) * (1 + mu / 2048);
+			/* precincts and code blocks */
+			var pw = r == 0 ? ppx : ppx - 1, ph = r == 0 ? ppy : ppy - 1;
+			var xcb = Math.min(cod.xcb, pw), ycb = Math.min(cod.ycb, ph);
+			for (var pj = 0; pj < rs.nph; pj++) {
+				for (var pi = 0; pi < rs.npw; pi++) {
+					var px0 = (j2k_floor(rs.x0, ppx) + pi) * Math.pow(2, pw), py0 = (j2k_floor(rs.y0, ppy) + pj) * Math.pow(2, ph);
+					/* precinct bounds in band coordinates */
+					var bx0 = Math.max(band.x0, px0), by0 = Math.max(band.y0, py0);
+					var bx1 = Math.min(band.x1, px0 + Math.pow(2, pw)), by1 = Math.min(band.y1, py0 + Math.pow(2, ph));
+					var pc = { cbs: [], ncw: 0, nch: 0 };
+					if (bx1 > bx0 && by1 > by0) {
+						var cx0 = j2k_floor(bx0, xcb), cx1 = j2k_ceil(bx1, xcb), cy0 = j2k_floor(by0, ycb), cy1 = j2k_ceil(by1, ycb);
+						pc.ncw = cx1 - cx0;
+						pc.nch = cy1 - cy0;
+						for (var cy = cy0; cy < cy1; cy++)
+							for (var cx = cx0; cx < cx1; cx++)
+								pc.cbs.push({ x0: Math.max(bx0, cx * Math.pow(2, xcb)), y0: Math.max(by0, cy * Math.pow(2, ycb)),
+									x1: Math.min(bx1, (cx + 1) * Math.pow(2, xcb)), y1: Math.min(by1, (cy + 1) * Math.pow(2, ycb)),
+									incl: false, lblock: 3, zbp: 0, passes: 0, segs: [], len: 0 });
+						pc.incl = new J2kTagTree(pc.ncw, pc.nch);
+						pc.zbpt = new J2kTagTree(pc.ncw, pc.nch);
+					}
+					band.precincts.push(pc);
+				}
+			}
+			rs.bands.push(band);
+		}
+		tc.res.push(rs);
+	}
+	return tc;
+}
+
+/* ---- packet parsing (T.800 B.10) ---- */
+
+function j2k_read_packets(cs, tile, data)
+{
+	var pos = 0;
+	var cur = 0, last = 0, ct = 0;
+	function bit()
+	{
+		if (ct == 0) {
+			last = cur;
+			cur = pos < data.length ? data[pos++] : 0;
+			ct = last == 0xff ? 7 : 8;
+		}
+		ct--;
+		return (cur >> ct) & 1;
+	}
+	function bits(n)
+	{
+		var v = 0;
+		while (n-- > 0)
+			v = (v << 1) | bit();
+		return v;
+	}
+	function packet(layer, r, c, pidx)
+	{
+		var tc = tile.tcs[c];
+		if (r > tc.nl)
+			return;
+		var rs = tc.res[r];
+		if (pidx >= rs.npw * rs.nph)
+			return;
+		var cod = tile.cods[c];
+		if (cod.sop && data[pos] == 0xff && data[pos + 1] == 0x91)
+			pos += 6;
+		cur = 0;
+		last = 0;
+		ct = 0;
+		var included = [];
+		if (bit()) {
+			for (var bi = 0; bi < rs.bands.length; bi++) {
+				var pc = rs.bands[bi].precincts[pidx];
+				for (var k = 0; k < pc.cbs.length; k++) {
+					var cb = pc.cbs[k], cx = k % pc.ncw, cy = Math.floor(k / pc.ncw), inc;
+					if (!cb.incl)
+						inc = pc.incl.decode(bit, cx, cy, layer + 1);
+					else
+						inc = bit();
+					if (!inc)
+						continue;
+					if (!cb.incl) {
+						cb.incl = true;
+						var z = 1;
+						while (!pc.zbpt.decode(bit, cx, cy, z))
+							z++;
+						cb.zbp = z - 1;
+					}
+					var np;
+					if (!bit())
+						np = 1;
+					else if (!bit())
+						np = 2;
+					else {
+						var v = bits(2);
+						if (v < 3)
+							np = 3 + v;
+						else {
+							v = bits(5);
+							if (v < 31)
+								np = 6 + v;
+							else
+								np = 37 + bits(7);
+						}
+					}
+					while (bit())
+						cb.lblock++;
+					var nbits = cb.lblock + Math.floor(Math.log(np) / Math.LN2 + 1e-9);
+					var len = bits(nbits);
+					included.push({ cb: cb, len: len, np: np });
+				}
+			}
+		}
+		/* align to a byte; a byte that follows an 0xFF is a stuffing byte */
+		if (cur == 0xff)
+			pos++;
+		ct = 0;
+		cur = 0;
+		last = 0;
+		if (cod.eph && data[pos] == 0xff && data[pos + 1] == 0x92)
+			pos += 2;
+		for (var i = 0; i < included.length; i++) {
+			var it = included[i];
+			it.cb.segs.push(bytes_sub(data, pos, Math.min(data.length, pos + it.len)));
+			it.cb.len += it.len;
+			it.cb.passes += it.np;
+			pos += it.len;
+		}
+	}
+	var cod0 = tile.cods[0], maxnl = 0, c, r, l;
+	for (c = 0; c < cs.ncomp; c++)
+		maxnl = Math.max(maxnl, tile.tcs[c].nl);
+	var layers = cod0.layers;
+	var single = true;
+	for (c = 0; c < cs.ncomp; c++)
+		for (r = 0; r <= tile.tcs[c].nl; r++)
+			if (tile.tcs[c].res[r].npw * tile.tcs[c].res[r].nph > 1)
+				single = false;
+	var prog = cod0.prog;
+	if (prog > 1 && !single)
+		throw "JPX: this progression order with several precincts isn't supported";
+	function each_prec(rr, cc, fn)
+	{
+		var rs = tile.tcs[cc].res[rr];
+		for (var pi = 0; pi < rs.npw * rs.nph; pi++)
+			fn(pi);
+	}
+	if (prog == 0) {
+		for (l = 0; l < layers; l++)
+			for (r = 0; r <= maxnl; r++)
+				for (c = 0; c < cs.ncomp; c++)
+					if (r <= tile.tcs[c].nl)
+						each_prec(r, c, function (pi) { packet(l, r, c, pi); });
+	}
+	else if (prog == 1) {
+		for (r = 0; r <= maxnl; r++)
+			for (l = 0; l < layers; l++)
+				for (c = 0; c < cs.ncomp; c++)
+					if (r <= tile.tcs[c].nl)
+						each_prec(r, c, function (pi) { packet(l, r, c, pi); });
+	}
+	else if (prog == 2) {		/* RPCL with one precinct each: resolution, component, layer */
+		for (r = 0; r <= maxnl; r++)
+			for (c = 0; c < cs.ncomp; c++)
+				if (r <= tile.tcs[c].nl)
+					for (l = 0; l < layers; l++)
+						packet(l, r, c, 0);
+	}
+	else if (prog == 3) {		/* PCRL */
+		for (c = 0; c < cs.ncomp; c++)
+			for (r = 0; r <= tile.tcs[c].nl; r++)
+				for (l = 0; l < layers; l++)
+					packet(l, r, c, 0);
+	}
+	else {		/* CPRL */
+		for (c = 0; c < cs.ncomp; c++)
+			for (r = 0; r <= tile.tcs[c].nl; r++)
+				for (l = 0; l < layers; l++)
+					packet(l, r, c, 0);
+	}
+}
+
+/* ---- tier 1: the code block bit-plane decoder (T.800 annex D) ---- */
+
+/* Decode one code block.  Returns { mag, neg, lp } for w x h coefficients. */
+/* MQ coder state tables indexed by a context's byte (state << 1 | MPS): the Qe value, and the byte after an MPS / an LPS */
+var MQ_QE = null, MQ_NMPS = null, MQ_NLPS = null;
+
+function mq_tables()
+{
+	if (MQ_QE)
+		return;
+	MQ_QE = new Uint16Array(94);
+	MQ_NMPS = new Uint8Array(94);
+	MQ_NLPS = new Uint8Array(94);
+	for (var cx = 0; cx < 94; cx++) {
+		var idx = cx >> 1, mps = cx & 1;
+		MQ_QE[cx] = JB2_QE[idx];
+		MQ_NMPS[cx] = (JB2_NMPS[idx] << 1) | mps;
+		MQ_NLPS[cx] = (JB2_NLPS[idx] << 1) | (JB2_SW[idx] ? 1 - mps : mps);
+	}
+}
+
+/* Decode one code block.  Returns { mag, st, pw, lp } for w x h coefficients. */
+function j2k_decode_block(cb, w, h, orient, mb, style)
+{
+	j2k_tables();
+	mq_tables();
+	var data;
+	if (cb.segs.length == 1)
+		data = cb.segs[0];
+	else {
+		data = new Uint8Array(cb.len);
+		var o = 0;
+		for (var s = 0; s < cb.segs.length; s++) {
+			data.set(cb.segs[s], o);
+			o += cb.segs[s].length;
+		}
+	}
+	var cxs = new Uint8Array(19);
+	cxs[0] = 4 << 1;
+	cxs[17] = 3 << 1;
+	cxs[18] = 46 << 1;
+	var QE = MQ_QE, NMPS = MQ_NMPS, NLPS = MQ_NLPS;
+	/* the MQ decoder, with its state in local variables */
+	var bp = 0, end = data.length, chigh = data[0], clow = 0, ct = 0, a = 0;
+	function byte_in()
+	{
+		if (data[bp] === 0xff) {
+			if (data[bp + 1] > 0x8f) {
+				clow += 0xff00;
+				ct = 8;
+			}
+			else {
+				bp++;
+				clow += data[bp] << 9;
+				ct = 7;
+			}
+		}
+		else {
+			bp++;
+			clow += bp < end ? data[bp] << 8 : 0xff00;
+			ct = 8;
+		}
+		if (clow > 0xffff) {
+			chigh += clow >> 16;
+			clow &= 0xffff;
+		}
+	}
+	function bit(pos)
+	{
+		var cx = cxs[pos], qe = QE[cx], d;
+		var a2 = a - qe;
+		if (chigh < qe) {
+			if (a2 < qe) {
+				d = cx & 1;
+				cxs[pos] = NMPS[cx];
+			}
+			else {
+				d = (cx & 1) ^ 1;
+				cxs[pos] = NLPS[cx];
+			}
+			a2 = qe;
+		}
+		else {
+			chigh -= qe;
+			if (a2 & 0x8000) {
+				a = a2;
+				return cx & 1;
+			}
+			if (a2 < qe) {
+				d = (cx & 1) ^ 1;
+				cxs[pos] = NLPS[cx];
+			}
+			else {
+				d = cx & 1;
+				cxs[pos] = NMPS[cx];
+			}
+		}
+		do {
+			if (ct === 0)
+				byte_in();
+			a2 <<= 1;
+			chigh = ((chigh << 1) & 0xffff) | ((clow >> 15) & 1);
+			clow = (clow << 1) & 0xffff;
+			ct--;
+		} while ((a2 & 0x8000) === 0);
+		a = a2;
+		return d;
+	}
+	byte_in();
+	chigh = ((chigh << 7) & 0xffff) | ((clow >> 9) & 0x7f);
+	clow = (clow << 7) & 0xffff;
+	ct -= 7;
+	a = 0x8000;
+	/* per coefficient: fl bit 0 significant, 1 negative, 2 visited in this bit-plane, 3 refined before, 4 has a
+	 * significant neighbour; nb the neighbours' significance (1 W, 2 E, 4 N, 8 S, 16 NW, 32 NE, 64 SW, 128 SE), ng the
+	 * signs of the W E N S neighbours */
+	var pw = w + 2;
+	var fl = new Uint8Array(pw * (h + 2)), nb = new Uint8Array(pw * (h + 2)), ng = new Uint8Array(pw * (h + 2));
+	var mag = new Int32Array(w * h), lp = new Int8Array(w * h);
+	var ZC = J2K_ZC, zo = (orient == 1 ? 1 : (orient == 3 ? 2 : 0)) * 256, SC = J2K_SC;
+	var plane = mb - 1 - cb.zbp;
+	var x, y, i, y0, k, m, ye, i0, m0;
+
+	function make_sig(i, neg)
+	{
+		fl[i] |= neg ? 3 : 1;
+		nb[i - 1] |= 2;
+		nb[i + 1] |= 1;
+		nb[i - pw] |= 8;
+		nb[i + pw] |= 4;
+		nb[i - pw - 1] |= 128;
+		nb[i - pw + 1] |= 64;
+		nb[i + pw - 1] |= 32;
+		nb[i + pw + 1] |= 16;
+		fl[i - 1] |= 16;
+		fl[i + 1] |= 16;
+		fl[i - pw] |= 16;
+		fl[i + pw] |= 16;
+		fl[i - pw - 1] |= 16;
+		fl[i - pw + 1] |= 16;
+		fl[i + pw - 1] |= 16;
+		fl[i + pw + 1] |= 16;
+		if (neg) {
+			ng[i - 1] |= 2;
+			ng[i + 1] |= 1;
+			ng[i - pw] |= 8;
+			ng[i + pw] |= 4;
+		}
+	}
+	function decode_sign(i)
+	{
+		var info = SC[(nb[i] & 15) | ((ng[i] & 15) << 4)];
+		return bit(info & 15) ^ (info >> 4);
+	}
+	for (var pass = 0; pass < cb.passes; pass++) {
+		var type = pass == 0 ? 2 : (pass - 1) % 3;
+		if (pass > 0 && type == 0)
+			plane--;
+		if (plane < 0)
+			break;
+		var bitval = 1 << plane;
+		if (type == 0) {
+			/* significance propagation */
+			for (y0 = 0; y0 < h; y0 += 4) {
+				ye = y0 + 4 < h ? y0 + 4 : h;
+				for (x = 0; x < w; x++) {
+					i = (y0 + 1) * pw + x + 1;
+					m = y0 * w + x;
+					for (y = y0; y < ye; y++, i += pw, m += w) {
+						if ((fl[i] & 17) != 16)
+							continue;
+						if (bit(ZC[zo + nb[i]])) {
+							var neg = decode_sign(i);
+							make_sig(i, neg);
+							mag[m] = bitval;
+							lp[m] = plane;
+						}
+						fl[i] |= 4;
+					}
+				}
+			}
+		}
+		else if (type == 1) {
+			/* magnitude refinement */
+			for (y0 = 0; y0 < h; y0 += 4) {
+				ye = y0 + 4 < h ? y0 + 4 : h;
+				for (x = 0; x < w; x++) {
+					i = (y0 + 1) * pw + x + 1;
+					m = y0 * w + x;
+					for (y = y0; y < ye; y++, i += pw, m += w) {
+						if ((fl[i] & 5) != 1)
+							continue;
+						if (bit((fl[i] & 8) ? 16 : ((fl[i] & 16) ? 15 : 14)))
+							mag[m] |= bitval;
+						lp[m] = plane;
+						fl[i] |= 8;
+					}
+				}
+			}
+		}
+		else {
+			/* cleanup */
+			for (y0 = 0; y0 < h; y0 += 4) {
+				ye = y0 + 4 < h ? y0 + 4 : h;
+				for (x = 0; x < w; x++) {
+					i0 = (y0 + 1) * pw + x + 1;
+					m0 = y0 * w + x;
+					var ys = y0;
+					if (y0 + 4 <= h && !((fl[i0] | fl[i0 + pw] | fl[i0 + 2 * pw] | fl[i0 + 3 * pw]) & 21)) {
+						if (!bit(17))
+							continue;
+						var r = bit(18) << 1;
+						r |= bit(18);
+						i = i0 + r * pw;
+						var ng1 = decode_sign(i);
+						make_sig(i, ng1);
+						mag[m0 + r * w] = bitval;
+						lp[m0 + r * w] = plane;
+						ys = y0 + r + 1;
+					}
+					i = i0 + (ys - y0) * pw;
+					m = m0 + (ys - y0) * w;
+					for (y = ys; y < ye; y++, i += pw, m += w) {
+						if (fl[i] & 5)
+							continue;
+						if (bit(ZC[zo + nb[i]])) {
+							var ng2 = decode_sign(i);
+							make_sig(i, ng2);
+							mag[m] = bitval;
+							lp[m] = plane;
+						}
+					}
+				}
+			}
+			if (style & 0x20)
+				for (k = 0; k < 4; k++)
+					bit(18);
+			for (i = 0; i < fl.length; i++)
+				fl[i] &= ~4;
+		}
+	}
+	return { mag: mag, st: fl, pw: pw, lp: lp };
+}
+
+/* ---- inverse wavelet transforms (T.800 annex F) ---- */
+
+var J2K_K = 1.230174104914001, J2K_ALPHA = -1.586134342059924, J2K_BETA = -0.052980118572961,
+	J2K_GAMMA = 0.882911075530934, J2K_DELTA = 0.443506852043971;
+
+/* One lifting step along a line of n samples at a[off ..]: a[j] -= c * (a[j-1] + a[j+1]) for j = start, start + 2, ...
+ * (the samples beyond the ends are the mirror image of those inside).  rev: the 5/3 integer steps. */
+function j2k_lift(a, off, n, start, c, rev, plus)
+{
+	var j, last = n - 1;
+	if (start > last)
+		return;
+	var j0 = start;
+	if (j0 == 0) {
+		/* left end: the neighbour on the left is the mirror image of the one on the right */
+		var r0 = a[off + 1];
+		if (rev)
+			a[off] = plus ? a[off] + ((r0 + r0) >> 1) : a[off] - ((r0 + r0 + 2) >> 2);
+		else
+			a[off] -= c * (r0 + r0);
+		j0 = 2;
+	}
+	var jend = last;		/* last index that has two real neighbours is n - 2 */
+	if (rev) {
+		if (plus)
+			for (j = j0; j < jend; j += 2)
+				a[off + j] += (a[off + j - 1] + a[off + j + 1]) >> 1;
+		else
+			for (j = j0; j < jend; j += 2)
+				a[off + j] -= (a[off + j - 1] + a[off + j + 1] + 2) >> 2;
+	}
+	else
+		for (j = j0; j < jend; j += 2)
+			a[off + j] -= c * (a[off + j - 1] + a[off + j + 1]);
+	if (j < n) {
+		/* j == n - 1: the right neighbour is mirrored */
+		var l = a[off + j - 1];
+		if (rev)
+			a[off + j] = plus ? a[off + j] + ((l + l) >> 1) : a[off + j] - ((l + l + 2) >> 2);
+		else
+			a[off + j] -= c * (l + l);
+	}
+}
+
+/* Synthesis of every row of the W x H array a, whose first column is at global position x0 */
+function j2k_synth_rows(a, W, H, x0, rev)
+{
+	var y, x, off, par = x0 & 1;
+	if (W == 1) {
+		if (par)
+			for (y = 0; y < H; y++)
+				a[y] = rev ? a[y] >> 1 : a[y] / 2;
+		return;
+	}
+	var invk = 1 / J2K_K;
+	for (y = 0; y < H; y++) {
+		off = y * W;
+		if (rev) {
+			j2k_lift(a, off, W, par, 0, true, false);
+			j2k_lift(a, off, W, 1 - par, 0, true, true);
+		}
+		else {
+			for (x = par; x < W; x += 2)
+				a[off + x] *= J2K_K;
+			for (x = 1 - par; x < W; x += 2)
+				a[off + x] *= invk;
+			j2k_lift(a, off, W, par, J2K_DELTA, false, false);
+			j2k_lift(a, off, W, 1 - par, J2K_GAMMA, false, false);
+			j2k_lift(a, off, W, par, J2K_BETA, false, false);
+			j2k_lift(a, off, W, 1 - par, J2K_ALPHA, false, false);
+		}
+	}
+}
+
+/* The same down the columns, done a whole row at a time */
+function j2k_synth_cols(a, W, H, y0, rev)
+{
+	var par = y0 & 1, x, y;
+	if (H == 1) {
+		if (par)
+			for (x = 0; x < W; x++)
+				a[x] = rev ? a[x] >> 1 : a[x] / 2;
+		return;
+	}
+	function mir(y)
+	{
+		return y < 0 ? -y : (y >= H ? 2 * (H - 1) - y : y);
+	}
+	function step(start, c, plus)
+	{
+		for (var yy = start; yy < H; yy += 2) {
+			var o = yy * W, p = mir(yy - 1) * W, q = mir(yy + 1) * W, xx;
+			if (rev) {
+				if (plus)
+					for (xx = 0; xx < W; xx++)
+						a[o + xx] += (a[p + xx] + a[q + xx]) >> 1;
+				else
+					for (xx = 0; xx < W; xx++)
+						a[o + xx] -= (a[p + xx] + a[q + xx] + 2) >> 2;
+			}
+			else
+				for (xx = 0; xx < W; xx++)
+					a[o + xx] -= c * (a[p + xx] + a[q + xx]);
+		}
+	}
+	if (rev) {
+		step(par, 0, false);
+		step(1 - par, 0, true);
+	}
+	else {
+		var invk = 1 / J2K_K;
+		for (y = 0; y < H; y++) {
+			var f = ((y + par) & 1) ? invk : J2K_K, o2 = y * W;
+			for (x = 0; x < W; x++)
+				a[o2 + x] *= f;
+		}
+		step(par, J2K_DELTA, false);
+		step(1 - par, J2K_GAMMA, false);
+		step(par, J2K_BETA, false);
+		step(1 - par, J2K_ALPHA, false);
+	}
+}
+
+/* Combine the resolution below (ll: { w, h, d }) with the bands of resolution rs into the next resolution up */
+function j2k_idwt_level(ll, rs, bandData, rev)
+{
+	var W = rs.x1 - rs.x0, H = rs.y1 - rs.y0;
+	var out = rev ? new Int32Array(W * H) : new Float32Array(W * H);
+	if (W == 0 || H == 0)
+		return { w: W, h: H, d: out };
+	var i;
+	function place(src, sw, sh, bx0, by0, xo, yo)
+	{
+		for (var yy = 0; yy < sh; yy++) {
+			var v = 2 * (by0 + yy) + yo - rs.y0;
+			if (v < 0 || v >= H)
+				continue;
+			var u0 = 2 * bx0 + xo - rs.x0, so = yy * sw, dst = v * W;
+			for (var xx = 0; xx < sw; xx++) {
+				var u = u0 + 2 * xx;
+				if (u >= 0 && u < W)
+					out[dst + u] = src[so + xx];
+			}
+		}
+	}
+	place(ll.d, ll.w, ll.h, Math.ceil(rs.x0 / 2), Math.ceil(rs.y0 / 2), 0, 0);
+	for (i = 0; i < 3; i++) {
+		var b = rs.bands[i];
+		place(bandData[i], b.x1 - b.x0, b.y1 - b.y0, b.x0, b.y0, (b.type == 1 || b.type == 3) ? 1 : 0, (b.type == 2 || b.type == 3) ? 1 : 0);
+	}
+	j2k_synth_rows(out, W, H, rs.x0, rev);
+	j2k_synth_cols(out, W, H, rs.y0, rev);
+	return { w: W, h: H, d: out };
+}
+
+/* ---- the decoder ---- */
+
+/* Decode a JPEG 2000 image (JP2 file or codestream) in b.  reduce: number of resolution levels to leave out (the image
+ * comes out 2^reduce times smaller).  Returns { w, h, n, data (8 bits, interleaved), reduce, enumcs }. */
+function jpx_decode(b, reduce)
+{
+	var cs = j2k_parse(b);
+	var nc = cs.ncomp;
+	for (var c = 0; c < nc; c++)
+		if (cs.comps[c].dx != 1 || cs.comps[c].dy != 1)
+			throw "JPX: subsampled components aren't supported";
+	var minlevels = 99;
+	for (c = 0; c < nc; c++)
+		minlevels = Math.min(minlevels, (cs.coc[c] || cs.cod).levels);
+	reduce = Math.max(0, Math.min(reduce || 0, minlevels));
+	var outw = j2k_ceil(cs.xsiz, reduce) - j2k_ceil(cs.xo, reduce), outh = j2k_ceil(cs.ysiz, reduce) - j2k_ceil(cs.yo, reduce);
+	var planes = [];
+	for (c = 0; c < nc; c++)
+		planes.push(null);
+	var rev = false;
+	var x0o = j2k_ceil(cs.xo, reduce), y0o = j2k_ceil(cs.yo, reduce);
+	for (var ty = 0; ty < cs.nty; ty++) {
+		for (var tx = 0; tx < cs.ntx; tx++) {
+			var tile = cs.tiles[ty * cs.ntx + tx];
+			if (!tile)
+				continue;
+			var tx0 = Math.max(cs.xto + tx * cs.xt, cs.xo), ty0 = Math.max(cs.yto + ty * cs.yt, cs.yo);
+			var tx1 = Math.min(cs.xto + (tx + 1) * cs.xt, cs.xsiz), ty1 = Math.min(cs.yto + (ty + 1) * cs.yt, cs.ysiz);
+			tile.tcs = [];
+			tile.cods = [];
+			for (c = 0; c < nc; c++) {
+				var cod = tile.coc[c] || tile.cod || cs.coc[c] || cs.cod;
+				/* the progression, layers and MCT come from the COD (tile or main) */
+				var main = tile.cod || cs.cod;
+				var cc = {};
+				for (var kk in cod)
+					cc[kk] = cod[kk];
+				cc.prog = main.prog;
+				cc.layers = main.layers;
+				cc.mct = main.mct;
+				cc.sop = main.sop;
+				cc.eph = main.eph;
+				if (cc.style & ~0x20)
+					throw "JPX: unsupported code block style " + cc.style;
+				var q = tile.qcc[c] || tile.qcd || cs.qcc[c] || cs.qcd;
+				tile.cods.push(cc);
+				tile.tcs.push(j2k_build_tc(cs, tx0, ty0, tx1, ty1, c, cc, q));
+			}
+			var data = tile.chunks.length == 1 ? tile.chunks[0] : null;
+			if (!data) {
+				var tot = 0, k;
+				for (k = 0; k < tile.chunks.length; k++)
+					tot += tile.chunks[k].length;
+				data = new Uint8Array(tot);
+				tot = 0;
+				for (k = 0; k < tile.chunks.length; k++) {
+					data.set(tile.chunks[k], tot);
+					tot += tile.chunks[k].length;
+				}
+			}
+			j2k_read_packets(cs, tile, data);
+			/* decode each component */
+			var comps = [];
+			for (c = 0; c < nc; c++) {
+				var tc = tile.tcs[c];
+				rev = tc.rev;
+				var R = tc.nl - reduce, cur = null;
+				for (var r = 0; r <= R; r++) {
+					var rs = tc.res[r];
+					var bandData = [];
+					for (var bi = 0; bi < rs.bands.length; bi++) {
+						var band = rs.bands[bi];
+						var bw = band.x1 - band.x0, bh = band.y1 - band.y0;
+						var bd = tc.rev ? new Int32Array(bw * bh) : new Float32Array(bw * bh);
+						for (var pi = 0; pi < band.precincts.length; pi++) {
+							var pc = band.precincts[pi];
+							for (var k2 = 0; k2 < pc.cbs.length; k2++) {
+								var cb = pc.cbs[k2];
+								if (!cb.passes)
+									continue;
+								var cw = cb.x1 - cb.x0, ch = cb.y1 - cb.y0;
+								var res = j2k_decode_block(cb, cw, ch, band.type, band.mb, tc.cod.style);
+								var mag = res.mag, lp = res.lp, st = res.st, pw = res.pw;
+								for (var yy = 0; yy < ch; yy++) {
+									for (var xx = 0; xx < cw; xx++) {
+										var m = mag[yy * cw + xx];
+										if (!m)
+											continue;
+										var l = lp[yy * cw + xx];
+										if (l > 0)
+											m += 1 << (l - 1);
+										if (st[(yy + 1) * pw + xx + 1] & 2)
+											m = -m;
+										bd[(cb.y0 - band.y0 + yy) * bw + (cb.x0 - band.x0 + xx)] = tc.rev ? m : m * band.delta;
+									}
+								}
+							}
+						}
+						bandData.push(bd);
+					}
+					if (r == 0)
+						cur = { w: rs.x1 - rs.x0, h: rs.y1 - rs.y0, d: bandData[0] };
+					else
+						cur = j2k_idwt_level(cur, rs, bandData, tc.rev);
+				}
+				comps.push(cur);
+			}
+			/* inverse multiple component transform */
+			var mct = tile.cods[0].mct;
+			if (mct && nc >= 3) {
+				var A = comps[0].d, B = comps[1].d, C = comps[2].d, n = A.length;
+				if (rev) {
+					for (var q2 = 0; q2 < n; q2++) {
+						var g = A[q2] - ((C[q2] + B[q2]) >> 2);
+						var rr = C[q2] + g, bb = B[q2] + g;
+						A[q2] = rr;
+						B[q2] = g;
+						C[q2] = bb;
+					}
+				}
+				else {
+					for (q2 = 0; q2 < n; q2++) {
+						var yv = A[q2], cbv = B[q2], crv = C[q2];
+						A[q2] = yv + 1.402 * crv;
+						B[q2] = yv - 0.34413 * cbv - 0.71414 * crv;
+						C[q2] = yv + 1.772 * cbv;
+					}
+				}
+			}
+			/* copy into the image planes */
+			for (c = 0; c < nc; c++) {
+				if (!planes[c])
+					planes[c] = new Float32Array(outw * outh);
+				var cp = comps[c], tcr = tile.tcs[c].res[tile.tcs[c].nl - reduce];
+				var ox = tcr.x0 - x0o, oy = tcr.y0 - y0o;
+				for (var yy2 = 0; yy2 < cp.h; yy2++)
+					for (var xx2 = 0; xx2 < cp.w; xx2++) {
+						var dx2 = ox + xx2, dy2 = oy + yy2;
+						if (dx2 >= 0 && dx2 < outw && dy2 >= 0 && dy2 < outh)
+							planes[c][dy2 * outw + dx2] = cp.d[yy2 * cp.w + xx2];
+					}
+			}
+		}
+	}
+	if (cs.palette && cs.cmap && cs.cmap.length) {
+		/* palette: component 0 holds indices; each output channel is a palette column (or a component) */
+		var pal = cs.palette, ch = cs.cmap.length, pout = new Uint8Array(outw * outh * ch), pc0 = planes[0];
+		var pprec = cs.comps[0].prec, pshift = cs.comps[0].signed ? 0 : Math.pow(2, pprec - 1), pmax = pal.ne - 1;
+		for (var cc2 = 0; cc2 < ch; cc2++) {
+			var cm = cs.cmap[cc2], src = planes[cm.comp];
+			if (cm.mtyp == 1) {
+				var pbits = pal.bits[cm.pcol], pscale = 255 / (Math.pow(2, pbits) - 1);
+				for (var q3 = 0; q3 < pc0.length; q3++) {
+					var ix = Math.round(pc0[q3] + pshift);
+					ix = ix < 0 ? 0 : (ix > pmax ? pmax : ix);
+					pout[q3 * ch + cc2] = Math.round(pal.table[ix * pal.npc + cm.pcol] * pscale);
+				}
+			}
+			else {
+				var dprec = cs.comps[cm.comp].prec, dsh = Math.pow(2, dprec - 1), dmax = Math.pow(2, dprec) - 1;
+				for (q3 = 0; q3 < src.length; q3++) {
+					var dv = src[q3] + dsh;
+					pout[q3 * ch + cc2] = Math.round((dv < 0 ? 0 : (dv > dmax ? dmax : dv)) * 255 / dmax);
+				}
+			}
+		}
+		return { w: outw, h: outh, n: ch, data: pout, reduce: reduce, enumcs: cs.enumcs };
+	}
+	/* level shift, clamp, to 8 bits, interleave */
+	var out = new Uint8Array(outw * outh * nc);
+	for (c = 0; c < nc; c++) {
+		var prec = cs.comps[c].prec, shift = cs.comps[c].signed ? 0 : Math.pow(2, prec - 1), maxv = Math.pow(2, prec) - 1;
+		var scale = 255 / maxv, pl = planes[c];
+		if (!pl)
+			continue;
+		var sg = cs.comps[c].signed ? Math.pow(2, prec - 1) : 0;
+		for (var p2 = 0; p2 < pl.length; p2++) {
+			var v = pl[p2] + shift + sg;
+			v = v < 0 ? 0 : (v > maxv ? maxv : v);
+			out[p2 * nc + c] = prec == 8 ? Math.round(v) : Math.round(v * scale);
+		}
+	}
+	return { w: outw, h: outh, n: nc, data: out, reduce: reduce, enumcs: cs.enumcs };
+}
 
 /* ----- Document ----- */
 
@@ -1107,11 +3288,11 @@ PDFDoc.prototype.init = function ()
 };
 
 
-/* Initialise decryption (empty user password). Sets this.crypt or this.crypt_error. */
+/* Initialize decryption (empty user password). Sets this.crypt or this.crypt_error. */
 PDFDoc.prototype.setup_encryption = function ()
 {
-	if (this.crypt || !this.trailer || this.trailer.Encrypt === undefined)
-		return;
+	if (this.crypt || !this.trailer || this.trailer.Encrypt === undefined || this.trailer.Encrypt === null)
+		return;		/* (an update can remove encryption with /Encrypt null) */
 	this.encrypted = true;
 	this.cache = {};
 	var enc = this.resolve(this.trailer.Encrypt);
@@ -1592,9 +3773,11 @@ PDFDoc.prototype.get_pages = function ()
 	{
 		var ref = node;
 		node = doc.resolve(node);
-		if (!isDict(node) || depth > 64)
+		if (!isDict(node) || depth > 2000)	/* (some files nest the page tree a level per page) */
 			return;
-		if (ref instanceof Ref) {
+		/* a page may be listed more than once (some files do, and other readers show it each time); only branches
+		 * of the tree are checked for loops */
+		if (ref instanceof Ref && doc.resolve(node.Kids) instanceof Array && !isName(node.Type, "Page")) {
 			if (visited[ref.num])
 				return;
 			visited[ref.num] = true;
@@ -1629,7 +3812,7 @@ PDFDoc.prototype.get_pages = function ()
 };
 
 /* ======================================================================= */
-/* Part 2: functions, colour spaces, fonts and encodings                    */
+/* Part 2: functions, color spaces, fonts and encodings                    */
 /* ======================================================================= */
 
 function num_array(doc, v)
@@ -1936,7 +4119,7 @@ function make_function(doc, fobj)
 	return fn;
 }
 
-/* ----- Colour spaces ----- */
+/* ----- Color spaces ----- */
 
 function c255(v)
 {
@@ -2087,8 +4270,11 @@ var MACROMAN_HIGH = "ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõú�
 var WINANSI_80 = [0x20ac, 0, 0x201a, 0x0192, 0x201e, 0x2026, 0x2020, 0x2021, 0x02c6, 0x2030, 0x0160, 0x2039, 0x0152, 0, 0x017d, 0,
 	0, 0x2018, 0x2019, 0x201c, 0x201d, 0x2022, 0x2013, 0x2014, 0x02dc, 0x2122, 0x0161, 0x203a, 0x0153, 0, 0x017e, 0x0178];
 var STANDARD_HIGH = { 0xa1: 0xa1, 0xa2: 0xa2, 0xa3: 0xa3, 0xa4: 0x2044, 0xa5: 0xa5, 0xa6: 0x192, 0xa7: 0xa7, 0xa8: 0xa4, 0xa9: 0x27,
-	0xaa: 0x201c, 0xab: 0xab, 0xae: 0xfb01, 0xaf: 0xfb02, 0xb1: 0x2013, 0xb2: 0x2020, 0xb3: 0x2021, 0xb4: 0xb7, 0xb6: 0xb6,
-	0xb7: 0x2022, 0xb8: 0x201a, 0xb9: 0x201e, 0xba: 0x201d, 0xbb: 0xbb, 0xbc: 0x2026, 0xbd: 0x2030, 0xbf: 0xbf, 0xd0: 0x2014 };
+	0xaa: 0x201c, 0xab: 0xab, 0xac: 0x2039, 0xad: 0x203a, 0xae: 0xfb01, 0xaf: 0xfb02, 0xb1: 0x2013, 0xb2: 0x2020, 0xb3: 0x2021,
+	0xb4: 0xb7, 0xb6: 0xb6, 0xb7: 0x2022, 0xb8: 0x201a, 0xb9: 0x201e, 0xba: 0x201d, 0xbb: 0xbb, 0xbc: 0x2026, 0xbd: 0x2030,
+	0xbf: 0xbf, 0xc1: 0x60, 0xc2: 0xb4, 0xc3: 0x2c6, 0xc4: 0x2dc, 0xc5: 0xaf, 0xc6: 0x2d8, 0xc7: 0x2d9, 0xc8: 0xa8, 0xca: 0x2da,
+	0xcb: 0xb8, 0xcd: 0x2dd, 0xce: 0x2db, 0xcf: 0x2c7, 0xd0: 0x2014, 0xe1: 0xc6, 0xe3: 0xaa, 0xe8: 0x141, 0xe9: 0xd8, 0xea: 0x152,
+	0xeb: 0xba, 0xf1: 0xe6, 0xf5: 0x131, 0xf8: 0x142, 0xf9: 0xf8, 0xfa: 0x153, 0xfb: 0xdf };
 
 var CP437_REV = {};
 (function () {
@@ -2187,6 +4373,13 @@ function base_encoding(name)
 				t[0x80 + i] = String.fromCharCode(WINANSI_80[i]);
 		t[0x7f] = "•";
 		t[0xad] = "-";
+	}
+	for (i = 0; i < 256; i++) {		/* ligature characters (fi, fl ...) are drawn and searched as their letters */
+		if (t[i] == "\ufb00") t[i] = "ff";
+		else if (t[i] == "\ufb01") t[i] = "fi";
+		else if (t[i] == "\ufb02") t[i] = "fl";
+		else if (t[i] == "\ufb03") t[i] = "ffi";
+		else if (t[i] == "\ufb04") t[i] = "ffl";
 	}
 	return t;
 }
@@ -2444,6 +4637,11 @@ function make_font(doc, fobj, res)
 				bename = be.name;
 			diffs = doc.resolve(enc2.Differences);
 		}
+		/* no /Encoding: a Type 1 font that isn't embedded (Times-Roman, Helvetica ...) uses StandardEncoding, in
+		 * which codes 174 and 175 are the fi and fl ligatures and 170 and 186 the curly double quotes */
+		var embedded = isDict(desc) && (desc.FontFile !== undefined || desc.FontFile2 !== undefined || desc.FontFile3 !== undefined);
+		if (!bename && !embedded && (isName(subtype, "Type1") || isName(subtype, "MMType1")) && !/symbol|dingbats/i.test(font.name))
+			bename = "StandardEncoding";
 		var uni = base_encoding(bename || "WinAnsiEncoding");
 		if (diffs instanceof Array) {
 			var code = 0;
@@ -4024,7 +6222,7 @@ function builtin_path(font, u)
 }
 
 /* ======================================================================= */
-/* Part 3: rasteriser (anti-aliased path fill, stroke, glyphs, images)      */
+/* Part 3: rasterizer (anti-aliased path fill, stroke, glyphs, images)      */
 /* ======================================================================= */
 
 var FB = null;		/* Int32Array of 0xRRGGBB pixels */
@@ -4674,7 +6872,7 @@ function glyph_hires(bf, cp, bold)
 var GLYPH_CACHE = {};
 var GLYPH_CACHE_N = 0;
 
-/* Rasterise a glyph into a coverage bitmap. M maps em-space (x right, y up, 1 = font
+/* Rasterize a glyph into a coverage bitmap. M maps em-space (x right, y up, 1 = font
  * size) to device pixels with the glyph origin at a sub-pixel offset from (0,0). */
 function glyph_render(bf, cp, M, adv, bold)
 {
@@ -4929,14 +7127,14 @@ function draw_outline_glyph(font, code, path, M, rgb, alpha, clip)
 {
 	var scale = Math.sqrt(Math.abs(M[0] * M[3] - M[1] * M[2]));
 	if (scale > 70) {
-		/* very large glyph: rasterise directly rather than caching a huge bitmap */
+		/* very large glyph: rasterize directly rather than caching a huge bitmap */
 		var polys = [];
 		flatten_path(path, M, polys);
 		if (polys.length)
 			fill_polys(polys, false, rgb, alpha, clip);
 		return;
 	}
-	/* positions are quantised (1/3 pixel across, whole pixel down) so that glyph bitmaps can be reused */
+	/* positions are quantized (1/3 pixel across, whole pixel down) so that glyph bitmaps can be reused */
 	var qx = Math.floor(M[4] * 3 + 0.5);
 	var ix = Math.floor(qx / 3), iy = Math.floor(M[5] + 0.5);
 	var fx = (qx - ix * 3) / 3, fy = 0;
@@ -5199,6 +7397,7 @@ function draw_image(img, M, alpha, rgb, clip)
 		if (!img.reduced[f])
 			img.reduced[f] = reduce_image(img, f);
 		img = img.reduced[f];
+		ratio /= f;		/* what is left after the box reduction (1 to 2): sample it smoothly */
 	}
 	var w = img.w, h = img.h, data = img.data, n = img.n, am = img.alpha;
 	var smooth = ratio < 1.5;
@@ -5401,8 +7600,16 @@ function jpeg_decode(data, scaleN, abort)
 					p += 3;
 				}
 				break;
-			case 0xc2: case 0xc3: case 0xc5: case 0xc6: case 0xc7: case 0xc9: case 0xca: case 0xcb: case 0xcd: case 0xce: case 0xcf:
-				return null;	/* progressive / lossless / arithmetic: unsupported */
+			case 0xc2:		/* progressive */
+				frame = { prec: data[p], h: (data[p + 1] << 8) | data[p + 2], w: (data[p + 3] << 8) | data[p + 4], n: data[p + 5], prog: true };
+				p += 6;
+				for (i = 0; i < frame.n; i++) {
+					comps.push({ id: data[p], hs: data[p + 1] >> 4, vs: data[p + 1] & 15, tq: data[p + 2] });
+					p += 3;
+				}
+				break;
+			case 0xc3: case 0xc5: case 0xc6: case 0xc7: case 0xc9: case 0xca: case 0xcb: case 0xcd: case 0xce: case 0xcf:
+				return null;	/* lossless / arithmetic / hierarchical: unsupported */
 			case 0xdd:
 				restart = (data[p] << 8) | data[p + 1];
 				break;
@@ -5425,6 +7632,13 @@ function jpeg_decode(data, scaleN, abort)
 							scomps.push(comps[ci]);
 						}
 				}
+				if (frame.prog) {
+					var ss = data[p], se = data[p + 1], ahal = data[p + 2];
+					pos = segend;
+					pos = jpeg_prog_scan(data, pos, frame, comps, scomps, hts, restart, ss, se, ahal >> 4, ahal & 15, abort);
+					scan_done = true;
+					continue;
+				}
 				pos = segend;
 				pos = jpeg_decode_scan(data, pos, frame, comps, scomps, qt, hts, restart, N, T, abort);
 				scan_done = true;
@@ -5435,6 +7649,8 @@ function jpeg_decode(data, scaleN, abort)
 	}
 	if (!frame || !scan_done)
 		return null;
+	if (frame.prog)
+		jpeg_prog_finish(frame, comps, qt, N, T);
 	return jpeg_output(frame, comps, adobe, N);
 }
 
@@ -5666,6 +7882,251 @@ function jpeg_decode_scan(data, pos, frame, comps, scomps, qt, hts, restart, N, 
 	return pos;
 }
 
+/* ----- progressive JPEG: coefficients are accumulated over all the scans, then transformed ----- */
+
+function jpeg_prog_scan(data, pos, frame, comps, scomps, hts, restart, Ss, Se, Ah, Al, abort)
+{
+	var len = data.length;
+	var hmax = 1, vmax = 1, i;
+	for (i = 0; i < comps.length; i++) {
+		if (comps[i].hs > hmax) hmax = comps[i].hs;
+		if (comps[i].vs > vmax) vmax = comps[i].vs;
+	}
+	var mcux = Math.ceil(frame.w / (8 * hmax)), mcuy = Math.ceil(frame.h / (8 * vmax));
+	frame.hmax = hmax;
+	frame.vmax = vmax;
+	for (i = 0; i < comps.length; i++) {
+		var c0 = comps[i];
+		c0.bw = mcux * c0.hs;
+		c0.bh = mcuy * c0.vs;
+		if (!c0.coefs)
+			c0.coefs = new Int16Array(c0.bw * c0.bh * 64);
+		c0.pred = 0;
+	}
+	var bitbuf = 0, bitcnt = 0, eobrun = 0;
+
+	function fill()
+	{
+		while (bitcnt <= 16) {
+			var b = 0;
+			if (pos < len) {
+				b = data[pos];
+				if (b == 0xff) {
+					if (data[pos + 1] == 0)
+						pos += 2;
+					else
+						b = 0;
+				}
+				else
+					pos++;
+			}
+			bitbuf = ((bitbuf << 8) | b) & 0xffffff;
+			bitcnt += 8;
+		}
+	}
+	function bit()
+	{
+		if (bitcnt < 1)
+			fill();
+		bitcnt--;
+		return (bitbuf >> bitcnt) & 1;
+	}
+	function receive(n)
+	{
+		if (n == 0)
+			return 0;
+		if (bitcnt < n)
+			fill();
+		bitcnt -= n;
+		return (bitbuf >> bitcnt) & ((1 << n) - 1);
+	}
+	function huff(tab)
+	{
+		if (bitcnt < 16)
+			fill();
+		var e = tab[(bitbuf >> (bitcnt - 16)) & 0xffff];
+		var l = e >> 8;
+		bitcnt -= l ? l : 1;
+		return e & 255;
+	}
+	function extend(v, s)
+	{
+		return v < (1 << (s - 1)) ? v - (1 << s) + 1 : v;
+	}
+
+	function do_block(c, base)
+	{
+		var co = c.coefs, k, rs, r, s;
+		if (Ss == 0) {
+			if (Ah == 0) {
+				s = huff(hts.dc[c.dc]);
+				c.pred += s ? extend(receive(s), s) : 0;
+				co[base] = c.pred << Al;
+			}
+			else if (bit())
+				co[base] |= 1 << Al;
+			return;
+		}
+		var act = hts.ac[c.ac];
+		if (Ah == 0) {
+			if (eobrun > 0) {
+				eobrun--;
+				return;
+			}
+			for (k = Ss; k <= Se; k++) {
+				rs = huff(act);
+				r = rs >> 4;
+				s = rs & 15;
+				if (s) {
+					k += r;
+					if (k > 63)
+						break;
+					co[base + JPEG_ZZ[k]] = extend(receive(s), s) << Al;
+				}
+				else if (r == 15)
+					k += 15;
+				else {
+					eobrun = (1 << r) - 1;
+					if (r)
+						eobrun += receive(r);
+					break;
+				}
+			}
+			return;
+		}
+		/* AC refinement */
+		var p1 = 1 << Al, m1 = -1 << Al;
+		k = Ss;
+		if (eobrun == 0) {
+			for (; k <= Se; k++) {
+				rs = huff(act);
+				r = rs >> 4;
+				s = rs & 15;
+				var nv = 0;
+				if (s) {
+					nv = bit() ? p1 : m1;
+				}
+				else if (r != 15) {
+					eobrun = 1 << r;
+					if (r)
+						eobrun += receive(r);
+					break;
+				}
+				do {
+					var zi = base + JPEG_ZZ[k];
+					if (co[zi] != 0) {
+						if (bit() && (co[zi] & p1) == 0)
+							co[zi] += co[zi] >= 0 ? p1 : m1;
+					}
+					else if (--r < 0)
+						break;
+					k++;
+				} while (k <= Se);
+				if (nv && k <= 63)
+					co[base + JPEG_ZZ[k]] = nv;
+			}
+		}
+		if (eobrun > 0) {
+			for (; k <= Se; k++) {
+				var zj = base + JPEG_ZZ[k];
+				if (co[zj] != 0 && bit() && (co[zj] & p1) == 0)
+					co[zj] += co[zj] >= 0 ? p1 : m1;
+			}
+			eobrun--;
+		}
+	}
+
+	function restart_now(list)
+	{
+		bitcnt = 0;
+		bitbuf = 0;
+		eobrun = 0;
+		while (pos < len && !(data[pos] == 0xff && data[pos + 1] >= 0xd0 && data[pos + 1] <= 0xd7))
+			pos++;
+		pos += 2;
+		for (var q = 0; q < list.length; q++)
+			list[q].pred = 0;
+	}
+
+	var count = 0, x, y;
+	if (scomps.length == 1) {
+		var sc = scomps[0];
+		var bw = Math.ceil(Math.ceil(frame.w * sc.hs / hmax) / 8), bh = Math.ceil(Math.ceil(frame.h * sc.vs / vmax) / 8);
+		for (y = 0; y < bh; y++) {
+			if (abort && abort())
+				throw "aborted";
+			for (x = 0; x < bw; x++) {
+				if (restart && count && (count % restart) == 0)
+					restart_now(scomps);
+				do_block(sc, (y * sc.bw + x) * 64);
+				count++;
+			}
+		}
+		return pos;
+	}
+	for (var my = 0; my < mcuy; my++) {
+		if (abort && abort())
+			throw "aborted";
+		for (var mx = 0; mx < mcux; mx++) {
+			if (restart && count && (count % restart) == 0)
+				restart_now(scomps);
+			for (var ci = 0; ci < scomps.length; ci++) {
+				var cc = scomps[ci];
+				for (var vv = 0; vv < cc.vs; vv++)
+					for (var hh = 0; hh < cc.hs; hh++)
+						do_block(cc, ((my * cc.vs + vv) * cc.bw + mx * cc.hs + hh) * 64);
+			}
+			count++;
+		}
+	}
+	return pos;
+}
+
+/* Dequantize and inverse-transform the accumulated coefficients into each component's pixel plane */
+function jpeg_prog_finish(frame, comps, qt, N, T)
+{
+	var inv = new Int32Array(64);
+	for (var k = 0; k < 64; k++)
+		inv[JPEG_ZZ[k]] = k;
+	var tmp = new Float64Array(64), blk = new Float64Array(64);
+	for (var ci = 0; ci < comps.length; ci++) {
+		var c = comps[ci];
+		var q = qt[c.tq];
+		c.pw = c.bw * N;
+		c.ph = c.bh * N;
+		c.plane = new Uint8Array(c.pw * c.ph);
+		if (!c.coefs)
+			continue;
+		var lim = Math.min(8, N);
+		for (var by = 0; by < c.bh; by++) {
+			for (var bx = 0; bx < c.bw; bx++) {
+				var base = (by * c.bw + bx) * 64, i, u, v, x, y, sum;
+				for (i = 0; i < 64; i++)
+					blk[i] = c.coefs[base + i] * q[inv[i]];
+				for (v = 0; v < lim; v++) {
+					for (x = 0; x < N; x++) {
+						sum = 0;
+						for (u = 0; u < lim; u++)
+							sum += T[x * N + u] * blk[v * 8 + u];
+						tmp[v * N + x] = sum;
+					}
+				}
+				var ox = bx * N, oy = by * N;
+				for (y = 0; y < N; y++) {
+					var o = (oy + y) * c.pw + ox;
+					for (x = 0; x < N; x++) {
+						sum = 128;
+						for (v = 0; v < lim; v++)
+							sum += T[y * N + v] * tmp[v * N + x];
+						c.plane[o + x] = sum < 0 ? 0 : (sum > 255 ? 255 : sum + 0.5);
+					}
+				}
+			}
+		}
+		c.coefs = null;
+	}
+}
+
 var YCC_TABLES = null;
 
 function jpeg_output(frame, comps, adobe, N)
@@ -5801,6 +8262,138 @@ function unpack_samples(data, w, h, ncomp, bpc, raw)
 	return out;
 }
 
+/* How much a stencil mask (1 bit per pixel) can be reduced when it will be shown desired device pixels wide:
+ * 1, 2, 4 or 8, keeping at least twice the pixels needed */
+function mask_reduction(w, desired)
+{
+	var f = 1;
+	if (desired > 0)
+		while (f < 8 && w / (f * 2) >= desired * 1.25)
+			f *= 2;
+	return f;
+}
+
+var POP8 = null;
+
+/* Packed 1-bit stencil data (0 = paint, or the reverse if invert) averaged down by f (2, 4 or 8) into coverage values.
+ * Most of a scanned page is blank, and blank bytes are skipped. */
+function mask_reduced(data, w, h, f, invert)
+{
+	if (!POP8) {
+		POP8 = new Uint8Array(256);
+		for (var q = 1; q < 256; q++)
+			POP8[q] = POP8[q >> 1] + (q & 1);
+	}
+	/* painted pixels in a whole byte (P8), in a half byte (P4) or in 2 bits (P2) */
+	var P8 = new Uint8Array(256), P4 = new Uint8Array(16), P2 = new Uint8Array(4), blank = invert ? 0 : 255;
+	for (var n = 0; n < 256; n++)
+		P8[n] = invert ? POP8[n] : 8 - POP8[n];
+	for (n = 0; n < 16; n++)
+		P4[n] = invert ? POP8[n] : 4 - POP8[n];
+	for (n = 0; n < 4; n++)
+		P2[n] = invert ? POP8[n] : 2 - POP8[n];
+	var rb = (w + 7) >> 3, cw = Math.ceil(w / f), ch = Math.ceil(h / f);
+	var cov = new Uint8Array(cw * ch), acc = new Int32Array(cw + 8), full = f * f;
+	var sy, i, c, v, y, any, ymax, base, o;
+	for (y = 0; y < ch; y++) {
+		any = false;
+		ymax = Math.min(h, y * f + f);
+		for (sy = y * f; sy < ymax; sy++) {
+			base = sy * rb;
+			for (i = 0; i < rb; i++) {
+				v = data[base + i];
+				if (v === blank)
+					continue;
+				if (!any) {
+					any = true;
+					for (c = 0; c < acc.length; c++)
+						acc[c] = 0;
+				}
+				if (f == 8)
+					acc[i] += P8[v];
+				else if (f == 4) {
+					acc[2 * i] += P4[v >> 4];
+					acc[2 * i + 1] += P4[v & 15];
+				}
+				else {
+					acc[4 * i] += P2[v >> 6];
+					acc[4 * i + 1] += P2[(v >> 4) & 3];
+					acc[4 * i + 2] += P2[(v >> 2) & 3];
+					acc[4 * i + 3] += P2[v & 3];
+				}
+			}
+		}
+		if (any) {
+			o = y * cw;
+			for (c = 0; c < cw; c++)
+				cov[o + c] = Math.round(255 * acc[c] / full);
+		}
+	}
+	return { w: cw, h: ch, n: 1, data: cov, alpha: null, mask: true, f: f };
+}
+
+/* The reduction (how many resolution levels to leave out) that still leaves a JPEG 2000 picture at least desired pixels wide */
+function jpx_reduction(w, desired)
+{
+	var r = 0;
+	if (desired > 0)
+		while (r < 5 && w / Math.pow(2, r + 1) >= desired)
+			r++;
+	return r;
+}
+
+/* Decode a JPEG 2000 image for load_image_raw: returns an image, or null if it can't be decoded */
+function jpx_image(doc, dict, data, w, h, desired)
+{
+	try {
+		var red = jpx_reduction(w, desired);
+		if (data.length * 200 < w * h)
+			red = Math.max(red, 3);		/* nearly empty: a flat color layer, no need for detail */
+		var im = jpx_decode(data, red);
+		var n = im.n, px = im.data, cnt = im.w * im.h, i, k;
+		var cs = doc.resolve(dict.ColorSpace);
+		var cmyk = cs instanceof Name && cs.name == "DeviceCMYK";
+		var out;
+		if (n == 1 || n == 2) {
+			if (n == 2) {
+				out = new Uint8Array(cnt);
+				for (i = 0; i < cnt; i++)
+					out[i] = px[i * 2];
+				px = out;
+			}
+			return { w: im.w, h: im.h, n: 1, data: px, alpha: null, mask: false, jpx: true, jr: im.reduce, jclamped: im.reduce < red };
+		}
+		out = new Uint8Array(cnt * 3);
+		if (n >= 4 && cmyk) {
+			for (i = 0; i < cnt; i++) {
+				var kk = 255 - px[i * 4 + 3];
+				out[i * 3] = (255 - px[i * 4]) * kk / 255;
+				out[i * 3 + 1] = (255 - px[i * 4 + 1]) * kk / 255;
+				out[i * 3 + 2] = (255 - px[i * 4 + 2]) * kk / 255;
+			}
+		}
+		else {
+			for (i = 0; i < cnt; i++)
+				for (k = 0; k < 3; k++)
+					out[i * 3 + k] = px[i * n + k];
+			if (im.enumcs == 18) {		/* sYCC */
+				for (i = 0; i < cnt; i++) {
+					var yy = out[i * 3], cb = out[i * 3 + 1] - 128, cr = out[i * 3 + 2] - 128;
+					var rr = yy + 1.402 * cr, gg = yy - 0.34413 * cb - 0.71414 * cr, bb = yy + 1.772 * cb;
+					out[i * 3] = rr < 0 ? 0 : (rr > 255 ? 255 : rr);
+					out[i * 3 + 1] = gg < 0 ? 0 : (gg > 255 ? 255 : gg);
+					out[i * 3 + 2] = bb < 0 ? 0 : (bb > 255 ? 255 : bb);
+				}
+			}
+		}
+		return { w: im.w, h: im.h, n: 3, data: out, alpha: null, mask: false, jpx: true, jr: im.reduce, jclamped: im.reduce < red };
+	}
+	catch (e) {
+		IMG_FAIL[String(e)] = (IMG_FAIL[String(e)] || 0) + 1;
+		return null;
+	}
+}
+
 /* desired: approximate number of device pixels across the image (for JPEG scaled decoding) */
 function load_image_raw(doc, st, res, desired, maxN)
 {
@@ -5841,7 +8434,7 @@ function load_image_raw(doc, st, res, desired, maxN)
 			if (!j)
 				return image_placeholder(w, h, "jpeg");
 			if (j.n == 4) {
-				/* CMYK samples -> RGB (honouring /Decode) */
+				/* CMYK samples -> RGB (honoring /Decode) */
 				var rgb = new Uint8Array(j.w * j.h * 3);
 				var inv = decode && decode[0] > decode[1];
 				for (i = 0, k = 0; i < j.w * j.h; i++) {
@@ -5862,7 +8455,7 @@ function load_image_raw(doc, st, res, desired, maxN)
 			else {
 				img = { w: j.w, h: j.h, n: j.n, data: j.data, alpha: null, mask: false };
 				if (j.n == 1 && cs.n == 1 && cs.rgb !== CS_GRAY.rgb) {
-					/* indexed / separation applied to a gray JPEG: map through the colour space */
+					/* indexed / separation applied to a gray JPEG: map through the color space */
 					var rgb1 = new Uint8Array(j.w * j.h * 3);
 					for (i = 0; i < j.w * j.h; i++) {
 						var cc = cs.rgb([j.data[i] / 255]);
@@ -5881,8 +8474,25 @@ function load_image_raw(doc, st, res, desired, maxN)
 			st._jpegN = N;
 		}
 	}
+	else if (filter == "JPXDecode" && (img = jpx_image(doc, dict, data, w, h, desired)) !== null) {
+		/* decoded */
+	}
+	else if (filter == "JPXDecode" && data.length * 200 < w * h) {
+		img = null;
+		/* JPEG 2000 isn't decoded, but a nearly empty one is just a flat color: the background or
+		 * foreground color layer of a scanned page.  Paper is white and ink (a layer used through a mask) black. */
+		var flat = new Uint8Array(1);
+		flat[0] = (doc.resolve(dict.Mask) !== undefined || doc.resolve(dict.SMask) !== undefined) ? 0 : 255;
+		IMG_FAIL.jpx_flat = (IMG_FAIL.jpx_flat || 0) + 1;
+		img = { w: 1, h: 1, n: 1, data: flat, alpha: null, mask: false, flat: true };
+	}
 	else if (filter) {
 		return image_placeholder(w, h, filter);
+	}
+	else if (ismask && mask_reduction(w, desired) > 1) {
+		/* a big stencil (a scanned page) shown small: average it down while unpacking */
+		var mf = mask_reduction(w, desired);
+		img = mask_reduced(data, w, h, mf, decode && decode[0] == 1);
 	}
 	else if (ismask) {
 		var bits = unpack_samples(data, w, h, 1, 1, true);
@@ -5991,6 +8601,39 @@ function load_image_raw(doc, st, res, desired, maxN)
 			mimg = load_image(doc, sm, res, desired, 8);
 		else if (mk instanceof PDFStream)
 			mimg = load_image(doc, mk, res, desired, 8);
+		if (mimg && !mimg.placeholder && !img.flat && (img.n == 1 || img.n == 3) && mimg.w * mimg.h > img.w * img.h * 1.5 &&
+			mimg.w * mimg.h <= 12000000) {
+			/* a low resolution color layer seen through a detailed mask (scanned pages): bring the color up to the
+			 * mask's size so the mask's detail isn't lost */
+			var up = new Uint8Array(mimg.w * mimg.h * img.n), upn = img.n, uprow = mimg.w * upn;
+			var xmap = new Int32Array(mimg.w), lasty = -1;
+			for (x = 0; x < mimg.w; x++)
+				xmap[x] = Math.min(img.w - 1, Math.floor(x * img.w / mimg.w)) * upn;
+			for (y = 0; y < mimg.h; y++) {
+				var uy = Math.min(img.h - 1, Math.floor(y * img.h / mimg.h));
+				if (uy == lasty) {
+					up.set(up.subarray((y - 1) * uprow, y * uprow), y * uprow);
+					continue;
+				}
+				lasty = uy;
+				var so = uy * img.w * upn, dop = y * uprow;
+				if (upn == 1)
+					for (x = 0; x < mimg.w; x++)
+						up[dop + x] = img.data[so + xmap[x]];
+				else
+					for (x = 0; x < mimg.w; x++) {
+						var sp = so + xmap[x], dp = dop + x * 3;
+						up[dp] = img.data[sp];
+						up[dp + 1] = img.data[sp + 1];
+						up[dp + 2] = img.data[sp + 2];
+					}
+			}
+			return { w: mimg.w, h: mimg.h, n: img.n, data: up, alpha: mimg.data, mask: false };
+		}
+		if (mimg && !mimg.placeholder && img.flat) {
+			/* a flat color seen through a mask: just paint the mask (in the current fill color) */
+			return { w: mimg.w, h: mimg.h, n: 1, data: mimg.data, alpha: null, mask: true };
+		}
 		if (mimg && !mimg.placeholder) {
 			var am = new Uint8Array(img.w * img.h);
 			for (y = 0; y < img.h; y++) {
@@ -6024,7 +8667,11 @@ function load_image(doc, st, res, desired, maxN)
 		var Nneed = ratio >= 6 ? 1 : (ratio >= 3 ? 2 : (ratio >= 1.5 ? 4 : 8));
 		N = Math.min(Nneed, maxN || 8);
 	}
-	if (st._img && st._imgN >= N)
+	var fneed = 1;
+	if (doc.resolve(st.dict.ImageMask) === true)
+		fneed = mask_reduction(w, desired);
+	var jrneed = f == "JPXDecode" ? jpx_reduction(w, desired) : 0;
+	if (st._img && st._imgN >= N && (st._img.f || 1) <= fneed && !(st._img.jpx && st._img.jr > jrneed && !st._img.jclamped))
 		return st._img;
 	var img = load_image_raw(doc, st, res, desired, maxN);
 	if (img && !img.placeholder) {
@@ -6067,7 +8714,7 @@ function find_ei(bytes, p)
 	return n;
 }
 
-/* Tokenise a content stream into [[operator, [operands]], ...] */
+/* Tokenize a content stream into [[operator, [operands]], ...] */
 function parse_content(doc, bytes)
 {
 	var lx = new Lexer(bytes, 0);
@@ -6401,7 +9048,7 @@ function paint_path(dofill, dostroke, evenodd)
 {
 	var gs = RS.gs;
 	CLIPMASK = gs.mask;
-	if (!RS.hidden) {
+	if (!RS.hidden && !RS.textlog) {
 		var polys;
 		if (dofill && !gs.fcs.none) {
 			polys = path_polys();
@@ -6416,7 +9063,8 @@ function paint_path(dofill, dostroke, evenodd)
 			stroke_current_path();
 	}
 	if (RS.pending) {
-		apply_clip(RS.pending == 2);
+		if (!RS.textlog)
+			apply_clip(RS.pending == 2);
 		RS.pending = 0;
 	}
 	RS.path = [];
@@ -6459,7 +9107,7 @@ function stroke_current_path()
 		fill_polys(polys, false, gs.srgb, gs.sa, gs.clip);
 }
 
-/* ----- colours ----- */
+/* ----- colors ----- */
 
 function set_fill(comps)
 {
@@ -6510,7 +9158,7 @@ function shading_color(sh)
 	}
 }
 
-/* Returns { rgb: approximate solid colour, pat: shading pattern or null } */
+/* Returns { rgb: approximate solid color, pat: shading pattern or null } */
 function pattern_info(res, name, comps, cs)
 {
 	var doc = RS.doc;
@@ -6670,7 +9318,7 @@ function paint_shading(sh, M, box, cover, alpha)
 	}
 }
 
-/* Fill polygons with a shading pattern: rasterise the shape to a coverage mask, then paint through it */
+/* Fill polygons with a shading pattern: rasterize the shape to a coverage mask, then paint through it */
 function fill_with_shading(polys, evenodd, pat)
 {
 	var gs = RS.gs;
@@ -6803,6 +9451,23 @@ function draw_char(font, code, uni, w0)
 	}
 }
 
+/* Text search: while a page's text is being collected (page_text_run), each character is recorded instead of drawn
+ * as [text, x, y, advance x, advance y, up x, up y] in the page's own coordinates (unrotated, y upwards) */
+function log_text_char(uni, w0, font, code)
+{
+	var gs = RS.gs;
+	if (typeof uni != "string" || uni === "") {		/* e.g. a Type 3 font whose glyphs are named /2 or /n41: use the name */
+		var gn = font && font.glyphnames ? font.glyphnames[code] : null;
+		var hx = gn ? /^n([0-9a-fA-F]{2})$/.exec(gn) : null;
+		if (gn && gn.length == 1)
+			uni = gn;
+		else if (hx)
+			uni = String.fromCharCode(parseInt(hx[1], 16));
+	}
+	var trm = mat_mul([gs.fs * gs.th, 0, 0, gs.fs, 0, gs.trise], mat_mul(RS.tm, gs.ctm));
+	RS.textlog.push([typeof uni == "string" ? uni : "", trm[4], trm[5], w0 * trm[0], w0 * trm[1], trm[2], trm[3]]);
+}
+
 function show_text(str)
 {
 	var gs = RS.gs;
@@ -6822,7 +9487,9 @@ function show_text(str)
 			code = str.charCodeAt(i++) & 255;
 		var uni = font_unicode(font, code);
 		var w0 = font_width(font, code, uni);
-		if (vis)
+		if (RS.textlog)
+			log_text_char(uni, w0, font, code);
+		else if (vis)
 			draw_char(font, code, uni, w0);
 		var tx = (w0 * gs.fs + gs.tc + ((!font.twobyte && code == 32) ? gs.tw : 0)) * gs.th;
 		var tm = RS.tm;
@@ -6842,7 +9509,7 @@ function text_next_line(tx, ty)
 function paint_image(st, res)
 {
 	var gs = RS.gs;
-	if (RS.hidden)
+	if (RS.hidden || RS.textlog)
 		return;
 	if (st.dict.OC !== undefined && oc_hidden(RS.doc, st.dict.OC))
 		return;
@@ -7019,7 +9686,7 @@ function exec_ops(ops, res, depth)
 			case "W": RS.pending = 1; break;
 			case "W*": RS.pending = 2; break;
 
-			/* colour */
+			/* color */
 			case "g": gs.fcs = CS_GRAY; set_fill(nums(args, 1)); break;
 			case "G": gs.scs = CS_GRAY; set_stroke(nums(args, 1)); break;
 			case "rg": gs.fcs = CS_RGB; set_fill(nums(args, 3)); break;
@@ -7139,7 +9806,7 @@ function exec_ops(ops, res, depth)
 				break;
 			case "sh": {
 				var shd = res_get(res, "Shading", args[0] instanceof Name ? args[0].name : "");
-				if (shd && !RS.hidden)
+				if (shd && !RS.hidden && !RS.textlog)
 					paint_shading(shd, gs.ctm, gs.clip, null, gs.fa);
 				break;
 			}
@@ -7247,7 +9914,7 @@ function paint_annotations(doc, page)
 	}
 }
 
-/* Render a page into FB (which must already be initialised).
+/* Render a page into FB (which must already be initialized).
  * base maps PDF user space to device pixels. Returns false if aborted. */
 function render_page(doc, page, base, clip, abort_cb, maxN)
 {
@@ -7283,6 +9950,86 @@ function render_page(doc, page, base, clip, abort_cb, maxN)
 	return ok;
 }
 
+/* Run a page's content with nothing drawn and return the characters it shows (see log_text_char) */
+function page_text_run(doc, page)
+{
+	var ident = [1, 0, 0, 1, 0, 0];
+	RS = {
+		doc: doc, gs: new_gs(ident, [-1e7, -1e7, 1e7, 1e7]), stack: [], path: [], cur: null, cx: 0, cy: 0,
+		pending: 0, tm: [1, 0, 0, 1, 0, 0], tlm: [1, 0, 0, 1, 0, 0], hidden: 0, mc: [],
+		abort: null, opcount: 0, aborted: false, nocolor: false, depth: 0, patbase: ident,
+		maxN: 1, degraded: false, textlog: []
+	};
+	CLIPMASK = null;
+	COVTARGET = null;
+	var found = [];
+	try {
+		exec_ops(page_ops(doc, page), page.res, 0);
+	}
+	catch (e) {
+		/* whatever was found before the problem is still used */
+	}
+	found = RS.textlog;
+	CLIPMASK = null;
+	COVTARGET = null;
+	RS = null;
+	return found;
+}
+
+/* The text of a page for searching: { text, boxes }.  boxes[i] is the [x0, y0, x1, y1] rectangle (page
+ * coordinates, y upwards) of text[i], or null for a space or line break that was put in between words.  Cached. */
+PDFDoc.prototype.page_text = function (pageno)
+{
+	if (!this.text_cache)
+		this.text_cache = {};
+	if (this.text_cache[pageno])
+		return this.text_cache[pageno];
+	var out = { text: "", boxes: [] };
+	var page = this.get_pages()[pageno];
+	if (page) {
+		var log = page_text_run(this, page);
+		var parts = [];
+		var boxes = [];
+		var prev = null;
+		for (var i = 0; i < log.length; i++) {
+			var r = log[i];
+			var str = r[0];
+			if (str === "")
+				continue;
+			var ox = r[1], oy = r[2], ax = r[3], ay = r[4], ux = r[5], uy = r[6];
+			var size = Math.sqrt(ux * ux + uy * uy) || 1;
+			if (prev) {
+				var dx = ox - prev.ex, dy = oy - prev.ey;
+				var alen = Math.sqrt(prev.ax * prev.ax + prev.ay * prev.ay) || 1;
+				var along = (dx * prev.ax + dy * prev.ay) / alen;
+				var across = Math.abs(dy * prev.ax - dx * prev.ay) / alen;
+				if (across > size * 0.5 || along < -size) {
+					parts.push("\n");
+					boxes.push(null);
+				}
+				else if (along > size * 0.2) {
+					parts.push(" ");
+					boxes.push(null);
+				}
+			}
+			/* the character's box: from a little below the baseline to a little above the letters */
+			var xs = [ox - 0.2 * ux, ox + ax - 0.2 * ux, ox + ax + 0.8 * ux, ox + 0.8 * ux];
+			var ys = [oy - 0.2 * uy, oy + ay - 0.2 * uy, oy + ay + 0.8 * uy, oy + 0.8 * uy];
+			var box = [Math.min(xs[0], xs[1], xs[2], xs[3]), Math.min(ys[0], ys[1], ys[2], ys[3]),
+				Math.max(xs[0], xs[1], xs[2], xs[3]), Math.max(ys[0], ys[1], ys[2], ys[3])];
+			for (var k = 0; k < str.length; k++) {
+				parts.push(str.charAt(k));
+				boxes.push(box);
+			}
+			prev = { ex: ox + ax, ey: oy + ay, ax: ax, ay: ay };
+		}
+		out.text = parts.join("");
+		out.boxes = boxes;
+	}
+	this.text_cache[pageno] = out;
+	return out;
+};
+
 /* ======================================================================= */
 /* Part 6: Sixel encoder, viewer and program entry point                    */
 /* ======================================================================= */
@@ -7311,8 +10058,8 @@ function sixel_color_base(ci)
 	return [SIX_LEVELS[Math.floor(c / 36)], SIX_LEVELS[Math.floor(c / 6) % 6], SIX_LEVELS[c % 6]];
 }
 
-/* Quantise to the fixed palette (32 greys + a 6x6x6 colour cube) */
-function sixel_quantise_fixed(fb, n)
+/* Quantize to the fixed palette (32 grays + a 6x6x6 color cube) */
+function sixel_quantize_fixed(fb, n)
 {
 	var q = new Uint8Array(n);
 	var cache = new Int32Array(4096);	/* tiny direct-mapped cache keyed on the pixel value */
@@ -7353,42 +10100,12 @@ var SIX_DITHER = true;
 var SIX_BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 var SIX_FIXED_PAL = null;
 
-/* Quantise a W x H framebuffer.  Images with few colours (documents, line art) use a fixed
- * palette; photographs and gradients get an adaptive 255-colour palette (median cut) and
- * ordered dithering.  Returns { q: Uint8Array of palette indices, pal: [[r,g,b], ...] } */
-function sixel_quantise(fb, W, H)
+/* Median cut on a 4-bit-per-channel histogram: cnt, sr, sg, sb are 4096-entry arrays indexed by
+ * (r >> 4) << 8 | (g >> 4) << 4 | (b >> 4) holding the pixel count and the sums of the r, g and b
+ * values; bins lists the used indexes.  Returns { pal, binmap, nearest }. */
+function sixel_make_palette(cnt, sr, sg, sb, bins)
 {
-	var n = W * H;
-	var step = n > 120000 ? 2 : 1;
-	var cnt = new Int32Array(4096), sr = new Int32Array(4096), sg = new Int32Array(4096), sb = new Int32Array(4096);
-	var x, y, i, p, r, g, b, bi;
-	for (y = 0; y < H; y += step) {
-		var base = y * W;
-		for (x = 0; x < W; x += step) {
-			p = fb[base + x];
-			r = (p >> 16) & 255;
-			g = (p >> 8) & 255;
-			b = p & 255;
-			bi = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
-			cnt[bi]++;
-			sr[bi] += r;
-			sg[bi] += g;
-			sb[bi] += b;
-		}
-	}
-	var bins = [];
-	for (i = 0; i < 4096; i++)
-		if (cnt[i])
-			bins.push(i);
-	if (bins.length <= 48 || !SIX_DITHER) {
-		if (!SIX_FIXED_PAL) {
-			SIX_FIXED_PAL = [];
-			for (i = 0; i < SIX_NCOLORS; i++)
-				SIX_FIXED_PAL.push(sixel_color_base(i));
-		}
-		return { q: sixel_quantise_fixed(fb, n), pal: SIX_FIXED_PAL };
-	}
-
+	var i;
 	/* median cut on the 4-bit-per-channel histogram */
 	function make_box(list)
 	{
@@ -7480,6 +10197,15 @@ function sixel_quantise(fb, W, H)
 		}
 		return bk;
 	}
+	return { pal: pal, binmap: binmap, nearest: nearest };
+}
+
+/* Map a W x H framebuffer to indexes in the palette P (from sixel_make_palette), using ordered
+ * dithering.  The same pixel always maps to the same index, whichever frame it is in. */
+function sixel_map(fb, W, H, P)
+{
+	var n = W * H, binmap = P.binmap, nearest = P.nearest;
+	var x, y, p, r, g, b, bi;
 	var q = new Uint8Array(n);
 	var lastp = -1, lastc = 0, o = 0;
 	for (y = 0; y < H; y++) {
@@ -7490,7 +10216,7 @@ function sixel_quantise(fb, W, H)
 				q[o] = lastc;
 				continue;
 			}
-			if (y > 0 && fb[o - W] === p) {	/* flat area: keep the colour of the pixel above */
+			if (y > 0 && fb[o - W] === p) {	/* flat area: keep the color of the pixel above */
 				lastc = q[o - W];
 				lastp = p;
 				q[o] = lastc;
@@ -7517,26 +10243,167 @@ function sixel_quantise(fb, W, H)
 			lastc = kk;
 		}
 	}
-	return { q: q, pal: pal };
+	return q;
 }
+
+/* Build a palette from raw RGB byte data (e.g. the frames of an animated GIF), without rendering
+ * anything.  frames is a list of Uint8Arrays of r,g,b triplets; extra is a list of packed 0xRRGGBB
+ * colors that must be representable (such as the background).  Returns what sixel_make_palette does. */
+function sixel_palette_from_rgb(frames, extra)
+{
+	var cnt = new Int32Array(4096), sr = new Int32Array(4096), sg = new Int32Array(4096), sb = new Int32Array(4096);
+	var i, j, r, g, b, bi, total = 0;
+	for (i = 0; i < frames.length; i++)
+		total += frames[i].length / 3;
+	var step = Math.max(1, Math.floor(total / 400000));
+	for (i = 0; i < frames.length; i++) {
+		var d = frames[i];
+		for (j = 0; j + 2 < d.length; j += 3 * step) {
+			r = d[j]; g = d[j + 1]; b = d[j + 2];
+			bi = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+			cnt[bi]++; sr[bi] += r; sg[bi] += g; sb[bi] += b;
+		}
+	}
+	for (i = 0; i < extra.length; i++) {
+		r = (extra[i] >> 16) & 255; g = (extra[i] >> 8) & 255; b = extra[i] & 255;
+		bi = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+		cnt[bi] += 50; sr[bi] += r * 50; sg[bi] += g * 50; sb[bi] += b * 50;
+	}
+	var bins = [];
+	for (i = 0; i < 4096; i++)
+		if (cnt[i])
+			bins.push(i);
+	return sixel_make_palette(cnt, sr, sg, sb, bins);
+}
+
+/* Quantize a W x H framebuffer.  Images with few colors (documents, line art) use a fixed
+ * palette; photographs and gradients get an adaptive 255-color palette (median cut) and
+ * ordered dithering.  Returns { q: Uint8Array of palette indices, pal: [[r,g,b], ...] } */
+function sixel_quantize(fb, W, H)
+{
+	var n = W * H;
+	var step = n > 120000 ? 2 : 1;
+	var cnt = new Int32Array(4096), sr = new Int32Array(4096), sg = new Int32Array(4096), sb = new Int32Array(4096);
+	var x, y, i, p, r, g, b, bi;
+	for (y = 0; y < H; y += step) {
+		var base = y * W;
+		for (x = 0; x < W; x += step) {
+			p = fb[base + x];
+			r = (p >> 16) & 255;
+			g = (p >> 8) & 255;
+			b = p & 255;
+			bi = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+			cnt[bi]++;
+			sr[bi] += r;
+			sg[bi] += g;
+			sb[bi] += b;
+		}
+	}
+	var bins = [];
+	for (i = 0; i < 4096; i++)
+		if (cnt[i])
+			bins.push(i);
+	if (bins.length <= 48 || !SIX_DITHER) {
+		if (!SIX_FIXED_PAL) {
+			SIX_FIXED_PAL = [];
+			for (i = 0; i < SIX_NCOLORS; i++)
+				SIX_FIXED_PAL.push(sixel_color_base(i));
+		}
+		return { q: sixel_quantize_fixed(fb, n), pal: SIX_FIXED_PAL };
+	}
+
+	var P = sixel_make_palette(cnt, sr, sg, sb, bins);
+	return { q: sixel_map(fb, W, H, P), pal: P.pal };
+}
+
 
 /* Encode fb (W x H, H a multiple of 6) as a complete Sixel DCS string */
 function sixel_encode(fb, W, H)
 {
-	var Q = sixel_quantise(fb, W, H);
-	var q = Q.q, pal = Q.pal;
+	var Q = sixel_quantize(fb, W, H);
+	return sixel_encode_q(Q.q, Q.pal, W, H, null);
+}
+
+/* Which 6-pixel bands differ between two index buffers of the same size, and over which columns?
+ * Returns null if nothing changed, else { band: Uint8Array (1 = changed), x0, x1: Int32Array with the
+ * first and last changed column of each band }. */
+function sixel_changed_bands(prev, cur, W, H)
+{
+	var bands = Math.floor(H / 6), ch = new Uint8Array(bands), x0 = new Int32Array(bands), x1 = new Int32Array(bands);
+	var any = false, b, r, x, o, lo, hi, row;
+	for (b = 0; b < bands; b++) {
+		lo = W;
+		hi = -1;
+		for (r = 0; r < 6; r++) {
+			row = (b * 6 + r) * W;
+			for (x = 0; x < W; x++) {
+				if (prev[row + x] !== cur[row + x]) {
+					if (x < lo) lo = x;
+					break;
+				}
+			}
+			if (x == W)
+				continue;
+			for (x = W - 1; x > hi; x--) {
+				if (prev[row + x] !== cur[row + x]) {
+					hi = x;
+					break;
+				}
+			}
+		}
+		if (hi >= 0) {
+			ch[b] = 1;
+			x0[b] = lo;
+			x1[b] = hi;
+			any = true;
+		}
+	}
+	return any ? { band: ch, x0: x0, x1: x1 } : null;
+}
+
+/* Encode already-quantized pixels (q: palette indexes, pal: palette) as a Sixel DCS string.
+ * changed is null for a whole image, or what sixel_changed_bands returns: the result then draws only
+ * the changed columns of the changed 6-pixel bands and leaves everything else on screen as it is.
+ * Such a partial image must be drawn from the same corner as the image it patches (sixel scrolling
+ * off) and uses the same palette as the image it patches. */
+function sixel_encode_q(q, pal, W, H, changed)
+{
 	var out = [];
 	var used = new Uint8Array(256);
-	var i, x;
-	for (i = 0; i < q.length; i++)
-		used[q[i]] = 1;
-	out.push("\x1bPq\"1;1;" + W + ";" + H);
+	var i, x, lastband = -1;
+	var nbands = Math.floor(H / 6);
+	var cband = changed ? changed.band : null;
+	if (changed) {
+		for (var cb = 0; cb < nbands; cb++) {
+			if (!cband[cb])
+				continue;
+			lastband = cb;
+			/* the span that will be scanned below: the changed columns widened to a multiple of 4 */
+			var ux0 = changed.x0[cb] & ~3, ux1 = Math.min(W, (changed.x1[cb] | 3) + 1) - 1;
+			for (var cr = 0; cr < 6; cr++)
+				for (i = (cb * 6 + cr) * W + ux0; i <= (cb * 6 + cr) * W + ux1; i++)
+					used[q[i]] = 1;
+		}
+		if (lastband < 0)
+			return "";
+	}
+	else {
+		for (i = 0; i < q.length; i++)
+			used[q[i]] = 1;
+	}
+	/* A partial image gives no size (the terminal would paint the whole declared area with the
+	 * background) and sets "unset pixels stay as they are" (P2 = 1). */
+	out.push(changed ? "\x1bP0;1q\"1;1" : "\x1bPq\"1;1;" + W + ";" + H);
 	for (i = 0; i < pal.length; i++) {
 		if (!used[i])
 			continue;
 		var c = SIX_INVERT ? [255 - pal[i][0], 255 - pal[i][1], 255 - pal[i][2]] : pal[i];
 		out.push("#" + i + ";2;" + Math.floor(c[0] * 100 / 255 + 0.5) + ";" + Math.floor(c[1] * 100 / 255 + 0.5) + ";" + Math.floor(c[2] * 100 / 255 + 0.5));
 	}
+	/* The terminal only sets up its pixel buffer when it gets the first data character, so a
+	 * partial image that skips its first bands starts with one blank one */
+	if (changed && !cband[0])
+		out.push("?");
 	var lines = [];
 	for (i = 0; i < 256; i++)
 		lines.push(used[i] ? new Uint8Array(W) : null);
@@ -7546,11 +10413,24 @@ function sixel_encode(fb, W, H)
 	var wide = (W % 4) == 0;
 	var q32 = wide ? new Uint32Array(q.buffer) : null;
 	for (var band = 0; band < bands; band++) {
+		if (changed && !cband[band]) {
+			if (band < lastband)
+				out.push("-");
+			continue;
+		}
+		/* columns to scan: all of them, or (partial image) the changed span, widened to a multiple of 4 */
+		var xs = 0, xend = W;
+		if (changed) {
+			xs = changed.x0[band] & ~3;
+			xend = (changed.x1[band] | 3) + 1;
+			if (xend > W)
+				xend = W;
+		}
 		var seen = [];
 		var o0 = band * 6 * W;
 		var g0 = o0 >> 2, g1 = (o0 + W) >> 2, g2 = (o0 + 2 * W) >> 2, g3 = (o0 + 3 * W) >> 2, g4 = (o0 + 4 * W) >> 2, g5 = (o0 + 5 * W) >> 2;
 		var o1 = o0 + W, o2 = o1 + W, o3 = o2 + W, o4 = o3 + W, o5 = o4 + W;
-		for (var xg = 0; xg < W; xg += 4) {
+		for (var xg = xs; xg < xend; xg += 4) {
 			var xe = xg + 4 > W ? W : xg + 4;
 			if (wide) {
 				var gi = xg >> 2;
@@ -7654,7 +10534,7 @@ function sixel_encode(fb, W, H)
 			for (x = lo[ci]; x <= last; x++)
 				lr[x] = 0;
 		}
-		if (band < bands - 1)
+		if (band < (changed ? lastband : bands - 1))
 			out.push("-");
 	}
 	out.push("\x1b\\");
@@ -7847,8 +10727,15 @@ PDFDoc.prototype.page_links = function (pageno)
 				var rect = rect_of(this, a.Rect);
 				if (!rect)
 					continue;
-				/* only links to somewhere inside the document are kept */
+				/* only links to somewhere inside the document are kept (and web links, for documents made from
+				 * HTML, which set allow_uri) */
 				var act = this.resolve(a.A);
+				if (this.allow_uri && isDict(act) && isName(this.resolve(act.S), "URI")) {
+					var uri = this.resolve(act.URI);
+					if (typeof uri == "string" && uri.length)
+						out.push({ rect: rect, page: -1, uri: uri });
+					continue;
+				}
 				var d = this.resolve_dest(isDict(act) && isName(this.resolve(act.S), "GoTo") ? act.D : a.Dest);
 				if (d)
 					out.push({ rect: rect, page: d.page, x: d.x, y: d.y });
@@ -7940,7 +10827,7 @@ View.prototype.zoom = function (factor)
 	var ns = Math.max(0.1, Math.min(16, this.scale * factor));
 	if (ns == this.scale)
 		return;
-	/* keep the page point at the centre of the view fixed */
+	/* keep the page point at the center of the view fixed */
 	var cx = (this.sx + this.W / 2) / this.scale, cy = (this.sy + this.H / 2) / this.scale;
 	this.scale = ns;
 	this.sx = cx * ns - this.W / 2;
@@ -7991,16 +10878,26 @@ function load_pdf(filename)
 	var f = new File(filename);
 	if (!f.exists)
 		throw "File not found: " + filename;
-	if (f.length > 96 * 1024 * 1024)
+	var total = f.length;
+	if (total > 200 * 1024 * 1024)
 		throw "File is too large";
 	if (!f.open("rb"))
 		throw "Unable to open " + filename;
-	var s = f.read();
+	/* read it in pieces, so that a big file never exists as a string and as bytes at the same time */
+	var bytes = new Uint8Array(total), got = 0, chunk = 4 * 1024 * 1024;
+	while (got < total) {
+		var piece = f.read(chunk);
+		if (!piece || !piece.length)
+			break;
+		for (var pi = 0, pn = piece.length; pi < pn; pi++)
+			bytes[got + pi] = piece.charCodeAt(pi) & 0xff;
+		got += piece.length;
+	}
 	f.close();
-	if (!s || s.length < 16)
+	if (got < 16)
 		throw "File is empty or too short";
-	var bytes = string_to_bytes(s);
-	s = null;
+	if (got < total)
+		bytes = bytes_sub(bytes, 0, got);
 	/* tolerate junk before the %PDF header */
 	var h = find_bytes(bytes, "%PDF-", 0, 1024);
 	if (h > 0)
