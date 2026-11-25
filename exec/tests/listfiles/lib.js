@@ -245,5 +245,57 @@ for (var i = 0; i < keys.length; i++) {
 		failures.push("listfiles_defaults() lacks " + keys[i]);
 }
 
+// Search terms of boolean search expressions, as bool_search() parses them
+function texts(terms)
+{
+	return terms.map(function (t) { return (t.quoted ? "\"" : "") + t.text; });
+}
+check("terms: one word", texts(listfiles_search_terms("NOFX")), ["NOFX"]);
+check("terms: phrase", texts(listfiles_search_terms("  soul  doubt ")), ["soul  doubt"]);
+check("terms: AND/OR", texts(listfiles_search_terms("a and b OR c")), ["a", "b", "c"]);
+check("terms: operator chars", texts(listfiles_search_terms("(a|b)&c")), ["a", "b", "c"]);
+check("terms: keyword inside a word", texts(listfiles_search_terms("bandit ornot")), ["bandit ornot"]);
+check("terms: quoted", texts(listfiles_search_terms("\"x y\" | z")), ["\"x y", "z"]);
+check("terms: NOT left out", texts(listfiles_search_terms("a NOT b")), ["a"]);
+check("terms: ! left out", texts(listfiles_search_terms("a & !(b | c)")), ["a"]);
+check("terms: double negation", texts(listfiles_search_terms("!!a")), ["a"]);
+check("terms: implicit AND before NOT", texts(listfiles_search_terms("(w | d) & (m | c) !OS/2")), ["w", "d", "m", "c"]);
+check("terms: empty", texts(listfiles_search_terms("")), []);
+
+// Highlighting matches ("[" for the color, "+"/"-" pushed/popped)
+function hl(text, expr)
+{
+	return listfiles_highlight(text, listfiles_search_terms(expr), "[")
+		.replace(/\x01\+/g, "{").replace(/\x01-/g, "}").replace(/\x01/g, "^");
+}
+check("highlight: case-insensitive", hl("BGAcapellaNoFX_03.L", "nofx"), "BGAcapella{[NoFX}_03.L");
+check("highlight: every match", hl("ab ab", "ab"), "{[ab} {[ab}");
+check("highlight: overlapping terms merge", hl("abcd", "abc | bcd"), "{[abcd}");
+check("highlight: none", hl("abc", "xyz"), "abc");
+check("highlight: quoted is whole word", hl("NoFX_03 NOFX", "\"nofx\""), "NoFX_03 {[NOFX}");
+check("highlight: across a color code", hl("ab\x01hcd", "abcd"), "{[ab}^h{[cd}");
+check("highlight: ends at line breaks", hl("ab\r\ncd", "b | c"), "a{[b}\r\n{[c}d");
+check("highlight: ends at conditional newlines", hl("ab\x01/cd", "abcd"), "{[ab}^/{[cd}");
+check("highlight: NOT term not shown", hl("a b", "a !b"), "{[a} b");
+check("highlight: no terms", hl("abc", ""), "abc");
+check("highlight: skips ANSI sequences", hl("\x1b[1;33mA1m", "1 | m"), "\x1b[1;33mA{[1m}");
+check("highlight: match spans an ANSI sequence", hl("a\x1b[0mb", "ab"), "{[a}\x1b[0m{[b}");
+check("highlight: color code after a match stays", hl("NOFX\x01n - x", "nofx"), "{[NOFX}^n - x");
+check("highlight: ANSI color after a match stays", hl("\x1b[1;33mNOFX\x1b[0;36m s", "nofx"), "\x1b[1;33m{[NOFX}\x1b[0;36m s");
+
+// Highlighting in the color the text is in, brightened or dimmed
+function hl_toggle(text, expr, start)
+{
+	return listfiles_highlight(text, listfiles_search_terms(expr), start)
+		.replace(/\x01\+/g, "{").replace(/\x01-/g, "}").replace(/\x01/g, "^");
+}
+check("toggle: dim to bright", hl_toggle("ab", "b", 7), "a{^n^w^hb}");
+check("toggle: bright to dim", hl_toggle("ab", "b", 15), "a{^n^wb}");
+check("toggle: follows the text's codes", hl_toggle("\x01ra\x01hb", "a | b", 7), "^r{^n^r^ha}^h{^n^rb}");
+check("toggle: keeps the background", hl_toggle("a", "a", 0x1e), "{^n^y^4a}");
+check("attr codes: color keeps bright", listfiles_apply_attr_codes("\x01h\x01c", 7), 11);
+check("attr codes: normal", listfiles_apply_attr_codes("\x01h\x01n", 14), 7);
+check("attr codes: background", listfiles_apply_attr_codes("\x014", 7), 0x17);
+
 if (failures.length)
 	throw new Error(failures.length + " failed:\r\n" + failures.join("\r\n"));

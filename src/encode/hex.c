@@ -23,19 +23,24 @@
 #include "genwrap.h"
 #include "gen_defs.h"
 
-char* hex_encode(char esc, const char* src, char* chars, char* dest, size_t size)
+char* hex_encode(char esc, const char* src, const char* chars, char* dest, size_t size)
 {
 	char* result = dest;
-	char* end = dest + (size - 1);
+	char* end;
 
+	if (size < 1)
+		return result;
+	end = dest + (size - 1);
 	while (*src != '\0' && dest < end) {
-		if ((*src == esc || strchr(chars, *src) != NULL) && dest + 3 < end)
-			dest += sprintf(dest, "%c%2X", esc, *src);
-		else
+		if (*src == esc || strchr(chars, *src) != NULL) {
+			if (end - dest < 3)	/* no room for the whole escape */
+				break;
+			dest += sprintf(dest, "%c%02X", esc, (unsigned char)*src);
+		} else
 			*(dest++) = *src;
 		src++;
 	}
-	*end = '\0';
+	*dest = '\0';
 	return result;
 }
 

@@ -666,6 +666,7 @@ typedef struct
 	struct loadable_module scandirs_mod;
 	struct loadable_module listfiles_mod;
 	struct loadable_module fileinfo_mod;
+	struct loadable_module extfileinfo_mod;
 	struct loadable_module nodelist_mod;
 	struct loadable_module whosonline_mod;
 	struct loadable_module privatemsg_mod;

@@ -48,6 +48,7 @@ function listfiles_defaults()
 		tag_attr: "WH",	// the tagged marker's color ("": the filename color)
 		flags_attr: "KH",	// the extended description marker's color ("": the filename color)
 		free_attr: "",
+		found_attr: "",	// what a search found, in the descriptions ("": the color it's in, brightened or dimmed)
 		hdr_box_attr: "",
 		hdr_line_attr: "",
 		box_top_left: "\xc9",
@@ -338,6 +339,256 @@ function listfiles_shorten_to_fit(names, render, measure, width)
 		text = render(names);
 	}
 	return text;
+}
+
+// The search terms in boolean search expression 'expr' (parsed as
+// bool_search() parses it) that a matching file's text may contain, each
+// {text, quoted}: terms under a NOT are left out
+function listfiles_search_terms(expr)
+{
+	var terms = [];
+	var p = 0;
+	function word_char(c)
+	{
+		return c.length === 1 && /[A-Za-z0-9_]/.test(c);
+	}
+	function special(c)
+	{
+		return c.length === 1 && "&|!()\"".indexOf(c) >= 0;
+	}
+	function space(c)
+	{
+		return c.length === 1 && /\s/.test(c);
+	}
+	function skip_space()
+	{
+		while (space(expr.charAt(p)))
+			p++;
+	}
+	// The operator keyword (AND, OR or NOT) at position i, or ""
+	function keyword(i)
+	{
+		var m = expr.substr(i, 4).match(/^(and|or|not)/i);
+		if (!m || word_char(expr.charAt(i + m[1].length)))
+			return "";
+		return m[1].toUpperCase();
+	}
+	function term(negated)
+	{
+		skip_space();
+		var text;
+		if (expr.charAt(p) === "\"") {
+			var end = expr.indexOf("\"", p + 1);
+			if (end < 0)
+				end = expr.length;
+			text = expr.substring(p + 1, end);
+			p = end + 1;
+			if (text !== "" && !negated)
+				terms.push({ text: text, quoted: true });
+			return;
+		}
+		// A bare phrase: words and the white space between them, up to an
+		// operator character or keyword
+		var start = p;
+		while (p < expr.length) {
+			var c = expr.charAt(p);
+			if (special(c))
+				break;
+			if (space(c)) {
+				var q = p;
+				while (space(expr.charAt(q)))
+					q++;
+				if (q >= expr.length || special(expr.charAt(q)) || keyword(q))
+					break;
+			}
+			p++;
+		}
+		text = expr.substring(start, p).replace(/\s+$/, "");
+		if (text !== "" && !negated)
+			terms.push({ text: text, quoted: false });
+		if (p === start && p < expr.length)
+			p++;	// (not a valid expression: don't stall)
+	}
+	function atom(negated)
+	{
+		skip_space();
+		if (expr.charAt(p) !== "(") {
+			term(negated);
+			return;
+		}
+		p++;
+		or_expr(negated);
+		skip_space();
+		if (expr.charAt(p) === ")")
+			p++;
+	}
+	function not_expr(negated)
+	{
+		for (;;) {
+			skip_space();
+			if (expr.charAt(p) === "!")
+				p++;
+			else if (keyword(p) === "NOT")
+				p += 3;
+			else
+				break;
+			negated = !negated;
+		}
+		atom(negated);
+	}
+	function and_expr(negated)
+	{
+		not_expr(negated);
+		for (;;) {
+			skip_space();
+			var kw = keyword(p);
+			if (expr.charAt(p) === "&")
+				p++;
+			else if (kw === "AND")
+				p += 3;
+			else if (expr.charAt(p) !== "!" && kw !== "NOT")	// (an implicit AND before a NOT)
+				break;
+			not_expr(negated);
+		}
+	}
+	function or_expr(negated)
+	{
+		and_expr(negated);
+		for (;;) {
+			skip_space();
+			if (expr.charAt(p) === "|")
+				p++;
+			else if (keyword(p) === "OR")
+				p += 2;
+			else
+				break;
+			and_expr(negated);
+		}
+	}
+	if (expr)
+		or_expr(false);
+	return terms;
+}
+
+// Color 'attr' (a number) after the Ctrl-A color codes in 'codes'
+function listfiles_apply_attr_codes(codes, attr)
+{
+	var re = /\x01(.)/g;
+	var m;
+	while ((m = re.exec(codes)) !== null) {
+		var c = m[1].toUpperCase();
+		var fg = "KBGCRMYW".indexOf(c);
+		var bg = "04261537".indexOf(c);	// (background digits are in ANSI order)
+		if (fg >= 0)
+			attr = (attr & ~0x07) | fg;
+		else if (bg >= 0)
+			attr = (attr & ~0x70) | (bg << 4);
+		else if (c === "H")
+			attr |= 0x08;
+		else if (c === "I")
+			attr |= 0x80;
+		else if (c === "N")
+			attr = 0x07;
+	}
+	return attr;
+}
+
+// The length of the Ctrl-A code or ANSI escape sequence (ESC [ ... final
+// byte) at position i of 'text', or 0 if there's none there
+function listfiles_code_length(text, i)
+{
+	var c = text.charAt(i);
+	if (c === "\x01")
+		return i + 1 < text.length ? 2 : 0;
+	if (c !== "\x1b" || text.charAt(i + 1) !== "[")
+		return 0;
+	for (var k = i + 2; k < text.length; k++) {
+		var code = text.charCodeAt(k);
+		if (code >= 0x40 && code <= 0x7e)
+			return k + 1 - i;
+	}
+	return text.length - i;
+}
+
+// 'text' (which may contain Ctrl-A codes and ANSI escape sequences, neither
+// of which is matched or split) with what matches the search 'terms' (from
+// listfiles_search_terms()), matched as bool_search() matches them:
+// case-insensitive, and a quoted term as whole words. A match is shown
+// in color 'attr': Ctrl-A codes, or a number, the color 'text' starts in,
+// for each match to be the color it's in, brightened (or dimmed when already
+// bright). The color before each match is restored after it.
+function listfiles_highlight(text, terms, attr)
+{
+	if (!text || !terms || !terms.length)
+		return text;
+	// The visible text, and the position in 'text' of each of its characters
+	var plain = "";
+	var i;
+	for (i = 0; i < text.length; i++) {
+		var skip = listfiles_code_length(text, i);
+		if (skip)
+			i += skip - 1;
+		else
+			plain += text.charAt(i);
+	}
+	var lower = plain.toLowerCase();
+	function word_char(c)
+	{
+		return c.length === 1 && /[A-Za-z0-9_]/.test(c);
+	}
+	var marked = [];
+	for (var t = 0; t < terms.length; t++) {
+		var needle = terms[t].text.toLowerCase();
+		var lead = terms[t].quoted && !/^\s/.test(needle);
+		var trail = terms[t].quoted && !/\s$/.test(needle);
+		for (var at = lower.indexOf(needle); needle && at >= 0; at = lower.indexOf(needle, at + 1)) {
+			if (lead && at > 0 && word_char(plain.charAt(at - 1)))
+				continue;
+			if (trail && word_char(plain.charAt(at + needle.length)))
+				continue;
+			for (var k = at; k < at + needle.length; k++)
+				marked[k] = true;
+		}
+	}
+	// Each run of matched characters in 'attr', ended at each line break
+	// and code (so that every screen line, and every color the text sets,
+	// is kept)
+	var result = "";
+	var on = false;
+	var n = 0;
+	var cur = attr;	// (the color the text is in, when 'attr' is a number)
+	function found_attr()
+	{
+		return typeof attr === "number" ? listfiles_attr_str(cur ^ 0x08) : attr;
+	}
+	for (i = 0; i < text.length; i++) {
+		var c = text.charAt(i);
+		var len = listfiles_code_length(text, i);
+		if (len) {
+			// A code ends the run (so the color it sets outlasts the
+			// match), which resumes at the next matched character
+			var code = text.substr(i, len);
+			i += len - 1;
+			if (on) {
+				result += "\x01-";
+				on = false;
+			}
+			result += code;
+			if (typeof attr === "number" && c === "\x01")
+				cur = listfiles_apply_attr_codes(code, cur);
+			continue;
+		}
+		var want = marked[n++] === true && c !== "\r" && c !== "\n";
+		if (want && !on)
+			result += "\x01+" + found_attr();
+		else if (!want && on)
+			result += "\x01-";
+		on = want;
+		result += c;
+	}
+	if (on)
+		result += "\x01-";
+	return result;
 }
 
 // The screen lines of an extended description: split at its line breaks

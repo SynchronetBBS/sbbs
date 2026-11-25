@@ -1,10 +1,10 @@
-/* sixelview.js
+/* univiewer.js
  *
  * Universal viewer for Sixel terminals (SyncTERM 1.2+) with scrolling and zooming.
  * Displays PDF files, Sixel files (.six), PNG, JPEG, GIF (animated too), BMP, PPM/PGM, SVG, PCX, TGA, ICO,
  * TIFF, IFF/ILBM and XBin/BIN text-mode art; the type is detected from the file's contents.
  *
- *	?sixelview <file> [start-page] [force]
+ *	?univiewer <file> [start-page] [force]
  *
  *	start-page	for PDF files, the 1-based page to open
  *	force		skip the SyncTERM/Sixel capability check
@@ -18,18 +18,18 @@
  * re-rendered at every zoom level (sharp text and vector graphics); raster images
  * are resampled.
  *
- * Requires sixelview_lib.js, which loads pdf2sixel_lib.js.  Tab size is 4.
+ * Requires univiewer_lib.js, which loads pdf2sixel_lib.js.  Tab size is 4.
  */
 
 "use strict";
 
-load("sixelview_lib.js");
+load("univiewer_lib.js");
 
 function main()
 {
 	var file = argv.length > 0 ? argv[0] : null;
 	if (!file) {
-		console.print("\x01n\x01cusage: \x01h?sixelview <file> [page] [force]\x01n\r\n");
+		console.print("\x01n\x01cusage: \x01h?univiewer <file> [page] [force]\x01n\r\n");
 		return;
 	}
 	var doc;
@@ -64,6 +64,6 @@ try {
 	main();
 }
 catch (e) {
-	log(LOG_ERR, "sixelview error: " + e + (e && e.stack ? "\n" + e.stack : ""));
-	console.print("\x01n\x01h\x01rsixelview error: \x01w" + String(e).replace(/\x01/g, "") + "\x01n\r\n");
+	log(LOG_ERR, "univiewer error: " + e + (e && e.stack ? "\n" + e.stack : ""));
+	console.print("\x01n\x01h\x01runiviewer error: \x01w" + String(e).replace(/\x01/g, "") + "\x01n\r\n");
 }

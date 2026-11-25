@@ -10,7 +10,7 @@
  * changed (the changes are added to the end of the file, so the original text of the book is still in there; use out=
  * if you want to keep the original).
  *
- * Run it on the host, not in SixelView.  Use jsexec's -m option for big books, e.g.  jsexec -m536870912 pdfunmark.js ...
+ * Run it on the host, not in Universal Viewer.  Use jsexec's -m option for big books, e.g.  jsexec -m536870912 pdfunmark.js ...
  *
  * Only text can be removed; a watermark that is part of a scanned picture can't be.  If the watermark shares one
  * text operator with real words, those words are hidden with it.  Encrypted books are handled if they use RC4 (most do).

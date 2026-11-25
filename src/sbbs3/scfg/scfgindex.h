@@ -270,6 +270,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Access Requirements",
 		"Module",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements"
+	},
+	{
+		"Access Requirements",
+		"Module",
 		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements"
 	},
 	{
@@ -1166,6 +1171,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Clear Requirements",
 		"Access Requirements",
 		"System > Loadable Modules... > View File Info > Module > Access Requirements > Clear Requirements"
+	},
+	{
+		"Clear Requirements",
+		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Clear Requirements"
 	},
 	{
 		"Clear Requirements",
@@ -2296,6 +2306,16 @@ static const scfg_option_t scfg_option_index[] = {
 		"Exported Ctrl-A Codes",
 		"Network Hubs...",
 		"Networks > Network Hubs... > Exported Ctrl-A Codes"
+	},
+	{
+		"Ext File Info",
+		"Loadable Modules",
+		"System > Loadable Modules > Ext File Info"
+	},
+	{
+		"Ext File Info",
+		"Loadable Modules...",
+		"System > Loadable Modules... > Ext File Info"
 	},
 	{
 		"Extend Expiration",
@@ -3844,6 +3864,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Module",
+		"Ext File Info",
+		"System > Loadable Modules... > Ext File Info > Module"
+	},
+	{
+		"Module",
 		"Guru",
 		"Chat Features > Artificial Gurus > Guru > Module"
 	},
@@ -4221,6 +4246,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Name / Command-line",
 		"Module",
 		"System > Loadable Modules... > View File Info > Module > Name / Command-line"
+	},
+	{
+		"Name / Command-line",
+		"Module",
+		"System > Loadable Modules... > Ext File Info > Module > Name / Command-line"
 	},
 	{
 		"Name / Command-line",
@@ -5340,6 +5370,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Age",
 		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required Age"
+	},
+	{
+		"Set Required Age",
+		"Access Requirements",
 		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Age"
 	},
 	{
@@ -5686,6 +5721,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Day of Week",
 		"Access Requirements",
 		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Day of Week"
+	},
+	{
+		"Set Required Day of Week",
+		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required Day of Week"
 	},
 	{
 		"Set Required Day of Week",
@@ -6040,6 +6080,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Gender",
 		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required Gender"
+	},
+	{
+		"Set Required Gender",
+		"Access Requirements",
 		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Gender"
 	},
 	{
@@ -6386,6 +6431,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Number of Credits",
 		"Access Requirements",
 		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Number of Credits"
+	},
+	{
+		"Set Required Number of Credits",
+		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required Number of Credits"
 	},
 	{
 		"Set Required Number of Credits",
@@ -6740,6 +6790,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Post/Call Ratio (percentage)",
 		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
+	},
+	{
+		"Set Required Post/Call Ratio (percentage)",
+		"Access Requirements",
 		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Post/Call Ratio (percentage)"
 	},
 	{
@@ -7086,6 +7141,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Security Flag",
 		"Access Requirements",
 		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Security Flag"
+	},
+	{
+		"Set Required Security Flag",
+		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required Security Flag"
 	},
 	{
 		"Set Required Security Flag",
@@ -7440,6 +7500,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Security Level",
 		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required Security Level"
+	},
+	{
+		"Set Required Security Level",
+		"Access Requirements",
 		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Security Level"
 	},
 	{
@@ -7786,6 +7851,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Terminal Type/Capability",
 		"Access Requirements",
 		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Terminal Type/Capability"
+	},
+	{
+		"Set Required Terminal Type/Capability",
+		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required Terminal Type/Capability"
 	},
 	{
 		"Set Required Terminal Type/Capability",
@@ -8140,6 +8210,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Time of Day",
 		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required Time of Day"
+	},
+	{
+		"Set Required Time of Day",
+		"Access Requirements",
 		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Time of Day"
 	},
 	{
@@ -8486,6 +8561,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Time Remaining",
 		"Access Requirements",
 		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Time Remaining"
+	},
+	{
+		"Set Required Time Remaining",
+		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required Time Remaining"
 	},
 	{
 		"Set Required Time Remaining",
@@ -8840,6 +8920,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required Upload/Download Byte Ratio (percentage)",
 		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download Byte Ratio (percentage)",
+		"Access Requirements",
 		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required Upload/Download Byte Ratio (percentage)"
 	},
 	{
@@ -9186,6 +9271,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required Upload/Download File Ratio (percentage)",
 		"Access Requirements",
 		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
+	},
+	{
+		"Set Required Upload/Download File Ratio (percentage)",
+		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required Upload/Download File Ratio (percentage)"
 	},
 	{
 		"Set Required Upload/Download File Ratio (percentage)",
@@ -9540,6 +9630,11 @@ static const scfg_option_t scfg_option_index[] = {
 	{
 		"Set Required User Number",
 		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required User Number"
+	},
+	{
+		"Set Required User Number",
+		"Access Requirements",
 		"System > Loadable Modules... > Batch Transfer > Module > Access Requirements > Set Required User Number"
 	},
 	{
@@ -9886,6 +9981,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Set Required User Type (e.g. Sysop, Guest)",
 		"Access Requirements",
 		"System > Loadable Modules... > View File Info > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
+	},
+	{
+		"Set Required User Type (e.g. Sysop, Guest)",
+		"Access Requirements",
+		"System > Loadable Modules... > Ext File Info > Module > Access Requirements > Set Required User Type (e.g. Sysop, Guest)"
 	},
 	{
 		"Set Required User Type (e.g. Sysop, Guest)",

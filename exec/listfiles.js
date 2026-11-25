@@ -57,6 +57,8 @@ function Listing(dir, mode, filespec)
 	// widened before anything else (so it lists every match, with the
 	// full header)
 	this.filespec = (mode & FL_FIND) ? filespec : listfiles_widen_filespec(filespec);
+	// What to highlight in the descriptions: the search expression's terms
+	this.terms = (mode & FL_FIND) && filespec ? listfiles_search_terms(filespec) : [];
 	this.opts = null;	// loaded once there are files to list (a scan visits many without)
 	this.batch = (user.settings & USER_BATCHFLAG) && !(mode & (FL_EXT | FL_VIEW));
 	this.files = [];
@@ -253,7 +255,34 @@ Listing.prototype.extdesc = function (f)
 		return null;
 	if (strip_ctrl(f.extdesc).replace(/\s+$/, "") === "")
 		return null;
-	return f.extdesc;
+	return this.highlight(f.extdesc);
+};
+
+// The search expression the files were found with (passed to the file
+// information display, for an Extended File Info module to highlight), or
+// undefined when not searching
+Listing.prototype.search = function ()
+{
+	return (this.mode & FL_FIND) && this.filespec ? this.filespec : undefined;
+};
+
+// 'text' (a description, starting in color 'start_attr', Ctrl-A codes, or
+// by default the description color) with what the search expression found
+// in it in the found_attr color, by default the color it's in, brightened
+// (or dimmed when already bright)
+Listing.prototype.highlight = function (text, start_attr)
+{
+	if (!this.terms.length)
+		return text;
+	var opts = this.opts;
+	var attr = opts.found_attr;
+	if (!attr) {
+		if (start_attr === undefined)
+			start_attr = opts.desc_attr;
+		attr = start_attr ? listfiles_apply_attr_codes(start_attr, LIGHTGRAY)
+			: console.color_list[ATTR_FILEDESC];
+	}
+	return listfiles_highlight(text, this.terms, attr);
 };
 
 // Read which of the directory's files are in the user's batch download queue
@@ -293,7 +322,6 @@ Listing.prototype.file_line = function (f, letter, fmt, overrides)
 	var namelen = this.name_width();
 	var name_attr_num = console.color_list[ATTR_FILENAME];
 	var size_attr_num = console.color_list[ATTR_FILECDT];
-	var desc_attr_num = console.color_list[ATTR_FILEDESC];
 	var exists = (f.size !== -1);
 	var cost = f.cost || 0;
 	if (!exists)
@@ -324,17 +352,8 @@ Listing.prototype.file_line = function (f, letter, fmt, overrides)
 		var desc = (f.desc || "").replace(/^\s+/, "");
 		if (desc === "")
 			values.desc = f.name;
-		else if ((this.mode & FL_FIND) && this.filespec) {
-			var pos = desc.toLowerCase().indexOf(this.filespec.toLowerCase());
-			if (pos >= 0)
-				desc = desc.substr(0, pos)
-					+ (opts.desc_attr ? opts.desc_attr + "\x01h" : listfiles_attr_str(desc_attr_num ^ HIGH))
-					+ desc.substr(pos, this.filespec.length)
-					+ values.desc_attr
-					+ desc.substr(pos + this.filespec.length);
-			values.desc = desc;
-		} else
-			values.desc = desc;
+		else
+			values.desc = this.highlight(desc);
 	}
 	for (var key in overrides)
 		values[key] = overrides[key];
@@ -401,7 +420,7 @@ Listing.prototype.list = function ()
 			// As listfileinfo() does: no newline after each file (the next
 			// file's screen is cleared without a pause), and Previous goes
 			// back a file
-			var result = bbs.view_file_info(this.code, f.name, (this.mode & FL_EXT) ? true : false);
+			var result = bbs.view_file_info(this.code, f.name, (this.mode & FL_EXT) ? true : false, this.search());
 			if (result === 0)
 				return -1;
 			// Previous goes back a file: count each file once
@@ -515,7 +534,7 @@ Listing.prototype.command = function (ch, choose)
 			if ((files = choose()) === null)
 				return null;
 			for (i = 0; i < files.length; i++) {
-				if (bbs.view_file_info(code, files[i].name, ch === "E") === 0)
+				if (bbs.view_file_info(code, files[i].name, ch === "E", this.search()) === 0)
 					return CMD_QUIT;
 			}
 			console.cond_newline();
@@ -1063,7 +1082,7 @@ LightbarLayout.prototype.pane_lines = function (i)
 		.replace(/(\r?\n)+$/, "").split(/\r?\n/);
 	if (f.extdesc && strip_ctrl(f.extdesc).replace(/\s+$/, "") !== "") {
 		var attr = this.opts.preview_extdesc_attr;
-		lines = lines.concat(listfiles_extdesc_lines(f.extdesc).map(function (line) { return attr + line; }));
+		lines = lines.concat(listfiles_extdesc_lines(listing.highlight(f.extdesc, attr)).map(function (line) { return attr + line; }));
 	}
 	return lines;
 };

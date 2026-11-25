@@ -86,6 +86,8 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 		return 0;
 	}
 
+	// The search expression, before it's widened into a file pattern
+	const char* search = (mode & FL_FIND) ? filespec : nullptr;
 	filespec = liberal_filepattern(filespec, filepattern, sizeof filepattern);
 	size_t  file_count = 0;
 	file_t* file_list = loadfiles(&smb
@@ -127,7 +129,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 			    && !(mode & (FL_EXT | FL_VIEW))) {
 				flagprompt = 0;
 				term->lncntr = 0;
-				if ((i = batchflagprompt(&smb, bf, file_row, letter - 'A', file_count)) == 2) {
+				if ((i = batchflagprompt(&smb, bf, file_row, letter - 'A', file_count, search)) == 2) {
 					m = anchor;
 					found -= letter - 'A';
 					letter = 'A';
@@ -267,7 +269,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 		if (mode & (FL_EXT | FL_VIEW)) {
 			if (!found)
 				bputs("\1[\1>");
-			if (!viewfile(f, INT_TO_BOOL(mode & FL_EXT))) {
+			if (!viewfile(f, INT_TO_BOOL(mode & FL_EXT), search)) {
 				found = -1;
 				break;
 			}
@@ -276,7 +278,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 		else if (tofile)
 			listfiletofile(f, tofile);
 		else if (mode & FL_FIND)
-			disp = listfile(f, dirnum, filespec, letter, longest);
+			disp = listfile(f, dirnum, search, letter, longest);
 		else
 			disp = listfile(f, dirnum, nulstr, letter, longest);
 		if (!disp && letter > 'A') {
@@ -307,7 +309,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 				flagprompt = 0;
 				term->lncntr = 0;
 				lastbat = found;
-				if ((int)(i = batchflagprompt(&smb, bf, file_row, letter - 'A' + 1, file_count)) < 1) {
+				if ((int)(i = batchflagprompt(&smb, bf, file_row, letter - 'A' + 1, file_count, search)) < 1) {
 					if ((int)i == -1)
 						found = -1;
 					break;
@@ -489,7 +491,7 @@ mouse_list(sbbs_t *sbbs, uint *row, const int total, char *str)
 /* or 3, backwards. 														*/
 /****************************************************************************/
 int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
-                            , const int totalfiles)
+                            , const int totalfiles, const char* search)
 {
 	char ch, str[256], *p;
 	bool remcdt = false;
@@ -600,7 +602,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 
 		if (ch == 'E' || ch == 'V') {    /* Extended Info */
 			if (total == 1) {
-				if (!viewfile(bf[0], ch == 'E'))
+				if (!viewfile(bf[0], ch == 'E', search))
 					return -1;
 				return 2;
 			}
@@ -622,7 +624,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 							*p = 0;
 						for (i = 0; i < total; i++) {
 							if (filematch(bf[i]->name, str + c)) {
-								if (!viewfile(bf[i], ch == 'E'))
+								if (!viewfile(bf[i], ch == 'E', search))
 									return -1;
 							}
 						}
@@ -630,7 +632,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 					if (strchr(str + c, '.'))
 						c += strlen(str + c);
 					else if (str[c] < 'A' + (char)total && str[c] >= 'A') {
-						if (!viewfile(bf[str[c] - 'A'], ch == 'E'))
+						if (!viewfile(bf[str[c] - 'A'], ch == 'E', search))
 							return -1;
 					}
 				}

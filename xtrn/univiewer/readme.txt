@@ -1,14 +1,20 @@
-WHAT IS SIXELVIEW?
-==================
-SixelView by nelgin (and Claude) is a pure Synchronet script to convert
+WHAT IS UNIVERSAL VIEWER?
+=========================
+Universal Viewer by nelgin (and Claude) is a pure Synchronet script to convert
 different graphics file formats and pdfs and display them in a sixel viewer.
 It doesn't require any external conversion tools, which makes it portable
 on any platform that runs Synchronet.
 
+It was called SixelView until version 2.0.  It grew past pictures: it now
+reads text, ANSI art, books, web pages and plays music too, so it has a
+name that doesn't say "sixel" (Sixel graphics are still how pictures and
+pages are shown).  If you are upgrading from SixelView, see UPGRADING FROM
+SIXELVIEW below.
+
 As of version 1.2 it is also an all-in-one file library browser: text files,
 ANSI and ASCII art, PDFs, pictures and ZIP files, from directories on your
 BBS or from online archives, all in one lightbar program.  If you are
-running ansiview and a textfiles.com section, sixelviewlibrary.js can
+running ansiview and a textfiles.com section, univiewerlibrary.js can
 replace both of them.
 
 WHAT IT CAN SHOW
@@ -68,13 +74,13 @@ It works in any terminal that reports the mouse (SyncTERM does).
                  first key when you click the part before the slash and the
                  second for the part after it.
 
-HOW TO USE SIXELVIEW TO VIEW ONE FILE:
-=====================================
-To view a single pdf or picture, simply call sixelview with the path to the
+HOW TO USE UNIVERSAL VIEWER TO VIEW ONE FILE:
+============================================
+To view a single pdf or picture, simply call univiewer with the path to the
 file, for example if you want to use it in a menu:
 
-'P': { exec: '/sbbs/xtrn/sixelview/sixelview.js ' +
-       '/sbbs/xtrn/sixelview/demo/sixelview_demo.pdf' },
+'P': { exec: '/sbbs/xtrn/univiewer/univiewer.js ' +
+       '/sbbs/xtrn/univiewer/demo/univiewer_demo.pdf' },
 
 You could also add it to run from a door menu if you wish.
 
@@ -94,13 +100,13 @@ pdf2sixel_lib.js	PDF parser, renderer and Sixel encoder
 pdf2sixel_fonts.js	outline data for the standard Helvetica, Times
 			and Courier faces. More could be added.
 
-sixelview_lib.js	the viewer, plus Sixel, PNG, JPEG, GIF, BMP,
+univiewer_lib.js	the viewer, plus Sixel, PNG, JPEG, GIF, BMP,
 			PPM, SVG and the other picture loaders
 
 pdf2sixel.js		converts a PDF page to Sixel (stdout, a file, or
 			the terminal)
 
-sixelview.js		Universal viewer: PDF plus images
+univiewer.js		Viewer for one file: PDF plus images
 
 pdfview.js		Viewer for a single PDF file (?pdfview file.pdf
 			[page])
@@ -108,12 +114,12 @@ pdfview.js		Viewer for a single PDF file (?pdfview file.pdf
 pdfunmark.js		Host tool: removes watermark text from PDF books (see
 			REMOVING WATERMARKS below).  Not used by the BBS.
 
-sixelviewlibrary.js	The library browser (see below)
+univiewerlibrary.js	The library browser (see below)
 
-sixelmusic_lib.js	The music player the library browser uses (see MUSIC)
+univiewer_music_lib.js	The music player the library browser uses (see MUSIC)
 
-sixelmusic.js		Plays a music file or directory by itself
-			(?sixelmusic <file or directory>)
+univiewer_music.js		Plays a music file or directory by itself
+			(?univiewer_music <file or directory>)
 
 http_lib.js		The web requests the browser makes (GET and POST, with
 			the limits and checks described under WEB PAGES)
@@ -133,12 +139,12 @@ hooks/			Small scripts that connect the browser to online
 demo/			Demo files to try the viewers on
 
 
-THE LIBRARY BROWSER - SIXELVIEWLIBRARY.JS
+THE LIBRARY BROWSER - UNIVIEWERLIBRARY.JS
 =========================================
 Let me walk you through how it works, because it is a lot easier to explain
 by talking it through than by listing options.
 
-When a user runs sixelviewlibrary.js they see a list of "libraries".  A
+When a user runs univiewerlibrary.js they see a list of "libraries".  A
 library is just a name that points at a directory of files on your BBS (or
 at an online archive, more on that later).  The user moves up and down with
 the cursor keys and presses Enter to open one.  If they are only allowed to
@@ -306,7 +312,7 @@ directory of files without going back to the list each time.  The cursor
 keys are left alone for scrolling and panning.  In a document with pages, the
 < and > keys (or , and .) go to the previous and next page, PgUp and PgDn
 scroll a screenful (and turn the page when you reach its end), and G goes to
-a page number; when a PDF is opened on its own with sixelview.js, N and P
+a page number; when a PDF is opened on its own with univiewer.js, N and P
 change pages too.  On an animated GIF, which has no pages, < and > change the
 speed instead.
 
@@ -352,7 +358,7 @@ colon is what users see in the list.  Here is a local library:
   exclude = *.exe,*.com,*.html,*.rip,*.jpg,*.gif,*.___,*.rar
 
 "dir" is the directory.  If it doesn't start with a / it is taken to be
-relative to this sixelview directory.  "desc" is the description beside the
+relative to this univiewer directory.  "desc" is the description beside the
 name in the list.
 
 "ars" is a normal Synchronet access requirement string, so anything you
@@ -423,7 +429,7 @@ HOOKS - ONLINE ARCHIVES
 A library doesn't have to be a directory on your disk.  If instead of "dir"
 you give it a "module", the browser asks a small script called a hook to
 fetch the listing from a remote server.  The hook scripts live in the
-hooks directory.  The one that ships with sixelview is for the Sixteen
+hooks directory.  The one that ships with Universal Viewer is for the Sixteen
 Colors ANSI/ASCII art archive (https://16colo.rs):
 
   [library:Sixteen Colors]
@@ -545,7 +551,7 @@ COLORS - THE THEME FILE
 ========================
 Colors are not in settings.ini.  They are in a separate theme file, named
 by the "theme=" line in settings.ini.  DefaultTheme.cfg is the one that
-comes with sixelview and uses the same look as DDMsgReader: cyan text,
+comes with Universal Viewer and uses the same look as DDMsgReader: cyan text,
 bright yellow numbers, bright blue dates, a blue highlight bar and a white
 help line at the bottom with red hotkeys.
 
@@ -597,11 +603,11 @@ ADDING IT TO YOUR MENUS
 The easiest way to add it as an online program is Synchronet's installer.
 From your exec directory (or with ;exec ?install-xtrn from the terminal) run:
 
-  jsexec install-xtrn ../xtrn/sixelview
+  jsexec install-xtrn ../xtrn/univiewer
 
-It adds the SXLIB online program (the second way below) and copies
+It adds the UVLIB online program (the second way below) and copies
 settings-example.ini to settings.ini if you don't have one yet; an
-existing settings.ini is kept.  It can't make SixelView your text file
+existing settings.ini is kept.  It can't make Universal Viewer your text file
 section, so for that use the first way below.
 
 There are three ways to give users access.  If your Synchronet is a modern
@@ -613,7 +619,7 @@ runs whenever a user chooses the text files section, which on the default
 menus is the G key, so there is nothing to edit in default.js and nothing
 to add to your menu screens.  Set the command to:
 
-  ../xtrn/sixelview/sixelviewlibrary.js
+  ../xtrn/univiewer/univiewerlibrary.js
 
 and, if you want, put an access requirement on it such as LEVEL 50.
 Synchronet runs the first module whose requirements the user meets, so you can
@@ -625,10 +631,10 @@ ways.
 The second is as an online program (door).  In SCFG go to External Programs,
 Online Programs, pick a section and add:
 
-  Name:                        SixelView Library
-  Internal Code:               SXLIB
-  Start-up Directory:          ../xtrn/sixelview
-  Command Line:                ?sixelviewlibrary.js
+  Name:                        Universal Viewer Library
+  Internal Code:               UVLIB
+  Start-up Directory:          ../xtrn/univiewer
+  Command Line:                ?univiewerlibrary.js
   Multiple Concurrent Users:   Yes
 
 The third is directly from your command shell, so it is one keystroke from
@@ -645,14 +651,14 @@ edit that one and don't copy over it.)
 
 Now edit /sbbs/mods/default.js.  Find the list of commands in the main menu
 (the lines that look like 'A': { eval: 'bbs.auto_msg()' }, ) and add a line
-for sixelview with a key nobody else is using.  The format is the same as
-the entries around it, for example the one that logs a user off:
+for Universal Viewer with a key nobody else is using.  The format is the same
+as the entries around it, for example the one that logs a user off:
 
   'O': { eval: 'logoff(/* fast: */false)' },
 
-and sixelview's is:
+and Universal Viewer's is:
 
-  'Z': { exec: '/sbbs/xtrn/sixelview/sixelviewlibrary.js' },
+  'Z': { exec: '/sbbs/xtrn/univiewer/univiewerlibrary.js' },
 
 (the quotes and the comma at the end matter).  You can use any key that
 isn't taken; look through the existing entries to see what is free.  If you
@@ -666,12 +672,12 @@ add the new key and name where you want it.
 
 USING MORE THAN ONE SETTINGS FILE
 =================================
-By default sixelviewlibrary.js reads settings.ini.  If you give it the name of
+By default univiewerlibrary.js reads settings.ini.  If you give it the name of
 an .ini file as its first argument, it reads that file instead:
 
-  ?sixelviewlibrary.js music.ini
+  ?univiewerlibrary.js music.ini
 
-The name is looked for in the SixelView directory unless it is a full path,
+The name is looked for in the univiewer directory unless it is a full path,
 and ".ini" is added if you leave it off.  The file is laid out exactly like
 settings.ini (a theme and [library:...] sections).
 
@@ -685,7 +691,7 @@ one copy of the program.  Use it in the Command Line of an online program
 (see the second way above), in the exec line of a command shell key, or after
 the module name in the Text Section command in SCFG:
 
-  ../xtrn/sixelview/sixelviewlibrary.js music.ini
+  ../xtrn/univiewer/univiewerlibrary.js music.ini
 
 Synchronet runs the first Text Section module whose access requirements the
 user meets, so you can give different groups of users different settings
@@ -767,6 +773,36 @@ To make a music section, add a library to a settings file, for example:
 and, if you like, keep it in its own file (see USING MORE THAN ONE SETTINGS
 FILE above).
 
+UPGRADING FROM SIXELVIEW
+========================
+Version 2.0 renamed everything, so a BBS that already runs SixelView needs a
+few changes.  The program is the same.  Your settings.ini and the theme file
+work as they are.
+
+The directory xtrn/sixelview is now xtrn/univiewer, and the files in it:
+
+  sixelview.js          univiewer.js
+  sixelview_lib.js      univiewer_lib.js
+  sixelviewlibrary.js   univiewerlibrary.js
+  sixelmusic.js         univiewer_music.js
+  sixelmusic_lib.js     univiewer_music_lib.js
+  demo/sixelview_demo.* demo/univiewer_demo.*
+
+The other files (pdf2sixel*.js, pdfview.js, pdfunmark.js, inflate.js,
+http_lib.js, DefaultTheme.cfg, hooks/) keep their names.
+
+  1. Put the new files in xtrn/univiewer.
+  2. Copy your settings.ini from xtrn/sixelview to xtrn/univiewer (and your
+     own theme file, if you made one).  The .cache directory can be copied
+     too, or just left behind to be rebuilt.
+  3. Change everything that points at the old files: the Text Section
+     command in SCFG (../xtrn/univiewer/univiewerlibrary.js), the command
+     line and start-up directory of an online program (the installer's one is
+     now called UVLIB), the exec lines of command shell keys, and any menu
+     that runs sixelview.js.
+  4. Once it works, delete xtrn/sixelview.  The directories named in
+     settings.ini are not affected, because they are not inside it.
+
 SOME NOTES AND LIMITS
 =====================
 The viewers are written in plain JavaScript, so everything is slow on a
@@ -825,10 +861,10 @@ A PDF that is a scan of a book (every
 page one big picture) can take several seconds per page, because the picture
 has to be decoded each time.  The slowest are JBIG2 and JPEG 2000 scans and
 pages of 3 megapixels or more.  A file over 200 MB isn't opened at all, and
-SixelView keeps the whole file in memory (about four times its size) while it
-is open, so very large scans also strain the BBS.  You can convert such files
-once, on the host and not in SixelView, so that SixelView only has to read
-plain pictures:
+Universal Viewer keeps the whole file in memory (about four times its size)
+while it is open, so very large scans also strain the BBS.  You can convert
+such files once, on the host and not in Universal Viewer, so that it only has
+to read plain pictures:
 
     gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.5 \
        -dAutoFilterMonoImages=false -dMonoImageFilter=/FlateEncode \
@@ -852,7 +888,7 @@ it was).  Check the page count and a few pages before replacing the original.
 REMOVING WATERMARKS - PDFUNMARK.JS
 ==================================
 If someone has stamped text into your PDF books (a web site name, "Downloaded
-from ...") you can remove it.  This is a host tool, run from the sixelview
+from ...") you can remove it.  This is a host tool, run from the univiewer
 directory, and it is not part of the BBS:
 
     jsexec -m536870912 pdfunmark.js book.pdf "watermark text" out=clean.pdf
@@ -934,3 +970,11 @@ Version 1.5		23 Nov 2026	Music: MP3, Ogg Vorbis, Opus, FLAC,
 					libraries.  include and exclude:
 					a pattern ending in / matches
 					directories only.
+Version 2.0		24 Nov 2026	Renamed from SixelView to
+					Universal Viewer, since it does
+					far more than Sixel now.  The
+					directory is xtrn/univiewer and the
+					files are univiewer*.js (see
+					UPGRADING FROM SIXELVIEW).  The
+					installer's online program is now
+					UVLIB.

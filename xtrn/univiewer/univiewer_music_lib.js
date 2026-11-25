@@ -1,7 +1,7 @@
-/* sixelmusic_lib.js
+/* univiewer_music_lib.js
  *
- * SixelMusic: a music player for SyncTERM, written entirely in Synchronet JavaScript.  It is part of
- * SixelView: sixelviewlibrary.js starts it when a music file is chosen, and sixelmusic.js runs it alone.
+ * Music Player: a music player for SyncTERM, written entirely in Synchronet JavaScript.  It is part of
+ * Universal Viewer: univiewerlibrary.js starts it when a music file is chosen, and univiewer_music.js runs it alone.
  *
  * How it works.  SyncTERM can play sound files that the BBS sends it (its "audio APCs", see cterm_lib.js):
  * the BBS uploads a file, SyncTERM decodes it (MP3, Ogg Vorbis, Opus, FLAC, WAV, AIFF, AU ...) and plays it, and the BBS
@@ -13,7 +13,7 @@
  * copies of big songs (music_kbps in settings.ini); see music_recode.
  *
  * Needs: a terminal with the audio APCs and libsndfile (SyncTERM).  MP3 needs libsndfile 1.1 or later.
- * Mouse reporting is used when the user has it (see mouse_start in sixelview_lib.js).
+ * Mouse reporting is used when the user has it (see mouse_start in univiewer_lib.js).
  *
  * Tab size is 4.
  */
@@ -481,7 +481,7 @@ function music_recode(path, kbps, bitrate, ffmpeg)
 		return "";
 	if (!/^[A-Za-z0-9 _.,()\[\]+@=~\/:\\-]+$/.test(path))
 		return "";
-	var dir = BASE_DIR + ".cache/music/";		/* BASE_DIR: see sixelviewlibrary.js */
+	var dir = BASE_DIR + ".cache/music/";		/* BASE_DIR: see univiewerlibrary.js */
 	var out = dir + md5_calc(path + "|" + file_date(path) + "|" + file_size(path) + "|" + kbps, true) + ".ogg";
 	if (file_exists(out) && file_size(out) > 0)
 		return out;
@@ -490,7 +490,7 @@ function music_recode(path, kbps, bitrate, ffmpeg)
 	var ff = file_exists(system.exec_dir + "ffmpeg") ? system.exec_dir + "ffmpeg" : "ffmpeg";
 	if (ffmpeg) {		/* the sysop named it (ffmpeg= in the settings) */
 		if (!file_exists(ffmpeg) || !/^[A-Za-z0-9 _.,()\[\]+@=~\/:\\-]+$/.test(ffmpeg)) {
-			log(LOG_ERR, "sixelmusic: ffmpeg setting is not a usable file: " + ffmpeg);
+			log(LOG_ERR, "univiewer_music: ffmpeg setting is not a usable file: " + ffmpeg);
 			return "";
 		}
 		ff = ffmpeg;
@@ -748,7 +748,7 @@ function music_player(playlist, index, kbps, ffmpeg)
 
 	function draw_title()
 	{
-		var left = " SixelMusic", right = playlist.length > 1 ? "track " + (cur + 1) + " of " + playlist.length + " " : "";
+		var left = " Music Player", right = playlist.length > 1 ? "track " + (cur + 1) + " of " + playlist.length + " " : "";
 		var mid = W - left.length - right.length;
 		put(1, 1, "\x01n\x01h\x01w\x014" + left + music_pad("", Math.max(0, mid)) + right + "\x01n");
 	}

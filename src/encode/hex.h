@@ -28,7 +28,10 @@
 extern "C" {
 #endif
 
-char* hex_encode(char esc, const char* src, char* chars, char* dest, size_t size);
+// Encode 'src' into 'dest' (of 'size' bytes), escaping 'esc' itself and each
+// character in 'chars' as 'esc' followed by 2 uppercase hex digits (e.g. %22).
+// Stops (rather than copying a character unescaped) when 'dest' is full.
+char* hex_encode(char esc, const char* src, const char* chars, char* dest, size_t size);
 // In-place decode of hex-encoded bytes (pass esc of '\0' for no escape char)
 char* hex_decode(char esc, char* str);
 

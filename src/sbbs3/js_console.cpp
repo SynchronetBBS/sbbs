@@ -905,25 +905,31 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 	for (i = 0; i < argc; i++) {
 		if (JSVAL_IS_NUMBER(argv[i])) {
 			if (maxlen == 0) {
-				if (!JS_ValueToInt32(cx, argv[i], &maxlen))
+				if (!JS_ValueToInt32(cx, argv[i], &maxlen)) {
+					strListFree(&history);
 					return JS_FALSE;
+				}
 			}
 			else {
-				if (!JS_ValueToInt32(cx, argv[i], &mode))
+				if (!JS_ValueToInt32(cx, argv[i], &mode)) {
+					strListFree(&history);
 					return JS_FALSE;
+				}
 			}
 		}
 		else if (JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
-			if (!js_str)
+			if (!js_str) {
+				strListFree(&history);
 				return JS_FALSE;
+			}
 		}
 		else if (JSVAL_IS_OBJECT(argv[i])) {
 			JSObject* array = JSVAL_TO_OBJECT(argv[i]);
 			jsuint    len = 0;
+			strListFree(&history);
 			if (array == NULL || !JS_GetArrayLength(cx, array, &len))
 				return JS_FALSE;
-			strListFree(&history);
 			if (len >= SIZE_MAX / sizeof(char*)
 			    || (history = (str_list_t)calloc(len + 1, sizeof(char*))) == NULL) {
 				JS_ReportError(cx, "Error allocating history of %u entries", (unsigned)len);
