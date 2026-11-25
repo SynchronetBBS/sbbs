@@ -542,7 +542,6 @@ bool write_msgs_cfg(scfg_t* cfg)
 				strlwr(path);
 				SAFECAT(smb.file, path);
 				if (smb_open(&smb) != SMB_SUCCESS) {
-					result = false;
 					continue;
 				}
 				if (!filelength(fileno(smb.shd_fp))) {
