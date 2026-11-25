@@ -1294,7 +1294,7 @@ HtmlBuilder.prototype.write = function (path, toc)
 			ol.push({ level: oe.level, title: oe.title, dest: "[" + pageobj[Math.min(pgi, pages.length - 1)] + " 0 R /XYZ 0 " + html_n(H - Math.max(0, oe.y - 6)) + " 0]" });
 		}
 	}
-	/* build the outline tree (levels are normalised so that no level is skipped) */
+	/* build the outline tree (levels are normalized so that no level is skipped) */
 	var tree = { kids: [] }, stack2 = [{ level: 0, node: tree }];
 	for (i = 0; i < ol.length; i++) {
 		var e = ol[i];
@@ -1401,14 +1401,18 @@ HtmlBuilder.prototype.write = function (path, toc)
 
 var IMAGE_TYPES = ["pdf", "png", "jpg", "jpeg", "gif", "bmp", "ppm", "pgm", "six", "svg", "pcx", "tga", "ico", "tif", "tiff",
 	"iff", "lbm", "ilbm", "xb", "xbin", "bin"];
-var TEXT_TYPES = ["ans", "ansi", "asc", "txt", "msg", "diz", "nfo", "bbs", "md", "log", "cfg", "ini", "conf", "1st"];
-var ARCHIVE_TYPES = ["zip", "cbz", "rar", "cbr"];		/* extracted on demand into a directory of the same name */
+var TEXT_TYPES = ["ans", "ansi", "asc", "txt", "msg", "diz", "nfo", "bbs", "md", "log", "cfg", "ini", "conf", "1st",
+	"json", "xml", "xsd", "xsl", "xslt", "rss", "atom", "plist", "yaml", "yml", "toml", "markdown"];
+/* extracted on demand by Synchronet's Archive support (libarchive): into a directory of the same name, except a lone
+ * compressed file (see is_single_compressed), which is opened in place */
+var ARCHIVE_TYPES = ["zip", "cbz", "rar", "cbr", "tar", "tgz", "tbz", "tbz2", "tb2", "txz", "tlz", "tzst", "7z", "cpio", "lzh", "lha", "cab", "iso",
+	"gz", "bz2", "xz", "lzma", "zst"];
 var HTML_TYPES = ["html", "htm", "xhtml", "epub"];	/* laid out as pages and shown like a PDF */
 var SUPPORTED_TYPES = IMAGE_TYPES.concat(TEXT_TYPES, ARCHIVE_TYPES, HTML_TYPES, MUSIC_TYPES);	/* MUSIC_TYPES: see univiewer_music_lib.js */
 
 /* Output speeds for text/ANSI files; index 0 = unlimited (the index is also what SyncTERM is sent) */
 var SPEEDS = [0, 300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 76800, 115200];
-var opt = { speed: 0, pause: false, zip_max_bytes: 50 * 1048576, zip_max_files: 2000,
+var opt = { speed: 0, pause: false, zip_max_bytes: 500 * 1048576, zip_max_files: 2000,
 	image_max_bytes: 3 * 1048576, cache_max_days: 14, cache_max_bytes: 100 * 1048576, error_mail: "" };
 var syncterm;
 
@@ -1446,6 +1450,13 @@ var DEFAULT_THEME = {
 	helpLineHotkeyColor: "r",
 	helpLineParenColor: "m",
 	textBodyColor: "nw",
+	syntaxCommentColor: "nhk",
+	syntaxKeyColor: "nc",
+	syntaxTagColor: "nhy",
+	syntaxStringColor: "nhg",
+	syntaxNumberColor: "nhm",
+	searchMatchColor: "n6k",
+	searchCurrentColor: "n7k",
 	scrollbarBGColor: "nhk",
 	scrollbarBGChar: "\\xb0",
 	scrollbarScrollBlockColor: "nhw",
@@ -1741,6 +1752,12 @@ function read_settings()
 		opt.music_kbps = Number(root.music_kbps);
 	if (root.ffmpeg)		/* full path of ffmpeg; otherwise the exec directory, then the path */
 		opt.ffmpeg = String(root.ffmpeg).replace(/^\s+|\s+$/g, "");
+	/* unzip= and unrar=: full path of a program to try only when Synchronet's own Archive support can't
+	 * extract a file; otherwise the exec directory, then the path */
+	if (root.unzip)
+		opt.unzip = String(root.unzip).replace(/^\s+|\s+$/g, "");
+	if (root.unrar)
+		opt.unrar = String(root.unrar).replace(/^\s+|\s+$/g, "");
 	return { theme: root.theme, libraries: libraries };
 }
 
@@ -1973,8 +1990,215 @@ function read_descriptions(dir)
 	return map;
 }
 
+/* ---------- Browsing inside archives ---------- */
+
+/* Archives other than ZIP, RAR and comic books (7Z, TAR and its compressed forms, CPIO, LZH, CAB, ISO) are browsed
+ * in place: the list shows what is inside them, and only a file that is opened is extracted (into the cache). The
+ * place in the archive is part of subpath, which holds the archive's own name marked with ARC_MARK, then the folders
+ * inside it. */
+var ARC_MARK = "\x1f";
+var DISK_TYPES = ["img", "ima", "dsk", "vfd"];		/* FAT disk images, read by univiewer_disk_lib.js (no Archive support is involved) */
+var DISK = null;
+
+function disk_lib()
+{
+	if (!DISK)
+		DISK = load({}, BASE_DIR + "univiewer_disk_lib.js");
+	return DISK;
+}
+
+/* Is this file a FAT disk image?  (Only its extension and first sectors are looked at.) */
+function is_disk_image(path)
+{
+	if (DISK_TYPES.indexOf(file_ext(path)) < 0)
+		return false;
+	try {
+		return disk_lib().probe(path);
+	}
+	catch (e) {
+		return false;
+	}
+}
+var ARC_LISTS = {};		/* the contents of each archive looked at in this session */
+
+/* The element of subpath for an archive: ARC_MARK and its name in the library's directory, or (for one found inside
+ * another archive, which has been extracted into the cache) ARC_MARK, "\x1e", its full path, "|" and its name */
+function arc_element(name, path)
+{
+	return path ? ARC_MARK + "\x1e" + path + "|" + name : ARC_MARK + name;
+}
+
+function arc_path(lib, subpath, ai)
+{
+	var el = subpath[ai].substr(1);
+	if (el.charAt(0) == "\x1e")
+		return el.substr(1).replace(/\|[^|]*$/, "");
+	return lib.dir + (ai ? subpath.slice(0, ai).join("/") + "/" : "") + el;
+}
+
+/* What the place in subpath is called on screen */
+function arc_where(subpath)
+{
+	return subpath.map(function (el) {
+		if (el.charAt(0) != ARC_MARK)
+			return el;
+		return el.substr(1).charAt(0) == "\x1e" ? el.replace(/^.*\|/, "") : el.substr(1);
+	}).join("/");
+}
+
+function is_browse_archive(name)
+{
+	var ext = file_ext(name);
+	return ARCHIVE_TYPES.indexOf(ext) >= 0 && !/^(zip|rar|cbz|cbr)$/.test(ext) && !is_single_compressed(name);
+}
+
+/* The contents of an archive as [{ name (with / between folders), isdir, size, date }], or throws */
+function arc_list(path)
+{
+	var key = path + "|" + file_date(path) + "|" + file_size(path);
+	if (ARC_LISTS[key])
+		return ARC_LISTS[key];
+	var raw = DISK_TYPES.indexOf(file_ext(path)) >= 0 ? disk_lib().list(path) : new Archive(path).list();
+	var out = [];
+	for (var i = 0; i < raw.length; i++) {
+		var n = String(raw[i].name).replace(/\\/g, "/").replace(/^(\.\/)+/, "").replace(/\/+$/, "");
+		if (!n.length || n == "." || /^\//.test(n) || /(^|\/)\.\.(\/|$)/.test(n))		/* nothing to show, or an unsafe name */
+			continue;
+		out.push({ name: n, orig: String(raw[i].name), isdir: raw[i].type == "directory" || raw[i].isdir === true, size: raw[i].size || 0,
+			date: raw[i].time || raw[i].date || 0 });
+	}
+	ARC_LISTS[key] = out;
+	return out;
+}
+
+/* The entries of one folder inside an archive (subpath[ai] is the archive, the rest are folders in it) */
+function list_archive_entries(lib, subpath, ai)
+{
+	var path = arc_path(lib, subpath, ai);
+	var prefix = subpath.slice(ai + 1).join("/");
+	prefix = prefix.length ? prefix + "/" : "";
+	var all = arc_list(path);
+	var dirs = {};
+	var files = [];
+	for (var i = 0; i < all.length; i++) {
+		var n = all[i].name;
+		if (n.substr(0, prefix.length) != prefix || n.length == prefix.length)
+			continue;
+		var rest = n.substr(prefix.length);
+		var slash = rest.indexOf("/");
+		if (slash >= 0 || all[i].isdir) {
+			var d = slash >= 0 ? rest.substr(0, slash) : rest;
+			if (d.charAt(0) != "." && dir_allowed(lib, d) && !dirs["d:" + d])		/* (the prefix keeps names like "constructor" safe) */
+				dirs["d:" + d] = { name: d, isdir: true, size: 0, date: all[i].date, desc: "" };
+		}
+		else if (rest.charAt(0) != "." && type_allowed(lib, rest))
+			/* an archive or disk image inside this one can be browsed too (nested: it is extracted first) */
+			files.push({ name: rest, isdir: false, size: all[i].size, date: all[i].date, desc: "", type: file_ext(rest).toUpperCase(),
+				arcpath: path, inner: n, orig: all[i].orig,
+				isarc: (ARCHIVE_TYPES.indexOf(file_ext(rest)) >= 0 && !is_single_compressed(rest)) || DISK_TYPES.indexOf(file_ext(rest)) >= 0,
+				nested: true });
+	}
+	var dl = [];
+	for (var k in dirs)
+		dl.push(dirs[k]);
+	dl.sort(function (a, b) { return natural_compare(a.name, b.name); });
+	files.sort(list_sorter(lib));
+	return [{ name: "..", isdir: true, up: true, size: 0, date: 0 }].concat(dl, files);
+}
+
+/* ZIP files that Synchronet's Archive support can't extract (the old "imploded" kind) are read by univiewer_zip_lib.js */
+var ZIPJS = null;
+
+function zip_lib()
+{
+	if (!ZIPJS)
+		ZIPJS = load({}, BASE_DIR + "univiewer_zip_lib.js");
+	return ZIPJS;
+}
+
+/* Extract one file of a ZIP to out with the JavaScript reader; true if it worked */
+function zip_js_member(zip, name, out)
+{
+	try {
+		var list = zip_lib().entries(zip);
+		for (var i = 0; i < list.length; i++) {
+			if (list[i].name == name) {
+				zip_lib().extract(zip, list[i], out);
+				return true;
+			}
+		}
+	}
+	catch (e) {
+		log(LOG_WARNING, "univiewerlibrary: " + zip + ": " + name + ": " + e);
+	}
+	return false;
+}
+
+/* A file from inside an archive, extracted into the cache once.  Returns { entry } to view, or { error }. */
+function archive_member(e)
+{
+	if (e.size > opt.zip_max_bytes) {
+		log(LOG_WARNING, "univiewerlibrary: " + user.alias + " could not open " + e.inner + " in " + e.arcpath + ": " + e.size + " bytes");
+		return { error: "Can't open " + e.name + ": it is " + Math.ceil(e.size / 1048576) + " MB and the limit is " +
+			Math.ceil(opt.zip_max_bytes / 1048576) + " MB (zip_max_mb)" };
+	}
+	var dest = BASE_DIR + ".cache/arc/" + md5_calc(e.arcpath + "|" + file_date(e.arcpath) + "|" + file_size(e.arcpath), true) + "/" +
+		md5_calc(e.inner, true) + "/";
+	var path = dest + e.name;
+	if (!file_exists(path)) {
+		/* the file is made under another name in a directory of its own and renamed when it is complete, so that
+		 * somebody else opening it at the same moment never gets a half-written file */
+		var tmpdir = dest + "tmp" + bbs.node_num + "-" + system.timer.toString().replace(/\D/g, "") + "/";
+		var tmp = tmpdir + e.name;
+		mkpath(tmpdir);
+		try {
+			if (DISK_TYPES.indexOf(file_ext(e.arcpath)) >= 0)
+				disk_lib().extract(e.arcpath, e.inner, tmp);
+			else
+				new Archive(e.arcpath).extract(tmpdir, false, true, 0, e.orig || e.inner);		/* (the name as the archive has it) */
+		}
+		catch (x) {
+			log(LOG_INFO, "univiewerlibrary: extracting " + e.inner + " from " + e.arcpath + ": " + x + " (trying the JavaScript reader)");
+			file_remove(tmp);		/* whatever was written before the problem */
+		}
+		/* a ZIP the Archive support couldn't read (old PKZIP "imploded" files): do it in JavaScript */
+		if (!file_exists(tmp) && /^(zip|cbz)$/.test(file_ext(e.arcpath)))
+			zip_js_member(e.arcpath, e.orig || e.inner, tmp);
+		/* it must be as big as the list said, or it was cut short */
+		if (file_exists(tmp) && e.size > 0 && file_size(tmp) != e.size)
+			file_remove(tmp);
+		if (file_exists(tmp) && !file_rename(tmp, path))
+			file_remove(tmp);
+		rmdir(tmpdir);
+		if (!file_exists(path))
+			return { error: "Unable to extract " + e.name };
+	}
+	return { entry: { name: e.name, path: path, isdir: false, size: file_size(path), date: e.date, desc: "" } };
+}
+
+/* The sort order of a library's lists */
+function list_sorter(lib)
+{
+	return function (a, b) {
+		var r;
+		if (lib.sort == "date")
+			r = a.date - b.date;
+		else if (lib.sort == "size")
+			r = a.size - b.size;
+		else
+			r = 0;
+		if (r == 0)
+			return natural_compare(a.name, b.name);
+		return lib.reverse ? -r : r;
+	};
+}
+
 function list_entries(lib, subpath)
 {
+	for (var ai = subpath.length - 1; ai >= 0; ai--) {		/* the innermost archive we are in */
+		if (subpath[ai].charAt(0) == ARC_MARK)
+			return list_archive_entries(lib, subpath, ai);
+	}
 	var dir = lib.dir + (subpath.length ? subpath.join("/") + "/" : "");
 	var descs = read_descriptions(dir);
 	var paths = directory(dir + "*");
@@ -2002,25 +2226,17 @@ function list_entries(lib, subpath)
 		else if (type_allowed(lib, name)) {
 			/* a ZIP or RAR that has already been extracted is hidden (its directory is listed instead); a comic book
 			 * (.cbz, .cbr) stays listed and its extracted directory is the one that is hidden */
-			if ((file_ext(name) == "zip" || file_ext(name) == "rar") && file_isdir(zip_dest(p)))
+			if (/^(zip|rar)$/.test(file_ext(name)) && file_isdir(zip_dest(p)))
+				continue;
+			var disk = is_disk_image(p);		/* a FAT disk image is browsed like an archive (and needs subdirs, like one) */
+			if (disk && !lib.subdirs)
 				continue;
 			files.push({ name: name, isdir: false, path: p, size: file_size(p), date: file_date(p),
-				desc: descs && descs[name] || "", type: file_ext(name).toUpperCase(), iszip: ARCHIVE_TYPES.indexOf(file_ext(name)) >= 0 });
+				desc: descs && descs[name] || "", type: file_ext(name).toUpperCase(),
+				iszip: ARCHIVE_TYPES.indexOf(file_ext(name)) >= 0 && !is_browse_archive(name), isarc: is_browse_archive(name) || disk });
 		}
 	}
-	function cmp(a, b)
-	{
-		var r;
-		if (lib.sort == "date")
-			r = a.date - b.date;
-		else if (lib.sort == "size")
-			r = a.size - b.size;
-		else
-			r = 0;
-		if (r == 0)
-			return natural_compare(a.name, b.name);
-		return lib.reverse ? -r : r;
-	}
+	var cmp = list_sorter(lib);
 	dirs.sort(function (a, b) { return natural_compare(a.name, b.name); });
 	files.sort(cmp);
 	var out = [{ name: "..", isdir: true, up: true, size: 0, date: 0 }];	/* at the top it leaves the library */
@@ -2448,7 +2664,7 @@ function option_help()
 
 /* ---------- Text / ANSI viewing ---------- */
 
-var Sauce, Graphic, Ansi, CTermLib;
+var Sauce, Graphic, Ansi, CTermLib, Syntax;
 
 function load_text_libs()
 {
@@ -2458,6 +2674,7 @@ function load_text_libs()
 	Graphic = load({}, "graphic.js");
 	Ansi = load({}, "ansiterm_lib.js");
 	CTermLib = load({}, "cterm_lib.js");
+	Syntax = load({}, BASE_DIR + "univiewer_syntax_lib.js");
 	syncterm = CTermLib.query_da() !== false;
 }
 
@@ -2599,7 +2816,8 @@ function draw_text(file, cols, rows)
 
 /* ---------- Scrollable text reader ---------- */
 
-var READER_MAX_BYTES = 2 * 1048576;
+var READER_MAX_BYTES = 4 * 1048576;
+var MATCH_LIMIT = 5000;		/* the most matches the reader will find and mark */
 
 /* Strip a UTF-8 byte-order mark and, if the text is valid UTF-8 (not CP437 art), convert it to
  * CP437; Synchronet translates CP437 for UTF-8 terminals on output. */
@@ -2614,23 +2832,107 @@ function normalize_text(text)
 	return text;
 }
 
-/* Split text into display lines of at most width characters */
+/* Split text into display lines of at most width characters.  (It walks along each line by
+ * position instead of cutting the front off it each time, so one very long line, such as
+ * minified JSON, is not copied over and over.) */
 function wrap_lines(text, width)
 {
 	var raw = text.split(/\r\n|\r|\n/);
 	var out = [];
 	for (var i = 0; i < raw.length; i++) {
 		var line = raw[i].replace(/\t/g, "        ").replace(/[\x00-\x1f]/g, " ").replace(/\s+$/, "");
-		while (line.length > width) {
-			var brk = line.lastIndexOf(" ", width);
-			if (brk < width / 2)
-				brk = width;
-			out.push(line.substr(0, brk).replace(/\s+$/, ""));
-			line = line.substr(brk).replace(/^ /, "");
+		var p = 0;
+		while (line.length - p > width) {
+			var brk = line.lastIndexOf(" ", p + width);
+			if (brk < p + width / 2)
+				brk = p + width;
+			out.push(line.substring(p, brk).replace(/\s+$/, ""));
+			p = brk;
+			if (line.charAt(p) == " ")
+				p++;
 		}
-		out.push(line);
+		out.push(p ? line.substring(p) : line);
 	}
 	return out;
+}
+
+/* Like wrap_lines(), for text with a character-per-character kind string (see
+ * univiewer_syntax_lib.js).  Returns { text: [lines], kinds: [the kind string of each line] }. */
+function wrap_styled(text, kinds, width)
+{
+	var out = { text: [], kinds: [] };
+	var pos = 0;
+	var n = text.length;
+	while (pos <= n) {
+		var nl = text.indexOf("\n", pos);
+		if (nl < 0)
+			nl = n;
+		var line = text.substring(pos, nl);
+		var kind = kinds.substring(pos, nl);
+		pos = nl + 1;
+		if (/[\x00-\x1f]/.test(line)) {
+			var l2 = "", k2 = "";
+			for (var i = 0; i < line.length; i++) {
+				var ch = line.charAt(i);
+				if (ch == "\t") {
+					l2 += "        ";
+					k2 += new Array(9).join(kind.charAt(i));
+				}
+				else {
+					l2 += ch < " " ? " " : ch;
+					k2 += kind.charAt(i);
+				}
+			}
+			line = l2;
+			kind = k2;
+		}
+		var e = line.length;
+		while (e > 0 && line.charAt(e - 1) == " ")
+			e--;
+		line = line.substr(0, e);
+		kind = kind.substr(0, e);
+		var p = 0;
+		while (line.length - p > width) {
+			var brk = line.lastIndexOf(" ", p + width);
+			if (brk < p + width / 2)
+				brk = p + width;
+			var pe = brk;
+			while (pe > p && line.charAt(pe - 1) == " ")
+				pe--;
+			out.text.push(line.substring(p, pe));
+			out.kinds.push(kind.substring(p, pe));
+			p = brk;
+			if (line.charAt(p) == " ")
+				p++;
+		}
+		out.text.push(p ? line.substring(p) : line);
+		out.kinds.push(p ? kind.substring(p) : kind);
+	}
+	return out;
+}
+
+/* A reader line with its colors: kind is the kind string from the syntax library (or null for plain text),
+ * found is a list of [column, length, is_current] for the search matches on the line. */
+function reader_line(text, kind, found)
+{
+	var colors = { p: C("textBodyColor"), c: C("syntaxCommentColor"), k: C("syntaxKeyColor"), t: C("syntaxTagColor"),
+		s: C("syntaxStringColor"), n: C("syntaxNumberColor") };
+	var res = "\x01n" + colors.p;
+	var cur = colors.p;
+	var f = 0;
+	for (var i = 0; i < text.length; i++) {
+		var want = kind ? colors[kind.charAt(i)] : colors.p;
+		while (found && f < found.length && i >= found[f][0] + found[f][1])
+			f++;
+		if (found && f < found.length && i >= found[f][0])
+			want = C(found[f][2] ? "searchCurrentColor" : "searchMatchColor");
+		if (want != cur) {
+			res += want;
+			cur = want;
+		}
+		res += text.charAt(i);
+	}
+	return res;
 }
 
 function view_reader(file, text)
@@ -2650,16 +2952,137 @@ function view_reader_inner(file, text)
 	var W = console.screen_columns;
 	var H = console.screen_rows;
 	var rows = H - 2;
-	var lines = wrap_lines(normalize_text(text), W - 1);
-	var maxtop = Math.max(0, lines.length - rows);
-	var top = 0;
+	var lines;
+	var linekinds = null;		/* the kind string of each line when the text is colored */
+	var norm = normalize_text(text).replace(/\r\n?/g, "\n");
+	var skind = Syntax.kind_of(file_ext(file_getname(file)));
+	/* INI, YAML, TOML, JSON, XML and Markdown are colored, and JSON, XML and Markdown are laid out again;
+	 * if the text can't be parsed (or is too big) it is shown exactly as it is.  V switches to the file
+	 * as it is.  */
+	var styled = skind ? Syntax.view(skind, norm) : null;
+	var raw_mode = false;
+	var maxtop, top = 0;
+
+	function build()
+	{
+		if (styled && !raw_mode) {
+			var t = styled.text, k = styled.kinds;
+			if (/\n$/.test(t)) {		/* no empty line at the end */
+				t = t.substr(0, t.length - 1);
+				k = k.substr(0, k.length - 1);
+			}
+			var ws = wrap_styled(t, k, W - 1);
+			lines = ws.text;
+			linekinds = ws.kinds;
+		}
+		else {
+			lines = wrap_lines(norm, W - 1);
+			linekinds = null;
+		}
+		maxtop = Math.max(0, lines.length - rows);
+	}
+	build();
 	var name = file_getname(file);
+	var term = "";				/* what the user searched for */
+	var matches = [];			/* [line, column] of each match, in order */
+	var mi = -1;				/* the current match */
+	var bymatch = {};			/* matches by line, for drawing: line -> [[column, length, is_current], ...] */
+	var notice = "";			/* message for the bottom line until the next key */
+	var notice_shown = false;
+
+	/* Find every match (up to MATCH_LIMIT) of term in the lines on the screen, ignoring case.  A match that the
+	 * line wrapping split across two lines is not found. */
+	function find_all()
+	{
+		matches = [];
+		mi = -1;
+		if (!term.length)
+			return;
+		var needle = term.toLowerCase();
+		for (var l = 0; l < lines.length && matches.length < MATCH_LIMIT; l++) {
+			var hay = lines[l].toLowerCase();
+			var at = hay.indexOf(needle);
+			while (at >= 0 && matches.length < MATCH_LIMIT) {
+				matches.push([l, at]);
+				at = hay.indexOf(needle, at + needle.length);
+			}
+		}
+	}
+
+	function mark_matches()
+	{
+		bymatch = {};
+		for (var m = 0; m < matches.length; m++) {
+			var ln = matches[m][0];
+			if (!bymatch[ln])
+				bymatch[ln] = [];
+			bymatch[ln].push([matches[m][1], term.length, m == mi]);
+		}
+	}
+
+	/* Make the current match visible (a few lines down from the top, so the lines before it show too) */
+	function show_match()
+	{
+		var ln = matches[mi][0];
+		if (ln < top || ln >= top + rows)
+			top = Math.max(0, Math.min(maxtop, ln - 2));
+		mark_matches();
+	}
+
+	function ask_find()
+	{
+		var v = form_line_edit("Find", term, 60, false);
+		if (v === null)
+			return;
+		var t = "";
+		for (var i = 0; i < v.length; i++) {
+			var cp = unicode_to_cp437(v.charCodeAt(i));
+			if (cp >= 0)
+				t += String.fromCharCode(cp);
+		}
+		term = t;
+		find_all();
+		if (!term.length) {
+			mark_matches();
+			return;
+		}
+		if (!matches.length) {
+			mark_matches();
+			notice = "Not found: " + term;
+			return;
+		}
+		/* the first match from the top of the screen on, else the first one in the file */
+		mi = 0;
+		for (var m = 0; m < matches.length; m++) {
+			if (matches[m][0] >= top) {
+				mi = m;
+				break;
+			}
+		}
+		show_match();
+		if (matches.length >= MATCH_LIMIT)
+			notice = "Showing the first " + MATCH_LIMIT + " matches";
+	}
+
+	function step_match(dir)
+	{
+		if (!matches.length) {
+			notice = term.length ? "Not found: " + term : "Press / to find text";
+			return;
+		}
+		mi = (mi + dir + matches.length) % matches.length;
+		show_match();
+	}
 
 	function draw()
 	{
 		var pct = maxtop ? Math.round(100 * top / maxtop) : 100;
 		var pos = " Line " + Math.min(lines.length, top + 1) + "-" + Math.min(lines.length, top + rows) +
 			"/" + lines.length + "  " + pct + "% ";
+		if (matches.length)
+			pos = " Match " + (mi + 1) + "/" + matches.length + (matches.length >= MATCH_LIMIT ? "+" : "") + " " + pos;
+		if (styled)		/* V switches; the header says which view this is */
+			pos = " (V)iew: " + (raw_mode ? "As is" : skind == "md" ? "Rendered" : skind == "json" || skind == "xml" ? "Formatted" : "Colored") + " " + pos;
 		console.gotoxy(1, 1);
 		console.print("\x01n" + C("headerTextColor") + " " + fit(name, Math.max(1, W - 1 - pos.length - 1)) +
 			rjust(pos, pos.length));
@@ -2667,8 +3090,13 @@ function view_reader_inner(file, text)
 		for (var r = 0; r < rows; r++) {
 			console.gotoxy(1, 2 + r);
 			console.print("\x01n" + C("textBodyColor"));
-			if (top + r < lines.length)
-				console.write(lines[top + r]);
+			if (top + r < lines.length) {
+				if (linekinds || bymatch[top + r])
+					console.print(reader_line(lines[top + r], linekinds ? linekinds[top + r] : null, bymatch[top + r]),
+						P_NOATCODES | P_NOPAUSE);
+				else
+					console.write(lines[top + r]);
+			}
 			console.cleartoeol();
 		}
 		if (maxtop) {
@@ -2684,7 +3112,24 @@ function view_reader_inner(file, text)
 		}
 		console.gotoxy(1, H);
 		var bkg = "\x01" + T("helpLineBkgColor").charAt(0);
-		var help = [["Up/Dn", "Scroll"], ["PgUp/PgDn", "Page"], ["Home/End", "Top/Bottom"], ["N/P", "Next/Prev File"], ["Q", "Back"]];
+		/* the menu in three sizes: the first one that fits the screen is used */
+		var tiers = [
+			[["Up/Dn", "Scroll"], ["PgUp/PgDn", "Page"], ["Home/End", "Top/Bottom"], ["N/P", "Next/Prev File"], ["/", "Find"],
+				["</>", "Match"], ["Q", "Back"]],
+			[["Up/Dn", "Scroll"], ["PgUp/PgDn", "Page"], ["Home/End", "Ends"], ["N/P", "File"], ["/", "Find"],
+				["</>", "Match"], ["Q", "Back"]],
+			[["Up/Dn", "Move"], ["PgUp/PgDn", "Page"], ["N/P", "File"], ["/", "Find"], ["</>", "Match"], ["Q", "Back"]]
+		];
+		var help = tiers[2];
+		for (var ti = 0; ti < tiers.length; ti++) {
+			var hwidth = 0;
+			for (var hh = 0; hh < tiers[ti].length; hh++)
+				hwidth += tiers[ti][hh][0].length + 1 + tiers[ti][hh][1].length + 1;
+			if (hwidth <= W) {
+				help = tiers[ti];
+				break;
+			}
+		}
 		var hs = "\x01n" + bkg;
 		var hx = 1;
 		BAR_SPOTS = [];
@@ -2698,6 +3143,11 @@ function view_reader_inner(file, text)
 		console.print(hs);
 		console.cleartoeol();
 		console.print("\x01n");
+		if (notice) {		/* a message takes the place of the menu until the next key */
+			status_line(" " + notice);
+			notice = "";
+			notice_shown = true;
+		}
 	}
 
 	console.clear();
@@ -2705,6 +3155,8 @@ function view_reader_inner(file, text)
 	while (bbs.online) {
 		var key = console.getkey(K_NONE);
 		var old = top;
+		var redraw = notice_shown;
+		notice_shown = false;
 		if (key == KEY_ESC) {
 			var rmk = read_mouse();
 			if (rmk !== false) {
@@ -2741,6 +3193,38 @@ function view_reader_inner(file, text)
 			case KEY_END:
 				top = maxtop;
 				break;
+			case "/":
+				ask_find();
+				redraw = true;
+				break;
+			case "v":
+			case "V":
+				if (styled) {
+					raw_mode = !raw_mode;
+					build();
+					top = 0;
+					find_all();
+					if (matches.length) {
+						mi = 0;
+						show_match();
+					}
+					else
+						mark_matches();
+					redraw = true;
+				}
+				break;
+			case ">":
+			case ".":
+			case "m":
+				step_match(1);
+				redraw = true;
+				break;
+			case "<":
+			case ",":
+			case "M":
+				step_match(-1);
+				redraw = true;
+				break;
 			case "n":
 			case "N":
 				return "next";
@@ -2756,7 +3240,7 @@ function view_reader_inner(file, text)
 				return "";
 		}
 		top = Math.max(0, Math.min(maxtop, top));
-		if (top != old)
+		if (top != old || redraw)
 			draw();
 	}
 }
@@ -2905,23 +3389,42 @@ function archive_too_big(path, name, count, total)
 		". The sysop has been told so the limit can be raised";
 }
 
-/* RAR files libarchive can't read (old formats, odd headers) or extract: use the unrar program, if there is one */
+/* unzip= and unrar= in settings.ini name programs to use for ZIP and RAR files.  Returns the program named for
+ * name ("unzip" or "unrar"), or "" if none is named or the one named is not usable.  Nothing is looked for on
+ * the path: without the setting Synchronet's own Archive support does the work. */
+function configured_program(name)
+{
+	var prog = opt[name];
+	if (!prog)
+		return "";
+	if (!file_exists(prog) || !/^[A-Za-z0-9 _.,()\[\]+@=~\/:\\-]+$/.test(prog)) {
+		log(LOG_ERR, "univiewerlibrary: the " + name + " setting is not a usable file: " + prog);
+		return "";
+	}
+	return prog;
+}
+
+/* What extract_rar() and unzip_archive() return when the program itself failed (so Synchronet's own support
+ * should be tried next), as opposed to an error to show the user */
+var TOOL_FAILED = "program failed";
+
+/* Extract a RAR with the unrar program named in settings.ini */
 function extract_rar(path, dest, name)
 {
-	if (/["$`\\!]/.test(path + dest))
-		return "Unable to extract " + name;
-	var unrar = file_exists(system.exec_dir + "unrar") ? system.exec_dir + "unrar" : "unrar";
+	var unrar = configured_program("unrar");
+	if (!unrar || /["$`\\!]/.test(path + dest))
+		return TOOL_FAILED;
 	var tmp = BASE_DIR + ".cache/unrar-" + system.timer.toString().replace(/\D/g, "") + ".txt";
 	mkpath(BASE_DIR + ".cache/");
 	/* the last line of a listing is "  <total size> ... <file count>" */
-	system.exec(unrar + ' l -p- "' + path + '" > "' + tmp + '" 2>&1');
+	system.exec('"' + unrar + '" l -p- "' + path + '" > "' + tmp + '" 2>&1');
 	var f = new File(tmp), txt = "";
 	if (f.open("r")) { txt = f.read() || ""; f.close(); }
 	file_remove(tmp);
 	var m = /(\d+)[^\n\d]*(\d+)\s*\r?\n?\s*$/.exec(txt.replace(/\s+$/, ""));
 	if (!m || txt.indexOf("-----") < 0) {
 		log(LOG_WARNING, "univiewerlibrary: unable to list " + path + " with unrar");
-		return "Unable to extract " + name;
+		return TOOL_FAILED;
 	}
 	var big = archive_too_big(path, name, Number(m[2]), Number(m[1]));
 	if (big)
@@ -2929,32 +3432,69 @@ function extract_rar(path, dest, name)
 	mkpath(dest);
 	if (!file_isdir(dest))
 		return "Unable to create " + file_getname(dest);
-	var rc = system.exec(unrar + ' x -o+ -y -p- -inul "' + path + '" "' + backslash(dest) + '"');
+	var rc = system.exec('"' + unrar + '" x -o+ -y -p- -inul "' + path + '" "' + backslash(dest) + '"');
 	if (rc !== 0 || directory(backslash(dest) + "*").length < 1) {
 		log(LOG_WARNING, "univiewerlibrary: unrar of " + path + " failed, code " + rc);
 		remove_tree(dest);
-		return "Unable to extract " + name;
+		return TOOL_FAILED;
 	}
 	return null;
 }
 
-/* Extract an archive into dest (which must not exist).  Returns an error string or null. */
+/* Extract a ZIP into dest (which exists) with the unzip program named in settings.ini; true if it worked.  The
+ * caller has already checked the archive against the size limits. */
+function unzip_archive(path, dest)
+{
+	var unzip = configured_program("unzip");
+	if (!unzip || /["$`\\!]/.test(path + dest))
+		return false;
+	var rc = system.exec('"' + unzip + '" -o -qq -d "' + dest + '" "' + path + '"');
+	if ((rc !== 0 && rc !== 1) || directory(backslash(dest) + "*").length < 1) {
+		log(LOG_WARNING, "univiewerlibrary: unzip of " + path + " failed, code " + rc);
+		return false;
+	}
+	return true;
+}
+
+/* The uncompressed size a .gz file says it holds: the last four bytes of the file (modulo 4 GB), or 0 */
+function gzip_size(path)
+{
+	var f = new File(path);
+	if (!f.open("rb"))
+		return 0;
+	var n = 0;
+	if (f.length >= 22) {
+		f.position = f.length - 4;
+		var b = f.read(4);
+		if (b && b.length == 4)
+			n = b.charCodeAt(0) + b.charCodeAt(1) * 256 + b.charCodeAt(2) * 65536 + b.charCodeAt(3) * 16777216;
+	}
+	f.close();
+	return n;
+}
+
+/* Extract an archive into dest (which must not exist).  If unrar= or unzip= names a program it is used for a
+ * RAR or a ZIP; if that isn't set, or fails, Synchronet's own Archive support does it.  Returns an error string
+ * or null. */
 function extract_archive(path, dest, name)
 {
 	if (file_exists(dest))
 		return "Cannot extract: " + file_getname(dest) + " already exists";
 	try {
 		var ext = file_ext(path).toLowerCase();
-		try {
-			var a = new Archive(path);
-			var list = a.list();
+		var is_rar = ext == "rar" || ext == "cbr";
+		if (is_rar && configured_program("unrar")) {
+			var rr = extract_rar(path, dest, name);
+			if (rr !== TOOL_FAILED)
+				return rr;
+			log(LOG_INFO, "univiewerlibrary: " + path + ": unrar failed (trying Synchronet's own support)");
+			remove_tree(dest);
 		}
-		catch (e) {
-			if (ext == "rar") {
-				log(LOG_INFO, "univiewerlibrary: " + path + ": " + e + " (trying unrar)");
-				return extract_rar(path, dest, name);
-			}
-			throw e;
+		var a = new Archive(path);
+		var list = a.list();
+		if (!list.length && !/^(zip|cbz|rar|cbr)$/.test(ext)) {		/* a file that couldn't be read at all lists nothing */
+			log(LOG_WARNING, "univiewerlibrary: " + path + ": no files could be read from it");
+			return "Unable to extract " + name;
 		}
 		var total = 0;
 		var count = 0;
@@ -2967,12 +3507,24 @@ function extract_archive(path, dest, name)
 				total += list[i].size;
 			}
 		}
+		/* a lone .gz file (not a .tar inside it) may not give its size in the list: the end of the file does */
+		if (ext == "gz" && list.length == 1 && list[0].format == "raw")
+			total = Math.max(total, gzip_size(path));
 		var big = archive_too_big(path, name, count, total);
 		if (big)
 			return big;
 		mkpath(dest);
 		if (!file_isdir(dest))
 			return "Unable to create " + file_getname(dest);
+		if ((ext == "zip" || ext == "cbz") && configured_program("unzip")) {
+			if (unzip_archive(path, dest))
+				return null;
+			log(LOG_INFO, "univiewerlibrary: " + path + ": unzip failed (trying Synchronet's own support)");
+			remove_tree(dest);
+			mkpath(dest);
+			if (!file_isdir(dest))
+				return "Unable to create " + file_getname(dest);
+		}
 		/* some archives (many EPUBs) have no entries for their folders, and libarchive then can't create the files in them */
 		var made = {};
 		for (i = 0; i < list.length; i++) {
@@ -2985,26 +3537,27 @@ function extract_archive(path, dest, name)
 		}
 		try {
 			a.extract(dest, true, true, opt.zip_max_files);
-			return null;
 		}
-		catch (e) {
-			/* e.g. old "imploded" ZIPs that libarchive can't read: start again with unzip, if there is one */
-			log(LOG_INFO, "univiewerlibrary: " + path + ": " + e + " (trying " + (ext == "rar" ? "unrar" : "unzip") + ")");
-		}
-		remove_tree(dest);
-		if (ext == "rar")
-			return extract_rar(path, dest, name);
-		if (/["$`\\!]/.test(path + dest))
-			return "Unable to extract " + name;
-		var unzip = file_exists(system.exec_dir + "unzip") ? system.exec_dir + "unzip" : "unzip";
-		mkpath(dest);
-		if (!file_isdir(dest))
-			return "Unable to create " + file_getname(dest);
-		var rc = system.exec(unzip + ' -o -qq -d "' + dest + '" "' + path + '"');
-		if ((rc !== 0 && rc !== 1) || directory(backslash(dest) + "*").length < 1) {
-			log(LOG_WARNING, "univiewerlibrary: unzip of " + path + " failed, code " + rc);
+		catch (x) {
+			/* an old "imploded" ZIP: Archive support can't do it, so it is done in JavaScript (file by file, as
+			 * the list from the Archive support gave them) */
+			if (!/^(zip|cbz)$/.test(ext))
+				throw x;
+			log(LOG_INFO, "univiewerlibrary: " + path + ": " + x + " (trying the JavaScript reader)");
 			remove_tree(dest);
-			return "Unable to extract " + name;
+			mkpath(dest);
+			var done = 0;
+			for (i = 0; i < list.length; i++) {
+				if (list[i].type != "file")
+					continue;
+				var target = backslash(dest) + String(list[i].name).replace(/\\/g, "/");
+				mkpath(target.replace(/[^\/]*$/, ""));
+				if (!zip_js_member(path, String(list[i].name), target))
+					throw "could not unpack " + list[i].name;
+				done++;
+			}
+			if (!done)
+				throw x;
 		}
 	}
 	catch (e) {
@@ -3102,7 +3655,7 @@ function form_cp437_unicode(ch)
 /* Remove control characters (and the BBS's own Ctrl-A color codes) and cut to length */
 function form_clean(s, maxlen)
 {
-	return String(s).replace(/[\x00-\x1f\x7f-\x9f  ]/g, "").substr(0, maxlen);
+	return String(s).replace(/[\x00-\x1f\x7f-\x9f\u2028\u2029]/g, "").substr(0, maxlen);
 }
 
 /* A string of Unicode characters as UTF-8 bytes */
@@ -3274,7 +3827,7 @@ function form_activate(lib, d, url, idx)
 	return again;
 }
 
-/* Number of colour components of a JPEG, or 0 */
+/* Number of color components of a JPEG, or 0 */
 function jpeg_components(s)
 {
 	var p = 2;
@@ -3527,7 +4080,7 @@ function read_whole(path)
 	return s;
 }
 
-/* A path inside dir (no .. escapes)?  Both are normalised, forward-slash paths. */
+/* A path inside dir (no .. escapes)?  Both are normalized, forward-slash paths. */
 function path_inside(dir, path)
 {
 	dir = backslash(dir).replace(/\\/g, "/");
@@ -3928,6 +4481,54 @@ function view_file_inner(entry)
 }
 
 /* Fetch (for online libraries) and view a file.  Returns "prev"/"next" from the text viewer, else "" */
+/* A .gz, .bz2, .xz, .lzma or .zst that is one compressed file (not a .tar.gz and so on) is opened in place rather than
+ * as a directory: it is unpacked into the cache and the file inside is shown by its own name (a .json.gz as JSON). */
+function is_single_compressed(name)
+{
+	return /\.(gz|bz2|xz|lzma|zst)$/i.test(name) && !/\.tar\.(gz|bz2|xz|lzma|zst)$/i.test(name);
+}
+
+/* Unpack a single-file .gz (or .bz2 and so on) into the cache.  Returns { entry } for the file inside, { error } to show the user, or
+ * { notsingle: true } if it held more than one file (a tar archive without the usual name). */
+function unpack_compressed(e)
+{
+	var dest = BASE_DIR + ".cache/gz/" + md5_calc(e.path + "|" + file_date(e.path) + "|" + file_size(e.path), true) + "/";
+	if (!file_isdir(dest)) {
+		mkpath(BASE_DIR + ".cache/gz/");
+		/* unpacked under another name and renamed when done, so nobody else sees it half made */
+		var tmpdest = dest.replace(/\/$/, "") + ".tmp" + bbs.node_num + "-" + system.timer.toString().replace(/\D/g, "");
+		var err = extract_archive(e.path, tmpdest, e.name);
+		if (err)
+			return { error: err };
+		if (!file_rename(tmpdest, dest.replace(/\/$/, "")) && !file_isdir(dest))
+			return { error: "Unable to unpack " + e.name };
+		remove_tree(tmpdest);		/* (only if somebody else finished first) */
+	}
+	var inside = directory(dest + "*");
+	if (inside.length != 1 || file_isdir(inside[0])) {
+		remove_tree(dest.replace(/\/$/, ""));
+		return { notsingle: true };
+	}
+	var p = inside[0];
+	return { entry: { name: file_getname(p), path: p, isdir: false, size: file_size(p), date: file_date(p), desc: "" } };
+}
+
+/* Open an entry of the list: a file inside an archive is extracted first */
+function open_listed(lib, hook, subpath, e, image)
+{
+	if (e.arcpath) {
+		var m = archive_member(e);
+		if (m.error) {
+			console.clear();
+			pause_error(unescape_text(T("errorText")).replace("%s", m.error));
+			return "";
+		}
+		CUR_LIB = lib;
+		return view_file(m.entry);
+	}
+	return open_entry(lib, hook, subpath, e, image);
+}
+
 function open_entry(lib, hook, subpath, e, image)
 {
 	CUR_LIB = lib;
@@ -3955,7 +4556,7 @@ function open_entry(lib, hook, subpath, e, image)
 function neighbor(entries, i, dir)
 {
 	for (i += dir; i >= 0 && i < entries.length; i += dir) {
-		if (!entries[i].isdir && !entries[i].iszip)
+		if (!entries[i].isdir && !entries[i].iszip && !entries[i].isarc)
 			return i;
 	}
 	return -1;
@@ -4001,7 +4602,7 @@ function browse_library(lib)
 			{ head: "Date", width: 10, color: "listDateColor", hicolor: "listDateHighlightColor",
 				get: function (e) { return e.up || !e.date ? "" : format_date(e.date); } }
 		];
-		var where = lib.name + (subpath.length ? "/" + subpath.join("/") : "");
+		var where = lib.name + (subpath.length ? "/" + arc_where(subpath) : "");
 		var hook = lib.module ? open_hook(lib) : null;
 		var has_images = hook && hook.images;
 		var scrollable = false;
@@ -4040,13 +4641,64 @@ function browse_library(lib)
 			parents.push(sel);
 			sel = 0;
 		}
+		else if (e.isarc) {		/* browsed in place: nothing is extracted until a file in it is opened */
+			var arc_err = "";
+			var arc_file = e.path;
+			var plain = false;
+			if (e.nested) {		/* an archive inside an archive: extracted into the cache, then browsed from there */
+				var nm = archive_member(e);
+				if (nm.error)
+					arc_err = nm.error;
+				else {
+					arc_file = nm.entry.path;
+					/* a disk image that isn't FAT (a boot image, say) is just a file */
+					plain = DISK_TYPES.indexOf(file_ext(e.name)) >= 0 && !is_disk_image(arc_file);
+					if (plain) {
+						CUR_LIB = lib;
+						view_file(nm.entry);
+					}
+				}
+			}
+			if (!arc_err && !plain) {
+				try {
+					arc_list(arc_file);
+				}
+				catch (x) {
+					log(LOG_WARNING, "univiewerlibrary: reading " + arc_file + ": " + x);
+					arc_err = "Unable to read " + e.name;
+				}
+			}
+			if (arc_err) {
+				console.clear();
+				pause_error(unescape_text(T("errorText")).replace("%s", arc_err));
+			}
+			else if (!plain) {
+				subpath.push(e.nested ? arc_element(e.name, arc_file) : arc_element(e.name));
+				parents.push(sel);
+				sel = 0;
+			}
+		}
 		else if (e.iszip) {
-			var err = extract_zip(e);
+			var shown = false;
+			if (is_single_compressed(e.name)) {		/* one compressed file: opened in place, not as a directory */
+				var gz = unpack_compressed(e);
+				if (gz.error) {
+					console.clear();
+					pause_error(unescape_text(T("errorText")).replace("%s", gz.error));
+					shown = true;
+				}
+				else if (!gz.notsingle) {
+					CUR_LIB = lib;
+					view_file(gz.entry);
+					shown = true;
+				}
+			}
+			var err = shown ? null : extract_zip(e);
 			if (err) {
 				console.clear();
 				pause_error(unescape_text(T("errorText")).replace("%s", err));
 			}
-			else {
+			else if (!shown) {
 				subpath.push(file_getname(zip_dest(e.path)));
 				parents.push(sel);
 				sel = 0;
@@ -4054,14 +4706,14 @@ function browse_library(lib)
 		}
 		else {
 			var image = res.action == "i" || res.action == "I";
-			var nav = open_entry(lib, hook, subpath, e, image);
+			var nav = open_listed(lib, hook, subpath, e, image);
 			/* N and P in the viewers move on to the next/previous file */
 			while (nav == "prev" || nav == "next") {
 				var n = neighbor(entries, sel, nav == "next" ? 1 : -1);
 				if (n < 0)
 					break;
 				sel = n;
-				nav = open_entry(lib, hook, subpath, entries[n], false);
+				nav = open_listed(lib, hook, subpath, entries[n], false);
 			}
 		}
 	}
