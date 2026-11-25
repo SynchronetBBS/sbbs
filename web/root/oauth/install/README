@@ -1,0 +1,122 @@
+Synchronet OpenID Connect provider
+==================================
+
+These Synchronet web server scripts let a client sign in a BBS user and
+receive a signed ID token identifying that user by alias. The scripts
+implement the provider side of the exchange. Two details matter before
+configuring a client: discovery advertises HTTP URLs while ID tokens name
+an HTTPS issuer, and the access tokens have no backing resource service.
+
+Install the endpoints
+---------------------
+
+Use the document root served for the BBS host. Paths on the left below
+are relative to the source tree's web/root/oauth directory.
+
+    Source                           Destination under the site's web root
+    auth.ssjs, token.ssjs, jwks.ssjs  oauth/ (keep each filename)
+    rewrite_lib.js, webctrl.ini       oauth/ (authorization and token routes)
+    install/openid-configuration.ssjs .well-known/openid-configuration.ssjs
+    install/rewrite_lib.js            .well-known/rewrite_lib.js (merge)
+    install/webctrl.ini               .well-known/webctrl.ini (see below)
+
+If the site already serves oauth/ from the source tree, those five files
+are already in place. Create .well-known/ if needed. The two files named
+rewrite_lib.js contain different functions, each loaded by the webctrl.ini
+in its own directory.
+
+For discovery, copy openid-configuration.ssjs, add oid_conf_rewrite() to
+the destination rewrite_lib.js, and merge the [openid-configuration]
+section from install/webctrl.ini into the destination webctrl.ini. On a
+new site the discovery rewrite library can be copied as a file.
+
+The top-level AccessRequirements=level 90 in install/webctrl.ini applies
+to the staging directory. Copying it into .well-known/ would restrict
+discovery and could also restrict other services there. For public
+discovery, the metadata must be readable without a BBS login. Preserve
+the site's other access rules and check the inherited rules as well.
+
+The installation under /synchronet/sbbs/web/root has both discovery and
+WebFinger in .well-known/. Its webctrl.ini has separate [webfinger] and
+[openid-configuration] sections, and its rewrite_lib.js contains both
+functions. WebFinger is an additional installed service. The files in
+this install directory supply only OpenID provider metadata.
+
+Host name and signing key
+-------------------------
+
+The scripts use system.host_name for the issuer, endpoint URLs and RSA key
+label. They require Synchronet SSJS with CryptKeyset and CryptContext.
+All three oauth/*.ssjs handlers read the system password from the legacy
+binary main.cnf in system.ctrl_dir, even when a signing key already
+exists. A system with only main.ini requires a script update before use.
+
+The first OAuth handler invoked creates oid.key in system.ctrl_dir if
+needed and generates a 2048-bit RSA key if it cannot load the labeled
+key. The web server account needs access to main.cnf and the keyset, and
+permission to create the keyset on first use. Keep oid.key private and
+preserve it across upgrades. Clients fetch its public key from jwks.ssjs.
+
+Check discovery and the public key
+----------------------------------
+
+Replace bbs.example with the BBS host. From a client without a BBS login,
+request both documents over HTTPS.
+
+    curl -fsS https://bbs.example/.well-known/openid-configuration
+    curl -fsS https://bbs.example/oauth/jwks.ssjs
+
+Discovery should return JSON with issuer, authorization_endpoint,
+token_endpoint and jwks_uri. If only the extensionless URL gives a 404,
+try /.well-known/openid-configuration.ssjs and check the discovery rewrite.
+A login challenge on discovery points to the effective access requirements.
+The key response should contain a keys array with an RSA public key,
+algorithm RS256 and key ID "1". If discovery works but the key request
+fails, check the web server log for a main.cnf or keyset error.
+
+As shipped, discovery builds its issuer and all three URLs with http://,
+even when fetched over HTTPS. ID tokens use https:// for the same host.
+Clients that compare issuers will reject that mismatch. Before using
+discovery for sign-in, align the issuer in openid-configuration.ssjs with
+the public HTTPS issuer. The three advertised endpoints derive from it.
+
+Sign in with an authorization code
+----------------------------------
+
+1. Send the user's browser to /oauth/auth.ssjs on the HTTPS BBS host with
+   URL-encoded response_type=code, client_id and redirect_uri parameters.
+   Include scope=openid, a fresh state for the callback and a nonce for
+   the ID token. The [auth.ssjs] rule requires a BBS login (level 0).
+   /oauth/authorize is an alias when followed by a query string.
+
+2. After login, the browser receives a 302 to redirect_uri with code and
+   the supplied state in the query string. The client checks the state
+   and has ten minutes from code issuance to exchange the code.
+
+3. POST form-encoded grant_type=authorization_code, code, client_id and
+   redirect_uri to /oauth/token.ssjs over HTTPS. Use the same client ID
+   and callback URI as in step 1. The /oauth/token alias also works when
+   the URL ends in /token and the parameters are in the request body.
+   The JSON response contains id_token, access_token, token_type (Bearer)
+   and expires_in (3600 seconds).
+
+4. Verify the ID token's RS256 signature with the published key, then
+   check issuer, audience, expiry and the nonce sent in step 1. The token
+   carries the BBS alias in sub, the client ID in aud, and the issue and
+   expiry times in iat and exp. auth_time is set to the time of issuance.
+
+Other responses and limits
+--------------------------
+
+auth.ssjs also accepts id_token, token and the space-separated value
+"id_token token". These responses return their fields in the redirect
+URI fragment. Discovery lists "token id_token" in the opposite order
+and omits the token-only response. Use "code" for the flow above.
+
+The scripts do not register clients, validate callback URIs against a
+registry, or bind a code to its issuing client and callback. The token
+handler checks the code's age but does not record redemption. There is
+no client-secret or PKCE check. These limits matter when deciding which
+applications can be trusted with BBS sign-in. The access token is a
+generated string that the scripts neither store nor validate. The
+package supplies no UserInfo endpoint or refresh-token grant.
