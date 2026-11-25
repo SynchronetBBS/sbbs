@@ -886,7 +886,7 @@ function status_menu(prefix, items, optional)
 	console.print(white + colored.replace(/\x01(?![nhyw4])/g, "") + "\x01n");
 }
 
-var HELP_TEXT = "Arrows:scroll(j/k:small) +/-:zoom W:width F:page 1:actual PgUp/PgDn <>:page G:goto V:invert D:dither C:contents Tab:links Enter:follow b:back L:show links Q:quit";
+var HELP_TEXT = "Arrows:scroll(j/k:small) +/-:zoom W:width F:page 1:actual PgUp/PgDn <>:page G:goto /:find m/M:next/prev match V:invert D:dither C:contents Tab:links Enter:follow b:back L:show links Q:quit";
 
 /* True if the user has pressed a key that hasn't been read yet */
 function input_pending()
@@ -1100,6 +1100,7 @@ function viewer_inner(doc, startpage, browse)
 
 	function overlay()
 	{
+		search_overlay();
 		if (!has_links || (!showlinks && linksel < 0))
 			return;
 		var links = cur_links();
@@ -1406,6 +1407,11 @@ function viewer_inner(doc, startpage, browse)
 			if (!browse)
 				L.push(["N  P", "next / previous page"]);
 		}
+		if (has_text) {
+			L.push(["", "Search"]);
+			L.push(["/", "find text (an empty answer ends the search)"]);
+			L.push(["M  Shift-M", "next / previous match"]);
+		}
 		if (has_links) {
 			L.push(["", "Contents and links"]);
 			if (doc.has_outline())
@@ -1527,6 +1533,191 @@ function viewer_inner(doc, startpage, browse)
 		return true;
 	}
 
+
+	/* ---- search (PDF, HTML pages and EPUB books): / asks for text, m goes to the next match, M to the previous ---- */
+	var has_text = typeof doc.page_text == "function";
+	var find = null;		/* while a search is active: { term, needle, hits: { page: [match, ...] }, page, idx } */
+
+	/* The matches of the search on a page, in reading order: [{ rects: [[x0, y0, x1, y1], ...] }] in page coordinates
+	 * (one rectangle for each line a match runs over).  Finding them reads the page's text, which is kept. */
+	function page_hits(pg)
+	{
+		if (find.hits[pg])
+			return find.hits[pg];
+		var pt = doc.page_text(pg);
+		var hay = pt.text.replace(/\n/g, " ").toLowerCase();
+		var out = [];
+		var at = hay.indexOf(find.needle);
+		while (at >= 0 && out.length < 1000) {
+			var rects = [];
+			var cur = null;
+			for (var i = at; i < at + find.needle.length; i++) {
+				var b = pt.boxes[i];
+				if (!b)
+					continue;
+				if (cur && Math.abs((b[1] + b[3]) / 2 - (cur[1] + cur[3]) / 2) < (cur[3] - cur[1]) * 0.5) {
+					cur[0] = Math.min(cur[0], b[0]);
+					cur[1] = Math.min(cur[1], b[1]);
+					cur[2] = Math.max(cur[2], b[2]);
+					cur[3] = Math.max(cur[3], b[3]);
+				}
+				else {
+					cur = b.slice();
+					rects.push(cur);
+				}
+			}
+			if (rects.length)
+				out.push({ rects: rects });
+			at = hay.indexOf(find.needle, at + find.needle.length);
+		}
+		find.hits[pg] = out;
+		return out;
+	}
+
+	/* Multiply the pixels of a box by a color (so black text stays black and white turns that color) */
+	function tint_rect(x0, y0, x1, y1, rgb)
+	{
+		x0 = Math.max(0, Math.round(x0)); y0 = Math.max(0, Math.round(y0));
+		x1 = Math.min(FW - 1, Math.round(x1)); y1 = Math.min(FH - 1, Math.round(y1));
+		var cr = (rgb >> 16) & 255, cg = (rgb >> 8) & 255, cb = rgb & 255;
+		for (var y = y0; y <= y1; y++) {
+			for (var x = x0; x <= x1; x++) {
+				var p = FB[y * FW + x];
+				FB[y * FW + x] = ((((p >> 16) & 255) * cr >> 8) << 16) | ((((p >> 8) & 255) * cg >> 8) << 8) | ((p & 255) * cb >> 8);
+			}
+		}
+	}
+
+	/* Mark every match on the page; the one the search is at gets a stronger color and a frame */
+	function search_overlay()
+	{
+		if (!find)
+			return;
+		var hits = page_hits(view.page);
+		for (var i = 0; i < hits.length; i++) {
+			var current = find.page == view.page && find.idx === i;
+			for (var r = 0; r < hits[i].rects.length; r++) {
+				var b = link_box({ rect: hits[i].rects[r] });
+				tint_rect(b[0], b[1], b[2], b[3], current ? 0xff8c28 : 0xffe84a);
+				if (current)
+					frame_rect(b[0] - 1, b[1] - 1, b[2] + 1, b[3] + 1, 1, 0xe05000);
+			}
+		}
+	}
+
+	/* A line of text typed on the bottom line.  Enter accepts, Esc cancels (returns null). */
+	function status_input(prompt, initial, maxlen)
+	{
+		var val = initial, key;
+		var clicks_on = (console.status & CON_MOUSE_CLK_PASSTHRU) != 0;
+		mouse_clicks(false);		/* mouse reports must not end up in the text */
+		try {
+			for (;;) {
+				var head = " " + prompt + ": ", room = console.screen_columns - 2 - head.length;
+				var shown = val.length > room ? val.substr(val.length - room) : val;
+				status_line(head + shown);
+				console.gotoxy(head.length + shown.length + 1, console.screen_rows);
+				key = console.getkey(K_NONE);
+				if (!bbs.online || !key)
+					return null;
+				if (key == "\r" || key == "\n")
+					return val;
+				if (key == "\x1b") {
+					if (read_mouse() === false)
+						return null;		/* the Esc key */
+					continue;
+				}
+				if (key == "\b" || key == "\x7f")
+					val = val.substr(0, val.length - 1);
+				else if (key == "\x15")
+					val = "";
+				else if (key.length == 1 && key.charCodeAt(0) >= 0x20 && key.charCodeAt(0) != 0x7f && val.length < maxlen) {
+					var u = utf8_encode(key), b0 = u.charCodeAt(0);		/* a typed character is CP437; the PDF's text is Unicode */
+					val += b0 < 0x80 ? key : b0 < 0xe0 ? String.fromCharCode(((b0 & 0x1f) << 6) | (u.charCodeAt(1) & 0x3f)) : "?";
+				}
+			}
+		}
+		finally {
+			mouse_clicks(clicks_on);
+		}
+	}
+
+	/* Go to the next (dir 1) or previous (dir -1) match, reading the text of pages as needed (a key stops it).
+	 * Returns true if the view has to be redrawn. */
+	function find_step(dir)
+	{
+		var pg = view.page, idx, hits, steps = 0, wrapped = false, stopped = false;
+		hits = page_hits(pg);
+		if (find.idx !== null && find.page == pg)
+			idx = find.idx;
+		else if (dir > 0) {		/* a new search starts with the first match not wholly above the screen */
+			idx = -1;
+			while (idx + 1 < hits.length && link_box({ rect: hits[idx + 1].rects[hits[idx + 1].rects.length - 1] })[3] <= 0)
+				idx++;
+		}
+		else {
+			idx = hits.length;
+			while (idx - 1 >= 0 && link_box({ rect: hits[idx - 1].rects[0] })[1] >= view.H)
+				idx--;
+		}
+		for (;;) {
+			if (dir > 0 ? idx + 1 < hits.length : idx - 1 >= 0) {
+				idx += dir;
+				break;
+			}
+			pg += dir;
+			if (pg < 0 || pg >= np) {
+				wrapped = true;
+				pg = pg < 0 ? np - 1 : 0;
+			}
+			if (++steps > np || input_pending()) {
+				stopped = steps <= np;
+				hits = [];
+				break;
+			}
+			if (np > 1)
+				status_line(" Searching page " + (pg + 1) + "/" + np + " for \"" + find.term.substr(0, 30) + "\" (press a key to stop) ...");
+			hits = page_hits(pg);
+			idx = dir > 0 ? -1 : hits.length;
+		}
+		if (!hits.length) {
+			linkmsg = stopped ? " Search stopped" : " Not found: " + find.term.substr(0, console.screen_columns - 20);
+			return false;
+		}
+		var moved = view.page != pg;
+		if (moved) {
+			view.set_page(pg, false);
+			linksel = -1;
+		}
+		find.page = pg;
+		find.idx = idx;
+		if (reveal({ rect: hits[idx].rects[0] }))
+			moved = true;
+		linkmsg = " \"" + find.term.substr(0, 30) + "\": match " + (idx + 1) + "/" + hits.length + " on page " + (pg + 1) +
+			(wrapped ? " (search wrapped)" : "") + "   [m] next  [M] previous  [/] new search";
+		return moved;
+	}
+
+	/* The / key: ask what to find (an empty answer ends the search) and go to the first match */
+	function find_prompt()
+	{
+		if (!has_text) {
+			linkmsg = " There is no text to search in this file";
+			return false;
+		}
+		var v = status_input("Find", find ? find.term : "", 60);
+		if (v === null)
+			return false;
+		v = v.replace(/^\s+|\s+$/g, "");
+		if (!v.length) {
+			find = null;
+			repaint();
+			return false;
+		}
+		find = { term: v, needle: v.toLowerCase().replace(/\s+/g, " "), hits: {}, page: -1, idx: null };
+		return find_step(1);
+	}
+
 	function select_link(dir)
 	{
 		var links = cur_links();
@@ -1633,6 +1824,8 @@ function viewer_inner(doc, startpage, browse)
 		menu.push("(Q)uit");
 		menu.push("(H)elp");
 		var opt = [];
+		if (has_text)
+			opt.push("(/) Find");
 		if (has_links && cur_links().length)
 			opt.push("(Tab) Links");
 		if (history.length || doc.web)
@@ -1708,6 +1901,11 @@ function viewer_inner(doc, startpage, browse)
 			var d = view.dims();
 			var k = key;
 			var redraw = true;
+			/* where the view is before the key: a key that only moves or zooms it needs no redraw if it didn't (at the
+			 * last page there is nothing to render when Down is pressed again) */
+			var before = view.page + "|" + view.scale + "|" + view.sx + "|" + view.sy;
+			var moves = [KEY_UP, KEY_DOWN, "k", "j", KEY_LEFT, KEY_RIGHT, "l", KEY_PAGEDN, " ", "\r", KEY_PAGEUP, "\b", KEY_HOME, KEY_END,
+				"+", "=", "i", "I", "-", "_", "o", "O", "<", ",", ">", ".", "w", "W", "f", "F", "1", "n", "N", "p", "P"].indexOf(k) >= 0;
 			linkmsg = "";
 			if (k == "\r" && linksel >= 0)
 				k = "\x00follow";
@@ -1753,6 +1951,26 @@ function viewer_inner(doc, startpage, browse)
 					}
 					else {
 						redraw = false;
+						show_status();
+					}
+					break;
+				case "/":
+					redraw = find_prompt();
+					if (!redraw) {
+						repaint();
+						show_status();
+					}
+					break;
+				case "m": case "M":
+					if (!find) {
+						linkmsg = has_text ? " Press / to find text first" : " There is no text to search in this file";
+						redraw = false;
+						show_status();
+						break;
+					}
+					redraw = find_step(k == "M" ? -1 : 1);
+					if (!redraw) {
+						repaint();
 						show_status();
 					}
 					break;
@@ -1893,7 +2111,8 @@ function viewer_inner(doc, startpage, browse)
 					linksel = -1;
 				}
 				view.clamp();
-				need = true;
+				if (!moves || doc.nframes > 1 || before != view.page + "|" + view.scale + "|" + view.sx + "|" + view.sy)
+					need = true;
 			}
 			if (!input_pending())
 				break;
