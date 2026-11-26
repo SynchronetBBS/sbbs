@@ -16,10 +16,6 @@
 //
 // https://www.c64-wiki.com/wiki/PETSCII
 
-// 2026-11-25 - Description search uses Synchronet bool_search() when available
-// (same fields as stock listfiles.js / listfile.cpp), with legacy substring
-// matching on older builds.
-
 "use strict";
 
 // If the search action has been aborted, then return -1
