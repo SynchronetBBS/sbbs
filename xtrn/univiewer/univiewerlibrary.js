@@ -1714,6 +1714,7 @@ function read_settings()
 			include: split_list(o.include),
 			exclude: split_list(o.exclude).concat(split_list(o.hide)),	/* hide= is ansiview's name for exclude= */
 			subdirs: !o.module && (o.subdirs === true || /^(true|yes|1)$/i.test(String(o.subdirs))),
+			noindex: o.noindex === true || /^(true|yes|1)$/i.test(String(o.noindex)),		/* not in the search index */
 			reverse: sort.charAt(0) == "-",
 			sort: sort.replace(/^-/, "")
 		};
@@ -1724,6 +1725,11 @@ function read_settings()
 	f.close();
 	if (root.pause === true || /^(true|yes|1)$/i.test(String(root.pause)))
 		opt.pause = true;
+	/* search_max=N: the most files a search lists (default 500, at most 10000) */
+	if (Number(root.search_max) >= 1)
+		SEARCH_MAX = Math.min(10000, Math.floor(Number(root.search_max)));
+	/* noindex=true in the root section: nothing is indexed, and no library has a search */
+	NOINDEX_ALL = root.noindex === true || /^(true|yes|1)$/i.test(String(root.noindex));
 	if (SPEEDS.indexOf(Number(root.speed)) > 0)
 		opt.speed = SPEEDS.indexOf(Number(root.speed));
 	if (Number(root.zip_max_mb) > 0)
@@ -2270,12 +2276,13 @@ function count_files(lib)
  * Returns { item: <selected item>, index: <its index> } or null on quit.
  * onkey(key, item) may return true to end the list with that key.
  */
-function lightbar(title, subtitle, cols, items, help, onkey, initial)
+function lightbar(title, subtitle, cols, items, help, onkey, initial, detail, detail_rows)
 {
 	var W = console.screen_columns;
 	var H = console.screen_rows;
 	var listTop = 3;
-	var listRows = H - listTop - 1;
+	var drows = detail ? detail_rows || 1 : 0;		/* detail: a function giving the lines (an array of drows) about the selected item */
+	var listRows = H - listTop - 1 - drows;
 	var sbX = W;
 	var width = W - 1;		/* leave the last column for the scrollbar */
 	var sel = 0;
@@ -2473,11 +2480,31 @@ function lightbar(title, subtitle, cols, items, help, onkey, initial)
 		console.print("\x01n");
 	}
 
+	/* The lines below the list that say more about the selected item (where it is, its whole name, its description) */
+	function draw_detail()
+	{
+		if (!detail)
+			return;
+		var lines = items.length ? detail(items[sel]) : [];
+		if (!(lines instanceof Array))
+			lines = [lines];
+		for (var d = 0; d < drows; d++) {
+			var t = String(lines[d] || "");
+			if (t.length > W - 2)
+				t = t.substr(0, W - 3) + "~";
+			console.gotoxy(1, H - drows + d);
+			console.print("\x01n" + C("listDescColor") + " " + t);
+			console.cleartoeol();
+		}
+		console.print("\x01n");
+	}
+
 	function draw_list()
 	{
 		for (var r = 0; r < listRows; r++)
 			draw_row(top + r, top + r == sel);
 		draw_scrollbar();
+		draw_detail();
 	}
 
 	function move_to(n)
@@ -2497,6 +2524,7 @@ function lightbar(title, subtitle, cols, items, help, onkey, initial)
 		else {
 			draw_row(old, false);
 			draw_row(sel, true);
+			draw_detail();
 		}
 	}
 
@@ -4562,7 +4590,156 @@ function neighbor(entries, i, dir)
 	return -1;
 }
 
-function browse_library(lib)
+/* ---------- Searching the file name index ---------- */
+
+/*
+ * The sysop builds an index of the file names (and descriptions) of the libraries with univiewer_index.js, plain text
+ * files in the .index directory; see univiewer_search_lib.js.  When a library has one, / in a list searches it: in a
+ * library, that library; in the list of libraries, all of them that have an index and that the user may use.  The
+ * results are one list of files; an archive or disk image in it takes the user to the folder it is in.
+ */
+var SEARCH = null;
+var SEARCH_LAST = "";
+var SEARCH_MAX = 500;
+var SEARCH_READY = {};
+var NOINDEX_ALL = false;		/* noindex=true in the root of the settings file */
+
+function search_lib()
+{
+	if (!SEARCH)
+		SEARCH = load({}, BASE_DIR + "univiewer_search_lib.js");
+	return SEARCH;
+}
+
+/* Has this library an index (that it may use)? */
+function search_ready(lib)
+{
+	if (NOINDEX_ALL || lib.noindex || lib.module || lib.web || !lib.dir)
+		return false;
+	if (SEARCH_READY[lib.name] === undefined) {
+		try {
+			SEARCH_READY[lib.name] = search_lib().header(settings_path(), lib.name) !== null;
+		}
+		catch (e) {
+			log(LOG_WARNING, "univiewerlibrary: looking for the search index of " + lib.name + ": " + e);
+			SEARCH_READY[lib.name] = false;
+		}
+	}
+	return SEARCH_READY[lib.name];
+}
+
+/* A list entry for a row of search results */
+function search_entry(lib, r, multi)
+{
+	var path = lib.dir + (r.folder.length ? r.folder + "/" : "") + r.name;
+	var place = multi ? lib.name + (r.folder.length ? ": " + r.folder + "/" : "") : r.folder.length ? r.folder + "/" : "(top folder)";
+	var ext = file_ext(r.name);
+	var disk = DISK_TYPES.indexOf(ext) >= 0 && file_exists(path) && is_disk_image(path);
+	return { name: r.name, isdir: false, path: path, size: r.size, date: r.date, type: ext.toUpperCase(), lib: lib, folder: r.folder,
+		where: place, desc: r.desc,
+		iszip: ARCHIVE_TYPES.indexOf(ext) >= 0 && !is_browse_archive(r.name), isarc: is_browse_archive(r.name) || disk };
+}
+
+/* Ask what to look for, and show what the index finds in libs.  Returns null, or { lib, folder: [...], name } if the
+ * user chose an archive or disk image, to be shown in its folder. */
+function run_search(all)
+{
+	var libs = all.filter(search_ready);
+	if (!libs.length)
+		return null;
+	var multi = libs.length > 1;
+	var byname = {};
+	var names = [];
+	for (var i = 0; i < libs.length; i++) {
+		byname[libs[i].name] = libs[i];
+		names.push(libs[i].name);
+	}
+	var v = form_line_edit("Search", "", 60, false);
+	for (;;) {
+		if (v === null || !bbs.online)
+			return null;
+		var term = "";
+		for (i = 0; i < v.length; i++) {		/* what was typed, as the bytes the file names are made of */
+			var cp = unicode_to_cp437(v.charCodeAt(i));
+			if (cp >= 0)
+				term += String.fromCharCode(cp);
+		}
+		term = term.replace(/^\s+|\s+$/g, "");
+		if (!term.length)
+			return null;
+		SEARCH_LAST = term;
+		status_line(" Searching ...");
+		var found;
+		try {
+			found = search_lib().search(settings_path(), names, term, SEARCH_MAX);
+		}
+		catch (e) {
+			log(LOG_ERR, "univiewerlibrary: search for \"" + term + "\": " + e);
+			console.clear();
+			pause_error("\x01n\x01h\x01yThe search could not be done.");
+			return null;
+		}
+		if (!found.rows.length) {
+			console.clear();
+			pause_error("\x01n\x01h\x01yNothing found for \"" + term.replace(/\x01/g, "") + "\".");
+			v = form_line_edit("Search", SEARCH_LAST, 60, false);
+			continue;
+		}
+		var items = [];
+		for (i = 0; i < found.rows.length; i++) {
+			if (byname[found.rows[i].lib])
+				items.push(search_entry(byname[found.rows[i].lib], found.rows[i], multi));
+		}
+		/* The name is in the area that Left and Right scroll sideways, as in the other lists, so it is never shortened;
+		 * where the file is and its description are on the line below the list */
+		var cols = [
+			{ head: "Name", scroll: true, color: "listNameColor", hicolor: "listNameHighlightColor",
+				get: function (e) { return e.name; } },
+			{ head: "Size", width: 6, align: "right", color: "listSizeColor", hicolor: "listSizeHighlightColor",
+				get: function (e) { return !e.size ? "" : format_size(e.size); } },
+			{ head: "Date", width: 10, color: "listDateColor", hicolor: "listDateHighlightColor",
+				get: function (e) { return !e.date ? "" : format_date(e.date); } }
+		];
+		var title = "Search: " + term + " (" + (found.total > items.length ? "first " + items.length + " of " + found.total : String(found.total)) + ")";
+		var help = function () {
+			return [["Enter", "Open"], ["Up/Dn", "Select"], ["Left/Right", "Scroll"], ["/", "New search"], ["Q", "Back"]];
+		};
+		var sel = 0;
+		var again = false;
+		while (bbs.online && !again) {
+			var res = lightbar(unescape_text(T("titleText")).replace(/\x01./g, ""), title, cols, items, help,
+				function (key) { return key == "/" ? "exit" : false; }, sel,
+				function (e) { return (e.where || "") + (e.desc && e.desc.length ? (e.where ? "  " : "") + e.desc : ""); });
+			if (!res)
+				return null;
+			sel = res.index;
+			if (res.action == "/") {
+				v = form_line_edit("Search", "", 60, false);
+				again = true;
+				break;
+			}
+			var e = res.item;
+			if (!file_exists(e.path)) {
+				console.clear();
+				pause_error("\x01n\x01h\x01y" + e.name.replace(/\x01/g, "") + " is no longer there; the index is out of date.");
+				continue;
+			}
+			if (e.iszip || e.isarc)
+				return { lib: e.lib, folder: e.folder.length ? e.folder.split("/") : [], name: e.name };
+			var nav = open_listed(e.lib, null, [], e, false);
+			/* N and P in the viewers move on to the next/previous file of the results */
+			while (nav == "prev" || nav == "next") {
+				var n = neighbor(items, sel, nav == "next" ? 1 : -1);
+				if (n < 0)
+					break;
+				sel = n;
+				nav = open_listed(items[n].lib, null, [], items[n], false);
+			}
+		}
+	}
+}
+
+function browse_library(lib, start)
 {
 	if (lib.web) {
 		CUR_LIB = lib;
@@ -4572,6 +4749,13 @@ function browse_library(lib)
 	var subpath = [];
 	var sel = 0;		/* item to put the cursor on */
 	var parents = [];	/* selected index in each parent directory */
+	var goto_name = null;	/* a file to put the cursor on in the first list (when coming from a search) */
+	if (start) {
+		subpath = start.folder.slice();
+		for (var pi = 0; pi < subpath.length; pi++)
+			parents.push(0);
+		goto_name = start.name;
+	}
 	while (bbs.online) {
 		var entries;
 		if (lib.module) {
@@ -4590,6 +4774,13 @@ function browse_library(lib)
 		}
 		else
 			entries = list_entries(lib, subpath);
+		if (goto_name !== null) {
+			for (var gi = 0; gi < entries.length; gi++) {
+				if (entries[gi].name == goto_name)
+					sel = gi;
+			}
+			goto_name = null;
+		}
 		var cols = [
 			{ head: "Name", scroll: true, maxw: 30, color: "listNameColor", hicolor: "listNameHighlightColor",
 				dircolor: "listDirColor", dirhicolor: "listDirHighlightColor",
@@ -4608,17 +4799,39 @@ function browse_library(lib)
 		var scrollable = false;
 		for (var si = 0; si < entries.length && !scrollable; si++)
 			scrollable = !!entries[si].desc || String(entries[si].name).length > 30;
+		var can_search = search_ready(lib);
 		var help = function () {
-			return [["Enter", "View"]].concat(has_images ? [["I", "Image"]] : [], [["Up/Dn", "Select"]],
-				scrollable ? [["Left/Right", "Scroll"]] : [],
+			var h = [["Enter", "View"]].concat(has_images ? [["I", "Image"]] : [], [["Up/Dn", "Select"]],
+				scrollable ? [["Left/Right", "Scroll"]] : [], can_search ? [["/", "Search"]] : [],
 				option_help(), [["Q", "Back"]]);
+			var w = 0;
+			for (var hi = 0; hi < h.length; hi++)
+				w += String(h[hi][0]).length + 1 + String(h[hi][1]).length + 1;
+			if (w > console.screen_columns - 1) {		/* too much for the line: the scroll hint goes */
+				h = h.filter(function (it) { return it[0] != "Left/Right"; });
+			}
+			return h;
 		};
 		var onkey = function (key, item) {
 			if (has_images && (key == "i" || key == "I"))
 				return item && !item.isdir ? "exit" : false;
+			if (key == "/" && can_search)
+				return "exit";
 			return option_key(key);
 		};
 		var res = lightbar(unescape_text(T("titleText")).replace(/\x01./g, ""), where, cols, entries, help, onkey, sel);
+		if (res && res.action == "/") {		/* a search; an archive in the results shows in its folder */
+			sel = res.index;
+			var found = run_search([lib]);
+			if (found) {
+				subpath = found.folder.slice();
+				parents = [];
+				for (var fi = 0; fi < subpath.length; fi++)
+					parents.push(0);
+				goto_name = found.name;
+			}
+			continue;
+		}
 		if (!res) {
 			/* Q / Esc goes up one level, like the .. entry, and leaves the library only from its top level */
 			if (subpath.length) {
@@ -4770,31 +4983,53 @@ function main()
 	for (i = 0; i < items.length; i++)
 		longest = Math.max(longest, Math.min(24, String(items[i].name).length) + String(items[i].desc || "").length);
 	var scrollable = longest + 10 > console.screen_columns - 6;
+	var can_search = libs.some(search_ready);
 	var help = function () {
-		return [["Enter", "Open"], ["Up/Dn", "Select"]].concat(scrollable ? [["Left/Right", "Scroll"]] : [], option_help(), [["Q", "Quit"]]);
+		var h = [["Enter", "Open"], ["Up/Dn", "Select"]].concat(scrollable ? [["Left/Right", "Scroll"]] : [], can_search ? [["/", "Search"]] : [],
+			option_help(), [["Q", "Quit"]]);
+		var w = 0;
+		for (var hi = 0; hi < h.length; hi++)
+			w += String(h[hi][0]).length + 1 + String(h[hi][1]).length + 1;
+		if (w > console.screen_columns - 1)
+			h = h.filter(function (it) { return it[0] != "Left/Right"; });
+		return h;
+	};
+	var onkey = function (key, item) {
+		if (key == "/" && can_search)
+			return "exit";
+		return option_key(key);
 	};
 	var sel = 0;
 	while (bbs.online) {
-		var res = lightbar(unescape_text(T("titleText")).replace(/\x01./g, ""), "", cols, items, help, option_key, sel);
+		var res = lightbar(unescape_text(T("titleText")).replace(/\x01./g, ""), "", cols, items, help, onkey, sel);
 		if (!res)
 			break;
 		sel = res.index;
+		if (res.action == "/") {		/* search every library the user can use */
+			var found = run_search(libs);
+			if (found)
+				browse_library(found.lib, { folder: found.folder, name: found.name });
+			continue;
+		}
 		browse_library(res.item.lib);
 	}
 }
 
-try {
-	mouse_start();
+/* univiewer_index.js loads this file for its functions and sets UNIVIEWER_INDEXING so that the menu doesn't start */
+if (typeof UNIVIEWER_INDEXING === "undefined") {
 	try {
-		main();
+		mouse_start();
+		try {
+			main();
+		}
+		finally {
+			mouse_stop();
+		}
+		console.attributes = 7;
+		console.clear();
 	}
-	finally {
-		mouse_stop();
+	catch (e) {
+		log(LOG_ERR, "univiewerlibrary error: " + e + (e && e.stack ? "\n" + e.stack : ""));
+		console.print("\x01n\x01h\x01runiviewerlibrary error: \x01w" + String(e).replace(/\x01/g, "") + "\x01n\r\n");
 	}
-	console.attributes = 7;
-	console.clear();
-}
-catch (e) {
-	log(LOG_ERR, "univiewerlibrary error: " + e + (e && e.stack ? "\n" + e.stack : ""));
-	console.print("\x01n\x01h\x01runiviewerlibrary error: \x01w" + String(e).replace(/\x01/g, "") + "\x01n\r\n");
 }
