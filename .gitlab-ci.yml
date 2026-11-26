@@ -1,6 +1,19 @@
 variables:
   BUILD_ARGS:
     description: "Extra arguments to pass on gmake command lines."
+  # Retry a failed checkout rather than failing the job: a burst of jobs
+  # starting at once on one runner host occasionally has a fetch refused.
+  GET_SOURCES_ATTEMPTS: "3"
+
+# Every job's checkout counts against gitlab.synchro.net's per-IP git rate
+# limit, and several runners share one NAT address.  A merge request event
+# would re-run the whole pipeline on a SHA its branch push already built, so
+# run only the branch (or tag, schedule, web...) pipeline.
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - when: always
 
 stages:
   - build
