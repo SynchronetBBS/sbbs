@@ -140,6 +140,12 @@ univiewer_disk_lib.js	Reads FAT disk images (.img and so on) for the library
 univiewer_zip_lib.js	Unpacks the old "imploded" kind of ZIP file, which
 			Synchronet's own support can't read
 
+univiewer_index.js	Builds the file name search index (see SEARCHING THE
+			LIBRARIES); run it from jsexec
+
+univiewer_search_lib.js	The index's layout and the search, used by the library
+			and by univiewer_index.js
+
 univiewer_music.js		Plays a music file or directory by itself
 			(?univiewer_music <file or directory>)
 
@@ -516,6 +522,129 @@ That's all you need for as many local libraries as you like.  Just add
 more sections.  Libraries appear in the list in the order you write them.
 
 
+SEARCHING THE LIBRARIES
+=======================
+Users can search the file names and descriptions in the libraries.  They
+press / in a list: inside a library it searches that library, and in the
+list of libraries it searches all the libraries they can use.  The results
+are one list of files, with the name, size and date of each, and a line
+under the list that says which library and folder the selected file is in
+and shows its description.  Names are never shortened: Left and Right scroll
+a long one sideways, as in the other lists.  Enter opens a file, N and P go
+to the next and previous file of the results, / starts another search, and Q
+goes back.  If a result is an archive or disk image, Enter takes the user to
+its folder with the cursor on it.
+
+A library has no / key until the sysop has built its index.  The index is
+made by univiewer_index.js, which is run from jsexec, and run again now and
+then when the files change; once a night is plenty.  For example, as a
+Synchronet timed event:
+
+  jsexec /sbbs/xtrn/univiewer/univiewer_index.js
+
+Synchronet's installer (see ADDING IT TO YOUR MENUS) offers to add a timed
+event, UVINDEX, that runs it every night at 4:00 am, so after the first run
+by hand nothing more needs doing.
+
+Add -q to stop it printing what it did.  With no file named it indexes the
+libraries in settings.ini.  A settings file that a menu entry names (see
+USING MORE THAN ONE SETTINGS FILE) is indexed by naming it, and has its own
+index:
+
+  jsexec /sbbs/xtrn/univiewer/univiewer_index.js \
+      settings.ini music.ini
+
+What goes in the index is what a user would see in the library's lists: the
+same include, exclude, subdirs and file types, the descriptions from the
+.desc files, and the files of the sub-directories if subdirs is true.
+Online libraries (module= or url=) are not indexed.  Who may search a
+library is decided by its ars= when somebody searches, not when the index is
+built.
+
+To leave a library out, put noindex = true in its section (a big library on a
+slow network disk, for example).  It then has no / key, and the indexer skips
+it and removes any index file it made for it before.  noindex = true at the
+top of the settings file, before the first section, does that for every
+library in the file: the indexer indexes nothing, and removes the index files
+it made, even when it is run.  Both default to false.
+
+The index is a plain text file for each library, in the .index directory
+inside the univiewer directory.  There is no database, because a database
+needs file locking, which can't be relied on over the network shares that
+several hosts of one Synchronet install use (a Windows host and a Linux host
+sharing the install, for example).  Each file is written whole, under
+another name, and renamed when it is complete, so searches can go on while a
+new index is being made, from any host.  A second run for the same settings
+file is refused while one that began less than six hours ago is still going.
+The BBS only needs to be able to read the directory.  The files can be
+deleted at any time; the libraries just lose their / key until the indexer
+runs again.  Nearly all of the time it takes is the time to read the
+folders: a few seconds for tens of thousands of files on a local disk (all
+of 132,000 files in five libraries took 17 seconds), but much longer over
+NFS (the 32,000 music files took four minutes).  An index file is about 100
+bytes for each file.
+
+Only the first run reads every folder.  After that the indexer remembers
+each folder's modification time (in a .dirs file beside each index file) and
+reads again only the folders that have changed, and copies the rest from the
+old index.  The second run in the test, with nothing changed, took under a
+second instead of 17 for the libraries on a local disk, and 35 seconds
+instead of 3 minutes for the 6,000 folders of the music library on NFS,
+where each folder still costs one request to ask its time.  A folder's time
+changes when a file or folder is added, removed or renamed in it, but not
+when a file is edited in place, so the size and date shown for a file that
+was only edited stay as they were.  A .desc file that is changed is noticed.
+Add -full to read everything again (see below).  Everything is also read
+again when the library's dir, include, exclude or subdirs setting has
+changed, when the .dirs file is damaged or doesn't belong to the index file,
+and for any folder changed within ten minutes before the last run began (a
+change made while that run was reading might not show in the time: a file
+server's clock can be some seconds out, and FAT disks and some network
+shares show times only to two seconds).
+
+To make the indexer read every folder again on request, add -full:
+
+  jsexec /sbbs/xtrn/univiewer/univiewer_index.js -full
+
+You may want to do that, perhaps once a week, only if files in your
+libraries are edited in place (replaced by a newer version with the same
+name): the nightly run doesn't notice that, so the size and date shown in
+the search results stay as they were until a -full run.  Names, descriptions
+and the files found are never affected.  The sysop can make a weekly run a
+second timed event in SCFG (External Programs, Timed Events) with the
+command ?univiewer_index.js -q -full and the start-up directory
+../xtrn/univiewer/, at a time that is not that of the nightly one.  Most
+libraries don't need it.
+
+The indexer refuses to start while another run for the same settings file is
+still going, so give the two events times far enough apart.
+
+The indexer writes each new index under another name and renames it over the
+old one when it is complete.  It deletes what an earlier run that was
+stopped left behind (files ending in .new) at the start, and again at the
+end of every run, whatever happened, and it removes its lock file.  The
+files in .index can all be deleted safely: the next run just makes them
+again.
+
+How a search works.  The words typed are looked for in the file names and
+the descriptions, ignoring capitals, and every word must be found.  A word
+can be part of a longer one, so "cat" finds "category", and "at" finds
+"cat".  No word is left out for being common.  Instead the files are put in
+order of how good the match is: a file with the word on its own in the name
+first, then one whose name starts with it, then one with it inside a name,
+and last one that has it only in the description.  At most 500 files are
+listed (the sysop can change that with search_max in settings.ini, up to
+10000), and the title says how many there were in all ("first 500 of 3120"),
+so a very short word like "at" shows the best matches and a longer or second
+word narrows it down.  A file that has been removed since the index was
+built is reported when it is opened.
+
+A search reads one library's index file into memory at a time (a library of
+60,000 files needs about 30 MB while it is searched) and looks for the
+longest word with the fast built-in text search, so a search of one big
+library takes a few tens of milliseconds, and a search of all five libraries
+in the test took under a second, even for a single letter.
+
 HOOKS - ONLINE ARCHIVES
 =======================
 A library doesn't have to be a directory on your disk.  If instead of "dir"
@@ -745,9 +874,12 @@ From your exec directory (or with ;exec ?install-xtrn from the terminal) run:
   jsexec install-xtrn ../xtrn/univiewer
 
 It adds the UVLIB online program (the second way below) and copies
-settings-example.ini to settings.ini if you don't have one yet; an
-existing settings.ini is kept.  It can't make Universal Viewer your text file
-section, so for that use the first way below.
+settings-example.ini to settings.ini if you don't have one yet; an existing
+settings.ini is kept.  It also offers to add a timed event, UVINDEX, that
+rebuilds the file name search index every night at 4:00 am (see SEARCHING
+THE LIBRARIES); change the time in SCFG, External Programs, Timed Events if
+you like.  It can't make Universal Viewer your text file section, so for
+that use the first way below.
 
 There are three ways to give users access.  If your Synchronet is a modern
 one (3.18 or later), the easiest manual way is the first.
@@ -1193,3 +1325,23 @@ Version 2.3		25 Nov 2026	Archives and disk images.  7Z, TAR
 					and for archives browsed in place
 					it is the largest single file
 					opened.
+Version 2.4		25 Nov 2026	File name search.  / searches the file
+					names and descriptions of a library
+					(or of all the libraries, from the
+					list of them).  The sysop builds the
+					index, plain text files in .index,
+					with univiewer_index.js from jsexec
+					now and then.  Results are put in
+					order of how good the match is, so
+					common words don't swamp them.
+					search_max sets how many files a
+					search lists (default 500).
+					noindex = true (in a library, or at
+					the top of settings.ini for all of
+					them) turns indexing off.
+					After the first run the indexer
+					reads only the folders that have
+					changed (-full reads them all), and
+					it cleans up after itself.  The
+					installer can add a nightly timed
+					event, UVINDEX, to run it.
