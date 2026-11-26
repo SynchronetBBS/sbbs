@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.37     2026-11-25   Description search uses the new bool_search() function if
+                      available; on older builds of Synchronet, it still uses
+                      the previous search mechanism with substring matching.
+                      This change was done with the help of Cursor (AI tool).
 2.36     2026-10-16   Some small fixes based on Cursor AI code review:
                       - Possible next-page/file-delete conflict with
                         traditional UI mode: Those actions shared the same

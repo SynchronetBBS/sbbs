@@ -16,6 +16,10 @@
 //
 // https://www.c64-wiki.com/wiki/PETSCII
 
+// 2026-11-25 - Description search uses Synchronet bool_search() when available
+// (same fields as stock listfiles.js / listfile.cpp), with legacy substring
+// matching on older builds.
+
 "use strict";
 
 // If the search action has been aborted, then return -1
@@ -43,8 +47,19 @@ if (system.version_num < 32000)
 
 
 require("sbbsdefs.js", "K_UPPER");
+require("sbbsdefs.js", "FL_NONE");
+require("sbbsdefs.js", "FL_ULTIME");
+require("sbbsdefs.js", "FL_DLTIME");
+require("sbbsdefs.js", "FL_NO_HDR");
+require("sbbsdefs.js", "FL_FINDDESC");
+require("sbbsdefs.js", "FL_EXFIND");
+require("sbbsdefs.js", "FL_VIEW");
+// FL_FIND is a newer sbbsdefs.js alias for FL_FINDDESC; older releases only define FL_FINDDESC.
+if (typeof(FL_FIND) === "undefined")
+	var FL_FIND = FL_FINDDESC;
 require('key_defs.js', 'KEY_UP');
 require("text.js", "Email"); // Text string definitions (referencing text.dat)
+require("text.js", "InvalidSearchExpression");
 require("dd_lightbar_menu.js", "DDLightbarMenu");
 require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 require("frame.js", "Frame");
@@ -69,8 +84,8 @@ if (gUsingRIP)
 
 
 // Version information
-var LISTER_VERSION = "2.36";
-var LISTER_DATE = "2026-10-16";
+var LISTER_VERSION = "2.37";
+var LISTER_DATE = "2026-11-25";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -5989,18 +6004,7 @@ function parseArgs(argv)
 		// (for either Scan Dirs or List Files)
 		//The 'S' option calls bbs.scan_dirs() which is expected to do the prompting for the string (filename/pattern) and then call filelist mod for each directory
 
-		/*
-		// Bits in mode for bbs.scan_dirs()
-		// bbs.list_files() & bbs.list_file_info()
-		//********************************************
-		var FL_NONE			=0;			// No special behavior
-		var FL_ULTIME		=(1<<0);	// List files by upload time
-		var FL_DLTIME		=(1<<1);	// List files by download time
-		var FL_NO_HDR		=(1<<2);	// Don't list directory header
-		var FL_FINDDESC		=(1<<3);	// Find text in description
-		var FL_EXFIND		=(1<<4);	// Find text in description - extended info
-		var FL_VIEW			=(1<<5);	// View ZIP/ARC/GIF etc. info
-		*/
+		// FL_* mode flags from exec/load/sbbsdefs.js (FL_FINDDESC; FL_FIND alias when present).
 
 		// There must be either 2 or 3 arguments
 		if (argv.length < 2)
@@ -6043,8 +6047,8 @@ function parseArgs(argv)
 				console.print("FL_DLTIME\r\n");
 			if (Boolean(FLBehavior & FL_NO_HDR))
 				console.print("FL_NO_HDR\r\n");
-			if (Boolean(FLBehavior & FL_FINDDESC))
-				console.print("FL_FINDDESC\r\n");
+			if (Boolean(FLBehavior & FL_FIND))
+				console.print("FL_FIND\r\n");
 			if (Boolean(FLBehavior & FL_EXFIND))
 				console.print("FL_EXFIND\r\n");
 			if (Boolean(FLBehavior & FL_VIEW))
@@ -6075,8 +6079,8 @@ function parseArgs(argv)
 			// If FL_ULTIME is set, then set the script mode to new file search
 			if (Boolean(FLBehavior & FL_ULTIME))
 				gScriptMode = MODE_NEW_FILE_SEARCH; // List files by upload time
-			// If FL_FINDDESC is set, then set the script mode to search by description
-			else if (Boolean(FLBehavior & FL_FINDDESC) || Boolean(FLBehavior & FL_EXFIND))
+			// If FL_FIND is set, then set the script mode to search by description
+			else if (Boolean(FLBehavior & FL_FIND) || Boolean(FLBehavior & FL_EXFIND))
 				gScriptMode = MODE_SEARCH_DESCRIPTION;
 			if (Boolean(FLBehavior & FL_VIEW))
 			{
@@ -6095,7 +6099,7 @@ function parseArgs(argv)
 			if (!file_area.dir.hasOwnProperty(argv[0]))
 				return false;
 			gDirCode = argv[0];
-			if (Boolean(FLBehavior & FL_FINDDESC) || Boolean(FLBehavior & FL_EXFIND))
+			if (Boolean(FLBehavior & FL_FIND) || Boolean(FLBehavior & FL_EXFIND))
 			{
 				gScriptMode = MODE_SEARCH_DESCRIPTION;
 				// The keyword could have spaces in it, so look at argv[2] and the remainder of the
@@ -6267,9 +6271,7 @@ function populateFileList(pSearchMode)
 			var searchDescription = "";
 			if (userInputDLA.length > 0 && validInputOptions.indexOf(userInputDLA) > -1)
 			{
-				// Prompt the user for a description to search for
-				console.mnemonics(bbs.text(bbs.text.SearchStringPrompt));
-				searchDescription = console.getstr(40, K_LINE|K_UPPER);
+				searchDescription = ddFileListerPromptDescriptionSearchString();
 				if (searchDescription.length > 0)
 					console.print("Searching....");
 				else
@@ -6290,7 +6292,9 @@ function populateFileList(pSearchMode)
 		{
 			if (gDirCode.length > 0 && gDescKeyword.length > 0)
 			{
-				var searchRetObj = searchDirWithDescUpper(gDirCode, gDescKeyword.toUpperCase());
+				if (!ddFileListerValidateDescSearchExprAndMaybeExit(gDescKeyword, retObj))
+					return retObj;
+				var searchRetObj = searchDirWithDescUpper(gDirCode, gDescKeyword);
 				//searchRetObj.foundFiles
 				for (var i = 0; i < searchRetObj.dirErrors.length; ++i)
 					dirErrors.push(searchRetObj.dirErrors[i]);
@@ -6427,6 +6431,110 @@ function populateFileList(pSearchMode)
 	return retObj;
 }
 
+// Returns whether the Synchronet bool_search() function is available
+// (it was added in Synchronet v3.22).
+function ddFileListerBoolSearchAvailable()
+{
+	return (typeof(bool_search) === "function");
+}
+
+// Prompts for a description search string (stock get_search_string() / listfiles behavior).
+// Returns "" if the user aborts or enters nothing.
+function ddFileListerPromptDescriptionSearchString()
+{
+	var maxLen = 40;
+	while (bbs.online && !js.terminated)
+	{
+		console.mnemonics(bbs.text(bbs.text.SearchStringPrompt));
+		var searchDescription = console.getstr(maxLen, K_LINE|K_UPPER);
+		if (console.aborted)
+		{
+			console.aborted = false;
+			return "";
+		}
+		if (searchDescription.length === 0)
+			return "";
+		if (searchDescription === "?")
+		{
+			bbs.menu("textsrch");
+			continue;
+		}
+		if (ddFileListerBoolSearchAvailable())
+		{
+			var validObj = ddFileListerValidateBoolSearchExpression(searchDescription);
+			if (!validObj.valid)
+			{
+				console.attributes = "N";
+				console.crlf();
+				console.print(format(bbs.text(InvalidSearchExpression),
+					validObj.errorMsg.length > 0 ? validObj.errorMsg : "(?)"));
+				console.crlf();
+				bbs.menu("textsrch");
+				continue;
+			}
+		}
+		return searchDescription;
+	}
+	return "";
+}
+
+// Reports an invalid description-search expression and optionally signals exit (loadable-module path).
+function ddFileListerValidateDescSearchExprAndMaybeExit(pExpr, pExitRetObj)
+{
+	if (!ddFileListerBoolSearchAvailable() || pExpr.length === 0)
+		return true;
+	var validObj = ddFileListerValidateBoolSearchExpression(pExpr);
+	if (validObj.valid)
+		return true;
+	console.attributes = "N";
+	console.crlf();
+	console.print(format(bbs.text(InvalidSearchExpression), validObj.errorMsg));
+	console.crlf();
+	if (pExitRetObj != null)
+	{
+		pExitRetObj.exitNow = true;
+		pExitRetObj.exitCode = 0;
+	}
+	return false;
+}
+
+// Validates a boolean file-search expression (throws from bool_search on error).
+function ddFileListerValidateBoolSearchExpression(pExpression)
+{
+	if (!ddFileListerBoolSearchAvailable())
+		return { valid: true, errorMsg: "" };
+	if (typeof(pExpression) !== "string" || pExpression.length === 0)
+		return { valid: false, errorMsg: "" };
+	try
+	{
+		bool_search(pExpression, "");
+		return { valid: true, errorMsg: "" };
+	}
+	catch (e)
+	{
+		var errMsg = "";
+		if (e != null && typeof(e.message) === "string")
+			errMsg = e.message;
+		else if (e != null)
+			errMsg = String(e);
+		return { valid: false, errorMsg: errMsg };
+	}
+}
+
+// Tests one file record against a boolean search expression (stock listfiles.js).
+function ddFileListerFileMatchesBoolSearch(pExpression, pFileObj)
+{
+	if (!ddFileListerBoolSearchAvailable())
+		return false;
+	var name = (pFileObj != null && typeof(pFileObj.name) === "string" ? pFileObj.name : "");
+	var desc = (pFileObj != null && typeof(pFileObj.desc) === "string" ? pFileObj.desc : "");
+	var extdesc = (pFileObj != null && typeof(pFileObj.extdesc) === "string" ? pFileObj.extdesc : "");
+	var tags = (pFileObj != null && typeof(pFileObj.tags) === "string" ? pFileObj.tags : "");
+	var author = (pFileObj != null && typeof(pFileObj.author) === "string" ? pFileObj.author : "");
+	var author_org = (pFileObj != null && typeof(pFileObj.author_org) === "string" ? pFileObj.author_org : "");
+	return bool_search(pExpression, name, desc, extdesc, tags, author, author_org);
+}
+
 // Searches files in a directory by filespec.
 //
 // Parameters:
@@ -6483,23 +6591,27 @@ function searchDirWithFilespec(pDirCode, pFilespec)
 	return retObj;
 }
 
-// Searches files in a directory by description.
+// Searches files in a directory by description (boolean expression when supported).
 //
 // Parameters:
 //  pDirCode: The internal code of a directory to search
-//  pDescUpper: The description to search for.  This is assumed to be uppercase.
+//  pSearchExpr: Search string (boolean expression with bool_search(), else plain substring)
 //
 // Return value: An object with the following properties:
 //               foundFiles: Boolean - Whether or not any files were found
 //               dirErrors: An array of strings that will be populated with any errors that occur
-function searchDirWithDescUpper(pDirCode, pDescUpper)
+function searchDirWithDescUpper(pDirCode, pSearchExpr)
 {
 	var retObj = {
 		foundFiles: false,
 		dirErrors: []
 	};
-	if (typeof(pDirCode) !== "string" || pDirCode.length == 0 || typeof(pDescUpper) !== "string" || pDescUpper.length == 0)
+	if (typeof(pDirCode) !== "string" || pDirCode.length == 0 || typeof(pSearchExpr) !== "string" || pSearchExpr.length == 0)
 		return retObj;
+
+	var useBoolSearch = ddFileListerBoolSearchAvailable();
+	var descKeywordUpper = (!useBoolSearch ? pSearchExpr.toUpperCase() : "");
+	var listFilespec = (useBoolSearch ? "*" : gFilespec);
 
 	var filebase = new FileBase(pDirCode);
 	if (filebase.open())
@@ -6508,37 +6620,44 @@ function searchDirWithDescUpper(pDirCode, pDescUpper)
 		var fileList;
 		if (gSettings.fileSortOrder == SORT_FL_ULTIME || gSettings.fileSortOrder == SORT_FL_DLTIME)
 		{
-			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, FileBase.SORT.NATURAL);
+			fileList = filebase.get_list(listFilespec, FileBase.DETAIL.EXTENDED, 0, true, FileBase.SORT.NATURAL);
 			if (gSettings.fileSortOrder == SORT_FL_ULTIME)
 				fileList.sort(fileInfoSortULTime);
 			else if (gSettings.fileSortOrder == SORT_FL_DLTIME)
 				fileList.sort(fileInfoSortDLTime);
 		}
 		else if (gSettings.fileSortOrder == SORT_PER_DIR_CFG)
-			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, file_area.dir[pDirCode].sort);
+			fileList = filebase.get_list(listFilespec, FileBase.DETAIL.EXTENDED, 0, true, file_area.dir[pDirCode].sort);
 		else
-			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, gSettings.fileSortOrder);
+			fileList = filebase.get_list(listFilespec, FileBase.DETAIL.EXTENDED, 0, true, gSettings.fileSortOrder);
 		filebase.close();
 		for (var i = 0; i < fileList.length; ++i)
 		{
-			// Search both 'desc' and 'extdesc', if available in the file metadata object
 			var fileIsMatch = false;
-			if (fileList[i].hasOwnProperty("desc"))
+			if (useBoolSearch)
+				fileIsMatch = ddFileListerFileMatchesBoolSearch(pSearchExpr, fileList[i]);
+			else
 			{
-				var fileDesc = strip_ctrl(fileList[i].desc).toUpperCase();
-				fileIsMatch = (fileDesc.indexOf(pDescUpper) > -1);
-			}
-			if (!fileIsMatch && fileList[i].hasOwnProperty("extdesc"))
-			{
-				// Fix line endings if necessary
-				fileList[i].extdesc = lfexpand(fileList[i].extdesc);
-				var descLines = fileList[i].extdesc.split("\r\n");
-				var fileDesc = strip_ctrl(descLines.join(" ")).toUpperCase();
-				fileIsMatch = (fileDesc.indexOf(pDescUpper) > -1);
+				// Search both 'desc' and 'extdesc', if available in the file metadata object
+				if (fileList[i].hasOwnProperty("desc"))
+				{
+					var fileDesc = strip_ctrl(fileList[i].desc).toUpperCase();
+					fileIsMatch = (fileDesc.indexOf(descKeywordUpper) > -1);
+				}
+				if (!fileIsMatch && fileList[i].hasOwnProperty("extdesc"))
+				{
+					// Fix line endings if necessary
+					fileList[i].extdesc = lfexpand(fileList[i].extdesc);
+					var descLines = fileList[i].extdesc.split("\r\n");
+					var fileDescJoined = strip_ctrl(descLines.join(" ")).toUpperCase();
+					fileIsMatch = (fileDescJoined.indexOf(descKeywordUpper) > -1);
+				}
 			}
 			if (fileIsMatch)
 			{
 				retObj.foundFiles = true;
+				if (fileList[i].hasOwnProperty("extdesc") && /\r\n$/.test(fileList[i].extdesc))
+					fileList[i].extdesc = lfexpand(fileList[i].extdesc);
 				fileList[i].dirCode = pDirCode;
 				gFileList.push(fileList[i]);
 			}
