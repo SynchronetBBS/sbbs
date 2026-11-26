@@ -969,13 +969,13 @@ set_attr(struct cterminal *cterm, unsigned char colour, bool bg)
 void
 cterm_set_fgattr(struct cterminal *cterm, unsigned char colour)
 {
-	set_attr(cterm, colour, false ^ cterm->negative);
+	set_attr(cterm, colour, false);
 }
 
 void
 cterm_set_bgattr(struct cterminal *cterm, unsigned char colour)
 {
-	set_attr(cterm, colour, true ^ cterm->negative);
+	set_attr(cterm, colour, true);
 }
 
 void
@@ -1645,36 +1645,41 @@ cterm_skypix_color(struct cterminal *cterm, int color)
 	return color;
 }
 
+static uint8_t
+reverse_attr(const struct cterminal *cterm)
+{
+	uint8_t attr = cterm->attr;
+	if (cterm->emulation == CTERM_EMULATION_ATARIST_VT52)
+		return (attr >> 4) | (attr << 4);
+	/* Blink and alternate-font selection still use the original flag bits. */
+	return (attr & 0x88) | ((attr & 0x70) >> 4) | ((attr & 0x07) << 4);
+}
+
+static void
+reverse_colours(struct cterminal *cterm)
+{
+	uint32_t fg = cterm->fg_color;
+	cterm->attr = reverse_attr(cterm);
+	cterm->fg_color = cterm->bg_color;
+	cterm->bg_color = fg;
+}
+
 void
 cterm_set_negative(struct cterminal *cterm, bool on)
 {
-	unsigned char bg;
-	unsigned char fg;
-	uint32_t tmp_colour;
-
-	// TODO: This one is great...
 	if (on != cterm->negative) {
-		if (cterm->emulation == CTERM_EMULATION_ATARIST_VT52) {
-			bg = cterm->attr & 0xF0;
-			fg = cterm->attr & 0x0F;
-			cterm->attr = (bg >> 4) | (fg << 4);
-			tmp_colour = cterm->fg_color;
-			cterm->fg_color = cterm->bg_color;
-			cterm->bg_color = tmp_colour;
-			cterm->negative = on;
-		}
-		else {
-			bg = cterm->attr & 0x70;
-			fg = cterm->attr & 0x07;
-			cterm->attr &= 0x88;
-			cterm->attr |= (bg >> 4);
-			cterm->attr |= (fg << 4);
-			tmp_colour = cterm->fg_color;
-			cterm->fg_color = cterm->bg_color;
-			cterm->bg_color = tmp_colour;
-			cterm->negative = on;
-		}
+		reverse_colours(cterm);
+		cterm->negative = on;
 	}
+}
+
+/* Resolve the legacy colours in drawing order under the current video flags. */
+int
+cterm_attr2palette(const struct cterminal *cterm, uint32_t *fg, uint32_t *bg)
+{
+	if (cterm->negative)
+		return attr2palette(reverse_attr(cterm), bg, fg);
+	return attr2palette(cterm->attr, fg, bg);
 }
 
 /* ------------------------------------------------------------------------
@@ -1690,10 +1695,20 @@ cterm_set_negative(struct cterminal *cterm, bool on)
  * Used from the CSI m handler (cterm_handle_sgr) and from DECCARA.
  * ------------------------------------------------------------------------ */
 void
-cterm_apply_sgr(struct cterminal *cterm, int *pi)
+cterm_apply_sgr(struct cterminal *cterm, int first)
 {
-	cterm_seq_default(cterm, *pi, 0);
-	cterm_cterm_apply_sgr(cterm, pi);
+	/* Drawing paths consume the resolved colours.  Restore logical order
+	 * while processing the parameters, including changes to SGR 7 itself. */
+	if (cterm->negative)
+		reverse_colours(cterm);
+	for (int i = first; i < cterm->seq_param_count; i++) {
+		if (cterm_seq_param_consumed(cterm, i))
+			continue;
+		cterm_seq_default(cterm, i, 0);
+		cterm_cterm_apply_sgr(cterm, &i);
+	}
+	if (cterm->negative)
+		reverse_colours(cterm);
 }
 
 /* ------------------------------------------------------------------------

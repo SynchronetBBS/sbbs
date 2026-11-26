@@ -444,8 +444,7 @@ cterm_handle_deccara(struct cterminal *cterm, int *speed)	/* CSI Pt;Pl;Pb;Pr;...
 					cterm->negative = false;
 					FREE_AND_NULL(cterm->fg_tc_str);
 					FREE_AND_NULL(cterm->bg_tc_str);
-					for (int p = 4; p < cterm->seq_param_count; p++)
-						cterm_apply_sgr(cterm, &p);
+					cterm_apply_sgr(cterm, 4);
 					rowbuf[c].legacy_attr = cterm->attr;
 					rowbuf[c].fg = cterm->fg_color;
 					rowbuf[c].bg = cterm->bg_color;
@@ -914,9 +913,9 @@ cterm_handle_restore_dec_modes(struct cterminal *cterm, int *speed)	/* CSI ? u *
 	(void)speed;
 	gettextinfo(&ti);
 	flags = getvideoflags();
-	attr2palette(cterm->attr, &oldfg, &oldbg);
-	updfg = (oldfg == cterm->fg_color);
-	updbg = (oldbg == cterm->bg_color);
+	bool have_palette = cterm_attr2palette(cterm, &oldfg, &oldbg);
+	updfg = have_palette && oldfg == cterm->fg_color;
+	updbg = have_palette && oldbg == cterm->bg_color;
 	if (cterm->seq_param_count == 0) {
 		if (cterm->saved_mode_mask & CTERM_SAVEMODE_ORIGIN) {
 			if (cterm->saved_mode & CTERM_SAVEMODE_ORIGIN)
@@ -1151,8 +1150,9 @@ cterm_handle_restore_dec_modes(struct cterminal *cterm, int *speed)	/* CSI ? u *
 	}
 finish:
 	if (updfg || updbg) {
-		attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL,
+		cterm_attr2palette(cterm, updfg ? &cterm->fg_color : NULL,
 		    updbg ? &cterm->bg_color : NULL);
+		setcolour(cterm->fg_color, cterm->bg_color);
 		if (updfg) {
 			if (cterm->negative)
 				FREE_AND_NULL(cterm->bg_tc_str);
