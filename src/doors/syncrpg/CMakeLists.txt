@@ -49,6 +49,13 @@ if(MSVC)
 		CACHE STRING "MSVC runtime library (must match the vcpkg triplet)" FORCE)
 endif()
 
+# EasyRPG's doc/manpage targets need easyrpg/resources/ files that the
+# vendored tree prunes (PROVENANCE.md), so keep their tools from being found.
+# #1427
+set(CMAKE_DISABLE_FIND_PACKAGE_Doxygen ON)
+set(ASCIIDOCTOR_EXECUTABLE OFF CACHE FILEPATH
+	"Disabled: EasyRPG manpage source is pruned from the vendored tree" FORCE)
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/easyrpg easyrpg)
 
 # UI substitution: run EasyRPG through our headless BaseUi_termgfx instead

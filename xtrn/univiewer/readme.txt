@@ -17,10 +17,17 @@ BBS or from online archives, all in one lightbar program.  If you are
 running ansiview and a textfiles.com section, univiewerlibrary.js can
 replace both of them.
 
+CREDIT
+======
+Inspiration for this project came from Nightfox. I wanted to create a
+viewer similar to DDMsgReader and AreaChooers so it fit in with the
+color theme of my BBS.
+
 WHAT IT CAN SHOW
 ================
 Pictures and documents (shown in the Sixel viewer, which needs a terminal that
 supports Sixel, such as SyncTERM):
+
   PDF                       text, vector graphics, pictures, links and
                             bookmarks; scanned books too (JPEG, JPEG 2000,
                             JBIG2, CCITT); blank-password encrypted files
@@ -47,9 +54,14 @@ Text (shown in the text reader or drawn to the terminal):
   TXT ASC MSG DIZ NFO BBS MD LOG CFG INI CONF 1ST, and any file with another
   extension or none; ANS and ANSI (and anything holding ANSI codes) with
   SAUCE records and iCE colors
+  JSON XML XSD XSL XSLT RSS ATOM PLIST YAML YML TOML MARKDOWN are text too,
+  and INI CFG CONF MD are colored or laid out as well (see COLORS FOR
+  CONFIGURATION FILES, JSON, XML AND MARKDOWN below)
 
-Archives (unpacked on demand; see below):
-  ZIP RAR CBZ CBR
+Archives (opened on demand; see below):
+  ZIP RAR CBZ CBR (extracted), 7Z TAR TGZ TBZ TBZ2 TB2 TXZ TLZ TZST CPIO
+  LZH LHA CAB ISO (browsed in place), FAT disk images IMG IMA DSK VFD
+  (browsed in place), and single compressed files GZ BZ2 XZ LZMA ZST
 
 Music (played through the terminal's audio; see MUSIC below):
   MP3 OGG OGA OPUS FLAC WAV AIF AIFF AIFC AU
@@ -117,6 +129,22 @@ pdfunmark.js		Host tool: removes watermark text from PDF books (see
 univiewerlibrary.js	The library browser (see below)
 
 univiewer_music_lib.js	The music player the library browser uses (see MUSIC)
+
+univiewer_syntax_lib.js	Colors and lays out configuration files, JSON, XML and
+			Markdown in the text reader (see COLORS FOR
+			CONFIGURATION FILES, JSON, XML AND MARKDOWN)
+
+univiewer_disk_lib.js	Reads FAT disk images (.img and so on) for the library
+			browser (see the archives notes under ZIP above)
+
+univiewer_zip_lib.js	Unpacks the old "imploded" kind of ZIP file, which
+			Synchronet's own support can't read
+
+univiewer_index.js	Builds the file name search index (see SEARCHING THE
+			LIBRARIES); run it from jsexec
+
+univiewer_search_lib.js	The index's layout and the search, used by the library
+			and by univiewer_index.js
 
 univiewer_music.js		Plays a music file or directory by itself
 			(?univiewer_music <file or directory>)
@@ -203,6 +231,17 @@ What happens when they open a file depends on what it is:
     to the top and bottom.  Long lines are wrapped, UTF-8 files (like most
     Project Gutenberg books) are converted so they display properly, and the
     invisible marker some editors put at the start of a file is removed.
+    Press / to find text: type it and press Enter (Esc cancels, and an empty
+    search clears the marks).  Capitals don't matter.  Every match on the
+    screen is marked, the one you are on in a different color, and the
+    header shows which match it is.  The . or > or m key goes to the next
+    match and , or < or Shift-M to the previous one, wrapping round at the
+    ends.  N and P
+    still mean next and previous file, so there is no separate search mode.
+    A match split between two screen lines by the wrapping isn't found.  It
+    works on every file the reader opens, including colored JSON and XML.
+    V switches a colored or laid-out file (INI, YAML, TOML, JSON, XML,
+    Markdown) to the file exactly as it is, and back.
 
   - ANSI art (ans ansi) and anything containing ANSI codes is displayed the
     way ansiview displays it, including SAUCE records and iCE colors.  Press
@@ -217,11 +256,16 @@ What happens when they open a file depends on what it is:
   - HTML pages and EPUB books (html htm xhtml epub) are laid out as pages and
     shown like a PDF; see WEB PAGES, HTML FILES AND BOOKS below.
 
-  - ZIP and RAR files and CBZ/CBR comic books (a .cbz or .cbr is a zip or rar
-    of page images) are unpacked for you, on demand.  The first time somebody
-    selects one, it is extracted into a directory with the same name beside it
-    (pack.zip becomes pack/, story.cbz becomes story/) and the user is taken
-    inside.  What the list shows afterwards depends on the kind of file:
+  - Archives are handled for you, on demand, in three ways.  Synchronet's own
+    Archive support does it all, so there is nothing to install (unzip and
+    unrar can optionally be named for a few old ZIPs and RARs; see below).
+
+    ZIP and RAR files, and CBZ/CBR comic books (a .cbz or .cbr is a zip or
+    rar of page images), are extracted.  The first time somebody selects
+    one, it is extracted into a directory with the same name beside it
+    (pack.zip becomes pack/, story.cbz becomes story/) and the user is
+    taken inside.  What the list shows afterwards depends on the kind of
+    file:
 
       .zip   Once it has been extracted, the ZIP (or RAR) is hidden and its
              directory is shown instead, exactly as ansiview does.  That suits
@@ -237,6 +281,37 @@ What happens when they open a file depends on what it is:
              setting hides *.cbz, the directory is shown instead, so the pages
              can't be lost.
 
+    7Z, TAR (and tar compressed with gzip, bzip2, xz, lzma or zstd: .tar.gz
+    .tgz .tar.bz2 .tbz2 .tar.xz .txz .tar.zst and so on), CPIO, LZH, LHA,
+    CAB and ISO disc images are browsed in place.  Selecting one shows what
+    is inside as folders and files, and nothing is written to the library
+    directory.  Only a file the user opens is extracted, into the cache, and
+    it is then shown like any other file of its type (an XML file inside a
+    CAB is laid out and colored as XML, a picture is drawn, and so on).  The
+    library's include and exclude settings apply inside the archive too, so
+    a library can hide what can't be viewed (exclude = *.exe,*.dll,*.efi,
+    *.img).  A file that is not a viewable type is reported as unable to
+    display.  A file bigger than zip_max_mb is refused.  An archive or disk
+    image inside another (a DOS floppy image in an ISO, say) is extracted
+    into the cache when it is selected and then browsed the same way.
+
+    FAT disk images (.img, .ima, .dsk and .vfd: DOS floppy and hard disk
+    images) are browsed in place the same way.  Synchronet's Archive support
+    can't read them, so the viewer reads them itself, in JavaScript: FAT12,
+    FAT16 and FAT32, long file names, and the partitions of a hard disk image
+    (each shows as a folder, Partition 1 and so on).  Other file systems
+    (NTFS, ext2 and so on) are not recognized, and an .img that isn't a FAT
+    disk, such as a boot image, is listed and treated as any other file.
+
+    A single compressed file (GZ, BZ2, XZ, LZMA or ZST, as in notes.txt.gz
+    or data.json.xz) is opened in place: selecting it shows the file inside,
+    by its own name, in the viewer for that type (a .json.gz as JSON).  It
+    is unpacked into the cache and the compressed file stays in the list.
+
+    Every extracted archive (ZIP, RAR, comic books and single compressed
+    files) is checked against the size limit by the size it will have when
+    unpacked.
+
     Names with numbers in them are sorted by the number, so page2 comes
     before page10.  The extracted directories are ordinary directories on
     your disk, so you can delete them to free space; they are made again the
@@ -244,22 +319,30 @@ What happens when they open a file depends on what it is:
 
     For this to work the library must have subdirs=true (archives aren't
     listed without it) and the BBS needs permission to write to the library
-    directory.  Extraction uses Synchronet's own Archive support, so unzip is
-    not normally needed.  A few old ZIPs (the "imploded" kind from the early
-    90s, common in art packs) can't be read that way; for those it falls back
-    to the unzip program in /sbbs/exec if you have one (on Linux, a symlink to
-    /usr/bin/unzip is enough), and cleans up after itself if both fail.  RAR
-    files work the same way, with the unrar program (/usr/bin/unrar) as the
-    fallback; many old DOS-era RARs need it.  As a safety net, archives with
-    unsafe file names, more than 2000 files or more than 50 MB of data are
+    directory.  Extraction uses Synchronet's own Archive support, so
+    nothing needs installing.  The "imploded" ZIPs from the early 90s
+    (common in DOS-era files and art packs), which that support can't read,
+    are unpacked by the viewer's own JavaScript (univiewer_zip_lib.js), in
+    folders, in archives and on disk images alike.  Some old DOS-era RARs
+    can't be read either, and the unzip and unrar programs can be used for
+    them and for anything else odd.  They are optional and used only if you
+    name them in settings.ini:
+
+      unzip = /usr/bin/unzip
+      unrar = /usr/bin/unrar
+
+    A program that is named is used for every ZIP (or RAR); if it fails on a
+    file, or none is named, Synchronet's own support does it.  Nothing is
+    looked for on the path.  If neither works the file is reported as unable
+    to extract and the problem is logged.  As a safety net, archives with
+    unsafe file names, more than 2000 files or more than 500 MB of data are
     refused (zip_max_files and zip_max_mb in settings.ini change those
     limits).  The user is told how many files or how much data the archive
     holds against the limit, and that the sysop has been told.  That means a
     warning in the BBS log and a netmail (file path, problem, user) to the
     sysop, or to whoever error_mail= in settings.ini names: an alias, a user
-    number or an Internet address, or "none" for no mail.  Each file is mailed
-    once a day.  To count the files in an archive yourself:  unzip -Zt
-    book.epub
+    number or an Internet address, or "none" for no mail.  Each file is
+    mailed once a day.
 
 The keys, in any list:
 
@@ -306,6 +389,21 @@ draws a thin blue box around every link on the page.  Only links that jump
 to another place in the same document are used; web addresses and links to
 other files are ignored.
 
+Finding text.  In a PDF, a web page, an HTML file or an EPUB book (anything
+that has text), press / and type what to look for, then Enter.  Capitals
+don't matter.  The viewer goes to the first match from where you are, reading
+on through the following pages if there isn't one on this page (the status
+line shows which page it is looking at, and any key stops it).  All the
+matches on a page are marked in yellow and the one you are on in orange; the
+status line says "match 2/5 on page 3".  Press m for the next match and
+Shift-M for the previous one.  The search wraps round at the ends of the
+document, and the marks stay until you press / and give an empty answer.  It
+finds text the way it is drawn on the page, so a word split by a line break
+with a hyphen isn't found, and a PDF that is only a scan of pages (pictures,
+no text) has nothing to find.  Pictures and music have no text.  The text of
+each page is read once and kept while the file is open, so the first search
+through a long book takes a little while.
+
 In every viewer (text, ANSI art, pictures and PDFs), N moves to the next
 file in the list and P to the previous one, so you can flip through a whole
 directory of files without going back to the list each time.  The cursor
@@ -330,7 +428,7 @@ The top part looks like this, and everything in it is optional:
   theme=DefaultTheme.cfg
   pause=false
   speed=2400
-  zip_max_mb=50
+  zip_max_mb=500
   zip_max_files=2000
   error_mail=
   text_types=
@@ -423,6 +521,129 @@ the site itself has none for the rest).
 That's all you need for as many local libraries as you like.  Just add
 more sections.  Libraries appear in the list in the order you write them.
 
+
+SEARCHING THE LIBRARIES
+=======================
+Users can search the file names and descriptions in the libraries.  They
+press / in a list: inside a library it searches that library, and in the
+list of libraries it searches all the libraries they can use.  The results
+are one list of files, with the name, size and date of each, and a line
+under the list that says which library and folder the selected file is in
+and shows its description.  Names are never shortened: Left and Right scroll
+a long one sideways, as in the other lists.  Enter opens a file, N and P go
+to the next and previous file of the results, / starts another search, and Q
+goes back.  If a result is an archive or disk image, Enter takes the user to
+its folder with the cursor on it.
+
+A library has no / key until the sysop has built its index.  The index is
+made by univiewer_index.js, which is run from jsexec, and run again now and
+then when the files change; once a night is plenty.  For example, as a
+Synchronet timed event:
+
+  jsexec /sbbs/xtrn/univiewer/univiewer_index.js
+
+Synchronet's installer (see ADDING IT TO YOUR MENUS) offers to add a timed
+event, UVINDEX, that runs it every night at 4:00 am, so after the first run
+by hand nothing more needs doing.
+
+Add -q to stop it printing what it did.  With no file named it indexes the
+libraries in settings.ini.  A settings file that a menu entry names (see
+USING MORE THAN ONE SETTINGS FILE) is indexed by naming it, and has its own
+index:
+
+  jsexec /sbbs/xtrn/univiewer/univiewer_index.js \
+      settings.ini music.ini
+
+What goes in the index is what a user would see in the library's lists: the
+same include, exclude, subdirs and file types, the descriptions from the
+.desc files, and the files of the sub-directories if subdirs is true.
+Online libraries (module= or url=) are not indexed.  Who may search a
+library is decided by its ars= when somebody searches, not when the index is
+built.
+
+To leave a library out, put noindex = true in its section (a big library on a
+slow network disk, for example).  It then has no / key, and the indexer skips
+it and removes any index file it made for it before.  noindex = true at the
+top of the settings file, before the first section, does that for every
+library in the file: the indexer indexes nothing, and removes the index files
+it made, even when it is run.  Both default to false.
+
+The index is a plain text file for each library, in the .index directory
+inside the univiewer directory.  There is no database, because a database
+needs file locking, which can't be relied on over the network shares that
+several hosts of one Synchronet install use (a Windows host and a Linux host
+sharing the install, for example).  Each file is written whole, under
+another name, and renamed when it is complete, so searches can go on while a
+new index is being made, from any host.  A second run for the same settings
+file is refused while one that began less than six hours ago is still going.
+The BBS only needs to be able to read the directory.  The files can be
+deleted at any time; the libraries just lose their / key until the indexer
+runs again.  Nearly all of the time it takes is the time to read the
+folders: a few seconds for tens of thousands of files on a local disk (all
+of 132,000 files in five libraries took 17 seconds), but much longer over
+NFS (the 32,000 music files took four minutes).  An index file is about 100
+bytes for each file.
+
+Only the first run reads every folder.  After that the indexer remembers
+each folder's modification time (in a .dirs file beside each index file) and
+reads again only the folders that have changed, and copies the rest from the
+old index.  The second run in the test, with nothing changed, took under a
+second instead of 17 for the libraries on a local disk, and 35 seconds
+instead of 3 minutes for the 6,000 folders of the music library on NFS,
+where each folder still costs one request to ask its time.  A folder's time
+changes when a file or folder is added, removed or renamed in it, but not
+when a file is edited in place, so the size and date shown for a file that
+was only edited stay as they were.  A .desc file that is changed is noticed.
+Add -full to read everything again (see below).  Everything is also read
+again when the library's dir, include, exclude or subdirs setting has
+changed, when the .dirs file is damaged or doesn't belong to the index file,
+and for any folder changed within ten minutes before the last run began (a
+change made while that run was reading might not show in the time: a file
+server's clock can be some seconds out, and FAT disks and some network
+shares show times only to two seconds).
+
+To make the indexer read every folder again on request, add -full:
+
+  jsexec /sbbs/xtrn/univiewer/univiewer_index.js -full
+
+You may want to do that, perhaps once a week, only if files in your
+libraries are edited in place (replaced by a newer version with the same
+name): the nightly run doesn't notice that, so the size and date shown in
+the search results stay as they were until a -full run.  Names, descriptions
+and the files found are never affected.  The sysop can make a weekly run a
+second timed event in SCFG (External Programs, Timed Events) with the
+command ?univiewer_index.js -q -full and the start-up directory
+../xtrn/univiewer/, at a time that is not that of the nightly one.  Most
+libraries don't need it.
+
+The indexer refuses to start while another run for the same settings file is
+still going, so give the two events times far enough apart.
+
+The indexer writes each new index under another name and renames it over the
+old one when it is complete.  It deletes what an earlier run that was
+stopped left behind (files ending in .new) at the start, and again at the
+end of every run, whatever happened, and it removes its lock file.  The
+files in .index can all be deleted safely: the next run just makes them
+again.
+
+How a search works.  The words typed are looked for in the file names and
+the descriptions, ignoring capitals, and every word must be found.  A word
+can be part of a longer one, so "cat" finds "category", and "at" finds
+"cat".  No word is left out for being common.  Instead the files are put in
+order of how good the match is: a file with the word on its own in the name
+first, then one whose name starts with it, then one with it inside a name,
+and last one that has it only in the description.  At most 500 files are
+listed (the sysop can change that with search_max in settings.ini, up to
+10000), and the title says how many there were in all ("first 500 of 3120"),
+so a very short word like "at" shows the best matches and a longer or second
+word narrows it down.  A file that has been removed since the index was
+built is reported when it is opened.
+
+A search reads one library's index file into memory at a time (a library of
+60,000 files needs about 30 MB while it is searched) and looks for the
+longest word with the fast built-in text search, so a search of one big
+library takes a few tens of milliseconds, and a search of all five libraries
+in the test took under a second, even for a single letter.
 
 HOOKS - ONLINE ARCHIVES
 =======================
@@ -547,6 +768,50 @@ and what was typed is never written to the log (the log records the user
 number and the address without its query).  The BBS's name is not sent to the
 site.
 
+COLORS FOR CONFIGURATION FILES, JSON, XML AND MARKDOWN
+======================================================
+The text reader colors these so they are easier to read:
+
+  INI CFG CONF   comments, [sections], keys, and values (numbers and
+                 true/false/yes/no/on/off get their own color)
+  YAML YML       comments, keys, strings, numbers and true/false/null, list
+                 dashes, anchors and tags, and the text of | and > blocks
+  TOML           comments, [tables], keys, strings (including multi-line
+                 ones), numbers, dates and true/false
+  JSON           keys, strings, and numbers/true/false/null
+  XML XSD XSL XSLT RSS ATOM PLIST
+                 tags (cyan), attribute names (yellow), attribute values,
+                 comments, CDATA and entities such as &amp;
+  MD MARKDOWN    headings, **bold**, *italic*, `code`, code blocks, links,
+                 quotes, lists and rules
+
+JSON, XML and Markdown are also laid out again, so a file saved on one long
+line is readable.  JSON and XML get two-space indents.  Nothing in the file
+is changed except spaces and line breaks between items: numbers, strings and
+the order of keys stay exactly as written.  In XML, text mixed in with tags
+(as in XHTML) is left as it was written, because spaces matter there.
+Markdown is shown as it is meant to be read: the marks are taken off and the
+text is colored instead (a link shows as its text followed by its address).
+Tables, and anything else Markdown can do that isn't listed above, are shown
+as they were written.
+
+Press V to switch between this view and the file exactly as it is.  The
+header at the top says which one you are looking at, for example "(V)iew:
+Formatted" (or Rendered or Colored) or "(V)iew: As is", and only appears for
+files that have a second view.  The menu at the bottom doesn't change.
+
+A file that is not valid JSON or XML (a missing bracket or closing tag, say),
+or is larger than the limit (4 MB for XML, YAML, TOML and INI, 1 MB for JSON
+and Markdown, which take much more memory to lay out), is shown exactly as it
+is, with no colors and no changes.  Pure JavaScript does all of this, so
+there is nothing to install.  The colors are the five syntax entries in the
+text reader section of the theme file (syntaxCommentColor and so on; see
+COLORS). Markdown uses the same five: headings are the tag color, bold and
+bullets the number color, italic and link text the key color, code the
+string color, and quotes, rules and link addresses the comment color.  A
+library that has an include setting needs these types added to it
+(*.json,*.xml,*.yaml and so on); one with no include already lists them.
+
 COLORS - THE THEME FILE
 ========================
 Colors are not in settings.ini.  They are in a separate theme file, named
@@ -586,7 +851,10 @@ The names in DefaultTheme.cfg tell you what they color: the header bar
 (listHighlightBkgColor is just a background number, then each column has a
 Highlight color), the help line at the bottom (a background plus colors for
 general text, hotkeys and the bracket between them), the scrollbar and the
-color of text in the reader (textBodyColor).
+color of text in the reader (textBodyColor).  The five syntax...Color entries
+color configuration files, JSON, XML and Markdown (see the section before
+this one), and searchMatchColor and searchCurrentColor mark the text found
+with /.
 
 At the bottom of the theme file are a few pieces of text, like the message
 shown when a library is empty.  Those can contain \x01 followed by a color
@@ -606,9 +874,12 @@ From your exec directory (or with ;exec ?install-xtrn from the terminal) run:
   jsexec install-xtrn ../xtrn/univiewer
 
 It adds the UVLIB online program (the second way below) and copies
-settings-example.ini to settings.ini if you don't have one yet; an
-existing settings.ini is kept.  It can't make Universal Viewer your text file
-section, so for that use the first way below.
+settings-example.ini to settings.ini if you don't have one yet; an existing
+settings.ini is kept.  It also offers to add a timed event, UVINDEX, that
+rebuilds the file name search index every night at 4:00 am (see SEARCHING
+THE LIBRARIES); change the time in SCFG, External Programs, Timed Events if
+you like.  It can't make Universal Viewer your text file section, so for
+that use the first way below.
 
 There are three ways to give users access.  If your Synchronet is a modern
 one (3.18 or later), the easiest manual way is the first.
@@ -734,11 +1005,13 @@ in settings.ini:
   music_kbps = 128
 
 then any song with a higher bit rate is sent as a smaller Opus copy at about
-that rate.  This is the one place an outside program is used.  ffmpeg (with
-libopus) is optional but highly recommended: the music player works fully
-without it, but with it songs are a fraction of the size, which saves
-bandwidth and gets them to slow connections much sooner.  FLAC files and high
-bit rate MP3s benefit the most.  It is never used unless you set music_kbps.
+that rate.  This and the unzip and unrar settings for archives (see ZIP
+above) are the only places an outside program is used, and all are
+optional.  ffmpeg (with libopus) is optional but highly recommended: the
+music player works fully without it, but with it songs are a fraction of the
+size, which saves bandwidth and gets them to slow connections much sooner.
+FLAC files and high bit rate MP3s benefit the most.  It is never used unless
+you set music_kbps.
 Why ffmpeg: re-encoding music inside Synchronet's JavaScript would take
 minutes per song.
 
@@ -978,3 +1251,97 @@ Version 2.0		24 Nov 2026	Renamed from SixelView to
 					UPGRADING FROM SIXELVIEW).  The
 					installer's online program is now
 					UVLIB.
+Version 2.1		25 Nov 2026	Text reader.  INI, CFG, CONF, YAML
+					and TOML files are colored.  JSON
+					and XML (and XSD, XSL, XSLT, RSS,
+					ATOM, PLIST) are laid out with
+					indents and colored.  Markdown is
+					shown with its marks removed, and
+					colored.  V switches to the file
+					as it is, and the header says
+					which view it is.  A file that is
+					not valid, or is too big (4 MB; 1
+					MB for JSON and Markdown), is
+					shown as it is.  Text files up to
+					4 MB open in the reader (it was 2
+					MB).  New theme colors
+					syntaxCommentColor,
+					syntaxKeyColor, syntaxTagColor,
+					syntaxStringColor and
+					syntaxNumberColor.
+					/ finds text in the reader (. , >
+					< m and Shift-M for the next and
+					previous match).  New theme colors
+					searchMatchColor and
+					searchCurrentColor.
+					Very long lines (minified JSON)
+					now wrap in a fraction of a second
+					instead of a minute.
+Version 2.2		25 Nov 2026	Pictures and PDFs.  / finds text
+					in PDFs, web pages, HTML files and
+					EPUB books, marking every match on
+					the page; m and Shift-M go to the
+					next and previous match, across
+					pages.
+					The viewer no longer redraws when
+					a key (Down at the last page, say)
+					doesn't move anything.
+					A standard font such as Times-
+					Roman with no encoding named now
+					uses StandardEncoding, so the fi
+					and fl ligatures and curly quotes
+					draw correctly.
+					pdf2sixel_lib.js: the full version
+					is back (progressive JPEG, JPEG
+					2000, JBIG2, animated GIF
+					encoding), after an update had
+					replaced it with an older copy.
+					Scanned pages and animated GIFs
+					draw correctly again.
+Version 2.3		25 Nov 2026	Archives and disk images.  7Z, TAR
+					(also .tar.gz, .tar.bz2, .tar.xz
+					and so on), CPIO, LZH/LHA, CAB,
+					ISO and FAT disk images (.img .ima
+					.dsk .vfd) are browsed in place:
+					only a file that is opened is
+					extracted, into the cache.  An
+					archive or disk image inside
+					another is browsed too.  The disk
+					images are read by the viewer's
+					own JavaScript.
+					A single GZ, BZ2, XZ, LZMA or ZST
+					file is opened in place, as the
+					file inside it.
+					Old "imploded" ZIP files (PKZIP
+					1.x) are unpacked in JavaScript
+					when Synchronet's Archive support
+					can't.
+					unzip= and unrar= (optional) name
+					programs to extract ZIP and RAR
+					files with; if one isn't named, or
+					fails, Synchronet's own Archive
+					support does it.
+					zip_max_mb now defaults to 500,
+					and for archives browsed in place
+					it is the largest single file
+					opened.
+Version 2.4		25 Nov 2026	File name search.  / searches the file
+					names and descriptions of a library
+					(or of all the libraries, from the
+					list of them).  The sysop builds the
+					index, plain text files in .index,
+					with univiewer_index.js from jsexec
+					now and then.  Results are put in
+					order of how good the match is, so
+					common words don't swamp them.
+					search_max sets how many files a
+					search lists (default 500).
+					noindex = true (in a library, or at
+					the top of settings.ini for all of
+					them) turns indexing off.
+					After the first run the indexer
+					reads only the folders that have
+					changed (-full reads them all), and
+					it cleans up after itself.  The
+					installer can add a nightly timed
+					event, UVINDEX, to run it.
