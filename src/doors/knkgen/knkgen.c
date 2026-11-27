@@ -13,7 +13,7 @@
  * key: trim outside spaces, collapse repeated spaces, and use mixed case.
  */
 static void
-canonicalize(char *value)
+knkgen_canonicalize(char *value)
 {
 	unsigned char *source = (unsigned char *)value;
 	unsigned char *destination = (unsigned char *)value;
@@ -277,8 +277,8 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-	canonicalize(sysop);
-	canonicalize(bbs);
+	knkgen_canonicalize(sysop);
+	knkgen_canonicalize(bbs);
 	code = registration_code(bbs, sysop);
 	snprintf(standard_code, sizeof(standard_code), "%" PRIu64, code);
 	printf("Code: %s\n", standard_code);

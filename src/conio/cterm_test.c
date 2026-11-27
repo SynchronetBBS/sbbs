@@ -704,6 +704,33 @@ static int test_ansi_sgr_negative(void)
 	return 1;
 }
 
+static int test_ansi_sgr_negative_intensity(void)
+{
+	struct vmem_cell cells[7];
+
+	setup_ansi();
+	ct_puts("\033[0;43mN\033[1mA");  /* Normal and bold on brown */
+	ct_puts("\033[0;1;7;43mB");       /* Enter negative with bold set */
+	ct_puts("\033[0;7;44m");
+	ct_puts("\033[1;7;43mC");         /* Set bold while already reversed */
+	ct_puts("\033[22mD\033[1mE");
+	ct_puts("\033[27mF");
+	ct_gettext(1, 1, 7, 1, cells);
+	for (int i = 2; i <= 5; i++) {
+		struct vmem_cell ref = cells[cells[i].ch == 'D' ? 0 : 1];
+		if (cells[i].fg != ref.bg || cells[i].bg != ref.fg) {
+			fprintf(result_fp, "    %c drew fg=%u bg=%u, expected %u/%u\n",
+			    cells[i].ch, cells[i].fg, cells[i].bg, ref.bg, ref.fg);
+			return 0;
+		}
+	}
+	if (cells[6].fg != cells[1].fg || cells[6].bg != cells[1].bg) {
+		fprintf(result_fp, "    SGR 27 failed to restore white on brown\n");
+		return 0;
+	}
+	return 1;
+}
+
 static int test_ansi_sgr_fg_color(void)
 {
 	struct vmem_cell cells[1];
@@ -6269,6 +6296,7 @@ static struct test_entry tests[] = {
 	{"ANSI_SGR_bold",     test_ansi_sgr_bold},
 	{"ANSI_SGR_blink",    test_ansi_sgr_blink},
 	{"ANSI_SGR_neg",      test_ansi_sgr_negative},
+	{"ANSI_SGR_neg_intensity", test_ansi_sgr_negative_intensity},
 	{"ANSI_SGR_fg",       test_ansi_sgr_fg_color},
 	{"ANSI_SGR_bg",       test_ansi_sgr_bg_color},
 	/* ANSI-BBS — Margins and scrolling */

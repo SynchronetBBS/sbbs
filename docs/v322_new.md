@@ -869,6 +869,14 @@
 - Fix: `msglist.js` dropped the space after a MIME-encoded word in a
   message subject or name (e.g. `Re: café is open` shown as
   `Re: caféis open`)
+- `install-xtrn.js` can now install file viewers, testers, extractors and
+  compressors (`[viewer:]`, `[tester:]`, `[extractor:]` and `[compressor:]`
+  sections of `install-xtrn.ini`), placed ahead of any existing one that
+  would otherwise handle the same file types
+- Fix: `dyndns.js` sent a command-line password as the IP address when a
+  password was also set in the `[dyndns]` section of `modopts.ini`; the
+  `modopts.ini` password now overrides the command-line one again, and
+  only a valid IPv4 address is used as the IP address
 - New: **LLM-backed Guru** — optional JavaScript chat engine
   (`chat_llm.js`) that backs a Guru, or an IRC bot
   (`chat_llm_irc.js`), with a local or hosted LLM: tool calling,
