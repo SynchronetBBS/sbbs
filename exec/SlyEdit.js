@@ -4,7 +4,8 @@
  *
  * Author: Eric Oulashin (AKA Nightfox)
  * BBS: Digital Distortion
- * BBS address: digdist.bbsindex.com
+ * BBS address: digitaldistortionbbs.com
+ * Alternate address: digdist.synchro.net
  *
  */
 
@@ -103,7 +104,7 @@ if (console.screen_columns < 80)
 
 // Version information
 var EDITOR_VERSION = "2.05";
-var EDITOR_VER_DATE = "2026-11-24";
+var EDITOR_VER_DATE = "2026-11-27";
 
 
 // Program variables
