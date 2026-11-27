@@ -543,8 +543,11 @@ function promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, pParamObj, pAlw
 	var userResponse = pDefaultYes;
 
 	// Get the current cursor position, so that we can place the cursor
-	// back there later.
-	const originalCurpos = console.getxy();
+	// back there later. If the terminal does not answer, use the position
+	// the edit loop is tracking so the box can still be erased.
+	var originalCurpos = console.getxy();
+	if (!xyPosValid(originalCurpos))
+		originalCurpos = fallbackCursorPos();
 
 	// Set up the abort confirmation box dimensions, and calculate
 	// where on the screen to display it.
@@ -644,21 +647,19 @@ function promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, pParamObj, pAlw
 	}
 
 	// If the user chose no, then erase the confirmation box and put the
-	// cursor back where it originally was.
+	// cursor back where it originally was. originalCurpos is always a
+	// position, including when the terminal did not answer the query.
 	if (!userResponse || pAlwaysEraseBox)
 	{
 		// Calculate the difference in the edit lines index we'll need to use
 		// to erase the confirmation box.  This will be the difference between
 		// the cursor position between boxY and the current cursor row.
-		if (typeof(originalCurpos) === "object" && typeof(originalCurpos.x) === "number" && typeof(originalCurpos.y) === "number")
-		{
-			const editLinesIndexDiff = boxY - originalCurpos.y;
-			pParamObj.displayMessageRectangle(boxX, boxY, boxWidth, boxHeight,
-			                                  pParamObj.editLinesIndex + editLinesIndexDiff,
-			                                  true);
-			// Put the cursor back where it was
-			console.gotoxy(originalCurpos);
-		}
+		const editLinesIndexDiff = boxY - originalCurpos.y;
+		pParamObj.displayMessageRectangle(boxX, boxY, boxWidth, boxHeight,
+		                                  pParamObj.editLinesIndex + editLinesIndexDiff,
+		                                  true);
+		// Put the cursor back where it was
+		console.gotoxy(originalCurpos);
 	}
 
 	return userResponse;

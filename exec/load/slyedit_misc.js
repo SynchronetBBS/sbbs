@@ -1470,7 +1470,7 @@ function promptYesNo(pQuestion, pDefaultYes, pBoxTitle, pIceRefreshForBothAnswer
       if (pIceRefreshForBothAnswers || !userResponse)
       {
          fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
-		 consoleGoLocation1ElseLocation2(originalCurpos, {x: gEditLeft, y: gEditTop});
+         consoleGotoXY(originalCurpos);
       }
    }
 
@@ -3517,8 +3517,9 @@ function getUserKey(pMode)
 //  pValidKeyStrs: An array of strings containing valid keys
 //  pCfgObj: The SlyEdit configuration settings object
 //  pCurPos: Optional.  Contains x and y coordinates specifying the current
-//           cursor position.  If this is not specified, this function will
-//           get the cursor position by calling console.getxy().
+//           cursor position.  If this is not specified, this function calls
+//           console.getxy(), and if that fails it uses the edit loop's
+//           tracked position.
 //
 // Return value: The user's input, as a string.  If nothing is input, this
 //               function will return an empty string.
@@ -3529,16 +3530,9 @@ function getUserInputWithSetOfInputStrs(pMode, pValidKeyStrs, pCfgObj, pCurPos)
 	if (pValidKeyStrs.length == 0)
 		return "";
 
-	// Get the current cursor position, either from pCurPos or console.getxy().
-	var curPos;
-	if (typeof(pCurPos) === "object" && typeof(pCurPos.x) === "number" && typeof(pCurPos.y) === "number")
-		curPos = pCurPos;
-	else
-	{
-		curPos = console.getxy();
-		if (curPos === false)
-			curPos = {x: gEditLeft, y: gEditTop};
-	}
+	// Get the current cursor position, either from pCurPos, the terminal,
+	// or the position the edit loop is tracking.
+	var curPos = consoleGetXY(pCurPos);
 	var originalCurposX = curPos.x;
 
 	// Build one string containing all the valid keys.
@@ -5452,16 +5446,55 @@ function displayRIPHdr(pText, pTextColorNum, pInnerBorderColorNum, pOuterEdgeCol
 	console.print(rip + "\r\n");
 }
 
-// Moves the console cursor to one location if that location object is
-// valid; otherwise, moves the cursor to the 2nd location.
+// Returns whether pPos is an object with numeric x and y screen coordinates.
+// console.getxy() returns false (not an object missing x or y) when the
+// terminal does not answer.
+function xyPosValid(pPos)
+{
+	return (typeof(pPos) === "object" && pPos !== null &&
+	        typeof(pPos.x) === "number" && typeof(pPos.y) === "number");
+}
+
+// The cursor position to use when console.getxy() fails. This is the position
+// the edit loop is tracking, or the top-left of the edit area if that has not
+// been set yet.
+function fallbackCursorPos()
+{
+	if (xyPosValid(gCurPos))
+		return { x: gCurPos.x, y: gCurPos.y };
+	var left = (typeof(gEditLeft) === "number" ? gEditLeft : 1);
+	var top = (typeof(gEditTop) === "number" ? gEditTop : 1);
+	return { x: left, y: top };
+}
+
+// Returns a cursor position. A valid pKnownPos is copied. Otherwise the
+// terminal is queried, and if it does not answer, the edit loop's tracked
+// position is used.
 //
 // Parameters:
-//  pLocation1: The 1st console location to try
-//  pLocation2: The 2nd console location to try
-function consoleGoLocation1ElseLocation2(pLocation1, pLocation2)
+//  pKnownPos: Optional position already known to the caller
+//
+// Return value: An object with numeric x and y properties
+function consoleGetXY(pKnownPos)
 {
-	if (typeof(pLocation1) === "object" && typeof(pLocation1.x) === "number" && typeof(pLocation1.y) === "number")
-		console.gotoxy(pLocation1);
-	else if (typeof(pLocation2) === "object" && typeof(pLocation2.x) === "number" && typeof(pLocation2.y) === "number")
-		console.gotoxy(pLocation2);
+	if (xyPosValid(pKnownPos))
+		return { x: pKnownPos.x, y: pKnownPos.y };
+	var pos = console.getxy();
+	if (xyPosValid(pos))
+		return pos;
+	return fallbackCursorPos();
+}
+
+// Moves the cursor to pPos when that is a valid position. When it is not
+// (including false from console.getxy()), moves to the edit loop's tracked
+// position without querying the terminal again.
+//
+// Parameters:
+//  pPos: The position to move to
+function consoleGotoXY(pPos)
+{
+	if (xyPosValid(pPos))
+		console.gotoxy(pPos);
+	else
+		console.gotoxy(fallbackCursorPos());
 }

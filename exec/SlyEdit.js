@@ -118,6 +118,12 @@ var gEditBottom = console.screen_rows-2;  // The last line of the edit area
 //var gEditRight = gEditLeft + 79; // Based on gEditLeft being 1-based
 var gEditLeft = 1;
 var gEditRight = gEditLeft + console.screen_columns - 1; // Based on gEditLeft being 1-based
+// Cursor position the edit loop keeps up to date. Used when the terminal
+// does not answer a cursor-position query.
+var gCurPos = {
+	x: gEditLeft,
+	y: gEditTop
+};
 /*
 // If the screen has less than 80 columns, then use the whole screen.
 if (console.screen_columns < 80)
@@ -453,7 +459,7 @@ Object.defineProperty(js.global, "SlyEdit_areYouThereProp", {
 		// a keypress after the "Are you there" warning
 		console.ungetstr(KEY_ENTER);
 
-		consoleGoLocation1ElseLocation2(originalCurPos, {x: gEditLeft, y: gEditTop});
+		consoleGotoXY(originalCurPos);
 		console.attributes = originalAtrs;
 
 		return "";
@@ -1316,10 +1322,11 @@ function doEditLoop()
 	fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes,
 	               gUserSettings.ctrlQQuote, 0, displayEditLines);
 
-	var curpos = {
-		x: gEditLeft,
-		y: gEditTop
-	};
+	// Share the edit loop's cursor with the rest of SlyEdit so a failed
+	// cursor-position query can restore this position.
+	gCurPos.x = gEditLeft;
+	gCurPos.y = gEditTop;
+	var curpos = gCurPos;
 	console.gotoxy(curpos);
 
 	// initialTimeLeft and updateTimeLeft will be used to keep track of the user's
@@ -1608,7 +1615,7 @@ function doEditLoop()
 								break;
 							case ENTER_ACTION_DO_CROSS_POST_SELECTION:
 								if (gCanCrossPost)
-									doCrossPosting();
+									doCrossPosting(curpos);
 								break;
 							case ENTER_ACTION_DO_MEME_INPUT:
 								// Input a meme from the user
@@ -1839,11 +1846,11 @@ function doEditLoop()
 				break;
 			case CROSSPOST_KEY:
 				if (gCanCrossPost)
-					doCrossPosting();
+					doCrossPosting(curpos);
 				break;
 			case LIST_TXT_REPLACEMENTS_KEY:
 				if (gConfigSettings.enableTextReplacements)
-					listTextReplacements();
+					listTextReplacements(curpos);
 				break;
 			case USER_SETTINGS_KEY:
 				var userSettingsRetObj = doUserSettings(curpos, true);
@@ -2738,7 +2745,7 @@ function handleSlashCommands(pCurpos, pCurrentWordLength)
 		if (lineUpper == "/T")
 		{
 			if (gConfigSettings.enableTextReplacements)
-				listTextReplacements();
+				listTextReplacements(pCurpos);
 			blankLineAndResetCursor(retObj, pCurpos.y, 2);
 			return retObj;
 		}
@@ -2754,7 +2761,7 @@ function handleSlashCommands(pCurpos, pCurrentWordLength)
 	// /UL or /UPLOAD
 	else if ((lineLen == 3 && lineUpper == "/UL") || (lineLen == 7 && lineUpper == "/UPLOAD"))
 	{
-		if (letUserUploadMessageFile())
+		if (letUserUploadMessageFile(pCurpos))
 		{
 			retObj.continueOn = false;
 			return retObj;
@@ -3918,7 +3925,7 @@ function doESCMenu(pCurpos, pCurrentWordLength)
 			break;
 		case ESC_MENU_LIST_TEXT_REPLACEMENTS:
 			if (gConfigSettings.enableTextReplacements)
-				listTextReplacements();
+				listTextReplacements(pCurpos);
 			break;
 		case ESC_MENU_USER_SETTINGS:
 			if (gConfigSettings.allowUserSettings)
@@ -5050,14 +5057,14 @@ function updateTime(pCurpos, pMoveCursorBack)
 	{
 		// Get the current cursor position so we can move
 		// the cursor back there when we're done.
-		var curpos = (typeof(pCurpos) == "object" ? pCurpos : console.getxy());
+		var curpos = consoleGetXY(pCurpos);
 		// Display the current time on the screen
 		fpDisplayTime(currentTime);
 		// Make sure the edit color is correct
 		console.print(chooseEditColor());
 		// Move the cursor back to where it was
 		if (pMoveCursorBack)
-			consoleGoLocation1ElseLocation2(curpos, {x: gEditLeft, y: gEditTop});
+			console.gotoxy(curpos);
 		// Update this function's time variable
 		updateTime.timeStr = currentTime;
 	}
@@ -5104,7 +5111,13 @@ function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 	console.cleartoeol("\x01n");
 	console.crlf();
 	console.clearline("\x01n");
-	console.print("\x01cSpecial: \x01w\x01hH:\x01n\x01hHigh Intensity \x01wI:\x01n\x01iBlinking \x01n\x01w\x01hN:\x01nNormal \x01h\x01g" + CP437_BLACK_SQUARE + " \x01n\x01cChoose colors/attributes\x01h\x01g: \x01c");
+	var colorPrompt = "\x01cSpecial: \x01w\x01hH:\x01n\x01hHigh Intensity \x01wI:\x01n\x01iBlinking \x01n\x01w\x01hN:\x01nNormal \x01h\x01g" + CP437_BLACK_SQUARE + " \x01n\x01cChoose colors/attributes\x01h\x01g: \x01c";
+	console.print(colorPrompt);
+	// The prompt is printed on the third color-selection row (two crlfs above).
+	var colorInputPos = {
+		x: 1 + console.strlen(colorPrompt),
+		y: colorSelTopLine + 2
+	};
 	// Get the attribute codes from the user.  Ideally, we'd use console.getkeys(),
 	// but that outputs a CR at the end, which is undesirable.  So instead, we call
 	// getUserInputWithSetOfInputStrs (defined in slyedit_misc.js).
@@ -5112,7 +5125,7 @@ function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 	var validKeys = ["KRGYBMCW", // Foreground color codes
 	                 "01234567", // Background color codes
 	                 "HIN"];     // Special color codes
-	var attrCodeKeys = getUserInputWithSetOfInputStrs(K_UPPER|K_NOCRLF|K_NOSPIN, validKeys, gConfigSettings);
+	var attrCodeKeys = getUserInputWithSetOfInputStrs(K_UPPER|K_NOCRLF|K_NOSPIN, validKeys, gConfigSettings, colorInputPos);
 	// If the user entered some attributes, then set them in retObj.txtAttrs.
 	if (attrCodeKeys.length > 0)
 	{
@@ -5263,11 +5276,11 @@ function displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight)
 // Parameters:
 //  pOriginalCurpos: Optional - The correct position of the cursor
 //                   when this function is called.  If this parameter
-//                   is not passed, then this function will call
-//                   console.getxy() to get the position of the cursor.
-//                   This is used for refreshing the message area to
-//                   erase the cross-post selection box when the user
-//                   quits out of cross-post selection.
+//                   is not passed, then this function uses the cursor
+//                   position the edit loop is tracking.  This is used
+//                   for refreshing the message area to erase the
+//                   cross-post selection box when the user quits out
+//                   of cross-post selection.
 function doCrossPosting(pOriginalCurpos)
 {
 	// If cross-posting is not allowed, then just return.
@@ -5318,15 +5331,7 @@ function doCrossPosting(pOriginalCurpos)
 
 	// Store the position of the cursor when we started so that we
 	// can return the cursor back to this position at the end
-	var origStartingCurpos = null;
-	if ((pOriginalCurpos != null) && (typeof(pOriginalCurpos) != "undefined"))
-		origStartingCurpos = pOriginalCurpos;
-	else
-	{
-		origStartingCurpos = console.getxy();
-		if (origStartingCurpos === false)
-			origStartingCurpos ={x: gEditLeft, y: gEditTop};
-	}
+	var origStartingCurpos = consoleGetXY(pOriginalCurpos);
 
 	// Construct objects to represent the screen locations of the upper-left
 	// and lower-right corners of the selection box.  Initially, let the box
@@ -5729,8 +5734,15 @@ function createCrossPostSubBoardMenu(pGrpIdx, pListStartCol, pListStartRow, pLis
 			// Go to the bottom row of the selection box and display an error that
 			// the user can't post in the selected sub-board and pause for a moment.
 			var origCurPos = console.getxy();
-			if (origCurPos === false)
-				origCurPos = {x: gEditLeft, y: gEditTop};
+			if (!xyPosValid(origCurPos))
+			{
+				// The cursor is on the highlighted sub-board row. Put it back
+				// there without using the edit area's top-left corner.
+				var rowOffset = subBoardMenu.selectedItemIdx - subBoardMenu.topItemIdx;
+				if (rowOffset < 0)
+					rowOffset = 0;
+				origCurPos = {x: pListStartCol, y: pListStartRow + rowOffset};
+			}
 			writeCantPostErrMsg(pListStartCol-1, pListStartRow+pListHeight, subBoardMenu.selectedItemIdx+1,
 								pListWidth+2, pListWidth, 2000/*cantPostErrPauseMS*/, origCurPos);
 		}
@@ -5865,14 +5877,19 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 }
 
 // Lists the text replacements configured in SlyEdit using a scrollable list box.
-function listTextReplacements()
+//
+// Parameters:
+//  pCurpos: Optional cursor position. If this is not a valid position, the
+//           terminal is queried, and if that fails the edit loop's position
+//           is used.
+function listTextReplacements(pCurpos)
 {
+	var originalCurpos = consoleGetXY(pCurpos);
 	if (gNumTxtReplacements == 0)
 	{
-		var originalCurpos = console.getxy();
 		writeMsgOntBtmHelpLineWithPause("\x01n\x01h\x01yThere are no text replacements.", ERRORMSG_PAUSE_MS);
 		console.print(chooseEditColor()); // Make sure the edit color is correct
-		consoleGoLocation1ElseLocation2(originalCurpos, {x: gEditLeft, y: gEditTop});
+		console.gotoxy(originalCurpos);
 		return;
 	}
 
@@ -5951,7 +5968,6 @@ function listTextReplacements()
 	boxInfo.topLeftY = gEditTop + Math.floor((gEditHeight/2) - (boxInfo.height/2));
 
 	// Draw the top & bottom box borders for the list of text replacements
-	var originalCurpos = console.getxy();
 	console.gotoxy(boxInfo.topLeftX, boxInfo.topLeftY);
 	console.print(listTextReplacements.topBorder);
 	console.gotoxy(boxInfo.topLeftX, boxInfo.topLeftY+boxInfo.height-1);
@@ -6055,16 +6071,12 @@ function listTextReplacements()
 
 	// We're done listing the text replacements.
 	// Erase the list box rectangle by re-drawing the message text.  Then, move
-	// the cursor back to where it was originally.
-	if (typeof(originalCurpos) === "object" && typeof(originalCurpos.x) === "number" && typeof(originalCurpos.y) === "number")
-	{
-		var editLineIndexAtSelBoxTopRow = gEditLinesIndex - (originalCurpos.y-boxInfo.topLeftY);
-		displayMessageRectangle(boxInfo.topLeftX, boxInfo.topLeftY, boxInfo.width,
-								boxInfo.height, editLineIndexAtSelBoxTopRow, true);
-		console.gotoxy(originalCurpos);
-	}
-	else
-		console.gotoxy(gEditLeft, gEditTop);
+	// the cursor back to where it was originally. originalCurpos is always a
+	// position: the one passed in, the terminal's answer, or the edit loop's.
+	var editLineIndexAtSelBoxTopRow = gEditLinesIndex - (originalCurpos.y-boxInfo.topLeftY);
+	displayMessageRectangle(boxInfo.topLeftX, boxInfo.topLeftY, boxInfo.width,
+							boxInfo.height, editLineIndexAtSelBoxTopRow, true);
+	console.gotoxy(originalCurpos);
 	console.print(chooseEditColor());
 }
 
@@ -6072,8 +6084,8 @@ function listTextReplacements()
 //
 // Parameters:
 //  pCurpos: The position of the cursor on the screen when this function is called.
-//           This is optional.  If not specified, this function will call console.getxy()
-//           to get the cursor position.
+//           This is optional.  If not specified, this function uses the cursor
+//           position the edit loop is tracking.
 //  pReturnCursorToOriginalPos: Optional, boolean - Whether or not to return the cursor
 //                              to its original position when done.
 function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
@@ -6086,16 +6098,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	if (!gConfigSettings.allowUserSettings)
 		return retObj;
 
-	//const originalCurpos = (typeof(pCurpos) == "object" ? pCurpos : console.getxy());
-	var originalCurpos;
-	if (typeof(pCurpos) === "object" && typeof(pCurpos.x) === "number" && typeof(pCurpos.y) === "number")
-		originalCurpos = pCurpos;
-	else
-	{
-		originalCurpos = console.getxy();
-		if (originalCurpos === false)
-			originalCurpos = originalCurpos = {x: gEditLeft, y: gEditTop};
-	}
+	var originalCurpos = consoleGetXY(pCurpos);
 	var returnCursorWhenDone = true;
 	if (typeof(pReturnCursorToOriginalPos) == "boolean")
 		returnCursorWhenDone = pReturnCursorToOriginalPos;
@@ -6764,15 +6767,7 @@ function letUserUploadMessageFile(pCurpos)
 {
 	gUploadedMessageFile = false;
 
-	var originalCurpos;
-	if (typeof(pCurpos) === "object" && pCurpos.hasOwnProperty("x") && pCurpos.hasOwnProperty("y"))
-		originalCurpos = pCurpos;
-	else
-	{
-		originalCurpos = console.getxy();
-		if (originalCurpos === false)
-			originalCurpos = originalCurpos = {x: gEditLeft, y: gEditTop};
-	}
+	var originalCurpos = consoleGetXY(pCurpos);
 
 	var uploadedMessage = false;
 	if (promptYesNo("Upload a message", true, "Upload message", true, true))
@@ -6985,13 +6980,12 @@ function promptForGraphicsChar(pCurPos)
 				if (inp.length > 0)
 				{
 					inp = inp.substr(0, inp.length-1);
-					var curPos = console.getxy();
-					if (typeof(curPos) === "object" && typeof(curPos.x) === "number" && typeof(curPos.y) === "number")
-					{
-						console.gotoxy(curPos.x-1, curPos.y);
-						console.print(" ");
-						console.gotoxy(curPos.x-1, curPos.y);
-					}
+					// The input field starts at column 55. Don't ask the terminal
+					// where the cursor is; that query can fail and skip the erase.
+					var eraseX = 55 + inp.length;
+					console.gotoxy(eraseX, console.screen_rows);
+					console.print(" ");
+					console.gotoxy(eraseX, console.screen_rows);
 				}
 				break;
 			case '\x0d':	// CR

@@ -115,41 +115,36 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	var lineNum = 2;
 	var toNameLineNum = lineNum;
 	console.gotoxy(1, lineNum);
-	console.print("\x01n" + randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
+	var toLinePrefix = "\x01n" + randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
 	              gConfigSettings.iceColors.BorderColor1,
 	              gConfigSettings.iceColors.BorderColor2) +
 	              gConfigSettings.iceColors.TopInfoBkgColor + " " +
 	              gConfigSettings.iceColors.TopLabelColor + "TO" +
 	              gConfigSettings.iceColors.TopLabelColonColor + ": " +
-	              gConfigSettings.iceColors.TopToColor);
+	              gConfigSettings.iceColors.TopToColor;
+	console.print(toLinePrefix);
 	//var fieldWidth = Math.floor(console.screen_columns * (29/80));
 	const toFieldLenFor80Cols = 29;
 	var fieldWidth = Math.floor(console.screen_columns * (toFieldLenFor80Cols/80));
-	for (var i = 0; i < fieldWidth; ++i)
-		console.print(" ");
+	if (fieldWidth > 0)
+		console.print(format("%*s", fieldWidth, ""));
 
-	// From name
+	// From name. The column is the length of the text just printed, so a
+	// failed cursor-position query cannot leave this header half drawn.
 	var fromNameLineNum = toNameLineNum;
-	console.print(" " + gConfigSettings.iceColors.TopLabelColor + "FROM" +
+	var fromLabel = " " + gConfigSettings.iceColors.TopLabelColor + "FROM" +
 	              gConfigSettings.iceColors.TopLabelColonColor + ": " +
-	              gConfigSettings.iceColors.TopFromColor);
-	var curpos = console.getxy();
-	if (curpos === false)
-		return;
-	const fromNameXPos = curpos.x; // Save this for later
-	for (var i = 0; i < fieldWidth; ++i)
-		console.print(" ");
-	// More spaces until the time location
-	curpos = console.getxy();
-	if (curpos === false)
-		return;
+	              gConfigSettings.iceColors.TopFromColor;
+	console.print(fromLabel);
+	const fromNameXPos = 1 + console.strlen(toLinePrefix) + fieldWidth + console.strlen(fromLabel);
 	var startX = console.screen_columns - 8;
-	while (curpos.x < startX)
-	{
-		console.print(" ");
-		++curpos.x;
-	}
-	const fromFieldLenFor80Cols = curpos.x - fromNameXPos;
+	var fromFieldEndX = fromNameXPos + fieldWidth;
+	if (fromFieldEndX < startX)
+		fromFieldEndX = startX;
+	var fromFieldPad = fromFieldEndX - fromNameXPos;
+	if (fromFieldPad > 0)
+		console.print(format("%*s", fromFieldPad, ""));
+	const fromFieldLenFor80Cols = fromFieldEndX - fromNameXPos;
 
 	// Time
 	console.print(" ");
@@ -161,31 +156,28 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	var subjectLineNum = ++lineNum;
 	console.gotoxy(1, lineNum);
 	// Subject
-	console.print("\x01n" + randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
+	var subjPrefix = "\x01n" + randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
 	              gConfigSettings.iceColors.BorderColor1,
 	              gConfigSettings.iceColors.BorderColor2) +
 	              gConfigSettings.iceColors.TopInfoBkgColor + " " +
 	              gConfigSettings.iceColors.TopLabelColor + "SUBJECT" +
 	              gConfigSettings.iceColors.TopLabelColonColor + ": " +
-	              gConfigSettings.iceColors.TopSubjectColor);
-	fieldWidth = Math.floor(console.screen_columns * (54/80));
-	for (var i = 0; i < fieldWidth; ++i)
-		console.print(" ");
+	              gConfigSettings.iceColors.TopSubjectColor;
+	console.print(subjPrefix);
+	var subjFieldWidth = Math.floor(console.screen_columns * (54/80));
+	if (subjFieldWidth > 0)
+		console.print(format("%*s", subjFieldWidth, ""));
 
 	// Time left
 	fieldWidth = Math.floor(console.screen_columns * (4/80));
 	var screenText = Math.floor(bbs.time_left / 60).toString().substr(0, fieldWidth);
 	startX = console.screen_columns - fieldWidth - 10;
 	// Before outputting the time left, write more spaces until the starting
-	// horizontal location.
-	curpos = console.getxy();
-	if (curpos === false)
-		return;
-	while (curpos.x < startX)
-	{
-		console.print(" ");
-		++curpos.x;
-	}
+	// horizontal location. Count the columns already printed instead of
+	// querying the terminal.
+	var afterSubjX = 1 + console.strlen(subjPrefix) + subjFieldWidth;
+	if (afterSubjX < startX)
+		console.print(format("%*s", startX - afterSubjX, ""));
 	console.print(" " + gConfigSettings.iceColors.TopLabelColor + "TL" +
 	              gConfigSettings.iceColors.TopLabelColonColor + ": " +
 	              gConfigSettings.iceColors.TopTimeLeftColor, screenText);
