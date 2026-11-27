@@ -536,9 +536,9 @@ cterm_decset_reset_common(struct cterminal *cterm, bool set)
 	bool updfg, updbg;
 	int i, flags;
 
-	attr2palette(cterm->attr, &oldfg, &oldbg);
-	updfg = (oldfg == cterm->fg_color);
-	updbg = (oldbg == cterm->bg_color);
+	bool have_palette = cterm_attr2palette(cterm, &oldfg, &oldbg);
+	updfg = have_palette && oldfg == cterm->fg_color;
+	updbg = have_palette && oldbg == cterm->bg_color;
 
 	for (i = 0; i < cterm->seq_param_count; i++) {
 		if (cterm_seq_param_consumed(cterm, i))
@@ -600,8 +600,9 @@ cterm_decset_reset_common(struct cterminal *cterm, bool set)
 		cterm_handle_decrm(cterm, NULL);
 
 	if (updfg || updbg) {
-		attr2palette(cterm->attr, updfg ? &cterm->fg_color : NULL,
+		cterm_attr2palette(cterm, updfg ? &cterm->fg_color : NULL,
 		    updbg ? &cterm->bg_color : NULL);
+		setcolour(cterm->fg_color, cterm->bg_color);
 		if (updfg) {
 			if (cterm->negative)
 				FREE_AND_NULL(cterm->bg_tc_str);
@@ -1538,9 +1539,7 @@ set_bright_fg(struct cterminal *cterm, unsigned char colour, int flags)
 		cterm_set_fgattr(cterm, colour);
 		if (!cterm->skypix)
 			cterm->attr |= 8;
-		attr2palette(cterm->attr,
-		    cterm->negative ? NULL : &cterm->fg_color,
-		    cterm->negative ? &cterm->fg_color : NULL);
+		attr2palette(cterm->attr, &cterm->fg_color, NULL);
 		FREE_AND_NULL(cterm->fg_tc_str);
 	}
 }
@@ -1552,9 +1551,7 @@ set_bright_bg(struct cterminal *cterm, unsigned char colour, int flags)
 		cterm_set_bgattr(cterm, colour);
 		if (!cterm->skypix)
 			cterm->attr |= 128;
-		attr2palette(cterm->attr,
-		    cterm->negative ? &cterm->bg_color : NULL,
-		    cterm->negative ? NULL : &cterm->bg_color);
+		attr2palette(cterm->attr, NULL, &cterm->bg_color);
 		FREE_AND_NULL(cterm->bg_tc_str);
 	}
 }
@@ -1566,10 +1563,10 @@ cterm_cterm_apply_sgr(struct cterminal *cterm, int *pi)
 
 	switch (cterm->seq_param_int[*pi]) {
 		case 38:
-			cterm_parse_extended_colour(cterm, pi, true ^ cterm->negative);
+			cterm_parse_extended_colour(cterm, pi, true);
 			return;
 		case 48:
-			cterm_parse_extended_colour(cterm, pi, false ^ cterm->negative);
+			cterm_parse_extended_colour(cterm, pi, false);
 			return;
 		case 90:  set_bright_fg(cterm, BLACK,     flags); return;
 		case 91:  set_bright_fg(cterm, RED,       flags); return;

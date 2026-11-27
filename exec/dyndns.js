@@ -3,8 +3,12 @@
 // Client for Synchronet dynamic DNS service (yourbbs.synchro.net)
 
 // usage: ?dyndns [password] [ip_address] [[-option] | [-option value] [...]]
+//
+// When a password is set in the [dyndns] section of ctrl/modopts.ini, it
+// overrides a password given as the first argument; only an argument that
+// is a valid IPv4 address is then used as the IP address.
 
-var REVISION = "2.0";
+var REVISION = "2.1";
 var rx_log_level = LOG_INFO;
 var tx_log_level = LOG_DEBUG;
 
@@ -30,6 +34,19 @@ var ip_address = options.ip;
 var ip6_address = options.ip6;
 var host_name = system.qwk_id;
 var password = options.password;
+var positional = 0;
+
+function valid_ipv4_address(str)
+{
+	var octet = str.split('.');
+	if (octet.length != 4)
+		return false;
+	for (var o = 0; o < octet.length; o++) {
+		if (!/^\d{1,3}$/.test(octet[o]) || parseInt(octet[o], 10) > 255)
+			return false;
+	}
+	return true;
+}
 
 for(i=0;i<argc;i++) {
 	switch (argv[i].toLowerCase()) {
@@ -47,10 +64,15 @@ for(i=0;i<argc;i++) {
 			ip6_address = argv[++i];
 			break;
 		default:
-			if (password)
-				ip_address = argv[i];
-			else
+			++positional;
+			if (positional == 1 && !options.password)
 				password = argv[i];
+			else if (valid_ipv4_address(argv[i]))
+				ip_address = argv[i];
+			else if (positional == 1)
+				;	// Command-line password, overridden by modopts.ini
+			else	// Don't log the argument itself: it may be a password
+				alert("Ignoring unrecognized argument #" + (i + 1));
 			break;
 	}
 }
