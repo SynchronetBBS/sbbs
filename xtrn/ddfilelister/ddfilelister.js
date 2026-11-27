@@ -43,19 +43,8 @@ if (system.version_num < 32000)
 
 
 require("sbbsdefs.js", "K_UPPER");
-require("sbbsdefs.js", "FL_NONE");
-require("sbbsdefs.js", "FL_ULTIME");
-require("sbbsdefs.js", "FL_DLTIME");
-require("sbbsdefs.js", "FL_NO_HDR");
-require("sbbsdefs.js", "FL_FINDDESC");
-require("sbbsdefs.js", "FL_EXFIND");
-require("sbbsdefs.js", "FL_VIEW");
-// FL_FIND is a newer sbbsdefs.js alias for FL_FINDDESC; older releases only define FL_FINDDESC.
-if (typeof(FL_FIND) === "undefined")
-	var FL_FIND = FL_FINDDESC;
 require('key_defs.js', 'KEY_UP');
 require("text.js", "Email"); // Text string definitions (referencing text.dat)
-require("text.js", "InvalidSearchExpression");
 require("dd_lightbar_menu.js", "DDLightbarMenu");
 require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 require("frame.js", "Frame");
@@ -6000,7 +5989,7 @@ function parseArgs(argv)
 		// (for either Scan Dirs or List Files)
 		//The 'S' option calls bbs.scan_dirs() which is expected to do the prompting for the string (filename/pattern) and then call filelist mod for each directory
 
-		// FL_* mode flags from exec/load/sbbsdefs.js (FL_FINDDESC; FL_FIND alias when present).
+		// FL_* mode flags from exec/load/sbbsdefs.js.
 
 		// There must be either 2 or 3 arguments
 		if (argv.length < 2)
@@ -6043,8 +6032,8 @@ function parseArgs(argv)
 				console.print("FL_DLTIME\r\n");
 			if (Boolean(FLBehavior & FL_NO_HDR))
 				console.print("FL_NO_HDR\r\n");
-			if (Boolean(FLBehavior & FL_FIND))
-				console.print("FL_FIND\r\n");
+			if (Boolean(FLBehavior & FL_FINDDESC))
+				console.print("FL_FINDDESC\r\n");
 			if (Boolean(FLBehavior & FL_EXFIND))
 				console.print("FL_EXFIND\r\n");
 			if (Boolean(FLBehavior & FL_VIEW))
@@ -6075,8 +6064,8 @@ function parseArgs(argv)
 			// If FL_ULTIME is set, then set the script mode to new file search
 			if (Boolean(FLBehavior & FL_ULTIME))
 				gScriptMode = MODE_NEW_FILE_SEARCH; // List files by upload time
-			// If FL_FIND is set, then set the script mode to search by description
-			else if (Boolean(FLBehavior & FL_FIND) || Boolean(FLBehavior & FL_EXFIND))
+			// If FL_FINDDESC is set, then set the script mode to search by description
+			else if (Boolean(FLBehavior & FL_FINDDESC) || Boolean(FLBehavior & FL_EXFIND))
 				gScriptMode = MODE_SEARCH_DESCRIPTION;
 			if (Boolean(FLBehavior & FL_VIEW))
 			{
@@ -6095,7 +6084,7 @@ function parseArgs(argv)
 			if (!file_area.dir.hasOwnProperty(argv[0]))
 				return false;
 			gDirCode = argv[0];
-			if (Boolean(FLBehavior & FL_FIND) || Boolean(FLBehavior & FL_EXFIND))
+			if (Boolean(FLBehavior & FL_FINDDESC) || Boolean(FLBehavior & FL_EXFIND))
 			{
 				gScriptMode = MODE_SEARCH_DESCRIPTION;
 				// The keyword could have spaces in it, so look at argv[2] and the remainder of the
@@ -6462,7 +6451,7 @@ function ddFileListerPromptDescriptionSearchString()
 			{
 				console.attributes = "N";
 				console.crlf();
-				console.print(format(bbs.text(InvalidSearchExpression),
+				console.print(format(bbs.text(bbs.text.InvalidSearchExpression),
 					validObj.errorMsg.length > 0 ? validObj.errorMsg : "(?)"));
 				console.crlf();
 				bbs.menu("textsrch");
@@ -6484,7 +6473,7 @@ function ddFileListerValidateDescSearchExprAndMaybeExit(pExpr, pExitRetObj)
 		return true;
 	console.attributes = "N";
 	console.crlf();
-	console.print(format(bbs.text(InvalidSearchExpression), validObj.errorMsg));
+	console.print(format(bbs.text(bbs.text.InvalidSearchExpression), validObj.errorMsg));
 	console.crlf();
 	if (pExitRetObj != null)
 	{
@@ -6520,15 +6509,10 @@ function ddFileListerValidateBoolSearchExpression(pExpression)
 // Tests one file record against a boolean search expression (stock listfiles.js).
 function ddFileListerFileMatchesBoolSearch(pExpression, pFileObj)
 {
-	if (!ddFileListerBoolSearchAvailable())
+	if (!ddFileListerBoolSearchAvailable() || pFileObj == null)
 		return false;
-	var name = (pFileObj != null && typeof(pFileObj.name) === "string" ? pFileObj.name : "");
-	var desc = (pFileObj != null && typeof(pFileObj.desc) === "string" ? pFileObj.desc : "");
-	var extdesc = (pFileObj != null && typeof(pFileObj.extdesc) === "string" ? pFileObj.extdesc : "");
-	var tags = (pFileObj != null && typeof(pFileObj.tags) === "string" ? pFileObj.tags : "");
-	var author = (pFileObj != null && typeof(pFileObj.author) === "string" ? pFileObj.author : "");
-	var author_org = (pFileObj != null && typeof(pFileObj.author_org) === "string" ? pFileObj.author_org : "");
-	return bool_search(pExpression, name, desc, extdesc, tags, author, author_org);
+	return bool_search(pExpression, pFileObj.name || "", pFileObj.desc || "", pFileObj.extdesc || ""
+		, pFileObj.tags || "", pFileObj.author || "", pFileObj.author_org || "");
 }
 
 // Searches files in a directory by filespec.
@@ -6607,7 +6591,6 @@ function searchDirWithDescUpper(pDirCode, pSearchExpr)
 
 	var useBoolSearch = ddFileListerBoolSearchAvailable();
 	var descKeywordUpper = (!useBoolSearch ? pSearchExpr.toUpperCase() : "");
-	var listFilespec = (useBoolSearch ? "*" : gFilespec);
 
 	var filebase = new FileBase(pDirCode);
 	if (filebase.open())
@@ -6616,16 +6599,16 @@ function searchDirWithDescUpper(pDirCode, pSearchExpr)
 		var fileList;
 		if (gSettings.fileSortOrder == SORT_FL_ULTIME || gSettings.fileSortOrder == SORT_FL_DLTIME)
 		{
-			fileList = filebase.get_list(listFilespec, FileBase.DETAIL.EXTENDED, 0, true, FileBase.SORT.NATURAL);
+			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, FileBase.SORT.NATURAL);
 			if (gSettings.fileSortOrder == SORT_FL_ULTIME)
 				fileList.sort(fileInfoSortULTime);
 			else if (gSettings.fileSortOrder == SORT_FL_DLTIME)
 				fileList.sort(fileInfoSortDLTime);
 		}
 		else if (gSettings.fileSortOrder == SORT_PER_DIR_CFG)
-			fileList = filebase.get_list(listFilespec, FileBase.DETAIL.EXTENDED, 0, true, file_area.dir[pDirCode].sort);
+			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, file_area.dir[pDirCode].sort);
 		else
-			fileList = filebase.get_list(listFilespec, FileBase.DETAIL.EXTENDED, 0, true, gSettings.fileSortOrder);
+			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, gSettings.fileSortOrder);
 		filebase.close();
 		for (var i = 0; i < fileList.length; ++i)
 		{
@@ -6652,7 +6635,8 @@ function searchDirWithDescUpper(pDirCode, pSearchExpr)
 			if (fileIsMatch)
 			{
 				retObj.foundFiles = true;
-				if (fileList[i].hasOwnProperty("extdesc") && /\r\n$/.test(fileList[i].extdesc))
+				// Fix line endings in extdesc if necessary (bare LF -> CRLF; already-CRLF text is unchanged)
+				if (fileList[i].hasOwnProperty("extdesc"))
 					fileList[i].extdesc = lfexpand(fileList[i].extdesc);
 				fileList[i].dirCode = pDirCode;
 				gFileList.push(fileList[i]);
