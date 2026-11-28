@@ -2019,7 +2019,8 @@ SOURCE: <<VT320>>
 
 === `CSI Ps SP q` Set Cursor Style (`DECSCUSR`)
 Defaults: `Ps` = 1
-Sets the cursor style
+Sets the cursor shape and blink. Hiding the cursor with DECTCEM retains this
+style. A style selected while hidden takes effect when the cursor is shown.
 
 [%autowidth]
 |===

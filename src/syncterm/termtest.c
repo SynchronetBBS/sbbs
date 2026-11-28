@@ -2127,8 +2127,13 @@ test_decrpm_cursor(void)
 		term_write("\033[?25h");
 		return 0;
 	}
-	/* Restore */
+	/* Show cursor and verify the mode was restored. */
 	term_write("\033[?25h");
+	pm = query_decrqm(25);
+	if (pm != 1) {
+		fprintf(result_fp, "    ?25h: expected pm=1(set) got %d\n", pm);
+		return 0;
+	}
 	return 1;
 }
 

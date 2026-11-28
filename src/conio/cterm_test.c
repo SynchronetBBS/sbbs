@@ -2961,6 +2961,79 @@ static int test_ansi_decscusr(void)
 	return 1;
 }
 
+static int expect_cursor_mode(int style, int visible)
+{
+	char expected[40];
+	int shape = style <= 2 ? _SOLIDCURSOR : _NORMALCURSOR;
+	response_clear();
+	ct_puts("\033[?25$p\033P$q q\033\\");
+	snprintf(expected, sizeof(expected), "\033[?25;%d$y\033P1$r%d q\033\\",
+	    visible ? 1 : 2, style);
+	if (strcmp(response_buf, expected) != 0 || cterm->cursor != (visible ? shape : _NOCURSOR)) {
+		fprintf(result_fp, "    style %d, visible %d: cursor=%d, reply='%s'\n",
+		    style, visible, cterm->cursor, response_buf);
+		return 0;
+	}
+	response_clear();
+	ct_puts("\033[=2n");
+	const char *mode = strstr(response_buf, ";25");
+	if ((mode != NULL && (mode[3] == ';' || mode[3] == 'n')) != visible) {
+		fprintf(result_fp, "    visible %d: private mode list '%s'\n", visible, response_buf);
+		return 0;
+	}
+	int start, end, range, blink, shown;
+	getcustomcursor(&start, &end, &range, &blink, &shown);
+	if ((shown && start <= end && start < range) != visible ||
+	    (visible && (blink != (style & 1) || (start == 0 && end == range - 1) != (style <= 2)))) {
+		fprintf(result_fp, "    style %d, visible %d: scanlines %d..%d/%d, blink %d, shown %d\n",
+		    style, visible, start, end, range, blink, shown);
+		return 0;
+	}
+	return 1;
+}
+
+/* Saving all private modes also queries and restores the host's mouse modes. */
+static int cursor_test_mouse_query(int parameter, void *data)
+{
+	(void)parameter;
+	(void)data;
+	return 0;
+}
+
+static void cursor_test_mouse_change(int parameter, int enable, void *data)
+{
+	(void)parameter;
+	(void)enable;
+	(void)data;
+}
+
+static int test_ansi_dectcem(void)
+{
+	setup_ansi();
+	cterm->mouse_state_query = cursor_test_mouse_query;
+	cterm->mouse_state_change = cursor_test_mouse_change;
+	for (int style = 1; style <= 4; ++style) {
+		const char *mode = style % 2 ? "25" : "";
+		ct_printf("\033[%d q", style);
+		if (!expect_cursor_mode(style, 1))
+			return 0;
+		ct_printf("\033[?%ss\033[?25l\033[?25l", mode);
+		if (!expect_cursor_mode(style, 0))
+			return 0;
+		ct_printf("\033[?%su", mode);
+		if (!expect_cursor_mode(style, 1))
+			return 0;
+		ct_printf("\033[?25l\033[?%ss\033[?25h\033[?%su", mode, mode);
+		ct_printf("\033[%d q", 5 - style);
+		if (!expect_cursor_mode(5 - style, 0))
+			return 0;
+		ct_puts("\033[?25h\033[?25h");
+		if (!expect_cursor_mode(5 - style, 1))
+			return 0;
+	}
+	return 1;
+}
+
 static int test_ansi_ct24bc(void)
 {
 	struct vmem_cell c1, c2;
@@ -6475,6 +6548,7 @@ static struct test_entry tests[] = {
 	{"SPLIT_beeb_vdu23",  test_split_beeb_vdu23},
 	{"SPLIT_doorway",     test_split_doorway},
 	/* Stage 2: Untested ANSI features */
+	{"ANSI_DECTCEM",      test_ansi_dectcem},
 	{"ANSI_DECSCUSR",     test_ansi_decscusr},
 	{"ANSI_CT24BC",       test_ansi_ct24bc},
 	{"ANSI_FETM_TTM",     test_ansi_fetm_ttm},

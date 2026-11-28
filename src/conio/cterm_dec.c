@@ -49,56 +49,33 @@
 #include "vidmodes.h"
 #include <crc16.h>
 
+static int
+visible_cursor_type(const struct cterminal *cterm)
+{
+	return cterm->cursor_style == 1 || cterm->cursor_style == 2 ? _SOLIDCURSOR : _NORMALCURSOR;
+}
+
+static void
+set_cursor_visible(struct cterminal *cterm, bool visible)
+{
+	cterm->cursor = visible ? visible_cursor_type(cterm) : _NOCURSOR;
+	ciolib_setcursortype(cterm->cursor);
+	if (visible && cterm->cursor_style != 0 && (cio_api.options & CONIO_OPT_CUSTOM_CURSOR)) {
+		int s, e, r;
+		getcustomcursor(&s, &e, &r, NULL, NULL);
+		setcustomcursor(s, e, r, cterm->cursor_style & 1, true);
+	}
+}
+
 void
 cterm_handle_decscusr(struct cterminal *cterm, int *speed)	/* CSI SP q */
 {
-	int s, e, r, b, v;
 	(void)speed;
 	cterm_seq_default(cterm, 0, 1);
-	switch (cterm->seq_param_int[0]) {
-		case 0:
-		case 1:
-		default:
-			cterm->cursor = _SOLIDCURSOR;
-			_setcursortype(_SOLIDCURSOR);
-			if (cio_api.options & CONIO_OPT_CUSTOM_CURSOR) {
-				getcustomcursor(&s, &e, &r, &b, &v);
-				b = true;
-				v = true;
-				setcustomcursor(s, e, r, b, v);
-			}
-			break;
-		case 2:
-			cterm->cursor = _SOLIDCURSOR;
-			_setcursortype(_SOLIDCURSOR);
-			if (cio_api.options & CONIO_OPT_CUSTOM_CURSOR) {
-				getcustomcursor(&s, &e, &r, &b, &v);
-				b = false;
-				v = true;
-				setcustomcursor(s, e, r, b, v);
-			}
-			break;
-		case 3:
-			cterm->cursor = _NORMALCURSOR;
-			_setcursortype(_NORMALCURSOR);
-			if (cio_api.options & CONIO_OPT_CUSTOM_CURSOR) {
-				getcustomcursor(&s, &e, &r, &b, &v);
-				b = true;
-				v = true;
-				setcustomcursor(s, e, r, b, v);
-			}
-			break;
-		case 4:
-			cterm->cursor = _NORMALCURSOR;
-			_setcursortype(_NORMALCURSOR);
-			if (cio_api.options & CONIO_OPT_CUSTOM_CURSOR) {
-				getcustomcursor(&s, &e, &r, &b, &v);
-				b = false;
-				v = true;
-				setcustomcursor(s, e, r, b, v);
-			}
-			break;
-	}
+	uint64_t style = cterm->seq_param_int[0];
+	cterm->cursor_style = style >= 1 && style <= 4 ? (int)style : 1;
+	if (cterm->cursor != _NOCURSOR)
+		set_cursor_visible(cterm, true);
 }
 
 void
@@ -687,7 +664,7 @@ cterm_handle_decrqm_dec(struct cterminal *cterm, int *speed)	/* CSI ? $ p */
 			pm = (cterm->extattr & CTERM_EXTATTR_AUTOWRAP) ? 1 : 2;
 			break;
 		case 25:
-			pm = (cterm->cursor == _NORMALCURSOR) ? 1 : 2;
+			pm = (cterm->cursor != _NOCURSOR) ? 1 : 2;
 			break;
 		case 31:
 			pm = (vidflags & CIOLIB_VIDEO_ALTCHARS) ? 1 : 2;
@@ -761,7 +738,7 @@ cterm_handle_save_dec_modes(struct cterminal *cterm, int *speed)	/* CSI ? s */
 		    | CTERM_SAVEMODE_DECLRMM | CTERM_SAVEMODE_DECBKM);
 		cterm->saved_mode &= ~cterm->saved_mode_mask;
 		cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_AUTOWRAP) ? CTERM_SAVEMODE_AUTOWRAP : 0;
-		cterm->saved_mode |= (cterm->cursor == _NORMALCURSOR) ? CTERM_SAVEMODE_CURSOR : 0;
+		cterm->saved_mode |= (cterm->cursor != _NOCURSOR) ? CTERM_SAVEMODE_CURSOR : 0;
 		cterm->saved_mode |= (flags & CIOLIB_VIDEO_ALTCHARS) ? CTERM_SAVEMODE_ALTCHARS : 0;
 		cterm->saved_mode |= (flags & CIOLIB_VIDEO_NOBRIGHT) ? CTERM_SAVEMODE_NOBRIGHT : 0;
 		cterm->saved_mode |= (flags & CIOLIB_VIDEO_BGBRIGHT) ? CTERM_SAVEMODE_BGBRIGHT : 0;
@@ -807,7 +784,7 @@ cterm_handle_save_dec_modes(struct cterminal *cterm, int *speed)	/* CSI ? s */
 			case 25:
 				cterm->saved_mode_mask |= CTERM_SAVEMODE_CURSOR;
 				cterm->saved_mode &= ~CTERM_SAVEMODE_CURSOR;
-				cterm->saved_mode |= (cterm->cursor == _NORMALCURSOR) ? CTERM_SAVEMODE_CURSOR : 0;
+				cterm->saved_mode |= (cterm->cursor != _NOCURSOR) ? CTERM_SAVEMODE_CURSOR : 0;
 				break;
 			case 31:
 				cterm->saved_mode_mask |= CTERM_SAVEMODE_ALTCHARS;
@@ -936,10 +913,8 @@ cterm_handle_restore_dec_modes(struct cterminal *cterm, int *speed)	/* CSI ? u *
 			else
 				cterm->extattr &= ~CTERM_EXTATTR_SXSCROLL;
 		}
-		if (cterm->saved_mode_mask & CTERM_SAVEMODE_CURSOR) {
-			cterm->cursor = (cterm->saved_mode & CTERM_SAVEMODE_CURSOR) ? _NORMALCURSOR : _NOCURSOR;
-			ciolib_setcursortype(cterm->cursor);
-		}
+		if (cterm->saved_mode_mask & CTERM_SAVEMODE_CURSOR)
+			set_cursor_visible(cterm, (cterm->saved_mode & CTERM_SAVEMODE_CURSOR) != 0);
 		if (cterm->saved_mode_mask & CTERM_SAVEMODE_ALTCHARS) {
 			if (cterm->saved_mode & CTERM_SAVEMODE_ALTCHARS)
 				flags |= CIOLIB_VIDEO_ALTCHARS;
@@ -1032,10 +1007,8 @@ cterm_handle_restore_dec_modes(struct cterminal *cterm, int *speed)	/* CSI ? u *
 					cterm->mouse_state_change(9, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_X10, cterm->mouse_state_change_cbdata);
 				break;
 			case 25:
-				if (cterm->saved_mode_mask & CTERM_SAVEMODE_CURSOR) {
-					cterm->cursor = (cterm->saved_mode & CTERM_SAVEMODE_CURSOR) ? _NORMALCURSOR : _NOCURSOR;
-					ciolib_setcursortype(cterm->cursor);
-				}
+				if (cterm->saved_mode_mask & CTERM_SAVEMODE_CURSOR)
+					set_cursor_visible(cterm, (cterm->saved_mode & CTERM_SAVEMODE_CURSOR) != 0);
 				break;
 			case 31:
 				if (cterm->saved_mode_mask & CTERM_SAVEMODE_ALTCHARS) {
@@ -1210,8 +1183,7 @@ cterm_handle_decsm(struct cterminal *cterm, int *speed)	/* CSI ? h */
 				cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
 				break;
 			case 25:
-				cterm->cursor = _NORMALCURSOR;
-				ciolib_setcursortype(cterm->cursor);
+				set_cursor_visible(cterm, true);
 				break;
 			case 67:
 				cterm->extattr |= CTERM_EXTATTR_DECBKM;
@@ -1267,8 +1239,7 @@ cterm_handle_decrm(struct cterminal *cterm, int *speed)	/* CSI ? l */
 				cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
 				break;
 			case 25:
-				cterm->cursor = _NOCURSOR;
-				ciolib_setcursortype(cterm->cursor);
+				set_cursor_visible(cterm, false);
 				break;
 			case 67:
 				cterm->extattr &= ~CTERM_EXTATTR_DECBKM;
@@ -2431,17 +2402,16 @@ cterm_dec_dcs_finish(struct cterminal *cterm)
 				break;
 			case ' ':
 				if (cterm->strbuf[3] == 'q' && cterm->strbuf[4] == 0) {
-					int style;
-					int cs, ce, cr, cb, cv;
+					int style = visible_cursor_type(cterm) == _SOLIDCURSOR ? 2 : 4;
 					if (cio_api.options & CONIO_OPT_CUSTOM_CURSOR) {
-						getcustomcursor(&cs, &ce, &cr, &cb, &cv);
-						if (cterm->cursor == _SOLIDCURSOR)
-							style = cb ? 1 : 2;
-						else
-							style = cb ? 3 : 4;
-					}
-					else {
-						style = (cterm->cursor == _SOLIDCURSOR) ? 2 : 4;
+						if (cterm->cursor == _NOCURSOR && cterm->cursor_style != 0)
+							style = cterm->cursor_style;
+						else {
+							int blink = 0;
+							getcustomcursor(NULL, NULL, NULL, &blink, NULL);
+							if (blink)
+								style--;
+						}
 					}
 					sprintf(tmp, "\x1bP1$r%d q\x1b\\", style);
 					cterm_respond(cterm, tmp, strlen(tmp));
