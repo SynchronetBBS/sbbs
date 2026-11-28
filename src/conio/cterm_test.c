@@ -1777,6 +1777,27 @@ static int test_ansi_sgr_rgb_bg(void)
 	return 1;
 }
 
+static int test_ansi_sgr_compound_colours(void)
+{
+	struct vmem_cell cells[2];
+	setup_ansi();
+	ct_puts("\033[38:2::");
+	ct_puts("18:52:86;48:5:123;5mA");
+	ct_puts("\033[0;48:2::86:52:18;38:5:124mB");
+	ct_gettext(1, 1, 2, 1, cells);
+	if (cells[0].fg != (CIOLIB_COLOR_RGB | 0x123456) || cells[0].bg != 123
+	    || !(cells[0].legacy_attr & 0x80)) {
+		fprintf(result_fp, "    expected RGB foreground, indexed background and blink on A\n");
+		return 0;
+	}
+	if (cells[1].fg != 124 || cells[1].bg != (CIOLIB_COLOR_RGB | 0x563412)
+	    || (cells[1].legacy_attr & 0x80)) {
+		fprintf(result_fp, "    expected indexed foreground, RGB background and blink off on B\n");
+		return 0;
+	}
+	return 1;
+}
+
 /* DECIC/DECDC */
 static int test_ansi_decic(void)
 {
@@ -6370,6 +6391,7 @@ static struct test_entry tests[] = {
 	{"ANSI_SGR256_bg",    test_ansi_sgr256_bg},
 	{"ANSI_SGRRGB_fg",    test_ansi_sgr_rgb_fg},
 	{"ANSI_SGRRGB_bg",    test_ansi_sgr_rgb_bg},
+	{"ANSI_SGR_compound_colours", test_ansi_sgr_compound_colours},
 	/* ANSI-BBS — DECIC/DECDC */
 	{"ANSI_DECIC",        test_ansi_decic},
 	{"ANSI_DECDC",        test_ansi_decdc},

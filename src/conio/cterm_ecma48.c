@@ -1504,44 +1504,21 @@ seq_feed(struct cterminal *cterm, unsigned char ch)
 					cterm->seq_cur_has_sub = false;
 				}
 				else if (ch == ':') {
-					if (!cterm->seq_cur_has_sub) {
-						if (cterm->seq_param_count < MAX_SEQ_PARAMS) {
-							cterm->seq_param_int[cterm->seq_param_count] =
-							    cterm->seq_cur_has_digits
-							        ? cterm->seq_cur_value : UINT64_MAX;
-						}
-						cterm->seq_cur_has_sub = true;
-					}
-					cterm->seq_cur_value = 0;
-					cterm->seq_cur_has_digits = false;
+					/* Keep the main value. Handlers read subparameters from seq_params. */
+					cterm->seq_cur_has_sub = true;
 				}
-				else {
-					/* Digit 0x30-0x39 */
+				else if (!cterm->seq_cur_has_sub) {
 					cterm->seq_cur_value = cterm->seq_cur_value * 10 + (ch - '0');
 					cterm->seq_cur_has_digits = true;
 				}
 				return SEQ_INCOMPLETE;
 			}
-			/* Non-param byte -- finalise the last parameter and
-			 * transition to intermediate/final handling.  A parameter
-			 * is only present if we saw a digit in the current slot
-			 * (cur_has_digits) or we already closed at least one slot
-			 * (count > 0 via a ';' or ':').  Don't be misled by
-			 * seq_param_len: that includes the private indicator
-			 * byte, which is NOT a parameter (sequences like CSI ? s
-			 * must finish with seq_param_count == 0 so handlers can
-			 * detect "no explicit parameters"). */
-			if (!cterm->seq_overflow) {
-				if (cterm->seq_param_count < MAX_SEQ_PARAMS
-				    && (cterm->seq_cur_has_digits
-				        || cterm->seq_param_count > 0)) {
-					if (!cterm->seq_cur_has_sub) {
-						cterm->seq_param_int[cterm->seq_param_count] =
-						    cterm->seq_cur_has_digits
-						        ? cterm->seq_cur_value : UINT64_MAX;
-					}
-					cterm->seq_param_count++;
-				}
+			/* A digit, colon or semicolon establishes a parameter. A private
+			 * indicator alone (e.g. CSI ? s) leaves the parameter list empty. */
+			if (!cterm->seq_overflow && cterm->seq_param_count < MAX_SEQ_PARAMS
+			    && (cterm->seq_cur_has_digits || cterm->seq_cur_has_sub || cterm->seq_param_count > 0)) {
+				cterm->seq_param_int[cterm->seq_param_count++] =
+				    cterm->seq_cur_has_digits ? cterm->seq_cur_value : UINT64_MAX;
 			}
 			cterm->seq_phase = SEQ_PHASE_INTERM;
 			/* FALLTHROUGH */
